@@ -10,6 +10,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementIntents.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawObservations.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawSupportTargetOpportunity.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -33,6 +34,7 @@ struct AdaptiveMagmawPlan
 {
     bool OwnsNode = false;
     bool ReleaseRetainedRangedFormation = false;
+    bool ClearOptionalDamageTarget = false;
     bool SuppressOffense = false;
     std::string_view SuppressReason;
     MagmawParasiteCombatContract ParasiteCombat;
@@ -94,7 +96,9 @@ public:
         MagmawFacts const* facts = nullptr,
         MagmawPersonalParasiteEscapeTask* personalEscapeTask = nullptr,
         MagmawParasiteWaveTask* parasiteWaveTask = nullptr,
-        MagmawRetainedFormationPath const* retainedPath = nullptr) const
+        MagmawRetainedFormationPath const* retainedPath = nullptr,
+        MagmawSupportTargetOpportunities const* supportOpportunities =
+            nullptr) const
     {
         AdaptiveMagmawPlan plan;
         if (board.Route.NodeId != "bwd.magmaw.encounter")
@@ -131,7 +135,8 @@ public:
                 // as if it were the arrival generation.
                 laneTransition->SealNoMechanicArrival(board.Revision);
         }
-        MagmawActorObservation const observed = ObserveMagmawActors(board, *bot);
+        MagmawActorObservation const observed = ObserveMagmawActors(board, *bot,
+            supportOpportunities);
         if (!observed.Boss)
             return plan;
         plan.OwnsNode = true;
@@ -178,7 +183,10 @@ public:
             }
         }
         plan.DamageTarget = SelectDamageTarget(observed, botGuid, role,
+            bot->ClassSpec,
             plan.ParasiteCombat);
+        plan.ClearOptionalDamageTarget = plan.DamageTarget.IsEmpty()
+            && observed.SupportOpportunitiesObserved;
         MagmawHookAssignment const hookAssignment = ResolveHookAssignment(
             board, *bot, botGuid);
         bool const pincerWarning = PincerWarningObserved(board);

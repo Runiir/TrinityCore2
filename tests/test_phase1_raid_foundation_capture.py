@@ -98,6 +98,10 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     finalize_capture,
 )
 from tools.raid_program.capture_setup import recurrence_profile_authority
+from tools.raid_program.capture_telemetry_transport import (
+    drain_pending_trace_batches,
+)
+from tools.raid_program.capture_terminal_trace import collect_terminal_trace
 from tools.raid_program.capture_environment_validation import (
     snapshot_receipt_bound_artifacts,
 )
@@ -1149,6 +1153,12 @@ def test_execute_capture_run_owns_fake_process_and_live_loop(tmp_path: Path, mon
             "rejections": [],
         },
     )
+    monkeypatch.setattr(
+        "tools.raid_program.capture_live_run.drain_pending_trace_batches",
+        lambda *args, **kwargs: {
+            "gate_passed": True, "rejections": [],
+        },
+    )
 
     def fake_shutdown(child, timeout_seconds):
         child.returncode = 0
@@ -2074,6 +2084,104 @@ def test_trace_scheduler_shortens_after_ring_pressure_without_accepting_gaps():
     assert gap_only.commands_due(2.0) == []
 
 
+def test_trace_scheduler_prioritizes_native_pending_backlog():
+    scheduler = TelemetryScheduler(
+        status_interval_sec=5, diagnose_interval_sec=30, trace_interval_sec=10,
+    )
+    scheduler.commands_due(0.0)
+    scheduler.observe_trace([{
+        "bots": [{
+            "bot_guid": 1001,
+            "pending_entry_count": 200,
+            "entries": [{"sequence": 1, "situation": "head_exposed"}],
+        }],
+    }], observed_at=1.0)
+
+    assert scheduler.state()["trace_pending_entries"] == 200
+    assert scheduler.commands_due(1.1) == ["botauto trace all 128 delta"]
+
+
+def test_trace_failure_context_forces_diagnosis_with_a_rate_bound():
+    scheduler = TelemetryScheduler(
+        status_interval_sec=5, diagnose_interval_sec=30, trace_interval_sec=10,
+        diagnosis_failure_cooldown_sec=15,
+    )
+    scheduler.commands_due(0.0)
+    scheduler.observe_trace([{
+        "bots": [{
+            "bot_guid": 1001,
+            "entries": [{
+                "sequence": 1, "situation": "head_exposed",
+                "mechanic_family": "magmaw_head",
+            }],
+        }],
+    }], observed_at=0.5)
+    assert scheduler.commands_due(0.6) == []
+
+    current_failure = {
+        "bots": [{
+            "bot_guid": 1001,
+            "entries": [{
+                "sequence": 2, "situation": "head_hidden",
+                "mechanic_family": "magmaw_body",
+                "target_return": {
+                    "captured_at_ms": 1000,
+                    "observed_at_ms": 900,
+                    "age_ms": 100,
+                    "current_at_record": True,
+                    "stale": False,
+                    "observation": {
+                        "evaluated": True, "bind_result": "native_missing",
+                    },
+                },
+            }],
+        }],
+    }
+    scheduler.observe_trace([current_failure], observed_at=1.0)
+    assert scheduler.commands_due(1.1) == ["botauto diagnose all"]
+    scheduler.observe_trace([current_failure], observed_at=1.2)
+    assert scheduler.commands_due(1.3) == []
+    assert scheduler.state()["trace_context_trigger_count"] == 1
+
+    scheduler.observe_trace([{
+        "bots": [{
+            "bot_guid": 1001,
+            "entries": [{
+                "sequence": 3, "situation": "head_hidden",
+                "mechanic_family": "magmaw_body",
+                "target_return": {
+                    "captured_at_ms": 2000,
+                    "observed_at_ms": 900,
+                    "age_ms": 1100,
+                    "current_at_record": False,
+                    "stale": True,
+                    "observation": {
+                        "evaluated": True, "bind_result": "native_missing",
+                    },
+                },
+            }],
+        }],
+    }], observed_at=2.0)
+    assert scheduler.commands_due(2.1) == []
+    assert scheduler.state()["trace_context_diagnosis_pending"] is False
+
+    scheduler.observe_trace([{
+        "bots": [{
+            "bot_guid": 1001,
+            "entries": [{
+                "sequence": 4, "situation": "death_loop",
+                "action": "repeated_death", "result": "failed",
+                "fingerprint_failure_count": 8,
+            }],
+        }],
+    }], observed_at=3.0)
+    assert scheduler.commands_due(3.1) == []
+    assert scheduler.state()["trace_context_diagnosis_pending"] is True
+    assert scheduler.commands_due(16.1) == [
+        "botauto status", "botauto trace all 128 delta", "botauto diagnose all",
+    ]
+
+
 def test_terminal_runtime_failure_is_exact_roster_bound_and_material():
     status = accepted_status()
     status["cohort_id"] = "default"
@@ -2306,7 +2414,7 @@ def test_forced_stall_bundle_contains_diagnose_and_lossless_trace_delta():
     ]
 
 
-def test_forced_stall_bundle_uses_full_trace_after_ring_pressure_but_keeps_gap_rejection():
+def test_forced_stall_bundle_keeps_lossless_delta_after_ring_pressure():
     scheduler = TelemetryScheduler(
         status_interval_sec=5, diagnose_interval_sec=15, trace_interval_sec=10,
     )
@@ -2317,34 +2425,266 @@ def test_forced_stall_bundle_uses_full_trace_after_ring_pressure_but_keeps_gap_r
     )
     scheduler.force_diagnosis(include_trace=True)
     assert scheduler.commands_due(2.0) == [
-        "botauto trace all 128", "botauto diagnose all",
+        "botauto trace all 128 delta", "botauto diagnose all",
     ]
 
+
+def _pending_trace_page(
+    status: dict, start: int, end: int, *, newest: int,
+    pending: int | None, gap: bool = False,
+) -> dict:
+    trace = _forced_response(status, "botauto_trace")
+    trace["raid_runtime"] = copy.deepcopy(status["raid_runtime"])
+    for bot_row in trace["bots"]:
+        guid = bot_row["bot_guid"]
+        bot_row["cursor_before"] = start - 1
+        bot_row["cursor_after"] = end
+        bot_row["entries"] = [
+            {
+                "sequence": sequence,
+                "server_epoch": status["raid_runtime"]["server_epoch"],
+                "attempt_id": status["raid_runtime"]["attempt_id"],
+                "cohort_id": status["cohort_id"],
+                "actor": {
+                    "guid": guid,
+                    "map_id": status["raid_runtime"]["map_id"],
+                    "instance_id": status["raid_runtime"]["instance_id"],
+                },
+                "reason_code": (
+                    "head_hidden_body_bind_failed" if sequence == 1 else "later"
+                ),
+            }
+            for sequence in range(start, end + 1)
+        ]
+        bot_row["gap"] = gap
+        if pending is not None:
+            bot_row["pending_entry_count"] = pending
+            bot_row["newest_retained_sequence"] = newest
+    return trace
+
+
+def test_terminal_pending_trace_drain_preserves_more_than_one_export_page():
     status = accepted_status()
     status["cohort_id"] = "raid"
-    full_trace = _forced_response(status, "botauto_trace")
-    for bot_row in full_trace["bots"]:
-        bot_row.pop("gap")
-        bot_row["entries"] = [{"sequence": 1}]
-    accepted = validate_forced_evidence_bundle(
-        [(_forced_response(status, "botauto_diagnose"), 10.1), (full_trace, 10.2)],
+    queued = [
+        (_pending_trace_page(status, 129, 256, newest=300, pending=44), 10.2),
+        (_pending_trace_page(status, 257, 300, newest=300, pending=0), 10.3),
+    ]
+    commands: list[str] = []
+    report = drain_pending_trace_batches(
+        (_pending_trace_page(status, 1, 128, newest=300, pending=172), 10.1),
         status,
-        requested_at_monotonic=10.0,
-        freshness_timeout_seconds=5.0,
+        deadline_monotonic=11.0,
+        send_delta=lambda: commands.append("botauto trace all 128 delta"),
+        read_trace_response=lambda deadline: queued.pop(0),
+        monotonic=lambda: 10.5,
     )
-    assert accepted["gate_passed"] is True
 
-    missing = json.loads(json.dumps(full_trace))
-    missing["bots"][0]["gap"] = True
-    missing["bots"][0]["entries"] = []
-    rejected = validate_forced_evidence_bundle(
-        [(_forced_response(status, "botauto_diagnose"), 10.1), (missing, 10.2)],
-        status,
-        requested_at_monotonic=10.0,
-        freshness_timeout_seconds=5.0,
+    assert report["gate_passed"] is True
+    assert report["batch_count"] == 3
+    assert report["additional_delta_command_count"] == 2
+    assert report["pending_entry_count_final"] == 0
+    assert report["retention_capacity"] == 4096
+    assert report["export_batch_size"] == 128
+    assert commands == ["botauto trace all 128 delta"] * 2
+
+
+def test_production_terminal_trace_collector_drains_delayed_300_record_backlog():
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    pages = [
+        _pending_trace_page(status, 1, 128, newest=300, pending=172),
+        _pending_trace_page(status, 129, 256, newest=300, pending=44),
+        _pending_trace_page(status, 257, 300, newest=300, pending=0),
+    ]
+
+    class Clock:
+        now = 10.0
+
+        def monotonic(self):
+            return self.now
+
+        def sleep(self, seconds):
+            self.now += seconds
+
+    clock = Clock()
+
+    def observation(row):
+        return SimpleNamespace(
+            row=row,
+            response_bytes=len(json.dumps(row)),
+            response_sha256="a" * 64,
+            first_byte_observed_at_monotonic=clock.now,
+            response_complete_observed_at_monotonic=clock.now,
+            parse_duration_seconds=0.0001,
+        )
+
+    class Cursor:
+        def __init__(self):
+            self.rows = []
+
+        def read_new_observations(self):
+            rows, self.rows = self.rows, []
+            return rows
+
+    cursor = Cursor()
+
+    class Process:
+        def __init__(self):
+            self.commands = []
+            self.stdin = self
+
+        def write(self, payload):
+            for command in payload.decode().splitlines():
+                self.commands.append(command)
+                if command == "botauto diagnose all":
+                    cursor.rows.append(observation(
+                        _forced_response(status, "botauto_diagnose")
+                    ))
+                elif command == "botauto trace all 128 delta":
+                    cursor.rows.append(observation(pages.pop(0)))
+            return len(payload)
+
+        def flush(self):
+            return None
+
+    process = Process()
+    scheduler = TelemetryScheduler(
+        status_interval_sec=5, diagnose_interval_sec=30, trace_interval_sec=10,
     )
-    assert rejected["gate_passed"] is False
-    assert "trace:forced_response_trace_delta_gap" in rejected["rejections"]
+    ledger = TelemetryTransportLedger()
+    counts = {"status": 0, "diagnose": 0, "trace": 0}
+    report, diagnoses, trace_count = collect_terminal_trace(
+        process=process,
+        log_cursor=cursor,
+        combat_log_delta_controller=SimpleNamespace(observe_rows=lambda rows: None),
+        scheduler=scheduler,
+        transport_ledger=ledger,
+        command_counts=counts,
+        expected_status=status,
+        telemetry_timeout_seconds=5.0,
+        record_resource_sample=lambda: None,
+        validate_bundle=validate_forced_evidence_bundle,
+        monotonic=clock.monotonic,
+        sleep=clock.sleep,
+    )
+
+    assert report["gate_passed"] is True
+    assert report["trace_drain"]["batch_count"] == 3
+    assert len(diagnoses) == 1
+    assert trace_count == 3
+    assert counts == {"status": 1, "diagnose": 1, "trace": 3}
+    assert process.commands.count("botauto trace all 128 delta") == 3
+    assert all(receipt["association_state"] == "bound_in_serial_command_order"
+               for receipt in ledger.receipts())
+
+
+def test_terminal_pending_trace_drain_legacy_full_page_requests_another_delta():
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    queued = [(_pending_trace_page(
+        status, 129, 133, newest=133, pending=None,
+    ), 10.2)]
+    commands: list[str] = []
+    report = drain_pending_trace_batches(
+        (_pending_trace_page(status, 1, 128, newest=128, pending=None), 10.1),
+        status,
+        deadline_monotonic=11.0,
+        send_delta=lambda: commands.append("botauto trace all 128 delta"),
+        read_trace_response=lambda deadline: queued.pop(0),
+        monotonic=lambda: 10.5,
+    )
+
+    assert report["gate_passed"] is True
+    assert report["batch_count"] == 2
+    assert all(batch["legacy_pending_inference"] for batch in report["batches"])
+    assert commands == ["botauto trace all 128 delta"]
+
+
+@pytest.mark.parametrize(
+    ("mutate", "rejection"),
+    [
+        (lambda row: row["bots"][0].update(gap=True), "trace_drain_gap_observed"),
+        (
+            lambda row: row["bots"][0].pop("gap"),
+            "trace_drain_gap_invalid",
+        ),
+        (
+            lambda row: row["bots"][0].update(gap="false"),
+            "trace_drain_gap_invalid",
+        ),
+        (
+            lambda row: row["raid_runtime"].update(instance_id=999),
+            "trace_drain_runtime_identity_mismatch",
+        ),
+        (
+            lambda row: row["bots"][0]["entries"][0].update(attempt_id=999),
+            "trace_drain_entry_identity_mismatch",
+        ),
+    ],
+)
+def test_terminal_pending_trace_drain_rejects_overflow_and_identity_drift(
+    mutate, rejection,
+):
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    page = _pending_trace_page(status, 1, 128, newest=300, pending=172)
+    mutate(page)
+    report = drain_pending_trace_batches(
+        (page, 10.1), status,
+        deadline_monotonic=11.0,
+        send_delta=lambda: None,
+        read_trace_response=lambda deadline: None,
+        monotonic=lambda: 10.5,
+    )
+    assert report["gate_passed"] is False
+    assert rejection in report["rejections"]
+
+
+def test_terminal_pending_trace_drain_fails_at_deadline_without_substitution():
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    commands: list[str] = []
+    report = drain_pending_trace_batches(
+        (_pending_trace_page(status, 1, 128, newest=300, pending=172), 10.1),
+        status,
+        deadline_monotonic=10.2,
+        send_delta=lambda: commands.append("unexpected"),
+        read_trace_response=lambda deadline: None,
+        monotonic=lambda: 10.2,
+    )
+    assert report["gate_passed"] is False
+    assert report["rejections"] == ["trace_drain_deadline_exceeded"]
+    assert commands == []
+
+
+def test_terminal_pending_trace_drain_rejects_response_observed_after_deadline():
+    status = accepted_status()
+    status["cohort_id"] = "raid"
+    queued = [(
+        _pending_trace_page(status, 129, 256, newest=300, pending=44),
+        11.1,
+    )]
+    report = drain_pending_trace_batches(
+        (_pending_trace_page(status, 1, 128, newest=300, pending=172), 10.1),
+        status,
+        deadline_monotonic=11.0,
+        send_delta=lambda: None,
+        read_trace_response=lambda deadline: queued.pop(0),
+        monotonic=lambda: 10.5,
+    )
+    assert report["gate_passed"] is False
+    assert report["rejections"] == ["trace_drain_response_after_deadline"]
+
+
+def test_production_finalizer_calls_pending_trace_drain_helper():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_live_run.py"
+    ).read_text(encoding="utf-8")
+    assert "collect_terminal_trace(" in source
+    assert "drain_pending=drain_pending_trace_batches" in source
+    assert '"botauto trace all 128"' not in source
 
 
 def _forced_response(status: dict, action: str, *, ok: bool = True) -> dict:

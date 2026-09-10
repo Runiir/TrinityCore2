@@ -20,7 +20,8 @@ friendly damage and mirrored 79010 events while retaining owned pet damage.
 The route-event span includes approach time and is not the fight denominator.
 
 The all-bot review reports 28,935,523 hostile damage, 138,307.847 exact DPS,
-and 14,447.548 HPS. The five DPS actors contribute 104,040.571 exact DPS.
+and 13,853.884 HPS over the same hostile-pull-to-death window. The older
+14,447.548 HPS included 124,201 healing before that window. The five DPS actors contribute 104,040.571 exact DPS.
 Throughput remains unresolved. Late targets remain valid, but optional parasite
 support can be admitted without executable offense while repositioning is
 forbidden. Fire hook deals only 244 damage over the last 57.689 seconds; Hunter
@@ -75,3 +76,24 @@ Pointer: `artifacts/cata_raid_program/magmaw_development_6882d0c204_20260908.tar
 [active work unit](../../experiments/configs/cata_raid_active_work_unit_v1.json)
 routes the next shared target-admission repair and retains the separate native
 cast-failure observation gap. No unchanged encounter retry is justified.
+
+## Current implementation, awaiting native validation
+
+ENC-003 optional support admission now uses actor-specific native LOS and
+effective spell/profile ranges; mandatory bait, personal threat and hazard
+movement remain distinct. Production fixtures cover hidden-head replacement
+with a live body and blocked optional parasites. Independent native review
+approves the implementation for build, not end-to-end repair acceptance.
+
+The [timeline](bot_timeline.md) joins existing combat, diagnosis and trace
+records. Native trace context is frozen at recording; pending delta retention
+is 4,096 rows plus 128 exported rows. Capture drains pending pages and writes
+the inspectable timeline automatically. Retained 6882 evidence reproduces
+209.211 seconds and 28,935,523 hostile damage exactly. Legacy missing decision
+context remains missing. The manual DPS-023 occurrence is still unresolved.
+
+No retained controlled comparison establishes a regression-causing patch, so
+no blind revert is justified. Preserve the accepted tank-swap and early
+cast-interruption fixes. Next: finish consumer checks, build once, run the
+native trace-pressure fixture and one completion-watchdog Magmaw validation,
+then independently compare clear, repair and performance outcomes.

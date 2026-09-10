@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_TRACE_TRANSPORT_TEST_H
 
 #include "Define.h"
+#include "Bots/BotWorldTraceExportCursor.h"
 
 #include <string_view>
 
@@ -11,8 +12,8 @@ constexpr char ProfileName[] = "trace_transport_10";
 constexpr char PoolTag[] = "blackwing_descent_10n";
 constexpr char Authority[] = "trace_transport_test_only_not_gameplay";
 constexpr uint32 ActorCount = 10;
-constexpr uint32 MinimumPressureCount = 129;
-constexpr uint32 MaximumPressureCount = 192;
+constexpr uint32 MinimumPressureCount = BotWorldTrace::PendingTraceCapacity + 1;
+constexpr uint32 MaximumPressureCount = MinimumPressureCount + 63;
 
 struct GateInput
 {

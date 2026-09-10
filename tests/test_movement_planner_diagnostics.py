@@ -223,6 +223,7 @@ int main()
     std::uint64_t ordinaryReceipt = sidecar.BeginReceipt(30010, 669,
         ordinaryRequest, receiptScope, 0, 0.0f, 0.0f, 210.0f);
     assert(sidecar.Latest(30010).LaunchReceipt.Id == ordinaryReceipt);
+    assert(sidecar.HasPendingTraceObservation(30010));
     sidecar.AssociateTrace(30010, 10);
     MovementPlannerObservation retainedHazard = sidecar.ForTrace(30010, 10);
     assert(retainedHazard.LaunchReceipt.Id == hazardReceipt);
@@ -242,8 +243,10 @@ int main()
         != std::string::npos);
     assert(retainedHazardJson.find("route_destination_endpoint_mismatch")
         != std::string::npos);
+    assert(sidecar.HasPendingTraceObservation(30010));
     sidecar.AssociateTrace(30010, 11);
     assert(sidecar.ForTrace(30010, 11).LaunchReceipt.Id == ordinaryReceipt);
+    assert(!sidecar.HasPendingTraceObservation(30010));
 
     sidecar.Record(InvalidFloor());
     std::string invalidFloorJson = MovementPlannerObservationJson(
@@ -512,9 +515,11 @@ def test_planner_trace_diagnosis_and_lifecycle_wiring():
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in diagnosis
     assert "movement_planner" in diagnosis
     assert "MovementPlannerDiagnostics().Latest" in diagnosis
-    assert "MovementPlannerDiagnostics().ForTrace" in diagnosis
+    assert "MovementPlannerDiagnostics().ForTrace" not in diagnosis
+    assert "AppendDecisionTraceEntryJson" in diagnosis
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in status
-    assert "MovementPlannerDiagnostics().ForTrace" in status
+    assert "MovementPlannerDiagnostics().ForTrace" not in status
+    assert "AppendDecisionTraceEntryJson" in status
     assert '#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"' in executor
     assert "RecordMovementPlannerExecutorOutcome" in executor
     assert "action.IntentReason" in native_action
@@ -610,7 +615,9 @@ def test_candidate_key_is_diagnostic_only() -> None:
 
 
 def test_sidecar_is_not_in_central_state_and_is_registered():
-    assert "MovementPlannerDiagnostics" not in BOT_STATE.read_text(encoding="utf-8")
+    bot_state = BOT_STATE.read_text(encoding="utf-8")
+    assert "MovementPlannerDiagnosticSidecar" not in bot_state
+    assert "optional<BotWorldMovement::MovementPlannerObservation>" in bot_state
     assert "MovementPlannerDiagnostics" not in MANAGER.read_text(encoding="utf-8")
     cmake = CMAKE.read_text(encoding="utf-8")
     assert "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.cpp" in cmake

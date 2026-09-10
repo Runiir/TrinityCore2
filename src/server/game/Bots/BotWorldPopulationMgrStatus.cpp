@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
 #include "Bots/BotWorldTraceExportCursor.h"
 
 #include "CellImpl.h"
@@ -320,91 +321,13 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
                     if (!firstEntry)
                         json << ',';
                     firstEntry = false;
-                    // Reuse the existing bounded encoder by emitting a
-                    // temporary one-entry view without copying the full
-                    // diagnostic state.  Delta callers only need the same
-                    // immutable entry schema and its sequence cursor.
-                    json << "{\"timestamp_ms\":" << itr->TimestampMs
-                         << ",\"sequence\":" << itr->Sequence
-                         << ",\"decision_sequence\":" << itr->DecisionSequence
-                         << ",\"situation\":\"" << JsonEscape(itr->Situation)
-                         << "\",\"action\":\"" << JsonEscape(itr->Action)
-                         << "\",\"route_node_id\":\"" << JsonEscape(itr->RouteNodeId)
-                         << "\",\"route_generation\":" << itr->RouteGeneration
-                         << ",\"quest_id\":" << itr->QuestId
-                         << ",\"target_id\":" << itr->TargetGuid
-                         << ",\"destination\":{\"map\":" << itr->DestinationMapId
-                         << ",\"x\":" << itr->DestinationX << ",\"y\":" << itr->DestinationY
-                         << ",\"z\":" << itr->DestinationZ << "}"
-                         << ",\"result\":\"" << JsonEscape(itr->Result)
-                         << "\",\"reason_code\":\"" << JsonEscape(itr->ReasonCode)
-                         << "\",\"fingerprint_hash\":" << itr->FingerprintHash
-                         << ",\"fingerprint_repeat_count\":" << itr->FingerprintRepeatCount
-                         << ",\"fingerprint_failure_count\":" << itr->FingerprintFailureCount
-                         << ",\"consecutive_same_decision_count\":" << itr->ConsecutiveSameDecisionCount
-                         << ",\"idle_decision_repeat_count\":" << itr->IdleDecisionRepeatCount
-                         << ",\"target_churn_count\":" << itr->TargetChurnCount
-                         << ",\"suppressed_repeatable_event_count\":" << itr->SuppressedRepeatableEventCount
-                         << ",\"suppressed_repeatable_decision_count\":" << itr->SuppressedRepeatableDecisionCount
-                         << ",\"threat_snapshot\":{\"engaged_hostiles\":" << itr->EngagedHostileCount
-                         << ",\"tank_owned_hostiles\":" << itr->TankOwnedHostileCount
-                         << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount
-                         << ",\"engaged_hostile_guids\":[";
-                    for (size_t index = 0; index < itr->EngagedHostileGuids.size(); ++index)
-                    {
-                        if (index)
-                            json << ',';
-                        json << itr->EngagedHostileGuids[index];
-                    }
-                    json << "],\"tank_owned_hostile_guids\":[";
-                    for (size_t index = 0; index < itr->TankOwnedHostileGuids.size(); ++index)
-                    {
-                        if (index)
-                            json << ',';
-                        json << itr->TankOwnedHostileGuids[index];
-                    }
-                    json << "],\"healer_targeting_hostile_guids\":[";
-                    for (size_t index = 0; index < itr->HealerTargetingHostileGuids.size(); ++index)
-                    {
-                        if (index)
-                            json << ',';
-                        json << itr->HealerTargetingHostileGuids[index];
-                    }
-                    json << "],\"tank_threat_aura_active\":" << (itr->TankThreatAuraActive ? "true" : "false") << "}"
-                         << ",\"pet_alive\":" << (itr->PetAlive ? "true" : "false")
-                         << ",\"loop_guardrail_action\":\"" << JsonEscape(itr->LoopGuardrailAction)
-                         << "\",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason)
-                         << "\",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode)
-                         << "\",\"recovery_result\":\"" << JsonEscape(itr->RecoveryResult)
-                         << "\",\"native_path_floor\":{\"failure\":\""
-                         << BotWorldMovement::NativePathFloorFailureName(
-                                itr->NativePathFloor.Failure)
-                         << "\",\"segment_index\":" << itr->NativePathFloor.SegmentIndex
-                         << ",\"sample_index\":" << itr->NativePathFloor.SampleIndex
-                         << ",\"x\":" << itr->NativePathFloor.X
-                         << ",\"y\":" << itr->NativePathFloor.Y
-                         << ",\"z\":" << itr->NativePathFloor.Z
-                         << ",\"resolved_floor_z\":" << itr->NativePathFloor.ResolvedFloorZ
-                         << ",\"reference_z\":" << itr->NativePathFloor.ReferenceZ << "}"
-                         << ",\"movement_planner\":"
-                         << BotWorldMovement::MovementPlannerObservationJson(
-                                BotWorldMovement::MovementPlannerDiagnostics().ForTrace(
-                                    state.Guid.GetCounter(), itr->Sequence))
-                         << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
-                         << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason)
-                         << "\",\"blocked_current_reason\":\"" << JsonEscape(itr->BlockedCurrentReason)
-                         << "\",\"blocked_resolution\":\"" << JsonEscape(itr->BlockedResolution)
-                         << "\",\"blocked_resolved_by\":\"" << JsonEscape(itr->BlockedResolvedBy)
-                         << "\",\"action_category\":\"" << JsonEscape(state.LastActionCategory)
-                         << "\",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal)
-                         << "\",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode)
-                         << "\",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason)
-                         << "\",\"mechanic_family\":\"" << JsonEscape(state.LastMechanicFamily)
-                         << "\",\"encounter_role_responsibility\":\"" << JsonEscape(state.LastEncounterRoleResponsibility)
-                         << "\",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction)
-                         << "\",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
-                         << ",\"native_spell_finish\":" << (itr->NativeSpellFinishJson.empty() ? "null" : itr->NativeSpellFinishJson)
-                         << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
+                    BotWorldTrace::AppendDecisionTraceEntryJson(json, *itr,
+                        [this](std::string const& value)
+                        { return JsonEscape(value); },
+                        [this](WorldBotState::CombatAttemptDiagnostic const& value)
+                        { return BuildCombatAttemptJson(value); },
+                        [this](WorldBotState::RouteProgressDiagnostic const& value)
+                        { return BuildRouteProgressJson(value); });
                 }
                 json << "]";
                 BotWorldTrace::WriteExportCursorFields(json, transition);

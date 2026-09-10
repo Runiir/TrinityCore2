@@ -861,10 +861,28 @@ def finalize_capture(setup: CaptureSetup, run: CaptureRunResult) -> int:
             personal_threat_episode_target_binding
         )
     output.parent.mkdir(parents=True, exist_ok=True)
+    report["optimization_acceptance"] = {
+        "clear_accepted": (
+            report.get("development_run", {}).get("native_boss_death_accepted") is True
+            and report.get("classification") == "success"
+        ),
+        "repair_edge_accepted": None,
+        "performance_accepted": None,
+        "state": "requires_closed_run_review_and_baseline_comparison",
+    }
     report["artifact_inventory"] = [
         _artifact_record(raw_output, "raw_normalized_jsonl"),
         _artifact_record(server_log_output, "raw_worldserver_log"),
     ]
+    # Render from the same bound rows before final hashing. Failure preserves
+    # the native clear/cleanup evidence but cannot silently complete the
+    # diagnostic workflow without its primary view.
+    from tools.raid_program.capture_timeline_artifacts import attach_capture_timeline
+    if not attach_capture_timeline(
+        normalized_rows, report, output, raw_sha256=raw_payload_sha256,
+    ):
+        success = False
+    report["capture_success"] = success
     # The report entry is a deliberate self-reference.  Its digest is the
     # canonical report hash after nulling both self-reference fields; this is
     # stable and independently reproducible without a circular hash.

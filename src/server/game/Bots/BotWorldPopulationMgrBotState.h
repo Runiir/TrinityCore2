@@ -7,6 +7,7 @@
 #include "Bots/BotServerVehicleExitLanding.h"
 #include "Bots/BotWorldPopulationMgrNativeFloor.h"
 #include "Bots/BotWorldPopulationMgrMovement.h"
+#include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
@@ -649,9 +650,53 @@ namespace BotWorldPopulationMgrBotState
 
         struct DecisionTraceEntry
         {
+            struct TargetObservation
+            {
+                uint64 Guid = 0;
+                uint64 GuidRaw = 0;
+                uint32 Entry = 0;
+                bool NativePresent = false;
+                bool Alive = false;
+                bool ValidAttackTarget = false;
+                bool DistanceAvailable = false;
+                float Distance = 0.0f;
+                bool DistanceWithin45Yd = false;
+                bool LineOfSightAvailable = false;
+                bool LineOfSight = false;
+                bool PositionAvailable = false;
+                float X = 0.0f;
+                float Y = 0.0f;
+                float Z = 0.0f;
+            };
+
+            struct NativeActorObservation
+            {
+                bool NativePresent = false;
+                bool InWorld = false;
+                bool Alive = false;
+                bool PositionAvailable = false;
+                float X = 0.0f;
+                float Y = 0.0f;
+                float Z = 0.0f;
+                bool Moving = false;
+                bool SplineInitialized = false;
+                bool SplineFinalized = true;
+                uint32 SplineId = 0;
+                uint32 CurrentGenericSpellId = 0;
+            };
+
             uint64 TimestampMs = 0;
             uint64 Sequence = 0;
             uint32 DecisionSequence = 0;
+            uint64 ServerEpoch = 0;
+            uint64 AttemptId = 0;
+            uint64 WipeGeneration = 0;
+            std::string CohortId;
+            uint64 ActorGuid = 0;
+            uint64 ActorGuidRaw = 0;
+            uint32 ActorMapId = 0;
+            uint32 ActorInstanceId = 0;
+            std::string ActorRole;
             std::string Situation = "unknown";
             std::string Action = "wait";
             std::string RouteNodeId;
@@ -690,6 +735,25 @@ namespace BotWorldPopulationMgrBotState
             std::string BlockedCurrentReason;
             std::string BlockedResolution;
             std::string BlockedResolvedBy;
+            uint64 PolicyObservedAtMs = 0;
+            std::string ActionCategory = "wait";
+            std::string RoleGoal = "increase_character_power";
+            std::string RecommendedBalanceMode = "role_first";
+            std::string SaturationReason = "role_first";
+            std::string MechanicFamily = "none";
+            std::string EncounterRoleResponsibility = "maintain_role";
+            std::string NextExpectedAction = "wait_for_next_decision_tick";
+            TargetObservation EventTarget;
+            TargetObservation NativeSelectedTarget;
+            TargetObservation StateBoundTarget;
+            NativeActorObservation NativeActor;
+            std::optional<BotWorldMovement::MovementPlannerObservation>
+                MovementPlanner;
+            std::optional<BotEncounter::MagmawTargetReturnObservation::Record>
+                TargetReturn;
+            bool TargetReturnCurrentAtRecord = false;
+            bool TargetReturnAgeAvailable = false;
+            uint64 TargetReturnAgeMs = 0;
             std::string NativeSpellFinishJson; // Callback facts; cached CombatAttempt is not its identity.
             CombatAttemptDiagnostic CombatAttempt;
             RouteProgressDiagnostic RouteProgress;

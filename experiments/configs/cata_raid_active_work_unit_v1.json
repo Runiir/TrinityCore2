@@ -1,14 +1,14 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:multi_class_performance_batch",
+  "work_unit": "magmaw:target_admission_and_causal_timeline",
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "trace_backed_shared_target_admission_repair",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "6882d0c20447283a9c97f006cdae2c7ea136a9db",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
-  "evidence_contract_change": false,
-  "gate_state": "6882 clear; tank swap and early moving-cast interruption repair accepted; throughput unresolved due shared target admission and native terminal-failure observation gaps",
+  "behavior_change": true,
+  "evidence_contract_change": true,
+  "gate_state": "Native, capture and timeline/comparator independently approved; native build and live validation pending",
   "first_broken_edge": {
     "id": "optional_parasite_support_without_spatial_legality",
     "owner_classification": "raid_bot_runtime_implementation",
@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "869a557f19e3b175910e11d6ea8323a9cc3bbac96eee29916d7df77ccc9b2da2"
+    "sha256": "d3e5a5d81dca9966ea35ff116ecd4769f9296a9125793775804ffff8ddacc91a"
   },
   "scope_lock": {
     "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
@@ -28,9 +28,12 @@
     ]
   },
   "acceptance_conditions": [
-    "Identify exact candidate/native failure from the closed run.",
-    "Exercise smallest repair through the actual production caller with a deterministic fixture.",
-    "Pass independent review and one bounded native validation."
+    "Identify the earliest causal mismatch in attributable per-bot timeline evidence; keep missing or inferred state explicit.",
+    "Exercise production hidden-head/live-body binding, blocked optional parasite admission, mandatory bait/threat obligations and simultaneous movement/casting in focused fixtures.",
+    "Pass independent native and capture review, one clean build, native trace-pressure retention/drain validation, and a completion-watchdog Magmaw run.",
+    "Record encounter clear, requested repair achieved end to end, and overall performance as separate outcomes.",
+    "Compare exact hostile owner-plus-pet pull-to-death DPS/HPS, per-bot activity, boss/add damage, switch latency, survival and phase coverage against an identified matched baseline. An unexplained material decline blocks performance acceptance.",
+    "Publish closed generated evidence through DVC, verify remote reconstruction, and evict exact duplicate payloads after all reviewers finish."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -39,9 +42,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Implement bounded optional-support spatial admission from observed native facts, preserving personal threats, bait and hazard ownership; retain OBS-008 before guessing Scorch terminal failure.",
+  "next_action": "Complete actual retained-run timeline reconciliation and consumer review, then serialized build, native pressure fixture, and matched watchdog Magmaw validation.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -80,8 +83,8 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "not_started",
-    "scope": "New ENC-003 optional support-target spatial admission; previous6882 repair acceptance is recorded in the closed evidence.",
+    "verdict": "approved_for_native_build",
+    "scope": "ENC-003 support admission, immutable trace context, pending retention, capture drain, timeline and optimization comparator",
     "live_verified": false
   },
   "related_edges": [

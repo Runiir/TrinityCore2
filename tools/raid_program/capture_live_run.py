@@ -48,8 +48,10 @@ from tools.raid_program.capture_telemetry_transport import (
     TelemetryScheduler,
     TelemetryTransportLedger,
     collect_log_observations,
+    drain_pending_trace_batches,
     observe_telemetry_freshness,
 )
+from tools.raid_program.capture_terminal_trace import collect_terminal_trace
 from tools.raid_program.capture_terminal_batch import (
     classify_terminal_failure_batch,
 )
@@ -435,78 +437,26 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                 sleep as proof that the commands ran.
                 """
                 nonlocal diagnosis_count, trace_count, latest_diagnosis
-                telemetry_scheduler.force_diagnosis(include_trace=True)
-                request_started = time.monotonic()
-                commands = telemetry_scheduler.commands_due(request_started)
-                trace_command = (
-                    "botauto trace all 128"
-                    if "botauto trace all 128" in commands
-                    else "botauto trace all 128 delta"
-                )
-                required_commands = {
-                    "botauto diagnose all", trace_command,
-                }
-                if not required_commands.issubset(commands):
-                    return {
-                        "requested": False,
-                        "gate_passed": False,
-                        "missing_channels": [
-                            channel for channel in ("diagnosis", "trace")
-                            if {
-                                "diagnosis": "botauto diagnose all",
-                                "trace": trace_command,
-                            }[channel] not in commands
-                        ],
-                        "rejections": ["forced_request_commands_not_scheduled"],
-                        "commands": commands,
-                    }
-                for command in commands:
-                    if command == "botauto status":
-                        telemetry_command_counts["status"] += 1
-                    elif command == "botauto diagnose all":
-                        telemetry_command_counts["diagnose"] += 1
-                    elif command in {
-                        "botauto trace all 128",
-                        "botauto trace all 128 delta",
-                    }:
-                        telemetry_command_counts["trace"] += 1
-                process.stdin.write(("\n".join(commands) + "\n").encode())
-                process.stdin.flush()
-                observations: list[tuple[dict[str, Any], float]] = []
                 expected_status = monitor_statuses[-1] if monitor_statuses else None
-                deadline = request_started + args.telemetry_timeout_sec
-                report: dict[str, Any] = {
-                    "requested": True,
-                    "gate_passed": False,
-                    "missing_channels": ["diagnosis", "trace"],
-                    "rejections": ["forced_responses_not_observed"],
-                    "commands": commands,
-                }
-                while time.monotonic() < deadline:
-                    time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
-                    record_process_resource_sample()
-                    observed_at = time.monotonic()
-                    rows = log_cursor.read_new_rows()
-                    combat_log_delta_controller.observe_rows(rows)
-                    for row in rows:
-                        action = row.get("action")
-                        if action == "botauto_diagnose":
-                            diagnosis_count += 1
-                            latest_diagnosis = row
-                            observations.append((row, observed_at))
-                        elif action == "botauto_trace":
-                            trace_count += 1
-                            observations.append((row, observed_at))
-                    report = validate_forced_evidence_bundle(
-                        observations,
-                        expected_status,
-                        requested_at_monotonic=request_started,
-                        freshness_timeout_seconds=args.telemetry_timeout_sec,
+                report, terminal_diagnoses, terminal_trace_count = (
+                    collect_terminal_trace(
+                        process=process, log_cursor=log_cursor,
+                        combat_log_delta_controller=combat_log_delta_controller,
+                        scheduler=telemetry_scheduler,
+                        transport_ledger=telemetry_transport_ledger,
+                        command_counts=telemetry_command_counts,
+                        expected_status=expected_status,
+                        telemetry_timeout_seconds=float(args.telemetry_timeout_sec),
+                        record_resource_sample=record_process_resource_sample,
+                        validate_bundle=validate_forced_evidence_bundle,
+                        drain_pending=drain_pending_trace_batches,
+                        monotonic=time.monotonic, sleep=time.sleep,
                     )
-                    report["requested"] = True
-                    report["commands"] = commands
-                    if report["gate_passed"]:
-                        break
+                )
+                diagnosis_count += len(terminal_diagnoses)
+                trace_count += terminal_trace_count
+                if terminal_diagnoses:
+                    latest_diagnosis = terminal_diagnoses[-1]
                 delta_deadline = time.monotonic() + min(5.0, float(args.telemetry_timeout_sec))
                 delta_report = combat_log_delta_controller.drain_final(delta_deadline)
                 combat_log_started = time.monotonic()
@@ -567,7 +517,6 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                         f"combat_log:{reason}"
                         for reason in combat_log_report["rejections"]
                     )
-                report["response_wait_seconds"] = round(time.monotonic() - request_started, 3)
                 return report
             flush_forced_evidence_callback = flush_forced_evidence
             while (deadline is None or time.monotonic() < deadline) and not (
@@ -613,10 +562,7 @@ def execute_capture_run(setup: CaptureSetup) -> CaptureRunResult:
                             telemetry_command_counts["status"] += 1
                         elif command == "botauto diagnose all":
                             telemetry_command_counts["diagnose"] += 1
-                        elif command in {
-                            "botauto trace all 128",
-                            "botauto trace all 128 delta",
-                        }:
+                        elif command == "botauto trace all 128 delta":
                             telemetry_command_counts["trace"] += 1
                     process.stdin.write(("\n".join(due_commands) + "\n").encode())
                     process.stdin.flush()

@@ -35,15 +35,22 @@
             || classSpec == "destruction_warlock";
     }
     static MagmawActorObservation ObserveMagmawActors(Blackboard const& board,
-        ActorSnapshot const& bot)
+        ActorSnapshot const& bot,
+        MagmawSupportTargetOpportunities const* supportOpportunities)
     {
         MagmawActorObservation observed;
-        auto inspectTarget = [&observed, &bot](ActorSnapshot const& actor)
+        observed.SupportOpportunitiesObserved = supportOpportunities != nullptr;
+        auto inspectTarget = [&observed, &bot, supportOpportunities](
+            ActorSnapshot const& actor)
         {
             if (!actor.Alive)
                 return;
             if (actor.Entry == BossEntry)
+            {
                 observed.Boss = &actor;
+                observed.BossStaticDamageOpportunity = supportOpportunities
+                    && supportOpportunities->Contains(actor.Guid);
+            }
             else if (actor.Entry == HeadEntry && actor.Selectable
                 && actor.Attackable)
                 observed.Head = &actor;
@@ -55,6 +62,14 @@
                 {
                     observed.NearestParasite = &actor;
                     observed.NearestParasiteDistance = distance;
+                }
+                if ((!supportOpportunities
+                        || supportOpportunities->Contains(actor.Guid))
+                    && (!observed.SupportParasite
+                        || distance < observed.SupportParasiteDistance))
+                {
+                    observed.SupportParasite = &actor;
+                    observed.SupportParasiteDistance = distance;
                 }
                 if (MagmawParasitePolicy::PersonallyThreatens(bot, actor)
                     && (!observed.PersonalParasiteThreat
@@ -70,6 +85,23 @@
             inspectTarget(actor);
         for (ActorSnapshot const& actor : board.Summons)
             inspectTarget(actor);
+        if (supportOpportunities)
+        {
+            auto channels = board.BotTargets.find(bot.Guid);
+            ObjectGuid const current = channels == board.BotTargets.end()
+                ? ObjectGuid{} : channels->second.DamageTarget;
+            ActorSnapshot const* currentActor = board.FindActor(current);
+            if (currentActor && currentActor->Alive
+                && IsParasiteEntry(currentActor->Entry)
+                && supportOpportunities->Contains(current)
+                && Distance2d(bot.Position, currentActor->Position)
+                    <= RangedParasiteSupportTargetDistance)
+            {
+                observed.SupportParasite = currentActor;
+                observed.SupportParasiteDistance =
+                    Distance2d(bot.Position, currentActor->Position);
+            }
+        }
         return observed;
     }
 
@@ -138,7 +170,8 @@
 
     static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
         ObjectGuid botGuid,
-        std::string_view role, MagmawParasiteCombatContract const& contract)
+        std::string_view role, std::string_view classSpec,
+        MagmawParasiteCombatContract const& contract)
     {
         if (observed.Head)
             return observed.Head->Guid;
@@ -159,12 +192,23 @@
                     observed.PersonalParasiteThreat->Guid))
                 return observed.PersonalParasiteThreat->Guid;
 
-            if (observed.NearestParasite
-                && observed.NearestParasiteDistance
+            if (observed.SupportParasite
+                && observed.SupportParasiteDistance
                     <= RangedParasiteSupportTargetDistance
                 && contract.IsSupportTarget(botGuid,
-                    observed.NearestParasite->Guid))
-                return observed.NearestParasite->Guid;
+                    observed.SupportParasite->Guid))
+                return observed.SupportParasite->Guid;
+
+            bool const optionalSupportChoice =
+                observed.SupportOpportunitiesObserved
+                && observed.NearestParasite
+                && observed.NearestParasiteDistance
+                    <= RangedParasiteSupportTargetDistance
+                && !contract.IsAssignedBaiter(botGuid)
+                && IsRangedParasiteSupportSpec(classSpec);
+            if (optionalSupportChoice)
+                return observed.BossStaticDamageOpportunity
+                    ? observed.Boss->Guid : ObjectGuid{};
         }
         return observed.Boss->Guid;
     }
@@ -181,11 +225,11 @@
                 observed.PersonalParasiteThreat->Guid;
         if (role != "dps" || contract.IsAssignedBaiter(bot.Guid)
             || !IsRangedParasiteSupportSpec(bot.ClassSpec)
-            || observed.Head || !observed.NearestParasite
-            || observed.NearestParasiteDistance
+            || observed.Head || !observed.SupportParasite
+            || observed.SupportParasiteDistance
                 > RangedParasiteSupportTargetDistance)
             return;
-        contract.SupportTargetGuid = observed.NearestParasite->Guid;
+        contract.SupportTargetGuid = observed.SupportParasite->Guid;
     }
 
     static void EmitPersonalParasiteEscape(Blackboard const& board,

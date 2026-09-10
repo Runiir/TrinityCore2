@@ -1,7 +1,6 @@
 """Actual callback and retained trace payload; native dependencies are value stubs."""
 import json
 from pathlib import Path
-import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,13 +9,6 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_native_finish_callback_retained_observation(tmp_path):
     source = (ROOT / 'src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp').read_text()
     callback = source[source.index('void BotWorldPopulationMgr::NotifyBotSpellFinished('):source.index('void BotWorldPopulationMgr::NotifyBotItemSpellFinished(')]
-    serializers = []
-    for filename in ['BotWorldPopulationMgrDiagnosis.cpp', 'BotWorldPopulationMgrStatus.cpp']:
-        source_json = (ROOT / 'src/server/game/Bots' / filename).read_text()
-        emission = re.search(r'\s*<< ",\\"native_spell_finish\\":".*?\n', source_json)
-        # An absent delta field produces an empty object before the repair.
-        serializers.append('json ' + emission.group().strip() + ';' if emission else 'json << "";')
-    serializer = 'if (delta) {' + serializers[1] + '} else {' + serializers[0] + '}'
     cpp = r'''
 #include <array>
 #include <algorithm>
@@ -70,10 +62,8 @@ int main(){
  mgr.NotifyBotSpellFinished(nullptr,133,true);mgr.NotifyBotSpellFinished(&caster,0,true);caster.guid.raw=40000;mgr.NotifyBotSpellFinished(&caster,133,true);
  if(mgr.party.Bots[0].DecisionTrace.size()!=n)return 4;
  mgr.party.Bots[0].DecisionTrace.push_back({}); // ordinary trace has no finish observation
- for(bool delta : {false,true})
- for(auto itr=mgr.party.Bots[0].DecisionTrace.begin();itr!=mgr.party.Bots[0].DecisionTrace.end();++itr){std::ostringstream json;json<<"{\"fixture\":true";
-'''+serializer+r'''
- json<<"}";std::cout<<json.str()<<'\n';}
+ for(auto const& row:mgr.party.Bots[0].DecisionTrace)
+  std::cout<<(row.NativeSpellFinishJson.empty()?"null":row.NativeSpellFinishJson)<<'\n';
 }
 '''
     path=tmp_path/'callback.cpp';path.write_text(cpp);binary=tmp_path/'callback'
@@ -81,7 +71,76 @@ int main(){
     assert built.returncode==0,built.stderr
     run=subprocess.run([str(binary)],capture_output=True,text=True)
     assert run.returncode==0,run.stderr
-    exported = list(map(json.loads, run.stdout.splitlines()))
+    callback_rows = list(map(json.loads, run.stdout.splitlines()))
+    assert len(callback_rows) == 5
+
+    payloads = ",\n".join(
+        json.dumps("" if row is None else json.dumps(row, separators=(",", ":")))
+        for row in callback_rows
+    )
+    encoder_cpp = r'''
+#include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
+#include <iostream>
+#include <sstream>
+#include <string>
+
+namespace BotWorldMovement
+{
+std::string MovementPlannerObservationJson(MovementPlannerObservation const&)
+{
+    return "{}";
+}
+}
+
+using BotWorldPopulationMgrBotState::WorldBotState;
+
+std::string Encode(WorldBotState::DecisionTraceEntry const& entry)
+{
+    std::ostringstream json;
+    BotWorldTrace::AppendDecisionTraceEntryJson(json, entry,
+        [](std::string const& value) { return value; },
+        [](WorldBotState::CombatAttemptDiagnostic const&) { return "{}"; },
+        [](WorldBotState::RouteProgressDiagnostic const&) { return "{}"; });
+    return json.str();
+}
+
+int main()
+{
+    char const* payloads[] = {
+''' + payloads + r'''
+    };
+    for (bool delta : {false, true})
+    {
+        (void)delta;
+        for (char const* payload : payloads)
+        {
+            WorldBotState::DecisionTraceEntry row;
+            row.NativeSpellFinishJson = payload;
+            std::cout << Encode(row) << '\n';
+        }
+    }
+}
+'''
+    encoder_path = tmp_path / "native_finish_encoder.cpp"
+    encoder_binary = tmp_path / "native_finish_encoder"
+    encoder_path.write_text(encoder_cpp, encoding="utf-8")
+    encoded_build = subprocess.run(
+        [
+            "c++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+            "-I", str(ROOT / "src/common"),
+            "-I", str(ROOT / "src/server/game"),
+            "-I", str(ROOT / "src/server/game/Entities/Object"),
+            "-I", str(ROOT / "dep/g3dlite/include"),
+            str(encoder_path), "-o", str(encoder_binary),
+        ],
+        capture_output=True, text=True,
+    )
+    assert encoded_build.returncode == 0, encoded_build.stderr
+    encoded_run = subprocess.run(
+        [str(encoder_binary)], capture_output=True, text=True
+    )
+    assert encoded_run.returncode == 0, encoded_run.stderr
+    exported = list(map(json.loads, encoded_run.stdout.splitlines()))
     full, delta = exported[:5], exported[5:]
     assert len(full)==len(delta)==5
     assert all('native_spell_finish' in row for row in delta)

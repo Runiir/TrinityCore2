@@ -2467,6 +2467,9 @@ def test_botauto_diagnosis_and_trace_surface():
     diagnosis_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
     snapshot_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson")
     trace_entries = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson")
+    trace_entry_encoder = read(
+        BOT_DIR / "BotWorldPopulationMgrDecisionTraceJson.h"
+    )
     record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
     record_event = function_body(mgr, "void BotWorldPopulationMgr::RecordEvent")
     update_outcome_stats = function_body(mgr, "void BotWorldPopulationMgr::UpdateSemanticOutcomeStats")
@@ -2674,7 +2677,7 @@ def test_botauto_diagnosis_and_trace_surface():
         "loop_guardrail_action",
         "recovery_mode",
     ]:
-        assert field in trace_entries
+        assert field in trace_entries or field in trace_entry_encoder
 
     assert "RecordDecisionTrace(state" in record_decision
     assert "loop_guardrail_triggered" in update_bot
@@ -2697,7 +2700,7 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "reward = clampMetric(reward, -25.0f, 25.0f);" in update_outcome_stats
     assert "powerDelta = clampMetric(powerDelta, -25.0f, 25.0f);" in update_outcome_stats
     assert "state.DecisionTrace.push_back(entry)" in record_trace
-    assert "state.DecisionTrace.size() > 128" in record_trace
+    assert "TrimExportedTrace(state.DecisionTrace, exportedCursor)" in record_trace
     assert "debug_schema_version" in debug
     assert "diagnosis" in debug
 

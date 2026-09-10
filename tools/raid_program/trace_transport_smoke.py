@@ -13,10 +13,14 @@ POOL_TAG = "blackwing_descent_10n"
 ACTOR_COUNT = 10
 PRESSURE_WATERMARK = 16
 PRESSURE_INTERVAL_SECONDS = 2.0
+PENDING_DRAIN_MAX_DELAY_SECONDS = 1.5
+PENDING_TRACE_CAPACITY = 4096
+TRACE_EXPORT_BATCH_SIZE = 128
+PRESSURE_PENDING_AFTER_FIRST_PAGE = PENDING_TRACE_CAPACITY - TRACE_EXPORT_BATCH_SIZE
 PRESSURE_WARMUP_SECONDS = 5.0
 AUTHORITY = "trace_transport_test_only_not_gameplay"
 DELTA_COMMAND = "botauto trace all 128 delta"
-PRESSURE_COUNT = 129
+PRESSURE_COUNT = 4097  # Deliberately exceed the pending export cap, not the UI tail.
 PRESSURE_COMMAND = f"botautotracepressure {PRESSURE_COUNT}"
 GENERIC_IDENTITY_FIELDS = (
     "cohort_id", "server_epoch", "attempt_id", "profile_generation",
@@ -214,6 +218,39 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
         first_by_guid = _by_guid(first_rows)
         pressure = max((int(row.get("entry_count") or 0) for row in first_rows), default=0)
         scheduler = first.get("scheduler_state_after_response") or {}
+        pending_metadata_present = any(
+            "pending_entry_count_present" in row
+            or "newest_retained_sequence_present" in row
+            or "pending_entry_count" in row
+            for row in first_rows
+        )
+        pending_entries: int | None = None
+        if pending_metadata_present:
+            valid_pending_rows = [
+                row for row in first_rows
+                if row.get("pending_entry_count_present") is True
+                and row.get("newest_retained_sequence_present") is True
+                and isinstance(row.get("pending_entry_count"), int)
+                and not isinstance(row.get("pending_entry_count"), bool)
+                and row["pending_entry_count"] >= 0
+                and isinstance(row.get("newest_retained_sequence"), int)
+                and not isinstance(row.get("newest_retained_sequence"), bool)
+                and isinstance(row.get("cursor_after"), int)
+                and row["newest_retained_sequence"] - row["cursor_after"]
+                    == row["pending_entry_count"]
+            ]
+            if len(valid_pending_rows) != len(first_rows):
+                reasons.append("pending_drain_metadata_invalid")
+            else:
+                pending_entries = max(
+                    row["pending_entry_count"] for row in valid_pending_rows
+                )
+                if (
+                    gap.get("pending_entry_count")
+                    != PRESSURE_PENDING_AFTER_FIRST_PAGE
+                    or pending_entries != PRESSURE_PENDING_AFTER_FIRST_PAGE
+                ):
+                    reasons.append("pressure_pending_backlog_mismatch")
         interval = (
             gap.get("missing_sequence_start"), gap.get("missing_sequence_end"),
             gap.get("oldest_retained_sequence"), gap.get("newest_retained_sequence"),
@@ -228,6 +265,11 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
             reasons.append("gap_response_pressure_below_production_watermark")
         if scheduler.get("effective_trace_interval_seconds") != PRESSURE_INTERVAL_SECONDS:
             reasons.append("production_pressure_cadence_not_armed")
+        if pending_entries is not None and pending_entries > 0 and (
+            scheduler.get("trace_pending_entries") != pending_entries
+            or scheduler.get("trace_forced") is not True
+        ):
+            reasons.append("production_pending_drain_not_armed")
         if not all(isinstance(value, int) and value > 0 for value in interval):
             reasons.append("explicit_discontinuity_interval_missing")
         elif not (
@@ -253,10 +295,11 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
             current = second_by_guid.get(guid)
             if current is None:
                 continue
-            if current.get("gap") is True:
+            if current.get("gap") is not False:
                 reasons.append(
                     "gap_actor_followup_reoverflowed"
-                    if guid == gap.get("bot_guid") else "peer_actor_followup_gap"
+                    if current.get("gap") is True and guid == gap.get("bot_guid")
+                    else "peer_actor_followup_gap"
                 )
             elif current.get("cursor_before") != prior.get("cursor_after"):
                 reasons.append(f"actor_cursor_not_independent_contiguous:{guid}")
@@ -264,9 +307,48 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
                 reasons.append(f"actor_first_sequence_not_contiguous:{guid}")
             elif current.get("entry_count") and current.get("last_sequence") != current.get("cursor_after"):
                 reasons.append(f"actor_cursor_after_not_last_sequence:{guid}")
+        followup_pending: int | None = None
+        if pending_metadata_present:
+            valid_followup_pending = []
+            for guid, prior in first_by_guid.items():
+                current = second_by_guid.get(guid)
+                if current is None:
+                    continue
+                pending = current.get("pending_entry_count")
+                newest = current.get("newest_retained_sequence")
+                cursor_after = current.get("cursor_after")
+                expected_pending = int(prior.get("pending_entry_count") or 0) \
+                    - int(current.get("entry_count") or 0)
+                if not (
+                    current.get("pending_entry_count_present") is True
+                    and current.get("newest_retained_sequence_present") is True
+                    and isinstance(pending, int) and not isinstance(pending, bool)
+                    and pending == max(0, expected_pending)
+                    and isinstance(newest, int) and not isinstance(newest, bool)
+                    and isinstance(cursor_after, int)
+                    and newest - cursor_after == pending
+                    and newest == prior.get("newest_retained_sequence")
+                ):
+                    reasons.append(f"followup_pending_metadata_invalid:{guid}")
+                else:
+                    valid_followup_pending.append(pending)
+            if len(valid_followup_pending) == len(first_by_guid):
+                followup_pending = max(valid_followup_pending, default=0)
+                followup_scheduler = (
+                    followup.get("scheduler_state_after_response") or {}
+                )
+                if followup_pending > 0 and (
+                    followup_scheduler.get("trace_pending_entries")
+                        != followup_pending
+                    or followup_scheduler.get("trace_forced") is not True
+                ):
+                    reasons.append("followup_pending_drain_not_armed")
         delay = first.get("response_complete_to_next_send_seconds")
-        if not isinstance(delay, (int, float)):
+        if not isinstance(delay, (int, float)) or isinstance(delay, bool):
             reasons.append("next_command_send_timing_missing")
+        elif pending_metadata_present:
+            if not 0 <= delay <= PENDING_DRAIN_MAX_DELAY_SECONDS:
+                reasons.append("pending_drain_send_outside_immediate_window")
         elif not PRESSURE_INTERVAL_SECONDS <= delay <= PRESSURE_INTERVAL_SECONDS + 1.5:
             reasons.append("next_command_send_outside_production_poll_window")
         passed = not reasons
@@ -278,6 +360,12 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
             "followup_command_sequence": followup.get("command_sequence"),
             "gap_actor_guid": gap.get("bot_guid"), "actor_count": len(first_by_guid),
             "pressure_entries": pressure,
+            "pending_entry_count": pending_entries,
+            "followup_pending_entry_count": followup_pending,
+            "pending_drain_max_delay_seconds": (
+                PENDING_DRAIN_MAX_DELAY_SECONDS
+                if pending_entries is not None and pending_entries > 0 else None
+            ),
             "effective_trace_interval_seconds": scheduler.get("effective_trace_interval_seconds"),
             "response_complete_to_next_send_seconds": delay,
         }

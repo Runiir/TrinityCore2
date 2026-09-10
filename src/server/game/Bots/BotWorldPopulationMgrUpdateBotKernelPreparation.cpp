@@ -4,11 +4,14 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotAdaptiveDrudgeStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeActivationState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDamageTargetBinding.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotWorldPopulationMgrRaidConsumables.h"
 
@@ -58,6 +61,88 @@ void SettleRetainedMagmawFormation(State& state, Actor* bot)
     state.ActivePathTargetGuid.Clear();
     state.MovementLease = {};
     state.IsMoving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+}
+
+std::vector<BotEncounter::MagmawStaticDamageRange>
+ObserveMagmawStaticDamageRanges(Player const* bot, Unit const* target,
+    BotClassSpecActionProfile const& profile)
+{
+    std::vector<BotEncounter::MagmawStaticDamageRange> ranges;
+    if (!bot || !target || profile.MissingProfile)
+        return ranges;
+
+    for (BotActionProfileSpell const& action : profile.Spells)
+    {
+        if (!bot->HasSpell(action.SpellId) || action.TargetSelector != "enemy"
+            || !(action.DamageWeight > 0.0f) || action.RequiresGroundTarget
+            || action.RequiresMeleeRange || action.RequiresInterruptibleTarget
+            || action.Category == BotCombatActionCategory::Aoe
+            || action.Category == BotCombatActionCategory::Cleave
+            || action.Category == BotCombatActionCategory::OffensiveCooldown)
+            continue;
+        SpellInfo const* spellInfo =
+            BotSpellResolution::Resolve(bot, action.SpellId).Effective;
+        if (!spellInfo || spellInfo->IsPositive())
+            continue;
+
+        float minimum = action.MinRange > 0.0f
+            ? action.MinRange : profile.MinRange;
+        float maximum = action.MaxRange > 0.0f
+            ? action.MaxRange : profile.MaxRange;
+        float nativeMinimum = bot->GetSpellMinRangeForTarget(target, spellInfo);
+        if (spellInfo->RangeEntry
+            && (spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED))
+            nativeMinimum += bot->GetMeleeRange(target);
+        minimum = std::max(minimum, nativeMinimum);
+
+        float nativeMaximum = bot->GetSpellMaxRangeForTarget(target, spellInfo);
+        if (spellInfo->RangeEntry
+            && (spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE))
+            nativeMaximum = std::max(nativeMaximum,
+                bot->GetMeleeRange(target));
+        else
+            nativeMaximum += bot->GetCombatReach() + target->GetCombatReach();
+        maximum = maximum > 0.0f
+            ? std::min(maximum, nativeMaximum) : nativeMaximum;
+        if (std::isfinite(minimum) && std::isfinite(maximum)
+            && minimum >= 0.0f && maximum > minimum)
+            ranges.push_back({ minimum, maximum });
+    }
+    return ranges;
+}
+
+BotEncounter::MagmawSupportTargetOpportunities
+ObserveMagmawSupportTargetOpportunities(Player const* bot,
+    BotEncounter::Blackboard const& board, char const* role)
+{
+    BotEncounter::MagmawSupportTargetOpportunities opportunities;
+    if (!bot || board.Route.NodeId != "bwd.magmaw.encounter")
+        return opportunities;
+
+    BotClassSpecActionProfile const profile =
+        BotClassSpecActionProfileStore::Build(bot, role);
+    auto inspect = [bot, &profile, &opportunities](
+        BotEncounter::ActorSnapshot const& actor)
+    {
+        if (!actor.Alive
+            || (actor.Entry != BotEncounter::AdaptiveMagmawStrategy::BossEntry
+                && actor.Entry
+                    != BotEncounter::AdaptiveMagmawStrategy::ParasiteEntry
+                && actor.Entry
+                    != BotEncounter::AdaptiveMagmawStrategy::ParasiteAltEntry))
+            return;
+        Unit* target = ObjectAccessor::GetUnit(*bot, actor.Guid);
+        std::vector<BotEncounter::MagmawStaticDamageRange> const ranges =
+            ObserveMagmawStaticDamageRanges(bot, target, profile);
+        if (BotEncounter::ObserveMagmawStaticDamageOpportunity(
+                bot, target, ranges))
+            opportunities.Admit(actor.Guid);
+    };
+    for (BotEncounter::ActorSnapshot const& actor : board.Hostiles)
+        inspect(actor);
+    for (BotEncounter::ActorSnapshot const& actor : board.Summons)
+        inspect(actor);
+    return opportunities;
 }
 }
 
@@ -494,10 +579,15 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 ? context.Target->GetGUID() : ObjectGuid::Empty;
             BotEncounter::MagmawFacts const* magmawFacts = Cohort().MagmawFacts
                 ? &Cohort().MagmawFacts->Facts() : nullptr;
+            std::string const magmawRole = GetDungeonRole(context.Bot);
+            BotEncounter::MagmawSupportTargetOpportunities const
+                magmawSupportOpportunities =
+                    ObserveMagmawSupportTargetOpportunities(context.Bot,
+                        *Cohort().EncounterSnapshot, magmawRole.c_str());
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
-                GetDungeonRole(context.Bot), &context.State.MovementLease,
+                magmawRole, &context.State.MovementLease,
                 context.State.ActivePathValid, context.State.IsMoving,
                 &magmawLaneOwner->MagmawLaneTransition,
                 &context.State.MagmawParasiteHazard,
@@ -506,7 +596,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     DefaultMovementProducerOrder,
                 magmawFacts,
                 &context.State.MagmawPersonalParasiteEscape,
-                &Cohort().MagmawParasiteWave, &retainedFormation);
+                &Cohort().MagmawParasiteWave, &retainedFormation,
+                &magmawSupportOpportunities);
             if (magmawPlan.ReleaseRetainedRangedFormation)
                 SettleRetainedMagmawFormation(context.State, context.Bot);
 
@@ -573,10 +664,11 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 BotEncounter::MagmawTargetReturnObservation::BindResult;
             TargetBindResult bindResult = targetReturn
                 ? targetReturn->Result : TargetBindResult::NotEvaluated;
+            Unit* adaptiveTarget = magmawPlan.DamageTarget.IsEmpty()
+                ? nullptr : ObjectAccessor::GetUnit(*context.Bot,
+                    magmawPlan.DamageTarget);
             if (!magmawPlan.DamageTarget.IsEmpty())
             {
-                Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
-                    magmawPlan.DamageTarget);
                 if (targetReturn)
                     BotEncounter::MagmawTargetReturnObservation::
                         ObserveProposedNative(*targetReturn,
@@ -584,19 +676,21 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                             adaptiveTarget && adaptiveTarget->IsAlive(),
                             adaptiveTarget && context.Bot->IsValidAttackTarget(
                                 adaptiveTarget));
-                if (!adaptiveTarget)
-                    bindResult = TargetBindResult::NativeMissing;
-                else if (!adaptiveTarget->IsAlive())
-                    bindResult = TargetBindResult::NativeDead;
-                else if (!context.Bot->IsValidAttackTarget(adaptiveTarget))
-                    bindResult = TargetBindResult::NativeInvalid;
-                else
-                {
-                    context.Target = adaptiveTarget;
-                    context.State.TargetGuid = magmawPlan.DamageTarget;
-                    bindResult = TargetBindResult::Bound;
-                }
             }
+            using NativeBindResult =
+                BotEncounter::MagmawDamageTargetBindResult;
+            NativeBindResult const nativeBind =
+                BotEncounter::BindMagmawDamageTarget(context,
+                    magmawPlan.DamageTarget,
+                    magmawPlan.ClearOptionalDamageTarget, adaptiveTarget);
+            if (nativeBind == NativeBindResult::NativeMissing)
+                bindResult = TargetBindResult::NativeMissing;
+            else if (nativeBind == NativeBindResult::NativeDead)
+                bindResult = TargetBindResult::NativeDead;
+            else if (nativeBind == NativeBindResult::NativeInvalid)
+                bindResult = TargetBindResult::NativeInvalid;
+            else if (nativeBind == NativeBindResult::Bound)
+                bindResult = TargetBindResult::Bound;
             if (targetReturn)
                 BotEncounter::MagmawTargetReturnObservation::Finish(
                     *targetReturn, bindResult, context.State.TargetGuid,

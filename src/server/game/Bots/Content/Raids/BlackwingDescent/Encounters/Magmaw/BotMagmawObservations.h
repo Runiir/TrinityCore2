@@ -11,6 +11,10 @@ struct MagmawActorObservation
     ActorSnapshot const* Head = nullptr;
     ActorSnapshot const* NearestParasite = nullptr;
     float NearestParasiteDistance = 0.0f;
+    ActorSnapshot const* SupportParasite = nullptr;
+    float SupportParasiteDistance = 0.0f;
+    bool SupportOpportunitiesObserved = false;
+    bool BossStaticDamageOpportunity = false;
     ActorSnapshot const* PersonalParasiteThreat = nullptr;
     float PersonalParasiteThreatDistance = 0.0f;
 };

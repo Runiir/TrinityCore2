@@ -250,6 +250,7 @@ public:
     MovementPlannerObservation ForReceipt(std::uint64_t receiptId) const;
     MovementPlannerObservation ForTrace(std::uint64_t botGuid,
         std::uint64_t traceSequence) const;
+    bool HasPendingTraceObservation(std::uint64_t botGuid) const;
     void ClearBot(std::uint64_t botGuid);
     void ClearAll();
 

@@ -1,15 +1,21 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotWorldPopulationMgrDecisionTraceCoalescing.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/BotWorldTraceExportCursor.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "GridNotifiersImpl.h"
 #include "Group.h"
+#include "Movement/Spline/MoveSpline.h"
+#include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
+#include "Spell.h"
+#include "SpellInfo.h"
 #include "Unit.h"
 
 #include <algorithm>
@@ -181,31 +187,81 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
 
 void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode, bool coalesceRepeatable)
 {
-    if (coalesceRepeatable && !state.DecisionTrace.empty())
+    uint64 const nowMs = NowMs();
+    Player* bot = GetLoadedBot(state);
+    auto observeTarget = [bot](Unit const* observed, uint64 fallbackGuid)
     {
-        WorldBotState::DecisionTraceEntry& previous = state.DecisionTrace.back();
-        uint64 const nowMs = NowMs();
-        bool const sameDecision = previous.Situation == (situation ? situation : "unknown")
-            && previous.Action == (action ? action : "wait")
-            && previous.TargetGuid == (target ? target->GetGUID().GetCounter() : 0)
-            && previous.Result == (result ? result : "ok")
-            && previous.ReasonCode == (reasonCode ? reasonCode : "")
-            && previous.RouteNodeId == Cohort().Config.ValidationRouteNodeId
-            && previous.RouteGeneration == state.ValidationRouteGeneration;
-        if (sameDecision && nowMs >= previous.TimestampMs
-            && nowMs - previous.TimestampMs < 5000)
+        WorldBotState::DecisionTraceEntry::TargetObservation snapshot;
+        snapshot.Guid = observed ? observed->GetGUID().GetCounter() : fallbackGuid;
+        snapshot.GuidRaw = observed ? observed->GetGUID().GetRawValue() : 0;
+        if (!observed)
+            return snapshot;
+        snapshot.NativePresent = true;
+        if (Creature const* creature = observed->ToCreature())
+            snapshot.Entry = creature->GetEntry();
+        snapshot.Alive = observed->IsAlive();
+        snapshot.PositionAvailable = observed->IsInWorld();
+        if (snapshot.PositionAvailable)
         {
-            ++previous.SuppressedRepeatableDecisionCount;
-            return;
+            snapshot.X = observed->GetPositionX();
+            snapshot.Y = observed->GetPositionY();
+            snapshot.Z = observed->GetPositionZ();
         }
-    }
+        bool const comparable = bot && bot->IsInWorld() && observed->IsInWorld()
+            && bot->GetMap() == observed->GetMap();
+        snapshot.ValidAttackTarget = comparable
+            && bot->IsValidAttackTarget(observed);
+        snapshot.DistanceAvailable = comparable;
+        if (comparable)
+        {
+            snapshot.Distance = bot->GetExactDist(observed);
+            snapshot.DistanceWithin45Yd = snapshot.Distance <= 45.0f;
+            snapshot.LineOfSightAvailable = true;
+            snapshot.LineOfSight = bot->IsWithinLOSInMap(observed);
+        }
+        return snapshot;
+    };
+
+    WorldBotState::DecisionTraceEntry::TargetObservation const eventTarget =
+        observeTarget(target, target ? target->GetGUID().GetCounter() : 0);
+    Unit* nativeSelected = bot && bot->IsInWorld()
+        ? bot->GetSelectedUnit() : nullptr;
+    WorldBotState::DecisionTraceEntry::TargetObservation nativeSelectedTarget =
+        nativeSelected && nativeSelected == target ? eventTarget
+        : observeTarget(nativeSelected,
+            bot ? bot->GetTarget().GetCounter() : 0);
+    if (bot && !nativeSelectedTarget.GuidRaw)
+        nativeSelectedTarget.GuidRaw = bot->GetTarget().GetRawValue();
+    Unit* stateBound = bot && bot->IsInWorld() && !state.TargetGuid.IsEmpty()
+        ? ObjectAccessor::GetUnit(*bot, state.TargetGuid) : nullptr;
+    WorldBotState::DecisionTraceEntry::TargetObservation stateBoundTarget =
+        stateBound && stateBound == target ? eventTarget
+        : stateBound && stateBound == nativeSelected ? nativeSelectedTarget
+        : observeTarget(stateBound, state.TargetGuid.GetCounter());
+    if (!stateBoundTarget.GuidRaw)
+        stateBoundTarget.GuidRaw = state.TargetGuid.GetRawValue();
+    auto cursorItr = Party().TraceExportCursorByGuid.find(
+        state.Guid.GetCounter());
+    uint64 const exportedCursor = cursorItr == Party().TraceExportCursorByGuid.end()
+        ? 0 : cursorItr->second;
+    uint32 const actorMapId = bot ? bot->GetMapId() : Party().MapId;
+    uint32 const actorInstanceId = bot ? bot->GetInstanceId() : Party().InstanceId;
+    auto roleItr = Party().RoleByGuid.find(state.Guid.GetCounter());
+    std::string const actorRole = roleItr != Party().RoleByGuid.end()
+        ? roleItr->second : bot ? GetDungeonRole(bot) : "unknown";
 
     WorldBotState::DecisionTraceEntry entry;
-    entry.TimestampMs = NowMs();
-    entry.Sequence = ++state.TraceSequence;
-    BotWorldMovement::MovementPlannerDiagnostics().AssociateTrace(
-        state.Guid.GetCounter(), entry.Sequence);
+    entry.TimestampMs = nowMs;
     entry.DecisionSequence = state.Sequence;
+    entry.ServerEpoch = _serverEpoch;
+    entry.AttemptId = Cohort().AttemptId;
+    entry.WipeGeneration = Cohort().Raid.WipeGeneration;
+    entry.CohortId = Cohort().Id;
+    entry.ActorGuid = state.Guid.GetCounter();
+    entry.ActorGuidRaw = state.Guid.GetRawValue();
+    entry.ActorMapId = actorMapId;
+    entry.ActorInstanceId = actorInstanceId;
+    entry.ActorRole = actorRole;
     entry.Situation = situation ? situation : "unknown";
     entry.Action = action ? action : "wait";
     entry.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
@@ -234,6 +290,90 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     }
     entry.Result = result ? result : "ok";
     entry.ReasonCode = reasonCode ? reasonCode : "";
+    entry.LoopGuardrailAction = state.LastLoopGuardrailAction;
+    entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
+    entry.RecoveryMode = state.LastRecoveryMode;
+    entry.RecoveryResult = state.LastRecoveryResult;
+    entry.BlockedEpisodeId = state.BlockedEpisodeId;
+    entry.BlockedFirstReason = state.BlockedFirstReason;
+    entry.BlockedCurrentReason = state.BlockedReason;
+    entry.BlockedResolution = state.BlockedResolution;
+    entry.BlockedResolvedBy = state.BlockedResolvedBy;
+    entry.PolicyObservedAtMs = state.LastDecisionTickMs;
+    entry.ActionCategory = state.LastActionCategory;
+    entry.RoleGoal = state.LastRoleGoal;
+    entry.RecommendedBalanceMode = state.LastRecommendedBalanceMode;
+    entry.SaturationReason = state.LastSaturationReason;
+    entry.MechanicFamily = state.LastMechanicFamily;
+    entry.EncounterRoleResponsibility = state.LastEncounterRoleResponsibility;
+    entry.NextExpectedAction = state.LastNextExpectedAction;
+    entry.EventTarget = eventTarget;
+    entry.NativeSelectedTarget = nativeSelectedTarget;
+    entry.StateBoundTarget = stateBoundTarget;
+    entry.NativeActor.NativePresent = bot != nullptr;
+    if (bot)
+    {
+        entry.NativeActor.InWorld = bot->IsInWorld();
+        entry.NativeActor.Alive = bot->IsAlive();
+        entry.NativeActor.PositionAvailable = bot->IsInWorld();
+        if (bot->IsInWorld())
+        {
+            entry.NativeActor.X = bot->GetPositionX();
+            entry.NativeActor.Y = bot->GetPositionY();
+            entry.NativeActor.Z = bot->GetPositionZ();
+        }
+        entry.NativeActor.Moving = bot->isMoving()
+            || bot->HasUnitState(UNIT_STATE_MOVING);
+        entry.NativeActor.SplineInitialized = bot->movespline
+            && bot->movespline->Initialized();
+        entry.NativeActor.SplineFinalized = !bot->movespline
+            || bot->movespline->Finalized();
+        entry.NativeActor.SplineId = entry.NativeActor.SplineInitialized
+            ? bot->movespline->GetId() : 0;
+        if (Spell* spell = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            entry.NativeActor.CurrentGenericSpellId = spell->GetSpellInfo()
+                ? spell->GetSpellInfo()->Id : 0;
+    }
+    if (state.MagmawTargetReturn.Evaluated)
+    {
+        entry.TargetReturn = state.MagmawTargetReturn;
+        auto const* snapshot = Cohort().EncounterSnapshot
+            ? &*Cohort().EncounterSnapshot : nullptr;
+        entry.TargetReturnCurrentAtRecord = snapshot
+            && state.MagmawTargetReturn.AttemptId == Cohort().AttemptId
+            && state.MagmawTargetReturn.RouteGeneration
+                == Party().ValidationRouteGeneration
+            && state.MagmawTargetReturn.SnapshotRevision == snapshot->Revision
+            && state.MagmawTargetReturn.RouteNodeId == snapshot->Route.NodeId;
+        entry.TargetReturnAgeAvailable = state.MagmawTargetReturn.ObservedAtMs
+            && state.MagmawTargetReturn.ObservedAtMs <= nowMs;
+        if (entry.TargetReturnAgeAvailable)
+            entry.TargetReturnAgeMs = nowMs
+                - state.MagmawTargetReturn.ObservedAtMs;
+    }
+
+    if (coalesceRepeatable && !state.DecisionTrace.empty())
+    {
+        WorldBotState::DecisionTraceEntry& previous = state.DecisionTrace.back();
+        bool const movementPlannerPending =
+            BotWorldMovement::MovementPlannerDiagnostics()
+                .HasPendingTraceObservation(state.Guid.GetCounter());
+        if (BotWorldTrace::CanCoalesceDecisionTrace(previous, entry,
+                exportedCursor, movementPlannerPending))
+        {
+            ++previous.SuppressedRepeatableDecisionCount;
+            return;
+        }
+    }
+
+    entry.Sequence = ++state.TraceSequence;
+    BotWorldMovement::MovementPlannerDiagnostics().AssociateTrace(
+        state.Guid.GetCounter(), entry.Sequence);
+    BotWorldMovement::MovementPlannerObservation movementPlanner =
+        BotWorldMovement::MovementPlannerDiagnostics().ForTrace(
+            state.Guid.GetCounter(), entry.Sequence);
+    if (movementPlanner.Available)
+        entry.MovementPlanner = std::move(movementPlanner);
     entry.FingerprintHash = state.LastDecisionFingerprintHash;
     entry.FingerprintRepeatCount = state.LastDecisionFingerprintRepeatCount;
     entry.FingerprintFailureCount = state.LastDecisionFingerprintFailureCount;
@@ -279,19 +419,9 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
         std::sort(entry.TankOwnedHostileGuids.begin(), entry.TankOwnedHostileGuids.end());
         std::sort(entry.HealerTargetingHostileGuids.begin(), entry.HealerTargetingHostileGuids.end());
     }
-    entry.LoopGuardrailAction = state.LastLoopGuardrailAction;
-    entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
-    entry.RecoveryMode = state.LastRecoveryMode;
-    entry.RecoveryResult = state.LastRecoveryResult;
     entry.NativePathFloor = state.LastNativePathFloorObservation;
-    entry.BlockedEpisodeId = state.BlockedEpisodeId;
-    entry.BlockedFirstReason = state.BlockedFirstReason;
-    entry.BlockedCurrentReason = state.BlockedReason;
-    entry.BlockedResolution = state.BlockedResolution;
-    entry.BlockedResolvedBy = state.BlockedResolvedBy;
     entry.CombatAttempt = state.LastCombatAttempt;
     entry.RouteProgress = state.LastRouteProgress;
     state.DecisionTrace.push_back(entry);
-    while (state.DecisionTrace.size() > 128)
-        state.DecisionTrace.pop_front();
+    BotWorldTrace::TrimExportedTrace(state.DecisionTrace, exportedCursor);
 }

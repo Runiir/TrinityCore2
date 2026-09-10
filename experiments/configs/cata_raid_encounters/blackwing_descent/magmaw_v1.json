@@ -3,6 +3,17 @@
   "contract_schema": "cata_raid_encounter_contract_v1",
   "raid": "blackwing_descent",
   "boss_slug": "magmaw",
+  "native_damage_targets": {
+    "primary_entry": 41570,
+    "boss_auxiliary_entries": [42347, 48270],
+    "add_entries": [41806, 42321],
+    "basis": "repository_native_creature_constants_and_boss_body_parts",
+    "source_paths": [
+      "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
+      "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp"
+    ],
+    "unlisted_targets": "unclassified; this is not an exhaustive heroic add catalog"
+  },
   "modes": ["10N", "10H", "25N", "25H"],
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",

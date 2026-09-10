@@ -1,12 +1,9 @@
-"""Regression tests for bounded bot trace polling with explicit loss.
+"""Trace serialization and lifecycle seams.
 
-The production ring lives in C++, so these tests keep a small executable
-model of its cursor contract and pair it with source assertions for the
-serialization/reset seams.  A missing prefix remains an evidence failure,
-while the truthful retained suffix resumes the actor's cursor.
+Retention/cursor behavior is exercised against the production C++ helpers in
+test_trace_pending_retention.py; no copied Python ring model is used.
 """
 
-from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -16,6 +13,7 @@ MANAGER = "\n".join(
     (BOT_ROOT / name).read_text(encoding="utf-8")
     for name in (
         "BotWorldPopulationMgrDecisionTrace.cpp",
+        "BotWorldPopulationMgrDecisionTraceJson.h",
         "BotWorldPopulationMgrStatus.cpp",
         "BotWorldPopulationMgrValidationLifecycle.cpp",
         "BotWorldPopulationMgrValidationRouteRuntime.cpp",
@@ -28,124 +26,6 @@ RUNTIME_MODULE = (BOT_ROOT / "BotWorldPopulationMgrValidationRouteRuntime.cpp").
 PROFILE_MODULE = (BOT_ROOT / "BotWorldPopulationMgrRuntimeProfiles.cpp").read_text(encoding="utf-8")
 
 
-@dataclass
-class TraceRow:
-    sequence: int
-    decision_sequence: int
-    suppressed_repeatable_event_count: int = 0
-    suppressed_repeatable_decision_count: int = 0
-    key: str = ""
-    timestamp_ms: int = 0
-
-
-class TraceRing:
-    def __init__(self):
-        self.rows = []
-        self.trace_sequence = 0
-        self.cursor = None
-
-    def record(self, decision_sequence, suppressed=0, *, key="", timestamp_ms=0, coalesce=False):
-        if coalesce and self.rows:
-            previous = self.rows[-1]
-            if previous.key == key and timestamp_ms >= previous.timestamp_ms \
-                    and timestamp_ms - previous.timestamp_ms < 5000:
-                previous.suppressed_repeatable_decision_count += 1
-                return
-        self.trace_sequence += 1
-        self.rows.append(TraceRow(
-            self.trace_sequence, decision_sequence, suppressed,
-            key=key, timestamp_ms=timestamp_ms,
-        ))
-        self.rows = self.rows[-128:]
-
-    def delta(self, limit=20):
-        cursor = 0 if self.cursor is None else self.cursor
-        cursor_initialized = self.cursor is not None
-        new = [row for row in self.rows if row.sequence > cursor]
-        expected = cursor + 1
-        gap = bool(new) and (
-            (not cursor_initialized and new[0].sequence != 1)
-            or (cursor_initialized and new[0].sequence != expected)
-        )
-        contiguous = []
-        for row in new:
-            if contiguous and row.sequence != contiguous[-1].sequence + 1:
-                break
-            contiguous.append(row)
-        emitted = contiguous[: min(limit, 128)]
-        if emitted:
-            self.cursor = emitted[-1].sequence
-        result = {
-            "entries": emitted,
-            "gap": gap,
-            "cursor_before": cursor,
-            "cursor_after": cursor if not emitted else emitted[-1].sequence,
-        }
-        if gap:
-            result["discontinuity"] = {
-                "missing_sequence_start": expected,
-                "missing_sequence_end": new[0].sequence - 1,
-                "oldest_retained_sequence": new[0].sequence,
-                "newest_retained_sequence": self.rows[-1].sequence,
-            }
-        return result
-
-
-def test_trace_rows_have_a_distinct_monotonic_stream_from_decisions():
-    ring = TraceRing()
-    ring.record(7)
-    ring.record(7)
-    ring.record(8)
-    assert [row.sequence for row in ring.rows] == [1, 2, 3]
-    assert [row.decision_sequence for row in ring.rows] == [7, 7, 8]
-    assert "entry.Sequence = ++state.TraceSequence;" in MANAGER
-    assert "entry.DecisionSequence = state.Sequence;" in MANAGER
-
-
-def test_initial_ring_overwrite_stays_explicit_and_resumes_retained_rows():
-    ring = TraceRing()
-    for decision in range(129):
-        ring.record(decision)
-    result = ring.delta(128)
-    assert result["gap"] is True
-    assert [row.sequence for row in result["entries"]] == list(range(2, 130))
-    assert result["cursor_before"] == 0
-    assert result["cursor_after"] == 129
-    assert result["discontinuity"] == {
-        "missing_sequence_start": 1,
-        "missing_sequence_end": 1,
-        "oldest_retained_sequence": 2,
-        "newest_retained_sequence": 129,
-    }
-
-
-def test_partial_batch_advances_only_through_last_emitted_row():
-    ring = TraceRing()
-    for decision in range(5):
-        ring.record(decision)
-    first = ring.delta(2)
-    assert [row.sequence for row in first["entries"]] == [1, 2]
-    assert first["cursor_after"] == 2
-    second = ring.delta(128)
-    assert [row.sequence for row in second["entries"]] == [3, 4, 5]
-    assert second["cursor_after"] == 5
-
-
-def test_later_gap_stays_explicit_and_advances_only_through_emitted_rows():
-    ring = TraceRing()
-    for decision in range(4):
-        ring.record(decision)
-    assert [row.sequence for row in ring.delta(1)["entries"]] == [1]
-    ring.rows = [row for row in ring.rows if row.sequence != 2]
-    result = ring.delta(128)
-    assert result["gap"] is True
-    assert [row.sequence for row in result["entries"]] == [3, 4]
-    assert result["cursor_before"] == 1
-    assert result["cursor_after"] == 4
-    assert result["discontinuity"]["missing_sequence_start"] == 2
-    assert result["discontinuity"]["missing_sequence_end"] == 2
-
-
 def test_delta_encoder_keeps_suppressed_repeatable_event_count_and_bound():
     assert "suppressed_repeatable_event_count" in MANAGER
     assert "SuppressedRepeatableDecisionCount" in TRACE_MODULE
@@ -155,20 +35,6 @@ def test_delta_encoder_keeps_suppressed_repeatable_event_count_and_bound():
     assert "BotWorldTrace::BuildExportCursorTransition" in MANAGER
     assert "BotWorldTrace::WriteExportCursorFields" in MANAGER
     assert "transition.EntryCount && transition.CursorAfter != transition.CursorBefore" in MANAGER
-
-
-def test_repeatable_decisions_coalesce_without_losing_the_exact_count():
-    ring = TraceRing()
-    for decision in range(1000):
-        ring.record(
-            decision, key="validation_route_patrol_anchor_path_rejected",
-            timestamp_ms=decision * 100, coalesce=True,
-        )
-
-    result = ring.delta(128)
-    assert result["gap"] is False
-    assert len(result["entries"]) < 128
-    assert sum(row.suppressed_repeatable_decision_count for row in result["entries"]) == 980
 
 
 def test_trace_stream_reset_is_reserved_for_destructive_lifecycle_boundaries():

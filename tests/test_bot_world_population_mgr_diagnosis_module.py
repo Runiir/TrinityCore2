@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrDiagnosis.cpp"
+TRACE_JSON = ROOT / "src/server/game/Bots/BotWorldPopulationMgrDecisionTraceJson.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 
@@ -56,6 +57,7 @@ def test_diagnosis_module_preserves_state_codes_and_evidence() -> None:
 
 def test_diagnosis_module_preserves_trace_snapshot_contract() -> None:
     module = MODULE.read_text(encoding="utf-8")
+    trace_encoder = TRACE_JSON.read_text(encoding="utf-8")
     for field in (
         "threat_snapshot",
         "engaged_hostile_guids",
@@ -66,4 +68,4 @@ def test_diagnosis_module_preserves_trace_snapshot_contract() -> None:
         "ValidationDescentPhaseName",
         "RuntimeModeName",
     ):
-        assert field in module
+        assert field in module or field in trace_encoder

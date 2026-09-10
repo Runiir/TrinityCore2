@@ -685,6 +685,19 @@ MovementPlannerObservation MovementPlannerDiagnosticSidecar::ForTrace(
     return {};
 }
 
+bool MovementPlannerDiagnosticSidecar::HasPendingTraceObservation(
+    std::uint64_t botGuid) const
+{
+    auto rejected = _rejectedHazardsByGuid.find(botGuid);
+    if (rejected != _rejectedHazardsByGuid.end() && !rejected->second.empty())
+        return true;
+    auto pending = _pendingByGuid.find(botGuid);
+    if (pending == _pendingByGuid.end() || !pending->second)
+        return false;
+    auto latest = _latestByGuid.find(botGuid);
+    return latest != _latestByGuid.end() && latest->second.Available;
+}
+
 void MovementPlannerDiagnosticSidecar::ClearBot(std::uint64_t botGuid)
 {
     MovementProgressDiagnostics().ClearBot(botGuid);
