@@ -19,6 +19,7 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "MotionMaster.h"
+#include "Spell.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 
