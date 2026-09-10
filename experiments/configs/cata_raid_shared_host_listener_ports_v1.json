@@ -1,0 +1,6 @@
+{
+  "schema": "cata_raid_listener_overlay_v1",
+  "settings": {
+    "InstanceServerPort": 18086
+  }
+}
