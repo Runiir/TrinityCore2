@@ -332,6 +332,17 @@ inside each archive; final closure records that input mapping explicitly.
 
 ## Process failures already observed
 
+- Pressure validation on `36074a3a15` exposed two launch failures before gameplay:
+  port 8086 belonged to an unrelated HTTP server, then the native command's
+  three-digit parser converted the requested 4097 rows to zero. The latter
+  assertion was also copied into a structural test, so the test preserved the
+  defect instead of exercising parsing. Retain both failed captures. Use the
+  tracked instance-listener overlay and test the actual command caller through
+  the manager's bounds gate before the next pressure run.
+- A late producer edit missed the source freeze while its consumer was committed.
+  Freeze all worker edits before staging, inspect the complete dirty-file set,
+  and run the producer-to-consumer fixture on that exact set. Worker completion
+  and separate passing tests do not prove the committed integration is complete.
 - Broad reviews and handoffs omitted actual launch consumers or duplicate native
   callers. Parent caught these late. Map the finite launch-to-outcome path before
   assigning an implementation; return all known blockers together.

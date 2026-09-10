@@ -32,7 +32,7 @@ private:
         countText = first == std::string::npos
             ? "" : countText.substr(first, last - first + 1);
         uint32 requestedCount = 0;
-        if (!countText.empty() && countText.size() <= 3
+        if (!countText.empty() && countText.size() <= 4
             && countText.find_first_not_of("0123456789") == std::string::npos)
             requestedCount = uint32(std::strtoul(countText.c_str(), nullptr, 10));
 

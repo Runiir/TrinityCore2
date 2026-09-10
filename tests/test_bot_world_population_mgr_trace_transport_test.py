@@ -102,9 +102,107 @@ def test_command_adapter_is_small_unique_and_controller_sends_pressure_once():
     capture = CAPTURE.read_text(encoding="utf-8")
     assert '"botautotracepressure"' in command
     assert "ApplyTraceTransportTestPressureForCohort" in command
-    assert "countText.size() <= 3" in command
     assert len(command.splitlines()) < 1000
     assert capture.count("trace_transport_smoke.PRESSURE_COMMAND") == 1
     pressure_send = capture.index("trace_transport_smoke.PRESSURE_COMMAND")
     first_delta_schedule = capture.index("telemetry_scheduler.commands_due")
     assert pressure_send < first_delta_schedule
+
+
+def test_command_adapter_passes_four_digit_pressure_to_manager(tmp_path: Path):
+    include = tmp_path / "include"
+    (include / "Bots").mkdir(parents=True)
+    (include / "Bots/BotWorldPopulationMgr.h").write_text(
+        r'''
+#pragma once
+#include <cstdint>
+#include <string>
+using uint32 = std::uint32_t;
+class BotWorldPopulationMgr
+{
+public:
+    std::string ResolveGlobalCohortId() { return "default"; }
+    std::string ApplyTraceTransportTestPressureForCohort(
+        std::string const&, uint32 count)
+    {
+        LastRequestedCount = count;
+        return "{}";
+    }
+    uint32 LastRequestedCount = 0;
+};
+extern BotWorldPopulationMgr* sBotWorldPopulationMgr;
+''',
+        encoding="utf-8",
+    )
+    (include / "Chat.h").write_text(
+        r'''
+#pragma once
+class ChatHandler
+{
+public:
+    void SendSysMessage(char const*) { }
+};
+''',
+        encoding="utf-8",
+    )
+    (include / "RBAC.h").write_text(
+        r'''
+#pragma once
+namespace rbac { constexpr int RBAC_PERM_COMMAND_HEALERBOT = 1; }
+''',
+        encoding="utf-8",
+    )
+    (include / "ScriptMgr.h").write_text(
+        r'''
+#pragma once
+#include "Chat.h"
+#include <vector>
+struct ChatCommand
+{
+    char const* Name;
+    int Permission;
+    bool AllowConsole;
+    bool (*Handler)(ChatHandler*, char const*);
+    char const* Help;
+};
+class CommandScript
+{
+public:
+    explicit CommandScript(char const*) { }
+    virtual ~CommandScript() = default;
+    virtual std::vector<ChatCommand> GetCommands() const = 0;
+};
+''',
+        encoding="utf-8",
+    )
+    replay = tmp_path / "trace_transport_command.cpp"
+    binary = tmp_path / "trace_transport_command"
+    replay.write_text(
+        f'''
+#include "{COMMAND}"
+
+BotWorldPopulationMgr Manager;
+BotWorldPopulationMgr* sBotWorldPopulationMgr = &Manager;
+
+int main()
+{{
+    trace_transport_test_commandscript script;
+    ChatHandler handler;
+    auto command = script.GetCommands().at(0);
+    if (!command.Handler(&handler, "4097") || Manager.LastRequestedCount != 4097)
+        return 1;
+    if (!command.Handler(&handler, " 4160 ") || Manager.LastRequestedCount != 4160)
+        return 2;
+    if (!command.Handler(&handler, "10000") || Manager.LastRequestedCount != 0)
+        return 3;
+    return 0;
+}}
+''',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["c++", "-std=c++17", "-I", str(include), str(replay), "-o", str(binary)],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
