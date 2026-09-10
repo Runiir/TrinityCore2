@@ -2,6 +2,8 @@ import copy
 import json
 from pathlib import Path
 
+import pytest
+
 from tools.raid_program import trace_transport_smoke as smoke
 from tools.raid_program.capture_telemetry_transport import (
     JsonLogObservation,
@@ -81,17 +83,26 @@ def test_gate_requires_ten_independent_cursors_and_contiguous_followup():
     ))
 
 
-def _transport_trace(*, start: int, end: int, pending: int, gap: bool):
+def _transport_trace(
+    *, start: int, end: int, pending: int, gap: bool,
+    pressure_newest: int = 4097, peer_cursor_before: int = 0,
+    append_peer: bool = False,
+):
     actors = []
     for index in range(10):
         guid = 30001 + index
         pressured = index == 7
+        peer = index == 0
         entries = (
             [{"sequence": sequence} for sequence in range(start, end + 1)]
-            if pressured else []
+            if pressured else
+            ([{"sequence": peer_cursor_before + 1}] if peer and append_peer else [])
         )
-        cursor_before = start - 1 if pressured else 0
-        cursor_after = end if pressured else 0
+        cursor_before = start - 1 if pressured else peer_cursor_before if peer else 0
+        cursor_after = end if pressured else (
+            peer_cursor_before + int(append_peer) if peer else 0
+        )
+        newest = pressure_newest if pressured else cursor_after if peer else 0
         actor = {
             "bot_guid": guid,
             "cursor_before": cursor_before,
@@ -99,14 +110,14 @@ def _transport_trace(*, start: int, end: int, pending: int, gap: bool):
             "gap": gap if pressured else False,
             "entries": entries,
             "pending_entry_count": pending if pressured else 0,
-            "newest_retained_sequence": 4097 if pressured else 0,
+            "newest_retained_sequence": newest,
         }
         if gap and pressured:
             actor["discontinuity"] = {
                 "missing_sequence_start": 1,
                 "missing_sequence_end": 1,
                 "oldest_retained_sequence": 2,
-                "newest_retained_sequence": 4097,
+                "newest_retained_sequence": pressure_newest,
             }
         actors.append(actor)
     return {"ok": True, "action": "botauto_trace", "bots": actors}
@@ -123,7 +134,7 @@ def _observation(row, observed_at):
     )
 
 
-def _scheduler_pending_receipts():
+def _scheduler_pending_receipts(*, drain_all: bool = True):
     scheduler = TelemetryScheduler(
         status_interval_sec=5, diagnose_interval_sec=30, trace_interval_sec=10,
     )
@@ -151,6 +162,38 @@ def _scheduler_pending_receipts():
     scheduler.observe_trace([followup], observed_at=0.3)
     ledger.finalize_responses([followup_index], scheduler.state())
 
+    end = 257
+    pressure_newest = 4097
+    peer_cursor = 0
+    pending = 3840
+    now = 0.4
+    append_during_drain = True
+    while drain_all and pending > 0:
+        commands = scheduler.commands_due(now)
+        assert commands == [smoke.DELTA_COMMAND]
+        ledger.command_sent(
+            commands, sent_at_monotonic=now,
+            scheduler_state=scheduler.state(),
+        )
+        start = end + 1
+        if append_during_drain:
+            pressure_newest += 1
+        end = min(start + 127, pressure_newest)
+        pending = pressure_newest - end
+        row = _transport_trace(
+            start=start, end=end, pending=pending, gap=False,
+            pressure_newest=pressure_newest,
+            peer_cursor_before=peer_cursor,
+            append_peer=append_during_drain,
+        )
+        if append_during_drain:
+            peer_cursor += 1
+            append_during_drain = False
+        receipt_index = ledger.observe(_observation(row, now + 0.05))
+        scheduler.observe_trace([row], observed_at=now + 0.05)
+        ledger.finalize_responses([receipt_index], scheduler.state())
+        now += 0.1
+
     return scheduler, ledger.receipts()
 
 
@@ -161,8 +204,33 @@ def test_gate_accepts_actual_scheduler_immediate_pending_followup_receipts():
     gate = smoke.evaluate(receipts)
     assert gate["gate_passed"] is True
     assert gate["pending_entry_count"] == 3968
-    assert gate["response_complete_to_next_send_seconds"] == 0.1
+    assert gate["followup_pending_entry_count"] == 0
+    assert gate["validated_page_count"] == 33
+    assert gate["response_complete_to_next_send_seconds"] == pytest.approx(0.05)
     assert scheduler.state()["trace_gap_observed"] is True
+    assert receipts[2]["identity"]["actors"][7]["newest_retained_sequence"] == 4098
+    assert receipts[2]["identity"]["actors"][0]["entry_count"] == 1
+    assert receipts[2]["identity"]["actors"][0]["sequences_contiguous"] is True
+
+
+def test_production_run_loop_predicate_waits_for_all_pressure_pages():
+    capture_source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_live_run.py"
+    ).read_text(encoding="utf-8")
+    assert 'trace_transport_gate.get("terminal") is True' in capture_source
+    _, receipts = _scheduler_pending_receipts()
+    elapsed_seconds = 0
+    for page_count in range(1, len(receipts) + 1):
+        gate = smoke.evaluate(receipts[:page_count])
+        if page_count < len(receipts):
+            assert gate["terminal"] is False
+            assert gate["gate_passed"] is False
+        else:
+            assert gate["terminal"] is True
+            assert gate["gate_passed"] is True
+        elapsed_seconds += 1
+        assert elapsed_seconds < 90
 
 
 def test_gate_rejects_zero_pressure_backlog_and_invalid_followup_metadata():
@@ -193,6 +261,13 @@ def test_gate_rejects_zero_pressure_backlog_and_invalid_followup_metadata():
     rejected_followup = smoke.evaluate(drifted_followup)
     assert "followup_pending_metadata_invalid:30008" in (
         rejected_followup["rejections"]
+    )
+
+    noncontiguous = copy.deepcopy(valid)
+    noncontiguous[2]["identity"]["actors"][7]["sequences_contiguous"] = False
+    rejected_noncontiguous = smoke.evaluate(noncontiguous)
+    assert "actor_emitted_sequences_invalid:30008" in (
+        rejected_noncontiguous["rejections"]
     )
 
 

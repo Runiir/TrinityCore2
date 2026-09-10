@@ -230,6 +230,10 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
                 row for row in first_rows
                 if row.get("pending_entry_count_present") is True
                 and row.get("newest_retained_sequence_present") is True
+                and row.get("sequences_contiguous") is True
+                and isinstance(row.get("entry_count"), int)
+                and not isinstance(row.get("entry_count"), bool)
+                and 0 <= row["entry_count"] <= TRACE_EXPORT_BATCH_SIZE
                 and isinstance(row.get("pending_entry_count"), int)
                 and not isinstance(row.get("pending_entry_count"), bool)
                 and row["pending_entry_count"] >= 0
@@ -284,90 +288,174 @@ def evaluate(receipts: list[dict[str, Any]]) -> dict[str, Any]:
                 "gap_actor_guid": gap.get("bot_guid"), "rejections": reasons,
             }
 
-        followup = complete[index + 1]
-        second_rows, first_by_guid = _actors(followup), _by_guid(first_rows)
-        second_by_guid = _by_guid(second_rows)
-        if followup.get("command") != DELTA_COMMAND:
-            reasons.append("followup_command_not_production_delta")
-        if len(second_rows) != ACTOR_COUNT or set(second_by_guid) != set(first_by_guid):
-            reasons.append("followup_actor_identity_mismatch")
-        for guid, prior in first_by_guid.items():
-            current = second_by_guid.get(guid)
-            if current is None:
-                continue
-            if current.get("gap") is not False:
-                reasons.append(
-                    "gap_actor_followup_reoverflowed"
-                    if current.get("gap") is True and guid == gap.get("bot_guid")
-                    else "peer_actor_followup_gap"
-                )
-            elif current.get("cursor_before") != prior.get("cursor_after"):
-                reasons.append(f"actor_cursor_not_independent_contiguous:{guid}")
-            elif current.get("entry_count") and current.get("first_sequence") != int(prior["cursor_after"]) + 1:
-                reasons.append(f"actor_first_sequence_not_contiguous:{guid}")
-            elif current.get("entry_count") and current.get("last_sequence") != current.get("cursor_after"):
-                reasons.append(f"actor_cursor_after_not_last_sequence:{guid}")
-        followup_pending: int | None = None
-        if pending_metadata_present:
-            valid_followup_pending = []
-            for guid, prior in first_by_guid.items():
+        prior_receipt = first
+        prior_by_guid = first_by_guid
+        followup_pending = pending_entries
+        followup = None
+        delay = None
+        validated_pages = 1
+        for followup in complete[index + 1:]:
+            second_rows = _actors(followup)
+            second_by_guid = _by_guid(second_rows)
+            if followup.get("command") != DELTA_COMMAND:
+                reasons.append("followup_command_not_production_delta")
+            if (
+                len(second_rows) != ACTOR_COUNT
+                or set(second_by_guid) != set(prior_by_guid)
+            ):
+                reasons.append("followup_actor_identity_mismatch")
+            for guid, prior in prior_by_guid.items():
                 current = second_by_guid.get(guid)
                 if current is None:
                     continue
-                pending = current.get("pending_entry_count")
-                newest = current.get("newest_retained_sequence")
+                entry_count = current.get("entry_count")
+                cursor_before = current.get("cursor_before")
                 cursor_after = current.get("cursor_after")
-                expected_pending = int(prior.get("pending_entry_count") or 0) \
-                    - int(current.get("entry_count") or 0)
-                if not (
-                    current.get("pending_entry_count_present") is True
-                    and current.get("newest_retained_sequence_present") is True
-                    and isinstance(pending, int) and not isinstance(pending, bool)
-                    and pending == max(0, expected_pending)
-                    and isinstance(newest, int) and not isinstance(newest, bool)
+                if current.get("gap") is not False:
+                    reasons.append(
+                        "gap_actor_followup_reoverflowed"
+                        if current.get("gap") is True
+                        and guid == gap.get("bot_guid")
+                        else "peer_actor_followup_gap"
+                    )
+                elif current.get("cursor_before") != prior.get("cursor_after"):
+                    reasons.append(f"actor_cursor_not_independent_contiguous:{guid}")
+                elif not (
+                    isinstance(entry_count, int)
+                    and not isinstance(entry_count, bool)
+                    and 0 <= entry_count <= TRACE_EXPORT_BATCH_SIZE
+                    and isinstance(cursor_before, int)
+                    and not isinstance(cursor_before, bool)
                     and isinstance(cursor_after, int)
-                    and newest - cursor_after == pending
-                    and newest == prior.get("newest_retained_sequence")
+                    and not isinstance(cursor_after, bool)
+                    and cursor_after - cursor_before == entry_count
+                    and (
+                        not pending_metadata_present
+                        or current.get("sequences_contiguous") is True
+                    )
                 ):
-                    reasons.append(f"followup_pending_metadata_invalid:{guid}")
-                else:
-                    valid_followup_pending.append(pending)
-            if len(valid_followup_pending) == len(first_by_guid):
-                followup_pending = max(valid_followup_pending, default=0)
-                followup_scheduler = (
-                    followup.get("scheduler_state_after_response") or {}
-                )
-                if followup_pending > 0 and (
-                    followup_scheduler.get("trace_pending_entries")
-                        != followup_pending
-                    or followup_scheduler.get("trace_forced") is not True
+                    reasons.append(f"actor_emitted_sequences_invalid:{guid}")
+                elif entry_count and (
+                    current.get("first_sequence")
+                    != int(prior["cursor_after"]) + 1
                 ):
-                    reasons.append("followup_pending_drain_not_armed")
-        delay = first.get("response_complete_to_next_send_seconds")
-        if not isinstance(delay, (int, float)) or isinstance(delay, bool):
-            reasons.append("next_command_send_timing_missing")
-        elif pending_metadata_present:
-            if not 0 <= delay <= PENDING_DRAIN_MAX_DELAY_SECONDS:
-                reasons.append("pending_drain_send_outside_immediate_window")
-        elif not PRESSURE_INTERVAL_SECONDS <= delay <= PRESSURE_INTERVAL_SECONDS + 1.5:
-            reasons.append("next_command_send_outside_production_poll_window")
-        passed = not reasons
+                    reasons.append(f"actor_first_sequence_not_contiguous:{guid}")
+                elif entry_count and (
+                    current.get("last_sequence") != current.get("cursor_after")
+                ):
+                    reasons.append(f"actor_cursor_after_not_last_sequence:{guid}")
+
+            current_pending: int | None = None
+            if pending_metadata_present:
+                valid_followup_pending = []
+                for guid, prior in prior_by_guid.items():
+                    current = second_by_guid.get(guid)
+                    if current is None:
+                        continue
+                    pending = current.get("pending_entry_count")
+                    newest = current.get("newest_retained_sequence")
+                    cursor_after = current.get("cursor_after")
+                    prior_newest = prior.get("newest_retained_sequence")
+                    entry_count = current.get("entry_count")
+                    prior_pending = prior.get("pending_entry_count")
+                    appended = (
+                        newest - prior_newest
+                        if isinstance(newest, int)
+                        and not isinstance(newest, bool)
+                        and isinstance(prior_newest, int)
+                        and not isinstance(prior_newest, bool)
+                        else -1
+                    )
+                    expected_pending = (
+                        prior_pending + appended - entry_count
+                        if isinstance(prior_pending, int)
+                        and not isinstance(prior_pending, bool)
+                        and isinstance(entry_count, int)
+                        and not isinstance(entry_count, bool)
+                        else -1
+                    )
+                    if not (
+                        current.get("pending_entry_count_present") is True
+                        and current.get("newest_retained_sequence_present") is True
+                        and isinstance(pending, int)
+                        and not isinstance(pending, bool)
+                        and 0 <= pending <= PENDING_TRACE_CAPACITY
+                        and appended >= 0
+                        and expected_pending >= 0
+                        and pending == expected_pending
+                        and isinstance(newest, int)
+                        and not isinstance(newest, bool)
+                        and isinstance(cursor_after, int)
+                        and newest - cursor_after == pending
+                    ):
+                        reasons.append(
+                            f"followup_pending_metadata_invalid:{guid}"
+                        )
+                    else:
+                        valid_followup_pending.append(pending)
+                if len(valid_followup_pending) == len(prior_by_guid):
+                    current_pending = max(valid_followup_pending, default=0)
+                    followup_scheduler = (
+                        followup.get("scheduler_state_after_response") or {}
+                    )
+                    if current_pending > 0 and (
+                        followup_scheduler.get("trace_pending_entries")
+                            != current_pending
+                        or followup_scheduler.get("trace_forced") is not True
+                    ):
+                        reasons.append("followup_pending_drain_not_armed")
+
+            delay = prior_receipt.get(
+                "response_complete_to_next_send_seconds"
+            )
+            if not isinstance(delay, (int, float)) or isinstance(delay, bool):
+                reasons.append("next_command_send_timing_missing")
+            elif pending_metadata_present:
+                if not 0 <= delay <= PENDING_DRAIN_MAX_DELAY_SECONDS:
+                    reasons.append("pending_drain_send_outside_immediate_window")
+            elif not (
+                PRESSURE_INTERVAL_SECONDS <= delay
+                <= PRESSURE_INTERVAL_SECONDS + 1.5
+            ):
+                reasons.append("next_command_send_outside_production_poll_window")
+
+            validated_pages += 1
+            followup_pending = current_pending
+            if reasons or not pending_metadata_present or current_pending == 0:
+                passed = not reasons
+                return {
+                    **base, "transport_admitted": passed,
+                    "gate_passed": passed, "terminal": True,
+                    "state": "passed" if passed else "failed_verification",
+                    "rejections": list(dict.fromkeys(reasons)),
+                    "gap_command_sequence": first.get("command_sequence"),
+                    "followup_command_sequence": followup.get("command_sequence"),
+                    "gap_actor_guid": gap.get("bot_guid"),
+                    "actor_count": len(first_by_guid),
+                    "pressure_entries": pressure,
+                    "pending_entry_count": pending_entries,
+                    "followup_pending_entry_count": followup_pending,
+                    "validated_page_count": validated_pages,
+                    "pending_drain_max_delay_seconds": (
+                        PENDING_DRAIN_MAX_DELAY_SECONDS
+                        if pending_metadata_present else None
+                    ),
+                    "effective_trace_interval_seconds": scheduler.get(
+                        "effective_trace_interval_seconds"
+                    ),
+                    "response_complete_to_next_send_seconds": delay,
+                }
+            prior_receipt = followup
+            prior_by_guid = second_by_guid
+
         return {
-            **base, "transport_admitted": passed, "gate_passed": passed,
-            "terminal": True, "state": "passed" if passed else "failed_verification",
+            **base,
+            "state": "awaiting_pending_drain",
             "rejections": list(dict.fromkeys(reasons)),
-            "gap_command_sequence": first.get("command_sequence"),
-            "followup_command_sequence": followup.get("command_sequence"),
-            "gap_actor_guid": gap.get("bot_guid"), "actor_count": len(first_by_guid),
-            "pressure_entries": pressure,
-            "pending_entry_count": pending_entries,
-            "followup_pending_entry_count": followup_pending,
-            "pending_drain_max_delay_seconds": (
-                PENDING_DRAIN_MAX_DELAY_SECONDS
-                if pending_entries is not None and pending_entries > 0 else None
-            ),
-            "effective_trace_interval_seconds": scheduler.get("effective_trace_interval_seconds"),
-            "response_complete_to_next_send_seconds": delay,
+            "gap_actor_guid": gap.get("bot_guid"),
+            "pending_entry_count": followup_pending,
+            "validated_page_count": validated_pages,
+            "terminal": False,
         }
     return base
 
