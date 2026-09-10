@@ -4808,6 +4808,7 @@ def test_production_trace_transport_receipt_binds_fragmented_response_and_next_p
         "entry_count": 128,
         "first_sequence": 175,
         "last_sequence": 302,
+        "sequences_contiguous": True,
         "missing_sequence_start": 47,
         "missing_sequence_end": 174,
         "oldest_retained_sequence": 175,

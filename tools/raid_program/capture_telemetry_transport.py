@@ -180,8 +180,18 @@ class TelemetryTransportLedger:
             entries = entries if isinstance(entries, list) else []
             sequences = [
                 entry.get("sequence") for entry in entries
-                if isinstance(entry, dict) and isinstance(entry.get("sequence"), int)
+                if isinstance(entry, dict)
+                and isinstance(entry.get("sequence"), int)
+                and not isinstance(entry.get("sequence"), bool)
             ]
+            sequences_contiguous = (
+                len(sequences) == len(entries)
+                and (
+                    not sequences
+                    or sequences
+                    == list(range(sequences[0], sequences[-1] + 1))
+                )
+            )
             discontinuity = bot_row.get("discontinuity")
             discontinuity = discontinuity if isinstance(discontinuity, dict) else {}
             actors.append({
@@ -192,6 +202,7 @@ class TelemetryTransportLedger:
                 "entry_count": len(entries),
                 "first_sequence": sequences[0] if sequences else None,
                 "last_sequence": sequences[-1] if sequences else None,
+                "sequences_contiguous": sequences_contiguous,
                 **({
                     "pending_metadata_present": True,
                     "pending_entry_count_present": (
