@@ -1,39 +1,37 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:target_admission_and_causal_timeline",
+  "work_unit": "magmaw:native_terminal_cast_outcome",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "trace_backed_shared_target_admission_repair",
+  "classification": "missing_native_cast_outcome_observation",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "6882d0c20447283a9c97f006cdae2c7ea136a9db",
+  "observed_at_commit": "b1132dd087de9216c1d77694a8d7b37ddc209955",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": true,
+  "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "Native, capture and timeline/comparator independently approved; native build and live validation pending",
+  "gate_state": "Prior timeline/target-admission canary closed; next observation bounded but not implemented",
   "first_broken_edge": {
-    "id": "optional_parasite_support_without_spatial_legality",
+    "id": "native_terminal_cast_failure_unattributable",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Optional support selects a live parasite without actor-target LOS/range admission, while its movement contract forbids repairing LOS/max range; valid target can leave no executable offense.",
-    "review_state": "trace_and_actual_caller_mismatch_proven",
-    "ledger_id": "ENC-003"
+    "cause": "Native finish records success=false without terminal SpellCastResult/cancellation cause or cast-instance identity. Current-spell observations and submissions cannot identify why a moving-permitted cast later failed.",
+    "review_state": "observation_gap_proven_no_coefficient_or_policy_cause_admitted",
+    "ledger_id": "OBS-008"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "d3e5a5d81dca9966ea35ff116ecd4769f9296a9125793775804ffff8ddacc91a"
+    "sha256": "b47dc785f5347de3414b09f8a6ef1b95a00a8529e04432b9e5dff90f235e5684"
   },
   "scope_lock": {
-    "objective": "Resolve performance losses across all represented classes; preserve accepted DK/MT improvements and fix misleading diagnostic publication.",
+    "objective": "Expose one missing native terminal cast outcome so the next repair has a causal target; preserve accepted gameplay and complete timeline capture.",
     "owned_files": [],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Identify the earliest causal mismatch in attributable per-bot timeline evidence; keep missing or inferred state explicit.",
-    "Exercise production hidden-head/live-body binding, blocked optional parasite admission, mandatory bait/threat obligations and simultaneous movement/casting in focused fixtures.",
-    "Pass independent native and capture review, one clean build, native trace-pressure retention/drain validation, and a completion-watchdog Magmaw run.",
-    "Record encounter clear, requested repair achieved end to end, and overall performance as separate outcomes.",
-    "Compare exact hostile owner-plus-pet pull-to-death DPS/HPS, per-bot activity, boss/add damage, switch latency, survival and phase coverage against an identified matched baseline. An unexplained material decline blocks performance acceptance.",
-    "Publish closed generated evidence through DVC, verify remote reconstruction, and evict exact duplicate payloads after all reviewers finish."
+    "Retain actual native terminal failure/cancellation cause and cast-instance correlation, with server epoch, attempt, actor, target and timestamp.",
+    "Exercise the production start/finish/cancel paths and simultaneous native movement without fabricating correlations or changing gameplay.",
+    "Obtain independent review and one bounded validation only after the observation repair is implemented.",
+    "Keep encounter clear, requested observation coverage and overall performance separate; publish and verify closed evidence before exact local eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -42,9 +40,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Complete actual retained-run timeline reconciliation and consumer review, then serialized build, native pressure fixture, and matched watchdog Magmaw validation.",
+  "next_action": "Inspect the retained timeline and add native terminal cast failure/cancellation cause and cast-instance identity before another rotation hypothesis; do not repeat the accepted retention/admission canary unchanged.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -60,32 +58,40 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "21c640739d4788b69cb0fe5ef33555544b8706b9",
+    "source_commit": "b1132dd087de9216c1d77694a8d7b37ddc209955",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
+    "server_exit_code": 0,
+    "postrun_build_verified": true,
     "training_eligible": false,
-    "recorded_casualties": 0,
+    "qualification_eligible": false,
+    "recorded_casualties": 2,
     "boss_fight_casualties": 0,
-    "hostile_only_party_dps": 183854.61,
-    "party_hps": 13463.903,
-    "combat_duration_sec": 154,
-    "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_21c640739d_20260908.tar.gz.dvc",
-    "pull_to_death_seconds": 152.412,
-    "pull_to_death_party_dps": 185769.839,
-    "route_encounter_span_seconds": 173.806,
-    "five_dps_actor_dps": 160193.591
+    "pull_to_death_seconds": 156.064,
+    "hostile_originated_damage": 28352550,
+    "pull_to_death_party_dps": 181672.5830428542,
+    "exact_effective_healing": 2298732,
+    "exact_hps": 14729.418700020506,
+    "five_dps_actor_dps": 138633.599,
+    "requested_repair_id": "ENC-003",
+    "requested_repair_achieved": true,
+    "performance_verdict": "inconclusive",
+    "diagnosis_required": true,
+    "primary_baseline_source": "6882d0c20447283a9c97f006cdae2c7ea136a9db",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_b1132dd087_20260910.tar.gz.dvc",
+    "publication_state": "see_adjacent_publication_receipt",
+    "historical_head_return_cause": "DPS-023 unresolved; current return does not disprove original occurrence"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "approved_for_native_build",
-    "scope": "ENC-003 support admission, immutable trace context, pending retention, capture drain, timeline and optimization comparator",
-    "live_verified": false
+    "verdict": "prior_work_unit_reviewed_and_native_exercised",
+    "scope": "ENC-003 optional admission, CAP-005 immutable trace/retention, CAP-006 outcome-aware repeat counter; artifact renderer separately reviewed on a9431b973e",
+    "live_verified": true,
+    "next_work_unit_implemented": false
   },
   "related_edges": [
     {
@@ -131,9 +137,8 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "ENC-003",
+  "error_id": "OBS-008",
   "related_open_error_ids": [
-    "OBS-008",
     "DPS-037",
     "DPS-021",
     "DPS-023",

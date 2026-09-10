@@ -1,99 +1,107 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-10. This file contains one current status. Known failures and
-rejected assumptions belong in the [error ledger](error_ledger.md). Historical
-run narratives are retained in Git, including this file at commit 6882d0c204;
-closed generated evidence is tracked by DVC under artifacts/cata_raid_program.
-Do not treat a historical proposed repair as current launch instructions.
+Updated 2026-09-10. This is the current status. Historical run narratives remain
+in Git; failed assumptions and bounded next repairs belong in the
+[error ledger](error_ledger.md). Closed generated evidence is tracked by DVC.
 
 ## Current run
 
-Source `6882d0c20447283a9c97f006cdae2c7ea136a9db` built on its first attempt
-and cleared Magmaw 10N in exactly 209.211 seconds. All ten bots survived the boss.
-Three bots died on Drudges and recovered: Fire hook 30007, Affliction 30008 and
-Paladin tank 30001. Native exit, build verification and cleanup passed.
-This is a development clear, not throughput acceptance or training data.
+Native source `b1132dd087de9216c1d77694a8d7b37ddc209955` cleared Magmaw 10N
+in **156.064 seconds**, with **28,352,550 hostile originated damage** and
+**181,672.583 exact raid DPS**. Owned pets are included; friendly damage and
+mirrored spell 79010 callbacks are excluded. Effective healing over that same
+pull-to-death interval is 2,298,732, or **14,729.419 HPS**. The actual roster is
+2 tanks, 3 healers and 5 DPS. All ten survived the boss. Fire hook and Affliction
+died on Drudges and recovered before the pull. Native exit, zero bots/leases,
+cleanup and post-run build verification passed.
 
-The actual roster is 2 tanks, 3 healers and 5 DPS. All ten actors remain under
-role review. Compare exact native pull-to-death damage and healing; exclude
-friendly damage and mirrored 79010 events while retaining owned pet damage.
-The route-event span includes approach time and is not the fight denominator.
+| Source | Exact fight seconds | Exact raid DPS | Comparison |
+| --- | ---: | ---: | --- |
+| 4b24d7242f | 140.359 | 200,864.383 | Faster benchmark; no living-body return after its first head phase |
+| 41266a508c | 151.420 | 186,703.302 | Prior matched setup; current DPS is 2.69% lower |
+| 6882d0c204 | 209.211 | 138,307.847 | Primary reviewed baseline; current DPS is 31.35% higher |
+| b1132dd087 | 156.064 | 181,672.583 | Current development clear |
 
-The all-bot review reports 28,935,523 hostile damage, 138,307.847 exact DPS,
-and 13,853.884 HPS over the same hostile-pull-to-death window. The older
-14,447.548 HPS included 124,201 healing before that window. The five DPS actors contribute 104,040.571 exact DPS.
-Throughput remains unresolved. Late targets remain valid, but optional parasite
-support can be admitted without executable offense while repositioning is
-forbidden. Fire hook deals only 244 damage over the last 57.689 seconds; Hunter
-has 23 native Serpent Sting LOS failures. This is a shared target-admission
-boundary, not proof of wrong class coefficients or a stale head-return target.
+Every DPS actor improved against 6882, by approximately 9% to 47%; both tanks
+improved. The five DPS contribute 138,633.599 DPS, 33.25% above 6882 but 5.60%
+below 41266. Fight length, head exposure and target opportunities remain
+comparison variables. This pair does not assign all recovery to one patch.
+No controlled retained comparison proves a particular recent gameplay change
+caused the original decline. No blind revert or coefficient tuning was made.
 
-## Repair acceptance
+## Separate acceptance outcomes
 
-The 6882 batch contains two independently reviewed runtime changes. Twenty
-focused tests pass, including a repeated-hazard fixture that fails old source.
+- **Encounter clear: accepted.** Native Magmaw death, exact accounting and
+  complete capture are verified. This is not full-raid qualification or training data.
+- **Requested repairs: exercised and reviewed.** Optional support admission uses
+  actor-specific native LOS and effective action ranges. Production fixtures
+  cover blocked optional parasites, mandatory bait/threat, hidden-head to live-body
+  binding and simultaneous movement/casting. The live run exercises legal support,
+  mandatory bait and fresh body attacks after head disappearance. It does not
+  expose every rejected nearby candidate, so fixture and live coverage stay distinct.
+- **Overall performance: inconclusive, diagnosis required.** The comparator
+  identifies the baseline and matching roster/loadout/profile/route/assets. The
+  instance-listener port is an explicit infrastructure-only difference and slower
+  full diagnosis is recorded. Legacy target-switch observations are insufficient.
+  Healer activity/HPS flags require demand review; lower raid damage taken and zero
+  boss deaths do not explain every actor's change. Do not promote all-role throughput.
 
-- Hazard movement no longer repeatedly cancels a native moving-permitted cast.
-  A Hazard Scorch survives its full 1.246s duration with path progress; an
-  uncovered Fireball still interrupts. The required Scorch finish/landing
-  nevertheless fails, with no terminal native failure code. Preserve this
-  repaired interruption boundary and route the missing outcome to OBS-008.
-- The typed tank-swap repair is accepted: Paladin taunt at +90.601s transfers
-  ownership by +91.919s while its movement continues. Reciprocal DK taunt at
-  +185.136s is followed by body ownership at +186.133s. Exactly two swaps occur.
+Preserve accepted tank swaps, native Vengeance, MM haste/filler, Affliction
+boss-health potion, Elemental moving Lava Burst and early moving-cast cancellation
+repairs. A later unsuccessful cast does not undo the proven interruption repair.
 
-## Open work across the roster
+## Timeline and capture
 
-- Optional support targets need actor-specific native LOS/range admission.
-  Preserve mandatory personal-threat/bait obligations and hazard movement;
-  select only observed legal alternatives. Existing pure facts lack LOS.
-  ENC-003. This is the next shared DPS repair, ahead of coefficient tuning.
+The [timeline tooling](bot_timeline.md) joins existing native combat, trace and
+diagnosis records. This run retains 26,345 trace rows and 8,868 combat events,
+with no identity rejection or trace/combat gap. Recording-time context separates
+proposed/bound/native targets, native action outcomes and stale observations.
+The complete HTML has 74,153 joined events, actor/phase/target/spell/time filters
+and lazy event details. Chrome filtering and detail expansion were checked.
+Lossless packaging is 7,061,175 bytes instead of 213,524,963 bytes; the original
+inventoried HTML remains immutable in the evidence archive. Renderer revision
+`a9431b973e` is separate from native run revision `b1132dd087`.
 
-- Elemental Lightning Bolt has a proven artificial 12-yard cast rejection.
-  The same field also controls positioning. Separate those semantics explicitly;
-  do not hide a duplicate filler row from the positioning observer. DPS-037.
-- Affliction Shadowflame and Blood Heart Strike remain blocked by shared area
-  protection. No unreviewed blanket exception is permitted. DPS-029/DPS-026.
-- Drudge escape destinations violate Rush-bait isolation. The source-safe
-  fallback is not a proven full-roster-safe path. ENC-001.
-- Healer review still lacks attributable Discipline absorption. OBS-006.
+CAP-005 retention passed a native 4,097-event pressure emission, all 33 drain
+pages and final zero backlog. Its deliberately overflowing actor reports the
+expected gap; no unreported loss is accepted. CAP-006 was diagnosed directly in
+the first live timeline: the native same-action counter ignored result changes,
+so successful attacks contributed to a watchdog failure streak. The repair resets
+on outcome changes without relaxing thresholds. The next run crossed both trash
+nodes and cleared the boss; reviewed outcome transitions reset correctly.
 
-Preserve accepted MM haste/filler, Affliction boss-health potion, Elemental
-moving Lava Burst, owner effective-stat observation and native Vengeance fixes.
-No missing owner passive or damage-coefficient defect has been established by
-the gear/stat review. Existing clear results do not accept all class throughput.
+Five-second diagnosis with two-second trace capture reduced native capture bytes
+per elapsed second by 31.39% against 6882. Trace parsing used approximately 0.51%
+of one core; mean server CPU changed from 32.255% to 33.720% of one core and peak
+RSS increased about 0.59 MB. These are whole-run observations, not isolated proof
+of instrumentation CPU cost. Keep aggregate counters, identity/readback receipts
+and original raw evidence alongside the timeline in DVC.
 
-## Evidence and next action
+## Next bounded work
 
-The 41266 capture is DVC-published and verified via a fresh empty-cache remote
-download; exact large local payloads were evicted after every reader finished.
-Pointer: `artifacts/cata_raid_program/magmaw_development_41266a508c_20260908.tar.gz.dvc`.
+The original manual head-hide outage remains **DPS-023, cause unknown**. Its
+128-row decisions were overwritten. Current successful returns do not disprove
+that occurrence or prove its precise cause repaired. Do not retry it unchanged
+or claim a universal head-return fix.
 
-The 6882 reviews are closed. Evidence is DVC-published, verified with a fresh
-remote download, and exact large local payloads are evicted.
-Pointer: `artifacts/cata_raid_program/magmaw_development_6882d0c204_20260908.tar.gz.dvc`. The current source is pushed to
-`codex/dps-canary-20260908`. The
-[active work unit](../../experiments/configs/cata_raid_active_work_unit_v1.json)
-routes the next shared target-admission repair and retains the separate native
-cast-failure observation gap. No unchanged encounter retry is justified.
+Next actionable observation is **OBS-008**: terminal native cast failure reason
+and cast-instance correlation remain unavailable. The timeline says so explicitly;
+accepted submission, finish and landed effects are separate records. Obtain that
+native outcome before guessing why a moving-permitted cast later fails.
+Keep DPS-037 (Elemental artificial 12-yard gate), DPS-026/DPS-029 (area protection),
+ENC-001 (Drudge safety), HEAL-001 (Holy Paladin capabilities) and OBS-006
+(Discipline absorption attribution) visible for separate bounded work units.
 
-## Current implementation, awaiting native validation
+## Evidence
 
-ENC-003 optional support admission now uses actor-specific native LOS and
-effective spell/profile ranges; mandatory bait, personal threat and hazard
-movement remain distinct. Production fixtures cover hidden-head replacement
-with a live body and blocked optional parasites. Independent native review
-approves the implementation for build, not end-to-end repair acceptance.
+Current closed run, prior failed attempts, pressure validation, independent
+reviews, focused tests, accounting and capture-cost receipts are bundled under
+`artifacts/cata_raid_program/magmaw_development_b1132dd087_20260910.tar.gz.dvc`.
+The adjacent publication receipt records fresh empty-cache remote verification
+and exact local eviction. Consult it for publication status rather than assuming
+that a pointer alone proves uploaded bytes. The compact HTML and reviews remain
+locally inspectable; large duplicate payloads are evicted only after verification.
 
-The [timeline](bot_timeline.md) joins existing combat, diagnosis and trace
-records. Native trace context is frozen at recording; pending delta retention
-is 4,096 rows plus 128 exported rows. Capture drains pending pages and writes
-the inspectable timeline automatically. Retained 6882 evidence reproduces
-209.211 seconds and 28,935,523 hostile damage exactly. Legacy missing decision
-context remains missing. The manual DPS-023 occurrence is still unresolved.
-
-No retained controlled comparison establishes a regression-causing patch, so
-no blind revert is justified. Preserve the accepted tank-swap and early
-cast-interruption fixes. Next: finish consumer checks, build once, run the
-native trace-pressure fixture and one completion-watchdog Magmaw validation,
-then independently compare clear, repair and performance outcomes.
+The [active work unit](../../experiments/configs/cata_raid_active_work_unit_v1.json)
+closes this canary and routes OBS-008. No additional native run is required for
+post-close HTML packaging or comparator/documentation changes.

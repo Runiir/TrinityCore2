@@ -8,9 +8,9 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
-| CAP-006 | False repeated-failure termination proven on f0be69d1aa | Chainwielder run stopped at 84.675s while fresh attacks continued. Actor30001 decisions81/82 were ok and83 failed, but native consecutive_same_decision_count22 ignored outcome changes; the validator treated that count as a failure streak. Complete immutable timeline and terminal drain retained the sequence. | Reset the native same-decision counter when result changes; retain real consecutive-failure termination and existing thresholds. Test the production predicate against alternating outcomes and a 20-failure control, then validate the route continues. No boss-performance result exists for this pre-boss stop. |
-| CAP-005 | Causal trace/timeline implemented; native transport validation pending | The 128-row trace evicted the manual head-hide decisions. Export-time mutable context could describe later state. New pending retention exposes a pressure-fixture bug: its two-page success condition stops with a backlog. Transport-only preflight also encountered dynamic provisioned GUIDs versus historical raid GUID expectations; zero server starts. | Preserve immutable context and drain every pending page, allowing native records appended during drain. Test the actual controller terminal predicate. Bind nongameplay transport actors by exact DB name/account/pool; preserve strict raid readback failure and do not relax Magmaw fixed-roster admission. |
-| ENC-003 | Shared optional parasite target admission deadlock proven on6882 | Fire hook has244 damage in final57.689s with valid parasite selected;38/46 samples defer combat. Support target binding lacks LOS/executable-range facts, but support movement forbids LOS/max-range reposition. Hunter has23 native Serpent Sting LOS failures; not every interval has the same contract role. | Admit optional support only with actor-target spatial legality. Preserve personal threats, bait and hazard ownership. Native adapter now supplies actor-specific LOS/effective range facts; production fixtures and independent review pass. Native end-to-end validation remains pending. No invented legal fallback or generic movement relaxation. |
+| CAP-006 | False failure streak repaired and native accepted on b113 | f0be stopped on Chainwielder at 84.675s despite fresh attacks: same situation/action count22 included successes. Native result is now part of the repeat predicate; tests preserve 20 real failures. b113 passed both trash nodes and cleared; reviewed outcome changes reset to1. | Preserve thresholds and the outcome-aware counter. Do not blame optional support or weaken termination for this accounting defect. The complete timeline made the false stop directly diagnosable. |
+| CAP-005 | Immutable timeline and native pressure retention accepted | A 128-row tail erased decisive manual events. New record-time context plus4096 pending entries retain the causal stream; native4097 pressure emission drains33 pages to zero and reports the deliberate overflow. b113 has26345 trace rows and no trace/combat gaps. | Use retained delta timeline, not a late interactive tail. Keep aggregates/identity. Actual pressure command parser must accept four digits; replace source-string tests that bless a three-digit limit with the compiled registered-command fixture. |
+| ENC-003 | Actor-specific optional support admission implemented; exercised live on b113 | On6882 Fire hook had244 damage in final57.689s and Hunter23 Serpent Sting LOS failures. Selection lacked actor LOS/range while movement forbade repairing geometry. Production fixtures reject blocked optional parasites and preserve mandatory bait/threat; current live run exercises legal support and fresh body return. | Preserve actor-specific native admission and mandatory ownership. Do not infer every rejected nearest candidate from snapshots, or claim this explains every outage. Exact raid DPS recovered138308→181673; original DPS-023 cause and full performance acceptance remain unresolved. |
 | OBS-008 | Native terminal cast-failure reason absent on6882 | Fire bait's Hazard Scorch lasts1.246s with path progress, then native_spell_finish_v1 reports only success=false. No same-timestamp LOS/profile rejection identifies the cause. The prior rapid cancellation loop is removed. | Retain terminal native SpellCastResult/cancellation cause and cast-instance identity before another guessed rotation change. Current-spell observations and accepted submissions do not identify terminal failure. |
 | REV-001 | Corrected recent-event attribution on6882 | Initial late-window sum4,079,235 included1,041,252 damage-taken events and33,977 friendly damage because recent events omit perspective. Canonical hostile outgoing total is3,004,006, exactly matching cumulative-counter change. | Reconstruct actor ownership and hostile target identity before summing recent events; reconcile against canonical counters. Review guidance updated. This is an analysis error, not a gameplay defect. |
 | ENC-002 | Native two-way swap accepted on6882 | Contract alone failed on41266 because adaptive ownership bypassed both callers and generic boss candidate claimed Movement. Narrow typed action now submits Paladin62124 and DK56222; native ownership transfers follow, with exactly two swaps and no repeats. | Preserve shared swap/latch and moving-spline-safe facing. First Pal transfer observed by+91.919s; reciprocal DK body ownership+186.133s. All ten survive the boss. |
@@ -355,3 +355,30 @@ inside each archive; final closure records that input mapping explicitly.
 - Agent usage limits interrupted Hunter diagnosis and implementation preparation.
   No Hunter gameplay edits were made. This is an infrastructure limit, not another
   failed canary or evidence that a different model repaired DPS.
+
+## 2026-09-10 timeline closure
+
+Current native source b1132dd087 clears in156.064s at181,672.583 exact DPS
+and14,729.419 exact HPS; all ten survive the boss. The comparator separates
+clear/repair from performance, remains inconclusive on old switch coverage,
+and still requires diagnosis for known healer activity/HPS declines. Raid
+damage taken fell20.3%; that demand change and survival do not establish every
+healer cause. Do not suppress known declines merely because another metric is
+missing. No controlled evidence justified reverting an unrelated accepted fix.
+
+Capture bytes per second fell31.39%; lossless full-event HTML is7,061,175 bytes
+instead of213,524,963. An over64MiB browser-tool response was an artifact
+packaging issue, not missing telemetry. Preserve all records with deterministic
+compression and lazy detail rendering. Keep original report inventories immutable.
+
+An unrelated listener on8086 blocked one owned server startup. The tracked
+instance-listener-only overlay uses18086 and records both configuration hashes;
+it does not authorize killing the unrelated service or changing gameplay.
+The build include failure, pressure command parser and false watchdog attempts
+are retained in the current DVC bundle, not silently recast as boss failures.
+
+Publication pointer:
+`artifacts/cata_raid_program/magmaw_development_b1132dd087_20260910.tar.gz.dvc`.
+The adjacent publication receipt and contained independent reviews define exact
+acceptance scope. Next observation is OBS-008; DPS-023 remains historically
+unresolved. Do not rerun this accepted capture/retention edge unchanged.

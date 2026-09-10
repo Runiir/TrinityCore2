@@ -6,6 +6,14 @@ Open the HTML for the actor overview and filter by actor, phase, target or
 spell. Inspect the full event details before choosing a repair. The JSON
 retains the same causal records for command-line analysis.
 
+The HTML embeds the complete model as deterministic gzip/base64 and expands it
+inside the browser without a network dependency. Event details are rendered on
+expansion. Use a browser with `DecompressionStream` support; loading failures
+remain visible. Time inputs apply when committed by moving focus away.
+Actor totals describe the full scoring window; the event list and activity
+marks follow the selected interval. A phase labelled `unknown` remains unknown,
+even when individual targetability observations identify the live body.
+
 To reconstruct the view from retained evidence:
 
 ```sh
@@ -47,8 +55,15 @@ encounter clear, requested repair and performance. The default five-percent
 decline threshold routes diagnosis; it is not a statistical significance test.
 Missing evidence produces an inconclusive result. Reduced add damage alone is
 not a regression. Keep faster but unmatched historical runs as benchmarks.
+Known material declines still require diagnosis when other missing evidence
+makes the overall verdict inconclusive. Healing activity and HPS flags require
+demand, survival and absorption review before attributing a regression.
 
 Automatic timelines bind the native raw hash and a stable report-source
 projection. The final report inventories their file hashes. A full report hash
 cannot be embedded before that report exists without creating a hash cycle.
 Post-close reconstruction may additionally bind the full report-file hash.
+Preserve an already-inventoried HTML when improving its renderer after closure.
+Write a separate compact artifact and receipt with renderer revision, original
+hash, exact decompressed-model hash, size and generation time. The native run
+keeps its original source identity.
