@@ -2,6 +2,7 @@
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotDatasetEvent.h"
+#include "Bots/BotWorldDecisionRepeatCounter.h"
 #include "Bots/BotExperienceLearningPolicy.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRoleSaturationPolicy.h"
@@ -287,8 +288,15 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     std::string previousAction = state.LastDecisionAction;
     ObjectGuid previousTargetGuid = state.LastDecisionTargetGuid;
     ObjectGuid currentTargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
-    bool sameDecision = previousSituation == (situation ? situation : "idle") && previousAction == (action ? action : "wait");
-    state.ConsecutiveSameDecisionCount = sameDecision ? state.ConsecutiveSameDecisionCount + 1 : 1;
+    std::string const currentResult = failure ? "failed" : "ok";
+    state.ConsecutiveSameDecisionCount = BotWorldDecisionRepeatCounter::Next(
+        state.ConsecutiveSameDecisionCount,
+        previousSituation,
+        previousAction,
+        state.LastDecisionResult,
+        situation ? situation : "idle",
+        action ? action : "wait",
+        currentResult);
     bool idleDecision = (!action || std::string(action) == "wait" || std::string(action) == "wander" || std::string(action) == "rest")
         && (!situation || std::string(situation) == "idle" || std::string(situation) == "travel");
     state.IdleDecisionRepeatCount = idleDecision ? state.IdleDecisionRepeatCount + 1 : 0;
@@ -305,7 +313,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     state.LastDecisionSituation = situation ? situation : "idle";
     state.LastDecisionAction = action ? action : "wait";
     state.LastDecisionActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
-    state.LastDecisionResult = failure ? "failed" : "ok";
+    state.LastDecisionResult = currentResult;
     state.LastDecisionReason = failure ? "decision_failure" : "";
     state.LastDecisionTargetGuid = currentTargetGuid;
     if (!state.LastDecisionQuestId)
