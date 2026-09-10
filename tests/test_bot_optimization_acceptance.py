@@ -337,6 +337,20 @@ def test_equal_empty_setup_identities_are_rejected() -> None:
     assert report["setup_match"]["evidence_pointer_contents_verified"] is False
 
 
+def test_legitimate_zero_inside_setup_identity_is_not_empty() -> None:
+    baseline = _summary(party_dps=100.0)
+    candidate = _summary(party_dps=100.0)
+    setup = _setup(baseline, candidate)
+    setup["fields"]["encounter"]["baseline"] = {"difficulty": 0, "map_id": 669}
+    setup["fields"]["encounter"]["candidate"] = {"difficulty": 0, "map_id": 669}
+
+    report = compare_optimization_acceptance(
+        baseline, candidate, setup, _repair()
+    )
+
+    assert report["performance_verdict"] == "pass"
+
+
 def test_missing_direct_activity_is_inconclusive_not_zero() -> None:
     baseline = _summary(party_dps=100.0)
     candidate = _summary(party_dps=100.0)

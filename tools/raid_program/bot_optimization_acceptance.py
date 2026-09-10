@@ -211,7 +211,7 @@ def _identity_present(value: object) -> bool:
         return bool(value.strip())
     if isinstance(value, (int, float)):
         numeric = _number(value)
-        return numeric is not None and numeric > 0.0
+        return numeric is not None
     if isinstance(value, list):
         return bool(value) and all(_identity_present(item) for item in value)
     if isinstance(value, dict):
