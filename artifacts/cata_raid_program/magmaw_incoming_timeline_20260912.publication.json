@@ -1,0 +1,216 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "analysis_commit": "addb86515621faa6c1470776b28f36b196f2e88b",
+  "native_source_commit": "a4b9ab9bd7cefb66c27f3d92c43dfd2b3259d431",
+  "new_live_run": false,
+  "training_eligible": false,
+  "original_publication": "artifacts/cata_raid_program/magmaw_fidelity_20260912.publication.json",
+  "members": [
+    {
+      "path": "analysis.json",
+      "bytes": 1294,
+      "sha256": "5b19c3e4c0768f04606a4aa4221d205fa780c0871427bda89fbe995cdc65754c"
+    },
+    {
+      "path": "independent-review.md",
+      "bytes": 12935,
+      "sha256": "96f46bfc3de3d5b41d60e74d9cb75a66d4d8863350f09f01eef05743002b8890"
+    },
+    {
+      "path": "native_melee_events.json",
+      "bytes": 22032,
+      "sha256": "9137629891f8084bd1686cdf5f8588d5415d7515a7fbc52b8b1419e24ae4d5f0"
+    },
+    {
+      "path": "tank_runtime_samples.json",
+      "bytes": 5620,
+      "sha256": "325a4b73ba8e5ce4dcce6ba5b97cb224c229a0e0e822d6948a6e1311682a42fd"
+    },
+    {
+      "path": "wcl_melee_rows.json",
+      "bytes": 2407,
+      "sha256": "295fb5af34ac7981b28ca48944981fc84d3b16a2211368dbea4aefb89093755d"
+    },
+    {
+      "path": "transport_receipt.json",
+      "bytes": 1549,
+      "sha256": "5c2575d9b43f2c1e3dcb7b6f6ce426e2db03ea29b11664a014f87de8898a57ea"
+    },
+    {
+      "path": "replay_metrics.json",
+      "bytes": 919,
+      "sha256": "6d6b49ea5e7ad3dd731cde489c9bec8b61affcfef1bf0a380d6140e7bf1b73d0"
+    },
+    {
+      "path": "tests.txt",
+      "bytes": 99,
+      "sha256": "e6293fb57ca544ea9e6c7a3dd195f6692d53ceda2b850632f9d38d0c2a4791ca"
+    },
+    {
+      "path": "timeline-summary.json",
+      "bytes": 120227,
+      "sha256": "000b1f94263f0f9f220177ae5b66c9c9c9dc2306e41efde50824a3c36b6dfe90"
+    },
+    {
+      "path": "timeline.html",
+      "bytes": 6875180,
+      "sha256": "c4fb800e78c47103c4e25d6580cfe7f7f4bce098446555bdcc9c404dfd36cd16"
+    },
+    {
+      "path": "dvclive/metrics.json",
+      "bytes": 288,
+      "sha256": "982b2de0a93576f23a6d2fb8ba32609c3738a20a17b62afbd488b83c931f8d95"
+    },
+    {
+      "path": "dvclive/plots/metrics/exact_raid_dps.tsv",
+      "bytes": 62,
+      "sha256": "ce9ceaed8eb8b0452a0373c0c5f47521b0d5a7f71789e7f8f041ef30393df007"
+    },
+    {
+      "path": "dvclive/plots/metrics/exact_raid_hps.tsv",
+      "bytes": 62,
+      "sha256": "d87319fe82bf7f6d9a3f43f474bfae28a54a91b6be093012d00374090fe46fde"
+    },
+    {
+      "path": "dvclive/plots/metrics/incoming_events_added.tsv",
+      "bytes": 39,
+      "sha256": "879bb5a73387c764ba57d075d5fb593e59e60a2757624f17d9a3076a7cff071c"
+    },
+    {
+      "path": "dvclive/plots/metrics/new_html_bytes.tsv",
+      "bytes": 40,
+      "sha256": "9708c14384bf4d8277e25cade9586263e4f7e48ef2d42c37f1b23d03f6fdb8e4"
+    },
+    {
+      "path": "dvclive/plots/metrics/new_render_seconds.tsv",
+      "bytes": 63,
+      "sha256": "f89dcce74b062ef908936530fb3c30ec7725fb6475a770832d57b0128b8ad6c4"
+    },
+    {
+      "path": "dvclive/plots/metrics/old_html_bytes.tsv",
+      "bytes": 40,
+      "sha256": "3c827c333c2b5235c14f7da3d50d6e99b03a10659bd532194d199d183035c682"
+    },
+    {
+      "path": "dvclive/plots/metrics/old_render_seconds.tsv",
+      "bytes": 64,
+      "sha256": "d5785947e16848d6f2003c0b3cf8c01cb465f52fdf5b1d22bed283ea4fc4f86a"
+    }
+  ],
+  "archive_sha256": "d5ae2b028e8e5b7f15ff242e117a8ead53d88bc282e1698e15162e2846aec46c",
+  "archive_bytes": 4751734,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_incoming_timeline_20260912.tar.gz.dvc",
+  "remote_download_sha256": "d5ae2b028e8e5b7f15ff242e117a8ead53d88bc282e1698e15162e2846aec46c",
+  "fresh_empty_cache": true,
+  "post_experiment_commands": {
+    "dvc_status": "Data and pipelines are up to date.",
+    "dvc_push": "1 file pushed"
+  },
+  "remote_status_before_eviction": "Cache and remote 'object' are in sync.\n",
+  "evicted_payloads": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_incoming_timeline_20260912.tar.gz",
+      "bytes": 4751734,
+      "sha256": "d5ae2b028e8e5b7f15ff242e117a8ead53d88bc282e1698e15162e2846aec46c"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/7d/c726e1230eb2c10a56e5b1048140c5",
+      "bytes": 4751734,
+      "sha256": "d5ae2b028e8e5b7f15ff242e117a8ead53d88bc282e1698e15162e2846aec46c"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/remote-cache/files/md5/6e/6c900b95ab5e5c63f79264c9bf1f87",
+      "bytes": 89841259,
+      "sha256": "bea760917427020188c968a51ee7725ef467678c6c91e29abfa0e0cc476636e8"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/analysis.json",
+      "bytes": 1294,
+      "sha256": "5b19c3e4c0768f04606a4aa4221d205fa780c0871427bda89fbe995cdc65754c"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/independent-review.md",
+      "bytes": 12935,
+      "sha256": "96f46bfc3de3d5b41d60e74d9cb75a66d4d8863350f09f01eef05743002b8890"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/native_melee_events.json",
+      "bytes": 22032,
+      "sha256": "9137629891f8084bd1686cdf5f8588d5415d7515a7fbc52b8b1419e24ae4d5f0"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/tank_runtime_samples.json",
+      "bytes": 5620,
+      "sha256": "325a4b73ba8e5ce4dcce6ba5b97cb224c229a0e0e822d6948a6e1311682a42fd"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/wcl_melee_rows.json",
+      "bytes": 2407,
+      "sha256": "295fb5af34ac7981b28ca48944981fc84d3b16a2211368dbea4aefb89093755d"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/transport_receipt.json",
+      "bytes": 1549,
+      "sha256": "5c2575d9b43f2c1e3dcb7b6f6ce426e2db03ea29b11664a014f87de8898a57ea"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/replay_metrics.json",
+      "bytes": 919,
+      "sha256": "6d6b49ea5e7ad3dd731cde489c9bec8b61affcfef1bf0a380d6140e7bf1b73d0"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/tests.txt",
+      "bytes": 99,
+      "sha256": "e6293fb57ca544ea9e6c7a3dd195f6692d53ceda2b850632f9d38d0c2a4791ca"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/metrics.json",
+      "bytes": 288,
+      "sha256": "982b2de0a93576f23a6d2fb8ba32609c3738a20a17b62afbd488b83c931f8d95"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/exact_raid_dps.tsv",
+      "bytes": 62,
+      "sha256": "ce9ceaed8eb8b0452a0373c0c5f47521b0d5a7f71789e7f8f041ef30393df007"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/exact_raid_hps.tsv",
+      "bytes": 62,
+      "sha256": "d87319fe82bf7f6d9a3f43f474bfae28a54a91b6be093012d00374090fe46fde"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/incoming_events_added.tsv",
+      "bytes": 39,
+      "sha256": "879bb5a73387c764ba57d075d5fb593e59e60a2757624f17d9a3076a7cff071c"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/new_html_bytes.tsv",
+      "bytes": 40,
+      "sha256": "9708c14384bf4d8277e25cade9586263e4f7e48ef2d42c37f1b23d03f6fdb8e4"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/new_render_seconds.tsv",
+      "bytes": 63,
+      "sha256": "f89dcce74b062ef908936530fb3c30ec7725fb6475a770832d57b0128b8ad6c4"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/old_html_bytes.tsv",
+      "bytes": 40,
+      "sha256": "3c827c333c2b5235c14f7da3d50d6e99b03a10659bd532194d199d183035c682"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/dvclive/plots/metrics/old_render_seconds.tsv",
+      "bytes": 64,
+      "sha256": "d5785947e16848d6f2003c0b3cf8c01cb465f52fdf5b1d22bed283ea4fc4f86a"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-20260912/combat_events.json",
+      "bytes": 6655355,
+      "sha256": "c44494fccf58978364ab8cee74492d7f50169320fcdeadb75c25c705904bd3ee"
+    }
+  ],
+  "evicted_payload_bytes": 106047595,
+  "retained_primary_view": "/home/runiir/Games/trinity-magmaw-melee-20260912/timeline.html",
+  "retained_summary": "/home/runiir/Games/trinity-magmaw-melee-20260912/timeline-summary.json",
+  "retention_reason": "One inspectable timeline and compact summary; original raw and new analysis are remotely verified."
+}
