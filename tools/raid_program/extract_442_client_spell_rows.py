@@ -97,12 +97,16 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--contracts", type=Path, default=ROOT / "experiments/configs/cata_raid_encounters")
     parser.add_argument("--dossiers", type=Path, default=ROOT / "docs/bot_raids/strategies")
+    parser.add_argument("--spell-id", type=int, action="append",
+                        help="Explicit spell selection (repeatable); replaces document discovery")
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists():
         raise SystemExit("output exists; client extracts are immutable")
     sources = sorted(args.contracts.rglob("*.json")) + sorted(args.dossiers.rglob("*.md"))
-    spell_ids = referenced_spell_ids(sources)
+    spell_ids = set(args.spell_id) if args.spell_id else referenced_spell_ids(sources)
+    if any(spell_id <= 0 for spell_id in spell_ids):
+        raise SystemExit("spell IDs must be positive")
     if not spell_ids:
         raise SystemExit("no referenced spell IDs found")
 

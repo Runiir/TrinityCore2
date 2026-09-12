@@ -11,7 +11,7 @@
   "purpose": "source-and-timer ledger for Phase 0 research; no live-validation assertion",
   "scope": ["10N", "10H", "25N", "25H"],
   "repository_revision_audited": "889d38cc9451c2b8104db142ce069593b4647a41",
-  "retrieved_utc_date": "2026-08-11",
+  "retrieved_utc_date": "2026-09-12",
   "source_catalog": [
     {
       "id": "wowhead_cata_magmaw_2024",
@@ -151,6 +151,46 @@
       "authority": "historical DB snapshot, not current 4.4.2 data",
       "lines": ["47", "2629", "2682"],
       "notes": "Contains map 669 access modes 0/1/2/3, instance_template map 669 script, and encounter 1024 for creature 41570; no current retail tuning proof."
+    },
+    {
+      "id": "local_dbm_r254_magmaw",
+      "title": "DBM Magmaw module",
+      "publisher": "Deadly Boss Mods",
+      "revision": "20241115112135",
+      "package": "r254",
+      "interfaces": [
+        40401,
+        40402
+      ],
+      "path": "/home/runiir/Games/_whitemane-60895_/Interface/AddOns/DBM-Raids-Cata/BlackwingDescent/Magmaw.lua",
+      "sha256": "43a1e3b3876fc67b1f3e9cdd625e3c9a0621f6d99668ad47e154580348991432",
+      "url": "https://raw.githubusercontent.com/DeadlyBossMods/DBM-Cataclysm/4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e/DBM-Raids-Cata/BlackwingDescent/Magmaw.lua",
+      "upstream_commit": "4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e",
+      "upstream_sha256": "f470759ac2c0a53313a43384c46a6c7daa60ad7ae815cecca9d8477696cea156",
+      "equivalence": "equal after removing packaging revision, blank lines and line-ending differences",
+      "accessed": "2026-09-12",
+      "authority": "event-anchored addon predictions; not exact server scheduling"
+    },
+    {
+      "id": "wcl_xAhkN2y9YP3KRmnJ_10",
+      "title": "Sehr erfolgreich, Magmaw 10N fight 10",
+      "publisher": "Warcraft Logs",
+      "author": "Amaraaa",
+      "published_or_updated": "2025-06-11",
+      "accessed": "2026-09-12",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=10&type=damage-taken&by=ability&options=4098&view=events",
+      "authority": "observed later Classic 10N combat, cutoff compatibility unproven",
+      "notes": "Short kill has no Mangle or exposed-head coverage. U values are WCL estimates. Damage samples retain absorbs separately."
+    },
+    {
+      "id": "magmaw_client_59185_20260912",
+      "title": "Magmaw-selected client rows for 4.4.2.59185",
+      "publisher": "Wago.tools client database",
+      "accessed": "2026-09-12",
+      "url": "https://wago.tools/db2/SpellEffect/csv?build=4.4.2.59185",
+      "authority": "version-queried client values; server hotfix parity requires observations",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc",
+      "notes": "New retrieval hashes retained. Do not overwrite the earlier shared extract: full-table CSV bytes differ even for the same build query."
     }
   ],
   "values": [
@@ -185,23 +225,84 @@
     },
     {
       "key": "magma_spit_damage",
-      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
-      "source_report": {"normal_approx": "30000", "heroic_approx": "45000", "ability_table_range": "39375-50625"},
+      "mode_values": {
+        "10N": null,
+        "10H": null,
+        "25N": null,
+        "25H": null
+      },
+      "source_report": {
+        "normal_approx": "30000",
+        "heroic_approx": "45000",
+        "ability_table_range": "39375-50625"
+      },
       "unit": "fire damage per hit",
-      "source_refs": ["wowhead_cata_magmaw_2024"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "wcl_xAhkN2y9YP3KRmnJ_10",
+        "magmaw_client_59185_20260912"
+      ],
       "repository_confirmation": false,
-      "status": "fidelity_blocked",
-      "notes": "Prose/table conflict and no reliable mode mapping."
+      "status": "10N_sample_compatible_other_modes_unvalidated",
+      "notes": "Prose/table conflict and no reliable mode mapping.",
+      "checked_10N": {
+        "spell_id": 78359,
+        "client_effect_row": 77915,
+        "client_roll_min": 30625,
+        "client_roll_max": 39375,
+        "sample_count": 18,
+        "observed_min": 30834,
+        "observed_max": 39329,
+        "observed_mean": 34522.5,
+        "outside_client_roll": 0
+      },
+      "native_dbc": "Matching base and dice; no spell_dbc or spelleffect_dbc override on readback 2026-09-12."
     },
     {
       "key": "lava_spew",
-      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
-      "source_report": {"interval": "roughly 20s", "duration": "6s", "normal_each_tick_approx": "16000", "heroic_each_tick_approx": "27000", "normal_total_approx": "48000", "heroic_total_approx": "81000", "ability_table_range": "14800-17200", "range": "60yd"},
-      "repository_baseline": {"initial": "19s", "repeat": "24s", "projectile_reschedule": "6s"},
+      "mode_values": {
+        "10N": null,
+        "10H": null,
+        "25N": null,
+        "25H": null
+      },
+      "source_report": {
+        "interval": "roughly 20s",
+        "duration": "6s",
+        "normal_each_tick_approx": "16000",
+        "heroic_each_tick_approx": "27000",
+        "normal_total_approx": "48000",
+        "heroic_total_approx": "81000",
+        "ability_table_range": "14800-17200",
+        "range": "60yd"
+      },
+      "repository_baseline": {
+        "initial": "19s",
+        "repeat": "24s",
+        "projectile_reschedule": "6s"
+      },
       "unit": "raid fire event",
-      "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "wcl_xAhkN2y9YP3KRmnJ_10",
+        "magmaw_client_59185_20260912"
+      ],
       "repository_confirmation": "event_exists_only",
-      "status": "fidelity_blocked"
+      "status": "10N_sample_compatible_other_modes_unvalidated",
+      "checked_10N": {
+        "spell_id": 77690,
+        "client_effect_row": 77186,
+        "client_roll_min": 14800,
+        "client_roll_max": 17200,
+        "sample_count": 12,
+        "observed_min": 15084,
+        "observed_max": 17087,
+        "observed_mean": 15835.333333333334,
+        "outside_client_roll": 0
+      },
+      "native_dbc": "Matching base and dice; no spell_dbc or spelleffect_dbc override on readback 2026-09-12."
     },
     {
       "key": "pillar_of_flame",
@@ -258,13 +359,35 @@
     },
     {
       "key": "exposed_head_vulnerability",
-      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
-      "source_report": {"duration": "30s", "damage_modifier": "+100%"},
-      "repository_baseline": {"head_vulnerability_spells": [79010, 79011], "head_shown_after_impale": "5s"},
+      "mode_values": {
+        "10N": null,
+        "10H": null,
+        "25N": null,
+        "25H": null
+      },
+      "source_report": {
+        "duration": "30s",
+        "damage_modifier": "+100%"
+      },
+      "repository_baseline": {
+        "head_vulnerability_spells": [
+          79010,
+          79011
+        ],
+        "head_shown_after_impale": "5s"
+      },
       "unit": "damage window",
-      "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw"
+      ],
       "repository_confirmation": "phase_spells_only",
-      "status": "guide_reported_window_not_live_validated"
+      "status": "guide_reported_window_not_live_validated",
+      "client_detail": {
+        "79010": "share originated damage; do not double-count mirrored callbacks",
+        "79011": "+100% damage taken, -100% critical damage taken modifier; aura duration indefinite, lifecycle owns window"
+      }
     },
     {
       "key": "heroic_nefarian_and_constructs",
@@ -280,11 +403,137 @@
   ],
   "timers": [
     {"key": "magma_spit_initial", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "roughly 5s", "repository_baseline": "6s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "mixed_unresolved"},
-    {"key": "lava_spew_initial_repeat", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "roughly 20s; 6s sequence", "repository_baseline": "19s then 24s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "mixed_unresolved"},
-    {"key": "pillar", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "roughly 30s; 4-5s impact", "repository_baseline": "after fourth projectile; pillar despawn 7s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "mixed_unresolved"},
-    {"key": "mangle_and_crash", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "roughly 90s; 30s Mangle damage", "repository_baseline": "Mangle 90s then 95s; prepare +3.5s; Crash +5s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "mixed_unresolved"},
-    {"key": "head_window", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "30s vulnerability", "repository_baseline": "head shown 5s after impale; cover finish event +3s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "guide_window_not_live_validated"},
-    {"key": "heroic_blazing_inferno", "modes": ["10H", "25H"], "strategy_report": "roughly 35s", "repository_baseline": "27s initial then 36s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "mixed_unresolved"},
+    {
+      "key": "lava_spew_initial_repeat",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "strategy_report": "roughly 20s; 6s sequence",
+      "repository_baseline": "19s then 24s",
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "local_dbm_r254_magmaw"
+      ],
+      "status": "mixed_unresolved",
+      "addon_prediction": {
+        "seconds": 22,
+        "anchor": "SPELL_CAST_SUCCESS 77690, first tick accepted by AntiSpam(5)",
+        "type": "cooldown_prediction",
+        "native_initial_to_first_tick": "19s wrapper deadline + 2s cast + 2s periodic tick; scheduler delays still apply",
+        "observed_first_ticks_ms": [
+          23046,
+          50574
+        ],
+        "observed_tick_gap_ms": 27528
+      }
+    },
+    {
+      "key": "pillar",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "strategy_report": "roughly 30s; 4-5s impact",
+      "repository_baseline": "after fourth projectile; pillar despawn 7s",
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "local_dbm_r254_magmaw"
+      ],
+      "status": "mixed_unresolved",
+      "addon_prediction": {
+        "initial_seconds": 30,
+        "seconds": 32.5,
+        "anchor": "SPELL_AURA_APPLIED 78006",
+        "type": "cooldown_prediction",
+        "author_range_seconds": [
+          30,
+          40
+        ],
+        "slump_reset_seconds": 15,
+        "slump_reset_confidence": "author explicitly calls this theory",
+        "head_emote_reset_seconds": 40
+      }
+    },
+    {
+      "key": "mangle_and_crash",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "strategy_report": "roughly 90s; 30s Mangle damage",
+      "repository_baseline": "Mangle 90s then 95s; prepare +3.5s; Crash +5s",
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "local_dbm_r254_magmaw"
+      ],
+      "status": "mixed_unresolved",
+      "addon_prediction": {
+        "initial_seconds": 90,
+        "seconds": 95,
+        "anchor": "SPELL_AURA_APPLIED 89773",
+        "type": "cooldown_prediction",
+        "target_timer_seconds": 30
+      }
+    },
+    {
+      "key": "head_window",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "strategy_report": "30s vulnerability",
+      "repository_baseline": "head shown 5s after impale; cover finish event +3s",
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "local_dbm_r254_magmaw"
+      ],
+      "status": "guide_window_not_live_validated",
+      "addon_prediction": {
+        "seconds": 30,
+        "anchor": "HeadExposed emote",
+        "type": "buff_window_prediction"
+      }
+    },
+    {
+      "key": "heroic_blazing_inferno",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "strategy_report": "roughly 35s",
+      "repository_baseline": "27s initial then 36s",
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "local_dbm_r254_magmaw"
+      ],
+      "status": "mixed_unresolved",
+      "addon_prediction": {
+        "initial_seconds": 30,
+        "seconds": 35,
+        "anchor": "SPELL_SUMMON 92154",
+        "type": "next_event_prediction",
+        "cancel": "heroic phase-two yell"
+      }
+    },
     {"key": "heroic_shadow_breath", "modes": ["10H", "25H"], "strategy_report": "at 30%; roughly 1s", "repository_baseline": "below 30%; first +9s then 1.2s", "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"], "status": "mixed_unresolved"}
   ],
   "lifecycle": [
@@ -294,13 +543,41 @@
     {"key": "parasite_evade", "modes": ["10N", "10H", "25N", "25H"], "official_hotfix_report": "parasites should not reset the encounter when they evade", "source_refs": ["blizzard_cataclysm_hotfix_jan26"], "repository_confirmation": "no parasite-driven reset found", "status": "Classic_carryover_unresolved"}
   ],
   "unresolved": [
-    {"key": "exact_442_build_hotfix_cutoff", "status": "fidelity_blocked", "evidence_gap": "4.4.2 notes have no Magmaw tuning; historical Cataclysm hotfixes do not prove Classic carryover."},
+    {
+      "key": "wcl_hotfix_cutoff_compatibility",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Build and cutoff are pinned in acceptance policy. June 11 WCL is after February 20 cutoff; exact hotfix equivalence remains unproven."
+    },
     {"key": "mode_scaling", "status": "fidelity_blocked", "evidence_gap": "No source provides authoritative complete damage/health/spawn/timer values for all four modes; Wowhead Crash prose/table conflict."},
-    {"key": "timers", "status": "fidelity_blocked", "evidence_gap": "Strategy approximations conflict with implementation baselines for all major events; no live run permitted in Phase 0."},
+    {
+      "key": "timers",
+      "status": "fidelity_blocked",
+      "evidence_gap": "DBM predictions anchored and queue defect repaired. Short 10N WCL confirms Spew ticks only; long head-cycle and heroic observations remain missing."
+    },
     {"key": "parasite_count", "status": "fidelity_blocked", "evidence_gap": "Current guide says up to 7, old non-Classic guide conflicts, repository does not hardcode count."},
     {"key": "hooks", "status": "fidelity_blocked", "evidence_gap": "Current guides say up to two; Tavern/old Icy say three; repository proves two pincers and both-hook condition only."},
-    {"key": "sweltering_armor_duration", "status": "fidelity_blocked", "evidence_gap": "Current guides say 1m, Tavern says 2m; spell data was not audited."},
+    {
+      "key": "sweltering_armor_duration",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Client SpellMisc duration index23 resolves to90000ms; effect is -50% armor. Actual apply/remove lifecycle duration still needs a longer WCL fight."
+    },
     {"key": "shadow_breath", "status": "fidelity_blocked", "evidence_gap": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies; exact Classic splash/cadence unknown."},
     {"key": "retail_credit_loot_and_achievement", "status": "unresolved", "evidence_gap": "Only repository DONE/FAIL and progression notification were audited."}
-  ]
+  ],
+  "fidelity_target": {
+    "build": "4.4.2.59185",
+    "locale": "enUS",
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "authority": "experiments/configs/cata_raid_acceptance_policy_v1.json"
+  },
+  "queue_policy": {
+    "authority": "user instruction 2026-09-12; native queue repair a4b9ab9bd7",
+    "timing_interpretation": "Addon values are possible cooldowns with state-dependent leeway, not exact cast-start deadlines.",
+    "implementation": "Use existing EventMap. Recheck native cast state after dispatch; leave later due events queued. Preserve impaled lifecycle exemption. No random jitter or global spacing added.",
+    "preserved_behavior": "Instant casts, in-flight missiles and periodic damage may overlap. WCL Spit lands during Spew ticks.",
+    "numeric_policy": "Existing script intervals remain compatibility values. Do not copy a triggered-tick DBM bar into a wrapper-spell scheduler.",
+    "first_broken_edge": "Two overdue events: Spew starts casting; Mangle is rejected as spell in progress but old code advances its phase sequence.",
+    "fixture": "tests/test_magmaw_native_cast_queue.py",
+    "scope": "Boss only; no class, bot policy, damage or unrelated encounter changes."
+  }
 }

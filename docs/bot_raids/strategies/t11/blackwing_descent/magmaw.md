@@ -2,6 +2,10 @@
 
 This is a sourced planning dossier for Blackwing Descent's Magmaw encounter in 10-player normal/heroic and 25-player normal/heroic. It is not live-validation evidence. Values called “guide-reported” are observations from the current 4.4.2-labelled guides; values called “repository baseline” describe this checkout's C++ implementation and must not be silently promoted to Classic retail truth.
 
+## September 12 update
+
+The [Magmaw timing and damage check](../../../magmaw_fidelity_20260912.md) supersedes the older unresolved build, unexamined spell-data and timer-source claims below. It pins local DBM predictions and their event anchors, checks WCL 10N damage against client and native data, and repairs the same-update cast queue defect. All-mode fidelity remains blocked.
+
 ## Bot-safe encounter contract
 
 ### Magmaw-side prerequisite trash
@@ -71,6 +75,6 @@ These implementation intervals are useful for diagnosing this checkout, not proo
 - Blizzard, “Patch 4.0.6 Hotfixes and 4.0.6a Changes — Last update: March 29” (historical hotfix context): https://worldofwarcraft.blizzard.com/en-gb/news/9981073/patch-406-hotfixes-and-406a-changes-last-update-march-29
 - Blizzard forum, Kaivax, “World of Warcraft: Cataclysm Classic—Patch 4.4.2 Notes,” 2025-02-18: https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030
 
-Material blockers: exact 4.4.2 client/build and BWD hotfix cutoff; live timer confirmation in every mode; exact Crash/Pillar/Spit/Spew mode scaling; parasite spawn count; mount count and hook timing tolerance; Sweltering Armor duration; and Shadow Breath splash/cadence. These remain `unresolved`/`fidelity_blocked` in the machine-readable files.
+Material blockers: compatibility of later WCL reports with the already-pinned 4.4.2.59185 build and BWD hotfix cutoff; live timer confirmation in every mode; exact Crash/Pillar/Spit/Spew mode scaling; parasite spawn count; mount count and hook timing tolerance; Sweltering Armor duration; and Shadow Breath splash/cadence. These remain `unresolved`/`fidelity_blocked` in the machine-readable files.
 
 The Drudge pair adds two live blockers before tactical fidelity acceptance: prove the derived lane anchors are native-walkable in BWD, and observe native Rush target/impact behavior from 4.4.2 telemetry. The repository does not justify inventing an impact radius or damage-synchronization window.

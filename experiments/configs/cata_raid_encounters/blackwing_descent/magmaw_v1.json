@@ -302,5 +302,6 @@
     {"key": "sweltering_armor_duration", "status": "fidelity_blocked", "detail": "Current Wowhead/Icy say 1m, Warcraft Tavern says 2m; script confirms application/removal but not spell duration."},
     {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
     {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}
-  ]
+  ],
+  "queue_and_damage_audit": "docs/bot_raids/magmaw_fidelity_20260912.md"
 }
