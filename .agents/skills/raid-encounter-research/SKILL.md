@@ -56,9 +56,13 @@ keep qualification `fidelity_blocked`.
 Maintain `research_completion` in the existing ledger: one row per mechanic or
 lifecycle obligation, with `key`, mode scope, status, known evidence, source
 references and the exact next question. Full research is complete only when
-the required coverage has supported values, a native comparison and acceptance
-observations for the requested modes. A bounded repair can be ready earlier;
-name its scope. Neither a populated packet nor a clear proves full fidelity.
+the required coverage has supported values, a native comparison and specified
+acceptance observations for the requested modes. Executing those observations
+is implementation validation, not a prerequisite for finishing research.
+Unresolved reference values still block the affected fidelity claim. A bounded
+repair can be ready earlier; name its scope. Neither a populated packet nor a
+clear proves full fidelity. Update superseded claims in the main dossier and
+contract, not only an addendum that a worker may never read.
 
 ## Review the current script shape
 

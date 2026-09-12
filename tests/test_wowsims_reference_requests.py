@@ -359,3 +359,29 @@ def test_pending_catalog_projection_removes_generated_numeric_authority(
 def test_checked_manifest_is_current(built_manifest: dict) -> None:
     checked = json.loads(DEFAULT_OUTPUT_PATH.read_text(encoding="utf-8"))
     assert pending_catalog_projection(checked) == built_manifest
+
+
+def test_cli_input_check_accepts_promoted_catalog_but_rejects_changed_inputs(
+    built_manifest: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tools.bot_ml import build_wowsims_reference_requests as cli
+    monkeypatch.setattr(cli, "build_manifest", lambda: built_manifest)
+    catalog = json.loads(DEFAULT_OUTPUT_PATH.read_text())
+    path = tmp_path / "promoted.json"
+    path.write_text(json.dumps(catalog))
+    before = path.read_bytes()
+    assert cli.main(["--check", "--output", str(path)]) == 0
+    assert path.read_bytes() == before
+    catalog["requests"][0]["request_sha256"] = "0" * 64
+    path.write_text(json.dumps(catalog))
+    with pytest.raises(SystemExit, match="stale"):
+        cli.main(["--check", "--output", str(path)])
+
+
+def test_cli_input_check_rejects_invalid_json(built_manifest, tmp_path, monkeypatch):
+    from tools.bot_ml import build_wowsims_reference_requests as cli
+    monkeypatch.setattr(cli, "build_manifest", lambda: built_manifest)
+    path = tmp_path / "broken.json"
+    path.write_text("{")
+    with pytest.raises(SystemExit, match="invalid generated manifest JSON"):
+        cli.main(["--check", "--output", str(path)])

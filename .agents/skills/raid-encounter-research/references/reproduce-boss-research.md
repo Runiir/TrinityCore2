@@ -9,6 +9,12 @@ Keep the boss-specific values in its dossier/contract/ledger, not in this skill.
 2. Start from retained WCL report/fight URLs. For missing late mechanics, open the reporting guild's report list/calendar and inspect a longer kill. Prefer the same mode and compatible date. A fast ranking kill may skip the very mechanic being investigated. A longer different-mode/era kill can supply bounded observations but cannot silently replace the tuning baseline.
 3. Open the fight itself and verify boss, difficulty, raid size, date, duration and roster. Confirm that the required mechanic actually occurs. Stop collecting candidates once useful coverage is found; seek another only for a named missing claim or contradictory observation.
 
+If the retained guild lacks a mode or era, use the raid's WCL rankings with the
+visible boss, difficulty, size and phase filters, then open one report matching
+the needed coverage. Read ranking rows with rendered `innerText`; `textContent`
+can include embedded scripts and large gear payloads. A ranking is a discovery
+index, not a matched DPS baseline. Verify report date and mode after opening it.
+
 ## Reproduce WCL access and extraction
 
 Use an available WCL connector/API if authorized. Otherwise the public report UI or the user's already-authorized browser session works. Do not assume OAuth is necessary because an API request failed. Do not extract browser cookies or guess private API endpoints.
@@ -29,6 +35,11 @@ The rendered quick filter accepts expressions such as `ability.id != <observed-m
 
 Normalize selected evidence into compact records: report/fight/date/mode, relative timestamp and its origin, event type, spell ID, source/target IDs and names, displayed value, mitigation fields, source URL and capture scope. Keep null for unavailable values. Preserve selected original row text alongside derived intervals so a worker can audit the transformation. Do not fabricate GUIDs from WCL local actor IDs or call selected rows a complete raw export.
 
+For a historical month, the guild calendar exposes `?date=<epoch milliseconds>`
+after month navigation. Use that observed parameter to jump to the desired month
+and verify its heading, rather than clicking through years. Filter by the raid
+zone before opening reports; a long report is not necessarily a long boss kill.
+
 ## Resolve timing semantics before changing a constant
 
 Locate the installed DBM/BigWigs boss module using `rg --files` in the actual addon directory. Retain package/interface version, module revision, file SHA-256 and, where possible, matching upstream commit. Follow each timer's `Start`/reset/cancel call back to its event and spell ID. Record first-use and repeat predictions separately, including author caveats.
@@ -45,6 +56,39 @@ Add `--follow-triggers` for a new chain extraction. It downloads each table once
 
 Check the loaded worldserver DataDir and hash its DBC files. An offline checkout subset is not automatically the runtime data. Read applicable DB overrides, SpellMgr corrections and native script/aura modifiers. Keep the repository observation separate from external evidence.
 
+Search split `SpellMgrCorrections*` files too. Check `spell_dbc`,
+`spelleffect_dbc` and `spelldifficulty_dbc` before declaring native values equal
+to client rows. Missing client IDs can be server-defined helper spells. For
+periodic summon counts, inspect the extra-initial-period flag as well as duration
+and period; distinguish uninterrupted tick arithmetic from observed summons.
+
+Audit creature melee and health separately from spell damage. Read the active
+`creature_template` variants, `creature_classlevelstats`, applicable
+`gt_npc_total_hp_exp*` / `gt_npc_damage_by_class_exp*` SQL tables and configured
+rates. Follow native float/rounding and attack-speed/variance formulas. A flat
+spell comparison says nothing about boss melee pressure or tank Vengeance.
+Current DB rows do not establish what a historical run loaded.
+
+For health, prefer explicit max HP. If only WCL's rendered resource bars are
+available, retain consecutive amounts and full-precision health percentages.
+Derive max HP from damage divided by lost-health fraction and corroborate across
+several consecutive events on the same NPC instance. Exclude overkill, healing,
+missing intervals and max-HP changes. Label the result derived, not a raw max-HP
+observation; rounded `26.8m` display text is insufficient.
+
+Run the retained observations through:
+
+```bash
+pixi run python -m tools.raid_program.derive_encounter_health <captures.json> --output <derived.json>
+```
+
+The input is a list of attributed records with `columns` and `observations`:
+`displayed_relative_time`, `displayed_damage_amount`,
+`health_bar_css_right_percent`. Declare `consecutive_no_healing_or_overkill`
+only after checking capture scope; `initial_full_health` is optional. The tool
+requires three corroborating intervals and rejects inconsistent estimates. It
+does not validate historical patch compatibility or discover omitted events.
+
 WCL health loss, absorbed damage and U (unmitigated estimate) are distinct. Gear alone cannot reconstruct active defensive cooldowns, resistance, absorbs or encounter modifiers. Never multiply a tank's displayed damage by a guessed armor factor. Use explicit mitigation observations or leave the base roll unresolved.
 
 The comparison input uses `columns` plus `samples` (arrays in that column order), including `spell_id` and `wcl_unmitigated_estimate`, and `report`, `fight`, `mode`, `limitations`. Preserve original rows and source URL. Client roll endpoints are separate from WCL sample compatibility and from verified native outcomes.
@@ -58,6 +102,21 @@ Deliver the implementer one earliest causal mismatch with exact owned files, eve
 Route the code repair to `raid-encounter-implementation`. A fixture must exercise the relevant production scheduler/helper and demonstrate failure before repair, then success after it. Preserve reset, phase, target return and death/credit behavior. Follow required independent review before the coordinator's build and one completion-watchdog canary.
 
 Keep encounter clear, requested mechanic repair and overall performance acceptance separate. Compare matched setup and phase coverage, tank ownership, hostile incoming damage, per-bot activity, DPS/HPS and survival. A clear or higher raid DPS does not resolve an unobserved cast outcome. Missing damage is not proof of a missing cast without adequate cast/absorb telemetry. Record the next precise evidence gap instead of repeating the same run.
+
+The research handoff defines expected observations; the live worker supplies
+them. Do not leave research open solely because its native acceptance test has
+not run. Conversely, do not mark an unresolved external value resolved because
+a fixture copied the current implementation. Scope loot/achievement parity
+separately from combat training, while retaining reset, death, instance credit
+and save/load as run-attribution requirements.
+
+WoWSims supplies matched class mechanics and cadence references, not an expected
+raid-wide Magmaw DPS number. Bind gear, effective stats, buffs, targets and time;
+compare phase-specific fresh actions separately from pet/DoT tails. Tank and
+healer validation also needs incoming pressure, defenses, threat, mana and
+preventable deaths. Before admitting data for an actual-client policy, identify
+which facts the client can observe and which are server-only teacher labels;
+validate client action submission, latency and native outcomes separately.
 
 Commit code/config and the compact claim packet. Use `raid-evidence-lifecycle` to DVC-publish generated source observations and closed experiments, verify a fresh remote reconstruction and remove exact redundant local payloads. Keep a reconstruction pointer and concise findings. Do not rewrite a previously published run when adding research.
 

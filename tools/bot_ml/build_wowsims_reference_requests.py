@@ -1435,16 +1435,19 @@ def _render(manifest: Mapping[str, Any]) -> str:
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_PATH)
-    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--check", action="store_true",
+                        help="Check request inputs after removing promotion results; validate-catalog checks result integrity")
     args = parser.parse_args(list(argv) if argv is not None else None)
     manifest = build_manifest()
     rendered = _render(manifest)
     if args.check:
         try:
-            existing = args.output.read_text(encoding="utf-8")
+            existing = json.loads(args.output.read_text(encoding="utf-8"))
         except OSError as exc:
             raise SystemExit(f"missing generated manifest: {args.output}") from exc
-        if existing != rendered:
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"invalid generated manifest JSON: {args.output}") from exc
+        if not isinstance(existing, dict) or pending_catalog_projection(existing) != manifest:
             raise SystemExit(f"generated manifest is stale: {args.output}")
         return 0
     args.output.parent.mkdir(parents=True, exist_ok=True)

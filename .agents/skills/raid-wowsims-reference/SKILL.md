@@ -27,6 +27,11 @@ pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check
 pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog
 ```
 
+The generator's `--check` compares request inputs after stripping promotion
+results. `validate-catalog` checks promoted result integrity. Keep both checks;
+do not regenerate an accepted cohort merely because it contains result fields
+that the pending generator does not emit.
+
 If the first status reports `workspace_state=remote_requires_hydration`, do
 not run `validate-catalog` yet and do not regenerate the cohort. Materialize
 and verify the already promoted cohort with:

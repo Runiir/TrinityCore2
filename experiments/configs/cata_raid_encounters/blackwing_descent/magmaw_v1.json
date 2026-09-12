@@ -22,7 +22,7 @@
   "encounter": "magmaw",
   "instance": "blackwing_descent",
   "scope": ["10N", "10H", "25N", "25H"],
-  "research_state": "phase0_researched_not_live_validated",
+  "research_state": "bounded_reference_packet_with_material_gaps_native_fidelity_not_accepted",
   "evidence_policy": "A behavior-changing claim requires two independent strategy sources or one credible strategy source plus repository confirmation; conflicts remain unresolved.",
   "source_refs": [
     "wowhead_cata_magmaw_2024",
@@ -40,7 +40,8 @@
     "magmaw_client_59185_20260912",
     "repo_magmaw_a4b9ab9bd7",
     "local_dbm_r254_magmaw",
-    "wcl_xAhkN2y9YP3KRmnJ_10"
+    "wcl_xAhkN2y9YP3KRmnJ_10",
+    "magmaw_baseline_20260912"
   ],
   "mode_matrix": {
     "10N": {
@@ -48,28 +49,40 @@
       "magma_spit_targets_repository": 3,
       "heroic": false,
       "nefarian_add_repository": false,
-      "behavior_delta": "normal Mangle/Crash/impale loop; no heroic Nefarian events"
+      "behavior_delta": "normal Mangle/Crash/impale loop; no heroic Nefarian events",
+      "health_native_calculated": 26798304,
+      "health_wcl_derived": 26798304,
+      "health_reference_note": "Native current configuration; historical WCL-derived value where present. Guide values are non-authoritative."
     },
     "10H": {
       "health_guide_reported": 39200000,
       "magma_spit_targets_repository": 3,
       "heroic": true,
       "nefarian_add_repository": true,
-      "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%"
+      "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%",
+      "health_native_calculated": 39240616,
+      "health_wcl_derived": 39240600,
+      "health_reference_note": "Native current configuration; historical WCL-derived value where present. Guide values are non-authoritative."
     },
     "25N": {
       "health_guide_reported": 101400000,
       "magma_spit_targets_repository": 8,
       "heroic": false,
       "nefarian_add_repository": false,
-      "behavior_delta": "normal Mangle/Crash/impale loop; no heroic Nefarian events"
+      "behavior_delta": "normal Mangle/Crash/impale loop; no heroic Nefarian events",
+      "health_native_calculated": 81082048,
+      "health_wcl_derived": 81082048,
+      "health_reference_note": "Native current configuration; historical WCL-derived value where present. Guide values are non-authoritative."
     },
     "25H": {
       "health_guide_reported": 120000000,
       "magma_spit_targets_repository": 8,
       "heroic": true,
       "nefarian_add_repository": true,
-      "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%"
+      "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%",
+      "health_native_calculated": 120016040,
+      "health_wcl_derived": 120016403,
+      "health_reference_note": "Native current configuration; historical WCL-derived value where present. Guide values are non-authoritative."
     }
   },
   "roles": {
@@ -156,10 +169,13 @@
         "infection_damage": "25000 every 2s for 10s (Wowhead normal report; guide total says 125000)",
         "vomit": {"normal_approx": "20000", "heroic_approx": "45000", "radius": "8yd"},
         "repository_max_active_parasite_debuffs": 3,
-        "repository_vomit_on_proc": true
+        "repository_vomit_on_proc": true,
+        "uninterrupted_client_native_summon_count": 9
       },
       "evidence": ["wowhead_cata_magmaw_2024", "blizzard_cataclysm_hotfix_jan26", "repo_boss_magmaw"],
-      "conflicts": ["Exact count and mode scaling are absent from the repository; old Icy content is not 4.4.2 Classic evidence."],
+      "conflicts": [
+        "Guide7 conflicts with9 derived from2500ms/300ms plus initial-period flag. Actual summon count/interruption still unverified."
+      ],
       "confidence": "target-limit_repository_confirmed; count_and_scaling_fidelity_blocked"
     },
     {
@@ -175,10 +191,13 @@
         "repository_target": "current victim after VictimCheck",
         "sweltering_armor_applied": true,
         "sweltering_armor_client_and_native_duration_ms": 90000,
-        "sweltering_armor_retained_after_ejection": true
+        "sweltering_armor_retained_after_ejection": true,
+        "initial_weapon_hit_native_percent": 100
       },
       "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw", "magmaw_client_59185_20260912", "repo_magmaw_a4b9ab9bd7"],
-      "conflicts": ["Guide duration conflict resolved by client and native DBC: 90 seconds. Current source retains Armor after ejection. Full WCL lifetime remains unobserved."],
+      "conflicts": [
+        "Armor lifetime now observed89.992s in25H, consistent with90s client/native. WCL applies at Mangle release; native boarding anchor conflicts. Distinguish hooks, timeout and cleanup."
+      ],
       "confidence": "credible_strategy_plus_repository_for_target_and_phase; damage_unresolved; armor_duration_client_and_native_confirmed"
     },
     {
@@ -235,7 +254,9 @@
         "armageddon_deadline_guide": "8s",
         "shadow_breath_trigger": "below 30%",
         "shadow_breath_guide": "roughly 27000 to random target and nearby players within 5yd",
-        "shadow_breath_repository_targeting": "selects two non-vehicle targets"
+        "shadow_breath_repository_targeting": "selects two non-vehicle targets",
+        "construct_health_25H_wcl_derived": 4500000,
+        "construct_health_10H_wcl_derived": 1410000
       },
       "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "warcraft_tavern_cata_magmaw_unknown_date", "repo_boss_magmaw"],
       "conflicts": ["Repository Shadow Breath selection (two targets, non-vehicle) does not by itself establish the guide's splash semantics or exact 1-second cadence; all heroic timer/damage values require live confirmation."],
@@ -302,12 +323,45 @@
   "unresolved": [
     {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "Patch 4.4.2 notes establish the version/date but contain no Magmaw tuning; original Cataclysm hotfixes are not proof of Classic carryover."},
     {"key": "live_timers_all_modes", "status": "fidelity_blocked", "detail": "Guide timers conflict with repository intervals for Spit, Spew, Pillar, Mangle/Crash, Blazing Inferno, and Shadow Breath."},
-    {"key": "mode_damage_and_health_scaling", "status": "fidelity_blocked", "detail": "Guide health figures are source-only; Crash prose/table and ability ranges do not provide a reliable 10N/10H/25N/25H mapping."},
-    {"key": "parasite_spawn_count_and_scaling", "status": "fidelity_blocked", "detail": "Wowhead says up to 7; old non-Classic Icy material conflicts; repository does not hardcode a count."},
-    {"key": "hook_player_count_and_tolerance", "status": "fidelity_blocked", "detail": "Current guides say up to 2 and old/Tavern text says 3; repository only establishes two pincers and both-hook condition."},
-    {"key": "sweltering_armor_duration", "status": "fidelity_blocked", "detail": "Client and native DBC duration is 90s; current passenger ejection retains Armor. A longer WCL report is needed to observe its full lifetime."},
+    {
+      "key": "mode_damage_and_health_scaling",
+      "status": "fidelity_blocked",
+      "detail": "32 native/client base-roll checks match. WCL-derived health now covers all four bosses and both heroic construct modes. Boss melee pressure and exact-cutoff compatibility remain unverified; tiny heroic HP precision differences are retained."
+    },
+    {
+      "key": "parasite_spawn_count_and_scaling",
+      "status": "fidelity_blocked",
+      "detail": "Pinned client/native period, duration and extra-initial flag derive9 uninterrupted summons. Actual spawn/interruption behavior remains unverified."
+    },
+    {
+      "key": "hook_player_count_and_tolerance",
+      "status": "fidelity_blocked",
+      "detail": "Native two-pincer topology; both hook auras have3000ms client duration. Guide<1s is tactic, not established server cutoff. Verify arrivals/expiry and seat behavior."
+    },
+    {
+      "key": "sweltering_armor_duration",
+      "status": "fidelity_blocked",
+      "detail": "90s client/native duration corroborated by89.992s historical WCL. Outstanding issue is boarding versus gameplay-release anchor and target-cutoff compatibility, not missing lifetime evidence."
+    },
     {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
     {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}
   ],
-  "queue_and_damage_audit": "docs/bot_raids/magmaw_fidelity_20260912.md"
+  "queue_and_damage_audit": "docs/bot_raids/magmaw_fidelity_20260912.md",
+  "baseline_use": {
+    "reference_ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+    "ready": [
+      "matched WoWSims request inputs and promoted references",
+      "native/client spell-base comparison",
+      "all-mode boss health and both heroic construct health references",
+      "Armor release-anchor repair specification",
+      "queue scheduling acceptance specification"
+    ],
+    "blocked": [
+      "full four-mode target-cutoff fidelity",
+      "boss melee and tank/healer-pressure calibration",
+      "native first-Spew outcome attribution",
+      "exact head transitions and late heroic behavior"
+    ],
+    "training_eligible": false
+  }
 }

@@ -247,6 +247,47 @@
       "authority": "version-queried client values; server hotfix parity requires observations",
       "evidence_dvc": "artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc",
       "notes": "New retrieval hashes retained. Do not overwrite the earlier shared extract: full-table CSV bytes differ even for the same build query."
+    },
+    {
+      "id": "magmaw_baseline_20260912",
+      "title": "Magmaw health, native input and melee pressure audit",
+      "accessed": "2026-09-12",
+      "authority": "selected historical WCL observations plus separately attributed current native inputs",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_baseline_20260912.tar.gz.dvc",
+      "notes": "WCL HP derived from consecutive rendered resource rows. Current DB is not a historical runtime readback. No gameplay or performance acceptance."
+    },
+    {
+      "id": "wcl_LQtcz1wpJVF9AKN8_7",
+      "title": "5:13 heroic kill, sustained late phase",
+      "publisher": "Warcraft Logs, public report UI",
+      "date": "2024-09-18",
+      "accessed": "2026-09-12",
+      "mode": "25H",
+      "url": "https://classic.warcraftlogs.com/reports/LQtcz1wpJVF9AKN8?fight=7",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_baseline_20260912.tar.gz.dvc",
+      "authority": "attributed selected combat observations; exact target-cutoff compatibility is separate"
+    },
+    {
+      "id": "wcl_cDtyBfFJajPKrNnL_69",
+      "title": "25N health reference",
+      "publisher": "Warcraft Logs, public report UI",
+      "date": "2025-03-26",
+      "accessed": "2026-09-12",
+      "mode": "25N",
+      "url": "https://classic.warcraftlogs.com/reports/cDtyBfFJajPKrNnL?fight=69",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_baseline_20260912.tar.gz.dvc",
+      "authority": "attributed selected combat observations; exact target-cutoff compatibility is separate"
+    },
+    {
+      "id": "wcl_7fjDAtg1qQ3G4WPw_6",
+      "title": "2:33 heroic kill, boss and construct health",
+      "publisher": "Warcraft Logs, public report UI",
+      "date": "2025-04-28",
+      "accessed": "2026-09-12",
+      "mode": "10H",
+      "url": "https://classic.warcraftlogs.com/reports/7fjDAtg1qQ3G4WPw?fight=6",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_baseline_20260912.tar.gz.dvc",
+      "authority": "attributed selected combat observations; exact target-cutoff compatibility is separate"
     }
   ],
   "values": [
@@ -254,10 +295,27 @@
       "key": "health_guide_reported",
       "mode_values": {"10N": 33500000, "10H": 39200000, "25N": 101400000, "25H": 120000000},
       "unit": "hit points",
-      "source_refs": ["wowhead_cata_magmaw_2024"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "magmaw_baseline_20260912",
+        "wcl_cDtyBfFJajPKrNnL_69",
+        "wcl_7fjDAtg1qQ3G4WPw_6"
+      ],
       "repository_confirmation": false,
-      "status": "guide_reported_not_repository_verified",
-      "notes": "No 4.4.2 SQL/DBC audit in this task establishes these values."
+      "status": "guide_conflicts_with_observed_normal_health",
+      "notes": "WCL-derived HP is available for all four modes. Both normals match current native calculations exactly; native10H is16HP higher, native25H363HP lower. Historical dates bracket but do not prove exact-cutoff compatibility. Guide normal health is superseded.",
+      "wcl_derived_mode_values": {
+        "25H": 120016403,
+        "10N": 26798304,
+        "25N": 81082048,
+        "10H": 39240600
+      },
+      "native_calculated_mode_values": {
+        "10N": 26798304,
+        "25N": 81082048,
+        "10H": 39240616,
+        "25H": 120016040
+      }
     },
     {
       "key": "molten_tantrum",
@@ -282,12 +340,7 @@
     {
       "key": "magma_spit_damage",
       "client_59185_reference": {"source_ref": "magmaw_research_closure_20260912", "spell_id": 78359, "effect_index": 0, "mode_rolls": {"10N": [30625, 39375], "25N": [30625, 39375], "10H": [35000, 45000], "25H": [39375, 50625]}, "meaning": "client inclusive base roll; native and hotfix verification separate"},
-      "mode_values": {
-        "10N": null,
-        "10H": null,
-        "25N": null,
-        "25H": null
-      },
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
       "source_report": {
         "normal_approx": "30000",
         "heroic_approx": "45000",
@@ -297,7 +350,8 @@
       "source_refs": [
         "wowhead_cata_magmaw_2024",
         "wcl_xAhkN2y9YP3KRmnJ_10",
-        "magmaw_client_59185_20260912"
+        "magmaw_client_59185_20260912",
+        "magmaw_baseline_20260912"
       ],
       "repository_confirmation": false,
       "status": "10N_sample_compatible_other_modes_unvalidated",
@@ -313,17 +367,17 @@
         "observed_mean": 34522.5,
         "outside_client_roll": 0
       },
-      "native_dbc": "Matching base and dice; no spell_dbc or spelleffect_dbc override on readback 2026-09-12."
+      "native_dbc": "Matching base and dice; no spell_dbc or spelleffect_dbc override on readback 2026-09-12.",
+      "native_base_roll_comparison": {
+        "source_ref": "magmaw_baseline_20260912",
+        "status": "matching_base_and_dice_for_checked_modes",
+        "scope": "32 comparisons across nine damage events; effect modifiers, weapon hits and final native outcomes require separate checks"
+      }
     },
     {
       "key": "lava_spew",
       "client_59185_reference": {"source_ref": "magmaw_research_closure_20260912", "spell_id": 77690, "effect_index": 0, "mode_rolls": {"10N": [14800, 17200], "25N": [14800, 17200], "10H": [20812, 24187], "25H": [24050, 27950]}, "meaning": "client inclusive base roll; native and hotfix verification separate"},
-      "mode_values": {
-        "10N": null,
-        "10H": null,
-        "25N": null,
-        "25H": null
-      },
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
       "source_report": {
         "interval": "roughly 20s",
         "duration": "6s",
@@ -345,7 +399,8 @@
         "icy_veins_cata_magmaw_2024",
         "repo_boss_magmaw",
         "wcl_xAhkN2y9YP3KRmnJ_10",
-        "magmaw_client_59185_20260912"
+        "magmaw_client_59185_20260912",
+        "magmaw_baseline_20260912"
       ],
       "repository_confirmation": "event_exists_only",
       "status": "10N_sample_compatible_other_modes_unvalidated",
@@ -360,7 +415,12 @@
         "observed_mean": 15835.333333333334,
         "outside_client_roll": 0
       },
-      "native_dbc": "Matching base and dice; no spell_dbc or spelleffect_dbc override on readback 2026-09-12."
+      "native_dbc": "Matching base and dice; no spell_dbc or spelleffect_dbc override on readback 2026-09-12.",
+      "native_base_roll_comparison": {
+        "source_ref": "magmaw_baseline_20260912",
+        "status": "matching_base_and_dice_for_checked_modes",
+        "scope": "32 comparisons across nine damage events; effect modifiers, weapon hits and final native outcomes require separate checks"
+      }
     },
     {
       "key": "pillar_of_flame",
@@ -369,9 +429,20 @@
       "source_report": {"interval": "roughly 30s", "impact_delay": "4-5s", "normal_damage_approx": "75000", "heroic_damage_approx": "120000", "radius": "5yd"},
       "repository_baseline": {"preferred_distance": ">15yd from Magmaw combat reach", "vehicle_targets": false, "random_preferred_target_count": 1, "despawn": "7s"},
       "unit": "fire damage/targeting",
-      "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "blizzard_cataclysm_hotfix_jan26", "repo_boss_magmaw"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "blizzard_cataclysm_hotfix_jan26",
+        "repo_boss_magmaw",
+        "magmaw_baseline_20260912"
+      ],
       "repository_confirmation": "target_filter_only",
-      "status": "target_rule_confirmed; scaling_and_cadence_unresolved"
+      "status": "target_rule_confirmed; scaling_and_cadence_unresolved",
+      "native_base_roll_comparison": {
+        "source_ref": "magmaw_baseline_20260912",
+        "status": "matching_base_and_dice_for_checked_modes",
+        "scope": "32 comparisons across nine damage events; effect modifiers, weapon hits and final native outcomes require separate checks"
+      }
     },
     {
       "key": "parasite_infection_and_vomit",
@@ -391,10 +462,21 @@
       "source_report": {"interval": "roughly 90s", "damage": "roughly 165000 every 2s for 30s", "ability_table_range": "154649-179728 every 2s", "sweltering_armor": "1m current guides; 2m Warcraft Tavern"},
       "repository_baseline": {"initial": "90s", "repeat": "95s", "target": "current victim after VictimCheck", "sweltering_armor_applied": true},
       "unit": "physical damage/vehicle event",
-      "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "warcraft_tavern_cata_magmaw_unknown_date", "repo_boss_magmaw"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "warcraft_tavern_cata_magmaw_unknown_date",
+        "repo_boss_magmaw",
+        "magmaw_baseline_20260912"
+      ],
       "repository_confirmation": "target_and_application_only",
       "status": "fidelity_blocked",
-      "notes": "Pinned client duration is 30s and periodic interval 2s. Physical periodic base rolls are retained by mode; initial weapon-percent hit is a separate effect. Native parity remains unverified."
+      "notes": "Pinned client duration is 30s and periodic interval 2s. Physical periodic base rolls are retained by mode; initial weapon-percent hit is a separate effect. Native parity remains unverified.",
+      "native_base_roll_comparison": {
+        "source_ref": "magmaw_baseline_20260912",
+        "status": "matching_base_and_dice_for_checked_modes",
+        "scope": "32 comparisons across nine damage events; effect modifiers, weapon hits and final native outcomes require separate checks"
+      }
     },
     {
       "key": "massive_crash",
@@ -403,10 +485,21 @@
       "source_report": {"normal_damage_approx": "100000", "heroic_damage_approx": "170000", "ability_table_range": "157250-182750", "stun": "3s", "shape": "frontal cone"},
       "repository_baseline": {"prepare_after_mangle": "3.5s", "crash_after_prepare": "5s", "ejects_pincers": true},
       "unit": "physical damage/stun",
-      "source_refs": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw", "repo_bwd_header"],
+      "source_refs": [
+        "wowhead_cata_magmaw_2024",
+        "icy_veins_cata_magmaw_2024",
+        "repo_boss_magmaw",
+        "repo_bwd_header",
+        "magmaw_baseline_20260912"
+      ],
       "repository_confirmation": "phase_and_eject_only",
       "status": "fidelity_blocked",
-      "notes": "Wowhead prose and ability-table range conflict; exact 10/25 normal/heroic values are unknown."
+      "notes": "Wowhead prose and ability-table range conflict; exact 10/25 normal/heroic values are unknown.",
+      "native_base_roll_comparison": {
+        "source_ref": "magmaw_baseline_20260912",
+        "status": "matching_base_and_dice_for_checked_modes",
+        "scope": "32 comparisons across nine damage events; effect modifiers, weapon hits and final native outcomes require separate checks"
+      }
     },
     {
       "key": "pincers_and_hooks",
@@ -461,6 +554,31 @@
       "repository_confirmation": "heroic_gate_and_trigger_confirmed; tuning_unresolved",
       "status": "fidelity_blocked",
       "notes": "Repository selection does not establish the guides' nearby-player splash semantics."
+    },
+    {
+      "key": "boss_melee_pressure",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "status": "material_native_audit_lead_not_calibrated",
+      "source_refs": [
+        "magmaw_baseline_20260912",
+        "wcl_MxFq7TRbvnjGY1hJ_22"
+      ],
+      "wcl_10N_samples": {
+        "landed": 14,
+        "miss_or_parry": 7,
+        "unmitigated_estimate_min": 111531,
+        "unmitigated_estimate_max": 178540,
+        "meaning": "observed sample range, not recovered roll endpoints"
+      },
+      "native_10N_retained": {
+        "tank": "Mgwtankb",
+        "events": 24,
+        "health_damage": 20127
+      },
+      "current_db_damage_modifier": 1,
+      "repository_observation": "CreatureStatSystem uses template ModDamage, variance, base/AP and attack time. All four configured Magmaw variants have DamageModifier1. Historical custom SQL used120 with variance0.5; that is not an external authority. Migration2025_06_18_06_world.sql globally resets DamageModifier to1. Commit68a3622133 explicitly requires damage reevaluation after formula changes; ancestor of4b24/41266/6882. Current updates table records it applied2026-06-02. This is inherited source history, not a newly introduced patch in that comparison.",
+      "implementation_consequence": "Audit effective melee values and defenses before interpreting Vengeance, tank DPS or healer pressure. Do not copy120 or compare U directly with post-defense damage.",
+      "acceptance_observation": "Attributable native swing attempts, pre-defense damage, miss/parry/block, armor, absorbs, defensive auras and tank ownership; compare a matched same-mode WCL sample envelope before choosing a correction."
     }
   ],
   "timers": [
@@ -610,20 +728,32 @@
       "status": "fidelity_blocked",
       "evidence_gap": "Build/cutoff pinned. June 2025 log is later, October/November 2024 logs earlier. 4.4.2 notes and the February 21 hotfix archive contain no Magmaw entry, but this bounded search does not prove complete carryover. June 13 2024 official Impale orientation fix predates both longer logs."
     },
-    {"key": "mode_scaling", "status": "fidelity_blocked", "evidence_gap": "No source provides authoritative complete damage/health/spawn/timer values for all four modes; Wowhead Crash prose/table conflict."},
+    {
+      "key": "mode_scaling",
+      "status": "fidelity_blocked",
+      "evidence_gap": "32 native/client base-roll comparisons match; all four boss HP and both heroic construct HP references derived from WCL. Exact-cutoff compatibility and tiny native heroic rounding differences remain distinct. Melee pressure is uncalibrated and blocks tank/healer-performance qualification."
+    },
     {
       "key": "timers",
       "status": "fidelity_blocked",
       "evidence_gap": "DBM predictions anchored and queue defect repaired. Longer historical 25H WCL observes two Mangles 95.558s apart, two Crashes and nine Spew sequences. Exact head targetability boundaries and target-era compatibility remain unresolved."
     },
-    {"key": "parasite_count", "status": "fidelity_blocked", "evidence_gap": "Current guide says up to 7, old non-Classic guide conflicts, repository does not hardcode count."},
+    {
+      "key": "parasite_count",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Client/native tick semantics derive9 uninterrupted summons; actual interruption/spawn behavior and historical WCL count still require verification."
+    },
     {"key": "hooks", "status": "fidelity_blocked", "evidence_gap": "Current guides say up to two; Tavern/old Icy say three; repository proves two pincers and both-hook condition only."},
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
       "evidence_gap": "Pinned client/native duration is 90s. Historical 25H WCL observes 89.992s from 118.049 to 208.041. Target-era compatibility remains unproven. Historical 25H and 10N both apply Armor at Mangle removal, conflicting with native boarding application. See longer-kill addendum."
     },
-    {"key": "shadow_breath", "status": "fidelity_blocked", "evidence_gap": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies; exact Classic splash/cadence unknown."},
+    {
+      "key": "shadow_breath",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Client/native mode base rolls match and selected25H U samples fit. Longer25H5:13 kill supports stopping new Inferno cycles during sustained Breath, corroborating DBM. Exact primary/splash selection, HP transition anchor and target-era carryover remain unverified."
+    },
     {"key": "retail_credit_loot_and_achievement", "status": "unresolved", "evidence_gap": "Only repository DONE/FAIL and progression notification were audited."}
   ],
   "fidelity_target": {
@@ -663,11 +793,12 @@
         "10H",
         "25H"
       ],
-      "status": "blocked",
-      "known": "Native victim/melee condition inspected; client 78403 damage modifier referenced.",
-      "next": "Verify aura stack cap, cadence, reset and damage interaction with compatible out-of-melee events; ordinary kills may never exercise it.",
+      "status": "partial",
+      "known": "Client/native78403 adds100% fire damage per stack, cap10,10s native duration. Client recovery1500ms. Native78068 effect1 triggers78403 from projectile out-of-melee branch.",
+      "next": "Resolve observed out-of-melee repeat/refresh/expiry; client recovery alone does not prove an AI timer.",
       "source_refs": [
-        "magmaw_research_closure_20260912"
+        "magmaw_research_closure_20260912",
+        "magmaw_baseline_20260912"
       ]
     },
     {
@@ -677,11 +808,12 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Seven 25H Ignitions roughly 35.5s apart; native Inferno 27s then 36s. Armageddon aura is 8s; damage child has a nonzero coefficient.",
-      "next": "Resolve construct HP, 92134 Ignition damage chain/geometry, Slash weapon scaling, Armageddon coefficient and despawn behavior.",
+      "known": "Seven 25H Ignitions roughly 35.5s apart; native Inferno 27s then 36s. Armageddon aura is 8s; damage child has a nonzero coefficient. Nine consecutive resource differences derive25Hconstruct4500000HP; native4499999, notguide6M. 10Hconstruct WCL1410000, native1410001.",
+      "next": "Resolve92134fire geometry,Slash weapon scaling andArmageddon coefficient. Both heroic construct health references and sustained late-phase inference now exist.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "wcl_FhcbnAmN9v7kr1VP_3"
+        "wcl_FhcbnAmN9v7kr1VP_3",
+        "magmaw_baseline_20260912"
       ]
     },
     {
@@ -710,12 +842,15 @@
         "10H",
         "25H"
       ],
-      "status": "blocked",
-      "known": "Guide has four health values; they are not a runtime reference.",
-      "next": "Extract boss maximum HP by mode from compatible WCL/replay and compare loaded creature stats and DB overrides.",
+      "status": "reference_available_native_precision_and_era_checks_pending",
+      "known": "All modes now WCL-derived:10N26798304,25N81082048,10H39240600,25H120016403. Current native normals match; heroic differences16/363HP. Constructs10H1410000 and25H4500000.",
+      "next": "Use retained six-capture derivation; resolve target-cutoff carryover and tiny native heroic precision differences only if claiming exact fidelity. Do not repeat HP source discovery.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "wowhead_cata_magmaw_2024"
+        "wowhead_cata_magmaw_2024",
+        "magmaw_baseline_20260912",
+        "wcl_cDtyBfFJajPKrNnL_69",
+        "wcl_7fjDAtg1qQ3G4WPw_6"
       ]
     },
     {
@@ -727,10 +862,11 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Four-mode client rolls mapped; 18 retained 10N U samples fit. Native 10N base/dice match.",
-      "next": "Check heroic U samples and loaded difficulty mapping; join target count and first/repeat volley timestamps.",
+      "known": "Four-mode client rolls mapped; 18 retained 10N U samples fit. Native 10N base/dice match. Native difficulty families and base/dice match pinned client in all four modes; selected DB difficulty overrides absent.",
+      "next": "Check heroic U samples and target-count/cadence observations; do not redo verified base-roll mapping.",
       "source_refs": [
-        "magmaw_research_closure_20260912"
+        "magmaw_research_closure_20260912",
+        "magmaw_baseline_20260912"
       ]
     },
     {
@@ -772,11 +908,12 @@
         "10H",
         "25H"
       ],
-      "status": "blocked",
-      "known": "77973 lasts 2500ms and references 77969 every 300ms; 77969 summons NPC 41806. Vomit summons NPC 42321.",
-      "next": "Count actual summons by Pillar across modes; verify first/last tick semantics before converting duration into spawn count.",
+      "status": "partial",
+      "known": "Pinned client and native77973:2500ms/300ms with extra initial period; expected9 uninterrupted77969 summons of41806. Vomit separately summons42321.",
+      "next": "Verify spawned count and interruption/despawn cases in the production path; exact historical count remains distinct from derived expectation.",
       "source_refs": [
-        "magmaw_research_closure_20260912"
+        "magmaw_research_closure_20260912",
+        "magmaw_baseline_20260912"
       ]
     },
     {
@@ -788,11 +925,12 @@
         "25H"
       ],
       "status": "partial",
-      "known": "30s client duration, 2s periodic damage; 25H Mangle repeats after 95.558s. Initial weapon hit differs from periodic damage.",
+      "known": "30s client duration, 2s periodic damage; 25H Mangle repeats after 95.558s. Initial weapon hit differs from periodic damage. Native split SpellMgr correction changes initial weapon effect150% to100%; periodic mode rolls match client.",
       "next": "Compare periodic U values by mode and distinguish normal hook release, timeout damage and reset/death cleanup.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "wcl_FhcbnAmN9v7kr1VP_3"
+        "wcl_FhcbnAmN9v7kr1VP_3",
+        "magmaw_baseline_20260912"
       ]
     },
     {
@@ -866,11 +1004,13 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Eight 25H U estimates fit client 24975-29025. Damage starts 259.487s; selected cast view empty. Native keeps Inferno scheduled after 30%.",
-      "next": "Find a heroic pull with >36s below 30% and HP/position evidence to distinguish Inferno cancellation and Breath selection versus splash.",
+      "known": "Eight 25H U estimates fit client 24975-29025. Damage starts 259.487s; selected cast view empty. Native keeps Inferno scheduled after 30%. September18 report LQtcz1wpJVF9AKN8 fight7(25H5:13) observes56.523s of Breath and no new Ignition across68.984s after the last construct; supports ending new Inferno cycles, with DBM bar cancellation.",
+      "next": "Specify no new Inferno cycles in late phase as supported inference; distinguish pending missiles. Still resolve exact HP crossing, primary/splash geometry and target-cutoff compatibility.",
       "source_refs": [
         "magmaw_research_closure_20260912",
-        "local_dbm_r254_magmaw"
+        "local_dbm_r254_magmaw",
+        "magmaw_baseline_20260912",
+        "wcl_LQtcz1wpJVF9AKN8_7"
       ],
       "client_59185_reference": {
         "spell_id": 92173,
@@ -925,9 +1065,19 @@
       "source_refs": [
         "magmaw_research_closure_20260912"
       ]
+    },
+    {
+      "key": "boss_melee_pressure",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "status": "blocked",
+      "known": "Native24melee events total20127health damage; WCL10N14landedU estimates111531-178540. Current four templates DamageModifier1. Fields/setups differ. Origin is inherited blanket migration68a3622133, shared by all three comparison sources; current DB updater receipt confirms application.",
+      "next": "Retain effective native melee and mitigation observations, then derive a justified correction. Do not use this run as tank/healer calibration.",
+      "source_refs": [
+        "magmaw_baseline_20260912"
+      ]
     }
   ],
-  "research_completion_policy": "Each required mechanic needs mode-scoped source support, native comparison and acceptance observations. Partial rows do not authorize full fidelity acceptance. Existing unresolved_material_count counts broad historical blockers, not completion rows.",
+  "research_completion_policy": "Reference readiness requires sourced values or explicit proposal bounds, native comparison and specified acceptance observations. Native execution of those observations is a separate validation milestone. Full four-mode fidelity remains blocked by the listed material unknowns.",
   "additional_client_mode_references": {
     "blazing_inferno": {
       "spell_id": 92154,
