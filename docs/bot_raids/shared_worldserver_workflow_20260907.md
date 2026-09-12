@@ -20,8 +20,14 @@ The paired route action itself owned the movement resource; its movement
 candidate's conflict does not establish an independent blocker. The prior
 review's zero-trash-casualty baseline claim was incorrect: retained baseline
 raw contains four Drudge deaths before recovery and the boss clear. Its final
-watchdog counters had reset scope. The candidate-only full wipe remains
-unexplained; inspect the subsequent survival/recovery divergence. Boss-only staging edits
+watchdog counters had reset scope. The second Rush pair chose different actors.
+In the candidate, one Drudge then
+entered tank 30001's lane; the tank took 261,694 damage and received 81,021
+healing in the reviewed interval before death. The corresponding baseline
+interval had 173,764 damage fully healed. Exact target-selection causality is
+unresolved. Native changes were limited to telemetry; the retained capture
+cannot measure its CPU impact. No causal code regression or justified revert
+has been established. Boss-only staging edits
 are held and have not been built or live-validated. They do not repair this wipe.
 
 The preceding successful native run is source `a4b9ab9bd7`:
