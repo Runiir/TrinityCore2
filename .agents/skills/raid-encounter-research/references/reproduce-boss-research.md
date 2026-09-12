@@ -31,6 +31,13 @@ Choose the next action from the missing observation:
   durable stream, then run one reviewed completion-watchdog attempt.
 - Supported reference and observed native mismatch: hand off the bounded repair.
 
+For a boss-specific native observation, check that the selected scenario reaches
+that boss without an unrelated trash prerequisite. If a pre-boss failure prevents
+the measurement, retain and route that failure once, then use the canonical
+isolated boss scenario with explicit preparation/assistance attribution. Keep its
+results separate from full-route completion and from unmatched DPS comparisons.
+Do not spend repeated boss-research attempts on the unchanged prerequisite.
+
 Update the existing claim and current status in place. Do not create another
 handoff document containing copies of the same receipts. Standalone DVCLive
 research bundles use `Live(..., save_dvc_exp=False, dvcyaml=False)` so analysis

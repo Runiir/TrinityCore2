@@ -67,3 +67,15 @@ An earlier launch stopped before bot admission because the persisted stat seed w
 The bounded Magmaw queue repair and canary are closed. Remaining work is explicit: explain the missing early Spew outcome, obtain longer compatible WCL coverage for head/Mangle and other modes, and diagnose tank activity separately before accepting overall performance.
 
 Follow-up: [longer WCL kills](magmaw_longer_wcl_20260912.md) now provide historical Mangle cycles and a full Armor lifetime, and identify an Armor application-anchor discrepancy. Target-era compatibility and exact head boundaries remain unresolved.
+
+## Melee observation follow-up
+
+Source `36f8ab0bc3` adds ordinary-swing stage observations to the existing durable combat stream. The native build and independent review passed. The single watchdog capture stopped on a full-group Drudge trash wipe before Magmaw, then cleaned up all bots, leases and its server. This is not a new boss DPS comparison. The timeline retained 11,192 trace records and all 1,786 combat events without stream gaps. It displays 224 swing resolutions: 217 linked health callbacks and seven misses with no callback. Missing callbacks remain unknown health outcomes. Full absorbs, avoidance and actual health loss are now distinguishable for captured swings. No Magmaw swing was captured, so ENC-006's boss-specific value remains unresolved.
+
+The first lethal exposure was Fire mage 30007's unavailable entrance escape while Drudges approached; this is a trash movement/pressure failure. Independent comparison of the extracted native melee functions found no combat-math or control-flow drift and no justified revert. Use an isolated, explicitly assisted development boss scenario for the missing Magmaw observation. Preserve the failed trash run as separate evidence; do not repeat it unchanged or call it a boss throughput regression.
+
+The activity consumer was also corrected (OBS-010): legacy `active_seconds` includes hostile DoTs/pets and effective healing. Fresh direct owner attacks now have a separate occupied-second count. Acceptance compares that explicit metric and leaves old missing values unknown. Neither metric measures cast/GCD uptime. Both baseline and candidate are rendered with the corrected consumer.
+
+Historical 10N Mangle evidence now includes one initial weapon hit (WCL U 240,338) and 12 periodic ticks (U 116,904 each). The periodic value fits the pinned client 10N roll, but repeated ticks of one aura are not independent roll samples. This does not determine the initial weapon coefficient or resolve target-cutoff compatibility. Scarlet Fever and Bone Shield intervals are retained separately for melee comparisons; do not pool unlike defensive states.
+
+The working timeline, capture, reviews, tests and selected external rows are tracked by `artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc`. No damage coefficient changed and overall performance recovery remains unproven.

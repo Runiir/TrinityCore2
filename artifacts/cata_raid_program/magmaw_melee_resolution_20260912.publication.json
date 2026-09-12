@@ -1,0 +1,61 @@
+{
+  "pointer": "artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc",
+  "md5": "14ad9bfde38da421b314c07b78a83e07",
+  "sha256": "ddd1e40b7dab3d5bb3449786b363d116207250c90eb062f03e1898a59be5eebe",
+  "bytes": 50400584,
+  "empty_cache_remote_reconstruction_verified": true,
+  "members_verified": 48,
+  "verification_cache_evicted": true,
+  "evicted_exact_payloads": [
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/live/raw.jsonl",
+      "bytes": 221515411
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/live/worldserver.log",
+      "bytes": 218569204
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/live/report.json",
+      "bytes": 8104530
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/capture-controller.log",
+      "bytes": 8104530
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/build-fast4.log",
+      "bytes": 834069
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/configure-fast4.log",
+      "bytes": 15531
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/configure.log",
+      "bytes": 6333
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/build.log",
+      "bytes": 77
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/build-admission-rejected.log",
+      "bytes": 70
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz",
+      "bytes": 50400584
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/14/ad9bfde38da421b314c07b78a83e07",
+      "bytes": 50400584
+    }
+  ],
+  "evicted_logical_bytes": 557950923,
+  "retained_views": [
+    "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/live/timeline.html",
+    "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/live/timeline-summary.json",
+    "/home/runiir/Games/trinity-magmaw-melee-resolution-20260912/dps_review.json"
+  ]
+}

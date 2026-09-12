@@ -173,7 +173,7 @@
     },
     {
       "id": "blizzard_442_notes_2025",
-      "title": "World of Warcraft: Cataclysm Classic—Patch 4.4.2 Notes",
+      "title": "World of Warcraft: Cataclysm Classic\u2014Patch 4.4.2 Notes",
       "author": "Kaivax",
       "publisher": "Blizzard Entertainment forums",
       "published_or_updated": "2025-02-18",
@@ -398,6 +398,25 @@
       "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=auras&source=8&ability=49222&view=events",
       "evidence_dvc": "artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc",
       "authority": "Selected aura event rows; target-cutoff equivalence is unresolved."
+    },
+    {
+      "id": "wcl_mangle_damage_20260912",
+      "title": "Historical 10N Mangle initial hit and periodic damage",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22&type=damage-taken&ability=89773&view=events&options=4098",
+      "accessed": "2026-09-12",
+      "report_date": "2024-10-28",
+      "mode": "10N",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc",
+      "member": "wcl_mangle_damage.json",
+      "claim": "All 13 displayed rows: one initial hit, 12 periodic ticks. Historical sample compatibility only; target-cutoff carryover unresolved."
+    },
+    {
+      "id": "native_melee_resolution_20260912",
+      "title": "Reviewed native swing telemetry capture",
+      "accessed": "2026-09-12",
+      "source_commit": "36f8ab0bc3b12b33eee7e7c39d3f190082aeacdc",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc",
+      "claim": "224 swing observations, 217 health links and seven misses without health callbacks; no Magmaw swings because the run failed on preceding Drudges. Capture verifies transport, not boss pressure."
     }
   ],
   "values": [
@@ -759,7 +778,8 @@
         "icy_veins_cata_magmaw_2024",
         "warcraft_tavern_cata_magmaw_unknown_date",
         "repo_boss_magmaw",
-        "magmaw_baseline_20260912"
+        "magmaw_baseline_20260912",
+        "wcl_mangle_damage_20260912"
       ],
       "repository_confirmation": "target_and_application_only",
       "status": "fidelity_blocked",
@@ -768,6 +788,23 @@
         "source_ref": "magmaw_baseline_20260912",
         "status": "matching_base_and_dice_for_checked_modes",
         "scope": "32 comparisons across nine damage events; effect modifiers, weapon hits and final native outcomes require separate checks"
+      },
+      "observed_10n_damage": {
+        "source_ref": "wcl_mangle_damage_20260912",
+        "initial_hit": {
+          "at_seconds": 90.597,
+          "wcl_unmitigated_estimate": 240338,
+          "weapon_coefficient_resolved": false
+        },
+        "periodic": {
+          "first_at_seconds": 92.608,
+          "last_at_seconds": 114.597,
+          "sample_count": 12,
+          "wcl_unmitigated_estimate_min": 116904,
+          "wcl_unmitigated_estimate_max": 116904,
+          "within_pinned_client_base_roll": true
+        },
+        "limitations": "One aura can reuse one periodic roll; 12 identical ticks are not 12 independent base-roll samples. WCL U calculation boundary and historical carryover remain unresolved."
       }
     },
     {
@@ -1441,12 +1478,13 @@
         "25H"
       ],
       "status": "partial",
-      "known": "30s client duration, 2s periodic damage; 25H Mangle repeats after 95.558s. Initial weapon hit differs from periodic damage. Native split SpellMgr correction changes initial weapon effect150% to100%; periodic mode rolls match client.",
-      "next": "Compare periodic U values by mode and distinguish normal hook release, timeout damage and reset/death cleanup.",
+      "known": "30s client duration, 2s periodic damage; 25H Mangle repeats after 95.558s. Initial weapon hit differs from periodic damage. Native split SpellMgr correction changes initial weapon effect150% to100%; periodic mode rolls match client. Historical10N has one initial U240338 and12 periodic U116904 ticks, compatible with pinned10N periodic roll. These are one aura, not12 independent rolls.",
+      "next": "Check remaining mode periodic samples and release branches. Resolve initial100% native versus150% client correction with same-stage weapon evidence; one WCL initial hit cannot determine the coefficient.",
       "source_refs": [
         "magmaw_research_closure_20260912",
         "wcl_FhcbnAmN9v7kr1VP_3",
-        "magmaw_baseline_20260912"
+        "magmaw_baseline_20260912",
+        "wcl_mangle_damage_20260912"
       ]
     },
     {
@@ -1591,13 +1629,14 @@
         "25H"
       ],
       "status": "blocked",
-      "known": "Recovered24 native melee callbacks raw4466-8012,sum143845;health20127,17zero-health. WCL10N14landedU estimates111531-178540. Native raw includes taken modifiers; WCL U and native raw have different stages. Current four templates DamageModifier1 from inherited migration68a3622133. No exact correction established. Exact WCL Bone Shield stack/removal rows now accompany the first six melee samples; Scarlet Fever applied8921-37934ms and64577-93594ms. Samples have changing defensive context.",
-      "next": "Do not repeat capture to recover existing raw values. Obtain same-swing roll/done/taken/armor/outcome/block/absorb/resist/final damage and active modifier/template inputs for a stage-matched WCL comparison. Do not use current pressure as tank/healer calibration.",
+      "known": "Recovered24 native melee callbacks raw4466-8012,sum143845;health20127,17zero-health. WCL10N14landedU estimates111531-178540. Native raw includes taken modifiers; WCL U and native raw have different stages. Current four templates DamageModifier1 from inherited migration68a3622133. No exact correction established. Exact WCL Bone Shield stack/removal rows now accompany the first six melee samples; Scarlet Fever applied8921-37934ms and64577-93594ms. Samples have changing defensive context. Reviewed native stage telemetry now survives full/delta capture and timeline joins. Its first capture stopped on Drudge trash before Magmaw; no boss value added.",
+      "next": "Use isolated boss preparation to capture the missing Magmaw swing with the existing reviewed binary and stage fields. Do not repeat unchanged trash prerequisites. Compare equal calculation stages and defensive contexts against retained WCL; no guessed multiplier.",
       "source_refs": [
         "magmaw_baseline_20260912",
         "magmaw_incoming_timeline_20260912",
         "wcl_magmaw_scarlet_fever_20260912",
-        "wcl_magmaw_bone_shield_20260912"
+        "wcl_magmaw_bone_shield_20260912",
+        "native_melee_resolution_20260912"
       ]
     }
   ],
