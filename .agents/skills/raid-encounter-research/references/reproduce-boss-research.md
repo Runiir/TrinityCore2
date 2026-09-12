@@ -23,6 +23,10 @@ For an observed report/fight, useful report views are:
 
 Verify the selected UI filters after navigation. Wait for the loaded table; an initial empty page is not evidence of zero events. Read the event table and spell/actor links, not the entire summary DOM with every gear link. In supported browser tools, extract rendered row text plus linked spell IDs and report-local actor IDs. Preserve pagination or time filters and report how many rows were actually captured. A missing aura in one view does not prove the aura was absent; check buff/debuff direction and entity before classifying it unavailable.
 
+Resolve same-named NPCs by their NPC and report-local actor IDs. In Damage Taken, the URL's `source` selects the recipient and `target` the attacker; verify the UI labels. Exclude encounter damage-sharing callbacks before measuring fresh attacks, then separate DoTs and pets. A player's first/last swing bounds observed activity, not exact targetability. Aura removal alone does not identify successful interaction, timeout, dispel or death. Join the surrounding damage/death events before prescribing a release callback change.
+
+The rendered quick filter accepts expressions such as `ability.id != <observed-mirror-id>`. Enter it in `#quick-filter-pin`, submit, then verify the loaded table and pagination. Spell IDs and this encounter's mirror exclusion belong in its packet. An empty cast view can coexist with landed damage; record that capture limitation.
+
 Normalize selected evidence into compact records: report/fight/date/mode, relative timestamp and its origin, event type, spell ID, source/target IDs and names, displayed value, mitigation fields, source URL and capture scope. Keep null for unavailable values. Preserve selected original row text alongside derived intervals so a worker can audit the transformation. Do not fabricate GUIDs from WCL local actor IDs or call selected rows a complete raw export.
 
 ## Resolve timing semantics before changing a constant
@@ -37,9 +41,13 @@ Inspect native scheduling, cast-state checks, event consumption, failed submissi
 
 Use exact WCL spell IDs, not names or a guide's nearest link. Follow parent, trigger, periodic damage, difficulty variant and aura modifier IDs in the pinned client tables. Reuse `tools.raid_program.extract_442_client_spell_rows` with repeatable `--spell-id <id>` and `--output <path>` to retain explicit IDs, including trigger metadata that document-based discovery may miss. The tool is specifically pinned to 4.4.2; check its build before using it for another target.
 
+Add `--follow-triggers` for a new chain extraction. It downloads each table once, follows forward trigger references including cycles, and reports missing name/effect records. This is metadata reachability; scripts, creature auras and visual wrappers can introduce IDs outside that graph. Inventory WCL damage IDs before the extraction and retain missing IDs as gaps. Reuse the pinned Difficulty table's ID/fallback mapping; normal/heroic names or legacy variant spell IDs are insufficient.
+
 Check the loaded worldserver DataDir and hash its DBC files. An offline checkout subset is not automatically the runtime data. Read applicable DB overrides, SpellMgr corrections and native script/aura modifiers. Keep the repository observation separate from external evidence.
 
 WCL health loss, absorbed damage and U (unmitigated estimate) are distinct. Gear alone cannot reconstruct active defensive cooldowns, resistance, absorbs or encounter modifiers. Never multiply a tank's displayed damage by a guessed armor factor. Use explicit mitigation observations or leave the base roll unresolved.
+
+The comparison input uses `columns` plus `samples` (arrays in that column order), including `spell_id` and `wcl_unmitigated_estimate`, and `report`, `fight`, `mode`, `limitations`. Preserve original rows and source URL. Client roll endpoints are separate from WCL sample compatibility and from verified native outcomes.
 
 `tools.raid_program.compare_encounter_spell_samples` compares selected U estimates to an explicit client effect/difficulty row. It supports simple positive integer direct-damage rolls only and rejects unsupported/missing scaling fields and empty observations. Zero out-of-range samples means sample compatibility, not recovered endpoints, complete distribution, or proof of server hotfix parity. Do not weaken its checks to force a match.
 

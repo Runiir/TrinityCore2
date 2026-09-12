@@ -15,9 +15,18 @@ Run:
 pixi run python -m tools.raid_program.raid_workloop boss <raid> <boss> --mode <mode>
 ```
 
-Read the emitted dossier, mechanic contract, value ledger, current native boss
-source, instance source, relevant DB rows, and
-`experiments/configs/cata_raid_acceptance_policy_v1.json`.
+Start with the emitted ledger's compact resume view:
+
+```bash
+pixi run python -m tools.raid_program.encounter_research_view <ledger-path>
+```
+
+Choose the next unresolved claim, then use `--key <claim-key>` for its values
+and sources. Read the relevant dossier/contract sections, native functions and
+DB rows. On the first audit, inventory the full boss/instance implementation
+and read `experiments/configs/cata_raid_acceptance_policy_v1.json`. On a resume,
+check source revisions before reusing retained observations. Do not reread all
+evidence or rebuild a reference already bound to unchanged inputs.
 
 Browse every referenced online page that supports a changed claim. Preserve
 URL, title, publisher/author when available, publication/update date, retrieval
@@ -43,6 +52,13 @@ Keep source truth, current repository behavior, and proposed bot tactic as
 three separate fields. Record conflicts instead of choosing a convenient value.
 If no authoritative input resolves a material value, leave it `unresolved` and
 keep qualification `fidelity_blocked`.
+
+Maintain `research_completion` in the existing ledger: one row per mechanic or
+lifecycle obligation, with `key`, mode scope, status, known evidence, source
+references and the exact next question. Full research is complete only when
+the required coverage has supported values, a native comparison and acceptance
+observations for the requested modes. A bounded repair can be ready earlier;
+name its scope. Neither a populated packet nor a clear proves full fidelity.
 
 ## Review the current script shape
 

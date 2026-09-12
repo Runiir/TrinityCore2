@@ -1,5 +1,7 @@
 # Magmaw — Phase 0 research contract (Cataclysm Classic 4.4.2)
 
+Research resume: the ledger now contains a mechanic-by-mechanic completion inventory. See the [longer-kill follow-up](../../../magmaw_longer_wcl_20260912.md#follow-up-completion-inventory-and-stronger-references) for pinned mode values, head actor separation and unresolved release semantics. Full fidelity remains blocked.
+
 This is a sourced planning dossier for Blackwing Descent's Magmaw encounter in 10-player normal/heroic and 25-player normal/heroic. It is not live-validation evidence. Values called “guide-reported” are observations from the current 4.4.2-labelled guides; values called “repository baseline” describe this checkout's C++ implementation and must not be silently promoted to Classic retail truth.
 
 ## September 12 update
