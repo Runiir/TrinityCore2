@@ -55,7 +55,27 @@ def collect_json_spell_ids(value: Any, result: set[int], key: str = "") -> None:
         result.add(value)
 
 
-def download_table(table: str, spell_ids: set[int]) -> tuple[dict[str, Any], list[dict[str, str]]]:
+def trigger_closure(spell_ids: set[int], effects: list[dict[str, str]]) -> set[int]:
+    """Follow client trigger references, including cycles, without reverse expansion.
+
+    This discovers metadata dependencies, not proof that every referenced effect
+    executes. Missing child records remain in the selection for explicit reporting.
+    """
+    children: dict[int, set[int]] = {}
+    for row in effects:
+        owner, child = int(row.get("SpellID", 0)), int(row.get("EffectTriggerSpell", 0))
+        if owner > 0 and child > 0:
+            children.setdefault(owner, set()).add(child)
+    selected = set(spell_ids)
+    pending = list(selected)
+    while pending:
+        for child in children.get(pending.pop(), set()) - selected:
+            selected.add(child)
+            pending.append(child)
+    return selected
+
+
+def download_table(table: str, spell_ids: set[int], *, retain_all: bool = False) -> tuple[dict[str, Any], list[dict[str, str]]]:
     url = f"https://wago.tools/db2/{table}/csv?build={BUILD}"
     request = Request(url, headers={"User-Agent": "trinity-cata-raid-research/1"})
     digest = hashlib.sha256()
@@ -72,7 +92,7 @@ def download_table(table: str, spell_ids: set[int]) -> tuple[dict[str, Any], lis
         raw_csv.seek(0)
         reader = csv.DictReader(raw_csv)
         for row in reader:
-            relevant = table in LOOKUP_TABLES
+            relevant = retain_all or table in LOOKUP_TABLES
             relevant = relevant or any(row.get(field, "").isdigit() and int(row[field]) in spell_ids for field in ID_FIELDS)
             if table == "SpellName" and row.get("ID", "").isdigit():
                 relevant = int(row["ID"]) in spell_ids
@@ -99,6 +119,8 @@ def main() -> int:
     parser.add_argument("--dossiers", type=Path, default=ROOT / "docs/bot_raids/strategies")
     parser.add_argument("--spell-id", type=int, action="append",
                         help="Explicit spell selection (repeatable); replaces document discovery")
+    parser.add_argument("--follow-triggers", action="store_true",
+                        help="Fetch SpellEffect once, then include transitive trigger metadata")
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists():
@@ -112,7 +134,17 @@ def main() -> int:
 
     manifests: list[dict[str, Any]] = []
     retained: dict[str, list[dict[str, str]]] = {}
+    requested_spell_ids = sorted(spell_ids)
+    if args.follow_triggers:
+        manifest, effects = download_table("SpellEffect", spell_ids, retain_all=True)
+        spell_ids = trigger_closure(spell_ids, effects)
+        retained["SpellEffect"] = [row for row in effects if int(row["SpellID"]) in spell_ids]
+        manifest["retained_rows"] = len(retained["SpellEffect"])
+        manifests.append(manifest)
+        del effects
     for table in TABLES:
+        if table in retained:
+            continue
         manifest, rows = download_table(table, spell_ids)
         manifests.append(manifest)
         retained[table] = rows
@@ -126,6 +158,10 @@ def main() -> int:
         "source_provider": "wago.tools",
         "source_contract": "full CSV hashes freeze upstream table identity; only encounter-referenced rows are retained",
         "referenced_spell_ids": sorted(spell_ids),
+        "requested_spell_ids": requested_spell_ids,
+        "follow_triggers": args.follow_triggers,
+        "missing_spell_name_ids": sorted(spell_ids - {int(row["ID"]) for row in retained["SpellName"]}),
+        "missing_spell_effect_ids": sorted(spell_ids - {int(row["SpellID"]) for row in retained["SpellEffect"]}),
         "table_manifests": manifests,
         "rows": retained,
     }
