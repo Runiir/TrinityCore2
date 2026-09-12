@@ -1,0 +1,41 @@
+{
+  "source_commit": "126aae6e2c8912c41ff316bb8b4d067a1f6d18e1",
+  "artifact_kind": "selected_external_research",
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_longer_wcl_20260912.tar.gz.dvc",
+  "archive_sha256": "2421c501f548dc5d6b4db703fb58c28973945e23a5b05dc0cf6c3f9894c76fd6",
+  "archive_bytes": 2516,
+  "members": [
+    {
+      "path": "derived_intervals.json",
+      "bytes": 703,
+      "sha256": "754f29891972a9dffff3623c540065942082fd6997d820675929478189cc57e6"
+    },
+    {
+      "path": "selected_aura_table_text.txt",
+      "bytes": 1011,
+      "sha256": "53d6d84287e7a0c9822876871323a8877f4555ce245e47decf98b1fc6846a330"
+    },
+    {
+      "path": "selected_events.json",
+      "bytes": 24039,
+      "sha256": "9440d8d3a636bd2c26045e53edcafe62ef4288f2808bff7e047218e31fd33b4c"
+    },
+    {
+      "path": "validation.txt",
+      "bytes": 99,
+      "sha256": "169cb5382724cae71d783949f50b5598d644b04e469bff86fa50631f3d6254b4"
+    }
+  ],
+  "remote_download_sha256": "2421c501f548dc5d6b4db703fb58c28973945e23a5b05dc0cf6c3f9894c76fd6",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "dvc_push": "1 file pushed\n",
+  "verified_archive_copies_evicted": true,
+  "compact_inputs_retained_at": "/home/runiir/Games/trinity-magmaw-long-wcl-20260912",
+  "compact_inputs_bytes": 25852
+}
