@@ -17,6 +17,12 @@ and server-side `CastSpell` need not apply the same replacement logic.
 Derive effective cast time through native scaling and modifier precedence; a
 zero base cast-time entry does not prove an instant spell. Fixtures must retain
 the actual inputs to that calculation instead of stubbing its expected result.
+For a moving filler, separate a stationary APL use condition from native spell
+eligibility. A missing damage proc may make an instant unattractive while
+stationary without making it uncastable during movement. Check the actual
+loaded action rows after all migrations, not an older seed SQL row. Retain
+native GCD, mana and cast-state checks and validate any moving-only fallback
+end to end before claiming a DPS gain.
 A current-spell ID can remain during projectile flight. Join native spell state
 and blocked-action results before treating its presence as casting time.
 

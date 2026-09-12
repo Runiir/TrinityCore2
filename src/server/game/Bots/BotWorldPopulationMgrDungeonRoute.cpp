@@ -615,7 +615,14 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                 state.ReadinessRetryUntilMs.erase("hunter:revive_pet");
             }
             TryResolveBotBlocker(state, bot, "hunter_pet_ready");
-            if (Player* tank = FindDungeonAnchor(bot))
+            // Assigned pull policies own the redirect target and timing.
+            // Generic readiness must not refresh a competing tank's aura.
+            bool const assignedPullOwnsMisdirection =
+                !Cohort().Config.ValidationRoutePatrolPullPolicy.empty()
+                || Cohort().Config.ValidationRouteMechanicProfile
+                    == "trash_two_tank_charge_lanes";
+            if (Player* tank = assignedPullOwnsMisdirection
+                    ? nullptr : FindDungeonAnchor(bot))
                 if (tank != bot && bot->HasSpell(34477) && !bot->HasAura(34477) && TryCastFriendlySpell(bot, tank, 34477))
                 {
                     result.Action = "validation_route_readiness_misdirection";

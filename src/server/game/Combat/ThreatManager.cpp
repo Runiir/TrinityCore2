@@ -796,6 +796,15 @@ void ThreatManager::RegisterRedirectThreat(uint32 spellId, ObjectGuid const& vic
     UpdateRedirectInfo();
 }
 
+uint32 ThreatManager::GetRegisteredRedirectThreatPercent(uint32 spellId, ObjectGuid const& victim) const
+{
+    auto const spell = _redirectRegistry.find(spellId);
+    if (spell == _redirectRegistry.end())
+        return 0;
+    auto const target = spell->second.find(victim);
+    return target == spell->second.end() ? 0 : target->second;
+}
+
 void ThreatManager::UnregisterRedirectThreat(uint32 spellId)
 {
     auto it = _redirectRegistry.find(spellId);

@@ -11,6 +11,7 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
+#include "ThreatManager.h"
 
 #include <algorithm>
 #include <cmath>
@@ -280,15 +281,6 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
             }
             if (!rosterStaged)
                 return hold("validation_route_patrol_roster_stage", source);
-            if (!atWait)
-                return hold("validation_route_patrol_wait_for_safe_phase", source);
-            if (!sourcePathKeepsFutureEncountersSafe())
-            {
-                state.LastPathRejectReason =
-                    "patrol_pull_native_chase_path_rejected";
-                return hold("validation_route_patrol_chase_path_rejected", source);
-            }
-
             if (!pullOwner)
                 return hold("validation_route_patrol_wait_for_puller", source);
 
@@ -335,6 +327,11 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                     source);
             }
 
+            if (hunterPullOwner && bot->HasAura(HUNTER_MISDIRECTION_SPELL_ID)
+                && bot->GetThreatManager().GetRegisteredRedirectThreatPercent(
+                    HUNTER_MISDIRECTION_SPELL_ID, tank->GetGUID()) != 100)
+                return hold("validation_route_patrol_misdirection_wrong_tank", source);
+
             if (hunterPullOwner
                 && !bot->HasAura(HUNTER_MISDIRECTION_SPELL_ID))
             {
@@ -367,6 +364,18 @@ bool BotWorldPopulationMgr::TryValidationRoutePatrolPull(
                 situation = "validation_route_patrol_pull";
                 action = "validation_route_patrol_misdirection";
                 return true;
+            }
+
+            // Prime the assigned redirect while the staged roster waits.
+            // The narrow patrol window gates only the hostile pull, not its
+            // friendly preparation; a late preparation GCD can miss the pass.
+            if (!atWait)
+                return hold("validation_route_patrol_wait_for_safe_phase", source);
+            if (!sourcePathKeepsFutureEncountersSafe())
+            {
+                state.LastPathRejectReason =
+                    "patrol_pull_native_chase_path_rejected";
+                return hold("validation_route_patrol_chase_path_rejected", source);
             }
 
             BotRaidAreaAuthority::SetAllOffenseSuppressed(

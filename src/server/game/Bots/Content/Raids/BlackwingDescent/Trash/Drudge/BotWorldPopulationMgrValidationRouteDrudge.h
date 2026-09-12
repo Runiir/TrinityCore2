@@ -184,6 +184,8 @@ struct DrudgeLaneContext
     PhaseResult ResolveSources();
     PhaseResult EnforceFutureBossBoundary();
     PhaseResult BuildAnchorPolicies();
+    uint32 EntrancePullOwnerSlot() const;
+    bool PrepareEntranceMisdirection();
     PhaseResult RunEntrancePullActions();
     PhaseResult RunEntranceMovement(MemberAnchor const* anchor,
         char const* moveResult, char const* waitResult,

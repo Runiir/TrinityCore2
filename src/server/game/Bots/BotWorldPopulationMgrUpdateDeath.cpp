@@ -157,7 +157,9 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
                         raid.NativeHostileResetGenerationAtWipe,
                         Cohort().Config.ValidationRouteNodeId,
                         raid.NativeHostileObservationNodeId,
-                        raid.NativeHostileInactivityObserved};
+                        raid.NativeHostileInactivityObserved,
+                        raid.NativeHostileActivityEntry,
+                        raid.NativeHostileActivityGuid.GetRawValue()};
                 bool const nativePartialDeathResetObserved =
                     BotWorldPopulationMgrNativeRecovery::EvaluatePartialDeathAdmission(
                         partialDeathObservation)
@@ -312,19 +314,49 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
             }
 
             // Raid trash does not necessarily drive InstanceScript's boss
-            // state.  Do not release/run back a corpse merely because group
-            // members look idle: the exact native instance must have
-            // observed either the boss reset or a hostile-pack activity to
-            // stable inactivity transition.  This is observation-only; no
+            // state.  An attributable partial trash casualty may enter the
+            // ordinary native release/runback path while its observed pack
+            // remains active; full wipes and boss routes still require the
+            // exact native reset transition.  This is observation-only; no
             // combat stop, reset, teleport, kill, or resurrection is issued.
             if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
             {
                 RaidRuntime const& raid = Cohort().Raid;
+                BotWorldPopulationMgrNativeRecovery::PartialDeathObservation
+                    const partialDeathObservation{
+                        raid.Active,
+                        raid.RosterComplete,
+                        raid.EncounterInProgress,
+                        raid.NativeHostileActivityActive,
+                        raid.WipeState == "partial_deaths",
+                        Cohort().Config.TargetPopulation,
+                        raid.ExpectedSize,
+                        raid.ActiveSize,
+                        raid.AliveSize,
+                        raid.AttemptId,
+                        Cohort().AttemptId,
+                        Party().ValidationRouteGeneration,
+                        raid.NativeHostileObservationAttemptId,
+                        raid.NativeHostileObservationRouteGeneration,
+                        raid.BossResetGeneration,
+                        raid.BossResetGenerationAtWipe,
+                        raid.NativeHostileResetGeneration,
+                        raid.NativeHostileResetGenerationAtWipe,
+                        Cohort().Config.ValidationRouteNodeId,
+                        raid.NativeHostileObservationNodeId,
+                        raid.NativeHostileInactivityObserved,
+                        raid.NativeHostileActivityEntry,
+                        raid.NativeHostileActivityGuid.GetRawValue()};
+                bool const partialTrashRecoveryAllowed =
+                    BotWorldPopulationMgrNativeRecovery::IsAttributablePartialTrashDeath(
+                        partialDeathObservation,
+                        Cohort().Config.ValidationRouteKind);
                 bool const nativeHostileResetObserved = raid.NativeHostileInactivityObserved
                     && raid.NativeHostileResetGeneration > raid.NativeHostileResetGenerationAtWipe;
                 bool const nativeResetObserved = raid.BossResetGeneration > raid.BossResetGenerationAtWipe
                     || nativeHostileResetObserved;
-                bool const nativeHostileRecoveryBlocked = raid.NativeHostileActivityActive || !nativeResetObserved;
+                bool const nativeHostileRecoveryBlocked = !partialTrashRecoveryAllowed
+                    && (raid.NativeHostileActivityActive || !nativeResetObserved);
                 if (nativeHostileRecoveryBlocked)
                 {
                     std::string raw = BuildRawJson(bot, nullptr);

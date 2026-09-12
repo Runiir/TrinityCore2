@@ -6,6 +6,7 @@
 
 #include "Creature.h"
 #include "Player.h"
+#include "ThreatManager.h"
 
 #include <algorithm>
 #include <array>
@@ -25,6 +26,70 @@ bool NativeEngaged(Context const& context, Creature const* source)
             || (context.Callbacks.IsCombatLinked
                 && context.Callbacks.IsCombatLinked(source)));
 }
+}
+
+uint32 DrudgeLaneContext::EntrancePullOwnerSlot() const
+{
+    auto const& raid = Manager.Cohort().Raid;
+    if (!raid.RosterComplete || raid.RosterByGuid.size()
+        != Manager.Cohort().Config.TargetPopulation)
+        return 0;
+    uint32 hunterSlot = 0;
+    // Assignment follows frozen roster identity. An unavailable Hunter must
+    // not silently hand the pull to a different class after staging.
+    for (auto const& entry : raid.RosterByGuid)
+        if (entry.second.ClassId == CLASS_HUNTER)
+        {
+            uint32 const slot = entry.second.SlotIndex + 1;
+            if (!hunterSlot || slot < hunterSlot)
+                hunterSlot = slot;
+        }
+    return hunterSlot ? hunterSlot
+        : Manager.Cohort().Config.ValidationRouteSplitSeedRosterSlots.front();
+}
+
+bool DrudgeLaneContext::PrepareEntranceMisdirection()
+{
+    if (Bot->getClass() != CLASS_HUNTER)
+        return true;
+    constexpr uint32 MisdirectionSpellId = 34477;
+    Player* tank = nullptr;
+    auto const& slots = Manager.Cohort().Config.ValidationRouteSplitLaneTankSlots;
+    for (WorldBotState const& state : Manager.Party().Bots)
+    {
+        Player* member = Manager.GetLoadedBot(state);
+        auto const roster = Manager.Cohort().Raid.RosterByGuid.find(
+            state.Guid.GetCounter());
+        if (member && member->IsInWorld() && member->IsAlive()
+            && member->GetMap() == Bot->GetMap()
+            && member->GetGroup() && member->GetGroup() == Bot->GetGroup()
+            && roster != Manager.Cohort().Raid.RosterByGuid.end()
+            && roster->second.Active && roster->second.LeaseOwned
+            && roster->second.Role == "tank" && !slots.empty()
+            && roster->second.SlotIndex + 1 == slots.front())
+            tank = member;
+    }
+    if (!tank || !Bot->HasSpell(MisdirectionSpellId))
+    {
+        HoldOffense();
+        Record(Sources[0], "drudge_entrance_misdirection_unavailable");
+        return false;
+    }
+    if (Bot->HasAura(MisdirectionSpellId))
+    {
+        if (Bot->GetThreatManager().GetRegisteredRedirectThreatPercent(
+                MisdirectionSpellId, tank->GetGUID()) == 100)
+            return true;
+        HoldOffense();
+        Record(Sources[0], "drudge_entrance_misdirection_wrong_tank");
+        return false;
+    }
+    std::string failure;
+    bool const submitted = Manager.TryCastFriendlySpell(
+        Bot, tank, MisdirectionSpellId, &failure);
+    Record(Sources[0], submitted ? "drudge_entrance_misdirection_submitted"
+        : "drudge_entrance_misdirection_wait", 0.0f, MisdirectionSpellId);
+    return false; // Observe the native aura before submitting the hostile pull.
 }
 
 DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
@@ -321,7 +386,7 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         Record(nullptr, "drudge_entrance_exact_roster_staged");
     }
 
-    uint32 const pullOwnerSlot = config.ValidationRouteSplitSeedRosterSlots.front();
+    uint32 const pullOwnerSlot = EntrancePullOwnerSlot();
     if (OneBasedSlot != pullOwnerSlot)
     {
         bool const safeBackline = AssignedTank
@@ -341,7 +406,10 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
         return PhaseResult::Handled;
     }
 
-    MemberAnchor const* pullAnchor = DeclaredAnchorFor(pullOwnerSlot);
+    // Pull ownership and the existing safe pull position are independent of
+    // the two later threat-seed assignments.
+    MemberAnchor const* pullAnchor = DeclaredAnchorFor(
+        config.ValidationRouteSplitSeedRosterSlots.front());
     if (!pullAnchor || !StrictNativePath(pullAnchor->X, pullAnchor->Y,
             pullAnchor->Z, true, false, nullptr))
     {
@@ -357,6 +425,9 @@ DrudgeLaneContext::PhaseResult DrudgeLaneContext::RunEntrancePullActions()
             "drudge_entrance_pull_owner_ready", false,
             entranceArrived(pullAnchor,
                 doorwayToleranceFor(false, OneBasedSlot)));
+
+    if (!PrepareEntranceMisdirection())
+        return PhaseResult::Handled;
 
     Creature* source = Sources[0];
     ResolvedCombatAction action = Manager.ResolveProfileCombatAction(

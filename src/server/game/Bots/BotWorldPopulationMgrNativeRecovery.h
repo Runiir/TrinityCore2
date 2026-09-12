@@ -36,6 +36,8 @@ struct PartialDeathObservation
     std::string_view NodeId;
     std::string_view HostileObservationNodeId;
     bool HostileInactivityObserved = false;
+    std::uint32_t HostileActivityEntry = 0;
+    std::uint64_t HostileActivityGuid = 0;
 };
 
 enum class PartialDeathAdmission : std::uint8_t
@@ -43,6 +45,42 @@ enum class PartialDeathAdmission : std::uint8_t
     Hold,
     ReleaseAfterNativeReset,
 };
+
+inline constexpr bool IsAttributablePartialTrashDeath(
+    PartialDeathObservation const& observation,
+    std::string_view routeKind)
+{
+    bool const hostileScopeMatches =
+        observation.HostileObservationAttemptId == observation.ExpectedAttemptId
+        && observation.HostileObservationRouteGeneration
+            == observation.RouteGeneration
+        && observation.HostileObservationNodeId == observation.NodeId;
+    bool const exactPartialRoster = observation.Active
+        && observation.RosterComplete
+        && observation.ExpectedPopulation
+            == observation.RaidExpectedPopulation
+        && observation.ActiveSize == observation.RaidExpectedPopulation
+        && observation.AliveSize > 0
+        && observation.AliveSize < observation.ActiveSize
+        && observation.PartialDeathState;
+
+    // A trash casualty may release while its pack is still active.  The
+    // current route/node/attempt, observed hostile identity, and the nonzero
+    // survivor count provide the attribution; a full wipe still needs the
+    // native reset latch below.
+    return routeKind == "trash"
+        && exactPartialRoster
+        && observation.AttemptId
+        && observation.ExpectedAttemptId
+        && observation.AttemptId == observation.ExpectedAttemptId
+        && observation.RouteGeneration
+        && !observation.NodeId.empty()
+        && hostileScopeMatches
+        && observation.HostileActivityActive
+        && observation.HostileActivityEntry
+        && observation.HostileActivityGuid
+        && !observation.EncounterInProgress;
+}
 
 inline constexpr PartialDeathAdmission EvaluatePartialDeathAdmission(
     PartialDeathObservation const& observation)
