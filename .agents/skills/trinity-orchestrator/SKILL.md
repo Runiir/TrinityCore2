@@ -97,6 +97,12 @@ provisioning, and DVC publication. Never mutate a live frozen checkout.
 Use `pixi run python -m tools.raid_program.queued_build status --compact` to
 check admission; the full status includes historical receipts and is unnecessary
 for deciding whether another build is active.
+For a matched rebuild, read `policy_id` from the baseline build receipt and pass
+that exact policy with `--policy` to configure, build and receipt verification.
+Do not assume the CLI's default policy or guess a `-j` spelling. Policy-bound
+builds require the exact CMake invocation; configure arguments come from
+`queued_build.expected_build_configuration(policy)`, with `-S . -B build` and
+the policy's generator. Retain the successful argv once and reuse it on resumes.
 Python uses pixi; code/configuration use Git; generated evidence uses DVC. Reuse exact verified assets,
 verify remote copies, and evict only exact duplicate payloads.
 

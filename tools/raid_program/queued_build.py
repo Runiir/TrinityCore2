@@ -674,7 +674,8 @@ def validate_command(
             "--target", "worldserver", "--parallel", str(compiler_jobs),
         ]
         if list(command) != expected:
-            raise CoordinatorError("worldserver build command differs from exact policy invocation")
+            raise CoordinatorError("worldserver build command differs from exact policy invocation; expected: "
+                                   + shlex.join(expected))
         executable = Path(expected[0])
         if not executable.is_file() or sha256_file(executable) != controls.get(
             "cmake_executable_sha256"
