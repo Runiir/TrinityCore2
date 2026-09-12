@@ -3,6 +3,39 @@
 Use this procedure when a native encounter appears wrong or lacks an implementation.
 Keep the boss-specific values in its dossier/contract/ledger, not in this skill.
 
+## Shortest useful resume
+
+Read the compact ledger view, select one unresolved claim, then follow only the
+section below that addresses it. Reuse unchanged source captures and published
+run identities. A resume does not require repeating report discovery, client
+extraction, simulator generation or a live pull.
+
+For a retained run, render directly from its verified archive:
+
+```bash
+pixi run python -m tools.raid_program.bot_timeline \
+  --raw-archive <verified-archive> --raw-member <exact-raw-jsonl-member> \
+  --report <original-report.json> --summary <summary.json> --html <timeline.html>
+```
+
+The archive reader does not extract the raw payload. Omit `--output` when the
+summary and inspectable HTML suffice; a second complete timeline JSON duplicates
+the HTML's embedded model. Keep original capture provenance separate from the
+renderer revision. Hydrate only the named DVC object and needed report member.
+
+Choose the next action from the missing observation:
+
+- Present in retained records: fix or use the consumer, then replay.
+- Missing external value: inspect one relevant WCL/client/addon source.
+- Missing native stage or outcome: capture that field through the existing
+  durable stream, then run one reviewed completion-watchdog attempt.
+- Supported reference and observed native mismatch: hand off the bounded repair.
+
+Update the existing claim and current status in place. Do not create another
+handoff document containing copies of the same receipts. Standalone DVCLive
+research bundles use `Live(..., save_dvc_exp=False, dvcyaml=False)` so analysis
+tracking does not rewrite the repository's pipeline.
+
 ## Separate execution from reference data
 
 Read both `execution_target` and `fidelity_target` in the acceptance policy.
@@ -80,6 +113,15 @@ attempt counts from surviving callbacks, or fit a multiplier from unmatched
 calculation stages. Preserve sequence/epoch/attempt binding when selecting rows.
 Only request new instrumentation for specific stages or outcomes absent in the
 retained records; preserve the original capture and publish replay separately.
+
+For instrumented melee, use the timeline's **Native melee stages** table and
+`melee_resolution` event details. Follow `related_event_sequence` from the
+health callback to its resolution in the same bound combat stream. Compare the
+weapon roll, done/taken modifiers, script hook, armor, hit outcome and absorption
+as separate stages. `resolved_damage_amount` precedes `DealDamage`; only the
+linked damage callback observes health loss. A missing callback is unknown, even
+when the resolution was a miss or had zero resolved damage. Legacy runs cannot
+gain these missing native observations through replay.
 
 ## Resolve timing semantics before changing a constant
 

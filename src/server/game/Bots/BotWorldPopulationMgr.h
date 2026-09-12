@@ -3,6 +3,7 @@
 
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
+#include "Entities/Unit/MeleeDamageResolutionObservation.h"
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/BotWorldPopulationMgrRouteState.h"
 #include "Bots/BotWorldPopulationMgrBotState.h"
@@ -52,6 +53,7 @@ class Quest;
 class Unit;
 class WorldObject;
 struct BotClassSpecActionProfile;
+struct CalcDamageInfo;
 namespace BotHealSelection
 {
 struct Diagnostic;
@@ -176,8 +178,9 @@ public:
     void NotifyCombatAttackAttempt(Unit* attacker, Unit* victim);
     void PrepareCombatPeriodicOutcome(Unit* attacker, Unit* victim,
         uint32 spellId, bool critical, float critChancePct);
+    uint64 NotifyCombatMeleeResolution(CalcDamageInfo const& damageInfo);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
-        uint32 damageType, uint32 schoolMask);
+        uint32 damageType, uint32 schoolMask, uint64 relatedEventSequence = 0);
     void NotifyDragonwrathCopyProcAttempt(Unit* caster, uint32 originalSpellId,
         uint32 castResult, bool accepted);
     uint64 NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);
@@ -874,7 +877,8 @@ private:
         uint64 timestampMs, bool sharedDamage = false);
     void AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target, uint32 spellId,
         uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
-        uint64 timestampMs, bool sharedDamage = false);
+        uint64 timestampMs, bool sharedDamage = false, uint64 relatedEventSequence = 0,
+        MeleeDamageResolutionObservation const* meleeResolution = nullptr);
 
 #include "Bots/BotWorldPopulationMgrCalibrationMetrics.h"
     static void ObserveCalibrationEffectiveStats(Unit const* unit,

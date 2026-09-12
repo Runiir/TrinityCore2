@@ -24,7 +24,7 @@ def incoming_damage(rows: list[dict]) -> tuple[list[dict], dict]:
         if row.get("kind") != "damage" or row.get("_perspective") != "damage_taken":
             continue
         event = {key: row.get(key) for key in (
-            "event_sequence", "actor_guid", "source_guid", "source_entry", "source_name",
+            "event_sequence", "related_event_sequence", "actor_guid", "source_guid", "source_entry", "source_name",
             "target_guid", "target_entry", "target_name", "spell_id", "spell_name",
             "effect_type", "school_mask", "raw_amount", "route_generation", "route_node_id", "shared_damage",
         )}

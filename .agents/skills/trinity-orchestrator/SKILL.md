@@ -93,8 +93,11 @@ fixture revision bookkeeping, or sealed movement checkpoints for ordinary develo
 Full qualification and training promotion retain their specific checks.
 
 Serialize heavyweight builds through queued_build, shared worldserver ownership,
-provisioning, and DVC publication. Never mutate a live frozen checkout. Python uses pixi;
-code/configuration use Git; generated evidence uses DVC. Reuse exact verified assets,
+provisioning, and DVC publication. Never mutate a live frozen checkout.
+Use `pixi run python -m tools.raid_program.queued_build status --compact` to
+check admission; the full status includes historical receipts and is unnecessary
+for deciding whether another build is active.
+Python uses pixi; code/configuration use Git; generated evidence uses DVC. Reuse exact verified assets,
 verify remote copies, and evict only exact duplicate payloads.
 
 A real tool/account/resource failure may require external input; ordinary fixture,

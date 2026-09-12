@@ -68,7 +68,7 @@ def test_combat_damage_perspective_schema_keeps_legacy_values_and_adds_friendly_
     assert "HealingReceived = 3" in planning
     assert "FriendlyDamageDone = 4" in planning
     assert '"friendly_damage_done"' in status
-    assert '"combat_log_schema_version\\":3' in status
+    assert '"combat_log_schema_version\\":4' in status
     assert '"damage_attribution_schema\\":\\"originated_amount_v2_friendly_split\\"' in status
 
 

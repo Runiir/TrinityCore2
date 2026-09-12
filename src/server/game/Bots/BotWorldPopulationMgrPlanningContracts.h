@@ -421,6 +421,9 @@
         uint32 OriginatedAmount = 0;
         uint32 RawAmount = 0;
         uint32 AbsorbedAmount = 0;
+        uint64 RelatedEventSequence = 0;
+        bool HasMeleeResolution = false;
+        MeleeDamageResolutionObservation MeleeResolution;
         float SourceX = 0.0f;
         float SourceY = 0.0f;
         float SourceZ = 0.0f;

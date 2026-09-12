@@ -46,8 +46,8 @@ def _full(events):
             "abilities": [_ability(e) for e in events], "recent_events": events}
 
 
-def _delta_frames(events, before, after):
-    payload = {"ok": True, "action": "botauto_combatlog_delta", "combat_log_schema_version": 3,
+def _delta_frames(events, before, after, schema=3):
+    payload = {"ok": True, "action": "botauto_combatlog_delta", "combat_log_schema_version": schema,
                **IDENTITY, "combat_log_epoch": 3, **PROFILE, "event_count_at_export": after,
                "cursor_before": before, "cursor_after": after, "gap": False, "recent_events": events}
     raw = json.dumps(payload, separators=(",", ":")).encode()
@@ -69,6 +69,69 @@ def _report(failed=False):
             "evidence_demux": {"canonical_identity_sha256": "a" * 64},
             "combat_log_event_stream": {"identity": {**IDENTITY, "combat_log_epoch": 3},
                                         "profile_context": PROFILE, "gap_ranges": []}}
+
+
+def test_melee_stages_and_zero_callback_survive_delta_eviction_without_extra_damage():
+    resolution = {**_event(1, 500, amount=0), "kind": "melee_resolution",
+                  "source_guid": 99, "source_entry": 41570, "target_guid": 8,
+                  "target_entry": 0, "actor_guid": 8, "actor_name": "Tank",
+                  "melee_resolution_sequence": 1, "melee_resolution": {
+                      "weapon_roll_amount": 9000, "after_attacker_bonus_amount": 9000,
+                      "after_target_bonus_amount": 6300, "after_script_hook_amount": 6300,
+                      "after_armor_amount": 2808, "absorbed_amount": 2808,
+                      "resolved_damage_amount": 0, "hit_outcome": 0}}
+    callback = {**resolution, "kind": "damage", "event_sequence": 2,
+                "timestamp_ms": 501, "related_event_sequence": 1, "amount": 0}
+    callback.pop("melee_resolution")
+    missed = {**resolution, "event_sequence": 3, "timestamp_ms": 600,
+              "melee_resolution_sequence": 3}
+    outgoing = _event(4, 1000)
+    report = _report(failed=True)
+    model, summary = build_timeline_from_rows([
+        *[_bound("combat_log", r) for r in _delta_frames([resolution, callback, missed], 0, 3, schema=4)],
+        _bound("combat_log", _full([outgoing])),
+    ], report)
+    observed = [e for e in model["events"] if e["kind"] == "melee_resolution"]
+    assert len(observed) == 2
+    assert observed[0]["melee_resolution"] == resolution["melee_resolution"]
+    assert observed[0]["health_correlation"] == "matched"
+    assert observed[0]["health_damage"] == 0
+    assert observed[0]["health_event_sequence"] == 2
+    assert observed[1]["health_correlation"] == "no_correlated_health_callback"
+    assert observed[1]["health_damage"] is None
+    assert model["actors"]["8"]["name"] == "Tank"
+    assert summary["accounting"]["hostile_originated_damage"] == 10
+    assert summary["incoming_damage"]["groups"][0]["events"] == 1
+    assert summary["melee_resolutions"]["observations"] == 2
+    assert _embedded_model(render_timeline_html(model))["events"] == model["events"]
+
+
+@pytest.mark.parametrize("change,state", [
+    ({"target_guid": 9}, "inconsistent_health_callback_identity"),
+    ({"source_entry": 999}, "inconsistent_health_callback_identity"),
+    ({"timestamp_ms": 99}, "inconsistent_health_callback_identity"),
+    ({"related_event_sequence": True}, "no_correlated_health_callback"),
+])
+def test_melee_health_join_requires_explicit_consistent_identity(change, state):
+    from tools.raid_program.bot_timeline_melee import melee_resolutions
+    resolution = {"kind": "melee_resolution", "event_sequence": 1, "timestamp_ms": 100,
+                  "actor_guid": 7, "source_guid": 99, "target_guid": 7, "source_entry": 41570, "target_entry": 0}
+    callback = {**resolution, "kind": "damage", "event_sequence": 2, "timestamp_ms": 101,
+                "related_event_sequence": 1, "amount": 123, **change}
+    events, _ = melee_resolutions([resolution, callback])
+    assert events[0]["health_correlation"] == state
+    assert events[0]["health_damage"] is None
+
+
+def test_melee_health_join_does_not_sum_ambiguous_callbacks():
+    from tools.raid_program.bot_timeline_melee import melee_resolutions
+    resolution = {"kind": "melee_resolution", "event_sequence": 1, "timestamp_ms": 100,
+                  "actor_guid": 7, "source_guid": 99, "target_guid": 7, "source_entry": 41570, "target_entry": 0}
+    callback = {**resolution, "kind": "damage", "event_sequence": 2, "timestamp_ms": 101,
+                "related_event_sequence": 1, "amount": 123}
+    events, _ = melee_resolutions([resolution, callback, {**callback, "event_sequence": 3}])
+    assert events[0]["health_correlation"] == "ambiguous_health_callbacks"
+    assert events[0]["health_damage"] is None
 
 
 def test_incoming_damage_survives_delta_and_zero_health_without_becoming_dps():

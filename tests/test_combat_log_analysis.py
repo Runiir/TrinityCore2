@@ -821,6 +821,7 @@ def test_live_validation_reassembles_bounded_calibration_status_chunks():
     assert report["combat_calibration"]["window_complete"] is True
     assert report["combat_calibration"]["bots"][0]["damage"] == 5_382_659
     assert report["combat_calibration_transport"] == {
+        "attempted": True,
         "direct": False,
         "complete_marker": True,
         "expected_chunks": len(parts),

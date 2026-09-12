@@ -370,7 +370,8 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
 
 void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target,
     uint32 spellId, uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount,
-    uint32 absorbedAmount, uint64 timestampMs, bool sharedDamage)
+    uint32 absorbedAmount, uint64 timestampMs, bool sharedDamage, uint64 relatedEventSequence,
+    MeleeDamageResolutionObservation const* meleeResolution)
 {
     if (!actor || !source || !target)
         return;
@@ -401,6 +402,12 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.OriginatedAmount = sharedDamage ? 0 : amount;
     event.RawAmount = rawAmount;
     event.AbsorbedAmount = absorbedAmount;
+    event.RelatedEventSequence = relatedEventSequence;
+    if (meleeResolution)
+    {
+        event.HasMeleeResolution = true;
+        event.MeleeResolution = *meleeResolution;
+    }
     event.SourceX = source->GetPositionX();
     event.SourceY = source->GetPositionY();
     event.SourceZ = source->GetPositionZ();

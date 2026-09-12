@@ -2055,6 +2055,8 @@ def parser() -> argparse.ArgumentParser:
     run_parser.add_argument("command", nargs=argparse.REMAINDER)
     status_parser = commands.add_parser("status")
     status_parser.add_argument("--no-recover", action="store_true")
+    status_parser.add_argument("--compact", action="store_true",
+                               help="Show active/queued work without historical build receipts")
     cancel_parser = commands.add_parser("cancel")
     cancel_parser.add_argument("ticket")
     commands.add_parser("recover")
@@ -2091,7 +2093,17 @@ def main(arguments: Sequence[str] | None = None) -> int:
             print(json.dumps(receipt, indent=2, sort_keys=True))
             return returncode
         if args.action == "status":
-            print(json.dumps(status(paths, recover=not args.no_recover), indent=2, sort_keys=True))
+            report = status(paths, recover=not args.no_recover)
+            if args.compact:
+                active_ids = set(report["queue"])
+                if report["active"]:
+                    active_ids.add(report["active"])
+                report["tickets"] = {
+                    ticket_id: {key: ticket.get(key) for key in
+                                ("state", "worktree", "commit", "resource_class", "requested_at_utc", "heartbeat_at_utc")}
+                    for ticket_id, ticket in report["tickets"].items() if ticket_id in active_ids
+                }
+            print(json.dumps(report, indent=2, sort_keys=True))
             return 0
         if args.action == "cancel":
             print(json.dumps(cancel_ticket(paths, args.ticket), indent=2, sort_keys=True))

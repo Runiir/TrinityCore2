@@ -226,8 +226,32 @@ void BotWorldPopulationMgr::PrepareCombatPeriodicOutcome(Unit* attacker,
         Cohort().Id, Cohort().AttemptId, true };
 }
 
+uint64 BotWorldPopulationMgr::NotifyCombatMeleeResolution(CalcDamageInfo const& damageInfo)
+{
+    Unit* attacker = damageInfo.Attacker;
+    Unit* victim = damageInfo.Target;
+    if (!attacker || !victim)
+        return 0;
+
+    CohortScope scope = ScopeCallbackCohort(attacker, victim);
+    if (!scope || !Cohort().Active)
+        return 0;
+
+    Player* sourceActor = FindCombatLogCohortPlayer(attacker);
+    Player* targetActor = FindCombatLogCohortPlayer(victim);
+    if (!sourceActor && !targetActor)
+        return 0;
+
+    uint64 const nowMs = NowMs();
+    uint64 const resolutionEventSequence = ++Party().CombatLogEventCount;
+    AddCombatLogEvent("melee_resolution", sourceActor ? sourceActor : targetActor,
+        attacker, victim, 0, uint32(DIRECT_DAMAGE), damageInfo.DamageSchoolMask,
+        0, 0, 0, nowMs, false, 0, &damageInfo.ResolutionObservation);
+    return resolutionEventSequence;
+}
+
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
-    uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
+    uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask, uint64 relatedEventSequence)
 {
     if (!attacker || !victim)
         return;
@@ -504,5 +528,6 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         AddCombatLogAggregate(CombatLogPerspective::DamageTaken, targetActor, attacker, victim, spellId,
             damageType, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
     AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
-        damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
+        damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs,
+        sharedDamage, relatedEventSequence);
 }

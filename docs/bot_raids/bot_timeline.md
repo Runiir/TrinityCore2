@@ -19,6 +19,16 @@ Legacy damage callbacks hardcode absorption to zero, so this view labels it
 unavailable. Zero health damage alone does not distinguish avoidance from
 absorption. These callbacks are not a complete count of swing attempts.
 
+Instrumented ordinary swings appear as `melee_resolution`. The native melee
+table follows the current filters and displays up to 500 matching swings; narrow
+the time range to inspect later rows. Its event details retain the weapon roll,
+each bonus/armor/outcome stage and loaded attacker inputs. These are resolution
+observations, not extra damage. `resolved_damage_amount` precedes `DealDamage`.
+Only a damage callback with the explicit `related_event_sequence` and matching
+actor/source/target supplies `health_damage`. Missing or conflicting callbacks
+stay unknown. `summary.melee_resolutions` reports observation and correlation
+counts. Older captures cannot recover these fields from final damage alone.
+
 The HTML embeds the complete model as deterministic gzip/base64 and expands it
 inside the browser without a network dependency. Event details are rendered on
 expansion. Use a browser with `DecompressionStream` support; loading failures

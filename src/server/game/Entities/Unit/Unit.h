@@ -20,6 +20,7 @@
 
 #include "Object.h"
 #include "CombatManager.h"
+#include "MeleeDamageResolutionObservation.h"
 #include "SpellAuraDefines.h"
 #include "SpellDefines.h"
 #include "ThreatManager.h"
@@ -550,6 +551,7 @@ struct CalcDamageInfo
     ProcFlags ProcVictim;
     uint32 UnmitigatedDamage;    // Used only for rage calculation
     MeleeHitOutcome HitOutCome;  /// @todo remove this field (need use TargetState)
+    MeleeDamageResolutionObservation ResolutionObservation;
 };
 
 // Spell damage info structure based on structure sending in SMSG_SPELLNONMELEEDAMAGELOG opcode
@@ -874,7 +876,7 @@ class TC_GAME_API Unit : public WorldObject
 
         uint32 GetMaxSkillValueForLevel(Unit const* target = nullptr) const { return (target ? getLevelForTarget(target) : getLevel()) * 5; }
         static void DealDamageMods(Unit const* victim, uint32& damage, uint32* absorb);
-        static uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, uint32 unmitigatedDamage = 0, DamageEffectType damagetype = DIRECT_DAMAGE, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NORMAL, SpellInfo const* spellProto = nullptr, bool durabilityLoss = true);
+        static uint32 DealDamage(Unit* attacker, Unit* victim, uint32 damage, uint32 unmitigatedDamage = 0, DamageEffectType damagetype = DIRECT_DAMAGE, SpellSchoolMask damageSchoolMask = SPELL_SCHOOL_MASK_NORMAL, SpellInfo const* spellProto = nullptr, bool durabilityLoss = true, uint64 relatedCombatEventSequence = 0);
         static void Kill(Unit* attacker, Unit* victim, bool durabilityLoss = true);
         void KillSelf(bool durabilityLoss = true) { Unit::Kill(this, this, durabilityLoss); }
         static void DealHeal(HealInfo& healInfo);
@@ -895,7 +897,7 @@ class TC_GAME_API Unit : public WorldObject
         static uint32 CalcMeleeAttackRageGain(Unit const* attacker, Unit const* victim, WeaponAttackType attType);
         static uint32 CalcDamageTakenRageGain(Unit const* victim, uint32 damage);
         void CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, WeaponAttackType attackType = BASE_ATTACK);
-        void DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss);
+        void DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss, uint64 resolutionEventSequence = 0);
         void HandleProcExtraAttackFor(Unit* victim);
 
         void CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 damage, SpellInfo const* spellInfo, WeaponAttackType attackType = BASE_ATTACK, bool crit = false, bool blocked = false);
@@ -1475,7 +1477,7 @@ class TC_GAME_API Unit : public WorldObject
         virtual bool IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index, WorldObject const* caster, bool requireImmunityPurgesEffectAttribute = false) const; // redefined in Creature
 
         static bool IsDamageReducedByArmor(SpellSchoolMask damageSchoolMask, SpellInfo const* spellInfo = nullptr);
-        static uint32 CalcArmorReducedDamage(Unit const* attacker, Unit* victim, const uint32 damage, SpellInfo const* spellInfo, WeaponAttackType attackType = MAX_ATTACK, uint8 attackerLevel = 0);
+        static uint32 CalcArmorReducedDamage(Unit const* attacker, Unit* victim, const uint32 damage, SpellInfo const* spellInfo, WeaponAttackType attackType = MAX_ATTACK, uint8 attackerLevel = 0, float* effectiveArmor = nullptr);
         static uint32 CalcSpellResistedDamage(Unit const* attacker, Unit* victim, uint32 damage, SpellSchoolMask schoolMask, SpellInfo const* spellInfo);
         static void CalcAbsorbResist(DamageInfo& damageInfo);
         static void CalcHealAbsorb(HealInfo& healInfo);

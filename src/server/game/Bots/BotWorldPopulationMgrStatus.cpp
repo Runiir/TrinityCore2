@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
+#include "Bots/BotMeleeResolutionEventJson.h"
 #include "Bots/BotWorldTraceExportCursor.h"
 
 #include "CellImpl.h"
@@ -421,6 +422,14 @@ void BotWorldPopulationMgr::AppendCombatLogEventJson(std::ostringstream& json,
          << ",\"originated_amount\":" << event.OriginatedAmount
          << ",\"raw_amount\":" << event.RawAmount
          << ",\"absorbed_amount\":" << event.AbsorbedAmount
+         << ",\"related_event_sequence\":";
+    if (event.RelatedEventSequence)
+        json << event.RelatedEventSequence;
+    else
+        json << "null";
+    if (event.HasMeleeResolution)
+        BotMeleeResolutionEventJson::Append(json, event.EventSequence, event.MeleeResolution);
+    json
          << ",\"source_x\":" << event.SourceX
          << ",\"source_y\":" << event.SourceY
          << ",\"source_z\":" << event.SourceZ
@@ -452,7 +461,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":3"
+    json << ",\"combat_log_schema_version\":4"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId
@@ -549,7 +558,7 @@ std::string BotWorldPopulationMgr::GetCombatLogDeltaJson(uint64 cursor, uint32 l
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog_delta\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":3"
+    json << ",\"combat_log_schema_version\":4"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId

@@ -591,9 +591,10 @@ class CombatLogEventStream:
             )
         namespace.response_count += 1
         rows = _event_rows(payload)
+        schema_supported = _integer(payload.get("combat_log_schema_version"), minimum=1) in (3, 4)
         if (
             payload.get("ok") is not True
-            or payload.get("combat_log_schema_version") != 3
+            or not schema_supported
             or cursor_before is None
             or cursor_after is None
             or event_count is None
@@ -601,7 +602,7 @@ class CombatLogEventStream:
         ):
             if payload.get("ok") is not True:
                 self._transport_rejections.append("delta_response_not_ok")
-            if payload.get("combat_log_schema_version") != 3:
+            if not schema_supported:
                 self._transport_rejections.append("delta_schema_version_invalid")
             self._transport_rejections.append("delta_cursor_or_events_invalid")
             return CombatLogDeltaResult(

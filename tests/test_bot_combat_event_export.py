@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -386,13 +387,14 @@ def test_combatlog_command_rejects_invalid_uint64_and_limit_inputs() -> None:
     assert '"usage: .botauto combatlog <cohort_id> delta <cursor> <limit>"' in command_body
 
 
-def test_schema3_delta_shape_is_accepted_by_event_stream_consumer() -> None:
+@pytest.mark.parametrize("schema", [3, 4])
+def test_supported_delta_shape_is_accepted_by_event_stream_consumer(schema) -> None:
     from tools.bot_ml.combat_log_event_stream import CombatLogEventStream, merge_event_rows
 
     stream = CombatLogEventStream(expected_cohort_id="raid")
     common = {
         "ok": True,
-        "combat_log_schema_version": 3,
+        "combat_log_schema_version": schema,
         "cohort_id": "raid",
         "server_epoch": 11,
         "attempt_id": 2,
