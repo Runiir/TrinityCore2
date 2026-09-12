@@ -36,7 +36,11 @@
     "repo_bwd_header",
     "repo_loader",
     "repo_sql_history",
-    "repo_tdb_snapshot"
+    "repo_tdb_snapshot",
+    "magmaw_client_59185_20260912",
+    "repo_magmaw_a4b9ab9bd7",
+    "local_dbm_r254_magmaw",
+    "wcl_xAhkN2y9YP3KRmnJ_10"
   ],
   "mode_matrix": {
     "10N": {
@@ -169,11 +173,13 @@
         "repository_initial": "90s",
         "repository_repeat": "95s",
         "repository_target": "current victim after VictimCheck",
-        "sweltering_armor_applied": true
+        "sweltering_armor_applied": true,
+        "sweltering_armor_client_and_native_duration_ms": 90000,
+        "sweltering_armor_retained_after_ejection": true
       },
-      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
-      "conflicts": ["Current Wowhead/Icy report 1-minute Sweltering Armor; Warcraft Tavern reports 2 minutes; spell duration is not audited here."],
-      "confidence": "credible_strategy_plus_repository_for_target_and_phase; damage_and_armor_duration_unresolved"
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw", "magmaw_client_59185_20260912", "repo_magmaw_a4b9ab9bd7"],
+      "conflicts": ["Guide duration conflict resolved by client and native DBC: 90 seconds. Current source retains Armor after ejection. Full WCL lifetime remains unobserved."],
+      "confidence": "credible_strategy_plus_repository_for_target_and_phase; damage_unresolved; armor_duration_client_and_native_confirmed"
     },
     {
       "key": "massive_crash",
@@ -299,7 +305,7 @@
     {"key": "mode_damage_and_health_scaling", "status": "fidelity_blocked", "detail": "Guide health figures are source-only; Crash prose/table and ability ranges do not provide a reliable 10N/10H/25N/25H mapping."},
     {"key": "parasite_spawn_count_and_scaling", "status": "fidelity_blocked", "detail": "Wowhead says up to 7; old non-Classic Icy material conflicts; repository does not hardcode a count."},
     {"key": "hook_player_count_and_tolerance", "status": "fidelity_blocked", "detail": "Current guides say up to 2 and old/Tavern text says 3; repository only establishes two pincers and both-hook condition."},
-    {"key": "sweltering_armor_duration", "status": "fidelity_blocked", "detail": "Current Wowhead/Icy say 1m, Warcraft Tavern says 2m; script confirms application/removal but not spell duration."},
+    {"key": "sweltering_armor_duration", "status": "fidelity_blocked", "detail": "Client and native DBC duration is 90s; current passenger ejection retains Armor. A longer WCL report is needed to observe its full lifetime."},
     {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
     {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}
   ],

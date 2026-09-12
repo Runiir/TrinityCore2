@@ -18,7 +18,7 @@ The [Magmaw timing and damage check](../../../magmaw_fidelity_20260912.md) super
 - Magmaw is immobile and is fought from melee range. Keep the tank at the boss and keep the rest of the raid out of the pillar marker; a tank out of melee causes the repository AI to cast Molten Tantrum instead of Magma Spit.
 - Pillar of Flame selects a non-vehicle target and prefers a target more than 15 yards from Magmaw when one exists. Move out of the impact area and control the Lava Parasites; do not infer an exact parasite count from this repository.
 - Mangle is a tank event in the current implementation and in both current strategy guides. During the Mangle/Crash sequence, stop normal damage, avoid Massive Crash, put one player on each available pincer, and apply both hooks to the same target. The two-hook condition is repository-confirmed; exact retail interaction tolerance is guide-reported and unresolved below.
-- A successful impale exposes the head for a 30-second, +100% damage window in both current guides. Retarget the exposed head, then expect the ordinary phase to resume. The code also applies Sweltering Armor to the Mangle passenger and removes it when that passenger leaves; duration is a spell-data question, not established by the script.
+- A successful impale exposes the head for a 30-second, +100% damage window in both current guides. Retarget the exposed head, then expect the ordinary phase to resume. The current code applies Sweltering Armor to the Mangle passenger and keeps it after ejection. Client and runtime DBC duration is 90 seconds with -50% armor; the old removal claim was stale.
 - Heroic only: Nefarian is summoned at engage, casts Blazing Inferno/construct events, and starts Shadow Breath when Magmaw is damaged below 30%. Normal modes have no Nefarian add in the repository.
 
 ## Difficulty matrix
@@ -44,7 +44,7 @@ Guide-reported values requiring caution:
 - Wowhead also reports Molten Tantrum as +100% damage every 1.5 seconds, stacking 10 times (up to +1000%). Its heroic Inferno report gives a 4-second meteor delay, roughly 75k within 4 yards, and fire trails lasting 50 seconds at roughly 55k per hit. These are guide values, not mode-complete tuning.
 - The same Wowhead page's ability table instead lists ranges of 39,375–50,625 (Spit), 14,800–17,200 (Spew), 29,250–30,750 (Pillar), 154,649–179,728 (Mangle), and 157,250–182,750 (Crash), without a dependable mode mapping. The Crash narrative/table conflict is unresolved; neither range is a bot contract.
 - Current Wowhead/Icy report up to two players mounting and both hooks being required; old Icy material and the Warcraft Tavern strategy text mention three melee players. The repository has exactly two pincer body parts and requires both hook auras, so “two” is the implementation contract while retail player-count/tolerance remains unresolved.
-- Current Wowhead/Icy report Sweltering Armor for 1 minute; Warcraft Tavern says 2 minutes. Repository confirms application/removal but not duration. Treat duration as unresolved.
+- Current guide prose reports conflicting Sweltering Armor durations. The September 12 client/runtime check resolves the spell duration to 90 seconds; a longer WCL fight is still needed to observe its full lifetime.
 
 ## Timer ledger (not live-validated)
 

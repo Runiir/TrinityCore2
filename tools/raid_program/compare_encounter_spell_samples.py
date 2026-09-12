@@ -14,6 +14,8 @@ def compare(client: dict, observations: dict, difficulty_id: int) -> dict:
     rows = client['rows']['SpellEffect']
     samples = [dict(zip(observations['columns'], row, strict=True))
                for row in observations['samples']]
+    if not samples:
+        raise ValueError('no observations supplied')
     results = []
     for spell in sorted({row['spell_id'] for row in samples}):
         candidates = [r for r in rows if int(r['SpellID']) == spell
@@ -22,7 +24,12 @@ def compare(client: dict, observations: dict, difficulty_id: int) -> dict:
         if len(candidates) != 1:
             raise ValueError(f'{spell}: require one explicit difficulty/effect row')
         effect = candidates[0]
-        if int(effect['Effect']) != 2 or float(effect['EffectBonusCoefficient']) != 0:
+        zero_fields = ('EffectBonusCoefficient', 'EffectRealPointsPerLevel',
+                       'EffectPointsPerResource', 'BonusCoefficientFromAP',
+                       'Coefficient', 'ResourceCoefficient', 'Variance')
+        if (int(effect['Effect']) != 2
+                or any(field not in effect or float(effect[field]) != 0
+                       for field in zero_fields)):
             raise ValueError(f'{spell}: unsupported damage formula')
         base, die = int(effect['EffectBasePoints']), int(effect['EffectDieSides'])
         if die < 1:

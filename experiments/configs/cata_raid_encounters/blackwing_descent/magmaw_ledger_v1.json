@@ -10,9 +10,20 @@
   "encounter": "magmaw",
   "purpose": "source-and-timer ledger for Phase 0 research; no live-validation assertion",
   "scope": ["10N", "10H", "25N", "25H"],
-  "repository_revision_audited": "889d38cc9451c2b8104db142ce069593b4647a41",
+  "repository_revision_audited": "a4b9ab9bd7cefb66c27f3d92c43dfd2b3259d431",
+  "historical_repository_claim_revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+  "current_audit_scope": "Queue, spell values/durations and passenger ejection; unchanged historical claims retain their original source revision.",
   "retrieved_utc_date": "2026-09-12",
   "source_catalog": [
+    {
+      "id": "repo_magmaw_a4b9ab9bd7",
+      "title": "Current native Magmaw queue and passenger lifecycle",
+      "publisher": "local repository",
+      "revision": "a4b9ab9bd7cefb66c27f3d92c43dfd2b3259d431",
+      "paths": ["src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp", "src/server/game/AI/CoreAI/UnitAI.cpp"],
+      "accessed": "2026-09-12",
+      "authority": "current implementation; separate from external boss references"
+    },
     {
       "id": "wowhead_cata_magmaw_2024",
       "title": "Magmaw Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -559,7 +570,7 @@
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
-      "evidence_gap": "Client SpellMisc duration index23 resolves to90000ms; effect is -50% armor. Actual apply/remove lifecycle duration still needs a longer WCL fight."
+      "evidence_gap": "Client SpellMisc duration index23 resolves to90000ms; effect is -50% armor. Runtime DBC agrees; current passenger exit removes Mangle but keeps Sweltering Armor. A longer WCL fight is needed to observe the complete debuff lifetime."
     },
     {"key": "shadow_breath", "status": "fidelity_blocked", "evidence_gap": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies; exact Classic splash/cadence unknown."},
     {"key": "retail_credit_loot_and_achievement", "status": "unresolved", "evidence_gap": "Only repository DONE/FAIL and progression notification were audited."}
