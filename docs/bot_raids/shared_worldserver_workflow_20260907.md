@@ -7,14 +7,31 @@ in Git; failed assumptions and bounded next repairs belong in the
 ## Current work and latest native run
 
 The active objective is the Magmaw reference baseline, with 4.3.4 execution and
-4.4.2 tuning references. The latest native run is source `a4b9ab9bd7`:
+4.4.2 tuning references. The latest native run is source `36f8ab0bc3`. It wiped
+on `bwd.magmaw.drudges`, never reached Magmaw, and ended by the completion
+watchdog with `semantic_stall`. Cleanup passed. Its closed capture and review
+are in `artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc`.
+There is no boss DPS/HPS result from this attempt and no performance acceptance.
+
+The immediate work is ENC-001: compare this trash failure with the preceding
+successful run before changing or retrying gameplay. Both runs contain Fire
+mage 30007's unavailable escape, movement about 14.6 seconds later and death.
+The paired route action itself owned the movement resource; its movement
+candidate's conflict does not establish an independent blocker. The prior
+review's zero-trash-casualty baseline claim was incorrect: retained baseline
+raw contains four Drudge deaths before recovery and the boss clear. Its final
+watchdog counters had reset scope. The candidate-only full wipe remains
+unexplained; inspect the subsequent survival/recovery divergence. Boss-only staging edits
+are held and have not been built or live-validated. They do not repair this wipe.
+
+The preceding successful native run is source `a4b9ab9bd7`:
 150.254 seconds, 28,305,736 hostile originated damage, 188,385.907 exact raid
 DPS and 11,624.203 effective HPS over the same interval. It cleared with zero
 boss deaths among the bots. Its source, review, build and closed capture are in
 `artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc`.
 This is a development clear, not full fidelity or performance acceptance.
 
-Current edge is ENC-006. A retained-data replay recovered 24 Magmaw melee
+The pending boss-research edge is ENC-006. A retained-data replay recovered 24 Magmaw melee
 callbacks with native raw 4,466-8,012, 20,127 health damage and 17 zero-health
 callbacks. The timeline previously omitted incoming damage; the repaired view
 now exposes it without changing DPS/HPS. Raw is after done/taken modifiers and

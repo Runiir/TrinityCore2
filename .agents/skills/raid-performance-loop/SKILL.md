@@ -22,6 +22,14 @@ workers' status commands pointing to an already-fixed failure. Historical
 receipts stay immutable. A stale status is metadata to correct, not a reason
 to repeat an accepted experiment.
 
+When closing a run, update the linked workflow's latest-run paragraph and the
+active ledger edge together, including failures before the boss. Preserve the
+last successful baseline under its own label. An isolated boss experiment may
+answer a research question, but skipping failed trash does not resolve or
+validate that route regression.
+For route-wide survival comparisons, count retained death events in the same
+attempt and route window; final watchdog counters may reset at a node change.
+
 Use one repair loop: inspect the failed run, identify the earliest actionable mismatch,
 repair it, test the affected behavior, review risky changes, build, run, and close evidence.
 A worker or attempt ending does not end the user's task. Continue automatically after
