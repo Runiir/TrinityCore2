@@ -1,0 +1,82 @@
+{
+  "source_commit": "50495dd168b64cfae235bd1c221117bc27d2435f",
+  "artifact_kind": "selected_external_research",
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_research_closure_20260912.tar.gz.dvc",
+  "archive_sha256": "32eb9fa2575c5d6916ecb07d4b762f5544b175b182fb0586a79cfe4e2a7afbff",
+  "archive_bytes": 27998,
+  "members": [
+    {
+      "path": "client_complete_chains.json",
+      "bytes": 350530,
+      "sha256": "810ed90ff436b1902ba89ee330aa7a10f179051d05ea375b8bd107c7c175b0f5"
+    },
+    {
+      "path": "client_extraction_command.json",
+      "bytes": 2003,
+      "sha256": "1a6dd1281205f0b605a02c9611f43579ca96057eb9ff54f48e949e61d1693621"
+    },
+    {
+      "path": "client_mode_rolls.json",
+      "bytes": 8690,
+      "sha256": "9f32e90ee5bb9d784679196abdfe10c994da4713ffdbf0b5fa9f189c78b2a168"
+    },
+    {
+      "path": "client_trigger_rows.json",
+      "bytes": 178625,
+      "sha256": "a7b5b243430a801b10cbad8f37eec97d507a8e7a09c3b6d4364854674c66f846"
+    },
+    {
+      "path": "difficulty_rows.json",
+      "bytes": 2971,
+      "sha256": "5bf5baf2a0359ad631c370de21502fd6f86fb05f93cf59a059636ca14ceeff06"
+    },
+    {
+      "path": "head_activity_samples.json",
+      "bytes": 7197,
+      "sha256": "c2f00086716d5cb9335ce6f9d3c793413635aa73301d520f63ea8d1baa502e1a"
+    },
+    {
+      "path": "mangle_release_context.json",
+      "bytes": 959,
+      "sha256": "212c88dbea7751e5eb2f9d6d034f9642bb716e10e7c40eff905e2f6a0b1c8aa9"
+    },
+    {
+      "path": "official_patch_scope.json",
+      "bytes": 1638,
+      "sha256": "01644a0e1e7bcd4d8f943cdaef324a2f19c6d95063a6453b71252a3968e5b352"
+    },
+    {
+      "path": "research_metrics.json",
+      "bytes": 431,
+      "sha256": "93507e05bf5adf9ffd10a953ba0d61444a2007de7b88493017436765f177933e"
+    },
+    {
+      "path": "shadow_breath_comparison.json",
+      "bytes": 652,
+      "sha256": "1e2a7845c30f7bfbf3f7a688d324bf3fd353641f8a6ed8b5a494cc72df11a1e1"
+    },
+    {
+      "path": "shadow_breath_samples.json",
+      "bytes": 2226,
+      "sha256": "5729835b336a15e3a781dacd9acc0cf8c53513f3e1f82f4bf7c414d2362d4098"
+    },
+    {
+      "path": "validation.txt",
+      "bytes": 258,
+      "sha256": "51125c6d441f6553ce92f0981a1a39251970ac73e339472c853ff519a9b9eeb1"
+    }
+  ],
+  "remote_download_sha256": "32eb9fa2575c5d6916ecb07d4b762f5544b175b182fb0586a79cfe4e2a7afbff",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "dvc_push": "1 file pushed",
+  "verified_archive_copies_evicted": true,
+  "verified_local_bytes_evicted": 612176,
+  "compact_inputs_retained_at": null,
+  "cache_object_resolution": "repo.cache.local.oid_to_path(pointer md5)"
+}

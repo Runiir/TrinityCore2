@@ -83,6 +83,9 @@ dvc push, and verify the remote bytes with an empty-cache reconstruction. Preser
 pointer visibility and enough space for transport; never print private credentials.
 Evict exact verified duplicate payloads after diagnosis/review, retaining compact evidence
 and the remote reconstruction path. No broad DVC GC or unrelated worktree deletion.
+Resolve an exact cache object with `repo.cache.local.oid_to_path(pointer_hash)`;
+the cache object's root may already include `files/md5`. Do not append that
+layout again and mistake a nonexistent path for successful cache eviction.
 
 Do not admit development, stale, contaminated, unclassified, synthetic-only or incomplete
 runs to training. Full qualification retains complete attribution and independent outcome
