@@ -1,0 +1,66 @@
+{
+  "pointer": "artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz.dvc",
+  "md5": "99c0885d75816bd439d066bd3ae4e86e",
+  "sha256": "3a3ce4684cec1ff8e805feed7bc0e7ea4c9d5ea525359292c7dbde5139ec0d10",
+  "bytes": 55284349,
+  "empty_cache_remote_reconstruction_verified": true,
+  "members_verified": 51,
+  "verification_cache_evicted": true,
+  "evicted_exact_payloads": [
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/build-controller.log",
+      "bytes": 25029
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/configure-controller.log",
+      "bytes": 15611
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live/raw.jsonl",
+      "bytes": 79316
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live/report.json",
+      "bytes": 5830517
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live/report.timeline.json",
+      "bytes": 6598
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live/worldserver.log",
+      "bytes": 123400
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live-prepared/raw.jsonl",
+      "bytes": 381900250
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live-prepared/report.json",
+      "bytes": 7880066
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live-prepared/report.timeline.json",
+      "bytes": 213585732
+    },
+    {
+      "path": "/home/runiir/Games/trinity-native-wipe-recovery-20260912/live-prepared/worldserver.log",
+      "bytes": 378993114
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz",
+      "bytes": 55284349
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/99/c0885d75816bd439d066bd3ae4e86e",
+      "bytes": 55284349
+    }
+  ],
+  "evicted_logical_bytes": 1099008331,
+  "review_addendum": {
+    "pointer": "artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.review-addendum.json.dvc",
+    "sha256": "ecc97221e04b4a14767b290b9e2eb0de0fcc8e7216254a3607a2f89fed611e42",
+    "md5": "4b67fcb7be3e84ba8186cfd216eca794",
+    "empty_cache_remote_reconstruction_verified": true
+  }
+}

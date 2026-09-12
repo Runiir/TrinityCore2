@@ -7,29 +7,45 @@ in Git; failed assumptions and bounded next repairs belong in the
 ## Current work and latest native run
 
 The active objective is the Magmaw reference baseline, with 4.3.4 execution and
-4.4.2 tuning references. The latest native run is source `36f8ab0bc3`. It wiped
-on `bwd.magmaw.drudges`, never reached Magmaw, and ended by the completion
-watchdog with `semantic_stall`. Cleanup passed. Its closed capture and review
-are in `artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc`.
-There is no boss DPS/HPS result from this attempt and no performance acceptance.
+4.4.2 tuning references. Source `0f0a8c0382` cleared the original four-node route,
+including both trash sections, and killed Magmaw in 149.023 seconds at
+189,706.381 exact raid DPS and 14,021.688 effective HPS. Cleanup passed and
+retained combat/trace streams have no gaps. This is a development clear.
+Evidence: `artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz.dvc`.
 
-The immediate repair is the post-wipe recovery receipt. All ten bots released,
-ran back, re-entered instance 3 and became alive, but the tracker retained zero
-runback/re-entry/resurrection sequences and held them in
-`recovery_evidence_pending`. The admission receipt contained recovery entrance
-`0/0/0`; execution used the built-in BWD entrance while the tracker required a
-nonzero admitted trigger. The configuration repair declares `(6581, 0, 669)`
-on all seven BWD scenarios. Native DBC and live database readback confirm this
-entrance. Focused validation and live recovery acceptance are pending.
+REC-001's full-wipe deadlock is repaired in configuration. In the previous
+`36f8ab0bc3` run all ten bots physically released, ran back, re-entered and
+resurrected, but admission recorded entrance `0/0/0`. The tracker therefore
+rejected their runback evidence and held the alive cohort. All seven BWD
+scenarios now explicitly declare the DBC/database-verified entrance
+`(6581, 0, 669)`. The production tracker fixture covers actual ghost progress,
+re-entry/resurrection in the same update, and rejection of missing/mismatched
+observations. Independent review approved this configuration-only repair;
+19 focused scenario/recovery tests and the native build passed.
 
-Trash wipes are acceptable when bots recover, regroup and resume route progress;
-zero deaths are not the acceptance target. The preceding successful run also
-lost four bots on trash before recovery. Its final watchdog counters had reset
-scope, so the earlier review's zero-trash-casualty claim was wrong. Both runs
-contained the same roughly 14.6-second Fire mage escape delay. Different second
-Rush targets and healing pressure preceded the candidate's full wipe, but no
-causal telemetry regression was established. Boss-only staging remains held;
-it cannot prove recovery of the original route.
+The live admission now contains the correct entrance. Fire mage 30007 died on
+Drudges, released, ran back, re-entered and resurrected after 122.493 seconds;
+the full cohort then resumed and killed Magmaw. This run did not have a full wipe, so full-wipe recovery has fixture coverage but remains unexercised
+live. The controller's `native_recovery_accepted=true` is vacuous when
+`native_recovery_required=false`; it is not proof of observed recovery.
+Trash wipes are acceptable when bots recover, regroup and resume progress.
+Do not weaken native evidence checks or manufacture a wipe to claim acceptance.
+
+Overall boss DPS is 0.70% above the previous successful a4b9 run. This does not
+establish every class's correctness or complete boss fidelity. Fire DPS fell
+6.69%; Discipline DPS/HPS fell 24.38%/22.16%, while other actors improved.
+There is no blanket role-performance acceptance. The independent closed-run
+review separates per-bot changes, encounter clear and repair scope.
+The first setup-only launch rejected a missing fresh stat seed before admitting
+bots; canonical provisioning corrected it. It is not a failed gameplay canary.
+
+The preceding 36f8 failure and its corrected causal analysis remain attributable.
+Earlier baseline review incorrectly reported zero trash casualties because its
+final watchdog counters had reset scope. The a4b9 run lost four bots on trash
+and recovered; it did not exercise a full wipe. Both old runs contained the
+same roughly 14.6-second Fire mage escape delay. Different Rush targets and
+healing pressure preceded the 36f8 wipe, but no causal telemetry regression was
+established. Boss-only staging remains held and was not used for this clear.
 
 The preceding successful native run is source `a4b9ab9bd7`:
 150.254 seconds, 28,305,736 hostile originated damage, 188,385.907 exact raid
@@ -38,14 +54,15 @@ boss deaths among the bots. Its source, review, build and closed capture are in
 `artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc`.
 This is a development clear, not full fidelity or performance acceptance.
 
-The pending boss-research edge is ENC-006. A retained-data replay recovered 24 Magmaw melee
-callbacks with native raw 4,466-8,012, 20,127 health damage and 17 zero-health
-callbacks. The timeline previously omitted incoming damage; the repaired view
-now exposes it without changing DPS/HPS. Raw is after done/taken modifiers and
-before armor/outcome adjustment. WCL U uses a different mitigation boundary.
-Do not rerun merely to recover these already-retained values or guess a
-multiplier from their ratio. See the [current baseline](strategies/t11/blackwing_descent/magmaw.md)
-and `summary.incoming_damage` for evidence and the exact missing observations.
+The pending boss-research edge is ENC-006. The new capture now contains native
+melee calculation stages: 485 observations with all nine stage fields, 466
+matched health callbacks, and 19 unmatched swings explicitly marked as native
+misses. The retained incoming-damage view contains 23 ordinary Magmaw callbacks
+with raw 4,431-6,538 and 9,939 total health damage. These values are not WCL's
+unmitigated boundary; review the stage observations before choosing any damage
+modifier. No fresh capture is needed to obtain those stages. See the
+[current baseline](strategies/t11/blackwing_descent/magmaw.md) and the published
+closed-run review. Full 4.4.2 fidelity is still not accepted.
 
 The following b113 comparison is the prior diagnostic run, preserved for
 performance context. It does not supersede the later a4b9 capture.

@@ -32,6 +32,10 @@ staged. Do not hide unrelated SQL errors with blanket ignore behavior.
 Provision the exact cohort and read back native-loadable identities, roster, equipment,
 consumables, positions, and group/instance/corpse state. Serialize mutation of the shared
 worldserver and database. One cohort's cleanup must preserve other active instances.
+Use canonical selected-scenario provisioning before each fresh launch so the
+native full-stat seed is current. A prior run's provisioning is not a fresh seed.
+While capture is active, its server log is `.raid-phase1-worldserver-*.log.tmp`
+inside the output directory; parse bounded tails rather than printing full JSON.
 
 ## Capture and classify
 

@@ -36,6 +36,9 @@ eliminating every casualty. Keep the watchdog's death-loop and stall limits.
 Bind the recovery entrance in the first route's immutable admission receipt;
 an executor fallback must not differ from the identity required by its tracker.
 Source map zero is a valid map, not a missing entrance when the trigger is set.
+An accepted optional recovery gate does not prove recovery occurred. Read its
+required flag and full-route lifecycle events; distinguish partial casualties,
+a full wipe, and an unexercised branch. Final boss counters can omit trash deaths.
 
 Use one repair loop: inspect the failed run, identify the earliest actionable mismatch,
 repair it, test the affected behavior, review risky changes, build, run, and close evidence.
