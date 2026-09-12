@@ -16,6 +16,30 @@
   "retrieved_utc_date": "2026-09-12",
   "source_catalog": [
     {
+      "id": "wcl_FhcbnAmN9v7kr1VP_3",
+      "title": "PSA + BoT 25w",
+      "publisher": "Warcraft Logs",
+      "author": "Amaraaa",
+      "published_or_updated": "2024-11-03",
+      "accessed": "2026-09-12",
+      "url": "https://classic.warcraftlogs.com/reports/FhcbnAmN9v7kr1VP?fight=3",
+      "authority": "historical observed combat; target 4.4.2 compatibility unproven",
+      "mode": "25H",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_longer_wcl_20260912.tar.gz.dvc"
+    },
+    {
+      "id": "wcl_MxFq7TRbvnjGY1hJ_22",
+      "title": "10er WT feat. Wongel",
+      "publisher": "Warcraft Logs",
+      "author": "Amaraaa",
+      "published_or_updated": "2024-10-28",
+      "accessed": "2026-09-12",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ?fight=22",
+      "authority": "historical observed combat; target 4.4.2 compatibility unproven",
+      "mode": "10N",
+      "evidence_dvc": "artifacts/cata_raid_program/magmaw_longer_wcl_20260912.tar.gz.dvc"
+    },
+    {
       "id": "repo_magmaw_a4b9ab9bd7",
       "title": "Current native Magmaw queue and passenger lifecycle",
       "publisher": "local repository",
@@ -563,14 +587,14 @@
     {
       "key": "timers",
       "status": "fidelity_blocked",
-      "evidence_gap": "DBM predictions anchored and queue defect repaired. Short 10N WCL confirms Spew ticks only; long head-cycle and heroic observations remain missing."
+      "evidence_gap": "DBM predictions anchored and queue defect repaired. Longer historical 25H WCL observes two Mangles 95.558s apart, two Crashes and nine Spew sequences. Exact head targetability boundaries and target-era compatibility remain unresolved."
     },
     {"key": "parasite_count", "status": "fidelity_blocked", "evidence_gap": "Current guide says up to 7, old non-Classic guide conflicts, repository does not hardcode count."},
     {"key": "hooks", "status": "fidelity_blocked", "evidence_gap": "Current guides say up to two; Tavern/old Icy say three; repository proves two pincers and both-hook condition only."},
     {
       "key": "sweltering_armor_duration",
       "status": "fidelity_blocked",
-      "evidence_gap": "Client SpellMisc duration index23 resolves to90000ms; effect is -50% armor. Runtime DBC agrees; current passenger exit removes Mangle but keeps Sweltering Armor. A longer WCL fight is needed to observe the complete debuff lifetime."
+      "evidence_gap": "Pinned client/native duration is 90s. Historical 25H WCL observes 89.992s from 118.049 to 208.041. Target-era compatibility remains unproven. Historical 25H and 10N both apply Armor at Mangle removal, conflicting with native boarding application. See longer-kill addendum."
     },
     {"key": "shadow_breath", "status": "fidelity_blocked", "evidence_gap": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies; exact Classic splash/cadence unknown."},
     {"key": "retail_credit_loot_and_achievement", "status": "unresolved", "evidence_gap": "Only repository DONE/FAIL and progression notification were audited."}
@@ -590,5 +614,17 @@
     "first_broken_edge": "Two overdue events: Spew starts casting; Mangle is rejected as spell in progress but old code advances its phase sequence.",
     "fixture": "tests/test_magmaw_native_cast_queue.py",
     "scope": "Boss only; no class, bot policy, damage or unrelated encounter changes."
+  },
+  "longer_wcl_followup": {
+    "dossier": "docs/bot_raids/magmaw_longer_wcl_20260912.md",
+    "source_refs": [
+      "wcl_FhcbnAmN9v7kr1VP_3",
+      "wcl_MxFq7TRbvnjGY1hJ_22"
+    ],
+    "mangle_repeat_25H_seconds": 95.558,
+    "armor_lifetime_25H_seconds": 89.992,
+    "armor_application": "observed at Mangle removal in both reports; native applies on boarding",
+    "implementation_status": "repair_candidate_target_era_compatibility_unproven",
+    "head_targetability_windows": "unresolved; vulnerability aura alone is insufficient"
   }
 }

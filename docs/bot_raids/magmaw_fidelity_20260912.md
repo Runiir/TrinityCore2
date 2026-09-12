@@ -65,3 +65,5 @@ The first recorded native Spew damage was at +47.020s, followed by ticks near +4
 An earlier launch stopped before bot admission because the persisted stat seed was not freshly provisioned. Existing canonical provisioning corrected that setup failure. It is retained as a failed preflight, not boss evidence.
 
 The bounded Magmaw queue repair and canary are closed. Remaining work is explicit: explain the missing early Spew outcome, obtain longer compatible WCL coverage for head/Mangle and other modes, and diagnose tank activity separately before accepting overall performance.
+
+Follow-up: [longer WCL kills](magmaw_longer_wcl_20260912.md) now provide historical Mangle cycles and a full Armor lifetime, and identify an Armor application-anchor discrepancy. Target-era compatibility and exact head boundaries remain unresolved.

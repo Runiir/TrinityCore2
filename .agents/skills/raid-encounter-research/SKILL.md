@@ -24,6 +24,11 @@ URL, title, publisher/author when available, publication/update date, retrieval
 date, exact mode, and the bounded claim it supports. Do not cite a search result
 or another dossier as the source.
 
+For suspected timer, damage or phase bugs, follow
+[the reproducible boss research procedure](references/reproduce-boss-research.md).
+It covers longer WCL kill selection, browser extraction, addon event anchors,
+client/native spell chains and the bounded implementation handoff.
+
 ## Build the claim ledger
 
 Follow [references/claim-ledger.md](references/claim-ledger.md). Research both:
