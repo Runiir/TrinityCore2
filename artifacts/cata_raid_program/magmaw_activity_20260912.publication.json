@@ -1,0 +1,62 @@
+{
+  "pointer": "artifacts/cata_raid_program/magmaw_activity_20260912.tar.gz.dvc",
+  "md5": "a601bbe2d6db6409278d982c318acd38",
+  "sha256": "f0acbb4b83990e21c7ec9ff8d837272d2c4f4e68d4e5d10a8a7acd262952bf2d",
+  "bytes": 57703411,
+  "empty_cache_remote_reconstruction_verified": true,
+  "members_verified": 58,
+  "verification_cache_evicted": true,
+  "evicted_exact_payloads": [
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/configure-controller.log",
+      "bytes": 15529
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/failed-13e89-configure-controller.log",
+      "bytes": 15534
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/failed-13e89-worldserver_build-controller.log",
+      "bytes": 544944
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/live-prepared/raw.jsonl",
+      "bytes": 398859709
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/live-prepared/report.json",
+      "bytes": 8023941
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/live-prepared/report.timeline.json",
+      "bytes": 221728194
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/live-prepared/worldserver.log",
+      "bytes": 395743207
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/worldserver_build-controller.log",
+      "bytes": 315306
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_activity_20260912.tar.gz",
+      "bytes": 57703411
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/a6/01bbe2d6db6409278d982c318acd38",
+      "bytes": 57703411
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/raw.jsonl",
+      "bytes": 381900250,
+      "already_published_pointer": "artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz.dvc"
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-activity-20260912/report.json",
+      "bytes": 7880066,
+      "already_published_pointer": "artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz.dvc"
+    }
+  ],
+  "evicted_logical_bytes": 1530433502
+}
