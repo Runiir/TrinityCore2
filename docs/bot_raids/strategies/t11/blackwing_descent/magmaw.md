@@ -1,6 +1,8 @@
 # Magmaw research baseline
 
-Target: Cataclysm Classic 4.4.2.59185, enUS, hotfix cutoff February 20, 2025. Scope: 10N, 25N, 10H and 25H. The [claim ledger](../../../../../experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json) is the quantitative authority; this dossier is its working summary.
+Tuning reference: Cataclysm Classic 4.4.2.59185, enUS, hotfix cutoff February 20, 2025. Execution target: 4.3.4 build-15595 client and server. Scope: 10N, 25N, 10H and 25H. The [claim ledger](../../../../../experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json) is the quantitative authority; this dossier is its working summary.
+
+The September 12 local inspection confirmed the running client's directory as `/home/runiir/Games/Cataclysm-4.3.4.15595-enUS-x64`; its Sound.log reports 4.3.4 (15595). Its installed Magmaw DBM module is revision 7661, separate from the Classic module previously researched under `_whitemane-60895_`. The legacy module also predicts 22s Spew, 32.5s Pillar (comment allows 30-40s), 90s first/95s repeat Mangle and 30s exposure. Agreement corroborates predictions, not server cast timing. No WoWCombatLog.txt was present at inspection, and addon loading was not verified. Existing Prat ChatLog code uses LoggingCombat(1/0), so standard client logging is the first capture option. This inspection supplies no new damage observation and does not close the melee-pressure or cast-outcome gaps.
 
 The packet supports bounded repairs. Full four-mode fidelity and training admission remain blocked. Research specifies what a live check must observe; implementation validation supplies that observation. A boss clear does not establish correct incoming damage, class performance or mechanic execution.
 

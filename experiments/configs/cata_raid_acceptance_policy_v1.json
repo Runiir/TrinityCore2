@@ -1,6 +1,13 @@
 {
   "schema_version": 1,
   "policy_id": "cata_raid_acceptance_policy_v1",
+  "execution_target": {
+    "client_patch": "4.3.4",
+    "client_build": 15595,
+    "server_protocol": "4.3.4",
+    "tuning_reference": "fidelity_target",
+    "semantics": "Run the 4.3.4 client and server with the resolved 4.4.2 tuning values. fidelity_target.client_build identifies reference data, not the required connecting client. Map reference effects into native spell families and validate final server outcomes; protocol compatibility alone does not prove mechanic parity."
+  },
   "fidelity_target": {
     "product": "Cataclysm Classic",
     "patch": "4.4.2",

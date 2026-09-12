@@ -3,6 +3,33 @@
 Use this procedure when a native encounter appears wrong or lacks an implementation.
 Keep the boss-specific values in its dossier/contract/ledger, not in this skill.
 
+## Separate execution from reference data
+
+Read both `execution_target` and `fidelity_target` in the acceptance policy.
+This project runs a 4.3.4 build-15595 client/server with resolved 4.4.2 tuning.
+The reference build is not a requirement to upgrade the connecting client.
+Identify the running executable's directory and its build log before selecting
+addons or data. Separate installations can contain different DBM releases.
+
+Use the execution client's combat log to corroborate delivered damage, casts,
+auras and deaths. Its local spell tables and tooltips describe execution-era
+data; they do not independently establish the intended 4.4.2 values. Retain the
+reference spell/difficulty mapping and native overrides/corrections separately.
+Do not copy newer DB2 files into legacy DBC directories or alter tooltips to
+make a comparison pass.
+
+Prefer existing client combat logging before adding another logger. For the
+installed legacy client, `LoggingCombat(1)` starts capture and
+`LoggingCombat(0)` stops it through `/run`. Check the resulting
+`Logs/WoWCombatLog.txt`; a command or installed addon alone does not prove
+capture. Bind the file to the native attempt using common GUID/spell events
+and an explicit timestamp offset, checking drift across the pull. Preserve
+missing fields and observer coverage limits. A spectator cannot reveal every
+bot's rejected candidates, intended target, LOS decision or pre-defense roll;
+join native telemetry for those questions. Publish only the bounded attempt
+slice with identity and capture coverage, verify DVC remote content, then
+remove exact unneeded copies. Never truncate an active log.
+
 ## Choose evidence that covers the failure
 
 1. Run `pixi run python -m tools.raid_program.raid_workloop boss <raid> <boss> --mode 10N` (modes are case-sensitive: 10N, 10H, 25N, 25H). Read the paths it emits and the pinned client build/hotfix cutoff. A newer upload or a Classic-branded page does not establish build compatibility.
