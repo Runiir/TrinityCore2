@@ -1,0 +1,44 @@
+{
+  "pointer": "artifacts/cata_raid_program/magmaw_mobility_readiness_20260912.tar.gz.dvc",
+  "md5": "549700ae224ec8fd251d64359ebeb2da",
+  "sha256": "0a37e8a4218015b12310a3f43bf28ee17fc779b39f501c4c484fd01a20754d40",
+  "bytes": 55428306,
+  "empty_cache_remote_reconstruction_verified": true,
+  "members_verified": 35,
+  "verification_cache_evicted": true,
+  "evicted_exact_payloads": [
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-mobility-readiness-20260912/configure-controller.log",
+      "bytes": 15532
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-mobility-readiness-20260912/live-prepared/raw.jsonl",
+      "bytes": 381467958
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-mobility-readiness-20260912/live-prepared/report.json",
+      "bytes": 7948742
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-mobility-readiness-20260912/live-prepared/report.timeline.json",
+      "bytes": 210893205
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-mobility-readiness-20260912/live-prepared/worldserver.log",
+      "bytes": 378476458
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-mobility-readiness-20260912/worldserver_build-controller.log",
+      "bytes": 26516
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_mobility_readiness_20260912.tar.gz",
+      "bytes": 55428306
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/54/9700ae224ec8fd251d64359ebeb2da",
+      "bytes": 55428306
+    }
+  ],
+  "evicted_logical_bytes": 1089685023
+}

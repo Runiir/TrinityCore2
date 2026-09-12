@@ -6,35 +6,48 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The wider objective remains the Magmaw reference baseline. The current repair
-is DPS-040: rejected native directional mobility changes facing before cooldown
-or GCD rejection. Source `b5215c35b6` cleared the original four-node route and
-killed Magmaw in 180.401 seconds at 161,490.396 exact raid DPS and 17,145.903
-effective HPS. Cleanup and telemetry completeness passed; all ten survived the
-boss. This is a development clear with performance acceptance rejected.
+The wider objective remains the Magmaw reference baseline. The latest source
+`c5700590e7` cleared the original four-node route and killed Magmaw in 147.272
+seconds at 191,961.907 exact raid DPS and 12,169.034 effective HPS. All ten
+survived the boss, cleanup passed, and combat/trace streams have no gaps.
+This is a development clear with the focused DPS-040 repair verified.
+Evidence: `artifacts/cata_raid_program/magmaw_mobility_readiness_20260912.tar.gz.dvc`.
 
-The preceding `3329f0b407` activity canary took 154.986 seconds at 185,407.417
-DPS. Its source, corrected stat review and remote-verified evidence are in
-`artifacts/cata_raid_program/magmaw_activity_20260912.tar.gz.dvc`.
-The prior `0f0a8c0382` comparison remains 149.023 seconds at 189,706.381 DPS,
-with `magmaw_native_wipe_recovery_20260912.tar.gz.dvc` evidence.
+The matched earlier `0f0a8c0382` result was 149.023 seconds at 189,706.381 DPS,
+with the same 28,270,614 originated hostile damage. Latest DPS is 1.19% higher.
+The intermediate `3329f0b407` and `b5215c35b6` runs remain published under
+`magmaw_activity_20260912` and `magmaw_recovery_repath_20260912`; their lower
+DPS is not relabeled as acceptance. Overall class tuning and boss fidelity are
+still incomplete.
 
-REC-002 removed the long partial-trash pre-release wait. REC-003 now retries
-one native spline that finishes short of the entrance without waiting 30s.
-The latest five casualties released within 0.425s and returned in 41.716-53.047s;
-all regrouped and resumed the route. Full-wipe recovery was not exercised.
-PULL-001's Hunter Misdirection to the assigned tank and Drudge opener were
-observed; faster total trash completion is not established.
+DPS-040 found that failed directional mobility attempts changed facing before
+native cooldown/GCD rejection. Readiness now precedes facing/native submission;
+other native rejections restore the prior orientation. Ready emergency mobility
+still uses the native executor. Six focused tests, independent review and the
+native build passed. Fire30006 now finished 17 Fireballs successfully during
+head exposure; all 17 landed for 993,679 damage, with zero failed Fireball or
+native Blink finishes in that window. Typed cooldown rejections occurred before
+native Blink submission.
+The prior run had zero successful and ten failed Fireball finishes, alongside
+62 failed Blinks. Cast-instance/facing correlation remains unavailable; do not
+attribute every point of raid DPS change to this one repair.
 
+REC-002 removes partial-trash pre-release waiting. REC-003 retries a native
+spline that finishes short of the entrance once, preserving the 30-second
+fallback for active paths. The latest eight death episodes released within
+1.514 seconds and returned in 41.846-46.455 seconds; all regrouped and resumed.
+The preceding run exercised the early retry and returned in 53.047 seconds
+instead of retaining the earlier 78.198-second stall. Full-wipe recovery was
+not exercised. The requested universal 30-40-second return is not yet proven.
+
+PULL-001's Hunter Misdirection to the assigned tank and Drudge opener are
+verified. Faster total trash completion and fewer casualties are not established.
 DPS-038 removed Elemental's artificial 12-yard retreats. DPS-039's moving
-Affliction Fel Flame fallback produced native damage on trash. Neither result
-establishes all-class tuning. The latest Fire30006 exposed-head window had ten
-unsuccessful Fireball finishes and no Fireball damage, alongside repeated Blink
-rejections. Native orientation mutation is proven in the executor; its exact
-share of total damage loss is not. The bounded readiness/facing repair has six
-passing focused tests and independent review; native build/live are next.
-Do not claim absent stats from an aggregate-only review: diagnosis snapshots
-contain effective/native combat stats and primary-stat modifier aura effects.
+Affliction Fel Flame fallback produced native damage on trash. Remaining
+bounded leads include Hunter's Mark on short-lived adds, trash survival and
+pull staging, and recovery episode bookkeeping across focus cleanup.
+Review actual diagnosis `effective_stats`/`native_combat_stats` and modifier
+auras before claiming missing stats or tuning damage from unmatched proc state.
 
 REC-001's full-wipe deadlock is repaired in configuration. In the previous
 `36f8ab0bc3` run all ten bots physically released, ran back, re-entered and
@@ -46,7 +59,7 @@ re-entry/resurrection in the same update, and rejection of missing/mismatched
 observations. Independent review approved this configuration-only repair;
 19 focused scenario/recovery tests and the native build passed.
 
-The previous0f0 live admission contained the correct entrance. Fire mage 30007 died on
+The previous `0f0` live admission contained the correct entrance. Fire mage 30007 died on
 Drudges, released, ran back, re-entered and resurrected after 122.493 seconds;
 the full cohort then resumed and killed Magmaw. This run did not have a full wipe, so full-wipe recovery has fixture coverage but remains unexercised
 live. The controller's `native_recovery_accepted=true` is vacuous when
@@ -54,7 +67,7 @@ live. The controller's `native_recovery_accepted=true` is vacuous when
 Trash wipes are acceptable when bots recover, regroup and resume progress.
 Do not weaken native evidence checks or manufacture a wipe to claim acceptance.
 
-The previous0f0 boss DPS was0.70% above the earlier successful a4b9 run. This does not
+The previous `0f0` boss DPS was 0.70% above the earlier successful a4b9 run. This does not
 establish every class's correctness or complete boss fidelity. Fire DPS fell
 6.69%; Discipline DPS/HPS fell 24.38%/22.16%, while other actors improved.
 There is no blanket role-performance acceptance. The independent closed-run
@@ -70,14 +83,14 @@ same roughly 14.6-second Fire mage escape delay. Different Rush targets and
 healing pressure preceded the 36f8 wipe, but no causal telemetry regression was
 established. Boss-only staging remains held and was not used for this clear.
 
-The preceding successful native run is source `a4b9ab9bd7`:
+An older successful native run is source `a4b9ab9bd7`:
 150.254 seconds, 28,305,736 hostile originated damage, 188,385.907 exact raid
 DPS and 11,624.203 effective HPS over the same interval. It cleared with zero
 boss deaths among the bots. Its source, review, build and closed capture are in
 `artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc`.
 This is a development clear, not full fidelity or performance acceptance.
 
-The pending boss-research edge is ENC-006. The new capture now contains native
+The pending boss-research edge is ENC-006. The `0f0` capture contains native
 melee calculation stages: 485 observations with all nine stage fields, 466
 matched health callbacks, and 19 unmatched swings explicitly marked as native
 misses. The retained incoming-damage view contains 23 ordinary Magmaw callbacks
