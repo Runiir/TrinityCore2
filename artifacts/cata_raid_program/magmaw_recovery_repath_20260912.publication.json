@@ -1,0 +1,44 @@
+{
+  "pointer": "artifacts/cata_raid_program/magmaw_recovery_repath_20260912.tar.gz.dvc",
+  "md5": "d591b463c755aa771f0a704504b51b23",
+  "sha256": "c20d3e2345fdd7abd29f25f35c061c3399ba80f1f9c05ea829e2481916759cda",
+  "bytes": 62774533,
+  "empty_cache_remote_reconstruction_verified": true,
+  "members_verified": 37,
+  "verification_cache_evicted": true,
+  "evicted_exact_payloads": [
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-recovery-repath-20260912/configure-controller.log",
+      "bytes": 15522
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-recovery-repath-20260912/live-prepared/raw.jsonl",
+      "bytes": 444459688
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-recovery-repath-20260912/live-prepared/report.json",
+      "bytes": 8074700
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-recovery-repath-20260912/live-prepared/report.timeline.json",
+      "bytes": 252325267
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-recovery-repath-20260912/live-prepared/worldserver.log",
+      "bytes": 441226075
+    },
+    {
+      "path": "/home/runiir/Games/trinity-magmaw-recovery-repath-20260912/worldserver_build-controller.log",
+      "bytes": 26511
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_recovery_repath_20260912.tar.gz",
+      "bytes": 62774533
+    },
+    {
+      "path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/d5/91b463c755aa771f0a704504b51b23",
+      "bytes": 62774533
+    }
+  ],
+  "evicted_logical_bytes": 1271676829
+}

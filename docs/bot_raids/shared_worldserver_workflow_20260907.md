@@ -6,32 +6,35 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The active objective remains the Magmaw reference baseline, with 4.3.4 execution
-and 4.4.2 tuning references. The latest activity canary, source `3329f0b407`,
-cleared the original four-node route and killed Magmaw in 154.986 seconds at
-185,407.417 exact raid DPS and 17,172.164 effective HPS. Cleanup passed, all ten
-survived the boss, and retained combat/trace streams have no gaps. This is a
-development clear, not overall performance acceptance. Its evidence publication
-is being closed under `magmaw_activity_20260912`.
+The wider objective remains the Magmaw reference baseline. The current repair
+is DPS-040: rejected native directional mobility changes facing before cooldown
+or GCD rejection. Source `b5215c35b6` cleared the original four-node route and
+killed Magmaw in 180.401 seconds at 161,490.396 exact raid DPS and 17,145.903
+effective HPS. Cleanup and telemetry completeness passed; all ten survived the
+boss. This is a development clear with performance acceptance rejected.
 
-The matched previous source `0f0a8c0382` remains the successful comparison:
-149.023 seconds, 189,706.381 exact raid DPS, 14,021.688 effective HPS.
-Evidence: `artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz.dvc`.
-The new run has 2.27% lower DPS. Elemental gained4.59% and lost all artificial
-12-yard retreat receipts; Affliction gained3.89% and used the new moving Fel
-Flame fallback successfully on trash. Hunter lost14.09%, with lower early boss
-agility/RAP after its trash death cleared Kiril proc carryover. Native stats
-and modifier aura effects are present in diagnosis snapshots; the original
-review's missing-stat claim is corrected by a separate frozen addendum.
+The preceding `3329f0b407` activity canary took 154.986 seconds at 185,407.417
+DPS. Its source, corrected stat review and remote-verified evidence are in
+`artifacts/cata_raid_program/magmaw_activity_20260912.tar.gz.dvc`.
+The prior `0f0a8c0382` comparison remains 149.023 seconds at 189,706.381 DPS,
+with `magmaw_native_wipe_recovery_20260912.tar.gz.dvc` evidence.
 
-REC-002 removed the partial-trash pre-release wait: five casualties released
-within0-1.499s. Four returned in42.541-44.815s; one took78.198s because its native
-spline finished short of the entrance and recovery waited30s before retrying.
-A bounded finalized-spline retry is the active repair. Full-wipe recovery was
-not exercised. PULL-001's Hunter Misdirection to30001 and Drudge opener were
-observed natively. Chainwielder took113.015s versus111.986s; Drudges197.272s
-versus162.616s, with five casualties versus one. Pull ownership is verified,
-but improved route speed and the cause of increased casualties are not.
+REC-002 removed the long partial-trash pre-release wait. REC-003 now retries
+one native spline that finishes short of the entrance without waiting 30s.
+The latest five casualties released within 0.425s and returned in 41.716-53.047s;
+all regrouped and resumed the route. Full-wipe recovery was not exercised.
+PULL-001's Hunter Misdirection to the assigned tank and Drudge opener were
+observed; faster total trash completion is not established.
+
+DPS-038 removed Elemental's artificial 12-yard retreats. DPS-039's moving
+Affliction Fel Flame fallback produced native damage on trash. Neither result
+establishes all-class tuning. The latest Fire30006 exposed-head window had ten
+unsuccessful Fireball finishes and no Fireball damage, alongside repeated Blink
+rejections. Native orientation mutation is proven in the executor; its exact
+share of total damage loss is not. The bounded readiness/facing repair has six
+passing focused tests and independent review; native build/live are next.
+Do not claim absent stats from an aggregate-only review: diagnosis snapshots
+contain effective/native combat stats and primary-stat modifier aura effects.
 
 REC-001's full-wipe deadlock is repaired in configuration. In the previous
 `36f8ab0bc3` run all ten bots physically released, ran back, re-entered and

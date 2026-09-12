@@ -155,12 +155,24 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 return BotActionArbitration::Outcome::Retryable(
                     "native_directional_mobility_spell_passive");
 
+            // A rejected mobility attempt must not turn an in-flight cast
+            // away from its target. Keep ordinary native readiness ahead of
+            // facing changes; ready emergency mobility may still interrupt.
+            if (!bot->GetSpellHistory()->IsReady(spellInfo))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_directional_mobility_cooldown");
+            if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_directional_mobility_global_cooldown");
+
+            float const previousFacing = bot->GetOrientation();
             float const facing = BotNativeAction::DirectionalMobilityFacingAngle(
                 bot->GetPositionX(), bot->GetPositionY(), action);
             bot->SetFacingTo(facing);
             SpellCastResult const result = bot->CastSpell(bot, spellId, false);
             if (result != SPELL_CAST_OK)
             {
+                bot->SetFacingTo(previousFacing);
                 std::string const reason =
                     "native_directional_mobility_cast_rejected_result_"
                     + std::to_string(static_cast<unsigned>(result));

@@ -110,7 +110,6 @@ def test_native_executor_faces_then_uses_an_ordinary_self_cast() -> None:
     assert "bot->SetFacingTo(facing);" in branch
     assert "bot->CastSpell(bot, spellId, false)" in branch
     assert "native_directional_mobility_cast_rejected_result_" in branch
-    assert branch.count("BotActionArbitration::Outcome::Retryable") == 5
     assert branch.index("bot->SetFacingTo(facing);") < branch.index(
         "bot->CastSpell(bot, spellId, false)"
     )
@@ -132,3 +131,70 @@ def test_native_executor_does_not_manufacture_directional_travel() -> None:
 
     header = HEADER.read_text(encoding="utf-8")
     assert "std::variant<CastSpell, Move, DirectionalMobility," in header
+
+
+def test_unavailable_mobility_preserves_facing_and_active_cast(tmp_path: Path) -> None:
+    branch = _visitor_branch(EXECUTOR.read_text(encoding="utf-8"))
+    body = branch[branch.index("{"):branch.rindex("}") + 1]
+    source = tmp_path / "readiness.cpp"
+    source.write_text(r'''
+#include <cassert>
+#include <cmath>
+#include <string>
+#include <cstdint>
+using uint32 = std::uint32_t;
+enum SpellCastResult { SPELL_CAST_OK, SPELL_FAILED_NO_POWER };
+struct SpellInfo { bool IsPassive() const { return false; } };
+struct SpellMgr { SpellInfo info; SpellInfo const* GetSpellInfo(uint32) { return &info; } } mgr;
+auto* sSpellMgr = &mgr;
+struct History {
+ bool ready=true, gcd=false;
+ bool IsReady(SpellInfo const*) { return ready; }
+ bool HasGlobalCooldown(SpellInfo const*) { return gcd; }
+};
+struct Bot {
+ History history; float facing=0.25f; int casts=0, turns=0; bool activeCast=true;
+ SpellCastResult outcome=SPELL_CAST_OK;
+ bool HasSpell(uint32) { return true; }
+ History* GetSpellHistory() { return &history; }
+ float GetPositionX() { return 0; } float GetPositionY() { return 0; }
+ float GetOrientation() { return facing; }
+ void SetFacingTo(float f) { facing=f; ++turns; }
+ SpellCastResult CastSpell(Bot*, uint32, bool triggered) {
+  assert(!triggered); ++casts; if(outcome==SPELL_CAST_OK) activeCast=false; return outcome;
+ }
+};
+namespace BotActionArbitration {
+struct Outcome {
+ bool submitted; std::string reason;
+ static Outcome Retryable(std::string r) { return {false,r}; }
+ static Outcome Submitted(std::string r) { return {true,r}; }
+}; }
+struct Action { float X=20,Y=0; uint32 SpellId=1953; };
+namespace BotNativeAction {
+float DirectionalMobilityFacingAngle(float, float, Action const&) { return 2.5f; }
+}
+BotActionArbitration::Outcome Execute(Bot* bot, Action const& action)
+''' + body + r'''
+int main() {
+ Action action;
+ Bot cooldown; cooldown.history.ready=false;
+ auto a=Execute(&cooldown,action);
+ assert(!a.submitted && a.reason=="native_directional_mobility_cooldown");
+ assert(cooldown.casts==0 && cooldown.turns==0 && cooldown.activeCast && cooldown.facing==0.25f);
+ Bot gcd; gcd.history.gcd=true;
+ auto b=Execute(&gcd,action);
+ assert(!b.submitted && b.reason=="native_directional_mobility_global_cooldown");
+ assert(gcd.casts==0 && gcd.turns==0 && gcd.activeCast && gcd.facing==0.25f);
+ Bot rejected; rejected.outcome=SPELL_FAILED_NO_POWER;
+ assert(!Execute(&rejected,action).submitted);
+ assert(rejected.casts==1 && rejected.facing==0.25f && rejected.activeCast);
+ Bot emergency;
+ assert(Execute(&emergency,action).submitted);
+ assert(emergency.casts==1 && emergency.facing==2.5f && !emergency.activeCast);
+}
+''', encoding="utf-8")
+    binary = tmp_path / "readiness"
+    subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+                    str(source), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
