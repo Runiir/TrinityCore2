@@ -508,6 +508,7 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         case CLASS_PALADIN:
             break;
         case CLASS_HUNTER:
+        {
             if (!bot->GetPet())
             {
                 static uint32 const callPetSpells[] = { 883, 83242, 83243, 83244, 83245 };
@@ -639,6 +640,7 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                     return true;
                 }
             break;
+        }
         default:
             break;
     }
