@@ -13,22 +13,23 @@ watchdog with `semantic_stall`. Cleanup passed. Its closed capture and review
 are in `artifacts/cata_raid_program/magmaw_melee_resolution_20260912.tar.gz.dvc`.
 There is no boss DPS/HPS result from this attempt and no performance acceptance.
 
-The immediate work is ENC-001: compare this trash failure with the preceding
-successful run before changing or retrying gameplay. Both runs contain Fire
-mage 30007's unavailable escape, movement about 14.6 seconds later and death.
-The paired route action itself owned the movement resource; its movement
-candidate's conflict does not establish an independent blocker. The prior
-review's zero-trash-casualty baseline claim was incorrect: retained baseline
-raw contains four Drudge deaths before recovery and the boss clear. Its final
-watchdog counters had reset scope. The second Rush pair chose different actors.
-In the candidate, one Drudge then
-entered tank 30001's lane; the tank took 261,694 damage and received 81,021
-healing in the reviewed interval before death. The corresponding baseline
-interval had 173,764 damage fully healed. Exact target-selection causality is
-unresolved. Native changes were limited to telemetry; the retained capture
-cannot measure its CPU impact. No causal code regression or justified revert
-has been established. Boss-only staging edits
-are held and have not been built or live-validated. They do not repair this wipe.
+The immediate repair is the post-wipe recovery receipt. All ten bots released,
+ran back, re-entered instance 3 and became alive, but the tracker retained zero
+runback/re-entry/resurrection sequences and held them in
+`recovery_evidence_pending`. The admission receipt contained recovery entrance
+`0/0/0`; execution used the built-in BWD entrance while the tracker required a
+nonzero admitted trigger. The configuration repair declares `(6581, 0, 669)`
+on all seven BWD scenarios. Native DBC and live database readback confirm this
+entrance. Focused validation and live recovery acceptance are pending.
+
+Trash wipes are acceptable when bots recover, regroup and resume route progress;
+zero deaths are not the acceptance target. The preceding successful run also
+lost four bots on trash before recovery. Its final watchdog counters had reset
+scope, so the earlier review's zero-trash-casualty claim was wrong. Both runs
+contained the same roughly 14.6-second Fire mage escape delay. Different second
+Rush targets and healing pressure preceded the candidate's full wipe, but no
+causal telemetry regression was established. Boss-only staging remains held;
+it cannot prove recovery of the original route.
 
 The preceding successful native run is source `a4b9ab9bd7`:
 150.254 seconds, 28,305,736 hostile originated damage, 188,385.907 exact raid

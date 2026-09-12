@@ -29,6 +29,13 @@ answer a research question, but skipping failed trash does not resolve or
 validate that route regression.
 For route-wide survival comparisons, count retained death events in the same
 attempt and route window; final watchdog counters may reset at a node change.
+Trash wipes are not automatic rejection when native recovery regroups the
+cohort and route progress resumes. Evaluate death, release, runback, resurrection,
+regroup and resumed progress separately; prioritize a stalled recovery over
+eliminating every casualty. Keep the watchdog's death-loop and stall limits.
+Bind the recovery entrance in the first route's immutable admission receipt;
+an executor fallback must not differ from the identity required by its tracker.
+Source map zero is a valid map, not a missing entrance when the trigger is set.
 
 Use one repair loop: inspect the failed run, identify the earliest actionable mismatch,
 repair it, test the affected behavior, review risky changes, build, run, and close evidence.

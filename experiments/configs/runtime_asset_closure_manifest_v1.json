@@ -32,8 +32,8 @@
       "class_id": "validation_routes",
       "stage": "validation_scenarios",
       "output_path": "dataset/validation_scenarios",
-      "md5": "54e4a686f9048fa4c1dede2d08503dbf.dir",
-      "size": 548942,
+      "md5": "386bff34f0f17ce66e14214adba1a0ee.dir",
+      "size": 549642,
       "nfiles": 5
     },
     {
@@ -108,9 +108,9 @@
       "audit_inventory_sha256": "bd23bc7cc3e018f542e54acb63d787bdab7bae98a2bf00249411fdb1754565be",
       "expected_inventory": {
         "file_count": 5,
-        "size_bytes": 548942,
+        "size_bytes": 549642,
         "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1",
-        "inventory_sha256": "b7c5f6d1fee9f02be048b0f25a7d910219e43e8bb7cf83a4348929d42d9de933"
+        "inventory_sha256": "abb5d309db7aedc1e8f1b8c0206ac425a89f94d6e9209987fa9cdb9b3dd491fd"
       },
       "expected_files": [
         {
@@ -118,7 +118,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 764,
-          "sha256": "8d465287c3288e4f5a86f0e43ec85f282ee909044e9f056d1efeb74771a04c41"
+          "sha256": "d5d426c11566c0de1ed681d7bd8dd5e21caa575bf0b9697d1aa2fada61fcc632"
         },
         {
           "path": "dataset/validation_scenarios/report.json",
@@ -138,15 +138,15 @@
           "path": "dataset/validation_scenarios/validation_routes.jsonl",
           "type": "file",
           "mode": "0644",
-          "size_bytes": 483953,
-          "sha256": "e678fa55082eea0075ea43b7560b46c607e998b603f884aaf11a4de90acfa80f"
+          "size_bytes": 484198,
+          "sha256": "a575576cb3e54fa4d4202774723a55132aa8529218731f55b5bc59970ee32dbb"
         },
         {
           "path": "dataset/validation_scenarios/validation_scenarios.jsonl",
           "type": "file",
           "mode": "0644",
-          "size_bytes": 33903,
-          "sha256": "dbe0e58a81129fda999ad1f16073e43050b59ecb1c111ca2ada8d752e8705386"
+          "size_bytes": 34358,
+          "sha256": "18e4a1dc228ac5ac13f5b27dfaa342d1bc7096082223a8e0b7ab0fda673a7a98"
         }
       ]
     },
