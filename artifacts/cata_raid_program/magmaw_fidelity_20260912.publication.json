@@ -331,5 +331,44 @@
   "post_experiment_commands": {
     "dvc_status": "Data and pipelines are up to date.\n",
     "dvc_push": "1 file pushed\n"
-  }
+  },
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "evicted_raw_payloads": [
+    {
+      "path": "live/controller.log",
+      "bytes": 5830425,
+      "sha256": "ac6d7a571d160c6bfd6e2a1972be577b1601b983eff917de9b9b5f5b93a930e8"
+    },
+    {
+      "path": "live/report.json",
+      "bytes": 5830425,
+      "sha256": "ac6d7a571d160c6bfd6e2a1972be577b1601b983eff917de9b9b5f5b93a930e8"
+    },
+    {
+      "path": "live-prepared/controller.log",
+      "bytes": 7885156,
+      "sha256": "499d34346a057ee2761e48b9de248262d39433d0f9546eec8bc1ef7883d6f3dd"
+    },
+    {
+      "path": "live-prepared/raw.jsonl",
+      "bytes": 370439718,
+      "sha256": "a9aac71842e4e9857a8e7c529ba38fad59b20a791b15a340ac1ae6ad26666283"
+    },
+    {
+      "path": "live-prepared/report.timeline.json",
+      "bytes": 203687728,
+      "sha256": "e2255b7f7266bac9b7b71a3db76d4396da4ab6fef991df19d7a7bcb9bf79aff6"
+    },
+    {
+      "path": "live-prepared/worldserver.log",
+      "bytes": 367579780,
+      "sha256": "71d21c63b4aebc227794ce7230ee4be7ed8e29bff8caf8bcb3786c4a27c42544"
+    }
+  ],
+  "evicted_raw_payload_bytes": 961253232,
+  "retained_primary_view": "/home/runiir/Games/trinity-magmaw-fidelity-20260912/live-prepared/report.timeline.html",
+  "local_retained_bytes": 16259965,
+  "post_eviction_remote_status": "\tdeleted:            artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz\n",
+  "post_eviction_remote_status_meaning": "Remote object exists; local cache intentionally evicted."
 }
