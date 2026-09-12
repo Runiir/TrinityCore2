@@ -488,6 +488,11 @@ struct boss_magmaw : public BossAI
                 default:
                     break;
             }
+
+            // A due event may have started a cast. Leave later events queued
+            // until it finishes, while preserving impale's head-exposure events.
+            if (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_IMPALED))
+                return;
         }
 
         DoMeleeAttackIfReady();
