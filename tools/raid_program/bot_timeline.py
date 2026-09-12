@@ -8,11 +8,13 @@ from collections import defaultdict
 import hashlib
 import json
 from pathlib import Path
+import tarfile
 from typing import Any, Iterable
 
 from tools.bot_ml.combat_log_event_stream import combat_log_identity, combat_log_profile_context
 from tools.bot_ml.run_live_bot_validation import combined_combat_log
 from tools.raid_program.encounter_damage_targets import load_encounter_damage_targets
+from tools.raid_program.bot_timeline_incoming import incoming_damage
 from tools.raid_program.tactical_replay_lite import _combined_trace, _load_rows
 
 
@@ -486,6 +488,10 @@ def build_timeline_from_rows(
     trace_events, switches = _trace_events(trace)
     diagnosis_events = _diagnosis_events(channels["diagnosis"])
     timeline_events = [*trace_events, *diagnosis_events]
+    incoming_rows = [row for row in scoped_combat_events
+                     if death_ms is None or _timestamp(row) <= death_ms]
+    incoming_events, incoming_summary = incoming_damage(incoming_rows)
+    timeline_events.extend(incoming_events)
     actors: dict[int, dict[str, Any]] = {}
     actor_points: dict[int, list[int]] = defaultdict(list)
     fresh: dict[int, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
@@ -523,6 +529,16 @@ def build_timeline_from_rows(
         if actor:
             actor_context = row.get("actor") or {}
             actors.setdefault(actor, {"actor_guid": actor, "name": row.get("bot_name") or "", "role": actor_context.get("role") or "", "class_id": None, "damage": defaultdict(int)})
+    for row in incoming_rows:
+        if row.get("kind") != "damage" or row.get("_perspective") != "damage_taken":
+            continue
+        actor = _int(row.get("actor_guid"))
+        if actor:
+            data = actors.setdefault(actor, {"actor_guid": actor, "name": "", "role": "",
+                                             "class_id": None, "damage": defaultdict(int)})
+            data["name"] = data.get("name") or row.get("actor_name") or ""
+            data["role"] = data.get("role") or row.get("actor_role") or ""
+            data["class_id"] = data.get("class_id") or row.get("actor_class_id")
     if first_hostile:
         for row in scoped_combat_events:
             if _timestamp(row) >= first_hostile or row.get("kind") != "heal" or row.get("_perspective") != "healing_done":
@@ -692,28 +708,54 @@ def build_timeline_from_rows(
             event["phase_provenance"] = "conflicting_actor_phase_intervals"
     summary = {"schema": SUMMARY_SCHEMA, "clear_accepted": clear_accepted, "clear_acceptance_source": "report.classification+development_run.native_boss_death_accepted+terminal_failure", "identity": identity, "window": window, "target_taxonomy": target_taxonomy, "accounting": accounting_out, "actors": {str(k): v for k, v in sorted(actors.items())}, "phase_intervals": phase_intervals, "completeness": completeness}
     model = {"schema": SCHEMA, "identity": identity, "window": window, "target_taxonomy": target_taxonomy, "phase_intervals": summary["phase_intervals"], "actors": summary["actors"], "events": sorted(timeline_events, key=lambda event: (event["at_ms"], event["actor_guid"], event["kind"])), "completeness": completeness, "summary": summary}
+    summary["incoming_damage"] = incoming_summary
     return model, summary
 
 
-def build_timeline(*, raw_path: Path | None = None, report_path: Path | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
-    if raw_path is None and report_path is None:
+def build_timeline(*, raw_path: Path | None = None, report_path: Path | None = None,
+                   raw_archive: Path | None = None, raw_member: str | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+    if raw_path is not None and raw_archive is not None:
+        raise ValueError("Choose raw_path or raw_archive")
+    if bool(raw_archive) != bool(raw_member):
+        raise ValueError("raw_archive and raw_member must be supplied together")
+    if raw_path is None and report_path is None and raw_archive is None:
         raise ValueError("raw_path or report_path is required")
     report = json.loads(report_path.read_text()) if report_path else {}
     rows = _load_rows(raw_path) if raw_path else []
-    return build_timeline_from_rows(rows, report, raw_sha256=_sha256(raw_path), report_sha256=_sha256(report_path))
+    raw_hash = _sha256(raw_path)
+    if raw_archive:
+        digest = hashlib.sha256()
+        with tarfile.open(raw_archive) as archive:
+            member = archive.getmember(raw_member)
+            if not member.isfile():
+                raise ValueError("Raw archive member must be a regular normalized JSONL file")
+            with archive.extractfile(member) as handle:
+                for line in handle:
+                    digest.update(line)
+                    if line.strip():
+                        rows.append(json.loads(line))
+        raw_hash = digest.hexdigest()
+    return build_timeline_from_rows(rows, report, raw_sha256=raw_hash, report_sha256=_sha256(report_path))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--raw", type=Path)
+    raw_group = parser.add_mutually_exclusive_group()
+    raw_group.add_argument("--raw", type=Path)
+    raw_group.add_argument("--raw-archive", type=Path, help="Read normalized JSONL directly from a retained tar archive")
+    parser.add_argument("--raw-member", help="Exact regular-file member in --raw-archive")
     parser.add_argument("--report", type=Path)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path, help="Optional full JSON model; HTML already embeds the complete model")
     parser.add_argument("--summary", type=Path)
     parser.add_argument("--html", type=Path)
     args = parser.parse_args()
-    model, summary = build_timeline(raw_path=args.raw, report_path=args.report)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(model, sort_keys=True, separators=(",", ":")) + "\n")
+    if not any((args.output, args.summary, args.html)):
+        parser.error("Choose at least one of --output, --summary or --html")
+    model, summary = build_timeline(raw_path=args.raw, report_path=args.report,
+                                    raw_archive=args.raw_archive, raw_member=args.raw_member)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(model, sort_keys=True, separators=(",", ":")) + "\n")
     if args.summary:
         args.summary.parent.mkdir(parents=True, exist_ok=True)
         args.summary.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")

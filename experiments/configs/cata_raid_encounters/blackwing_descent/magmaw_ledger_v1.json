@@ -15,6 +15,7 @@
   "current_audit_scope": "Queue, spell values/durations and passenger ejection; unchanged historical claims retain their original source revision.",
   "retrieved_utc_date": "2026-09-12",
   "source_catalog": [
+    {"id": "magmaw_incoming_timeline_20260912", "title": "Retained a4b9 incoming-damage replay", "accessed": "2026-09-12", "authority": "native observed callback values; calculation-stage interpretation from exact source", "evidence_dvc": "artifacts/cata_raid_program/magmaw_incoming_timeline_20260912.tar.gz.dvc", "claim": "24 melee callbacks raw4466-8012,17zero-health,20127health total. Timeline consumer omission repaired; no new pull or multiplier calibration."},
     {"id": "blizzard_442_notes_20250218", "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes", "publisher": "Blizzard", "author": "Kaivax", "published_or_updated": "2025-02-18", "accessed": "2026-09-12", "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030", "claim": "Official patch date; announcement contains no Magmaw entry. This is not proof of unchanged behavior."},
     {"id": "blizzard_hotfix_archive_20250221", "title": "Hotfixes: February 21, 2025", "publisher": "Blizzard", "published_or_updated": "2025-02-21 archive header; individual entries carry their own dates", "accessed": "2026-09-12", "url": "https://news.blizzard.com/en-us/article/24148555/hotfixes-february-21-2025", "claim": "No Magmaw match in fetched archive. Blackwing hits concern other game editions; no complete cross-patch equivalence asserted."},
     {"id": "blizzard_magmaw_impale_20240613", "title": "Hotfixes: July 22, 2024, June 13 Cataclysm Classic section", "publisher": "Blizzard", "published_or_updated": "2024-06-13 relevant event; 2024-07-22 archive header", "accessed": "2026-09-12", "url": "https://news.blizzard.com/en-us/article/24066687/hotfixes-july-22-2024", "claim": "Impale falling-backwards positioning prevented player damage and was fixed; both retained longer logs postdate this fix."},
@@ -573,7 +574,18 @@
       "native_10N_retained": {
         "tank": "Mgwtankb",
         "events": 24,
-        "health_damage": 20127
+        "health_damage": 20127,
+        "raw_amount_min": 4466,
+        "raw_amount_max": 8012,
+        "raw_amount_sum": 143845,
+        "zero_health_callbacks": 17,
+        "tank_snapshot_count": 29,
+        "tank_snapshot_armor": 40530,
+        "tank_snapshot_vengeance_ap_range": [0, 1131],
+        "tank_snapshot_vengeance_cap": 14738,
+        "snapshot_limitation": "Snapshot-time values, not same-swing modifier/outcome observations. No Vengeance implementation verdict.",
+        "raw_semantics": "After done/taken modifiers and hooks, before armor and hit-outcome adjustments; not automatically WCL U. Absorb/outcome fields unavailable.",
+        "evidence": "magmaw_incoming_timeline_20260912"
       },
       "current_db_damage_modifier": 1,
       "repository_observation": "CreatureStatSystem uses template ModDamage, variance, base/AP and attack time. All four configured Magmaw variants have DamageModifier1. Historical custom SQL used120 with variance0.5; that is not an external authority. Migration2025_06_18_06_world.sql globally resets DamageModifier to1. Commit68a3622133 explicitly requires damage reevaluation after formula changes; ancestor of4b24/41266/6882. Current updates table records it applied2026-06-02. This is inherited source history, not a newly introduced patch in that comparison.",
@@ -1070,10 +1082,10 @@
       "key": "boss_melee_pressure",
       "modes": ["10N", "10H", "25N", "25H"],
       "status": "blocked",
-      "known": "Native24melee events total20127health damage; WCL10N14landedU estimates111531-178540. Current four templates DamageModifier1. Fields/setups differ. Origin is inherited blanket migration68a3622133, shared by all three comparison sources; current DB updater receipt confirms application.",
-      "next": "Retain effective native melee and mitigation observations, then derive a justified correction. Do not use this run as tank/healer calibration.",
+      "known": "Recovered24 native melee callbacks raw4466-8012,sum143845;health20127,17zero-health. WCL10N14landedU estimates111531-178540. Native raw includes taken modifiers; WCL U and native raw have different stages. Current four templates DamageModifier1 from inherited migration68a3622133. No exact correction established.",
+      "next": "Do not repeat capture to recover existing raw values. Obtain same-swing roll/done/taken/armor/outcome/block/absorb/resist/final damage and active modifier/template inputs for a stage-matched WCL comparison. Do not use current pressure as tank/healer calibration.",
       "source_refs": [
-        "magmaw_baseline_20260912"
+        "magmaw_baseline_20260912", "magmaw_incoming_timeline_20260912"
       ]
     }
   ],

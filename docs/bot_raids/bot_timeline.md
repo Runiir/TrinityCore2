@@ -6,6 +6,19 @@ Open the HTML for the actor overview and filter by actor, phase, target or
 spell. Inspect the full event details before choosing a repair. The JSON
 retains the same causal records for command-line analysis.
 
+Incoming damage is included as `damage_taken`, including callbacks with zero
+health damage and nonzero native `raw_amount`. Filter by event kind and the
+receiving actor. The incoming overview groups the selected route through death
+by actor, source GUID/entry and spell, including damage before the first outgoing
+hit. Time/phase/spell filters apply to the event list, not this summary table.
+The earliest callback is an observation bound, not a claimed pull-start event.
+Incoming shared damage remains health pressure even when excluded from DPS. `summary.incoming_damage` exposes the same groups for workers.
+This does not change the DPS/HPS numerator. Use the native raw field's stated
+calculation stage before comparing it with an external unmitigated field.
+Legacy damage callbacks hardcode absorption to zero, so this view labels it
+unavailable. Zero health damage alone does not distinguish avoidance from
+absorption. These callbacks are not a complete count of swing attempts.
+
 The HTML embeds the complete model as deterministic gzip/base64 and expands it
 inside the browser without a network dependency. Event details are rendered on
 expansion. Use a browser with `DecompressionStream` support; loading failures
@@ -30,6 +43,18 @@ selected targets separately, with their own observation times. Cached policy,
 binding and movement observations retain their timestamps and freshness flags.
 An accepted submission, native finish and landed effect are separate events;
 missing cast-instance correlation is never inferred as an exact match.
+
+For an archived normalized capture, avoid writing another large raw/model copy:
+
+```sh
+pixi run python -m tools.raid_program.bot_timeline \
+  --raw-archive VERIFIED_ARCHIVE.tar.gz --raw-member live-prepared/raw.jsonl \
+  --report RUN/report.json --summary RUN/replay-summary.json --html RUN/replay.html
+```
+
+This reads the exact regular-file member without unpacking it, hashes its bytes
+for the same raw identity, and writes only the requested outputs. HTML still
+contains the full model. Keep the original archive/report DVC binding.
 
 The existing trace queue retains up to 4,096 pending entries plus 128 exported
 entries per actor. Delta capture drains pending pages, including at termination.

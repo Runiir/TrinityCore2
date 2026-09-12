@@ -1,10 +1,32 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-10. This is the current status. Historical run narratives remain
+Updated 2026-09-12. This is the current status. Historical run narratives remain
 in Git; failed assumptions and bounded next repairs belong in the
 [error ledger](error_ledger.md). Closed generated evidence is tracked by DVC.
 
-## Current run
+## Current work and latest native run
+
+The active objective is the Magmaw reference baseline, with 4.3.4 execution and
+4.4.2 tuning references. The latest native run is source `a4b9ab9bd7`:
+150.254 seconds, 28,305,736 hostile originated damage, 188,385.907 exact raid
+DPS and 11,624.203 effective HPS over the same interval. It cleared with zero
+boss deaths among the bots. Its source, review, build and closed capture are in
+`artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc`.
+This is a development clear, not full fidelity or performance acceptance.
+
+Current edge is ENC-006. A retained-data replay recovered 24 Magmaw melee
+callbacks with native raw 4,466-8,012, 20,127 health damage and 17 zero-health
+callbacks. The timeline previously omitted incoming damage; the repaired view
+now exposes it without changing DPS/HPS. Raw is after done/taken modifiers and
+before armor/outcome adjustment. WCL U uses a different mitigation boundary.
+Do not rerun merely to recover these already-retained values or guess a
+multiplier from their ratio. See the [current baseline](strategies/t11/blackwing_descent/magmaw.md)
+and `summary.incoming_damage` for evidence and the exact missing observations.
+
+The following b113 comparison is the prior diagnostic run, preserved for
+performance context. It does not supersede the later a4b9 capture.
+
+## Prior diagnostic run
 
 Native source `b1132dd087de9216c1d77694a8d7b37ddc209955` cleared Magmaw 10N
 in **156.064 seconds**, with **28,352,550 hostile originated damage** and
@@ -77,14 +99,14 @@ RSS increased about 0.59 MB. These are whole-run observations, not isolated proo
 of instrumentation CPU cost. Keep aggregate counters, identity/readback receipts
 and original raw evidence alongside the timeline in DVC.
 
-## Next bounded work
+## Prior diagnostic follow-ups (still unresolved)
 
 The original manual head-hide outage remains **DPS-023, cause unknown**. Its
 128-row decisions were overwritten. Current successful returns do not disprove
 that occurrence or prove its precise cause repaired. Do not retry it unchanged
 or claim a universal head-return fix.
 
-Next actionable observation is **OBS-008**: terminal native cast failure reason
+A separate actionable observation remains **OBS-008**: terminal native cast failure reason
 and cast-instance correlation remain unavailable. The timeline says so explicitly;
 accepted submission, finish and landed effects are separate records. Obtain that
 native outcome before guessing why a moving-permitted cast later fails.

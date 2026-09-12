@@ -67,6 +67,20 @@ after month navigation. Use that observed parameter to jump to the desired month
 and verify its heading, rather than clicking through years. Filter by the raid
 zone before opening reports; a long report is not necessarily a long boss kill.
 
+## Inspect retained incoming damage before requesting another pull
+
+Rebuild the existing bot timeline and read `summary.incoming_damage`. The
+primary view now includes `damage_taken`, zero-health callbacks and native raw
+values. Previously omitted display rows are a consumer defect, not capture loss.
+Trace each numeric field back to its producer: legacy melee raw is after
+attacker/defender modifiers but before armor and outcome adjustments, whereas
+WCL U can exclude those defensive reductions. Legacy absorbed_amount is a
+hardcoded placeholder. Do not call raw>0/health=0 a full absorb, infer swing
+attempt counts from surviving callbacks, or fit a multiplier from unmatched
+calculation stages. Preserve sequence/epoch/attempt binding when selecting rows.
+Only request new instrumentation for specific stages or outcomes absent in the
+retained records; preserve the original capture and publish replay separately.
+
 ## Resolve timing semantics before changing a constant
 
 Locate the installed DBM/BigWigs boss module using `rg --files` in the actual addon directory. Retain package/interface version, module revision, file SHA-256 and, where possible, matching upstream commit. Follow each timer's `Start`/reset/cancel call back to its event and spell ID. Record first-use and repeat predictions separately, including author caveats.

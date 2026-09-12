@@ -1,8 +1,12 @@
 import base64
 import gzip
 import json
+import io
+import tarfile
+import hashlib
+import pytest
 
-from tools.raid_program.bot_timeline import build_timeline_from_rows
+from tools.raid_program.bot_timeline import build_timeline, build_timeline_from_rows
 from tools.raid_program.bot_timeline_html import browser_safe_model, render_timeline_html
 
 
@@ -65,6 +69,99 @@ def _report(failed=False):
             "evidence_demux": {"canonical_identity_sha256": "a" * 64},
             "combat_log_event_stream": {"identity": {**IDENTITY, "combat_log_epoch": 3},
                                         "profile_context": PROFILE, "gap_ranges": []}}
+
+
+def test_incoming_damage_survives_delta_and_zero_health_without_becoming_dps():
+    outgoing = _event(1, 1000)
+    incoming = {**_event(2, 2000, amount=0), "source_guid": 99,
+                "source_entry": 41570, "source_name": "Magmaw", "target_guid": 7,
+                "target_entry": 0, "spell_id": 0, "amount": 0, "raw_amount": 6381,
+                "absorbed_amount": 0}
+    landed = {**incoming, "event_sequence": 3, "timestamp_ms": 3000,
+              "amount": 2747, "originated_amount": 2747, "raw_amount": 6163}
+    outside = {**incoming, "event_sequence": 4, "timestamp_ms": 10000}
+    death = _trace([{"timestamp_ms": 9000, "sequence": 9, "action": "boss_killed",
+                     "result": "confirmed_unit_death", "target": {"entry": 41570}}])
+    rows = [_bound("trace", death), *[_bound("combat_log", r) for r in
+            _delta_frames([outgoing, incoming, landed, outside], 0, 4)]]
+    final = _full([outside])  # Critical rows have already left the final snapshot.
+    final["abilities"] = [_ability(outgoing), _ability(incoming, "damage_taken")]
+    rows.append(_bound("combat_log", final))
+    model, summary = build_timeline_from_rows(rows, _report())
+    received = [e for e in model["events"] if e["kind"] == "damage_taken"]
+    assert len(received) == 2
+    assert received[0]["raw_amount"] == 6381
+    assert received[0]["amount"] == 0
+    assert received[0]["absorbed_amount"] is None
+    assert received[0]["zero_health_cause"] == "unavailable"
+    group = summary["incoming_damage"]["groups"][0]
+    assert (group["events"], group["zero_health_events"], group["health_damage"]) == (2, 1, 2747)
+    assert (group["raw_min"], group["raw_max"]) == (6163, 6381)
+    assert summary["accounting"]["hostile_originated_damage"] == 10
+    assert summary["actors"]["7"]["damage"]["hostile_originated"] == 10
+    assert _embedded_model(render_timeline_html(model))["summary"]["incoming_damage"] == summary["incoming_damage"]
+
+
+def test_incoming_missing_raw_stays_unknown_and_shared_health_loss_is_preserved():
+    from tools.raid_program.bot_timeline_incoming import incoming_damage
+    row = {**_event(1, 2000), "_perspective": "damage_taken", "amount": 10}
+    events, summary = incoming_damage([row, {**row, "spell_id": 79010},
+                                      {**row, "shared_damage": True}])
+    assert len(events) == 3
+    assert events[0]["raw_amount"] is None
+    assert summary["groups"][0]["raw_min"] is None
+    assert summary["groups"][0]["raw_observations"] == 0
+    assert sum(group["health_damage"] for group in summary["groups"]) == 30
+
+
+def test_incoming_before_first_attack_and_incoming_only_actor_are_visible():
+    incoming = {**_event(1, 500), "source_guid": 99, "source_entry": 41570,
+                "target_guid": 8, "target_entry": 0, "actor_guid": 8,
+                "actor_name": "Tank", "actor_role": "tank", "amount": 1000}
+    outgoing = _event(2, 1000)
+    for events in ([incoming], [incoming, outgoing]):
+        full = _full(events)
+        full["abilities"] = [_ability(incoming, "damage_taken"), _ability(outgoing)]
+        model, summary = build_timeline_from_rows([_bound("combat_log", full)], _report(failed=True))
+        assert summary["incoming_damage"]["groups"][0]["health_damage"] == 1000
+        assert summary["incoming_damage"]["window"]["first_at_ms"] == 500
+        assert model["actors"]["8"]["name"] == "Tank"
+        assert len([e for e in model["events"] if e["kind"] == "damage_taken"]) == 1
+        assert summary["accounting"]["hostile_originated_damage"] == (10 if len(events) == 2 else 0)
+
+
+def test_archive_replay_matches_direct_rows_and_binds_member_bytes(tmp_path, monkeypatch):
+    raw = (json.dumps(_bound("combat_log", _full([_event(1, 1000)]))) + "\n").encode()
+    archive = tmp_path / "capture.tar.gz"
+    with tarfile.open(archive, "w:gz") as handle:
+        member = tarfile.TarInfo("run/raw.jsonl")
+        member.size = len(raw)
+        handle.addfile(member, io.BytesIO(raw))
+    archived = build_timeline(raw_archive=archive, raw_member="run/raw.jsonl")
+    direct = build_timeline_from_rows([json.loads(raw)], {}, raw_sha256=hashlib.sha256(raw).hexdigest())
+    assert archived == direct
+    assert not (tmp_path / "run").exists()
+    with pytest.raises(ValueError, match="supplied together"):
+        build_timeline(raw_archive=archive)
+    with pytest.raises(ValueError, match="Choose"):
+        build_timeline(raw_path=tmp_path / "raw", raw_archive=archive, raw_member="run/raw.jsonl")
+    from tools.raid_program.bot_timeline import main
+    monkeypatch.setattr("sys.argv", ["bot_timeline", "--raw-archive", str(archive),
+                                    "--raw-member", "run/raw.jsonl", "--html", str(tmp_path / "view.html")])
+    assert main() == 0
+    assert _embedded_model((tmp_path / "view.html").read_text()) == direct[0]
+    assert not list(tmp_path.glob("*.json"))
+
+
+def test_archive_replay_rejects_link_members(tmp_path):
+    archive = tmp_path / "capture.tar.gz"
+    with tarfile.open(archive, "w:gz") as handle:
+        member = tarfile.TarInfo("raw.jsonl")
+        member.type = tarfile.SYMTYPE
+        member.linkname = "/outside/raw.jsonl"
+        handle.addfile(member)
+    with pytest.raises(ValueError, match="regular"):
+        build_timeline(raw_archive=archive, raw_member="raw.jsonl")
 
 
 def test_join_deduplicates_snapshots_isolates_identity_and_marks_legacy_fields():
