@@ -8,6 +8,8 @@
 #include "GameTime.h"
 #include "Group.h"
 #include "Map.h"
+#include "MotionMaster.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "Pet.h"
 #include "Player.h"
 #include "SpellInfo.h"
@@ -251,6 +253,18 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             && state.ActivePathRouteNodeId
                 == Cohort().Config.ValidationRouteNodeId;
     };
+    auto nativeRecoveryPathFinishedBeforeEntrance = [&]()
+    {
+        MotionMaster const* motion = bot->GetMotionMaster();
+        return matchingNativeRecoveryPath()
+            && motion
+            && motion->GetCurrentMovementGeneratorType()
+                == IDLE_MOTION_TYPE
+            && motion->GetMotionSlotType(MOTION_SLOT_ACTIVE)
+                == MAX_MOTION_TYPE
+            && bot->movespline
+            && bot->movespline->Finalized();
+    };
     BotWorldGhostFlight::RetainedPath const retainedRecoveryPath{
         state.ActivePathValid,
         state.NativeRecoveryEntranceRequired,
@@ -387,8 +401,11 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
             {
                 transition("moving_to_entrance");
                 bool const matchingRecoveryPath = matchingNativeRecoveryPath();
+                bool const recoveryPathFinished =
+                    nativeRecoveryPathFinishedBeforeEntrance();
                 bool const recoveryPathStalled = noProgressExpired();
-                if (matchingRecoveryPath && !recoveryPathStalled)
+                if (matchingRecoveryPath && !recoveryPathFinished
+                    && !recoveryPathStalled)
                 {
                     // The native generator already owns the exact scoped
                     // recovery path. Re-submitting the same Move intent on
@@ -397,13 +414,17 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
                     result = "native_instance_runback_in_progress";
                     return true;
                 }
-                if (recoveryPathStalled && matchingRecoveryPath
+                if ((recoveryPathFinished || recoveryPathStalled)
+                    && matchingRecoveryPath
                     && state.NativeRecoveryMovementRetryCount == 0)
                 {
-                    // The existing native generator has stalled. Invalidate
-                    // only the evidence, then let the typed movement intent
-                    // ask the movement executor for exactly one fresh native
-                    // path. The executor remains the sole MotionMaster owner.
+                    // A native spline can finish before the entrance while
+                    // the retained recovery evidence still claims it owns a
+                    // path. Invalidate only that evidence, then let the typed
+                    // movement intent ask the movement executor for exactly
+                    // one fresh native path. The same bounded retry also
+                    // handles the existing 30-second no-progress fallback;
+                    // an active native point generator remains retained.
                     state.ActivePathValid = false;
                     ++state.NativeRecoveryMovementRetryCount;
                     BotActionArbitration::Outcome const repathOutcome =
@@ -424,7 +445,8 @@ bool BotWorldPopulationMgr::TryNativeCorpseRun(WorldBotState& state, Player* bot
                     }
                     return terminal("native_runback_no_progress");
                 }
-                if (recoveryPathStalled && matchingRecoveryPath)
+                if ((recoveryPathFinished || recoveryPathStalled)
+                    && matchingRecoveryPath)
                     return terminal("native_runback_no_progress");
                 BotActionArbitration::Outcome const moveOutcome =
                     ExecuteNativeActionIntent(state, bot,

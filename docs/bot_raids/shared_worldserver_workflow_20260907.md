@@ -6,12 +6,32 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The active objective is the Magmaw reference baseline, with 4.3.4 execution and
-4.4.2 tuning references. Source `0f0a8c0382` cleared the original four-node route,
-including both trash sections, and killed Magmaw in 149.023 seconds at
-189,706.381 exact raid DPS and 14,021.688 effective HPS. Cleanup passed and
-retained combat/trace streams have no gaps. This is a development clear.
+The active objective remains the Magmaw reference baseline, with 4.3.4 execution
+and 4.4.2 tuning references. The latest activity canary, source `3329f0b407`,
+cleared the original four-node route and killed Magmaw in 154.986 seconds at
+185,407.417 exact raid DPS and 17,172.164 effective HPS. Cleanup passed, all ten
+survived the boss, and retained combat/trace streams have no gaps. This is a
+development clear, not overall performance acceptance. Its evidence publication
+is being closed under `magmaw_activity_20260912`.
+
+The matched previous source `0f0a8c0382` remains the successful comparison:
+149.023 seconds, 189,706.381 exact raid DPS, 14,021.688 effective HPS.
 Evidence: `artifacts/cata_raid_program/magmaw_native_wipe_recovery_20260912.tar.gz.dvc`.
+The new run has 2.27% lower DPS. Elemental gained4.59% and lost all artificial
+12-yard retreat receipts; Affliction gained3.89% and used the new moving Fel
+Flame fallback successfully on trash. Hunter lost14.09%, with lower early boss
+agility/RAP after its trash death cleared Kiril proc carryover. Native stats
+and modifier aura effects are present in diagnosis snapshots; the original
+review's missing-stat claim is corrected by a separate frozen addendum.
+
+REC-002 removed the partial-trash pre-release wait: five casualties released
+within0-1.499s. Four returned in42.541-44.815s; one took78.198s because its native
+spline finished short of the entrance and recovery waited30s before retrying.
+A bounded finalized-spline retry is the active repair. Full-wipe recovery was
+not exercised. PULL-001's Hunter Misdirection to30001 and Drudge opener were
+observed natively. Chainwielder took113.015s versus111.986s; Drudges197.272s
+versus162.616s, with five casualties versus one. Pull ownership is verified,
+but improved route speed and the cause of increased casualties are not.
 
 REC-001's full-wipe deadlock is repaired in configuration. In the previous
 `36f8ab0bc3` run all ten bots physically released, ran back, re-entered and
@@ -23,7 +43,7 @@ re-entry/resurrection in the same update, and rejection of missing/mismatched
 observations. Independent review approved this configuration-only repair;
 19 focused scenario/recovery tests and the native build passed.
 
-The live admission now contains the correct entrance. Fire mage 30007 died on
+The previous0f0 live admission contained the correct entrance. Fire mage 30007 died on
 Drudges, released, ran back, re-entered and resurrected after 122.493 seconds;
 the full cohort then resumed and killed Magmaw. This run did not have a full wipe, so full-wipe recovery has fixture coverage but remains unexercised
 live. The controller's `native_recovery_accepted=true` is vacuous when
@@ -31,7 +51,7 @@ live. The controller's `native_recovery_accepted=true` is vacuous when
 Trash wipes are acceptable when bots recover, regroup and resume progress.
 Do not weaken native evidence checks or manufacture a wipe to claim acceptance.
 
-Overall boss DPS is 0.70% above the previous successful a4b9 run. This does not
+The previous0f0 boss DPS was0.70% above the earlier successful a4b9 run. This does not
 establish every class's correctness or complete boss fidelity. Fire DPS fell
 6.69%; Discipline DPS/HPS fell 24.38%/22.16%, while other actors improved.
 There is no blanket role-performance acceptance. The independent closed-run

@@ -82,6 +82,14 @@ observation. Do not inherit a roster-wide mismatch from an earlier run. Normaliz
 serialized enchantment integers and distinguish permanent setup from temporary
 native imbues. A calibration actor may have a different GUID if its exact setup
 matches; missing effective stats do not erase verified gear identity.
+Before declaring stats or aura evidence missing, inspect retained
+`botauto_diagnose` rows at `bots[].snapshot.effective_stats` and
+`snapshot.native_combat_stats`. The owner's
+`modifier_ledger.primary_stats[].aura_effects` records contributing spell,
+caster and amount. Bind `observed_at_ms` to the boss pull and actor; admission
+gear alone does not describe a bot after trash deaths. Compare temporary proc
+carryover and re-buff timing before attributing changed damage to role code.
+This modifier subset does not establish a complete aura or consumable ledger.
 Matching stored equipment is not proof that its effects apply. Check native
 profession/rank requirements for equipped enchants against the actor's skills
 and the simulator's actual applicability rules before diagnosing a proc or

@@ -33,12 +33,24 @@ def _stalled_native_path(now_ms: int, last_progress_ms: int,
 
 
 def _native_runback_submission(*, matching: bool, stalled: bool,
-                               repath_count: int) -> tuple[str, int]:
-    if matching and not stalled:
+                               repath_count: int,
+                               outside_entrance: bool = True,
+                               spline_finalized: bool = False,
+                               current_motion: str = "POINT",
+                               active_motion: str = "POINT") -> tuple[str, int]:
+    if not outside_entrance:
+        return "entrance", repath_count
+    finished_before_entrance = (
+        matching
+        and spline_finalized
+        and current_motion == "IDLE"
+        and active_motion == "MAX"
+    )
+    if matching and not finished_before_entrance and not stalled:
         return "preserve", repath_count
-    if matching and repath_count == 0:
+    if (finished_before_entrance or stalled) and matching and repath_count == 0:
         return "repath", 1
-    if matching:
+    if (finished_before_entrance or stalled) and matching:
         return "terminal", repath_count
     return "submit", repath_count
 
@@ -284,7 +296,9 @@ def test_stalled_native_generator_gets_one_repath_then_terminal_bound() -> None:
 
 def test_active_native_runback_path_is_not_resubmitted_before_stall() -> None:
     recovery = RECOVERY.read_text(encoding="utf-8")
-    preserve = recovery.index("if (matchingRecoveryPath && !recoveryPathStalled)")
+    preserve = recovery.index(
+        "if (matchingRecoveryPath && !recoveryPathFinished"
+    )
     in_progress = recovery.index('result = "native_instance_runback_in_progress";', preserve)
     submit = recovery.index("BotActionArbitration::Outcome const moveOutcome", preserve)
     assert preserve < in_progress < submit
@@ -300,6 +314,63 @@ def test_active_native_runback_path_is_not_resubmitted_before_stall() -> None:
     ) == ("terminal", 1)
     assert _native_runback_submission(
         matching=False, stalled=False, repath_count=0
+    ) == ("submit", 0)
+
+
+def test_native_finished_before_entrance_repaths_once_from_actual_motion_state() -> None:
+    recovery = RECOVERY.read_text(encoding="utf-8")
+    assert '#include "MotionMaster.h"' in recovery
+    assert '#include "Movement/Spline/MoveSpline.h"' in recovery
+    assert "auto nativeRecoveryPathFinishedBeforeEntrance" in recovery
+    finished = recovery[recovery.index(
+        "auto nativeRecoveryPathFinishedBeforeEntrance"
+    ):recovery.index("BotWorldGhostFlight::RetainedPath", recovery.index(
+        "auto nativeRecoveryPathFinishedBeforeEntrance"
+    ))]
+    assert "matchingNativeRecoveryPath()" in finished
+    assert "GetCurrentMovementGeneratorType()" in finished
+    assert "== IDLE_MOTION_TYPE" in finished
+    assert "GetMotionSlotType(MOTION_SLOT_ACTIVE)" in finished
+    assert "== MAX_MOTION_TYPE" in finished
+    assert "bot->movespline->Finalized()" in finished
+    assert "recoveryPathFinished || recoveryPathStalled" in recovery
+
+    # Receipt 277 / actor 30006: the exact scoped recovery path remains
+    # retained while the ghost is outside the entrance, but the native point
+    # generator has settled to idle with a finalized spline before its 30 s
+    # no-progress fallback.
+    trace_finished = dict(
+        matching=True, stalled=False, repath_count=0,
+        outside_entrance=True, spline_finalized=True,
+        current_motion="IDLE", active_motion="MAX",
+    )
+    assert _native_runback_submission(**trace_finished) == ("repath", 1)
+    assert _native_runback_submission(
+        **{**trace_finished, "repath_count": 1}
+    ) == ("terminal", 1)
+
+    # A live point generator is retained until the existing 30 s witness
+    # expires, while a completed entrance skips runback entirely.
+    assert _native_runback_submission(
+        matching=True, stalled=False, repath_count=0,
+        spline_finalized=False, current_motion="POINT", active_motion="POINT",
+    ) == ("preserve", 0)
+    assert _native_runback_submission(
+        matching=True, stalled=False, repath_count=0,
+        spline_finalized=True, current_motion="POINT", active_motion="POINT",
+    ) == ("preserve", 0)
+    assert _native_runback_submission(
+        matching=True, stalled=True, repath_count=0,
+        spline_finalized=False, current_motion="POINT", active_motion="POINT",
+    ) == ("repath", 1)
+    assert _native_runback_submission(
+        **{**trace_finished, "outside_entrance": False}
+    ) == ("entrance", 0)
+
+    # Finalized native state from another attempt/owner/path is not a matching
+    # recovery receipt and cannot spend the recovery retry token.
+    assert _native_runback_submission(
+        **{**trace_finished, "matching": False}
     ) == ("submit", 0)
 
 
