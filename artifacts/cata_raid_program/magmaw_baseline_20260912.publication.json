@@ -1,0 +1,82 @@
+{
+  "source_commit": "24fcea56ff22c7a10037ac0ff967178831cd9e0c",
+  "artifact_kind": "selected_external_research_and_native_readback",
+  "training_eligible": false,
+  "boss_clear_claimed": false,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_baseline_20260912.tar.gz.dvc",
+  "archive_sha256": "1dbf3f8dbadde628ce1f64ea2968bd3c85b026e495270c92cd00cf2d6c7f6123",
+  "archive_bytes": 15537,
+  "members": [
+    {
+      "path": "calendar_search_scope.json",
+      "bytes": 361,
+      "sha256": "305f859aaa8f1e585fb3abaf32ad9a7dc3cae2eb6f2015eac639696f5a81ced6"
+    },
+    {
+      "path": "health_derivations.json",
+      "bytes": 4292,
+      "sha256": "4f48f1f6d863e5092d12e4577d23850bf3c0eb5ef1c341b5adc586ffbefbce09"
+    },
+    {
+      "path": "late_heroic_phase.json",
+      "bytes": 1796,
+      "sha256": "e889144d3a4d5e6705ccd9b22992d0544a411ffde0291e17fc75acac9fbb71c8"
+    },
+    {
+      "path": "melee_migration_origin.json",
+      "bytes": 1034,
+      "sha256": "8b886e100989b94ec4172b6ca285d6eff42bb8e80ba958cff19c0dc5b1d64eb9"
+    },
+    {
+      "path": "melee_pressure_comparison.json",
+      "bytes": 4797,
+      "sha256": "2cb5895992f1734b8bb43679a776f71f9a52b35ab845af2dd03b1cd220216eae"
+    },
+    {
+      "path": "native_client_damage_comparison.json",
+      "bytes": 9679,
+      "sha256": "1411a6ac0ca97ee224cceb56ba2c413e947bd1e755c33cd0a5d11be3a9f9710b"
+    },
+    {
+      "path": "native_creature_readback.json",
+      "bytes": 7232,
+      "sha256": "a1303b330c86321c416d6a5446e4684b9ec5be1575abb893b56e54367233a617"
+    },
+    {
+      "path": "native_spell_readback.json",
+      "bytes": 84451,
+      "sha256": "698681551583e4dd2691eff1accfbbb98ed1ad7ff13083d10af678369e512829"
+    },
+    {
+      "path": "research_metrics.json",
+      "bytes": 188,
+      "sha256": "b78ac53722491fdfb5b0de2145ac76d3dbf815bab973a7a3ebfa3f20e8ad323a"
+    },
+    {
+      "path": "tantrum_reference.json",
+      "bytes": 4671,
+      "sha256": "6ba55018784a247fc8aee9c3e2744b5f917e62647c4966bec62ea779bc8b3c71"
+    },
+    {
+      "path": "validation.txt",
+      "bytes": 772,
+      "sha256": "2eb2b90dd61d730d191783e60d0a183f29ee13b7014e77a38a9687fc6ce1b081"
+    },
+    {
+      "path": "wcl_health_observations.json",
+      "bytes": 9521,
+      "sha256": "853c66aa5d69eabdbe8426133adb71b7ee2fc377e66e98f0089812a6ed549e3d"
+    }
+  ],
+  "remote_download_sha256": "1dbf3f8dbadde628ce1f64ea2968bd3c85b026e495270c92cd00cf2d6c7f6123",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "dvc_push": "1 file pushed",
+  "verified_archive_copies_evicted": true,
+  "verified_local_bytes_evicted": 159868,
+  "compact_inputs_retained_at": null,
+  "cache_object_resolution": "repo.cache.local.oid_to_path(pointer md5)"
+}

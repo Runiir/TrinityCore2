@@ -1,0 +1,5 @@
+outs:
+- md5: 42bdc602da2ef99b39fc533d4c1c20c2
+  size: 15537
+  hash: md5
+  path: magmaw_baseline_20260912.tar.gz
