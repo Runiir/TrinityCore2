@@ -34,6 +34,7 @@ def _actor(
         "activity": {
             "intervals": [],
             "active_seconds": active_fraction * elapsed,
+            "fresh_attack_active_seconds": active_fraction * elapsed,
             "longest_fresh_attack_outage_ms": 750,
         },
         "survival": {
@@ -56,7 +57,7 @@ def _nonattacking_healer(*, hps: float, elapsed: float = 100.0) -> dict[str, obj
         "role": "healer",
         "class_id": 2,
         "damage": {"hostile_originated": 0, "dps": 0.0},
-        "activity": {"intervals": [], "active_seconds": elapsed * 0.8},
+        "activity": {"intervals": [], "active_seconds": elapsed * 0.8, "fresh_attack_active_seconds": 0},
         "survival": {"death_observed": False},
         "effective_healing": hps * elapsed,
         "effective_hps": hps,
@@ -292,7 +293,7 @@ def test_clear_with_thirty_percent_decline_fails_performance_independently() -> 
 def test_material_decline_requires_diagnosis_when_missing_data_is_inconclusive() -> None:
     baseline = _summary(party_dps=100.0)
     candidate = _summary(party_dps=70.0, actors={"30006": _actor(dps=70.0)})
-    del candidate["actors"]["30006"]["activity"]["active_seconds"]
+    del candidate["actors"]["30006"]["activity"]["fresh_attack_active_seconds"]
 
     report = compare_optimization_acceptance(
         baseline,
@@ -373,15 +374,46 @@ def test_legitimate_zero_inside_setup_identity_is_not_empty() -> None:
 def test_missing_direct_activity_is_inconclusive_not_zero() -> None:
     baseline = _summary(party_dps=100.0)
     candidate = _summary(party_dps=100.0)
-    del candidate["actors"]["30006"]["activity"]["active_seconds"]
+    del candidate["actors"]["30006"]["activity"]["fresh_attack_active_seconds"]
 
     report = compare_optimization_acceptance(
         baseline, candidate, _setup(baseline, candidate), _repair()
     )
 
     assert report["performance_verdict"] == "inconclusive"
-    assert report["comparisons"]["actors"]["30006"]["candidate"]["active_fraction"] is None
+    assert report["comparisons"]["actors"]["30006"]["candidate"]["fresh_attack_event_second_rate"] is None
     assert "candidate_actor_30006_activity_missing" in report["sufficiency_reasons"]
+
+
+def test_direct_activity_gate_ignores_changes_in_healing_pet_and_dot_activity() -> None:
+    baseline = _summary(party_dps=100.0)
+    candidate = _summary(party_dps=100.0)
+    for summary in (baseline, candidate):
+        summary["actors"]["30006"]["activity"]["fresh_attack_active_seconds"] = 40
+    candidate["actors"]["30006"]["activity"]["active_seconds"] = 40
+    report = compare_optimization_acceptance(
+        baseline, candidate, _setup(baseline, candidate), _repair())
+    assert report["comparisons"]["actors"]["30006"]["direct_activity_decline_pct"] == 0
+    assert report["performance_verdict"] == "pass"
+
+    candidate["actors"]["30006"]["activity"]["fresh_attack_active_seconds"] = 20
+    report = compare_optimization_acceptance(
+        baseline, candidate, _setup(baseline, candidate), _repair())
+    assert report["comparisons"]["actors"]["30006"]["direct_activity_decline_pct"] == 50
+    assert "actor_30006_direct_activity_decline_pct_material" in report["material_decline_reasons"]
+
+
+def test_direct_activity_buckets_can_exceed_elapsed_seconds_at_window_edges() -> None:
+    baseline = _summary(party_dps=100.0, elapsed=100.5,
+                        actors={"30006": _actor(dps=100.0, elapsed=100.5)})
+    candidate = _summary(party_dps=100.0, elapsed=100.5,
+                         actors={"30006": _actor(dps=100.0, elapsed=100.5)})
+    for summary in (baseline, candidate):
+        summary["actors"]["30006"]["activity"]["fresh_attack_active_seconds"] = 102
+    report = compare_optimization_acceptance(
+        baseline, candidate, _setup(baseline, candidate), _repair())
+    assert report["comparisons"]["actors"]["30006"]["direct_activity_decline_pct"] == 0
+    assert not any("activity_missing" in reason for reason in report["sufficiency_reasons"])
 
 
 def test_nonattacking_healer_uses_hps_activity_and_survival_metrics() -> None:

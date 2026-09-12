@@ -686,14 +686,16 @@ def _actor_metrics(
             exact_hps, effective_healing / elapsed_seconds
         ):
             reasons.append(f"{label}_actor_{guid}_hps_accounting_mismatch")
-    active_seconds = (
-        _number(activity.get("active_seconds")) if isinstance(activity, dict) else None
+    fresh_attack_seconds = (
+        _number(activity.get("fresh_attack_active_seconds")) if isinstance(activity, dict) else None
     )
-    if active_seconds is None or active_seconds > elapsed_seconds:
+    # These are occupied absolute-second buckets, not an elapsed duration.
+    # An interval crossing a second boundary can occupy one extra bucket.
+    if fresh_attack_seconds is None or fresh_attack_seconds > math.ceil(elapsed_seconds) + 1:
         reasons.append(f"{label}_actor_{guid}_activity_missing")
-        active_fraction = None
+        fresh_attack_second_rate = None
     else:
-        active_fraction = active_seconds / elapsed_seconds
+        fresh_attack_second_rate = fresh_attack_seconds / elapsed_seconds
     attack_outage_ms = (
         _number(activity.get("longest_fresh_attack_outage_ms"))
         if isinstance(activity, dict) else None
@@ -743,8 +745,8 @@ def _actor_metrics(
         "direct_dps": direct_damage / elapsed_seconds if direct_damage is not None else None,
         "effective_healing": effective_healing,
         "exact_hps": exact_hps,
-        "active_seconds": active_seconds,
-        "active_fraction": active_fraction,
+        "fresh_attack_active_seconds": fresh_attack_seconds,
+        "fresh_attack_event_second_rate": fresh_attack_second_rate,
         "longest_fresh_attack_outage_ms": attack_outage_ms,
         "boss_damage": boss_damage,
         "boss_dps": boss_damage / elapsed_seconds if boss_damage is not None else None,
@@ -873,8 +875,8 @@ def compare_optimization_acceptance(
                 else None
             ),
             "direct_activity_decline_pct": (
-                _decline_pct(before["active_fraction"], after["active_fraction"])
-                if before["active_fraction"] is not None and after["active_fraction"] is not None
+                _decline_pct(before["fresh_attack_event_second_rate"], after["fresh_attack_event_second_rate"])
+                if before["fresh_attack_event_second_rate"] is not None and after["fresh_attack_event_second_rate"] is not None
                 else None
             ),
             "direct_damage_rate_decline_pct": (

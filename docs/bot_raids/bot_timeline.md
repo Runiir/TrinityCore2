@@ -37,6 +37,13 @@ Actor totals describe the full scoring window; the event list and activity
 marks follow the selected interval. A phase labelled `unknown` remains unknown,
 even when individual targetability observations identify the live body.
 
+`activity.active_seconds` is the number of absolute one-second buckets with
+effective healing or originated hostile damage, including pet and periodic
+damage. `fresh_attack_active_seconds` counts only buckets with owner non-pet
+direct hostile impacts. Neither measures casting time or GCD usage. Older
+models' enclosing `metric_scope` incorrectly called the mixed counter offensive
+activity; replay corrects its description without changing damage/healing totals.
+
 To reconstruct the view from retained evidence:
 
 ```sh

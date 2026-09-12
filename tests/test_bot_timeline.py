@@ -134,6 +134,20 @@ def test_melee_health_join_does_not_sum_ambiguous_callbacks():
     assert events[0]["health_damage"] is None
 
 
+def test_activity_distinguishes_healing_and_pet_dot_tails_from_fresh_attacks():
+    direct = _event(1, 1000)
+    periodic = _event(2, 2000, effect=2)
+    pet = _event(3, 3000, pet=True)
+    heal = {**_event(4, 4000), "kind": "heal", "target_guid": 7, "target_entry": 0}
+    _, summary = build_timeline_from_rows([
+        _bound("combat_log", _full([direct, periodic, pet, heal]))], _report(failed=True))
+    activity = summary["actors"]["7"]["activity"]
+    assert activity["active_seconds"] == 4
+    assert activity["fresh_attack_active_seconds"] == 1
+    assert activity["active_seconds_basis"] == "occupied_absolute_second_buckets_with_hostile_damage_or_effective_healing"
+    assert activity["fresh_attack_outage_basis"] == "observed_direct_landed_boundaries"
+
+
 def test_incoming_damage_survives_delta_and_zero_health_without_becoming_dps():
     outgoing = _event(1, 1000)
     incoming = {**_event(2, 2000, amount=0), "source_guid": 99,

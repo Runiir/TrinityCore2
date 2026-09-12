@@ -24,6 +24,15 @@ Report DPS and HPS for every bot. Review tanks' offensive uptime alongside
 threat/defensives and healers' damage opportunities alongside healing, mana,
 and preventable deaths. A low healer DPS number alone is not a defect.
 
+In the bot timeline, `activity.active_seconds` counts absolute one-second
+buckets with effective healing or originated hostile damage, including pet/DoT
+tails. It is not offensive or cast/GCD uptime. Use
+`fresh_attack_active_seconds` for buckets with owner non-pet direct hostile
+impacts, and the separately named submission/outage fields for their stated
+boundaries. Neither bucket count measures time spent casting. Legacy captures
+mislabel the enclosing `metric_scope`; preserve their numbers and correct the
+interpretation instead of treating a healing-only actor as actively attacking.
+
 For every DPS actor and spec, report available evidence for:
 
 - Originated damage and DPS using the same encounter denominator for every
