@@ -19,6 +19,8 @@ def payload():
                                     'evaluation_started_at_ms': 1000, 'observed_at_ms': 1002,
                                     'actor_guid': 7, 'target_guid': 76, 'target_entry': 42347,
                                     'owned_auras': {'ignite_effect0_amount': 9999},
+                                    'component_columns': ['spell_id', 'effect_index', 'amount', 'source_base_period_ms', 'contribution'],
+                                    'components': [[12654, 0, 6000, 2000, 3000], [44457, 0, 3000, 3000, 1000], [92315, 1, 1500, 3000, 500]],
                                     'estimate_kind': 'derived_candidate_state_not_observed_outcome',
                                     'gate': {'ignite_below_10000': True}},
                     'actions': [{'spell_id': 11129, 'valid': False, 'reject_reason': 'combustion_dot_window_not_ready'}]}}}}]}

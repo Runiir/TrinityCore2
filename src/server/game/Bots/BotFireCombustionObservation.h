@@ -14,7 +14,8 @@ namespace BotFireCombustionObservation
 struct Component
 {
     uint32 SpellId, EffectIndex;
-    int32 Amount, Contribution;
+    int32 Amount, SourceBasePeriodMs;
+    double Contribution;
 };
 struct AuraState
 {

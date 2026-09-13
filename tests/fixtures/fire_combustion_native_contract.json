@@ -1,0 +1,183 @@
+{
+  "contract": "DPS-057 Combustion base-rate snapshot, no double haste",
+  "wowsims_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+  "dbc_sha256": {
+    "Spell.dbc": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+    "SpellEffect.dbc": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252",
+    "SpellRange.dbc": "46fc3e766ff03f621a7641e2e440886475714f1304721c41e1e767d15ba87efd",
+    "SpellClassOptions.dbc": "6df7951ec8fa988cd0444a61d35992db8f94020870473d8101829b6d22dcd69c"
+  },
+  "combustion": {
+    "spell_id": 11129,
+    "effect_index": 0,
+    "effect": 77,
+    "scaling_percent": 100,
+    "mask": [
+      12582935,
+      4160,
+      0
+    ],
+    "range_index": 5,
+    "native_max_range": 40
+  },
+  "sources": [
+    {
+      "spell_id": 12654,
+      "effect_index": 0,
+      "base_period_ms": 2000,
+      "family_flags": [
+        134217728,
+        0,
+        8
+      ],
+      "haste_periodic": false
+    },
+    {
+      "spell_id": 44457,
+      "effect_index": 0,
+      "base_period_ms": 3000,
+      "family_flags": [
+        0,
+        131072,
+        8
+      ],
+      "haste_periodic": true
+    },
+    {
+      "spell_id": 92315,
+      "effect_index": 1,
+      "base_period_ms": 3000,
+      "family_flags": [
+        4194304,
+        0,
+        8
+      ],
+      "haste_periodic": true
+    },
+    {
+      "spell_id": 11366,
+      "effect_index": 1,
+      "base_period_ms": 3000,
+      "family_flags": [
+        4194304,
+        0,
+        4104
+      ],
+      "haste_periodic": true
+    }
+  ],
+  "child": {
+    "spell_id": 83853,
+    "base_period_ms": 1000,
+    "base_duration_ms": 10000,
+    "haste_periodic": true
+  },
+  "hasted_case": {
+    "period_modifier": 0.75,
+    "tick_amounts": [
+      6000,
+      3000,
+      1500
+    ],
+    "source_rate": 4500,
+    "child_ticks": 13,
+    "precrit_total": 58500,
+    "wrong_actual_period_total": 65000
+  },
+  "unchanged_script_sha256": {
+    "spell_mage_arcane_potency": "e91228d2b9093e52e38d4699bf3d5414fcc8e845f67940dd3e2e99600a8f93fd",
+    "spell_mage_blast_wave": "f62740ecf886c0a7a27b8f484ea82d53f12e861619250ebf0889bb7b4a908522",
+    "spell_mage_blazing_speed": "20bc98fe0823daf49225c441a4fa5cfe96bd8eca30035348a1265c63349239c1",
+    "spell_mage_blizzard": "7479c94219bf7c48aa7864c6194aaaf29b8fb8511308ccc60ff959d6ba564845",
+    "spell_mage_cold_snap": "d942468f7578667568d34e845b5335109c55661d91b0d8f9c6cce8827b6bd96d",
+    "spell_mage_cone_of_cold": "65f520eb338e7c6a8c559bc8311204bf76a3c6f94461b59abc6ce165805800c1",
+    "spell_mage_conjure_refreshment": "aa113dac6c4ecf1fca8beb7058e9df0bee8775096d478b5fb16d0396e90f238d",
+    "spell_mage_dragon_breath": "29c2a009b409680f3db163526122e7295bb0cc83d81f61e2484dd94e4ddae98f",
+    "spell_mage_focus_magic": "0c28950508599aa938be79fadb085e723721f03db20a9eb76a9d2e0234bc7630",
+    "spell_mage_frostbolt": "27c396a950de17c97b89769fa37edfe01736afc42195edf2be7249b9826fe1d7",
+    "spell_mage_ice_block": "1758dcf3523897a236db1fbaeffdb618defa0b669b4c0a449a003722d3ebb8ff",
+    "spell_mage_icy_veins": "ffaa8eb2b0aacd08a485105796d203f4faaab84acaa139a9790a2a9bbc348849",
+    "spell_mage_living_bomb": "55aefeea6a32e2bc90cb97540146bf61c5fadcdc1bc1649bd1b21b0e0829303f",
+    "spell_mage_ice_barrier": "8126de30c55531821fd097c16c46133484f56f36c530f5ecba88e93c6fea8356",
+    "spell_mage_ignite": "22d9b65f2a4e0018441492a3aee637cef4178f38e3e1399a74f090571a1399ca",
+    "spell_mage_ignite_periodic": "6a35302302c5bb685b54a1000d8bacec311c82058d04eff891bd250bc822d127",
+    "spell_mage_mage_ward": "46074bf81f9772f7c1e215705efbaa5a911d7940abbf5f2c96a70517338d8500",
+    "spell_mage_mana_shield": "ac339fc281876710d2179a2ef74ca208486fdcac84abbc2aebf5fe41448fc244",
+    "spell_mage_master_of_elements": "9b1946d13d092e16f4ac803d9bceeec3bd237e45bcc54345c2ee8c49856b6e8a",
+    "spell_mage_nether_vortex": "ab65faf43b2a7834433c28897dbe16e9a52e5a0555e4556b4f852ea2f6f44585",
+    "spell_mage_permafrost": "305c173e891486652e6c1bc7a132ac6b21f207771aaf9171eae914e89b086bd2",
+    "spell_mage_polymorph": "594bb5f782a3efe758b127197154882b58dd58fa3f98e931359f536230b64e4f",
+    "spell_mage_replenish_mana": "d84469202facec805601b36c5eec163c8e1f5c4fc5e6fa1c131a5a3b727d20f1",
+    "spell_mage_ring_of_frost": "2cd88dba223ca0c48d1a12eaa2f80d3c5e8f3e990425662ba4faaf19fb9b46ef",
+    "spell_mage_ring_of_frost_freeze": "94f501234a23b5427f3256a0b39639917f754e7d50f08726b921dc8318b1c70a",
+    "spell_mage_ring_of_frost_freeze_AuraScript": "b0efb6ef8f6c74523fddf8f29b8ac3293e43152ae879dc6e3a399cd1f9a05145",
+    "spell_mage_time_warp": "d9f63119060d5d0513fe50db458b67ad3cc717fd3bb93fa5f1a46e3dec5a02a7",
+    "spell_mage_water_elemental_freeze": "81f11888c11b228f2d916f300a1a2ba3b63676c864b0879ade46b7a8a2b15b07",
+    "spell_mage_arcane_missiles_trigger": "c467743fd24a9986a6a092e51cd8e2eeccb06fc86280fce689bfe7cef1110bdc",
+    "spell_mage_offensive_state_dnd": "476dd8d7fd45aea7978d86eafd6bf135007b0fcc8df546583bde269dd500250f",
+    "spell_mage_early_frost": "0eb2e235ed8510afabcb12ff2b76296733237475a9093932ca5a452adcba552e",
+    "spell_mage_flame_orb": "4b3ed28652162f33c06377150cabe71e93fe14da6bb11f080b959b730d69c1e8",
+    "spell_mage_flame_orb_aoe_dummy": "4c64ad4add1236f1dec7a5de83208dcac4d026778ce0678383771bdac2441237",
+    "spell_mage_hot_streak": "06459b6b2205d655580d0c51a096fb2803c5e41bc82628102fc8e97ca2eb5010",
+    "spell_mage_improved_hot_streak": "c4ac2e5faff34b919e45acdc8192d7e7b88b597130cf458608b86c7dabeec01d",
+    "spell_mage_mirror_image": "4e5e468ff6c94b5987b024bfc93df7ff17be39e241eb8fcd36250776bbf7d5fd",
+    "spell_mage_mirror_image_AurasScript": "0973d79c9ea974c8d51bd201fcdc2a8f6a4396f5de424ad80e5c49af43547eae",
+    "SummonerCheck": "d5ff720ebfee2db6220767e3f43517f352c26c1ac527eca573206c50418cd974",
+    "spell_mage_initialize_images": "8e0cdefadd2ec475bce973a69e32b4a113899413e9e4985fc8694ad615a3e464",
+    "spell_mage_deep_freeze": "b07ad4a86a8ea830737fc2c3909d97dc6c22b91002ae9e73a9368d49b6a944e3",
+    "spell_mage_pyromaniac": "318d11dd410f4ea92e0ad63d26fc39aa475a4436d1dda575e3a8d99255f7ab73",
+    "spell_mage_impact": "d2d2712b56f4ab75ea9e6742cb56cf0d819ec77bfb599bf24305364f2ec4690a",
+    "spell_mage_impact_triggered": "938fcd3a567d8a289747b94b8b69747706ef1b17eeb726ac957c7725c5492186",
+    "spell_mage_frostfire_bolt": "0f916cdee7c80fb4df5123d4d6f7a2f7b7e320a3705ff778febaa96f7573a672"
+  },
+  "registration_order": [
+    "RegisterSpellScript(spell_mage_arcane_missiles_trigger);",
+    "RegisterSpellScript(spell_mage_arcane_potency);",
+    "RegisterSpellScript(spell_mage_blast_wave);",
+    "RegisterSpellScript(spell_mage_blazing_speed);",
+    "RegisterSpellScript(spell_mage_blizzard);",
+    "RegisterSpellScript(spell_mage_cold_snap);",
+    "RegisterSpellScript(spell_mage_combustion);",
+    "RegisterSpellScript(spell_mage_cone_of_cold);",
+    "RegisterSpellScript(spell_mage_conjure_refreshment);",
+    "RegisterSpellScript(spell_mage_deep_freeze);",
+    "RegisterSpellScript(spell_mage_dragon_breath);",
+    "RegisterSpellScript(spell_mage_early_frost);",
+    "RegisterSpellScript(spell_mage_flame_orb);",
+    "RegisterSpellScript(spell_mage_flame_orb_aoe_dummy);",
+    "RegisterSpellScript(spell_mage_focus_magic);",
+    "RegisterSpellScript(spell_mage_frostbolt);",
+    "RegisterSpellScript(spell_mage_frostfire_bolt);",
+    "RegisterSpellScript(spell_mage_hot_streak);",
+    "RegisterSpellScript(spell_mage_ice_barrier);",
+    "RegisterSpellScript(spell_mage_ice_block);",
+    "RegisterSpellScript(spell_mage_icy_veins);",
+    "RegisterSpellScript(spell_mage_ignite);",
+    "RegisterSpellScript(spell_mage_ignite_periodic);",
+    "RegisterSpellScript(spell_mage_impact);",
+    "RegisterSpellScript(spell_mage_impact_triggered);",
+    "RegisterSpellScript(spell_mage_improved_hot_streak);",
+    "RegisterSpellScript(spell_mage_initialize_images);",
+    "RegisterSpellScript(spell_mage_living_bomb);",
+    "RegisterSpellScript(spell_mage_mage_ward);",
+    "RegisterSpellScript(spell_mage_mana_shield);",
+    "RegisterSpellScript(spell_mage_master_of_elements);",
+    "RegisterSpellAndAuraScriptPair(spell_mage_mirror_image, spell_mage_mirror_image_AurasScript);",
+    "RegisterSpellScript(spell_mage_nether_vortex);",
+    "RegisterSpellScript(spell_mage_offensive_state_dnd);",
+    "RegisterSpellScript(spell_mage_permafrost);",
+    "RegisterSpellScript(spell_mage_polymorph);",
+    "RegisterSpellScript(spell_mage_pyromaniac);",
+    "RegisterSpellScript(spell_mage_replenish_mana);",
+    "RegisterSpellScript(spell_mage_ring_of_frost);",
+    "RegisterSpellAndAuraScriptPair(spell_mage_ring_of_frost_freeze, spell_mage_ring_of_frost_freeze_AuraScript);",
+    "RegisterSpellScript(spell_mage_time_warp);",
+    "RegisterSpellScript(spell_mage_water_elemental_freeze);"
+  ],
+  "unchanged_enum_sha256": {
+    "MageSpells": "a3d76853678d6408d391f6b803a4eccde9d59a3d2e21d3cdbd7e54a9caef3177",
+    "MageIcons": "1c7ae2f89cd4a0a35dcb52be3b55611e939320093efda16498176b51ce831334",
+    "MiscSpells": "a8b7e345bf4a43c48b1b92d2636885b17192f5d3a4c7b07629efb80e303a6c4d",
+    "MageSpellIcons": "dd4ad5d39c490715fe420538db44534da515595f40ce472b92db93e00815fb62"
+  }
+}

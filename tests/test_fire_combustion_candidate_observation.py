@@ -24,7 +24,7 @@ constexpr unsigned SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE=5,SPELL_
 constexpr unsigned PLAYER_SPELL_CRIT_PERCENTAGE1=10,CLASS_MAGE=8;
 struct Guid {unsigned value; unsigned GetCounter()const{return value;} bool operator!=(Guid b)const{return value!=b.value;}};
 constexpr unsigned SPELL_EFFECT_SCRIPT_EFFECT=77,SPELL_ATTR8_MASTERY_AFFECTS_POINTS=1,SPELL_ATTR1_FINISHING_MOVE_DAMAGE=2;
-struct SpellEffectInfo {unsigned Effect=77,ApplyAuraName=0,AuraPeriod=0,SpellClassMask=123;int BasePoints=100,DieSides=0;float RealPointsPerLevel=0,PointsPerComboPoint=0;
+struct SpellEffectInfo {unsigned Effect=77,ApplyAuraName=0,AuraPeriod=1000,SpellClassMask=123;int BasePoints=100,DieSides=0;float RealPointsPerLevel=0,PointsPerComboPoint=0;
  struct {float Coefficient=0,Variance=0,ComboPointsCoefficient=0;} Scaling;};
 struct SpellInfo {unsigned Id=0,SpellFamilyName=SPELLFAMILY_MAGE,school=SPELL_SCHOOL_MASK_FIRE;bool affected=true;
  SpellEffectInfo Effects[3];unsigned attributes=0;bool HasAttribute(unsigned a)const{return attributes&a;}
@@ -94,7 +94,7 @@ int main(){
     assert (first['actor_guid'], first['target_guid'], first['target_entry']) == (30006, 76, 42347)
     assert (first['evaluation_started_at_ms'], first['observed_at_ms']) == (1000, 1002)
     assert first['eligible_component_count'] == 10
-    assert first['summed_base_points'] == sum(int((10000 + i) * .5) for i in range(4, 14))
+    assert first['summed_base_points'] == int(sum((10000 + i) * .5 for i in range(4, 14)))
     assert first['components_truncated'] is True
     assert len(first['components']) == 8
     assert first['components'] == sorted(first['components'])
@@ -181,7 +181,7 @@ int main(){
  s.ScalingPercent=s.HasteMod=s.FireCritPct=s.TargetSpellCritPct=s.TargetAllCritPct=s.SpellCritMultiplier=s.FireCritDamageMultiplier=-std::numeric_limits<float>::max();
  s.EstimatedTotal=-std::numeric_limits<double>::max();s.EstimateAvailable=true;
  for(auto& b:s.Buffs)b={true,INT32_MIN};
- for(int i=0;i<8;++i)s.Components.push_back({UINT32_MAX,UINT32_MAX,INT32_MIN,INT32_MIN});
+ for(int i=0;i<8;++i)s.Components.push_back({UINT32_MAX,UINT32_MAX,INT32_MIN,INT32_MIN,INT32_MIN});
  std::cout<<ToJson(s)<<'\n';
  Player actor;Unit target;
  manager.periodic.haste=std::numeric_limits<float>::quiet_NaN();
@@ -229,7 +229,7 @@ int main(){Player actor;actor.guid=30006;Unit target;SpellInfo info;info.Id=1265
         assert observation['summed_base_points'] is None
         assert observation['estimated_total'] is None
         assert observation['eligible_component_count'] == 1
-        assert observation['components'] == [[12654, 0, 12000, None]]
+        assert observation['components'] == [[12654, 0, 12000, 1000, None]]
     source = (BOTS / 'BotFireCombustionObservation.cpp').read_text()
     for forbidden in ('CalculateSpellDamage(', 'CalcValue(', 'CalcBaseValue(', 'ApplySpellMod(', 'GetSpellModValues(',
                       'SpellCritChanceDone(', 'CalcPeriod(', 'CalcDuration(', 'SpellCriticalDamageBonus('):

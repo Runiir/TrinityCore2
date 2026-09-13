@@ -662,6 +662,13 @@ void SpellMgrCorrections::ApplyPart04()
         spellInfo->AttributesEx |= SPELL_ATTR1_FINISHING_MOVE_DURATION;
     });
 
+    // Combustion combines owned Ignite and Living Bomb with the existing Pyro mask.
+    ApplySpellFix({ 11129 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->Effects[EFFECT_0].SpellClassMask[0] |= 0x08000000;
+        spellInfo->Effects[EFFECT_0].SpellClassMask[1] |= 0x00020000;
+    });
+
     // Combustion
     // Patch 4.3.0 (2011-11-29): Combustion's periodic damage can now critically hit.
     ApplySpellFix({ 83853 }, [](SpellInfo* spellInfo)

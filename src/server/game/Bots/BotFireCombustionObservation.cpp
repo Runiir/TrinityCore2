@@ -3,6 +3,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "SpellInfo.h"
+#include "Spells/SpellCombustion.h"
 #include "SpellMgr.h"
 #include "Util.h"
 #include <algorithm>
@@ -64,6 +65,7 @@ Snapshot Capture(Player const* actor, Unit const* target, uint64 evaluationStart
         && !combustion->HasAttribute(SPELL_ATTR1_FINISHING_MOVE_DAMAGE);
     if (s.RawScalingAvailable)
         s.ScalingPercent = static_cast<float>(scaling.BasePoints);
+    double sourceRate = 0;
     for (AuraEffect const* effect : target->GetAuraEffectsByType(SPELL_AURA_PERIODIC_DAMAGE))
     {
         SpellInfo const* info = effect->GetSpellInfo();
@@ -72,18 +74,21 @@ Snapshot Capture(Player const* actor, Unit const* target, uint64 evaluationStart
             || info->SpellFamilyName != SPELLFAMILY_MAGE
             || !info->IsAffected(SPELLFAMILY_MAGE, combustion->Effects[EFFECT_0].SpellClassMask))
             continue;
-        int32 const contribution = CalculatePct(effect->GetAmount(), s.ScalingPercent);
+        int32 const sourceBasePeriodMs = info->Effects[effect->GetEffIndex()].AuraPeriod;
+        double const rate = SpellCombustion::SourceRate(effect->GetAmount(), sourceBasePeriodMs);
+        double const contribution = rate * double(s.ScalingPercent) / 100.0;
+        sourceRate += rate;
         ++s.EligibleComponentCount;
-        s.SummedBasePoints += contribution;
-        s.Components.push_back({info->Id, effect->GetEffIndex(), effect->GetAmount(), contribution});
+        s.Components.push_back({info->Id, effect->GetEffIndex(), effect->GetAmount(), sourceBasePeriodMs, contribution});
         std::sort(s.Components.begin(), s.Components.end(), [](Component const& a, Component const& b)
         {
-            return std::tie(a.SpellId, a.EffectIndex, a.Amount, a.Contribution)
-                < std::tie(b.SpellId, b.EffectIndex, b.Amount, b.Contribution);
+            return std::tie(a.SpellId, a.EffectIndex, a.Amount, a.SourceBasePeriodMs, a.Contribution)
+                < std::tie(b.SpellId, b.EffectIndex, b.Amount, b.SourceBasePeriodMs, b.Contribution);
         });
         if (s.Components.size() > 8)
             s.Components.pop_back();
     }
+    s.SummedBasePoints = SpellCombustion::ScaledBasePoints(sourceRate, s.ScalingPercent);
     s.DurationMs = periodic->GetDuration();
     s.HasteMod = periodic->CalcPeriodicHasteMod(actor);
     for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
@@ -149,13 +154,13 @@ std::string ToJson(Snapshot const& s)
     o << ",\"eligible_component_count\":" << s.EligibleComponentCount << ",\"summed_base_points\":";
     if (s.RawScalingAvailable) o << s.SummedBasePoints; else o << "null";
     o << ",\"components_truncated\":" << (s.EligibleComponentCount > s.Components.size())
-      << ",\"component_columns\":[\"spell_id\",\"effect_index\",\"amount\",\"contribution\"],\"components\":[";
+      << ",\"component_columns\":[\"spell_id\",\"effect_index\",\"amount\",\"source_base_period_ms\",\"contribution\"],\"components\":[";
     for (size_t i = 0; i < s.Components.size(); ++i)
     {
         if (i) o << ',';
         Component const& c = s.Components[i];
-        o << '[' << c.SpellId << ',' << c.EffectIndex << ',' << c.Amount << ',';
-        if (s.RawScalingAvailable) o << c.Contribution; else o << "null";
+        o << '[' << c.SpellId << ',' << c.EffectIndex << ',' << c.Amount << ',' << c.SourceBasePeriodMs << ',';
+        if (s.RawScalingAvailable) number(c.Contribution); else o << "null";
         o << ']';
     }
     o << "],\"periodic\":{\"effect_index\":" << s.PeriodicEffectIndex << ",\"duration_ms\":" << s.DurationMs << ",\"period_ms\":" << s.PeriodMs
