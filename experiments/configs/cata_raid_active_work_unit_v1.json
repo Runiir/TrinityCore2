@@ -1,38 +1,42 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:remaining_role_performance",
-  "owner_skill": "raid-rotation-review",
-  "classification": "retained_evidence_diagnosis",
+  "work_unit": "magmaw:affliction_doomguard_admission",
+  "owner_skill": "raid-role-implementation",
+  "classification": "implemented_review_pending",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "05f5c2f959b4ee57be8de6021eb5df6fba7cf87c",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
+  "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Survival swap and shot/trap repairs accepted; remaining class performance diagnosis",
+  "gate_state": "Affliction guardian implementation tested; independent review pending",
   "first_broken_edge": {
-    "id": "remaining_role_policy_and_equipment_gaps",
-    "owner_classification": "raid_rotation_review",
-    "cause": "Survival execution recovered; remaining documented class-policy/equipment gaps and actor throughput declines require separately bounded repairs.",
-    "review_state": "retained_evidence_available",
-    "ledger_id": "DPS-045"
+    "id": "affliction_doomguard_missing_action_and_known_spell",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Source05f actor30008 lacks18540 profile action and admitted known spell; native self-summon needs matching provisioning and action semantics.",
+    "review_state": "implementation_tested_review_pending",
+    "ledger_id": "DPS-049"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "2532bb0810c6734f4d5cb45d42a967c414374b066d0e5b61566ab22dabf45b20"
+    "sha256": "b0e716b6969cf50b4bd4dc6e7203fecae1e827185e535b7f57a62edc75f99da0"
   },
   "scope_lock": {
-    "objective": "Diagnose one remaining class/role gap using retained exact native and WCL/WoWSims references.",
+    "objective": "Admit Affliction native Doomguard through exact profile and provisioning paths.",
     "owned_files": [
-      "docs/bot_raids/magmaw_dps_baseline_20260913.md",
-      "docs/bot_raids/error_ledger.md"
+      "sql/custom/world/2026_09_13_02_affliction_doomguard.sql",
+      "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+      "experiments/configs/cata_434_action_profiles.json",
+      "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "tests/test_affliction_doomguard.py"
     ],
     "forbidden_changes": [
-      "No coefficient, roster, native movement or boss changes without a production-backed repair packet."
+      "No C++/coefficients/boss/movement/guardian AI/transient-add rotation changes."
     ]
   },
   "acceptance_conditions": [
-    "Identify exact actor, native interval, reference limitation and earliest actionable mismatch.",
-    "Preserve accepted Survival shot/trap fixes and separate encounter clear from per-actor/WCL parity."
+    "Production fixtures prove known-spell admission,self-target zero-range execution,native gates and guardian reservation.",
+    "Native summon18540 produces attributable Doomguard11859 damage while primaryFelhunter identity is preserved.",
+    "All-actor table updated; clear,repair and overall performance remain separate."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -43,7 +47,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Select one documented role edge from retained evidence: Force of Nature classification, missing Doomguard, parasite long-DoT policy or role equipment authority. Resolve exact production ownership and fixture before a new implementation; no unchanged trap retry.",
+  "next_action": "Implement DPS-049, independently review, regenerate exact affected provisioning assets, build once and validate native summon/damage with the whole roster reviewed. Continue remaining actor rows afterward.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -94,10 +98,9 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "accepted_narrow_native_trap_removal",
-    "live_verified": true,
-    "next_work_unit_implemented": false,
-    "artifact_sha256": "be595a267e3c20a5b3b2d32f00fd2b0c5addb253b6adf0d2ebbb1fd31bb94b3a"
+    "verdict": "pending",
+    "live_verified": false,
+    "next_work_unit_implemented": true
   },
   "related_edges": [
     {
@@ -143,7 +146,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-045",
+  "error_id": "DPS-049",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",

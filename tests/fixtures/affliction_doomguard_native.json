@@ -1,0 +1,785 @@
+{
+  "source": "26438196d1",
+  "missing_run": "05f5c2f959",
+  "native": {
+    "Spell": {
+      "sha256": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+      "record_count": 73253,
+      "field_count": 48,
+      "record_size": 192,
+      "rows": [
+        [
+          18540,
+          65536,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          512,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          5791,
+          0,
+          3592,
+          0,
+          389866,
+          27066,
+          389883,
+          0,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2951,
+          1325,
+          1175,
+          0,
+          0,
+          2655,
+          3419,
+          778,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          60478,
+          0,
+          268435456,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          22,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1479,
+          0,
+          389866,
+          0,
+          1787782,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8530,
+          0,
+          0,
+          0,
+          0,
+          12530,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "SpellRange": {
+      "sha256": "46fc3e766ff03f621a7641e2e440886475714f1304721c41e1e767d15ba87efd",
+      "record_count": 85,
+      "field_count": 8,
+      "record_size": 32,
+      "rows": [
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          11
+        ]
+      ]
+    },
+    "SpellCastTimes": {
+      "sha256": "8f7167c3e37e6975afee20fdfc0ee68efe8440644e236b0b1aa86390529e30dc",
+      "record_count": 84,
+      "field_count": 4,
+      "record_size": 16,
+      "rows": [
+        [
+          1,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "SpellCooldowns": {
+      "sha256": "0939c8ffb7902dc4e11546feedf36603b3bead730dfe795289fe977771b71d12",
+      "record_count": 7671,
+      "field_count": 4,
+      "record_size": 16,
+      "rows": [
+        [
+          1175,
+          600000,
+          0,
+          1500
+        ]
+      ]
+    },
+    "SpellDuration": {
+      "sha256": "284e22a843ce4cb85604cd037d228f55a757ea3a608e59e3a5f30cbba02bc727",
+      "record_count": 155,
+      "field_count": 4,
+      "record_size": 16,
+      "rows": [
+        [
+          22,
+          45000,
+          0,
+          45000
+        ]
+      ]
+    },
+    "SpellEffect": {
+      "sha256": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252",
+      "record_count": 97388,
+      "field_count": 27,
+      "record_size": 108,
+      "rows": [
+        [
+          10047,
+          64,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1065353216,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          0,
+          0,
+          0,
+          0,
+          0,
+          60478,
+          47,
+          0,
+          18540,
+          0,
+          0
+        ],
+        [
+          54175,
+          28,
+          0,
+          0,
+          0,
+          1,
+          1065353216,
+          1065353216,
+          0,
+          0,
+          0,
+          0,
+          11859,
+          61,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          18,
+          0,
+          60478,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "schema": {
+    "bot_rotation_profile": [
+      {
+        "Field": "id",
+        "Type": "int(10) unsigned",
+        "Default": null,
+        "Extra": "auto_increment"
+      },
+      {
+        "Field": "class_id",
+        "Type": "tinyint(3) unsigned",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "spec_tag",
+        "Type": "varchar(64)",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "role",
+        "Type": "varchar(32)",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "resource_type",
+        "Type": "varchar(32)",
+        "Default": "mana",
+        "Extra": ""
+      },
+      {
+        "Field": "range_band",
+        "Type": "varchar(32)",
+        "Default": "mixed",
+        "Extra": ""
+      },
+      {
+        "Field": "movement_directive",
+        "Type": "varchar(32)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "auto_attack_mode",
+        "Type": "varchar(16)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "min_range",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_range",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "enabled",
+        "Type": "tinyint(3) unsigned",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "version",
+        "Type": "int(10) unsigned",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "source_note",
+        "Type": "varchar(255)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "scope_note",
+        "Type": "varchar(255)",
+        "Default": "add rows for any class_id/spec_tag/role to expand coverage",
+        "Extra": ""
+      }
+    ],
+    "bot_rotation_action": [
+      {
+        "Field": "id",
+        "Type": "int(10) unsigned",
+        "Default": null,
+        "Extra": "auto_increment"
+      },
+      {
+        "Field": "profile_id",
+        "Type": "int(10) unsigned",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sort_order",
+        "Type": "smallint(5) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "spell_id",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "category",
+        "Type": "varchar(32)",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "mechanic_tags",
+        "Type": "varchar(255)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "damage_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "healing_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "threat_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "mitigation_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "survival_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "movement_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "progression_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "profession_weight",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "priority_bucket",
+        "Type": "tinyint(3) unsigned",
+        "Default": "5",
+        "Extra": ""
+      },
+      {
+        "Field": "min_enemies",
+        "Type": "tinyint(3) unsigned",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "max_enemies",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_target_health_pct",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_target_health_pct",
+        "Type": "float",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "min_self_health_pct",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_self_health_pct",
+        "Type": "float",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "required_self_aura",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "forbidden_self_aura",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "required_target_aura",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "forbidden_target_aura",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_interruptible_target",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_target_not_victim",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_target_victim",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_melee_range",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_ranged_range",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "target_selector",
+        "Type": "varchar(32)",
+        "Default": "enemy",
+        "Extra": ""
+      },
+      {
+        "Field": "movement_directive",
+        "Type": "varchar(32)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "auto_attack_mode",
+        "Type": "varchar(16)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "min_range",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_range",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_instant_cast",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_cast_time_ms",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "maintain_aura_id",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "refresh_aura_below_ms",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_injured_players",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_injured_players",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "injured_health_pct",
+        "Type": "float",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "min_mana_pct",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_mana_pct",
+        "Type": "float",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "min_primary_power_pct",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_primary_power_pct",
+        "Type": "float",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "min_attackers",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_attackers",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_stationary",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_moving",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "required_self_aura_stacks",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_self_aura_stacks",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_self_aura_remaining_ms",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_self_aura_remaining_ms",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "required_owned_target_aura",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "forbidden_owned_target_aura",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_combo_points",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_combo_points",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_ready_runes",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "required_shapeshift_form",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_pet",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "forbids_pet",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "required_main_hand_enchant",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "required_off_hand_enchant",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "cooldown_group",
+        "Type": "varchar(64)",
+        "Default": "",
+        "Extra": ""
+      },
+      {
+        "Field": "target_creature_type_mask",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "requires_ground_target",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_hostile_target_health_pct",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "enabled",
+        "Type": "tinyint(3) unsigned",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "required_self_aura_charges",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_self_aura_charges",
+        "Type": "tinyint(3) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "min_owned_target_aura_remaining_ms",
+        "Type": "int(10) unsigned",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "max_hostile_target_health_pct",
+        "Type": "float",
+        "Default": "0",
+        "Extra": ""
+      }
+    ]
+  },
+  "profile": {
+    "id": 272,
+    "class_id": 9,
+    "spec_tag": "affliction_warlock",
+    "role": "dps",
+    "resource_type": "mana",
+    "range_band": "ranged",
+    "movement_directive": "ranged",
+    "auto_attack_mode": "none",
+    "min_range": 0.0,
+    "max_range": 35.0,
+    "enabled": 1,
+    "version": 5,
+    "source_note": "wowsims_affliction_apl_player_actions_v2",
+    "scope_note": "typed live-state approximation including execute combat potion"
+  },
+  "existing_doomguard_rows": []
+}

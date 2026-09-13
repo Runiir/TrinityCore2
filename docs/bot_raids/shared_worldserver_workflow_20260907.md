@@ -13,6 +13,9 @@ cadence attribution, Balance guardian admission, Affliction Doomguard and Surviv
 AoE admission are being resolved from retained evidence. Implement one proven
 repair at a time, then review the whole roster and continue the remaining rows.
 The accepted Survival canary below closes its narrow repairs, not this objective.
+Current implementation is DPS-049: add Affliction's native Doomguard action and
+matching spell provisioning together, then test/review/build/native-validate it.
+The other actor findings remain queued as DPS-048 and DPS-050 through DPS-052.
 
 Latest source `05f5c2f959` cleared Magmaw in 130.217 seconds at
 216,508.774 exact raid DPS and 11,177.634 HPS. All ten survived the boss;
