@@ -6,29 +6,46 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The current experiment uses one Blood DK tank, three healers and six DPS.
-Source `89cef294b6` replaces the Prot Paladin slot with exact catalog Balance
-Druid gear and preserves the other nine actors. It cleared the four-node route
-with zero deaths and killed Magmaw in 149.639 seconds at 195,379.273 exact raid
-DPS and 19,122.488 effective HPS. Cleanup passed. Bloodlust was submitted
-0.400 seconds after head exposure and its aura appeared after 0.502 seconds.
+The latest source `ff226ad52b` uses one Blood DK tank, three healers and six
+DPS, including Balance Druid. It killed Magmaw in 132.828 seconds at
+212,252.861 exact raid DPS and 11,764.605 effective HPS; native clear and
+cleanup passed. The run recovered from seven trash death events and reached
+the boss. Independent review accepts MOV-001: Elemental selected an outward20-yard
+endpoint from15.970 yards clearance, reached it through native motion, retained
+the pursuit episode after arrival, and rearmed when danger approached again.
+A later native path-control rejection remains a separate limitation.
+Evidence:
+`artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`.
+
+The matched one-tank baseline `89cef294b6` took 149.639 seconds at
+195,379.273 DPS and 19,122.488 HPS. Latest originated hostile damage is
+28,193,123 versus 29,236,359; no spell78941 incoming events appear in the
+latest complete boss timeline, versus15 previously. Mage30006, Mage30007,
+Affliction and Hunter DPS rose; Blood DK, Elemental and Balance declined.
+Do not equate a faster clear or fewer infections with acceptance of all class
+behavior. The independent per-phase boss/add review owns causal limits.
+
+MOV-001 corrects an observed inward escape destination and premature task
+completion during pursuit. It keeps safe distant pursuit armed without
+movement, emits outward legs when danger approaches, and retains the same
+threat episode after arrival. Twenty-two focused tests passed independently;
+the production strategy replay fails on the prior implementation. Native
+pathing and class policies are unchanged.
+
+DPS-041 is the next prepared class repair. Hunter's Mark setup preempted normal
+ranking during parasite target changes, despite its existing low-priority
+profile row. The proposed guard retains pre-pull and native boss marking,
+while ordinary combat targets use ranking. Twelve focused tests passed; an
+independent review and live validation are still required. This change is not
+included in the `ff226ad52b` run. Mage spread arbitration and target lifetime
+remain separate leads, without enough evidence to claim every proc delay.
+
+The one-tank composition was first accepted on `89cef294b6`, replacing only
+the Prot Paladin slot with the catalog Balance loadout. All other nine actors
+were preserved. Its extra965,745 damage versus the two-tank baseline was
+entirely adds; its1.78% greater raid DPS was not a performance acceptance.
 Evidence: `artifacts/cata_raid_program/magmaw_one_tank_balance_20260913.tar.gz.dvc`,
 member `magmaw-development-89cef294b6/dps_review.json`.
-
-This accepts the declared one-tank composition and development clear, not an
-overall performance improvement. Compared with the prior two-tank run, boss
-damage stayed 26,798,304, all 965,745 extra damage came from adds, and the kill
-was 2.367 seconds longer. The composition itself is deliberately different.
-Balance dealt 28,610.950 DPS; retained actors have mixed gains and losses.
-
-MOV-001 is the next proven repair: Elemental's parasite escape moved from
-31.311 yards clearance toward an endpoint at 16 yards, then declared success
-while pursuit continued. Native spline progress and subsequent infection are
-retained in `MOV-001-incident.json`. The repair is undergoing production-path
-fixtures and independent review before matched live validation. Fire used
-Blast Wave and Flamestrike; observed add Pyroblasts were instant Hot Streak.
-Hunter used Multi-Shot once. Add priorities and target lifetime remain separate
-review leads; no coefficient change is justified by these observations.
 
 The last two-tank baseline, `c5700590e7`, cleared in 147.272 seconds at
 191,961.907 exact raid DPS and 12,169.034 effective HPS. All ten survived the
