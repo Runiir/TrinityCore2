@@ -6,32 +6,38 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-Latest source `69903f785e` cleared Magmaw in148.635s with all ten alive,
-at191,627.988 exact raid DPS and12,954.445 HPS. Native death, capture, build
-verification and cleanup passed. DPS-046 is accepted end to end: Survival rose
-from14,603.545 to37,019.760DPS; its head core shots and Cobra land, and the former
-head range/enemy-count rejections are absent. The native updater and row/hash
-readback passed before this run. The same Survival roster was used on8146.
+Latest source `05f5c2f959` cleared Magmaw in 130.217 seconds at
+216,508.774 exact raid DPS and 11,177.634 HPS. All ten survived the boss;
+one Drudge casualty recovered before the pull. Native death, capture, build
+verification and cleanup passed. DPS-047's invalid remote trap removal is
+accepted: zero spell13813 attempts and zero associated range-reconciliation
+moves, with zero Infection78941 hits. Survival remains at 37,131.143 DPS and
+lands eight head Cobra casts. DPS-046's shot admission repair is preserved.
 
-Overall performance and safety are not accepted. Both Mages and Affliction
-lose head-phase casting during parasite-contact evasion; Affliction ends its
-escape58.71yd from the head and remains range-blocked. Six Infection78941 hits
-land on three actors, with no deaths. This does not prove a coefficient change
-or that the Hunter SQL caused every loss. The old complete Fire headhide/body
-outage did not recur: both Mages cast on the live body after this head window.
+Multi-Shot remains loaded and unchanged, but did not submit in this run.
+Observed masks reject it for its owned-target aura gate, busy/GCD state or
+range; no observed eligible Multi-Shot bypass is proven. Its native use is
+unexercised here. The 23.789-second head window ends in boss death, so this
+run cannot validate a later head-to-body return.
 
-DPS-047 is next: the remaining enemy-target AoE Explosive Trap13813 is a native
-self-placed range-zero spell. On699 it makes ten failed attempts and no damage.
-At+50.483 it triggers an inward combat-range path; Hunter reaches parasite-contact
-distance at+53.118 and takes Infection damage at+55.490. This proves invalid
-trap-to-range reconciliation, not causality for every Infection. Disable only
-that ranged AoE trap row; preserve Multi-Shot, the accepted shot/ST repair,
-the separate calibration-opener row, and native movement/encounter behavior.
-The implementation and ten combined regression tests passed independent review.
-The89,482,818-byte699 archive and every member were remotely reconstructed and
-verified; exact raw/full timeline and duplicate archive/cache payloads were
-evicted. HTML, summary and frozen all-bot/Fire/Affliction reviews remain local.
-Pointer: `artifacts/cata_raid_program/magmaw_survival_admission_69903f785e_20260913.tar.gz.dvc`.
+Raid DPS recovered from the prior Survival run's 191,627.988 and exceeds the
+same-composition MM baseline's 213,253.077 by 1.53%. This is an observed
+single-run recovery, not proof of stable WCL parity or every actor's correctness.
+Affliction recovers 25,204→37,712 DPS; Fire recovers 20,781/24,389→28,858/27,929.
+Balance and Blood remain low. Keep missing guardians, role item enchants,
+parasite spell selection and shared escape/range re-entry in the review queue.
+Do not change coefficients from aggregate DPS or repeat this accepted trap test.
+
+The prior `69903f785e` run accepted DPS-046's shot repair but failed overall
+performance/safety: 148.635 seconds, 191,627.988 DPS, six Infection hits on three
+actors, and caster head movement/range losses. Its remotely verified archive:
+`artifacts/cata_raid_program/magmaw_survival_admission_69903f785e_20260913.tar.gz.dvc`.
+The current evidence pointer is
+`artifacts/cata_raid_program/magmaw_survival_trap_05f5c2f959_20260913.tar.gz.dvc`.
+Its 88,448,397-byte archive and every member passed fresh-cache remote
+reconstruction. Exact raw/full-timeline and duplicate archive/cache payloads
+were evicted; HTML, summary and frozen review remain available. Targeted DVC
+status reflects deliberate local eviction; DVC push confirms the remote is current.
 
 Earlier8146 Survival canary: clear137.163s,205,544.666DPS; native setup/duties
 passed but shot admission and performance failed. Its83,391,167-byte archive

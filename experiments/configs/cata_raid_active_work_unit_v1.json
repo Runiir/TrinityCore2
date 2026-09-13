@@ -1,40 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:survival_remote_trap_admission",
-  "owner_skill": "raid-role-implementation",
-  "classification": "implementation_approved_native_pending",
+  "work_unit": "magmaw:remaining_role_performance",
+  "owner_skill": "raid-rotation-review",
+  "classification": "retained_evidence_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "69903f785e01bbbdfeadde40566cd09b86b8cb00",
+  "observed_at_commit": "05f5c2f959b4ee57be8de6021eb5df6fba7cf87c",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": true,
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "Invalid remote AoE trap disable independently approved; native validation pending",
+  "gate_state": "Survival swap and shot/trap repairs accepted; remaining class performance diagnosis",
   "first_broken_edge": {
-    "id": "survival_remote_self_trap_requests_inward_range",
-    "owner_classification": "raid_role_implementation",
-    "cause": "Enemy-target AoE trap13813 is self-placed native range0; rejection drives inward combat-range movement. Ten failed attempts/no trap damage; later contact and Infection observed without claiming all-hit causality.",
-    "review_state": "implementation_independently_approved",
-    "ledger_id": "DPS-047"
+    "id": "remaining_role_policy_and_equipment_gaps",
+    "owner_classification": "raid_rotation_review",
+    "cause": "Survival execution recovered; remaining documented class-policy/equipment gaps and actor throughput declines require separately bounded repairs.",
+    "review_state": "retained_evidence_available",
+    "ledger_id": "DPS-045"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "210598236004e9d3d6267699766b141b6e75fd06d892cdc3c963faceb6d75408"
+    "sha256": "d469c0c95bd855a032a3f9e66df7db53760170375bc7c99ca57c4277c3784e3a"
   },
   "scope_lock": {
-    "objective": "Remove invalid ranged AoE trap action while preserving MultiShot and accepted native shot admission.",
+    "objective": "Diagnose one remaining class/role gap using retained exact native and WCL/WoWSims references.",
     "owned_files": [
-      "sql/custom/world/2026_09_13_01_survival_disable_remote_aoe_trap.sql",
-      "tests/test_survival_remote_trap_admission.py"
+      "docs/bot_raids/magmaw_dps_baseline_20260913.md",
+      "docs/bot_raids/error_ledger.md"
     ],
     "forbidden_changes": [
-      "No native spell ranges, trap-launch workaround, movement geometry, boss, coefficients, roster or calibration-opener changes."
+      "No coefficient, roster, native movement or boss changes without a production-backed repair packet."
     ]
   },
   "acceptance_conditions": [
-    "Old enabled AoE trap row enters the actual production candidate path; disabled row cannot emit or request attack-range reconciliation.",
-    "MultiShot, core shots, native legality, other profiles and separate calibration opener are unchanged.",
-    "Native run has no invalid remote AoE trap attempts/reconciliation while MultiShot and head shot/Cobra use persist.",
-    "Report all-bot exact DPS/HPS, movement/range losses, Infection hits, survival, phase and bodyreturn; clear, bounded repair and safety/performance remain separate."
+    "Identify exact actor, native interval, reference limitation and earliest actionable mismatch.",
+    "Preserve accepted Survival shot/trap fixes and separate encounter clear from per-actor/WCL parity."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -43,9 +41,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
-  "ready_for_live_verification": true,
-  "next_action": "Disable only the unsupported enemy-target AoE trap row, test production admission, independently review, apply native updater/readback and run one bounded canary. Retain caster movement/range and Infection evidence.",
+  "ready_for_build": false,
+  "ready_for_live_verification": false,
+  "next_action": "Select one documented role edge from retained evidence: Force of Nature classification, missing Doomguard, parasite long-DoT policy or role equipment authority. Resolve exact production ownership and fixture before a new implementation; no unchanged trap retry.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -61,7 +59,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "69903f785e01bbbdfeadde40566cd09b86b8cb00",
+    "source_commit": "05f5c2f959b4ee57be8de6021eb5df6fba7cf87c",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -71,33 +69,34 @@
     "postrun_build_verified": true,
     "training_eligible": false,
     "qualification_eligible": false,
-    "recorded_casualties": 0,
+    "recorded_casualties": 1,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 148.635,
-    "hostile_originated_damage": 28482626,
-    "pull_to_death_party_dps": 191627.98802435497,
-    "exact_effective_healing": 1925484,
-    "exact_hps": 12954.445453628015,
-    "requested_repair_id": "DPS-046",
+    "pull_to_death_seconds": 130.217,
+    "hostile_originated_damage": 28193123,
+    "pull_to_death_party_dps": 216508.7738160148,
+    "exact_effective_healing": 1455518,
+    "exact_hps": 11177.634256663876,
+    "requested_repair_id": "DPS-047",
     "requested_repair_achieved": true,
-    "performance_verdict": "failed_other_caster_head_movement_losses_and_infection",
+    "performance_verdict": "observed_raid_recovery_remaining_actor_gaps",
     "diagnosis_required": true,
-    "primary_baseline_source": "8146a06b40fc0ac163b3862905e953a22bd81b10",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_survival_admission_69903f785e_20260913.tar.gz.dvc",
+    "primary_baseline_source": "69903f785e01bbbdfeadde40566cd09b86b8cb00",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_survival_trap_05f5c2f959_20260913.tar.gz.dvc",
     "publication_state": "remote_verified_and_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "requested_repair_scope": "Native Survival head shot/ST admission and landed outcomes; safety and overall performance failed.",
-    "infection_damage_event_count": 6,
-    "infection_affected_actor_count": 3,
-    "safety_retained": false
+    "requested_repair_scope": "Invalid remote AoE trap absent; shot outcomes preserved. MultiShot native use and body return unexercised.",
+    "infection_damage_event_count": 0,
+    "infection_affected_actor_count": 0,
+    "safety_retained": true,
+    "independent_review_sha256": "bb86f3fb4cf416ea4064cb0ba2462914e44f7bf3da3043cf502d9d0357d8e157"
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "approved_bounded_implementation",
-    "live_verified": false,
-    "next_work_unit_implemented": true,
+    "verdict": "accepted_narrow_native_trap_removal",
+    "live_verified": true,
+    "next_work_unit_implemented": false,
     "artifact_sha256": "be595a267e3c20a5b3b2d32f00fd2b0c5addb253b6adf0d2ebbb1fd31bb94b3a"
   },
   "related_edges": [
@@ -144,7 +143,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-047",
+  "error_id": "DPS-045",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",

@@ -182,3 +182,44 @@ inward combat-range path; later Hunter contact and Infection are recorded.
 Disabling that invalid action preserves MultiShot and the accepted shot gates.
 The following run must measure actual movement, Infection and all-bot output;
 removing the row alone is not a claim of overall safety or performance recovery.
+
+## Final Survival comparison, source 05f5c2f959
+
+The native updater loaded the narrow trap disable and preserved Multi-Shot,
+the separate opener, and the accepted shot ranges/count gates. This run cleared
+in 130.217 seconds with 28,193,123 originated hostile damage, 216,508.774 DPS
+and 11,177.634 effective HPS. All ten survived the boss; one trash casualty
+recovered before the pull. Capture and post-run build verification passed.
+
+| Actor | Previous Survival run DPS | Trap-corrected run DPS |
+| --- | ---: | ---: |
+| Balance | 27,976 | 26,450 |
+| Blood | 14,701 | 11,591 |
+| Fire 30006 | 20,781 | 28,858 |
+| Fire 30007 | 24,389 | 27,929 |
+| Affliction | 25,204 | 37,712 |
+| Survival | 37,020 | 37,131 |
+| Elemental | 34,505 | 36,404 |
+
+The raid result exceeds the earlier MM run's 213,253.077 DPS by 1.53%,
+and the immediately preceding Survival run by 12.98%. These are single-run
+comparisons with different phase coverage, not an estimated general effect
+size. The unchanged 28,193,123 damage total versus the MM baseline avoids an
+extra-add-damage explanation for that comparison. Balance, Blood, missing
+guardians and role equipment gaps remain separate unresolved findings.
+
+Independent native review finds zero trap13813 events and zero associated
+combat-range reconciliation, with zero Infection78941 damage events. Head
+Cobra has eight submissions and eight landed events. Multi-Shot is still
+loaded in all 27 observed masks but does not submit: the retained snapshots
+show the owned-target aura gate, busy/GCD rejection or range rejection. No
+eligible bypass is demonstrated. Its native-use branch remains unexercised
+in this run. Head lasts 23.789 seconds and ends in death; there is no body-return
+interval to validate here.
+
+No actor has a head-phase contact-evasion event in this run. This supports
+restored caster opportunity relative to 699, without attributing every gain to
+the trap change. Blood lands 15 Death Strikes and 15 Rune Strikes versus the
+MM baseline's 17 and 19; its broad damage decline still needs a separate
+stats, mitigation, Vengeance and cadence comparison. The current raid total
+must not hide that actor's loss.
