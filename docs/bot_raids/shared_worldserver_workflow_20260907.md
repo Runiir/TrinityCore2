@@ -52,12 +52,20 @@ from live snapshots. Native terrain/pathing and class coefficients are unchanged
 Overall performance remains mixed. Hunter is31,513DPS versus33,060 on26;
 Fire30006 is27,936 versus32,875, while Fire30007 rises to30,140 and Balance
 to30,423. These totals do not prove the remaining class rotations are correct.
-DPS-044 is the next bounded diagnosis: explain Mage30006's19.138-second
-fresh-direct-attack gap, then Hunter's14.910-second gap, using retained native
-submissions, finishes, movement and candidate eligibility. A fresh-effect gap
-is not automatically idle casting time. The separate Balance Starfall/Force
-of Nature area-policy lead remains open; no coefficient change is justified
-by their absence alone.
+The next review covers the whole roster against the newly selected
+[111.3-second WCL reference](magmaw_dps_baseline_20260913.md), which includes
+Balance, Fire, Elemental, Affliction and Blood at roughly395 average ilvl.
+Its nine-player2/2/5 roster does246,232.7DPS; it is a useful class comparison,
+not an exact passing floor. DPS-045 retains the outstanding phase, gear,
+aura/cooldown and accounting normalization. There is no matched MM player yet.
+
+DPS-044 remains open: Mage30006's19.138-second and Hunter's14.910-second
+fresh-direct-effect gaps require candidate/native-outcome diagnosis; a gap
+is not automatically idle casting time. Affliction is14.11% belowff226 across
+owner, periodic and pet output. Balance's area-policy suppression remains a
+separate lead. Native admission also shows no permanent item enchants on Blood
+or the three healers, while all DPS characters are enchanted. Use the actual
+admitted manifest, not intermediate generic profile flags or their item levels.
 
 DPS-041 remains accepted: ordinary add setup Marks are zero, seven Marks use
 normal ranking, and body/head setup remains. MOV-001 retains its earlier
