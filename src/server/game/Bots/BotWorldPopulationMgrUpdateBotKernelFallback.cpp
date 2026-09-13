@@ -754,6 +754,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotEncounter::MagmawParasiteCombatContract const& magmawContract =
                 context.State.MagmawParasiteCombat;
             bool const magmawContractActive = magmawContract.Active;
+            uint32 const policyExcludedSpellId = magmawContract.IsOptionalSupportTarget(
+                context.Bot->GetGUID(), context.Target->GetGUID()) ? 603 : 0;
             bool const hazardRetained = hasRetainedMagmawHazard();
             BotEncounter::MagmawParasiteCombatContract::ProfileParameters
                 magmawProfile = magmawContract.ResolveProfileParameters(
@@ -774,7 +776,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     context.Bot, context.Target, 0, false, 0, false, false,
                     magmawProfile.ForbidAreaDamage,
                     magmawProfile.AllowMultidot, false, false, nullptr,
-                    /*publishDiagnostics=*/false);
+                    /*publishDiagnostics=*/false, policyExcludedSpellId);
                 bool const outsideLegalMaxRange = preview.MaxRange > 0.0f
                     && context.Bot->GetExactDist(context.Target)
                         > preview.MaxRange;
@@ -814,7 +816,7 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionResult const result = ExecuteProfileCombatAction(
                 &context.State, context.Bot, context.Target, &profileAction,
                 0, false, 0, false, false, magmawProfile.ForbidAreaDamage,
-                magmawProfile.AllowMultidot, false);
+                magmawProfile.AllowMultidot, false, policyExcludedSpellId);
             uint32 const spellId = profileAction.SpellId;
             context.Situation = "open_world_combat";
             context.Action = spellId ? "cast_combat_spell" : "attack";

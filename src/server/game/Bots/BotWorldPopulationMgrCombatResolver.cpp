@@ -79,7 +79,7 @@ bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
 
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics, uint32 policyExcludedSpellId) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -306,6 +306,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (excludedSpellId && candidate.SpellId == excludedSpellId)
         {
             candidate.RejectReason = "temporarily_suppressed";
+            continue;
+        }
+        if (policyExcludedSpellId && candidate.SpellId == policyExcludedSpellId)
+        {
+            candidate.RejectReason = "target_purpose_excluded";
             continue;
         }
         if (exactSingleTargetCalibration && candidate.SpellId == 42650
@@ -825,6 +830,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             << ",\"effective_hostile_count\":" << hostileCount
             << ",\"density_only\":" << densityOnly
             << ",\"excluded_spell_id\":" << excludedSpellId
+            << ",\"policy_excluded_spell_id\":" << policyExcludedSpellId
             << ",\"area_only\":" << areaOnly
             << ",\"self_centered_only\":" << selfCenteredOnly
             << ",\"forbid_area\":" << forbidArea

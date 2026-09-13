@@ -17,14 +17,18 @@ def test_actual_resolver_publication_and_passive_call_sites(tmp_path):
         calls.append(fallback[start:fallback.index(";", start) + 1])
     program = r'''
 #include <cassert>
+#include <algorithm>
 #include <map>
 #include <string>
 #include <sstream>
 #include <vector>
 using uint32=unsigned;
 struct Guid {uint32 GetCounter()const{return 1;}};
-struct Bot {Guid GetGUID(){return {};}};
-struct BotActionCandidate {unsigned SpellId=0;std::string RejectReason;int Category=0;};
+constexpr int CLASS_MAGE=8;
+struct Bot {Guid GetGUID(){return {};} int getClass(){return 9;} bool IsValidAttackTarget(void*){return true;}};
+namespace BotWorldPopulationMgrSpellSemantics {unsigned NowMs(){return 100;}}
+namespace BotFireCombustionObservation {template<class... T> int Capture(T...){return 0;} std::string ToJson(int){return "observation";}}
+struct BotActionCandidate {unsigned SpellId=0;std::string RejectReason;int Category=0;std::string ObservationJson;};
 struct Saturation {int RecommendedBalanceMode=0;float ExperimentConfidence=0;std::string ToJson(){return "saturation";}};
 struct PartyState {
 std::map<unsigned,std::string> LastCombatRejectsByBot,LastCombatMaskByBot,LastChosenCombatByBot,LastActionCategoryByBot;
@@ -43,13 +47,13 @@ std::string CandidateMaskJson(std::vector<BotActionCandidate> const& c,int,char 
 std::string ChosenActionJson(BotActionCandidate const* c,int,char const*,char const*,float){return std::to_string(c->SpellId);}
 }
 struct ResolvedCombatAction {unsigned SpellId;};
-ResolvedCombatAction ResolveProfileCombatAction(Bot* bot,void*,unsigned hostileCount=0,bool densityOnly=false,
+ResolvedCombatAction ResolveProfileCombatAction(Bot* bot,void* target,unsigned hostileCount=0,bool densityOnly=false,
 unsigned excludedSpellId=0,bool areaOnly=false,bool selfCenteredOnly=false,bool forbidArea=false,
 bool allowMultidot=true,bool hostileTargetOnly=false,bool movementCompatibleOnly=false,
-char const* specTagOverride=nullptr,bool publishDiagnostics=true){
+char const* specTagOverride=nullptr,bool publishDiagnostics=true,unsigned policyExcludedSpellId=0){
 // Different resolved results emulate execution contract and passive preview.
 std::vector<BotActionCandidate> candidates={{forbidArea?101u:202u,forbidArea?"execution_reject":"preview_reject",forbidArea?1:2}};
-auto best=&candidates[0];int profile=0,maskEvaluation=0;std::string roleGoal="tank";
+auto best=&candidates[0];struct Profile{std::string SpecTag="affliction";operator int()const{return 0;}} profile;int maskEvaluation=0,maskEvaluatedAtMs=100;std::string roleGoal="tank";
 Saturation saturation;saturation.ExperimentConfidence=forbidArea?1:2;
 unsigned requestedHostileCount=hostileCount;
 ResolvedCombatAction action{best->SpellId};
@@ -59,6 +63,7 @@ return action;
 int main(){Bot bot;int unit;auto target=&unit;
 struct {Bot* Bot;void* Target;} context{&bot,target};
 struct {bool ForbidAreaDamage=false,AllowMultidot=true;} magmawProfile;
+unsigned policyExcludedSpellId=603;
 auto execution=ResolveProfileCombatAction(&bot,target,0,false,0,false,false,true);
 assert(execution.SpellId==101);
 auto previous=party;

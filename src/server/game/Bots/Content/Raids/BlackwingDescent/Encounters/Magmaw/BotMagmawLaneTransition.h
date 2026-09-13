@@ -69,6 +69,12 @@ struct MagmawParasiteCombatContract
             && targetGuid == SupportTargetGuid;
     }
 
+    bool IsOptionalSupportTarget(ObjectGuid guid, ObjectGuid targetGuid) const
+    {
+        return IsSupportTarget(guid, targetGuid) && !IsAssignedBaiter(guid)
+            && targetGuid != PersonalThreatGuid;
+    }
+
     bool AllowsParasiteTarget(ObjectGuid guid, ObjectGuid targetGuid) const
     {
         return !Active || IsAssignedBaiter(guid)
