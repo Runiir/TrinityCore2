@@ -45,6 +45,9 @@ after all behavioral fixtures pass. Keep native compilation a separate claim.
 For retained telemetry changes, locate both full and delta serializers and test
 the same native record through each. A field visible in a full snapshot can still
 be lost after ring eviction if the delta export omits it.
+Trace observation helpers through their callees: `CalculateSpellDamage` reaches
+`ApplySpellMod` and can attach modifiers to a prepared spell. Diagnostics must
+read nonmutating inputs; label approximations and omitted modifiers explicitly.
 When increasing decision or sampling frequency, test the resulting full-size
 export through controller retention, parsing and final acceptance recomputation.
 Incomplete transport is an infrastructure failure, not a class-tuning signal.

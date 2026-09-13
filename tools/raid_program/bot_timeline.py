@@ -360,6 +360,7 @@ def _diagnosis_events(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 mask = policy.get("valid_action_mask_json") if isinstance(policy.get("valid_action_mask_json"), dict) else {}
                 mask_evaluation = mask.get("evaluation") if isinstance(mask.get("evaluation"), dict) else {}
                 compact_mask = {
+                    "observation": mask.get("observation") if isinstance(mask.get("observation"), dict) else {},
                     "schema": mask.get("schema"),
                     "evaluation": {field: mask_evaluation.get(field) for field in ("actor_guid", "scope", "selector", "selector_filters", "target_entry", "target_guid")},
                     "actions": [{field: action.get(field) for field in (

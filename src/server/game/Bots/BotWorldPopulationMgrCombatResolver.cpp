@@ -1,4 +1,5 @@
 #include "Bots/BotSpellMinimumRange.h"
+#include "Bots/BotFireCombustionObservation.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -129,8 +130,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
 
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    uint64 const maskEvaluatedAtMs = BotWorldPopulationMgrSpellSemantics::NowMs();
     std::string const maskEvaluation = BotCombatMaskEvaluation::Context(
-        BotWorldPopulationMgrSpellSemantics::NowMs(), bot, target, Cohort(), Party(),
+        maskEvaluatedAtMs, bot, target, Cohort(), Party(),
         "ResolveProfileCombatAction");
     uint32 const requestedHostileCount = hostileCount;
     auto const potionHealthOwner = BotRaidCombatPotionHealthOwner::Resolve(bot, Cohort(), Party());
@@ -816,6 +818,14 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
 
     if (publishDiagnostics)
     {
+        if (bot->getClass() == CLASS_MAGE && profile.SpecTag == "fire"
+            && target && target != bot && bot->IsValidAttackTarget(target)
+            && std::any_of(candidates.begin(), candidates.end(), [](BotActionCandidate const& candidate) { return candidate.SpellId == 11129; }))
+        {
+            auto const observation = BotFireCombustionObservation::Capture(bot, target, maskEvaluatedAtMs,
+                BotWorldPopulationMgrSpellSemantics::NowMs());
+            candidates.front().ObservationJson = BotFireCombustionObservation::ToJson(observation);
+        }
         uint32 botKey = bot->GetGUID().GetCounter();
         std::ostringstream rejectionJson;
         rejectionJson << '[';

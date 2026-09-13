@@ -66,7 +66,7 @@ def test_all_real_cached_mask_writers_capture_context_before_candidates():
     assert set(writers) == {f'BotWorldPopulationMgrCombat{x}.cpp' for x in ('Resolver', 'Support', 'Spell')}
     for source in writers.values():
         assert source.count('LastCombatMaskByBot[botKey] =') == 1
-        assert source.index('BotCombatMaskEvaluation::Context(') < source.index('::BuildCandidates(bot, target, profile)')
+        assert source.index('BotCombatMaskEvaluation::Context(') < source.index('::BuildCandidates(')
         assert 'LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(' in source
         assert 'roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,' in source
     resolver = writers['BotWorldPopulationMgrCombatResolver.cpp']
