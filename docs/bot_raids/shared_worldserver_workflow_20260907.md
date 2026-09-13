@@ -12,43 +12,42 @@ tracks every unresolved actor. No actor has overall acceptance yet. Blood stat/
 cadence attribution, Balance guardian admission, Affliction Doomguard and Survival
 AoE admission are being resolved from retained evidence. Implement one proven
 repair at a time, then review the whole roster and continue the remaining rows.
-The accepted Survival canary below closes its narrow repairs, not this objective.
-Current implementation is DPS-049: add Affliction's native Doomguard action and
-matching spell provisioning together, then test/review/build/native-validate it.
-The other actor findings remain queued as DPS-048 and DPS-050 through DPS-052.
+The latest source `63d7483481` cleared in 130.087 seconds at 216,908.115
+exact raid DPS and 12,874.123 HPS. All ten survived the route and boss, with
+zero Infection hits. Capture, postrun build verification and cleanup passed.
+The matched `05f5c2f959` baseline was 216,508.774 DPS over 130.217 seconds.
+The 0.18% raid increase does not establish overall actor acceptance.
 
-Latest source `05f5c2f959` cleared Magmaw in 130.217 seconds at
-216,508.774 exact raid DPS and 11,177.634 HPS. All ten survived the boss;
-one Drudge casualty recovered before the pull. Native death, capture, build
-verification and cleanup passed. DPS-047's invalid remote trap removal is
-accepted: zero spell13813 attempts and zero associated range-reconciliation
-moves, with zero Infection78941 hits. Survival remains at 37,131.143 DPS and
-lands eight head Cobra casts. DPS-046's shot admission repair is preserved.
+DPS-049's action/provisioning admission passed: 18540 summoned owner-linked
+Doomguard11859 for its native lifetime while the primary Felhunter remained.
+Its actual combat behavior failed: 21 melee hits did only 8,287 damage and no
+Doom Bolt85692 was cast. The legacy template selects melee-only AggressorAI.
+DPS-053 now owns native guardian AI/spell binding and target authority. Do not
+change coefficients or declare Affliction repaired from token guardian damage.
+Affliction owner/head output also declined; this run does not establish its
+cause. Elemental's decline includes fewer observed Lava Surge resets and more
+movement, but remains separate from its proven unnecessary Tremor maintenance.
 
-Multi-Shot remains loaded and unchanged, but did not submit in this run.
-Observed masks reject it for its owned-target aura gate, busy/GCD state or
-range; no observed eligible Multi-Shot bypass is proven. Its native use is
-unexercised here. The 23.789-second head window ends in boss death, so this
-run cannot validate a later head-to-body return.
+Fire observation-only implementation is in review preparation. It must retain
+owned aura components and gate reasons without calling spell-modifier APIs that
+can mutate a prepared spell. Blood's native Mark/Might coverage, Balance guardian
+admission/authority, Survival sustained AoE, Elemental Tremor and role enchants
+remain queued. Every new run reviews all actors before performance acceptance.
+The final head window ended with boss death, so head-to-body return remains
+unexercised by this run.
 
-Raid DPS recovered from the prior Survival run's 191,627.988 and exceeds the
-same-composition MM baseline's 213,253.077 by 1.53%. This is an observed
-single-run recovery, not proof of stable WCL parity or every actor's correctness.
-Affliction recovers 25,204→37,712 DPS; Fire recovers 20,781/24,389→28,858/27,929.
-Balance and Blood remain low. Keep missing guardians, role item enchants,
-parasite spell selection and shared escape/range re-entry in the review queue.
-Do not change coefficients from aggregate DPS or repeat this accepted trap test.
+Current evidence:
+`artifacts/cata_raid_program/magmaw_affliction_doomguard_63d7483481_20260913.tar.gz.dvc`.
+The 80,865,216-byte archive and every member passed fresh-cache remote
+verification. Exact raw/full-timeline and duplicate archive/cache payloads were
+evicted; the inspectable HTML, summaries and frozen reviews remain. Targeted
+DVC status records deliberate local eviction; DVC push reports up to date.
+The archive includes the all-bot review, Affliction native-outcome diagnosis,
+Elemental review and bounded packets for the remaining actor repairs.
 
-The prior `69903f785e` run accepted DPS-046's shot repair but failed overall
-performance/safety: 148.635 seconds, 191,627.988 DPS, six Infection hits on three
-actors, and caster head movement/range losses. Its remotely verified archive:
-`artifacts/cata_raid_program/magmaw_survival_admission_69903f785e_20260913.tar.gz.dvc`.
-The current evidence pointer is
+Prior Survival trap removal remains accepted on `05f5c2f959`: no invalid13813
+attempts and zero Infection hits, with shot outcomes preserved. Its pointer is
 `artifacts/cata_raid_program/magmaw_survival_trap_05f5c2f959_20260913.tar.gz.dvc`.
-Its 88,448,397-byte archive and every member passed fresh-cache remote
-reconstruction. Exact raw/full-timeline and duplicate archive/cache payloads
-were evicted; HTML, summary and frozen review remain available. Targeted DVC
-status reflects deliberate local eviction; DVC push confirms the remote is current.
 
 Earlier8146 Survival canary: clear137.163s,205,544.666DPS; native setup/duties
 passed but shot admission and performance failed. Its83,391,167-byte archive
