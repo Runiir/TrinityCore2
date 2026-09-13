@@ -11,6 +11,8 @@ class Unit;
 
 namespace BotWorldPopulationMgrSpellSemantics
 {
+constexpr uint32 ForceOfNatureSpellId = 33831;
+
 uint64 NowMs();
 bool SpellLooksLikeHeal(SpellInfo const* spellInfo);
 bool SpellLooksDangerous(SpellInfo const* spellInfo);

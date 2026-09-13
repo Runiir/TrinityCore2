@@ -47,30 +47,7 @@ bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpel
 }
 
 
-bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
-{
-    if (!spellInfo || depth > 4)
-        return false;
-    // Starfall's owner aura delegates hostile selection to triggered spells;
-    // retain the explicit root as a conservative client-data semantic guard.
-    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
-        return true;
-    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
-    {
-        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
-        if (!effect.IsEffect())
-            continue;
-        if (!spellInfo->IsPositiveEffect(effectIndex)
-            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
-                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
-                || effect.IsAreaAuraEffect()))
-            return true;
-        if (effect.TriggerSpell
-            && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
-            return true;
-    }
-    return false;
-}
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
 
 // Future encounter protection must be geometry-aware.  Keeping the global
 // entry set is useful for route bookkeeping, but it must not suppress AoE on

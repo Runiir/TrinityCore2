@@ -225,6 +225,10 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
 {
     if (!spellInfo || depth > 4)
         return false;
+    // Force of Nature's destination-area targets place three guardians; they
+    // do not deal area damage. Keep other roots' triggered-chain semantics.
+    if (depth == 0 && spellInfo->Id == ForceOfNatureSpellId)
+        return false;
     // Starfall's owner aura delegates hostile selection to triggered spells;
     // retain the explicit root as a conservative client-data semantic guard.
     if (spellInfo->Id == 48505 || spellInfo->Id == 89751)

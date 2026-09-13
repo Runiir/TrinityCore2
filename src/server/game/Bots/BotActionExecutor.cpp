@@ -1,3 +1,4 @@
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotCastWhileMoving.h"
@@ -35,28 +36,7 @@ constexpr uint32 FelguardEntry = 17252;
 constexpr uint32 FelstormSpellId = 89751;
 constexpr uint32 ShadowfiendSpellId = 34433;
 
-bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
-{
-    if (!spellInfo || depth > 4)
-        return false;
-    if (spellInfo->Id == 48505 || spellInfo->Id == FelstormSpellId)
-        return true;
-    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
-    {
-        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
-        if (!effect.IsEffect())
-            continue;
-        if (!spellInfo->IsPositiveEffect(effectIndex)
-            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
-                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
-                || effect.IsAreaAuraEffect()))
-            return true;
-        if (effect.TriggerSpell
-            && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
-            return true;
-    }
-    return false;
-}
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
 
 // Route protection is about preventing splash onto a future encounter that is
 // physically near the selected target.  A global "any protected entry" check
