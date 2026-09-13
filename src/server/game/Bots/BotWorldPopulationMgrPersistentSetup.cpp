@@ -6,6 +6,7 @@
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Cryptography/CryptoHash.h"
+#include "Creature.h"
 #include "Entities/Item/Item.h"
 #include "Entities/Item/ItemTemplate.h"
 #include "GameTime.h"
@@ -904,7 +905,13 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             return true;
     }
 
-    if (bot->getClass() == CLASS_HUNTER && target && target->IsAlive() && bot->HasSpell(1130)
+    // Keep native boss and pre-pull marking as setup. Ordinary combat target
+    // changes must let Hunter's Mark compete through its existing profile rank.
+    Creature const* const hunterMarkCreature = target ? target->ToCreature() : nullptr;
+    bool const hunterMarkBoss = hunterMarkCreature
+        && (hunterMarkCreature->IsDungeonBoss() || hunterMarkCreature->isWorldBoss());
+    if (bot->getClass() == CLASS_HUNTER && (!bot->IsInCombat() || hunterMarkBoss)
+        && target && target->IsAlive() && bot->HasSpell(1130)
         && !target->HasAura(1130, bot->GetGUID()))
     {
         std::string retryKey = "persistent_setup:hunters_mark:" + std::to_string(target->GetGUID().GetCounter());
