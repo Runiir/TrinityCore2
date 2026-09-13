@@ -55,6 +55,14 @@ A worker or attempt ending does not end the user's task. Continue automatically 
 passing checks. Stop unchanged retries at ten occurrences of the same first-broken edge,
 write the causal summary, and change the hypothesis or architecture before resuming.
 
+When choosing a throughput repair, estimate the recoverable damage from observed
+lost events or activity and label the estimate's limits. A real small defect
+need not explain the main gap. When several canaries remain near the same total
+and actor changes are dominated by proc, crit or phase variation, prioritize a
+controlled stat/cadence/per-event comparison over another series of minor raid
+patches. Reuse exact promoted simulator inputs; do not mistake matching gear IDs
+for matching native effective stats, or unknown critical outcomes for normal hits.
+
 ## Development runs
 
 Use the existing capture controller's development mode with a canonical scenario/profile.

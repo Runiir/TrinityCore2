@@ -75,6 +75,14 @@ Frozen-fixture validation must run without the game's local DBC installation.
 When adding a helper, test that boundary with its actual data root unavailable;
 patching only the fixture module's file reader misses imported data access.
 
+Before translating an APL predicate, resolve its serialized enums and matching
+function in the pinned simulator. Names are insufficient: item-proc collections
+can include enchant procs, and stacking auras may count as active only at maximum
+stacks. Reduce conditions against the exact equipped inputs only after these
+semantics are verified. A native true branch can be implemented separately, but
+retain unsupported alternate branches explicitly instead of claiming full APL
+parity or inventing encounter remaining time.
+
 ## Keep three reference classes separate
 
 Name the reference class before reporting or comparing DPS:
