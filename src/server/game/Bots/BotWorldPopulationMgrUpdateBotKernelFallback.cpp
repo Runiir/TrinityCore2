@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotProfileCombatRangeCandidate.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotRouteCombatTargetPolicy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
@@ -11,6 +12,7 @@
 #include "Creature.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
+#include "ObjectGuid.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -18,6 +20,7 @@
 #include <string_view>
 #include <memory>
 #include <utility>
+#include <vector>
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotRaidDrudgeEntranceMovement::IsExactDrudgePositionHold;
