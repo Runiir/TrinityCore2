@@ -29,6 +29,7 @@ def compile_fixture(tmp_path, revision=None):
     resolver = read('BotWorldPopulationMgrCombatResolver.cpp')
     native = between(resolver, '    auto effectiveSpellMinRange =', '    auto effectiveSpellMaxRange =')
     gate = between(resolver, '        float distance = selfCenteredHostileAction', '        if (deferLavaBurstMovementRejection)')
+    pre_rejected = between(resolver, '        if (!candidate.RejectReason.empty())\n        {\n            // Preserve the highest-priority', '        bool candidateIsMajorTankDefensive')
     controller = read('BotControllerCombat.cpp')
     control_gate = between(controller, '        if (candidate.Profile.RequiresMeleeRange', '        if (candidate.SpellId)')
     spell_header=(ROOT/'src/server/game/Spells/Spell.h').read_text()
@@ -66,7 +67,7 @@ struct Unit { float distance=4.64954f, reach=1.5f;
  bool IsWithinMeleeRange(Unit const* target) const { return distance<=GetMeleeRange(target); }
 };
 ''' + native_method + melee_method + helper + r'''
-struct Profile { int SpellId=8921; float MinRange=0,MaxRange=40;
+struct Profile { std::string TargetSelector="enemy"; int SpellId=8921; float MinRange=0,MaxRange=40;
  bool RequiresMeleeRange=false,RequiresRangedRange=true; };
 struct BotActionCandidate { struct Profile Profile; int ResolvedSpellId=8921,SpellId=8921; std::string RejectReason; };
 struct SpellMgr { SpellInfo info; bool missing=false;
@@ -93,6 +94,56 @@ std::string admit(float distance, float configured=0, bool controller=false, boo
  }
  }
  return candidate.RejectReason;
+}
+// Run the production pre-rejected branch before handing its range envelope
+// to the real movement lane. Keep max-range recovery and aggregation covered.
+float rejectedEnvelope(float configured, float profileMinimum, float targetReach,
+    float initialMinimum=0, std::string reason="", bool self=false) {
+ Unit actor,victim;actor.distance=6;victim.reach=targetReach;
+ Unit *bot=&actor,*target=&victim,*actionTarget=self?bot:target;
+ Profile profile,spell,action;profile.MinRange=profileMinimum;spell.MinRange=configured;
+ spell.TargetSelector=self?"self":"enemy";action.MinRange=initialMinimum;
+ std::vector<BotActionCandidate> candidates(1);auto& candidate=candidates[0];candidate.Profile=spell;
+ auto* spellInfo=sSpellMgr->GetSpellInfo(spell.SpellId);
+ if(false) {}
+''' + missing + ranged + r'''
+ if(!reason.empty())candidate.RejectReason=reason;
+ assert(!candidate.RejectReason.empty());
+ bool densityOnly=false;BotActionCandidate const* bestRangeRecovery=nullptr;
+ auto candidatePreferred=[](BotActionCandidate const&,BotActionCandidate const*){return true;};
+ for(auto& candidate:candidates){
+ auto* candidateSpellInfo=sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId);
+''' + pre_rejected + r'''
+ }
+ assert((bestRangeRecovery!=nullptr)==(reason=="out_of_range"&&!self));
+ return action.MinRange;
+}
+void rejectedMovement() {
+ store.info.range.Flags=0;
+ float envelope=rejectedEnvelope(8,0,2);
+ assert(envelope==8); // The old 2af propagation returned 5.
+ assert(rejectedEnvelope(0,8,2)==8); // Profile fallback survives.
+ assert(rejectedEnvelope(8,0,2,12)==12); // Existing larger minimum survives.
+ assert(rejectedEnvelope(8,0,2,3,"out_of_range")==3);
+ assert(rejectedEnvelope(8,0,2,3,"insufficient_resource")==3);
+ store.info.range.Flags=SPELL_RANGE_RANGED;
+ float hunterEnvelope=rejectedEnvelope(0,0,7);
+ assert(std::abs(hunterEnvelope-(1.5f+7+1.3333334f))<0.00001f);
+ // A self target must not inherit the unrelated enemy's large combat reach.
+ assert(rejectedEnvelope(8,0,7,0,"",true)==8);
+ for(float minimum:{envelope,hunterEnvelope}) {
+ using namespace BotActionArbitration;
+ Kernel kernel;kernel.Begin(2000);bool moved=false;
+ BotProfileCombatRangeCandidate::Decision decision;
+ decision.TargetPresent=decision.TargetInWorld=decision.TargetAlive=decision.TargetAttackable=decision.SameMap=decision.SameInstance=true;
+ decision.Distance=6;decision.MinRange=minimum;
+ decision.Move=[&moved](){moved=true;return true;};
+ BotProfileCombatRangeCandidate::Request request;request.Observe=[decision](){return decision;};
+ assert(kernel.Submit(BotProfileCombatRangeCandidate::Build(std::move(request))));
+ auto result=kernel.Resolve();assert(moved&&result.AnyCommitted);
+ assert(result.Trace[0].Reason=="profile_combat_min_range_reconciled");
+ }
+ store.info.range.Flags=0;
 }
 void movement(bool pincer) {
  using namespace BotActionArbitration;
@@ -132,7 +183,7 @@ int main(){
  assert(!admit(5).empty());assert(admit(5.5f).empty()); // Native positive minimum plus both reaches.
  store.info.range.RangeMin[0]=store.info.range.RangeMin[1]=0;
  store.missing=true;assert(admit(4.64954f)=="missing_spell_info");store.missing=false;
- movement(false);movement(true);
+ movement(false);movement(true);rejectedMovement();
 }
 '''.replace('ROWS',rows)
     path=tmp_path/('baseline.cpp' if revision else 'repaired.cpp');path.write_text(cpp)
@@ -150,3 +201,9 @@ def test_frozen_433_producer_rejects_native_legal_recorded_point(tmp_path):
     result=compile_fixture(tmp_path,'4337116eeb')
     assert result.returncode!=0
     assert 'admit(4.64954f,0,controller).empty()' in result.stderr
+
+
+def test_frozen_2af_rejected_candidate_loses_movement_envelope(tmp_path):
+    result=compile_fixture(tmp_path,'2af61a1cef')
+    assert result.returncode!=0
+    assert 'envelope==8' in result.stderr

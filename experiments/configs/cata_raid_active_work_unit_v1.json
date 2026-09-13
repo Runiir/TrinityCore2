@@ -4,21 +4,21 @@
   "owner_skill": "raid-bot-runtime-implementation",
   "classification": "implementation_pending_live_verification",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "4337116eebce7c3081a94ef3f6de3dc122d692a2",
+  "observed_at_commit": "2af61a1cef2f43083dfb904e61d1cc2b159ebe07",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "DPS-042 independently reviewed; build and native validation pending",
+  "gate_state": "Initial DPS-042 canary closed; range-envelope correction independently approved",
   "first_broken_edge": {
-    "id": "artificial_five_yard_gate_rejects_native_zero_minimum_spells",
+    "id": "rejected_range_candidate_loses_effective_minimum_before_movement",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "At4.650yd after pincer duty, five Balance spells are rejected as ranged_range_required although native and configured minimums are0; movement sees no minimum-range violation.",
-    "review_state": "independently_approved_15_focused_tests",
+    "cause": "New native/configured range rejection reaches a legacy handler that returns only5yd to movement, allowing a rejection loop for larger minima.",
+    "review_state": "propagation_correction_independently_approved_16_tests",
     "ledger_id": "DPS-042"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "3c23279ec49d9db274aa7c85b3efdb45e0a86c0473ff06fe78e033192616ebd6"
+    "sha256": "18046308332dbe1ac16e9488529ae1cb698e95141e820702bc2b9e01e36c914d"
   },
   "scope_lock": {
     "objective": "Admit spells using their actual native/configured minimum range and preserve real Hunter deadzones.",
@@ -47,7 +47,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": true,
-  "next_action": "Build the reviewed DPS-042 source once, then run the same canonical one-tank Magmaw full route with completion watchdog and independent all-bot performance review.",
+  "next_action": "Build the approved rejected-candidate range-envelope correction. Complete and publish the closed2af review, then run one bounded native validation on the same roster.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -63,7 +63,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "4337116eebce7c3081a94ef3f6de3dc122d692a2",
+    "source_commit": "2af61a1cef2f43083dfb904e61d1cc2b159ebe07",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -73,22 +73,22 @@
     "postrun_build_verified": true,
     "training_eligible": false,
     "qualification_eligible": false,
-    "recorded_casualties": 0,
+    "recorded_casualties": 2,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 138.556,
+    "pull_to_death_seconds": 131.609,
     "hostile_originated_damage": 28193123,
-    "pull_to_death_party_dps": 203478.182106874,
-    "exact_effective_healing": 2017883,
-    "exact_hps": 14563.663789,
-    "requested_repair_id": "DPS-041",
-    "requested_repair_achieved": true,
-    "performance_verdict": "unresolved_decline_diagnosis_required",
+    "pull_to_death_party_dps": 214218.80722442994,
+    "exact_effective_healing": 1532981,
+    "exact_hps": 11647.9951978968,
+    "requested_repair_id": "DPS-042",
+    "requested_repair_achieved": false,
+    "performance_verdict": "all_bot_review_pending",
     "diagnosis_required": true,
     "primary_baseline_source": "ff226ad52b3f20183cecaa6400f4bc824e804569",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc",
-    "publication_state": "remote_verified_and_exact_duplicates_evicted",
-    "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_native_range_2af61a1cef_20260913.tar.gz.dvc",
+    "publication_state": "pending_review_and_publication",
+    "remote_reconstruction_verified": false,
+    "raw_payloads_evicted": false
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
@@ -96,7 +96,7 @@
     "verdict": "approved_for_build_and_one_bounded_canary",
     "live_verified": false,
     "next_work_unit_implemented": true,
-    "artifact_sha256": "e7bd06f4832b22da55298c6573a29a182c2174996b52428d92f4b01583214ec0"
+    "artifact_sha256": "0439ef7396dfdca889e23d46596205269045a27c35ff468a8b6f3a4ffd528c0d"
   },
   "related_edges": [
     {

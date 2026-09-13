@@ -6,7 +6,22 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The latest native source `4337116eeb` uses one Blood DK tank, three healers
+The latest native source `2af61a1cef` cleared Magmaw in 131.609 seconds at
+214,218.807 exact raid DPS and 11,647.995 effective HPS, using the same sole
+Blood DK, three healers and six DPS. The full route took 399.535 seconds;
+two trash deaths recovered, and cleanup passed. Balance measured 29,498 DPS
+versus 17,670 on433. Native phase/cast review and publication are pending.
+This is an incomplete DPS-042 implementation, not full repair acceptance.
+
+Independent follow-up found that pre-rejected range candidates still returned
+a five-yard movement envelope even when their native/configured minimum was
+larger. The correction propagates the same effective minimum into movement.
+The actual producer, rejected-candidate handler and movement adapter now have
+a compiled regression:2af fails the eight-yard envelope assertion; all16
+focused tests pass after correction. Sol approved the correction for build and
+one native validation. The runtime skill now requires testing that handoff.
+
+The preceding native source `4337116eeb` uses one Blood DK tank, three healers
 and six DPS, including Balance Druid. It cleared Magmaw in 138.556 seconds
 at 203,478.182 exact raid DPS and 14,563.664 effective HPS. All ten survived
 the complete route, which took 348.774 seconds. Cleanup passed. The preceding

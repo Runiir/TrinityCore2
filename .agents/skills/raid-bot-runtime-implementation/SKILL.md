@@ -74,6 +74,12 @@ Return the work when the trace instead identifies:
 Check fixture values against the claimed predicate: an out-of-range case must
 actually exceed its range, and an isolated LOS case must otherwise be in range.
 Test names and inert flags do not prove boundary coverage or native behavior.
+When changing admission or a rejection reason, follow that rejection through
+every consumer into the returned movement/action envelope. Test the producer,
+rejected-candidate handling and resulting movement together; returning the
+expected rejection string alone misses liveness failures. Range classification
+does not imply a five-yard floor: use native range flags, combat reach and
+configured minimums consistently in admission and recovery.
 
 Treat decision complexity as a runtime risk, not as a diagnosis by itself. The
 2026-08-28 native bot audit found a heavy tail: 45 functions above CCN 100 and

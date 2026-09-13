@@ -445,7 +445,15 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             // is valid. Preserve the rejected candidate's minimum range so the
             // caller can move outward instead of waiting forever.
             if (candidate.RejectReason == "ranged_range_required")
-                action.MinRange = std::max(action.MinRange, 5.0f);
+            {
+                Unit* rangeTarget = candidate.Profile.TargetSelector == "self"
+                    ? static_cast<Unit*>(bot) : target;
+                float configuredMinimum = candidate.Profile.MinRange > 0.0f
+                    ? candidate.Profile.MinRange : profile.MinRange;
+                action.MinRange = std::max(action.MinRange,
+                    BotSpellMinimumRange::Effective(bot, rangeTarget,
+                        candidateSpellInfo, configuredMinimum));
+            }
             continue;
         }
         bool candidateIsMajorTankDefensive = role == "tank"
