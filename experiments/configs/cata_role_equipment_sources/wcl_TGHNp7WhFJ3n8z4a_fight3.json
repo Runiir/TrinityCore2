@@ -1,0 +1,176 @@
+{
+  "report": "TGHNp7WhFJ3n8z4a",
+  "fight": 3,
+  "source": 1,
+  "actor": "Garbodrood",
+  "spec": "restoration_druid",
+  "displayed_item_level": 407,
+  "talents": "10 / 0 / 31",
+  "combat_potions": 2,
+  "healthstones_and_potions": 1,
+  "encounter": "Morchok",
+  "difficulty": "Heroic",
+  "raid_size": 25,
+  "created_by": "Depanji",
+  "created_date": "2025-05-14",
+  "observed_date": "2026-09-13",
+  "source_url": "https://classic.warcraftlogs.com/reports/TGHNp7WhFJ3n8z4a?fight=3&type=summary&source=1",
+  "method": "Visible WCL character table and DOM-backed item hrefs via Chrome; not current character profile",
+  "purpose": "Cataclysm same-spec slot enchant authority only; not Magmaw HPS reference",
+  "equipment": [
+    {
+      "runtime_slot": 0,
+      "item_id": 78690,
+      "gem_item_ids": [
+        68780,
+        71881
+      ],
+      "enchant_id": 4207,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78690?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=68780:71881&ench=4207"
+    },
+    {
+      "runtime_slot": 1,
+      "item_id": 78364,
+      "gem_item_ids": [],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78364?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0"
+    },
+    {
+      "runtime_slot": 2,
+      "item_id": 78740,
+      "gem_item_ids": [
+        71881,
+        71881
+      ],
+      "enchant_id": 4200,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78740?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881:71881&ench=4200"
+    },
+    {
+      "runtime_slot": 4,
+      "item_id": 78660,
+      "gem_item_ids": [
+        71881,
+        71881,
+        71842
+      ],
+      "enchant_id": 4102,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78660?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881:71881:71842&ench=4102"
+    },
+    {
+      "runtime_slot": 5,
+      "item_id": 78420,
+      "gem_item_ids": [
+        71881,
+        71881,
+        71881
+      ],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78420?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881:71881:71881"
+    },
+    {
+      "runtime_slot": 6,
+      "item_id": 78710,
+      "gem_item_ids": [
+        71881,
+        71881,
+        71881
+      ],
+      "enchant_id": 4110,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78710?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881:71881:71881&ench=4110"
+    },
+    {
+      "runtime_slot": 7,
+      "item_id": 78434,
+      "gem_item_ids": [
+        71881,
+        71881
+      ],
+      "enchant_id": 4104,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78434?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881:71881&ench=4104"
+    },
+    {
+      "runtime_slot": 8,
+      "item_id": 78372,
+      "gem_item_ids": [
+        71881
+      ],
+      "enchant_id": 4257,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78372?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881&ench=4257"
+    },
+    {
+      "runtime_slot": 9,
+      "item_id": 78680,
+      "gem_item_ids": [
+        71881
+      ],
+      "enchant_id": 4107,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78680?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881&ench=4107"
+    },
+    {
+      "runtime_slot": 10,
+      "item_id": 77109,
+      "gem_item_ids": [
+        52239
+      ],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=77109?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=52239"
+    },
+    {
+      "runtime_slot": 11,
+      "item_id": 78419,
+      "gem_item_ids": [
+        71881
+      ],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78419?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881"
+    },
+    {
+      "runtime_slot": 12,
+      "item_id": 77989,
+      "gem_item_ids": [],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=77989?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0"
+    },
+    {
+      "runtime_slot": 13,
+      "item_id": 77114,
+      "gem_item_ids": [],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=77114?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0"
+    },
+    {
+      "runtime_slot": 14,
+      "item_id": 77096,
+      "gem_item_ids": [
+        71881
+      ],
+      "enchant_id": 4096,
+      "observed_item_href": "https://www.wowhead.com/cata/item=77096?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881&ench=4096"
+    },
+    {
+      "runtime_slot": 15,
+      "item_id": 78476,
+      "gem_item_ids": [],
+      "enchant_id": 4097,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78476?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&ench=4097"
+    },
+    {
+      "runtime_slot": 16,
+      "item_id": 78433,
+      "gem_item_ids": [
+        71881
+      ],
+      "enchant_id": 4091,
+      "observed_item_href": "https://www.wowhead.com/cata/item=78433?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881&ench=4091"
+    },
+    {
+      "runtime_slot": 17,
+      "item_id": 77083,
+      "gem_item_ids": [
+        71881
+      ],
+      "enchant_id": 0,
+      "observed_item_href": "https://www.wowhead.com/cata/item=77083?pcs=78690:78364:78740:0:78660:78420:78710:78434:78372:78680:77109:78419:77989:77114:77096:78476:78433:77083:0&gems=71881"
+    }
+  ]
+}

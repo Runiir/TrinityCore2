@@ -18,7 +18,7 @@ investigation and are not coefficient multipliers or hard acceptance thresholds.
 | 30008 Affliction | 35,192 | 40,281 | Doomguard admission works but guardian only melees for8,287 damage/AP4; long DoTs on transient adds remain | Repair native guardian AI/spell binding; verify existing owner-SP response and Doom Bolt cadence, then transient-target allocation | Native guardian repair required |
 | 30009 Survival | 39,941 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
 | 30010 Elemental | 30,135 | 41,866 | Tremor8143 wastes routine setup globals without fear; current local DPS decline under review | Repair required-earth-slot semantics while retaining reactive fear response; diagnose new loss separately | Active diagnosis |
-| 30003 Restoration | 5,022 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Resolve equipment authority; preserve healing and survival while reviewing offensive idle time | Open |
+| 30003 Restoration | 5,022 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Apply reviewed nine-slot Cataclysm enchant overlay; preserve healing and survival while reviewing offensive idle time | Source verified; implementation pending |
 | 30004 Holy | 0 | No matched damage target | Same role equipment gap; zero damage alone does not prove healer failure | Verify healing cadence, mana and safe offensive opportunities | Open |
 | 30005 Discipline | 5,898 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
 
@@ -29,6 +29,18 @@ when aggregate DPS rises. Missing evidence becomes an explicit capture task,
 not an implied pass. Closed individual repairs remain in the error ledger.
 
 ## Retained reference research
+
+The Restoration enchant source is Garbodrood, report `TGHNp7WhFJ3n8z4a`,
+fight 3/source 1, Morchok 25 heroic on May 14, 2025. The logged actor is
+Restoration 10/0/31, item level 407. The
+[retained item-link snapshot](../../experiments/configs/cata_role_equipment_sources/wcl_TGHNp7WhFJ3n8z4a_fight3.json)
+is an enchant source, not a Magmaw healing-performance comparison.
+Its SHA-256 is `a35f98b449c8afbb310d038a53cbf15c6fb436d492f9796a230bf8d3a85d9d8d`.
+Native slot/skill checks admit enchants 4207,4200,4102,4110,4104,4257,4107,4096,4097
+on runtime slots 0,2,4,6,7,8,9,14,15 respectively, preserving current items,
+gems and reforges. Omit the source's offhand enchant because the bot uses a
+two-hand staff. These enchants impose no wearer profession requirement;
+the actor's complete profession choice remains unresolved.
 
 Reviewed through the connected WCL browser on 2026-09-13. These are measured
 reference observations, not a controlled expected-DPS floor. Native comparison
