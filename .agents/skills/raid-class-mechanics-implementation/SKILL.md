@@ -97,6 +97,9 @@ Before adding a missing consumer, trace which terms the surrounding native
 calculation already includes. Exercise nonzero local and inherited contributions
 together; a zero-local-stat fixture cannot detect double application. Preserve
 school masks, coefficient spell mods, and snapshot/update timing explicitly.
+When converting periodic damage to a rate, distinguish the reference's base
+tick interval from its hasted schedule. Dividing by a hasted interval and then
+hasting the derived effect can count haste twice; exercise a nonzero-haste case.
 
 ## Make one bounded repair
 

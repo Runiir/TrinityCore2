@@ -12,26 +12,34 @@ tracks every unresolved actor. No actor has overall acceptance yet. Blood stat/
 cadence attribution, Balance guardian admission, Affliction Doomguard and Survival
 AoE admission are being resolved from retained evidence. Implement one proven
 repair at a time, then review the whole roster and continue the remaining rows.
-The latest source `db67e88cc8` cleared in 132.852 seconds at 213,591.990
-exact raid DPS and 18,165.726 HPS. All ten survived. Capture, build verification,
-shutdown and cleanup passed. The matched `63d7483481` baseline was 130.087
-seconds and 216,908.115 DPS. Performance is not accepted: raid DPS fell 1.529%,
-Balance and Fire30006 declined, and Elemental received three Infection callbacks.
+The latest source `9a0df70704` cleared in 130.546 seconds at 215,963.132
+exact raid DPS and 11,789.860 HPS. All ten survived, with zero Infection.
+Capture, build verification, shutdown and cleanup passed. Against immediate
+baseline `db67e88cc8` (132.852 seconds, 213,591.990 DPS), Blood, Elemental,
+Affliction and Survival declined while Balance and both Fire actors improved.
+The older `63d7483481` baseline remains 216,908.115 DPS over 130.087 seconds.
+No actor has overall performance acceptance.
 
-DPS-053 native Doomguard repair passed: nine Doom Bolts dealt 102,447 damage,
-with no guardian melee and the primary Felhunter preserved for the normal
-45-second guardian lifetime. Owner Bane placement on parasites removed useful
-body targeting late in that lifetime; the exact aura-removal timestamp is
-inferred from replacement semantics, not independently serialized. DPS-056
-owns that separate policy failure. Numeric guardian parity remains open.
+MOV-001's native hazard admission is implemented and independently reviewed,
+but its new live branch was unexercised: zero `native_same_surface_hazard_escape`
+and zero qualified-proof observations. Existing escape branches moved natively;
+zero Infection does not prove the new branch. Keep its live check in subsequent
+already-needed class canaries instead of repeating an unchanged run to seek it.
+The db67 receipts377/378 production regression is retained in a compact fixture.
 
-The active repair is MOV-001's remaining native escape admission. Elemental
-receipts377/378 describe complete, floor-valid, projected native endpoints with
-outward hazard clearance and `ProofQualified=true`. The planner never consumes
-that qualified proof, rejects the original Z hint mismatch, and submits no
-escape before Infection. Connect the existing proof to production admission;
-preserve native coordinates, path guards, and accepted pursuit/rearm behavior.
-This is not controlled evidence that the guardian patch caused the safety loss.
+DPS-053 native Doomguard remains accepted. Adjacent Affliction Bane603 placement
+on optional parasites remains DPS-056. A global old-Bane lock was rejected
+because it would block valid head and mandatory target reassignment. Drain Soul
+head-tick loss needs per-event and channel-state comparison; the next review
+must not equate fewer ticks with the whole damage difference.
+
+The active implementation is Fire's native Combustion contract, DPS-057, with a
+separately reviewed DPS-052 range migration in the same planned build. Restore
+owned Ignite and Living Bomb inputs, normalize with base (not hasted) source
+periods, and retain native child behavior. The native contract, split-helper correction and separate range migration
+have independent approval. Native build, updater/readback and live verification
+remain pending. All other
+actor rows remain queued and every closed run receives an all-bot review.
 
 Fire observations exposed a 35yd profile cap on native40yd Combustion, plus a
 native class-mask omission excluding Ignite and Living Bomb. Blood's old MM
@@ -42,12 +50,12 @@ enchants remain queued in the actor table. No actor has overall acceptance.
 The only head phase ended in death; head-to-body return remains unexercised.
 
 Current evidence:
-`artifacts/cata_raid_program/magmaw_native_doomguard_db67e88cc8_20260913.tar.gz.dvc`.
-Its 87,922,212-byte archive and every member passed fresh-cache remote
+`artifacts/cata_raid_program/magmaw_native_hazard_9a0df70704_20260913.tar.gz.dvc`.
+Its 82,571,008-byte archive and every member passed fresh-cache remote
 verification. Exact raw/full-timeline, duplicate archive/cache and reconstructed
 payloads were evicted. Inspectable HTML and compact reviews remain. DVC status
-records deliberate local eviction; DVC push reports up to date. The prior63d
-archive remains available under its own immutable DVC pointer.
+records deliberate local eviction; DVC push reports up to date. The prior db67 and 63d
+archives remain available under their own immutable DVC pointers.
 
 Prior Survival trap removal remains accepted on `05f5c2f959`: no invalid13813
 attempts and zero Infection hits, with shot outcomes preserved. Its pointer is

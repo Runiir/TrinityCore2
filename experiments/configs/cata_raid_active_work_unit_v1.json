@@ -1,42 +1,53 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:native_hazard_escape_admission",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "unconsumed_qualified_native_hazard_proof",
+  "work_unit": "magmaw:fire_combustion_contract",
+  "owner_skill": "raid-class-mechanics-implementation",
+  "classification": "native_periodic_input_mask_and_base_rate_contract",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
+  "observed_at_commit": "9a0df707045ad7f5754603e7732c5386a5766716",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Native escape admission independently reviewed; build/live pending",
+  "gate_state": "Native Fire contract and separate range migration independently approved; build/live pending",
   "first_broken_edge": {
-    "id": "qualified_native_hazard_proof_not_consumed",
-    "owner_classification": "shared_native_movement_admission",
-    "cause": "Receipts377/378 qualify complete projected native escape but planner rejects requested Z; no submission precedes Infection.",
-    "review_state": "approved_for_build_and_bounded_canary",
-    "ledger_id": "MOV-001"
+    "id": "combustion_excludes_owned_fire_dots_and_sums_tick_amounts",
+    "owner_classification": "native_class_damage_consumer",
+    "cause": "11129 mask excludes12654/44457 and script sums per-tick amounts into1s child instead of base-period rates. Separate profile35yd cap rejects legal37.7469 opportunity.",
+    "review_state": "native_and_range_independently_approved",
+    "ledger_id": "DPS-057"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "fb9299f4acf2cc1777b4642e467d9197e2390e57063cf39453acf93c8379eb5b"
+    "sha256": "f37caf3690c47dc235b1058efcc87ea237a2de698551112b079d6aa8a8942b47"
   },
   "scope_lock": {
-    "objective": "Admit qualified native hazard escape through existing planner/executor without changing coordinates or tolerances.",
+    "objective": "Restore native Combustion periodic input/base-rate contract and separately reviewed11129 range.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrConnectedSurfacePath.h",
-      "src/server/game/Bots/BotWorldPopulationMgrNativePathAdmission.h",
-      "tests/test_native_hazard_escape_progress.py",
-      "tests/fixtures/native_hazard_escape_db67.json"
+      "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
+      "src/server/game/Spells/SpellCombustion.h",
+      "src/server/game/Bots/BotFireCombustionObservation.cpp",
+      "src/server/game/Bots/BotFireCombustionObservation.h",
+      "src/server/scripts/Spells/spell_mage.cpp",
+      "src/server/scripts/Spells/spell_mage_fire.cpp",
+      "src/server/scripts/Spells/spell_mage_frost.cpp",
+      "src/server/scripts/Spells/spell_mage_shared.h",
+      "sql/custom/world/2026_09_13_04_fire_combustion_native_range.sql",
+      "tests/test_fire_combustion_native.py",
+      "tests/test_fire_combustion_native_range.py",
+      "tests/fixtures/fire_combustion_native_contract.json",
+      "tests/test_fire_combustion_candidate_observation.py",
+      "tests/test_bot_timeline_fire_combustion_observation.py"
     ],
     "forbidden_changes": [
-      "No Z steering, pathgen/MMAP edits, tolerance changes, class/boss edits or unproved lifecycle rewrites."
+      "No readiness, target policy, child tick-rounding, unrelated Mage behavior, guessed coefficients, movement or boss changes."
     ]
   },
   "acceptance_conditions": [
-    "Actual production admission/executor accepts receipts377/378 native endpoint and controls with qualified outward hazard progress.",
-    "Ordinary goals, incomplete/shortcut/offmesh/floor-invalid paths and unbound/no-progress hazards remain rejected.",
-    "Matched live run preserves pursuit/rearm and demonstrates native movement outcomes; clear, safety, narrow repair and all-actor performance remain separate."
+    "Native owner/school/family/mask calculation admits Ignite, Living Bomb and either Pyro variant, excluding unrelated/foreign effects.",
+    "Base source periods form native one-second rate with no double haste; child snapshot/ticks remain native and observations stay nonmutating/approximate.",
+    "Companion migration changes only enabled Fire11129 action35->40; exact native updater/readback and both actor loads are required.",
+    "Native Combustion submissions/landed periodic output and every actor are reviewed; clear, native repair and overall performance remain separate.",
+    "Check MOV-001 new traversal branch for native progress and lifecycle if exercised; retain pending status otherwise."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -47,7 +58,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Build reviewed native hazard admission once and run the completion-watchdog canary; verify actual escape progress and review every actor.",
+  "next_action": "Build the two reviewed Combustion corrections once, apply/read back migration04, and validate both Fire actors plus the whole roster.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -63,7 +74,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
+    "source_commit": "9a0df707045ad7f5754603e7732c5386a5766716",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -75,33 +86,35 @@
     "qualification_eligible": false,
     "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 132.852,
-    "hostile_originated_damage": 28376123,
-    "pull_to_death_party_dps": 213591.98958239242,
-    "exact_effective_healing": 2413353,
-    "exact_hps": 18165.725770029807,
-    "requested_repair_id": "DPS-053",
-    "requested_repair_achieved": true,
-    "performance_verdict": "not_accepted_safety_failure_and_actor_losses",
+    "pull_to_death_seconds": 130.546,
+    "hostile_originated_damage": 28193123,
+    "pull_to_death_party_dps": 215963.13176964442,
+    "exact_effective_healing": 1539119,
+    "exact_hps": 11789.859513121812,
+    "requested_repair_id": "MOV-001",
+    "requested_repair_achieved": false,
+    "performance_verdict": "not_accepted_actor_gaps_and_four_declines",
     "diagnosis_required": true,
-    "primary_baseline_source": "63d74834813ee558644a9e61fd6039abf617e589",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_native_doomguard_db67e88cc8_20260913.tar.gz.dvc",
+    "primary_baseline_source": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_native_hazard_9a0df70704_20260913.tar.gz.dvc",
     "publication_state": "remote_verified_and_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "requested_repair_scope": "Native Bane-targeted Doom Bolt and primary-pet coexistence accepted; numeric parity and adjacent Bane placement remain open.",
-    "infection_damage_event_count": 3,
-    "infection_affected_actor_count": 1,
-    "safety_retained": false,
-    "independent_review_sha256": "346781d2bba8c8fb7f53a73ce13587171c9760dafbfc6ea0f6e4990f071001f4"
+    "requested_repair_scope": "Production fixture/implementation reviewed; new native traversal branch unexercised live. Existing escape progress and zero Infection are observed.",
+    "infection_damage_event_count": 0,
+    "infection_affected_actor_count": 0,
+    "safety_retained": true,
+    "independent_review_sha256": "8ebf222a1018f7a5afcf462a23e7b543b4a3e38377fd3300acbc64da29ae5225"
   },
   "implementation_review": {
     "verdict": "approved_for_build_and_canary",
-    "review_sha256": "0ad56e9965aec9994e229e897fb516f701702eb7a9c16064b822c471bf4c738c",
-    "focused_tests_passed": 31,
-    "historical_actual_caller_rejection_reproduced": true,
+    "range_review_sha256": "d63311c95e204b4032ba071f96ea2c006841e33e1528511f50db51a770f670f9",
     "live_verified": false,
-    "next_work_unit_implemented": true
+    "next_work_unit_implemented": true,
+    "native_initial_review_sha256": "b65230e2c99ded74e6ab64b32985d0de4e74f51e8f598d0105c43c0d4129dd55",
+    "native_split_fix_approval_sha256": "e6eb27964463946a66fa8956db4da7816b7ce5d894a5444a959025bf733af40d",
+    "native_focused_tests_passed": 30,
+    "range_focused_tests_passed": 4
   },
   "related_edges": [
     {
@@ -147,7 +160,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "MOV-001",
+  "error_id": "DPS-057",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -164,7 +177,8 @@
     "DPS-055",
     "DPS-056",
     "DPS-057",
-    "DPS-058"
+    "DPS-058",
+    "MOV-001"
   ],
   "requested_tank_assignment": {
     "main_tank": {
