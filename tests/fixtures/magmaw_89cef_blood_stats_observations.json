@@ -1,0 +1,330 @@
+{
+  "source_commit": "89cef294b67ca4edecdff146bcbf32418febd8e7",
+  "archive_sha256": "5eba2dc33479dda2cd5a7f174a716cc4ce6541f06cd0dd5f0ff7677b92d0a1d9",
+  "raw_sha256": "b127e992437b7d4654b4947adc09d916b346e5f4af83ff37fd029863e792b78d",
+  "pull_ms": 1789287295435,
+  "identity": {
+    "cohort_id": "default",
+    "server_epoch": 7795554048008749,
+    "attempt_id": 1
+  },
+  "projection": "Recorded Blood30002 primary-stat/native-Vengeance subset; no synthetic stat values.",
+  "observations": [
+    {
+      "capture_sequence": 401,
+      "actor_guid": 30002,
+      "snapshot": {
+        "effective_stats": {
+          "observed_at_ms": 1789287294739,
+          "owner": {
+            "guid": 30002,
+            "observed": true,
+            "observed_at_ms": 1789287294739,
+            "strength": 8836,
+            "stamina": 10410,
+            "armor": 36454,
+            "attack_power": 27168.5,
+            "modifier_ledger": {
+              "schema": "trinity_scoring_start_stat_modifier_ledger_v1",
+              "primary_stats": [
+                {
+                  "aura_effects": [
+                    {
+                      "amount": 549,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 57330
+                    },
+                    {
+                      "amount": 300,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 79472
+                    },
+                    {
+                      "amount": 1200,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 79634
+                    },
+                    {
+                      "amount": 90,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 87545
+                    },
+                    {
+                      "amount": 2,
+                      "aura_type": 137,
+                      "caster_guid": 30002,
+                      "effect_index": 1,
+                      "misc_value": 0,
+                      "misc_value_b": 1,
+                      "spell_id": 53138
+                    },
+                    {
+                      "amount": 5,
+                      "aura_type": 137,
+                      "caster_guid": 30004,
+                      "effect_index": 0,
+                      "misc_value": -1,
+                      "misc_value_b": 15,
+                      "spell_id": 79063
+                    }
+                  ],
+                  "base_pct": 1,
+                  "base_value": 5921,
+                  "create_stat": 191,
+                  "published_stat": 8836,
+                  "recomputed_total": 8836.82,
+                  "stat": "strength",
+                  "stat_index": 0,
+                  "total_pct": 1.071,
+                  "total_value": 2139
+                },
+                {
+                  "aura_effects": [
+                    {
+                      "amount": 90,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 1,
+                      "misc_value": 2,
+                      "misc_value_b": 0,
+                      "spell_id": 87545
+                    },
+                    {
+                      "amount": 8,
+                      "aura_type": 137,
+                      "caster_guid": 30002,
+                      "effect_index": 2,
+                      "misc_value": 2,
+                      "misc_value_b": 4,
+                      "spell_id": 48263
+                    },
+                    {
+                      "amount": 9,
+                      "aura_type": 137,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 4,
+                      "spell_id": 50029
+                    },
+                    {
+                      "amount": 5,
+                      "aura_type": 137,
+                      "caster_guid": 30004,
+                      "effect_index": 0,
+                      "misc_value": -1,
+                      "misc_value_b": 15,
+                      "spell_id": 79063
+                    }
+                  ],
+                  "base_pct": 1,
+                  "base_value": 8132,
+                  "create_stat": 174,
+                  "published_stat": 10410,
+                  "recomputed_total": 10410.1,
+                  "stat": "stamina",
+                  "stat_index": 2,
+                  "total_pct": 1.23606,
+                  "total_value": 116
+                }
+              ]
+            }
+          },
+          "persistent_pet": {
+            "present": false,
+            "guid": 0,
+            "entry": 0,
+            "observed_at_ms": 1789287294739,
+            "effective_stats": {
+              "observed": false,
+              "observed_at_ms": 0,
+              "guid": 0
+            }
+          }
+        },
+        "native_combat_stats": {
+          "melee_attack_power": 27168.5,
+          "vengeance_76691_caster_guid": 0,
+          "vengeance_76691_effect0_amount": 0,
+          "vengeance_76691_effect0_present": false,
+          "vengeance_76691_present": false,
+          "vengeance_cap_create_health_plus_stamina": 14738
+        }
+      }
+    },
+    {
+      "capture_sequence": 411,
+      "actor_guid": 30002,
+      "snapshot": {
+        "effective_stats": {
+          "observed_at_ms": 1789287299861,
+          "owner": {
+            "guid": 30002,
+            "observed": true,
+            "observed_at_ms": 1789287299861,
+            "strength": 8836,
+            "stamina": 10410,
+            "armor": 36454,
+            "attack_power": 28902.2,
+            "modifier_ledger": {
+              "schema": "trinity_scoring_start_stat_modifier_ledger_v1",
+              "primary_stats": [
+                {
+                  "aura_effects": [
+                    {
+                      "amount": 549,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 57330
+                    },
+                    {
+                      "amount": 300,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 79472
+                    },
+                    {
+                      "amount": 1200,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 79634
+                    },
+                    {
+                      "amount": 90,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 0,
+                      "spell_id": 87545
+                    },
+                    {
+                      "amount": 2,
+                      "aura_type": 137,
+                      "caster_guid": 30002,
+                      "effect_index": 1,
+                      "misc_value": 0,
+                      "misc_value_b": 1,
+                      "spell_id": 53138
+                    },
+                    {
+                      "amount": 5,
+                      "aura_type": 137,
+                      "caster_guid": 30004,
+                      "effect_index": 0,
+                      "misc_value": -1,
+                      "misc_value_b": 15,
+                      "spell_id": 79063
+                    }
+                  ],
+                  "base_pct": 1,
+                  "base_value": 5921,
+                  "create_stat": 191,
+                  "published_stat": 8836,
+                  "recomputed_total": 8836.82,
+                  "stat": "strength",
+                  "stat_index": 0,
+                  "total_pct": 1.071,
+                  "total_value": 2139
+                },
+                {
+                  "aura_effects": [
+                    {
+                      "amount": 90,
+                      "aura_type": 29,
+                      "caster_guid": 30002,
+                      "effect_index": 1,
+                      "misc_value": 2,
+                      "misc_value_b": 0,
+                      "spell_id": 87545
+                    },
+                    {
+                      "amount": 8,
+                      "aura_type": 137,
+                      "caster_guid": 30002,
+                      "effect_index": 2,
+                      "misc_value": 2,
+                      "misc_value_b": 4,
+                      "spell_id": 48263
+                    },
+                    {
+                      "amount": 9,
+                      "aura_type": 137,
+                      "caster_guid": 30002,
+                      "effect_index": 0,
+                      "misc_value": 0,
+                      "misc_value_b": 4,
+                      "spell_id": 50029
+                    },
+                    {
+                      "amount": 5,
+                      "aura_type": 137,
+                      "caster_guid": 30004,
+                      "effect_index": 0,
+                      "misc_value": -1,
+                      "misc_value_b": 15,
+                      "spell_id": 79063
+                    }
+                  ],
+                  "base_pct": 1,
+                  "base_value": 8132,
+                  "create_stat": 174,
+                  "published_stat": 10410,
+                  "recomputed_total": 10410.1,
+                  "stat": "stamina",
+                  "stat_index": 2,
+                  "total_pct": 1.23606,
+                  "total_value": 116
+                }
+              ]
+            }
+          },
+          "persistent_pet": {
+            "present": false,
+            "guid": 0,
+            "entry": 0,
+            "observed_at_ms": 1789287299861,
+            "effective_stats": {
+              "observed": false,
+              "observed_at_ms": 0,
+              "guid": 0
+            }
+          }
+        },
+        "native_combat_stats": {
+          "melee_attack_power": 28902.2,
+          "vengeance_76691_caster_guid": 30002,
+          "vengeance_76691_effect0_amount": 1204,
+          "vengeance_76691_effect0_present": true,
+          "vengeance_76691_present": true,
+          "vengeance_cap_create_health_plus_stamina": 14738
+        }
+      }
+    }
+  ]
+}

@@ -303,6 +303,7 @@ def _diagnosis_events(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen_returns: set[tuple[Any, ...]] = set()
     last_decision_context: dict[int, str] = {}
     last_movement_context: dict[int, str] = {}
+    seen_stats: set[tuple[int, str, int]] = set()
     for payload in payloads:
         for bot in payload.get("bots") or []:
             if not isinstance(bot, dict):
@@ -312,6 +313,26 @@ def _diagnosis_events(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 continue
             diagnosis = bot.get("diagnosis") or {}
             snapshot = bot.get("snapshot") or {}
+            effective = snapshot.get("effective_stats")
+            stats_at = effective.get("observed_at_ms") if isinstance(effective, dict) else None
+            # Native diagnosis stamps these current observations separately
+            # from cached policy/movement state. Never borrow a policy clock.
+            if type(stats_at) is int and stats_at > 0:
+                identity = _identity(payload)
+                fields = {"effective_stats": effective, "source_identity": identity,
+                          "source_identity_verified": payload.get("_normalized_identity_verified")}
+                if "native_combat_stats" in snapshot:
+                    fields["native_combat_stats"] = snapshot["native_combat_stats"]
+                    fields["native_combat_stats_clock"] = "shared_diagnosis_snapshot_no_independent_timestamp"
+                cohort = snapshot.get("validation_cohort") or {}
+                fields["snapshot_context"] = {key: cohort[key] for key in (
+                    "current_map_id", "current_instance_id", "alive", "ghost", "in_world") if key in cohort}
+                identity_key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+                sample_key = (actor, identity_key, stats_at)
+                if sample_key not in seen_stats:
+                    seen_stats.add(sample_key)
+                    events.append(_event("diagnosis_stats_observation", stats_at, actor, **fields,
+                                         provenance="diagnosis_effective_stats_observed_at"))
             target_return = diagnosis.get("magmaw_target_return") or {}
             observed = _int(target_return.get("observed_at_ms"))
             if target_return.get("evaluated") is True and observed:

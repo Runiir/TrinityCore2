@@ -254,6 +254,13 @@ when the real failure is range, LOS, route authority, setup, resource ownership,
 or a higher-priority mechanic. Do not call a profile correct merely because the
 spell exists in it.
 
+Before changing bucket or score values, inspect setup and multi-target branches
+that return before normal ranking. A low-priority profile row can still run
+first through those callers. Replay the actual setup-to-resolver path with an
+eligible competing action; preserve legitimate pre-pull and target setup when
+removing a bypass. Use native target-classification methods and loaded flags,
+not display rank or an encounter-specific entry list.
+
 Deduplicate replayed trace rows by actor and native sequence. Keep submissions,
 primary impacts, periodic ticks, triggered effects and per-target AoE impacts
 separate; event counts are not cast counts. A no-impact interval can contain
