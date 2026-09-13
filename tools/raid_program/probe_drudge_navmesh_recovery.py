@@ -159,6 +159,8 @@ def verify_route_anchors(root: Path = ROOT) -> dict[str, list[float]]:
             row for row in scenario["route"]
             if row.get("node_id") == "bwd.magmaw.drudges"
         )
+        if node.get("mechanic_profile") != "trash_two_tank_charge_lanes":
+            continue
         anchors = {
             str(int(row["roster_slot"])): [
                 float(row["x"]), float(row["y"]), float(row["z"])
@@ -191,8 +193,12 @@ def verify_route_anchors(root: Path = ROOT) -> dict[str, list[float]]:
             "blackwing_descent_10n_magmaw_diagnostic",
         }
         and row.get("route_node_id") == "bwd.magmaw.drudges"
+        and row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
     ]
-    if len(materialized) != 2:
+    split_scenarios = {scenario["id"] for scenario in selected
+                       if any(node.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+                              for node in scenario["route"])}
+    if {row.get("scenario_id") for row in materialized} != split_scenarios or len(materialized) != len(split_scenarios):
         raise RuntimeError("drudge_navmesh_materialized_route_set_mismatch")
     for row in materialized:
         anchors = {

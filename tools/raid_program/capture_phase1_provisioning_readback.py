@@ -45,6 +45,7 @@ def validate_readback(
     corpse_phase_rows: int,
     group_instance_rows: int = 0,
     group_rows: int = 0,
+    required_roles: dict[str, int] | None = None,
 ) -> list[str]:
     reasons: list[str] = []
     expected_by_name = {str(row["name"]): row for row in expected}
@@ -56,7 +57,10 @@ def validate_readback(
     if len({int(row.get("guid") or 0) for row in observed}) != len(observed):
         reasons.append("unique_guids")
     role_counts = {role: sum(str(row.get("role")) == role for row in observed) for role in ("tank", "healer", "dps")}
-    if role_counts != {"tank": 2, "healer": 3, "dps": 5}:
+    expected_roles = {role: sum(str(row.get("role")) == role for row in expected) for role in ("tank", "healer", "dps")}
+    declared_roles = expected_roles if required_roles is None else required_roles
+    if (sum(expected_roles.values()) != 10 or expected_roles != declared_roles
+            or role_counts != declared_roles):
         reasons.append("exact_roles")
     for name, expected_row in expected_by_name.items():
         row = observed_by_name.get(name)
@@ -348,6 +352,7 @@ def main() -> int:
         expected,
         observed,
         start=contract["start"],
+        required_roles=contract["scenario"].get("required_roles"),
         character_instance_rows=character_instance_rows,
         group_member_rows=group_member_rows,
         ghost_aura_rows=ghost_aura_rows,

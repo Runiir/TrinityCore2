@@ -39,13 +39,28 @@ def expected_bwd_10n_roster(
         role_counts[role] += 1
         expected.append(
             (
-                f"raid_{role}_{role_counts[role]}",
+                str(bot.get("canonical_roster_slot_id") or f"raid_{role}_{role_counts[role]}"),
                 role,
                 int(bot["class"]),
                 str(bot["class_spec"]),
             )
         )
-    if len(expected) != 10 or role_counts != Counter({"tank": 2, "healer": 3, "dps": 5}):
+    from tools.bot_ml.build_validation_provisioning import (
+        DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
+        load_config_with_bwd_diagnostic_shards,
+    )
+    config = load_config_with_bwd_diagnostic_shards(
+        ROOT / "experiments/configs/validation_provisioning_cata_001.json",
+        DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE,
+    )
+    declared = next(row for row in config["scenarios"] if row.get("id") == profile_name)
+    required_roles = declared.get("required_roles") or Counter(
+        str(bot["role"]) for bot in declared["bots"]
+    )
+    if (len(expected) != 10 or len({row[0] for row in expected}) != 10
+            or set(required_roles) != {"tank", "healer", "dps"}
+            or sum(required_roles.values()) != 10
+            or role_counts != Counter(required_roles)):
         raise ValueError("frozen BWD 10N provisioning roster is invalid")
     return tuple(expected)
 
@@ -330,7 +345,8 @@ def _roster_rejections(
     if len(set(guids)) != 10:
         reasons.append("unique_roster_guids")
     roles = Counter(row.get("role") for row in rows)
-    if roles != Counter({"tank": 2, "healer": 3, "dps": 5}):
+    expected_roster = expected_bwd_10n_roster(profile_name)
+    if roles != Counter(row[1] for row in expected_roster):
         reasons.append("exact_10n_role_composition")
     observed_roster = tuple(
         (
@@ -339,7 +355,7 @@ def _roster_rejections(
         )
         for row in rows
     )
-    if observed_roster != expected_bwd_10n_roster(profile_name):
+    if observed_roster != expected_roster:
         reasons.append("exact_frozen_bwd_10n_roster_identity")
     if not all(row.get("active") is True for row in rows):
         reasons.append("all_roster_active")

@@ -32,6 +32,34 @@ std::vector<BotWorldPopulationMgr::RaidRosterPlanSlot> BotWorldPopulationMgr::Bu
         if (raidSize != 10 && raidSize != 25)
             return plan;
 
+        if (Cohort().Config.ValidationRouteEnable
+            && !Party().ValidationRouteManifest.empty())
+        {
+            auto const& declared = Party().ValidationRouteManifest.front().ExpectedRoster;
+            if (!declared.empty())
+            {
+                if (declared.size() != raidSize)
+                    return {};
+                std::set<std::string> slots;
+                plan.reserve(raidSize);
+                for (auto const& identity : declared)
+                {
+                    if (identity.RosterSlotId.empty()
+                        || !slots.insert(identity.RosterSlotId).second
+                        || (identity.Role != "tank" && identity.Role != "healer"
+                            && identity.Role != "dps"))
+                        return {};
+                    RaidRosterPlanSlot slot;
+                    slot.SlotIndex = uint32(plan.size());
+                    slot.SubGroup = uint8(slot.SlotIndex / MAXGROUPSIZE);
+                    slot.RosterSlotId = identity.RosterSlotId;
+                    slot.Role = identity.Role;
+                    plan.push_back(std::move(slot));
+                }
+                return plan;
+            }
+        }
+
         uint32 const healerCount = raidSize == 10 ? 3 : 6;
         uint32 const dpsCount = raidSize == 10 ? 5 : 17;
         plan.reserve(raidSize);
@@ -225,4 +253,3 @@ uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid(size_t slot) co
         return result->Fetch()[0].GetUInt32();
     return 0;
 }
-

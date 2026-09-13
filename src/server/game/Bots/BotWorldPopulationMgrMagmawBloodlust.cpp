@@ -9,32 +9,13 @@
 #include <array>
 #include <algorithm>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
 
 namespace
 {
-struct ExpectedMagmawRosterMember
-{
-    std::string_view Slot;
-    std::string_view Role;
-    std::string_view ClassSpec;
-};
-
-constexpr std::array<ExpectedMagmawRosterMember, 10> ExpectedMagmaw10NRoster = {{
-    { "raid_tank_1", "tank", "protection_paladin" },
-    { "raid_tank_2", "tank", "blood_death_knight" },
-    { "raid_healer_1", "healer", "restoration_druid" },
-    { "raid_healer_2", "healer", "holy_paladin" },
-    { "raid_healer_3", "healer", "discipline_priest" },
-    { "raid_dps_1", "dps", "fire_mage" },
-    { "raid_dps_2", "dps", "fire_mage" },
-    { "raid_dps_3", "dps", "affliction_warlock" },
-    { "raid_dps_4", "dps", "marksmanship_hunter" },
-    { "raid_dps_5", "dps", "elemental_shaman" },
-}};
-
 constexpr std::array<uint32, 8> RaidBloodlustLockouts = {
     BotEncounter::MagmawBloodlust::BloodlustSpell,
     BotEncounter::MagmawBloodlust::HeroismSpell,
@@ -71,9 +52,9 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         || !raid->ServerProvisioningComplete || !raid->BotActionsEnabled
         || !raid->RosterComplete || !raid->RosterCompositionValid
         || !raid->DifficultyReadbackComplete || !raid->DifficultyMatches
-        || !raid->UniqueLeases || raid->ExpectedSize != ExpectedMagmaw10NRoster.size()
-        || raid->ActiveSize != ExpectedMagmaw10NRoster.size()
-        || raid->RosterByGuid.size() != ExpectedMagmaw10NRoster.size()
+        || !raid->UniqueLeases || raid->ExpectedSize != 10
+        || raid->ActiveSize != 10
+        || raid->RosterByGuid.size() != 10
         || raid->AdmissionScenarioId != DiagnosticScenario)
         return;
 
@@ -83,16 +64,30 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
     auto const encounterSnapshot = cohort->EncounterSnapshot;
     uint64 const encounterSnapshotRevision = cohort->EncounterSnapshotRevision;
 
-    auto exactRosterAndOwner = [raid]() -> std::optional<ObjectGuid>
+    auto exactRosterAndOwner = [raid, party]() -> std::optional<ObjectGuid>
     {
+        if (party->ValidationRouteManifest.empty())
+            return std::nullopt;
+        auto const& expectedRoster = party->ValidationRouteManifest.front().ExpectedRoster;
+        if (expectedRoster.size() != 10 || raid->RosterByGuid.size() != expectedRoster.size())
+            return std::nullopt;
         ObjectGuid owner;
-        for (ExpectedMagmawRosterMember const& expected : ExpectedMagmaw10NRoster)
+        std::set<std::string> seenSlots;
+        std::set<uint32> seenGuids;
+        for (auto const& expected : expectedRoster)
         {
+            if (expected.RosterSlotId.empty() || !expected.Guid
+                || expected.ClassSpec.empty()
+                || (expected.Role != "tank" && expected.Role != "healer" && expected.Role != "dps")
+                || !seenSlots.insert(expected.RosterSlotId).second
+                || !seenGuids.insert(expected.Guid).second)
+                return std::nullopt;
             auto const member = std::find_if(raid->RosterByGuid.begin(),
                 raid->RosterByGuid.end(), [&expected](auto const& row)
                 {
                     RaidRosterSlot const& slot = row.second;
-                    return slot.RosterSlotId == expected.Slot
+                    return slot.RosterSlotId == expected.RosterSlotId
+                        && slot.Guid.GetCounter() == expected.Guid
                         && slot.Role == expected.Role
                         && slot.ClassSpec == expected.ClassSpec
                         && slot.Active && slot.LeaseOwned

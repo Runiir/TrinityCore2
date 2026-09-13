@@ -19,6 +19,7 @@ from tools.raid_program.capture_checkpoint_controller import (
 )
 from tools.raid_program.capture_drudge_geometry import (
     _frozen_drudge_member_anchors,
+    selected_drudge_split,
 )
 from tools.raid_program.capture_environment_validation import (
     build_policy_path_for_receipt,
@@ -826,10 +827,16 @@ def prepare_capture_setup(
                 controller_hold_identity,
                 **scheduler_kwargs,
             )
-    drudge_observed = not args.trace_transport_smoke and (
-        profile_name == "blackwing_descent_10n"
-        or profile_name.endswith("_magmaw_diagnostic")
-    )
+    drudge_observed = False
+    if not args.trace_transport_smoke and (
+        profile_name == "blackwing_descent_10n" or profile_name.endswith("_magmaw_diagnostic")
+    ):
+        try:
+            drudge_observed = selected_drudge_split(
+                Path(route_manifest) if isinstance(route_manifest, str) else None, scenario_id,
+            )
+        except (OSError, ValueError, TypeError) as exc:
+            raise SystemExit(f"runtime profile assets rejected: {exc}") from exc
     # Retain the exact lane/re-separation contract as diagnostic evidence;
     # trash acceptance itself remains outcome-based.
     drudge_required = False
@@ -846,10 +853,10 @@ def prepare_capture_setup(
         except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
             raise SystemExit(f"drudge navmesh preflight rejected: {exc}") from exc
     drudge_frozen_anchors = _frozen_drudge_member_anchors(
-        Path(route_manifest) if isinstance(route_manifest, str) else None
-    )
-    if (profile_name == "blackwing_descent_10n" or profile_name.endswith("_magmaw_diagnostic")) \
-            and set(drudge_frozen_anchors) != set(range(1, 11)):
+        Path(route_manifest) if isinstance(route_manifest, str) else None,
+        scenario_id=scenario_id,
+    ) if drudge_observed else {}
+    if drudge_observed and set(drudge_frozen_anchors) != set(range(1, 11)):
         raise SystemExit("runtime profile assets rejected: drudge_frozen_member_anchors_missing")
     try:
         build_policy_path = build_policy_path_for_receipt(

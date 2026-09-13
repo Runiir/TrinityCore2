@@ -14,8 +14,19 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def selected_drudge_split(route_manifest: Path | None, scenario_id: str) -> bool:
+    if route_manifest is None:
+        raise ValueError("drudge_selected_route_manifest_missing")
+    rows = [json.loads(line) for line in route_manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
+    selected = [row for row in rows if row.get("scenario_id") == scenario_id]
+    if not selected:
+        raise ValueError("drudge_selected_route_scenario_missing")
+    return any(row.get("mechanic_profile") == "trash_two_tank_charge_lanes" for row in selected)
+
+
 def _frozen_drudge_member_anchors(
     route_manifest: Path | None = None,
+    scenario_id: str | None = None,
 ) -> dict[int, tuple[float, float, float]]:
     """Load reviewed per-slot Drudge geometry from a sealed route manifest.
 
@@ -34,13 +45,19 @@ def _frozen_drudge_member_anchors(
             if line.strip()
         ]
         by_scenario: list[dict[int, tuple[float, float, float]]] = []
-        for scenario_id in (
-            "blackwing_descent_10n",
-            "blackwing_descent_10n_magmaw_diagnostic",
-        ):
+        scenarios = [scenario_id] if scenario_id else [
+            candidate for candidate in (
+                "blackwing_descent_10n", "blackwing_descent_10n_magmaw_diagnostic",
+            ) if any(row.get("scenario_id") == candidate
+                     and row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+                     for row in rows)
+        ]
+        if not scenarios:
+            return {}
+        for selected_scenario in scenarios:
             node = next(
                 row for row in rows
-                if row.get("scenario_id") == scenario_id
+                if row.get("scenario_id") == selected_scenario
                 and row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
             )
             anchors = {
@@ -82,7 +99,7 @@ def _frozen_drudge_member_anchors(
             # native ownership and pull the pair away from Magmaw.
             anchors.update(recovery_tank_anchors)
             by_scenario.append(anchors)
-        return by_scenario[0] if by_scenario[0] == by_scenario[1] else {}
+        return by_scenario[0] if all(row == by_scenario[0] for row in by_scenario) else {}
     except (OSError, KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError):
         return {}
 

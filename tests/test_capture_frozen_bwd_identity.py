@@ -117,3 +117,43 @@ def test_frozen_identity_rejects_malformed_canonical_gear(monkeypatch, mutation)
     monkeypatch.setattr(builder, "load_config_with_bwd_diagnostic_shards", lambda *args: config)
     with pytest.raises(ValueError, match="frozen BWD identity manifest unavailable for blackwing_descent_10n:"):
         acceptance._expected_identity_by_slot(PROFILES[0])
+
+
+def test_declared_one_tank_roster_preserves_slot_identity_and_rejects_role_drift(monkeypatch):
+    profile = "blackwing_descent_10n_magmaw_diagnostic"
+    expected = acceptance.expected_bwd_10n_roster(profile)
+    assert expected[0] == ("raid_tank_1", "dps", 11, "balance_druid")
+    assert expected[1] == ("raid_tank_2", "tank", 6, "blood_death_knight")
+    assert [row[1] for row in expected].count("tank") == 1
+    assert {row[0] for row in expected} == set(acceptance._expected_identity_by_slot(profile))
+    bots = copy.deepcopy(acceptance._provisioned_bwd_bots(profile))
+    bots[0]["role"] = "tank"
+    monkeypatch.setattr(acceptance, "_provisioned_bwd_bots", lambda _: bots)
+    with pytest.raises(ValueError, match="provisioning roster is invalid"):
+        acceptance.expected_bwd_10n_roster(profile)
+
+
+def test_actual_roster_rejections_accepts_declared_one_tank_and_rejects_old_composition():
+    profile = "blackwing_descent_10n_magmaw_diagnostic"
+    expected = acceptance.expected_bwd_10n_roster(profile)
+    identities = acceptance._expected_identity_by_slot(profile)
+    runtime = {"roster": []}
+    for index, (slot, role, class_id, spec) in enumerate(expected):
+        identity = identities[slot]
+        runtime["roster"].append({
+            "slot": index, "roster_slot_id": slot, "lease_role_slot": slot,
+            "subgroup": index // 5, "role": role, "class_id": class_id,
+            "class_spec": spec, "guid": identity["character_guid"],
+            "account_id": identity["account_id"], "account": identity["account"],
+            "name": identity["name"], "talents": list(identity["talents"]),
+            "glyphs": list(identity["glyphs"]), "active": True, "lease_owned": True,
+            "gear_identity": f"fixture_{slot}", "gear_identity_manifest": {"items": [
+                {**item, "guid": 500000 + index * 100 + item["slot"],
+                 "gem_item_ids": list(item["gem_item_ids"])} for item in identity["gear"]
+            ]},
+        })
+    assert acceptance._roster_rejections(runtime, profile) == []
+    runtime["roster"][0]["role"] = "tank"
+    rejected = acceptance._roster_rejections(runtime, profile)
+    assert "exact_10n_role_composition" in rejected
+    assert "exact_frozen_bwd_10n_roster_identity" in rejected

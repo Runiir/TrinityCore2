@@ -241,3 +241,30 @@ def test_materialized_readback_rejects_cross_shard_account_name_guid_and_residue
     assert "Mgwtanka:account" in reasons
     assert "Mgwtanka:guid" in reasons
     assert {"group_member_rows", "ghost_aura_rows", "corpse_phase_rows"}.issubset(reasons)
+
+
+def test_actual_readback_accepts_declared_one_tank_and_rejects_old_composition():
+    contract = load_materialized_readback_contract(
+        PROVISIONING, SCENARIOS, FIXTURE, "blackwing_descent_10n_magmaw_diagnostic"
+    )
+    expected = contract["expected"]
+    observed = []
+    for bot in expected:
+        observed.append({
+            **bot, **contract["start"], "class_id": bot["class"],
+            "account_id": bot["expected_account_id"],
+            "account_registry_id": bot["expected_account_id"],
+            "online": 0, "enabled": 1, "in_use": 0,
+            "health": VALIDATION_FULL_STAT_SEED, "power1": VALIDATION_FULL_STAT_SEED,
+            "character_flags": 0, "at_login": 0,
+        })
+    kwargs = dict(start=contract["start"], required_roles=contract["scenario"]["required_roles"],
+                  character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
+                  corpse_rows=0, corpse_phase_rows=0)
+    assert kwargs["required_roles"] == {"tank": 1, "healer": 3, "dps": 6}
+    assert validate_readback(expected, observed, **kwargs) == []
+    observed[0]["role"] = "tank"
+    assert "exact_roles" in validate_readback(expected, observed, **kwargs)
+    observed[0]["role"] = "dps"
+    kwargs["required_roles"] = {"tank": 2, "healer": 3, "dps": 5}
+    assert "exact_roles" in validate_readback(expected, observed, **kwargs)

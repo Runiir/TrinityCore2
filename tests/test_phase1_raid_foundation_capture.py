@@ -5675,8 +5675,7 @@ def test_drudge_lane_contract_is_diagnostic_while_route_outcome_gates_success():
     setup_source = (root / "capture_setup.py").read_text(encoding="utf-8")
     finalization_source = (root / "capture_finalization.py").read_text(encoding="utf-8")
     contract_source = (root / "capture_runtime_acceptance.py").read_text(encoding="utf-8")
-    assert "drudge_observed = not args.trace_transport_smoke and (" in setup_source
-    assert 'profile_name.endswith("_magmaw_diagnostic")' in setup_source
+    # Selected-route behavior is exercised by test_capture_drudge_selected_route.
     assert "drudge_required = False" in setup_source
     assert '"acceptance_role": "diagnostic_only"' in finalization_source
     assert "if drudge_observed" in finalization_source

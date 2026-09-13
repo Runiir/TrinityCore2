@@ -37,15 +37,12 @@ SHARD_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"boss_key": "chimaeron", "profile_id": "blackwing_descent_10n_chimaeron_diagnostic", "name_code": "Chi", "precompleted_boss_entries": [41570, 42166, 41378, 41442], "upper_ledge_start": False, "requires_native_descent_before_engagement": False},
     {"boss_key": "nefarian", "profile_id": "blackwing_descent_10n_nefarian_diagnostic", "name_code": "Nef", "precompleted_boss_entries": [41570, 42166, 41378, 41442, 43296], "upper_ledge_start": True, "requires_native_descent_before_engagement": True},
 )
-# Boss shards may use a mechanic-compatible class/spec composition while
-# retaining the canonical 2/3/5 slot and identity contract.  Drudge ranged
-# lanes keep every non-tank outside the repeated native Thunderclap radius, so
-# a melee-only Rogue profile can never execute its trained hostile action from
-# the certified formation.  The Magmaw diagnostic therefore uses the proven
-# Fire Mage setup for that DPS slot; other shards and the canonical roster are
-# unchanged.
+# Magmaw uses a diagnostic one-tank roster with the exact catalog Balance Druid
+# setup replacing the former Protection Paladin. The original Rogue slot also
+# uses Fire Mage for ranged execution. Canonical and other shard rosters stay
+# unchanged; canonical_roster_slot_id preserves stable slot/GUID ownership.
 SHARD_ROSTER_SOURCE_OVERRIDES: dict[str, dict[str, str]] = {
-    "magmaw": {"raid_dps_2": "raid_dps_1"},
+    "magmaw": {"raid_tank_1": "catalog:balance_druid", "raid_dps_2": "raid_dps_1"},
 }
 LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
 
@@ -63,6 +60,26 @@ def _canonical(config: dict[str, Any]) -> dict[str, Any]:
 
 def _slots(scenario: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {slot: dict(copy.deepcopy(bot), roster_slot_id=slot) for slot, bot in zip(CANONICAL_ROSTER_SLOT_IDS, scenario["bots"], strict=True)}
+
+
+def _roster_source(config: dict[str, Any], slots: dict[str, dict[str, Any]], source_id: str) -> dict[str, Any]:
+    if not source_id.startswith("catalog:"):
+        return slots[source_id]
+    spec = source_id.removeprefix("catalog:")
+    reference = str(config.get("canonical_target_catalog") or "")
+    if not reference:
+        raise ValueError("diagnostic_catalog_source_missing")
+    catalog = _read(REPO_ROOT / reference)
+    matches = [row for row in catalog.get("targets", []) if row.get("spec_target_id") == spec]
+    if len(matches) != 1:
+        raise ValueError(f"diagnostic_catalog_source_not_unique:{spec}")
+    row = matches[0]
+    bot = copy.deepcopy(row["provisioning_bot"])
+    if (bot.get("class_spec") != spec or not row.get("gear_profile_id")
+            or bot.get("gear_profile_id") != row["gear_profile_id"]
+            or bot.get("gear_profile") != row["gear_profile_id"]):
+        raise ValueError(f"diagnostic_catalog_source_identity_invalid:{spec}")
+    return bot
 
 
 def _starts() -> dict[str, dict[str, Any]]:
@@ -183,7 +200,7 @@ def _live_requirements() -> dict[str, Any]:
 
 
 def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
-    """Clone the canonical 2/3/5 roster into six disjoint 10-bot pools."""
+    """Clone the canonical roster into six disjoint pools with explicit spec overrides."""
     validate_native_consumable_slots(config)
     scenario = _canonical(config)
     slots = _slots(scenario)
@@ -201,7 +218,7 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
         )
         for slot_index, slot_id in enumerate(slots, 1):
             source_slot_id = source_overrides.get(slot_id, slot_id)
-            source = slots[source_slot_id]
+            source = _roster_source(config, slots, source_slot_id)
             account_id = 20000 + shard_index * 100 + slot_index
             guid = 30000 + shard_index * 100 + slot_index
             bot = copy.deepcopy(source)
@@ -229,7 +246,8 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
                     "gear_profile_id": str(source.get("gear_profile") or source.get("class_spec") or ""),
                     "glyph_ids": list(source.get("glyphs") or []),
                     "action_profile_id": str(source.get("class_spec") or ""),
-                    "source_config": "experiments/configs/validation_provisioning_cata_001.json",
+                    "source_config": (str(config["canonical_target_catalog"]) if source_slot_id.startswith("catalog:")
+                                      else "experiments/configs/validation_provisioning_cata_001.json"),
                     "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
                 },
                 "evidence_namespace": f"{namespace}/roster/{slot_id}",
@@ -257,7 +275,8 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
             "runtime_profile_id": profile_id,
             "evidence_namespace": namespace,
             "required_bot_count": 10,
-            "role_counts": {"tank": 2, "healer": 3, "dps": 5},
+            "role_counts": {role: sum(bot["role"] == role for bot in bots)
+                            for role in ("tank", "healer", "dps")},
             "start_position": starts.get(profile_id, {}),
             "diagnostic_only": True,
             "diagnostic_parent_scenario_id": CANONICAL_SCENARIO_ID,
@@ -293,7 +312,7 @@ def build_diagnostic_provisioning_config(config: dict[str, Any], fixture: dict[s
         for bot in bots:
             class_spec = str(bot.get("class_spec") or "")
             source_slot = str(bot.get("roster_source_slot_id") or "")
-            source = canonical_slots.get(source_slot)
+            source = _roster_source(config, canonical_slots, source_slot)
             if not source or not source.get("consumables"):
                 raise ValueError(
                     f"diagnostic_consumables_missing:{shard['boss_key']}:{source_slot}"

@@ -104,60 +104,128 @@
         {
           "account": "BWDMGWA01",
           "account_id": 20001,
-          "action_profile_id": "protection_paladin",
+          "action_profile_id": "balance_druid",
           "canonical_roster_slot_id": "raid_tank_1",
           "canonical_setup": {
-            "action_profile_id": "protection_paladin",
+            "action_profile_id": "balance_druid",
             "action_profile_manifest": "experiments/configs/cata_434_action_profiles.json",
-            "class_spec": "protection_paladin",
-            "gear_profile_id": "protection_paladin",
+            "class_spec": "balance_druid",
+            "gear_profile_id": "wowsims_cata_p4_balance_druid",
             "glyph_ids": [
-              45742,
-              41098,
-              43869,
-              41107,
-              43367,
-              43867,
-              43368,
-              43340,
-              43366
+              40919,
+              40923,
+              40922,
+              40921,
+              40909,
+              45622,
+              44922,
+              43331,
+              43335
             ],
-            "source_config": "experiments/configs/validation_provisioning_cata_001.json",
-            "talent_build_id": "protection_paladin"
+            "source_config": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+            "talent_build_id": "balance_druid"
           },
           "character_guid": 30001,
-          "class": 2,
-          "class_spec": "protection_paladin",
+          "class": 11,
+          "class_spec": "balance_druid",
+          "consumable_item_ids": [
+            58086,
+            62671,
+            58091
+          ],
           "consumables": [
             {
               "count": 20,
-              "item_id": 58088,
-              "slot": 26
+              "item_id": 58086,
+              "slot": 26,
+              "uses": [
+                "flask_before_scoring"
+              ]
             },
             {
               "count": 20,
-              "item_id": 62670,
-              "slot": 27
+              "item_id": 62671,
+              "slot": 27,
+              "uses": [
+                "food_before_scoring"
+              ]
             },
             {
               "count": 20,
-              "item_id": 58146,
-              "slot": 28
+              "item_id": 58091,
+              "slot": 28,
+              "uses": [
+                "prepot_before_combat",
+                "combat_potion_during_combat"
+              ]
             }
           ],
+          "controlled_consumable_profile": {
+            "combat_potion": {
+              "item_id": 58091,
+              "item_spell_id": 79476,
+              "observed_aura_spell_id": 79476
+            },
+            "flask": {
+              "item_id": 58086,
+              "item_spell_id": 79470,
+              "observed_aura_spell_id": 79470
+            },
+            "food": {
+              "item_id": 62671,
+              "item_spell_id": 87587,
+              "observed_aura_spell_id": 87547
+            },
+            "inventory": [
+              {
+                "count": 20,
+                "item_id": 58086,
+                "slot": 26,
+                "uses": [
+                  "flask_before_scoring"
+                ]
+              },
+              {
+                "count": 20,
+                "item_id": 62671,
+                "slot": 27,
+                "uses": [
+                  "food_before_scoring"
+                ]
+              },
+              {
+                "count": 20,
+                "item_id": 58091,
+                "slot": 28,
+                "uses": [
+                  "prepot_before_combat",
+                  "combat_potion_during_combat"
+                ]
+              }
+            ],
+            "prepot": {
+              "item_id": 58091,
+              "item_spell_id": 79476,
+              "observed_aura_spell_id": 79476
+            },
+            "primary_stat": "intellect",
+            "schema": "cata_controlled_dps_consumables_v1"
+          },
           "evidence_namespace": "cata_raid/bwd/diagnostic/magmaw/roster/raid_tank_1",
           "expected_account_id": 20001,
           "expected_character_guid": 30001,
+          "gear_profile": "wowsims_cata_p4_balance_druid",
+          "gear_profile_id": "wowsims_cata_p4_balance_druid",
           "glyphs": [
-            45742,
-            41098,
-            43869,
-            41107,
-            43367,
-            43867,
-            43368,
-            43340,
-            43366
+            40919,
+            40923,
+            40922,
+            40921,
+            40909,
+            45622,
+            44922,
+            43331,
+            43335
           ],
           "legacy_names": [
             "Mgwtank1"
@@ -165,11 +233,247 @@
           "level": 85,
           "name": "Mgwtanka",
           "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
-          "race": 1,
-          "role": "tank",
+          "primary_talent_tree_id": 752,
+          "primary_tree_spells": [
+            16913,
+            78674
+          ],
+          "profession_equipment": [
+            {
+              "enchant": 4207,
+              "gems": [
+                68780,
+                71881
+              ],
+              "id": 78696,
+              "reforging": 119
+            },
+            {
+              "id": 78364,
+              "reforging": 119
+            },
+            {
+              "enchant": 4200,
+              "gems": [
+                71881,
+                71881
+              ],
+              "id": 78740,
+              "reforging": 167
+            },
+            {
+              "enchant": 4115,
+              "gems": [
+                71881
+              ],
+              "id": 77098,
+              "reforging": 138
+            },
+            {
+              "enchant": 4102,
+              "gems": [
+                71881,
+                71881,
+                71850
+              ],
+              "id": 78662,
+              "reforging": 117
+            },
+            {
+              "enchant": 4257,
+              "gems": [
+                71881,
+                0
+              ],
+              "id": 78372,
+              "reforging": 117
+            },
+            {
+              "enchant": 4068,
+              "gems": [
+                71881,
+                0
+              ],
+              "id": 78676
+            },
+            {
+              "gems": [
+                71881,
+                71881,
+                71881
+              ],
+              "id": 78420,
+              "reforging": 117
+            },
+            {
+              "enchant": 4110,
+              "gems": [
+                71881,
+                71881,
+                71881
+              ],
+              "id": 78714
+            },
+            {
+              "enchant": 4104,
+              "gems": [
+                71881,
+                71881
+              ],
+              "id": 78434,
+              "reforging": 145
+            },
+            {
+              "gems": [
+                71881
+              ],
+              "id": 78491,
+              "reforging": 119
+            },
+            {
+              "gems": [
+                71881
+              ],
+              "id": 78419
+            },
+            {
+              "id": 77995
+            },
+            {
+              "id": 77991
+            },
+            {
+              "enchant": 4097,
+              "gems": [
+                71881,
+                71881,
+                71881
+              ],
+              "id": 71086,
+              "reforging": 140
+            },
+            {},
+            {
+              "gems": [
+                71881
+              ],
+              "id": 77082,
+              "reforging": 147
+            }
+          ],
+          "profession_setup": {
+            "requirements": [
+              {
+                "native_skill_id": 197,
+                "provisioned_max": 525,
+                "provisioned_value": 525,
+                "required_rank": 500,
+                "source_enchant_ids": [
+                  4115
+                ],
+                "wowsims_profession": "Tailoring"
+              }
+            ],
+            "wowsims_professions": [
+              "Tailoring",
+              "ProfessionUnknown"
+            ]
+          },
+          "race": 4,
+          "role": "dps",
           "roster_slot_id": "blackwing_descent_10n_magmaw_diagnostic:raid_tank_1",
-          "roster_source_slot_id": "raid_tank_1",
-          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic"
+          "roster_source_slot_id": "catalog:balance_druid",
+          "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+          "talents": [
+            {
+              "spell_id": 16834,
+              "talent_id": 8237
+            },
+            {
+              "spell_id": 48411,
+              "talent_id": 8277
+            },
+            {
+              "spell_id": 16816,
+              "talent_id": 8349
+            },
+            {
+              "spell_id": 61346,
+              "talent_id": 8359
+            },
+            {
+              "spell_id": 78675,
+              "talent_id": 8361
+            },
+            {
+              "spell_id": 48514,
+              "talent_id": 8379
+            },
+            {
+              "spell_id": 93399,
+              "talent_id": 8381
+            },
+            {
+              "spell_id": 33596,
+              "talent_id": 8383
+            },
+            {
+              "spell_id": 81062,
+              "talent_id": 8389
+            },
+            {
+              "spell_id": 48393,
+              "talent_id": 8391
+            },
+            {
+              "spell_id": 33831,
+              "talent_id": 8399
+            },
+            {
+              "spell_id": 48505,
+              "talent_id": 8405
+            },
+            {
+              "spell_id": 48506,
+              "talent_id": 11277
+            },
+            {
+              "spell_id": 24858,
+              "talent_id": 11278
+            },
+            {
+              "spell_id": 78736,
+              "talent_id": 11279
+            },
+            {
+              "spell_id": 35364,
+              "talent_id": 11281
+            },
+            {
+              "spell_id": 50516,
+              "talent_id": 11282
+            },
+            {
+              "spell_id": 57812,
+              "talent_id": 11284
+            },
+            {
+              "spell_id": 17005,
+              "talent_id": 11715
+            },
+            {
+              "spell_id": 17056,
+              "talent_id": 11716
+            },
+            {
+              "spell_id": 33599,
+              "talent_id": 12149
+            },
+            {
+              "spell_id": 93401,
+              "talent_id": 12150
+            }
+          ]
         },
         {
           "account": "BWDMGWA02",
@@ -810,9 +1114,9 @@
       },
       "required_bot_count": 10,
       "role_counts": {
-        "dps": 5,
+        "dps": 6,
         "healer": 3,
-        "tank": 2
+        "tank": 1
       },
       "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
       "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",

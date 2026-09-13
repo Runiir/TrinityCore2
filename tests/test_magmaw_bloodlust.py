@@ -54,8 +54,7 @@ def test_exact_magmaw_10n_roster_is_the_admitted_diagnostic_roster() -> None:
     assert roster.count(("raid_dps_5", "dps", "elemental_shaman")) == 1
 
     source = text(MODULE)
-    for slot, role, class_spec in roster:
-        assert f'{{ "{slot}", "{role}", "{class_spec}" }}' in source
+    assert "ValidationRouteManifest.front().ExpectedRoster" in source
     assert 'DiagnosticScenario =\n    "blackwing_descent_10n_magmaw_diagnostic"' in text(HELPER)
     assert 'ValidationRouteScenarioId != DiagnosticScenario' in source
     assert 'AdmissionScenarioId != DiagnosticScenario' in source
@@ -249,3 +248,69 @@ int main()
         cwd=ROOT,
     )
     subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
+def test_production_candidate_roster_gate_uses_declared_composition(tmp_path):
+    module = text(MODULE)
+    start = module.index("    auto exactRosterAndOwner =")
+    end = module.index("\n    std::optional<ObjectGuid> const owner", start)
+    gate = module[start:end]
+    fixture = json.loads((ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json").read_text())
+    bots = fixture["shards"][0]["bots"]
+    members = ",".join("{" + ",".join((json.dumps(bot["canonical_roster_slot_id"]), json.dumps(bot["role"]), json.dumps(bot["class_spec"]), str(bot["character_guid"]))) + "}" for bot in bots)
+    program = r'''
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
+#include <vector>
+using uint32 = std::uint32_t;
+constexpr char ElementalShamanSpec[]="elemental_shaman";
+struct ObjectGuid { uint32 Value=0; bool IsEmpty() const { return !Value; } uint32 GetCounter() const { return Value; } };
+struct RaidRosterSlot { std::string RosterSlotId,Role,ClassSpec; ObjectGuid Guid; bool Active=true,LeaseOwned=true; };
+struct Identity { std::string RosterSlotId,Role,ClassSpec; uint32 Guid; };
+struct Node { std::vector<Identity> ExpectedRoster; };
+struct Party { std::vector<Node> ValidationRouteManifest; };
+struct Raid { std::map<uint32,RaidRosterSlot> RosterByGuid; };
+std::optional<ObjectGuid> candidateOwner(Raid* raid, Party* party) {
+'''+gate+r'''
+ return exactRosterAndOwner();
+}
+int main() {
+ Party party; Raid raid;
+ party.ValidationRouteManifest.push_back({{'''+members+r'''}});
+ for (auto const& row:party.ValidationRouteManifest.front().ExpectedRoster)
+   raid.RosterByGuid.emplace(row.Guid,RaidRosterSlot{row.RosterSlotId,row.Role,row.ClassSpec,{row.Guid}});
+ auto owner=candidateOwner(&raid,&party);
+ assert(owner && owner->Value==30010);
+ raid.RosterByGuid.at(30001).Role="tank";
+ assert(!candidateOwner(&raid,&party));
+ raid.RosterByGuid.at(30001).Role="dps";
+ raid.RosterByGuid.at(30001).ClassSpec="fire_mage";
+ assert(!candidateOwner(&raid,&party));
+ raid.RosterByGuid.at(30001).ClassSpec="balance_druid";
+ raid.RosterByGuid.at(30001).LeaseOwned=false;
+ assert(!candidateOwner(&raid,&party));
+ raid.RosterByGuid.at(30001).LeaseOwned=true;
+ auto valid=party.ValidationRouteManifest.front().ExpectedRoster;
+ party.ValidationRouteManifest.front().ExpectedRoster[0]=valid[1];
+ assert(!candidateOwner(&raid,&party));
+ party.ValidationRouteManifest.front().ExpectedRoster=valid;
+ // Existing two-tank declarations remain supported.
+ party.ValidationRouteManifest.front().ExpectedRoster[0].Role="tank";
+ party.ValidationRouteManifest.front().ExpectedRoster[0].ClassSpec="protection_paladin";
+ raid.RosterByGuid.at(30001).Role="tank";
+ raid.RosterByGuid.at(30001).ClassSpec="protection_paladin";
+ assert(candidateOwner(&raid,&party));
+ party.ValidationRouteManifest.clear();
+ assert(!candidateOwner(&raid,&party));
+}
+'''
+    source = tmp_path / "candidate_roster.cpp"
+    source.write_text(program)
+    binary = tmp_path / "candidate_roster"
+    subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(source), "-o", str(binary)], check=True, capture_output=True)
+    subprocess.run([str(binary)], check=True, capture_output=True)

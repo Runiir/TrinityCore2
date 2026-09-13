@@ -65,7 +65,7 @@ def _valid_readback(fixture: dict) -> list[dict]:
     return rows
 
 
-def test_tracked_fixture_is_exactly_six_disjoint_2_3_5_shards():
+def test_tracked_fixture_has_disjoint_pools_and_magmaw_one_tank():
     fixture = _fixture()
     assert validate_shard_fixture(fixture, _config()) == {
         "all_passed": True,
@@ -73,7 +73,7 @@ def test_tracked_fixture_is_exactly_six_disjoint_2_3_5_shards():
         "shard_count": 6,
     }
     assert [len(shard["bots"]) for shard in fixture["shards"]] == [10] * 6
-    assert [shard["role_counts"] for shard in fixture["shards"]] == [{"tank": 2, "healer": 3, "dps": 5}] * 6
+    assert [shard["role_counts"] for shard in fixture["shards"]] == [{"tank": 1, "healer": 3, "dps": 6}] + [{"tank": 2, "healer": 3, "dps": 5}] * 5
     assert len({bot["account_id"] for shard in fixture["shards"] for bot in shard["bots"]}) == 60
     assert len({bot["character_guid"] for shard in fixture["shards"] for bot in shard["bots"]}) == 60
     assert len({bot["name"] for shard in fixture["shards"] for bot in shard["bots"]}) == 60
@@ -92,7 +92,12 @@ def test_fixture_clones_canonical_profile_inputs_and_preserves_canonical_config(
     canonical_by_slot = dict(zip(CANONICAL_ROSTER_SLOT_IDS, canonical["bots"], strict=True))
     for shard in fixture["shards"]:
         for clone in shard["bots"]:
-            source = canonical_by_slot[clone["roster_source_slot_id"]]
+            source_id = clone["roster_source_slot_id"]
+            if source_id.startswith("catalog:"):
+                catalog = json.loads((ROOT / config["canonical_target_catalog"]).read_text())
+                source = next(row["provisioning_bot"] for row in catalog["targets"] if row["spec_target_id"] == source_id.removeprefix("catalog:"))
+            else:
+                source = canonical_by_slot[source_id]
             for field in ("class", "class_spec", "role", "race", "level", "glyphs"):
                 assert clone[field] == source[field]
             assert clone["account"] != source["account"]
@@ -196,17 +201,26 @@ def test_each_shard_has_all_canonical_roster_slots():
         assert {bot["canonical_roster_slot_id"] for bot in shard["bots"]} == set(CANONICAL_ROSTER_SLOT_IDS)
 
 
-def test_magmaw_shard_uses_ranged_trained_profiles_for_all_five_dps_slots():
+def test_magmaw_shard_uses_six_ranged_dps_and_sole_blood_tank():
     fixture = _fixture()
     magmaw = next(row for row in fixture["shards"] if row["boss_key"] == "magmaw")
     dps = [bot for bot in magmaw["bots"] if bot["role"] == "dps"]
     assert [bot["class_spec"] for bot in dps] == [
+        "balance_druid",
         "fire_mage",
         "fire_mage",
         "affliction_warlock",
         "marksmanship_hunter",
         "elemental_shaman",
     ]
+    tanks = [bot for bot in magmaw["bots"] if bot["role"] == "tank"]
+    assert [(bot["character_guid"], bot["class_spec"]) for bot in tanks] == [(30002, "blood_death_knight")]
+    extra = next(bot for bot in dps if bot["character_guid"] == 30001)
+    catalog = json.loads((ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text())
+    source = next(row["provisioning_bot"] for row in catalog["targets"] if row["spec_target_id"] == "balance_druid")
+    for field in ("class_spec", "gear_profile", "glyphs", "talents", "primary_tree_spells", "consumables", "profession_setup"):
+        assert extra[field] == source[field]
+    assert extra["roster_source_slot_id"] == "catalog:balance_druid"
     replaced = next(bot for bot in dps if bot["canonical_roster_slot_id"] == "raid_dps_2")
     assert replaced["roster_source_slot_id"] == "raid_dps_1"
     assert replaced["canonical_setup"]["action_profile_id"] == "fire_mage"
@@ -241,6 +255,7 @@ def test_diagnostic_rosters_receive_exact_canonical_spec_consumables():
         if row["id"] == "blackwing_descent_10n_magmaw_diagnostic"
     )
     expected = {
+        "balance_druid": [58086, 62671, 58091],
         "protection_paladin": [58088, 62670, 58146],
         "blood_death_knight": [58088, 62670, 58146],
         "restoration_druid": [58086, 62671, 58091],
