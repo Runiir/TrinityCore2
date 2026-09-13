@@ -377,6 +377,21 @@ MagmawPersonalParasiteEscapeTask::Tick(
         State = BotDecision::PersistentTaskState::Running;
 
     float const clearance = ParasiteClearance(facts, bot.Position);
+    if (!personalThreat && clearance >= safeClearance)
+    {
+        State = BotDecision::PersistentTaskState::Succeeded;
+        AlternatePending = false;
+        if (PersonalThreatEpisodeOpen)
+        {
+            PersonalThreatEpisodeOpen = false;
+            RecordEpisodeTransition(board, facts, wave, nullptr, true,
+                false, "falling", TaskGeneration, CandidateGeneration);
+            RisingEpisodeTransition = {};
+        }
+        MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::SafeClearance,
+            board.ObservedAtMs);
+        return std::nullopt;
+    }
     if (CandidateGeneration
         && State == BotDecision::PersistentTaskState::Running)
     {
@@ -399,24 +414,14 @@ MagmawPersonalParasiteEscapeTask::Tick(
                 MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
                     NativeProgress, board.ObservedAtMs);
         }
-        if (clearance >= safeClearance
-            || distance <= arrivalTolerance)
+        // Arrival retires a movement leg, not a still-pursued episode.
+        // Re-evaluate the moving sources before selecting the next leg.
+        if (distance <= arrivalTolerance && personalThreat)
         {
-            State = BotDecision::PersistentTaskState::Succeeded;
+            CandidateGeneration = 0;
+            CandidateExpiresAtMs = 0;
             AlternatePending = false;
-            if (!personalThreat && PersonalThreatEpisodeOpen)
-            {
-                uint64 const priorTaskGeneration = TaskGeneration;
-                uint64 const priorCandidateGeneration = CandidateGeneration;
-                PersonalThreatEpisodeOpen = false;
-                RecordEpisodeTransition(board, facts, wave, nullptr, true,
-                    false, "falling", priorTaskGeneration,
-                    priorCandidateGeneration);
-                RisingEpisodeTransition = {};
-            }
-            MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::
-                SafeClearance, board.ObservedAtMs);
-            return std::nullopt;
+            Diagnostics.CandidateKey.clear();
         }
         if (board.ObservedAtMs > LastProgressAtMs
             && board.ObservedAtMs - LastProgressAtMs >= 5000)
@@ -430,6 +435,11 @@ MagmawPersonalParasiteEscapeTask::Tick(
         }
     }
 
+    // A distant pursuer keeps the episode armed, but does not justify an
+    // inward move to the clearance radius or a movement lock on safe casts.
+    if (!CandidateGeneration && clearance >= safeClearance)
+        return std::nullopt;
+
     MagmawActorFact const* nearest = NearestParasite(facts, bot.Position);
     if (!CandidateGeneration)
     {
@@ -442,8 +452,10 @@ MagmawPersonalParasiteEscapeTask::Tick(
                 AwaitingAuthoritativeFacts, board.ObservedAtMs);
             return std::nullopt;
         }
+        DangerGuid = nearest->Guid;
+        DangerPosition = nearest->Position;
         Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
-            DangerPosition, safeClearance);
+            DangerPosition, safeClearance + arrivalTolerance);
         PrimaryDestination = Destination;
         CandidateGeneration = ++NextCandidateGeneration;
         if (!CandidateGeneration)
@@ -475,7 +487,7 @@ MagmawPersonalParasiteEscapeTask::Tick(
         DangerGuid = nearest->Guid;
         DangerPosition = nearest->Position;
         Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
-            DangerPosition, safeClearance);
+            DangerPosition, safeClearance + arrivalTolerance);
         if (SamePoint(Destination, PrimaryDestination))
         {
             State = BotDecision::PersistentTaskState::Failed;

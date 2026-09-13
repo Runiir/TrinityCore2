@@ -229,8 +229,204 @@ static void AssertHazardPreemptsFormation(
     assert(hazardCommitted && formationMasked);
 }
 
+// MOV-001: immutable 89cef294b6 receipt327/spline3197, Ele30010.
+// Native submission/endpoint facts are retained in incident.json. This replay
+// tests policy/state/arbitration with a submission spy, not native terrain.
+static void RecordedPursuitDoesNotApproachOrRetireEarly()
+{
+    Blackboard board = Board();
+    board.ObservedAtMs = 1789287333160ULL;
+    board.Revision = 2193;
+    board.Players[3].Position = { -308.909851f, -36.4524231f, 211.580536f };
+    board.Hostiles[1] = Unit(41806, 183,
+        { -305.510223f, -67.5788116f, 213.035416f });
+    board.Hostiles[1].VictimGuid = PlayerGuid(30010);
+    auto cache = MagmawFactsCache::ForSnapshot(nullptr, board);
+    MagmawPersonalParasiteEscapeTask task;
+    AdaptiveMagmawStrategy strategy;
+    MagmawLaneTransitionState lane;
+    MagmawParasiteHazardState legacy;
+    MagmawParasiteWaveTask wave;
+    auto tick = [&]() -> std::optional<BotNativeAction::Candidate>
+    {
+        cache = MagmawFactsCache::ForSnapshot(cache, board);
+        auto plan = strategy.Propose(board, PlayerGuid(30010), "dps",
+            nullptr, false, false, &lane, &legacy, nullptr, std::nullopt,
+            AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+            &cache->Facts(), &task, &wave);
+        auto const* escape = EscapeFor(plan, PlayerGuid(30010));
+        return escape ? std::optional<BotNativeAction::Candidate>(*escape)
+            : std::nullopt;
+    };
+    assert(!tick()); // Never launch the recorded inward16-yard endpoint.
+    assert(task.Started && task.State == TaskState::Running);
+    assert(!task.OwnsMovement() && task.PersonalThreatEpisodeOpen);
+    uint64 const episode = task.TaskGeneration;
+
+    // Replay the later native geometry at +39.131s, including nearest-source
+    // churn183->184. This is a counterexample input, not a predicted new path.
+    board.ObservedAtMs = 1789287334566ULL;
+    ++board.Revision;
+    board.Players[3].Position = { -307.839f, -46.2543f, 212.027f };
+    board.Hostiles[1] = Unit(41806, 184,
+        { -307.651f, -60.9371f, 212.717f });
+    board.Hostiles[1].VictimGuid = PlayerGuid(30010);
+    auto candidate = tick();
+    assert(candidate && task.TaskGeneration == episode);
+    Vector3 const origin = board.Players[3].Position;
+    Vector3 const firstEnd = task.Destination;
+    auto clearance = [&](Vector3 point) {
+        return std::hypot(point.X-board.Hostiles[1].Position.X,
+            point.Y-board.Hostiles[1].Position.Y);
+    };
+    assert(clearance(firstEnd) > clearance(origin) + 4.0f);
+    assert(std::fabs(clearance(firstEnd)-20.0f) < 0.001f);
+    assert(task.DangerGuid == board.Hostiles[1].Guid);
+    SubmitThroughProductionAdapter(*candidate, board.ObservedAtMs, task);
+    std::string const firstKey = candidate->Id.Key();
+    // Same running path survives source movement before logical arrival.
+    board.Players[3].Position.X += (firstEnd.X-origin.X)*0.2f;
+    board.Players[3].Position.Y += (firstEnd.Y-origin.Y)*0.2f;
+    board.Hostiles[1].Position.Y += 0.1f;
+    board.ObservedAtMs += 100;
+    ++board.Revision;
+    candidate = tick();
+    assert(candidate && candidate->Id.Key()==firstKey);
+    assert(task.State == TaskState::Running);
+    assert(task.Diagnostics.Lifecycle == MagmawPersonalParasiteEscapeLifecycle::NativeProgress);
+    // Logical arrival is an input; the native executor/floor stay out of scope.
+    board.Players[3].Position = firstEnd;
+    board.ObservedAtMs += 900;
+    ++board.Revision;
+    assert(!tick());
+    assert(task.State == TaskState::Running && !task.OwnsMovement());
+    assert(task.TaskGeneration == episode && task.PersonalThreatEpisodeOpen);
+
+    // A living pursuer approaches again. Repeated safe arrival must never
+    // tombstone this episode and leave the bot standing until infection.
+    uint64 priorLeg = task.NextCandidateGeneration;
+    for (int leg=0; leg<3; ++leg)
+    {
+        board.Hostiles[1].Position = board.Players[3].Position;
+        board.Hostiles[1].Position.Y -= 9.0f;
+        board.ObservedAtMs += 1000;
+        ++board.Revision;
+        candidate = tick();
+        assert(candidate && task.TaskGeneration == episode);
+        assert(task.CandidateGeneration > priorLeg);
+        priorLeg = task.CandidateGeneration;
+        assert(clearance(task.Destination) > clearance(board.Players[3].Position));
+        // Real kernel arbitration: emergency movement excludes a competing
+        // stationary cast even if the cast has greater utility.
+        MagmawMovementIntentCollection movements;
+        movements.Propose(MagmawMovementProposalOrigin::Hazard,*candidate);
+        BotActionArbitration::Kernel kernel;
+        kernel.Begin(board.ObservedAtMs);
+        bool castExecuted=false;
+        BotActionArbitration::Candidate cast;
+        cast.Key="competing_stationary_cast";
+        cast.ActionPriority=BotActionArbitration::Priority::TrainedDamage;
+        cast.UtilityScore=1000;
+        cast.RequiredResources=BotActionArbitration::Uses(BotActionArbitration::Resource::Cast);
+        cast.Attempt=[&castExecuted]() {
+            castExecuted=true;
+            return BotActionArbitration::Outcome::Committed("cast_spy");
+        };
+        kernel.Submit(std::move(cast));
+        MagmawMovementKernelAdapterContext context;
+        context.ObservedAtMs=board.ObservedAtMs;
+        context.Execute=[](BotNativeAction::Intent const&, MagmawMovementNativeLease,
+            BotWorldMovement::ExecutionObservation*) {
+            return BotActionArbitration::Outcome::Submitted("native_move_submitted");
+        };
+        SubmitMagmawMovementKernelCandidates(kernel,movements,std::move(context));
+        kernel.Resolve();
+        assert(!castExecuted);
+        board.Players[3].Position=task.Destination;
+        board.ObservedAtMs+=500;
+        ++board.Revision;
+        assert(!tick());
+        assert(task.State==TaskState::Running && task.TaskGeneration==episode);
+    }
+    // Only authoritative personal-threat absence releases the semantic task.
+    board.Hostiles[1].VictimGuid=PlayerGuid(30008);
+    board.ObservedAtMs+=100;
+    ++board.Revision;
+    assert(!tick());
+    assert(task.State==TaskState::Succeeded && !task.PersonalThreatEpisodeOpen);
+    assert(!task.OwnsMovement());
+}
+
+// MOV-001: destination safety uses the nearest source, while episode
+// ownership follows the actual personal pursuer, even when it is farther away.
+static void CompetingSourcesRespectClearanceBoundaryAndPersonalEpisode()
+{
+    Blackboard board = Board();
+    board.Players[3].Position = { 0.0f, -20.0f, 210.0f };
+    board.Hostiles[1] = Unit(41806, 301, { 0.0f, -50.0f, 210.0f });
+    board.Hostiles[1].VictimGuid = PlayerGuid(30010);
+    board.Hostiles.push_back(Unit(41806, 302, { 0.0f, -36.0f, 210.0f }));
+    board.Hostiles[2].VictimGuid = PlayerGuid(30008);
+    auto cache = MagmawFactsCache::ForSnapshot(nullptr, board);
+    MagmawPersonalParasiteEscapeTask task;
+    AdaptiveMagmawStrategy strategy;
+    MagmawLaneTransitionState lane;
+    MagmawParasiteHazardState legacy;
+    MagmawParasiteWaveTask wave;
+    auto tick = [&]() -> std::optional<BotNativeAction::Candidate>
+    {
+        cache = MagmawFactsCache::ForSnapshot(cache, board);
+        auto plan = strategy.Propose(board, PlayerGuid(30010), "dps",
+            nullptr, false, false, &lane, &legacy, nullptr, std::nullopt,
+            AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
+            &cache->Facts(), &task, &wave);
+        auto const* escape = EscapeFor(plan, PlayerGuid(30010));
+        return escape ? std::optional<BotNativeAction::Candidate>(*escape)
+            : std::nullopt;
+    };
+    assert(!tick()); // Exactly16 is safe: no movement leg or cast lock.
+    assert(task.Started && task.State == TaskState::Running);
+    assert(task.PersonalThreatEpisodeOpen && !task.OwnsMovement());
+    assert(task.DangerGuid == board.Hostiles[1].Guid);
+    uint64 const episode = task.TaskGeneration;
+    board.Hostiles[2].Position.Y = -35.99f; // Just below16.
+    board.ObservedAtMs += 100;
+    ++board.Revision;
+    auto candidate = tick();
+    assert(candidate && task.OwnsMovement());
+    assert(task.TaskGeneration == episode && task.PersonalThreatEpisodeOpen);
+    assert(task.DangerGuid == board.Hostiles[2].Guid);
+    assert(task.DangerGuid != board.Hostiles[1].Guid);
+    assert(MagmawPersonalParasiteEscapeTask::SamePoint(
+        task.DangerPosition, board.Hostiles[2].Position));
+    float const endpointClearance = std::hypot(
+        task.Destination.X-board.Hostiles[2].Position.X,
+        task.Destination.Y-board.Hostiles[2].Position.Y);
+    assert(std::fabs(endpointClearance-20.0f) < 0.001f);
+    assert(task.Destination.Y > board.Players[3].Position.Y);
+    SubmitThroughProductionAdapter(*candidate, board.ObservedAtMs, task);
+    board.Players[3].Position = task.Destination;
+    board.ObservedAtMs += 500;
+    ++board.Revision;
+    assert(!tick());
+    assert(task.State == TaskState::Running && !task.OwnsMovement());
+    assert(task.TaskGeneration == episode && task.PersonalThreatEpisodeOpen);
+    // The nearer source remains alive, in range, and owned by another bot.
+    // Removing only the farther personal pursuit closes this actor's episode.
+    board.Hostiles[1].VictimGuid = PlayerGuid(30008);
+    board.ObservedAtMs += 100;
+    ++board.Revision;
+    assert(!tick());
+    assert(task.State == TaskState::Succeeded && !task.PersonalThreatEpisodeOpen);
+    assert(task.FallingEpisodeTransition.PriorEpisodeOpen);
+    assert(!task.FallingEpisodeTransition.NewEpisodeOpen);
+    assert(task.FallingEpisodeTransition.PersonalThreatGuid == 0);
+}
+
 int main()
 {
+    RecordedPursuitDoesNotApproachOrRetireEarly();
+    CompetingSourcesRespectClearanceBoundaryAndPersonalEpisode();
     Blackboard board = Board();
     auto cache = MagmawFactsCache::ForSnapshot(nullptr, board);
     assert(!cache->Facts().Parasites.Generation.Authoritative());
@@ -429,20 +625,21 @@ int main()
     cache = MagmawFactsCache::ForSnapshot(cache, board);
     assert(!actor30010Task.Tick(board, cache->Facts(), board.Players[3],
         &board.Hostiles[1], 16.0f, 4.0f, false, &sharedWave));
-    assert(actor30010Task.Diagnostics.Lifecycle ==
-        MagmawPersonalParasiteEscapeLifecycle::SafeClearance);
+    assert(actor30010Task.State == TaskState::Running);
+    assert(!actor30010Task.OwnsMovement());
+    assert(actor30010Task.PersonalThreatEpisodeOpen);
     std::string lifecycleJson =
         BuildMagmawPersonalParasiteEscapeDiagnosticsJson(actor30010Task,
             &sharedWave);
     for (char const* field : { "task_created", "awaiting_facts",
         "candidate_built", "submitted", "native_progress",
-        "safe_clearance", "candidate_key", "actor_guid",
+        "candidate_key", "actor_guid",
         "wave_generation" })
         assert(lifecycleJson.find(field) != std::string::npos);
 
     // The shared provisional wave can outlive more than one actor-local
-    // contact episode. Continuous personal threat after terminal clearance
-    // is still the same episode and must not rearm.
+    // contact episode. Arrival while still pursued keeps the same episode
+    // armed, allowing safe casts until the threat approaches again.
     uint64 const clearedTaskGeneration = actor30010Task.TaskGeneration;
     uint64 const clearedCandidateGeneration =
         actor30010Task.CandidateGeneration;
@@ -675,7 +872,7 @@ int main()
         &overlapBoard.Hostiles[1], 16.0f, 4.0f, true);
     Vector3 const overlapExpected = MagmawMoveAwayDestination(
         overlapBoard.Players[2].Position, overlapBoard.Players[2].Facing,
-        overlapBoard.Hostiles[1].Position, 16.0f);
+        overlapBoard.Hostiles[1].Position, 20.0f);
     assert(overlapIntent);
     assert(MagmawPersonalParasiteEscapeTask::SamePoint(
         overlapTask.Destination, overlapExpected));
@@ -838,7 +1035,7 @@ int main()
         AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
         &cache->Facts(), &lifeTask, &lifeWave);
     assert(!Escape(lifeCleared));
-    assert(lifeTask.State == TaskState::Succeeded);
+    assert(lifeTask.State == TaskState::Running);
     uint64 const oldLifeTaskGeneration = lifeTask.TaskGeneration;
     uint64 const oldLifeCandidateGeneration =
         lifeTask.CandidateGeneration;
@@ -854,7 +1051,7 @@ int main()
         false, &lane, &legacy, nullptr, std::nullopt,
         AdaptiveMagmawStrategy::DefaultMovementProducerOrder,
         &cache->Facts(), &lifeTask, &lifeWave);
-    assert(lifeTask.Started && lifeTask.State == TaskState::Succeeded);
+    assert(lifeTask.Started && lifeTask.State == TaskState::Aborted);
     assert(lifeTask.ActorLifeGeneration == 1);
     assert(lifeTask.PersonalThreatEpisodeOpen);
     assert(lifeTask.ActorGuid == PlayerGuid(30008));
@@ -978,7 +1175,7 @@ int main()
     cache = MagmawFactsCache::ForSnapshot(cache, board);
     assert(!task.Tick(board, cache->Facts(), board.Players[2],
         &board.Hostiles[1], 16.0f, 4.0f, false));
-    assert(task.State == TaskState::Succeeded && !task.OwnsMovement());
+    assert(task.State == TaskState::Running && !task.OwnsMovement());
 
     // Unknown first-active generation latches locally. A later authoritative
     // generation during continuous presence cannot silently rearm it.

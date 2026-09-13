@@ -172,7 +172,8 @@ struct MagmawPersonalParasiteEscapeTask
 
     bool OwnsMovement() const
     {
-        return Started && State == BotDecision::PersistentTaskState::Running
+        return Started && CandidateGeneration
+            && State == BotDecision::PersistentTaskState::Running
             && !AlternatePending;
     }
 
