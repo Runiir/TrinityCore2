@@ -88,6 +88,11 @@ targeting rules before choosing acquisition behavior. A simulator's generic
 `CurrentTarget` is not evidence that the live guardian follows arbitrary owner
 attacks. Exercise aura application after cast callbacks as well as aura loss.
 
+Derive buff equivalence from active aura effects and native stacking rules,
+not spell names or legacy readiness lists. Flat stats and percentage attack
+power are separate categories. Account for existing learned talent auras before
+adding a replacement buff to compensate for a measured stat deficit.
+
 Before adding a missing consumer, trace which terms the surrounding native
 calculation already includes. Exercise nonzero local and inherited contributions
 together; a zero-local-stat fixture cannot detect double application. Preserve

@@ -1,52 +1,42 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:doomguard_native_caster",
-  "owner_skill": "raid-class-mechanics-implementation",
-  "classification": "native_ai_binding_repair_independently_reviewed",
+  "work_unit": "magmaw:native_hazard_escape_admission",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "unconsumed_qualified_native_hazard_proof",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "63d74834813ee558644a9e61fd6039abf617e589",
+  "observed_at_commit": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Native implementation reviewed; build and live outcomes pending",
+  "gate_state": "Doomguard accepted; safety failure requires native admission repair",
   "first_broken_edge": {
-    "id": "doomguard_legacy_template_selects_melee_ai",
-    "owner_classification": "native_guardian_ai",
-    "cause": "Native11859 has no caster binding and legacy slots;63d produced only21 melee hits/8287damage with no85692.",
-    "review_state": "approved_for_native_build_and_bounded_canary",
-    "ledger_id": "DPS-053"
+    "id": "qualified_native_hazard_proof_not_consumed",
+    "owner_classification": "shared_native_movement_admission",
+    "cause": "Receipts377/378 qualify complete projected native escape but planner rejects requested Z; no submission precedes Infection.",
+    "review_state": "causally_proven_implementation_in_progress",
+    "ledger_id": "MOV-001"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "1cee2577f2481d219729a0f63c6c3c105ba988556cbcc711dfd8dc7e9b95b689"
+    "sha256": "fb9299f4acf2cc1777b4642e467d9197e2390e57063cf39453acf93c8379eb5b"
   },
   "scope_lock": {
-    "objective": "Restore native Doom Bolt on owner-applied Doom/Agony targets, with shared controlled-unit authority and primary-pet preservation.",
+    "objective": "Admit qualified native hazard escape through existing planner/executor without changing coordinates or tolerances.",
     "owned_files": [
-      "src/server/game/AI/CoreAI/PetAI.cpp",
-      "src/server/game/AI/CoreAI/TotemAI.cpp",
-      "src/server/game/Bots/BotRaidAreaAuthority.h",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrValidationAuthority.cpp",
-      "src/server/scripts/Pet/pet_script_loader.cpp",
-      "src/server/scripts/Pet/pet_shaman.cpp",
-      "tests/test_bot_route_combat_target_policy.py",
-      "tests/test_shaman_elemental_owner_target.py",
-      "src/server/scripts/Pet/pet_warlock.cpp",
-      "sql/custom/world/2026_09_13_03_warlock_doomguard_native_cast.sql",
-      "tests/test_warlock_doomguard_guardian.py",
-      "tests/test_raid_controlled_target_selection.py",
-      "tests/fixtures/warlock_doomguard_63d_native.json"
+      "src/server/game/Bots/BotWorldPopulationMgrMovementPlanner.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrConnectedSurfacePath.h",
+      "src/server/game/Bots/BotWorldPopulationMgrNativePathAdmission.h",
+      "tests/test_native_hazard_escape_progress.py",
+      "tests/fixtures/native_hazard_escape_db67.json"
     ],
     "forbidden_changes": [
-      "No guessed coefficients, bot rotation, boss mechanics, native spell range, movement tolerances or unrelated templates."
+      "No Z steering, pathgen/MMAP edits, tolerance changes, class/boss edits or unproved lifecycle rewrites."
     ]
   },
   "acceptance_conditions": [
-    "Native85692 submissions require owner-applied603/980 and legal target authority; callback-before-aura, preexisting aura, loss and fallback are exercised. Historical multi-Bane ordering remains unverified.",
-    "Native guardian casts and lands attributable Doom Bolt, scales through existing owner-SP path and expires normally without replacing Felhunter.",
-    "All actor rows reviewed; clear, narrow repair and overall performance remain separate.",
-    "Protected first candidates cannot hide legal second candidates in PetAI, TotemAI or Shaman elementals; native binding determines acquisition success."
+    "Actual production admission/executor accepts receipts377/378 native endpoint and controls with qualified outward hazard progress.",
+    "Ordinary goals, incomplete/shortcut/offmesh/floor-invalid paths and unbound/no-progress hazards remain rejected.",
+    "Matched live run preserves pursuit/rearm and demonstrates native movement outcomes; clear, safety, narrow repair and all-actor performance remain separate."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -55,9 +45,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build reviewed native guardian/shared selectors and Fire observations once; read back11859; run completion-watchdog canary and review every actor. Continue remaining actor rows after evidence closure.",
+  "next_action": "Finish bounded native hazard admission implementation and independent review, build once and run completion watchdog. Review every actor and continue queued class repairs.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -73,7 +63,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "63d74834813ee558644a9e61fd6039abf617e589",
+    "source_commit": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -85,32 +75,30 @@
     "qualification_eligible": false,
     "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 130.087,
-    "hostile_originated_damage": 28216926,
-    "pull_to_death_party_dps": 216908.115338,
-    "exact_effective_healing": 1674756,
-    "exact_hps": 12874.122702,
-    "requested_repair_id": "DPS-049",
-    "requested_repair_achieved": false,
-    "performance_verdict": "raid_near_baseline_actor_gaps_open",
+    "pull_to_death_seconds": 132.852,
+    "hostile_originated_damage": 28376123,
+    "pull_to_death_party_dps": 213591.98958239242,
+    "exact_effective_healing": 2413353,
+    "exact_hps": 18165.725770029807,
+    "requested_repair_id": "DPS-053",
+    "requested_repair_achieved": true,
+    "performance_verdict": "not_accepted_safety_failure_and_actor_losses",
     "diagnosis_required": true,
-    "primary_baseline_source": "05f5c2f959b4ee57be8de6021eb5df6fba7cf87c",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_affliction_doomguard_63d7483481_20260913.tar.gz.dvc",
+    "primary_baseline_source": "63d74834813ee558644a9e61fd6039abf617e589",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_native_doomguard_db67e88cc8_20260913.tar.gz.dvc",
     "publication_state": "remote_verified_and_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "requested_repair_scope": "Admission and primary-pet preservation passed; functional Doom Bolt guardian failed and routes DPS-053.",
-    "infection_damage_event_count": 0,
-    "infection_affected_actor_count": 0,
-    "safety_retained": true,
-    "independent_review_sha256": "b0baaefc5dda164498ce6bf4a82d28e31b65b2d72b9834b19b1f0a206b2e5ea1"
+    "requested_repair_scope": "Native Bane-targeted Doom Bolt and primary-pet coexistence accepted; numeric parity and adjacent Bane placement remain open.",
+    "infection_damage_event_count": 3,
+    "infection_affected_actor_count": 1,
+    "safety_retained": false,
+    "independent_review_sha256": "346781d2bba8c8fb7f53a73ce13587171c9760dafbfc6ea0f6e4990f071001f4"
   },
   "implementation_review": {
-    "verdict": "approved_for_build_and_canary",
-    "review_sha256": "6b0348c6ba3059a84bab1f91ffec9c8c222a1db1004126013079bb1f84acfad3",
-    "focused_tests_passed": 22,
+    "verdict": "MOV-001_implementation_in_progress",
     "live_verified": false,
-    "next_work_unit_implemented": true
+    "next_work_unit_implemented": false
   },
   "related_edges": [
     {
@@ -156,7 +144,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-053",
+  "error_id": "MOV-001",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -165,7 +153,15 @@
     "DPS-029",
     "ENC-001",
     "HEAL-001",
-    "OBS-006"
+    "OBS-006",
+    "DPS-048",
+    "DPS-051",
+    "DPS-052",
+    "DPS-054",
+    "DPS-055",
+    "DPS-056",
+    "DPS-057",
+    "DPS-058"
   ],
   "requested_tank_assignment": {
     "main_tank": {

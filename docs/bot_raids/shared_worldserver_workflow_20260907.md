@@ -12,41 +12,42 @@ tracks every unresolved actor. No actor has overall acceptance yet. Blood stat/
 cadence attribution, Balance guardian admission, Affliction Doomguard and Survival
 AoE admission are being resolved from retained evidence. Implement one proven
 repair at a time, then review the whole roster and continue the remaining rows.
-The latest source `63d7483481` cleared in 130.087 seconds at 216,908.115
-exact raid DPS and 12,874.123 HPS. All ten survived the route and boss, with
-zero Infection hits. Capture, postrun build verification and cleanup passed.
-The matched `05f5c2f959` baseline was 216,508.774 DPS over 130.217 seconds.
-The 0.18% raid increase does not establish overall actor acceptance.
+The latest source `db67e88cc8` cleared in 132.852 seconds at 213,591.990
+exact raid DPS and 18,165.726 HPS. All ten survived. Capture, build verification,
+shutdown and cleanup passed. The matched `63d7483481` baseline was 130.087
+seconds and 216,908.115 DPS. Performance is not accepted: raid DPS fell 1.529%,
+Balance and Fire30006 declined, and Elemental received three Infection callbacks.
 
-DPS-049's action/provisioning admission passed: 18540 summoned owner-linked
-Doomguard11859 for its native lifetime while the primary Felhunter remained.
-Its actual combat behavior failed: 21 melee hits did only 8,287 damage and no
-Doom Bolt85692 was cast. The legacy template selects melee-only AggressorAI.
-DPS-053 now owns native guardian AI/spell binding and target authority. Do not
-change coefficients or declare Affliction repaired from token guardian damage.
-Affliction owner/head output also declined; this run does not establish its
-cause. Elemental's decline includes fewer observed Lava Surge resets and more
-movement, but remains separate from its proven unnecessary Tremor maintenance.
+DPS-053 native Doomguard repair passed: nine Doom Bolts dealt 102,447 damage,
+with no guardian melee and the primary Felhunter preserved for the normal
+45-second guardian lifetime. Owner Bane placement on parasites removed useful
+body targeting late in that lifetime; the exact aura-removal timestamp is
+inferred from replacement semantics, not independently serialized. DPS-056
+owns that separate policy failure. Numeric guardian parity remains open.
 
-Fire observation-only implementation passed independent review in `4dcbb69b19`.
-DPS-053 also passed independent review and 22 focused tests. Its dedicated
-Doomguard AI requires owner-applied Bane of Doom603 or Bane of Agony980;
-shared pet/totem selectors skip protected targets before selecting a legal fallback.
-Native build, entry11859 readback and the next canary remain pending. Fire
-aura/gate observations will be captured in that same canary. Blood's native Mark/Might coverage, Balance guardian
-admission/authority, Survival sustained AoE, Elemental Tremor and role enchants
-remain queued. Every new run reviews all actors before performance acceptance.
-The final head window ended with boss death, so head-to-body return remains
-unexercised by this run.
+The active repair is MOV-001's remaining native escape admission. Elemental
+receipts377/378 describe complete, floor-valid, projected native endpoints with
+outward hazard clearance and `ProofQualified=true`. The planner never consumes
+that qualified proof, rejects the original Z hint mismatch, and submits no
+escape before Infection. Connect the existing proof to production admission;
+preserve native coordinates, path guards, and accepted pursuit/rearm behavior.
+This is not controlled evidence that the guardian patch caused the safety loss.
+
+Fire observations exposed a 35yd profile cap on native40yd Combustion, plus a
+native class-mask omission excluding Ignite and Living Bomb. Blood's old MM
+AP increase was duplicate Abomination's Might/Trueshot stacking, not a missing
+current buff. Correct those native contracts before compensation. Balance
+Force of Nature, Survival sustained AoE, Elemental Tremor and permanent role
+enchants remain queued in the actor table. No actor has overall acceptance.
+The only head phase ended in death; head-to-body return remains unexercised.
 
 Current evidence:
-`artifacts/cata_raid_program/magmaw_affliction_doomguard_63d7483481_20260913.tar.gz.dvc`.
-The 80,865,216-byte archive and every member passed fresh-cache remote
-verification. Exact raw/full-timeline and duplicate archive/cache payloads were
-evicted; the inspectable HTML, summaries and frozen reviews remain. Targeted
-DVC status records deliberate local eviction; DVC push reports up to date.
-The archive includes the all-bot review, Affliction native-outcome diagnosis,
-Elemental review and bounded packets for the remaining actor repairs.
+`artifacts/cata_raid_program/magmaw_native_doomguard_db67e88cc8_20260913.tar.gz.dvc`.
+Its 87,922,212-byte archive and every member passed fresh-cache remote
+verification. Exact raw/full-timeline, duplicate archive/cache and reconstructed
+payloads were evicted. Inspectable HTML and compact reviews remain. DVC status
+records deliberate local eviction; DVC push reports up to date. The prior63d
+archive remains available under its own immutable DVC pointer.
 
 Prior Survival trap removal remains accepted on `05f5c2f959`: no invalid13813
 attempts and zero Infection hits, with shot outcomes preserved. Its pointer is

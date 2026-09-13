@@ -4,23 +4,23 @@
 
 Repair and validate DPS across every represented spec. The latest feedback
 selects work within this objective; it does not replace it. No actor below has
-overall performance acceptance yet. Current native values are source63d7483481,
-130.087 seconds, 216,908.115 raid DPS and 12,874.123 HPS. Exact WCL references
+overall performance acceptance yet. Current native values are sourcedb67e88cc8,
+132.852 seconds, 213,591.990 raid DPS and 18,165.726 HPS. Exact WCL references
 below differ in composition, phase coverage and gear; raw gaps prioritize
 investigation and are not coefficient multipliers or hard acceptance thresholds.
 
 | Actor/spec | Native DPS | WCL example DPS | Open cause or uncertainty | Next implementation/verification | State |
 | --- | ---: | ---: | --- | --- | --- |
-| 30001 Balance | 26,800 | 41,029 | Force of Nature falsely classified as area damage; guardian target fidelity unproved; remaining output gap | Resolve summon safety and repair actual admission; compare Eclipse/spell cadence afterward | Active diagnosis |
-| 30002 Blood | 15,790 | 26,152 | Missing permanent enchants and lost Trueshot AP coverage after MM swap; Vengeance expiry consistent with incoming hits | Implement native Mark/Might coverage; verify AP and preserve solo calibration; equipment/Heart Strike remain separate | Active diagnosis |
-| 30006 Fire | 27,986 | 40,190 | Baiter add spell allocation, proc/cooldown use and movement losses | Compare eligible AoE/proc actions with native outcomes; preserve legal fallback | Open |
-| 30007 Fire | 30,144 | 40,190 | Optional-add focus policy and proc/cooldown cadence | Separate justified area restrictions from wasted long casts and missing proc use | Open |
-| 30008 Affliction | 35,192 | 40,281 | Doomguard admission works but guardian only melees for8,287 damage/AP4; long DoTs on transient adds remain | Repair native guardian AI/spell binding; verify existing owner-SP response and Doom Bolt cadence, then transient-target allocation | Native guardian repair required |
-| 30009 Survival | 39,941 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
-| 30010 Elemental | 30,135 | 41,866 | Tremor8143 wastes routine setup globals without fear; current local DPS decline under review | Repair required-earth-slot semantics while retaining reactive fear response; diagnose new loss separately | Active diagnosis |
-| 30003 Restoration | 5,022 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Apply reviewed nine-slot Cataclysm enchant overlay; preserve healing and survival while reviewing offensive idle time | Source verified; implementation pending |
+| 30001 Balance | 23,171 | 41,029 | Force of Nature falsely classified as area damage; guardian target fidelity unproved; remaining output gap | Resolve summon safety and repair actual admission; compare Eclipse/spell cadence afterward | Active diagnosis |
+| 30002 Blood | 16,292 | 26,152 | Missing permanent enchants; Trueshot AP delta needs existing Abomination's Might53138 activation/stacking diagnosis | Verify existing talent aura before adding Might; Horn/Shout flat stats are a separate category; equipment/Heart Strike remain separate | Active diagnosis |
+| 30006 Fire | 22,585 | 40,190 | Baiter add spell allocation, proc/cooldown use and movement losses | Compare eligible AoE/proc actions with native outcomes; preserve legal fallback | Open |
+| 30007 Fire | 31,540 | 40,190 | Optional-add focus policy and proc/cooldown cadence | Separate justified area restrictions from wasted long casts and missing proc use | Open |
+| 30008 Affliction | 37,229 | 40,281 | Native Doomguard landed9 bolts/102,447 damage; moving Doom to parasites removed its eligible body target and wasted final lifetime | Repair Bane placement on transient targets; numeric guardian parity and remaining owner cadence remain open | Native caster observed; policy repair required |
+| 30009 Survival | 39,219 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
+| 30010 Elemental | 34,894 | 41,866 | Tremor8143 wastes routine setup globals without fear; current local DPS decline under review | Repair required-earth-slot semantics while retaining reactive fear response; diagnose new loss separately | Active diagnosis |
+| 30003 Restoration | 4,170 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Apply reviewed nine-slot Cataclysm enchant overlay; preserve healing and survival while reviewing offensive idle time | Source verified; implementation pending |
 | 30004 Holy | 0 | No matched damage target | Same role equipment gap; zero damage alone does not prove healer failure | Verify healing cadence, mana and safe offensive opportunities | Open |
-| 30005 Discipline | 5,898 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
+| 30005 Discipline | 4,492 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
 
 Close an actor only with attributable setup/stat and action/outcome comparison,
 implemented proven repairs, and native validation preserving its duties and
