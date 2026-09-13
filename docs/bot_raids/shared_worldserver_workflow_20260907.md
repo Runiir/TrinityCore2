@@ -6,6 +6,14 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
+The active objective is to repair and validate DPS across the whole represented
+roster. The [actor acceptance table](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance)
+tracks every unresolved actor. No actor has overall acceptance yet. Blood stat/
+cadence attribution, Balance guardian admission, Affliction Doomguard and Survival
+AoE admission are being resolved from retained evidence. Implement one proven
+repair at a time, then review the whole roster and continue the remaining rows.
+The accepted Survival canary below closes its narrow repairs, not this objective.
+
 Latest source `05f5c2f959` cleared Magmaw in 130.217 seconds at
 216,508.774 exact raid DPS and 11,177.634 HPS. All ten survived the boss;
 one Drudge casualty recovered before the pull. Native death, capture, build

@@ -5,6 +5,15 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 
 # Raid performance loop
 
+For a roster-wide request, preserve that parent objective while selecting one
+bounded repair. Keep an actor acceptance table in the existing baseline document:
+current native result, reference limitations, unresolved cause, next action and
+validation state. Later feedback adds or reprioritizes work unless the user
+explicitly replaces the objective. Update every actor after each closed run;
+an accepted patch or improved raid total does not close unresolved actor rows.
+Continue to the next actionable row after publication. Do not substitute a
+ledger entry or a proposed repair for implementing the authorized work.
+
 Read the current result at the top of
 [`shared_worldserver_workflow_20260907.md`](../../../docs/bot_raids/shared_worldserver_workflow_20260907.md)
 before choosing work; its historical entries do not override the current result.

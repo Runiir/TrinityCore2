@@ -1,5 +1,35 @@
 # Magmaw DPS comparison references
 
+## Active parent objective and actor acceptance
+
+Repair and validate DPS across every represented spec. The latest feedback
+selects work within this objective; it does not replace it. No actor below has
+overall performance acceptance yet. Current native values are source05f5c2f959,
+130.217 seconds, 216,508.774 raid DPS and 11,177.634 HPS. Exact WCL references
+below differ in composition, phase coverage and gear; raw gaps prioritize
+investigation and are not coefficient multipliers or hard acceptance thresholds.
+
+| Actor/spec | Native DPS | WCL example DPS | Open cause or uncertainty | Next implementation/verification | State |
+| --- | ---: | ---: | --- | --- | --- |
+| 30001 Balance | 26,450 | 41,029 | Force of Nature falsely classified as area damage; guardian target fidelity unproved; remaining output gap | Resolve summon safety and repair actual admission; compare Eclipse/spell cadence afterward | Active diagnosis |
+| 30002 Blood | 11,591 | 26,152 | Missing permanent enchants; local broad damage/cadence decline; Vengeance/stat attribution unresolved | Establish exact equipment and native stat/cadence mismatch before repair | Active diagnosis |
+| 30006 Fire | 28,858 | 40,190 | Baiter add spell allocation, proc/cooldown use and movement losses | Compare eligible AoE/proc actions with native outcomes; preserve legal fallback | Open |
+| 30007 Fire | 27,929 | 40,190 | Optional-add focus policy and proc/cooldown cadence | Separate justified area restrictions from wasted long casts and missing proc use | Open |
+| 30008 Affliction | 37,712 | 40,281 | Missing Doomguard; long DoTs on transient adds; earlier escape/range loss | Add class-correct guardian candidate with native outcomes, then repair transient-target spell allocation | Active preparation |
+| 30009 Survival | 37,131 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
+| 30010 Elemental | 36,404 | 41,866 | No independent coefficient defect; Chain Lightning restricted by encounter policy; lower shock cadence | Compare target policy, charges, actual casts and event damage before selecting repair | Open |
+| 30003 Restoration | 4,973 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Resolve equipment authority; preserve healing and survival while reviewing offensive idle time | Open |
+| 30004 Holy | 0 | No matched damage target | Same role equipment gap; zero damage alone does not prove healer failure | Verify healing cadence, mana and safe offensive opportunities | Open |
+| 30005 Discipline | 5,462 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
+
+Close an actor only with attributable setup/stat and action/outcome comparison,
+implemented proven repairs, and native validation preserving its duties and
+survival. Every subsequent run updates all rows and retains regressions even
+when aggregate DPS rises. Missing evidence becomes an explicit capture task,
+not an implied pass. Closed individual repairs remain in the error ledger.
+
+## Retained reference research
+
 Reviewed through the connected WCL browser on 2026-09-13. These are measured
 reference observations, not a controlled expected-DPS floor. Native comparison
 is closed source `ee0504cc0c`, epoch11003006216685852, attempt1, instance2;

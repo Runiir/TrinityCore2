@@ -18,7 +18,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "d469c0c95bd855a032a3f9e66df7db53760170375bc7c99ca57c4277c3784e3a"
+    "sha256": "2532bb0810c6734f4d5cb45d42a967c414374b066d0e5b61566ab22dabf45b20"
   },
   "scope_lock": {
     "objective": "Diagnose one remaining class/role gap using retained exact native and WCL/WoWSims references.",
@@ -188,5 +188,7 @@
     "survival": [
       30009
     ]
-  }
+  },
+  "parent_objective": "Repair and validate DPS across every represented spec; narrow repair acceptance does not complete the roster objective.",
+  "actor_acceptance_path": "docs/bot_raids/magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance"
 }
