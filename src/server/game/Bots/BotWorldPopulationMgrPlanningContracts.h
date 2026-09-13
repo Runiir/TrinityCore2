@@ -391,6 +391,15 @@
         uint64 OriginatedAmount = 0;
     };
 
+    struct CombatLogLandedDamageObservation
+    {
+        bool CriticalOutcomeAvailable = false;
+        bool Critical = false;
+        float CritChancePct = 0.0f;
+        uint32 TargetHealthBeforeDamage = 0;
+        uint32 TargetMaxHealth = 0;
+    };
+
     struct CombatLogEvent
     {
         // Sequence is assigned at emission time, before the bounded ring can
@@ -422,6 +431,8 @@
         uint32 RawAmount = 0;
         uint32 AbsorbedAmount = 0;
         uint64 RelatedEventSequence = 0;
+        bool HasLandedDamageObservation = false;
+        CombatLogLandedDamageObservation LandedDamageObservation;
         bool HasMeleeResolution = false;
         MeleeDamageResolutionObservation MeleeResolution;
         float SourceX = 0.0f;

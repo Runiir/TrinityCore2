@@ -260,6 +260,8 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         return;
     PendingPeriodicOutcome pending;
     if (PendingOutcome.Armed
+        && PendingOutcome.Attacker == attacker && PendingOutcome.Victim == victim
+        && PendingOutcome.SpellId == spellId && damageType == uint32(DOT)
         && BotWorldCohortScope::MatchesPendingOwnership(
             PendingOutcome.CohortId, PendingOutcome.AttemptId,
             Cohort().Id, Cohort().AttemptId))
@@ -281,6 +283,11 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         && pending.SpellId == spellId
         && damageType == uint32(DOT)
             ? pending.CritChancePct : 0.0f;
+
+    // DealDamage invokes this callback before changing health. Capture before
+    // calibration scheduling can mutate the target.
+    CombatLogLandedDamageObservation const landedDamage{criticalOutcomeAvailable,
+        critical, critChancePct, victim->GetHealth(), victim->GetMaxHealth()};
 
     if (!Cohort().Active || (!damage && !unmitigatedDamage))
         return;
@@ -529,5 +536,5 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             damageType, damage, unmitigatedDamage, 0, nowMs, sharedDamage);
     AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
         damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs,
-        sharedDamage, relatedEventSequence);
+        sharedDamage, relatedEventSequence, nullptr, &landedDamage);
 }

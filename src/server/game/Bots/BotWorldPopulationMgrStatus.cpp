@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -427,6 +428,24 @@ void BotWorldPopulationMgr::AppendCombatLogEventJson(std::ostringstream& json,
         json << event.RelatedEventSequence;
     else
         json << "null";
+    if (event.HasLandedDamageObservation && event.Kind == "damage")
+    {
+        auto const& observation = event.LandedDamageObservation;
+        json << ",\"landed_damage_observation\":{\"critical_outcome_available\":"
+             << (observation.CriticalOutcomeAvailable ? "true" : "false")
+             << ",\"critical\":";
+        if (observation.CriticalOutcomeAvailable)
+            json << (observation.Critical ? "true" : "false");
+        else
+            json << "null";
+        json << ",\"crit_chance_pct\":";
+        if (observation.CriticalOutcomeAvailable && std::isfinite(observation.CritChancePct))
+            json << observation.CritChancePct;
+        else
+            json << "null";
+        json << ",\"target_health_before_damage\":" << observation.TargetHealthBeforeDamage
+             << ",\"target_max_health\":" << observation.TargetMaxHealth << "}";
+    }
     if (event.HasMeleeResolution)
         BotMeleeResolutionEventJson::Append(json, event.EventSequence, event.MeleeResolution);
     json
@@ -461,7 +480,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":4"
+    json << ",\"combat_log_schema_version\":5"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId
@@ -558,7 +577,7 @@ std::string BotWorldPopulationMgr::GetCombatLogDeltaJson(uint64 cursor, uint32 l
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog_delta\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":4"
+    json << ",\"combat_log_schema_version\":5"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId

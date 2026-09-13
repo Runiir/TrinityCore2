@@ -294,7 +294,8 @@ def test_shared_damage_copies_are_raw_but_not_originated_dps():
     assert actor["abilities"][0]["originated_damage"] == 100
 
 
-def test_schema3_splits_hostile_and_friendly_damage_without_losing_raw_callbacks():
+@pytest.mark.parametrize("schema", [3, 4, 5])
+def test_schema3_splits_hostile_and_friendly_damage_without_losing_raw_callbacks(schema):
     def row(
         perspective,
         amount,
@@ -346,7 +347,7 @@ def test_schema3_splits_hostile_and_friendly_damage_without_losing_raw_callbacks
         ),
     ]
     report = analyze_combat_log({
-        "combat_log_schema_version": 3,
+        "combat_log_schema_version": schema,
         "damage_attribution_schema": "originated_amount_v2_friendly_split",
         "event_count": 5,
         "abilities": abilities,

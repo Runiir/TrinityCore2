@@ -387,7 +387,7 @@ def test_combatlog_command_rejects_invalid_uint64_and_limit_inputs() -> None:
     assert '"usage: .botauto combatlog <cohort_id> delta <cursor> <limit>"' in command_body
 
 
-@pytest.mark.parametrize("schema", [3, 4])
+@pytest.mark.parametrize("schema", [3, 4, 5])
 def test_supported_delta_shape_is_accepted_by_event_stream_consumer(schema) -> None:
     from tools.bot_ml.combat_log_event_stream import CombatLogEventStream, merge_event_rows
 
@@ -421,6 +421,10 @@ def test_supported_delta_shape_is_accepted_by_event_stream_consumer(schema) -> N
     import base64
     import json
 
+    if schema == 5:
+        payload["recent_events"][0].update({"kind": "damage", "amount": 42, "raw_amount": 84,
+            "landed_damage_observation": {"critical_outcome_available": True, "critical": True,
+                "crit_chance_pct": 27.5, "target_health_before_damage": 200, "target_max_health": 1000}})
     raw = json.dumps(payload, separators=(",", ":")).encode()
     envelope = {"cohort_id": "raid", "combat_log_chunk_schema_version": 1,
                 "export_id": 1, "export_kind": "delta", "chunk_count": 1}
@@ -431,6 +435,8 @@ def test_supported_delta_shape_is_accepted_by_event_stream_consumer(schema) -> N
     ]
     result = stream.observe_rows(frames)[0]
     assert result.accepted and result.cursor_after == 3
+    assert [row["event"] for row in stream.take_accepted_events()] == payload["recent_events"]
+    assert stream.events() == payload["recent_events"]
     receipt = stream.receipt()
     assert receipt["identity"] == {
         "cohort_id": "raid",
@@ -458,6 +464,7 @@ def test_supported_delta_shape_is_accepted_by_event_stream_consumer(schema) -> N
     assert full["event_count"] == 3
     merged = merge_event_rows(full["recent_events"], payload["recent_events"])
     assert [row["event_sequence"] for row in merged] == [1, 2, 3]
+    assert merged == payload["recent_events"]
 
 
 def test_native_frames_bind_each_export_and_kind(tmp_path: Path) -> None:
@@ -509,3 +516,47 @@ int main() {
     assert [row["total_bytes"] for row in rows if "total_bytes" in row] == [13000, 2, 2]
     assert 'cohortId, cursor, uint32(requestedLimit)), "delta")' in commands
     assert 'GetCombatLogJsonForCohort(cohortId), "full")' in commands
+
+
+def test_actual_native_landed_storage_and_shared_serializer(tmp_path):
+    import json
+    planning = PLANNING.read_text()
+    structs = planning[planning.index("    struct CombatLogLandedDamageObservation"):planning.index("    struct SemanticOutcomeStats")]
+    status = STATUS.read_text()
+    serializer = status[status.index("void BotWorldPopulationMgr::AppendCombatLogEventJson"):status.index("std::string BotWorldPopulationMgr::GetCombatLogJson()")]
+    serializer = serializer.replace("BotWorldPopulationMgr::", "")
+    log = COMBAT_LOG.read_text()
+    storage = log[log.index("    if (landedDamage && event.Kind"):log.index("    if (meleeResolution)")]
+    assert "nullptr, &landedDamage" in (BOT_DIR / "BotWorldPopulationMgrCombatNotifications.cpp").read_text()
+    source = '''#include <cstdint>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <cmath>
+#include <limits>
+using uint32=std::uint32_t; using uint64=std::uint64_t; using uint8=std::uint8_t;
+struct MeleeDamageResolutionObservation {};
+namespace BotMeleeResolutionEventJson { void Append(std::ostringstream&,uint64,MeleeDamageResolutionObservation const&){} }
+std::string JsonEscape(std::string const& v){return v;}
+''' + structs + serializer + '''
+void Store(CombatLogEvent& event, CombatLogLandedDamageObservation const* landedDamage) {
+''' + storage + '''}
+int main(){
+ for(int i=0;i<4;++i) {
+  CombatLogEvent event; event.Kind=i==3?"heal":"damage";
+  CombatLogLandedDamageObservation observation{i!=1,true,i==2?std::numeric_limits<float>::quiet_NaN():27.5f,200,1000};
+  Store(event,&observation); std::ostringstream json; AppendCombatLogEventJson(json,event); std::cout<<json.str()<<"\\n";
+ }
+}
+'''
+    cpp = tmp_path / "landed.cpp"
+    cpp.write_text(source)
+    binary = tmp_path / "landed"
+    subprocess.run(["g++", "-std=c++17", str(cpp), "-o", str(binary)], check=True)
+    rows = [json.loads(row) for row in subprocess.check_output([str(binary)], text=True).splitlines()]
+    assert rows[0]["landed_damage_observation"] == {"critical_outcome_available": True,
+        "critical": True, "crit_chance_pct": 27.5, "target_health_before_damage": 200, "target_max_health": 1000}
+    assert rows[1]["landed_damage_observation"]["critical"] is None
+    assert rows[1]["landed_damage_observation"]["crit_chance_pct"] is None
+    assert rows[2]["landed_damage_observation"]["crit_chance_pct"] is None
+    assert "landed_damage_observation" not in rows[3]

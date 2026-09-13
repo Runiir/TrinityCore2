@@ -878,7 +878,8 @@ private:
     void AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target, uint32 spellId,
         uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
         uint64 timestampMs, bool sharedDamage = false, uint64 relatedEventSequence = 0,
-        MeleeDamageResolutionObservation const* meleeResolution = nullptr);
+        MeleeDamageResolutionObservation const* meleeResolution = nullptr,
+        CombatLogLandedDamageObservation const* landedDamage = nullptr);
 
 #include "Bots/BotWorldPopulationMgrCalibrationMetrics.h"
     static void ObserveCalibrationEffectiveStats(Unit const* unit,

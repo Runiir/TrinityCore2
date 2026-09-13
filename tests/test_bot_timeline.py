@@ -472,3 +472,47 @@ def test_actor_role_comes_from_identity_scoped_admission_receipt():
     actor = summary["actors"]["7"]
     assert actor["role"] == "dps"
     assert actor["role_provenance"] == "accepted_raid_runtime.admission_receipt.members"
+
+
+@pytest.mark.parametrize("schema", [3, 4, 5])
+def test_landed_observation_full_delta_and_legacy_unknown(schema):
+    events = [_event(1, 1000, effect=2), _event(2, 2000)]
+    for row in events:
+        row.update(amount=15, raw_amount=20, school_mask=32, related_event_sequence=None)
+        if schema == 5:
+            periodic = row["effect_type"] == 2
+            row["landed_damage_observation"] = {
+                "critical_outcome_available": periodic,
+                "critical": True if periodic else None,
+                "crit_chance_pct": 27.5 if periodic else None,
+                "target_health_before_damage": 200, "target_max_health": 1000}
+    full = _full(events)
+    full["combat_log_schema_version"] = schema
+    baseline, summary = build_timeline_from_rows([_bound("combat_log", full)], _report())
+    union, union_summary = build_timeline_from_rows([
+        *[_bound("combat_log", r) for r in _delta_frames(events, 0, 2, schema=schema)],
+        _bound("combat_log", full)], _report())
+    landed = [r for r in baseline["events"] if r["kind"] == "landed"]
+    assert landed == [r for r in union["events"] if r["kind"] == "landed"]
+    assert summary["actors"]["7"]["damage"] == union_summary["actors"]["7"]["damage"]
+    assert len(landed) == 2
+    for actual, source in zip(landed, events):
+        for key in ("event_sequence", "related_event_sequence", "effect_type", "school_mask", "originated_amount", "raw_amount"):
+            assert actual[key] == source[key]
+        assert actual["amount"] == source["originated_amount"] == 10
+        assert actual["callback_amount"] == source["amount"] == 15
+        assert actual["landed_damage_observation"] == source.get("landed_damage_observation")
+        assert actual["landed_damage_observation_available"] == (schema == 5)
+        assert actual["cast_correlation"] == "unavailable"
+    assert _embedded_model(render_timeline_html(baseline))["events"] == baseline["events"]
+
+
+def test_legacy_landed_missing_callback_and_raw_remain_unknown():
+    row = _event(1, 1000)
+    model, _ = build_timeline_from_rows([_bound("combat_log", _full([row]))], _report())
+    landed = next(event for event in model["events"] if event["kind"] == "landed")
+    assert landed["amount"] == 10
+    assert landed["callback_amount"] is None
+    assert landed["raw_amount"] is None and landed["raw_amount_available"] is False
+    assert landed["landed_damage_observation"] is None
+    assert landed["landed_damage_observation_available"] is False

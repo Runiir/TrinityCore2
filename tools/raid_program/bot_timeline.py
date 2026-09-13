@@ -618,7 +618,19 @@ def build_timeline_from_rows(
         target_key = f"{_int(row.get('target_entry'))}:{_int(row.get('target_guid'))}"
         target_damage[actor][target_key] += amount
         target_names[target_key] = str(row.get("target_name") or "")
-        timeline_events.append(_event("landed", at, actor, spell_id=_int(row.get("spell_id")), spell_name=row.get("spell_name"), target_guid=_int(row.get("target_guid")), target_entry=_int(row.get("target_entry")), amount=amount, attack_origin=origin, source_guid=_int(row.get("source_guid")), source_is_pet=row.get("source_is_pet") is True, provenance="observed_combat_event", cast_correlation="unavailable"))
+        timeline_events.append(_event("landed", at, actor,
+            spell_id=_int(row.get("spell_id")), spell_name=row.get("spell_name"),
+            target_guid=_int(row.get("target_guid")), target_entry=_int(row.get("target_entry")),
+            amount=amount, callback_amount=row.get("amount"), originated_amount=row.get("originated_amount"),
+            raw_amount=row.get("raw_amount"), raw_amount_available=row.get("raw_amount") is not None,
+            raw_amount_semantics="native_callback_path_dependent",
+            event_sequence=row.get("event_sequence"), related_event_sequence=row.get("related_event_sequence"),
+            effect_type=row.get("effect_type"), school_mask=row.get("school_mask"),
+            landed_damage_observation=row.get("landed_damage_observation"),
+            landed_damage_observation_available=isinstance(row.get("landed_damage_observation"), dict),
+            attack_origin=origin, source_guid=_int(row.get("source_guid")),
+            source_is_pet=row.get("source_is_pet") is True,
+            provenance="observed_combat_event", cast_correlation="unavailable"))
         if origin == "direct":
             fresh[actor]["landed"].append(at)
         elif origin in {"periodic", "owned_source"}:

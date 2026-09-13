@@ -131,7 +131,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics."""
     schema_version = _combat_log_schema_version(combat_log)
     friendly_split_available = (
-        schema_version == 3
+        schema_version >= 3
         and combat_log.get("damage_attribution_schema")
         == "originated_amount_v2_friendly_split"
     )
