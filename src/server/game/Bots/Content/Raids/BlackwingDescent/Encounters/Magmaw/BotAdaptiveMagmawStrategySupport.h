@@ -180,10 +180,20 @@
             if (contract.IsAssignedBaiter(botGuid)
                 && observed.NearestParasite
                 && observed.NearestParasiteDistance
-                    <= RangedParasiteTargetDistance
-                && contract.AllowsParasiteTarget(botGuid,
-                    observed.NearestParasite->Guid))
-                return observed.NearestParasite->Guid;
+                    <= RangedParasiteTargetDistance)
+            {
+                if (observed.SupportParasite
+                    && observed.SupportParasiteDistance <= RangedParasiteTargetDistance
+                    && contract.AllowsParasiteTarget(botGuid,
+                        observed.SupportParasite->Guid))
+                    return observed.SupportParasite->Guid;
+                // Bait/threat ownership remains in the contract and movement
+                // tasks. An observed blocked parasite is not a legal damage
+                // fallback, including when it is personally pursuing the baiter.
+                if (observed.SupportOpportunitiesObserved)
+                    return observed.BossStaticDamageOpportunity
+                        ? observed.Boss->Guid : ObjectGuid{};
+            }
 
             if (observed.PersonalParasiteThreat
                 && observed.PersonalParasiteThreatDistance

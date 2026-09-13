@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import pytest
 from pathlib import Path
 
 
@@ -18,6 +19,8 @@ def compile_probe(tmp_path: Path, source_text: str) -> Path:
             "-Wall",
             "-Wextra",
             "-Werror",
+            "-I",
+            str(tmp_path),
             "-I",
             str(ROOT / "src/server/game"),
             "-I",
@@ -42,9 +45,16 @@ def compile_probe(tmp_path: Path, source_text: str) -> Path:
     return binary
 
 
+@pytest.mark.parametrize("revision", [None, "26c536140a4e23c43d3d8e5016d3d1aa0463a716"])
 def test_native_opportunity_and_production_support_selector(
-    tmp_path: Path,
+    tmp_path: Path, revision,
 ) -> None:
+    if revision:
+        relative = Path("Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h")
+        frozen = tmp_path / relative
+        frozen.parent.mkdir(parents=True)
+        frozen.write_text(subprocess.check_output(
+            ["git", "show", f"{revision}:src/server/game/{relative}"], cwd=ROOT, text=True))
     binary = compile_probe(
         tmp_path,
         r'''
@@ -123,10 +133,11 @@ struct NativeContext
 
 static AdaptiveMagmawPlan Propose(AdaptiveMagmawStrategy const& strategy,
     Blackboard const& board, ObjectGuid actor,
-    MagmawSupportTargetOpportunities const& opportunities)
+    MagmawSupportTargetOpportunities const& opportunities,
+    MagmawLaneTransitionState* lane = nullptr)
 {
     return strategy.Propose(board, actor, "dps", nullptr, false, false,
-        nullptr, nullptr, nullptr, std::nullopt,
+        lane, nullptr, nullptr, std::nullopt,
         AdaptiveMagmawStrategy::DefaultMovementProducerOrder, nullptr,
         nullptr, nullptr, nullptr, &opportunities);
 }
@@ -158,6 +169,20 @@ int main()
     assert(!ObserveMagmawStaticDamageOpportunity(
         &nativeActor, &nativeTarget, legalRanges));
     nativeTarget.Instance = 1;
+
+    for (int invalid = 0; invalid != 4; ++invalid)
+    {
+        NativeUnit target = nativeTarget;
+        if (invalid == 0) target.Alive = false;
+        if (invalid == 1) target.InWorld = false;
+        if (invalid == 2) target.Attackable = false;
+        if (invalid == 3) target.Map = 1;
+        assert(!ObserveMagmawStaticDamageOpportunity(&nativeActor, &target, legalRanges));
+    }
+    assert(!ObserveMagmawStaticDamageOpportunity(
+        static_cast<NativeUnit*>(nullptr), &nativeTarget, legalRanges));
+    assert(!ObserveMagmawStaticDamageOpportunity(
+        &nativeActor, static_cast<NativeUnit*>(nullptr), legalRanges));
 
     Blackboard board;
     board.CurrentScope = Scope{
@@ -220,11 +245,76 @@ int main()
     assert(none.ClearOptionalDamageTarget);
     assert(none.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
-    // Fixed bait and personal-threat obligations do not pass through optional
-    // opportunity admission.
-    AdaptiveMagmawPlan bait = Propose(
-        strategy, board, board.Players.front().Guid, noneLegal);
-    assert(bait.DamageTarget == blocked.Guid);
+    // DPS-043: fixed Mage and Hunter baiters use actual native opportunity
+    // admission for damage, while their mandatory assignments remain intact.
+    MagmawSupportTargetOpportunities baitOpportunities = bodyOnly;
+    nativeActor.Distance = 20;nativeActor.LineOfSight = false;
+    assert(!ObserveMagmawStaticDamageOpportunity(&nativeActor, &nativeTarget, legalRanges));
+    nativeActor.Distance = 24;nativeActor.LineOfSight = true;
+    if (ObserveMagmawStaticDamageOpportunity(&nativeActor, &nativeTarget, legalRanges))
+        baitOpportunities.Admit(legal.Guid);
+    for (ObjectGuid baiter : {board.Players[0].Guid, board.Players[1].Guid})
+    {
+        AdaptiveMagmawPlan bait = Propose(strategy, board, baiter, baitOpportunities);
+        NativeUnit nativeBaiter;nativeBaiter.Guid = baiter;
+        NativeUnit nativeLegal;nativeLegal.Guid = legal.Guid;
+        NativeUnit nativeBlocked;nativeBlocked.Guid = blocked.Guid;
+        NativeContext baitContext; baitContext.Bot = &nativeBaiter;
+        // Bind the actual selection before checking identity: old26 binds215.
+        assert(BindMagmawDamageTarget(baitContext, bait.DamageTarget,
+            bait.ClearOptionalDamageTarget,
+            bait.DamageTarget == legal.Guid ? &nativeLegal : &nativeBlocked)
+            == MagmawDamageTargetBindResult::Bound);
+        assert(baitContext.State.TargetGuid == legal.Guid);
+        assert(bait.ParasiteCombat.IsAssignedBaiter(baiter));
+        assert(bait.ParasiteCombat.AllowsParasiteTarget(baiter, blocked.Guid));
+        assert(bait.ParasiteCombat.SupportTargetGuid.IsEmpty());
+        Blackboard pursued = board;
+        pursued.Hostiles[1].VictimGuid = baiter;
+        AdaptiveMagmawPlan pursuedPlan = Propose(strategy, pursued, baiter, baitOpportunities);
+        assert(pursuedPlan.DamageTarget == legal.Guid);
+        assert(pursuedPlan.ParasiteCombat.PersonalThreatGuid == blocked.Guid);
+        assert(pursuedPlan.ParasiteCombat.IsAssignedBaiter(baiter));
+        AdaptiveMagmawPlan baitBody = Propose(strategy, pursued, baiter, bodyOnly);
+        assert(baitBody.DamageTarget == boss.Guid);
+        AdaptiveMagmawPlan baitNone = Propose(strategy, pursued, baiter, noneLegal);
+        assert(baitNone.DamageTarget.IsEmpty() && baitNone.ClearOptionalDamageTarget);
+        assert(baitNone.ParasiteCombat.IsAssignedBaiter(baiter));
+        assert(baitNone.ParasiteCombat.PersonalThreatGuid == blocked.Guid);
+        assert(BindMagmawDamageTarget(baitContext, baitNone.DamageTarget,
+            baitNone.ClearOptionalDamageTarget, static_cast<NativeUnit*>(nullptr))
+            == MagmawDamageTargetBindResult::Cleared);
+        assert(baitContext.Target == nullptr && baitContext.State.TargetGuid.IsEmpty());
+        assert(baitNone.ParasiteCombat.IsAssignedBaiter(baiter));
+        assert(baitNone.ParasiteCombat.PersonalThreatGuid == blocked.Guid);
+        Blackboard sticky = board;
+        sticky.BotTargets[baiter].DamageTarget = legal.Guid;
+        MagmawSupportTargetOpportunities bothLegal = baitOpportunities;
+        bothLegal.Admit(blocked.Guid);
+        assert(Propose(strategy, sticky, baiter, bothLegal).DamageTarget == legal.Guid);
+        Blackboard escaping = pursued;
+        escaping.Route.NavigationHints = { { 50, 0, 210 } };
+        escaping.Hostiles[1].Position = escaping.FindActor(baiter)->Position;
+        escaping.Hostiles[1].Position.X += 8.0f;
+        MagmawLaneTransitionState legalLane, blockedLane;
+        AdaptiveMagmawPlan escapeLegal = Propose(strategy, escaping, baiter, baitOpportunities, &legalLane);
+        AdaptiveMagmawPlan escapeBlocked = Propose(strategy, escaping, baiter, noneLegal, &blockedLane);
+        assert(escapeLegal.DamageTarget == legal.Guid && escapeBlocked.DamageTarget.IsEmpty());
+        assert(escapeLegal.Movement && escapeBlocked.Movement);
+        assert(escapeLegal.Movement.Size() == escapeBlocked.Movement.Size());
+        auto const& legalMoves = escapeLegal.Movement.Proposals();
+        auto const& blockedMoves = escapeBlocked.Movement.Proposals();
+        bool contactEscape = false;
+        for (size_t i=0; i<legalMoves.size(); ++i)
+        {
+            contactEscape = contactEscape || legalMoves[i].Id.Mechanic == "parasite_contact_evade";
+            assert(legalMoves[i].Id.Mechanic == blockedMoves[i].Id.Mechanic);
+            assert(legalMoves[i].ActionPriority == blockedMoves[i].ActionPriority);
+        }
+        assert(contactEscape);
+
+    }
+    // Ordinary DPS retains its separately owned personal-threat obligation.
     Blackboard threatened = board;
     threatened.Hostiles[1].VictimGuid = supportActor;
     AdaptiveMagmawPlan threat = Propose(
@@ -254,6 +344,12 @@ int main()
     assert(context.Target == &nativeHead);
     assert(context.State.TargetGuid == head.Guid);
 
+    Blackboard protectedHead = exposed;
+    protectedHead.Hostiles.back().Attackable = false;
+    assert(Propose(strategy, protectedHead, supportActor, bodyOnly).DamageTarget == boss.Guid);
+    protectedHead.Hostiles.back().Attackable = true;
+    protectedHead.Hostiles.back().Selectable = false;
+    assert(Propose(strategy, protectedHead, supportActor, bodyOnly).DamageTarget == boss.Guid);
     nativeHead.Attackable = false;
     AdaptiveMagmawPlan hideReturn = Propose(
         strategy, board, supportActor, bodyOnly);
@@ -301,6 +397,13 @@ int main()
     assert(simultaneous.DamageTarget == legal.Guid);
     assert(simultaneous.Movement);
 
+    // No observed boss is the pre-existing unowned-node boundary, not a
+    // claim that a stale target is legal or that the selector cleared it.
+    Blackboard missingBoss = board;
+    missingBoss.Hostiles.erase(missingBoss.Hostiles.begin());
+    AdaptiveMagmawPlan unowned = Propose(strategy, missingBoss, supportActor, noneLegal);
+    assert(!unowned.OwnsNode && unowned.DamageTarget.IsEmpty());
+
     // With no parasites, the ordinary body path is unchanged even when the
     // optional opportunity view is empty.
     Blackboard noParasites = board;
@@ -312,7 +415,12 @@ int main()
 }
 ''',
     )
-    subprocess.run([str(binary)], cwd=ROOT, check=True)
+    result = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
+    if revision:
+        assert result.returncode != 0
+        assert "baitContext.State.TargetGuid == legal.Guid" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
 
 
 def test_production_preparation_observes_and_consumes_opportunities() -> None:

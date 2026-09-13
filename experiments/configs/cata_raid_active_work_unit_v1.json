@@ -2,23 +2,23 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:multishot_los_selection",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "26c536140a4e23c43d3d8e5016d3d1aa0463a716",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "DPS-042 published and accepted; DPS-043 fixed-baiter filter bypass proven",
+  "gate_state": "DPS-043 independently approved; build and native validation pending",
   "first_broken_edge": {
     "id": "fixed_baiter_bypasses_actor_filtered_damage_opportunities",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "Fixed baiters bind unfiltered NearestParasite despite an existing LOS/range-filtered opportunity list. Recorded Multi-Shot target189 has LOS false; an existing fixture expects the same wrong nearest-target behavior.",
-    "review_state": "causal_diagnosis_complete_bounded_implementation_in_progress",
+    "review_state": "independently_approved_13_focused_tests",
     "ledger_id": "DPS-043"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "9adefb8b8f04103cbe534c9945c790affab3257dce66d6119edd06c19b372f6e"
+    "sha256": "ac55f4e4252f3a0123d339e9dce8fc882b424da8d431b4f27d8358007eb0e070"
   },
   "scope_lock": {
     "objective": "Select legal fixed-baiter damage targets independently of persistent bait/threat assignment.",
@@ -43,9 +43,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
-  "ready_for_live_verification": false,
-  "next_action": "Repair fixed-baiter damage target selection using actor-filtered opportunities while retaining duty/threat assignment; test legal-alternative and all-blocked paths, then independently review.",
+  "ready_for_build": true,
+  "ready_for_live_verification": true,
+  "next_action": "Build the reviewed DPS-043 source and run the same canonical full route under completion watchdog; verify legal target binding, native offense and preserved bait/escape duties.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -92,10 +92,10 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "prior_DPS-042_shared_repair_native_accepted_current_DPS-043_diagnosis_only",
-    "live_verified": true,
-    "next_work_unit_implemented": false,
-    "artifact_sha256": "0439ef7396dfdca889e23d46596205269045a27c35ff468a8b6f3a4ffd528c0d"
+    "verdict": "approved_for_build_and_one_native_canary",
+    "live_verified": false,
+    "next_work_unit_implemented": true,
+    "artifact_sha256": "12c6177cd042608c11c5ada453cd1b5bbdfe21019bd937c5da625618ddeae8d2"
   },
   "related_edges": [
     {

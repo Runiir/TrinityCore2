@@ -40,8 +40,10 @@ DPS-043 is the next bounded runtime repair. Hunter selected Multi-Shot twice
 at+44.55/+44.65s on parasite189 with observed LOS false; none landed in26.
 Fixed baiter selection bypasses the existing actor-filtered opportunities and
 binds raw NearestParasite. The existing fixture even expects the blocked
-nearest215 instead of legal216. Repair damage selection while preserving
-bait/threat assignment and escape ownership. Exact-tick alternate legality is
+nearest215 instead of legal216. The patch selects a filtered legal parasite, admitted boss or explicit damage
+target clear while retaining bait/threat assignment and escape ownership.
+Thirteen focused tests passed independently; native build and validation are
+next. Exact-tick alternate legality is
 not observed; these two failures do not explain the full Hunter DPS gap. Mage30006 landed Blast Wave, Flamestrike and Blizzard;
 Mage30007 used Blizzard. No superior eligible Mage action bypass is proven.
 Balance Starfall/Force of Nature absence is a separate lead.
