@@ -27,6 +27,9 @@ Affliction Bane-purpose, Fire/Survival potions and optional Elemental earth slot
 are committed and independently reviewed, but not built/applied/live validated.
 The authserver remains available; worldserver is stopped after clean closure.
 Current evidence: `artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc`.
+The82,856,023-byte archive and every member passed fresh-cache remote verification.
+Exact raw/full timeline and archive/cache/reconstruction duplicates were evicted.
+The readable comparison, normalized references and timeline HTML remain local.
 
 The sections below retain September10 diagnostic history. Their run-specific
 acceptance and follow-up descriptions do not override the current status above.

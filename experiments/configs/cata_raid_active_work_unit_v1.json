@@ -16,7 +16,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "d297bb2f3b525d541f39f3c50d1b918f8b84da52bd5f299a63add13a416193ea"
+    "sha256": "a89d0f7c6d0bddf1289c72fd0cb04d8ddecf7ff065443931b4f27a381ed8f4f4"
   },
   "scope_lock": {
     "objective": "Resolve phase/duty and component parity for material owner-cadence, guardian and strike-damage differences; choose a bounded repair from evidence, not readiness of small queued patches.",
@@ -83,9 +83,9 @@
     "diagnosis_required": true,
     "primary_baseline_source": "a3a74056c871a1083577f52f8a2e9516ce159e84",
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc",
-    "publication_state": "pending_remote_publication",
-    "remote_reconstruction_verified": false,
-    "raw_payloads_evicted": false,
+    "publication_state": "remote_verified_and_exact_duplicates_evicted",
+    "remote_reconstruction_verified": true,
+    "raw_payloads_evicted": true,
     "requested_repair_scope": "Three Treants and native damage; periodic outcome full/delta/timeline; receipt373 native hazard traversal.",
     "infection_damage_event_count": 0,
     "infection_affected_actor_count": 0,
