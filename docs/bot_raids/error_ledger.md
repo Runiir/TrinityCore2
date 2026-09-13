@@ -1,6 +1,6 @@
 # Raid program error ledger
 
-Updated 2026-09-12. This is the canonical index of known blockers and rejected
+Updated 2026-09-13. This is the canonical index of known blockers and rejected
 assumptions. The current workflow summary chooses work; this ledger explains
 what has already failed. Do not create a new handoff document merely to copy it.
 
@@ -8,6 +8,8 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
+| MOV-001 | Reproduced; focused repair and independent review in progress | On `89cef294b6`, Elemental30010 decision1214 at +37.725s selects a parasite escape endpoint at16yd while already31.311yd away. Receipt327/spline3197 confirms native inward progress; the task releases at clearance>=16 despite continued pursuit. Infection follows at+42.834s. | Keep pursuit armed, suppress inward escape destinations, and retire movement legs separately from the threat episode. Production replay must fail on89cef and pass repaired code, then validate actual avoidance live. Frozen incident and all-bot review are in the one-tank Balance DVC archive. |
+| COMP-001 | Declared one-tank composition accepted on89cef | Roster allocation, Bloodlust identity, readback and trash split preflight assumed two tanks despite a declared one-tank scenario. | Manifest consumers now use declared roles; sole Blood DK plus Balance clears the full route with zero deaths. 149.639s/195,379.273DPS/19,122.488HPS. Performance is mixed: unchanged boss damage and extra adds; do not claim a throughput improvement from add-inclusive DPS. |
 | OBS-010 | Activity label and direct-activity acceptance repaired | `active_seconds` includes healing and pet/DoT damage, but its label and acceptance consumer treated it as direct offense. This produced a direct-activity decline flag for a healing-only paladin. | Re-render both summaries. Use `fresh_attack_active_seconds` and its explicit event-second rate for direct-activity comparison. Legacy missing values remain unknown. Neither count is casting uptime. Focused producer/acceptance fixtures and independent review passed. |
 | OBS-009 | Timeline incoming-damage omission repaired | Existing raw callbacks were retained but the timeline only emitted outgoing damage and healing. Amount-zero incoming callbacks and native raw amounts were invisible in the primary diagnostic view. | Incoming summary and damage_taken events now join the same identity/route/window. Delta-eviction regression test and retained a4b9 replay preserve DPS/HPS. Absorption/outcome gaps remain explicitly unknown. |
 | ENC-006 | Native swing stages captured; exact tuning unresolved | Source 0f0a8c0382 reaches Magmaw with 485 native melee-resolution observations, 466 linked health callbacks, and 19 unmatched native misses. Magmaw ordinary callbacks retain raw 4,431-6,538 and total health damage 9,939. Native stages now permit roll/modifier/outcome/mitigation inspection; callback raw and WCL U are different boundaries. | Analyze retained stages in magmaw_native_wipe_recovery_20260912 DVC archive before another run or any guessed multiplier. Full fidelity remains unaccepted. Earlier 36f8 trash-only capture and a4b9 legacy raw remain historical evidence. |

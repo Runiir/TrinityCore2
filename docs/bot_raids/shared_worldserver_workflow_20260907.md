@@ -1,17 +1,41 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-12. This is the current status. Historical run narratives remain
+Updated 2026-09-13. This is the current status. Historical run narratives remain
 in Git; failed assumptions and bounded next repairs belong in the
 [error ledger](error_ledger.md). Closed generated evidence is tracked by DVC.
 
 ## Current work and latest native run
 
-The wider objective remains the Magmaw reference baseline. The latest source
-`c5700590e7` cleared the original four-node route and killed Magmaw in 147.272
-seconds at 191,961.907 exact raid DPS and 12,169.034 effective HPS. All ten
-survived the boss, cleanup passed, and combat/trace streams have no gaps.
-This is a development clear with the focused DPS-040 repair verified.
-Evidence: `artifacts/cata_raid_program/magmaw_mobility_readiness_20260912.tar.gz.dvc`.
+The current experiment uses one Blood DK tank, three healers and six DPS.
+Source `89cef294b6` replaces the Prot Paladin slot with exact catalog Balance
+Druid gear and preserves the other nine actors. It cleared the four-node route
+with zero deaths and killed Magmaw in 149.639 seconds at 195,379.273 exact raid
+DPS and 19,122.488 effective HPS. Cleanup passed. Bloodlust was submitted
+0.400 seconds after head exposure and its aura appeared after 0.502 seconds.
+Evidence: `artifacts/cata_raid_program/magmaw_one_tank_balance_20260913.tar.gz.dvc`,
+member `magmaw-development-89cef294b6/dps_review.json`.
+
+This accepts the declared one-tank composition and development clear, not an
+overall performance improvement. Compared with the prior two-tank run, boss
+damage stayed 26,798,304, all 965,745 extra damage came from adds, and the kill
+was 2.367 seconds longer. The composition itself is deliberately different.
+Balance dealt 28,610.950 DPS; retained actors have mixed gains and losses.
+
+MOV-001 is the next proven repair: Elemental's parasite escape moved from
+31.311 yards clearance toward an endpoint at 16 yards, then declared success
+while pursuit continued. Native spline progress and subsequent infection are
+retained in `MOV-001-incident.json`. The repair is undergoing production-path
+fixtures and independent review before matched live validation. Fire used
+Blast Wave and Flamestrike; observed add Pyroblasts were instant Hot Streak.
+Hunter used Multi-Shot once. Add priorities and target lifetime remain separate
+review leads; no coefficient change is justified by these observations.
+
+The last two-tank baseline, `c5700590e7`, cleared in 147.272 seconds at
+191,961.907 exact raid DPS and 12,169.034 effective HPS. All ten survived the
+boss; eight trash death episodes recovered. This accepted the focused DPS-040
+repair. Evidence:
+`artifacts/cata_raid_program/magmaw_mobility_readiness_20260912.tar.gz.dvc`.
+The following paragraphs describe that earlier baseline and its predecessors.
 
 The matched earlier `0f0a8c0382` result was 149.023 seconds at 189,706.381 DPS,
 with the same 28,270,614 originated hostile damage. Latest DPS is 1.19% higher.
