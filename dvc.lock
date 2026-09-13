@@ -215,12 +215,12 @@ stages:
       nfiles: 3
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 0ee949465528fef57a228816b3dc9dee
-      size: 307180
+      md5: 330777b17e8d648077885ec1256b6f39
+      size: 307195
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: c8af1620391605f0e59e6fc9c45a6940
-      size: 20564
+      md5: 52783a9c3cf3837bed5ffb3835e28734
+      size: 20577
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
       md5: 4553edf5b236f05b7d5e184fff158a6b
@@ -248,8 +248,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 1d95cee846ca105f5dc8a4da335b8361.dir
-      size: 3601847
+      md5: edf59989d1ee30f13886f20ee6c6ddfa.dir
+      size: 3603911
       nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -353,17 +353,17 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 1d95cee846ca105f5dc8a4da335b8361.dir
-      size: 3601847
+      md5: edf59989d1ee30f13886f20ee6c6ddfa.dir
+      size: 3603911
       nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 0ee949465528fef57a228816b3dc9dee
-      size: 307180
+      md5: 330777b17e8d648077885ec1256b6f39
+      size: 307195
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: c8af1620391605f0e59e6fc9c45a6940
-      size: 20564
+      md5: 52783a9c3cf3837bed5ffb3835e28734
+      size: 20577
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 52f9f607e1aa7a5244f86c252edc9c86
@@ -407,7 +407,7 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: f00a4ad7e8c48d29ae13464582825ce2
+      md5: 5e548171b4138c555e91dc628ae2879e
       size: 1652
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
@@ -421,11 +421,11 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: afebe62e62e5907e573b7612ca123551
+      md5: 616966fda6f1d2d116b5e3589873eb4a
       size: 20763
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: f00a4ad7e8c48d29ae13464582825ce2
+      md5: 5e548171b4138c555e91dc628ae2879e
       size: 1652
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
@@ -1052,19 +1052,19 @@ stages:
       size: 16841
     - path: experiments/configs/all_spec_references_cata_p4_v1.json
       hash: md5
-      md5: c21b0e3cc3cda387777281e86300dbb0
-      size: 157389
+      md5: ac2125171d6bd1e4e9d8d54c159d9875
+      size: 184254
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
-      md5: 44266d8a1fdbfc016e5896d53a9e0d3a
-      size: 217189
+      md5: 330777b17e8d648077885ec1256b6f39
+      size: 307195
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 7f49c91e3149d203c163e0a5eee8fac1
-      size: 19931
+      md5: 52783a9c3cf3837bed5ffb3835e28734
+      size: 20577
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
-      md5: 012afbc3288c3ec227a26114fd2fb962
+      md5: 52f9f607e1aa7a5244f86c252edc9c86
       size: 3975
     - path: experiments/configs/stonecore_pairwise_constraints_v1.json
       hash: md5
@@ -1072,8 +1072,8 @@ stages:
       size: 5077
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: ab033e42803d700ae85947c741d9283e
-      size: 24355
+      md5: 73b32f8d3ae7834f4b2dad672ca58a97
+      size: 27639
     - path: 
         sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql
       hash: md5
@@ -1081,17 +1081,17 @@ stages:
       size: 37613
     - path: tools/bot_ml/build_all_spec_phase1_catalogs.py
       hash: md5
-      md5: eb8fc959996743df4179ccfbed575c30
-      size: 57690
+      md5: dad62c89dc767483f89c6426e84ba12c
+      size: 88606
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 34c9ea3ea840661a66299c2d30589770
-      size: 41243
+      md5: 234feb5004acac87d27435a9fa898e1c
+      size: 69191
     outs:
     - path: dataset/all_spec_phase1_catalogs
       hash: md5
-      md5: 24b9d133fe3fe1b6f253e500c266562f.dir
-      size: 250546
+      md5: b5836fa420389895ab1396aa31206c14.dir
+      size: 306692
       nfiles: 5
   all_spec_phase2_evidence_contract:
     cmd: python -m tools.bot_ml.live_validation_session --output-dir 

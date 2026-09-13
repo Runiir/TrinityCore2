@@ -2,18 +2,18 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:affliction_doomguard_admission",
   "owner_skill": "raid-role-implementation",
-  "classification": "implemented_review_pending",
+  "classification": "implementation_approved_native_pending",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "05f5c2f959b4ee57be8de6021eb5df6fba7cf87c",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Affliction guardian implementation tested; independent review pending",
+  "gate_state": "Affliction guardian reviewed; native validation pending",
   "first_broken_edge": {
     "id": "affliction_doomguard_missing_action_and_known_spell",
     "owner_classification": "raid_role_implementation",
     "cause": "Source05f actor30008 lacks18540 profile action and admitted known spell; native self-summon needs matching provisioning and action semantics.",
-    "review_state": "implementation_tested_review_pending",
+    "review_state": "implementation_independently_approved",
     "ledger_id": "DPS-049"
   },
   "source_handoff": {
@@ -45,8 +45,8 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
-  "ready_for_live_verification": false,
+  "ready_for_build": true,
+  "ready_for_live_verification": true,
   "next_action": "Implement DPS-049, independently review, regenerate exact affected provisioning assets, build once and validate native summon/damage with the whole roster reviewed. Continue remaining actor rows afterward.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
@@ -98,9 +98,10 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "pending",
+    "verdict": "approved_bounded_implementation",
     "live_verified": false,
-    "next_work_unit_implemented": true
+    "next_work_unit_implemented": true,
+    "artifact_sha256": "ff55b323256b83a7719cc521a5a5a30875f50ad7410d10b387d40c59bc184c66"
   },
   "related_edges": [
     {
