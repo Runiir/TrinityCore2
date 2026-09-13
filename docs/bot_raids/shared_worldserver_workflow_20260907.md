@@ -6,62 +6,67 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The latest native source `2af61a1cef` cleared Magmaw in 131.609 seconds at
-214,218.807 exact raid DPS and 11,647.995 effective HPS, using the same sole
-Blood DK, three healers and six DPS. The full route took 399.535 seconds;
-two trash deaths recovered, and cleanup passed. Balance measured 29,498 DPS
-versus 17,670 on433. Native phase/cast review and publication are pending.
-This is an incomplete DPS-042 implementation, not full repair acceptance.
+The latest native source `26c536140a` cleared Magmaw with the same sole Blood
+DK, three healers and six DPS. Native death, complete capture, post-run build
+verification and cleanup passed. All ten survived the boss. One Fire Mage died
+on Drudges, reached the entrance after 44.785 seconds and returned to prepull
+after 67.892 seconds. The full route took 369.108 seconds.
 
-Independent follow-up found that pre-rejected range candidates still returned
-a five-yard movement envelope even when their native/configured minimum was
-larger. The correction propagates the same effective minimum into movement.
-The actual producer, rejected-candidate handler and movement adapter now have
-a compiled regression:2af fails the eight-yard envelope assertion; all16
-focused tests pass after correction. Sol approved the correction for build and
-one native validation. The runtime skill now requires testing that handoff.
+| Native source | Boss seconds | Exact raid DPS | Effective HPS |
+| --- | ---: | ---: | ---: |
+| ff226ad52b | 132.828 | 212,252.861 | 11,764.605 |
+| 4337116eeb | 138.556 | 203,478.182 | 14,563.664 |
+| 2af61a1cef | 131.609 | 214,218.807 | 11,647.995 |
+| 26c536140a | 133.998 | 210,399.581 | 10,868.625 |
 
-The preceding native source `4337116eeb` uses one Blood DK tank, three healers
-and six DPS, including Balance Druid. It cleared Magmaw in 138.556 seconds
-at 203,478.182 exact raid DPS and 14,563.664 effective HPS. All ten survived
-the complete route, which took 348.774 seconds. Cleanup passed. The preceding
-`ff226ad52b` clear remains the best matched one-tank result: 132.828 seconds,
-212,252.861 DPS, 11,764.605 HPS and 414.771 seconds for the full route, including
-seven recovered trash deaths. Both runs dealt 28,193,123 originated hostile
-damage. The latest 4.13% boss DPS decline is not performance acceptance.
-Evidence: `artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc`.
+All four runs have 28,193,123 originated hostile damage. The latest DPS is
+0.873% below ff226 and 3.402% above433; individual class results remain mixed.
+These are matched-composition development runs, not exact WCL/WoWSims parity
+or proof that every class is optimized.
 
-DPS-041 is independently reviewed and natively accepted. Ordinary add setup
-Marks fell from 13 to zero; six Marks passed through normal ranking instead.
-Boss/head setup marking remained, and Multi-Shot finished and landed. Hunter
-DPS nevertheless fell from 35,127 to 33,245; a direct-attack gap and later LOS
-failures remain unresolved. Do not attribute every DPS change to this patch.
+DPS-042 is accepted as a shared range repair. Native/configured minimums now
+agree across candidate admission, both combat consumers and rejected-candidate
+movement recovery. Sixteen focused tests passed independently. The first patch
+missed the rejection-to-movement handler; its deterministic eight-yard case
+fails on2af and passes on26. Native Hunter receipt307 starts11.163yd from the
+body, selects an outward25.323yd endpoint, reconciles the minimum and resumes
+Auto Shot/Steady Shot with landed damage. Native terrain/pathing is unchanged.
+Balance's exact former post-exit4.650yd position did not recur. Two nearer
+pincer attempts reached native execution but returned176; that is policy-level
+coverage, not successful under-five-yard native casting. No unchanged range
+retry is requested. Balance measured25,641DPS versus17,670 on433 and29,498 on2af.
 
-DPS-042 is the next bounded runtime repair. Balance DPS fell from 27,512 to
-17,670. After pincer duty, native motion left it 4.650 yards from the target.
-Five core spells were rejected as `ranged_range_required`, while movement
-correctly reported the configured zero-yard minimum satisfied. Native DBC
-ranges for those spells permit zero yards; Hunter ranged spells instead retain
-a native deadzone. The reviewed patch removes the contradictory artificial five-yard admission
-rule through the real producer and both consumers, preserving native/configured
-minimums. Fifteen focused tests passed independently; native build and canary
-are next. Compare native casts and head-phase activity before acceptance.
-Earlier Eclipse carryover remains unobserved and is not a coefficient diagnosis.
+DPS-043 is the next bounded runtime repair. Hunter selected Multi-Shot twice
+at+44.55/+44.65s on parasite189 with observed LOS false; none landed in26.
+Fixed baiter selection bypasses the existing actor-filtered opportunities and
+binds raw NearestParasite. The existing fixture even expects the blocked
+nearest215 instead of legal216. Repair damage selection while preserving
+bait/threat assignment and escape ownership. Exact-tick alternate legality is
+not observed; these two failures do not explain the full Hunter DPS gap. Mage30006 landed Blast Wave, Flamestrike and Blizzard;
+Mage30007 used Blizzard. No superior eligible Mage action bypass is proven.
+Balance Starfall/Force of Nature absence is a separate lead.
 
-MOV-001 remains accepted. It prevents inward escape toward a distant parasite,
-keeps pursuit armed after arrival, and rearms outward native movement when
-needed. The ff226 trace proves outward movement from 15.970 yards to a 20-yard
-endpoint and same-episode rearm. Neither ff226 nor 433 has incoming Infection
-78941 events. A later path-control rejection remains a separate limitation.
-Evidence: `artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`.
+DPS-041 remains accepted: ordinary add setup Marks are zero, seven Marks use
+normal ranking, and body/head setup remains. MOV-001 retains its earlier
+native acceptance onff226; the latest run has zero Infection78941, but does
+not independently exercise the personal-threat task. Its contact-evade and
+range-movement records must not be confused with that earlier task proof.
 
-OBS-011 joins existing native effective/combat stat snapshots into the timeline
-at their actual observation times. Thirty-nine focused tests passed. Replaying
-433 retained 700 stat observations without changing damage, actor totals,
-scoring interval or phases. Analysis source `06781c5732` is distinct from the
-native 433 source. Prior raw snapshots show temporary proc differences, not a
-proven permanent post-recovery stat loss. Mage spread arbitration and target
-lifetime remain leads; no blanket Pyroblast ban or guessed tuning is accepted.
+OBS-011 joins existing native effective/combat stats into the timeline at their
+actual observation times. Thirty-nine focused tests passed. The433 replay
+retained700 snapshots with unchanged damage, actor totals, scoring window and
+phases. Analysis source067 is distinct from native433. Earlier raw snapshots
+show temporary proc differences, not a proven permanent post-recovery stat loss.
+
+Evidence pointers:
+`artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`,
+`artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc`,
+`artifacts/cata_raid_program/magmaw_native_range_2af61a1cef_20260913.tar.gz.dvc`,
+and the verified26 publication
+`artifacts/cata_raid_program/magmaw_range_recovery_26c536140a_20260913.tar.gz.dvc`.
+All four remote archives were reconstructed and hash-verified; exact large
+local payloads and duplicate archive/cache copies were evicted. The compact
+all-bot review is `dps_review.json` inside each closed run.
 
 The one-tank composition was first accepted on `89cef294b6`, replacing only
 the Prot Paladin slot with the catalog Balance loadout. All other nine actors

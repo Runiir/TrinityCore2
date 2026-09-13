@@ -80,6 +80,10 @@ rejected-candidate handling and resulting movement together; returning the
 expected rejection string alone misses liveness failures. Range classification
 does not imply a five-yard floor: use native range flags, combat reach and
 configured minimums consistently in admission and recovery.
+Keep persistent duty/threat assignment separate from the current damage target.
+A mandatory duty does not make an illegal offensive target usable. Test legal
+alternates and no-legal-target behavior while preserving the duty and its
+movement owner; an old fixture expectation is not strategy authority.
 
 Treat decision complexity as a runtime risk, not as a diagnosis by itself. The
 2026-08-28 native bot audit found a heavy tail: 45 functions above CCN 100 and
