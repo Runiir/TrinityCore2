@@ -6,24 +6,38 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-Latest source `8146a06b40` completed the Survival swap and cleared Magmaw in
-137.163s at205,544.666 exact raid DPS and12,335.433 effective HPS. Capture,
-native death, post-run build verification and cleanup passed. Performance is
-not accepted: Survival30009 did14,603.545DPS versus31,512.590 for MM on ee0504.
-Affliction and Fire30007 improved, partly masking that loss. This spec change
-is not a controlled coefficient comparison.
+Latest source `69903f785e` cleared Magmaw in148.635s with all ten alive,
+at191,627.988 exact raid DPS and12,954.445 HPS. Native death, capture, build
+verification and cleanup passed. DPS-046 is accepted end to end: Survival rose
+from14,603.545 to37,019.760DPS; its head core shots and Cobra land, and the former
+head range/enemy-count rejections are absent. The native updater and row/hash
+readback passed before this run. The same Survival roster was used on8146.
 
-DPS-046 is the next bounded repair. At+110s Survival is stationary with clear
-LOS to the live head at38.4835yd, but its35yd profile caps reject Cobra and
-Serpent Sting. Explosive Shot and Black Arrow also fail enemy-count ceilings.
-Read-only native rows and pinned Spell/SpellRange data confirm40yd shot ranges
-and45yd Kill Shot. A Survival-only shot-range/core-single-target admission
-migration passed eight focused tests and independent review; native range authority and all other profiles
-remain unchanged. Separate trap13813/native-range failures remain open.
-The83,391,167-byte archive and every member were verified by fresh-cache
-remote reconstruction. Exact raw/full timeline and duplicate archives/cache
-were evicted; HTML, summary and the frozen all-bot review remain local.
-Pointer: `artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz.dvc`.
+Overall performance and safety are not accepted. Both Mages and Affliction
+lose head-phase casting during parasite-contact evasion; Affliction ends its
+escape58.71yd from the head and remains range-blocked. Six Infection78941 hits
+land on three actors, with no deaths. This does not prove a coefficient change
+or that the Hunter SQL caused every loss. The old complete Fire headhide/body
+outage did not recur: both Mages cast on the live body after this head window.
+
+DPS-047 is next: the remaining enemy-target AoE Explosive Trap13813 is a native
+self-placed range-zero spell. On699 it makes ten failed attempts and no damage.
+At+50.483 it triggers an inward combat-range path; Hunter reaches parasite-contact
+distance at+53.118 and takes Infection damage at+55.490. This proves invalid
+trap-to-range reconciliation, not causality for every Infection. Disable only
+that ranged AoE trap row; preserve Multi-Shot, the accepted shot/ST repair,
+the separate calibration-opener row, and native movement/encounter behavior.
+The implementation and ten combined regression tests passed independent review.
+The89,482,818-byte699 archive and every member were remotely reconstructed and
+verified; exact raw/full timeline and duplicate archive/cache payloads were
+evicted. HTML, summary and frozen all-bot/Fire/Affliction reviews remain local.
+Pointer: `artifacts/cata_raid_program/magmaw_survival_admission_69903f785e_20260913.tar.gz.dvc`.
+
+Earlier8146 Survival canary: clear137.163s,205,544.666DPS; native setup/duties
+passed but shot admission and performance failed. Its83,391,167-byte archive
+was remotely reconstructed and every member verified; exact raw/full timeline
+and duplicate payloads were evicted. Pointer:
+`artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz.dvc`.
 
 The earlier source `ee0504cc0c` cleared Magmaw with the same sole Blood
 DK, three healers and six DPS in132.205 seconds. Native death, complete capture,
@@ -40,8 +54,10 @@ Independent review accepts the bounded DPS-043 targeting repair.
 | 26c536140a | 133.998 | 210,399.581 | 10,868.625 |
 | ee0504cc0c | 132.205 | 213,253.077 | 10,279.195 |
 | 8146a06b40 (Survival) | 137.163 | 205,544.666 | 12,335.433 |
+| 69903f785e (Survival) | 148.635 | 191,627.988 | 12,954.445 |
 
-These six runs have28,193,123 originated hostile damage. The first five share
+The first six runs have28,193,123 originated hostile damage;699 has28,482,626,
+including289,503 more add damage. The first five share
 the MM composition; ee0504 is1.356% above26 and0.471% aboveff226. The Survival
 run is3.615% belowee0504 and changes spec/setup. These development comparisons
 are not exact WCL/WoWSims parity or proof that every class is optimized.

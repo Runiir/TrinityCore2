@@ -19,8 +19,10 @@ gear manifest and inventory readback must agree with the selected profile,
 including enchants, gems and reforges. A correct profile label is insufficient.
 
 When changing a spec, inspect its loaded action rows as well as its setup.
-Compare configured shot/spell ranges with native ranges and the route's observed
-cast distances; inspect core single-target enemy-count ceilings where adds or
+Compare configured shot/spell ranges and targeting kinds with native semantics
+and the route's observed cast distances. A self-placed spell does not become a
+ranged attack because its profile says enemy/35yd. Inspect core single-target
+enemy-count ceilings where adds or
 multiple boss units exist. A matching simulator loadout does not prove those
 policy gates are usable. Preserve mechanic-duty selectors through the swap,
 and route proven policy defects separately from roster provisioning.

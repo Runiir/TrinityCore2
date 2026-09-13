@@ -156,3 +156,29 @@ contract. Elemental's lower Earth Shock count is plausibly downstream of absent
 Chain Lightning charge generation; no independent Elemental gate or coefficient
 defect is proven. Its Fire Elemental, Spiritwalker's Grace and head Bloodlust
 are present.
+
+
+## Survival native validation and newly localized caster losses
+
+Source8146 replaced MM with the exact promoted Survival setup but exposed a
+35yd profile cap and core-single-target enemy-count ceiling. Survival did only
+14,603.545DPS and stopped offense during the head window. Source699 repairs
+those gates within native40/45yd shot limits: Survival reaches37,019.760DPS,
+lands Cobra and core shots on head, and has no former head range/count rejection.
+These are native end-to-end outcomes, not a WoWSims-equivalent DPS score.
+
+Raid DPS nevertheless falls205,544.666→191,627.988 and six Infection damage
+hits land on three actors. The Fire losses concentrate on head:30006 landed
+Fireballs15→5 and30007 thirteen→eight. Contact-evasion movement is recorded
+through that damage window. Affliction's head escape moves it13.27→58.71yd
+away; movement gates become range gates after stopping, with no owner damage
+cast after+115.310 until the head closes. Offensive stats/procs are present.
+This establishes casting-opportunity loss before any coefficient diagnosis.
+It does not establish that the Hunter SQL caused all new contact or movement.
+
+The next bounded correction is the unsupported enemy-target AoE ExplosiveTrap
+row. Its native spell is self-placed/range0. At+50.483 its failure requests an
+inward combat-range path; later Hunter contact and Infection are recorded.
+Disabling that invalid action preserves MultiShot and the accepted shot gates.
+The following run must measure actual movement, Infection and all-bot output;
+removing the row alone is not a claim of overall safety or performance recovery.
