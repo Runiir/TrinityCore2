@@ -11,6 +11,7 @@ enum class NativePrimaryEndpointAdmission
     Native,
     ConnectedSurface,
     BoundedLocalMechanic,
+    HazardEscapeProgress,
 };
 
 // A request-level height query can select unrelated geometry on a multi-level
@@ -39,7 +40,7 @@ inline bool NativePathProvesConnectedSurfaceDespiteHeightConflict(
 inline NativePrimaryEndpointAdmission ClassifyNativePrimaryEndpointAdmission(
     NativePathProofObservation const& proof, bool requestHeightConflict,
     bool forbiddenNativePath, bool connectedPolyCorridor,
-    bool boundedLocalMechanicEndpoint)
+    bool boundedLocalMechanicEndpoint, bool qualifiedHazardEscape = false)
 {
     if (forbiddenNativePath || !proof.Available || !proof.Calculated
         || !proof.Complete
@@ -54,6 +55,8 @@ inline NativePrimaryEndpointAdmission ClassifyNativePrimaryEndpointAdmission(
         return NativePrimaryEndpointAdmission::ConnectedSurface;
     if (boundedLocalMechanicEndpoint)
         return NativePrimaryEndpointAdmission::BoundedLocalMechanic;
+    if (qualifiedHazardEscape)
+        return NativePrimaryEndpointAdmission::HazardEscapeProgress;
     return NativePrimaryEndpointAdmission::Rejected;
 }
 }

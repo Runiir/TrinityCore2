@@ -59,7 +59,7 @@ inline HazardEscapeProgressObservation ObserveHazardEscapeProgress(
     return observation;
 }
 
-// This is a value-only proof for a future planner admission. It deliberately
+// This is the value-only proof consumed by primary endpoint admission. It
 // does not compare the endpoint with an arbitrary declared point: a projected
 // end-polygon result is useful only when it is a complete, same-surface native
 // route and measurably increases clearance from the exact bound hazard.

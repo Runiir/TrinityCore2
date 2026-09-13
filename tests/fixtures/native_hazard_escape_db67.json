@@ -1,0 +1,365 @@
+{
+  "ledger_id": "MOV-001",
+  "source_commit": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
+  "identity": {
+    "attempt_id": 1,
+    "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+    "cohort_id": "default",
+    "combat_log_epoch": 1,
+    "profile_content_hash": "879A9139C6E0E3B223F54C2FF2D96D5AD53ADC94347873E7A62EDE2FA3B4135B",
+    "profile_generation": 1,
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "server_epoch": 9244181845030057,
+    "source": {
+      "raw_sha256": "cbffa45083584a3a8641d12fe446994d5a98da817f8afbe56e45661ea8898d44",
+      "report_sha256": null,
+      "report_source": {
+        "accepted_boss_identity": {
+          "route_generation": 4,
+          "route_node_id": "bwd.magmaw.encounter",
+          "target_entry": 41570
+        },
+        "binary_sha256": "a75c70c7bc39b350ef346ae487b326afcfae935ff0e3d4760251d785d4a692b2",
+        "capture_id": "cata_raid_phase1_blackwing_descent_10n_magmaw_diagnostic_v1",
+        "config_sha256": "2bdecc95e1c4be1b62618c30dd65d66234edcf398a336e2dd328614031c2e3b8",
+        "raw_normalized_batch": {
+          "row_count": 1428,
+          "sha256": "cbffa45083584a3a8641d12fe446994d5a98da817f8afbe56e45661ea8898d44"
+        },
+        "runtime_identity": {
+          "attempt_id": 1,
+          "expected_difficulty": 0,
+          "expected_size": 10,
+          "group_guid": 2256303413312618497,
+          "instance_id": 2,
+          "map_id": 669,
+          "profile_content_hash": "879A9139C6E0E3B223F54C2FF2D96D5AD53ADC94347873E7A62EDE2FA3B4135B",
+          "profile_generation": 1,
+          "server_epoch": 9244181845030057,
+          "strategy_id": "tank_swap_adds_raid_aoe",
+          "wipe_generation": 0
+        },
+        "runtime_profile": "blackwing_descent_10n_magmaw_diagnostic",
+        "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+        "schema_version": 1,
+        "source_identity": {
+          "clean": true,
+          "dirty": false,
+          "head": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
+          "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tree": "929f4cc71a07a6315947cb578c0655c9eb3fbf08"
+        },
+        "started_at_utc": "2026-09-13T15:16:55Z"
+      },
+      "report_source_sha256": "57923528d62a82dce7b7ac2fd27f817f14aa42f6121c18ebd76b0fb6fcdb1ec8"
+    }
+  },
+  "window": {
+    "basis": "native_trace_boss_death",
+    "complete": true,
+    "elapsed_seconds": 132.852,
+    "first_hostile_at_ms": 1789312822576,
+    "native_boss_death_at_ms": 1789312955428
+  },
+  "source_path": "magmaw-development-db67e88cc8/report.timeline.json",
+  "receipts": [
+    {
+      "at_ms": 1789312915493,
+      "receipt_id": 377,
+      "identity": {
+        "bot_guid": 30010,
+        "diagnostic_candidate_key": "default:1:0:4:bwd.magmaw.encounter:669:2:tank_swap_adds_raid_aoe:adaptive_magmaw:parasite_contact_evade:GUID Full: 0x000000000000753a Type: Player Low: 30010:7",
+        "diagnostic_target_guid": 0,
+        "dynamic_target_guid": 0,
+        "intent_fingerprint": "d3112f0d04560b1b",
+        "intent_reason": "parasite_contact_evade",
+        "map": 669,
+        "owner": "hazard",
+        "progress_capture_enabled": true,
+        "scope": {
+          "attempt_id": 1,
+          "instance": 2,
+          "map": 669,
+          "route_generation": 4,
+          "wipe_generation": 0
+        }
+      },
+      "actor": {
+        "available": true,
+        "coordinate_space": "world",
+        "x": -309.385803,
+        "y": -37.5137177,
+        "z": 211.628815
+      },
+      "request": {
+        "map": 669,
+        "x": -308.822937,
+        "y": -29.4927139,
+        "z": 211.628815
+      },
+      "target_floor": {
+        "sampled": true,
+        "valid": true,
+        "z": 209.992752
+      },
+      "native_proof": {
+        "accepted": false,
+        "available": true,
+        "calculated": true,
+        "complete": true,
+        "endpoint": {
+          "distance": 1.62512088,
+          "floor_valid": true,
+          "horizontal_distance": 0.0507376827,
+          "horizontal_tolerance": 0.5,
+          "matched": false,
+          "vertical_distance": 1.62432861,
+          "vertical_tolerance": 1.5,
+          "x": -308.868317,
+          "y": -29.4700203,
+          "z": 210.004486
+        },
+        "endpoint_resolution": {
+          "actual_horizontal_distance": 0,
+          "actual_matched": true,
+          "actual_vertical_distance": 0.172668457,
+          "corridor_reached_end_poly": true,
+          "outcome": "reached_projected_end_poly",
+          "resolved": {
+            "available": true,
+            "x": -308.868317,
+            "y": -29.4700203,
+            "z": 210.177155
+          }
+        },
+        "floor_observation": {
+          "failure": "none",
+          "reference_z": 0,
+          "resolved_floor_z": 0,
+          "sample_index": 0,
+          "segment_index": 0,
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "floor_observation_conflict": false,
+        "path_type": 1
+      },
+      "hazard_escape_progress": {
+        "actor_clearance": 11.9592705,
+        "actor_hazard_same_level": true,
+        "actor_z": 211.628815,
+        "basis_available": true,
+        "basis_progress_guid_match": true,
+        "clearance_progress": 8.06024551,
+        "endpoint_basis": "primary_native_actual_endpoint",
+        "endpoint_clearance": 20.019516,
+        "hazard": {
+          "x": -310.222992,
+          "y": -49.4436493,
+          "z": 212.140686
+        },
+        "hazard_guid": 17379570517425520848,
+        "primary_resolved_endpoint": {
+          "x": -308.868317,
+          "y": -29.4700203,
+          "z": 210.004486
+        },
+        "progress_available": true,
+        "progress_hazard_guid": 17379570517425520848,
+        "proof_qualified": true,
+        "required_progress": 1
+      },
+      "controls": {
+        "available": true,
+        "capacity": 32,
+        "complete": true,
+        "coordinate_space": "world",
+        "count": 5,
+        "fingerprint": "eb08ea1ca5b48072",
+        "ordered_controls": [
+          {
+            "x": -309.385803,
+            "y": -37.5137177,
+            "z": 211.628815
+          },
+          {
+            "x": -310.615662,
+            "y": -33.7074814,
+            "z": 210.689911
+          },
+          {
+            "x": -313.352081,
+            "y": -30.7899475,
+            "z": 211.322144
+          },
+          {
+            "x": -309.514893,
+            "y": -29.6603546,
+            "z": 210.187653
+          },
+          {
+            "x": -308.868317,
+            "y": -29.4700203,
+            "z": 210.004486
+          }
+        ],
+        "retained_count": 5,
+        "truncated": false
+      },
+      "result": "rejected",
+      "reason": "route_destination_endpoint_mismatch",
+      "launches": [],
+      "local_fallback_attempted": false
+    },
+    {
+      "at_ms": 1789312915593,
+      "receipt_id": 378,
+      "identity": {
+        "bot_guid": 30010,
+        "diagnostic_candidate_key": "default:1:0:4:bwd.magmaw.encounter:669:2:tank_swap_adds_raid_aoe:adaptive_magmaw:parasite_contact_evade:GUID Full: 0x000000000000753a Type: Player Low: 30010:8",
+        "diagnostic_target_guid": 0,
+        "dynamic_target_guid": 0,
+        "intent_fingerprint": "a62498d24a7deff9",
+        "intent_reason": "parasite_contact_evade",
+        "map": 669,
+        "owner": "hazard",
+        "progress_capture_enabled": true,
+        "scope": {
+          "attempt_id": 1,
+          "instance": 2,
+          "map": 669,
+          "route_generation": 4,
+          "wipe_generation": 0
+        }
+      },
+      "actor": {
+        "available": true,
+        "coordinate_space": "world",
+        "x": -309.385803,
+        "y": -37.5137177,
+        "z": 211.628815
+      },
+      "request": {
+        "map": 669,
+        "x": -308.793945,
+        "y": -29.2424774,
+        "z": 211.628815
+      },
+      "target_floor": {
+        "sampled": true,
+        "valid": true,
+        "z": 209.97493
+      },
+      "native_proof": {
+        "accepted": false,
+        "available": true,
+        "calculated": true,
+        "complete": true,
+        "endpoint": {
+          "distance": 1.6412164,
+          "floor_valid": true,
+          "horizontal_distance": 0.0619953498,
+          "horizontal_tolerance": 0.5,
+          "matched": false,
+          "vertical_distance": 1.64004517,
+          "vertical_tolerance": 1.5,
+          "x": -308.842133,
+          "y": -29.2814827,
+          "z": 209.98877
+        },
+        "endpoint_resolution": {
+          "actual_horizontal_distance": 0,
+          "actual_matched": true,
+          "actual_vertical_distance": 0.175521851,
+          "corridor_reached_end_poly": true,
+          "outcome": "reached_projected_end_poly",
+          "resolved": {
+            "available": true,
+            "x": -308.842133,
+            "y": -29.2814827,
+            "z": 210.164291
+          }
+        },
+        "floor_observation": {
+          "failure": "none",
+          "reference_z": 0,
+          "resolved_floor_z": 0,
+          "sample_index": 0,
+          "segment_index": 0,
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "floor_observation_conflict": false,
+        "path_type": 1
+      },
+      "hazard_escape_progress": {
+        "actor_clearance": 11.7076111,
+        "actor_hazard_same_level": true,
+        "actor_z": 211.628815,
+        "basis_available": true,
+        "basis_progress_guid_match": true,
+        "clearance_progress": 8.25009537,
+        "endpoint_basis": "primary_native_actual_endpoint",
+        "endpoint_clearance": 19.9577065,
+        "hazard": {
+          "x": -310.221405,
+          "y": -49.1914711,
+          "z": 212.128128
+        },
+        "hazard_guid": 17379570517425520848,
+        "primary_resolved_endpoint": {
+          "x": -308.842133,
+          "y": -29.2814827,
+          "z": 209.98877
+        },
+        "progress_available": true,
+        "progress_hazard_guid": 17379570517425520848,
+        "proof_qualified": true,
+        "required_progress": 1
+      },
+      "controls": {
+        "available": true,
+        "capacity": 32,
+        "complete": true,
+        "coordinate_space": "world",
+        "count": 5,
+        "fingerprint": "3531124f3b58eb04",
+        "ordered_controls": [
+          {
+            "x": -309.385803,
+            "y": -37.5137177,
+            "z": 211.628815
+          },
+          {
+            "x": -310.615662,
+            "y": -33.7074814,
+            "z": 210.689911
+          },
+          {
+            "x": -313.352081,
+            "y": -30.7899475,
+            "z": 211.322144
+          },
+          {
+            "x": -309.558655,
+            "y": -29.5211391,
+            "z": 210.193176
+          },
+          {
+            "x": -308.842133,
+            "y": -29.2814827,
+            "z": 209.98877
+          }
+        ],
+        "retained_count": 5,
+        "truncated": false
+      },
+      "result": "rejected",
+      "reason": "route_destination_endpoint_mismatch",
+      "launches": [],
+      "local_fallback_attempted": false
+    }
+  ]
+}

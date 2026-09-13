@@ -361,7 +361,8 @@ bool BotWorldPopulationMgr::PlanMovementPath(
                     || targetZTransitionRequiresNativeProof,
                 BotWorldMovement::NativePathHasForbiddenAdmissionFlag(
                     pathType),
-                connectedPolyCorridor, boundedLocalMechanicEndpoint);
+                connectedPolyCorridor, boundedLocalMechanicEndpoint,
+                plan.HazardEscapeProgress.ProofQualified);
         if (admission
             != BotWorldMovement::NativePrimaryEndpointAdmission::Rejected)
         {
@@ -374,6 +375,9 @@ bool BotWorldPopulationMgr::PlanMovementPath(
             else if (admission == BotWorldMovement::
                     NativePrimaryEndpointAdmission::BoundedLocalMechanic)
                 traversalMode = "native_bounded_same_level_mechanic_endpoint";
+            else if (admission == BotWorldMovement::
+                    NativePrimaryEndpointAdmission::HazardEscapeProgress)
+                traversalMode = "native_same_surface_hazard_escape";
             segmentSelected = true;
         }
     }

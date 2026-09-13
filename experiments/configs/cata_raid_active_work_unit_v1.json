@@ -8,12 +8,12 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Doomguard accepted; safety failure requires native admission repair",
+  "gate_state": "Native escape admission independently reviewed; build/live pending",
   "first_broken_edge": {
     "id": "qualified_native_hazard_proof_not_consumed",
     "owner_classification": "shared_native_movement_admission",
     "cause": "Receipts377/378 qualify complete projected native escape but planner rejects requested Z; no submission precedes Infection.",
-    "review_state": "causally_proven_implementation_in_progress",
+    "review_state": "approved_for_build_and_bounded_canary",
     "ledger_id": "MOV-001"
   },
   "source_handoff": {
@@ -45,9 +45,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Finish bounded native hazard admission implementation and independent review, build once and run completion watchdog. Review every actor and continue queued class repairs.",
+  "next_action": "Build reviewed native hazard admission once and run the completion-watchdog canary; verify actual escape progress and review every actor.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -96,9 +96,12 @@
     "independent_review_sha256": "346781d2bba8c8fb7f53a73ce13587171c9760dafbfc6ea0f6e4990f071001f4"
   },
   "implementation_review": {
-    "verdict": "MOV-001_implementation_in_progress",
+    "verdict": "approved_for_build_and_canary",
+    "review_sha256": "0ad56e9965aec9994e229e897fb516f701702eb7a9c16064b822c471bf4c738c",
+    "focused_tests_passed": 31,
+    "historical_actual_caller_rejection_reproduced": true,
     "live_verified": false,
-    "next_work_unit_implemented": false
+    "next_work_unit_implemented": true
   },
   "related_edges": [
     {
