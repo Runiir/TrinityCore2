@@ -3,6 +3,7 @@
 from pathlib import Path
 import sqlite3
 import subprocess
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,7 +118,8 @@ def test_missing_affliction_profile_does_not_create_or_retarget_a_row() -> None:
     ).fetchone() == (2,)
 
 
-def test_native_item_lifecycle_health_ranking_and_reservation(tmp_path: Path) -> None:
+@pytest.mark.parametrize("potion_spell,item_id", [(79476, 58091), (79633, 58145)])
+def test_native_item_lifecycle_health_ranking_and_reservation(tmp_path: Path, potion_spell, item_id) -> None:
     candidates = (
         ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
     ).read_text(encoding="utf-8")
@@ -338,6 +340,59 @@ NATIVE_COMPARATOR
         .replace("RESERVATION", reservation)
         .replace("NATIVE_COMPARATOR", comparator)
     )
+    executor = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
+    item_submission = _between(executor, '    if (action.Type == "use_item")',
+                               '    // Auto Shot/pet startup above')
+    program = program.replace('#include <string_view>', '#include <string_view>\n#include <string>')
+    program = program.replace('struct Spell {', r"""
+struct Player;
+struct SpellCastTargets {};
+using SpellCastResult=int;
+constexpr int SPELL_CAST_OK=0, TRIGGERED_NONE=0, UNIT_STATE_CASTING=1;
+struct Spell {""")
+    program = program.replace('    bool IgnoreCooldowns = false;', r"""
+    Item* m_CastItem=nullptr;
+    inline static Item* SubmittedItem=nullptr;
+    inline static int NativeResult=1;
+    Spell(SpellInfo const* info):m_spellInfo(info){}
+    Spell(Player*,SpellInfo const* info,int):m_spellInfo(info){}
+    int prepare(SpellCastTargets const&) {SubmittedItem=m_CastItem;return NativeResult;}
+    bool IgnoreCooldowns = false;""")
+    program = program.replace('    uint32 CooldownEvents = 0;', r"""
+    bool Ready=true, Global=false;
+    bool IsReady(SpellInfo const*)const{return Ready;}
+    bool HasGlobalCooldown(SpellInfo const*)const{return Global;}
+    uint32 CooldownEvents = 0;""")
+    program = program.replace('    bool InCombat = false;', r"""
+    bool Casting=false;
+    bool HasUnitState(int)const{return Casting;}
+    unsigned GetGUID()const{return 30009;}
+    bool InCombat = false;""")
+    shim = r"""
+enum class BotActionResult {NoAction,Casting,GlobalCooldown,Cooldown,Throttled,CastFailed,Ok};
+struct Action {std::string Type="use_item";uint32 SpellId=79476,TargetGuid=0;};
+uint32 _lastSpellCastResult=0;
+bool IsThrottled(uint32,uint32,uint32){return false;}
+void RecordFailure(uint32,uint32,uint32){}
+void RecordSuccess(uint32){}
+BotActionResult Submit(Player* bot,Action action) {
+""" + item_submission + '    return BotActionResult::NoAction;\n}\n'
+    program = program.replace('int main() {', shim+'\nint main() {', 1)
+    program = program.replace('    BotActionProfileSpell potionProfile;', r"""
+    // Execute the actual production item branch with native prepare returning
+    // failure: the real selected inventory item is attached, and failure survives.
+    player.History.Ready=true; Spell::NativeResult=1;
+    assert(Submit(&player,Action{})==BotActionResult::CastFailed);
+    assert(Spell::SubmittedItem==&potion && _lastSpellCastResult==1);
+    player.History.Ready=false;assert(Submit(&player,Action{})==BotActionResult::Cooldown);
+    player.History.Ready=true;player.History.Global=true;
+    assert(Submit(&player,Action{})==BotActionResult::GlobalCooldown);
+    player.History.Global=false;player.Casting=true;
+    assert(Submit(&player,Action{})==BotActionResult::Casting);player.Casting=false;
+    player.Inventory[0]=nullptr;assert(Submit(&player,Action{})==BotActionResult::NoAction);
+    player.Inventory[0]=&potion;
+    BotActionProfileSpell potionProfile;""")
+    program = program.replace("79476", str(potion_spell)).replace("58091", str(item_id))
     source = tmp_path / "affliction_potion.cpp"
     binary = tmp_path / "affliction_potion"
     source.write_text(program, encoding="utf-8")
@@ -347,7 +402,8 @@ NATIVE_COMPARATOR
     subprocess.run([str(binary)], check=True)
 
 
-def test_raid_potion_health_owner_actual_callers_and_gate(tmp_path):
+@pytest.mark.parametrize("execute_percent", [25, 20])
+def test_raid_potion_health_owner_actual_callers_and_gate(tmp_path, execute_percent):
     bots = ROOT / "src/server/game/Bots"
     header = (bots / "BotClassSpecActionProfile.h").read_text()
     health = _between(header, "inline bool ValidHostileTargetHealthRange", "struct BotActionCandidate")
@@ -466,6 +522,8 @@ int main() {
                         "CALLER0": callers[0], "CALLER1": callers[1],
                         "DOWNSTREAM0": downstream[0], "DOWNSTREAM1": downstream[1]}.items():
         program = program.replace(name, value)
+    if execute_percent == 20:
+        program = program.replace(".25f", ".20f").replace("boss.Health=25", "boss.Health=20").replace("boss.Health=26", "boss.Health=21")
     source = tmp_path / "raid_potion_owner.cpp"
     source.write_text(program)
     binary = tmp_path / "raid_potion_owner"

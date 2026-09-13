@@ -253,6 +253,13 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
 {
     if (!bot)
         return "missing_bot";
+    if (HasMechanicTag(spell.MechanicTags, "combustion_ready"))
+    {
+        SpellInfo const* combustion = sSpellMgr->GetSpellInfo(11129);
+        if (!bot->HasSpell(11129) || !combustion
+            || !bot->GetSpellHistory()->IsReady(combustion))
+            return "combustion_not_ready";
+    }
     Aura const* selfAura = spell.RequiredSelfAura ? bot->GetAura(spell.RequiredSelfAura) : nullptr;
     if (spell.RequiredSelfAura && !selfAura)
         return "missing_required_self_aura";
