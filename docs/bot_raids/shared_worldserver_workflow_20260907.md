@@ -27,9 +27,10 @@ DPS-042 is the next bounded runtime repair. Balance DPS fell from 27,512 to
 Five core spells were rejected as `ranged_range_required`, while movement
 correctly reported the configured zero-yard minimum satisfied. Native DBC
 ranges for those spells permit zero yards; Hunter ranged spells instead retain
-a native deadzone. Remove the contradictory artificial five-yard admission
-rule through the real producer and consumers, preserving native/configured
-minimums. Compare native casts and head-phase activity after independent review.
+a native deadzone. The reviewed patch removes the contradictory artificial five-yard admission
+rule through the real producer and both consumers, preserving native/configured
+minimums. Fifteen focused tests passed independently; native build and canary
+are next. Compare native casts and head-phase activity before acceptance.
 Earlier Eclipse carryover remains unobserved and is not a coefficient diagnosis.
 
 MOV-001 remains accepted. It prevents inward escape toward a distant parasite,

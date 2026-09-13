@@ -1,3 +1,4 @@
+#include "Bots/BotSpellMinimumRange.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Cryptography/CryptoHash.h"
@@ -603,7 +604,9 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             candidate.RejectReason = "target_not_on_bot";
         else if (spell.RequiresMeleeRange && actionTarget && !bot->IsWithinMeleeRange(actionTarget))
             candidate.RejectReason = "melee_range_required";
-        else if (spell.RequiresRangedRange && actionTarget && bot->GetExactDist(actionTarget) < 5.0f)
+        else if (spell.RequiresRangedRange && actionTarget && bot->GetExactDist(actionTarget)
+            < BotSpellMinimumRange::Effective(bot, actionTarget, spellInfo,
+                spell.MinRange > 0.0f ? spell.MinRange : profile.MinRange))
             candidate.RejectReason = "ranged_range_required";
         else if (spellInfo && spellInfo->NeedsComboPoints()
             && (!comboTarget || bot->GetComboTarget() != comboTarget->GetGUID() || !bot->GetComboPoints()))

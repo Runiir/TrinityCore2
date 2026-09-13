@@ -2,30 +2,31 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:native_minimum_range_admission",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "failed",
+  "classification": "implementation_pending_live_verification",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "4337116eebce7c3081a94ef3f6de3dc122d692a2",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "DPS-041 accepted; DPS-042 implementation in progress",
+  "gate_state": "DPS-042 independently reviewed; build and native validation pending",
   "first_broken_edge": {
     "id": "artificial_five_yard_gate_rejects_native_zero_minimum_spells",
     "owner_classification": "raid_bot_runtime_implementation",
     "cause": "At4.650yd after pincer duty, five Balance spells are rejected as ranged_range_required although native and configured minimums are0; movement sees no minimum-range violation.",
-    "review_state": "causal_review_complete_implementation_pending",
+    "review_state": "independently_approved_15_focused_tests",
     "ledger_id": "DPS-042"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "f656ec892cb4c1823721a31cb7a16a25fe11d971962b427c27b747b7524bf6b0"
+    "sha256": "3c23279ec49d9db274aa7c85b3efdb45e0a86c0473ff06fe78e033192616ebd6"
   },
   "scope_lock": {
     "objective": "Admit spells using their actual native/configured minimum range and preserve real Hunter deadzones.",
     "owned_files": [
       "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
-      "src/server/game/Bots/BotControllerCombat.cpp"
+      "src/server/game/Bots/BotControllerCombat.cpp",
+      "src/server/game/Bots/BotSpellMinimumRange.h"
     ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
@@ -44,9 +45,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
-  "ready_for_live_verification": false,
-  "next_action": "Repair native/configured minimum range admission across producer and consumers, independently review, build once and validate Balance post-pincer activity on the same roster.",
+  "ready_for_build": true,
+  "ready_for_live_verification": true,
+  "next_action": "Build the reviewed DPS-042 source once, then run the same canonical one-tank Magmaw full route with completion watchdog and independent all-bot performance review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -92,9 +93,10 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "DPS-041_approved_and_native_accepted_DPS-042_pending",
+    "verdict": "approved_for_build_and_one_bounded_canary",
     "live_verified": false,
-    "next_work_unit_implemented": false
+    "next_work_unit_implemented": true,
+    "artifact_sha256": "e7bd06f4832b22da55298c6573a29a182c2174996b52428d92f4b01583214ec0"
   },
   "related_edges": [
     {

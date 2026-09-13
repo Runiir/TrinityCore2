@@ -1,3 +1,4 @@
+#include "Bots/BotSpellMinimumRange.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotController.h"
 #include "Bots/BotClassSpecActionProfile.h"
@@ -357,12 +358,10 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "melee_range_required";
             continue;
         }
-        if (candidate.Profile.RequiresRangedRange && targetDistance < 5.0f)
-        {
-            candidate.RejectReason = "ranged_range_required";
-            continue;
-        }
         float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
+        if (!selfTarget)
+            minRange = BotSpellMinimumRange::Effective(bot, actionTarget,
+                sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId), minRange);
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
         if (candidate.Profile.MaxRange <= 0.0f)
             if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId))

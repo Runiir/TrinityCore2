@@ -1,0 +1,151 @@
+{
+  "issue": "DPS-042",
+  "source_commit": "4337116eebce7c3081a94ef3f6de3dc122d692a2",
+  "incident": {
+    "actor_guid": 30001,
+    "at_ms": 1789291131548,
+    "sequence": 3355,
+    "decision_sequence": 1841,
+    "action": "wait_for_candidate_backoff",
+    "action_phase": "profile_resolve",
+    "result": "ok",
+    "native_actor": {
+      "alive": true,
+      "current_generic_spell_id": 0,
+      "in_world": true,
+      "moving": false,
+      "native_present": true,
+      "position": {
+        "available": true,
+        "x": -305.849,
+        "y": -34.8837,
+        "z": 210.517
+      },
+      "spline": {
+        "finalized": true,
+        "id": 4044,
+        "initialized": true
+      }
+    },
+    "event_target": {
+      "alive": true,
+      "distance": 4.64954,
+      "distance_within_45yd": true,
+      "entry": 42347,
+      "guid": 76,
+      "guid_raw": "17379572841002827852",
+      "line_of_sight": true,
+      "native_present": true,
+      "position": {
+        "available": true,
+        "x": -302.467,
+        "y": -31.7101,
+        "z": 210.848
+      },
+      "valid_attack_target": true
+    },
+    "route_generation": 4,
+    "route_node_id": "bwd.magmaw.encounter",
+    "window": {
+      "basis": "native_trace_boss_death",
+      "complete": true,
+      "elapsed_seconds": 138.556,
+      "first_hostile_at_ms": 1789291020281,
+      "native_boss_death_at_ms": 1789291158837
+    }
+  },
+  "dbc": {
+    "source_spell_sha256": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+    "source_spell_range_sha256": "46fc3e766ff03f621a7641e2e440886475714f1304721c41e1e767d15ba87efd",
+    "spell_layout": [
+      73253,
+      48,
+      192
+    ],
+    "range_layout": [
+      85,
+      8,
+      32
+    ],
+    "spells": [
+      {
+        "spell_id": 8921,
+        "range_id": 5,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 0
+      },
+      {
+        "spell_id": 5570,
+        "range_id": 5,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 0
+      },
+      {
+        "spell_id": 78674,
+        "range_id": 5,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 0
+      },
+      {
+        "spell_id": 2912,
+        "range_id": 5,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 0
+      },
+      {
+        "spell_id": 5176,
+        "range_id": 5,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 0
+      },
+      {
+        "spell_id": 93402,
+        "range_id": 5,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 0
+      },
+      {
+        "spell_id": 75,
+        "range_id": 197,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 2
+      },
+      {
+        "spell_id": 2643,
+        "range_id": 197,
+        "hostile_min": 0.0,
+        "friendly_min": 0.0,
+        "hostile_max": 40.0,
+        "friendly_max": 40.0,
+        "range_flags": 2
+      }
+    ]
+  },
+  "server_epoch": 7042190442622915,
+  "attempt": 1,
+  "instance": 2,
+  "raw_sha256": "5f678bcc5e726a02125ebbee4b51cde79356a8546da216d0392c853007329580",
+  "dvc_archive": "magmaw_hunter_mark_4337116eeb_20260913",
+  "spell_dbc_overrides": []
+}

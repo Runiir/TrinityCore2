@@ -46,28 +46,32 @@ def test_production_resolver_range_gate_uses_migrated_rows(tmp_path):
     source=(ROOT/'src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp').read_text()
     native=source[source.index('    auto effectiveSpellMinRange ='):source.index('    auto effectiveSpellMaxRange =')]
     gate=source[source.index('        float distance = selfCenteredHostileAction'):source.index('        if (deferLavaBurstMovementRejection)')]
+    helper=(ROOT/'src/server/game/Bots/BotSpellMinimumRange.h').read_text()
+    helper='\n'.join(line for line in helper.splitlines() if not line.startswith('#include \"'))
     cpp=r'''
 #include <algorithm>
 #include <cassert>
 #include <string>
 #include <vector>
-constexpr int SPELL_RANGE_RANGED=1;
+constexpr int SPELL_RANGE_MELEE=1, SPELL_RANGE_RANGED=2;
 struct Range { int Flags=0; };
 struct SpellInfo { Range range; Range* RangeEntry=&range; float GetMaxRange(bool) const { return 30; } };
 struct SpellMgr { SpellInfo info; SpellInfo const* GetSpellInfo(int) { return &info; } } store;
 auto* sSpellMgr=&store;
-struct Actor {
+struct Unit {
  float distance=8.03f, nativeMin=0;
- float GetSpellMinRangeForTarget(Actor*,SpellInfo const*) { return nativeMin; }
- float GetMeleeRange(Actor*) { return 5; }
- float GetExactDist(Actor*) { return distance; }
- bool IsWithinMeleeRange(Actor*) { return distance<=5; }
+ float GetSpellMinRangeForTarget(Unit const*,SpellInfo const*) const { return nativeMin; }
+ float GetMeleeRange(Unit const*) const { return 5; }
+ float GetCombatReach() const { return 0; }
+ float GetExactDist(Unit*) { return distance; }
+ bool IsWithinMeleeRange(Unit*) { return distance<=5; }
 };
+'''+helper+r'''
 struct Profile { float MinRange=0, MaxRange=35; bool RequiresMeleeRange=false,RequiresRangedRange=false; };
 struct BotActionCandidate { struct Profile Profile; int ResolvedSpellId=0; std::string RejectReason; };
 std::string check(float configuredMin,float distance,float nativeMin=0,bool requiresRanged=false) {
- Actor actor; actor.distance=distance;actor.nativeMin=nativeMin;
- Actor* bot=&actor;Actor* target=&actor;Actor* actionTarget=target;
+ Unit actor; actor.distance=distance;actor.nativeMin=nativeMin;
+ Unit* bot=&actor;Unit* target=&actor;Unit* actionTarget=target;
  Profile profile,action;std::vector<BotActionCandidate> candidates(1);
  candidates[0].Profile.MinRange=configuredMin;
  candidates[0].Profile.RequiresRangedRange=requiresRanged;
@@ -84,7 +88,7 @@ int main() {
 '''+''.join(f' assert(check({r[4]},8.03f).empty());\n' for r in rows)+r'''
  assert(check(0,31)=="max_range_exceeded");
  assert(check(0,4).empty()); // These five rows have no configured ranged-only floor.
- assert(check(0,4,0,true)=="ranged_range_required");
+ assert(check(0,4,0,true).empty()); // Ranged profile classification does not manufacture a native minimum.
  assert(check(0,8,10)=="min_range_required"); // A real native minimum still wins.
 }
 '''

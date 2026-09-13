@@ -1,3 +1,4 @@
+#include "Bots/BotSpellMinimumRange.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -160,14 +161,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     };
     auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
     {
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId);
-        if (!spellInfo)
-            return configuredMinRange;
-
-        float spellMinRange = bot->GetSpellMinRangeForTarget(target, spellInfo);
-        if (spellInfo->RangeEntry && (spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED))
-            spellMinRange += bot->GetMeleeRange(target);
-        return std::max(configuredMinRange, spellMinRange);
+        return BotSpellMinimumRange::Effective(bot, target,
+            sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId), configuredMinRange);
     };
     auto effectiveSpellMaxRange = [bot, target](BotActionCandidate const& candidate,
         float configuredMaxRange) -> float
@@ -696,11 +691,6 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (candidate.Profile.RequiresMeleeRange && !bot->IsWithinMeleeRange(actionTarget))
         {
             candidate.RejectReason = "melee_range_required";
-            continue;
-        }
-        if (candidate.Profile.RequiresRangedRange && distance < 5.0f)
-        {
-            candidate.RejectReason = "ranged_range_required";
             continue;
         }
         if (minRange > 0.0f && distance < minRange)
