@@ -12,13 +12,23 @@ tracks every unresolved actor. No actor has overall acceptance yet. Blood stat/
 cadence attribution, Balance guardian admission, Affliction Doomguard and Survival
 AoE admission are being resolved from retained evidence. Implement one proven
 repair at a time, then review the whole roster and continue the remaining rows.
-The latest source `9a0df70704` cleared in 130.546 seconds at 215,963.132
-exact raid DPS and 11,789.860 HPS. All ten survived, with zero Infection.
-Capture, build verification, shutdown and cleanup passed. Against immediate
-baseline `db67e88cc8` (132.852 seconds, 213,591.990 DPS), Blood, Elemental,
-Affliction and Survival declined while Balance and both Fire actors improved.
-The older `63d7483481` baseline remains 216,908.115 DPS over 130.087 seconds.
-No actor has overall performance acceptance.
+The latest source `a3a74056c8` cleared in 129.088 seconds at 218,402.353
+exact raid DPS and 12,350.947 HPS. Capture, post-run build verification,
+DVCLive, cleanup and independent all-bot review passed. Native Combustion
+child damage is accepted for Fire 30007; exact pre-cast rate reconciliation
+and the 35–40 yard live branch remain unobserved. Combined Fire damage rose
+5.60%, DPS 6.79%. The baiter decline is proc/periodic outcome variation with
+improved casting gaps; no new Fire gate regression is proven.
+Against `9a`, Fire 30007 rose 19.85% to 39,521 DPS but Fire 30006 fell 9.19%
+to 24,467 and Balance fell 6.39%. Blood remained 12,815. No actor has overall
+performance acceptance. The previous `9a` baseline was 130.546 seconds,
+215,963.132 DPS and11,789.860 HPS; its published evidence remains immutable.
+
+The next build combines independently approved Balance summon admission
+(commit `7680fd9b7c`) with OBS-012's independently approved landed-outcome export (01f75a5c8b).
+This retains actual periodic critical results and exact pre-damage health
+through the existing event/full+delta/timeline. No coefficient change follows
+from an unexplained aggregate gap. Both repair units require native validation.
 
 MOV-001's native hazard admission is implemented and independently reviewed,
 but its new live branch was unexercised: zero `native_same_surface_hazard_escape`
@@ -33,13 +43,11 @@ because it would block valid head and mandatory target reassignment. Drain Soul
 head-tick loss needs per-event and channel-state comparison; the next review
 must not equate fewer ticks with the whole damage difference.
 
-The active implementation is Fire's native Combustion contract, DPS-057, with a
-separately reviewed DPS-052 range migration in the same planned build. Restore
-owned Ignite and Living Bomb inputs, normalize with base (not hasted) source
-periods, and retain native child behavior. The native contract, split-helper correction and separate range migration
-have independent approval. Native build, updater/readback and live verification
-remain pending. All other
-actor rows remain queued and every closed run receives an all-bot review.
+Fire input/base-rate and range changes completed native build, exact updater
+readback and the `a3a` canary. The native Combustion outcome is accepted for30007; increased
+raid DPS does not accept the declining baiter's overall performance. Balance and
+landed-outcome changes are the next implementation work. Every closed run
+receives an all-bot review.
 
 Fire observations exposed a 35yd profile cap on native40yd Combustion, plus a
 native class-mask omission excluding Ignite and Living Bomb. Blood's old MM
@@ -50,12 +58,12 @@ enchants remain queued in the actor table. No actor has overall acceptance.
 The only head phase ended in death; head-to-body return remains unexercised.
 
 Current evidence:
-`artifacts/cata_raid_program/magmaw_native_hazard_9a0df70704_20260913.tar.gz.dvc`.
-Its 82,571,008-byte archive and every member passed fresh-cache remote
-verification. Exact raw/full-timeline, duplicate archive/cache and reconstructed
-payloads were evicted. Inspectable HTML and compact reviews remain. DVC status
-records deliberate local eviction; DVC push reports up to date. The prior db67 and 63d
-archives remain available under their own immutable DVC pointers.
+`artifacts/cata_raid_program/magmaw_fire_combustion_a3a74056c8_20260913.tar.gz.dvc`.
+Its 82,107,297-byte archive and every member passed fresh-cache remote
+verification. All readers released the raw evidence. Exact raw/full timeline, archive/cache
+and remote reconstruction duplicates were evicted after verification. Targeted
+DVC status records deliberate eviction; DVC push reports up to date.
+The previous `9a` archive remains immutable and remotely available.
 
 Prior Survival trap removal remains accepted on `05f5c2f959`: no invalid13813
 attempts and zero Infection hits, with shot outcomes preserved. Its pointer is
@@ -114,7 +122,7 @@ that selection counterexample is proven by the production fixture, not invented
 from live snapshots. Native terrain/pathing and class coefficients are unchanged.
 
 In the earlier MM run, performance remained mixed. Hunter was31,513DPS versus33,060 on26;
-Fire30006 is27,936 versus32,875, while Fire30007 rises to30,140 and Balance
+Fire 30006 is27,936 versus32,875, while Fire 30007 rises to30,140 and Balance
 to30,423. These totals do not prove the remaining class rotations are correct.
 The next review covers the whole roster against the newly selected
 [111.3-second WCL reference](magmaw_dps_baseline_20260913.md), which includes
@@ -182,7 +190,7 @@ DPS-040 found that failed directional mobility attempts changed facing before
 native cooldown/GCD rejection. Readiness now precedes facing/native submission;
 other native rejections restore the prior orientation. Ready emergency mobility
 still uses the native executor. Six focused tests, independent review and the
-native build passed. Fire30006 now finished 17 Fireballs successfully during
+native build passed. Fire 30006 now finished 17 Fireballs successfully during
 head exposure; all 17 landed for 993,679 damage, with zero failed Fireball or
 native Blink finishes in that window. Typed cooldown rejections occurred before
 native Blink submission.
@@ -362,3 +370,6 @@ locally inspectable; large duplicate payloads are evicted only after verificatio
 The [active work unit](../../experiments/configs/cata_raid_active_work_unit_v1.json)
 closes this canary and routes OBS-008. No additional native run is required for
 post-close HTML packaging or comparator/documentation changes.
+
+The adjacent Hunter override fixture dependency drift is repaired in eafe0cca2e;
+its two tests now pass. This test-only repair changes no native behavior.

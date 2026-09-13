@@ -1,24 +1,24 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:fire_combustion_contract",
-  "owner_skill": "raid-class-mechanics-implementation",
-  "classification": "native_periodic_input_mask_and_base_rate_contract",
+  "work_unit": "magmaw:balance_summon_and_landed_outcome",
+  "owner_skill": "raid-bot-runtime-implementation",
+  "classification": "summon_admission_and_existing_event_observation",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "9a0df707045ad7f5754603e7732c5386a5766716",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
-  "evidence_contract_change": false,
-  "gate_state": "Native Fire contract and separate range migration independently approved; build/live pending",
+  "evidence_contract_change": true,
+  "gate_state": "Balance and landed-outcome independently approved; ready for combined build/canary",
   "first_broken_edge": {
-    "id": "combustion_excludes_owned_fire_dots_and_sums_tick_amounts",
-    "owner_classification": "native_class_damage_consumer",
-    "cause": "11129 mask excludes12654/44457 and script sums per-tick amounts into1s child instead of base-period rates. Separate profile35yd cap rejects legal37.7469 opportunity.",
-    "review_state": "native_and_range_independently_approved",
-    "ledger_id": "DPS-057"
+    "id": "periodic_outcome_not_exported_to_ordinary_combat_event",
+    "owner_classification": "shared_telemetry",
+    "cause": "Periodic critical and pre-damage health omitted; raw damage dropped in timeline. Balance admission repair awaits same next build.",
+    "review_state": "implementation_active",
+    "ledger_id": "OBS-012"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "f37caf3690c47dc235b1058efcc87ea237a2de698551112b079d6aa8a8942b47"
+    "sha256": "a843a7ff70602844613d512ddcf7e97e84e00f7aabbf36519e885dca7b873d94"
   },
   "scope_lock": {
     "objective": "Restore native Combustion periodic input/base-rate contract and separately reviewed11129 range.",
@@ -74,7 +74,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "9a0df707045ad7f5754603e7732c5386a5766716",
+    "source_commit": "a3a74056c871a1083577f52f8a2e9516ce159e84",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -86,35 +86,33 @@
     "qualification_eligible": false,
     "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 130.546,
+    "pull_to_death_seconds": 129.088,
     "hostile_originated_damage": 28193123,
-    "pull_to_death_party_dps": 215963.13176964442,
-    "exact_effective_healing": 1539119,
-    "exact_hps": 11789.859513121812,
-    "requested_repair_id": "MOV-001",
-    "requested_repair_achieved": false,
-    "performance_verdict": "not_accepted_actor_gaps_and_four_declines",
+    "pull_to_death_party_dps": 218402.3534333168,
+    "exact_effective_healing": 1594359,
+    "exact_hps": 12350.946641051067,
+    "requested_repair_id": "DPS-057",
+    "requested_repair_achieved": true,
+    "performance_verdict": "not_accepted_roster_gaps_remain",
     "diagnosis_required": true,
-    "primary_baseline_source": "db67e88cc8bdb98c85c9bba5a200bbb2099527e1",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_native_hazard_9a0df70704_20260913.tar.gz.dvc",
+    "primary_baseline_source": "9a0df707045ad7f5754603e7732c5386a5766716",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_fire_combustion_a3a74056c8_20260913.tar.gz.dvc",
     "publication_state": "remote_verified_and_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "requested_repair_scope": "Production fixture/implementation reviewed; new native traversal branch unexercised live. Existing escape progress and zero Infection are observed.",
+    "requested_repair_scope": "Native Combustion child scheduling/damage accepted for30007; exact pre-cast sum reconciliation and DPS05235\u201340yd live edge unobserved.",
     "infection_damage_event_count": 0,
     "infection_affected_actor_count": 0,
     "safety_retained": true,
-    "independent_review_sha256": "8ebf222a1018f7a5afcf462a23e7b543b4a3e38377fd3300acbc64da29ae5225"
+    "independent_review_sha256": "e388dc7fa5660b70fe6a1c2918cfed3f98dec579120570a2f9e61c723da8e2fb"
   },
   "implementation_review": {
     "verdict": "approved_for_build_and_canary",
-    "range_review_sha256": "d63311c95e204b4032ba071f96ea2c006841e33e1528511f50db51a770f670f9",
+    "balance_review_sha256": "387cc9e399cc9ed16099190daabf8fe97e54893213ecfb4f0425d7d93b1aceb3",
     "live_verified": false,
     "next_work_unit_implemented": true,
-    "native_initial_review_sha256": "b65230e2c99ded74e6ab64b32985d0de4e74f51e8f598d0105c43c0d4129dd55",
-    "native_split_fix_approval_sha256": "e6eb27964463946a66fa8956db4da7816b7ce5d894a5444a959025bf733af40d",
-    "native_focused_tests_passed": 30,
-    "range_focused_tests_passed": 4
+    "outcome_review_sha256": "fc3b230122ab84c20fd8f159be6addb33d17edce265a498ad21c35c6d98c9a77",
+    "outcome_focused_tests_passed": 73
   },
   "related_edges": [
     {
@@ -160,7 +158,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-057",
+  "error_id": "OBS-012",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -178,7 +176,8 @@
     "DPS-056",
     "DPS-057",
     "DPS-058",
-    "MOV-001"
+    "MOV-001",
+    "OBS-012"
   ],
   "requested_tank_assignment": {
     "main_tank": {

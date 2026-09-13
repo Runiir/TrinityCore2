@@ -4,31 +4,38 @@
 
 Repair and validate DPS across every represented spec. The latest feedback
 selects work within this objective; it does not replace it. No actor below has
-overall performance acceptance yet. Current native values are source `9a0df70704`,
-130.546 seconds, 215,963.132 raid DPS and 11,789.860 HPS. Exact WCL references
+overall performance acceptance yet. Current native values are source `a3a74056c8`,
+129.088 seconds, 218,402.353 raid DPS and 12,350.947 HPS. Exact WCL references
 below differ in composition, phase coverage and gear; raw gaps prioritize
 investigation and are not coefficient multipliers or hard acceptance thresholds.
 
 | Actor/spec | Native DPS | WCL example DPS | Open cause or uncertainty | Next implementation/verification | State |
 | --- | ---: | ---: | --- | --- | --- |
-| 30001 Balance | 28,936 | 41,029 | Force of Nature falsely classified as area damage; guardian target fidelity unproved; remaining output gap | Resolve summon safety and repair actual admission; compare Eclipse/spell cadence afterward | Active diagnosis |
-| 30002 Blood | 12,888 | 26,152 | Missing permanent enchants/action gaps; latest Blood decline remains under review. Historical MM AP was illegally overstacked with active53138 | Preserve current single AP category; repair native same-effect grouping for all rosters, then equipment/Heart Strike; diagnose current activity/pressure separately | Active diagnosis |
-| 30006 Fire | 26,943 | 40,190 | Native Combustion excludes Ignite/Living Bomb and sums unnormalized source ticks; configured range35 vs native40 | Repair native periodic input/base-rate contract and separately correct range; retain targeting and movement review | Open |
-| 30007 Fire | 32,975 | 40,190 | Same native Combustion input/rate defects; optional-add and proc/cooldown cadence remain | Validate native correction on both Fire actors; retain per-actor opportunity and targeting review | Open |
-| 30008 Affliction | 34,628 | 40,281 | Native Doomguard landed9 bolts/102,447 damage; moving Doom to parasites removed its eligible body target and wasted final lifetime | Repair Bane placement on transient targets; numeric guardian parity and remaining owner cadence remain open | Native caster observed; policy repair required |
-| 30009 Survival | 37,374 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
-| 30010 Elemental | 31,713 | 41,866 | Tremor8143 wastes routine setup globals without fear; latest9a DPS decline under review | Repair required-earth-slot semantics while retaining reactive fear response; diagnose new loss separately | Active diagnosis |
-| 30003 Restoration | 4,290 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Apply reviewed nine-slot Cataclysm enchant overlay; preserve healing and survival while reviewing offensive idle time | Source verified; implementation pending |
+| 30001 Balance | 27,086 | 41,029 | Root summon admission repaired in `7680fd9b7c`; existing guardian authority preserved; live Treant outcomes pending | Resolve summon safety and repair actual admission; compare Eclipse/spell cadence afterward | Active diagnosis |
+| 30002 Blood | 12,815 | 26,152 | Missing permanent enchants/action gaps; latest Blood decline remains under review. Historical MM AP was illegally overstacked with active53138 | Preserve current single AP category; repair native same-effect grouping for all rosters, then equipment/Heart Strike; diagnose current activity/pressure separately | Active diagnosis |
+| 30006 Fire | 24,467 | 40,190 | Native input/rate and range repairs ran on `a3a`; baiter DPS fell 9.19%; native outcome reviewed; overall performance open | Repair native periodic input/base-rate contract and separately correct range; retain targeting and movement review | Open |
+| 30007 Fire | 39,521 | 40,190 | Native input/rate repairs ran on `a3a`; DPS rose 19.85%; per-event validation and other losses remain | Validate native correction on both Fire actors; retain per-actor opportunity and targeting review | Open |
+| 30008 Affliction | 34,764 | 40,281 | Native Doomguard landed9 bolts/102,447 damage; moving Doom to parasites removed its eligible body target and wasted final lifetime | Repair Bane placement on transient targets; numeric guardian parity and remaining owner cadence remain open | Native caster observed; policy repair required |
+| 30009 Survival | 38,231 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
+| 30010 Elemental | 32,168 | 41,866 | Tremor8143 wastes routine setup globals without fear; latest9a DPS decline under review | Repair required-earth-slot semantics while retaining reactive fear response; diagnose new loss separately | Active diagnosis |
+| 30003 Restoration | 3,212 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Apply reviewed nine-slot Cataclysm enchant overlay; preserve healing and survival while reviewing offensive idle time | Source verified; implementation pending |
 | 30004 Holy | 0 | No matched damage target | Same role equipment gap; zero damage alone does not prove healer failure | Verify healing cadence, mana and safe offensive opportunities | Open |
-| 30005 Discipline | 6,215 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
+| 30005 Discipline | 6,138 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
 
-The latest raid total increased 1.11% over `db67`, but four damage actors declined:
-Blood 20.9%, Elemental 9.1%, Affliction 7.0%, Survival 4.7%. Balance and both Fire
-actors improved within this pair, while remaining below their WCL examples.
-Zero Infection and zero deaths are survival outcomes, not DPS acceptance.
-The new native hazard admission branch was unexercised and keeps live verification
-pending during subsequent class canaries; no unchanged retry is required merely
-to seek that branch.
+The latest raid total increased 1.13% over `9a`, while Balance fell 6.39%
+and baiter Fire 30006 fell 9.19%. Fire 30007 rose 19.85% to 39,521 DPS;
+Affliction, Survival and Elemental rose slightly, while Blood remained near
+12,815 DPS. These are observed comparisons; the all-bot review attributes the Fire baiter
+loss to proc/periodic outcomes with shorter casting gaps. Combined Fire
+damage rose5.60% and DPS6.79%; exact per-cast modifier joins remain incomplete.
+No actor is accepted merely for approaching the WCL display value.
+
+Drain Soul explains the db67-to-9a Affliction damage decline. A measured 20%
+spell-speed difference explains tick spacing; both had Heroism. Extra speed
+aura ownership and landed critical/target-state details were not retained.
+The mean tick also fell 45.11%, so tick counts alone do not explain that loss.
+OBS-012 will retain native periodic outcomes and pre-damage health in the
+existing full/delta combat event and timeline, without inferred criticals.
 
 Close an actor only with attributable setup/stat and action/outcome comparison,
 implemented proven repairs, and native validation preserving its duties and
@@ -172,7 +179,7 @@ publication; none changes the immutable ee0504 report.
   of the14.11% local decline. The Affliction profile also lacks Summon Doomguard;
   WCL source9's guardian contributes416.2k displayed damage. Neither finding
   justifies changing native coefficients.
-- Fire30006/30007 submit0/1 Combustions and2/5 instant Pyroblasts; WCL source4
+- Fire 30006/30007 submit0/1 Combustions and2/5 instant Pyroblasts; WCL source4
   records2 and12 respectively. Existing aura/proc gates require investigation.
   Mage30006's19.138s fresh-direct-effect gap contains successful Living Bomb
   casts and mandatory movement. A shorter+95.233..100.547s interval retains
