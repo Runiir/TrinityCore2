@@ -62,6 +62,10 @@ and actor changes are dominated by proc, crit or phase variation, prioritize a
 controlled stat/cadence/per-event comparison over another series of minor raid
 patches. Reuse exact promoted simulator inputs; do not mistake matching gear IDs
 for matching native effective stats, or unknown critical outcomes for normal hits.
+First rank WCL spell-level differences across the roster, with phase and mandatory
+duty costs kept explicit. Follow the post-run review's duty-aware comparison before
+choosing a calibration actor. Distinguish investigation priority from verified
+recoverable damage; a small proven bug need not be the next performance canary.
 
 ## Development runs
 

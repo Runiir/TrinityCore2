@@ -1,53 +1,39 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:balance_summon_and_landed_outcome",
-  "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "summon_admission_and_existing_event_observation",
+  "work_unit": "magmaw:duty_aware_component_gap_diagnosis",
+  "owner_skill": "raid-rotation-review",
+  "classification": "cross_roster_causal_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "9a0df707045ad7f5754603e7732c5386a5766716",
+  "observed_at_commit": "779f62087f43afa9996a09817eabac045b5999ee",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": true,
-  "evidence_contract_change": true,
-  "gate_state": "Balance and landed-outcome independently approved; ready for combined build/canary",
+  "behavior_change": false,
+  "evidence_contract_change": false,
+  "gate_state": "Initial WCL component ranking available; matched duty/phase attribution remains open",
   "first_broken_edge": {
-    "id": "periodic_outcome_not_exported_to_ordinary_combat_event",
-    "owner_classification": "shared_telemetry",
-    "cause": "Periodic critical and pre-damage health omitted; raw damage dropped in timeline. Balance admission repair awaits same next build.",
-    "review_state": "implementation_active",
-    "ledger_id": "OBS-012"
+    "id": "material_throughput_gap_not_yet_causally_decomposed",
+    "owner_classification": "rotation_review",
+    "cause": "Aggregate WCL totals and small local defects were used without spell-level and duty/phase attribution."
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "a843a7ff70602844613d512ddcf7e97e84e00f7aabbf36519e885dca7b873d94"
+    "sha256": "d297bb2f3b525d541f39f3c50d1b918f8b84da52bd5f299a63add13a416193ea"
   },
   "scope_lock": {
-    "objective": "Restore native Combustion periodic input/base-rate contract and separately reviewed11129 range.",
+    "objective": "Resolve phase/duty and component parity for material owner-cadence, guardian and strike-damage differences; choose a bounded repair from evidence, not readiness of small queued patches.",
     "owned_files": [
-      "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
-      "src/server/game/Spells/SpellCombustion.h",
-      "src/server/game/Bots/BotFireCombustionObservation.cpp",
-      "src/server/game/Bots/BotFireCombustionObservation.h",
-      "src/server/scripts/Spells/spell_mage.cpp",
-      "src/server/scripts/Spells/spell_mage_fire.cpp",
-      "src/server/scripts/Spells/spell_mage_frost.cpp",
-      "src/server/scripts/Spells/spell_mage_shared.h",
-      "sql/custom/world/2026_09_13_04_fire_combustion_native_range.sql",
-      "tests/test_fire_combustion_native.py",
-      "tests/test_fire_combustion_native_range.py",
-      "tests/fixtures/fire_combustion_native_contract.json",
-      "tests/test_fire_combustion_candidate_observation.py",
-      "tests/test_bot_timeline_fire_combustion_observation.py"
+      "tools/bot_ml/rank_raid_damage_gaps.py",
+      "tests/test_rank_raid_damage_gaps.py",
+      "docs/bot_raids/magmaw_dps_baseline_20260913.md"
     ],
     "forbidden_changes": [
-      "No readiness, target policy, child tick-rounding, unrelated Mage behavior, guessed coefficients, movement or boss changes."
+      "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
     ]
   },
   "acceptance_conditions": [
-    "Native owner/school/family/mask calculation admits Ignite, Living Bomb and either Pyro variant, excluding unrelated/foreign effects.",
-    "Base source periods form native one-second rate with no double haste; child snapshot/ticks remain native and observations stay nonmutating/approximate.",
-    "Companion migration changes only enabled Fire11129 action35->40; exact native updater/readback and both actor loads are required.",
-    "Native Combustion submissions/landed periodic output and every actor are reviewed; clear, native repair and overall performance remain separate.",
-    "Check MOV-001 new traversal branch for native progress and lifecycle if exercised; retain pending status otherwise."
+    "All represented actors remain visible; exact native damage/HPS window reconciles.",
+    "WCL components and source identity retained; unmatched setup/phase/duty and spell aliases explicit.",
+    "Required duty is not classified as avoidable idle; unknown recoverable damage remains null.",
+    "Next implementation requires a material, trace-backed causal mismatch; a clear alone does not accept performance."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -56,9 +42,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build the two reviewed Combustion corrections once, apply/read back migration04, and validate both Fire actors plus the whole roster.",
+  "next_action": "Resolve phase/duty and component parity for material owner-cadence, guardian and strike-damage differences; choose a bounded repair from evidence, not readiness of small queued patches.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -74,7 +60,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "a3a74056c871a1083577f52f8a2e9516ce159e84",
+    "source_commit": "779f62087f43afa9996a09817eabac045b5999ee",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -86,30 +72,30 @@
     "qualification_eligible": false,
     "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 129.088,
+    "pull_to_death_seconds": 129.792,
     "hostile_originated_damage": 28193123,
-    "pull_to_death_party_dps": 218402.3534333168,
-    "exact_effective_healing": 1594359,
-    "exact_hps": 12350.946641051067,
-    "requested_repair_id": "DPS-057",
+    "pull_to_death_party_dps": 217217.72528353057,
+    "exact_effective_healing": 1682330,
+    "exact_hps": 12961.738782051281,
+    "requested_repair_id": "DPS-051,OBS-012,MOV-001",
     "requested_repair_achieved": true,
     "performance_verdict": "not_accepted_roster_gaps_remain",
     "diagnosis_required": true,
-    "primary_baseline_source": "9a0df707045ad7f5754603e7732c5386a5766716",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_fire_combustion_a3a74056c8_20260913.tar.gz.dvc",
-    "publication_state": "remote_verified_and_exact_duplicates_evicted",
-    "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true,
-    "requested_repair_scope": "Native Combustion child scheduling/damage accepted for30007; exact pre-cast sum reconciliation and DPS05235\u201340yd live edge unobserved.",
+    "primary_baseline_source": "a3a74056c871a1083577f52f8a2e9516ce159e84",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc",
+    "publication_state": "pending_remote_publication",
+    "remote_reconstruction_verified": false,
+    "raw_payloads_evicted": false,
+    "requested_repair_scope": "Three Treants and native damage; periodic outcome full/delta/timeline; receipt373 native hazard traversal.",
     "infection_damage_event_count": 0,
     "infection_affected_actor_count": 0,
     "safety_retained": true,
-    "independent_review_sha256": "e388dc7fa5660b70fe6a1c2918cfed3f98dec579120570a2f9e61c723da8e2fb"
+    "independent_review_sha256": "7d9a569f02f8a3c95e010e5ef1635c3ce2fbef6fad69f5a2ca2132c211561d67"
   },
   "implementation_review": {
-    "verdict": "approved_for_build_and_canary",
+    "verdict": "previous_Balance_OBS_MOV_edges_native_accepted",
     "balance_review_sha256": "387cc9e399cc9ed16099190daabf8fe97e54893213ecfb4f0425d7d93b1aceb3",
-    "live_verified": false,
+    "live_verified": true,
     "next_work_unit_implemented": true,
     "outcome_review_sha256": "fc3b230122ab84c20fd8f159be6addb33d17edce265a498ad21c35c6d98c9a77",
     "outcome_focused_tests_passed": 73
@@ -156,9 +142,8 @@
       "review": "native_capture_and_landing_accepted_9423"
     }
   ],
-  "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "OBS-012",
+  "error_id": "DPS-059",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -169,15 +154,13 @@
     "HEAL-001",
     "OBS-006",
     "DPS-048",
-    "DPS-051",
     "DPS-052",
     "DPS-054",
     "DPS-055",
     "DPS-056",
     "DPS-057",
     "DPS-058",
-    "MOV-001",
-    "OBS-012"
+    "DPS-059"
   ],
   "requested_tank_assignment": {
     "main_tank": {

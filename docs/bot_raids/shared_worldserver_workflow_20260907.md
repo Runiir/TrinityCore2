@@ -6,268 +6,30 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The active objective is to repair and validate DPS across the whole represented
-roster. The [actor acceptance table](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance)
-tracks every unresolved actor. No actor has overall acceptance yet. Blood stat/
-cadence attribution, Balance guardian admission, Affliction Doomguard and Survival
-AoE admission are being resolved from retained evidence. Implement one proven
-repair at a time, then review the whole roster and continue the remaining rows.
-The latest source `a3a74056c8` cleared in 129.088 seconds at 218,402.353
-exact raid DPS and 12,350.947 HPS. Capture, post-run build verification,
-DVCLive, cleanup and independent all-bot review passed. Native Combustion
-child damage is accepted for Fire 30007; exact pre-cast rate reconciliation
-and the 35–40 yard live branch remain unobserved. Combined Fire damage rose
-5.60%, DPS 6.79%. The baiter decline is proc/periodic outcome variation with
-improved casting gaps; no new Fire gate regression is proven.
-Against `9a`, Fire 30007 rose 19.85% to 39,521 DPS but Fire 30006 fell 9.19%
-to 24,467 and Balance fell 6.39%. Blood remained 12,815. No actor has overall
-performance acceptance. The previous `9a` baseline was 130.546 seconds,
-215,963.132 DPS and11,789.860 HPS; its published evidence remains immutable.
+Source `779f62087f` cleared Magmaw in129.792s at217,217.725 exact raid DPS
+and12,961.739 exact-window HPS. The all-bot review accepted Balance33831
+(three Treants,34 landed hits,83,995 damage), OBS-012 periodic outcome retention,
+and MOV-001's actual native hazard traversal (receipt373, endpoint reached).
+No Infection or boss-window deaths occurred. Overall roster performance is open;
+the latest DPS is0.54% below a3a. Historical head-to-body failure is not covered
+by this kill, which ended during head exposure.
 
-The next build combines independently approved Balance summon admission
-(commit `7680fd9b7c`) with OBS-012's independently approved landed-outcome export (01f75a5c8b).
-This retains actual periodic critical results and exact pre-damage health
-through the existing event/full+delta/timeline. No coefficient change follows
-from an unexplained aggregate gap. Both repair units require native validation.
+The active task is the duty-aware, spell-level WCL comparison linked in the
+[all-actor table](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
+Fresh WCL breakdowns expose larger cadence, guardian and strike-damage gaps,
+plus excess native components that can conceal losses. Drain Soul is above the
+selected reference; its variance does not explain the roster deficit. Separate
+investigation priorities from small proven bugs and from recoverable damage.
+No additional worldserver or dummy experiment was launched for this comparison.
+The next causal check should resolve a material gap using retained evidence first.
 
-MOV-001's native hazard admission is implemented and independently reviewed,
-but its new live branch was unexercised: zero `native_same_surface_hazard_escape`
-and zero qualified-proof observations. Existing escape branches moved natively;
-zero Infection does not prove the new branch. Keep its live check in subsequent
-already-needed class canaries instead of repeating an unchanged run to seek it.
-The db67 receipts377/378 production regression is retained in a compact fixture.
+Affliction Bane-purpose, Fire/Survival potions and optional Elemental earth slot
+are committed and independently reviewed, but not built/applied/live validated.
+The authserver remains available; worldserver is stopped after clean closure.
+Current evidence: `artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc`.
 
-DPS-053 native Doomguard remains accepted. Adjacent Affliction Bane603 placement
-on optional parasites remains DPS-056. A global old-Bane lock was rejected
-because it would block valid head and mandatory target reassignment. Drain Soul
-head-tick loss needs per-event and channel-state comparison; the next review
-must not equate fewer ticks with the whole damage difference.
-
-Fire input/base-rate and range changes completed native build, exact updater
-readback and the `a3a` canary. The native Combustion outcome is accepted for30007; increased
-raid DPS does not accept the declining baiter's overall performance. Balance and
-landed-outcome changes are the next implementation work. Every closed run
-receives an all-bot review.
-
-Fire observations exposed a 35yd profile cap on native40yd Combustion, plus a
-native class-mask omission excluding Ignite and Living Bomb. Blood's old MM
-AP increase was duplicate Abomination's Might/Trueshot stacking, not a missing
-current buff. Correct those native contracts before compensation. Balance
-Force of Nature, Survival sustained AoE, Elemental Tremor and permanent role
-enchants remain queued in the actor table. No actor has overall acceptance.
-The only head phase ended in death; head-to-body return remains unexercised.
-
-Current evidence:
-`artifacts/cata_raid_program/magmaw_fire_combustion_a3a74056c8_20260913.tar.gz.dvc`.
-Its 82,107,297-byte archive and every member passed fresh-cache remote
-verification. All readers released the raw evidence. Exact raw/full timeline, archive/cache
-and remote reconstruction duplicates were evicted after verification. Targeted
-DVC status records deliberate eviction; DVC push reports up to date.
-The previous `9a` archive remains immutable and remotely available.
-
-Prior Survival trap removal remains accepted on `05f5c2f959`: no invalid13813
-attempts and zero Infection hits, with shot outcomes preserved. Its pointer is
-`artifacts/cata_raid_program/magmaw_survival_trap_05f5c2f959_20260913.tar.gz.dvc`.
-
-Earlier8146 Survival canary: clear137.163s,205,544.666DPS; native setup/duties
-passed but shot admission and performance failed. Its83,391,167-byte archive
-was remotely reconstructed and every member verified; exact raw/full timeline
-and duplicate payloads were evicted. Pointer:
-`artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz.dvc`.
-
-The earlier source `ee0504cc0c` cleared Magmaw with the same sole Blood
-DK, three healers and six DPS in132.205 seconds. Native death, complete capture,
-post-run build verification and cleanup passed. All ten survived the full
-route and boss, with zero Infection78941. First retained event to boss death
-spans336.387 seconds; capture sampling spans349.064 seconds.
-Independent review accepts the bounded DPS-043 targeting repair.
-
-| Native source | Boss seconds | Exact raid DPS | Effective HPS |
-| --- | ---: | ---: | ---: |
-| ff226ad52b | 132.828 | 212,252.861 | 11,764.605 |
-| 4337116eeb | 138.556 | 203,478.182 | 14,563.664 |
-| 2af61a1cef | 131.609 | 214,218.807 | 11,647.995 |
-| 26c536140a | 133.998 | 210,399.581 | 10,868.625 |
-| ee0504cc0c | 132.205 | 213,253.077 | 10,279.195 |
-| 8146a06b40 (Survival) | 137.163 | 205,544.666 | 12,335.433 |
-| 69903f785e (Survival) | 148.635 | 191,627.988 | 12,954.445 |
-
-The first six runs have28,193,123 originated hostile damage;699 has28,482,626,
-including289,503 more add damage. The first five share
-the MM composition; ee0504 is1.356% above26 and0.471% aboveff226. The Survival
-run is3.615% belowee0504 and changes spec/setup. These development comparisons
-are not exact WCL/WoWSims parity or proof that every class is optimized.
-
-DPS-042 is accepted as a shared range repair. Native/configured minimums now
-agree across candidate admission, both combat consumers and rejected-candidate
-movement recovery. Sixteen focused tests passed independently. The first patch
-missed the rejection-to-movement handler; its deterministic eight-yard case
-fails on2af and passes on26. Native Hunter receipt307 starts11.163yd from the
-body, selects an outward25.323yd endpoint, reconciles the minimum and resumes
-Auto Shot/Steady Shot with landed damage. Native terrain/pathing is unchanged.
-Balance's exact former post-exit4.650yd position did not recur. Two nearer
-pincer attempts reached native execution but returned176; that is policy-level
-coverage, not successful under-five-yard native casting. No unchanged range
-retry is requested. Balance measured25,641DPS versus17,670 on433 and29,498 on2af.
-
-DPS-043 is accepted for legal fixed-baiter binding and native offense. The
-old selector bypassed actor-filtered opportunities for raw NearestParasite;
-Hunter's two Multi-Shots on26 then failed LOS. Thirteen focused tests passed
-independently. On ee0504 all13 Mage and15 Hunter parasite-binding transitions
-record alive, attackable and LOS true. Hunter submits two Multi-Shots and lands
-11 effects, including106,795 add damage. Mage30006 lands Blast Wave on eight
-parasites and17 Flamestrike damage events. Contact escape remains active and
-no Infection occurs. Exact-tick blocked-nearer alternatives are not recorded;
-that selection counterexample is proven by the production fixture, not invented
-from live snapshots. Native terrain/pathing and class coefficients are unchanged.
-
-In the earlier MM run, performance remained mixed. Hunter was31,513DPS versus33,060 on26;
-Fire 30006 is27,936 versus32,875, while Fire 30007 rises to30,140 and Balance
-to30,423. These totals do not prove the remaining class rotations are correct.
-The next review covers the whole roster against the newly selected
-[111.3-second WCL reference](magmaw_dps_baseline_20260913.md), which includes
-Balance, Fire, Elemental, Affliction and Blood at roughly395 average ilvl.
-Its nine-player2/2/5 roster does246,232.7DPS; it is a useful class comparison,
-not an exact passing floor. DPS-045 retains the outstanding phase, gear,
-aura/cooldown and accounting normalization. There is no matched MM player yet.
-
-DPS-044 remains open: Mage30006's19.138-second and Hunter's14.910-second
-fresh-direct-effect gaps require candidate/native-outcome diagnosis; a gap
-is not automatically idle casting time. Affliction is14.11% belowff226 across
-owner, periodic and pet output. Balance's area-policy suppression remains a
-separate lead. Native admission also shows no permanent item enchants on Blood
-or the three healers, while all DPS characters are enchanted. Use the actual
-admitted manifest, not intermediate generic profile flags or their item levels.
-
-DPS-041 remains accepted: ordinary add setup Marks are zero, seven Marks use
-normal ranking, and body/head setup remains. MOV-001 retains its earlier
-native acceptance onff226; the latest run has zero Infection78941, but does
-not independently exercise the personal-threat task. Its contact-evade and
-range-movement records must not be confused with that earlier task proof.
-
-OBS-011 joins existing native effective/combat stats into the timeline at their
-actual observation times. Thirty-nine focused tests passed. The433 replay
-retained700 snapshots with unchanged damage, actor totals, scoring window and
-phases. Analysis source067 is distinct from native433. Earlier raw snapshots
-show temporary proc differences, not a proven permanent post-recovery stat loss.
-
-Evidence pointers:
-`artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`,
-`artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc`,
-`artifacts/cata_raid_program/magmaw_native_range_2af61a1cef_20260913.tar.gz.dvc`,
-the verified26 publication
-`artifacts/cata_raid_program/magmaw_range_recovery_26c536140a_20260913.tar.gz.dvc`,
-and latest `artifacts/cata_raid_program/magmaw_baiter_targets_ee0504cc0c_20260913.tar.gz.dvc`.
-The latest compact review is `magmaw-development-ee0504cc0c/dps_review.md`;
-older runs retain `dps_review.json`. Latest `remaining_attack_gaps.timeline.json.gz`
-retains unmodified Mage/Hunter events from+88..+114s with original identity and
-input hash. The remote archive and every member were verified through a fresh-cache
-reconstruction. Exact local raw/full timeline and duplicate archive/cache
-payloads were evicted. Raw capture and full timeline remain remotely reconstructible.
-
-The one-tank composition was first accepted on `89cef294b6`, replacing only
-the Prot Paladin slot with the catalog Balance loadout. All other nine actors
-were preserved. Its extra965,745 damage versus the two-tank baseline was
-entirely adds; its1.78% greater raid DPS was not a performance acceptance.
-Evidence: `artifacts/cata_raid_program/magmaw_one_tank_balance_20260913.tar.gz.dvc`,
-member `magmaw-development-89cef294b6/dps_review.json`.
-
-The last two-tank baseline, `c5700590e7`, cleared in 147.272 seconds at
-191,961.907 exact raid DPS and 12,169.034 effective HPS. All ten survived the
-boss; eight trash death episodes recovered. This accepted the focused DPS-040
-repair. Evidence:
-`artifacts/cata_raid_program/magmaw_mobility_readiness_20260912.tar.gz.dvc`.
-The following paragraphs describe that earlier baseline and its predecessors.
-
-The matched earlier `0f0a8c0382` result was 149.023 seconds at 189,706.381 DPS,
-with the same 28,270,614 originated hostile damage. Latest DPS is 1.19% higher.
-The intermediate `3329f0b407` and `b5215c35b6` runs remain published under
-`magmaw_activity_20260912` and `magmaw_recovery_repath_20260912`; their lower
-DPS is not relabeled as acceptance. Overall class tuning and boss fidelity are
-still incomplete.
-
-DPS-040 found that failed directional mobility attempts changed facing before
-native cooldown/GCD rejection. Readiness now precedes facing/native submission;
-other native rejections restore the prior orientation. Ready emergency mobility
-still uses the native executor. Six focused tests, independent review and the
-native build passed. Fire 30006 now finished 17 Fireballs successfully during
-head exposure; all 17 landed for 993,679 damage, with zero failed Fireball or
-native Blink finishes in that window. Typed cooldown rejections occurred before
-native Blink submission.
-The prior run had zero successful and ten failed Fireball finishes, alongside
-62 failed Blinks. Cast-instance/facing correlation remains unavailable; do not
-attribute every point of raid DPS change to this one repair.
-
-REC-002 removes partial-trash pre-release waiting. REC-003 retries a native
-spline that finishes short of the entrance once, preserving the 30-second
-fallback for active paths. The latest eight death episodes released within
-1.514 seconds and returned in 41.846-46.455 seconds; all regrouped and resumed.
-The preceding run exercised the early retry and returned in 53.047 seconds
-instead of retaining the earlier 78.198-second stall. Full-wipe recovery was
-not exercised. The requested universal 30-40-second return is not yet proven.
-
-PULL-001's Hunter Misdirection to the assigned tank and Drudge opener are
-verified. Faster total trash completion and fewer casualties are not established.
-DPS-038 removed Elemental's artificial 12-yard retreats. DPS-039's moving
-Affliction Fel Flame fallback produced native damage on trash. Remaining
-bounded leads include Hunter's Mark on short-lived adds, trash survival and
-pull staging, and recovery episode bookkeeping across focus cleanup.
-Review actual diagnosis `effective_stats`/`native_combat_stats` and modifier
-auras before claiming missing stats or tuning damage from unmatched proc state.
-
-REC-001's full-wipe deadlock is repaired in configuration. In the previous
-`36f8ab0bc3` run all ten bots physically released, ran back, re-entered and
-resurrected, but admission recorded entrance `0/0/0`. The tracker therefore
-rejected their runback evidence and held the alive cohort. All seven BWD
-scenarios now explicitly declare the DBC/database-verified entrance
-`(6581, 0, 669)`. The production tracker fixture covers actual ghost progress,
-re-entry/resurrection in the same update, and rejection of missing/mismatched
-observations. Independent review approved this configuration-only repair;
-19 focused scenario/recovery tests and the native build passed.
-
-The previous `0f0` live admission contained the correct entrance. Fire mage 30007 died on
-Drudges, released, ran back, re-entered and resurrected after 122.493 seconds;
-the full cohort then resumed and killed Magmaw. This run did not have a full wipe, so full-wipe recovery has fixture coverage but remains unexercised
-live. The controller's `native_recovery_accepted=true` is vacuous when
-`native_recovery_required=false`; it is not proof of observed recovery.
-Trash wipes are acceptable when bots recover, regroup and resume progress.
-Do not weaken native evidence checks or manufacture a wipe to claim acceptance.
-
-The previous `0f0` boss DPS was 0.70% above the earlier successful a4b9 run. This does not
-establish every class's correctness or complete boss fidelity. Fire DPS fell
-6.69%; Discipline DPS/HPS fell 24.38%/22.16%, while other actors improved.
-There is no blanket role-performance acceptance. The independent closed-run
-review separates per-bot changes, encounter clear and repair scope.
-The first setup-only launch rejected a missing fresh stat seed before admitting
-bots; canonical provisioning corrected it. It is not a failed gameplay canary.
-
-The preceding 36f8 failure and its corrected causal analysis remain attributable.
-Earlier baseline review incorrectly reported zero trash casualties because its
-final watchdog counters had reset scope. The a4b9 run lost four bots on trash
-and recovered; it did not exercise a full wipe. Both old runs contained the
-same roughly 14.6-second Fire mage escape delay. Different Rush targets and
-healing pressure preceded the 36f8 wipe, but no causal telemetry regression was
-established. Boss-only staging remains held and was not used for this clear.
-
-An older successful native run is source `a4b9ab9bd7`:
-150.254 seconds, 28,305,736 hostile originated damage, 188,385.907 exact raid
-DPS and 11,624.203 effective HPS over the same interval. It cleared with zero
-boss deaths among the bots. Its source, review, build and closed capture are in
-`artifacts/cata_raid_program/magmaw_fidelity_20260912.tar.gz.dvc`.
-This is a development clear, not full fidelity or performance acceptance.
-
-The pending boss-research edge is ENC-006. The `0f0` capture contains native
-melee calculation stages: 485 observations with all nine stage fields, 466
-matched health callbacks, and 19 unmatched swings explicitly marked as native
-misses. The retained incoming-damage view contains 23 ordinary Magmaw callbacks
-with raw 4,431-6,538 and 9,939 total health damage. These values are not WCL's
-unmitigated boundary; review the stage observations before choosing any damage
-modifier. No fresh capture is needed to obtain those stages. See the
-[current baseline](strategies/t11/blackwing_descent/magmaw.md) and the published
-closed-run review. Full 4.4.2 fidelity is still not accepted.
-
-The following b113 comparison is the prior diagnostic run, preserved for
-performance context. It does not supersede the later a4b9 capture.
+The sections below retain September10 diagnostic history. Their run-specific
+acceptance and follow-up descriptions do not override the current status above.
 
 ## Prior diagnostic run
 

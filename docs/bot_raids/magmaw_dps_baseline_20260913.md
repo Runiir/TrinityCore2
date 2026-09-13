@@ -2,46 +2,52 @@
 
 ## Active parent objective and actor acceptance
 
-Repair and validate DPS across every represented spec. The latest feedback
-selects work within this objective; it does not replace it. No actor below has
-overall performance acceptance yet. Current native values are source `a3a74056c8`,
-129.088 seconds, 218,402.353 raid DPS and 12,350.947 HPS. Exact WCL references
-below differ in composition, phase coverage and gear; raw gaps prioritize
-investigation and are not coefficient multipliers or hard acceptance thresholds.
+Repair and validate all represented specs. Latest native source `779f62087f`
+cleared in129.792s with28,193,123 originated hostile damage:217,217.725DPS,
+12,961.739 exact-window HPS. This is0.54% below a3a's218,402.353DPS.
+Clear, Balance Treant admission, periodic-outcome telemetry and native hazard
+traversal passed independent review. Overall roster performance remains open.
 
-| Actor/spec | Native DPS | WCL example DPS | Open cause or uncertainty | Next implementation/verification | State |
-| --- | ---: | ---: | --- | --- | --- |
-| 30001 Balance | 27,086 | 41,029 | Root summon admission repaired in `7680fd9b7c`; existing guardian authority preserved; live Treant outcomes pending | Resolve summon safety and repair actual admission; compare Eclipse/spell cadence afterward | Active diagnosis |
-| 30002 Blood | 12,815 | 26,152 | Missing permanent enchants/action gaps; latest Blood decline remains under review. Historical MM AP was illegally overstacked with active53138 | Preserve current single AP category; repair native same-effect grouping for all rosters, then equipment/Heart Strike; diagnose current activity/pressure separately | Active diagnosis |
-| 30006 Fire | 24,467 | 40,190 | Native input/rate and range repairs ran on `a3a`; baiter DPS fell 9.19%; native outcome reviewed; overall performance open | Repair native periodic input/base-rate contract and separately correct range; retain targeting and movement review | Open |
-| 30007 Fire | 39,521 | 40,190 | Native input/rate repairs ran on `a3a`; DPS rose 19.85%; per-event validation and other losses remain | Validate native correction on both Fire actors; retain per-actor opportunity and targeting review | Open |
-| 30008 Affliction | 34,764 | 40,281 | Native Doomguard landed9 bolts/102,447 damage; moving Doom to parasites removed its eligible body target and wasted final lifetime | Repair Bane placement on transient targets; numeric guardian parity and remaining owner cadence remain open | Native caster observed; policy repair required |
-| 30009 Survival | 38,231 | 43,706–50,753 | Shot/trap repairs accepted; MultiShot native use unexercised in latest run | Explain observed aura/busy gates and validate useful add AoE without reopening accepted range fixes | Open |
-| 30010 Elemental | 32,168 | 41,866 | Tremor8143 wastes routine setup globals without fear; latest9a DPS decline under review | Repair required-earth-slot semantics while retaining reactive fear response; diagnose new loss separately | Active diagnosis |
-| 30003 Restoration | 3,212 | No matched damage target | Role gear lacks permanent enchants; healer duties bound offensive opportunity | Apply reviewed nine-slot Cataclysm enchant overlay; preserve healing and survival while reviewing offensive idle time | Source verified; implementation pending |
-| 30004 Holy | 0 | No matched damage target | Same role equipment gap; zero damage alone does not prove healer failure | Verify healing cadence, mana and safe offensive opportunities | Open |
-| 30005 Discipline | 6,138 | No matched damage target | Same role equipment gap; Atonement/healing attribution needs duty comparison | Verify equipment and healing/damage spell mix | Open |
+The current comparison reads actual WCL spell tables, not only actor totals.
+Its ranked component report and normalized source tables are retained inside
+`magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc`, under
+`magmaw-development-779f62087f/wcl-comparison/`. Reproduce with
+`tools.bot_ml.rank_raid_damage_gaps` and the retained timeline/references.json.
+Apparent gaps rank investigation; they are not recoverable DPS estimates.
 
-The latest raid total increased 1.13% over `9a`, while Balance fell 6.39%
-and baiter Fire 30006 fell 9.19%. Fire 30007 rose 19.85% to 39,521 DPS;
-Affliction, Survival and Elemental rose slightly, while Blood remained near
-12,815 DPS. These are observed comparisons; the all-bot review attributes the Fire baiter
-loss to proc/periodic outcomes with shorter casting gaps. Combined Fire
-damage rose5.60% and DPS6.79%; exact per-cast modifier joins remain incomplete.
-No actor is accepted merely for approaching the WCL display value.
+| Actor/spec | Native DPS | WCL example DPS | Largest observed differences / next check | State |
+| --- | ---: | ---: | --- | --- |
+| 30001 Balance | 26,401 | 41,029 | Starfire/Wrath cadence; missing Mushrooms/Starfall. Charge observed8.989s pincer interval and overlapping Crash once, then inspect free casting opportunities. | Open |
+| 30002 Blood | 13,098 | 26,152 | Death Strike/Rune Strike event damage, Vengeance/AP and phase coverage; missing Heart Strike is only one component. | Open |
+| 30006 Fire | 33,440 | 40,190 | Pyroblast1,033vs6,726DPS; explosions4,591vs853. Verify proc/cadence and explosion accounting, not only deficits. | Open |
+| 30007 Fire | 33,834 | 40,190 | Pyroblast3,256vs6,726DPS; explosions4,965vs853. Pincer duty and casting opportunity must be joined. | Open |
+| 30008 Affliction | 35,954 | 40,281 | Doomguard891vs3,738DPS; Shadow Bolt3,600vs6,121; Bane1,806vs3,748. Drain Soul4,327vs3,418 is not the deficit. | Open |
+| 30009 Survival | 35,403 | 43,706-50,753 | Explosive Shot structure/cadence; reference uses1215484/1215485, native53301. Verify alias/hotfix semantics before exact comparison. Pet DPS near lower reference. | Open |
+| 30010 Elemental | 28,861 | 41,866 | Lightning Bolt7,708vs13,069DPS; owned elementals1,897vs6,003; absent Chain Lightning. Lava Burst is higher here. | Open |
+| 30003 Restoration | 4,111 | Unmatched | 3,727.687HPS; duty/equipment/healing opportunity review remains required. | Open |
+| 30004 Holy | 0 | Unmatched | 4,769.585HPS; zero damage alone does not establish a defect. | Open |
+| 30005 Discipline | 6,117 | Unmatched | 903.399HPS; verify Atonement and healing opportunities alongside damage. | Open |
 
-Drain Soul explains the db67-to-9a Affliction damage decline. A measured 20%
-spell-speed difference explains tick spacing; both had Heroism. Extra speed
-aura ownership and landed critical/target-state details were not retained.
-The mean tick also fell 45.11%, so tick counts alone do not explain that loss.
-OBS-012 will retain native periodic outcomes and pre-damage health in the
-existing full/delta combat event and timeline, without inferred criticals.
+WCL Y8fight22 lasts111.3s; the Survival reference xAhkfight10 lasts70.9s.
+Whole-fight spell DPS is affected by phase coverage, buffs, gear and assignments.
+A larger native hit in some spells rejects blanket coefficient scaling as a
+justified next step; it does not certify those spells. The 8.989s Balance duty
+interval is observed assignment-to-landing time, not8.989s of proven zero-casting
+opportunity. Other required movement and WCL duty boundaries remain incomplete.
+Do not normalize total damage including DoT/pet tails by duty-free seconds.
 
-Close an actor only with attributable setup/stat and action/outcome comparison,
-implemented proven repairs, and native validation preserving its duties and
-survival. Every subsequent run updates all rows and retains regressions even
-when aggregate DPS rises. Missing evidence becomes an explicit capture task,
-not an implied pass. Closed individual repairs remain in the error ledger.
+The definite pre-duty Balance LOS failures remain a small repair candidate:
+two missed Starfires correspond to roughly110k gross damage using the observed
+mean, before resource, target lifetime and replacement-action costs. This is not
+a proven recovery estimate. The full27.221s casting gap cannot be charged as
+avoidable idle. Fix selection must follow material, duty-aware loss attribution.
+
+Next diagnosis compares phase/duty-matched spell cadence and damage, with native
+stat ledgers and promoted WoWSims action structure where class mechanics are
+suspected. Do not launch a five-spec dummy campaign or another minor raid canary
+just because a small patch is ready. Committed Affliction Bane-purpose, Fire/SV
+potion and Elemental Tremor changes are independently reviewed but not live
+validated; retain them without crediting hypothetical gains.
 
 ## Retained reference research
 

@@ -91,6 +91,23 @@ Rank improvements across the roster before selecting one bounded implementation;
 "one repair per iteration" does not mean "review only one bot."
 Do not estimate recoverable DPS by subtracting an unmatched simulator total.
 
+Rank large unexplained component differences separately from small proven bugs.
+Join duty/vehicle/safety intervals before labeling a cast gap avoidable; union
+overlaps and retain unknown boundaries. Assignment time is not automatically
+zero-casting time. Never divide total damage, including DoT/pet tails, by
+duty-free seconds. Compare body/head/add mix, phase exposure, buffs and spell
+aliases before attributing cadence or hit-size differences to code. Report
+stronger native components too: they can mask deficits or expose accounting and
+mechanics problems. A familiar small defect must not displace a larger unresolved
+signal merely because its implementation is ready.
+
+For a compact first comparison, normalize visible WCL component DPS into reviewed
+actor/selector records, retain the source tables, then join the existing timeline:
+`pixi run python -m tools.bot_ml.rank_raid_damage_gaps --timeline report.timeline.json
+--references references.json --output ranked.json`. The output ranks apparent
+differences, not recoverable gains. Bind duty annotations to the exact timeline
+identity; record missing phase/stat/duty parity and the next discriminating check.
+
 Return one compact `dps_review.json` and a short readable summary alongside the
 run. Reuse existing rotation-review output for exact spec comparisons. Include
 the per-actor findings, reference/measurement limitations, and the highest-value
