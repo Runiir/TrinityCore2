@@ -140,7 +140,12 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
     {
         victim = nullptr;
         Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, owner ? owner : me, max_range);
-        Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
+        // Filter before the native check can shrink its nearest-distance bound.
+        auto allowedCheck = [&](Unit* candidate)
+        {
+            return !ProtectedTotemTarget(owner, candidate) && u_check(candidate);
+        };
+        Trinity::UnitLastSearcher<decltype(allowedCheck)> checker(me, victim, allowedCheck);
         Cell::VisitAllObjects(me, checker, max_range);
         if (ProtectedTotemTarget(owner, victim))
             victim = nullptr;

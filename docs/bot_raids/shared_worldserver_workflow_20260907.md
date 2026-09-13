@@ -28,9 +28,12 @@ Affliction owner/head output also declined; this run does not establish its
 cause. Elemental's decline includes fewer observed Lava Surge resets and more
 movement, but remains separate from its proven unnecessary Tremor maintenance.
 
-Fire observation-only implementation is in review preparation. It must retain
-owned aura components and gate reasons without calling spell-modifier APIs that
-can mutate a prepared spell. Blood's native Mark/Might coverage, Balance guardian
+Fire observation-only implementation passed independent review in `4dcbb69b19`.
+DPS-053 also passed independent review and 22 focused tests. Its dedicated
+Doomguard AI requires owner-applied Bane of Doom603 or Bane of Agony980;
+shared pet/totem selectors skip protected targets before selecting a legal fallback.
+Native build, entry11859 readback and the next canary remain pending. Fire
+aura/gate observations will be captured in that same canary. Blood's native Mark/Might coverage, Balance guardian
 admission/authority, Survival sustained AoE, Elemental Tremor and role enchants
 remain queued. Every new run reviews all actors before performance acceptance.
 The final head window ended with boss death, so head-to-body return remains

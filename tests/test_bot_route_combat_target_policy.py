@@ -207,3 +207,56 @@ def test_drudge_reseparate_actions_stay_in_movement_lane_and_heal_is_independent
     assert "Resource::GlobalCooldown" in support
     assert "Resource::Cast" in support
     assert "Resource::Movement" not in support
+
+
+def test_current_encounter_authority_actual_producer_and_independent_future_slice(tmp_path):
+    """Compile the actual adaptive producer, native contract and authority header.
+
+    Only unrelated future-route collection is stubbed in the refresh adapter;
+    its new clearing statement is copied from the real ordinary refresh.
+    """
+    fallback = FALLBACK.read_text()
+    start = fallback.index('        if (routeOwnerReason())')
+    end = fallback.index('\n\n        auto routeActionIsMovementOnly', start)
+    producer = fallback[start:end]
+    refresh = (ROOT / 'src/server/game/Bots/BotWorldPopulationMgrValidationAuthority.cpp').read_text()
+    clear = next(line for line in refresh.splitlines() if 'SetCurrentEncounterRestrictions(' in line)
+    source = tmp_path / 'current_authority.cpp'
+    source.write_text(r'''
+#include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
+#include <cassert>
+struct Bot {ObjectGuid Guid{HighGuid::Player,30008u};ObjectGuid GetGUID()const{return Guid;}};
+struct Context {struct {BotEncounter::MagmawParasiteCombatContract MagmawParasiteCombat;} State;struct Bot* Bot;};
+void ConfigureValidationRouteCombatAuthority(Bot* bot){uint64 const raidAuthorityOwner=bot->GetGUID().GetRawValue();
+''' + clear + r'''
+}
+void publish(Context& context){auto routeOwnerReason=[](){return true;};
+''' + producer + r'''
+}
+int main(){using namespace BotRaidAreaAuthority;
+ Bot bot;Context context{{},&bot};auto& c=context.State.MagmawParasiteCombat;
+ uint64 owner=bot.Guid.GetRawValue();ObjectGuid personal(HighGuid::Unit,41806u,191u),support(HighGuid::Unit,42321u,192u),other(HighGuid::Unit,41806u,193u);
+ auto blocked=[&](uint32 entry,ObjectGuid guid){return IsProtectedEncounterTarget(owner,entry,0,guid.GetRawValue());};
+ SetProtectedEncounterEntries(owner,{9999});SetProtectedEncounterSpawnIds(owner,{55});
+ c.Active=true;c.ActorGuid=bot.Guid;c.PersonalThreatGuid=personal;c.SupportTargetGuid=support;publish(context);
+ assert(HasProtectedEncounterEntries(owner));assert(IsCurrentEncounterRestrictedEntry(owner,41806));assert(IsCurrentEncounterRestrictedEntry(owner,42321));
+ assert(blocked(41806,other));assert(blocked(42321,other));assert(!blocked(41806,personal));assert(!blocked(42321,support));
+ assert(!blocked(41570,other));assert(!blocked(42347,other));assert(blocked(9999,personal));
+ assert(IsProtectedEncounterTarget(owner,1,55,personal.GetRawValue()));
+ // Future-route allowed GUIDs cannot bypass this encounter's restriction.
+ SetAllowedEncounterGuids(owner,{other.GetRawValue()});assert(blocked(41806,other));
+ SetProtectedEncounterEntries(owner,{41806,9999});assert(blocked(41806,personal));
+ SetProtectedEncounterEntries(owner,{9999});
+ c.FireMageGuid=bot.Guid;publish(context);assert(!IsCurrentEncounterRestrictedEntry(owner,41806));assert(!blocked(41806,other));assert(blocked(9999,personal));
+ c.FireMageGuid.Clear();c.MarksmanshipHunterGuid=bot.Guid;publish(context);assert(!blocked(42321,other));
+ c.MarksmanshipHunterGuid.Clear();c.Active=false;publish(context);assert(!IsCurrentEncounterRestrictedEntry(owner,42321));assert(blocked(9999,personal));
+ c.Active=true;c.ActorGuid=ObjectGuid(HighGuid::Player,30007u);publish(context);assert(blocked(41806,personal));
+ c.ActorGuid=bot.Guid;publish(context);assert(!blocked(41806,personal));
+ ConfigureValidationRouteCombatAuthority(&bot);assert(!blocked(41806,other));assert(blocked(9999,personal));
+ publish(context);Clear(owner);assert(!HasProtectedEncounterEntries(owner));assert(!IsCurrentEncounterRestrictedEntry(owner,41806));assert(!blocked(41806,other));
+}
+''')
+    binary = tmp_path / 'current_authority'
+    subprocess.run(['g++', '-std=c++17', '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'), '-I', str(ROOT / 'src/server/game/Entities/Object'), str(source), '-o', str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)

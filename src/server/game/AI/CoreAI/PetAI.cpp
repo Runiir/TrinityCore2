@@ -19,6 +19,8 @@
 #include "AIException.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "CharmInfo.h"
+#include "CellImpl.h"
+#include "GridNotifiersImpl.h"
 #include "Creature.h"
 #include "Errors.h"
 #include "Group.h"
@@ -485,23 +487,27 @@ Unit* PetAI::SelectNextTarget(bool allowAutoSelect) const
     // Passive pets don't do next target selection
     if (me->HasReactState(REACT_PASSIVE) || me->HasReactState(REACT_ASSIST))
         return nullptr;
+    Unit* owner = me->GetCharmerOrOwner();
+    if (ControlledOffenseSuppressed(owner))
+        return nullptr;
     // Check pet attackers first so we don't drag a bunch of targets to the owner
     if (Unit* myAttacker = me->getAttackerForHelper())
-        if (!myAttacker->HasBreakableByDamageCrowdControlAura())
+        if (!myAttacker->HasBreakableByDamageCrowdControlAura() && !ProtectedEncounterTarget(owner, myAttacker))
             return myAttacker;
 
     // Not sure why we wouldn't have an owner but just in case...
-    if (!me->GetCharmerOrOwner())
+    if (!owner)
         return nullptr;
 
     // Check owner attackers
-    if (Unit* ownerAttacker = me->GetCharmerOrOwner()->getAttackerForHelper())
-        if (!ownerAttacker->HasBreakableByDamageCrowdControlAura())
+    if (Unit* ownerAttacker = owner->getAttackerForHelper())
+        if (!ownerAttacker->HasBreakableByDamageCrowdControlAura() && !ProtectedEncounterTarget(owner, ownerAttacker))
             return ownerAttacker;
 
     // Check owner victim
     // 3.0.2 - Pets now start attacking their owners victim in defensive mode as soon as the hunter does
-    if (Unit* ownerVictim = me->GetCharmerOrOwner()->GetVictim())
+    if (Unit* ownerVictim = owner->GetVictim())
+        if (!ProtectedEncounterTarget(owner, ownerVictim))
             return ownerVictim;
 
     // Neither pet or owner had a target and aggressive pets can pick any target
@@ -510,8 +516,18 @@ Unit* PetAI::SelectNextTarget(bool allowAutoSelect) const
     if (me->HasReactState(REACT_AGGRESSIVE) && allowAutoSelect)
     {
         if (!me->GetCharmInfo()->IsReturning() || me->GetCharmInfo()->IsFollowing() || me->GetCharmInfo()->IsAtStay())
-            if (Unit* nearTarget = me->SelectNearestHostileUnitInAggroRange(true, true))
+        {
+            Unit* nearTarget = nullptr;
+            Trinity::NearestHostileUnitInAggroRangeCheck nativeCheck(me, true, true);
+            auto allowedCheck = [&](Unit* candidate)
+            {
+                return !ProtectedEncounterTarget(owner, candidate) && nativeCheck(candidate);
+            };
+            Trinity::UnitSearcher<decltype(allowedCheck)> searcher(me, nearTarget, allowedCheck);
+            Cell::VisitGridObjects(me, searcher, MAX_AGGRO_RADIUS);
+            if (nearTarget)
                 return nearTarget;
+        }
     }
 
     // Default - no valid targets

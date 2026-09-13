@@ -14,6 +14,7 @@ void BotWorldPopulationMgr::ConfigureValidationRouteCombatAuthority(Player* bot)
         return;
 
     uint64 const raidAuthorityOwner = bot->GetGUID().GetRawValue();
+    BotRaidAreaAuthority::SetCurrentEncounterRestrictions(raidAuthorityOwner, {}, {});
     // Freeze every later encounter's complete declared creature surface in
     // the shared offensive authority before any route decision can submit a
     // cast.  Trash nodes are encounters too: their pack entries and split

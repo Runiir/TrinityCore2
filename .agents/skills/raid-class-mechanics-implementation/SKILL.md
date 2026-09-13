@@ -83,6 +83,11 @@ Locate the first native function or data edge that disagrees with the pinned
 reference. Use repository spell data, client data, or pinned WoWSims source as
 evidence; do not invent a coefficient from the final DPS gap.
 
+For guardian AI, verify the pinned expansion's spell description and owner-aura
+targeting rules before choosing acquisition behavior. A simulator's generic
+`CurrentTarget` is not evidence that the live guardian follows arbitrary owner
+attacks. Exercise aura application after cast callbacks as well as aura loss.
+
 Before adding a missing consumer, trace which terms the surrounding native
 calculation already includes. Exercise nonzero local and inherited contributions
 together; a zero-local-stat fixture cannot detect double application. Preserve

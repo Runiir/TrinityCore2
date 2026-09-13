@@ -2,37 +2,51 @@
   "schema": "cata_raid_active_work_unit_v1",
   "work_unit": "magmaw:doomguard_native_caster",
   "owner_skill": "raid-class-mechanics-implementation",
-  "classification": "native_ai_binding_proven_target_authority_review",
+  "classification": "native_ai_binding_repair_independently_reviewed",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "63d74834813ee558644a9e61fd6039abf617e589",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Admission accepted; native guardian combat behavior failed",
+  "gate_state": "Native implementation reviewed; build and live outcomes pending",
   "first_broken_edge": {
     "id": "doomguard_legacy_template_selects_melee_ai",
     "owner_classification": "native_guardian_ai",
     "cause": "Native11859 has no caster binding and legacy slots;63d produced only21 melee hits/8287damage with no85692.",
-    "review_state": "native_binding_proven_target_authority_review",
+    "review_state": "approved_for_native_build_and_bounded_canary",
     "ledger_id": "DPS-053"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "8690b3ca5f30e17416e2df144298e505c68cd8bc52862b4a2398a82af044b45a"
+    "sha256": "1cee2577f2481d219729a0f63c6c3c105ba988556cbcc711dfd8dc7e9b95b689"
   },
   "scope_lock": {
-    "objective": "Restore native Doom Bolt casting with owner target authority and preserve primary pet.",
+    "objective": "Restore native Doom Bolt on owner-applied Doom/Agony targets, with shared controlled-unit authority and primary-pet preservation.",
     "owned_files": [
-      "sql/custom/world/2026_09_13_03_warlock_doomguard_native_cast.sql"
+      "src/server/game/AI/CoreAI/PetAI.cpp",
+      "src/server/game/AI/CoreAI/TotemAI.cpp",
+      "src/server/game/Bots/BotRaidAreaAuthority.h",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrValidationAuthority.cpp",
+      "src/server/scripts/Pet/pet_script_loader.cpp",
+      "src/server/scripts/Pet/pet_shaman.cpp",
+      "tests/test_bot_route_combat_target_policy.py",
+      "tests/test_shaman_elemental_owner_target.py",
+      "src/server/scripts/Pet/pet_warlock.cpp",
+      "sql/custom/world/2026_09_13_03_warlock_doomguard_native_cast.sql",
+      "tests/test_warlock_doomguard_guardian.py",
+      "tests/test_raid_controlled_target_selection.py",
+      "tests/fixtures/warlock_doomguard_63d_native.json"
     ],
     "forbidden_changes": [
-      "No guessed coefficients, bot rotation, boss, movement tolerances or unrelated templates; expand exact native AI ownership only after target-authority review."
+      "No guessed coefficients, bot rotation, boss mechanics, native spell range, movement tolerances or unrelated templates."
     ]
   },
   "acceptance_conditions": [
-    "Production path selects native85692 caster behavior with legal owner target and fallback.",
+    "Native85692 submissions require owner-applied603/980 and legal target authority; callback-before-aura, preexisting aura, loss and fallback are exercised. Historical multi-Bane ordering remains unverified.",
     "Native guardian casts and lands attributable Doom Bolt, scales through existing owner-SP path and expires normally without replacing Felhunter.",
-    "All actor rows reviewed; clear, narrow repair and overall performance remain separate."
+    "All actor rows reviewed; clear, narrow repair and overall performance remain separate.",
+    "Protected first candidates cannot hide legal second candidates in PetAI, TotemAI or Shaman elementals; native binding determines acquisition success."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -41,9 +55,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Finish Fire observation review; implement native Doomguard caster/target authority, review/build once and validate all actors. Continue remaining class and role rows.",
+  "next_action": "Build reviewed native guardian/shared selectors and Fire observations once; read back11859; run completion-watchdog canary and review every actor. Continue remaining actor rows after evidence closure.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -92,9 +106,11 @@
     "independent_review_sha256": "b0baaefc5dda164498ce6bf4a82d28e31b65b2d72b9834b19b1f0a206b2e5ea1"
   },
   "implementation_review": {
-    "verdict": "next_native_repair_not_implemented",
+    "verdict": "approved_for_build_and_canary",
+    "review_sha256": "6b0348c6ba3059a84bab1f91ffec9c8c222a1db1004126013079bb1f84acfad3",
+    "focused_tests_passed": 22,
     "live_verified": false,
-    "next_work_unit_implemented": false
+    "next_work_unit_implemented": true
   },
   "related_edges": [
     {

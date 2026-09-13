@@ -21,34 +21,102 @@
  */
 
 #include "ScriptMgr.h"
+#include "Bots/BotRaidAreaAuthority.h"
+#include "CombatManager.h"
 #include "ScriptedCreature.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
+#include <algorithm>
+#include <tuple>
+#include <vector>
 
 namespace Pets::Shaman
 {
-bool AcquireShamanOwnerVictim(Creature* elemental)
+Unit* ShamanElementalOwner(Creature* elemental)
 {
     if (!elemental)
-        return false;
-
+        return nullptr;
     TempSummon* summon = elemental->ToTempSummon();
     Unit* owner = summon ? summon->GetSummoner() : elemental->GetCharmerOrOwner();
-    if (owner && owner->IsTotem())
-        owner = owner->ToTotem()->GetOwner();
-    Unit* victim = owner ? owner->GetVictim() : nullptr;
-    if (!victim && owner)
-        victim = owner->getAttackerForHelper();
-    if (!victim || !victim->IsAlive() || !owner->IsValidAttackTarget(victim))
-        return false;
+    return owner && owner->IsTotem() ? owner->ToTotem()->GetOwner() : owner;
+}
 
-    if (owner->GetTypeId() == TYPEID_PLAYER)
-        elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-    elemental->AI()->AttackStart(victim);
-    return true;
+bool ShamanAuthorityAllows(Unit* owner, Unit* target)
+{
+    if (!owner || !target)
+        return false;
+    uint64 const ownerGuid = owner->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return false;
+    Creature const* creature = target->ToCreature();
+    return !creature || !BotRaidAreaAuthority::IsProtectedEncounterTarget(ownerGuid,
+        creature->GetEntry(), creature->GetSpawnId(), creature->GetGUID().GetRawValue());
+}
+
+void StopShamanProtectedVictim(Creature* elemental)
+{
+    Unit* owner = ShamanElementalOwner(elemental);
+    if (owner && elemental->GetVictim() && !ShamanAuthorityAllows(owner, elemental->GetVictim()))
+    {
+        elemental->InterruptNonMeleeSpells(false);
+        elemental->AttackStop();
+    }
+}
+
+bool AcquireShamanOwnerVictim(Creature* elemental)
+{
+    Unit* owner = ShamanElementalOwner(elemental);
+    if (!owner)
+        return false;
+    auto tryTarget = [&](Unit* victim)
+    {
+        if (!victim || !victim->IsAlive() || !owner->IsValidAttackTarget(victim)
+            || !ShamanAuthorityAllows(owner, victim))
+            return false;
+        if (owner->GetTypeId() == TYPEID_PLAYER)
+            elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        elemental->AI()->AttackStart(victim);
+        return elemental->GetVictim() == victim;
+    };
+    Unit* victim = owner->GetVictim();
+    if (victim && tryTarget(victim))
+        return true;
+
+    uint64 const ownerGuid = owner->GetGUID().GetRawValue();
+    if (!BotRaidAreaAuthority::HasProtectedEncounterEntries(ownerGuid))
+        return !victim && tryTarget(owner->getAttackerForHelper());
+
+    // Protected first candidates must not hide established legal combat refs.
+    // Explicit owner victim wins above; fallback prefers ordinary targets and
+    // stable GUID order instead of unordered CombatManager iteration order.
+    std::vector<Unit*> candidates;
+    auto remember = [&](Unit* candidate)
+    {
+        if (candidate && candidate->IsAlive() && owner->IsValidAttackTarget(candidate)
+            && ShamanAuthorityAllows(owner, candidate))
+            candidates.push_back(candidate);
+    };
+    remember(owner->getAttackerForHelper());
+    for (auto const& entry : owner->GetCombatManager().GetPvECombatRefs())
+        if (!entry.second->IsSuppressedFor(owner))
+            remember(entry.second->GetOther(owner));
+    for (auto const& entry : owner->GetCombatManager().GetPvPCombatRefs())
+        if (!entry.second->IsSuppressedFor(owner))
+            remember(entry.second->GetOther(owner));
+    auto rank = [&](Unit* candidate)
+    {
+        return std::make_tuple(BotRaidAreaAuthority::IsCurrentEncounterRestrictedEntry(ownerGuid, candidate->GetEntry()),
+            candidate->GetGUID().GetRawValue());
+    };
+    std::sort(candidates.begin(), candidates.end(), [&](Unit* a, Unit* b) { return rank(a) < rank(b); });
+    candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
+    for (Unit* candidate : candidates)
+        if (tryTarget(candidate))
+            return true;
+    return false;
 }
 
 enum ShamanSpells
@@ -126,8 +194,16 @@ class npc_pet_shaman_earth_elemental : public CreatureScript
                 me->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_NATURE, true);
             }
 
+            void AttackStart(Unit* target) override
+            {
+                Unit* owner = ShamanElementalOwner(me);
+                if (!owner || ShamanAuthorityAllows(owner, target))
+                    ScriptedAI::AttackStart(target);
+            }
+
             void UpdateAI(uint32 diff) override
             {
+                StopShamanProtectedVictim(me);
                 if (!UpdateVictim() && (!AcquireShamanOwnerVictim(me) || !UpdateVictim()))
                     return;
 
@@ -170,8 +246,16 @@ class npc_pet_shaman_fire_elemental : public CreatureScript
                 me->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_FIRE, true);
             }
 
+            void AttackStart(Unit* target) override
+            {
+                Unit* owner = ShamanElementalOwner(me);
+                if (!owner || ShamanAuthorityAllows(owner, target))
+                    ScriptedAI::AttackStart(target);
+            }
+
             void UpdateAI(uint32 diff) override
             {
+                StopShamanProtectedVictim(me);
                 if (!UpdateVictim() && (!AcquireShamanOwnerVictim(me) || !UpdateVictim()))
                     return;
 

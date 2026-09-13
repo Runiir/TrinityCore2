@@ -16,6 +16,34 @@ inline std::unordered_map<uint64, std::unordered_set<uint32>> ProtectedEncounter
 inline std::unordered_map<uint64, std::unordered_set<uint32>> ProtectedEncounterSpawnIdsByOwner;
 inline std::unordered_map<uint64, std::unordered_set<uint64>> AllowedEncounterGuidsByOwner;
 
+// Separate from future-route protection: current exceptions cannot bypass it.
+inline std::unordered_map<uint64, std::unordered_set<uint32>> CurrentRestrictedEntriesByOwner;
+inline std::unordered_map<uint64, std::unordered_set<uint64>> CurrentAllowedGuidsByOwner;
+
+inline void SetCurrentEncounterRestrictions(uint64 ownerGuid,
+    std::vector<uint32> const& entries, std::vector<uint64> const& allowedGuids)
+{
+    if (!ownerGuid)
+        return;
+    std::lock_guard<std::mutex> guard(SuppressedOwnersMutex);
+    if (entries.empty())
+    {
+        CurrentRestrictedEntriesByOwner.erase(ownerGuid);
+        CurrentAllowedGuidsByOwner.erase(ownerGuid);
+        return;
+    }
+    CurrentRestrictedEntriesByOwner[ownerGuid] = {entries.begin(), entries.end()};
+    CurrentAllowedGuidsByOwner[ownerGuid] = {allowedGuids.begin(), allowedGuids.end()};
+    CurrentAllowedGuidsByOwner[ownerGuid].erase(0);
+}
+
+inline bool IsCurrentEncounterRestrictedEntry(uint64 ownerGuid, uint32 entry)
+{
+    std::lock_guard<std::mutex> guard(SuppressedOwnersMutex);
+    auto itr = CurrentRestrictedEntriesByOwner.find(ownerGuid);
+    return itr != CurrentRestrictedEntriesByOwner.end() && itr->second.count(entry) != 0;
+}
+
 inline void Set(uint64 ownerGuid, bool suppressed)
 {
     if (!ownerGuid)
@@ -67,6 +95,9 @@ inline void SetProtectedEncounterEntries(uint64 ownerGuid, std::vector<uint32> c
 inline bool HasProtectedEncounterEntries(uint64 ownerGuid)
 {
     std::lock_guard<std::mutex> guard(SuppressedOwnersMutex);
+    auto currentItr = CurrentRestrictedEntriesByOwner.find(ownerGuid);
+    if (currentItr != CurrentRestrictedEntriesByOwner.end() && !currentItr->second.empty())
+        return true;
     auto entryItr = ProtectedEncounterEntriesByOwner.find(ownerGuid);
     if (entryItr != ProtectedEncounterEntriesByOwner.end() && !entryItr->second.empty())
         return true;
@@ -118,17 +149,23 @@ inline bool IsProtectedEncounterTarget(uint64 ownerGuid, uint32 entry, uint32 sp
         return false;
     std::lock_guard<std::mutex> guard(SuppressedOwnersMutex);
     auto allowedItr = AllowedEncounterGuidsByOwner.find(ownerGuid);
-    if (allowedItr != AllowedEncounterGuidsByOwner.end()
-        && allowedItr->second.find(rawGuid) != allowedItr->second.end())
+    bool const futureAllowed = allowedItr != AllowedEncounterGuidsByOwner.end()
+        && allowedItr->second.count(rawGuid) != 0;
+    if (!futureAllowed)
+    {
+        auto entryItr = ProtectedEncounterEntriesByOwner.find(ownerGuid);
+        if (entryItr != ProtectedEncounterEntriesByOwner.end() && entryItr->second.count(entry) != 0)
+            return true;
+        auto spawnItr = ProtectedEncounterSpawnIdsByOwner.find(ownerGuid);
+        if (spawnItr != ProtectedEncounterSpawnIdsByOwner.end() && spawnItr->second.count(spawnId) != 0)
+            return true;
+    }
+    auto restrictedItr = CurrentRestrictedEntriesByOwner.find(ownerGuid);
+    if (restrictedItr == CurrentRestrictedEntriesByOwner.end() || restrictedItr->second.count(entry) == 0)
         return false;
-
-    auto entryItr = ProtectedEncounterEntriesByOwner.find(ownerGuid);
-    if (entryItr != ProtectedEncounterEntriesByOwner.end()
-        && entryItr->second.find(entry) != entryItr->second.end())
-        return true;
-    auto spawnItr = ProtectedEncounterSpawnIdsByOwner.find(ownerGuid);
-    return spawnItr != ProtectedEncounterSpawnIdsByOwner.end()
-        && spawnItr->second.find(spawnId) != spawnItr->second.end();
+    auto currentAllowedItr = CurrentAllowedGuidsByOwner.find(ownerGuid);
+    return currentAllowedItr == CurrentAllowedGuidsByOwner.end()
+        || currentAllowedItr->second.count(rawGuid) == 0;
 }
 
 inline void Clear(uint64 ownerGuid)
@@ -141,6 +178,8 @@ inline void Clear(uint64 ownerGuid)
     ProtectedEncounterEntriesByOwner.erase(ownerGuid);
     ProtectedEncounterSpawnIdsByOwner.erase(ownerGuid);
     AllowedEncounterGuidsByOwner.erase(ownerGuid);
+    CurrentRestrictedEntriesByOwner.erase(ownerGuid);
+    CurrentAllowedGuidsByOwner.erase(ownerGuid);
 }
 }
 

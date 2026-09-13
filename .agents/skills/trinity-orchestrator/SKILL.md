@@ -83,6 +83,11 @@ sets. A fixture that manually trims expected fields cannot prove the production
 comparison passes. Correct immutable contract identities through a new cohort;
 never fill missing observations from expected values.
 
+When adding shared target restrictions, exercise a protected first candidate and
+a legal second candidate through the affected pet/totem selectors. A final cast
+rejection cannot replace skipping ineligible candidates during selection, and
+an acquisition helper must not report success when target binding failed.
+
 Use Luna max for exact narrow implementation with immutable evidence, owned production
 and affected test files, one hypothesis, excluded changes, a focused command, and concrete
 acceptance. Use Sol high for causal ambiguity, architecture, or independent risky-change

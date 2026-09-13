@@ -1,0 +1,279 @@
+{
+  "source": "63d74834813ee558644a9e61fd6039abf617e589",
+  "server_epoch": 9934103279093296,
+  "attempt_id": 1,
+  "instance_id": 2,
+  "owner_guid": 30008,
+  "guardian_guid": 172,
+  "guardian_entry": 11859,
+  "first_summon_ms": 1789307878256,
+  "first_melee_ms": 1789307878335,
+  "last_melee_ms": 1789307922274,
+  "landed_melee_count": 21,
+  "landed_melee_damage": 8287,
+  "doom_bolt_event_count": 0,
+  "native": {
+    "Spell": {
+      "sha256": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+      "field_count": 48,
+      "record_size": 192,
+      "rows": [
+        [
+          85692,
+          65536,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          90,
+          0,
+          0,
+          4,
+          1101004800,
+          18445,
+          0,
+          213,
+          0,
+          1069170,
+          0,
+          14965,
+          0,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          629,
+          0,
+          0,
+          6136,
+          20171,
+          8559,
+          0,
+          0,
+          0,
+          18672,
+          16792,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "SpellRange": {
+      "sha256": "46fc3e766ff03f621a7641e2e440886475714f1304721c41e1e767d15ba87efd",
+      "field_count": 8,
+      "record_size": 32,
+      "rows": [
+        [
+          4,
+          0,
+          0,
+          1106247680,
+          1106247680,
+          0,
+          55,
+          68
+        ]
+      ]
+    },
+    "SpellCastTimes": {
+      "sha256": "8f7167c3e37e6975afee20fdfc0ee68efe8440644e236b0b1aa86390529e30dc",
+      "field_count": 4,
+      "record_size": 16,
+      "rows": [
+        [
+          90,
+          1700,
+          0,
+          1700
+        ]
+      ]
+    },
+    "SpellDuration": {
+      "sha256": "284e22a843ce4cb85604cd037d228f55a757ea3a608e59e3a5f30cbba02bc727",
+      "field_count": 4,
+      "record_size": 16,
+      "rows": []
+    },
+    "SpellCooldowns": {
+      "sha256": "0939c8ffb7902dc4e11546feedf36603b3bead730dfe795289fe977771b71d12",
+      "field_count": 4,
+      "record_size": 16,
+      "rows": []
+    },
+    "SpellClassOptions": {
+      "sha256": "6df7951ec8fa988cd0444a61d35992db8f94020870473d8101829b6d22dcd69c",
+      "field_count": 7,
+      "record_size": 28,
+      "rows": [
+        [
+          8559,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0
+        ]
+      ]
+    },
+    "SummonProperties": {
+      "sha256": "6fdb0e65535abc15d4d8962ab13b8efdb60f80536f70370a274d7e6f3f0dcfb4",
+      "field_count": 6,
+      "record_size": 24,
+      "rows": [
+        [
+          61,
+          1,
+          0,
+          2,
+          0,
+          2
+        ]
+      ]
+    },
+    "SpellEffect": {
+      "sha256": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252",
+      "field_count": 27,
+      "record_size": 108,
+      "rows": [
+        [
+          87009,
+          2,
+          0,
+          0,
+          0,
+          1,
+          1067748164,
+          1065353216,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          6,
+          0,
+          85692,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "template_before": {
+    "entry": 11859,
+    "AIName": "",
+    "ScriptName": "",
+    "spell1": 4629,
+    "spell2": 20549,
+    "spell3": 20812,
+    "spell4": 21949,
+    "spell5": 0,
+    "spell6": 0,
+    "spell7": 0,
+    "spell8": 0,
+    "minlevel": 60,
+    "maxlevel": 60,
+    "faction": 954,
+    "unit_class": 2,
+    "BaseAttackTime": 2000,
+    "RangeAttackTime": 1551
+  },
+  "bane_authority": {
+    "spell_dbc_sha256": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+    "rows": [
+      {
+        "spell_id": 603,
+        "name": "Bane of Doom",
+        "description": "Banes the target with impending doom, causing $s1 Shadow damage every $T1 sec.  When Bane of Doom deals damage, it has a $s2% chance to summon a Demon guardian. \r\n\r\nOnly one target can have Bane of Doom at a time, only one Bane per Warlock can be active on any one target. Lasts for $d.",
+        "attributes": [
+          65536,
+          0,
+          0,
+          0,
+          1048576,
+          32,
+          8388608,
+          0,
+          4096,
+          0,
+          0
+        ]
+      },
+      {
+        "spell_id": 980,
+        "name": "Bane of Agony",
+        "description": "Banes the target with agony, causing $o1 Shadow damage over $d.  This damage is dealt slowly at first, and builds up as the Curse reaches its full duration.  Only one Bane per Warlock can be active on any one target.",
+        "attributes": [
+          65536,
+          0,
+          0,
+          128,
+          1048576,
+          8192,
+          8388608,
+          0,
+          512,
+          0,
+          0
+        ]
+      },
+      {
+        "spell_id": 18540,
+        "name": "Summon Doomguard",
+        "description": "Summons a Doomguard to fight beside you for $60478d.\r\n\r\nThe Doomguard will assist you by attacking the target which is afflicted by your Bane of Doom or Bane of Agony spell.",
+        "attributes": [
+          65536,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          512,
+          0
+        ]
+      },
+      {
+        "spell_id": 80240,
+        "name": "Bane of Havoc",
+        "description": "Banes the target for $80240d, causing $80240s1% of all damage done by the Warlock to other targets to also be dealt to the baned target. \r\n\r\nOnly one target can have Bane of Havoc at a time, and only one Bane per Warlock can be active on any one target.",
+        "attributes": [
+          65536,
+          0,
+          0,
+          128,
+          1048576,
+          8224,
+          545259520,
+          0,
+          8704,
+          0,
+          0
+        ]
+      }
+    ]
+  }
+}

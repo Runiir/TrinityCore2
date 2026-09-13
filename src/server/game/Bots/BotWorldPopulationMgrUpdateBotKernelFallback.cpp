@@ -84,7 +84,24 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
         // future-encounter protections. Terminal and recovery holds return
         // before candidate submission and cannot reach this refresh.
         if (routeOwnerReason())
+        {
             ConfigureValidationRouteCombatAuthority(context.Bot);
+            auto const& contract = context.State.MagmawParasiteCombat;
+            ObjectGuid const actorGuid = context.Bot->GetGUID();
+            if (contract.Active && !contract.IsAssignedBaiter(actorGuid))
+            {
+                std::vector<uint64> allowedGuids;
+                if (contract.ActorGuid == actorGuid)
+                {
+                    if (!contract.PersonalThreatGuid.IsEmpty())
+                        allowedGuids.push_back(contract.PersonalThreatGuid.GetRawValue());
+                    if (!contract.SupportTargetGuid.IsEmpty())
+                        allowedGuids.push_back(contract.SupportTargetGuid.GetRawValue());
+                }
+                BotRaidAreaAuthority::SetCurrentEncounterRestrictions(actorGuid.GetRawValue(),
+                    {contract.ParasiteEntry, contract.ParasiteAltEntry}, allowedGuids);
+            }
+        }
 
         auto routeActionIsMovementOnly = [](std::string const& action)
         {

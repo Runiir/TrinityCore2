@@ -23,6 +23,7 @@ void AddSC_mage_pet_scripts();
 void AddSC_priest_pet_scripts();
 void AddSC_shaman_pet_scripts();
 void AddSC_paladin_pet_script();
+void AddSC_warlock_pet_scripts();
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
@@ -35,4 +36,5 @@ void AddPetScripts()
     AddSC_priest_pet_scripts();
     AddSC_shaman_pet_scripts();
     AddSC_paladin_pet_script();
+    AddSC_warlock_pet_scripts();
 }
