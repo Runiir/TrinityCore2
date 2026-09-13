@@ -6,11 +6,12 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The latest native source `26c536140a` cleared Magmaw with the same sole Blood
-DK, three healers and six DPS. Native death, complete capture, post-run build
-verification and cleanup passed. All ten survived the boss. One Fire Mage died
-on Drudges, reached the entrance after 44.785 seconds and returned to prepull
-after 67.892 seconds. The full route took 369.108 seconds.
+The latest native source `ee0504cc0c` cleared Magmaw with the same sole Blood
+DK, three healers and six DPS in132.205 seconds. Native death, complete capture,
+post-run build verification and cleanup passed. All ten survived the full
+route and boss, with zero Infection78941. First retained event to boss death
+spans336.387 seconds; capture sampling spans349.064 seconds.
+Independent review accepts the bounded DPS-043 targeting repair.
 
 | Native source | Boss seconds | Exact raid DPS | Effective HPS |
 | --- | ---: | ---: | ---: |
@@ -18,9 +19,10 @@ after 67.892 seconds. The full route took 369.108 seconds.
 | 4337116eeb | 138.556 | 203,478.182 | 14,563.664 |
 | 2af61a1cef | 131.609 | 214,218.807 | 11,647.995 |
 | 26c536140a | 133.998 | 210,399.581 | 10,868.625 |
+| ee0504cc0c | 132.205 | 213,253.077 | 10,279.195 |
 
-All four runs have 28,193,123 originated hostile damage. The latest DPS is
-0.873% below ff226 and 3.402% above433; individual class results remain mixed.
+All five runs have 28,193,123 originated hostile damage. Latest raid DPS is
+1.356% above26 and0.471% aboveff226; individual class results remain mixed.
 These are matched-composition development runs, not exact WCL/WoWSims parity
 or proof that every class is optimized.
 
@@ -36,17 +38,26 @@ pincer attempts reached native execution but returned176; that is policy-level
 coverage, not successful under-five-yard native casting. No unchanged range
 retry is requested. Balance measured25,641DPS versus17,670 on433 and29,498 on2af.
 
-DPS-043 is the next bounded runtime repair. Hunter selected Multi-Shot twice
-at+44.55/+44.65s on parasite189 with observed LOS false; none landed in26.
-Fixed baiter selection bypasses the existing actor-filtered opportunities and
-binds raw NearestParasite. The existing fixture even expects the blocked
-nearest215 instead of legal216. The patch selects a filtered legal parasite, admitted boss or explicit damage
-target clear while retaining bait/threat assignment and escape ownership.
-Thirteen focused tests passed independently; native build and validation are
-next. Exact-tick alternate legality is
-not observed; these two failures do not explain the full Hunter DPS gap. Mage30006 landed Blast Wave, Flamestrike and Blizzard;
-Mage30007 used Blizzard. No superior eligible Mage action bypass is proven.
-Balance Starfall/Force of Nature absence is a separate lead.
+DPS-043 is accepted for legal fixed-baiter binding and native offense. The
+old selector bypassed actor-filtered opportunities for raw NearestParasite;
+Hunter's two Multi-Shots on26 then failed LOS. Thirteen focused tests passed
+independently. On ee0504 all13 Mage and15 Hunter parasite-binding transitions
+record alive, attackable and LOS true. Hunter submits two Multi-Shots and lands
+11 effects, including106,795 add damage. Mage30006 lands Blast Wave on eight
+parasites and17 Flamestrike damage events. Contact escape remains active and
+no Infection occurs. Exact-tick blocked-nearer alternatives are not recorded;
+that selection counterexample is proven by the production fixture, not invented
+from live snapshots. Native terrain/pathing and class coefficients are unchanged.
+
+Overall performance remains mixed. Hunter is31,513DPS versus33,060 on26;
+Fire30006 is27,936 versus32,875, while Fire30007 rises to30,140 and Balance
+to30,423. These totals do not prove the remaining class rotations are correct.
+DPS-044 is the next bounded diagnosis: explain Mage30006's19.138-second
+fresh-direct-attack gap, then Hunter's14.910-second gap, using retained native
+submissions, finishes, movement and candidate eligibility. A fresh-effect gap
+is not automatically idle casting time. The separate Balance Starfall/Force
+of Nature area-policy lead remains open; no coefficient change is justified
+by their absence alone.
 
 DPS-041 remains accepted: ordinary add setup Marks are zero, seven Marks use
 normal ranking, and body/head setup remains. MOV-001 retains its earlier
@@ -64,11 +75,15 @@ Evidence pointers:
 `artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`,
 `artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc`,
 `artifacts/cata_raid_program/magmaw_native_range_2af61a1cef_20260913.tar.gz.dvc`,
-and the verified26 publication
-`artifacts/cata_raid_program/magmaw_range_recovery_26c536140a_20260913.tar.gz.dvc`.
-All four remote archives were reconstructed and hash-verified; exact large
-local payloads and duplicate archive/cache copies were evicted. The compact
-all-bot review is `dps_review.json` inside each closed run.
+the verified26 publication
+`artifacts/cata_raid_program/magmaw_range_recovery_26c536140a_20260913.tar.gz.dvc`,
+and latest `artifacts/cata_raid_program/magmaw_baiter_targets_ee0504cc0c_20260913.tar.gz.dvc`.
+The latest compact review is `magmaw-development-ee0504cc0c/dps_review.md`;
+older runs retain `dps_review.json`. Latest `remaining_attack_gaps.timeline.json.gz`
+retains unmodified Mage/Hunter events from+88..+114s with original identity and
+input hash. The remote archive and every member were verified through a fresh-cache
+reconstruction. Exact local raw/full timeline and duplicate archive/cache
+payloads were evicted. Raw capture and full timeline remain remotely reconstructible.
 
 The one-tank composition was first accepted on `89cef294b6`, replacing only
 the Prot Paladin slot with the catalog Balance loadout. All other nine actors
