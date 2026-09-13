@@ -81,9 +81,9 @@ struct Unit {
  bool HasSpell(uint32 id)const{return learned.count(id);} bool IsAlive()const{return alive;}
  bool IsInWorld()const{return true;} bool IsValidAttackTarget(Unit*,SpellInfo const* s=nullptr){if(s)checkedId=s->Id;return true;}
  bool IsWithinLOSInMap(Unit*)const{return true;} float GetExactDist(Unit*)const{return distance;}
- float GetSpellMinRangeForTarget(Unit*,SpellInfo const*)const{return 0;}
+ float GetSpellMinRangeForTarget(Unit const*,SpellInfo const*)const{return 0;}
  float GetSpellMaxRangeForTarget(Unit*,SpellInfo const*)const{return maxRange;}
- float GetMeleeRange(Unit*)const{return 5;} float GetCombatReach()const{return 0;}
+ float GetMeleeRange(Unit const*)const{return 5;} float GetCombatReach()const{return 0;}
  bool IsWithinDistInMap(Unit*,float range)const{return distance<=range;}
  bool HasUnitState(int mask)const{return state&mask;} void* GetCurrentSpell(int)const{return nullptr;}
  History const* GetSpellHistory()const{return &history;} int GetComboPoints()const{return 0;}
@@ -114,6 +114,8 @@ using AuraStateType=uint32;
     # Compile the shared production helper against fixture native adapters.
     helper = (BOT / "BotSpellResolution.h").read_text()
     source += "\n" + "\n".join(line for line in helper.splitlines() if not line.startswith("#include"))
+    minimum_range = (BOT / "BotSpellMinimumRange.h").read_text()
+    source += "\n" + "\n".join(line for line in minimum_range.splitlines() if not line.startswith("#include"))
     source += r'''
 enum class BotActionResult {Ok,BadSpell,InvalidTarget,DeadTarget,NoLineOfSight,OutOfRange,Throttled,Casting,GlobalCooldown,Cooldown,NoMana,NoOwner,CastFailed,NoAction};
 bool HasEnoughPowerForSpell(Player const* bot,SpellInfo const* info){return bot->power>=info->cost;}
@@ -143,7 +145,7 @@ struct BotActionExecutor {
 enum class BotCombatActionCategory {Defensive,DispelCleanse,ExternalDefensive,HealAoe,HealEfficient,HealFast,Mitigation,UseItem,Damage};
 struct ProfileSpell : BotActionProfileSpell {
  uint32 SpellId=19434;BotCombatActionCategory Category=BotCombatActionCategory::Damage;
- std::string CooldownGroup;float DamageWeight=1;int MinInjuredPlayers=0,MaxInjuredPlayers=0;
+ std::string CooldownGroup;float MinRange=0,DamageWeight=1;int MinInjuredPlayers=0,MaxInjuredPlayers=0;
  bool RequiresInterruptibleTarget=false,RequiresMeleeRange=false,RequiresRangedRange=false,RequiresTargetNotVictim=false,RequiresTargetVictim=false;
 };
 struct Candidate {uint32 SpellId=19434,ResolvedSpellId=0,ResolvedTriggerFlags=0,CastTimeMs=0;std::string RejectReason;};
@@ -155,7 +157,9 @@ Candidate Admit(Player* bot,Unit* target,ProfileSpell const& spell){
  Candidate candidate; candidate.SpellId=spell.SpellId;
  bool selfTarget=false,allyTarget=false,interruptsCurrentChanneledSpell=false;
  Unit* actionTarget=target;Unit* comboTarget=target;std::string conditionRejection;
- struct {std::string Role="dps";} profile;int healerTriageInjuredPlayers=0;
+ // This fixture exercises hostile damage, never a self-targeted combat potion.
+ bool requiresPotionHealthOwner=false;Unit const* hostileHealthTarget=target;
+ struct {std::string Role="dps";float MinRange=0;} profile;int healerTriageInjuredPlayers=0;
  std::map<std::string,bool> cooldownGroupsReady;
 '''
     start=candidates.index("        auto const resolved = BotSpellResolution::Resolve(bot, spell.SpellId,")
