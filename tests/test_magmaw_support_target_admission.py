@@ -45,9 +45,9 @@ def compile_probe(tmp_path: Path, source_text: str) -> Path:
     return binary
 
 
-@pytest.mark.parametrize("revision", [None, "26c536140a4e23c43d3d8e5016d3d1aa0463a716"])
+@pytest.mark.parametrize("revision,hunter_spec", [(None, "marksmanship_hunter"), (None, "survival_hunter"), ("26c536140a4e23c43d3d8e5016d3d1aa0463a716", "marksmanship_hunter")])
 def test_native_opportunity_and_production_support_selector(
-    tmp_path: Path, revision,
+    tmp_path: Path, revision, hunter_spec,
 ) -> None:
     if revision:
         relative = Path("Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h")
@@ -413,7 +413,7 @@ int main()
     assert(ordinaryBody.DamageTarget == boss.Guid);
     assert(!ordinaryBody.ClearOptionalDamageTarget);
 }
-''',
+'''.replace("marksmanship_hunter", hunter_spec),
     )
     result = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
     if revision:

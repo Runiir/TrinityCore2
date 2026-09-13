@@ -44,7 +44,9 @@ bool MatchesRule(MagmawRosterMember const& member,
     AssignmentRule const& rule)
 {
     return member.Role == rule.Role
-        && (!*rule.ClassSpec || member.ClassSpec == rule.ClassSpec);
+        && (!*rule.ClassSpec || member.ClassSpec == rule.ClassSpec
+            || (rule.Value == Slot::MarksmanshipHunterBaiter
+                && member.ClassSpec == "survival_hunter"));
 }
 
 CandidatePool BuildCandidates(std::vector<MagmawRosterMember> const& members,

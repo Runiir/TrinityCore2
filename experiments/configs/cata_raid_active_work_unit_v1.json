@@ -1,37 +1,42 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:roster_reference_comparison",
-  "owner_skill": "raid-rotation-review",
-  "classification": "causal_diagnosis_pending",
+  "work_unit": "magmaw:survival_roster_validation",
+  "owner_skill": "raid-shard-architecture",
+  "classification": "implementation_approved_native_pending",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "ee0504cc0cf68ca02b3179ac7479672a195630bc",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
+  "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "DPS-043 accepted; DPS-045 broader roster reference comparison pending",
+  "gate_state": "Survival candidate independently approved; serialized build and native verification pending",
   "first_broken_edge": {
     "id": "roster_performance_reference_not_yet_normalized",
     "owner_classification": "raid_rotation_review",
     "cause": "Closer WCL reference is selected, but phase/gear/effective-stat/action parity is incomplete. Native Affliction decline and missing tank/healer permanent enchants require separate diagnosis; no universal coefficient defect proven.",
-    "review_state": "broader_baseline_review_pending",
+    "review_state": "parallel_class_diagnosis_and_survival_review",
     "ledger_id": "DPS-045"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "c342574094697ce5f32f932cf1483564b66dacf9aef66dddbf8d26bacf646f77"
+    "sha256": "29235782fddf5e0e7cd5a351f3f924df78bd2b3c4bc62249566d8d675e12021a"
   },
   "scope_lock": {
-    "objective": "Establish per-spec WCL/WoWSims comparison using actual admitted gear before selecting the next bounded repair.",
-    "owned_files": [],
+    "objective": "Replace Magmaw30009 MM with promoted Survival setup while preserving bait/escape duties and the other nine actors; investigate retained all-class DPS differences.",
+    "owned_files": [
+      "tools/raid_program/bwd_shard_fixtures.py",
+      "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw"
+    ],
     "forbidden_changes": [
-      "No gameplay changes before evidence-backed diagnosis; no new live run to regenerate already retained data."
+      "No unrelated roster changes, coefficients, movement geometry, boss values or speculative rotation changes."
     ]
   },
   "acceptance_conditions": [
-    "Separate native observations from WCL displayed values and inferred normalization.",
-    "Use actual admission gear manifests and profession-equipment overrides, not generic intermediate profiles.",
-    "Compare all represented DPS specs and Blood by phase/cadence/event damage/pet output; explicitly mark missing MM reference.",
-    "Retain DPS-044 direct-effect gaps and Affliction local decline; no guessed coefficient or policy edits."
+    "Native30009 is Survival with exact promoted equipment/talents/glyphs/pet/consumables; other nine actors and other shards remain unchanged.",
+    "Baiting, legal target selection, escape and Disengage survive the spec change in production fixtures and attributable native outcomes.",
+    "Native boss death, complete capture and cleanup are separate from requested repair and overall performance acceptance.",
+    "Report exact elapsed raid and per-bot DPS/HPS, boss/add/pet output, activity, survival and phase coverage against ee0504; WCL and WoWSims are qualified external comparisons."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -40,9 +45,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
-  "ready_for_live_verification": false,
-  "next_action": "Use Y8ajQ7dbmKMG1RZy fight22 for all-caster/Blood comparison; normalize actual admitted gear/stats, phases, cooldowns, pets and native outcomes. Retain DPS-044 gaps and Affliction local decline; find a separate MM reference.",
+  "ready_for_build": true,
+  "ready_for_live_verification": true,
+  "next_action": "Complete independent review, build clean frozen source once, run canonical completion-watchdog Survival canary and compare all bots with ee0504 and pinned WCL references.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -89,10 +94,10 @@
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "bounded_repair_native_accepted",
-    "live_verified": true,
-    "next_work_unit_implemented": false,
-    "artifact_sha256": "12c6177cd042608c11c5ada453cd1b5bbdfe21019bd937c5da625618ddeae8d2"
+    "verdict": "approved_bounded_implementation",
+    "live_verified": false,
+    "next_work_unit_implemented": true,
+    "artifact_sha256": "6ad43302f28048da9c6b620c5f78a627f537cfba0d13f620b451ed96bbf9c108"
   },
   "related_edges": [
     {
@@ -166,9 +171,6 @@
     "affliction": [
       30008
     ],
-    "marksmanship": [
-      30009
-    ],
     "elemental": [
       30010
     ],
@@ -182,6 +184,9 @@
     ],
     "balance": [
       30001
+    ],
+    "survival": [
+      30009
     ]
   }
 }

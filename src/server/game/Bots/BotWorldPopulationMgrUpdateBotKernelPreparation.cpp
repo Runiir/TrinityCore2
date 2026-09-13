@@ -562,7 +562,8 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         context.Bot->GetGUID()))
             {
                 uint32 const spellId = actor->ClassSpec == "fire_mage"
-                    ? 1953u : actor->ClassSpec == "marksmanship_hunter"
+                    ? 1953u : (actor->ClassSpec == "marksmanship_hunter"
+                        || actor->ClassSpec == "survival_hunter")
                     ? 781u : 0u;
                 if (spellId)
                     if (SpellInfo const* info = sSpellMgr->GetSpellInfo(spellId))

@@ -108,3 +108,51 @@ Their actual equipped16-item means are407.94/408.31, not the intermediate
 profile's409.56/409.24. Blood's mean is407.44. Counting the two-handed weapon
 twice gives17-slot means407.29/407.65/407.94 respectively; retain the convention
 rather than silently equating these with WCL's displayed average.
+
+
+## Bounded class findings before the Survival canary
+
+Retained native source ee0504cc0c and the selected WCL actors support these
+separate findings. Full compact reviews are included with the next experiment
+publication; none changes the immutable ee0504 report.
+
+- Affliction submitted18 long single-target DoTs/Haunt to short-lived parasites
+  for only19,553 landed damage from those spells. The first Bane of Doom starts
+  at+34.016s. This waste also occurs onff226 and does not establish the cause
+  of the14.11% local decline. The Affliction profile also lacks Summon Doomguard;
+  WCL source9's guardian contributes416.2k displayed damage. Neither finding
+  justifies changing native coefficients.
+- Fire30006/30007 submit0/1 Combustions and2/5 instant Pyroblasts; WCL source4
+  records2 and12 respectively. Existing aura/proc gates require investigation.
+  Mage30006's19.138s fresh-direct-effect gap contains successful Living Bomb
+  casts and mandatory movement. A shorter+95.233..100.547s interval retains
+  backoff and maximum-range rejection after movement path rejection; native
+  body distance47.2094yd is observed. It is not19seconds of complete idleness.
+- Blood and all three healers have permanent enchant_id=0 in every admitted
+  equipment slot, with current/admitted hashes matching. Their source rows omit
+  profession-equipment overrides; the generic profiles are explicitly
+  unenchanted. Exact replacement enchant/profession authority must be completed
+  before provisioning a correction. This does not prove absent DK runeforge
+  aura. All DPS actors have permanent enchants in actual admission.
+- Affliction's latest andff226 gear hashes, Haunt/Drain submission counts and
+  execute start times closely match. Drain Soul tick amounts, Dragonwrath and
+  pet outcomes differ. Retained landed events lack crit flags, cast-instance
+  correlation and complete aura-state joins; ff226 also lacks the newer stat
+  snapshots. The decline remains unattributed, not a proven priority regression.
+
+WCL action counts above come from the linked report's exact actors and differ
+from native landed-event counts. Roster, equipment, phase coverage and proc
+opportunities remain comparison limits. Switching30009 to Survival tests the
+requested spec/setup and preserved duties; it cannot prove the other losses fixed.
+
+Balance review narrows the area-policy lead: Force of Nature33831 is a
+non-damaging guardian summon, but the shared predicate treats its destination
+area as hostile multi-target damage. All28 retained masks reject it and no
+native summon occurs. Resolver and executor duplicate that predicate. A repair
+must distinguish summon geometry from damage and validate native Treant targets;
+it does not justify enabling genuine Starfall, Chain Lightning or Fire AoE for
+all actors. Those spells currently conflict with the route's exact-target focus
+contract. Elemental's lower Earth Shock count is plausibly downstream of absent
+Chain Lightning charge generation; no independent Elemental gate or coefficient
+defect is proven. Its Fire Elemental, Spiritwalker's Grace and head Bloodlust
+are present.

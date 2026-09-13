@@ -210,7 +210,7 @@ def test_magmaw_shard_uses_six_ranged_dps_and_sole_blood_tank():
         "fire_mage",
         "fire_mage",
         "affliction_warlock",
-        "marksmanship_hunter",
+        "survival_hunter",
         "elemental_shaman",
     ]
     tanks = [bot for bot in magmaw["bots"] if bot["role"] == "tank"]
@@ -221,6 +221,15 @@ def test_magmaw_shard_uses_six_ranged_dps_and_sole_blood_tank():
     for field in ("class_spec", "gear_profile", "glyphs", "talents", "primary_tree_spells", "consumables", "profession_setup"):
         assert extra[field] == source[field]
     assert extra["roster_source_slot_id"] == "catalog:balance_druid"
+    hunter = next(bot for bot in dps if bot["character_guid"] == 30009)
+    survival = next(row["provisioning_bot"] for row in catalog["targets"] if row["spec_target_id"] == "survival_hunter")
+    for field in ("class_spec", "race", "class", "gear_profile", "gear_profile_id", "glyphs", "talents", "primary_talent_tree_id", "primary_tree_spells", "consumables", "profession_setup", "profession_equipment"):
+        assert hunter[field] == survival[field]
+    assert {k:v for k,v in hunter["pet"].items() if k not in ("name", "id_offset")} == {k:v for k,v in survival["pet"].items() if k not in ("name", "id_offset")}
+    assert hunter["roster_source_slot_id"] == "catalog:survival_hunter"
+    assert hunter["canonical_roster_slot_id"] == "raid_dps_4"
+    assert hunter["canonical_setup"]["action_profile_id"] == "survival_hunter"
+
     replaced = next(bot for bot in dps if bot["canonical_roster_slot_id"] == "raid_dps_2")
     assert replaced["roster_source_slot_id"] == "raid_dps_1"
     assert replaced["canonical_setup"]["action_profile_id"] == "fire_mage"
@@ -234,6 +243,10 @@ def test_magmaw_shard_uses_six_ranged_dps_and_sole_blood_tank():
         )
         assert slot["class_spec"] == "assassination_rogue"
         assert slot["roster_source_slot_id"] == "raid_dps_2"
+        hunter = next(bot for bot in shard["bots"] if bot["canonical_roster_slot_id"] == "raid_dps_4")
+        assert hunter["class_spec"] == "marksmanship_hunter"
+        assert hunter["roster_source_slot_id"] == "raid_dps_4"
+
 
 
 def test_provisioning_entrypoint_loads_all_six_tracked_shard_pools():
@@ -264,6 +277,7 @@ def test_diagnostic_rosters_receive_exact_canonical_spec_consumables():
         "fire_mage": [58086, 62671, 58091],
         "affliction_warlock": [58086, 62671, 58091],
         "marksmanship_hunter": [58087, 62669, 58145],
+        "survival_hunter": [58087, 62669, 58145],
         "elemental_shaman": [58086, 62671, 58091],
     }
     for bot in magmaw["bots"]:
@@ -355,3 +369,27 @@ def test_dvc_generation_and_verifier_bind_the_tracked_shard_fixture():
     assert dvc.count(f"--bwd-diagnostic-shard-fixture\n      {fixture_path}") == 3
     assert dvc.count(f"- {fixture_path}") >= 3
     assert dvc.count("- tools/raid_program/bwd_shard_fixtures.py") >= 2
+
+
+def test_survival_catalog_matches_promoted_request_and_native_gear():
+    from tools.bot_ml.build_validation_provisioning import load_gear_profiles, apply_gear_profiles
+    config_dir = ROOT / "experiments/configs"
+    catalog = json.loads((config_dir / "all_spec_targets_cata_p4_v1.json").read_text())
+    bot = next(row["provisioning_bot"] for row in catalog["targets"] if row["spec_target_id"] == "survival_hunter")
+    request = next(row["request"] for row in json.loads((config_dir / "wowsims_cata_dps_reference_requests_v1.json").read_text())["requests"] if row["target_spec"] == "survival_hunter")
+    player = request["player"]
+    assert bot["profession_equipment"] == player["gear"]["wowsims_items"]
+    assert sorted(row["spell_id"] for row in bot["talents"]) == sorted(player["talents"]["active_spell_ids"])
+    assert bot["glyphs"] == player["glyphs"]["item_ids"]
+    assert bot["pet"]["entry"] == player["pet_setup"]["creature_entry"]
+    assert set(player["pet_setup"]["required_autocast_spell_ids"]).issubset({row["id"] for row in bot["pet"]["spells"] if isinstance(row, dict) and row["active"] == 193})
+    path = config_dir / "wowsims_cata_p4_gear_profiles.json"
+    source = json.loads(path.read_text())["profiles"][bot["gear_profile_id"]]
+    assert source["items"] == player["gear"]["wowsims_items"]
+    assert source["source"]["sha256"] == player["gear"]["source_sha256"]
+    assert source["transformed_manifest_sha256"] == player["gear"]["transformed_manifest_sha256"]
+    profiles = load_gear_profiles(path, profile_ids={bot["gear_profile_id"]})
+    resolved = apply_gear_profiles({"scenarios": [{"bots": [bot]}]}, profiles)["scenarios"][0]["bots"][0]
+    expected = [(slot, item["id"], item.get("enchant", 0), item.get("gems", []), item.get("reforging", 0)) for slot, item in zip(player["gear"]["slot_map"], player["gear"]["wowsims_items"]) if item.get("id")]
+    assert [(item["slot"], item["item_id"], item["enchant_id"], item["gem_item_ids"], item["reforge_id"]) for item in resolved["equipment"]] == expected
+    assert resolved["profession_setup"] == bot["profession_setup"]

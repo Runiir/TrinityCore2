@@ -32,8 +32,8 @@
       "class_id": "validation_routes",
       "stage": "validation_scenarios",
       "output_path": "dataset/validation_scenarios",
-      "md5": "b5ba1caeab017126358e95e8edcb2a46.dir",
-      "size": 546232,
+      "md5": "f882f698a5ff70a4710a19878d66d4f1.dir",
+      "size": 546212,
       "nfiles": 5
     },
     {
@@ -108,9 +108,9 @@
       "audit_inventory_sha256": "bd23bc7cc3e018f542e54acb63d787bdab7bae98a2bf00249411fdb1754565be",
       "expected_inventory": {
         "file_count": 5,
-        "size_bytes": 546232,
+        "size_bytes": 546212,
         "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1",
-        "inventory_sha256": "b4d20e141187eeba1b22125e4ec07313eba0f97d4e57c5e1a70ac1d5dc2a6500"
+        "inventory_sha256": "cc3c9e8323f574e4b9b9e2d0bac974ee3020798716514ef9ab62b9d1fa9fc4e8"
       },
       "expected_files": [
         {
@@ -118,7 +118,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 764,
-          "sha256": "879158ad56203b481807d0e7f5ef8e0deaa17e27248da97c61f0a4431c66ec44"
+          "sha256": "10cc2829d5caff877fbaa1b3ba1e1f7f291835757953cdbaaa07f95c057b134a"
         },
         {
           "path": "dataset/validation_scenarios/report.json",
@@ -138,15 +138,15 @@
           "path": "dataset/validation_scenarios/validation_routes.jsonl",
           "type": "file",
           "mode": "0644",
-          "size_bytes": 481831,
-          "sha256": "1a83806cf7f4a354fcafc93a79858cfe1e751b2afce1444a3b34d716d0cced0a"
+          "size_bytes": 481815,
+          "sha256": "f00e373e5dd0579ec8639a1f0c136bf5896b280cc077df9670f03af49937643d"
         },
         {
           "path": "dataset/validation_scenarios/validation_scenarios.jsonl",
           "type": "file",
           "mode": "0644",
-          "size_bytes": 34475,
-          "sha256": "22f290c77f6c89f933ce19f041f8560510f6b1e176d9bf7a01552a72b9eebe4b"
+          "size_bytes": 34471,
+          "sha256": "0d5926929d84d2a82b45f060044802a8ade71453ffe11067b3c7859bfb38422b"
         }
       ]
     },

@@ -6,6 +6,22 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
+Current candidate replaces only Magmaw Hunter30009 with Survival, using its
+promoted equipment, talents, glyphs, wolf and consumables. Sole Blood tank,
+three healers and the other five DPS remain unchanged. Baiting and Disengage
+predicates now accept both Hunter specs. Thirty-six affected tests pass; one
+pre-existing generic-gear fixture failure is documented in the review packet.
+Independent Sol review approves the bounded change (36 focused tests and eight
+additional Magmaw policy tests passed). Native Survival verification is pending. This spec swap
+is not acceptance of the other classes' unresolved losses.
+
+Generated provisioning and scenario assets were reproduced using
+`pixi run dvc repro --single-item validation_provisioning validation_provisioning_verify validation_scenarios`.
+Use these exact stages when upstream gear inputs are already verified; recursive
+reproduction otherwise re-extracts unrelated world knowledge. Refresh the route
+inventory/DVC binding and normalize generated route files to0644 before the
+frozen-source asset check. Runtime profile validation passes for Survival.
+
 The latest native source `ee0504cc0c` cleared Magmaw with the same sole Blood
 DK, three healers and six DPS in132.205 seconds. Native death, complete capture,
 post-run build verification and cleanup passed. All ten survived the full

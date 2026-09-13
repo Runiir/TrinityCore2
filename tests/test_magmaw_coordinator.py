@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,7 +14,8 @@ INCLUDES = [
 ]
 
 
-def test_magmaw_shadow_coordinator_contract(tmp_path: Path) -> None:
+@pytest.mark.parametrize("hunter_spec", ["marksmanship_hunter", "survival_hunter"])
+def test_magmaw_shadow_coordinator_contract(tmp_path: Path, hunter_spec) -> None:
     source = tmp_path / "magmaw_coordinator.cpp"
     binary = tmp_path / "magmaw_coordinator"
     source.write_text(r'''
@@ -608,6 +610,7 @@ int main()
     AssertLegacySignatureUnchanged();
 }
 ''', encoding="utf-8")
+    source.write_text(source.read_text().replace("marksmanship_hunter", hunter_spec))
     subprocess.run([
         "g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", *INCLUDES,
         str(source),

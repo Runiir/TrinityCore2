@@ -39,10 +39,10 @@ SHARD_DEFINITIONS: tuple[dict[str, Any], ...] = (
 )
 # Magmaw uses a diagnostic one-tank roster with the exact catalog Balance Druid
 # setup replacing the former Protection Paladin. The original Rogue slot also
-# uses Fire Mage for ranged execution. Canonical and other shard rosters stay
+# uses Fire Mage for ranged execution; GUID30009 uses exact catalog Survival. Canonical and other shard rosters stay
 # unchanged; canonical_roster_slot_id preserves stable slot/GUID ownership.
 SHARD_ROSTER_SOURCE_OVERRIDES: dict[str, dict[str, str]] = {
-    "magmaw": {"raid_tank_1": "catalog:balance_druid", "raid_dps_2": "raid_dps_1"},
+    "magmaw": {"raid_tank_1": "catalog:balance_druid", "raid_dps_2": "raid_dps_1", "raid_dps_4": "catalog:survival_hunter"},
 }
 LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
 

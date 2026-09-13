@@ -76,7 +76,8 @@ public:
                     && (mage.IsEmpty() || member.Guid.GetRawValue()
                         < mage.GetRawValue()))
                     mage = member.Guid;
-                else if (member.ClassSpec == "marksmanship_hunter"
+                else if ((member.ClassSpec == "marksmanship_hunter"
+                        || member.ClassSpec == "survival_hunter")
                     && (hunter.IsEmpty() || member.Guid.GetRawValue()
                         < hunter.GetRawValue()))
                     hunter = member.Guid;

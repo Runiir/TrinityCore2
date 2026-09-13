@@ -33,9 +33,10 @@ ProposeMagmawDirectionalMobility(Blackboard const& board,
         std::get_if<BotNativeAction::Move>(&pointMovement.Action);
     bool const fireMage = bot.ClassSpec == "fire_mage"
         && input.SpellId == BlinkSpell;
-    bool const marksHunter = bot.ClassSpec == "marksmanship_hunter"
+    bool const rangedHunter = (bot.ClassSpec == "marksmanship_hunter"
+        || bot.ClassSpec == "survival_hunter")
         && input.SpellId == DisengageSpell;
-    if (!point || (!fireMage && !marksHunter)
+    if (!point || (!fireMage && !rangedHunter)
         || !input.NativeReuseCooldownMs)
         return std::nullopt;
 

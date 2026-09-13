@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import subprocess
+import pytest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_magmaw_directional_mobility_and_point_fallback(tmp_path: Path) -> None:
+@pytest.mark.parametrize("hunter_spec", ["marksmanship_hunter", "survival_hunter"])
+def test_magmaw_directional_mobility_and_point_fallback(tmp_path: Path, hunter_spec) -> None:
     source = tmp_path / "magmaw_directional_integration.cpp"
     binary = tmp_path / "magmaw_directional_integration"
     source.write_text(
@@ -289,6 +291,7 @@ int main()
 ''',
         encoding="utf-8",
     )
+    source.write_text(source.read_text().replace("marksmanship_hunter", hunter_spec))
     subprocess.run(
         [
             "g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
@@ -323,3 +326,14 @@ def test_magmaw_runtime_join_uses_native_cooldown_and_two_candidates() -> None:
     assert "context.AdaptiveMagmawDirectionalMobility" in candidates
     assert "context.AdaptiveMagmawMovements" in candidates
     assert "parasite_directional_mobility" in adapter
+
+
+def test_native_preparation_selects_disengage_for_both_hunter_specs(tmp_path):
+    text = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp").read_text()
+    start = text.index('                uint32 const spellId = actor->ClassSpec == "fire_mage"')
+    gate = text[start:text.index('                if (spellId)', start)]
+    source = tmp_path / "native_mobility_spell.cpp"
+    source.write_text('#include <string>\n#include <cassert>\nusing uint32=unsigned;\nstruct Actor { std::string ClassSpec; };\nunsigned select(Actor const* actor) {\n' + gate + 'return spellId;}\nint main(){Actor a{"survival_hunter"};assert(select(&a)==781);a.ClassSpec="marksmanship_hunter";assert(select(&a)==781);a.ClassSpec="fire_mage";assert(select(&a)==1953);a.ClassSpec="balance_druid";assert(select(&a)==0);}')
+    binary = source.with_suffix('')
+    subprocess.run(['c++', '-std=c++17', str(source), '-o', str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
