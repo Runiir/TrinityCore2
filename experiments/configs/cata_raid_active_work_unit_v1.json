@@ -1,37 +1,41 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:native_terminal_cast_outcome",
+  "work_unit": "magmaw:native_minimum_range_admission",
   "owner_skill": "raid-bot-runtime-implementation",
-  "classification": "missing_native_cast_outcome_observation",
+  "classification": "failed",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "b1132dd087de9216c1d77694a8d7b37ddc209955",
+  "observed_at_commit": "4337116eebce7c3081a94ef3f6de3dc122d692a2",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
-  "evidence_contract_change": true,
-  "gate_state": "Prior timeline/target-admission canary closed; next observation bounded but not implemented",
+  "behavior_change": true,
+  "evidence_contract_change": false,
+  "gate_state": "DPS-041 accepted; DPS-042 implementation in progress",
   "first_broken_edge": {
-    "id": "native_terminal_cast_failure_unattributable",
+    "id": "artificial_five_yard_gate_rejects_native_zero_minimum_spells",
     "owner_classification": "raid_bot_runtime_implementation",
-    "cause": "Native finish records success=false without terminal SpellCastResult/cancellation cause or cast-instance identity. Current-spell observations and submissions cannot identify why a moving-permitted cast later failed.",
-    "review_state": "observation_gap_proven_no_coefficient_or_policy_cause_admitted",
-    "ledger_id": "OBS-008"
+    "cause": "At4.650yd after pincer duty, five Balance spells are rejected as ranged_range_required although native and configured minimums are0; movement sees no minimum-range violation.",
+    "review_state": "causal_review_complete_implementation_pending",
+    "ledger_id": "DPS-042"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "b47dc785f5347de3414b09f8a6ef1b95a00a8529e04432b9e5dff90f235e5684"
+    "sha256": "f656ec892cb4c1823721a31cb7a16a25fe11d971962b427c27b747b7524bf6b0"
   },
   "scope_lock": {
-    "objective": "Expose one missing native terminal cast outcome so the next repair has a causal target; preserve accepted gameplay and complete timeline capture.",
-    "owned_files": [],
+    "objective": "Admit spells using their actual native/configured minimum range and preserve real Hunter deadzones.",
+    "owned_files": [
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+      "src/server/game/Bots/BotControllerCombat.cpp"
+    ],
     "forbidden_changes": [
       "No guessed coefficients, manual auras, roster changes, arbiter bypass, Z steering or speculative cast cancellation."
     ]
   },
   "acceptance_conditions": [
-    "Retain actual native terminal failure/cancellation cause and cast-instance correlation, with server epoch, attempt, actor, target and timestamp.",
-    "Exercise the production start/finish/cancel paths and simultaneous native movement without fabricating correlations or changing gameplay.",
-    "Obtain independent review and one bounded validation only after the observation repair is implemented.",
-    "Keep encounter clear, requested observation coverage and overall performance separate; publish and verify closed evidence before exact local eviction."
+    "Replay recorded Balance4.650yd state through production producer and resolver; native0-minimum spells remain eligible.",
+    "Preserve ranged-flag Hunter deadzone, positive native/configured minimums, maximum range, LOS and movement ownership.",
+    "Independent Sol review and focused tests before one native completion-watchdog canary.",
+    "Verify native casts finish/land after pincer duty; compare all-bot activity, damage, survival, phase coverage and exact DPS/HPS to ff226 and433. Publish and verify evidence before exact eviction."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -42,7 +46,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Inspect the retained timeline and add native terminal cast failure/cancellation cause and cast-instance identity before another rotation hypothesis; do not repeat the accepted retention/admission canary unchanged.",
+  "next_action": "Repair native/configured minimum range admission across producer and consumers, independently review, build once and validate Balance post-pincer activity on the same roster.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -58,7 +62,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "b1132dd087de9216c1d77694a8d7b37ddc209955",
+    "source_commit": "4337116eebce7c3081a94ef3f6de3dc122d692a2",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -68,31 +72,28 @@
     "postrun_build_verified": true,
     "training_eligible": false,
     "qualification_eligible": false,
-    "recorded_casualties": 2,
+    "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 156.064,
-    "hostile_originated_damage": 28352550,
-    "pull_to_death_party_dps": 181672.5830428542,
-    "exact_effective_healing": 2298732,
-    "exact_hps": 14729.418700020506,
-    "five_dps_actor_dps": 138633.599,
-    "requested_repair_id": "ENC-003",
+    "pull_to_death_seconds": 138.556,
+    "hostile_originated_damage": 28193123,
+    "pull_to_death_party_dps": 203478.182106874,
+    "exact_effective_healing": 2017883,
+    "exact_hps": 14563.663789,
+    "requested_repair_id": "DPS-041",
     "requested_repair_achieved": true,
-    "performance_verdict": "inconclusive",
+    "performance_verdict": "unresolved_decline_diagnosis_required",
     "diagnosis_required": true,
-    "primary_baseline_source": "6882d0c20447283a9c97f006cdae2c7ea136a9db",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_development_b1132dd087_20260910.tar.gz.dvc",
+    "primary_baseline_source": "ff226ad52b3f20183cecaa6400f4bc824e804569",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc",
     "publication_state": "remote_verified_and_exact_duplicates_evicted",
-    "historical_head_return_cause": "DPS-023 unresolved; current return does not disprove original occurrence",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
     "reasoning": "high",
-    "verdict": "prior_work_unit_reviewed_and_native_exercised",
-    "scope": "ENC-003 optional admission, CAP-005 immutable trace/retention, CAP-006 outcome-aware repeat counter; artifact renderer separately reviewed on a9431b973e",
-    "live_verified": true,
+    "verdict": "DPS-041_approved_and_native_accepted_DPS-042_pending",
+    "live_verified": false,
     "next_work_unit_implemented": false
   },
   "related_edges": [
@@ -139,7 +140,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "OBS-008",
+  "error_id": "DPS-042",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -155,12 +156,9 @@
       "guid": 30002,
       "spec": "blood_death_knight"
     },
-    "off_tank": {
-      "guid": 30001,
-      "spec": "protection_paladin"
-    },
+    "off_tank": null,
     "state": "native_main_tank_and_vengeance_observed",
-    "reason": "Sustain Blood DK boss ownership and native Vengeance; validate taunts and swaps, not just pull ownership."
+    "reason": "Sole Blood DK tank; former Prot Paladin30001 is Balance DPS. Preserve the same one-tank/three-healer/six-DPS composition."
   },
   "active_review_actors": {
     "fire": [
@@ -176,9 +174,6 @@
     "elemental": [
       30010
     ],
-    "protection_paladin": [
-      30001
-    ],
     "healers": [
       30003,
       30004,
@@ -186,6 +181,9 @@
     ],
     "blood_death_knight": [
       30002
+    ],
+    "balance": [
+      30001
     ]
   }
 }

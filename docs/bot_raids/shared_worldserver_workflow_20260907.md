@@ -6,39 +6,46 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-The latest source `ff226ad52b` uses one Blood DK tank, three healers and six
-DPS, including Balance Druid. It killed Magmaw in 132.828 seconds at
-212,252.861 exact raid DPS and 11,764.605 effective HPS; native clear and
-cleanup passed. The run recovered from seven trash death events and reached
-the boss. Independent review accepts MOV-001: Elemental selected an outward20-yard
-endpoint from15.970 yards clearance, reached it through native motion, retained
-the pursuit episode after arrival, and rearmed when danger approached again.
-A later native path-control rejection remains a separate limitation.
-Evidence:
-`artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`.
+The latest native source `4337116eeb` uses one Blood DK tank, three healers
+and six DPS, including Balance Druid. It cleared Magmaw in 138.556 seconds
+at 203,478.182 exact raid DPS and 14,563.664 effective HPS. All ten survived
+the complete route, which took 348.774 seconds. Cleanup passed. The preceding
+`ff226ad52b` clear remains the best matched one-tank result: 132.828 seconds,
+212,252.861 DPS, 11,764.605 HPS and 414.771 seconds for the full route, including
+seven recovered trash deaths. Both runs dealt 28,193,123 originated hostile
+damage. The latest 4.13% boss DPS decline is not performance acceptance.
+Evidence: `artifacts/cata_raid_program/magmaw_hunter_mark_4337116eeb_20260913.tar.gz.dvc`.
 
-The matched one-tank baseline `89cef294b6` took 149.639 seconds at
-195,379.273 DPS and 19,122.488 HPS. Latest originated hostile damage is
-28,193,123 versus 29,236,359; no spell78941 incoming events appear in the
-latest complete boss timeline, versus15 previously. Mage30006, Mage30007,
-Affliction and Hunter DPS rose; Blood DK, Elemental and Balance declined.
-Do not equate a faster clear or fewer infections with acceptance of all class
-behavior. The independent per-phase boss/add review owns causal limits.
+DPS-041 is independently reviewed and natively accepted. Ordinary add setup
+Marks fell from 13 to zero; six Marks passed through normal ranking instead.
+Boss/head setup marking remained, and Multi-Shot finished and landed. Hunter
+DPS nevertheless fell from 35,127 to 33,245; a direct-attack gap and later LOS
+failures remain unresolved. Do not attribute every DPS change to this patch.
 
-MOV-001 corrects an observed inward escape destination and premature task
-completion during pursuit. It keeps safe distant pursuit armed without
-movement, emits outward legs when danger approaches, and retains the same
-threat episode after arrival. Twenty-two focused tests passed independently;
-the production strategy replay fails on the prior implementation. Native
-pathing and class policies are unchanged.
+DPS-042 is the next bounded runtime repair. Balance DPS fell from 27,512 to
+17,670. After pincer duty, native motion left it 4.650 yards from the target.
+Five core spells were rejected as `ranged_range_required`, while movement
+correctly reported the configured zero-yard minimum satisfied. Native DBC
+ranges for those spells permit zero yards; Hunter ranged spells instead retain
+a native deadzone. Remove the contradictory artificial five-yard admission
+rule through the real producer and consumers, preserving native/configured
+minimums. Compare native casts and head-phase activity after independent review.
+Earlier Eclipse carryover remains unobserved and is not a coefficient diagnosis.
 
-DPS-041 is the next prepared class repair. Hunter's Mark setup preempted normal
-ranking during parasite target changes, despite its existing low-priority
-profile row. The proposed guard retains pre-pull and native boss marking,
-while ordinary combat targets use ranking. Twelve focused tests passed; an
-independent review and live validation are still required. This change is not
-included in the `ff226ad52b` run. Mage spread arbitration and target lifetime
-remain separate leads, without enough evidence to claim every proc delay.
+MOV-001 remains accepted. It prevents inward escape toward a distant parasite,
+keeps pursuit armed after arrival, and rearms outward native movement when
+needed. The ff226 trace proves outward movement from 15.970 yards to a 20-yard
+endpoint and same-episode rearm. Neither ff226 nor 433 has incoming Infection
+78941 events. A later path-control rejection remains a separate limitation.
+Evidence: `artifacts/cata_raid_program/magmaw_parasite_escape_ff226ad52b_20260913.tar.gz.dvc`.
+
+OBS-011 joins existing native effective/combat stat snapshots into the timeline
+at their actual observation times. Thirty-nine focused tests passed. Replaying
+433 retained 700 stat observations without changing damage, actor totals,
+scoring interval or phases. Analysis source `06781c5732` is distinct from the
+native 433 source. Prior raw snapshots show temporary proc differences, not a
+proven permanent post-recovery stat loss. Mage spread arbitration and target
+lifetime remain leads; no blanket Pyroblast ban or guessed tuning is accepted.
 
 The one-tank composition was first accepted on `89cef294b6`, replacing only
 the Prot Paladin slot with the catalog Balance loadout. All other nine actors
