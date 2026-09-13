@@ -58,12 +58,27 @@ struct BotWorldPopulationMgr {
 int main(){
  BotWorldPopulationMgr mgr; Unit target;
  for(uint32 tree:{261u,263u,262u}){Player p;WorldBotState s;p.tree=tree;assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts==std::vector<uint32>{tree==261?3738u:8512u});}
- for(auto [slot,oldSpell,expected]:std::array<std::array<uint32,3>,2>{{{1,8075,8143},{2,5394,5675}}}){
+ for(auto [slot,oldSpell,expected]:std::array<std::array<uint32,3>,1>{{{2,5394,5675}}}){
   Player p;WorldBotState s;p.map.creatures[slot].totem.spell=oldSpell;assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts==std::vector<uint32>{expected});
  }
- for(uint32 missing:{8143u,5675u,3738u}){Player p;WorldBotState s;p.spells.erase(missing);assert(!mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts.empty());assert(s.ReadinessRetryUntilMs.count("totem_spell_missing:"+std::to_string(missing)));}
+ for(uint32 missing:{5675u,3738u}){Player p;WorldBotState s;p.spells.erase(missing);assert(!mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts.empty());assert(s.ReadinessRetryUntilMs.count("totem_spell_missing:"+std::to_string(missing)));}
  {Player p;WorldBotState s;p.spells.erase(8075);p.spells.erase(5394);p.spells.erase(8512);assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts[0]==3738);}
  for(auto [slot,expected]:std::array<std::array<uint32,2>,2>{{{1,8075},{2,5394}}}){Player p;WorldBotState s;p.tree=263;p.m_SummonSlot[slot]=0;p.spells.erase(8143);p.spells.erase(5675);assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts[0]==expected);}
+ // No steady earth demand: absent, expired Tremor, or an unrelated earth
+ // totem must not consume another setup global before profile offense.
+ for(int earth=0;earth<3;earth++) for(bool learned:{false,true}) {
+  Player p;WorldBotState s;
+  p.m_SummonSlot[3]=4;p.map.creatures[3].totem.spell=3738;
+  if(earth==0)p.m_SummonSlot[1]=0;
+  if(earth==1)p.map.creatures[1].totem.alive=false;
+  if(earth==2)p.map.creatures[1].totem.spell=8075;
+  if(!learned)p.spells.erase(8143);
+  bool profileLaneAvailable=!mgr.TryEnsureCombatTotems(s,&p,&target,1);
+  assert(profileLaneAvailable && p.casts.empty() && s.ReadinessRetryUntilMs.empty());
+ }
+ // Missing learned Tremor must not block a genuinely missing air totem.
+ {Player p;WorldBotState s;p.spells.erase(8143);p.m_SummonSlot[1]=0;
+  assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts[0]==3738);}
  // An existing wrong air totem must not mask Elemental's required setup.
  {Player p;WorldBotState s;p.m_SummonSlot[3]=4;p.map.creatures[3].totem.spell=8512;assert(mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts==std::vector<uint32>{3738});}
  {Player p;WorldBotState s;p.m_SummonSlot[3]=4;p.map.creatures[3].totem.spell=3738;assert(!mgr.TryEnsureCombatTotems(s,&p,&target,1));assert(p.casts.empty());}
@@ -90,3 +105,13 @@ int main(){
     binary=tmp_path/'fixture'
     subprocess.run(['c++','-std=c++17','-O0',str(cpp),'-o',str(binary)],check=True,capture_output=True,text=True)
     subprocess.run([str(binary)],check=True,capture_output=True,text=True)
+
+    # The historical required-earth function fails the same no-earth/expired
+    # cases. Preserve the original native maintenance function as the negative.
+    prior = subprocess.check_output(["git", "show", "63d74834813ee558644a9e61fd6039abf617e589:src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp"], cwd=ROOT, text=True)
+    begin = prior.index('bool BotWorldPopulationMgr::TryEnsureCombatTotems(')
+    historical = prior[begin:prior.index('\n}', begin) + 2]
+    assert 'isElemental ? 8143 : 8075' in historical
+    cpp.write_text(fixture.replace(function, historical))
+    subprocess.run(['c++','-std=c++17','-O0',str(cpp),'-o',str(binary)],check=True,capture_output=True,text=True)
+    assert subprocess.run([str(binary)],capture_output=True).returncode != 0

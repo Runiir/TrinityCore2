@@ -56,13 +56,15 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
     // Native active primary talent tree 261 is Elemental (TalentTab.dbc).
     bool const isElemental = bot->GetPrimaryTalentTree(bot->GetActiveSpec()) == 261;
-    uint32 const desiredEarthTotemSpell = isElemental ? 8143 : 8075;
+    // Tremor is reactive utility, not steady Elemental setup. There is no
+    // typed fear demand in this maintenance lane; leave its earth slot optional.
+    uint32 const desiredEarthTotemSpell = isElemental ? 0 : 8075;
     uint32 const desiredWaterTotemSpell = isElemental ? 5675 : 5394;
     uint32 const desiredAirTotemSpell = isElemental ? 3738 : 8512;
     uint32 const totemSpellIds[] = { desiredEarthTotemSpell, 3599, desiredWaterTotemSpell, desiredAirTotemSpell };
     for (uint32 spellId : totemSpellIds)
     {
-        if (bot->HasSpell(spellId))
+        if (!spellId || bot->HasSpell(spellId))
             continue;
 
         std::string key = "totem_spell_missing:" + std::to_string(spellId);
@@ -84,6 +86,8 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     }};
     for (auto const& [slot, spellId] : desiredTotems)
     {
+        if (!spellId)
+            continue;
         Creature* creature = bot->m_SummonSlot[slot] && bot->GetMap()
             ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
         Totem* totem = creature ? creature->ToTotem() : nullptr;
