@@ -1,42 +1,41 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:survival_roster_validation",
-  "owner_skill": "raid-shard-architecture",
+  "work_unit": "magmaw:survival_native_action_admission",
+  "owner_skill": "raid-role-implementation",
   "classification": "implementation_approved_native_pending",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "ee0504cc0cf68ca02b3179ac7479672a195630bc",
+  "observed_at_commit": "8146a06b40fc0ac163b3862905e953a22bd81b10",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Survival candidate independently approved; serialized build and native verification pending",
+  "gate_state": "Shot/ST admission independently approved; native recovery validation pending",
   "first_broken_edge": {
-    "id": "roster_performance_reference_not_yet_normalized",
-    "owner_classification": "raid_rotation_review",
-    "cause": "Closer WCL reference is selected, but phase/gear/effective-stat/action parity is incomplete. Native Affliction decline and missing tank/healer permanent enchants require separate diagnosis; no universal coefficient defect proven.",
-    "review_state": "parallel_class_diagnosis_and_survival_review",
-    "ledger_id": "DPS-045"
+    "id": "survival_shot_range_and_single_target_density_admission",
+    "owner_classification": "raid_role_implementation",
+    "cause": "Loaded35yd shot caps and max_enemies1/2 reject native-legal38.4835yd head offense;3Cobra7ExplosiveShots and14603.545DPS in137.163s.",
+    "review_state": "implementation_independently_approved",
+    "ledger_id": "DPS-046"
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "29235782fddf5e0e7cd5a351f3f924df78bd2b3c4bc62249566d8d675e12021a"
+    "sha256": "f44fa8e0213fe554360136a9692b2e12072eab77548b01ef52ae0e11938367b8"
   },
   "scope_lock": {
-    "objective": "Replace Magmaw30009 MM with promoted Survival setup while preserving bait/escape duties and the other nine actors; investigate retained all-class DPS differences.",
+    "objective": "Restore native-legal Survival shot admission at observed range and multiple-enemy scenes.",
     "owned_files": [
-      "tools/raid_program/bwd_shard_fixtures.py",
-      "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw"
+      "sql/custom/world/2026_09_13_00_survival_native_action_admission.sql",
+      "tests/test_survival_native_action_admission.py",
+      "tests/fixtures/survival_8146_native_admission.json"
     ],
     "forbidden_changes": [
-      "No unrelated roster changes, coefficients, movement geometry, boss values or speculative rotation changes."
+      "No native ranges, movement geometry, traps, AoE strategy, coefficients, boss or roster changes."
     ]
   },
   "acceptance_conditions": [
-    "Native30009 is Survival with exact promoted equipment/talents/glyphs/pet/consumables; other nine actors and other shards remain unchanged.",
-    "Baiting, legal target selection, escape and Disengage survive the spec change in production fixtures and attributable native outcomes.",
-    "Native boss death, complete capture and cleanup are separate from requested repair and overall performance acceptance.",
-    "Report exact elapsed raid and per-bot DPS/HPS, boss/add/pet output, activity, survival and phase coverage against ee0504; WCL and WoWSims are qualified external comparisons."
+    "Old loaded rows reproduce rejection at38.4835yd and head multi-enemy count; repaired rows pass production gates within native40/45yd limits.",
+    "Preserve other specs, utility/trap rows, native legality and bait/escape duties.",
+    "Native Survival resumes completed shots and Cobra on live exposed head; report whole-roster DPS/HPS, survival, phase coverage and exact accounting versus8146 and ee0504.",
+    "Keep clear, shot/ST repair and overall performance verdicts separate; trap failures and broader class gaps remain visible."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -47,7 +46,7 @@
   },
   "ready_for_build": true,
   "ready_for_live_verification": true,
-  "next_action": "Complete independent review, build clean frozen source once, run canonical completion-watchdog Survival canary and compare all bots with ee0504 and pinned WCL references.",
+  "next_action": "Finish Survival-only shot-range/core-ST enemy-count migration, pass production-gate fixtures and independent review, then run one bounded native recovery validation.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -63,7 +62,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "ee0504cc0cf68ca02b3179ac7479672a195630bc",
+    "source_commit": "8146a06b40fc0ac163b3862905e953a22bd81b10",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -75,21 +74,21 @@
     "qualification_eligible": false,
     "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 132.205,
+    "pull_to_death_seconds": 137.163,
     "hostile_originated_damage": 28193123,
-    "pull_to_death_party_dps": 213253.07666124578,
-    "exact_effective_healing": 1358961,
-    "exact_hps": 10279.19518928936,
-    "requested_repair_id": "DPS-043",
+    "pull_to_death_party_dps": 205544.66583553873,
+    "exact_effective_healing": 1691965,
+    "exact_hps": 12335.433024941127,
+    "requested_repair_id": "DPS-045",
     "requested_repair_achieved": true,
-    "performance_verdict": "mixed_near_matched_baseline_all_class_optimization_unaccepted",
+    "performance_verdict": "failed_survival_shot_admission_requires_repair",
     "diagnosis_required": true,
-    "primary_baseline_source": "26c536140a4e23c43d3d8e5016d3d1aa0463a716",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_baiter_targets_ee0504cc0c_20260913.tar.gz.dvc",
+    "primary_baseline_source": "ee0504cc0cf68ca02b3179ac7479672a195630bc",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz.dvc",
     "publication_state": "remote_verified_and_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "requested_repair_scope": "legal fixed-baiter binding and completed native offense; exact live blocked-nearer alternate unobserved"
+    "requested_repair_scope": "Exact Survival roster/setup and native participation; throughput not accepted."
   },
   "implementation_review": {
     "model": "gpt-5.6-sol",
@@ -97,7 +96,7 @@
     "verdict": "approved_bounded_implementation",
     "live_verified": false,
     "next_work_unit_implemented": true,
-    "artifact_sha256": "6ad43302f28048da9c6b620c5f78a627f537cfba0d13f620b451ed96bbf9c108"
+    "artifact_sha256": "121a70d558d176d8f29f32f94564e2e77f02d43f98fd2f3121fdf9adc6b363cd"
   },
   "related_edges": [
     {
@@ -143,7 +142,7 @@
   ],
   "reference_fixture_sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1",
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-045",
+  "error_id": "DPS-046",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",

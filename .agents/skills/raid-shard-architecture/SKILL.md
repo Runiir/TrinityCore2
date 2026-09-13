@@ -18,6 +18,13 @@ Resolve overrides and explicit equipment before comparing manifests. The native
 gear manifest and inventory readback must agree with the selected profile,
 including enchants, gems and reforges. A correct profile label is insufficient.
 
+When changing a spec, inspect its loaded action rows as well as its setup.
+Compare configured shot/spell ranges with native ranges and the route's observed
+cast distances; inspect core single-target enemy-count ceilings where adds or
+multiple boss units exist. A matching simulator loadout does not prove those
+policy gates are usable. Preserve mechanic-duty selectors through the swap,
+and route proven policy defects separately from roster provisioning.
+
 After regenerating gear or routes, refresh that generated asset class's expected
 files/inventory and DVC provenance before building or provisioning. Keep the
 historical native-data audit and extraction authority unchanged when native

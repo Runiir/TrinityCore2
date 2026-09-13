@@ -6,23 +6,26 @@ in Git; failed assumptions and bounded next repairs belong in the
 
 ## Current work and latest native run
 
-Current candidate replaces only Magmaw Hunter30009 with Survival, using its
-promoted equipment, talents, glyphs, wolf and consumables. Sole Blood tank,
-three healers and the other five DPS remain unchanged. Baiting and Disengage
-predicates now accept both Hunter specs. Thirty-six affected tests pass; one
-pre-existing generic-gear fixture failure is documented in the review packet.
-Independent Sol review approves the bounded change (36 focused tests and eight
-additional Magmaw policy tests passed). Native Survival verification is pending. This spec swap
-is not acceptance of the other classes' unresolved losses.
+Latest source `8146a06b40` completed the Survival swap and cleared Magmaw in
+137.163s at205,544.666 exact raid DPS and12,335.433 effective HPS. Capture,
+native death, post-run build verification and cleanup passed. Performance is
+not accepted: Survival30009 did14,603.545DPS versus31,512.590 for MM on ee0504.
+Affliction and Fire30007 improved, partly masking that loss. This spec change
+is not a controlled coefficient comparison.
 
-Generated provisioning and scenario assets were reproduced using
-`pixi run dvc repro --single-item validation_provisioning validation_provisioning_verify validation_scenarios`.
-Use these exact stages when upstream gear inputs are already verified; recursive
-reproduction otherwise re-extracts unrelated world knowledge. Refresh the route
-inventory/DVC binding and normalize generated route files to0644 before the
-frozen-source asset check. Runtime profile validation passes for Survival.
+DPS-046 is the next bounded repair. At+110s Survival is stationary with clear
+LOS to the live head at38.4835yd, but its35yd profile caps reject Cobra and
+Serpent Sting. Explosive Shot and Black Arrow also fail enemy-count ceilings.
+Read-only native rows and pinned Spell/SpellRange data confirm40yd shot ranges
+and45yd Kill Shot. A Survival-only shot-range/core-single-target admission
+migration passed eight focused tests and independent review; native range authority and all other profiles
+remain unchanged. Separate trap13813/native-range failures remain open.
+The83,391,167-byte archive and every member were verified by fresh-cache
+remote reconstruction. Exact raw/full timeline and duplicate archives/cache
+were evicted; HTML, summary and the frozen all-bot review remain local.
+Pointer: `artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz.dvc`.
 
-The latest native source `ee0504cc0c` cleared Magmaw with the same sole Blood
+The earlier source `ee0504cc0c` cleared Magmaw with the same sole Blood
 DK, three healers and six DPS in132.205 seconds. Native death, complete capture,
 post-run build verification and cleanup passed. All ten survived the full
 route and boss, with zero Infection78941. First retained event to boss death
@@ -36,11 +39,12 @@ Independent review accepts the bounded DPS-043 targeting repair.
 | 2af61a1cef | 131.609 | 214,218.807 | 11,647.995 |
 | 26c536140a | 133.998 | 210,399.581 | 10,868.625 |
 | ee0504cc0c | 132.205 | 213,253.077 | 10,279.195 |
+| 8146a06b40 (Survival) | 137.163 | 205,544.666 | 12,335.433 |
 
-All five runs have 28,193,123 originated hostile damage. Latest raid DPS is
-1.356% above26 and0.471% aboveff226; individual class results remain mixed.
-These are matched-composition development runs, not exact WCL/WoWSims parity
-or proof that every class is optimized.
+These six runs have28,193,123 originated hostile damage. The first five share
+the MM composition; ee0504 is1.356% above26 and0.471% aboveff226. The Survival
+run is3.615% belowee0504 and changes spec/setup. These development comparisons
+are not exact WCL/WoWSims parity or proof that every class is optimized.
 
 DPS-042 is accepted as a shared range repair. Native/configured minimums now
 agree across candidate admission, both combat consumers and rejected-candidate
@@ -65,7 +69,7 @@ no Infection occurs. Exact-tick blocked-nearer alternatives are not recorded;
 that selection counterexample is proven by the production fixture, not invented
 from live snapshots. Native terrain/pathing and class coefficients are unchanged.
 
-Overall performance remains mixed. Hunter is31,513DPS versus33,060 on26;
+In the earlier MM run, performance remained mixed. Hunter was31,513DPS versus33,060 on26;
 Fire30006 is27,936 versus32,875, while Fire30007 rises to30,140 and Balance
 to30,423. These totals do not prove the remaining class rotations are correct.
 The next review covers the whole roster against the newly selected

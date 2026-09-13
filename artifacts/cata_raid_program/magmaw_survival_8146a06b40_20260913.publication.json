@@ -1,0 +1,600 @@
+{
+  "schema": "closed_canary_remote_verification_v1",
+  "source_commit": "8146a06b40fc0ac163b3862905e953a22bd81b10",
+  "archive_sha256": "3ee771577dcb48b9b8742eb278073f7fdcd21aa062d9396acc673d61ee8e23d1",
+  "archive_bytes": 83391167,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz.dvc",
+  "remote_download_sha256": "3ee771577dcb48b9b8742eb278073f7fdcd21aa062d9396acc673d61ee8e23d1",
+  "fresh_empty_cache": true,
+  "status": {
+    "local": "Data and pipelines are up to date.\n",
+    "remote": "Cache and remote 'object' are in sync.\n"
+  },
+  "training_eligible": false,
+  "boss_clear_claimed": true,
+  "terminal_reason": "clear",
+  "cleanup_passed": true,
+  "members": [
+    {
+      "path": "build-preflight-8146a06b40/configure-receipt.json",
+      "bytes": 13615,
+      "sha256": "0b307d83b2b01d280f2c0d4d828f8d936b4581aad95af3556c37dbd7ca351612"
+    },
+    {
+      "path": "build-preflight-8146a06b40/map-0-asset-preflight.json",
+      "bytes": 6041884,
+      "sha256": "2593bf45d76a1c677a9c5f43100af0e4ca47b21af5d9f2db395a39feb47da8b4"
+    },
+    {
+      "path": "build-preflight-8146a06b40/map-669-asset-preflight.json",
+      "bytes": 5454510,
+      "sha256": "e86816277fc9111f07244038a35af247b4871b1d2c77e3e3f32f56d135e815b7"
+    },
+    {
+      "path": "build-preflight-8146a06b40/prebuild-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "build-preflight-8146a06b40/prebuild-worldserver.conf.receipt.json",
+      "bytes": 8778,
+      "sha256": "a22bc308a083d8ae47c4fbb8441951e3fc29747a8532066f7fe921fe2eb019a8"
+    },
+    {
+      "path": "build-preflight-8146a06b40/runtime-profile-preflight.json",
+      "bytes": 1335,
+      "sha256": "6f8e391faf9c573afb7322e6e8756c74da4e227b12f1d4708496c8491f1bba4c"
+    },
+    {
+      "path": "build-preflight-8146a06b40/worldserver_build_receipt.json",
+      "bytes": 24237,
+      "sha256": "e44eae2f901fca64cd4b4be71c1f0cc65aa5b3fe09ba6e4154425ba66137d6e4"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/affliction-dps045-review.md",
+      "bytes": 11753,
+      "sha256": "e6167f9629c4332a0e042fe43dc46c7c8427c39ac2290f2aa8bd90393a7efce5"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/base-worldserver.conf",
+      "bytes": 156886,
+      "sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/base-worldserver.conf.receipt.json",
+      "bytes": 8776,
+      "sha256": "ec61ae8d81dced0df0380961f9febf8a6c75a45e8d8f6b83753a333ec7c41e90"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/build-survival.log",
+      "bytes": 45808,
+      "sha256": "dc8cc8a133798d9a28ffebd0b3297565e5d459a48ad83d07794307e66a549ea6"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/capture.console.log",
+      "bytes": 7350875,
+      "sha256": "ecb32a23ff7e19c0cfe40affac797e654806bb92d61f097b31455bf8c59245b6"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/caster-dps045-review.md",
+      "bytes": 12159,
+      "sha256": "2c3b0393ca009db65a5bdccbf9d99038c10dea5e0e78a865ee49c1c672147397"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/database_readback.json",
+      "bytes": 40903,
+      "sha256": "ed315e03cadcf7fe82367ea748809dce4eb1e5b14193b674c4ab04e2b2013614"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dps_review.md",
+      "bytes": 9785,
+      "sha256": "feb5bb972789e03e3cc4e3282e01ff6047c3a52a5c2dc16efb413d82d3487abb"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/metrics.json",
+      "bytes": 3784,
+      "sha256": "eca9d13f6ff6dc6835faf37eff079088e3149f4f5b3bcdc0690cff0fe276fe3f"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/params.yaml",
+      "bytes": 158,
+      "sha256": "1b8829ce91dea1a6f2bc510ada67d5a354583c2a5f39e74b3c38c3c6a6726a0a"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30001/damage/direct.tsv",
+      "bytes": 22,
+      "sha256": "345512f0ef8c4fc056a6610128e9907e85d04bb6d0d138876512f08f9c22e189"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30001/damage/dps.tsv",
+      "bytes": 29,
+      "sha256": "1b95566ef464f980e175533c9ba0ec5bb15539931f1ed92942fb05d17378aca1"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30001/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "b04064b0365f1cbdf313abb16266a305f9ed57dfa4ed656ba99a20bda45d210f"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30001/damage/periodic.tsv",
+      "bytes": 24,
+      "sha256": "1ba29e3d2f3caf2e0de0644b00941106ac2a9c9e46d2e793c769fa3d9126f1de"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30002/damage/direct.tsv",
+      "bytes": 22,
+      "sha256": "731475a00fd855026e449b749e52997793c235dd75fd75258d78ff574b0f5b77"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30002/damage/dps.tsv",
+      "bytes": 30,
+      "sha256": "e12b55f9a19a6daecd9d6bf9a66e809d31b90d0ee3606952d07832a154e39d13"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30002/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "fa4ec584e0d59c54601cec3f223ec04f9a0455f17f2b9d9dc9bd7b392483f5b4"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30002/damage/owned_source.tsv",
+      "bytes": 26,
+      "sha256": "24727196a6f6b839bd3ab44fa16453293a5891ab7d1c193c4075876d498890e3"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30002/damage/periodic.tsv",
+      "bytes": 23,
+      "sha256": "7cfbaad26ba3a09243c1073ccd83b6397617f3de7cfe75ed005e3f18455429d5"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30003/damage/direct.tsv",
+      "bytes": 21,
+      "sha256": "1c2125ed63b9d6a8538f878c561ba6a813cbb4486395843e14da6079517d37a6"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30003/damage/dps.tsv",
+      "bytes": 29,
+      "sha256": "8c2f0dad52100c612b80f80d816c870a957577f89a69ffdaf60253a8c741b7bb"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30003/damage/hostile_originated.tsv",
+      "bytes": 33,
+      "sha256": "8f1cc7c690a1f1d35b533dff53745fd3ceb7410548d52da9115f7079b3a7bafe"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30004/damage/dps.tsv",
+      "bytes": 15,
+      "sha256": "cf18b331f3656c93910bef8a722ecefb4e3d360d0a6e51619cc6fd9956a8a62e"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30004/damage/hostile_originated.tsv",
+      "bytes": 28,
+      "sha256": "81d2bb1d481c9fc6b2c15f7128eef6685fb93829745e59f59bf8b426bd40c97b"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30005/damage/direct.tsv",
+      "bytes": 21,
+      "sha256": "9651518708861b53054277df158e89bbd2e0f8e8f8b42d2cda454b24592d5faf"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30005/damage/dps.tsv",
+      "bytes": 29,
+      "sha256": "1db759bb3d69ccf11bc531b5180a4225c3b7d3d38a81ae11ff0328084a6eb74a"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30005/damage/hostile_originated.tsv",
+      "bytes": 33,
+      "sha256": "0d16e50e6185854ef01522c5c0ebd75fccdd43c26f647e69e996c51c8ef09939"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30005/damage/periodic.tsv",
+      "bytes": 23,
+      "sha256": "b55212be05d1db5008b91c4c2997252a1fa9a4361c617ca31cf526e5d37d4343"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30006/damage/direct.tsv",
+      "bytes": 22,
+      "sha256": "3befb853bcdc56f6226263713a89c089aead9bec7dcbc0f9baa7e0f17cf7a9e6"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30006/damage/dps.tsv",
+      "bytes": 29,
+      "sha256": "7c11de011296fe57b859636d710648aba2c0d374c7e3ed61a4bf00395f797119"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30006/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "4ca1c775bc8a80f15aefba0e37b0de0c2c0dece4526871de9c5e65334e4e1218"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30006/damage/owned_source.tsv",
+      "bytes": 26,
+      "sha256": "3d6500b55108cef41ce30b6a9954ad052335c4bb82a9fa4c37ec7b61076bc696"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30006/damage/periodic.tsv",
+      "bytes": 24,
+      "sha256": "66b342b7f46f2b0943038fbb3ccdffefda240af7768bc2f86fb5e3dcf6caa03e"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30007/damage/direct.tsv",
+      "bytes": 22,
+      "sha256": "db32e4388eac2ebab5c0fd2cb8a1214dbf077ca631021ee94bab4e5b29694796"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30007/damage/dps.tsv",
+      "bytes": 29,
+      "sha256": "dc5b0839e3976100a2450378f53f176de28ab80a7581d6c0bc10a69fc2e45107"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30007/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "dee12762290e82cee51e85fc3226a272a11fe4e30e019bb58ebab04cce3c24a3"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30007/damage/owned_source.tsv",
+      "bytes": 26,
+      "sha256": "127738ce5e8cc13400379d6e1af890590bb9bc1b2034d1ac4ce797db076bc3db"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30007/damage/periodic.tsv",
+      "bytes": 24,
+      "sha256": "8754b43513bbabb0186eb4e21b39677aefea937a3bd9bb4ef0b7d9ebfffabb39"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30008/damage/direct.tsv",
+      "bytes": 22,
+      "sha256": "e3dee3ecd95dfdc7c4567271e2ea67b9f8076c4f130fdfbcdf92881aca18eef6"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30008/damage/dps.tsv",
+      "bytes": 29,
+      "sha256": "03578d6df3f6d8fb641102addb51b0512ff00e1429d8dbab9e4b5818b4b3206a"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30008/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "0a124b0409b5c058844bbcef664accd0856359861ab4807d52bb6e4e8278ad43"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30008/damage/owned_source.tsv",
+      "bytes": 28,
+      "sha256": "b2742022d6ff67efa8ec60bdf5735f5919675882b9e073e81028b3d432bfc856"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30008/damage/periodic.tsv",
+      "bytes": 24,
+      "sha256": "7b5e7e378db89cb77918e21591ca431a1e4db6726d1aa3b6d3b36d01b0bdd99b"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30009/damage/direct.tsv",
+      "bytes": 21,
+      "sha256": "ad3c5839e25635a4973b88c59227f5ee997c8b9158e395648d80401609627e18"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30009/damage/dps.tsv",
+      "bytes": 30,
+      "sha256": "7d538c35df4d6c59d0aff0834bf3c40c13dccffe0684608c99d8ba2075a7550f"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30009/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "1534257d09531b6e55804828a7f65f09e6447c222511b4dacd49463d7deaa59a"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30009/damage/owned_source.tsv",
+      "bytes": 27,
+      "sha256": "120d6133ccabf980a3813db75abed53ef060bbe8916eafd60634ac3f91ec1d54"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30009/damage/periodic.tsv",
+      "bytes": 23,
+      "sha256": "3cbd46d338194a8974c2ca0551d6a01f55ef47bf1eb434ff2f0202ffe4400581"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30010/damage/direct.tsv",
+      "bytes": 22,
+      "sha256": "8822f21125ac757ddd7aa64b2ceb390df2ecae3d87b67004c7edf6652a2486b2"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30010/damage/dps.tsv",
+      "bytes": 30,
+      "sha256": "e8575ddde4b26cc2c600388f4ec3322e93b21c90e0d629ec39d4fa8786de2e80"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30010/damage/hostile_originated.tsv",
+      "bytes": 34,
+      "sha256": "77eccc8a779cc6e20121b7c2c21c156dda745e0d6aaa121ba41bacfb9def1181"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30010/damage/owned_source.tsv",
+      "bytes": 27,
+      "sha256": "80f3c40f1cb003c7508314ec42e68e55bc500702e2d6c8b5531646768606f084"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/actors/30010/damage/periodic.tsv",
+      "bytes": 23,
+      "sha256": "dc78e2ef762dfddf721cbc2cab77bb00dea9bbb2d153f71c3475fc5f4ccd9abd"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/commands/combat_log.tsv",
+      "bytes": 20,
+      "sha256": "b447a6f428aac06a53fa20826e73a586f6c0396fd3873015ec0440a826e041cd"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/commands/combat_log_delta.tsv",
+      "bytes": 28,
+      "sha256": "e40b8acf243b824ab9b5bd2932fe08b565f08634371a07595ace52cfac5067f3"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/commands/diagnose.tsv",
+      "bytes": 19,
+      "sha256": "aaabb2d026c224019252e4ad97348115794ac7a6499d4fc02a1173858315d7c7"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/commands/status.tsv",
+      "bytes": 17,
+      "sha256": "854952b4a5bc62296a8f2da1530cf43c875b1bf716a2145cea73eb6d53325125"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/commands/trace.tsv",
+      "bytes": 17,
+      "sha256": "b7ce1b1a5390f761e72dbfb5ee1a7ca4a517d5211072d25817d9fd1c4f1f6082"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/commands/trace_pressure.tsv",
+      "bytes": 24,
+      "sha256": "bd61521357304d432c74219efde604b3af88eb567f060e808f23841edc5c3dd0"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/diagnose_interval_seconds.tsv",
+      "bytes": 37,
+      "sha256": "b5a18a2d055167816b809051c01f4be89d77bec956c01f97d553249ff6edc2a8"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/maximum_worldserver_rss_bytes.tsv",
+      "bytes": 48,
+      "sha256": "7e1923872ef9b8c4062dbeb640c5dae4d9335dcfcf362bc73d690101b54f23c3"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/mean_worldserver_cpu_percent_one_core.tsv",
+      "bytes": 52,
+      "sha256": "0304dc21abc2e3da3e8e030db6c1b17a2d383de29e286e0995757d1546e1c200"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/native_log_bytes.tsv",
+      "bytes": 34,
+      "sha256": "ff9f91410cda4d213bd2b27fd756119f8d441e5acb5c69486839e9945e6317ba"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/native_log_bytes_per_second.tsv",
+      "bytes": 54,
+      "sha256": "c1c1bff9fd7f752f4142f0498369052c01480bda1ade35cba7879b9ff0153e19"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/sampled_elapsed_seconds.tsv",
+      "bytes": 39,
+      "sha256": "9ebe1f2c0d1350678c0be00404fb2ffab763920e761aba7f7a8acf66a2dea63a"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/sampling_errors.tsv",
+      "bytes": 25,
+      "sha256": "a69f9b79e67daaf26a84bcd96a33e581e4b0d77cb75da6610a1dbb1b91d78882"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/trace_parse_seconds.tsv",
+      "bytes": 39,
+      "sha256": "a268779e160b1a6796e8f2fcf11e0db3c658eca6c004ff82b979a686b28ff446"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/trace_parse_seconds_per_sampled_second.tsv",
+      "bytes": 68,
+      "sha256": "15759f01db2c581b233d30100e61fe74da4bc58e13c310b9add4b5a5695e2b02"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/trace_receipt_count.tsv",
+      "bytes": 31,
+      "sha256": "6a598183af23b7885e42274719ea34f5778e34c7e2c52b3c513f54978ca43d0e"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/capture/trace_response_bytes.tsv",
+      "bytes": 38,
+      "sha256": "66040b164c11ac43180c868729806868937a16b4706ec831869e1bc5133c44ea"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/effective_healing.tsv",
+      "bytes": 33,
+      "sha256": "afd3c09a3b3893e2672b845b4dcb775ce902c03575bc2ac212957abac35dc587"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/effective_healing_through_death.tsv",
+      "bytes": 47,
+      "sha256": "dc271d84b02da43320b678577ce7bef5294319431eb261669cd99e093fc0ee4b"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/exact_party_dps.tsv",
+      "bytes": 42,
+      "sha256": "f1cd75f66de568430a2d15c79d1b137d19a6dd6a54620a9f375dab2f734d92e2"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/exact_party_hps.tsv",
+      "bytes": 42,
+      "sha256": "7e6125889703a65b01f58402a766c730c44823ac7f9994427d32918b5780ab96"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/excluded_friendly_damage.tsv",
+      "bytes": 39,
+      "sha256": "3478ced643c12e925d95ad82bb532641a1dfa4760b09183ef0954c749161f2c9"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/excluded_spell_79010_damage.tsv",
+      "bytes": 37,
+      "sha256": "e1be756466bfc50a55eba145ed33fd6506968d344c1b24de357f70c5470d64fd"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/excluded_spell_79010_raw_damage.tsv",
+      "bytes": 48,
+      "sha256": "ecfe78adbeef462f5e8ea88e355632aa93741e24ca86e120cf78457f6a55a3a3"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/hostile_originated_damage.tsv",
+      "bytes": 42,
+      "sha256": "009fa2c3557539791e153d67b0c2c3be2fe2c9943597268b18ef90f9459868e2"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/native_elapsed_hps_through_death.tsv",
+      "bytes": 59,
+      "sha256": "26dcf226b2f60b56d218177d93b475a81205dbd7a9026a3af4363d0a0dbcaddf"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/owned_source_damage.tsv",
+      "bytes": 35,
+      "sha256": "0855c3525b9e8a634d84e26911fe5b30d057b7863a793d3e8447b1b2e92b6554"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/owner_damage.tsv",
+      "bytes": 29,
+      "sha256": "3014b461b79919394e43b9da495d5d9024079792d10aef45d2edfc103d0d7775"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/pre_window_effective_healing.tsv",
+      "bytes": 38,
+      "sha256": "0b3361331ca39daf4d838f1cb6ab8e25784ebc6f47f7819e2f97b09171f587ef"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/dvclive/plots/metrics/raid/unknown_source_damage.tsv",
+      "bytes": 31,
+      "sha256": "9d58f097079c5ff98e228b26f6f2534be76e41f2435052cad1f347b9aa37496d"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/fire-dps045-review.md",
+      "bytes": 4141,
+      "sha256": "6045feba88d50b6961e4da92252c24cec1aed31c0ea8470373ac95275c29e400"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/launch-survival.log",
+      "bytes": 87,
+      "sha256": "c4d11154754c985d8eabd49d64b6a7fd3f8bd80667418f2913ac485a980dd3ab"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/launch.json",
+      "bytes": 2112,
+      "sha256": "50c24af33f98ea8bfa5a77605b90a588fa53626bc569fe90f854fd73f6585088"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/listener-worldserver.conf",
+      "bytes": 156887,
+      "sha256": "2bdecc95e1c4be1b62618c30dd65d66234edcf398a336e2dd328614031c2e3b8"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/listener-worldserver.conf.overlay.json",
+      "bytes": 962,
+      "sha256": "4e3b9a22ba23f06289e4798b1a532cdc027979618b1fecb1c3337ec019ba3c1b"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/loadout_database_readback.json",
+      "bytes": 145992,
+      "sha256": "a3e66dabaf9905e1e0f37d00ee1a61c341d0e2b7bddd9f47d7862dd99beeda0d"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/magmaw-survival-independent-review.md",
+      "bytes": 7676,
+      "sha256": "6ad43302f28048da9c6b620c5f78a627f537cfba0d13f620b451ed96bbf9c108"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/magmaw-survival-roster-review.md",
+      "bytes": 5162,
+      "sha256": "c197c894c764f01a5c9c322ef2035dad8f2df269a7b71e1bb9fd6df41b2fb5d5"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/postrun-build-verification.json",
+      "bytes": 537,
+      "sha256": "bbccabdc3ee8ffa97deee991ca61fe5bcac7eb6166bb8700421c9cf47046cc21"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/preparation-context.json",
+      "bytes": 885,
+      "sha256": "e90a0957e09fe89aff2fb25175ecfdb67df4ff34fab22e600d9965a4eb4bc34f"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/provisioning.json",
+      "bytes": 1381,
+      "sha256": "079132ef2cda710086da19418572734b998d8b055a8943286390df911163a953"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/raw.jsonl",
+      "bytes": 365040365,
+      "sha256": "6a7d7edaa258f02f9faf95d229e961566db3b3fd5d72981983ff9a1881c17841"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/readback.console.log",
+      "bytes": 27263,
+      "sha256": "dd052197d83288a5d3eaedbb70c10de539e886d1f7cca84c8731f9f2625a4465"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/report.json",
+      "bytes": 7350875,
+      "sha256": "ecb32a23ff7e19c0cfe40affac797e654806bb92d61f097b31455bf8c59245b6"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/report.timeline-summary.json",
+      "bytes": 110046,
+      "sha256": "8f2df26f395e2b4040108179dcd36ac7e702342850b117a4bd02d9974c517781"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/report.timeline.html",
+      "bytes": 7381074,
+      "sha256": "8673f2bae5322e0d98a9e6d931447d9766aa573e46f93e4552f35963aefe732d"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/report.timeline.json",
+      "bytes": 223328245,
+      "sha256": "58747d3fbc44d01b79c5b113905c757a8b10307aeaf291660834bd50b198e577"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/tank-healer-dps045-review.md",
+      "bytes": 5777,
+      "sha256": "1c208d002093d542da405d1412e8751e63721a961384b32640b0230882d49716"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/validation_provisioning_apply/provision_accounts.sql",
+      "bytes": 4068,
+      "sha256": "689fc5fd368cc4dc8e19c689471e579c80d1af762747fcc7b6f510fd66d114e7"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/validation_provisioning_apply/provision_characters.sql",
+      "bytes": 320852,
+      "sha256": "82cf6f5e90cf0037ef7e8e26d5bd3252a089367beca02f3d2280ecc2463053ba"
+    },
+    {
+      "path": "magmaw-development-8146a06b40/worldserver.log",
+      "bytes": 362876868,
+      "sha256": "cc77919945630d50ebf99c24074e38fad24ea15e5ac04093f79b56b359cfa79c"
+    },
+    {
+      "path": "run-development.py",
+      "bytes": 6138,
+      "sha256": "ac7358e66bff55ca8c722453a8bccb7aa421c70839da9ae7eba82e265e5cf05b"
+    },
+    {
+      "path": "listener_overlay.py",
+      "bytes": 1693,
+      "sha256": "6acc39c1bd850d5dac946258c9bc7e7d60101540fa48faa2d4f10f279de94e78"
+    },
+    {
+      "path": "preflight-reviewed.py",
+      "bytes": 2640,
+      "sha256": "79eae3d03286c5fdb9449809f9c2dbc2ca94de0f5c09d0c658ffc874539345bb"
+    }
+  ],
+  "verified_archive_copies_evicted": true,
+  "raw_payloads_retained_for_active_causal_review": false,
+  "raw_payloads_evicted": true,
+  "evicted_exact_paths": [
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw-development-8146a06b40/raw.jsonl",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw-development-8146a06b40/worldserver.log",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw-development-8146a06b40/report.timeline.json",
+    "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_survival_8146a06b40_20260913.tar.gz",
+    "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/c1/b72d5900c6cc40ef67c7725979cacc",
+    "/home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/magmaw_survival_8146a06b40_20260913-remote-verification"
+  ]
+}
