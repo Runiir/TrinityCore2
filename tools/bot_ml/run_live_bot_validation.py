@@ -1103,6 +1103,7 @@ def write_validation_config(
     calibration_reference_conditions: bool = False,
     calibration_self_provided_baseline: bool = False,
     console_enabled: bool | None = None,
+    apply_runtime_profile: bool = True,
 ) -> Path:
     route = validation_route or {}
     if not pool_tag and not route and not validation_route_manifest_path and autostart and not calibration_only:
@@ -1147,7 +1148,7 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AdvanceMode", '"terminal"')
     if route and not calibration_only:
         route_profile = str(route.get("runtime_profile_id") or route.get("scenario_id") or "").strip()
-        if validation_route_manifest_path and route_profile:
+        if validation_route_manifest_path and route_profile and apply_runtime_profile:
             # A manifest-scoped diagnostic must never inherit the base file's
             # Stonecore/canonical profile during AutoStart. The profile owns
             # the exact roster, pool, and route identity selected above.
@@ -1161,11 +1162,22 @@ def write_validation_config(
         # would silently replace a requested direct segment with node zero.
         # Direct-node configs already contain the pool and route contract, so
         # suppress only that late profile application for segment validation.
-        if not validation_route_manifest_path:
+        if not validation_route_manifest_path or not apply_runtime_profile:
             text = upsert_trinity_config(text, "BotWorld.RuntimeProfile", '""')
         expected_bot_count = int(route.get("expected_bot_count") or 0)
         if expected_bot_count > 0:
             text = upsert_trinity_config(text, "BotWorld.TargetPopulation", str(expected_bot_count))
+        if expected_bot_count > 5:
+            # Direct raid-boss segments do not apply the named full-instance
+            # profile. Keep the shard raid-shaped so native validation
+            # admission builds its exact 10/25-player roster transaction.
+            text = upsert_trinity_config(text, "BotProgression.AllowRaids", "1")
+            text = upsert_trinity_config(text, "BotProgression.RaidSize", str(expected_bot_count))
+            text = upsert_trinity_config(
+                text,
+                "BotProgression.RaidDifficulty",
+                str(int(route.get("raid_difficulty") or 0)),
+            )
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "1")
         text = upsert_trinity_config(text, "BotWorld.SafePositionMemorySec", "900")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ScenarioId", f'"{str(route.get("scenario_id") or "").replace(chr(34), "")}"')
@@ -8277,6 +8289,19 @@ def main() -> int:
         )
         if not validation_route and manifest_routes:
             validation_route = manifest_routes[0]
+    if (
+        validation_route
+        and validation_route_manifest_path is None
+        and int(validation_route.get("expected_bot_count") or 0) > 5
+    ):
+        # A boss-only raid canary still needs the native route manifest for
+        # exact roster admission. Limit that manifest to the requested node so
+        # this invocation never starts the rest of the instance.
+        validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(
+            session_runtime_dir,
+            args.validation_scenario_id,
+            [validation_route],
+        )
     pool_tag_filter = str(
         args.party_pool_tag
         if exact_party_specs
@@ -8300,6 +8325,7 @@ def main() -> int:
             calibration_reference_conditions=args.calibration_reference_conditions,
             calibration_self_provided_baseline=args.calibration_self_provided_baseline,
             console_enabled=False if args.transport == "session" else None,
+            apply_runtime_profile=bool(args.validation_route_manifest),
         )
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)

@@ -436,7 +436,9 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         bool const dynamicValidationProfile = Cohort().Config.Name != "stonecore_5n"
             && Cohort().Config.Name != "blackwing_descent_10n";
         if ((dynamicValidationProfile && node.RuntimeProfileId.empty())
-            || (!node.RuntimeProfileId.empty() && node.RuntimeProfileId != Cohort().Config.Name))
+            || (!node.RuntimeProfileId.empty()
+                && node.RuntimeProfileId != Cohort().Config.Name
+                && node.RuntimeProfileId != Cohort().Config.ValidationRouteScenarioId))
         {
             Party().ValidationRouteManifestLoadError = "manifest_runtime_profile_identity_mismatch";
             return;

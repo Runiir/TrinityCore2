@@ -1,0 +1,6 @@
+outs:
+- md5: 7b75b02f33ddff120c4feb060930595d.dir
+  size: 216450
+  nfiles: 6
+  hash: md5
+  path: magmaw_jev_canary_20260918

@@ -51,6 +51,46 @@ pixi run python tools/bot_ml/analyze_combat_log.py \
   --output artifacts/live_validation_instances/<run>/combat_analysis.json
 ```
 
+### Magmaw Jev canary review
+
+Every Magmaw canary must pass its compact native trace through Jev. The
+analyzer records ordered route/path observations, repeated-decision and recovery
+signals, combat-metric DPS, combat warnings, and a typed judgment for path
+consistency, stuck cause, DPS-loss area, and the next bounded fix. Raw stuck
+history is retained for progress tracking, while `active_stuck_*` is restricted
+to the latest non-terminal route generation so completed-node backoff history is
+not misreported as a current loop. Jev is shadow-only: it cannot submit an
+in-game action. The `JEV` key is loaded from the process environment or the
+repository `.env`; the command fails closed if the key or typed answers are
+unavailable.
+
+For the normal Magmaw 10N canary, use the isolated single-boss route manifest
+(entrance regroup, Chainwielder trash, Drudge pair, then Magmaw), then analyze
+the complete `bwd.magmaw.` route prefix:
+
+```bash
+pixi run magmaw-jev-analyze \
+  --input /tmp/magmaw-normal-shard/report.json \
+  --output /tmp/magmaw-normal/jev_report.json \
+  --ledger /tmp/magmaw-normal/progress_ledger.json \
+  --run-id magmaw-normal-001 \
+  --segment-id magmaw_shard \
+  --scope-route-prefix bwd.magmaw. \
+  --change-id codex/magmaw-jev-canary \
+  --change-note "added native encounter_path telemetry" \
+  --combat-analysis /tmp/magmaw-normal-shard/combat_analysis.json
+```
+
+Do not use a full-instance report for this boss judgment; it mixes later
+encounters into the same evidence bundle. Use the exact
+`bwd.magmaw.encounter` scope only for a boss-only trace that intentionally
+omits the approach and trash nodes.
+
+Use `--baseline-report` on later canaries to make Jev classify whether the
+branch change improved, preserved, or regressed the observed behavior. Keep the
+raw run outside the repository or publish it as a compact DVC artifact; commit
+only the analyzer/configuration, not live credentials or bulky raw traces.
+
 ## Offline Loop
 
 Extract DB-backed world knowledge manifests for the autonomous planner:

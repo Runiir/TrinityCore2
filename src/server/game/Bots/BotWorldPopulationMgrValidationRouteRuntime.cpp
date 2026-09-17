@@ -560,6 +560,31 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.LastLoopGuardrailReason.clear();
         state.LastNoProgressReason = reason ? reason : "validation_route_reset";
         state.LoopRecoveryCooldownUntilMs = nowMs + 3000;
+        // A new route node owns a new target/role contract.  Clear the
+        // previous node's blocker and arbitration history after the old trace
+        // tail has been flushed above; otherwise a future-target mask or
+        // profile backoff can suppress legal actions in the next node.
+        state.DecisionKernel.ResetLifecycleHistory(nowMs);
+        state.LastDecisionKernelJson = "{}";
+        state.StuckRecoveryStartedMs = 0;
+        state.StuckRecoveryStage = 0;
+        state.LastRecoveryMs = 0;
+        state.RecoveryAttemptCount = 0;
+        state.LastRecoveryMode.clear();
+        state.LastRecoveryResult.clear();
+        state.Blocked = false;
+        state.BlockedFirstReason.clear();
+        state.BlockedReason.clear();
+        state.BlockedResolution.clear();
+        state.BlockedResolutionCandidate.clear();
+        state.BlockedResolutionCandidateCount = 0;
+        state.BlockedResolvedBy.clear();
+        state.BlockedStartMs = 0;
+        state.BlockedProgressBaselineMs = 0;
+        state.BlockedResolvedMs = 0;
+        state.BlockedMessageEmitted = false;
+        state.LastBlockedDiagnosticText.clear();
+        state.UnstuckMessageEmitted = false;
     }
 }
 
