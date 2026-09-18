@@ -5267,6 +5267,25 @@ def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     )
 
 
+def test_profile_los_recovery_returns_casting_after_native_reposition():
+    executor = function_body(
+        read(BOT_MGR),
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
+    )
+    los = executor.split("if (recoverLineOfSight && target)", 1)[1].split(
+        "if (state && target", 1
+    )[0]
+    assert "bool const moved = MoveBotToProfileRange" in los
+    assert_ordered(
+        los,
+        "if (moved)",
+        '"native_position_reconciled"',
+        '"position_reconcile"',
+        '"native_no_line_of_sight"',
+        "return BotActionResult::Casting;",
+    )
+
+
 def test_profile_combat_reconciles_native_position_feedback_before_retrying():
     manager = read(BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp")
     executor = read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp")

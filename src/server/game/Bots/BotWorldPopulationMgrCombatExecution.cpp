@@ -371,7 +371,29 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         // spell topology so per-spell suppression cannot cycle other actions
         // from the same blocked point.
         if (recoverLineOfSight && target)
-            MoveBotToProfileRange(*state, bot, target, &action, true);
+        {
+            bool const moved = MoveBotToProfileRange(
+                *state, bot, target, &action, true);
+            if (moved)
+            {
+                state->DecisionKernel.Observe(
+                    "world.profile_position:" +
+                        std::to_string(action.TargetGuid.GetCounter()),
+                    BotActionArbitration::Outcome::Started(
+                        "native_position_reconciled"),
+                    nowMs, 100, 3000, 5);
+                state->LastRecoveryMode = "native_position_reconciliation";
+                state->LastRecoveryResult = "move_to_action_line_of_sight";
+                state->LastNoProgressReason.clear();
+                RecordCombatAttempt(*state, bot, target,
+                    "position_reconcile", &action,
+                    BotActionResult::Casting,
+                    "native_no_line_of_sight");
+                TryResolveBotBlocker(*state, bot,
+                    "native_position_reconciled");
+                return BotActionResult::Casting;
+            }
+        }
     }
     if (state && target
         && (result == BotActionResult::OutOfRange

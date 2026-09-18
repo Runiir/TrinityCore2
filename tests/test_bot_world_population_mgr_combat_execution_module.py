@@ -48,6 +48,8 @@ def test_combat_execution_preserves_position_reconciliation_and_backoff() -> Non
         "native_position_reconciled",
         "native_out_of_range",
         "native_no_line_of_sight",
+        "move_to_action_line_of_sight",
+        "return BotActionResult::Casting;",
         "RangeRecoveryRequired",
         "profile_min_range_reconcile",
         "profile_min_range_reconciled",
