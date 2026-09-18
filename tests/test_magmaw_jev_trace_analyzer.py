@@ -185,6 +185,78 @@ def test_progress_summary_uses_route_generations_and_native_terminals() -> None:
     assert summary["resolved_stuck_behavior_counts"]["repeated_decision_loop"] == 1
 
 
+def test_progress_summary_closes_boss_tail_from_boss_death_receipt() -> None:
+    entries = [
+        {
+            **_entry(
+                sequence,
+                "bwd.magmaw.encounter",
+                "wait_for_candidate_backoff",
+                route_generation=4,
+                fingerprint_repeat_count=25,
+                consecutive_same_decision_count=12,
+            ),
+            "_bot_guid": 10,
+        }
+        for sequence in range(1, 4)
+    ]
+
+    summary = analyzer._progress_summary(
+        entries,
+        analyzer.DEFAULT_EXPECTED_ROUTE,
+        [
+            {
+                "payload": {
+                    "boss_death_evidence": [
+                        {
+                            "result": "confirmed_unit_death",
+                            "route_generation": 4,
+                            "route_node_id": "bwd.magmaw.encounter",
+                        }
+                    ]
+                }
+            }
+        ],
+    )
+
+    assert summary["active_stuck_behavior_counts"] == {}
+    assert summary["resolved_stuck_behavior_counts"]["repeated_decision_loop"] == 3
+    assert summary["route_terminal_generations"]["bwd.magmaw.encounter"] == 4
+
+
+def test_report_rows_preserve_real_boss_death_as_terminal_evidence() -> None:
+    rows = analyzer._report_rows(
+        {
+            "trace": {"entries": []},
+            "evidence": {
+                "real_boss_kill_evidence": [
+                    {"route_generation": 4, "route_node_id": "bwd.magmaw.encounter"}
+                ]
+            },
+            "status": {
+                "validation_route": {
+                    "boss_death_evidence": [
+                        {
+                            "result": "confirmed_unit_death",
+                            "route_generation": 4,
+                            "route_node_id": "bwd.magmaw.encounter",
+                        }
+                    ]
+                }
+            },
+        }
+    )
+
+    status = rows[-1]["payload"]
+    assert status["real_boss_kill_evidence"] == [
+        {"route_generation": 4, "route_node_id": "bwd.magmaw.encounter"}
+    ]
+    assert status["boss_death_evidence"] == [
+        {"route_generation": 4, "route_node_id": "bwd.magmaw.encounter"}
+    ]
+    assert status["evidence"]["boss_death_evidence"] == status["boss_death_evidence"]
+
+
 def test_analyze_requires_jev_and_records_typed_answers_and_ledger(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -379,6 +451,198 @@ def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
     )
     assert annotated["actors"][0]["wcl_observed_dps"] == 41866.0
     assert annotated["actors"][0]["elapsed_dps_delta_vs_wcl"] == -25866.0
+
+
+def test_compact_metrics_prefers_full_window_native_action_outcomes() -> None:
+    metrics = analyzer._compact_metrics(
+        {
+            "available": True,
+            "route_node_id": "bwd.magmaw.encounter",
+            "action_outcomes": [
+                {
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "actor_guid": 10,
+                    "actor_name": "Firemake",
+                    "actor_role": "dps",
+                    "actor_class_id": 8,
+                    "phase": "profile_resolve",
+                    "action_type": "wait",
+                    "action_name": "no_valid_profile_action",
+                    "result": "no_action",
+                    "reason": "no_valid_profile_action",
+                    "retry_reason": "no_valid_profile_action",
+                    "first_at_ms": 1000,
+                    "last_at_ms": 9000,
+                    "count": 40,
+                }
+            ],
+        },
+        {"10": {"class_spec": "fire_mage", "role": "dps"}},
+    )
+
+    assert metrics["action_outcome_count"] == 1
+    outcome = metrics["action_outcomes"][0]
+    assert outcome["class_spec"] == "fire_mage"
+    assert outcome["outcome"] == "no_action"
+    assert outcome["reason_code"] == "no_valid_profile_action"
+    assert outcome["count"] == 40
+
+
+def test_native_action_outcome_normalization_is_idempotent() -> None:
+    compacted = analyzer._compact_native_action_outcomes(
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "wait",
+                "action_name": "already_casting",
+                "outcome": "casting",
+                "reason_code": "already_casting",
+                "count": 12,
+            }
+        ],
+        {"10": {"class_spec": "fire_mage", "role": "dps"}},
+    )
+
+    assert compacted[0]["action_category"] == "wait"
+    assert compacted[0]["outcome"] == "casting"
+    assert compacted[0]["reason_code"] == "already_casting"
+
+
+def test_compact_metrics_preserves_full_window_candidate_rejections() -> None:
+    metrics = analyzer._compact_metrics(
+        {
+            "available": True,
+            "candidate_rejections": [
+                {
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "actor_name": "Firemake",
+                    "actor_class_id": 8,
+                    "phase": "profile_resolve",
+                    "spell_id": 133,
+                    "action_category": "builder",
+                    "reason": "max_range_exceeded",
+                    "count": 12,
+                }
+            ],
+        },
+        {"10": {"class_spec": "fire_mage", "role": "dps"}},
+    )
+
+    assert metrics["candidate_rejection_count"] == 1
+    rejection = metrics["candidate_rejections"][0]
+    assert rejection["class_spec"] == "fire_mage"
+    assert rejection["reason"] == "max_range_exceeded"
+    assert rejection["count"] == 12
+
+
+def test_jev_candidate_rejection_summary_groups_spell_rows_and_keeps_movement() -> None:
+    summary = analyzer._summarize_jev_candidate_rejections(
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "builder",
+                "reason": "max_range_exceeded",
+                "spell_id": 133,
+                "count": 4,
+            },
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "spender",
+                "reason": "max_range_exceeded",
+                "spell_id": 2136,
+                "count": 3,
+            },
+        ]
+    )
+
+    assert summary == [
+        {
+            "bot_guid": 10,
+            "class_spec": "fire_mage",
+            "reason": "max_range_exceeded",
+            "count": 7,
+            "action_categories": ["builder", "spender"],
+            "spell_ids": [133, 2136],
+        }
+    ]
+
+
+def test_candidate_rejection_signal_separates_expected_waits_from_actionable_gates() -> None:
+    signal = analyzer._candidate_rejection_signal(
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "builder",
+                "reason": "already_casting",
+                "spell_id": 133,
+                "count": 400,
+            },
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "builder",
+                "reason": "global_cooldown",
+                "spell_id": 133,
+                "count": 100,
+            },
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "builder",
+                "reason": "max_range_exceeded",
+                "spell_id": 133,
+                "count": 7,
+            },
+        ]
+    )
+
+    assert signal["candidate_scan_count"] == 507
+    assert signal["expected_profile_wait_count"] == 500
+    assert signal["actionable_candidate_count"] == 7
+    assert signal["actionable_candidate_groups"] == [
+        {
+            "bot_guid": 10,
+            "class_spec": "fire_mage",
+            "reason": "max_range_exceeded",
+            "count": 7,
+            "action_categories": ["builder"],
+            "spell_ids": [133],
+        }
+    ]
+
+
+def test_jev_action_outcome_summary_counts_native_failures_separately() -> None:
+    summary = analyzer._summarize_jev_action_outcomes(
+        [
+            {"bot_guid": 10, "class_spec": "fire_mage", "outcome": "casting", "count": 40},
+            {"bot_guid": 10, "class_spec": "fire_mage", "outcome": "global_cooldown", "count": 8},
+            {"bot_guid": 10, "class_spec": "fire_mage", "outcome": "no_action", "count": 2},
+            {"bot_guid": 10, "class_spec": "fire_mage", "outcome": "cast_failed", "count": 1},
+        ]
+    )
+
+    assert summary == [
+        {
+            "bot_guid": 10,
+            "class_spec": "fire_mage",
+            "outcome_counts": {
+                "casting": 40,
+                "global_cooldown": 8,
+                "no_action": 2,
+                "cast_failed": 1,
+            },
+            "outcome_count": 51,
+            "actionable_failure_count": 3,
+            "actionable_failure_ratio": 0.058824,
+            "expected_wait_count": 48,
+        }
+    ]
 
 
 def test_boss_trace_window_excludes_teardown_and_post_terminal_rows() -> None:

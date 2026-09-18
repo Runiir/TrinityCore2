@@ -3135,6 +3135,9 @@ def test_phase1_partial_critical_death_holds_native_fight_without_tactical_retre
     assert hold < retreat_action
     assert 'Action = "native_full_wipe_hold";' in objective[hold:retreat_action]
     assert 'State.LastRecoveryMode = "native_full_wipe_only";' in objective[hold:retreat_action]
+    assert 'State.TargetGuid.Clear();' in objective[hold:retreat_action]
+    assert 'Target = nullptr;' in objective[hold:retreat_action]
+    assert 'BotMeleeAutoAttack::Kind::Suppress' in objective[hold:retreat_action]
     assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_partial_wipe_retreat_rendezvous"' not in objective[hold:retreat_action]
 
 

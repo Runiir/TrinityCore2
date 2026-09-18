@@ -252,6 +252,10 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
             Party().ValidationRouteManifestAdvanceReason = "boss_killed";
         }
         RecordEvent(*reporterState, reporter, "validation_route_terminal", killed, "boss_killed", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Config.ValidationRouteTargetEntry);
+        // The death callback claims the kill GUID before the per-bot route
+        // outcome runs.  Advance here so a confirmed native boss death cannot
+        // leave the manifest pending while every bot is already terminal.
+        MaybeAdvanceValidationRouteManifest();
     }
 }
 
@@ -295,6 +299,8 @@ void BotWorldPopulationMgr::ResetCombatLog()
     ++Cohort().CombatLogEpoch;
     Party().CombatLogAbilities.clear();
     Party().CombatLogSecondBuckets.clear();
+    Party().CombatActionOutcomes.clear();
+    Party().CombatCandidateRejections.clear();
     Party().CombatLogRecentEvents.clear();
     Party().CombatLogEventCount = 0;
     Party().CombatLogRecentEventsDropped = 0;

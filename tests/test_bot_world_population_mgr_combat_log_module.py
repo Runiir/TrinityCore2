@@ -45,6 +45,8 @@ def test_combat_log_module_preserves_heal_and_death_receipts() -> None:
         "ValidationRouteBossDeathEvidence",
         "CombatLogRecentEvents",
         "CombatLogSecondBuckets",
+        "CombatActionOutcomes",
+        "CombatCandidateRejections",
         "MaxRecentCombatEvents",
     ):
         assert field in module
@@ -61,3 +63,22 @@ def test_combat_log_module_preserves_native_charge_observation() -> None:
         "NotifyNativeCreatureSpellLanded",
     ):
         assert field in module
+
+
+def test_boss_death_callback_advances_a_pending_manifest() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    terminal = module.index(
+        'RecordEvent(*reporterState, reporter, "validation_route_terminal"'
+    )
+    assert "MaybeAdvanceValidationRouteManifest();" in module[terminal:]
+
+
+def test_combat_attempts_feed_the_full_window_action_ledger() -> None:
+    diagnostics = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatDiagnostics.cpp").read_text()
+    status = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp").read_text()
+    assert "CombatActionOutcomeKey" in diagnostics
+    assert "ValidationRouteTerminalState" in diagnostics
+    assert "action_outcomes" in status
+    assert "first_at_ms" in status
+    assert "retry_reason" in status
+    assert "candidate_rejections" in status

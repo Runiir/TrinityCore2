@@ -240,6 +240,41 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
         ? diagnosticReason : diagnostic.Reason;
     diagnostic.DetailJson = detailJson && *detailJson ? detailJson : "{}";
     diagnostic.Summary = BuildCombatAttemptSummary(diagnostic);
+
+    bool const bossActionPhase = diagnostic.Phase == "profile_resolve"
+        || diagnostic.Phase == "positional_reposition"
+        || diagnostic.Phase == "self_centered_position_reconcile"
+        || diagnostic.Phase == "cast"
+        || diagnostic.Phase == "position_reconcile";
+    if (bot && !state.ValidationRouteTerminalState && bossActionPhase
+        && Cohort().Active && Cohort().Config.ValidationRouteEnable
+        && Cohort().Config.ValidationRouteKind == "boss"
+        && Party().ValidationRouteGeneration)
+    {
+        CombatActionOutcomeKey key;
+        key.RouteGeneration = Party().ValidationRouteGeneration;
+        key.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
+        key.ActorGuid = bot->GetGUID().GetCounter();
+        key.Phase = diagnostic.Phase;
+        key.ActionType = diagnostic.ActionType;
+        key.DebugName = diagnostic.DebugName;
+        key.SpellId = diagnostic.SpellId;
+        key.Result = diagnostic.Result;
+        key.Reason = diagnostic.DiagnosticReason.empty()
+            ? diagnostic.Reason : diagnostic.DiagnosticReason;
+        key.RetryReason = diagnostic.Reason;
+
+        CombatActionOutcomeAggregate& aggregate = Party().CombatActionOutcomes[key];
+        if (!aggregate.Count)
+        {
+            aggregate.ActorName = bot->GetName();
+            aggregate.ActorRole = GetDungeonRole(bot);
+            aggregate.ActorClassId = bot->getClass();
+            aggregate.FirstAtMs = diagnostic.RecordedAtMs;
+        }
+        aggregate.LastAtMs = diagnostic.RecordedAtMs;
+        ++aggregate.Count;
+    }
     state.LastCombatAttempt = diagnostic;
 }
 

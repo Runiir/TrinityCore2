@@ -591,7 +591,7 @@ class CombatLogEventStream:
             )
         namespace.response_count += 1
         rows = _event_rows(payload)
-        schema_supported = _integer(payload.get("combat_log_schema_version"), minimum=1) in (3, 4, 5)
+        schema_supported = _integer(payload.get("combat_log_schema_version"), minimum=1) in (3, 4, 5, 6, 7)
         if (
             payload.get("ok") is not True
             or not schema_supported

@@ -215,9 +215,13 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     {
         BotActionResult invalidResult = action.DebugName == "global_cooldown"
             ? BotActionResult::GlobalCooldown : BotActionResult::NoAction;
+        if (action.DebugName == "already_casting")
+            invalidResult = BotActionResult::Casting;
         if (state)
             RecordCombatAttempt(*state, bot, target, "profile_resolve", &action,
-                invalidResult, action.DebugName.c_str());
+                invalidResult,
+                action.ResolutionReason.empty()
+                    ? action.DebugName.c_str() : action.ResolutionReason.c_str());
         if (state && invalidResult == BotActionResult::NoAction)
         {
             state->DecisionKernel.Observe("world.profile_resolve",

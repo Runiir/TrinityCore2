@@ -55,6 +55,13 @@ def test_combat_execution_preserves_position_reconciliation_and_backoff() -> Non
         assert marker in module
 
 
+def test_in_flight_profile_cast_is_not_reported_as_a_retryable_no_action() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    assert 'action.DebugName == "already_casting"' in module
+    assert "BotActionResult::Casting" in module
+    assert "action.ResolutionReason.empty()" in module
+
+
 def test_failed_totem_and_offensive_cooldown_attempts_release_profile_fallback() -> None:
     module = MODULE.read_text(encoding="utf-8")
     totems = module.split(

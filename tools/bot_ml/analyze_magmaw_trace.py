@@ -41,6 +41,70 @@ DEFAULT_WCL_REFERENCE = Path(
     "magmaw_wcl_dps_reference_v1.json"
 )
 
+# Candidate rows are emitted only when every profile candidate was rejected.
+# Most of those rows describe an expected wait (cast in flight, GCD, resource,
+# aura, target, or encounter-policy gate), not a failed native submission. Keep
+# that distinction explicit at the JEV boundary so the model cannot turn a
+# large candidate-search denominator into a false DPS-loss verdict.
+EXPECTED_PROFILE_WAIT_REASONS = frozenset({
+    "already_casting",
+    "global_cooldown",
+    "cooldown",
+    "cooldown_not_ready",
+    "mana_gate",
+    "primary_power_gate",
+    "insufficient_resource",
+    "insufficient_soul_shards",
+    "missing_required_self_aura",
+    "missing_required_target_aura",
+    "missing_required_owned_target_aura",
+    "missing_self_aura",
+    "missing_target_aura",
+    "forbidden_self_aura",
+    "forbidden_target_aura",
+    "forbidden_owned_target_aura_active",
+    "maintain_aura_active",
+    "maintain_owned_aura_active",
+    "insufficient_self_aura_charges",
+    "hostile_target_health_gate",
+    "target_health_gate",
+    "enemy_count_too_low",
+    "enemy_count_too_high",
+    "declarative_area_damage_forbidden",
+    "declarative_area_damage_semantics_forbidden",
+    "future_encounter_splash_forbidden",
+    "target_not_interruptible",
+    "target_purpose_excluded",
+    "pet_forbidden",
+    "requires_ally_target",
+    "temporarily_suppressed",
+    "combustion_not_ready",
+    "combustion_dot_window_not_ready",
+    "solar_mushrooms_not_ready",
+    "eclipse_dot_direction",
+    "prepull_only",
+    "target_immune",
+})
+
+# These are still useful for diagnosing a profile, but a candidate being
+# filtered by one is normal while the surrounding state is true. They are not
+# native submission failures and should not be promoted to JEV's short
+# actionable-gate list.
+NON_FAILURE_PROFILE_GATE_REASONS = frozenset({
+    "movement_gate",
+    "movement_requires_instant_action",
+    "missing_or_depleted_item",
+    "forbidden_self_aura_active",
+    "forbidden_target_aura_active",
+    "forbidden_owned_target_aura_active",
+    "declarative_area_damage_forbidden",
+    "declarative_area_damage_semantics_forbidden",
+    "future_encounter_splash_forbidden",
+    "pet_forbidden",
+    "requires_ally_target",
+    "owned_target_aura_duration_too_low",
+})
+
 
 class JevError(RuntimeError):
     """Raised when the mandatory Jev evidence judgment cannot be obtained."""
@@ -155,12 +219,31 @@ def _report_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         compact_evidence = _compact_evidence(evidence)
         if compact_evidence:
             status["evidence"] = compact_evidence
-        for key in ("route_terminal_evidence", "manifest_completion_evidence"):
+        for key in (
+            "route_terminal_evidence",
+            "manifest_completion_evidence",
+            "real_boss_kill_evidence",
+        ):
             if isinstance(compact_evidence.get(key), list):
                 status[key] = compact_evidence[key]
         for key in ("boss_kill_evidence", "boss_engagement_actions", "kills", "trash_pulls"):
             if key in compact_evidence:
                 status[key] = compact_evidence[key]
+    validation_route = report.get("validation_route")
+    if not isinstance(validation_route, dict):
+        report_status = report.get("status")
+        validation_route = (
+            report_status.get("validation_route")
+            if isinstance(report_status, dict)
+            else None
+        )
+    if isinstance(validation_route, dict):
+        boss_death_evidence = _compact_route_evidence(
+            validation_route.get("boss_death_evidence")
+        )
+        if boss_death_evidence:
+            status["boss_death_evidence"] = boss_death_evidence
+            status.setdefault("evidence", {})["boss_death_evidence"] = boss_death_evidence
     progress_counters = report.get("progress_counters")
     if isinstance(progress_counters, dict):
         status["progress_counters"] = {
@@ -229,6 +312,20 @@ def _compact_live_report(report: dict[str, Any]) -> dict[str, Any]:
     evidence = report.get("evidence")
     if isinstance(evidence, dict):
         result["evidence"] = _compact_evidence(evidence)
+    validation_route = report.get("validation_route")
+    if not isinstance(validation_route, dict):
+        report_status = report.get("status")
+        validation_route = (
+            report_status.get("validation_route")
+            if isinstance(report_status, dict)
+            else None
+        )
+    if isinstance(validation_route, dict):
+        boss_death_evidence = _compact_route_evidence(
+            validation_route.get("boss_death_evidence")
+        )
+        if boss_death_evidence:
+            result["boss_death_evidence"] = boss_death_evidence
     preparation = report.get("preparation")
     if isinstance(preparation, dict):
         compact_preparation: dict[str, Any] = {}
@@ -259,23 +356,34 @@ def _compact_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     ):
         if key in evidence:
             result[key] = evidence[key]
-    for key in ("route_terminal_evidence", "manifest_completion_evidence"):
+    for key in (
+        "route_terminal_evidence",
+        "manifest_completion_evidence",
+        "real_boss_kill_evidence",
+    ):
         value = evidence.get(key)
-        if not isinstance(value, list):
-            continue
-        result[key] = [
-            {
-                field: item[field]
-                for field in ("route_node_id", "route_generation")
-                if field in item
-            }
-            for item in value
-            if isinstance(item, dict) and item.get("route_node_id")
-        ]
+        compact = _compact_route_evidence(value)
+        if compact:
+            result[key] = compact
     diagnosis_codes = evidence.get("diagnosis_codes")
     if isinstance(diagnosis_codes, dict):
         result["diagnosis_codes"] = diagnosis_codes
     return result
+
+
+def _compact_route_evidence(value: Any) -> list[dict[str, Any]]:
+    """Keep only the identity needed to close a native route generation."""
+    if not isinstance(value, list):
+        return []
+    return [
+        {
+            field: item[field]
+            for field in ("route_node_id", "route_generation")
+            if field in item
+        }
+        for item in value
+        if isinstance(item, dict) and item.get("route_node_id")
+    ]
 
 
 def _trace_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -544,6 +652,318 @@ def _compact_actor(
     return result
 
 
+def _compact_native_action_outcomes(
+    rows: Any,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    focus_roles: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Normalize the native full-window action ledger for JEV."""
+    if not isinstance(rows, list):
+        return []
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        guid = _as_int(row.get("actor_guid") or row.get("bot_guid"))
+        identity = (actor_identity or {}).get(str(guid), {})
+        role = str(row.get("actor_role") or identity.get("role") or "")
+        if focus_roles and role and role not in focus_roles:
+            continue
+        item: dict[str, Any] = {
+            "bot_guid": guid,
+            "class_spec": str(identity.get("class_spec") or row.get("class_spec") or ""),
+            "route_node_id": str(row.get("route_node_id") or ""),
+            "phase": str(row.get("phase") or ""),
+            # Accept both raw combat-analysis keys and the already compacted
+            # native ledger. The analyzer calls this normalizer at both
+            # boundaries; dropping result here silently turned every native
+            # outcome into "unknown" and made JEV over-trust candidate gates.
+            "action_category": str(
+                row.get("action_type") or row.get("action_category") or "unknown"
+            ),
+            "action_name": str(row.get("action_name") or "unknown"),
+            "outcome": str(row.get("result") or row.get("outcome") or "unknown"),
+            "count": max(1, _as_int(row.get("count"))),
+        }
+        bot_name = str(row.get("actor_name") or identity.get("bot_name") or "")
+        if bot_name:
+            item["bot_name"] = bot_name
+        if role:
+            item["role"] = role
+        class_id = _as_int(row.get("actor_class_id"))
+        if class_id:
+            item["actor_class_id"] = class_id
+        spell_id = _as_int(row.get("spell_id"))
+        if spell_id:
+            item["spell_id"] = spell_id
+        for source, target in (
+            ("reason", "reason_code"),
+            ("reason_code", "reason_code"),
+            ("retry_reason", "retry_reason"),
+            ("first_at_ms", "first_at_ms"),
+            ("last_at_ms", "last_at_ms"),
+        ):
+            if row.get(source) not in (None, ""):
+                item[target] = row[source]
+        result.append(item)
+    return sorted(
+        result,
+        key=lambda row: (
+            -int(row.get("count") or 0),
+            int(row.get("bot_guid") or 0),
+            str(row.get("phase") or ""),
+            str(row.get("action_name") or ""),
+        ),
+    )
+
+
+def _compact_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
+    """Keep the full-window action ledger useful without repeating identity noise."""
+    if not isinstance(rows, list):
+        return []
+    allowed = (
+        "bot_guid",
+        "class_spec",
+        "phase",
+        "action_category",
+        "action_name",
+        "outcome",
+        "count",
+        "spell_id",
+        "reason_code",
+        "retry_reason",
+    )
+    return [
+        {key: row[key] for key in allowed if key in row}
+        for row in rows
+        if isinstance(row, dict)
+    ]
+
+
+def _summarize_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
+    """Summarize native outcomes by actor without losing failure semantics."""
+    if not isinstance(rows, list):
+        return []
+    grouped: dict[tuple[int, str], dict[str, Any]] = {}
+    actionable_failures = {"no_action", "cast_failed", "no_line_of_sight", "out_of_range"}
+    expected_waits = {"casting", "global_cooldown"}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        guid = _as_int(row.get("bot_guid") or row.get("actor_guid"))
+        class_spec = str(row.get("class_spec") or "")
+        key = (guid, class_spec)
+        item = grouped.setdefault(
+            key,
+            {
+                "bot_guid": guid,
+                "class_spec": class_spec,
+                "outcome_counts": Counter(),
+                "actionable_failure_count": 0,
+                "expected_wait_count": 0,
+            },
+        )
+        outcome = str(row.get("outcome") or row.get("result") or "unknown")
+        count = max(1, _as_int(row.get("count")))
+        item["outcome_counts"][outcome] += count
+        if outcome in actionable_failures:
+            item["actionable_failure_count"] += count
+        if outcome in expected_waits:
+            item["expected_wait_count"] += count
+    result = []
+    for item in grouped.values():
+        result.append(
+            {
+                "bot_guid": item["bot_guid"],
+                "class_spec": item["class_spec"],
+                "outcome_counts": dict(
+                    sorted(item["outcome_counts"].items(), key=lambda pair: (-pair[1], pair[0]))
+                ),
+                "outcome_count": sum(item["outcome_counts"].values()),
+                "actionable_failure_count": item["actionable_failure_count"],
+                "actionable_failure_ratio": round(
+                    item["actionable_failure_count"]
+                    / max(1, sum(item["outcome_counts"].values())),
+                    6,
+                ),
+                "expected_wait_count": item["expected_wait_count"],
+            }
+        )
+    return sorted(result, key=lambda row: int(row.get("bot_guid") or 0))
+
+
+def _compact_native_candidate_rejections(
+    rows: Any,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    focus_roles: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Normalize full-window profile-gate counts for JEV attribution."""
+    if not isinstance(rows, list):
+        return []
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        guid = _as_int(row.get("actor_guid") or row.get("bot_guid"))
+        identity = (actor_identity or {}).get(str(guid), {})
+        role = str(row.get("actor_role") or identity.get("role") or "")
+        if focus_roles and role and role not in focus_roles:
+            continue
+        item: dict[str, Any] = {
+            "bot_guid": guid,
+            "class_spec": str(identity.get("class_spec") or row.get("class_spec") or ""),
+            "spell_id": _as_int(row.get("spell_id")),
+            "action_category": str(row.get("action_category") or "unknown"),
+            "reason": str(row.get("reason") or "unknown"),
+            "count": max(1, _as_int(row.get("count"))),
+        }
+        phase = str(row.get("phase") or "")
+        if phase:
+            item["phase"] = phase
+        result.append(item)
+    return sorted(
+        result,
+        key=lambda row: (
+            -int(row.get("count") or 0),
+            int(row.get("bot_guid") or 0),
+            str(row.get("reason") or ""),
+            int(row.get("spell_id") or 0),
+        ),
+    )
+
+
+def _summarize_jev_candidate_rejections(rows: Any) -> list[dict[str, Any]]:
+    """Group native gates for JEV without sending one row per spell/category."""
+    if not isinstance(rows, list):
+        return []
+    grouped: dict[tuple[int, str, str], dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        key = (
+            _as_int(row.get("bot_guid")),
+            str(row.get("class_spec") or ""),
+            str(row.get("reason") or "unknown"),
+        )
+        item = grouped.setdefault(
+            key,
+            {
+                "bot_guid": key[0],
+                "class_spec": key[1],
+                "reason": key[2],
+                "count": 0,
+                "action_categories": set(),
+                "spell_ids": set(),
+            },
+        )
+        item["count"] += max(1, _as_int(row.get("count")))
+        action_category = str(row.get("action_category") or "unknown")
+        item["action_categories"].add(action_category)
+        spell_id = _as_int(row.get("spell_id"))
+        if spell_id:
+            item["spell_ids"].add(spell_id)
+    important_reasons = {
+        "movement_gate",
+        "movement_requires_instant_action",
+        "max_range_exceeded",
+        "no_movement_blocked_lava_burst",
+        "missing_required_self_aura",
+        "missing_required_target_aura",
+        "missing_required_owned_target_aura",
+        "primary_power_gate",
+    }
+    by_actor: dict[int, list[dict[str, Any]]] = {}
+    for item in grouped.values():
+        by_actor.setdefault(int(item["bot_guid"]), []).append(item)
+    result = []
+    for actor_rows in by_actor.values():
+        actor_rows.sort(key=lambda item: -int(item["count"]))
+        selected = actor_rows[:12]
+        selected_keys = {(item["bot_guid"], item["reason"]) for item in selected}
+        selected.extend(
+            item
+            for item in actor_rows[12:]
+            if item["reason"] in important_reasons
+            and (item["bot_guid"], item["reason"]) not in selected_keys
+        )
+        for item in selected:
+            result.append(
+                {
+                    "bot_guid": item["bot_guid"],
+                    "class_spec": item["class_spec"],
+                    "reason": item["reason"],
+                    "count": item["count"],
+                    "action_categories": sorted(item["action_categories"]),
+                    "spell_ids": sorted(item["spell_ids"])[:4],
+                }
+            )
+    return sorted(
+        result,
+        key=lambda row: (
+            int(row.get("bot_guid") or 0),
+            -int(row.get("count") or 0),
+            str(row.get("reason") or ""),
+        ),
+    )
+
+
+def _candidate_rejection_signal(rows: Any) -> dict[str, Any]:
+    """Separate expected profile waits from candidate gates worth reviewing."""
+    if not isinstance(rows, list):
+        rows = []
+    expected_rows: list[dict[str, Any]] = []
+    non_failure_rows: list[dict[str, Any]] = []
+    actionable_rows: list[dict[str, Any]] = []
+    reason_counts: Counter[str] = Counter()
+    expected_count = 0
+    non_failure_count = 0
+    actionable_count = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        reason = str(row.get("reason") or "unknown")
+        count = max(1, _as_int(row.get("count")))
+        reason_counts[reason] += count
+        if reason in EXPECTED_PROFILE_WAIT_REASONS:
+            expected_rows.append(row)
+            expected_count += count
+        elif reason in NON_FAILURE_PROFILE_GATE_REASONS:
+            non_failure_rows.append(row)
+            non_failure_count += count
+        else:
+            actionable_rows.append(row)
+            actionable_count += count
+
+    def reason_summary(selected: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        counts: Counter[str] = Counter()
+        for row in selected:
+            counts[str(row.get("reason") or "unknown")] += max(1, _as_int(row.get("count")))
+        return [
+            {"reason": reason, "count": count}
+            for reason, count in sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))[:16]
+        ]
+
+    return {
+        "interpretation": (
+            "candidate_scan_counts_are_not_native_failures; expected waits and "
+            "conditional profile gates must not be used as DPS loss without "
+            "corroborating native outcomes"
+        ),
+        "candidate_scan_count": expected_count + non_failure_count + actionable_count,
+        "expected_profile_wait_count": expected_count,
+        "expected_profile_wait_reasons": reason_summary(expected_rows),
+        "non_failure_profile_gate_count": non_failure_count,
+        "non_failure_profile_gate_reasons": reason_summary(non_failure_rows),
+        "actionable_candidate_count": actionable_count,
+        "actionable_candidate_reasons": reason_summary(actionable_rows),
+        "actionable_candidate_groups": _summarize_jev_candidate_rejections(actionable_rows),
+        "all_candidate_reasons": [
+            {"reason": reason, "count": count}
+            for reason, count in sorted(reason_counts.items(), key=lambda pair: (-pair[1], pair[0]))
+        ],
+    }
+
+
 def _compact_metrics(
     metrics: Any,
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
@@ -572,6 +992,8 @@ def _compact_metrics(
             "route_node_id",
             "first_at_ms",
             "last_at_ms",
+            "action_outcome_count",
+            "candidate_rejection_count",
         )
         if key in metrics
     }
@@ -582,6 +1004,16 @@ def _compact_metrics(
             for actor in actors
             if isinstance(actor, dict)
         ]
+    if isinstance(metrics.get("action_outcomes"), list):
+        result["action_outcomes"] = _compact_native_action_outcomes(
+            metrics["action_outcomes"], actor_identity
+        )
+        result["action_outcome_count"] = len(result["action_outcomes"])
+    if isinstance(metrics.get("candidate_rejections"), list):
+        result["candidate_rejections"] = _compact_native_candidate_rejections(
+            metrics["candidate_rejections"], actor_identity
+        )
+        result["candidate_rejection_count"] = len(result["candidate_rejections"])
     if "party_dps" in result:
         result["party_dps_basis"] = "active_damage_seconds"
     if "elapsed_party_dps" in result:
@@ -704,7 +1136,12 @@ def _progress_summary(
     terminal_generations: dict[str, int] = {}
     for row in rows:
         payload = _payload(row)
-        for key in ("route_terminal_evidence", "manifest_completion_evidence"):
+        for key in (
+            "route_terminal_evidence",
+            "manifest_completion_evidence",
+            "real_boss_kill_evidence",
+            "boss_death_evidence",
+        ):
             values = payload.get(key)
             if not isinstance(values, list):
                 continue
@@ -1323,6 +1760,11 @@ def _dps_review_metrics(
     if not isinstance(annotated, dict):
         return {"available": False, "actor_scope": "dps_only"}
     result = dict(annotated)
+    # The authoritative ledger is sent once as boss_dps_review.action_outcomes.
+    # Keeping it nested under combat_metrics doubled the JEV request without
+    # adding evidence.
+    result.pop("action_outcomes", None)
+    result.pop("candidate_rejections", None)
     actors = annotated.get("actors")
     dps_actors: list[dict[str, Any]] = []
     support_actors: list[dict[str, Any]] = []
@@ -1381,6 +1823,31 @@ def _compact_baseline(path: Path | None) -> dict[str, Any] | None:
     deterministic = deterministic if isinstance(deterministic, dict) else {}
     metrics = deterministic.get("latest_combat_metrics")
     metrics = metrics if isinstance(metrics, dict) else {}
+    actors = metrics.get("actors", [])
+    compact_actors = []
+    if isinstance(actors, list):
+        for actor in actors:
+            if not isinstance(actor, dict):
+                continue
+            compact_actors.append(
+                {
+                    key: actor[key]
+                    for key in (
+                        "bot_guid",
+                        "bot_name",
+                        "class_spec",
+                        "role",
+                        "damage",
+                        "active_dps",
+                        "elapsed_dps",
+                        "active_seconds",
+                        "damage_uptime",
+                        "distance_avg",
+                        "moving_fraction",
+                    )
+                    if key in actor
+                }
+            )
     return {
         "run_id": data.get("run_id"),
         "change_id": (data.get("change") or {}).get("id") if isinstance(data.get("change"), dict) else None,
@@ -1394,7 +1861,7 @@ def _compact_baseline(path: Path | None) -> dict[str, Any] | None:
         "elapsed_party_dps": metrics.get("elapsed_party_dps"),
         "combat_seconds": metrics.get("combat_seconds"),
         "duration_sec": metrics.get("duration_sec"),
-        "actors": metrics.get("actors", []),
+        "actors": compact_actors,
     }
 
 
@@ -1435,6 +1902,21 @@ def _compact_run_gate(report: dict[str, Any] | None) -> dict[str, Any]:
         result["route_terminal_evidence"] = compact.get("route_terminal_evidence", [])
         result["manifest_completion_evidence"] = compact.get(
             "manifest_completion_evidence", []
+        )
+        result["real_boss_kill_evidence"] = compact.get(
+            "real_boss_kill_evidence", []
+        )
+    validation_route = report.get("validation_route")
+    if not isinstance(validation_route, dict):
+        report_status = report.get("status")
+        validation_route = (
+            report_status.get("validation_route")
+            if isinstance(report_status, dict)
+            else None
+        )
+    if isinstance(validation_route, dict):
+        result["boss_death_evidence"] = _compact_route_evidence(
+            validation_route.get("boss_death_evidence")
         )
     return result
 
@@ -1542,21 +2024,69 @@ def _boss_dps_review(
             in {None, "dps"}
         )
     ]
+    native_action_outcomes = deterministic.get("boss_action_outcomes", [])
+    native_candidate_rejections = deterministic.get("boss_candidate_rejections", [])
+    candidate_signal = _candidate_rejection_signal(native_candidate_rejections)
+    native_outcome_summary = _summarize_jev_action_outcomes(native_action_outcomes)
+    native_outcome_count = sum(
+        int(row.get("outcome_count") or 0) for row in native_outcome_summary
+    )
+    native_failure_count = sum(
+        int(row.get("actionable_failure_count") or 0) for row in native_outcome_summary
+    )
     return {
         "scope_route_node": DEFAULT_BOSS_ROUTE[0],
         "combat_metrics": metrics,
         "combat_diagnostics": deterministic.get("boss_combat_diagnostics", []),
-        "action_outcomes": deterministic.get("boss_action_outcomes", []),
+        "action_outcomes": _compact_jev_action_outcomes(
+            native_action_outcomes
+        ),
+        "native_outcome_summary": native_outcome_summary,
+        "native_outcome_signal": {
+            "outcome_count": native_outcome_count,
+            "actionable_failure_count": native_failure_count,
+            "actionable_failure_ratio": round(
+                native_failure_count / max(1, native_outcome_count), 6
+            ),
+            "interpretation": (
+                "native action rejection is not the dominant loss when this ratio is low "
+                "and the active stuck set is empty"
+            ),
+        },
+        # Only gates outside the expected profile-wait set are sent as the
+        # short candidate list. The complete native rows remain in the
+        # deterministic report for local audit and replay.
+        "candidate_rejections": candidate_signal["actionable_candidate_groups"],
+        "candidate_rejection_summary": candidate_signal,
+        "candidate_rejection_rows": len(native_candidate_rejections),
+        "candidate_rejection_groups": len(candidate_signal["actionable_candidate_groups"]),
+        "candidate_rejection_count": sum(
+            int(row.get("count") or 0)
+            for row in native_candidate_rejections
+            if isinstance(row, dict)
+        ),
         "decision_outcomes": decision_outcomes,
         "action_outcome_coverage": {
             "boss_trace_rows": len(scoped_entries),
             "dps_trace_rows": len(dps_entries),
             "attributable_dps_action_outcomes": len(
-                deterministic.get("boss_action_outcomes", [])
+                native_action_outcomes
+            ),
+            "attributable_dps_candidate_rejections": len(
+                native_candidate_rejections
+            ),
+            "source": deterministic.get(
+                "boss_action_outcome_source", "retained_trace_tail"
+            ),
+            "full_window_action_outcome_count": int(
+                (deterministic.get("boss_combat_metrics") or {}).get(
+                    "action_outcome_count", 0
+                )
+                or 0
             ),
             "attributable_dps_decision_outcomes": len(decision_outcomes),
             "trace_capture": trace_capture,
-            "interpretation": "absence_is_missing_capture_not_proof_of_no_rejection",
+            "interpretation": "full_window_native_aggregate_is_authoritative_when_present; retained_tail_is_missing_capture_not_proof_of_no_rejection",
         },
         "trace_capture": trace_capture,
         "wcl_reference": wcl_reference,
@@ -1593,7 +2123,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the most actionable DPS loss area from boss_dps_review only. Compare elapsed_party_dps with active party_dps, inspect every DPS actor's elapsed_dps, active_dps, damage_uptime, movement, abilities, action_outcomes, and decision_outcomes. Treat trace_capture as authoritative for the captured boss window: post-terminal teardown and callback_instance_unavailable rows are excluded, while a retained-tail capture means missing action outcomes are unknown rather than successful. Prefer an attributable execution loss over a generic rotation explanation. Route stuck counters are historical unless route_review marks them active. If active_bots is zero or boss combat metrics are unavailable, choose insufficient_data and never infer action_rejection from a missing action log.",
+            "instructions": "Classify the most actionable DPS loss area from boss_dps_review only. Compare elapsed_party_dps with active party_dps, inspect every DPS actor's elapsed_dps, active_dps, damage_uptime, movement, abilities, native_outcome_summary, native_outcome_signal, action_outcomes, candidate_rejection_summary, candidate_rejections, and decision_outcomes. Native action outcomes are the authority for submitted-action loss. Candidate rejections are profile-search counts: the summary separates expected waits and conditional profile gates from a small actionable candidate list. Do not infer action_rejection from expected candidate-wait volume, conditional profile gates, or candidate rows alone; require corroborating no_action, cast_failed, no_line_of_sight, out_of_range, or repeated native backoff outcomes at material per-actor frequency. When native_outcome_signal.actionable_failure_ratio is low (below roughly 0.10) for every DPS actor and the active stuck set is empty, do not choose action_rejection as the dominant loss; use movement, uptime, or no_material_loss based on the actor metrics. Prefer an attributable execution loss over a generic rotation explanation. Route stuck counters are historical unless route_review marks them active. If active_bots is zero or boss combat metrics are unavailable, choose insufficient_data and never infer action_rejection from a missing action log.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "The dominant loss is idle time, repeated waits, or failed action cadence.",
@@ -1702,7 +2232,15 @@ def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str
         except HTTPError as exc:
             last_error = exc
             if exc.code not in {429, 529} or attempt == 2:
-                raise JevError(f"JEV request failed with HTTP {exc.code}") from exc
+                detail = ""
+                try:
+                    detail = exc.read().decode("utf-8", errors="replace").strip()
+                except OSError:
+                    pass
+                if len(detail) > 500:
+                    detail = detail[:500] + "..."
+                suffix = f": {detail}" if detail else ""
+                raise JevError(f"JEV request failed with HTTP {exc.code}{suffix}") from exc
         except (URLError, TimeoutError, json.JSONDecodeError) as exc:
             last_error = exc
             if attempt == 2:
@@ -1877,11 +2415,33 @@ def analyze(
         DEFAULT_BOSS_ROUTE[0],
     )
     deterministic["boss_trace_capture"] = boss_trace_capture
-    deterministic["boss_action_outcomes"] = _compact_action_outcomes(
-        boss_trace_entries,
-        DEFAULT_BOSS_ROUTE[0],
+    native_boss_action_outcomes = _compact_native_action_outcomes(
+        (deterministic.get("boss_combat_metrics") or {}).get("action_outcomes"),
         actor_identity,
         {"dps"},
+    )
+    if native_boss_action_outcomes:
+        deterministic["boss_action_outcomes"] = native_boss_action_outcomes
+        deterministic["boss_action_outcome_source"] = "full_window_native_aggregate"
+    else:
+        deterministic["boss_action_outcomes"] = _compact_action_outcomes(
+            boss_trace_entries,
+            DEFAULT_BOSS_ROUTE[0],
+            actor_identity,
+            {"dps"},
+        )
+        deterministic["boss_action_outcome_source"] = "retained_trace_tail"
+    deterministic["boss_candidate_rejections"] = _compact_native_candidate_rejections(
+        (deterministic.get("boss_combat_metrics") or {}).get(
+            "candidate_rejections"
+        ),
+        actor_identity,
+        {"dps"},
+    )
+    deterministic["boss_candidate_rejection_source"] = (
+        "full_window_native_aggregate"
+        if deterministic["boss_candidate_rejections"]
+        else "unavailable"
     )
     deterministic["boss_combat_diagnostics"] = _dps_diagnostics(
         deterministic.get("boss_combat_diagnostics", []),

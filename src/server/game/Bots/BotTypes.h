@@ -216,6 +216,10 @@ struct ResolvedCombatAction
     ObjectGuid TargetGuid;
     bool Valid = false;
     std::string DebugName;
+    // Native profile resolution can have no new spell while an earlier cast
+    // is still in flight. Keep that scheduler state distinct from a profile
+    // with no legal action so callers do not enter retry backoff mid-cast.
+    std::string ResolutionReason;
     std::string MovementDirective;
     std::string AutoAttackMode;
     // World-bot scheduling owns the persistent melee toggle through its typed

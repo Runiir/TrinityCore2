@@ -25,6 +25,43 @@ def combat_log_fixture() -> dict:
         "aggregate_count": 3,
         "second_bucket_count": 2,
         "recent_events_dropped": 7,
+        "action_outcomes": [
+            {
+                "route_generation": 2,
+                "route_node_id": "corborus",
+                "actor_guid": 10,
+                "actor_name": "Firemake",
+                "actor_role": "dps",
+                "actor_class_id": 8,
+                "phase": "profile_resolve",
+                "action_type": "wait",
+                "action_name": "no_valid_profile_action",
+                "spell_id": 0,
+                "result": "no_action",
+                "reason": "no_valid_profile_action",
+                "retry_reason": "no_valid_profile_action",
+                "first_at_ms": 3000,
+                "last_at_ms": 5000,
+                "count": 3,
+            },
+        ],
+        "candidate_rejections": [
+            {
+                "route_generation": 2,
+                "route_node_id": "corborus",
+                "actor_guid": 10,
+                "actor_name": "Firemake",
+                "actor_role": "dps",
+                "actor_class_id": 8,
+                "phase": "profile_resolve",
+                "spell_id": 133,
+                "action_category": "builder",
+                "reason": "max_range_exceeded",
+                "first_at_ms": 3000,
+                "last_at_ms": 5000,
+                "count": 4,
+            },
+        ],
         "abilities": [
             {
                 "route_generation": 2,
@@ -184,6 +221,12 @@ def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     assert actor["damage_uptime"] == 0.2
     assert actor["abilities"][0]["spell_name"] == "Fireball"
     assert actor["abilities"][0]["damage_share"] == 0.9
+    assert encounter["action_outcome_count"] == 1
+    assert encounter["action_outcomes"][0]["action_name"] == "no_valid_profile_action"
+    assert encounter["action_outcomes"][0]["count"] == 3
+    assert encounter["candidate_rejection_count"] == 1
+    assert encounter["candidate_rejections"][0]["reason"] == "max_range_exceeded"
+    assert report["candidate_rejection_count"] == 1
     assert {row["kind"] for row in report["diagnostics"]} >= {
         "rotation_low_variety",
         "single_ability_damage_dominance",

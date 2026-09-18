@@ -2810,6 +2810,11 @@ def test_validation_route_status_persists_terminal_and_boss_death_evidence():
     assert '\\"terminal_evidence\\"' in mgr
     assert '\\"boss_death_evidence\\"' in mgr
     assert '\\"contamination_evidence\\"' in mgr
+    assert_ordered(
+        notify_death,
+        'RecordEvent(*reporterState, reporter, "validation_route_terminal"',
+        "MaybeAdvanceValidationRouteManifest();",
+    )
 
 
 def test_validation_route_boss_terminal_requires_unit_kill_provenance():
@@ -6035,8 +6040,10 @@ def test_rerun157_preserves_global_cooldown_scheduling_identity():
 
     assert 'candidate.RejectReason == "global_cooldown"' in resolver
     assert 'globalCooldownSchedulingWait ? "global_cooldown"' in resolver
+    assert 'action.ResolutionReason == "already_casting"' in resolver
     assert 'action.DebugName == "global_cooldown"' in executor
     assert "BotActionResult::GlobalCooldown : BotActionResult::NoAction" in executor
+    assert 'action.DebugName == "already_casting"' in executor
     assert "RecordCombatAttempt(*state, bot, target, \"profile_resolve\", &action," in executor
     assert "return invalidResult;" in executor
 
