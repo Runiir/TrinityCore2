@@ -112,11 +112,11 @@ NATIVE_ACTIONABLE_FAILURE_OUTCOMES = frozenset({
     "out_of_range",
 })
 MOVEMENT_SIGNAL_REASONS = frozenset({
-    "movement_gate",
-    "movement_requires_instant_action",
     "max_range_exceeded",
     "no_line_of_sight",
     "no_movement_blocked_lava_burst",
+    "out_of_range",
+    "ranged_range_required",
 })
 TARGET_SIGNAL_REASONS = frozenset({
     "target_not_interruptible",

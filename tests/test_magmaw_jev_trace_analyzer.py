@@ -731,6 +731,7 @@ def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> No
         [
             {"bot_guid": 10, "reason": "already_casting", "count": 100},
             {"bot_guid": 10, "reason": "movement_requires_instant_action", "count": 5},
+            {"bot_guid": 10, "reason": "movement_gate", "count": 8},
             {"bot_guid": 10, "reason": "declarative_area_damage_semantics_forbidden", "count": 120},
         ],
     )
@@ -751,6 +752,8 @@ def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> No
     ]
     assert signal["policy_hypotheses"][0]["action"] == "rotation_profile"
     assert signal["candidate_gate_counts"]["profile_policy"] == 120
+    assert signal["candidate_gate_counts"].get("movement_or_range", 0) == 0
+    assert signal["candidate_gate_counts"]["conditional_gate"] == 13
 
 
 def test_actor_loss_signals_use_encounter_window_gap_as_wcl_loss() -> None:
