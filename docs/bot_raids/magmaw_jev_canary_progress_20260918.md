@@ -396,3 +396,48 @@ through DVC in the companion artifact pointers for this branch; the corrected
 shard33–35 summaries are checkpointed in the new WCL-contract artifact. Raw
 live reports remain in `/tmp/magmaw-normal-shard-{16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35}-20260918`
 during review and are not committed to Git.
+
+## Measurement repair and current-code repeats (shards49–52b, 2026-09-19)
+
+The mandatory JEV loop was run again on the clean control, the scoped Balance
+Starfall canary, and two same-code repeats after commit `d49921c96f`. The
+analyzer now bounds `duration_sec` by the first and last positive hostile
+`damage_done` aggregate and retains the complete telemetry lifetime as
+`capture_duration_sec`. This repaired a real signal failure: shard52b had a
+236.549-second capture lifetime but only a 133.436-second hostile damage
+window, so its party rate is 211.6k rather than the old tail-diluted 119.4k.
+
+| Run | Fight window | Capture lifetime | Encounter-window party DPS | Active party DPS | Native result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| shard49 clean control | 127.347s | 138.533s | 222.8k | 238.4k | clear, 0 deaths, 0 active stuck |
+| shard50 scoped Starfall | 129.339s | 131.934s | 218.0k | 229.2k | clear, 0 deaths, 0 active stuck |
+| shard51 same-code repeat | 146.273s | 150.820s | 193.4k | 203.5k | clear, 0 deaths, 0 active stuck |
+| shard52b same-code repeat | 133.436s | 236.549s | 211.6k | 212.3k | clear, 0 deaths, 0 active stuck |
+
+The corrected party mean is 211.4k versus the 246.2k WCL Summary context. The
+latest JEV judgment is path `aligned` (0.77), stuck `none` (0.50), DPS area
+`movement` (0.36), and next fix `movement_recovery` (0.44); promotion remains
+unsafe (0.04). Balance's simple three-mushroom assignment landed 222,197
+damage in shard52b, but it is not a clean rotation counterfactual. Fire A is
+the fixed pillar-bait identity with execution unobserved. Fire B is eligible
+and reached 41.9k in shard52b, while Elemental reached 25.1k with an
+attributable movement candidate (0.83) only in that repeat. Affliction also
+has a movement candidate (0.64). Those actor signals are not repeated enough
+to justify a shared movement patch yet.
+
+The prior 119.4k result was therefore an analyzer regression, not a gameplay
+wipe. Native completion-watchdog evidence remains authoritative: all four
+replays cleared Magmaw with no deaths, no active stuck behaviors, no death
+loops, and no repeated-decision watchdog stop. Corrected compact summaries and
+JEV judgments are checkpointed in the DVC artifact
+`magmaw_jev_canary_20260918`; raw reports remain under `/tmp`.
+
+## Next bounded action after the measurement repair
+
+Do not edit Balance, Fire A, or shared movement from the current aggregate.
+The next gameplay canary should be a matched, assignment-aware counterfactual
+for one eligible ranged actor—preferably Elemental movement—so JEV can compare
+the same duty and fight-window boundaries before and after one narrow change.
+Run the full sequence after that change: build/tests, completion-watchdog
+Magmaw clear, corrected combat analysis, JEV, and ledger update. A low-
+confidence JEV recommendation remains collection evidence, not an action.

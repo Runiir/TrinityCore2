@@ -1,6 +1,6 @@
 # Raid program error ledger
 
-Updated 2026-09-13. This is the canonical index of known blockers and rejected
+Updated 2026-09-19. This is the canonical index of known blockers and rejected
 assumptions. The current workflow summary chooses work; this ledger explains
 what has already failed. Do not create a new handoff document merely to copy it.
 
@@ -8,6 +8,8 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
+| DPS-061 | Magmaw WCL denominator was still vulnerable to post-kill telemetry tails; measurement repair committed on `d49921c96f` | The third Starfall-code repeat had 133.436 seconds of positive hostile damage but `duration_sec` was 236.549 seconds because healing/cleanup aggregates continued after the native kill. The old arithmetic reported 119.4k party window DPS; the corrected hostile damage window reports 211.6k. | Keep `duration_sec` on the first/last positive hostile `damage_done` aggregate and expose `capture_duration_sec` only as diagnostic context. Re-run JEV after every analyzer/gameplay change; never patch rotations from a tail-diluted denominator. |
+| DPS-062 | Current scoped Starfall code clears Magmaw natively, but all-actor WCL parity remains open | Corrected shards49/50/51/52b are native clears at 222.8k/218.0k/193.4k/211.6k encounter-window party DPS. JEV keeps path aligned and no active stuck behavior; Balance and Fire A are assignment-confounded, Fire B varies 34.9–41.9k, and the latest Elemental movement signal is not yet a repeated shared repair. | Collect a matched, assignment-aware movement counterfactual for an eligible actor before changing shared movement or rotation policy. Preserve the three-mushroom ground-duty contract and treat WCL as comparison context, not an unconditional floor. |
 | DPS-060 | Magmaw WCL denominator contract corrected; parity remains open | Local `dps`/`party_dps` use active-combat seconds, `active_dps` uses actor damage-bearing seconds, and legacy `elapsed_*` fields name the encounter event-window arithmetic rather than route wall clock. Shard35 is a native clear at 200.6k encounter-window party DPS versus the 246.2k WCL reference; Balance executed three detonations but retained 30 placement failures. | Use `encounter_window_dps`/`encounter_window_party_dps` for WCL comparison. Keep route wall clock and active rates diagnostic. Isolate Balance placement geometry or obtain a matched role counterfactual before changing rotation policy. |
 | DPS-059 | Cross-roster comparison previously prioritized small defects without duty-adjusted impact | Fresh WCL spell tables expose larger cadence/guardian/strike differences; some native components exceed WCL. | Use rank_raid_damage_gaps and retained779 references, then join phase, mandatory duty and effective stats. Apparent gaps are not recoverable gains. |
 | OBS-012 | Native retention accepted on779 | Periodic critical/pre-hit state retained in schema5 full+delta+HTML; all five Drain Soul events matched. | Preserve telemetry; direct crit and full aura/cast correlation remain unknown. This acceptance does not make Drain Soul the main DPS gap. |
