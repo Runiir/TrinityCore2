@@ -103,7 +103,7 @@ char const* MagmawBalanceMushroomRejection(
 }
 
 void SetMagmawBalanceMushroomGroundTarget(
-    ResolvedCombatAction& action, Unit const* target)
+    ResolvedCombatAction& action, Player const* bot, Unit const* target)
 {
     if (!target)
         return;
@@ -115,13 +115,47 @@ void SetMagmawBalanceMushroomGroundTarget(
     float groundX = target->GetPositionX();
     float groundY = target->GetPositionY();
     float groundZ = target->GetPositionZ();
-    if (Map* map = target->GetMap())
+    Map* map = target->GetMap();
+    auto resolveFloor = [&](float x, float y, float hintZ, float& resolvedZ)
     {
-        float const resolvedFloorZ = map->GetHeight(target->GetPhaseShift(),
-            groundX, groundY, groundZ + 2.0f, true, 64.0f);
-        if (resolvedFloorZ != INVALID_HEIGHT
-            && std::isfinite(resolvedFloorZ))
-            groundZ = resolvedFloorZ;
+        if (!map)
+            return false;
+        float const sampledZ = map->GetHeight(target->GetPhaseShift(), x, y,
+            hintZ + 2.0f, true, 64.0f);
+        if (sampledZ == INVALID_HEIGHT || !std::isfinite(sampledZ))
+            return false;
+        resolvedZ = sampledZ;
+        return true;
+    };
+    resolveFloor(groundX, groundY, groundZ, groundZ);
+
+    // Spell::CheckCast applies the same destination LOS check to a ground
+    // spell. If the exact add coordinate is hidden by encounter geometry,
+    // keep the point on the platform but move it toward the caster in small
+    // steps. The detonation radius still covers the parasite wave.
+    if (bot && !bot->IsWithinLOS(groundX, groundY, groundZ,
+            LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::M2))
+    {
+        float const towardX = bot->GetPositionX() - groundX;
+        float const towardY = bot->GetPositionY() - groundY;
+        float const towardLength = std::sqrt(towardX * towardX + towardY * towardY);
+        if (towardLength > 0.01f)
+        {
+            for (float offset = 2.0f; offset <= 6.0f; offset += 2.0f)
+            {
+                float const candidateX = groundX + towardX / towardLength * offset;
+                float const candidateY = groundY + towardY / towardLength * offset;
+                float candidateZ = groundZ;
+                if (!resolveFloor(candidateX, candidateY, groundZ, candidateZ)
+                    || !bot->IsWithinLOS(candidateX, candidateY, candidateZ,
+                        LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::M2))
+                    continue;
+                groundX = candidateX;
+                groundY = candidateY;
+                groundZ = candidateZ;
+                break;
+            }
+        }
     }
     action.HasGroundTarget = true;
     action.GroundTargetX = groundX;

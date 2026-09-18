@@ -69,6 +69,8 @@ def test_sql_and_native_path_keep_the_exception_narrow():
     assert "live floor position" in duty_source
     assert "GetHomePosition" not in duty_source
     assert "GetHeight" in duty_source
-    assert "groundZ + 2.0f" in duty_source
+    assert "hintZ + 2.0f" in duty_source
+    assert "IsWithinLOS" in duty_source
+    assert "ModelIgnoreFlags::M2" in duty_source
     assert "AllowMagmawBalanceMushroomSplash" in executor
     assert "prepull_only" in duty_source

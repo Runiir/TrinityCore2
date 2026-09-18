@@ -66,7 +66,7 @@ bool IsMagmawBalanceMushroomAction(
 char const* MagmawBalanceMushroomRejection(
     MagmawBalanceMushroomState const& state, BotActionCandidate const& candidate);
 void SetMagmawBalanceMushroomGroundTarget(
-    ResolvedCombatAction& action, Unit const* target);
+    ResolvedCombatAction& action, Player const* bot, Unit const* target);
 }
 
 #endif
