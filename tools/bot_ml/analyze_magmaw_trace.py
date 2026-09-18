@@ -105,6 +105,52 @@ NON_FAILURE_PROFILE_GATE_REASONS = frozenset({
     "owned_target_aura_duration_too_low",
 })
 
+NATIVE_ACTIONABLE_FAILURE_OUTCOMES = frozenset({
+    "no_action",
+    "cast_failed",
+    "no_line_of_sight",
+    "out_of_range",
+})
+MOVEMENT_SIGNAL_REASONS = frozenset({
+    "movement_gate",
+    "movement_requires_instant_action",
+    "max_range_exceeded",
+    "no_line_of_sight",
+    "no_movement_blocked_lava_burst",
+})
+TARGET_SIGNAL_REASONS = frozenset({
+    "target_not_interruptible",
+    "target_purpose_excluded",
+    "hostile_target_health_gate",
+    "target_health_gate",
+    "missing_required_target_aura",
+    "missing_required_owned_target_aura",
+    "forbidden_target_aura_active",
+})
+PROFILE_POLICY_SIGNAL_REASONS = frozenset({
+    "declarative_area_damage_forbidden",
+    "declarative_area_damage_semantics_forbidden",
+    "future_encounter_splash_forbidden",
+    "enemy_count_too_low",
+    "enemy_count_too_high",
+    "eclipse_dot_direction",
+    "solar_mushrooms_not_ready",
+    "temporarily_suppressed",
+    "prepull_only",
+    "target_immune",
+    "pet_forbidden",
+    "requires_ally_target",
+})
+RESOURCE_SIGNAL_REASONS = frozenset({
+    "mana_gate",
+    "primary_power_gate",
+    "insufficient_resource",
+    "insufficient_soul_shards",
+    "insufficient_self_aura_charges",
+    "cooldown_not_ready",
+    "cooldown",
+})
+
 
 class JevError(RuntimeError):
     """Raised when the mandatory Jev evidence judgment cannot be obtained."""
@@ -834,6 +880,24 @@ def _compact_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
     ]
 
 
+def _jev_action_outcome_slice(rows: Any) -> list[dict[str, Any]]:
+    """Send direct native failures to Jev, not the expected wait ledger."""
+    if not isinstance(rows, list):
+        return []
+    selected = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        outcome = str(row.get("outcome") or row.get("result") or "unknown")
+        reason = str(row.get("reason_code") or row.get("reason") or "")
+        if outcome in NATIVE_ACTIONABLE_FAILURE_OUTCOMES or reason in {
+            "no_line_of_sight",
+            "out_of_range",
+        }:
+            selected.append(row)
+    return _compact_jev_action_outcomes(selected)
+
+
 def _summarize_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
     """Summarize native outcomes by actor without losing failure semantics."""
     if not isinstance(rows, list):
@@ -1056,6 +1120,221 @@ def _candidate_rejection_signal(rows: Any) -> dict[str, Any]:
             for reason, count in sorted(reason_counts.items(), key=lambda pair: (-pair[1], pair[0]))
         ],
     }
+
+
+def _actor_loss_signals(
+    metrics: dict[str, Any] | None,
+    native_outcome_summary: list[dict[str, Any]],
+    candidate_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build small, attributable loss budgets for each DPS actor.
+
+    Jev should judge the semantic cause, but it should not have to reconstruct
+    denominators or decide whether a candidate scan count is a failure.  This
+    packet makes those deterministic facts explicit and includes contradictions
+    so a large policy-gate count cannot manufacture a confident action.
+    """
+    if not isinstance(metrics, dict):
+        return []
+    summary_by_guid = {
+        _as_int(row.get("bot_guid")): row
+        for row in native_outcome_summary
+        if isinstance(row, dict)
+    }
+    rows_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in candidate_rows:
+        if isinstance(row, dict):
+            rows_by_guid[_as_int(row.get("bot_guid"))].append(row)
+
+    def bucket_for(reason: str) -> str:
+        if reason in MOVEMENT_SIGNAL_REASONS:
+            return "movement_or_range"
+        if reason in TARGET_SIGNAL_REASONS:
+            return "targeting"
+        if reason in PROFILE_POLICY_SIGNAL_REASONS:
+            return "profile_policy"
+        if reason in RESOURCE_SIGNAL_REASONS:
+            return "resource_or_cooldown"
+        if reason in EXPECTED_PROFILE_WAIT_REASONS:
+            return "profile_wait"
+        if reason in NON_FAILURE_PROFILE_GATE_REASONS:
+            return "conditional_gate"
+        return "other"
+
+    actor_signals: list[dict[str, Any]] = []
+    actors = metrics.get("actors")
+    if not isinstance(actors, list):
+        return []
+    combat_seconds = max(1.0, _as_float(metrics.get("combat_duration_sec")))
+    for actor in actors:
+        if not isinstance(actor, dict) or str(actor.get("role") or "") != "dps":
+            continue
+        guid = _as_int(actor.get("bot_guid"))
+        native = summary_by_guid.get(guid, {})
+        outcome_counts = native.get("outcome_counts")
+        outcome_counts = outcome_counts if isinstance(outcome_counts, dict) else {}
+        outcome_count = max(0, _as_int(native.get("outcome_count")))
+        failure_count = max(0, _as_int(native.get("actionable_failure_count")))
+        failure_ratio = round(
+            failure_count / max(1, outcome_count),
+            6,
+        )
+        reason_counts: Counter[str] = Counter()
+        bucket_counts: Counter[str] = Counter()
+        for row in rows_by_guid.get(guid, []):
+            reason = str(row.get("reason") or "unknown")
+            count = max(1, _as_int(row.get("count")))
+            reason_counts[reason] += count
+            bucket_counts[bucket_for(reason)] += count
+
+        active_seconds = max(0.0, _as_float(actor.get("active_seconds")))
+        damage_uptime = _as_float(actor.get("damage_uptime"))
+        moving_fraction = _as_float(actor.get("moving_fraction"))
+        idle_fraction = round(max(0.0, 1.0 - damage_uptime), 6)
+        wcl_observed = actor.get("wcl_observed_dps")
+        active_dps = _as_float(actor.get("active_dps"))
+        material_gap = (
+            isinstance(wcl_observed, (int, float))
+            and active_dps < _as_float(wcl_observed) * 0.95
+        )
+        candidate_scan_count = sum(reason_counts.values())
+        profile_policy_count = bucket_counts["profile_policy"]
+        movement_count = bucket_counts["movement_or_range"]
+        target_count = bucket_counts["targeting"]
+        candidates: list[dict[str, Any]] = []
+        policy_hypotheses: list[dict[str, Any]] = []
+
+        def add_candidate(
+            action: str,
+            evidence: list[str],
+            contradictions: list[str],
+            strength: str,
+        ) -> None:
+            candidates.append({
+                "action": action,
+                "evidence": evidence,
+                "contradictions": contradictions,
+                "evidence_strength": strength,
+            })
+
+        if failure_ratio >= 0.10:
+            add_candidate(
+                "shared_arbitration",
+                ["native_actionable_failure_rate_material"],
+                [],
+                "direct_native",
+            )
+        movement_direct = (
+            (moving_fraction >= 0.08 and damage_uptime < 0.80)
+            or (movement_count >= 20 and moving_fraction >= 0.05)
+        )
+        if (
+            (material_gap and movement_direct)
+            or (not isinstance(wcl_observed, (int, float)) and moving_fraction >= 0.15 and damage_uptime < 0.80)
+        ):
+            add_candidate(
+                "movement_recovery",
+                [
+                    key
+                    for key, enabled in (
+                        ("moving_fraction_material", moving_fraction >= 0.08),
+                        ("movement_or_range_gates_observed", movement_count >= 20),
+                        ("ranged_idle_window", damage_uptime < 0.80),
+                    )
+                    if enabled
+                ],
+                ["moving_fraction_low"] if moving_fraction < 0.05 else [],
+                "attributable_movement",
+            )
+        if (
+            idle_fraction >= 0.25
+            and moving_fraction < 0.08
+            and failure_ratio < 0.05
+            and (material_gap or not isinstance(wcl_observed, (int, float)))
+        ):
+            add_candidate(
+                "uptime_cadence",
+                [
+                    "idle_fraction_material",
+                    "moving_fraction_low",
+                    "native_failure_rate_low",
+                ],
+                [],
+                "attributable_idle",
+            )
+        if (
+            material_gap
+            and profile_policy_count >= max(100, int(candidate_scan_count * 0.03))
+        ):
+            policy_hypotheses.append({
+                "action": "rotation_profile",
+                "evidence": [
+                    "profile_policy_gate_volume_material",
+                    "active_dps_below_wcl_context",
+                ],
+                "caveat": "policy gates are not native failures; require a targeted counterfactual canary",
+                "evidence_strength": "profile_hypothesis",
+            })
+        if material_gap and target_count >= 20:
+            add_candidate(
+                "target_lease",
+                ["target_gate_volume_material"],
+                [],
+                "attributable_targeting",
+            )
+        if not candidates:
+            candidates.append({
+                "action": "collect_more_canaries",
+                "evidence": ["no_single_causal_signal_clears_the_screen"],
+                "contradictions": [],
+                "evidence_strength": "insufficient",
+            })
+
+        top_abilities = []
+        abilities = actor.get("abilities")
+        if isinstance(abilities, list):
+            for ability in abilities[:8]:
+                if not isinstance(ability, dict):
+                    continue
+                top_abilities.append({
+                    key: ability[key]
+                    for key in ("spell_id", "spell_name", "events", "damage_share")
+                    if key in ability
+                })
+        actor_signals.append({
+            "bot_guid": guid,
+            "class_spec": str(actor.get("class_spec") or ""),
+            "active_dps": active_dps,
+            "elapsed_dps": _as_float(actor.get("elapsed_dps")),
+            "wcl_observed_dps": wcl_observed,
+            "active_dps_delta_vs_wcl": actor.get("active_dps_delta_vs_wcl"),
+            "elapsed_dps_delta_vs_wcl": actor.get("elapsed_dps_delta_vs_wcl"),
+            "combat_seconds": round(combat_seconds, 3),
+            "active_seconds": round(active_seconds, 3),
+            "damage_uptime": damage_uptime,
+            "idle_fraction": idle_fraction,
+            "moving_fraction": moving_fraction,
+            "distance_avg": actor.get("distance_avg"),
+            "native_outcome_count": outcome_count,
+            "native_actionable_failure_count": failure_count,
+            "native_actionable_failure_ratio": failure_ratio,
+            "native_outcome_counts": dict(sorted(outcome_counts.items())),
+            "candidate_scan_count": candidate_scan_count,
+            "candidate_gate_counts": dict(sorted(bucket_counts.items())),
+            "top_candidate_reasons": [
+                {"reason": reason, "count": count}
+                for reason, count in reason_counts.most_common(8)
+            ],
+            "top_abilities": top_abilities,
+            "sample_quality": {
+                "enough_native_outcomes": outcome_count >= 30,
+                "enough_damage_window": active_seconds >= 30,
+                "wcl_is_context_only": True,
+            },
+            "candidate_actions": candidates,
+            "policy_hypotheses": policy_hypotheses,
+        })
+    return sorted(actor_signals, key=lambda row: int(row.get("bot_guid") or 0))
 
 
 def _compact_metrics(
@@ -2129,13 +2408,18 @@ def _boss_dps_review(
     native_failure_count = sum(
         int(row.get("actionable_failure_count") or 0) for row in native_outcome_summary
     )
+    actor_loss_signals = _actor_loss_signals(
+        metrics,
+        native_outcome_summary,
+        native_candidate_rejections,
+    )
+    failure_action_outcomes = _jev_action_outcome_slice(native_action_outcomes)
     return {
         "scope_route_node": DEFAULT_BOSS_ROUTE[0],
         "combat_metrics": metrics,
         "combat_diagnostics": deterministic.get("boss_combat_diagnostics", []),
-        "action_outcomes": _compact_jev_action_outcomes(
-            native_action_outcomes
-        ),
+        "action_outcomes": failure_action_outcomes,
+        "action_outcome_view": "direct_native_failures_only",
         "native_outcome_summary": native_outcome_summary,
         "native_outcome_signal": {
             "outcome_count": native_outcome_count,
@@ -2148,6 +2432,7 @@ def _boss_dps_review(
                 "and the active stuck set is empty"
             ),
         },
+        "actor_loss_signals": actor_loss_signals,
         # Only gates outside the expected profile-wait set are sent as the
         # short candidate list. The complete native rows remain in the
         # deterministic report for local audit and replay.
@@ -2166,6 +2451,11 @@ def _boss_dps_review(
             "dps_trace_rows": len(dps_entries),
             "attributable_dps_action_outcomes": len(
                 native_action_outcomes
+            ),
+            "jev_action_outcome_rows": len(failure_action_outcomes),
+            "omitted_expected_wait_rows": max(
+                0,
+                len(native_action_outcomes) - len(failure_action_outcomes),
             ),
             "attributable_dps_candidate_rejections": len(
                 native_candidate_rejections
@@ -2192,6 +2482,7 @@ def _jev_questions(
     has_baseline: bool,
     *,
     include_next_fix: bool = True,
+    actor_specs: list[dict[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     questions: dict[str, dict[str, Any]] = {
         "path_consistency": {
@@ -2238,6 +2529,37 @@ def _jev_questions(
             },
         },
     }
+    for actor in actor_specs or []:
+        if not isinstance(actor, dict):
+            continue
+        guid = _as_int(actor.get("bot_guid"))
+        if not guid:
+            continue
+        class_spec = str(actor.get("class_spec") or "unknown")
+        question_id = f"actor_action_{guid}"
+        questions[question_id] = {
+            "type": "choice",
+            "instructions": (
+                f"Choose the smallest bounded engineering action for the single DPS actor "
+                f"{class_spec} (bot_guid {guid}) from actor_loss_signals. This is per-actor "
+                "triage, not a party verdict. Use the named deterministic facts, especially "
+                "idle_fraction, moving_fraction, native_actionable_failure_ratio, candidate "
+                "gate buckets, candidate_actions, top abilities, and sample_quality. A "
+                "candidate_actions entry is a screening hypothesis, not model confidence. "
+                "Require aligned evidence and do not turn policy-gate volume into a native "
+                "failure. WCL is comparison context only. If the evidence is mixed, select "
+                "collect_more_canaries rather than forcing a code change."
+            ),
+            "criteria": {
+                "no_material_action": "The actor has no attributable material loss or is at/above the comparison context; do not change code for this actor.",
+                "movement_recovery": "Repair movement, formation, range, or LOS only when movement facts and the actor's loss are aligned.",
+                "uptime_cadence": "Repair idle time or cast cadence when damage uptime is low despite low movement and low native failure.",
+                "rotation_profile": "Inspect the actor's priority, cooldown, resource, or policy profile when profile evidence explains a material attributable gap.",
+                "target_lease": "Repair target ownership, target return, or target churn when target evidence is material for this actor.",
+                "shared_arbitration": "Repair shared action submission or arbitration only when native actionable failures are material for this actor.",
+                "collect_more_canaries": "The evidence is mixed, sparse, or not reproducible enough to authorize a code change.",
+            },
+        }
     if has_baseline:
         questions["change_effect"] = {
             "type": "choice",
@@ -2257,11 +2579,12 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next engineering action after reviewing the typed evidence judgments and both named evidence views. Keep gameplay authority native and use the smallest fix that addresses the evidenced failure. If admission or lifecycle prevented bots from starting, choose admission_lifecycle. If boss_dps_review contains repeated native candidate rejection after admission, prefer shared_arbitration or rotation_profile over movement_recovery unless movement is the direct blocker. Do not choose a class rotation fix when the evidence only shows a shared movement or target lease failure.",
+        "instructions": "Choose one bounded next engineering action after reviewing the typed evidence judgments, per-actor actor_action judgments, and both named evidence views. Keep gameplay authority native and use the smallest fix that addresses the evidenced failure. Prefer a repair that is attributable to the actor(s) below the comparison context and reproducible across canaries. If admission or lifecycle prevented bots from starting, choose admission_lifecycle. If low damage uptime is aligned with low movement and low native failure, prefer uptime_cadence. If boss_dps_review contains repeated native candidate rejection after admission, prefer shared_arbitration or rotation_profile over movement_recovery unless movement is the direct blocker. Do not choose a class rotation fix when the evidence only shows a shared movement or target lease failure. If actor judgments conflict or remain low confidence, choose collect_more_canaries instead of manufacturing certainty.",
         "criteria": {
             "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
             "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
             "movement_recovery": "Repair or tune movement arbitration/recovery using the trace evidence.",
+            "uptime_cadence": "Repair idle time or cast cadence when the actor loss budget shows low uptime without aligned movement or native failure.",
             "target_lease": "Repair target ownership, target return, or target churn handling.",
             "shared_arbitration": "Repair a shared candidate arbitration/submission edge.",
             "encounter_assignment": "Repair the encounter mechanic assignment or transfer/hook/parasite contract.",
@@ -2388,6 +2711,30 @@ def _answer_summary(response: dict[str, Any]) -> dict[str, Any]:
             if field in answer:
                 compact[field] = answer[field]
         result[key] = compact
+    return result
+
+
+def _actor_action_gate(answers: dict[str, Any]) -> dict[str, Any]:
+    """Expose per-actor confidence without turning Jev into an executor."""
+    result: dict[str, Any] = {}
+    for question_id, answer in answers.items():
+        if not question_id.startswith("actor_action_") or not isinstance(answer, dict):
+            continue
+        choice = str(answer.get("choice") or "")
+        confidence = _as_float(answer.get("confidence"), 0.0)
+        if confidence < JEV_CONFIDENCE_FLOOR:
+            status = "review_required"
+        elif choice == "collect_more_canaries":
+            status = "advisory_collect_more"
+        elif choice == "no_material_action":
+            status = "advisory_no_change"
+        else:
+            status = "advisory_action"
+        result[question_id] = {
+            "choice": choice,
+            "confidence": confidence,
+            "status": status,
+        }
     return result
 
 
@@ -2597,6 +2944,7 @@ def analyze(
     review_questions = _jev_questions(
         baseline is not None,
         include_next_fix=False,
+        actor_specs=boss_dps_review.get("actor_loss_signals", []),
     )
     api_key = _jev_key(env_file)
     review_response = _call_jev(state, api_key, review_questions)
@@ -2697,6 +3045,12 @@ def analyze(
             "stuck_behaviors_observed": deterministic["stuck_behaviors"],
             "active_stuck_behaviors": deterministic["active_stuck_behaviors"],
             "resolved_stuck_behavior_counts": deterministic["resolved_stuck_behavior_counts"],
+            "actor_action_judgments": {
+                key: value
+                for key, value in answers.items()
+                if key.startswith("actor_action_")
+            },
+            "actor_action_gate": _actor_action_gate(answers),
             "fix_tracking": {
                 "change_id": change_id,
                 "change_note": change_note,

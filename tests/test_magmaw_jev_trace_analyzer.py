@@ -653,6 +653,114 @@ def test_candidate_rejection_signal_separates_expected_waits_from_actionable_gat
     ]
 
 
+def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> None:
+    signals = analyzer._actor_loss_signals(
+        {
+            "combat_duration_sec": 100,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "role": "dps",
+                    "class_spec": "balance_druid",
+                    "active_dps": 38000,
+                    "elapsed_dps": 23000,
+                    "wcl_observed_dps": 41000,
+                    "active_dps_delta_vs_wcl": -3000,
+                    "elapsed_dps_delta_vs_wcl": -18000,
+                    "active_seconds": 60,
+                    "damage_uptime": 0.60,
+                    "moving_fraction": 0.01,
+                    "distance_avg": 8.4,
+                    "abilities": [],
+                }
+            ],
+        },
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "balance_druid",
+                "outcome_count": 100,
+                "actionable_failure_count": 2,
+                "actionable_failure_ratio": 0.02,
+                "outcome_counts": {"casting": 80, "ok": 18, "cast_failed": 2},
+            }
+        ],
+        [
+            {"bot_guid": 10, "reason": "already_casting", "count": 100},
+            {"bot_guid": 10, "reason": "movement_requires_instant_action", "count": 5},
+            {"bot_guid": 10, "reason": "declarative_area_damage_semantics_forbidden", "count": 120},
+        ],
+    )
+
+    assert len(signals) == 1
+    signal = signals[0]
+    assert signal["candidate_actions"] == [
+        {
+            "action": "uptime_cadence",
+            "evidence": [
+                "idle_fraction_material",
+                "moving_fraction_low",
+                "native_failure_rate_low",
+            ],
+            "contradictions": [],
+            "evidence_strength": "attributable_idle",
+        }
+    ]
+    assert signal["policy_hypotheses"][0]["action"] == "rotation_profile"
+    assert signal["candidate_gate_counts"]["profile_policy"] == 120
+
+
+def test_jev_action_outcome_slice_excludes_expected_waits() -> None:
+    sliced = analyzer._jev_action_outcome_slice(
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "wait",
+                "action_name": "already_casting",
+                "outcome": "casting",
+                "count": 500,
+            },
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "cast",
+                "action_name": "fireball",
+                "outcome": "cast_failed",
+                "reason_code": "spell_cast_result_49",
+                "count": 2,
+            },
+        ]
+    )
+
+    assert len(sliced) == 1
+    assert sliced[0]["outcome"] == "cast_failed"
+    assert sliced[0]["count"] == 2
+
+
+def test_actor_action_gate_preserves_high_confidence_advice_and_uncertainty() -> None:
+    gate = analyzer._actor_action_gate(
+        {
+            "actor_action_10": {
+                "choice": "uptime_cadence",
+                "confidence": 0.75,
+            },
+            "actor_action_11": {
+                "choice": "collect_more_canaries",
+                "confidence": 0.92,
+            },
+            "actor_action_12": {
+                "choice": "movement_recovery",
+                "confidence": 0.41,
+            },
+        }
+    )
+
+    assert gate["actor_action_10"]["status"] == "advisory_action"
+    assert gate["actor_action_11"]["status"] == "advisory_collect_more"
+    assert gate["actor_action_12"]["status"] == "review_required"
+
+
 def test_jev_action_outcome_summary_counts_native_failures_separately() -> None:
     summary = analyzer._summarize_jev_action_outcomes(
         [

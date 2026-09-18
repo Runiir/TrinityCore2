@@ -68,6 +68,16 @@ included as context. Jev is shadow-only: it cannot submit an in-game action. The
 `JEV` key is loaded from the process environment or the repository `.env`; the
 command fails closed if the key or typed answers are unavailable.
 
+The boss evidence also contains `actor_loss_signals`, one compact loss budget
+per DPS actor. It separates idle fraction, movement/range, targeting,
+profile-policy, resource/cooldown, and native actionable-failure signals; it
+records contradictions and keeps policy hypotheses separate from native
+failures. Per-actor `actor_action_*` judgments are requested from Jev, while
+expected wait rows are retained for audit but omitted from the direct-failure
+action view. A low-confidence party-level action is therefore routed to
+`collect_more_canaries` or human review instead of overriding a high-confidence
+actor-specific action.
+
 For the normal Magmaw 10N canary, use the isolated single-boss route manifest
 (entrance regroup, Chainwielder trash, Drudge pair, then Magmaw), then analyze
 the complete `bwd.magmaw.` route prefix:
