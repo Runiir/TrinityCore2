@@ -3,11 +3,13 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotTypes.h"
 #include "Creature.h"
+#include "Map.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 
 #include <algorithm>
+#include <cmath>
 #include <list>
 
 namespace
@@ -106,13 +108,21 @@ void SetMagmawBalanceMushroomGroundTarget(
     if (!target)
         return;
 
-    // Lava Parasite home positions are the upper spawn/home anchor in this
-    // encounter.  The mushroom must land on the visible platform below the
-    // spawn, so use the parasite's live floor position instead of projecting
-    // the spell to that elevated home point.
+    // Lava Parasites can still be airborne when the add wave appears.  Keep
+    // their live X/Y so the mushrooms follow the wave, but resolve the target
+    // onto the visible platform instead of casting at the airborne Z or the
+    // elevated home point. This is the parasite's live floor position.
     float groundX = target->GetPositionX();
     float groundY = target->GetPositionY();
     float groundZ = target->GetPositionZ();
+    if (Map* map = target->GetMap())
+    {
+        float const resolvedFloorZ = map->GetHeight(target->GetPhaseShift(),
+            groundX, groundY, groundZ + 2.0f, true, 64.0f);
+        if (resolvedFloorZ != INVALID_HEIGHT
+            && std::isfinite(resolvedFloorZ))
+            groundZ = resolvedFloorZ;
+    }
     action.HasGroundTarget = true;
     action.GroundTargetX = groundX;
     action.GroundTargetY = groundY;
