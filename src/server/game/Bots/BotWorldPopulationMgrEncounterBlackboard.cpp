@@ -52,7 +52,14 @@ std::optional<BotEncounter::ConfiguredCombatRange> ObserveConfiguredCombatRange(
         if (!bot->HasSpell(action.SpellId) || action.TargetSelector != "enemy"
             || action.RequiresMeleeRange || action.RequiresGroundTarget
             || action.RequiresInterruptibleTarget || !(action.DamageWeight > 0.0f)
-            || !(BotRaidCooldownReservation::HasTag(action.MechanicTags, "filler")
+            // Some APLs, including Balance's Eclipse builders, label their
+            // stationary ranged filler as a plain `builder` without a
+            // `filler` or `focus_builder` tag.  It is still a valid source
+            // for the ordinary ranged formation envelope.  If builders
+            // disagree on their envelope, the equality check below fails
+            // closed instead of inventing a preference.
+            || !(action.Category == BotCombatActionCategory::Builder
+                || BotRaidCooldownReservation::HasTag(action.MechanicTags, "filler")
                 || BotRaidCooldownReservation::HasTag(action.MechanicTags, "focus_builder")))
             continue;
         if (filler && (filler->SpellId != action.SpellId

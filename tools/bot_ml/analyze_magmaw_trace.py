@@ -266,6 +266,7 @@ def _report_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
             "generation": validation_context.get("route_generation", 0),
             "node_id": validation_context.get("route_node_id", ""),
         }
+    status["native_gameplay_outcome"] = _native_gameplay_outcome(report)
     rows.append({"payload": status})
     return rows
 
@@ -273,6 +274,7 @@ def _report_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
 def _compact_live_report(report: dict[str, Any]) -> dict[str, Any]:
     """Keep lifecycle/admission facts when native trace rows are absent."""
     result: dict[str, Any] = {}
+    result["native_gameplay_outcome"] = _native_gameplay_outcome(report)
     for key in (
         "completion_reason",
         "failure_reason",
@@ -384,6 +386,98 @@ def _compact_route_evidence(value: Any) -> list[dict[str, Any]]:
         for item in value
         if isinstance(item, dict) and item.get("route_node_id")
     ]
+
+
+def _native_gameplay_outcome(report: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Separate native gameplay outcome from the certification/identity gate."""
+    if not isinstance(report, Mapping):
+        return {
+            "schema": "magmaw_native_gameplay_outcome_v1",
+            "status": "no_report",
+            "native_clear": False,
+            "certification_status": "unknown",
+            "certification_rejections": [],
+        }
+
+    evidence = report.get("evidence")
+    evidence = evidence if isinstance(evidence, Mapping) else {}
+    watchdog = report.get("watchdog_state")
+    watchdog = watchdog if isinstance(watchdog, Mapping) else {}
+    acceptance = report.get("acceptance_verification")
+    acceptance = acceptance if isinstance(acceptance, Mapping) else {}
+    completion_reason = str(report.get("completion_reason") or "")
+    manifest_completion = _compact_route_evidence(
+        evidence.get("manifest_completion_evidence")
+    )
+    boss_kills = _compact_route_evidence(evidence.get("real_boss_kill_evidence"))
+    all_dead_wiped = bool(
+        evidence.get("cohort_all_dead_wiped") or watchdog.get("all_dead_wiped")
+    )
+    death_loop = bool(watchdog.get("death_loop")) or bool(
+        _as_int(evidence.get("unresolved_route_death_loop_events"))
+    )
+    repeated_decision_loop = bool(watchdog.get("repeated_decision_loop"))
+    no_progress = bool(watchdog.get("no_progress"))
+    native_clear = bool(
+        completion_reason == "validation_route_manifest_complete"
+        and manifest_completion
+        and boss_kills
+        and not all_dead_wiped
+        and not death_loop
+        and not repeated_decision_loop
+        and not no_progress
+    )
+    if native_clear:
+        status = "clear"
+        native_reason = "native_route_manifest_and_boss_death"
+    elif all_dead_wiped:
+        status = "wipe"
+        native_reason = "native_cohort_all_dead"
+    elif death_loop:
+        status = "death_loop"
+        native_reason = "native_death_loop_guardrail"
+    elif repeated_decision_loop or no_progress:
+        status = "stalled"
+        native_reason = "native_watchdog_guardrail"
+    elif _as_int(report.get("active_bots")) <= 0 and str(
+        report.get("failure_reason") or ""
+    ):
+        status = "admission_failure"
+        native_reason = "native_admission_failure"
+    else:
+        status = "incomplete"
+        native_reason = "native_clear_not_proven"
+
+    rejection_values = acceptance.get("rejections")
+    if not isinstance(rejection_values, list):
+        rejection_values = report.get("final_evidence_rejections")
+    certification_rejections = sorted(
+        {str(value) for value in (rejection_values or []) if value}
+    )
+    certification_accepted = bool(
+        acceptance.get("accepted") is True
+        and report.get("acceptable_final_evidence") is True
+        and not certification_rejections
+    )
+    return {
+        "schema": "magmaw_native_gameplay_outcome_v1",
+        "status": status,
+        "native_clear": native_clear,
+        "native_reason": native_reason,
+        "completion_reason": completion_reason,
+        "manifest_completion_evidence": manifest_completion,
+        "real_boss_kill_evidence": boss_kills,
+        "watchdog": {
+            "all_dead_wiped": all_dead_wiped,
+            "death_loop": death_loop,
+            "no_progress": no_progress,
+            "repeated_decision_loop": repeated_decision_loop,
+        },
+        "certification_status": "accepted" if certification_accepted else (
+            "uncertified" if native_clear else "rejected"
+        ),
+        "certification_rejections": certification_rejections,
+    }
 
 
 def _trace_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1883,6 +1977,7 @@ def _compact_run_gate(report: dict[str, Any] | None) -> dict[str, Any]:
         )
         if key in report
     }
+    result["native_gameplay_outcome"] = _native_gameplay_outcome(report)
     context = report.get("validation_context")
     if isinstance(context, dict):
         result["validation_context"] = {
@@ -2101,7 +2196,7 @@ def _jev_questions(
     questions: dict[str, dict[str, Any]] = {
         "path_consistency": {
             "type": "choice",
-            "instructions": "Classify the route_review only. Use route generations and native terminal evidence: many decisions within one generation are normal and are not route repetition. The retained route-node sample can omit a node after it completed, so route_nodes_observed is not authoritative by itself. If route_acceptance.complete_native_terminal_evidence and route_acceptance.observed_order_monotonic are true, with no route_repeated_nodes, route_unexpected, or active unresolved route event, choose aligned even when the sampled node list has a gap. Use loop_or_gap only for explicit route reversal, repeated route generation, unexpected node, or missing native terminal evidence. Treat an ordered prefix as acceptable for a segment canary. If the live report has zero active bots or zero native trace rows, choose insufficient_evidence.",
+            "instructions": "Classify the route_review only. Use route generations and native terminal evidence: many decisions within one generation are normal and are not route repetition. The retained route-node sample can omit a node after it completed, so route_nodes_observed is not authoritative by itself. If route_acceptance.complete_native_terminal_evidence and route_acceptance.observed_order_monotonic are true, with no route_repeated_nodes, route_unexpected, or active unresolved route event, choose aligned even when the sampled node list has a gap. Use loop_or_gap only for explicit route reversal, repeated route generation, unexpected node, or missing native terminal evidence. Treat an ordered prefix as acceptable for a segment canary. Use native_gameplay_outcome as the gameplay authority; never treat certification_status=uncertified or acceptable_final_evidence=false by itself as a native wipe. If the live report has zero active bots or zero native trace rows, choose insufficient_evidence.",
             "criteria": {
                 "aligned": "Observed route is ordered and the current segment has no unexplained loop or gap.",
                 "ordered_segment": "The trace is an ordered, intentionally partial segment and is not enough to judge a full clear.",
@@ -2111,7 +2206,7 @@ def _jev_questions(
         },
         "stuck_behavior": {
             "type": "choice",
-            "instructions": "Classify the primary currently-unresolved behavior from route_review. Prefer active_stuck_behavior_counts and active_stuck_behaviors, which are restricted to the latest non-terminal route generation. Treat raw stuck_behavior_counts and resolved_stuck_behavior_counts as historical progress evidence, not an active blocker, when native route terminal evidence proves that node completed. When active_bots is zero and the run says admission failed or the pool was underfilled, choose lifecycle. Choose none when the run admitted bots, the active stuck set is empty, and no native unresolved route event remains.",
+            "instructions": "Classify the primary currently-unresolved behavior from route_review. Prefer active_stuck_behavior_counts and active_stuck_behaviors, which are restricted to the latest non-terminal route generation. Treat raw stuck_behavior_counts and resolved_stuck_behavior_counts as historical progress evidence, not an active blocker, when native route terminal evidence proves that node completed. When active_bots is zero and the run says admission failed or the pool was underfilled, choose lifecycle. Choose none when the run admitted bots, the active stuck set is empty, and no native unresolved route event remains. A clear native_gameplay_outcome with certification_status=uncertified is not a stuck or wipe result.",
             "criteria": {
                 "none": "No repeated, blocked, churn, failure, or recovery pattern is evidenced.",
                 "movement": "Movement or formation progress is the dominant blocker.",
@@ -2136,10 +2231,10 @@ def _jev_questions(
         },
         "canary_safe_to_promote": {
             "type": "noul",
-            "instructions": "Is this evidence safe to treat as a successful Magmaw canary result?",
+            "instructions": "Is this evidence safe to promote as a successful Magmaw canary result? Use native_gameplay_outcome first. A native clear with certification_status=uncertified is a valid diagnostic clear but is not promotable; do not call it a wipe.",
             "criteria": {
-                "true": "The watchdog/completion evidence is attributable, the route is complete or explicitly accepted as a segment, no death/repetition guardrail fired, and the observed outcome is consistent.",
-                "false": "The run is incomplete, has a material loop/recovery failure, lacks attributable native outcome evidence, or is only a timeout/smoke observation.",
+                "true": "native_gameplay_outcome.status is clear, certification_status is accepted, the route evidence is attributable, and no death/repetition guardrail fired.",
+                "false": "The native outcome is incomplete, wiped, stalled, or clear only with certification_status=uncertified. An uncertified clear is not a wipe.",
             },
         },
     }
@@ -2470,6 +2565,8 @@ def analyze(
             deterministic["stuck_behaviors"].append(lifecycle_record)
             deterministic["active_stuck_behavior_counts"]["lifecycle_admission_failure"] = 1
             deterministic["active_stuck_behaviors"].append(lifecycle_record)
+    native_gameplay_outcome = _native_gameplay_outcome(live_report)
+    deterministic["native_gameplay_outcome"] = native_gameplay_outcome
     source_sha256 = hashlib.sha256(source_path.read_bytes()).hexdigest()
     identity = _git_identity()
     run_id = run_id or f"magmaw-jev-{source_sha256[:12]}"
@@ -2493,6 +2590,7 @@ def analyze(
         "scope_route_prefix": scope_route_prefix,
         "route_review": route_review,
         "boss_dps_review": boss_dps_review,
+        "native_gameplay_outcome": native_gameplay_outcome,
         "reference_context": wcl_reference,
         "baseline": baseline,
     }
@@ -2551,6 +2649,7 @@ def analyze(
         "source_sha256": source_sha256,
         "change": {"id": change_id, "note": change_note, "git": identity},
         "native_authority": "native_runtime_only",
+        "native_gameplay_outcome": native_gameplay_outcome,
         "jev": {
             "model": review_response.get("model", JEV_MODEL),
             "answers": answers,

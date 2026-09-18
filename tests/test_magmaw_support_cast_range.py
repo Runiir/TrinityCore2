@@ -61,6 +61,7 @@ struct Blackboard { uint64 ProfileGeneration=1; std::string ProfileContentHash="
  struct {std::vector<Vector3> NavigationHints;} Route; };
 }
 using namespace BotEncounter;
+enum class BotCombatActionCategory { Builder, Dot };
 struct Creature;
 struct Unit {
  ObjectGuid Guid{39}; uint32 Entry=41570; bool Alive=true, InWorld=true, Attackable=true;
@@ -75,7 +76,7 @@ struct Player:Unit {
  bool Known=true; bool HasSpell(uint32)const{return Known;}
  bool IsValidAttackTarget(Unit const* u)const{return u->Attackable;}
 };
-struct BotActionProfileSpell {uint32 SpellId=403; std::string TargetSelector="enemy";
+struct BotActionProfileSpell {uint32 SpellId=403; BotCombatActionCategory Category=BotCombatActionCategory::Builder; std::string TargetSelector="enemy";
  bool RequiresRangedRange=false, RequiresMeleeRange=false,RequiresGroundTarget=false,RequiresInterruptibleTarget=false;
  float DamageWeight=1,MinRange=12,MaxRange=35; std::string MechanicTags="lightning_bolt,filler";};
 struct BotClassSpecActionProfile {bool MissingProfile=false; uint64 SnapshotGeneration=1;
@@ -123,6 +124,12 @@ int main(){
  assert(fact && fact->SourceSpellId==403 && fact->MinRange==12 && fact->PreferredRange==16);
  assert(GenericPreferred(*fact)==fact->PreferredRange);
  assert(fact->TargetGuid==target.Guid && fact->TargetEntry==41570);
+ // Balance's Eclipse builders are the real profile shape: they are ranged
+ // builders, but their tags do not include the generic filler marker.
+ profile.Spells[0].MechanicTags="starfire,eclipse";
+ profile.Spells[0].Category=BotCombatActionCategory::Builder;
+ assert(ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells[0].MechanicTags="lightning_bolt,filler";
  profile.Spells[0].MinRange=0; profile.MinRange=14;
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->MinRange==14);
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->PreferredRange==18);
@@ -138,10 +145,12 @@ int main(){
  profile.Spells[0].MechanicTags="steady_shot,focus_builder,apl_inactive";
  profile.Spells[1].MechanicTags="steady_shot,focus_builder,apl_expiring";
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->SourceSpellId==56641);
- profile.Spells[0].SpellId=403; profile.Spells[1].SpellId=403;
- profile.Spells.pop_back(); profile.Spells[0].MechanicTags="not_filler";
- assert(!ObserveConfiguredCombatRange(&player,&target,profile));
- profile.Spells[0].MechanicTags="lightning_bolt,filler";
+    profile.Spells[0].SpellId=403; profile.Spells[1].SpellId=403;
+    profile.Spells.pop_back(); profile.Spells[0].MechanicTags="not_filler";
+    profile.Spells[0].Category=BotCombatActionCategory::Dot;
+    assert(!ObserveConfiguredCombatRange(&player,&target,profile));
+    profile.Spells[0].MechanicTags="lightning_bolt,filler";
+    profile.Spells[0].Category=BotCombatActionCategory::Builder;
  player.Known=false; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); player.Known=true;
  target.Instance=3; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); target.Instance=2;
  target.Attackable=false; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); target.Attackable=true;

@@ -257,6 +257,42 @@ def test_report_rows_preserve_real_boss_death_as_terminal_evidence() -> None:
     assert status["evidence"]["boss_death_evidence"] == status["boss_death_evidence"]
 
 
+def test_native_clear_is_not_classified_as_wipe_when_identity_is_incomplete() -> None:
+    outcome = analyzer._native_gameplay_outcome(
+        {
+            "completion_reason": "validation_route_manifest_complete",
+            "acceptable_final_evidence": False,
+            "active_bots": 10,
+            "final_evidence_rejections": ["incomplete_evidence_identity"],
+            "acceptance_verification": {
+                "accepted": False,
+                "manifest_complete": True,
+                "rejections": ["incomplete_evidence_identity"],
+            },
+            "evidence": {
+                "manifest_completion_evidence": [
+                    {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4}
+                ],
+                "real_boss_kill_evidence": [
+                    {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4}
+                ],
+                "cohort_all_dead_wiped": False,
+            },
+            "watchdog_state": {
+                "all_dead_wiped": False,
+                "death_loop": False,
+                "no_progress": False,
+                "repeated_decision_loop": False,
+            },
+        }
+    )
+
+    assert outcome["status"] == "clear"
+    assert outcome["native_clear"] is True
+    assert outcome["certification_status"] == "uncertified"
+    assert outcome["certification_rejections"] == ["incomplete_evidence_identity"]
+
+
 def test_analyze_requires_jev_and_records_typed_answers_and_ledger(
     tmp_path: Path, monkeypatch
 ) -> None:
