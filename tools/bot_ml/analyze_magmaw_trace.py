@@ -152,7 +152,13 @@ RESOURCE_SIGNAL_REASONS = frozenset({
 })
 
 MAGMAW_BOSS_TARGET_ENTRIES = frozenset({41570, 42347, 48270})
-MAGMAW_MECHANIC_TARGET_ENTRIES = frozenset({41806})
+MAGMAW_MECHANIC_TARGET_ENTRIES = frozenset({41806, 42321})
+# A small amount of parasite damage is expected from incidental target
+# selection and native splash.  Only treat the target work as a required duty
+# when it is material for the actor, otherwise it hides an independently
+# attributable boss-uptime signal from Jev.
+MAGMAW_MATERIAL_DUTY_DAMAGE = 250000.0
+MAGMAW_MATERIAL_DUTY_SHARE = 0.05
 
 
 class JevError(RuntimeError):
@@ -1074,6 +1080,25 @@ def _target_duty_context(
             and _as_int(row.get("first_at_ms"))
             and _as_int(row.get("last_at_ms"))
         ]
+
+        def timestamp_in_intervals(timestamp_ms: int,
+            intervals: list[tuple[int, int]]) -> bool:
+            return any(
+                first_at_ms <= timestamp_ms <= last_at_ms
+                for first_at_ms, last_at_ms in intervals
+                if first_at_ms and last_at_ms
+            )
+
+        duty_moving_timestamps = [
+            timestamp_ms
+            for timestamp_ms in moving_timestamps
+            if timestamp_in_intervals(timestamp_ms, mechanic_intervals)
+        ]
+        recent_mechanic_event_count = sum(
+            1
+            for row in recent_events
+            if _magmaw_target_class(row) == "mechanic_target"
+        )
         correlated_failures = 0
         failure_windows: list[dict[str, Any]] = []
         for row in failure_rows_by_guid.get(guid, []):
@@ -1105,11 +1130,12 @@ def _target_duty_context(
                 })
 
         meaningful_mechanic_duty = (
-            mechanic_damage >= 50000.0 or mechanic_share >= 0.03
+            mechanic_damage >= MAGMAW_MATERIAL_DUTY_DAMAGE
+            or mechanic_share >= MAGMAW_MATERIAL_DUTY_SHARE
         )
         duty_explains_idle = bool(
             meaningful_mechanic_duty
-            and (correlated_failures > 0 or bool(moving_timestamps))
+            and (correlated_failures > 0 or bool(duty_moving_timestamps))
         )
         if actor_abilities:
             counterfactual_status = (
@@ -1140,10 +1166,19 @@ def _target_duty_context(
             "mechanic_target_originated_damage": round(mechanic_damage),
             "mechanic_target_originated_damage_share": mechanic_share,
             "mechanic_target_window_count": len(mechanic_intervals),
+            "mechanic_duty_scope": (
+                "material" if meaningful_mechanic_duty else "incidental"
+            ),
             "recent_damage_event_count": len(recent_events),
+            "recent_mechanic_damage_event_count": recent_mechanic_event_count,
             "recent_moving_damage_event_count": len(moving_timestamps),
             "recent_moving_damage_event_fraction": round(
                 len(moving_timestamps) / max(1, len(recent_events)),
+                6,
+            ),
+            "duty_moving_damage_event_count": len(duty_moving_timestamps),
+            "duty_moving_damage_event_fraction": round(
+                len(duty_moving_timestamps) / max(1, len(moving_timestamps)),
                 6,
             ),
             "native_failure_window_count": len(failure_rows_by_guid.get(guid, [])),
@@ -1620,6 +1655,15 @@ def _actor_loss_signals(
             "native_actionable_failure_ratio": failure_ratio,
             "native_outcome_counts": dict(sorted(outcome_counts.items())),
             "duty_explains_idle": duty_explains_idle,
+            "mechanic_duty_scope": str(
+                target_context.get("mechanic_duty_scope") or "unknown"
+            ),
+            "mechanic_target_originated_damage_share": _as_float(
+                target_context.get("mechanic_target_originated_damage_share")
+            ),
+            "duty_moving_damage_event_fraction": _as_float(
+                target_context.get("duty_moving_damage_event_fraction")
+            ),
             "counterfactual_status": counterfactual_status,
             "candidate_scan_count": candidate_scan_count,
             "candidate_gate_counts": dict(sorted(bucket_counts.items())),

@@ -774,6 +774,73 @@ def test_target_duty_context_aligns_failure_windows_with_required_work() -> None
     assert actor["counterfactual_eligible"] is False
 
 
+def test_target_duty_context_keeps_incidental_add_damage_counterfactual_clean() -> None:
+    context = analyzer._target_duty_context(
+        {
+            "abilities": [
+                {
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "perspective": "damage_done",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41570,
+                    "target_name": "Magmaw",
+                    "event_count": 100,
+                    "amount": 3000000,
+                    "originated_amount": 3000000,
+                    "first_at_ms": 1000,
+                    "last_at_ms": 11000,
+                },
+                {
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "perspective": "damage_done",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41806,
+                    "target_name": "Lava Parasite",
+                    "event_count": 2,
+                    "amount": 60000,
+                    "originated_amount": 60000,
+                    "first_at_ms": 1400,
+                    "last_at_ms": 1600,
+                },
+            ],
+            "recent_events": [
+                {
+                    "kind": "damage",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "source_guid": 10,
+                    "source_moving": True,
+                    "target_entry": 41806,
+                    "target_name": "Lava Parasite",
+                    "timestamp_ms": 1500,
+                }
+            ],
+            "recent_event_capacity": 16384,
+            "recent_events_dropped": 0,
+        },
+        {"actors": [{"bot_guid": 10, "role": "dps"}]},
+        [
+            {
+                "bot_guid": 10,
+                "action_name": "builder",
+                "outcome": "cast_failed",
+                "reason_code": "spell_cast_result_49",
+                "first_at_ms": 1400,
+                "last_at_ms": 1600,
+            }
+        ],
+    )
+
+    actor = context["actors"][0]
+    assert actor["mechanic_duty_scope"] == "incidental"
+    assert actor["mechanic_target_originated_damage_share"] < 0.05
+    assert actor["duty_moving_damage_event_count"] == 1
+    assert actor["duty_explains_idle"] is False
+    assert actor["counterfactual_status"] == "eligible"
+    assert actor["counterfactual_eligible"] is True
+
+
 def test_actor_loss_signal_blocks_cadence_fix_when_duty_explains_idle() -> None:
     signals = analyzer._actor_loss_signals(
         {
