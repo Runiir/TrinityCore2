@@ -617,6 +617,40 @@ def test_jev_candidate_rejection_summary_groups_spell_rows_and_keeps_movement() 
     ]
 
 
+def test_jev_target_duty_projection_keeps_causal_gates_without_contract_noise() -> None:
+    compacted = analyzer._compact_jev_target_duty_context(
+        {
+            "available": True,
+            "scope_route_node": "bwd.magmaw.encounter",
+            "full_window_target_aggregate": True,
+            "recent_event_capture": {"capacity": 500, "dropped": 0, "partial": False},
+            "causal_action_gate": "authorize only when counterfactual_eligible is true",
+            "actors": [{
+                "bot_guid": 30001,
+                "assignment_contract_source": "native contract prose",
+                "assignment_status": "executed",
+                "assignment_landed_damage": 123.0,
+                "duty_explains_idle": True,
+                "counterfactual_eligible": False,
+                "duty_correlated_native_failures": [{"reason_code": "no_line_of_sight"}],
+            }],
+        }
+    )
+
+    assert compacted["actors"] == [{
+        "bot_guid": 30001,
+        "assignment_status": "executed",
+        "assignment_landed_damage": 123.0,
+        "duty_explains_idle": True,
+        "counterfactual_eligible": False,
+    }]
+    assert compacted["recent_event_capture"] == {
+        "capacity": 500,
+        "dropped": 0,
+        "partial": False,
+    }
+
+
 def test_candidate_rejection_signal_separates_expected_waits_from_actionable_gates() -> None:
     signal = analyzer._candidate_rejection_signal(
         [

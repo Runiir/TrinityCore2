@@ -1468,6 +1468,105 @@ def _target_duty_context(
     }
 
 
+def _compact_jev_target_duty_context(
+    context: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Keep the causal duty gate without repeating assignment metadata.
+
+    The deterministic report retains the complete target-duty overlay.  Jev
+    needs the per-actor causal facts, not the repeated contract prose and raw
+    failure-window rows that are already represented by the native outcome
+    view and actor loss signals.
+    """
+    if not isinstance(context, dict):
+        return {
+            "available": False,
+            "reason": "target_duty_context_unavailable",
+            "actors": [],
+        }
+    result = {
+        key: context[key]
+        for key in (
+            "available",
+            "scope_route_node",
+            "full_window_target_aggregate",
+            "recent_event_capture",
+            "causal_action_gate",
+        )
+        if key in context
+    }
+    recent_capture = result.get("recent_event_capture")
+    if isinstance(recent_capture, dict):
+        result["recent_event_capture"] = {
+            key: recent_capture[key]
+            for key in ("capacity", "dropped", "partial")
+            if key in recent_capture
+        }
+    actor_keys = (
+        "bot_guid",
+        "target_categories",
+        "boss_or_head_originated_damage_share",
+        "mechanic_target_originated_damage",
+        "mechanic_target_originated_damage_share",
+        "mechanic_target_window_count",
+        "mechanic_duty_scope",
+        "required_assignment_active",
+        "assignment_id",
+        "assignment_role",
+        "assignment_status",
+        "assignment_counterfactual_status",
+        "assignment_detonation_count",
+        "assignment_placement_decision_count",
+        "assignment_placement_failure_count",
+        "assignment_damage_event_count",
+        "assignment_landed_damage",
+        "recent_damage_event_count",
+        "damage_cadence_capture",
+        "damage_gap_max_seconds",
+        "damage_gap_count_ge_3_seconds",
+        "damage_gap_count_ge_5_seconds",
+        "damage_gap_seconds_ge_3_total",
+        "recent_mechanic_damage_event_count",
+        "recent_moving_damage_event_count",
+        "recent_moving_damage_event_fraction",
+        "duty_moving_damage_event_count",
+        "duty_moving_damage_event_fraction",
+        "native_failure_window_count",
+        "duty_correlated_native_failure_window_count",
+        "duty_explains_idle",
+        "counterfactual_status",
+        "counterfactual_eligible",
+    )
+    result["actors"] = [
+        {
+            key: actor[key]
+            for key in actor_keys
+            if key in actor
+        }
+        for actor in context.get("actors", [])
+        if isinstance(actor, dict)
+    ]
+    return result
+
+
+def _compact_jev_candidate_signal(signal: dict[str, Any]) -> dict[str, Any]:
+    """Drop duplicated candidate rows while retaining native gate counts."""
+    return {
+        key: signal[key]
+        for key in (
+            "interpretation",
+            "candidate_scan_count",
+            "expected_profile_wait_count",
+            "expected_profile_wait_reasons",
+            "non_failure_profile_gate_count",
+            "non_failure_profile_gate_reasons",
+            "actionable_candidate_count",
+            "actionable_candidate_reasons",
+        )
+        if key in signal
+    }
+
+
 def _summarize_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
     """Summarize native outcomes by actor without losing failure semantics."""
     if not isinstance(rows, list):
@@ -3249,11 +3348,9 @@ def _boss_dps_review(
         "action_outcomes": failure_action_outcomes,
         "action_outcome_view": "direct_native_failures_only",
         "native_outcome_summary": native_outcome_summary,
-        "target_duty_context": target_duty_context or {
-            "available": False,
-            "reason": "combat_log_not_supplied",
-            "actors": [],
-        },
+        "target_duty_context": _compact_jev_target_duty_context(
+            target_duty_context
+        ),
         "causal_signal_view": "full_window_target_overlay_and_failure_window_overlap",
         "native_outcome_signal": {
             "outcome_count": native_outcome_count,
@@ -3271,7 +3368,9 @@ def _boss_dps_review(
         # short candidate list. The complete native rows remain in the
         # deterministic report for local audit and replay.
         "candidate_rejections": candidate_signal["actionable_candidate_groups"],
-        "candidate_rejection_summary": candidate_signal,
+        "candidate_rejection_summary": _compact_jev_candidate_signal(
+            candidate_signal
+        ),
         "candidate_rejection_rows": len(native_candidate_rejections),
         "candidate_rejection_groups": len(candidate_signal["actionable_candidate_groups"]),
         "candidate_rejection_count": sum(
