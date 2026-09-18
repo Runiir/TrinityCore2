@@ -8436,7 +8436,11 @@ def main() -> int:
             calibration_reference_conditions=args.calibration_reference_conditions,
             calibration_self_provided_baseline=args.calibration_self_provided_baseline,
             console_enabled=False if args.transport == "session" else None,
-            apply_runtime_profile=bool(args.validation_route_manifest),
+            # An automatically narrowed boss-only manifest is still a
+            # manifest-scoped run and must load its matching profile. Without
+            # this, direct 10-player boss canaries admit the roster with zero
+            # runtime profiles and die before engagement.
+            apply_runtime_profile=bool(args.validation_route_manifest or validation_route_manifest_path),
         )
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
