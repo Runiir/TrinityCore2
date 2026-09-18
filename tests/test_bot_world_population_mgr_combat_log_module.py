@@ -48,8 +48,20 @@ def test_combat_log_module_preserves_heal_and_death_receipts() -> None:
         "CombatActionOutcomes",
         "CombatCandidateRejections",
         "MaxRecentCombatEvents",
+        "CombatLogRecentEventCapacity",
     ):
         assert field in module
+
+
+def test_combat_log_capacity_is_shared_with_status_export() -> None:
+    header = (ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text(
+        encoding="utf-8"
+    )
+    status = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp").read_text(
+        encoding="utf-8"
+    )
+    assert "CombatLogRecentEventCapacity = 16384" in header
+    assert status.count("BotWorldPopulationMgr::CombatLogRecentEventCapacity") >= 2
 
 
 def test_combat_log_module_preserves_native_charge_observation() -> None:

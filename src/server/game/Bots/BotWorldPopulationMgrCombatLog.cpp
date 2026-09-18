@@ -431,7 +431,8 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.SourceIsPet = source != actor && CombatOwnerPlayer(source) == actor;
     event.SharedDamage = sharedDamage;
     Party().CombatLogRecentEvents.push_back(std::move(event));
-    static constexpr size_t MaxRecentCombatEvents = 4096;
+    static constexpr size_t MaxRecentCombatEvents =
+        BotWorldPopulationMgr::CombatLogRecentEventCapacity;
     if (Party().CombatLogRecentEvents.size() > MaxRecentCombatEvents)
     {
         Party().CombatLogRecentEvents.pop_front();

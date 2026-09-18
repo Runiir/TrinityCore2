@@ -82,6 +82,10 @@ class BotWorldPopulationMgr
 {
 public:
     static constexpr uint32 MaxActiveCohorts = 2;
+    // Normal Magmaw validation windows retain roughly 8k landed events across
+    // the route. Keep the bounded forensic ring large enough to preserve the
+    // complete boss counterfactual without making the event stream unbounded.
+    static constexpr uint32 CombatLogRecentEventCapacity = 16384;
 
     static BotWorldPopulationMgr* instance();
 

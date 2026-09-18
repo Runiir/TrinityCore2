@@ -486,7 +486,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId
          << ",\"event_count\":" << Party().CombatLogEventCount
-         << ",\"recent_event_capacity\":4096"
+         << ",\"recent_event_capacity\":"
+         << BotWorldPopulationMgr::CombatLogRecentEventCapacity
          << ",\"recent_events_dropped\":" << Party().CombatLogRecentEventsDropped
          << ",\"aggregate_count\":" << Party().CombatLogAbilities.size()
          << ",\"second_bucket_count\":" << Party().CombatLogSecondBuckets.size()
@@ -630,7 +631,8 @@ std::string BotWorldPopulationMgr::GetCombatLogDeltaJson(uint64 cursor, uint32 l
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId
          << ",\"event_count_at_export\":" << Party().CombatLogEventCount
-         << ",\"recent_event_capacity\":4096"
+         << ",\"recent_event_capacity\":"
+         << BotWorldPopulationMgr::CombatLogRecentEventCapacity
          << ",\"recent_events_dropped\":" << Party().CombatLogRecentEventsDropped;
     BotWorldTrace::WriteExportCursorFields(json, transition);
     json << ",\"recent_events\":[";
