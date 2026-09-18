@@ -41,6 +41,18 @@ rejected because a spell is already being cast, the resolver now reports
 `no_action` and entering candidate backoff. This is a shared cadence fix, not a
 class-specific damage or coefficient change.
 
+The Balance add-duty is now implemented as an encounter-scoped policy: place
+three Wild Mushrooms on the platform below the Lava Parasite wave and detonate
+immediately after the third placement. Shard25 exposed a second geometry edge:
+new parasites are airborne at spawn, so their live Z can still be 221--226
+while the platform is about 211--212. Commit `39b7c9eeff` preserves live X/Y
+but resolves Z through the native map floor query. Shard27 produced a native
+clear with zero `88747` line-of-sight failures, but shard28 reproduced 12
+destination-LOS failures in another valid route. Commit `b70eff769c` adds a
+native LOS check and a bounded caster-facing fallback point; shard29 then
+produced a clear with zero LOS or cast-failed placement outcomes. This
+validates the placement path, but it does not yet establish WCL DPS parity.
+
 ## Canary ledger
 
 All rows below are native Magmaw evidence. “Active DPS” uses originated damage
@@ -60,6 +72,13 @@ acceptance flag is intentionally shown separately from gameplay outcome.
 | shard20 | clear | 28.27M | 215.8k | 182.4k | 10 alive; no watchdog failure; identity-only certification rejection | aligned (0.91); stuck none (0.98); enhanced movement (0.68) |
 | shard21 | clear | 28.19M | 201.4k | 192.0k | 10 alive; no watchdog failure; identity-only certification rejection | aligned (0.90); stuck none (0.98); enhanced movement (0.42), next uptime (0.38) |
 | shard21-duty-replay | replay | 28.19M | 201.4k | 192.0k | same native clear; target/duty overlay added | aligned; stuck none; DPS `insufficient_data` (0.82); next `collect_more_canaries` (0.83); Balance `collect_more_canaries` (0.98) |
+| shard23 | clear | 28.19M | 218.6k | 200.9k | 10 alive; no watchdog failure; three placements and three detonations | aligned; stuck none; DPS `insufficient_data`; Balance `collect_more_canaries` (0.89) |
+| shard24 | clear | 28.27M | 231.7k | 221.0k | 10 alive; no watchdog failure; repeat duty clear | aligned; stuck none; DPS `insufficient_data`; Balance `collect_more_canaries` (0.59) |
+| shard25 | clear | 28.19M | 223.8k | 191.9k | 10 alive; no watchdog failure; 18 native `88747` LOS failures | aligned; stuck none; Balance `collect_more_canaries` (0.97) |
+| shard26 | clear | 28.19M | 229.2k | 215.9k | 10 alive; no watchdog failure; live-Z fix reduced LOS failures to 6 | aligned; stuck none; Balance `collect_more_canaries` (0.94) |
+| shard27 | clear | 28.19M | 229.2k | 187.7k | 10 alive; no watchdog failure; zero `88747` LOS failures | aligned; stuck none; DPS `insufficient_data` (0.85); Balance `collect_more_canaries` (0.95) |
+| shard28 | clear | 28.19M | 234.9k | 218.3k | 10 alive; no watchdog failure; repeat exposed 12 destination-LOS failures | aligned; stuck none; DPS `insufficient_data` (0.84); next `collect_more_canaries` (0.74) |
+| shard29 | clear | 28.24M | 209.2k | 193.2k | 10 alive; no watchdog failure; 12 placements, 3 detonations, zero LOS/cast-failed placement outcomes | aligned; stuck none; DPS `insufficient_data` (0.85); next `collect_more_canaries` (0.68) |
 
 The post-repair canaries therefore show no wipe regression. Active DPS is
 within normal run variance while elapsed DPS improves because the fights finish
@@ -132,6 +151,40 @@ The stable gap is now mostly duty/uptime and movement, not a proven native
 active-DPS gap; Fire A has the largest movement exposure in the repeat runs.
 Those are leads for the next bounded repair, not permission to scale spell
 coefficients or tune to an unmatched WCL denominator.
+
+The post-duty shard27 actor snapshot is still mixed against the comparison
+context: Balance 33.0k active versus 41.0k WCL, Elemental 34.9k versus 41.9k,
+and Blood 13.4k versus 26.2k; both Fire Mages and Affliction are at or above
+their matched WCL context, and Survival has no matched WCL actor. JEV labels
+the change `not_comparable` at 0.86 and keeps the next action at
+`collect_more_canaries` (0.58). That is a request for more attributable
+samples, not authorization to change coefficients or discard the floor fix.
+
+Shard29's active-DPS snapshot remains mixed: Balance 27.6k versus 41.0k WCL,
+Affliction 33.4k versus 40.3k, and Blood 19.2k versus 26.2k, while both Fire
+Mages and Elemental are at or above their matched WCL context and Survival has
+no matched WCL actor. This branch fixes the Balance add mechanic without
+claiming that every DPS spec is already on the WCL reference.
+
+## Balance mushroom duty evidence
+
+The native action ledger shows the intended sequence rather than a generic
+profile scan:
+
+| Run | Placement `88747` | Detonation `88751` | Native placement issue | Result |
+| --- | ---: | ---: | --- | --- |
+| shard23 | 12 successful submissions | 3 successful submissions | none | clear |
+| shard24 | 6 successful submissions | 2 successful submissions | none | clear |
+| shard25 | 12 successful submissions | 3 successful submissions | 18 LOS failures; 15 position-reconcile failures | clear, geometry exposed |
+| shard26 | 13 successful submissions | 4 successful submissions | 6 LOS failures | clear, airborne-Z evidence |
+| shard27 | 10 successful submissions | 3 successful submissions | 0 LOS failures; one native spell result 49 | clear, floor projection validated |
+| shard28 | 11 successful submissions | 3 successful submissions | 12 LOS failures; 8 position-reconcile failures | clear, repeat exposed destination geometry |
+| shard29 | 12 successful submissions | 3 successful submissions | 0 LOS failures; 0 cast-failed placement outcomes | clear, LOS-aware fallback validated |
+
+Shard27 also recorded the surviving Wild Mushroom at platform Z≈211.66. The
+new helper intentionally uses the parasite's live X/Y but samples the floor
+with `Map::GetHeight`; it no longer uses `GetHomePosition()` or an airborne
+target Z. The normal route remained death-free in every mushroom-duty canary.
 
 ## Signal correction and JEV contract
 
@@ -211,19 +264,24 @@ combat-log capture.
 | Fixed bait endpoints exceeded the native 35-yard ranged envelope | shard18 geometry/position trace | repaired to 30/18 in strategy and shadow lane planner; shard19 canary moved both baiters inside the envelope |
 | Generic acceptance/stage failure looked like a gameplay wipe | shards20–21 native clear plus identity-only rejection | fixed in live report with `native_gameplay_outcome_v1`; certification remains separate |
 | Party-level JEV choice mixed Balance idle time with ranged movement | shard21 actor loss replay plus target/duty overlay | fixed in JEV evidence contract; duty-correlated losses now block premature cadence/movement patches and low-confidence answers remain review-only |
+| Balance mushrooms were projected to the elevated parasite home/spawn Z | shard25: 18 native LOS failures and airborne add coordinates; shard26: 6 LOS failures | fixed in `39b7c9eeff` with native platform-floor projection; shard27 confirmed one clean sample |
+| Exact platform points could still fail native destination LOS | shard28 repeat: 12 `88747` LOS failures and 8 position-reconcile failures | fixed in `b70eff769c` with a bounded caster-facing LOS fallback; shard29 has zero LOS/cast-failed placement outcomes |
 
 ## Next bounded action
 
-Do not revert the cast-state or bait-envelope repairs. The next bounded
-validation is a fresh normal Magmaw canary with the target/duty overlay and
-mandatory JEV review. Do not make a Balance cadence or shared movement change
-until the new capture either removes the duty overlap or produces a repeatable,
-counterfactual-eligible loss. Keep the Balance area-policy observation as a
+Do not revert the cast-state, bait-envelope, floor-projection, or LOS-fallback
+repairs. The post-floor validation is complete through shard29: the latest
+canary cleared natively with zero deaths, zero watchdog stalls, and zero
+`88747` LOS/cast-failed outcomes. Mandatory JEV review still returned
+`collect_more_canaries` for DPS sufficiency and change effect, so no additional
+Balance cadence, shared movement, target lease, or native-mechanics patch is
+authorized from this batch. Keep the Balance area-policy observation as a
 separate counterfactual hypothesis, because policy-gate counts are not native
 failures. Keep WCL as a normalized comparison reference, not an unconditional
-per-actor acceptance threshold.
+per-actor acceptance threshold; shard29 still has Balance, Affliction, and Blood
+below the matched WCL context.
 
-Compact JEV reports and native combat ledgers for shards16–21 are checkpointed
+Compact JEV reports and native combat ledgers for shards16–29 are checkpointed
 through DVC in the companion artifact pointer for this branch. Raw live reports
-remain in `/tmp/magmaw-normal-shard-{16,17,18,19,20,21}-20260918` during review and
-are not committed to Git.
+remain in `/tmp/magmaw-normal-shard-{16,17,18,19,20,21,22,23,24,25,26,27,28,29}-20260918`
+during review and are not committed to Git.
