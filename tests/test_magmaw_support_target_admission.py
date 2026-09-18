@@ -236,13 +236,24 @@ int main()
         strategy, retained, supportActor, legalAlternative);
     assert(retainedPlan.DamageTarget == legal.Guid);
 
-    // No observed parasite or body opportunity leaves the optional selector
-    // empty instead of binding a target that support movement may not chase.
+    // Optional support is best effort.  When no parasite is currently
+    // admitted, ordinary ranged DPS keeps the boss target and waits for the
+    // native range/LOS path to reconcile instead of dropping combat intent.
     MagmawSupportTargetOpportunities noneLegal;
     AdaptiveMagmawPlan none = Propose(
         strategy, board, supportActor, noneLegal);
-    assert(none.DamageTarget.IsEmpty());
-    assert(none.ClearOptionalDamageTarget);
+    #define MAGMAW_EXPECT_LEGACY 0
+#if MAGMAW_EXPECT_LEGACY
+    {
+        assert(none.DamageTarget.IsEmpty());
+        assert(none.ClearOptionalDamageTarget);
+    }
+#else
+    {
+        assert(none.DamageTarget == boss.Guid);
+        assert(!none.ClearOptionalDamageTarget);
+    }
+#endif
     assert(none.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
     // DPS-043: fixed Mage and Hunter baiters use actual native opportunity
@@ -413,7 +424,9 @@ int main()
     assert(ordinaryBody.DamageTarget == boss.Guid);
     assert(!ordinaryBody.ClearOptionalDamageTarget);
 }
-'''.replace("marksmanship_hunter", hunter_spec),
+    '''.replace("marksmanship_hunter", hunter_spec).replace(
+        "#define MAGMAW_EXPECT_LEGACY 0",
+        "#define MAGMAW_EXPECT_LEGACY " + ("1" if revision else "0")),
     )
     result = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
     if revision:

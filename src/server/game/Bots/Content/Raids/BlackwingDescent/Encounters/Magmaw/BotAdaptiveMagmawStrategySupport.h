@@ -217,8 +217,14 @@
                 && !contract.IsAssignedBaiter(botGuid)
                 && IsRangedParasiteSupportSpec(classSpec);
             if (optionalSupportChoice)
-                return observed.BossStaticDamageOpportunity
-                    ? observed.Boss->Guid : ObjectGuid{};
+            {
+                // Optional parasite support is best effort.  If the native
+                // opportunity gate has not admitted the parasite yet, keep
+                // the boss as the damage target so ordinary range/LOS
+                // reconciliation can make progress instead of clearing the
+                // bot's combat intent for the whole observation tick.
+                return observed.Boss->Guid;
+            }
         }
         return observed.Boss->Guid;
     }
