@@ -455,6 +455,7 @@ def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
                     "actor_name": "Roostertours",
                     "actor_role": "dps",
                     "damage": 80000.0,
+                    "dps": 20000.0,
                     "active_dps": 20000.0,
                     "elapsed_dps": 16000.0,
                     "active_seconds": 4.0,
@@ -486,6 +487,7 @@ def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
         },
     )
     assert annotated["actors"][0]["wcl_observed_dps"] == 41866.0
+    assert annotated["actors"][0]["dps_delta_vs_wcl"] == -21866.0
     assert annotated["actors"][0]["elapsed_dps_delta_vs_wcl"] == -25866.0
 
 
@@ -710,7 +712,7 @@ def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> No
     assert signal["candidate_gate_counts"]["profile_policy"] == 120
 
 
-def test_actor_loss_signals_use_wall_clock_gap_when_active_dps_is_healthy() -> None:
+def test_actor_loss_signals_do_not_use_wall_clock_gap_as_wcl_loss() -> None:
     signals = analyzer._actor_loss_signals(
         {
             "combat_duration_sec": 100,
@@ -719,6 +721,7 @@ def test_actor_loss_signals_use_wall_clock_gap_when_active_dps_is_healthy() -> N
                     "bot_guid": 10,
                     "role": "dps",
                     "class_spec": "fire_mage",
+                    "dps": 40000,
                     "active_dps": 52000,
                     "elapsed_dps": 32000,
                     "wcl_observed_dps": 40000,
@@ -744,16 +747,13 @@ def test_actor_loss_signals_use_wall_clock_gap_when_active_dps_is_healthy() -> N
     signal = signals[0]
     assert signal["active_dps_gap_vs_wcl"] is False
     assert signal["elapsed_dps_gap_vs_wcl"] is True
+    assert signal["encounter_dps_gap_vs_wcl"] is False
     assert signal["candidate_actions"] == [
         {
-            "action": "uptime_cadence",
-            "evidence": [
-                "idle_fraction_material",
-                "moving_fraction_low",
-                "native_failure_rate_low",
-            ],
+            "action": "collect_more_canaries",
+            "evidence": ["no_single_causal_signal_clears_the_screen"],
             "contradictions": [],
-            "evidence_strength": "attributable_idle",
+            "evidence_strength": "insufficient",
         }
     ]
     assert signal["policy_hypotheses"] == []
