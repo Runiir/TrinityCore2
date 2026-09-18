@@ -10,6 +10,8 @@
 namespace BotElementalSpiritwalkersGrace
 {
 constexpr uint32 LavaBurstSpellId = 51505;
+constexpr uint32 LightningBoltSpellId = 403;
+constexpr uint32 ChainLightningSpellId = 421;
 constexpr uint32 SpiritwalkersGraceSpellId = 79206;
 constexpr std::string_view ElementalSpec = "elemental_shaman";
 constexpr std::string_view MovementRejection = "movement_requires_instant_action";
@@ -31,12 +33,20 @@ void EvaluateGraceAfterDamageOpportunities(Candidates& candidates)
         });
 }
 
+inline bool IsMovementBlockedDamageSpell(uint32 spellId)
+{
+    return spellId == LavaBurstSpellId
+        || spellId == LightningBoltSpellId
+        || spellId == ChainLightningSpellId;
+}
+
 template <typename Candidates>
-bool HasMovementBlockedLavaBurst(Candidates const& candidates)
+bool HasMovementBlockedDamageOpportunity(Candidates const& candidates)
 {
     for (auto const& candidate : candidates)
-        if (candidate.SpellId == LavaBurstSpellId
-            && candidate.RejectReason == MovementRejection)
+        if (IsMovementBlockedDamageSpell(candidate.SpellId)
+            && (candidate.RejectReason == MovementRejection
+                || candidate.RejectReason == "movement_requires_instant_action"))
             return true;
     return false;
 }

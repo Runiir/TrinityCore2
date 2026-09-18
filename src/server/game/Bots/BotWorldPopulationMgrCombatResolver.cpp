@@ -713,9 +713,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (profile.SpecTag == BotElementalSpiritwalkersGrace::ElementalSpec
             && candidate.SpellId == BotElementalSpiritwalkersGrace::SpiritwalkersGraceSpellId
-            && !BotElementalSpiritwalkersGrace::HasMovementBlockedLavaBurst(candidates))
+            && !BotElementalSpiritwalkersGrace::HasMovementBlockedDamageOpportunity(candidates))
         {
-            candidate.RejectReason = "no_movement_blocked_lava_burst";
+            candidate.RejectReason = "no_movement_blocked_damage_opportunity";
             continue;
         }
         if (!candidate.RejectReason.empty())
