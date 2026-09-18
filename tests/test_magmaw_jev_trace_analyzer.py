@@ -710,6 +710,116 @@ def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> No
     assert signal["candidate_gate_counts"]["profile_policy"] == 120
 
 
+def test_target_duty_context_aligns_failure_windows_with_required_work() -> None:
+    context = analyzer._target_duty_context(
+        {
+            "abilities": [
+                {
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "perspective": "damage_done",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41570,
+                    "target_name": "Magmaw",
+                    "event_count": 20,
+                    "amount": 100000,
+                    "originated_amount": 100000,
+                    "first_at_ms": 1000,
+                    "last_at_ms": 3000,
+                },
+                {
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "perspective": "damage_done",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41806,
+                    "target_name": "Lava Parasite",
+                    "event_count": 2,
+                    "amount": 60000,
+                    "originated_amount": 60000,
+                    "first_at_ms": 1400,
+                    "last_at_ms": 1600,
+                },
+            ],
+            "recent_events": [
+                {
+                    "kind": "damage",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "source_guid": 10,
+                    "source_moving": True,
+                    "timestamp_ms": 1500,
+                }
+            ],
+            "recent_event_capacity": 1,
+            "recent_events_dropped": 4,
+        },
+        {"actors": [{"bot_guid": 10, "role": "dps"}]},
+        [
+            {
+                "bot_guid": 10,
+                "action_name": "builder",
+                "outcome": "cast_failed",
+                "reason_code": "spell_cast_result_49",
+                "first_at_ms": 1400,
+                "last_at_ms": 1600,
+            }
+        ],
+    )
+
+    actor = context["actors"][0]
+    assert actor["mechanic_target_originated_damage_share"] == 0.375
+    assert actor["duty_correlated_native_failure_window_count"] == 1
+    assert actor["duty_explains_idle"] is True
+    assert actor["counterfactual_status"] == "partial_recent_capture"
+    assert actor["counterfactual_eligible"] is False
+
+
+def test_actor_loss_signal_blocks_cadence_fix_when_duty_explains_idle() -> None:
+    signals = analyzer._actor_loss_signals(
+        {
+            "combat_duration_sec": 100,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "role": "dps",
+                    "class_spec": "balance_druid",
+                    "active_dps": 38000,
+                    "elapsed_dps": 23000,
+                    "wcl_observed_dps": 41000,
+                    "active_seconds": 60,
+                    "damage_uptime": 0.60,
+                    "moving_fraction": 0.01,
+                    "abilities": [],
+                }
+            ],
+        },
+        [
+            {
+                "bot_guid": 10,
+                "outcome_count": 100,
+                "actionable_failure_count": 2,
+                "outcome_counts": {"casting": 98, "cast_failed": 2},
+            }
+        ],
+        [],
+        {
+            "available": True,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "duty_explains_idle": True,
+                    "counterfactual_status": "partial_recent_capture",
+                }
+            ],
+        },
+    )
+
+    assert signals[0]["candidate_actions"][0]["action"] == "collect_more_canaries"
+    assert "required_target_duty_overlaps_loss_window" in signals[0]["candidate_actions"][0]["evidence"]
+    assert signals[0]["duty_explains_idle"] is True
+    assert signals[0]["counterfactual_status"] == "partial_recent_capture"
+
+
 def test_jev_action_outcome_slice_excludes_expected_waits() -> None:
     sliced = analyzer._jev_action_outcome_slice(
         [

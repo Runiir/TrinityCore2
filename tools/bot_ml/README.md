@@ -78,6 +78,17 @@ action view. A low-confidence party-level action is therefore routed to
 `collect_more_canaries` or human review instead of overriding a high-confidence
 actor-specific action.
 
+The boss review also includes `target_duty_context`. It is derived from the
+full-window target aggregates and timestamped native failure windows, with the
+bounded recent event ring used only for movement correlation. It reports boss
+versus mechanic-target damage, duty/failure-window overlap,
+`duty_explains_idle`, and `counterfactual_status`. JEV must not authorize an
+uptime, movement, or rotation repair when required duty explains the loss or
+the movement capture is partial. This preserves low-confidence judgments as
+review evidence while preventing them from silently becoming gameplay changes.
+The analyzer auto-discovers `combat_log.json` beside a run directory; use
+`--combat-log` when the export is stored elsewhere.
+
 For the normal Magmaw 10N canary, use the isolated single-boss route manifest
 (entrance regroup, Chainwielder trash, Drudge pair, then Magmaw), then analyze
 the complete `bwd.magmaw.` route prefix:

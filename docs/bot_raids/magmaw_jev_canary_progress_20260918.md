@@ -23,6 +23,18 @@ removed from JEV's action view. This makes a low-confidence party-level choice
 an uncertainty signal rather than a reason to discard the useful actor-level
 judgments.
 
+The latest evidence boundary adds a target/duty overlay. Full-window target
+aggregates distinguish Magmaw/head damage from Lava Parasite work, and native
+failure timestamps are intersected with mechanic-target intervals and recent
+movement events. The overlay reports `duty_explains_idle` and a separate
+`counterfactual_status`; a partial recent ring is never treated as complete
+movement evidence. On the shard21 replay, Balance had 132,911 originated
+parasite damage (3.893% of its encounter damage) and 3 of 5 native failure
+windows overlapped mechanic work or movement. JEV consequently chose
+`collect_more_canaries` for Balance at 0.98 confidence and
+`insufficient_data` for the party DPS-loss area at 0.82, instead of authorizing
+the earlier uptime hypothesis.
+
 The trace-backed runtime repair is safe so far. When every profile candidate is
 rejected because a spell is already being cast, the resolver now reports
 `Casting` and preserves `already_casting` instead of returning retryable
@@ -47,6 +59,7 @@ acceptance flag is intentionally shown separately from gameplay outcome.
 | shard19 | clear | 28.19M | 222.0k | 210.2k | 10 alive; no watchdog failure | aligned (0.90); stuck none (0.92); movement (0.41) |
 | shard20 | clear | 28.27M | 215.8k | 182.4k | 10 alive; no watchdog failure; identity-only certification rejection | aligned (0.91); stuck none (0.98); enhanced movement (0.68) |
 | shard21 | clear | 28.19M | 201.4k | 192.0k | 10 alive; no watchdog failure; identity-only certification rejection | aligned (0.90); stuck none (0.98); enhanced movement (0.42), next uptime (0.38) |
+| shard21-duty-replay | replay | 28.19M | 201.4k | 192.0k | same native clear; target/duty overlay added | aligned; stuck none; DPS `insufficient_data` (0.82); next `collect_more_canaries` (0.83); Balance `collect_more_canaries` (0.98) |
 
 The post-repair canaries therefore show no wipe regression. Active DPS is
 within normal run variance while elapsed DPS improves because the fights finish
@@ -148,6 +161,14 @@ also keeps policy hypotheses such as Balance area-spell suppression separate
 from native failures. The JEV action view contains only direct native failures;
 the complete wait/action ledger remains in the deterministic report for audit.
 
+The target/duty overlay adds the signal that was missing from the original
+actor packet: target purpose and temporal overlap. A low uptime number alone is
+not enough to select a cadence fix. The analyzer now requires complete enough
+counterfactual evidence and no required-duty overlap before treating uptime,
+movement, or rotation as an actionable actor repair. Partial or low-confidence
+answers remain in the report with their probability maps and are routed to
+review/collection rather than discarded.
+
 Shard17 native outcomes contain 113 actionable failures out of 4,867 outcomes
 (2.32%); shard18 contains 87 out of 5,119 (1.70%). All six DPS actors stay below
 5% in both reports, and both JEV reviews now choose `movement`, never
@@ -171,6 +192,12 @@ fix.
 JEV remains shadow analysis only; native TrinityCore telemetry is the gameplay
 authority.
 
+The duty-aware replay supersedes the earlier Balance `uptime_cadence` hint for
+this evidence. It is an analyzer replay, not a second gameplay run, and it
+does not authorize a Balance or shared-arbitration patch. The next fresh
+canary must test whether the target/duty relationship repeats with a new
+combat-log capture.
+
 ## Fixed-behavior ledger
 
 | Behavior | Evidence | Status |
@@ -183,16 +210,18 @@ authority.
 | Terminal-tail `blocked_no_fallback` diagnostics | shard18 post-kill snapshot | open telemetry cleanup; not active during the boss window |
 | Fixed bait endpoints exceeded the native 35-yard ranged envelope | shard18 geometry/position trace | repaired to 30/18 in strategy and shadow lane planner; shard19 canary moved both baiters inside the envelope |
 | Generic acceptance/stage failure looked like a gameplay wipe | shards20–21 native clear plus identity-only rejection | fixed in live report with `native_gameplay_outcome_v1`; certification remains separate |
-| Party-level JEV choice mixed Balance idle time with ranged movement | shard21 actor loss replay | fixed in JEV evidence contract; high-confidence actor actions are retained, low-confidence global actions remain review-only |
+| Party-level JEV choice mixed Balance idle time with ranged movement | shard21 actor loss replay plus target/duty overlay | fixed in JEV evidence contract; duty-correlated losses now block premature cadence/movement patches and low-confidence answers remain review-only |
 
 ## Next bounded action
 
 Do not revert the cast-state or bait-envelope repairs. The next bounded
-validation is a Balance cadence/uptime canary with actor-level action evidence;
-do not make a shared movement change from the old party-level diagnosis. Keep
-the Balance area-policy observation as a separate counterfactual hypothesis,
-because policy-gate counts are not native failures. Keep WCL as a normalized
-comparison reference, not an unconditional per-actor acceptance threshold.
+validation is a fresh normal Magmaw canary with the target/duty overlay and
+mandatory JEV review. Do not make a Balance cadence or shared movement change
+until the new capture either removes the duty overlap or produces a repeatable,
+counterfactual-eligible loss. Keep the Balance area-policy observation as a
+separate counterfactual hypothesis, because policy-gate counts are not native
+failures. Keep WCL as a normalized comparison reference, not an unconditional
+per-actor acceptance threshold.
 
 Compact JEV reports and native combat ledgers for shards16–21 are checkpointed
 through DVC in the companion artifact pointer for this branch. Raw live reports

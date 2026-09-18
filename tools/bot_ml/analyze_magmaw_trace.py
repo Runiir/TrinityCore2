@@ -151,6 +151,9 @@ RESOURCE_SIGNAL_REASONS = frozenset({
     "cooldown",
 })
 
+MAGMAW_BOSS_TARGET_ENTRIES = frozenset({41570, 42347, 48270})
+MAGMAW_MECHANIC_TARGET_ENTRIES = frozenset({41806})
+
 
 class JevError(RuntimeError):
     """Raised when the mandatory Jev evidence judgment cannot be obtained."""
@@ -211,6 +214,17 @@ def _input_files(input_path: Path) -> tuple[Path | None, Path | None, Path | Non
     if input_path.suffix.lower() == ".json":
         return None, input_path, None
     return input_path, None, None
+
+
+def _discovered_combat_log_path(input_path: Path) -> Path | None:
+    """Find the bounded combat-log export next to a live canary input."""
+    if input_path.is_dir():
+        candidate = input_path / "combat_log.json"
+    elif input_path.name in {"raw.jsonl", "report.json", "combat_analysis.json"}:
+        candidate = input_path.parent / "combat_log.json"
+    else:
+        return None
+    return candidate if candidate.exists() else None
 
 
 def _report_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
@@ -898,6 +912,265 @@ def _jev_action_outcome_slice(rows: Any) -> list[dict[str, Any]]:
     return _compact_jev_action_outcomes(selected)
 
 
+def _magmaw_target_class(row: Mapping[str, Any]) -> str:
+    entry = _as_int(row.get("target_entry"))
+    name = str(row.get("target_name") or "").lower()
+    if entry in MAGMAW_MECHANIC_TARGET_ENTRIES or "parasite" in name:
+        return "mechanic_target"
+    if entry in MAGMAW_BOSS_TARGET_ENTRIES or "magmaw" in name or "exposed head" in name:
+        return "boss_or_head"
+    return "other"
+
+
+def _target_duty_context(
+    combat_log: dict[str, Any] | None,
+    metrics: dict[str, Any] | None,
+    native_action_outcomes: Any,
+) -> dict[str, Any]:
+    """Build a compact target/duty overlay without sending raw events to Jev.
+
+    The combat log has full-window target aggregates but only a bounded recent
+    event ring.  Keep those evidence scopes separate: target attribution can be
+    complete even when movement samples are partial.  A repair is not
+    counterfactual-ready when this distinction is lost.
+    """
+    if not isinstance(combat_log, dict) or not isinstance(metrics, dict):
+        return {
+            "available": False,
+            "reason": "combat_log_or_boss_metrics_unavailable",
+            "actors": [],
+        }
+
+    actors = metrics.get("actors")
+    if not isinstance(actors, list):
+        return {
+            "available": False,
+            "reason": "boss_actor_metrics_unavailable",
+            "actors": [],
+        }
+    dps_guids = {
+        _as_int(actor.get("bot_guid") or actor.get("actor_guid"))
+        for actor in actors
+        if isinstance(actor, dict) and str(actor.get("role") or "") == "dps"
+    }
+    dps_guids.discard(0)
+
+    abilities_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in combat_log.get("abilities") or []:
+        if not isinstance(row, dict):
+            continue
+        guid = _as_int(row.get("actor_guid") or row.get("bot_guid"))
+        if (
+            guid in dps_guids
+            and str(row.get("route_node_id") or "") == DEFAULT_BOSS_ROUTE[0]
+            and str(row.get("perspective") or "") in {"", "damage_done"}
+        ):
+            abilities_by_guid[guid].append(row)
+
+    recent_events_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in combat_log.get("recent_events") or []:
+        if not isinstance(row, dict) or str(row.get("kind") or "") != "damage":
+            continue
+        guid = _as_int(row.get("source_guid") or row.get("actor_guid"))
+        if (
+            guid in dps_guids
+            and str(row.get("route_node_id") or "") == DEFAULT_BOSS_ROUTE[0]
+        ):
+            recent_events_by_guid[guid].append(row)
+
+    failure_rows_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in native_action_outcomes if isinstance(native_action_outcomes, list) else []:
+        if not isinstance(row, dict):
+            continue
+        guid = _as_int(row.get("bot_guid") or row.get("actor_guid"))
+        outcome = str(row.get("outcome") or row.get("result") or "")
+        reason = str(row.get("reason_code") or row.get("reason") or "")
+        if (
+            guid in dps_guids
+            and (
+                outcome in NATIVE_ACTIONABLE_FAILURE_OUTCOMES
+                or reason in {"no_line_of_sight", "out_of_range"}
+            )
+        ):
+            failure_rows_by_guid[guid].append(row)
+
+    recent_events_dropped = max(0, _as_int(combat_log.get("recent_events_dropped")))
+    recent_event_capacity = max(0, _as_int(combat_log.get("recent_event_capacity")))
+    actor_contexts: list[dict[str, Any]] = []
+
+    def row_amount(row: Mapping[str, Any], field: str) -> float:
+        if field == "originated_damage" and "originated_amount" in row:
+            return max(0.0, _as_float(row.get("originated_amount")))
+        return max(
+            0.0,
+            _as_float(row.get("amount") or row.get("raw_amount")),
+        )
+
+    def interval_overlaps(
+        first_at_ms: int,
+        last_at_ms: int,
+        other_first_at_ms: int,
+        other_last_at_ms: int,
+    ) -> bool:
+        if not first_at_ms or not last_at_ms or not other_first_at_ms or not other_last_at_ms:
+            return False
+        return max(first_at_ms, other_first_at_ms) <= min(last_at_ms, other_last_at_ms)
+
+    for guid in sorted(dps_guids):
+        actor_abilities = abilities_by_guid.get(guid, [])
+        category_totals: defaultdict[str, dict[str, Any]] = defaultdict(
+            lambda: {
+                "event_count": 0,
+                "raw_damage": 0.0,
+                "originated_damage": 0.0,
+                "first_at_ms": 0,
+                "last_at_ms": 0,
+            }
+        )
+        for row in actor_abilities:
+            category = _magmaw_target_class(row)
+            summary = category_totals[category]
+            summary["event_count"] += max(0, _as_int(row.get("event_count")))
+            summary["raw_damage"] += row_amount(row, "raw_damage")
+            summary["originated_damage"] += row_amount(row, "originated_damage")
+            first_at_ms = _as_int(row.get("first_at_ms"))
+            last_at_ms = _as_int(row.get("last_at_ms"))
+            if first_at_ms:
+                summary["first_at_ms"] = min(
+                    first_at_ms,
+                    summary["first_at_ms"] or first_at_ms,
+                )
+            if last_at_ms:
+                summary["last_at_ms"] = max(summary["last_at_ms"], last_at_ms)
+
+        total_originated = sum(
+            float(summary["originated_damage"])
+            for summary in category_totals.values()
+        )
+        if total_originated <= 0.0:
+            total_originated = sum(
+                float(summary["raw_damage"])
+                for summary in category_totals.values()
+            )
+        mechanic = category_totals.get("mechanic_target", {})
+        mechanic_damage = float(mechanic.get("originated_damage") or 0.0)
+        if mechanic_damage <= 0.0:
+            mechanic_damage = float(mechanic.get("raw_damage") or 0.0)
+        mechanic_share = round(mechanic_damage / max(1.0, total_originated), 6)
+
+        recent_events = recent_events_by_guid.get(guid, [])
+        moving_timestamps = [
+            _as_int(row.get("timestamp_ms"))
+            for row in recent_events
+            if bool(row.get("source_moving")) and _as_int(row.get("timestamp_ms"))
+        ]
+        mechanic_intervals = [
+            (
+                _as_int(row.get("first_at_ms")),
+                _as_int(row.get("last_at_ms")),
+            )
+            for row in actor_abilities
+            if _magmaw_target_class(row) == "mechanic_target"
+            and _as_int(row.get("first_at_ms"))
+            and _as_int(row.get("last_at_ms"))
+        ]
+        correlated_failures = 0
+        failure_windows: list[dict[str, Any]] = []
+        for row in failure_rows_by_guid.get(guid, []):
+            first_at_ms = _as_int(row.get("first_at_ms"))
+            last_at_ms = _as_int(row.get("last_at_ms"))
+            mechanic_overlap = any(
+                interval_overlaps(first_at_ms, last_at_ms, duty_first, duty_last)
+                for duty_first, duty_last in mechanic_intervals
+            )
+            movement_overlap = any(
+                first_at_ms <= timestamp <= last_at_ms
+                for timestamp in moving_timestamps
+                if first_at_ms and last_at_ms
+            )
+            if mechanic_overlap or movement_overlap:
+                correlated_failures += 1
+                failure_windows.append({
+                    "action_name": str(row.get("action_name") or "unknown"),
+                    "outcome": str(row.get("outcome") or row.get("result") or "unknown"),
+                    "reason_code": str(row.get("reason_code") or row.get("reason") or ""),
+                    "overlap": [
+                        label
+                        for label, enabled in (
+                            ("mechanic_target", mechanic_overlap),
+                            ("moving_damage_event", movement_overlap),
+                        )
+                        if enabled
+                    ],
+                })
+
+        meaningful_mechanic_duty = (
+            mechanic_damage >= 50000.0 or mechanic_share >= 0.03
+        )
+        duty_explains_idle = bool(
+            meaningful_mechanic_duty
+            and (correlated_failures > 0 or bool(moving_timestamps))
+        )
+        if actor_abilities:
+            counterfactual_status = (
+                "partial_recent_capture"
+                if recent_events_dropped > 0
+                else "eligible"
+            )
+        else:
+            counterfactual_status = "unavailable"
+        target_categories = []
+        for category in ("boss_or_head", "mechanic_target", "other"):
+            summary = category_totals.get(category)
+            if not summary or not summary["event_count"]:
+                continue
+            target_categories.append({
+                "category": category,
+                "event_count": int(summary["event_count"]),
+                "originated_damage": round(float(summary["originated_damage"])),
+            })
+        actor_contexts.append({
+            "bot_guid": guid,
+            "target_categories": target_categories,
+            "boss_or_head_originated_damage_share": round(
+                float(category_totals.get("boss_or_head", {}).get("originated_damage") or 0.0)
+                / max(1.0, total_originated),
+                6,
+            ),
+            "mechanic_target_originated_damage": round(mechanic_damage),
+            "mechanic_target_originated_damage_share": mechanic_share,
+            "mechanic_target_window_count": len(mechanic_intervals),
+            "recent_damage_event_count": len(recent_events),
+            "recent_moving_damage_event_count": len(moving_timestamps),
+            "recent_moving_damage_event_fraction": round(
+                len(moving_timestamps) / max(1, len(recent_events)),
+                6,
+            ),
+            "native_failure_window_count": len(failure_rows_by_guid.get(guid, [])),
+            "duty_correlated_native_failure_window_count": correlated_failures,
+            "duty_correlated_native_failures": failure_windows[:8],
+            "duty_explains_idle": duty_explains_idle,
+            "counterfactual_status": counterfactual_status,
+            "counterfactual_eligible": counterfactual_status == "eligible",
+        })
+
+    return {
+        "available": bool(actor_contexts),
+        "scope_route_node": DEFAULT_BOSS_ROUTE[0],
+        "full_window_target_aggregate": bool(abilities_by_guid),
+        "recent_event_capture": {
+            "capacity": recent_event_capacity,
+            "dropped": recent_events_dropped,
+            "partial": recent_events_dropped > 0,
+        },
+        "causal_action_gate": (
+            "authorize only when counterfactual_eligible is true and "
+            "duty_explains_idle is false; otherwise keep the result advisory"
+        ),
+        "actors": actor_contexts,
+    }
+
+
 def _summarize_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
     """Summarize native outcomes by actor without losing failure semantics."""
     if not isinstance(rows, list):
@@ -1126,6 +1399,7 @@ def _actor_loss_signals(
     metrics: dict[str, Any] | None,
     native_outcome_summary: list[dict[str, Any]],
     candidate_rows: list[dict[str, Any]],
+    target_duty_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Build small, attributable loss budgets for each DPS actor.
 
@@ -1139,6 +1413,11 @@ def _actor_loss_signals(
     summary_by_guid = {
         _as_int(row.get("bot_guid")): row
         for row in native_outcome_summary
+        if isinstance(row, dict)
+    }
+    target_context_by_guid = {
+        _as_int(row.get("bot_guid")): row
+        for row in (target_duty_context or {}).get("actors", [])
         if isinstance(row, dict)
     }
     rows_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -1201,6 +1480,14 @@ def _actor_loss_signals(
         profile_policy_count = bucket_counts["profile_policy"]
         movement_count = bucket_counts["movement_or_range"]
         target_count = bucket_counts["targeting"]
+        target_context = target_context_by_guid.get(guid, {})
+        duty_explains_idle = bool(target_context.get("duty_explains_idle"))
+        counterfactual_status = str(
+            target_context.get("counterfactual_status") or "unavailable"
+        )
+        causal_context_available = bool(
+            (target_duty_context or {}).get("available") and target_context
+        )
         candidates: list[dict[str, Any]] = []
         policy_hypotheses: list[dict[str, Any]] = []
 
@@ -1231,7 +1518,7 @@ def _actor_loss_signals(
         if (
             (material_gap and movement_direct)
             or (not isinstance(wcl_observed, (int, float)) and moving_fraction >= 0.15 and damage_uptime < 0.80)
-        ):
+        ) and not duty_explains_idle:
             add_candidate(
                 "movement_recovery",
                 [
@@ -1251,6 +1538,11 @@ def _actor_loss_signals(
             and moving_fraction < 0.08
             and failure_ratio < 0.05
             and (material_gap or not isinstance(wcl_observed, (int, float)))
+            and not duty_explains_idle
+            and (
+                not causal_context_available
+                or counterfactual_status == "eligible"
+            )
         ):
             add_candidate(
                 "uptime_cadence",
@@ -1283,10 +1575,18 @@ def _actor_loss_signals(
                 "attributable_targeting",
             )
         if not candidates:
+            evidence = ["no_single_causal_signal_clears_the_screen"]
+            contradictions: list[str] = []
+            if duty_explains_idle:
+                evidence.append("required_target_duty_overlaps_loss_window")
+                contradictions.append("idle_or_movement_is_not_counterfactual_clean")
+            if causal_context_available and counterfactual_status != "eligible":
+                evidence.append("counterfactual_context_is_partial_or_unavailable")
+                contradictions.append("target_or_movement_capture_is_incomplete")
             candidates.append({
                 "action": "collect_more_canaries",
-                "evidence": ["no_single_causal_signal_clears_the_screen"],
-                "contradictions": [],
+                "evidence": evidence,
+                "contradictions": contradictions,
                 "evidence_strength": "insufficient",
             })
 
@@ -1319,6 +1619,8 @@ def _actor_loss_signals(
             "native_actionable_failure_count": failure_count,
             "native_actionable_failure_ratio": failure_ratio,
             "native_outcome_counts": dict(sorted(outcome_counts.items())),
+            "duty_explains_idle": duty_explains_idle,
+            "counterfactual_status": counterfactual_status,
             "candidate_scan_count": candidate_scan_count,
             "candidate_gate_counts": dict(sorted(bucket_counts.items())),
             "top_candidate_reasons": [
@@ -2172,6 +2474,44 @@ def _dps_review_metrics(
     return result
 
 
+def _jev_combat_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    """Remove repeated ability detail already present in actor_loss_signals."""
+    result = {
+        key: value
+        for key, value in metrics.items()
+        if key not in {"actors", "support_actors"}
+    }
+    compact_actors: list[dict[str, Any]] = []
+    for actor in metrics.get("actors", []):
+        if not isinstance(actor, dict):
+            continue
+        compact_actors.append({
+            key: actor[key]
+            for key in (
+                "bot_guid",
+                "bot_name",
+                "class_spec",
+                "role",
+                "damage",
+                "active_dps",
+                "elapsed_dps",
+                "active_seconds",
+                "damage_uptime",
+                "distance_avg",
+                "moving_fraction",
+                "wcl_observed_dps",
+                "active_dps_delta_vs_wcl",
+                "elapsed_dps_delta_vs_wcl",
+                "cast_movement_seconds",
+                "range_seconds",
+            )
+            if key in actor
+        })
+    result["actors"] = compact_actors
+    result["actor_scope"] = "dps_only"
+    return result
+
+
 def _dps_diagnostics(
     diagnostics: list[dict[str, Any]],
     actor_identity: Mapping[str, dict[str, Any]] | None,
@@ -2361,6 +2701,7 @@ def _boss_dps_review(
     live_report: dict[str, Any] | None,
     actor_identity: Mapping[str, dict[str, Any]] | None,
     wcl_reference: dict[str, Any] | None,
+    target_duty_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     metrics = deterministic.get("boss_combat_metrics")
     if not isinstance(metrics, dict):
@@ -2412,15 +2753,22 @@ def _boss_dps_review(
         metrics,
         native_outcome_summary,
         native_candidate_rejections,
+        target_duty_context,
     )
     failure_action_outcomes = _jev_action_outcome_slice(native_action_outcomes)
     return {
         "scope_route_node": DEFAULT_BOSS_ROUTE[0],
-        "combat_metrics": metrics,
+        "combat_metrics": _jev_combat_metrics(metrics),
         "combat_diagnostics": deterministic.get("boss_combat_diagnostics", []),
         "action_outcomes": failure_action_outcomes,
         "action_outcome_view": "direct_native_failures_only",
         "native_outcome_summary": native_outcome_summary,
+        "target_duty_context": target_duty_context or {
+            "available": False,
+            "reason": "combat_log_not_supplied",
+            "actors": [],
+        },
+        "causal_signal_view": "full_window_target_overlay_and_failure_window_overlap",
         "native_outcome_signal": {
             "outcome_count": native_outcome_count,
             "actionable_failure_count": native_failure_count,
@@ -2487,7 +2835,7 @@ def _jev_questions(
     questions: dict[str, dict[str, Any]] = {
         "path_consistency": {
             "type": "choice",
-            "instructions": "Classify the route_review only. Use route generations and native terminal evidence: many decisions within one generation are normal and are not route repetition. The retained route-node sample can omit a node after it completed, so route_nodes_observed is not authoritative by itself. If route_acceptance.complete_native_terminal_evidence and route_acceptance.observed_order_monotonic are true, with no route_repeated_nodes, route_unexpected, or active unresolved route event, choose aligned even when the sampled node list has a gap. Use loop_or_gap only for explicit route reversal, repeated route generation, unexpected node, or missing native terminal evidence. Treat an ordered prefix as acceptable for a segment canary. Use native_gameplay_outcome as the gameplay authority; never treat certification_status=uncertified or acceptable_final_evidence=false by itself as a native wipe. If the live report has zero active bots or zero native trace rows, choose insufficient_evidence.",
+            "instructions": "Classify route_review only. Use native terminal evidence and route generations; repeated decisions within one generation are not a route loop. A sampled node gap is acceptable after a native terminal. Choose loop_or_gap only for route reversal, repeated generation, unexpected node, missing terminal evidence, or an active unresolved event. Use native_gameplay_outcome as authority; uncertified is not a wipe. Choose insufficient_evidence for zero active bots or trace rows.",
             "criteria": {
                 "aligned": "Observed route is ordered and the current segment has no unexplained loop or gap.",
                 "ordered_segment": "The trace is an ordered, intentionally partial segment and is not enough to judge a full clear.",
@@ -2497,7 +2845,7 @@ def _jev_questions(
         },
         "stuck_behavior": {
             "type": "choice",
-            "instructions": "Classify the primary currently-unresolved behavior from route_review. Prefer active_stuck_behavior_counts and active_stuck_behaviors, which are restricted to the latest non-terminal route generation. Treat raw stuck_behavior_counts and resolved_stuck_behavior_counts as historical progress evidence, not an active blocker, when native route terminal evidence proves that node completed. When active_bots is zero and the run says admission failed or the pool was underfilled, choose lifecycle. Choose none when the run admitted bots, the active stuck set is empty, and no native unresolved route event remains. A clear native_gameplay_outcome with certification_status=uncertified is not a stuck or wipe result.",
+            "instructions": "Classify the currently-unresolved behavior from route_review. Prefer active_stuck_* for the latest non-terminal generation; raw/resolved counts are historical after native terminal evidence. Choose lifecycle for admission failure/underfill, none for an admitted run with no active stuck event, and never call an uncertified clear a wipe.",
             "criteria": {
                 "none": "No repeated, blocked, churn, failure, or recovery pattern is evidenced.",
                 "movement": "Movement or formation progress is the dominant blocker.",
@@ -2509,20 +2857,20 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the most actionable DPS loss area from boss_dps_review only. Compare elapsed_party_dps with active party_dps, inspect every DPS actor's elapsed_dps, active_dps, damage_uptime, movement, abilities, native_outcome_summary, native_outcome_signal, action_outcomes, candidate_rejection_summary, candidate_rejections, and decision_outcomes. Native action outcomes are the authority for submitted-action loss. Candidate rejections are profile-search counts: the summary separates expected waits and conditional profile gates from a small actionable candidate list. Do not infer action_rejection from expected candidate-wait volume, conditional profile gates, or candidate rows alone; require corroborating no_action, cast_failed, no_line_of_sight, out_of_range, or repeated native backoff outcomes at material per-actor frequency. When native_outcome_signal.actionable_failure_ratio is low (below roughly 0.10) for every DPS actor and the active stuck set is empty, do not choose action_rejection as the dominant loss; use movement, uptime, or no_material_loss based on the actor metrics. Prefer an attributable execution loss over a generic rotation explanation. Route stuck counters are historical unless route_review marks them active. If active_bots is zero or boss combat metrics are unavailable, choose insufficient_data and never infer action_rejection from a missing action log.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use elapsed/active DPS, actor_loss_signals, native_outcome_signal, direct action_outcomes, candidate_rejection_summary, and target_duty_context. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. Do not call low uptime cadence loss when duty_explains_idle is true or failure windows overlap mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable means insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
-                "uptime": "The dominant loss is idle time, repeated waits, or failed action cadence.",
+                "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
                 "movement": "The dominant loss is movement, formation, hazard, or range downtime.",
                 "targeting": "The dominant loss is target churn, stale targets, or wrong target return.",
                 "action_rejection": "The dominant loss is candidate rejection, native submission failure, or repeated backoff.",
                 "mechanic_downtime": "The dominant loss is a required encounter mechanic or recovery assignment.",
-                "insufficient_data": "Combat metrics or attributable trace evidence are insufficient.",
+                "insufficient_data": "Combat, duty, or counterfactual evidence is insufficient.",
             },
         },
         "canary_safe_to_promote": {
             "type": "noul",
-            "instructions": "Is this evidence safe to promote as a successful Magmaw canary result? Use native_gameplay_outcome first. A native clear with certification_status=uncertified is a valid diagnostic clear but is not promotable; do not call it a wipe.",
+            "instructions": "Is this Magmaw canary safe to promote? Use native_gameplay_outcome first. An uncertified clear is diagnostic only, not a wipe and not promotable.",
             "criteria": {
                 "true": "native_gameplay_outcome.status is clear, certification_status is accepted, the route evidence is attributable, and no death/repetition guardrail fired.",
                 "false": "The native outcome is incomplete, wiped, stalled, or clear only with certification_status=uncertified. An uncertified clear is not a wipe.",
@@ -2540,24 +2888,21 @@ def _jev_questions(
         questions[question_id] = {
             "type": "choice",
             "instructions": (
-                f"Choose the smallest bounded engineering action for the single DPS actor "
-                f"{class_spec} (bot_guid {guid}) from actor_loss_signals. This is per-actor "
-                "triage, not a party verdict. Use the named deterministic facts, especially "
-                "idle_fraction, moving_fraction, native_actionable_failure_ratio, candidate "
-                "gate buckets, candidate_actions, top abilities, and sample_quality. A "
-                "candidate_actions entry is a screening hypothesis, not model confidence. "
-                "Require aligned evidence and do not turn policy-gate volume into a native "
-                "failure. WCL is comparison context only. If the evidence is mixed, select "
-                "collect_more_canaries rather than forcing a code change."
+                f"For {class_spec} bot_guid {guid}, choose the smallest bounded action from "
+                "actor_loss_signals and its matching target_duty_context. Use uptime, movement, "
+                "native failure ratio, candidate_actions, abilities, and sample quality. "
+                "Policy gates are not native failures. duty_explains_idle=true or "
+                "counterfactual_status!=eligible blocks an actor repair; use collect_more_canaries "
+                "for mixed evidence. WCL is context only."
             ),
             "criteria": {
-                "no_material_action": "The actor has no attributable material loss or is at/above the comparison context; do not change code for this actor.",
-                "movement_recovery": "Repair movement, formation, range, or LOS only when movement facts and the actor's loss are aligned.",
-                "uptime_cadence": "Repair idle time or cast cadence when damage uptime is low despite low movement and low native failure.",
-                "rotation_profile": "Inspect the actor's priority, cooldown, resource, or policy profile when profile evidence explains a material attributable gap.",
-                "target_lease": "Repair target ownership, target return, or target churn when target evidence is material for this actor.",
-                "shared_arbitration": "Repair shared action submission or arbitration only when native actionable failures are material for this actor.",
-                "collect_more_canaries": "The evidence is mixed, sparse, or not reproducible enough to authorize a code change.",
+                "no_material_action": "No attributable material loss or at/above comparison context.",
+                "movement_recovery": "Movement/formation/range/LOS facts align with the loss.",
+                "uptime_cadence": "Low uptime remains with low movement/failure, no duty explanation, and eligible counterfactual evidence.",
+                "rotation_profile": "Profile priority, cooldown, resource, or policy explains a material gap.",
+                "target_lease": "Target ownership/return/churn is material for this actor.",
+                "shared_arbitration": "Material native submission failures are attributable to this actor.",
+                "collect_more_canaries": "Evidence is mixed, sparse, partial, or not reproducible.",
             },
         }
     if has_baseline:
@@ -2579,12 +2924,12 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next engineering action after reviewing the typed evidence judgments, per-actor actor_action judgments, and both named evidence views. Keep gameplay authority native and use the smallest fix that addresses the evidenced failure. Prefer a repair that is attributable to the actor(s) below the comparison context and reproducible across canaries. If admission or lifecycle prevented bots from starting, choose admission_lifecycle. If low damage uptime is aligned with low movement and low native failure, prefer uptime_cadence. If boss_dps_review contains repeated native candidate rejection after admission, prefer shared_arbitration or rotation_profile over movement_recovery unless movement is the direct blocker. Do not choose a class rotation fix when the evidence only shows a shared movement or target lease failure. If actor judgments conflict or remain low confidence, choose collect_more_canaries instead of manufacturing certainty.",
+        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If duty_explains_idle is true or counterfactual_status is partial/unavailable, do not choose uptime_cadence or movement_recovery; use collect_more_canaries or encounter_assignment. Use uptime_cadence only for low uptime with low movement/native failure and eligible counterfactual evidence. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
         "criteria": {
             "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
             "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
             "movement_recovery": "Repair or tune movement arbitration/recovery using the trace evidence.",
-            "uptime_cadence": "Repair idle time or cast cadence when the actor loss budget shows low uptime without aligned movement or native failure.",
+            "uptime_cadence": "Low uptime remains after duty/movement/native failure are ruled out and counterfactual evidence is eligible.",
             "target_lease": "Repair target ownership, target return, or target churn handling.",
             "shared_arbitration": "Repair a shared candidate arbitration/submission edge.",
             "encounter_assignment": "Repair the encounter mechanic assignment or transfer/hook/parasite contract.",
@@ -2800,6 +3145,7 @@ def analyze(
     change_note: str,
     baseline_path: Path | None,
     combat_analysis_path: Path | None,
+    combat_log_path: Path | None = None,
     scope_route_prefix: str = MAGMAW_ROUTE_PREFIX,
     wcl_reference_path: Path | None = None,
 ) -> dict[str, Any]:
@@ -2851,6 +3197,15 @@ def analyze(
             analysis,
             DEFAULT_BOSS_ROUTE[0],
         )
+    resolved_combat_log_path = combat_log_path or _discovered_combat_log_path(input_path)
+    combat_log: dict[str, Any] | None = None
+    if resolved_combat_log_path and resolved_combat_log_path.exists():
+        loaded_combat_log = _load_json(resolved_combat_log_path)
+        if not isinstance(loaded_combat_log, dict):
+            raise ValueError(
+                f"combat log must be an object: {resolved_combat_log_path}"
+            )
+        combat_log = loaded_combat_log
     boss_trace_entries, boss_trace_capture = _boss_trace_window(
         entries,
         deterministic.get("boss_combat_metrics"),
@@ -2884,6 +3239,11 @@ def analyze(
         "full_window_native_aggregate"
         if deterministic["boss_candidate_rejections"]
         else "unavailable"
+    )
+    deterministic["boss_target_duty_context"] = _target_duty_context(
+        combat_log,
+        deterministic.get("boss_combat_metrics"),
+        deterministic.get("boss_action_outcomes", []),
     )
     deterministic["boss_combat_diagnostics"] = _dps_diagnostics(
         deterministic.get("boss_combat_diagnostics", []),
@@ -2925,6 +3285,7 @@ def analyze(
         live_report,
         actor_identity,
         wcl_reference,
+        deterministic["boss_target_duty_context"],
     )
     boss_dps_review["actor_identity"] = _compact_actor_identity(actor_identity)
     state = {
@@ -3069,6 +3430,7 @@ def main() -> int:
     parser.add_argument("--ledger", type=Path, help="optional append-only compact progress ledger")
     parser.add_argument("--baseline-report", type=Path, help="previous analyzer report for change-effect comparison")
     parser.add_argument("--combat-analysis", type=Path, help="optional combat_analysis.json")
+    parser.add_argument("--combat-log", type=Path, help="optional combat_log.json; auto-discovered beside a run directory")
     parser.add_argument(
         "--wcl-reference",
         type=Path,
@@ -3104,6 +3466,7 @@ def main() -> int:
             change_note=args.change_note,
             baseline_path=args.baseline_report,
             combat_analysis_path=args.combat_analysis,
+            combat_log_path=args.combat_log,
             scope_route_prefix=args.scope_route_prefix,
             wcl_reference_path=args.wcl_reference,
         )
