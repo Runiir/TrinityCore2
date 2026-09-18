@@ -229,6 +229,15 @@ struct ResolvedCombatAction
     bool InterruptCurrentChanneledSpell = false;
     float MinRange = 0.0f;
     float MaxRange = 0.0f;
+    // A narrow encounter-role exception for Balance's Magmaw add duty.  The
+    // resolver fills this only for Wild Mushroom/Detonate on Lava Parasites;
+    // the executor keeps the normal future/current encounter splash guard for
+    // every other area action.
+    bool AllowMagmawBalanceMushroomSplash = false;
+    bool HasGroundTarget = false;
+    float GroundTargetX = 0.0f;
+    float GroundTargetY = 0.0f;
+    float GroundTargetZ = 0.0f;
     // Declarative raid target-control authority.  The executor must not start
     // implicit pet or spell damage capable of reaching additional hostiles.
     bool SuppressAreaDamage = false;
