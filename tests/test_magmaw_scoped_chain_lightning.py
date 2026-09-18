@@ -34,13 +34,19 @@ def test_scoped_area_authority_reaches_every_native_gate() -> None:
     resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
     executor = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
     mechanics = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp").read_text()
+    planning = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidPlanning.cpp").read_text()
+    fallback = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp").read_text()
     manifest = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp").read_text()
 
     assert "bool const scopedAreaAction" in resolver
     assert resolver.count("!magmawMushroomAction && !scopedAreaAction") == 3
     assert "action.AllowScopedEncounterAreaDamage" in resolver
     assert executor.count("!action.AllowScopedEncounterAreaDamage") == 2
-    assert "Build(bot, role).SpecTag == \"elemental_shaman\" ? spellId : 0" in mechanics
-    assert "closeRecallableAreaDamage(scopedAreaSpellIdForTarget(result.Target) != 0)" in mechanics
+    assert "ResolveScopedEncounterAreaSpellId(Player* bot" in planning
+    assert "contract.NodeId != \"bwd.magmaw.encounter\"" in planning
+    assert "ResolveScopedEncounterAreaSpellId(bot, result.Target)" in mechanics
+    assert "ResolveScopedEncounterAreaSpellId(\n                context.Bot, context.Target)" in fallback
+    assert "BuildBossMechanicFeatures(\n                    context.Bot, context.Target).AddCount" in fallback
+    assert "scopedAreaSpellId,\n                context.Target->GetEntry()" in fallback
     assert '"area_damage_spell_allowlist"' in manifest
     assert '"area_damage_target_allowlist"' in manifest

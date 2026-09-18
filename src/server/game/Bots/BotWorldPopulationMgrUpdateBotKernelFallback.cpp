@@ -813,10 +813,18 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
 
             context.State.TargetGuid = context.Target->GetGUID();
             ResolvedCombatAction profileAction;
+            uint32 const scopedAreaSpellId = ResolveScopedEncounterAreaSpellId(
+                context.Bot, context.Target);
+            uint32 hostileCount = 0;
+            if (scopedAreaSpellId)
+                hostileCount = BuildBossMechanicFeatures(
+                    context.Bot, context.Target).AddCount;
             BotActionResult const result = ExecuteProfileCombatAction(
                 &context.State, context.Bot, context.Target, &profileAction,
-                0, false, 0, false, false, magmawProfile.ForbidAreaDamage,
-                magmawProfile.AllowMultidot, false, policyExcludedSpellId);
+                hostileCount, false, 0, false, false, magmawProfile.ForbidAreaDamage,
+                magmawProfile.AllowMultidot, false, policyExcludedSpellId,
+                scopedAreaSpellId,
+                context.Target->GetEntry());
             uint32 const spellId = profileAction.SpellId;
             context.Situation = "open_world_combat";
             context.Action = spellId ? "cast_combat_spell" : "attack";

@@ -53,18 +53,6 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         heroicProgression = BuildHeroicRaidProgression(state, bot, power, stage);
     }
 
-    auto scopedAreaSpellIdForTarget = [bot, role, &raidAdapter](Unit const* target) -> uint32
-    {
-        constexpr uint32 spellId = 421;
-        if (!target || raidAdapter.AllowAreaDamage
-            || std::find(raidAdapter.AreaDamageSpellAllowlist.begin(), raidAdapter.AreaDamageSpellAllowlist.end(), spellId)
-                == raidAdapter.AreaDamageSpellAllowlist.end()
-            || std::find(raidAdapter.AreaDamageTargetAllowlist.begin(), raidAdapter.AreaDamageTargetAllowlist.end(), target->GetEntry())
-                == raidAdapter.AreaDamageTargetAllowlist.end())
-            return 0;
-        return BotClassSpecActionProfileStore::Build(bot, role).SpecTag == "elemental_shaman" ? spellId : 0;
-    };
-
     if (result.Features.RaidEncounter && !raidAdapter.ContractResolved)
     {
         ReconcileRaidAreaAutocasts(bot, true);
@@ -192,14 +180,15 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
-    auto closeRecallableAreaDamage = [this, bot, &scopedAreaSpellIdForTarget](bool preserveScopedArea) -> bool
+    auto closeRecallableAreaDamage = [this, bot](bool preserveScopedArea) -> bool
     {
         if (!bot)
             return false;
-        auto keepCurrent = [preserveScopedArea, &scopedAreaSpellIdForTarget](Spell const* current)
+        auto keepCurrent = [this, bot, preserveScopedArea](Spell const* current)
         {
             return preserveScopedArea && current && current->GetSpellInfo()
-                && current->GetSpellInfo()->Id == scopedAreaSpellIdForTarget(current->m_targets.GetUnitTarget());
+                && current->GetSpellInfo()->Id == ResolveScopedEncounterAreaSpellId(
+                    bot, current->m_targets.GetUnitTarget());
         };
         ReconcileRaidAreaAutocasts(bot, true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
@@ -271,7 +260,8 @@ raid_cooldown_complete:
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && raidAdapter.TargetControl == "focus_fire" && std::string(role) != "healer")
     {
-        if (!closeRecallableAreaDamage(scopedAreaSpellIdForTarget(result.Target) != 0))
+        if (!closeRecallableAreaDamage(
+            ResolveScopedEncounterAreaSpellId(bot, result.Target) != 0))
         {
             result.Action = "raid_area_damage_contamination_fail_closed";
             result.Failure = true;
@@ -853,7 +843,7 @@ raid_cooldown_complete:
         return result;
 
     ResolvedCombatAction profileAction;
-    uint32 const scopedAreaSpellId = scopedAreaSpellIdForTarget(result.Target);
+    uint32 const scopedAreaSpellId = ResolveScopedEncounterAreaSpellId(bot, result.Target);
     bool const forbidArea = raidAdapter.ContractResolved
         && ((!raidAdapter.AllowAreaDamage && !scopedAreaSpellId)
             || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
