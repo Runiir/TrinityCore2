@@ -963,7 +963,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         selectedMagmawMushroomPlacement || selectedMagmawMushroomDetonation;
     action.AllowMagmawBalanceMushroomSplash = selectedMagmawMushroomAction;
     if (selectedMagmawMushroomPlacement)
-        BotEncounter::SetMagmawBalanceMushroomGroundTarget(action, target, targetCreature);
+        BotEncounter::SetMagmawBalanceMushroomGroundTarget(action, target);
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;

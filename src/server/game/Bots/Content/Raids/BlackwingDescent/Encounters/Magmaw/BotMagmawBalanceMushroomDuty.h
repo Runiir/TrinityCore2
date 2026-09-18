@@ -8,7 +8,6 @@
 
 struct BotActionCandidate;
 struct ResolvedCombatAction;
-class Creature;
 class Player;
 class Unit;
 
@@ -67,7 +66,7 @@ bool IsMagmawBalanceMushroomAction(
 char const* MagmawBalanceMushroomRejection(
     MagmawBalanceMushroomState const& state, BotActionCandidate const& candidate);
 void SetMagmawBalanceMushroomGroundTarget(
-    ResolvedCombatAction& action, Unit const* target, Creature const* targetCreature);
+    ResolvedCombatAction& action, Unit const* target);
 }
 
 #endif

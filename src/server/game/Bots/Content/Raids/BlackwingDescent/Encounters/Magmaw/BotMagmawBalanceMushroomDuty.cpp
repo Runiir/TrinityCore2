@@ -2,7 +2,6 @@
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotTypes.h"
-#include "Creature.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -101,20 +100,18 @@ char const* MagmawBalanceMushroomRejection(
 }
 
 void SetMagmawBalanceMushroomGroundTarget(
-    ResolvedCombatAction& action, Unit const* target, Creature const* targetCreature)
+    ResolvedCombatAction& action, Unit const* target)
 {
     if (!target)
         return;
 
+    // Lava Parasite home positions are the upper spawn/home anchor in this
+    // encounter.  The mushroom must land on the visible platform below the
+    // spawn, so use the parasite's live floor position instead of projecting
+    // the spell to that elevated home point.
     float groundX = target->GetPositionX();
     float groundY = target->GetPositionY();
     float groundZ = target->GetPositionZ();
-    if (targetCreature && targetCreature->GetHomePosition().IsPositionValid())
-    {
-        groundX = targetCreature->GetHomePosition().GetPositionX();
-        groundY = targetCreature->GetHomePosition().GetPositionY();
-        groundZ = targetCreature->GetHomePosition().GetPositionZ();
-    }
     action.HasGroundTarget = true;
     action.GroundTargetX = groundX;
     action.GroundTargetY = groundY;
