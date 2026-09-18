@@ -67,14 +67,16 @@ def test_sql_and_native_path_keep_the_exception_narrow():
     assert "target_selector` = 'enemy'" in rollback_sql
     assert "NeedsPlacement" in duty_source
     assert "ReadyToDetonate" in duty_source
-    assert "live floor position" in duty_source
+    assert "live lava spawn" in duty_source
     assert "GetHomePosition" not in duty_source
     assert "PillarOfFlameEntry" in duty_source
     assert "FindNearestCreature" in duty_source
-    assert "lateralX" in duty_source
-    assert "GetHeight" in duty_source
-    assert "hintZ + 2.0f" in duty_source
-    assert "IsWithinLOS" in duty_source
-    assert "ModelIgnoreFlags::M2" in duty_source
+    assert "if (!pillar)" in duty_source
+    assert "GroundTargetX = pillar->GetPositionX()" in duty_source
+    assert "GroundTargetY = pillar->GetPositionY()" in duty_source
+    assert "GroundTargetZ = pillar->GetPositionZ()" in duty_source
+    assert "lateralX" not in duty_source
+    assert "GetHeight" not in duty_source
+    assert "IsWithinLOS" not in duty_source
     assert "AllowMagmawBalanceMushroomSplash" in executor
     assert "prepull_only" in duty_source
