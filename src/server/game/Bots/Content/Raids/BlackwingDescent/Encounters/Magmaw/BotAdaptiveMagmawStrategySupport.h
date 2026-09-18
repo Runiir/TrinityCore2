@@ -170,7 +170,7 @@
 
     static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
         ObjectGuid botGuid,
-        std::string_view role, std::string_view classSpec,
+        std::string_view role, std::string_view /*classSpec*/,
         MagmawParasiteCombatContract const& contract)
     {
         if (observed.Head)
@@ -207,22 +207,12 @@
                     <= RangedParasiteSupportTargetDistance
                 && contract.IsSupportTarget(botGuid,
                     observed.SupportParasite->Guid))
-                return observed.SupportParasite->Guid;
-
-            bool const optionalSupportChoice =
-                observed.SupportOpportunitiesObserved
-                && observed.NearestParasite
-                && observed.NearestParasiteDistance
-                    <= RangedParasiteSupportTargetDistance
-                && !contract.IsAssignedBaiter(botGuid)
-                && IsRangedParasiteSupportSpec(classSpec);
-            if (optionalSupportChoice)
             {
-                // Optional parasite support is best effort.  If the native
-                // opportunity gate has not admitted the parasite yet, keep
-                // the boss as the damage target so ordinary range/LOS
-                // reconciliation can make progress instead of clearing the
-                // bot's combat intent for the whole observation tick.
+                // Ordinary ranged DPS stays on Magmaw while the fixed baiters
+                // and personal-threat branch handle parasite duty.  The exact
+                // support opportunity remains in the contract for telemetry
+                // and area-damage restrictions, but it must not turn a normal
+                // DPS actor into a parasite chaser during an add window.
                 return observed.Boss->Guid;
             }
         }

@@ -1356,7 +1356,7 @@ int main()
     AdaptiveMagmawPlan nonbaitMagePlan = strategy.Propose(supportContact,
         PlayerGuid(30007), "dps", nullptr, false, false, &transition);
     assert(tankPlan.DamageTarget == contact.Hostiles.front().Guid);
-    assert(nonbaitMagePlan.DamageTarget == supportContact.Hostiles[1].Guid);
+    assert(nonbaitMagePlan.DamageTarget == supportContact.Hostiles.front().Guid);
     assert(nonbaitMagePlan.ParasiteCombat.SupportTargetGuid
         == supportContact.Hostiles[1].Guid);
     assert(!nonbaitMagePlan.Movement.has_value());
@@ -1383,7 +1383,7 @@ int main()
             rangedSupportContact, PlayerGuid(30100), "dps", nullptr, false,
             false, &rangedSupportTransition);
         assert(rangedSupportPlan.DamageTarget
-            == rangedSupportContact.Hostiles[1].Guid);
+            == rangedSupportContact.Hostiles.front().Guid);
         assert(rangedSupportPlan.ParasiteCombat.SupportTargetGuid
             == rangedSupportContact.Hostiles[1].Guid);
         assert(!rangedSupportPlan.Movement.has_value());
@@ -2015,9 +2015,9 @@ int main()
         "personally_threatened_profile"));
 
     // Replacing the parasite GUID inside the same unsafe episode updates only
-    // the fresh exact support target; the actor-owned hazard key and retained
-    // local destination remain stable when victim attribution is briefly
-    // absent beyond personal-contact range.
+    // the fresh support observation; the ordinary ranged actor keeps the boss
+    // target while its support identity, hazard key, and local destination
+    // remain stable when victim attribution is briefly absent.
     Blackboard guidChurn = threatened;
     guidChurn.Revision += 1;
     guidChurn.ObservedAtMs += 100;
@@ -2026,7 +2026,7 @@ int main()
     AdaptiveMagmawPlan churnPlan = strategy.Propose(guidChurn,
         PlayerGuid(30008), "dps", nullptr, false, false, &nonownerLane,
         &nonownerHazard);
-    assert(churnPlan.DamageTarget == guidChurn.Hostiles[1].Guid);
+    assert(churnPlan.DamageTarget == guidChurn.Hostiles.front().Guid);
     assert(churnPlan.ParasiteCombat.PersonalThreatGuid.IsEmpty());
     assert(churnPlan.ParasiteCombat.SupportTargetGuid
         == guidChurn.Hostiles[1].Guid);
@@ -2188,9 +2188,8 @@ int main()
     assert(exposedPlan.DamageTarget == exposed.Hostiles.back().Guid);
     assert(exposedPlan.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
-    // Fixed baiters retain their broader parasite contract; a ranged support
-    // actor may assist one exact nearby parasite without acquiring a bait-lane
-    // transition.
+    // Fixed baiters retain their broader parasite contract. Ordinary ranged
+    // actors observe support geometry without acquiring an add-chasing target.
     MagmawParasiteCombatContract const contract = tankPlan.ParasiteCombat;
     MagmawParasiteCombatContract::ProfileParameters const baitMageProfile =
         contract.ResolveProfileParameters(PlayerGuid(30006),
@@ -2215,7 +2214,7 @@ int main()
     AdaptiveMagmawPlan safeNonowner = strategy.Propose(board,
         PlayerGuid(30008), "dps", nullptr, false, false,
         &safeNonownerLane, &safeNonownerHazard);
-    assert(safeNonowner.DamageTarget == board.Hostiles[1].Guid);
+    assert(safeNonowner.DamageTarget == board.Hostiles.front().Guid);
     assert(safeNonowner.ParasiteCombat.SupportTargetGuid
         == board.Hostiles[1].Guid);
     assert(!safeNonownerLane.Committed);
