@@ -104,13 +104,13 @@ struct MagmawParasitePolicy {
 ''' + segment + "\n" + safety + r'''
 };
 struct Geometry {
- static constexpr float RangedStackDistance=30,SupportStackDistance=8,RangedStackLateralOffset=24;
+ static constexpr float RangedStackDistance=30,SupportStackDistance=8,RangedStackLateralOffset=18;
 ''' + anchors + r'''
 };
 struct Policy {
  static constexpr uint32 BossEntry=41570;
  static constexpr float RangedStackTolerance=4;
- static inline MagmawRangedAnchors Anchors{{8,0,0},{30,24,0},{30,-24,0}};
+ static inline MagmawRangedAnchors Anchors{{8,0,0},{30,18,0},{30,-18,0}};
  static std::optional<MagmawRangedAnchors> ResolveRangedAnchors(Blackboard const&,ActorSnapshot const&){return Anchors;}
  static bool IsPillarBaiter(Blackboard const&,ObjectGuid id){return id.value==9 || id.value==6;}
  static Vector3 FormationAnchor(Blackboard const&,MagmawRangedAnchors const&a,ObjectGuid id){return id.value==9?a.Left:a.Right;}
@@ -147,9 +147,17 @@ int main(){
  target.Attackable=false; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); target.Attackable=true;
  BotRaidAreaAuthority::Suppressed=true; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); BotRaidAreaAuthority::Suppressed=false;
  profile.Spells[0].MaxRange=10; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); profile.Spells[0].MaxRange=35;
- Blackboard board; ActorSnapshot boss{{39},41570,{0,0,0}}, bot{{10},0,{8,0,0}};
+ Blackboard board; board.Route.NavigationHints={{0,-1,0}};
+ ActorSnapshot boss{{39},41570,{0,0,0}}, bot{{10},0,{8,0,0}};
  bot.PreferredCombatRange=fact;
- // Real 30/24 bait chord cannot admit preferred16 shoulders with separation20.
+ auto resolved=Geometry::ResolveRangedAnchors(board,boss);
+ assert(resolved);
+ assert(std::hypot(resolved->Left.X-boss.Position.X,
+     resolved->Left.Y-boss.Position.Y)<=35.001f);
+ assert(std::hypot(resolved->Right.X-boss.Position.X,
+     resolved->Right.Y-boss.Position.Y)<=35.001f);
+ assert(MagmawParasitePolicy::FullLaneCorridorSafe(*resolved));
+ // Real 30/18 bait chord cannot admit preferred16 shoulders with separation20.
  // Old formation emits a return to8 after the range mover; new one abstains.
  bot.Position={GenericPreferred(*fact),0,0};
  assert(!Policy::ProposeRangedFormationRestore(board,bot,boss,"dps"));

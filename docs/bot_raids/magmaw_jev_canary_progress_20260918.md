@@ -35,10 +35,15 @@ acceptance flag is intentionally shown separately from gameplay outcome.
 | shard16 | clear | 28.19M | 223.8k | 172.6k | 10 alive; candidate telemetry added | action-rejection signal was noisy |
 | shard17 | clear | 28.29M | 221.0k | 185.4k | 10 alive; no watchdog failure | aligned; stuck none; movement |
 | shard18 | clear | 28.19M | 216.9k | 198.4k | 10 alive; no watchdog failure | aligned; stuck none; movement |
+| shard19 | clear | 28.19M | 222.0k | 210.2k | 10 alive; no watchdog failure | aligned (0.90); stuck none (0.92); movement (0.41) |
 
-The two post-repair canaries therefore show no wipe regression. Active DPS is
+The post-repair canaries therefore show no wipe regression. Active DPS is
 within normal run variance while elapsed DPS improves because the fights finish
-faster. Shard18 also retains two `blocked_no_fallback` and eight
+faster. Shard19 shortens the boss window to 134.1 seconds versus shard18's
+142.1 seconds and raises active party DPS by 2.4% and elapsed party DPS by
+6.0%. JEV marks the change effect `not_comparable` (0.69 confidence), so this
+is a positive canary signal, not a promotion claim. Shard18 also retains two
+`blocked_no_fallback` and eight
 `repeated_decision_loop` diagnostics in the final terminal snapshot; the
 snapshot is after Magmaw is dead and JEV classifies the active stuck set as empty.
 They remain tracked rather than being counted as a successful gameplay loop.
@@ -59,6 +64,14 @@ comparison reference, not a controlled floor.
 | Affliction | 42.8k / 31.0k | 44.7k / 34.5k | 40.3k |
 | Elemental | 45.3k / 28.2k | 46.0k / 33.4k | 41.9k |
 | Survival | 45.0k / 33.4k | 42.7k / 35.5k | no matched WCL actor |
+
+Shard19 after the 30/18 bait-envelope repair is: Balance 28.4k / 19.5k,
+Fire A 47.7k / 29.1k, Fire B 65.0k / 42.6k, Affliction 48.2k / 37.0k,
+Elemental 40.8k / 28.7k, and Survival 41.2k / 34.6k. The two fixed baiters'
+average distances fell from 36.15/36.78 yards in shard18 to 34.67/34.10 yards
+in shard19, and their movement fractions fell from 0.256/0.280 to
+0.141/0.175. This validates the range-envelope hypothesis, but does not yet
+close the remaining Balance/uptime gap to WCL.
 
 The stable gap is now mostly duty/uptime and movement, not a proven native
 “all casts are rejected” failure. Balance remains the clearest comparable
@@ -111,17 +124,17 @@ authority.
 | In-flight profile casts entered retryable candidate backoff | shard16 full-window native outcomes | fixed by preserving `Casting`/`already_casting`; validated in shards17–18 |
 | Candidate-search waits misclassified as native DPS rejection | shard17 JEV payload audit | fixed in JEV input contract and idempotent outcome normalization |
 | Terminal-tail `blocked_no_fallback` diagnostics | shard18 post-kill snapshot | open telemetry cleanup; not active during the boss window |
+| Fixed bait endpoints exceeded the native 35-yard ranged envelope | shard18 geometry/position trace | repaired to 30/18 in strategy and shadow lane planner; shard19 canary moved both baiters inside the envelope |
 
 ## Next bounded action
 
-Do not revert the cast-state repair. The next repair candidate is movement/uptime
-for Balance and the far-position Fire actor, but it needs a trace-backed change
-that preserves the Magmaw formation and mechanic assignments. Compare movement
-windows with successful casts and native range/LOS outcomes before changing the
-formation or a class profile. Keep WCL as a normalized comparison reference,
-not an unconditional per-actor acceptance threshold.
+Do not revert the cast-state or bait-envelope repairs. The next repair
+candidate is Balance movement/uptime and the residual movement/uptime loss for
+the fixed baiters. Compare movement windows with successful casts and native
+range/LOS outcomes before changing a class profile. Keep WCL as a normalized
+comparison reference, not an unconditional per-actor acceptance threshold.
 
-Compact JEV reports and native combat ledgers for shards16–18 are checkpointed
+Compact JEV reports and native combat ledgers for shards16–19 are checkpointed
 through DVC in the companion artifact pointer for this branch. Raw live reports
-remain in `/tmp/magmaw-normal-shard-{16,17,18}-20260918` during review and are
-not committed to Git.
+remain in `/tmp/magmaw-normal-shard-{16,17,18,19}-20260918` during review and
+are not committed to Git.
