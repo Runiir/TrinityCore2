@@ -1,0 +1,48 @@
+{
+  "schema": "magmaw_wcl_dps_reference_v1",
+  "references": [
+    {
+      "id": "Y8ajQ7dbmKMG1RZy-fight22",
+      "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=22&type=summary",
+      "mode": "10N",
+      "duration_sec": 111.3,
+      "raid_dps": 246232.7,
+      "average_item_level": 395.33,
+      "target_scope": "Magmaw and parasites",
+      "reference_class": "measured_live_observation_not_acceptance_floor",
+      "actor_dps": {
+        "balance_druid": 41029.1,
+        "fire_mage": 40189.9,
+        "elemental_shaman": 41866.0,
+        "affliction_warlock": 40281.0,
+        "blood_death_knight": 26152.0
+      },
+      "limitations": [
+        "WCL roster has five DPS and no Hunter.",
+        "Displayed duration and DPS are rounded observations.",
+        "Assignments, buffs, cooldown coverage, gear, and phase coverage differ from the bot canary.",
+        "The values are comparison context, not a controlled pass threshold."
+      ]
+    },
+    {
+      "id": "xAhkN2y9YP3KRmnJ-fight10",
+      "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ?fight=10&type=summary",
+      "mode": "10N",
+      "duration_sec": 70.9,
+      "raid_dps": 378849.0,
+      "average_item_level": 401.4,
+      "target_scope": "Magmaw and parasites",
+      "reference_class": "short_fight_throughput_context",
+      "actor_dps": {
+        "fire_mage": 58173.4,
+        "affliction_warlock": 49435.6,
+        "elemental_shaman": 41299.2,
+        "blood_death_knight": 28446.3
+      },
+      "limitations": [
+        "This composition has eight DPS and no Balance Druid.",
+        "It is a short-fight throughput reference, not the matched comparison."
+      ]
+    }
+  ]
+}

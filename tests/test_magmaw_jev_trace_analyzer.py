@@ -205,11 +205,19 @@ def test_analyze_requires_jev_and_records_typed_answers_and_ledger(
     env_file = tmp_path / ".env"
     env_file.write_text("JEV=test-key\n", encoding="utf-8")
     ledger = tmp_path / "ledger.json"
+    calls: list[set[str]] = []
 
     def fake_call(state: dict[str, object], key: str, questions: dict[str, object]) -> dict[str, object]:
         assert key == "test-key"
         assert state["authority"] == "native TrinityCore bot runtime; Jev is shadow analysis only"
-        assert {"path_consistency", "stuck_behavior", "dps_loss_area", "next_fix", "canary_safe_to_promote"} <= set(questions)
+        calls.append(set(questions))
+        if "next_fix" in questions:
+            assert set(questions) == {"next_fix"}
+            assert "prior_judgments" in state
+        else:
+            assert {"path_consistency", "stuck_behavior", "dps_loss_area", "canary_safe_to_promote"} <= set(questions)
+            assert "route_review" in state
+            assert "boss_dps_review" in state
         return {
             "model": "jev-latest",
             "answers": {
@@ -239,6 +247,9 @@ def test_analyze_requires_jev_and_records_typed_answers_and_ledger(
 
     assert report["jev"]["model"] == "jev-latest"
     assert report["jev"]["answers"]["path_consistency"]["choice"] == "aligned"
+    assert len(calls) == 2
+    assert report["jev"]["question_ids"][-1] == "stuck_behavior"
+    assert report["jev"]["answers"]["next_fix"]["choice"] == "collect_more_canaries"
     assert report["progress"]["fix_tracking"]["change_id"] == "telemetry-v1"
     stored = json.loads(ledger.read_text(encoding="utf-8"))
     assert stored["runs"][0]["run_id"] == "canary-1"
@@ -289,7 +300,7 @@ def test_analyze_accepts_closed_live_report_without_raw_trace(
 
     def fake_call(state: dict[str, object], key: str, questions: dict[str, object]) -> dict[str, object]:
         assert key == "test-key"
-        assert state["deterministic"]["live_report"]["failure_reason"] == "bot_pool_underfilled"
+        assert state["route_review"]["run_gate"]["failure_reason"] == "bot_pool_underfilled"
         return {
             "model": "jev-latest",
             "answers": {
@@ -319,3 +330,147 @@ def test_analyze_accepts_closed_live_report_without_raw_trace(
     assert report["source"]["path"].endswith("/report.json")
     assert report["deterministic"]["trace_rows"] == 0
     assert report["deterministic"]["live_report"]["failure_labels"] == ["bot_pool_underfilled"]
+
+
+def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
+    metrics = analyzer._compact_metrics(
+        {
+            "available": True,
+            "party_damage": 100000.0,
+            "party_dps": 25000.0,
+            "elapsed_party_dps": 20000.0,
+            "duration_sec": 5.0,
+            "combat_duration_sec": 4.0,
+            "actors": [
+                {
+                    "actor_guid": 10,
+                    "actor_name": "Roostertours",
+                    "actor_role": "dps",
+                    "damage": 80000.0,
+                    "active_dps": 20000.0,
+                    "elapsed_dps": 16000.0,
+                    "active_seconds": 4.0,
+                    "damage_uptime": 0.8,
+                    "distance_avg": 14.2,
+                    "moving_fraction": 0.2,
+                    "abilities": [
+                        {"spell_id": 403, "spell_name": "Lightning Bolt", "events": 10, "damage": 80000.0}
+                    ],
+                }
+            ],
+        },
+        {"10": {"class_spec": "elemental_shaman", "bot_name": "Roostertours"}},
+    )
+
+    actor = metrics["actors"][0]
+    assert actor["class_spec"] == "elemental_shaman"
+    assert actor["elapsed_dps"] == 16000.0
+    assert actor["active_dps"] == 20000.0
+    assert actor["abilities"][0]["spell_id"] == 403
+    assert metrics["elapsed_party_dps"] == 20000.0
+    assert metrics["party_dps_basis"] == "active_damage_seconds"
+
+    annotated = analyzer._annotate_wcl_deltas(
+        metrics,
+        {
+            "primary": {"actor_dps": {"elemental_shaman": 41866.0}},
+            "supplemental": [],
+        },
+    )
+    assert annotated["actors"][0]["wcl_observed_dps"] == 41866.0
+    assert annotated["actors"][0]["elapsed_dps_delta_vs_wcl"] == -25866.0
+
+
+def test_boss_trace_window_excludes_teardown_and_post_terminal_rows() -> None:
+    entries = [
+        {
+            **_entry(1, "bwd.magmaw.encounter", "cast_combat_spell"),
+            "timestamp_ms": 2000,
+            "_bot_guid": 10,
+        },
+        {
+            **_entry(2, "bwd.magmaw.encounter", "cast_combat_spell"),
+            "timestamp_ms": 3000,
+            "action_result": "rejected",
+            "action_rejection_reason": "global_cooldown",
+            "_bot_guid": 10,
+        },
+        {
+            **_entry(3, "bwd.magmaw.encounter", "wait"),
+            "timestamp_ms": 4000,
+            "action_result": "callback_instance_unavailable",
+            "_bot_guid": 10,
+        },
+        {
+            **_entry(4, "bwd.magmaw.encounter", "boss_killed"),
+            "timestamp_ms": 5000,
+            "_bot_guid": 10,
+        },
+        {
+            **_entry(5, "bwd.magmaw.encounter", "validation_route_terminal"),
+            "timestamp_ms": 6000,
+            "_bot_guid": 10,
+        },
+    ]
+
+    retained, capture = analyzer._boss_trace_window(
+        entries,
+        {"first_at_ms": 1000, "last_at_ms": 9000},
+    )
+
+    assert [entry["sequence"] for entry in retained] == [1, 2]
+    assert capture["trace_is_retained_tail"] is True
+    assert capture["terminal_at_ms"] == 5000
+    assert capture["excluded_after_terminal_rows"] == 1
+    assert capture["excluded_terminal_rows"] == 1
+    assert capture["excluded_teardown_reason_counts"] == {
+        "callback_instance_unavailable": 1,
+    }
+
+
+def test_decision_receipts_are_normalized_and_limited_to_boss_window() -> None:
+    report = {
+        "decision_receipts": [
+            {
+                "actor_guid": 10,
+                "count": 2,
+                "first_timestamp_ms": 2000,
+                "last_timestamp_ms": 3000,
+                "route_node_id": "bwd.magmaw.encounter",
+                "gate": "planner_admission",
+                "outcome_reason": "global_cooldown",
+                "reason": "spell_cast",
+                "reason_type": "combat_action",
+                "result": "rejected",
+            },
+            {
+                "actor_guid": 10,
+                "count": 4,
+                "first_timestamp_ms": 6000,
+                "last_timestamp_ms": 7000,
+                "route_node_id": "bwd.magmaw.encounter",
+                "gate": "planner_admission",
+                "outcome_reason": "after_boss_kill",
+                "reason": "spell_cast",
+                "reason_type": "combat_action",
+                "result": "rejected",
+            },
+        ]
+    }
+
+    outcomes = analyzer._compact_decision_receipts(
+        report,
+        "bwd.magmaw.encounter",
+        {"10": {"role": "dps", "class_spec": "fire_mage"}},
+        {"dps"},
+        window_start_ms=1000,
+        window_end_ms=5000,
+        terminal_at_ms=5000,
+    )
+
+    assert len(outcomes) == 1
+    assert outcomes[0]["bot_guid"] == 10
+    assert outcomes[0]["class_spec"] == "fire_mage"
+    assert outcomes[0]["outcome"] == "rejected"
+    assert outcomes[0]["reason_code"] == "global_cooldown"
+    assert outcomes[0]["count"] == 2

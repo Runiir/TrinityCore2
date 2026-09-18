@@ -17,7 +17,7 @@ import time
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -36,6 +36,10 @@ REPEATED_DECISION_LIMIT = 20
 SAME_DECISION_LIMIT = 10
 IDLE_DECISION_LIMIT = 10
 TARGET_CHURN_LIMIT = 8
+DEFAULT_WCL_REFERENCE = Path(
+    "experiments/configs/cata_raid_encounters/blackwing_descent/"
+    "magmaw_wcl_dps_reference_v1.json"
+)
 
 
 class JevError(RuntimeError):
@@ -429,25 +433,121 @@ def _compact_status(payload: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _compact_actor(actor: dict[str, Any]) -> dict[str, Any]:
+def _actor_identity(report: Any) -> dict[str, dict[str, Any]]:
+    """Extract only stable identity fields needed to join combat metrics."""
+    identities: dict[str, dict[str, Any]] = {}
+
+    def visit(value: Any, depth: int = 0) -> None:
+        if depth > 5:
+            return
+        if isinstance(value, list):
+            for item in value:
+                visit(item, depth + 1)
+            return
+        if not isinstance(value, dict):
+            return
+        guid = 0
+        for key in ("bot_guid", "guid", "actor_guid", "unit_guid"):
+            guid = _as_int(value.get(key))
+            if guid:
+                break
+        if guid:
+            fields: dict[str, Any] = {}
+            for target, keys in {
+                "bot_name": ("bot_name", "character_name", "actor_name", "name"),
+                "role": ("role", "actor_role"),
+                "class_spec": ("class_spec", "spec", "actor_spec", "bot_spec"),
+                "class_name": ("class_name", "class"),
+            }.items():
+                for key in keys:
+                    if value.get(key) not in (None, ""):
+                        fields[target] = value[key]
+                        break
+            if fields:
+                identities[str(guid)] = {**identities.get(str(guid), {}), **fields}
+        for key in ("diagnosis", "status", "raid_runtime", "roster", "members", "bots", "admission_receipt"):
+            nested = value.get(key)
+            if isinstance(nested, (dict, list)):
+                visit(nested, depth + 1)
+
+    visit(report)
+    return identities
+
+
+def _compact_ability(ability: dict[str, Any]) -> dict[str, Any]:
     keys = (
-        "bot_guid",
-        "bot_name",
-        "role",
+        "spell_id",
+        "spell_name",
+        "events",
+        "casts",
         "damage",
-        "dps",
-        "healing",
-        "hps",
-        "pet_damage",
-        "pet_damage_share",
-        "uptime_seconds",
-        "cast_movement_seconds",
-        "range_seconds",
+        "originated_damage",
+        "damage_share",
+        "originated_damage_share",
+        "moving_fraction",
+        "distance_avg",
+        "source_is_pet",
     )
-    return {key: actor[key] for key in keys if key in actor}
+    return {key: ability[key] for key in keys if key in ability}
 
 
-def _compact_metrics(metrics: Any) -> dict[str, Any]:
+def _compact_actor(
+    actor: dict[str, Any],
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    guid = _as_int(actor.get("bot_guid") or actor.get("actor_guid"))
+    identity = (actor_identity or {}).get(str(guid), {})
+    result: dict[str, Any] = {}
+    aliases = {
+        "bot_guid": ("bot_guid", "actor_guid"),
+        "bot_name": ("bot_name", "actor_name"),
+        "role": ("role", "actor_role"),
+        "damage": ("damage",),
+        "dps": ("dps",),
+        "active_dps": ("active_dps",),
+        "elapsed_dps": ("elapsed_dps",),
+        "active_seconds": ("active_seconds",),
+        "damage_uptime": ("damage_uptime",),
+        "distance_avg": ("distance_avg",),
+        "moving_fraction": ("moving_fraction",),
+        "healing": ("healing",),
+        "hps": ("hps",),
+        "pet_damage": ("pet_damage",),
+        "pet_damage_share": ("pet_damage_share",),
+        "uptime_seconds": ("uptime_seconds",),
+        "cast_movement_seconds": ("cast_movement_seconds",),
+        "range_seconds": ("range_seconds",),
+    }
+    for target, keys in aliases.items():
+        for key in keys:
+            if key in actor:
+                result[target] = actor[key]
+                break
+    if guid:
+        result["bot_guid"] = guid
+    for key in ("bot_name", "role"):
+        if key not in result and identity.get(key) not in (None, ""):
+            result[key] = identity[key]
+    class_spec = identity.get("class_spec") or actor.get("class_spec") or actor.get("spec")
+    if class_spec:
+        result["class_spec"] = class_spec
+    class_name = identity.get("class_name") or actor.get("class_name") or actor.get("class")
+    if class_name:
+        result["class_name"] = class_name
+    abilities = actor.get("abilities")
+    if isinstance(abilities, list):
+        result["abilities"] = [
+            _compact_ability(ability)
+            for ability in abilities[:6]
+            if isinstance(ability, dict)
+        ]
+    return result
+
+
+def _compact_metrics(
+    metrics: Any,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     if not isinstance(metrics, dict):
         return {"available": False}
     result = {
@@ -460,22 +560,32 @@ def _compact_metrics(metrics: Any) -> dict[str, Any]:
             "party_healing",
             "party_hps",
             "combat_seconds",
+            "combat_duration_sec",
+            "duration_sec",
+            "elapsed_party_dps",
+            "elapsed_party_hps",
             "active_party_damage_seconds",
             "originated_damage_seconds",
             "raw_event_damage",
             "raw_event_dps",
             "route_generation",
             "route_node_id",
+            "first_at_ms",
+            "last_at_ms",
         )
         if key in metrics
     }
     actors = metrics.get("actors")
     if isinstance(actors, list):
         result["actors"] = [
-            _compact_actor(actor)
+            _compact_actor(actor, actor_identity)
             for actor in actors
             if isinstance(actor, dict)
         ]
+    if "party_dps" in result:
+        result["party_dps_basis"] = "active_damage_seconds"
+    if "elapsed_party_dps" in result:
+        result["elapsed_party_dps_basis"] = "wall_clock_duration_seconds"
     return result
 
 
@@ -509,6 +619,7 @@ def _progress_summary(
     expected_route: tuple[str, ...],
     rows: list[dict[str, Any]],
     scope_route_prefix: str = MAGMAW_ROUTE_PREFIX,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     path_counts: Counter[str] = Counter()
     route_counts: Counter[str] = Counter()
@@ -715,7 +826,7 @@ def _progress_summary(
             ):
                 latest_scoped_status = compact_status
         if isinstance(payload.get("combat_metrics"), dict):
-            compact = _compact_metrics(payload["combat_metrics"])
+            compact = _compact_metrics(payload["combat_metrics"], actor_identity)
             metric_route = str(compact.get("route_node_id") or "")
             row_route = str(payload.get("route_node_id") or "")
             if not row_route:
@@ -787,7 +898,11 @@ def _progress_summary(
     }
 
 
-def _analysis_metrics(analysis: Any, scope_route_prefix: str) -> dict[str, Any] | None:
+def _analysis_metrics(
+    analysis: Any,
+    scope_route_prefix: str,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
     if not isinstance(analysis, dict):
         return None
     extracted = analysis.get("combat_metrics") or analysis.get("metrics")
@@ -796,7 +911,7 @@ def _analysis_metrics(analysis: Any, scope_route_prefix: str) -> dict[str, Any] 
         if (not route or _route_in_scope(route, scope_route_prefix)) and (
             extracted.get("available") or "party_dps" in extracted
         ):
-            return _compact_metrics(extracted)
+            return _compact_metrics(extracted, actor_identity)
     encounters = analysis.get("encounters")
     if not isinstance(encounters, list):
         return None
@@ -812,7 +927,7 @@ def _analysis_metrics(analysis: Any, scope_route_prefix: str) -> dict[str, Any] 
         return None
     metrics = dict(scoped[-1])
     metrics["available"] = True
-    return _compact_metrics(metrics)
+    return _compact_metrics(metrics, actor_identity)
 
 
 def _analysis_diagnostics(analysis: Any, scope_route_prefix: str) -> list[dict[str, Any]]:
@@ -839,6 +954,423 @@ def _analysis_diagnostics(analysis: Any, scope_route_prefix: str) -> list[dict[s
     return result
 
 
+def _compact_action_outcomes(
+    entries: Iterable[dict[str, Any]],
+    scope_route_prefix: str,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    focus_roles: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Aggregate attributable action outcomes without retaining raw trace text."""
+    counts: Counter[tuple[str, str, str, str, str, str, str]] = Counter()
+    names: dict[tuple[str, str, str, str, str, str, str], str] = {}
+    for entry in entries:
+        route = str(entry.get("route_node_id") or "")
+        if not _route_in_scope(route, scope_route_prefix):
+            continue
+        attempt = entry.get("combat_attempt")
+        attempt = attempt if isinstance(attempt, dict) else {}
+        action = attempt.get("action")
+        action = action if isinstance(action, dict) else {}
+        has_outcome = bool(attempt) or any(
+            key in entry
+            for key in (
+                "action_result",
+                "candidate_result",
+                "native_action_result",
+                "action_rejection_reason",
+                "result",
+                "outcome_reason",
+            )
+        )
+        if not has_outcome:
+            continue
+        guid = _as_int(entry.get("_bot_guid") or entry.get("bot_guid"))
+        identity = (actor_identity or {}).get(str(guid), {})
+        role = str(identity.get("role") or entry.get("role") or "")
+        if focus_roles and role and role not in focus_roles:
+            continue
+        spec = str(identity.get("class_spec") or entry.get("class_spec") or "")
+        category = str(
+            action.get("action_category")
+            or attempt.get("action_category")
+            or entry.get("action_category")
+            or action.get("action_type")
+            or attempt.get("action_type")
+            or entry.get("action")
+            or entry.get("reason_type")
+            or "unknown"
+        )
+        spell_id = _as_int(
+            action.get("spell_id")
+            or attempt.get("spell_id")
+            or entry.get("spell_id")
+        )
+        action_name = str(
+            action.get("spell_name")
+            or action.get("debug_name")
+            or attempt.get("debug_name")
+            or entry.get("spell_name")
+            or category
+        )
+        outcome = str(
+            action.get("result")
+            or attempt.get("result")
+            or entry.get("action_result")
+            or entry.get("candidate_result")
+            or entry.get("native_action_result")
+            or entry.get("result")
+            or "unknown"
+        )
+        reason = str(
+            action.get("reason_code")
+            or attempt.get("reason_code")
+            or entry.get("action_rejection_reason")
+            or entry.get("reason_code")
+            or entry.get("outcome_reason")
+            or ""
+        )
+        key = (
+            str(guid),
+            spec,
+            route,
+            category,
+            str(spell_id) if spell_id else "",
+            outcome,
+            reason,
+        )
+        counts[key] += max(1, _as_int(entry.get("_outcome_count")))
+        names[key] = action_name
+    result: list[dict[str, Any]] = []
+    for key, count in counts.most_common(100):
+        guid, spec, route, category, spell_id, outcome, reason = key
+        item = {
+            "bot_guid": _as_int(guid),
+            "class_spec": spec,
+            "route_node_id": route,
+            "action_category": category,
+            "outcome": outcome,
+            "count": count,
+            "action_name": names[key],
+        }
+        if spell_id:
+            item["spell_id"] = _as_int(spell_id)
+        if reason:
+            item["reason_code"] = reason
+        result.append(item)
+    return result
+
+
+def _compact_decision_receipts(
+    report: dict[str, Any] | None,
+    scope_route_prefix: str,
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    focus_roles: set[str] | None = None,
+    *,
+    window_start_ms: int = 0,
+    window_end_ms: int = 0,
+    terminal_at_ms: int = 0,
+) -> list[dict[str, Any]]:
+    """Summarize live decision receipts when they contain native outcomes."""
+    if not isinstance(report, dict) or not isinstance(report.get("decision_receipts"), list):
+        return []
+    entries: list[dict[str, Any]] = []
+    for receipt in report["decision_receipts"]:
+        if not isinstance(receipt, dict):
+            continue
+        entry = dict(receipt)
+        route = str(entry.get("route_node_id") or entry.get("route") or "")
+        if route:
+            entry["route_node_id"] = route
+        first_timestamp = _as_int(
+            entry.get("first_timestamp_ms") or entry.get("timestamp_ms")
+        )
+        last_timestamp = _as_int(
+            entry.get("last_timestamp_ms") or entry.get("timestamp_ms") or first_timestamp
+        )
+        if terminal_at_ms and first_timestamp and first_timestamp > terminal_at_ms:
+            continue
+        if window_end_ms and first_timestamp and first_timestamp > window_end_ms:
+            continue
+        if window_start_ms and last_timestamp and last_timestamp < window_start_ms:
+            continue
+        if "bot_guid" in entry or "actor_guid" in entry:
+            entry["_bot_guid"] = _as_int(
+                entry.get("bot_guid") or entry.get("actor_guid")
+            )
+        if "count" in entry:
+            entry["_outcome_count"] = max(1, _as_int(entry.get("count")))
+        entry["action_result"] = entry.get("result") or "unknown"
+        entry["action_rejection_reason"] = entry.get("outcome_reason") or ""
+        entry["action_category"] = entry.get("reason_type") or entry.get("gate") or "decision"
+        entry["action"] = entry.get("reason") or entry.get("action_category") or "decision"
+        entry["reason_code"] = entry.get("outcome_reason") or ""
+        attempt = entry.get("attempt") or entry.get("combat_attempt")
+        if isinstance(attempt, dict):
+            entry["combat_attempt"] = attempt
+        entries.append(entry)
+    return _compact_action_outcomes(
+        entries,
+        scope_route_prefix,
+        actor_identity,
+        focus_roles,
+    )
+
+
+def _entry_timestamp_ms(entry: dict[str, Any]) -> int:
+    attempt = entry.get("combat_attempt")
+    attempt = attempt if isinstance(attempt, dict) else {}
+    return max(
+        _as_int(entry.get("timestamp_ms")),
+        _as_int(entry.get("recorded_at_ms")),
+        _as_int(attempt.get("recorded_at_ms")),
+    )
+
+
+def _entry_outcome_tokens(entry: dict[str, Any]) -> list[str]:
+    attempt = entry.get("combat_attempt")
+    attempt = attempt if isinstance(attempt, dict) else {}
+    failure = attempt.get("failure")
+    failure = failure if isinstance(failure, dict) else {}
+    values = (
+        entry.get("reason_code"),
+        entry.get("action_rejection_reason"),
+        entry.get("action_result"),
+        entry.get("candidate_result"),
+        entry.get("native_action_result"),
+        entry.get("result"),
+        entry.get("outcome_reason"),
+        failure.get("reason"),
+        failure.get("retry_reason"),
+    )
+    return [str(value) for value in values if value not in (None, "")]
+
+
+def _boss_trace_window(
+    entries: list[dict[str, Any]],
+    metrics: dict[str, Any] | None,
+    scope_route_prefix: str = DEFAULT_BOSS_ROUTE[0],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Restrict retained trace rows to the active boss window.
+
+    Closed reports retain only a tail of the native trace.  The combat analysis
+    supplies the full encounter timestamps, while the explicit boss-killed row
+    marks the point after which callback and teardown rows must not influence a
+    DPS judgment.
+    """
+    scoped = [
+        entry
+        for entry in entries
+        if _route_in_scope(str(entry.get("route_node_id") or ""), scope_route_prefix)
+    ]
+    metric_start = _as_int((metrics or {}).get("first_at_ms"))
+    metric_end = _as_int((metrics or {}).get("last_at_ms"))
+    timestamps = [_entry_timestamp_ms(entry) for entry in scoped]
+    observed_start = min((value for value in timestamps if value), default=0)
+    observed_end = max((value for value in timestamps if value), default=0)
+    terminal_actions = {
+        "boss_killed",
+        "validation_route_terminal",
+        "validation_route_manifest_complete",
+    }
+    terminal_timestamps = [
+        _entry_timestamp_ms(entry)
+        for entry in scoped
+        if str(entry.get("action") or "") in terminal_actions
+        and _entry_timestamp_ms(entry)
+    ]
+    terminal_at = min(terminal_timestamps, default=0)
+    window_start = metric_start or observed_start
+    window_end = metric_end or observed_end
+    if terminal_at:
+        window_end = min(value for value in (window_end, terminal_at) if value)
+
+    in_window: list[dict[str, Any]] = []
+    excluded_after_terminal = 0
+    excluded_outside_window = 0
+    excluded_terminal_rows = 0
+    excluded_teardown_reasons: Counter[str] = Counter()
+    for entry in scoped:
+        timestamp = _entry_timestamp_ms(entry)
+        if timestamp and not (window_start <= timestamp <= window_end):
+            if terminal_at and timestamp > terminal_at:
+                excluded_after_terminal += 1
+            else:
+                excluded_outside_window += 1
+            continue
+        if str(entry.get("action") or "") in terminal_actions:
+            excluded_terminal_rows += 1
+            continue
+        tokens = _entry_outcome_tokens(entry)
+        teardown = [token for token in tokens if "callback_instance_unavailable" in token]
+        if teardown:
+            for token in teardown:
+                excluded_teardown_reasons[token] += 1
+            continue
+        in_window.append(entry)
+
+    capture = {
+        "combat_window_start_ms": window_start or None,
+        "combat_window_end_ms": window_end or None,
+        "combat_metrics_window_available": bool(metric_start and metric_end),
+        "terminal_at_ms": terminal_at or None,
+        "retained_trace_first_ms": observed_start or None,
+        "retained_trace_last_ms": observed_end or None,
+        "retained_trace_rows": len(scoped),
+        "trace_rows_in_window": len(in_window),
+        "trace_is_retained_tail": bool(
+            metric_start and observed_start and observed_start > metric_start
+        ),
+        "excluded_after_terminal_rows": excluded_after_terminal,
+        "excluded_outside_window_rows": excluded_outside_window,
+        "excluded_terminal_rows": excluded_terminal_rows,
+        "excluded_teardown_reason_counts": dict(sorted(excluded_teardown_reasons.items())),
+        "interpretation": (
+            "retained_trace_is_tail_capture; missing action outcomes are not proof "
+            "of no rejection"
+        ),
+    }
+    return in_window, capture
+
+
+def _compact_wcl_reference(data: Any) -> dict[str, Any] | None:
+    if not isinstance(data, dict):
+        return None
+    references = data.get("references")
+    if not isinstance(references, list):
+        return None
+    compact: list[dict[str, Any]] = []
+    for reference in references[:3]:
+        if not isinstance(reference, dict):
+            continue
+        item = {
+            key: reference[key]
+            for key in (
+                "id",
+                "url",
+                "mode",
+                "duration_sec",
+                "raid_dps",
+                "average_item_level",
+                "target_scope",
+                "reference_class",
+                "limitations",
+            )
+            if key in reference
+        }
+        actor_dps = reference.get("actor_dps")
+        if isinstance(actor_dps, dict):
+            item["actor_dps"] = {
+                str(key): _as_float(value)
+                for key, value in actor_dps.items()
+                if isinstance(value, (int, float))
+            }
+        compact.append(item)
+    if not compact:
+        return None
+    return {
+        "schema": data.get("schema", "magmaw_wcl_dps_reference_v1"),
+        "primary": compact[0],
+        "supplemental": compact[1:],
+    }
+
+
+def _annotate_wcl_deltas(
+    metrics: dict[str, Any] | None,
+    reference: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if not isinstance(metrics, dict):
+        return metrics
+    result = json.loads(json.dumps(metrics))
+    primary = reference.get("primary") if isinstance(reference, dict) else None
+    actor_dps = primary.get("actor_dps") if isinstance(primary, dict) else None
+    if not isinstance(actor_dps, dict):
+        return result
+    for actor in result.get("actors", []):
+        if not isinstance(actor, dict):
+            continue
+        spec = str(actor.get("class_spec") or "")
+        observed = actor_dps.get(spec)
+        if not isinstance(observed, (int, float)):
+            continue
+        actor["wcl_observed_dps"] = observed
+        elapsed = actor.get("elapsed_dps")
+        active = actor.get("active_dps")
+        if isinstance(elapsed, (int, float)):
+            actor["elapsed_dps_delta_vs_wcl"] = float(elapsed) - float(observed)
+        if isinstance(active, (int, float)):
+            actor["active_dps_delta_vs_wcl"] = float(active) - float(observed)
+    return result
+
+
+def _compact_actor_identity(
+    actor_identity: Mapping[str, dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for guid, identity in sorted((actor_identity or {}).items(), key=lambda item: _as_int(item[0])):
+        item = {"bot_guid": _as_int(guid)}
+        for key in ("bot_name", "role", "class_spec", "class_name"):
+            if identity.get(key) not in (None, ""):
+                item[key] = identity[key]
+        result.append(item)
+    return result
+
+
+def _dps_review_metrics(
+    metrics: dict[str, Any] | None,
+    wcl_reference: dict[str, Any] | None,
+) -> dict[str, Any]:
+    annotated = _annotate_wcl_deltas(metrics, wcl_reference)
+    if not isinstance(annotated, dict):
+        return {"available": False, "actor_scope": "dps_only"}
+    result = dict(annotated)
+    actors = annotated.get("actors")
+    dps_actors: list[dict[str, Any]] = []
+    support_actors: list[dict[str, Any]] = []
+    if isinstance(actors, list):
+        for actor in actors:
+            if not isinstance(actor, dict):
+                continue
+            if str(actor.get("role") or "") == "dps":
+                dps_actors.append(actor)
+                continue
+            support = {
+                key: actor[key]
+                for key in (
+                    "bot_guid",
+                    "bot_name",
+                    "class_spec",
+                    "role",
+                    "damage",
+                    "active_dps",
+                    "elapsed_dps",
+                    "active_seconds",
+                    "damage_uptime",
+                    "wcl_observed_dps",
+                    "elapsed_dps_delta_vs_wcl",
+                )
+                if key in actor
+            }
+            support_actors.append(support)
+    result["actors"] = dps_actors
+    result["support_actors"] = support_actors
+    result["actor_scope"] = "dps_only"
+    return result
+
+
+def _dps_diagnostics(
+    diagnostics: list[dict[str, Any]],
+    actor_identity: Mapping[str, dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for diagnostic in diagnostics:
+        guid = _as_int(diagnostic.get("actor_guid"))
+        role = (actor_identity or {}).get(str(guid), {}).get("role")
+        if role and role != "dps":
+            continue
+        result.append(diagnostic)
+    return result
+
+
 def _compact_baseline(path: Path | None) -> dict[str, Any] | None:
     if path is None:
         return None
@@ -859,15 +1391,187 @@ def _compact_baseline(path: Path | None) -> dict[str, Any] | None:
         "resolved_stuck_behavior_counts": deterministic.get("resolved_stuck_behavior_counts", {}),
         "combat_diagnostics": deterministic.get("combat_diagnostics", []),
         "party_dps": metrics.get("party_dps"),
+        "elapsed_party_dps": metrics.get("elapsed_party_dps"),
         "combat_seconds": metrics.get("combat_seconds"),
+        "duration_sec": metrics.get("duration_sec"),
+        "actors": metrics.get("actors", []),
     }
 
 
-def _jev_questions(has_baseline: bool) -> dict[str, dict[str, Any]]:
+def _compact_run_gate(report: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(report, dict):
+        return {}
+    result = {
+        key: report[key]
+        for key in (
+            "completion_reason",
+            "failure_reason",
+            "failure_labels",
+            "passed",
+            "all_passed",
+            "acceptable_final_evidence",
+            "active_bots",
+            "target_bots",
+            "trace_entries",
+        )
+        if key in report
+    }
+    context = report.get("validation_context")
+    if isinstance(context, dict):
+        result["validation_context"] = {
+            key: context[key]
+            for key in (
+                "scenario_id",
+                "segment_id",
+                "route_node_id",
+                "route_kind",
+                "route_generation",
+            )
+            if key in context
+        }
+    evidence = report.get("evidence")
+    if isinstance(evidence, dict):
+        compact = _compact_evidence(evidence)
+        result["route_terminal_evidence"] = compact.get("route_terminal_evidence", [])
+        result["manifest_completion_evidence"] = compact.get(
+            "manifest_completion_evidence", []
+        )
+    return result
+
+
+def _route_review(
+    deterministic: dict[str, Any],
+    expected_route: tuple[str, ...],
+    live_report: dict[str, Any] | None,
+) -> dict[str, Any]:
+    historical = []
+    for record in deterministic.get("stuck_behaviors", []):
+        if not isinstance(record, dict):
+            continue
+        historical.append({
+            "behavior": record.get("behavior"),
+            "path": record.get("path"),
+            "count": record.get("count", 0),
+            "bot_count": len(record.get("bot_guids", [])),
+        })
+    historical.sort(key=lambda item: (-_as_int(item.get("count")), str(item.get("behavior"))))
+    return {
+        "expected_route_nodes": list(expected_route),
+        "scope_route_prefix": deterministic.get("scope_route_prefix"),
+        "trace_rows": deterministic.get("trace_rows"),
+        "magmaw_trace_rows": deterministic.get("magmaw_trace_rows"),
+        "bot_guids": deterministic.get("bot_guids", []),
+        "duration_seconds": deterministic.get("duration_seconds"),
+        "route_status": deterministic.get("route_status"),
+        "route_acceptance": {
+            "complete_native_terminal_evidence": not deterministic.get("route_missing_expected")
+            and all(
+                node in deterministic.get("route_terminal_nodes", [])
+                for node in expected_route
+            ),
+            "observed_order_monotonic": not deterministic.get("route_unexpected")
+            and not deterministic.get("route_repeated_nodes"),
+        },
+        "route_nodes_observed": deterministic.get("route_nodes_observed", []),
+        "route_terminal_nodes": deterministic.get("route_terminal_nodes", []),
+        "route_generation_sequence": deterministic.get("route_generation_sequence", []),
+        "route_terminal_generations": deterministic.get("route_terminal_generations", {}),
+        "route_missing_expected": deterministic.get("route_missing_expected", []),
+        "route_unexpected": deterministic.get("route_unexpected", []),
+        "route_repeated_nodes": deterministic.get("route_repeated_nodes", []),
+        "path_counts": deterministic.get("path_counts", {}),
+        "path_transitions": deterministic.get("path_transitions", {}),
+        "bot_path_counts": deterministic.get("bot_path_counts", {}),
+        "active_route_generation": deterministic.get("active_route_generation"),
+        "active_route_node_id": deterministic.get("active_route_node_id"),
+        "stuck_behavior_counts": deterministic.get("stuck_behavior_counts", {}),
+        "historical_stuck_behavior_summary": historical[:12],
+        "active_stuck_behavior_counts": deterministic.get(
+            "active_stuck_behavior_counts", {}
+        ),
+        "active_stuck_behaviors": deterministic.get("active_stuck_behaviors", []),
+        "resolved_stuck_behavior_counts": deterministic.get(
+            "resolved_stuck_behavior_counts", {}
+        ),
+        "diagnosis_codes": deterministic.get("diagnosis_codes", {}),
+        "transfer_lane_outcomes": deterministic.get("transfer_lane_outcomes", {}),
+        "run_gate": _compact_run_gate(live_report),
+    }
+
+
+def _boss_dps_review(
+    deterministic: dict[str, Any],
+    entries: list[dict[str, Any]],
+    live_report: dict[str, Any] | None,
+    actor_identity: Mapping[str, dict[str, Any]] | None,
+    wcl_reference: dict[str, Any] | None,
+) -> dict[str, Any]:
+    metrics = deterministic.get("boss_combat_metrics")
+    if not isinstance(metrics, dict):
+        metrics = deterministic.get("latest_combat_metrics", {"available": False})
+    metrics = _dps_review_metrics(metrics, wcl_reference)
+    _, trace_capture = _boss_trace_window(
+        entries,
+        deterministic.get("boss_combat_metrics"),
+        DEFAULT_BOSS_ROUTE[0],
+    )
+    decision_outcomes = _compact_decision_receipts(
+        live_report,
+        DEFAULT_BOSS_ROUTE[0],
+        actor_identity,
+        {"dps"},
+        window_start_ms=_as_int(trace_capture.get("combat_window_start_ms")),
+        window_end_ms=_as_int(trace_capture.get("combat_window_end_ms")),
+        terminal_at_ms=_as_int(trace_capture.get("terminal_at_ms")),
+    )
+    scoped_entries = [
+        entry
+        for entry in entries
+        if _route_in_scope(str(entry.get("route_node_id") or ""), DEFAULT_BOSS_ROUTE[0])
+    ]
+    scoped_entries, trace_capture = _boss_trace_window(
+        scoped_entries,
+        deterministic.get("boss_combat_metrics"),
+        DEFAULT_BOSS_ROUTE[0],
+    )
+    dps_entries = [
+        entry
+        for entry in scoped_entries
+        if (
+            (actor_identity or {}).get(str(_as_int(entry.get("_bot_guid"))), {}).get("role")
+            in {None, "dps"}
+        )
+    ]
+    return {
+        "scope_route_node": DEFAULT_BOSS_ROUTE[0],
+        "combat_metrics": metrics,
+        "combat_diagnostics": deterministic.get("boss_combat_diagnostics", []),
+        "action_outcomes": deterministic.get("boss_action_outcomes", []),
+        "decision_outcomes": decision_outcomes,
+        "action_outcome_coverage": {
+            "boss_trace_rows": len(scoped_entries),
+            "dps_trace_rows": len(dps_entries),
+            "attributable_dps_action_outcomes": len(
+                deterministic.get("boss_action_outcomes", [])
+            ),
+            "attributable_dps_decision_outcomes": len(decision_outcomes),
+            "trace_capture": trace_capture,
+            "interpretation": "absence_is_missing_capture_not_proof_of_no_rejection",
+        },
+        "trace_capture": trace_capture,
+        "wcl_reference": wcl_reference,
+    }
+
+
+def _jev_questions(
+    has_baseline: bool,
+    *,
+    include_next_fix: bool = True,
+) -> dict[str, dict[str, Any]]:
     questions: dict[str, dict[str, Any]] = {
         "path_consistency": {
             "type": "choice",
-            "instructions": "Classify whether the observed Magmaw route and encounter paths match the expected ordered path. Use route generations and native terminal evidence: many decisions within one generation are normal and are not route repetition. If route_status is complete, route_repeated_nodes is empty, and every expected node has native terminal evidence, choose aligned unless there is a separate unexplained route reversal or gap. Treat an ordered prefix as acceptable for a segment canary. If the live report has zero active bots or zero native trace rows, choose insufficient_evidence.",
+            "instructions": "Classify the route_review only. Use route generations and native terminal evidence: many decisions within one generation are normal and are not route repetition. The retained route-node sample can omit a node after it completed, so route_nodes_observed is not authoritative by itself. If route_acceptance.complete_native_terminal_evidence and route_acceptance.observed_order_monotonic are true, with no route_repeated_nodes, route_unexpected, or active unresolved route event, choose aligned even when the sampled node list has a gap. Use loop_or_gap only for explicit route reversal, repeated route generation, unexpected node, or missing native terminal evidence. Treat an ordered prefix as acceptable for a segment canary. If the live report has zero active bots or zero native trace rows, choose insufficient_evidence.",
             "criteria": {
                 "aligned": "Observed route is ordered and the current segment has no unexplained loop or gap.",
                 "ordered_segment": "The trace is an ordered, intentionally partial segment and is not enough to judge a full clear.",
@@ -877,7 +1581,7 @@ def _jev_questions(has_baseline: bool) -> dict[str, dict[str, Any]]:
         },
         "stuck_behavior": {
             "type": "choice",
-            "instructions": "Identify the primary currently-unresolved stuck behavior. Prefer active_stuck_behavior_counts and active_stuck_behaviors, which are restricted to the latest non-terminal route generation. Treat raw stuck_behavior_counts and resolved_stuck_behavior_counts as historical progress evidence, not an active blocker, when native route terminal evidence proves that node completed. When active_bots is zero and the report says admission failed or the pool was underfilled, choose lifecycle. Choose none when the run admitted bots, the active stuck set is empty, and no native unresolved route event remains.",
+            "instructions": "Classify the primary currently-unresolved behavior from route_review. Prefer active_stuck_behavior_counts and active_stuck_behaviors, which are restricted to the latest non-terminal route generation. Treat raw stuck_behavior_counts and resolved_stuck_behavior_counts as historical progress evidence, not an active blocker, when native route terminal evidence proves that node completed. When active_bots is zero and the run says admission failed or the pool was underfilled, choose lifecycle. Choose none when the run admitted bots, the active stuck set is empty, and no native unresolved route event remains.",
             "criteria": {
                 "none": "No repeated, blocked, churn, failure, or recovery pattern is evidenced.",
                 "movement": "Movement or formation progress is the dominant blocker.",
@@ -889,7 +1593,7 @@ def _jev_questions(has_baseline: bool) -> dict[str, dict[str, Any]]:
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the most actionable DPS loss area from the trace, combat metrics, and compact combat_diagnostics. Prefer an attributable execution loss over a generic rotation explanation. Use active_stuck_behavior_counts for current blockers; historical resolved counters alone do not prove current action rejection. If active_bots is zero or combat metrics are unavailable, choose insufficient_data and never infer action_rejection.",
+            "instructions": "Classify the most actionable DPS loss area from boss_dps_review only. Compare elapsed_party_dps with active party_dps, inspect every DPS actor's elapsed_dps, active_dps, damage_uptime, movement, abilities, action_outcomes, and decision_outcomes. Treat trace_capture as authoritative for the captured boss window: post-terminal teardown and callback_instance_unavailable rows are excluded, while a retained-tail capture means missing action outcomes are unknown rather than successful. Prefer an attributable execution loss over a generic rotation explanation. Route stuck counters are historical unless route_review marks them active. If active_bots is zero or boss combat metrics are unavailable, choose insufficient_data and never infer action_rejection from a missing action log.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "The dominant loss is idle time, repeated waits, or failed action cadence.",
@@ -898,20 +1602,6 @@ def _jev_questions(has_baseline: bool) -> dict[str, dict[str, Any]]:
                 "action_rejection": "The dominant loss is candidate rejection, native submission failure, or repeated backoff.",
                 "mechanic_downtime": "The dominant loss is a required encounter mechanic or recovery assignment.",
                 "insufficient_data": "Combat metrics or attributable trace evidence are insufficient.",
-            },
-        },
-        "next_fix": {
-            "type": "choice",
-            "instructions": "Choose one bounded next engineering action. Keep gameplay authority native and use the smallest fix that addresses the evidenced failure. If admission or lifecycle prevented bots from starting, choose admission_lifecycle. If repeated no_valid_profile_action or native candidate rejection dominates after admission, prefer shared_arbitration or rotation_profile over movement_recovery unless movement is the direct blocker.",
-            "criteria": {
-                "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
-                "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
-                "movement_recovery": "Repair or tune movement arbitration/recovery using the trace evidence.",
-                "target_lease": "Repair target ownership, target return, or target churn handling.",
-                "shared_arbitration": "Repair a shared candidate arbitration/submission edge.",
-                "encounter_assignment": "Repair the encounter mechanic assignment or transfer/hook/parasite contract.",
-                "rotation_profile": "Repair a class/spec priority, resource, cooldown, or target gate.",
-                "native_mechanics": "Repair a native spell, aura, pet, or outcome mismatch.",
             },
         },
         "canary_safe_to_promote": {
@@ -934,7 +1624,26 @@ def _jev_questions(has_baseline: bool) -> dict[str, dict[str, Any]]:
                 "not_comparable": "The runs differ in route, roster, evidence completeness, or runtime identity enough that effect cannot be judged.",
             },
         }
+    if include_next_fix:
+        questions["next_fix"] = _next_fix_question()
     return questions
+
+
+def _next_fix_question() -> dict[str, Any]:
+    return {
+        "type": "choice",
+        "instructions": "Choose one bounded next engineering action after reviewing the typed evidence judgments and both named evidence views. Keep gameplay authority native and use the smallest fix that addresses the evidenced failure. If admission or lifecycle prevented bots from starting, choose admission_lifecycle. If boss_dps_review contains repeated native candidate rejection after admission, prefer shared_arbitration or rotation_profile over movement_recovery unless movement is the direct blocker. Do not choose a class rotation fix when the evidence only shows a shared movement or target lease failure.",
+        "criteria": {
+            "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
+            "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
+            "movement_recovery": "Repair or tune movement arbitration/recovery using the trace evidence.",
+            "target_lease": "Repair target ownership, target return, or target churn handling.",
+            "shared_arbitration": "Repair a shared candidate arbitration/submission edge.",
+            "encounter_assignment": "Repair the encounter mechanic assignment or transfer/hook/parasite contract.",
+            "rotation_profile": "Repair a class/spec priority, resource, cooldown, or target gate.",
+            "native_mechanics": "Repair a native spell, aura, pet, or outcome mismatch.",
+        },
+    }
 
 
 def _read_env_value(path: Path, name: str) -> str | None:
@@ -1078,7 +1787,12 @@ def _ledger_record(report: dict[str, Any]) -> dict[str, Any]:
         "resolved_stuck_behavior_counts": deterministic.get("resolved_stuck_behavior_counts", {}),
         "combat_diagnostics": deterministic.get("combat_diagnostics", []),
         "party_dps": metrics.get("party_dps"),
+        "elapsed_party_dps": metrics.get("elapsed_party_dps"),
         "combat_seconds": metrics.get("combat_seconds"),
+        "duration_sec": metrics.get("duration_sec"),
+        "boss_dps_review": report.get("jev_input", {}).get("state", {}).get(
+            "boss_dps_review", {}
+        ),
         "jev": report.get("jev", {}).get("answers", {}),
     }
 
@@ -1107,6 +1821,7 @@ def analyze(
     baseline_path: Path | None,
     combat_analysis_path: Path | None,
     scope_route_prefix: str = MAGMAW_ROUTE_PREFIX,
+    wcl_reference_path: Path | None = None,
 ) -> dict[str, Any]:
     raw_path, report_path, discovered_analysis = _input_files(input_path)
     live_report: dict[str, Any] | None = None
@@ -1124,22 +1839,54 @@ def analyze(
         missing_path = raw_path or report_path or input_path
         raise ValueError(f"trace input does not exist: {missing_path}")
     entries = _trace_rows(rows)
+    actor_identity = _actor_identity(live_report)
     deterministic = _progress_summary(
         entries,
         expected_route,
         rows,
         scope_route_prefix=scope_route_prefix,
+        actor_identity=actor_identity,
     )
     baseline = _compact_baseline(baseline_path)
+    wcl_reference: dict[str, Any] | None = None
+    if wcl_reference_path is not None and wcl_reference_path.exists():
+        wcl_reference = _compact_wcl_reference(_load_json(wcl_reference_path))
     analysis_path = combat_analysis_path or discovered_analysis
     if analysis_path and analysis_path.exists():
         analysis = _load_json(analysis_path)
-        extracted = _analysis_metrics(analysis, scope_route_prefix)
+        extracted = _analysis_metrics(analysis, scope_route_prefix, actor_identity)
         if extracted is not None:
             deterministic["latest_combat_metrics"] = extracted
         deterministic["combat_diagnostics"] = _analysis_diagnostics(
             analysis, scope_route_prefix
         )
+        boss_metrics = _analysis_metrics(
+            analysis,
+            DEFAULT_BOSS_ROUTE[0],
+            actor_identity,
+        )
+        if boss_metrics is not None:
+            deterministic["boss_combat_metrics"] = boss_metrics
+        deterministic["boss_combat_diagnostics"] = _analysis_diagnostics(
+            analysis,
+            DEFAULT_BOSS_ROUTE[0],
+        )
+    boss_trace_entries, boss_trace_capture = _boss_trace_window(
+        entries,
+        deterministic.get("boss_combat_metrics"),
+        DEFAULT_BOSS_ROUTE[0],
+    )
+    deterministic["boss_trace_capture"] = boss_trace_capture
+    deterministic["boss_action_outcomes"] = _compact_action_outcomes(
+        boss_trace_entries,
+        DEFAULT_BOSS_ROUTE[0],
+        actor_identity,
+        {"dps"},
+    )
+    deterministic["boss_combat_diagnostics"] = _dps_diagnostics(
+        deterministic.get("boss_combat_diagnostics", []),
+        actor_identity,
+    )
     if live_report is not None:
         deterministic["live_report"] = _compact_live_report(live_report)
         diagnosis = live_report.get("diagnosis")
@@ -1167,6 +1914,15 @@ def analyze(
     identity = _git_identity()
     run_id = run_id or f"magmaw-jev-{source_sha256[:12]}"
     change_id = change_id or identity["commit"]
+    route_review = _route_review(deterministic, expected_route, live_report)
+    boss_dps_review = _boss_dps_review(
+        deterministic,
+        entries,
+        live_report,
+        actor_identity,
+        wcl_reference,
+    )
+    boss_dps_review["actor_identity"] = _compact_actor_identity(actor_identity)
     state = {
         "task": "Magmaw 10N bot canary evidence review",
         "authority": "native TrinityCore bot runtime; Jev is shadow analysis only",
@@ -1175,23 +1931,56 @@ def analyze(
         "change": {"id": change_id, "note": change_note},
         "expected_route_nodes": list(expected_route),
         "scope_route_prefix": scope_route_prefix,
-        "deterministic": deterministic,
+        "route_review": route_review,
+        "boss_dps_review": boss_dps_review,
+        "reference_context": wcl_reference,
         "baseline": baseline,
     }
-    questions = _jev_questions(baseline is not None)
-    response = _call_jev(state, _jev_key(env_file), questions)
-    answers = _answer_summary(response)
+    review_questions = _jev_questions(
+        baseline is not None,
+        include_next_fix=False,
+    )
+    api_key = _jev_key(env_file)
+    review_response = _call_jev(state, api_key, review_questions)
+    review_answers = _answer_summary(review_response)
+    fix_state = dict(state)
+    fix_state["prior_judgments"] = review_answers
+    fix_questions = {"next_fix": _next_fix_question()}
+    fix_response = _call_jev(fix_state, api_key, fix_questions)
+    answers = {**review_answers, **_answer_summary(fix_response)}
+    questions = {**review_questions, **fix_questions}
     confidences = [
         _as_float(answer.get("confidence"))
         for answer in answers.values()
         if isinstance(answer, dict) and "confidence" in answer
     ]
+    confidences.extend(
+        max(_as_float(answer.get("noul")), 1.0 - _as_float(answer.get("noul")))
+        for answer in answers.values()
+        if isinstance(answer, dict) and "noul" in answer
+    )
     low_confidence = sorted(
         key for key, answer in answers.items()
         if isinstance(answer, dict)
-        and "confidence" in answer
-        and _as_float(answer.get("confidence")) < JEV_CONFIDENCE_FLOOR
+        and (
+            ("confidence" in answer and _as_float(answer.get("confidence")) < JEV_CONFIDENCE_FLOOR)
+            or (
+                "noul" in answer
+                and max(_as_float(answer.get("noul")), 1.0 - _as_float(answer.get("noul")))
+                < JEV_CONFIDENCE_FLOOR
+            )
+        )
     )
+    usage: dict[str, Any] = {}
+    for response in (review_response, fix_response):
+        response_usage = response.get("usage")
+        if not isinstance(response_usage, dict):
+            continue
+        for key, value in response_usage.items():
+            if isinstance(value, (int, float)):
+                usage[key] = usage.get(key, 0) + value
+            elif key not in usage:
+                usage[key] = value
     report = {
         "schema_version": 1,
         "tool": "magmaw_jev_trace_analyzer",
@@ -1203,13 +1992,45 @@ def analyze(
         "change": {"id": change_id, "note": change_note, "git": identity},
         "native_authority": "native_runtime_only",
         "jev": {
-            "model": response.get("model", JEV_MODEL),
+            "model": review_response.get("model", JEV_MODEL),
             "answers": answers,
-            "usage": response.get("usage", {}),
+            "usage": usage,
             "question_ids": sorted(questions),
+            "request_stages": [
+                {
+                    "stage": "evidence_review",
+                    "question_ids": sorted(review_questions),
+                    "state_sections": sorted(state),
+                },
+                {
+                    "stage": "next_fix",
+                    "question_ids": sorted(fix_questions),
+                    "state_sections": sorted(fix_state),
+                },
+            ],
             "confidence_floor": JEV_CONFIDENCE_FLOOR,
             "low_confidence_questions": low_confidence,
             "minimum_confidence": min(confidences) if confidences else None,
+        },
+        "jev_input": {
+            "state": state,
+            "question_contract": {
+                stage: {
+                    question_id: {
+                        "type": question.get("type"),
+                        "criteria": sorted(question.get("criteria", {})),
+                    }
+                    for question_id, question in question_set.items()
+                }
+                for stage, question_set in (
+                    ("evidence_review", review_questions),
+                    ("next_fix", fix_questions),
+                )
+            },
+            "typed_answer_fields": {
+                "choice": ["type", "choice", "confidence", "probabilities"],
+                "noul": ["type", "noul"],
+            },
         },
         "deterministic": deterministic,
         "baseline": baseline,
@@ -1235,6 +2056,12 @@ def main() -> int:
     parser.add_argument("--ledger", type=Path, help="optional append-only compact progress ledger")
     parser.add_argument("--baseline-report", type=Path, help="previous analyzer report for change-effect comparison")
     parser.add_argument("--combat-analysis", type=Path, help="optional combat_analysis.json")
+    parser.add_argument(
+        "--wcl-reference",
+        type=Path,
+        default=DEFAULT_WCL_REFERENCE,
+        help="compact, repository-tracked WCL comparison context",
+    )
     parser.add_argument("--env-file", type=Path, default=Path(".env"), help="file containing the mandatory JEV key")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--segment-id", default="04_magmaw")
@@ -1265,6 +2092,7 @@ def main() -> int:
             baseline_path=args.baseline_report,
             combat_analysis_path=args.combat_analysis,
             scope_route_prefix=args.scope_route_prefix,
+            wcl_reference_path=args.wcl_reference,
         )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

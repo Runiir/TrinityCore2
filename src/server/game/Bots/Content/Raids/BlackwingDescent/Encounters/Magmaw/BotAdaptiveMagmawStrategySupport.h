@@ -361,9 +361,9 @@
             return std::sqrt(dx * dx + dy * dy + dz * dz);
         };
         float const nominalRange = distance(anchors.Support);
-        if (range.MinRange == 0.0f)
-            return anchors.Support;
         if (nominalRange >= range.MinRange && nominalRange <= range.MaxRange
+            && std::fabs(nominalRange - range.PreferredRange)
+                <= RangedStackTolerance
             && MagmawParasitePolicy::FullLaneCorridorSafe(anchors))
             return anchors.Support;
 

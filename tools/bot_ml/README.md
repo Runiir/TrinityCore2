@@ -55,14 +55,18 @@ pixi run python tools/bot_ml/analyze_combat_log.py \
 
 Every Magmaw canary must pass its compact native trace through Jev. The
 analyzer records ordered route/path observations, repeated-decision and recovery
-signals, combat-metric DPS, combat warnings, and a typed judgment for path
+signals, combat-metric DPS, combat warnings, and typed judgments for path
 consistency, stuck cause, DPS-loss area, and the next bounded fix. Raw stuck
 history is retained for progress tracking, while `active_stuck_*` is restricted
 to the latest non-terminal route generation so completed-node backoff history is
-not misreported as a current loop. Jev is shadow-only: it cannot submit an
-in-game action. The `JEV` key is loaded from the process environment or the
-repository `.env`; the command fails closed if the key or typed answers are
-unavailable.
+not misreported as a current loop. JEV receives two named evidence views: a
+`route_review` and a boss-only `boss_dps_review`. The latter includes spec
+identity, wall-clock versus active DPS, top ability aggregates, action outcomes
+when present, and the repository-tracked WCL comparison context. The next-fix
+question is sent only after the evidence judgments, with those typed judgments
+included as context. Jev is shadow-only: it cannot submit an in-game action. The
+`JEV` key is loaded from the process environment or the repository `.env`; the
+command fails closed if the key or typed answers are unavailable.
 
 For the normal Magmaw 10N canary, use the isolated single-boss route manifest
 (entrance regroup, Chainwielder trash, Drudge pair, then Magmaw), then analyze
@@ -78,7 +82,8 @@ pixi run magmaw-jev-analyze \
   --scope-route-prefix bwd.magmaw. \
   --change-id codex/magmaw-jev-canary \
   --change-note "added native encounter_path telemetry" \
-  --combat-analysis /tmp/magmaw-normal-shard/combat_analysis.json
+  --combat-analysis /tmp/magmaw-normal-shard/combat_analysis.json \
+  --wcl-reference experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json
 ```
 
 Do not use a full-instance report for this boss judgment; it mixes later

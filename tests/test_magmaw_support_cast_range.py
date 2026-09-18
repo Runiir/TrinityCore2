@@ -170,6 +170,17 @@ int main(){
  assert(move); bot.Position=move->Destination;
  assert(std::hypot(bot.Position.X,bot.Position.Y)>=15);
  assert(!Policy::ProposeRangedFormationRestore(board,bot,boss,"dps"));
+ // A zero-minimum native filler still carries a 25-yard preferred range.
+ // The fixed 8-yard support anchor must not override that preference.
+ bot.PreferredCombatRange=fact;
+ bot.PreferredCombatRange->MinRange=0;
+ bot.PreferredCombatRange->PreferredRange=25;
+ Policy::Anchors.Left={50,24,0}; Policy::Anchors.Right={50,-24,0};
+ bot.Position={8,0,0}; move=Policy::ProposeRangedFormationRestore(board,bot,boss,"dps");
+ assert(move); assert(std::hypot(move->Destination.X,move->Destination.Y)>=24);
+ bot.Position=move->Destination;
+ assert(!Policy::ProposeRangedFormationRestore(board,bot,boss,"dps"));
+ bot.PreferredCombatRange=fact;
  // Formation tolerance cannot declare a below-preference position settled.
  bot.PreferredCombatRange->MinRange=14;
  bot.Position.X*=0.8f; bot.Position.Y*=0.8f;
