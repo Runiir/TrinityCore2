@@ -890,6 +890,233 @@ def test_target_duty_context_keeps_incidental_add_damage_counterfactual_clean() 
     assert actor["counterfactual_eligible"] is True
 
 
+def test_target_duty_context_records_balance_mushroom_assignment_execution() -> None:
+    context = analyzer._target_duty_context(
+        {
+            "abilities": [
+                {
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "perspective": "damage_done",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41570,
+                    "target_name": "Magmaw",
+                    "event_count": 20,
+                    "originated_amount": 1000000,
+                    "first_at_ms": 1000,
+                    "last_at_ms": 11000,
+                },
+                {
+                    "actor_guid": 10,
+                    "actor_role": "dps",
+                    "perspective": "damage_done",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41806,
+                    "target_name": "Lava Parasite",
+                    "spell_id": 78777,
+                    "event_count": 3,
+                    "originated_damage": 60000,
+                    "first_at_ms": 4000,
+                    "last_at_ms": 5000,
+                },
+            ],
+            "recent_events": [],
+            "recent_event_capacity": 16384,
+            "recent_events_dropped": 0,
+        },
+        {
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "role": "dps",
+                    "class_spec": "balance_druid",
+                }
+            ]
+        },
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "balance_druid",
+                "spell_id": 88747,
+                "outcome": "ok",
+                "reason_code": "global_cooldown",
+                "count": 3,
+            },
+            {
+                "bot_guid": 10,
+                "class_spec": "balance_druid",
+                "spell_id": 88751,
+                "outcome": "ok",
+                "reason_code": "cooldown",
+                "count": 1,
+            },
+        ],
+    )
+
+    actor = context["actors"][0]
+    assert actor["assignment_id"] == "magmaw_balance_mushroom_add_control"
+    assert actor["assignment_status"] == "executed"
+    assert actor["assignment_detonation_count"] == 1
+    assert actor["assignment_placement_decision_count"] == 3
+    assert actor["assignment_damage_event_count"] == 3
+    assert actor["assignment_landed_damage"] == 60000
+    assert actor["mechanic_duty_scope"] == "required_assignment"
+    assert actor["duty_explains_idle"] is True
+    assert actor["counterfactual_status"] == "required_assignment_observed"
+    assert actor["counterfactual_eligible"] is False
+
+
+def test_actor_loss_signal_routes_incomplete_balance_assignment_to_encounter_work() -> None:
+    signals = analyzer._actor_loss_signals(
+        {
+            "combat_duration_sec": 100,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "role": "dps",
+                    "class_spec": "balance_druid",
+                    "dps": 25000,
+                    "active_dps": 35000,
+                    "elapsed_dps": 22000,
+                    "wcl_observed_dps": 41000,
+                    "active_seconds": 65,
+                    "damage_uptime": 0.65,
+                    "moving_fraction": 0.01,
+                    "abilities": [],
+                }
+            ],
+        },
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "balance_druid",
+                "outcome_count": 80,
+                "actionable_failure_count": 1,
+                "outcome_counts": {"casting": 79, "cast_failed": 1},
+            }
+        ],
+        [],
+        {
+            "available": True,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "required_assignment_active": True,
+                    "assignment_id": "magmaw_balance_mushroom_add_control",
+                    "assignment_status": "incomplete",
+                    "assignment_counterfactual_status": "required_assignment_incomplete",
+                    "duty_explains_idle": False,
+                    "counterfactual_status": "required_assignment_incomplete",
+                }
+            ],
+        },
+    )
+
+    signal = signals[0]
+    assert signal["required_assignment_active"] is True
+    assert signal["assignment_status"] == "incomplete"
+    assert signal["candidate_actions"] == [
+        {
+            "action": "encounter_assignment",
+            "evidence": [
+                "required_assignment_observed",
+                "required_assignment_landed_cycle_incomplete",
+            ],
+            "contradictions": ["rotation_and_movement_are_not_counterfactual_clean"],
+            "evidence_strength": "direct_assignment",
+        }
+    ]
+
+
+def test_jev_questions_add_assignment_judgment_for_required_duty() -> None:
+    questions = analyzer._jev_questions(
+        False,
+        actor_specs=[
+            {
+                "bot_guid": 10,
+                "class_spec": "balance_druid",
+                "required_assignment_active": True,
+                "assignment_id": "magmaw_balance_mushroom_add_control",
+            }
+        ],
+    )
+
+    assert questions["actor_assignment_10"]["type"] == "choice"
+    assert set(questions["actor_assignment_10"]["criteria"]) == {
+        "assignment_executed",
+        "assignment_incomplete",
+        "assignment_unobserved",
+    }
+
+
+def test_target_duty_context_marks_only_lowest_guid_fire_mage_as_baiter() -> None:
+    context = analyzer._target_duty_context(
+        {
+            "abilities": [],
+            "recent_events": [],
+            "recent_event_capacity": 16384,
+            "recent_events_dropped": 0,
+        },
+        {
+            "actors": [
+                {"bot_guid": 10, "role": "dps", "class_spec": "fire_mage"},
+                {"bot_guid": 11, "role": "dps", "class_spec": "fire_mage"},
+            ]
+        },
+        [],
+    )
+
+    assignments = {
+        actor["bot_guid"]: actor
+        for actor in context["actors"]
+    }
+    assert assignments[10]["assignment_id"] == "magmaw_fixed_pillar_baiter"
+    assert assignments[10]["assignment_role"] == "fire_mage_pillar_baiter"
+    assert assignments[10]["assignment_status"] == "identity_assigned"
+    assert assignments[11]["assignment_status"] == "not_required"
+    assert assignments[11]["assignment_counterfactual_status"] == "eligible"
+
+
+def test_normal_target_eligibility_gates_do_not_create_target_lease_candidate() -> None:
+    signals = analyzer._actor_loss_signals(
+        {
+            "combat_duration_sec": 100,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "role": "dps",
+                    "class_spec": "elemental_shaman",
+                    "dps": 25000,
+                    "active_dps": 35000,
+                    "elapsed_dps": 22000,
+                    "wcl_observed_dps": 41000,
+                    "active_seconds": 65,
+                    "damage_uptime": 0.65,
+                    "moving_fraction": 0.01,
+                    "abilities": [],
+                }
+            ],
+        },
+        [
+            {
+                "bot_guid": 10,
+                "outcome_count": 80,
+                "actionable_failure_count": 1,
+                "outcome_counts": {"casting": 79, "cast_failed": 1},
+            }
+        ],
+        [
+            {"bot_guid": 10, "reason": "forbidden_target_aura_active", "count": 1423},
+            {"bot_guid": 10, "reason": "missing_required_target_aura", "count": 679},
+            {"bot_guid": 10, "reason": "target_not_interruptible", "count": 240},
+        ],
+    )
+
+    actions = {candidate["action"] for candidate in signals[0]["candidate_actions"]}
+    assert "target_lease" not in actions
+    assert "uptime_cadence" in actions
+
+
 def test_actor_loss_signal_blocks_cadence_fix_when_duty_explains_idle() -> None:
     signals = analyzer._actor_loss_signals(
         {

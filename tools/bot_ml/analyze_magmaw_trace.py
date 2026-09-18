@@ -153,6 +153,15 @@ RESOURCE_SIGNAL_REASONS = frozenset({
 
 MAGMAW_BOSS_TARGET_ENTRIES = frozenset({41570, 42347, 48270})
 MAGMAW_MECHANIC_TARGET_ENTRIES = frozenset({41806, 42321})
+MAGMAW_BALANCE_MUSHROOM_SPEC = "balance_druid"
+MAGMAW_BALANCE_MUSHROOM_PLACEMENT_SPELL = 88747
+MAGMAW_BALANCE_MUSHROOM_DETONATE_SPELL = 88751
+MAGMAW_BALANCE_MUSHROOM_DAMAGE_SPELL = 78777
+MAGMAW_FIXED_BAITER_SPECS = frozenset({
+    "fire_mage",
+    "marksmanship_hunter",
+    "survival_hunter",
+})
 # A small amount of parasite damage is expected from incidental target
 # selection and native splash.  Only treat the target work as a required duty
 # when it is material for the actor, otherwise it hides an independently
@@ -928,6 +937,191 @@ def _magmaw_target_class(row: Mapping[str, Any]) -> str:
     return "other"
 
 
+def _balance_mushroom_assignment(
+    class_spec: str,
+    actor_abilities: list[dict[str, Any]],
+    native_action_outcomes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Describe the native Balance add-duty contract without inferring casts.
+
+    The action ledger records decision outcomes, not guaranteed landed casts.
+    A successful detonation plus landed Wild Mushroom damage is therefore the
+    strongest compact evidence that a duty cycle produced an effect. Placement
+    rows remain attempts and are reported separately.
+    """
+    if class_spec != MAGMAW_BALANCE_MUSHROOM_SPEC:
+        return {
+            "required_assignment_active": False,
+            "assignment_id": None,
+            "assignment_status": "not_required",
+            "assignment_counterfactual_status": "eligible",
+        }
+
+    placement_rows = [
+        row
+        for row in native_action_outcomes
+        if _as_int(row.get("spell_id")) == MAGMAW_BALANCE_MUSHROOM_PLACEMENT_SPELL
+    ]
+    detonation_rows = [
+        row
+        for row in native_action_outcomes
+        if _as_int(row.get("spell_id")) == MAGMAW_BALANCE_MUSHROOM_DETONATE_SPELL
+    ]
+
+    def row_count(rows: list[dict[str, Any]]) -> int:
+        return sum(max(1, _as_int(row.get("count"))) for row in rows)
+
+    def failure_count(rows: list[dict[str, Any]]) -> int:
+        return sum(
+            max(1, _as_int(row.get("count")))
+            for row in rows
+            if str(row.get("outcome") or row.get("result") or "")
+            in NATIVE_ACTIONABLE_FAILURE_OUTCOMES
+            or str(row.get("reason_code") or row.get("reason") or "")
+            in {"no_line_of_sight", "out_of_range"}
+        )
+
+    mushroom_damage_rows = [
+        row
+        for row in actor_abilities
+        if _as_int(row.get("spell_id")) == MAGMAW_BALANCE_MUSHROOM_DAMAGE_SPELL
+        and _magmaw_target_class(row) == "mechanic_target"
+    ]
+    mushroom_damage_events = sum(
+        max(0, _as_int(row.get("event_count"))) for row in mushroom_damage_rows
+    )
+    mushroom_damage = sum(
+        max(
+            0.0,
+            _as_float(
+                row.get("originated_damage")
+                or row.get("damage")
+                or row.get("raw_amount")
+            ),
+        )
+        for row in mushroom_damage_rows
+    )
+    detonation_count = sum(
+        max(1, _as_int(row.get("count")))
+        for row in detonation_rows
+        if str(row.get("outcome") or row.get("result") or "")
+        not in NATIVE_ACTIONABLE_FAILURE_OUTCOMES
+    )
+    placement_decision_count = row_count(placement_rows)
+    placement_failure_count = failure_count(placement_rows)
+    placement_wait_count = sum(
+        max(1, _as_int(row.get("count")))
+        for row in placement_rows
+        if str(row.get("outcome") or row.get("result") or "")
+        in {"casting", "global_cooldown"}
+        or str(row.get("reason_code") or row.get("reason") or "")
+        in EXPECTED_PROFILE_WAIT_REASONS
+    )
+
+    if detonation_count and mushroom_damage_events:
+        status = "executed"
+        status_reason = "native_detonation_and_landed_mushroom_damage"
+        counterfactual_status = "required_assignment_observed"
+    elif placement_decision_count or detonation_count or mushroom_damage_events:
+        status = "incomplete"
+        status_reason = "assignment_evidence_without_complete_landed_cycle"
+        counterfactual_status = "required_assignment_incomplete"
+    else:
+        status = "unobserved"
+        status_reason = "no_assignment_action_or_landed_effect_observed"
+        counterfactual_status = "required_assignment_unobserved"
+
+    return {
+        "required_assignment_active": True,
+        "assignment_id": "magmaw_balance_mushroom_add_control",
+        "assignment_contract_source": "native_balance_mushroom_duty",
+        "assignment_contract": {
+            "placement_spell_id": MAGMAW_BALANCE_MUSHROOM_PLACEMENT_SPELL,
+            "detonate_spell_id": MAGMAW_BALANCE_MUSHROOM_DETONATE_SPELL,
+            "landed_damage_spell_id": MAGMAW_BALANCE_MUSHROOM_DAMAGE_SPELL,
+            "placements_per_cycle": 3,
+            "detonate_after_third": True,
+            "target": "lava_parasite",
+        },
+        "assignment_status": status,
+        "assignment_status_reason": status_reason,
+        "assignment_counterfactual_status": counterfactual_status,
+        "assignment_detonation_count": detonation_count,
+        "assignment_placement_decision_count": placement_decision_count,
+        "assignment_placement_failure_count": placement_failure_count,
+        "assignment_placement_wait_count": placement_wait_count,
+        "assignment_damage_event_count": mushroom_damage_events,
+        "assignment_landed_damage": round(mushroom_damage),
+        "assignment_observation": (
+            "landed_effect_and_native_detonation_are observed; placement rows "
+            "are decision attempts, not proof of three legal placements"
+        ),
+        "assignment_failure_reasons": sorted({
+            str(row.get("reason_code") or row.get("reason") or "unknown")
+            for row in placement_rows
+            if str(row.get("outcome") or row.get("result") or "")
+            in NATIVE_ACTIONABLE_FAILURE_OUTCOMES
+            or str(row.get("reason_code") or row.get("reason") or "")
+            in {"no_line_of_sight", "out_of_range"}
+        }),
+    }
+
+
+def _fixed_baiter_assignment(
+    class_spec: str,
+    bot_guid: int,
+    actors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Expose the native fixed-bait identity used by Magmaw's lane policy."""
+    if class_spec not in MAGMAW_FIXED_BAITER_SPECS:
+        return {
+            "required_assignment_active": False,
+            "assignment_id": None,
+            "assignment_status": "not_required",
+            "assignment_counterfactual_status": "eligible",
+        }
+    if class_spec == "fire_mage":
+        pool_specs = {"fire_mage"}
+        assignment_role = "fire_mage_pillar_baiter"
+    else:
+        pool_specs = {"marksmanship_hunter", "survival_hunter"}
+        assignment_role = "hunter_pillar_baiter"
+    pool = sorted(
+        _as_int(actor.get("bot_guid") or actor.get("actor_guid"))
+        for actor in actors
+        if isinstance(actor, dict)
+        and str(actor.get("role") or "") == "dps"
+        and str(actor.get("class_spec") or actor.get("spec") or "") in pool_specs
+        and _as_int(actor.get("bot_guid") or actor.get("actor_guid"))
+    )
+    if not pool or bot_guid != pool[0]:
+        return {
+            "required_assignment_active": False,
+            "assignment_id": None,
+            "assignment_status": "not_required",
+            "assignment_counterfactual_status": "eligible",
+        }
+    return {
+        "required_assignment_active": True,
+        "assignment_id": "magmaw_fixed_pillar_baiter",
+        "assignment_role": assignment_role,
+        "assignment_contract_source": "BotAdaptiveMagmawParasitePolicy::ResolveFixedBaiters",
+        "assignment_contract": {
+            "selection": "lowest_guid_per_class_family_from_frozen_roster",
+            "fire_mage_guid": pool[0] if class_spec == "fire_mage" else None,
+            "hunter_guid": pool[0] if class_spec != "fire_mage" else None,
+            "duty": "retain_fixed_pillar_lane_and_bait_pillar_of_flame",
+        },
+        "assignment_status": "identity_assigned",
+        "assignment_status_reason": "native_fixed_bait_identity_matches_frozen_roster",
+        "assignment_counterfactual_status": "required_assignment_unobserved",
+        "assignment_observation": (
+            "native roster identity is known; retained trace does not prove the "
+            "full bait movement episode"
+        ),
+    }
+
+
 def _target_duty_context(
     combat_log: dict[str, Any] | None,
     metrics: dict[str, Any] | None,
@@ -985,10 +1179,13 @@ def _target_duty_context(
             recent_events_by_guid[guid].append(row)
 
     failure_rows_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    native_rows_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in native_action_outcomes if isinstance(native_action_outcomes, list) else []:
         if not isinstance(row, dict):
             continue
         guid = _as_int(row.get("bot_guid") or row.get("actor_guid"))
+        if guid in dps_guids:
+            native_rows_by_guid[guid].append(row)
         outcome = str(row.get("outcome") or row.get("result") or "")
         reason = str(row.get("reason_code") or row.get("reason") or "")
         if (
@@ -1023,7 +1220,24 @@ def _target_duty_context(
         return max(first_at_ms, other_first_at_ms) <= min(last_at_ms, other_last_at_ms)
 
     for guid in sorted(dps_guids):
+        actor = next(
+            (
+                value
+                for value in actors
+                if isinstance(value, dict)
+                and _as_int(value.get("bot_guid") or value.get("actor_guid")) == guid
+            ),
+            {},
+        )
+        class_spec = str(actor.get("class_spec") or actor.get("spec") or "")
         actor_abilities = abilities_by_guid.get(guid, [])
+        assignment = _balance_mushroom_assignment(
+            class_spec,
+            actor_abilities,
+            native_rows_by_guid.get(guid, []),
+        )
+        if not assignment.get("required_assignment_active"):
+            assignment = _fixed_baiter_assignment(class_spec, guid, actors)
         category_totals: defaultdict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "event_count": 0,
@@ -1065,6 +1279,18 @@ def _target_duty_context(
         mechanic_share = round(mechanic_damage / max(1.0, total_originated), 6)
 
         recent_events = recent_events_by_guid.get(guid, [])
+        damage_timestamps = sorted({
+            _as_int(row.get("timestamp_ms"))
+            for row in recent_events
+            if _as_int(row.get("timestamp_ms"))
+        })
+        damage_gaps = [
+            (later - earlier) / 1000.0
+            for earlier, later in zip(damage_timestamps, damage_timestamps[1:])
+            if later > earlier
+        ]
+        damage_gaps_ge_3 = [gap for gap in damage_gaps if gap >= 3.0]
+        damage_gaps_ge_5 = [gap for gap in damage_gaps if gap >= 5.0]
         moving_timestamps = [
             _as_int(row.get("timestamp_ms"))
             for row in recent_events
@@ -1133,18 +1359,36 @@ def _target_duty_context(
             mechanic_damage >= MAGMAW_MATERIAL_DUTY_DAMAGE
             or mechanic_share >= MAGMAW_MATERIAL_DUTY_SHARE
         )
+        required_assignment_active = bool(
+            assignment.get("required_assignment_active")
+        )
+        assignment_explains_idle = bool(
+            required_assignment_active
+            and assignment.get("assignment_status") == "executed"
+        )
         duty_explains_idle = bool(
-            meaningful_mechanic_duty
-            and (correlated_failures > 0 or bool(duty_moving_timestamps))
+            assignment_explains_idle
+            or (
+                meaningful_mechanic_duty
+                and (correlated_failures > 0 or bool(duty_moving_timestamps))
+            )
         )
         if actor_abilities:
-            counterfactual_status = (
-                "partial_recent_capture"
-                if recent_events_dropped > 0
-                else "eligible"
+            counterfactual_status = str(
+                assignment.get("assignment_counterfactual_status")
+                if required_assignment_active
+                else (
+                    "partial_recent_capture"
+                    if recent_events_dropped > 0
+                    else "eligible"
+                )
             )
         else:
-            counterfactual_status = "unavailable"
+            counterfactual_status = (
+                str(assignment.get("assignment_counterfactual_status"))
+                if required_assignment_active
+                else "unavailable"
+            )
         target_categories = []
         for category in ("boss_or_head", "mechanic_target", "other"):
             summary = category_totals.get(category)
@@ -1167,9 +1411,22 @@ def _target_duty_context(
             "mechanic_target_originated_damage_share": mechanic_share,
             "mechanic_target_window_count": len(mechanic_intervals),
             "mechanic_duty_scope": (
-                "material" if meaningful_mechanic_duty else "incidental"
+                "required_assignment"
+                if required_assignment_active
+                else ("material" if meaningful_mechanic_duty else "incidental")
             ),
+            **assignment,
             "recent_damage_event_count": len(recent_events),
+            "damage_cadence_capture": (
+                "full_window_no_drops" if recent_events_dropped == 0
+                else "partial_recent_capture"
+            ),
+            "damage_event_first_at_ms": min(damage_timestamps, default=0),
+            "damage_event_last_at_ms": max(damage_timestamps, default=0),
+            "damage_gap_max_seconds": round(max(damage_gaps, default=0.0), 3),
+            "damage_gap_count_ge_3_seconds": len(damage_gaps_ge_3),
+            "damage_gap_count_ge_5_seconds": len(damage_gaps_ge_5),
+            "damage_gap_seconds_ge_3_total": round(sum(damage_gaps_ge_3), 3),
             "recent_mechanic_damage_event_count": recent_mechanic_event_count,
             "recent_moving_damage_event_count": len(moving_timestamps),
             "recent_moving_damage_event_fraction": round(
@@ -1186,7 +1443,10 @@ def _target_duty_context(
             "duty_correlated_native_failures": failure_windows[:8],
             "duty_explains_idle": duty_explains_idle,
             "counterfactual_status": counterfactual_status,
-            "counterfactual_eligible": counterfactual_status == "eligible",
+            "counterfactual_eligible": (
+                counterfactual_status == "eligible"
+                and not required_assignment_active
+            ),
         })
 
     return {
@@ -1463,7 +1723,14 @@ def _actor_loss_signals(
     def bucket_for(reason: str) -> str:
         if reason in MOVEMENT_SIGNAL_REASONS:
             return "movement_or_range"
-        if reason in TARGET_SIGNAL_REASONS:
+        # Target-aura, target-health, interruptibility, and purpose gates are
+        # normal profile eligibility checks. They are not target-lease loss
+        # unless a future native row emits an explicit churn/lease failure.
+        if (
+            reason in TARGET_SIGNAL_REASONS
+            and reason not in EXPECTED_PROFILE_WAIT_REASONS
+            and reason not in NON_FAILURE_PROFILE_GATE_REASONS
+        ):
             return "targeting"
         if reason in PROFILE_POLICY_SIGNAL_REASONS:
             return "profile_policy"
@@ -1541,6 +1808,13 @@ def _actor_loss_signals(
         movement_count = bucket_counts["movement_or_range"]
         target_count = bucket_counts["targeting"]
         target_context = target_context_by_guid.get(guid, {})
+        required_assignment_active = bool(
+            target_context.get("required_assignment_active")
+        )
+        assignment_id = target_context.get("assignment_id")
+        assignment_status = str(
+            target_context.get("assignment_status") or "not_required"
+        )
         duty_explains_idle = bool(target_context.get("duty_explains_idle"))
         counterfactual_status = str(
             target_context.get("counterfactual_status") or "unavailable"
@@ -1564,6 +1838,16 @@ def _actor_loss_signals(
                 "evidence_strength": strength,
             })
 
+        if required_assignment_active and assignment_status == "incomplete":
+            add_candidate(
+                "encounter_assignment",
+                [
+                    "required_assignment_observed",
+                    "required_assignment_landed_cycle_incomplete",
+                ],
+                ["rotation_and_movement_are_not_counterfactual_clean"],
+                "direct_assignment",
+            )
         if failure_ratio >= 0.10:
             add_candidate(
                 "shared_arbitration",
@@ -1578,7 +1862,7 @@ def _actor_loss_signals(
         if (
             (material_gap and movement_direct)
             or (not isinstance(wcl_observed, (int, float)) and moving_fraction >= 0.15 and damage_uptime < 0.80)
-        ) and not duty_explains_idle:
+        ) and not duty_explains_idle and not required_assignment_active:
             add_candidate(
                 "movement_recovery",
                 [
@@ -1599,6 +1883,7 @@ def _actor_loss_signals(
             and failure_ratio < 0.05
             and (material_gap or not isinstance(wcl_observed, (int, float)))
             and not duty_explains_idle
+            and not required_assignment_active
             and (
                 not causal_context_available
                 or counterfactual_status == "eligible"
@@ -1617,6 +1902,7 @@ def _actor_loss_signals(
         if (
             active_dps_gap
             and encounter_dps_gap
+            and not required_assignment_active
             and profile_policy_count >= max(100, int(candidate_scan_count * 0.03))
         ):
             policy_hypotheses.append({
@@ -1628,7 +1914,7 @@ def _actor_loss_signals(
                 "caveat": "policy gates are not native failures; require a targeted counterfactual canary",
                 "evidence_strength": "profile_hypothesis",
             })
-        if material_gap and target_count >= 20:
+        if material_gap and target_count >= 20 and not required_assignment_active:
             add_candidate(
                 "target_lease",
                 ["target_gate_volume_material"],
@@ -1641,6 +1927,15 @@ def _actor_loss_signals(
             if duty_explains_idle:
                 evidence.append("required_target_duty_overlaps_loss_window")
                 contradictions.append("idle_or_movement_is_not_counterfactual_clean")
+            if required_assignment_active:
+                evidence.append(
+                    f"required_assignment_active:{assignment_id or 'unknown'}"
+                )
+                if assignment_status == "unobserved":
+                    evidence.append("required_assignment_not_observed")
+                elif assignment_status == "identity_assigned":
+                    evidence.append("required_assignment_execution_unobserved")
+                contradictions.append("assignment_control_is_not_counterfactual_clean")
             if causal_context_available and counterfactual_status != "eligible":
                 evidence.append("counterfactual_context_is_partial_or_unavailable")
                 contradictions.append("target_or_movement_capture_is_incomplete")
@@ -1687,6 +1982,27 @@ def _actor_loss_signals(
             "native_actionable_failure_ratio": failure_ratio,
             "native_outcome_counts": dict(sorted(outcome_counts.items())),
             "duty_explains_idle": duty_explains_idle,
+            "required_assignment_active": required_assignment_active,
+            "assignment_id": assignment_id,
+            "assignment_status": assignment_status,
+            "assignment_counterfactual_status": str(
+                target_context.get("assignment_counterfactual_status") or "eligible"
+            ),
+            "assignment_detonation_count": _as_int(
+                target_context.get("assignment_detonation_count")
+            ),
+            "assignment_placement_decision_count": _as_int(
+                target_context.get("assignment_placement_decision_count")
+            ),
+            "assignment_placement_failure_count": _as_int(
+                target_context.get("assignment_placement_failure_count")
+            ),
+            "assignment_damage_event_count": _as_int(
+                target_context.get("assignment_damage_event_count")
+            ),
+            "assignment_landed_damage": _as_float(
+                target_context.get("assignment_landed_damage")
+            ),
             "mechanic_duty_scope": str(
                 target_context.get("mechanic_duty_scope") or "unknown"
             ),
@@ -1695,6 +2011,21 @@ def _actor_loss_signals(
             ),
             "duty_moving_damage_event_fraction": _as_float(
                 target_context.get("duty_moving_damage_event_fraction")
+            ),
+            "damage_cadence_capture": str(
+                target_context.get("damage_cadence_capture") or "unavailable"
+            ),
+            "damage_gap_max_seconds": _as_float(
+                target_context.get("damage_gap_max_seconds")
+            ),
+            "damage_gap_count_ge_3_seconds": _as_int(
+                target_context.get("damage_gap_count_ge_3_seconds")
+            ),
+            "damage_gap_count_ge_5_seconds": _as_int(
+                target_context.get("damage_gap_count_ge_5_seconds")
+            ),
+            "damage_gap_seconds_ge_3_total": _as_float(
+                target_context.get("damage_gap_seconds_ge_3_total")
             ),
             "counterfactual_status": counterfactual_status,
             "candidate_scan_count": candidate_scan_count,
@@ -2941,7 +3272,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use encounter dps (the active-combat `dps` field), active_dps as cadence context, elapsed_dps only as wall-clock context, actor_loss_signals, native_outcome_signal, direct action_outcomes, candidate_rejection_summary, and target_duty_context. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-DPS deficit with low movement and failure can be uptime; a wall-clock deficit alone is route/setup overhead and cannot authorize a fix. Do not call low uptime cadence loss when duty_explains_idle is true or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable means insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use encounter dps (the active-combat `dps` field), active_dps as cadence context, elapsed_dps only as wall-clock context, actor_loss_signals, native_outcome_signal, direct action_outcomes, candidate_rejection_summary, and target_duty_context. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A wall-clock deficit alone is route/setup overhead and cannot authorize a fix. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -2975,12 +3306,15 @@ def _jev_questions(
                 f"For {class_spec} bot_guid {guid}, choose the smallest bounded action from "
                 "actor_loss_signals and its matching target_duty_context. Use uptime, movement, "
                 "encounter versus active versus wall-clock DPS, native failure ratio, "
-                "candidate_actions, abilities, and sample quality. A wall-clock deficit "
+                "candidate_actions, required assignment status/evidence, full-window damage "
+                "gap cadence, abilities, and sample quality. A wall-clock deficit "
                 "alone is not a WCL performance gap; reserve rotation_profile for an active- "
                 "and encounter-DPS gap. "
                 "Policy gates are not native failures. duty_explains_idle=true or "
-                "counterfactual_status!=eligible blocks an actor repair; use collect_more_canaries "
-                "for mixed evidence. WCL is context only."
+                "required_assignment_active=true or counterfactual_status!=eligible blocks an "
+                "actor repair; use encounter_assignment only for incomplete required duty, and "
+                "collect_more_canaries for executed, identity-assigned, unobserved, mixed, or sparse evidence. "
+                "WCL is context only."
             ),
             "criteria": {
                 "no_material_action": "No attributable material loss or at/above comparison context.",
@@ -2992,6 +3326,21 @@ def _jev_questions(
                 "collect_more_canaries": "Evidence is mixed, sparse, partial, or not reproducible.",
             },
         }
+        if actor.get("assignment_id") == "magmaw_balance_mushroom_add_control":
+            questions[f"actor_assignment_{guid}"] = {
+                "type": "choice",
+                "instructions": (
+                    f"For the required Magmaw assignment {actor.get('assignment_id') or 'unknown'} "
+                    f"on {class_spec} bot_guid {guid}, classify execution from the deterministic "
+                    "assignment contract, native action outcomes, and landed effect evidence. "
+                    "Do not treat placement decision rows as landed casts."
+                ),
+                "criteria": {
+                    "assignment_executed": "A native detonation and the assignment's landed damage effect are both observed.",
+                    "assignment_incomplete": "Some assignment evidence is observed, but no complete landed cycle is proven.",
+                    "assignment_unobserved": "The required assignment is declared, but no attributable action or landed effect is observed.",
+                },
+            }
     if has_baseline:
         questions["change_effect"] = {
             "type": "choice",
@@ -3011,7 +3360,7 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If duty_explains_idle is true or counterfactual_status is partial/unavailable, do not choose uptime_cadence or movement_recovery; use collect_more_canaries or encounter_assignment. Use uptime_cadence only for a material encounter-DPS gap with low movement/native failure and eligible counterfactual evidence; elapsed_dps alone is wall-clock overhead. Prefer movement_recovery when movement/range facts align with the encounter-DPS loss. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
+        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If required_assignment_active is true, use encounter_assignment only when assignment_status is incomplete; use collect_more_canaries when it is executed, identity_assigned, or unobserved because the no-duty counterfactual is missing. If duty_explains_idle is true or counterfactual_status is partial/unavailable/required-assignment, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for a material encounter-DPS gap with low movement/native failure and eligible counterfactual evidence; elapsed_dps alone is wall-clock overhead. Prefer movement_recovery when movement/range facts align with the encounter-DPS loss. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
         "criteria": {
             "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
             "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
@@ -3497,6 +3846,11 @@ def analyze(
                 key: value
                 for key, value in answers.items()
                 if key.startswith("actor_action_")
+            },
+            "actor_assignment_judgments": {
+                key: value
+                for key, value in answers.items()
+                if key.startswith("actor_assignment_")
             },
             "actor_action_gate": _actor_action_gate(answers),
             "fix_tracking": {

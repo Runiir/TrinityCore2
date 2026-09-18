@@ -53,6 +53,19 @@ native LOS check and a bounded caster-facing fallback point; shard29 then
 produced a clear with zero LOS or cast-failed placement outcomes. This
 validates the placement path, but it does not yet establish WCL DPS parity.
 
+For this review, WCL summary DPS is the fight/encounter-window value: damage
+divided by the combat interval used by the parse. It is not the route's full
+wall-clock duration and it is not actor-only active-uptime DPS. The analyzer
+therefore compares WCL with native `dps`/`party_dps`, keeps `active_dps` as a
+cadence diagnostic, and keeps `elapsed_dps`/`elapsed_party_dps` as wall-clock
+context only.
+
+The latest full-window replay also makes the required signals explicit. JEV
+sees Balance's native mushroom assignment and landed effect, the fixed baiter
+identity selected by native roster rules, full-window damage gaps, and separate
+normal target-eligibility gates. This removes the previous false target-lease
+lead without allowing JEV to submit gameplay actions.
+
 ## Canary ledger
 
 All rows below are native Magmaw evidence. “Active DPS” uses originated damage
@@ -79,6 +92,9 @@ acceptance flag is intentionally shown separately from gameplay outcome.
 | shard27 | clear | 28.19M | 229.2k | 187.7k | 10 alive; no watchdog failure; zero `88747` LOS failures | aligned; stuck none; DPS `insufficient_data` (0.85); Balance `collect_more_canaries` (0.95) |
 | shard28 | clear | 28.19M | 234.9k | 218.3k | 10 alive; no watchdog failure; repeat exposed 12 destination-LOS failures | aligned; stuck none; DPS `insufficient_data` (0.84); next `collect_more_canaries` (0.74) |
 | shard29 | clear | 28.24M | 209.2k | 193.2k | 10 alive; no watchdog failure; 12 placements, 3 detonations, zero LOS/cast-failed placement outcomes | aligned; stuck none; DPS `insufficient_data` (0.85); next `collect_more_canaries` (0.68) |
+| shard30 | clear | 28.19M | 233.0k | 213.3k | 10 alive; no watchdog failure; 0 deaths; full-window action evidence retained | native clear; no loop/stall; identity-only certification rejection |
+| shard31 | clear | 28.23M | 233.3k | 211.4k | 10 alive; no watchdog failure; 0 deaths; full-window action evidence retained | native clear; no loop/stall; identity-only certification rejection |
+| shard32 | clear | 28.19M | 218.6k | 180.7k | native clear; one death; no watchdog loop/stall; event ring dropped 0; Balance 3 detonations and 73.0k landed mushroom damage | aligned (0.83); stuck none (0.49); DPS `uptime` (0.83); next `collect_more_canaries` (0.40) |
 
 The post-repair canaries therefore show no wipe regression. Active DPS is
 within normal run variance while elapsed DPS improves because the fights finish
@@ -166,6 +182,27 @@ Mages and Elemental are at or above their matched WCL context and Survival has
 no matched WCL actor. This branch fixes the Balance add mechanic without
 claiming that every DPS spec is already on the WCL reference.
 
+The newest shard32 encounter-window comparison is:
+
+| Bot spec | Encounter `dps` | Active `active_dps` | Wall-clock `elapsed_dps` | WCL summary context |
+| --- | ---: | ---: | ---: | ---: |
+| Balance | 25.1k | 34.3k | 20.8k | 41.0k |
+| Fire A | 21.3k | 42.0k | 17.6k | 40.2k |
+| Fire B | 38.5k | 58.4k | 31.9k | 40.2k |
+| Affliction | 39.2k | 44.3k | 32.4k | 40.3k |
+| Elemental | 33.1k | 44.1k | 27.3k | 41.9k |
+| Survival | 40.7k | 46.1k | 33.6k | no matched WCL actor |
+| Blood | 11.6k | 15.6k | 9.6k | 26.2k |
+
+This is why active DPS alone cannot answer the parity question: Elemental's
+active rate is above the WCL context, but its encounter rate is lower because
+its damage window is only 86 of 129 combat seconds. The full-window cadence
+overlay reports a 5.91-second maximum damage gap, five gaps of at least three
+seconds, and 23.0 seconds in those gaps. JEV selects `uptime_cadence` for
+Elemental at 0.97, but the global next fix remains low-confidence and selects
+`collect_more_canaries`; no Elemental gameplay patch is admitted from this
+single run.
+
 ## Balance mushroom duty evidence
 
 The native action ledger shows the intended sequence rather than a generic
@@ -222,6 +259,18 @@ movement, or rotation as an actionable actor repair. Partial or low-confidence
 answers remain in the report with their probability maps and are routed to
 review/collection rather than discarded.
 
+The v36 JEV input adds two further safeguards. Balance is classified through a
+typed `actor_assignment_30001` question and is marked `assignment_executed`
+only because both a native detonation and landed Wild Mushroom damage are
+present; placement decision rows are not treated as landed casts. The native
+fixed-bait rule marks only the lowest-GUID Fire Mage as the fixed pillar baiter,
+so Fire A's low encounter DPS is not mislabelled as a clean movement or
+rotation counterfactual. Normal target-aura, target-health, interruptibility,
+and purpose gates remain audit data but no longer create a `target_lease`
+candidate. In v36 JEV chose `uptime` for the party area (0.83),
+`uptime_cadence` for Elemental (0.97), and `collect_more_canaries` for Balance
+(0.91) and Fire A (0.93).
+
 Shard17 native outcomes contain 113 actionable failures out of 4,867 outcomes
 (2.32%); shard18 contains 87 out of 5,119 (1.70%). All six DPS actors stay below
 5% in both reports, and both JEV reviews now choose `movement`, never
@@ -266,20 +315,25 @@ combat-log capture.
 | Party-level JEV choice mixed Balance idle time with ranged movement | shard21 actor loss replay plus target/duty overlay | fixed in JEV evidence contract; duty-correlated losses now block premature cadence/movement patches and low-confidence answers remain review-only |
 | Balance mushrooms were projected to the elevated parasite home/spawn Z | shard25: 18 native LOS failures and airborne add coordinates; shard26: 6 LOS failures | fixed in `39b7c9eeff` with native platform-floor projection; shard27 confirmed one clean sample |
 | Exact platform points could still fail native destination LOS | shard28 repeat: 12 `88747` LOS failures and 8 position-reconcile failures | fixed in `b70eff769c` with a bounded caster-facing LOS fallback; shard29 has zero LOS/cast-failed placement outcomes |
+| Required Balance add duty and fixed pillar-bait identity were absent from the JEV causal packet | shard32 assignment/action evidence and native baiter resolver | fixed in analyzer evidence contract; Balance is assignment-aware and Fire A is not granted a clean movement counterfactual |
+| Normal target eligibility gates looked like target-lease loss | shard32 Elemental candidate counts | fixed in `target-signal-v1`; v36 retains the gates for audit but removes them from target-lease attribution |
 
 ## Next bounded action
 
 Do not revert the cast-state, bait-envelope, floor-projection, or LOS-fallback
-repairs. The post-floor validation is complete through shard29: the latest
-canary cleared natively with zero deaths, zero watchdog stalls, and zero
-`88747` LOS/cast-failed outcomes. Mandatory JEV review still returned
-`collect_more_canaries` for DPS sufficiency and change effect, so no additional
-Balance cadence, shared movement, target lease, or native-mechanics patch is
-authorized from this batch. Keep the Balance area-policy observation as a
-separate counterfactual hypothesis, because policy-gate counts are not native
-failures. Keep WCL as a normalized comparison reference, not an unconditional
-per-actor acceptance threshold; shard29 still has Balance, Affliction, and Blood
-below the matched WCL context.
+repairs. The post-floor validation remains a native-clear series through
+shard32: no watchdog reported a loop or stall, and shard32's one death did not
+prevent the boss clear. Mandatory JEV review still returns
+`collect_more_canaries` for the global next fix and change effect, so no
+additional Balance cadence, shared movement, target lease, or native-mechanics
+patch is authorized from this batch. Keep the Balance assignment evidence and
+Elemental cadence result as separate follow-up hypotheses. The next bounded
+canary should capture an attributable Elemental activity cause or a matched
+role counterfactual before changing its rotation. Keep WCL as a normalized
+encounter-window comparison reference, not an unconditional per-actor floor;
+the latest run still has Balance, Fire A, Elemental, and Blood below its
+matched WCL context, while Fire B, Affliction, and Survival need roster-aware
+interpretation.
 
 Compact JEV reports and native combat ledgers for shards16–29 are checkpointed
 through DVC in the companion artifact pointer for this branch. Raw live reports
