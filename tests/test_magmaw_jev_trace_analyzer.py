@@ -756,6 +756,7 @@ def test_actor_loss_signals_use_wall_clock_gap_when_active_dps_is_healthy() -> N
             "evidence_strength": "attributable_idle",
         }
     ]
+    assert signal["policy_hypotheses"] == []
 
 
 def test_target_duty_context_aligns_failure_windows_with_required_work() -> None:

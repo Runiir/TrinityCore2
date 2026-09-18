@@ -1596,7 +1596,7 @@ def _actor_loss_signals(
                 "attributable_idle",
             )
         if (
-            material_gap
+            active_dps_gap
             and profile_policy_count >= max(100, int(candidate_scan_count * 0.03))
         ):
             policy_hypotheses.append({
