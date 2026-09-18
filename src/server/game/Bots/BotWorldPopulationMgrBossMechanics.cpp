@@ -180,22 +180,23 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
-    auto closeRecallableAreaDamage = [this, bot](bool preserveScopedArea) -> bool
+    auto closeRecallableAreaDamage = [this, bot, &result](bool preserveScopedArea) -> bool
     {
         if (!bot)
             return false;
-        auto keepCurrent = [this, bot, preserveScopedArea](Spell const* current)
+        uint32 const scopedAreaSpellId = preserveScopedArea
+            ? ResolveScopedEncounterAreaSpellId(bot, result.Target) : 0;
+        auto keepCurrent = [preserveScopedArea, scopedAreaSpellId](Spell const* current)
         {
             return preserveScopedArea && current && current->GetSpellInfo()
-                && current->GetSpellInfo()->Id == ResolveScopedEncounterAreaSpellId(
-                    bot, current->m_targets.GetUnitTarget());
+                && current->GetSpellInfo()->Id == scopedAreaSpellId;
         };
         ReconcileRaidAreaAutocasts(bot, true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
             if (Spell* current = bot->GetCurrentSpell(spellType))
                 if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()) && !keepCurrent(current))
                     bot->InterruptSpell(spellType, false);
-        if (bot->HasAura(48505))
+        if (bot->HasAura(48505) && scopedAreaSpellId != 48505)
         {
             WorldPacket cancel(CMSG_CANCEL_AURA, sizeof(uint32));
             cancel << uint32(48505);
@@ -215,7 +216,7 @@ raid_cooldown_complete:
         BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
         for (BotActionProfileSpell const& action : profile.Spells)
             if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId))
-                && !(preserveScopedArea && action.SpellId == 421))
+                && action.SpellId != scopedAreaSpellId)
                 bot->RemoveDynObject(action.SpellId);
         return true;
     };

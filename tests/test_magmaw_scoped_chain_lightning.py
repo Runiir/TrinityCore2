@@ -20,12 +20,12 @@ def _magmaw_contracts() -> list[dict[str, object]]:
     ]
 
 
-def test_magmaw_chain_lightning_exception_is_narrow_and_quarantined() -> None:
+def test_magmaw_scoped_area_exception_is_narrow_and_quarantined() -> None:
     contracts = _magmaw_contracts()
     assert len(contracts) == 2
     for contract in contracts:
         assert contract["allow_area_damage"] is False
-        assert contract["area_damage_spell_allowlist"] == [421]
+        assert contract["area_damage_spell_allowlist"] == [421, 48505]
         assert contract["area_damage_target_allowlist"] == [41570, 42347]
         assert contract["allow_multidot"] is False
 
@@ -44,7 +44,12 @@ def test_scoped_area_authority_reaches_every_native_gate() -> None:
     assert executor.count("!action.AllowScopedEncounterAreaDamage") == 2
     assert "ResolveScopedEncounterAreaSpellId(Player* bot" in planning
     assert "contract.NodeId != \"bwd.magmaw.encounter\"" in planning
+    assert 'specTag == "balance_druid"' in planning
+    assert "starfallSpellId = 48505" in planning
     assert "ResolveScopedEncounterAreaSpellId(bot, result.Target)" in mechanics
+    assert "uint32 const scopedAreaSpellId = preserveScopedArea" in mechanics
+    assert "bot->HasAura(48505) && scopedAreaSpellId != 48505" in mechanics
+    assert "action.SpellId != scopedAreaSpellId" in mechanics
     assert "ResolveScopedEncounterAreaSpellId(\n                context.Bot, context.Target)" in fallback
     assert "BuildBossMechanicFeatures(\n                    context.Bot, context.Target).AddCount" in fallback
     assert "scopedAreaSpellId,\n                context.Target->GetEntry()" in fallback
