@@ -710,6 +710,54 @@ def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> No
     assert signal["candidate_gate_counts"]["profile_policy"] == 120
 
 
+def test_actor_loss_signals_use_wall_clock_gap_when_active_dps_is_healthy() -> None:
+    signals = analyzer._actor_loss_signals(
+        {
+            "combat_duration_sec": 100,
+            "actors": [
+                {
+                    "bot_guid": 10,
+                    "role": "dps",
+                    "class_spec": "fire_mage",
+                    "active_dps": 52000,
+                    "elapsed_dps": 32000,
+                    "wcl_observed_dps": 40000,
+                    "active_seconds": 64,
+                    "damage_uptime": 0.64,
+                    "moving_fraction": 0.01,
+                    "abilities": [],
+                }
+            ],
+        },
+        [
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "outcome_count": 100,
+                "actionable_failure_count": 2,
+                "outcome_counts": {"casting": 80, "ok": 18, "cast_failed": 2},
+            }
+        ],
+        [],
+    )
+
+    signal = signals[0]
+    assert signal["active_dps_gap_vs_wcl"] is False
+    assert signal["elapsed_dps_gap_vs_wcl"] is True
+    assert signal["candidate_actions"] == [
+        {
+            "action": "uptime_cadence",
+            "evidence": [
+                "idle_fraction_material",
+                "moving_fraction_low",
+                "native_failure_rate_low",
+            ],
+            "contradictions": [],
+            "evidence_strength": "attributable_idle",
+        }
+    ]
+
+
 def test_target_duty_context_aligns_failure_windows_with_required_work() -> None:
     context = analyzer._target_duty_context(
         {

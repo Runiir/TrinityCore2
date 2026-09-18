@@ -1507,10 +1507,16 @@ def _actor_loss_signals(
         idle_fraction = round(max(0.0, 1.0 - damage_uptime), 6)
         wcl_observed = actor.get("wcl_observed_dps")
         active_dps = _as_float(actor.get("active_dps"))
-        material_gap = (
+        elapsed_dps = _as_float(actor.get("elapsed_dps"))
+        active_dps_gap = (
             isinstance(wcl_observed, (int, float))
             and active_dps < _as_float(wcl_observed) * 0.95
         )
+        elapsed_dps_gap = (
+            isinstance(wcl_observed, (int, float))
+            and elapsed_dps < _as_float(wcl_observed) * 0.95
+        )
+        material_gap = active_dps_gap or elapsed_dps_gap
         candidate_scan_count = sum(reason_counts.values())
         profile_policy_count = bucket_counts["profile_policy"]
         movement_count = bucket_counts["movement_or_range"]
@@ -1644,6 +1650,8 @@ def _actor_loss_signals(
             "wcl_observed_dps": wcl_observed,
             "active_dps_delta_vs_wcl": actor.get("active_dps_delta_vs_wcl"),
             "elapsed_dps_delta_vs_wcl": actor.get("elapsed_dps_delta_vs_wcl"),
+            "active_dps_gap_vs_wcl": active_dps_gap,
+            "elapsed_dps_gap_vs_wcl": elapsed_dps_gap,
             "combat_seconds": round(combat_seconds, 3),
             "active_seconds": round(active_seconds, 3),
             "damage_uptime": damage_uptime,
@@ -2901,7 +2909,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use elapsed/active DPS, actor_loss_signals, native_outcome_signal, direct action_outcomes, candidate_rejection_summary, and target_duty_context. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. Do not call low uptime cadence loss when duty_explains_idle is true or failure windows overlap mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable means insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use elapsed/active DPS, actor_loss_signals, native_outcome_signal, direct action_outcomes, candidate_rejection_summary, and target_duty_context. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A healthy active DPS with a material elapsed-DPS deficit is an uptime signal only when low movement and duty overlap do not explain it. Do not call low uptime cadence loss when duty_explains_idle is true or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable means insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -2934,7 +2942,9 @@ def _jev_questions(
             "instructions": (
                 f"For {class_spec} bot_guid {guid}, choose the smallest bounded action from "
                 "actor_loss_signals and its matching target_duty_context. Use uptime, movement, "
-                "native failure ratio, candidate_actions, abilities, and sample quality. "
+                "elapsed versus active DPS, native failure ratio, candidate_actions, abilities, "
+                "and sample quality. A material elapsed-DPS deficit can be actionable even "
+                "when active DPS is healthy; reserve rotation_profile for an active-DPS gap. "
                 "Policy gates are not native failures. duty_explains_idle=true or "
                 "counterfactual_status!=eligible blocks an actor repair; use collect_more_canaries "
                 "for mixed evidence. WCL is context only."
@@ -2968,7 +2978,7 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If duty_explains_idle is true or counterfactual_status is partial/unavailable, do not choose uptime_cadence or movement_recovery; use collect_more_canaries or encounter_assignment. Use uptime_cadence only for low uptime with low movement/native failure and eligible counterfactual evidence. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
+        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If duty_explains_idle is true or counterfactual_status is partial/unavailable, do not choose uptime_cadence or movement_recovery; use collect_more_canaries or encounter_assignment. Use uptime_cadence only for low elapsed uptime with low movement/native failure and eligible counterfactual evidence. Prefer movement_recovery when movement/range facts align with the elapsed loss. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
         "criteria": {
             "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
             "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
