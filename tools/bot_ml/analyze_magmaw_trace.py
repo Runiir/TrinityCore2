@@ -783,6 +783,8 @@ def _compact_actor(
         "dps": ("dps",),
         "active_dps": ("active_dps",),
         "elapsed_dps": ("elapsed_dps",),
+        "encounter_window_dps": ("encounter_window_dps",),
+        "encounter_window_dps_basis": ("encounter_window_dps_basis",),
         "active_seconds": ("active_seconds",),
         "damage_uptime": ("damage_uptime",),
         "distance_avg": ("distance_avg",),
@@ -1773,20 +1775,36 @@ def _actor_loss_signals(
         moving_fraction = _as_float(actor.get("moving_fraction"))
         idle_fraction = round(max(0.0, 1.0 - damage_uptime), 6)
         wcl_observed = actor.get("wcl_observed_dps")
-        encounter_dps_value = actor.get("dps")
+        combat_dps_value = actor.get("dps")
         active_dps = _as_float(actor.get("active_dps"))
         elapsed_dps = _as_float(actor.get("elapsed_dps"))
-        if isinstance(encounter_dps_value, (int, float)):
-            encounter_dps = _as_float(encounter_dps_value)
-        else:
-            # Keep small unit-test packets and legacy evidence readable while
-            # real combat metrics use the authoritative dps field.
+        window_dps_value = actor.get("wcl_window_dps")
+        window_dps_basis = "wcl_window_dps"
+        if not isinstance(window_dps_value, (int, float)):
+            window_dps_value = actor.get("encounter_window_dps")
+            window_dps_basis = "encounter_window_dps"
+        if not isinstance(window_dps_value, (int, float)):
+            # Reports captured before the explicit field was introduced use
+            # `elapsed_dps` for damage over the encounter event window.
+            window_dps_value = actor.get("elapsed_dps")
+            window_dps_basis = "legacy_elapsed_dps"
+        if not isinstance(window_dps_value, (int, float)):
+            duration_seconds = max(1.0, _as_float(metrics.get("duration_sec")))
             damage = actor.get("damage")
-            encounter_dps = (
-                _as_float(damage) / combat_seconds
-                if isinstance(damage, (int, float)) and combat_seconds > 0.0
-                else active_dps
-            )
+            if isinstance(damage, (int, float)):
+                window_dps_value = _as_float(damage) / duration_seconds
+                window_dps_basis = "derived_damage_over_duration_sec"
+        if isinstance(window_dps_value, (int, float)):
+            encounter_dps = _as_float(window_dps_value)
+        elif isinstance(combat_dps_value, (int, float)):
+            # Minimal legacy/unit-test packets may contain only active-combat
+            # DPS. Keep them readable, but mark the fallback so it cannot be
+            # mistaken for a WCL-equivalent live measurement.
+            encounter_dps = _as_float(combat_dps_value)
+            window_dps_basis = "legacy_active_combat_fallback"
+        else:
+            encounter_dps = active_dps
+            window_dps_basis = "legacy_active_actor_fallback"
         active_dps_gap = (
             isinstance(wcl_observed, (int, float))
             and active_dps < _as_float(wcl_observed) * 0.95
@@ -1799,9 +1817,9 @@ def _actor_loss_signals(
             isinstance(wcl_observed, (int, float))
             and elapsed_dps < _as_float(wcl_observed) * 0.95
         )
-        # WCL and party `dps` use the active combat window. elapsed_dps is a
-        # wall-clock diagnostic only; route/setup time cannot authorize a DPS
-        # policy change.
+        # WCL Summary DPS is damage over the selected encounter window.  The
+        # local legacy `dps` field uses active-combat seconds and active_dps
+        # uses actor damage-bearing seconds, so neither is the comparator.
         material_gap = encounter_dps_gap
         candidate_scan_count = sum(reason_counts.values())
         profile_policy_count = bucket_counts["profile_policy"]
@@ -1961,13 +1979,17 @@ def _actor_loss_signals(
             "bot_guid": guid,
             "class_spec": str(actor.get("class_spec") or ""),
             "encounter_dps": encounter_dps,
+            "encounter_dps_basis": window_dps_basis,
+            "combat_dps": _as_float(combat_dps_value),
             "active_dps": active_dps,
             "elapsed_dps": _as_float(actor.get("elapsed_dps")),
+            "wcl_window_dps": encounter_dps,
             "wcl_observed_dps": wcl_observed,
             "dps_delta_vs_wcl": actor.get("dps_delta_vs_wcl"),
             "active_dps_delta_vs_wcl": actor.get("active_dps_delta_vs_wcl"),
             "elapsed_dps_delta_vs_wcl": actor.get("elapsed_dps_delta_vs_wcl"),
             "encounter_dps_gap_vs_wcl": encounter_dps_gap,
+            "wcl_window_dps_gap_vs_wcl": encounter_dps_gap,
             "active_dps_gap_vs_wcl": active_dps_gap,
             "elapsed_dps_gap_vs_wcl": elapsed_dps_gap,
             "wall_clock_dps_gap_vs_wcl": elapsed_dps_gap,
@@ -2066,6 +2088,8 @@ def _compact_metrics(
             "duration_sec",
             "elapsed_party_dps",
             "elapsed_party_hps",
+            "encounter_window_party_dps",
+            "encounter_window_party_dps_basis",
             "active_party_damage_seconds",
             "originated_damage_seconds",
             "raw_event_damage",
@@ -2099,7 +2123,14 @@ def _compact_metrics(
     if "party_dps" in result:
         result["party_dps_basis"] = "active_damage_seconds"
     if "elapsed_party_dps" in result:
-        result["elapsed_party_dps_basis"] = "wall_clock_duration_seconds"
+        # `elapsed_*` is a legacy name for the selected encounter event
+        # window.  It is not the route's entrance-to-kill wall clock.
+        result["elapsed_party_dps_basis"] = "encounter_event_window_seconds"
+    if "encounter_window_party_dps" in result:
+        result["encounter_window_party_dps_basis"] = result.get(
+            "encounter_window_party_dps_basis",
+            "originated_damage_over_duration_sec",
+        )
     return result
 
 
@@ -2814,6 +2845,23 @@ def _annotate_wcl_deltas(
         actor["wcl_observed_dps"] = observed
         elapsed = actor.get("elapsed_dps")
         active = actor.get("active_dps")
+        encounter_window = actor.get("encounter_window_dps")
+        if not isinstance(encounter_window, (int, float)):
+            # Pre-contract reports already carried this arithmetic under
+            # `elapsed_dps`. Keep those reports replayable while exposing the
+            # WCL denominator explicitly for new evidence.
+            encounter_window = elapsed
+        if isinstance(encounter_window, (int, float)):
+            actor["wcl_window_dps"] = float(encounter_window)
+            actor["wcl_window_dps_basis"] = (
+                "originated_damage_over_duration_sec"
+            )
+            actor["wcl_window_dps_delta_vs_wcl"] = (
+                float(encounter_window) - float(observed)
+            )
+            actor["wcl_window_dps_gap_vs_wcl"] = (
+                float(encounter_window) < float(observed) * 0.95
+            )
         if isinstance(elapsed, (int, float)):
             actor["elapsed_dps_delta_vs_wcl"] = float(elapsed) - float(observed)
         if isinstance(active, (int, float)):
@@ -2871,10 +2919,13 @@ def _dps_review_metrics(
                     "dps",
                     "active_dps",
                     "elapsed_dps",
+                    "encounter_window_dps",
+                    "wcl_window_dps",
                     "active_seconds",
                     "damage_uptime",
                     "wcl_observed_dps",
                     "dps_delta_vs_wcl",
+                    "wcl_window_dps_delta_vs_wcl",
                     "elapsed_dps_delta_vs_wcl",
                 )
                 if key in actor
@@ -2908,12 +2959,16 @@ def _jev_combat_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
                 "dps",
                 "active_dps",
                 "elapsed_dps",
+                "encounter_window_dps",
+                "wcl_window_dps",
                 "active_seconds",
                 "damage_uptime",
                 "distance_avg",
                 "moving_fraction",
                 "wcl_observed_dps",
                 "dps_delta_vs_wcl",
+                "wcl_window_dps_delta_vs_wcl",
+                "wcl_window_dps_gap_vs_wcl",
                 "active_dps_delta_vs_wcl",
                 "elapsed_dps_delta_vs_wcl",
                 "cast_movement_seconds",
@@ -3173,6 +3228,22 @@ def _boss_dps_review(
     failure_action_outcomes = _jev_action_outcome_slice(native_action_outcomes)
     return {
         "scope_route_node": DEFAULT_BOSS_ROUTE[0],
+        "wcl_dps_contract": {
+            "comparison_metric": "wcl_window_dps",
+            "formula": "originated_damage_over_duration_sec",
+            "duration_field": "duration_sec",
+            "local_source_field": "encounter_window_dps",
+            "legacy_alias": "elapsed_dps",
+            "excluded_diagnostics": {
+                "dps": "active_combat_seconds",
+                "active_dps": "actor_damage_bearing_seconds",
+                "elapsed_party_dps": "not_route_wall_clock; encounter event window only",
+            },
+            "interpretation": (
+                "Use only the selected Magmaw encounter window for WCL Summary DPS; "
+                "route entrance/recovery wall clock is a separate progress metric."
+            ),
+        },
         "combat_metrics": _jev_combat_metrics(metrics),
         "combat_diagnostics": deterministic.get("boss_combat_diagnostics", []),
         "action_outcomes": failure_action_outcomes,
@@ -3272,7 +3343,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use encounter dps (the active-combat `dps` field), active_dps as cadence context, elapsed_dps only as wall-clock context, actor_loss_signals, native_outcome_signal, direct action_outcomes, candidate_rejection_summary, and target_duty_context. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A wall-clock deficit alone is route/setup overhead and cannot authorize a fix. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use wcl_window_dps/encounter_window_dps (originated damage divided by duration_sec) for the WCL Summary comparison. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-window DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -3304,12 +3375,13 @@ def _jev_questions(
             "type": "choice",
             "instructions": (
                 f"For {class_spec} bot_guid {guid}, choose the smallest bounded action from "
-                "actor_loss_signals and its matching target_duty_context. Use uptime, movement, "
-                "encounter versus active versus wall-clock DPS, native failure ratio, "
+                "actor_loss_signals and its matching target_duty_context. Use encounter-window "
+                "WCL DPS (`wcl_window_dps`), active-combat `dps`, actor `active_dps`, movement, "
+                "native failure ratio, "
                 "candidate_actions, required assignment status/evidence, full-window damage "
-                "gap cadence, abilities, and sample quality. A wall-clock deficit "
-                "alone is not a WCL performance gap; reserve rotation_profile for an active- "
-                "and encounter-DPS gap. "
+                "gap cadence, abilities, and sample quality. Route wall-clock overhead "
+                "alone is not an actor DPS gap; reserve rotation_profile for an active- "
+                "and encounter-window-DPS gap. "
                 "Policy gates are not native failures. duty_explains_idle=true or "
                 "required_assignment_active=true or counterfactual_status!=eligible blocks an "
                 "actor repair; use encounter_assignment only for incomplete required duty, and "
@@ -3360,7 +3432,7 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If required_assignment_active is true, use encounter_assignment only when assignment_status is incomplete; use collect_more_canaries when it is executed, identity_assigned, or unobserved because the no-duty counterfactual is missing. If duty_explains_idle is true or counterfactual_status is partial/unavailable/required-assignment, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for a material encounter-DPS gap with low movement/native failure and eligible counterfactual evidence; elapsed_dps alone is wall-clock overhead. Prefer movement_recovery when movement/range facts align with the encounter-DPS loss. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
+        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If required_assignment_active is true, use encounter_assignment only when assignment_status is incomplete; use collect_more_canaries when it is executed, identity_assigned, or unobserved because the no-duty counterfactual is missing. If duty_explains_idle is true or counterfactual_status is partial/unavailable/required-assignment, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for a material encounter-window-DPS gap with low movement/native failure and eligible counterfactual evidence; route wall-clock overhead alone cannot authorize a fix. Prefer movement_recovery when movement/range facts align with the encounter-window-DPS loss. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
         "criteria": {
             "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
             "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",

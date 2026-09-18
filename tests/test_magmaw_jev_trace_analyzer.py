@@ -458,6 +458,8 @@ def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
                     "dps": 20000.0,
                     "active_dps": 20000.0,
                     "elapsed_dps": 16000.0,
+                    "encounter_window_dps": 16000.0,
+                    "encounter_window_dps_basis": "originated_damage_over_duration_sec",
                     "active_seconds": 4.0,
                     "damage_uptime": 0.8,
                     "distance_avg": 14.2,
@@ -475,8 +477,10 @@ def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
     assert actor["class_spec"] == "elemental_shaman"
     assert actor["elapsed_dps"] == 16000.0
     assert actor["active_dps"] == 20000.0
+    assert actor["encounter_window_dps"] == 16000.0
     assert actor["abilities"][0]["spell_id"] == 403
     assert metrics["elapsed_party_dps"] == 20000.0
+    assert metrics["elapsed_party_dps_basis"] == "encounter_event_window_seconds"
     assert metrics["party_dps_basis"] == "active_damage_seconds"
 
     annotated = analyzer._annotate_wcl_deltas(
@@ -489,6 +493,9 @@ def test_compact_metrics_preserves_spec_cadence_and_wcl_comparison() -> None:
     assert annotated["actors"][0]["wcl_observed_dps"] == 41866.0
     assert annotated["actors"][0]["dps_delta_vs_wcl"] == -21866.0
     assert annotated["actors"][0]["elapsed_dps_delta_vs_wcl"] == -25866.0
+    assert annotated["actors"][0]["wcl_window_dps"] == 16000.0
+    assert annotated["actors"][0]["wcl_window_dps_delta_vs_wcl"] == -25866.0
+    assert annotated["actors"][0]["wcl_window_dps_gap_vs_wcl"] is True
 
 
 def test_compact_metrics_prefers_full_window_native_action_outcomes() -> None:
@@ -712,7 +719,7 @@ def test_actor_loss_signals_separate_idle_movement_and_policy_hypotheses() -> No
     assert signal["candidate_gate_counts"]["profile_policy"] == 120
 
 
-def test_actor_loss_signals_do_not_use_wall_clock_gap_as_wcl_loss() -> None:
+def test_actor_loss_signals_use_encounter_window_gap_as_wcl_loss() -> None:
     signals = analyzer._actor_loss_signals(
         {
             "combat_duration_sec": 100,
@@ -747,13 +754,17 @@ def test_actor_loss_signals_do_not_use_wall_clock_gap_as_wcl_loss() -> None:
     signal = signals[0]
     assert signal["active_dps_gap_vs_wcl"] is False
     assert signal["elapsed_dps_gap_vs_wcl"] is True
-    assert signal["encounter_dps_gap_vs_wcl"] is False
+    assert signal["encounter_dps_gap_vs_wcl"] is True
     assert signal["candidate_actions"] == [
         {
-            "action": "collect_more_canaries",
-            "evidence": ["no_single_causal_signal_clears_the_screen"],
+            "action": "uptime_cadence",
+            "evidence": [
+                "idle_fraction_material",
+                "moving_fraction_low",
+                "native_failure_rate_low",
+            ],
             "contradictions": [],
-            "evidence_strength": "insufficient",
+            "evidence_strength": "attributable_idle",
         }
     ]
     assert signal["policy_hypotheses"] == []

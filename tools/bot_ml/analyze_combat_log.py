@@ -327,6 +327,12 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 "damage": total_damage,
                 "dps": round(total_damage / combat_seconds, 3),
                 "elapsed_dps": round(total_damage / duration_sec, 3),
+                # WCL's Summary DPS uses the selected fight window.  Keep an
+                # explicit name for that denominator so downstream evidence
+                # cannot confuse it with the legacy active-combat `dps` or
+                # actor damage-bearing `active_dps`.
+                "encounter_window_dps": round(total_damage / duration_sec, 3),
+                "encounter_window_dps_basis": "originated_damage_over_duration_sec",
                 "raw_event_damage": raw_event_damage,
                 "raw_event_dps": round(raw_event_damage / max(1, len(raw_event_damage_seconds)), 3),
                 "friendly_damage": friendly_damage,
@@ -442,6 +448,8 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "party_damage": party_damage,
             "party_dps": round(party_damage / combat_seconds, 3),
             "elapsed_party_dps": round(party_damage / duration_sec, 3),
+            "encounter_window_party_dps": round(party_damage / duration_sec, 3),
+            "encounter_window_party_dps_basis": "originated_damage_over_duration_sec",
             "raw_event_damage": sum(_raw_event_amount(row) for row in outgoing_rows),
             "raw_event_dps": round(
                 sum(_raw_event_amount(row) for row in outgoing_rows)

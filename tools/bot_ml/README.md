@@ -43,15 +43,37 @@ The harness writes `commands.txt`, `worldserver_output.log` when executed, and `
 
 `.botauto combatlog` exports exact landed damage and healing as compact per-spell aggregates, one-second activity buckets, and a bounded recent-event ring. The console export is chunked so long encounters cannot exceed the command transport limit. Live validation collects it only during cleanup, stores decoded `combat_log.json` once, and builds `combat_analysis.json` with encounter and actor DPS/HPS, spell shares, pet contribution, player/pet uptime, cast movement, range, incoming-damage sources, and rotation or positioning warnings. Share-damage callbacks are retained in `amount` and `raw_event_*`, while hostile user-facing `damage`/`dps` use originated amounts from `damage_done` and exclude engine callbacks identified as `NODAMAGE` with `SPELL_AURA_SHARE_DAMAGE_PCT`; this applies equally to player and pet sources. Friendly/self callbacks are retained under `friendly_damage_done` for attribution and raw forensic totals.
 
-`dps` and `party_dps` use party active-combat seconds, so route traversal does not dilute comparisons. `raw_event_dps` is the explicitly named all-landed-callback comparison. `elapsed_dps` and `elapsed_party_dps` retain wall-time values. Pet and player one-second buckets are separate in combat-log schema v2, and schema v3 adds the `friendly_damage_done` perspective. Schema v3 uses `damage_attribution_schema: "originated_amount_v2_friendly_split"`; hostile DPS/progress use `DamageDone` originated amounts, while `party_friendly_damage` and `party_raw_event_friendly_damage` retain the native friendly split. `raw_event_damage`, `raw_event_dps`, and `raw_event_pet_damage` continue to include landed callbacks from both outgoing perspectives, while originated `pet_damage` remains hostile-only. The analyzer emits `bot_combat_analysis_v3` and can still read schema v1/v2 with their old best-available originated meaning; those legacy payloads cannot reconstruct a friendly split. The diagnostic envelope is `bot_combat_metrics_v3` with `measurement_basis: "hostile_originated_damage"`; archived v2 metrics with `measurement_basis: "originated_damage"` remain accepted, and the `party_hps` denominator remains the historical active-combat window.
+`dps` and `party_dps` use active-combat seconds, so route traversal does not
+dilute the diagnostic. `active_dps` uses the actor's damage-bearing seconds and
+is a cadence diagnostic. `encounter_window_dps` and
+`encounter_window_party_dps` use originated damage divided by `duration_sec`,
+the selected encounter event window; these are the local fields used for WCL
+Summary DPS comparison. `elapsed_dps` and `elapsed_party_dps` are retained as
+legacy aliases for that same local encounter-window arithmetic, not route
+entrance-to-kill wall clock. Route wall clock is a separate progress metric in
+the live validation report. `raw_event_dps` is the explicitly named
+all-landed-callback comparison. Pet and player one-second buckets are separate
+in combat-log schema v2, and schema v3 adds the `friendly_damage_done`
+perspective. Schema v3 uses `damage_attribution_schema:
+"originated_amount_v2_friendly_split"`; hostile DPS/progress use `DamageDone`
+originated amounts, while `party_friendly_damage` and
+`party_raw_event_friendly_damage` retain the native friendly split.
+`raw_event_damage`, `raw_event_dps`, and `raw_event_pet_damage` continue to
+include landed callbacks from both outgoing perspectives, while originated
+`pet_damage` remains hostile-only. The analyzer emits
+`bot_combat_analysis_v3` and can still read schema v1/v2 with their old
+best-available originated meaning; those legacy payloads cannot reconstruct a
+friendly split. The diagnostic envelope is `bot_combat_metrics_v3` with
+`measurement_basis: "hostile_originated_damage"`; archived v2 metrics with
+`measurement_basis: "originated_damage"` remain accepted, and the `party_hps`
+denominator remains the historical active-combat window.
 
-For WCL comparison, use the encounter/fight-window `dps` value: WCL's summary
-DPS is damage over the pull-to-kill window, not actor-only active-uptime DPS
-and not the route's entrance-to-kill wall clock. `active_dps` is a cadence
-diagnostic based on the actor's damage-bearing seconds; `elapsed_dps` is a
-route/wall-clock diagnostic. A low `elapsed_dps` cannot authorize a rotation
-repair, and an actor whose `active_dps` is high but encounter `dps` is low has
-an activity-window problem to explain before changing spell priorities.
+For WCL comparison, use `encounter_window_dps` (or the legacy
+`elapsed_dps` alias) and `encounter_window_party_dps` (or
+`elapsed_party_dps`). Do not use `dps`, `active_dps`, or route wall clock as
+the WCL denominator. An actor whose active rate is high but encounter-window
+rate is low has an activity-window problem to explain before changing spell
+priorities.
 
 ```bash
 pixi run python tools/bot_ml/analyze_combat_log.py \

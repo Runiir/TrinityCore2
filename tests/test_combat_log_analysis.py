@@ -211,12 +211,15 @@ def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     assert encounter["route_node_id"] == "corborus"
     assert encounter["party_damage"] == 10000
     assert encounter["party_dps"] == 1000
+    assert encounter["encounter_window_party_dps"] == 1000
     assert encounter["party_healing"] == 0
     assert encounter["party_hps"] == 0
     assert encounter["elapsed_party_hps"] == 0
     actor = encounter["actors"][0]
     assert actor["dps"] == 1000
     assert actor["elapsed_dps"] == 1000
+    assert actor["encounter_window_dps"] == 1000
+    assert actor["encounter_window_dps_basis"] == "originated_damage_over_duration_sec"
     assert actor["active_dps"] == 5000
     assert actor["damage_uptime"] == 0.2
     assert actor["abilities"][0]["spell_name"] == "Fireball"
