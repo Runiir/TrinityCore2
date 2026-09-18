@@ -67,7 +67,12 @@ void BotWorldPopulationMgr::ApplyRuntimeProfile(BotWorldExperimentProfile const&
     if (profile.HasAutoRecordingWindowMinutes) Cohort().Config.AutoRecordingWindowMinutes = profile.Config.AutoRecordingWindowMinutes;
     if (profile.HasAutoRecordingNamePrefix) Cohort().Config.AutoRecordingNamePrefix = profile.Config.AutoRecordingNamePrefix;
     if (profile.HasValidationRouteEnable) Cohort().Config.ValidationRouteEnable = profile.Config.ValidationRouteEnable;
-    if (profile.HasValidationRouteManifestPath) Cohort().Config.ValidationRouteManifestPath = profile.Config.ValidationRouteManifestPath;
+    // A generated boss-only canary may provide an explicit narrowed manifest.
+    // Preserve it; the profile remains the default only when no manifest was
+    // supplied by the active config.
+    if (profile.HasValidationRouteManifestPath
+        && Cohort().Config.ValidationRouteManifestPath.empty())
+        Cohort().Config.ValidationRouteManifestPath = profile.Config.ValidationRouteManifestPath;
     if (profile.HasValidationRouteAdvanceMode) Cohort().Config.ValidationRouteAdvanceMode = profile.Config.ValidationRouteAdvanceMode;
     if (profile.HasValidationRouteScenarioId) Cohort().Config.ValidationRouteScenarioId = profile.Config.ValidationRouteScenarioId;
     if (profile.HasValidationRouteNodeId) Cohort().Config.ValidationRouteNodeId = profile.Config.ValidationRouteNodeId;
