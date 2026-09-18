@@ -45,6 +45,14 @@ The harness writes `commands.txt`, `worldserver_output.log` when executed, and `
 
 `dps` and `party_dps` use party active-combat seconds, so route traversal does not dilute comparisons. `raw_event_dps` is the explicitly named all-landed-callback comparison. `elapsed_dps` and `elapsed_party_dps` retain wall-time values. Pet and player one-second buckets are separate in combat-log schema v2, and schema v3 adds the `friendly_damage_done` perspective. Schema v3 uses `damage_attribution_schema: "originated_amount_v2_friendly_split"`; hostile DPS/progress use `DamageDone` originated amounts, while `party_friendly_damage` and `party_raw_event_friendly_damage` retain the native friendly split. `raw_event_damage`, `raw_event_dps`, and `raw_event_pet_damage` continue to include landed callbacks from both outgoing perspectives, while originated `pet_damage` remains hostile-only. The analyzer emits `bot_combat_analysis_v3` and can still read schema v1/v2 with their old best-available originated meaning; those legacy payloads cannot reconstruct a friendly split. The diagnostic envelope is `bot_combat_metrics_v3` with `measurement_basis: "hostile_originated_damage"`; archived v2 metrics with `measurement_basis: "originated_damage"` remain accepted, and the `party_hps` denominator remains the historical active-combat window.
 
+For WCL comparison, use the encounter/fight-window `dps` value: WCL's summary
+DPS is damage over the pull-to-kill window, not actor-only active-uptime DPS
+and not the route's entrance-to-kill wall clock. `active_dps` is a cadence
+diagnostic based on the actor's damage-bearing seconds; `elapsed_dps` is a
+route/wall-clock diagnostic. A low `elapsed_dps` cannot authorize a rotation
+repair, and an actor whose `active_dps` is high but encounter `dps` is low has
+an activity-window problem to explain before changing spell priorities.
+
 ```bash
 pixi run python tools/bot_ml/analyze_combat_log.py \
   artifacts/live_validation_instances/<run>/combat_log.json \
@@ -86,6 +94,13 @@ versus mechanic-target damage, duty/failure-window overlap,
 uptime, movement, or rotation repair when required duty explains the loss or
 the movement capture is partial. This preserves low-confidence judgments as
 review evidence while preventing them from silently becoming gameplay changes.
+For the Magmaw 10N Balance assignment, the same view reports the three-mushroom
+contract, native detonation, and landed Wild Mushroom effect separately from
+placement decision rows. It also reports the native fixed-bait identity for the
+lowest-GUID Fire Mage or hunter family member, full-window damage gaps, and
+normal target-eligibility gates as audit-only data. These fields let JEV classify
+assignment execution and cadence without turning expected profile eligibility
+checks into target-lease failures.
 The analyzer auto-discovers `combat_log.json` beside a run directory; use
 `--combat-log` when the export is stored elsewhere.
 
