@@ -94,7 +94,7 @@ acceptance flag is intentionally shown separately from gameplay outcome.
 | shard29 | clear | 28.24M | 209.2k | 193.2k | 10 alive; no watchdog failure; 12 placements, 3 detonations, zero LOS/cast-failed placement outcomes | aligned; stuck none; DPS `insufficient_data` (0.85); next `collect_more_canaries` (0.68) |
 | shard30 | clear | 28.19M | 233.0k | 213.3k | 10 alive; no watchdog failure; 0 deaths; full-window action evidence retained | native clear; no loop/stall; identity-only certification rejection |
 | shard31 | clear | 28.23M | 233.3k | 211.4k | 10 alive; no watchdog failure; 0 deaths; full-window action evidence retained | native clear; no loop/stall; identity-only certification rejection |
-| shard32 | clear | 28.19M | 218.6k | 180.7k | native clear; one death; no watchdog loop/stall; event ring dropped 0; Balance 3 detonations and 73.0k landed mushroom damage | aligned (0.83); stuck none (0.49); DPS `uptime` (0.83); next `collect_more_canaries` (0.40) |
+| shard32 | clear | 28.19M | 218.6k | 180.7k | native clear; one death; no watchdog loop/stall; event ring dropped 0; Balance 3 detonations and 73.0k landed mushroom damage | v37 aligned (0.83); stuck none (0.49); DPS `uptime` (0.75); next `collect_more_canaries` (0.41) |
 
 The post-repair canaries therefore show no wipe regression. Active DPS is
 within normal run variance while elapsed DPS improves because the fights finish
@@ -259,7 +259,7 @@ movement, or rotation as an actionable actor repair. Partial or low-confidence
 answers remain in the report with their probability maps and are routed to
 review/collection rather than discarded.
 
-The v36 JEV input adds two further safeguards. Balance is classified through a
+The v37 post-commit JEV input adds two further safeguards. Balance is classified through a
 typed `actor_assignment_30001` question and is marked `assignment_executed`
 only because both a native detonation and landed Wild Mushroom damage are
 present; placement decision rows are not treated as landed casts. The native
@@ -267,9 +267,10 @@ fixed-bait rule marks only the lowest-GUID Fire Mage as the fixed pillar baiter,
 so Fire A's low encounter DPS is not mislabelled as a clean movement or
 rotation counterfactual. Normal target-aura, target-health, interruptibility,
 and purpose gates remain audit data but no longer create a `target_lease`
-candidate. In v36 JEV chose `uptime` for the party area (0.83),
-`uptime_cadence` for Elemental (0.97), and `collect_more_canaries` for Balance
-(0.91) and Fire A (0.93).
+candidate. In v37 JEV chose `uptime` for the party area (0.75),
+`uptime_cadence` for Elemental (0.96), and `collect_more_canaries` for Balance
+(0.93) and Fire A (0.95). The post-commit replay preserved the same action
+directions as v36 while changing only confidence weights.
 
 Shard17 native outcomes contain 113 actionable failures out of 4,867 outcomes
 (2.32%); shard18 contains 87 out of 5,119 (1.70%). All six DPS actors stay below
@@ -316,7 +317,7 @@ combat-log capture.
 | Balance mushrooms were projected to the elevated parasite home/spawn Z | shard25: 18 native LOS failures and airborne add coordinates; shard26: 6 LOS failures | fixed in `39b7c9eeff` with native platform-floor projection; shard27 confirmed one clean sample |
 | Exact platform points could still fail native destination LOS | shard28 repeat: 12 `88747` LOS failures and 8 position-reconcile failures | fixed in `b70eff769c` with a bounded caster-facing LOS fallback; shard29 has zero LOS/cast-failed placement outcomes |
 | Required Balance add duty and fixed pillar-bait identity were absent from the JEV causal packet | shard32 assignment/action evidence and native baiter resolver | fixed in analyzer evidence contract; Balance is assignment-aware and Fire A is not granted a clean movement counterfactual |
-| Normal target eligibility gates looked like target-lease loss | shard32 Elemental candidate counts | fixed in `target-signal-v1`; v36 retains the gates for audit but removes them from target-lease attribution |
+| Normal target eligibility gates looked like target-lease loss | shard32 Elemental candidate counts | fixed in `target-signal-v1`; v37 retains the gates for audit but removes them from target-lease attribution |
 
 ## Next bounded action
 
@@ -335,7 +336,7 @@ the latest run still has Balance, Fire A, Elemental, and Blood below its
 matched WCL context, while Fire B, Affliction, and Survival need roster-aware
 interpretation.
 
-Compact JEV reports and native combat ledgers for shards16–29 are checkpointed
-through DVC in the companion artifact pointer for this branch. Raw live reports
-remain in `/tmp/magmaw-normal-shard-{16,17,18,19,20,21,22,23,24,25,26,27,28,29}-20260918`
+Compact JEV reports and native combat ledgers for shards16–32 are checkpointed
+through DVC in the companion artifact pointers for this branch. Raw live reports
+remain in `/tmp/magmaw-normal-shard-{16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32}-20260918`
 during review and are not committed to Git.
