@@ -3,6 +3,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotTypes.h"
 #include "Creature.h"
+#include "Map.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -113,9 +114,20 @@ void SetMagmawBalanceMushroomGroundTarget(
     if (!pillar)
         return;
 
+    Map* map = pillar->GetMap();
+    if (!map)
+        return;
+
+    float const groundX = pillar->GetPositionX();
+    float const groundY = pillar->GetPositionY();
+    float const groundZ = map->GetHeight(target->GetPhaseShift(), groundX, groundY,
+        pillar->GetPositionZ() + 2.0f, true, 64.0f);
+    if (groundZ == INVALID_HEIGHT)
+        return;
+
     action.HasGroundTarget = true;
-    action.GroundTargetX = pillar->GetPositionX();
-    action.GroundTargetY = pillar->GetPositionY();
-    action.GroundTargetZ = pillar->GetPositionZ();
+    action.GroundTargetX = groundX;
+    action.GroundTargetY = groundY;
+    action.GroundTargetZ = groundZ;
 }
 }
