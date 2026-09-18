@@ -1,0 +1,46 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _magmaw_contracts() -> list[dict[str, object]]:
+    config = json.loads(
+        (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
+    )
+    return [
+        step["mechanic_contract"]
+        for scenarios in (config["scenarios"], config["diagnostic_scenarios"])
+        for scenario in scenarios
+        for step in scenario["route"]
+        if step.get("node_id") == "bwd.magmaw.encounter"
+    ]
+
+
+def test_magmaw_chain_lightning_exception_is_narrow_and_quarantined() -> None:
+    contracts = _magmaw_contracts()
+    assert len(contracts) == 2
+    for contract in contracts:
+        assert contract["allow_area_damage"] is False
+        assert contract["area_damage_spell_allowlist"] == [421]
+        assert contract["area_damage_target_allowlist"] == [41570, 42347]
+        assert contract["allow_multidot"] is False
+
+
+def test_scoped_area_authority_reaches_every_native_gate() -> None:
+    resolver = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp").read_text()
+    executor = (ROOT / "src/server/game/Bots/BotActionExecutor.cpp").read_text()
+    mechanics = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp").read_text()
+    manifest = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp").read_text()
+
+    assert "bool const scopedAreaAction" in resolver
+    assert resolver.count("!magmawMushroomAction && !scopedAreaAction") == 3
+    assert "action.AllowScopedEncounterAreaDamage" in resolver
+    assert executor.count("!action.AllowScopedEncounterAreaDamage") == 2
+    assert "Build(bot, role).SpecTag == \"elemental_shaman\" ? spellId : 0" in mechanics
+    assert "closeRecallableAreaDamage(scopedAreaSpellIdForTarget(result.Target) != 0)" in mechanics
+    assert '"area_damage_spell_allowlist"' in manifest
+    assert '"area_damage_target_allowlist"' in manifest

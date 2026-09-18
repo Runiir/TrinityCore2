@@ -282,6 +282,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     auto const preview = BotSpellResolution::Resolve(bot, action.SpellId, action.Type == "use_item");
     if ((action.SuppressAreaDamage
             || (!action.AllowMagmawBalanceMushroomSplash
+                && !action.AllowScopedEncounterAreaDamage
                 && HasNearbyProtectedEncounterTarget(bot, target)))
         && SpellHasHostileMultiTargetSemantics(preview.Effective))
         return BotActionResult::NoAction;
@@ -377,6 +378,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     auto const resolved = BotSpellResolution::Resolve(bot, action.SpellId);
     if ((action.SuppressAreaDamage
             || (!action.AllowMagmawBalanceMushroomSplash
+                && !action.AllowScopedEncounterAreaDamage
                 && HasNearbyProtectedEncounterTarget(bot, target)))
         && SpellHasHostileMultiTargetSemantics(resolved.Effective))
         return BotActionResult::NoAction;

@@ -233,6 +233,8 @@
         bool AllowAreaDamage = false;
         bool AllowMultidot = false;
         std::vector<uint32> TargetEntries;
+        std::vector<uint32> AreaDamageSpellAllowlist;
+        std::vector<uint32> AreaDamageTargetAllowlist;
         uint32 ControlledAoeMinimumTargets = 0;
         float KillSyncTolerancePct = 0.0f;
         float KillSyncExecutionFloorPct = 0.0f;

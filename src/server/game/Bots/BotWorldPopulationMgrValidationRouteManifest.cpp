@@ -468,6 +468,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                 "tank_swap_add_entry", "tank_swap_phase", "main_tank_roster_slot", "off_tank_roster_slot",
                 "interrupt_owner_slot", "interrupt_backup_slot",
                 "interrupt_trigger_spell_id", "dispel_aura_id", "dispel_owner_slot", "dispel_backup_slot",
+                "area_damage_spell_allowlist", "area_damage_target_allowlist",
                 "healer_ownership", "healer_owner_slots", "cooldown_category", "cooldown_owner_slot",
                 "cooldown_backup_slot", "cooldown_trigger_spell_id", "cooldown_target", "soak_roster_slots",
                 "soak_minimum_count", "soak_radius_yards", "soak_trigger_spell_id", "soak_trigger_aura_id",
@@ -500,6 +501,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             ExtractJsonBoolField(mechanicContract, "allow_area_damage", node.AllowAreaDamage);
             ExtractJsonBoolField(mechanicContract, "allow_multidot", node.AllowMultidot);
             node.TargetEntries = ExtractJsonUIntArrayField(mechanicContract, "target_entries");
+            node.AreaDamageSpellAllowlist = ExtractJsonUIntArrayField(mechanicContract, "area_damage_spell_allowlist");
+            node.AreaDamageTargetAllowlist = ExtractJsonUIntArrayField(mechanicContract, "area_damage_target_allowlist");
             node.ControlledAoeMinimumTargets = uint32(std::max(0, readInt(mechanicContract, "controlled_aoe_minimum_targets")));
             node.KillSyncTolerancePct = readFloat(mechanicContract, "kill_sync_tolerance_pct");
             node.KillSyncExecutionFloorPct = readFloat(mechanicContract, "kill_sync_execution_floor_pct");

@@ -141,7 +141,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     return false;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId)
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry)
 {
     if (target && IsImmediateNextValidationRouteEncounterMember(target->ToCreature()))
     {
@@ -206,7 +206,8 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
         selfCenteredOnly, forbidArea, allowMultidot && !forbidArea,
-        hostileTargetOnly, movementCompatibleOnly, nullptr, true, policyExcludedSpellId);
+        hostileTargetOnly, movementCompatibleOnly, nullptr, true, policyExcludedSpellId,
+        scopedAreaSpellId, scopedAreaTargetEntry);
     action.MeleeAutoAttackExternallyReconciled = state
         && action.AutoAttackMode == "melee";
     if (actionOut)
@@ -413,9 +414,10 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     return result;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId)
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry)
 {
     return ExecuteProfileCombatAction(nullptr, bot, target, actionOut,
         hostileCount, densityOnly, excludedSpellId, areaOnly,
-        selfCenteredOnly, forbidArea, allowMultidot, hostileTargetOnly, policyExcludedSpellId);
+        selfCenteredOnly, forbidArea, allowMultidot, hostileTargetOnly, policyExcludedSpellId,
+        scopedAreaSpellId, scopedAreaTargetEntry);
 }

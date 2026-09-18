@@ -47,9 +47,7 @@ bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpel
     return !spell.RefreshAuraBelowMs || durationMs < 0 || uint32(durationMs) > spell.RefreshAuraBelowMs;
 }
 
-
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
-
 // Future encounter protection must be geometry-aware.  Keeping the global
 // entry set is useful for route bookkeeping, but it must not suppress AoE on
 // a current trash pack that is nowhere near the protected encounter.
@@ -80,7 +78,7 @@ bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
 
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics, uint32 policyExcludedSpellId) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -316,6 +314,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             BotEncounter::IsMagmawBalanceMushroomDetonation(mushroomState, candidate);
         bool const magmawMushroomAction =
             BotEncounter::IsMagmawBalanceMushroomAction(mushroomState, candidate);
+        bool const scopedAreaAction = scopedAreaSpellId
+            && scopedAreaTargetEntry == targetEntry && candidate.SpellId == scopedAreaSpellId;
         if (hostileTargetOnly && candidate.Profile.TargetSelector != "enemy"
             && !magmawMushroomAction)
         {
@@ -357,7 +357,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (forbidArea && (candidate.Category == BotCombatActionCategory::Aoe
             || candidate.Category == BotCombatActionCategory::Cleave)
-            && !magmawMushroomAction)
+            && !magmawMushroomAction && !scopedAreaAction)
         {
             candidate.RejectReason = "declarative_area_damage_forbidden";
             continue;
@@ -397,13 +397,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (HasNearbyProtectedEncounterTarget(bot, target)
             && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
-            && !magmawMushroomAction)
+            && !magmawMushroomAction && !scopedAreaAction)
         {
             candidate.RejectReason = "future_encounter_splash_forbidden";
             continue;
         }
         if (forbidArea && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
-            && !magmawMushroomAction)
+            && !magmawMushroomAction && !scopedAreaAction)
         {
             candidate.RejectReason = "declarative_area_damage_semantics_forbidden";
             continue;
@@ -962,6 +962,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     bool const selectedMagmawMushroomAction =
         selectedMagmawMushroomPlacement || selectedMagmawMushroomDetonation;
     action.AllowMagmawBalanceMushroomSplash = selectedMagmawMushroomAction;
+    action.AllowScopedEncounterAreaDamage = scopedAreaSpellId
+        && scopedAreaTargetEntry == targetEntry && best->SpellId == scopedAreaSpellId;
     if (selectedMagmawMushroomPlacement)
         BotEncounter::SetMagmawBalanceMushroomGroundTarget(action, bot, target);
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
@@ -986,7 +988,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         ? selfCenteredHostileMaxRange
         : (best->Profile.MaxRange > 0.0f
             ? best->Profile.MaxRange : profile.MaxRange);
-    action.SuppressAreaDamage = forbidArea && !selectedMagmawMushroomAction;
+    action.SuppressAreaDamage = forbidArea && !selectedMagmawMushroomAction
+        && !action.AllowScopedEncounterAreaDamage;
     if (!selfTarget && best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->ResolvedSpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));

@@ -316,6 +316,8 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
         adapter.AllowAreaDamage = contract->AllowAreaDamage;
         adapter.AllowMultidot = contract->AllowMultidot;
         adapter.TargetEntries = contract->TargetEntries;
+        adapter.AreaDamageSpellAllowlist = contract->AreaDamageSpellAllowlist;
+        adapter.AreaDamageTargetAllowlist = contract->AreaDamageTargetAllowlist;
         adapter.ControlledAoeMinimumTargets = contract->ControlledAoeMinimumTargets;
         adapter.KillSyncTolerancePct = contract->KillSyncTolerancePct;
         adapter.KillSyncExecutionFloorPct = contract->KillSyncExecutionFloorPct;

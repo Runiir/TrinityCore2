@@ -234,6 +234,11 @@ struct ResolvedCombatAction
     // the executor keeps the normal future/current encounter splash guard for
     // every other area action.
     bool AllowMagmawBalanceMushroomSplash = false;
+    // A route may admit one explicitly allowlisted area spell on one explicitly
+    // allowlisted target class while keeping generic area damage suppressed.
+    // This is used by the Magmaw Elemental Chain Lightning experiment only;
+    // native target, LOS, range and cast checks remain authoritative.
+    bool AllowScopedEncounterAreaDamage = false;
     bool HasGroundTarget = false;
     float GroundTargetX = 0.0f;
     float GroundTargetY = 0.0f;
