@@ -740,6 +740,7 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "completion_reason",
         "failure_reason",
         "failure_labels",
+        "native_gameplay_outcome",
         "all_passed",
         "acceptable_final_evidence",
         "live_validation_standard",
@@ -1045,6 +1046,114 @@ def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None)
     if kind == "trash":
         return int(evidence.get("trash_pulls") or 0) > 0
     return bool(required)
+
+
+def _compact_native_route_evidence(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [
+        {
+            field: item[field]
+            for field in ("route_node_id", "route_generation")
+            if field in item
+        }
+        for item in value
+        if isinstance(item, dict) and item.get("route_node_id")
+    ]
+
+
+def native_gameplay_outcome(report: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Classify native gameplay separately from certification and stage coverage."""
+    if not isinstance(report, Mapping):
+        return {
+            "schema": "native_gameplay_outcome_v1",
+            "status": "no_report",
+            "native_clear": False,
+            "certification_status": "unknown",
+            "certification_rejections": [],
+        }
+
+    evidence = report.get("evidence")
+    evidence = evidence if isinstance(evidence, Mapping) else {}
+    watchdog = report.get("watchdog_state")
+    watchdog = watchdog if isinstance(watchdog, Mapping) else {}
+    acceptance = report.get("acceptance_verification")
+    acceptance = acceptance if isinstance(acceptance, Mapping) else {}
+    completion_reason = str(report.get("completion_reason") or "")
+    manifest_completion = _compact_native_route_evidence(
+        evidence.get("manifest_completion_evidence")
+    )
+    boss_kills = _compact_native_route_evidence(
+        evidence.get("real_boss_kill_evidence")
+    )
+    all_dead_wiped = bool(
+        evidence.get("cohort_all_dead_wiped") or watchdog.get("all_dead_wiped")
+    )
+    death_loop = bool(watchdog.get("death_loop")) or int(
+        evidence.get("unresolved_route_death_loop_events") or 0
+    ) > 0
+    repeated_decision_loop = bool(watchdog.get("repeated_decision_loop"))
+    no_progress = bool(watchdog.get("no_progress"))
+    native_clear = bool(
+        completion_reason == "validation_route_manifest_complete"
+        and manifest_completion
+        and boss_kills
+        and not all_dead_wiped
+        and not death_loop
+        and not repeated_decision_loop
+        and not no_progress
+    )
+    if native_clear:
+        status = "clear"
+        native_reason = "native_route_manifest_and_boss_death"
+    elif all_dead_wiped:
+        status = "wipe"
+        native_reason = "native_cohort_all_dead"
+    elif death_loop:
+        status = "death_loop"
+        native_reason = "native_death_loop_guardrail"
+    elif repeated_decision_loop or no_progress:
+        status = "stalled"
+        native_reason = "native_watchdog_guardrail"
+    elif int(report.get("active_bots") or 0) <= 0 and str(
+        report.get("failure_reason") or ""
+    ):
+        status = "admission_failure"
+        native_reason = "native_admission_failure"
+    else:
+        status = "incomplete"
+        native_reason = "native_clear_not_proven"
+
+    rejection_values = acceptance.get("rejections")
+    if not isinstance(rejection_values, list):
+        rejection_values = report.get("final_evidence_rejections")
+    certification_rejections = sorted(
+        {str(value) for value in (rejection_values or []) if value}
+    )
+    certification_accepted = bool(
+        acceptance.get("accepted") is True
+        and report.get("acceptable_final_evidence") is True
+        and not certification_rejections
+    )
+    return {
+        "schema": "native_gameplay_outcome_v1",
+        "status": status,
+        "native_clear": native_clear,
+        "native_reason": native_reason,
+        "completion_reason": completion_reason,
+        "manifest_completion_evidence": manifest_completion,
+        "real_boss_kill_evidence": boss_kills,
+        "watchdog": {
+            "all_dead_wiped": all_dead_wiped,
+            "death_loop": death_loop,
+            "no_progress": no_progress,
+            "repeated_decision_loop": repeated_decision_loop,
+        },
+        "certification_status": "accepted" if certification_accepted else (
+            "uncertified" if native_clear else "rejected"
+        ),
+        "certification_rejections": certification_rejections,
+    }
 
 
 def supersede_transient_route_failures(report: dict[str, Any]) -> None:
@@ -5945,7 +6054,9 @@ def live_validation_report(
         "runtime_ml_control": "offline_shadow_only",
         "control_eligible": False,
     }
-    return apply_acceptance_evaluation(report)
+    report = apply_acceptance_evaluation(report)
+    report["native_gameplay_outcome"] = native_gameplay_outcome(report)
+    return report
 
 
 def read_until_console_prompt(
@@ -8694,6 +8805,7 @@ def main() -> int:
         identity_required=True,
         session_required=args.transport == "session",
     )
+    report["native_gameplay_outcome"] = native_gameplay_outcome(report)
     if args.transport == "session":
         attempt = ValidationAttempt(
             cohort_id=args.cohort_id,
