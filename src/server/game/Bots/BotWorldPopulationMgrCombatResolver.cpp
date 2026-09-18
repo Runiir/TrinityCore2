@@ -696,6 +696,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (minRange > 0.0f && distance < minRange)
         {
             action.MinRange = std::max(action.MinRange, minRange);
+            action.RangeRecoveryRequired = true;
             candidate.RejectReason = "min_range_required";
             continue;
         }

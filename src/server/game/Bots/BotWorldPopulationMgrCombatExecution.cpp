@@ -214,6 +214,27 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         *actionOut = action;
     if (!action.Valid)
     {
+        bool const profileRangeRecovery = state && bot && target
+            && action.RangeRecoveryRequired
+            && action.MinRange > 0.0f
+            && bot->GetExactDist(target) < action.MinRange
+            && !bot->HasUnitState(UNIT_STATE_CASTING);
+        if (profileRangeRecovery)
+        {
+            bool const moved = MoveBotToProfileRange(
+                *state, bot, target, &action);
+            RecordCombatAttempt(*state, bot, target,
+                "profile_min_range_reconcile", &action,
+                moved ? BotActionResult::Casting : BotActionResult::NoAction,
+                moved ? "profile_min_range_reconciled"
+                    : "profile_min_range_path_rejected");
+            if (moved)
+            {
+                TryResolveBotBlocker(*state, bot,
+                    "profile_min_range_reconciled");
+                return BotActionResult::Casting;
+            }
+        }
         BotActionResult invalidResult = action.DebugName == "global_cooldown"
             ? BotActionResult::GlobalCooldown : BotActionResult::NoAction;
         if (action.DebugName == "already_casting")

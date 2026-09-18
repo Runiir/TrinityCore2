@@ -6459,6 +6459,20 @@ def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
     assert "if (!forceRangedReposition && distance >= desiredRange - 1.0f" in manager
 
 
+def test_profile_minimum_range_rejection_enters_shared_recovery_lane():
+    resolver = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp")
+    execution = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp")
+    assert "action.RangeRecoveryRequired = true;" in resolver
+    assert_ordered(
+        execution,
+        "action.RangeRecoveryRequired",
+        "!bot->HasUnitState(UNIT_STATE_CASTING)",
+        "bool const moved = MoveBotToProfileRange(",
+        '"profile_min_range_reconcile"',
+        '"profile_min_range_reconciled"',
+    )
+
+
 def test_rerun206_feral_dps_provisions_and_maintains_cat_form():
     root = Path(__file__).resolve().parents[1]
     manager = read(BOT_MGR)
