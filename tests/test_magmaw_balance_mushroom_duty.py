@@ -30,6 +30,7 @@ int main()
     using Duty = BotEncounter::MagmawBalanceMushroomDuty;
     assert(Duty::IsActive(true, "bwd.magmaw.encounter", "balance_druid", 41806));
     assert(Duty::IsActive(true, "bwd.magmaw.encounter", "balance_druid", 42321));
+    assert(Duty::PillarOfFlameEntry == 41843);
     assert(!Duty::IsActive(false, "bwd.magmaw.encounter", "balance_druid", 41806));
     assert(!Duty::IsActive(true, "bwd.magmaw.drudges", "balance_druid", 41806));
     assert(!Duty::IsActive(true, "bwd.magmaw.encounter", "fire", 41806));
@@ -68,6 +69,9 @@ def test_sql_and_native_path_keep_the_exception_narrow():
     assert "ReadyToDetonate" in duty_source
     assert "live floor position" in duty_source
     assert "GetHomePosition" not in duty_source
+    assert "PillarOfFlameEntry" in duty_source
+    assert "FindNearestCreature" in duty_source
+    assert "lateralX" in duty_source
     assert "GetHeight" in duty_source
     assert "hintZ + 2.0f" in duty_source
     assert "IsWithinLOS" in duty_source

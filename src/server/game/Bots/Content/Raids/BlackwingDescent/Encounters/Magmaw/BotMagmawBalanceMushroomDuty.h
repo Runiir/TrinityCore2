@@ -18,6 +18,7 @@ struct MagmawBalanceMushroomDuty
     static constexpr uint32 WildMushroomSpellId = 88747;
     static constexpr uint32 WildMushroomDetonateSpellId = 88751;
     static constexpr uint32 RequiredMushroomCount = 3;
+    static constexpr uint32 PillarOfFlameEntry = 41843;
     static constexpr uint32 ParasiteEntry = 41806;
     static constexpr uint32 ParasiteAltEntry = 42321;
 

@@ -9,8 +9,10 @@
 #include "SpellMgr.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <list>
+#include <utility>
 
 namespace
 {
@@ -108,13 +110,18 @@ void SetMagmawBalanceMushroomGroundTarget(
     if (!target)
         return;
 
-    // Lava Parasites can still be airborne when the add wave appears.  Keep
-    // their live X/Y so the mushrooms follow the wave, but resolve the target
-    // onto the visible platform instead of casting at the airborne Z or the
-    // elevated home point. This is the parasite's live floor position.
-    float groundX = target->GetPositionX();
-    float groundY = target->GetPositionY();
-    float groundZ = target->GetPositionZ();
+    // The player mechanic is to put the mushrooms below the lava spawn. The
+    // parasite is a moving airborne target, so its position is a poor ground
+    // spell anchor and was the source of repeated destination-LOS failures in
+    // the shard35 canary. Prefer the live Pillar of Flame while it exists;
+    // retain the parasite as a bounded fallback after the pillar despawns. The
+    // resulting point is the live floor position of the lava spawn.
+    Creature const* pillar = target->FindNearestCreature(
+        MagmawBalanceMushroomDuty::PillarOfFlameEntry, 20.0f, true);
+    Unit const* groundAnchor = pillar ? static_cast<Unit const*>(pillar) : target;
+    float groundX = groundAnchor->GetPositionX();
+    float groundY = groundAnchor->GetPositionY();
+    float groundZ = groundAnchor->GetPositionZ();
     Map* map = target->GetMap();
     auto resolveFloor = [&](float x, float y, float hintZ, float& resolvedZ)
     {
@@ -131,8 +138,9 @@ void SetMagmawBalanceMushroomGroundTarget(
 
     // Spell::CheckCast applies the same destination LOS check to a ground
     // spell. If the exact add coordinate is hidden by encounter geometry,
-    // keep the point on the platform but move it toward the caster in small
-    // steps. The detonation radius still covers the parasite wave.
+    // keep the point on the platform but search a small ring around the lava
+    // spawn. The detonation radius still covers the parasite wave while the
+    // lateral points avoid a pillar/body edge that blocks one ray.
     if (bot && !bot->IsWithinLOS(groundX, groundY, groundZ,
             LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::M2))
     {
@@ -141,11 +149,33 @@ void SetMagmawBalanceMushroomGroundTarget(
         float const towardLength = std::sqrt(towardX * towardX + towardY * towardY);
         if (towardLength > 0.01f)
         {
-            for (float offset = 2.0f; offset <= 6.0f; offset += 2.0f)
+            float const directionX = towardX / towardLength;
+            float const directionY = towardY / towardLength;
+            float const lateralX = -directionY;
+            float const lateralY = directionX;
+            std::array<std::pair<float, float>, 12> const offsets = {{
+                { 2.0f * directionX, 2.0f * directionY },
+                { 4.0f * directionX, 4.0f * directionY },
+                { 6.0f * directionX, 6.0f * directionY },
+                { 2.0f * lateralX, 2.0f * lateralY },
+                {-2.0f * lateralX,-2.0f * lateralY },
+                { 4.0f * lateralX, 4.0f * lateralY },
+                {-4.0f * lateralX,-4.0f * lateralY },
+                { 2.0f * directionX + 2.0f * lateralX,
+                  2.0f * directionY + 2.0f * lateralY },
+                { 2.0f * directionX - 2.0f * lateralX,
+                  2.0f * directionY - 2.0f * lateralY },
+                { 4.0f * directionX + 2.0f * lateralX,
+                  4.0f * directionY + 2.0f * lateralY },
+                { 4.0f * directionX - 2.0f * lateralX,
+                  4.0f * directionY - 2.0f * lateralY },
+                { 6.0f * directionX, 6.0f * directionY }
+            }};
+            for (auto const& offset : offsets)
             {
-                float const candidateX = groundX + towardX / towardLength * offset;
-                float const candidateY = groundY + towardY / towardLength * offset;
-                float candidateZ = groundZ;
+                float const candidateX = groundX + offset.first;
+                float const candidateY = groundY + offset.second;
+                float candidateZ = groundAnchor->GetPositionZ();
                 if (!resolveFloor(candidateX, candidateY, groundZ, candidateZ)
                     || !bot->IsWithinLOS(candidateX, candidateY, candidateZ,
                         LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::M2))
