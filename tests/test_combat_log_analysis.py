@@ -340,6 +340,73 @@ def test_shared_damage_copies_are_raw_but_not_originated_dps():
     assert actor["abilities"][0]["originated_damage"] == 100
 
 
+def test_encounter_window_excludes_healing_and_post_kill_capture_tail():
+    report = analyze_combat_log({
+        "combat_log_schema_version": 2,
+        "event_count": 3,
+        "abilities": [
+            {
+                "route_generation": 8,
+                "route_node_id": "magmaw",
+                "perspective": "healing_done",
+                "actor_guid": 10,
+                "actor_role": "healer",
+                "first_at_ms": 1000,
+                "last_at_ms": 90000,
+                "event_count": 2,
+                "amount": 500,
+            },
+            {
+                "route_generation": 8,
+                "route_node_id": "magmaw",
+                "perspective": "damage_done",
+                "actor_guid": 20,
+                "actor_role": "dps",
+                "actor_class_id": 8,
+                "first_at_ms": 10000,
+                "last_at_ms": 20000,
+                "event_count": 2,
+                "amount": 10000,
+                "originated_amount": 10000,
+            },
+            {
+                "route_generation": 8,
+                "route_node_id": "magmaw",
+                "perspective": "damage_taken",
+                "actor_guid": 20,
+                "actor_role": "dps",
+                "first_at_ms": 30000,
+                "last_at_ms": 60000,
+                "event_count": 1,
+                "amount": 100,
+            },
+        ],
+        "second_buckets": [
+            {
+                "route_generation": 8,
+                "perspective": "damage_done",
+                "actor_guid": 20,
+                "source_is_pet": False,
+                "second": 10,
+                "amount": 10000,
+                "originated_amount": 10000,
+            },
+        ],
+    })
+
+    encounter = report["encounters"][0]
+    assert encounter["first_at_ms"] == 10000
+    assert encounter["last_at_ms"] == 20000
+    assert encounter["duration_sec"] == 10
+    assert encounter["capture_first_at_ms"] == 1000
+    assert encounter["capture_last_at_ms"] == 90000
+    assert encounter["capture_duration_sec"] == 89
+    assert encounter["encounter_window_boundary_basis"] == (
+        "first_to_last_positive_originated_damage_done"
+    )
+    assert encounter["encounter_window_party_dps"] == 1000
+
+
 @pytest.mark.parametrize("schema", [3, 4, 5])
 def test_schema3_splits_hostile_and_friendly_damage_without_losing_raw_callbacks(schema):
     def row(

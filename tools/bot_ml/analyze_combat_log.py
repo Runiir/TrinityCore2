@@ -251,9 +251,32 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         rows = by_generation[generation]
         timestamps = [int(row.get("first_at_ms") or 0) for row in rows] + [int(row.get("last_at_ms") or 0) for row in rows]
         timestamps = [value for value in timestamps if value > 0]
-        first_ms = min(timestamps, default=0)
-        last_ms = max(timestamps, default=first_ms)
+        capture_first_ms = min(timestamps, default=0)
+        capture_last_ms = max(timestamps, default=capture_first_ms)
+        originated_damage_rows = [
+            row
+            for row in rows
+            if row.get("perspective") == "damage_done"
+            and _originated_amount(row) > 0
+        ]
+        damage_timestamps = [
+            int(row.get("first_at_ms") or 0)
+            for row in originated_damage_rows
+        ] + [
+            int(row.get("last_at_ms") or 0)
+            for row in originated_damage_rows
+        ]
+        damage_timestamps = [value for value in damage_timestamps if value > 0]
+        # WCL Summary DPS uses the fight window, not the lifetime of cleanup
+        # telemetry. Healing, callbacks, and route-terminal heartbeats may
+        # continue after the boss is dead and must not dilute hostile damage.
+        # Keep the full capture bounds below so the tail remains diagnostic.
+        first_ms = min(damage_timestamps, default=capture_first_ms)
+        last_ms = max(damage_timestamps, default=capture_last_ms)
         duration_sec = max(1.0, (last_ms - first_ms) / 1000.0)
+        capture_duration_sec = max(
+            1.0, (capture_last_ms - capture_first_ms) / 1000.0
+        )
         party_damage_seconds: set[int] = set()
         raw_event_damage_seconds: set[int] = set()
         for (bucket_generation, _actor_guid, perspective, _source_is_pet), seconds in originated_bucket_seconds.items():
@@ -443,6 +466,14 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "first_at_ms": first_ms,
             "last_at_ms": last_ms,
             "duration_sec": round(duration_sec, 3),
+            "capture_first_at_ms": capture_first_ms,
+            "capture_last_at_ms": capture_last_ms,
+            "capture_duration_sec": round(capture_duration_sec, 3),
+            "encounter_window_boundary_basis": (
+                "first_to_last_positive_originated_damage_done"
+                if damage_timestamps
+                else "full_capture_fallback_no_originated_damage"
+            ),
             "combat_duration_sec": combat_seconds,
             "originated_damage_seconds": len(party_damage_seconds),
             "party_damage": party_damage,

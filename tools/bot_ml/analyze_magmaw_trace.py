@@ -2210,6 +2210,10 @@ def _compact_metrics(
             "combat_seconds",
             "combat_duration_sec",
             "duration_sec",
+            "capture_first_at_ms",
+            "capture_last_at_ms",
+            "capture_duration_sec",
+            "encounter_window_boundary_basis",
             "elapsed_party_dps",
             "elapsed_party_hps",
             "encounter_window_party_dps",
@@ -3356,6 +3360,8 @@ def _boss_dps_review(
             "comparison_metric": "wcl_window_dps",
             "formula": "originated_damage_over_duration_sec",
             "duration_field": "duration_sec",
+            "duration_basis": "first_to_last_positive_originated_damage_done",
+            "capture_duration_field": "capture_duration_sec",
             "local_source_field": "encounter_window_dps",
             "legacy_alias": "elapsed_dps",
             "excluded_diagnostics": {
@@ -3467,7 +3473,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use wcl_window_dps/encounter_window_dps (originated damage divided by duration_sec) for the WCL Summary comparison. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-window DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use wcl_window_dps/encounter_window_dps (originated damage divided by the first-to-last positive hostile damage_done window in duration_sec) for the WCL Summary comparison. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-window DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",

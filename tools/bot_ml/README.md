@@ -47,12 +47,16 @@ The harness writes `commands.txt`, `worldserver_output.log` when executed, and `
 dilute the diagnostic. `active_dps` uses the actor's damage-bearing seconds and
 is a cadence diagnostic. `encounter_window_dps` and
 `encounter_window_party_dps` use originated damage divided by `duration_sec`,
-the selected encounter event window; these are the local fields used for WCL
-Summary DPS comparison. `elapsed_dps` and `elapsed_party_dps` are retained as
-legacy aliases for that same local encounter-window arithmetic, not route
-entrance-to-kill wall clock. Route wall clock is a separate progress metric in
-the live validation report. `raw_event_dps` is the explicitly named
-all-landed-callback comparison. Pet and player one-second buckets are separate
+where the fight window is bounded by the first and last positive hostile
+`damage_done` aggregate. This prevents healing, callbacks, and post-kill route
+heartbeats from diluting the WCL Summary denominator. `capture_duration_sec`
+retains the full aggregate capture lifetime for diagnostics; it is not a WCL
+denominator. These are the local fields used for WCL Summary DPS comparison.
+`elapsed_dps` and `elapsed_party_dps` are retained as legacy aliases for that
+same local encounter-window arithmetic, not route entrance-to-kill wall clock.
+Route wall clock is a separate progress metric in the live validation report.
+`raw_event_dps` is the explicitly named all-landed-callback comparison. Pet and
+player one-second buckets are separate
 in combat-log schema v2, and schema v3 adds the `friendly_damage_done`
 perspective. Schema v3 uses `damage_attribution_schema:
 "originated_amount_v2_friendly_split"`; hostile DPS/progress use `DamageDone`
