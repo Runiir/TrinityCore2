@@ -105,6 +105,15 @@ NON_FAILURE_PROFILE_GATE_REASONS = frozenset({
     "owned_target_aura_duration_too_low",
 })
 
+# Magmaw can place a bot in a native controlled state during encounter
+# mechanics. The resolver records every candidate rejected while that state is
+# active, but those rows are mechanic downtime rather than failed submissions.
+# Keep them visible in the JEV packet without allowing their volume to create a
+# false rotation or movement signal.
+MECHANIC_WAIT_REASONS = frozenset({
+    "caster_controlled",
+})
+
 NATIVE_ACTIONABLE_FAILURE_OUTCOMES = frozenset({
     "no_action",
     "cast_failed",
@@ -1558,6 +1567,8 @@ def _compact_jev_candidate_signal(signal: dict[str, Any]) -> dict[str, Any]:
             "candidate_scan_count",
             "expected_profile_wait_count",
             "expected_profile_wait_reasons",
+            "mechanic_wait_count",
+            "mechanic_wait_reasons",
             "non_failure_profile_gate_count",
             "non_failure_profile_gate_reasons",
             "actionable_candidate_count",
@@ -1739,10 +1750,12 @@ def _candidate_rejection_signal(rows: Any) -> dict[str, Any]:
     if not isinstance(rows, list):
         rows = []
     expected_rows: list[dict[str, Any]] = []
+    mechanic_wait_rows: list[dict[str, Any]] = []
     non_failure_rows: list[dict[str, Any]] = []
     actionable_rows: list[dict[str, Any]] = []
     reason_counts: Counter[str] = Counter()
     expected_count = 0
+    mechanic_wait_count = 0
     non_failure_count = 0
     actionable_count = 0
     for row in rows:
@@ -1754,6 +1767,9 @@ def _candidate_rejection_signal(rows: Any) -> dict[str, Any]:
         if reason in EXPECTED_PROFILE_WAIT_REASONS:
             expected_rows.append(row)
             expected_count += count
+        elif reason in MECHANIC_WAIT_REASONS:
+            mechanic_wait_rows.append(row)
+            mechanic_wait_count += count
         elif reason in NON_FAILURE_PROFILE_GATE_REASONS:
             non_failure_rows.append(row)
             non_failure_count += count
@@ -1776,9 +1792,16 @@ def _candidate_rejection_signal(rows: Any) -> dict[str, Any]:
             "conditional profile gates must not be used as DPS loss without "
             "corroborating native outcomes"
         ),
-        "candidate_scan_count": expected_count + non_failure_count + actionable_count,
+        "candidate_scan_count": (
+            expected_count
+            + mechanic_wait_count
+            + non_failure_count
+            + actionable_count
+        ),
         "expected_profile_wait_count": expected_count,
         "expected_profile_wait_reasons": reason_summary(expected_rows),
+        "mechanic_wait_count": mechanic_wait_count,
+        "mechanic_wait_reasons": reason_summary(mechanic_wait_rows),
         "non_failure_profile_gate_count": non_failure_count,
         "non_failure_profile_gate_reasons": reason_summary(non_failure_rows),
         "actionable_candidate_count": actionable_count,
@@ -1822,6 +1845,8 @@ def _actor_loss_signals(
             rows_by_guid[_as_int(row.get("bot_guid"))].append(row)
 
     def bucket_for(reason: str) -> str:
+        if reason in MECHANIC_WAIT_REASONS:
+            return "mechanic_wait"
         if reason in MOVEMENT_SIGNAL_REASONS:
             return "movement_or_range"
         # Target-aura, target-health, interruptibility, and purpose gates are

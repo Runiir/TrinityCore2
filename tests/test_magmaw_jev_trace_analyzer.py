@@ -674,6 +674,14 @@ def test_candidate_rejection_signal_separates_expected_waits_from_actionable_gat
                 "bot_guid": 10,
                 "class_spec": "fire_mage",
                 "action_category": "builder",
+                "reason": "caster_controlled",
+                "spell_id": 133,
+                "count": 11,
+            },
+            {
+                "bot_guid": 10,
+                "class_spec": "fire_mage",
+                "action_category": "builder",
                 "reason": "max_range_exceeded",
                 "spell_id": 133,
                 "count": 7,
@@ -681,8 +689,12 @@ def test_candidate_rejection_signal_separates_expected_waits_from_actionable_gat
         ]
     )
 
-    assert signal["candidate_scan_count"] == 507
+    assert signal["candidate_scan_count"] == 518
     assert signal["expected_profile_wait_count"] == 500
+    assert signal["mechanic_wait_count"] == 11
+    assert signal["mechanic_wait_reasons"] == [
+        {"reason": "caster_controlled", "count": 11}
+    ]
     assert signal["actionable_candidate_count"] == 7
     assert signal["actionable_candidate_groups"] == [
         {
