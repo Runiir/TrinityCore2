@@ -2,6 +2,7 @@
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotTypes.h"
+#include "Creature.h"
 #include "Player.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
