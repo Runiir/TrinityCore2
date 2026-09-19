@@ -36,8 +36,10 @@ the two Fire actors prepared against live Magmaw and ended NOT_INFRONT after a
 spline/replacement heading overwrote their one-time facing. This is a bounded
 proven defect, not the whole Fire or raid gap. The facing repair is committed as `f7efd4fe08`, with independent approval and
 five passing focused tests. Native build and live acceptance remain pending.
-A separate pet-classification repair and passive Blood pre-spend observation
-are completing review for the same build; they retain separate acceptance checks.
+Pet classification `da85ab7798` and passive Blood pre-spend observation
+`8167623e51` are independently approved too. Their focused tests pass (1 and11
+respectively). The combined source is ready for one native build and a matched
+completion-watchdog canary; each repair retains separate acceptance checks.
 
 Blood's boss-window death, healer boss-entry cooldown and moving-triage gaps,
 Survival's target-valid Cobra interruptions, Balance interruptions preceding subsequent casts,

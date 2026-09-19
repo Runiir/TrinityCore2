@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10N clear; OBS-008 exercised; next bounded shared-runtime edge is moving-cast facing.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "DPS-063 design packet frozen; implementation underway; not yet independently reviewed, built or live verified",
+  "gate_state": "Facing and elemental ownership repairs plus passive Blood decision observation independently approved; focused tests passed; queued build next",
   "first_broken_edge": {
     "id": "moving_cast_spline_overwrites_required_target_facing",
     "owner_classification": "bot_runtime_implementation",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "b697f80e1cd376d89d6f3364f064bc13e4f8003a19f888e7f56d221b8bb481ac"
+    "sha256": "2d4b3e3e71f05533ffbf404bb2307c4a8a0392b974b85df6251c76ab2c692529"
   },
   "scope_lock": {
     "objective": "Keep native permitted movement while preserving the active front-required cast target facing at spline position commits, including arrival.",
@@ -44,9 +44,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Complete the bounded Unit::UpdateSplinePosition facing repair from /tmp/magmaw-cast-facing-repair-packet-20260919.json; run the focused compiled replay, independent review and clean build, then validate the same four-cast terminal edge in a completion-watchdog run. Preserve separate Blood survival and pet-filtering work.",
+  "next_action": "Configure and build the clean combined source once with fast4_v2; verify receipt; run the freshly provisioned unchanged roster through completion watchdog. Validate moving-cast native results, elemental friendly/hostile damage, and immutable Blood decision facts. Then review all10 actors with specialists and both models; retain performance acceptance separately.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -278,5 +278,23 @@
     "design_packet": "/tmp/magmaw-cast-facing-repair-packet-20260919.json",
     "observed_cast_count": 4,
     "bounded_scope_not_whole_gap": true
+  },
+  "reviewed_batch": {
+    "DPS-063": {
+      "commit": "f7efd4fe08",
+      "tests_passed": 5,
+      "review": "/tmp/magmaw-cast-facing-review-20260919.json"
+    },
+    "PET-001": {
+      "commit": "da85ab7798",
+      "tests_passed": 1,
+      "review": "/tmp/magmaw-pet-friendly-review-20260919.json"
+    },
+    "TANK-001_observation": {
+      "commit": "8167623e51",
+      "tests_passed": 11,
+      "review": "/tmp/magmaw-blood-observation-review-20260919.json",
+      "gameplay_change": false
+    }
   }
 }
