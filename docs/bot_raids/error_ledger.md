@@ -445,6 +445,11 @@ LOS hops; the policy scans45yd and also has an independent forbid_area gate.
 Capture the actual protection match and authority at evaluation before changing
 either gate. A code-level far-target counterexample is not proof that it occurred
 in shard89, and a rejection does not quantify recoverable damage.
+The passive observation is implemented and independently approved for build.
+It keeps the existing45yd first-match predicate, identifies that match and its
+primary-relative distance/LOS in the existing mask, and explicitly leaves native
+chain selection unobserved. Fifteen focused tests passed. No protection rule or
+Heart Strike admission has changed; live observation is still required.
 
 DPS-057: Within shard89 Fire30006 trails30007 by12,674.362 DPS. Combustion child
 83853 differs by567,468 damage and Pyroblast92315 by545,509, together about75.1%

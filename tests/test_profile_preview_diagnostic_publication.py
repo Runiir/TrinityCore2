@@ -22,6 +22,7 @@ def test_actual_resolver_publication_and_passive_call_sites(tmp_path):
 #include <string>
 #include <sstream>
 #include <vector>
+#include "Bots/BotRaidAreaObservation.h"
 using uint32=unsigned;
 struct Guid {uint32 GetCounter()const{return 1;}};
 constexpr int CLASS_MAGE=8;
@@ -56,6 +57,7 @@ std::vector<BotActionCandidate> candidates={{forbidArea?101u:202u,forbidArea?"ex
 auto best=&candidates[0];struct Profile{std::string SpecTag="affliction";operator int()const{return 0;}} profile;int maskEvaluation=0,maskEvaluatedAtMs=100;std::string roleGoal="tank";
 Saturation saturation;saturation.ExperimentConfidence=forbidArea?1:2;
 unsigned requestedHostileCount=hostileCount;
+BotRaidAreaObservation::Observation areaObservation;
 ResolvedCombatAction action{best->SpellId};
 ''' + publication + r'''
 return action;
@@ -87,5 +89,6 @@ assert(party.LastSaturationByBot.at(1).ExperimentConfidence==2);
     cpp = tmp_path / "preview.cpp"
     cpp.write_text(program)
     binary = tmp_path / "preview"
-    subprocess.run(["g++", "-std=c++17", str(cpp), "-o", str(binary)], check=True)
+    subprocess.run(["g++", "-std=c++17", "-I", str(ROOT / "src/server/game"),
+                    str(cpp), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True)

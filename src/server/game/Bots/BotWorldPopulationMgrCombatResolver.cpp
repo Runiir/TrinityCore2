@@ -4,13 +4,13 @@
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatMaskEvaluation.h"
+#include "Bots/BotRaidAreaObservation.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotElementalSpiritwalkersGrace.h"
 #include "Bots/BotProgressionGoalPolicy.h"
-#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotWorldPopulationMgrCombatRange.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -37,6 +37,7 @@
 namespace
 {
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+using BotRaidAreaObservation::ObserveNearbyProtectedEncounterTarget;
 
 bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpell const& spell)
 {
@@ -48,34 +49,6 @@ bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpel
 }
 
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
-// Future encounter protection must be geometry-aware.  Keeping the global
-// entry set is useful for route bookkeeping, but it must not suppress AoE on
-// a current trash pack that is nowhere near the protected encounter.
-
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
-{
-    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
-        return false;
-
-    std::vector<WorldObject*> nearbyObjects;
-    Trinity::AllWorldObjectsInRange check(target, 45.0f);
-    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
-        target, nearbyObjects, check);
-    Cell::VisitAllObjects(target, searcher, 45.0f);
-    for (WorldObject* object : nearbyObjects)
-    {
-        Creature* creature = object ? object->ToCreature() : nullptr;
-        if (!creature || creature == target || !creature->IsAlive()
-            || !owner->IsValidAttackTarget(creature))
-            continue;
-        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
-                owner->GetGUID().GetRawValue(), creature->GetEntry(),
-                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
-            return true;
-    }
-    return false;
-}
-
 }
 
 ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry) const
@@ -119,6 +92,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     std::string const maskEvaluation = BotCombatMaskEvaluation::Context(
         maskEvaluatedAtMs, bot, target, Cohort(), Party(),
         "ResolveProfileCombatAction");
+    BotRaidAreaObservation::Observation const areaObservation =
+        ObserveNearbyProtectedEncounterTarget(bot, target);
     uint32 const requestedHostileCount = hostileCount;
     auto const potionHealthOwner = BotRaidCombatPotionHealthOwner::Resolve(bot, Cohort(), Party());
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile, potionHealthOwner);
@@ -202,7 +177,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     // not already carry this mage's Living Bomb, while preserving the normal
     // priority target for every other action.
     if (allowMultidot
-        && !HasNearbyProtectedEncounterTarget(bot, target)
+        && !areaObservation.ProtectedTargetFound
         && bot->getClass() == CLASS_MAGE && hostileCount >= 3 && bot->HasSpell(44457))
     {
         std::vector<Unit*> spreadTargets = { target };
@@ -395,7 +370,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "movement_requires_instant_action";
             continue;
         }
-        if (HasNearbyProtectedEncounterTarget(bot, target)
+        if (areaObservation.ProtectedTargetFound
             && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
             && !magmawMushroomAction && !scopedAreaAction)
         {
@@ -906,7 +881,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             << ",\"allow_multidot\":" << allowMultidot
             << ",\"hostile_target_only\":" << hostileTargetOnly
             << ",\"movement_compatible_only\":" << movementCompatibleOnly
-            << ",\"spec_tag_override\":" << BotCombatMaskEvaluation::Quote(specTagOverride ? specTagOverride : "") << "}";
+            << ",\"spec_tag_override\":" << BotCombatMaskEvaluation::Quote(specTagOverride ? specTagOverride : "")
+            << ",\"area_authority_observation\":" << areaObservation.ObservationJson(forbidArea) << "}";
         Party().LastCombatMaskByBot[botKey] = BotCombatMaskEvaluation::Append(
             BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile,
                 roleGoal.c_str(), saturation.ToJson().c_str()), maskEvaluation,

@@ -29,7 +29,7 @@ def test_combat_resolver_preserves_profile_and_safety_arbitration() -> None:
     for marker in (
         "BotClassSpecActionProfileStore::BuildCandidates",
         "future_encounter_target_forbidden",
-        "HasNearbyProtectedEncounterTarget",
+        "ObserveNearbyProtectedEncounterTarget",
         "SpellHasHostileMultiTargetSemantics",
         "target_immune",
         "target_health_gate",
