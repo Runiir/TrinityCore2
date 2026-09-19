@@ -5,38 +5,42 @@ is preserved.
 
 ## Current work and latest native run
 
-WCL is the performance benchmark. Per the user's instruction, restart from the
-code that produced shard89's 241,249.360 DPS clear, restore native Mushroom
-radius/selection, run again, then continue repairs from the measured result.
-Do not replace the WCL goal with the later 152k run or treat 241k as the final
-acceptance threshold.
+WCL remains the performance benchmark. The requested 241k-source restart is
+complete. Clean source `ab829858df` differs from the shard89 native source only
+by restoring ordinary Mushroom radius/target selection. It killed Magmaw in
+119.991 seconds: 28,164,503 originated hostile damage, **234,721.796 DPS** and
+**13,064.738 HPS**, with all ten alive. Owned pets are included; friendly damage
+and mirrored 79010 callbacks are excluded. The completion watchdog accepted
+native death, cleanup and exit. Schema-8 capture retained 7,767 events with no
+gaps, conflicts or retries. Encounter clear is accepted; roster performance is
+still open. Historical shard89's 241,249.360 DPS used enlarged Mushroom targeting
+and a different retained window, so it is not a lawful performance floor.
 
-Shard89 native code is retained at `2f13baea11` and unchanged through
-`68621071cc`. Master now merges that source with the reviewed canonical timeline,
-schema-8 capture and local Laya tooling. The only native source/SQL difference
-for the new baseline run is `spell_druid_magmaw.cpp`: remove the eight-yard
-radius and horizontal-only target append, retaining ordinary native selection.
-Do not carry the later Blood observation refactor, melee-veto change or a new
-Mushroom policy fix into this baseline measurement.
+The roster stays 1 Blood tank, 3 healers and 6 DPS. The current per-actor table is
+[the DPS baseline](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
+The next reviewed changes address Heart Strike policy admission and lawful
+Mushroom ground placement. Preserve native cleave protection and spell geometry.
+No later native melee-veto removal was carried into the restart.
 
-Keep 1 Blood tank, 3 healers, 6 DPS and the shard89 class/profile setup. Use clean
-source/build identity, fresh provisioning/readback and the completion watchdog.
-The next result must report exact pull-to-death damage, owned pets, per-actor
-output, phase/duty coverage and deaths. Exclude friendly damage and mirrored
-79010 callbacks. Compare to shard89 and WCL; unexplained actor losses remain open.
+Both local Laya and hosted Jev reviewed all ten actors successfully. Each retained
+two suggestions requiring review; all predictions remain quarantined. Tank and
+healer packets lack detailed role metrics, which is explicitly reported rather
+than inferred. Independent class/role reviewers use the full native evidence.
+Follow [the shadow workflow](local_jev_shadow.md) after every closed run.
 
-The later `2fcd4133aa` run cleared in 197.847 seconds at 152,244.042 DPS and
-19,332.722 HPS. It is retained regression evidence, not the restart source or
-performance target. Its compact all-actor review is
+Raw evidence is published and fresh-remote verified at
+`artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc`.
+The 17,975,541-byte archive preserves the raw capture and timeline; local expanded
+copies remain temporarily available to reviewers. Compact reviews and model
+requests are being closed separately. The native source/build identity is
+ab829858df, not the later diagnostic-tooling commit.
+
+The later `2fcd4133aa` run at 152,244.042 DPS remains regression evidence, not the
+restart source or target. Its review pointer is
 `artifacts/cata_raid_program/magmaw_native_parity_2fcd4133_20260919_review.dvc`.
 Shard89 evidence is `artifacts/cata_raid_program/magmaw_jev_canary_compact_20260919.tar.gz.dvc`.
 
-Local Laya runs at `127.0.0.1:8000`; use the
-[local shadow workflow](local_jev_shadow.md) after closure. Predictions remain
-advisory and quarantined until adjudicated. The authserver is available; the
-next worldserver launch follows reviewed build and preparation.
-
-Historical entries below do not override this restart instruction.
+Historical entries below do not override this current result.
 
 ## Prior diagnostic run
 

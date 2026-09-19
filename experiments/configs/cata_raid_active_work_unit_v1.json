@@ -1,28 +1,34 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:241k_source_native_mushroom_baseline",
+  "work_unit": "magmaw:heart_strike_and_lawful_mushroom_placement",
   "owner_skill": "raid-performance-loop",
-  "classification": "controlled_baseline_restart",
+  "classification": "trace_backed_role_repair",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "68621071ccb3df1eb6927fbafa83a8c5dccdbb3a",
+  "observed_at_commit": "ab829858df86a19d1ede9cad5d1017f5e8a3004b",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
+  "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Initial WCL component ranking available; matched duty/phase attribution remains open",
+  "gate_state": "241k-source native-radius baseline closed; role repairs undergoing implementation and independent review",
   "first_broken_edge": {
-    "id": "material_throughput_gap_not_yet_causally_decomposed",
-    "owner_classification": "rotation_review",
-    "cause": "Aggregate WCL totals and small local defects were used without spell-level and duty/phase attribution."
+    "id": "scoped_heart_strike_permission_and_pillar_center_mushroom_destination",
+    "owner_classification": "role_implementation",
+    "cause": "Blood55050 blocked by area policy; Balance Mushroom children have zero native targets because selected Pillar center lies outside6yd native range."
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "0fc642ec7491af2348f989dc029d41407e48f36ebaec25be2dffc6096c932da2"
+    "sha256": "41c0950a202a9ea48acd00c6b1a0e1dcf559c9d792ebe618b9a9ef113db1e810"
   },
   "scope_lock": {
-    "objective": "Review and build 241k native source with only native Mushroom targeting restored; run completion watchdog, then compare all actors with WCL.",
+    "objective": "Repair the observed Blood admission and Balance ground-placement edges without changing native cleave/geometry; compare each actor with the closed ab829 baseline and WCL.",
     "owned_files": [
-      "src/server/scripts/Spells/spell_druid_magmaw.cpp",
-      "tests/test_magmaw_balance_mushroom_duty.py"
+      "src/server/game/Bots/BotWorldPopulationMgrRaidPlanning.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+      "src/server/game/Bots/BotActionExecutor.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.h",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h",
+      "experiments/configs/validation_scenarios_cata_001.json"
     ],
     "forbidden_changes": [
       "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -41,9 +47,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Independent review approved and 131 focused tests passed. Build master, provision exact roster and run completion-watchdog baseline; WCL remains performance benchmark.",
+  "next_action": "Finish independent Heart Strike and lawful Mushroom-placement reviews, refresh route asset closure, build clean master, then completion-watchdog validation and all-actor Laya/API Jev plus specialist review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -59,45 +65,33 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "779f62087f43afa9996a09817eabac045b5999ee",
+    "source_commit": "ab829858df86a19d1ede9cad5d1017f5e8a3004b",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
     "server_exit_code": 0,
-    "postrun_build_verified": true,
     "training_eligible": false,
     "qualification_eligible": false,
-    "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 129.792,
-    "hostile_originated_damage": 28193123,
-    "pull_to_death_party_dps": 217217.72528353057,
-    "exact_effective_healing": 1682330,
-    "exact_hps": 12961.738782051281,
-    "requested_repair_id": "DPS-051,OBS-012,MOV-001",
+    "pull_to_death_seconds": 119.991,
+    "hostile_originated_damage": 28164503,
+    "pull_to_death_party_dps": 234721.79580135178,
+    "exact_effective_healing": 1567651,
+    "exact_hps": 13064.738188697485,
+    "requested_repair_id": "native_mushroom_radius_restart",
     "requested_repair_achieved": true,
     "performance_verdict": "not_accepted_roster_gaps_remain",
     "diagnosis_required": true,
-    "primary_baseline_source": "a3a74056c871a1083577f52f8a2e9516ce159e84",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc",
-    "publication_state": "remote_verified_and_exact_duplicates_evicted",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc",
+    "publication_state": "raw_remote_verified_compact_reviews_pending",
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true,
-    "requested_repair_scope": "Three Treants and native damage; periodic outcome full/delta/timeline; receipt373 native hazard traversal.",
-    "infection_damage_event_count": 0,
-    "infection_affected_actor_count": 0,
-    "safety_retained": true,
-    "independent_review_sha256": "7d9a569f02f8a3c95e010e5ef1635c3ce2fbef6fad69f5a2ca2132c211561d67"
+    "raw_payloads_evicted": false
   },
   "implementation_review": {
-    "verdict": "previous_Balance_OBS_MOV_edges_native_accepted",
-    "balance_review_sha256": "387cc9e399cc9ed16099190daabf8fe97e54893213ecfb4f0425d7d93b1aceb3",
-    "live_verified": true,
-    "next_work_unit_implemented": true,
-    "outcome_review_sha256": "fc3b230122ab84c20fd8f159be6addb33d17edce265a498ad21c35c6d98c9a77",
-    "outcome_focused_tests_passed": 73
+    "verdict": "pending_heart_strike_and_mushroom_review",
+    "live_verified": false
   },
   "related_edges": [
     {
@@ -197,5 +191,38 @@
     ]
   },
   "parent_objective": "Repair and validate DPS across every represented spec; narrow repair acceptance does not complete the roster objective.",
-  "actor_acceptance_path": "docs/bot_raids/magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance"
+  "actor_acceptance_path": "docs/bot_raids/magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance",
+  "previous_closed_magmaw_canary": {
+    "source_commit": "779f62087f43afa9996a09817eabac045b5999ee",
+    "native_boss_death_accepted": true,
+    "capture_accepted": true,
+    "boss_clear": true,
+    "terminal_reason": "clear",
+    "cleanup_passed": true,
+    "server_exit_code": 0,
+    "postrun_build_verified": true,
+    "training_eligible": false,
+    "qualification_eligible": false,
+    "recorded_casualties": 0,
+    "boss_fight_casualties": 0,
+    "pull_to_death_seconds": 129.792,
+    "hostile_originated_damage": 28193123,
+    "pull_to_death_party_dps": 217217.72528353057,
+    "exact_effective_healing": 1682330,
+    "exact_hps": 12961.738782051281,
+    "requested_repair_id": "DPS-051,OBS-012,MOV-001",
+    "requested_repair_achieved": true,
+    "performance_verdict": "not_accepted_roster_gaps_remain",
+    "diagnosis_required": true,
+    "primary_baseline_source": "a3a74056c871a1083577f52f8a2e9516ce159e84",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc",
+    "publication_state": "remote_verified_and_exact_duplicates_evicted",
+    "remote_reconstruction_verified": true,
+    "raw_payloads_evicted": true,
+    "requested_repair_scope": "Three Treants and native damage; periodic outcome full/delta/timeline; receipt373 native hazard traversal.",
+    "infection_damage_event_count": 0,
+    "infection_affected_actor_count": 0,
+    "safety_retained": true,
+    "independent_review_sha256": "7d9a569f02f8a3c95e010e5ef1635c3ce2fbef6fad69f5a2ca2132c211561d67"
+  }
 }

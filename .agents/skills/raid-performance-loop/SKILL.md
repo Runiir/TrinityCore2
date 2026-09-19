@@ -123,6 +123,15 @@ steering, teleportation, global tolerance relaxation, or encounter MMAP workarou
 
 ## Workers
 
+For every closed optimization run, review every admitted actor with both local
+Laya and hosted Jev using the same attributable evidence projection. Retain
+provider/model identity, actual request and response, and explicit missing fields.
+Use the commands in `docs/bot_raids/local_jev_shadow.md`. Neither prediction
+agreement nor confidence accepts a repair. Join the class/role reviewer findings
+with native observations; tank/healer packets without role metrics remain
+insufficient evidence. Keep predictions quarantined until human adjudication.
+
+
 When several represented classes or roles underperform, use the
 [parallel role review](references/parallel-role-review.md) requested by the
 coordinator. One reviewer can cover duplicate bots of the same spec. Keep one

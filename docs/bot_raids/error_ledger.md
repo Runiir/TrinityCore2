@@ -459,3 +459,27 @@ between 2f13baea11 and 68621071cc), apply only native Mushroom radius/selection
 restoration, retain needed diagnostics/Laya, merge to master, build and measure.
 The 152k source is later regression evidence, not the new target. Do not add
 Blood, movement or Mushroom-placement repairs before this baseline rerun.
+
+## Restart baseline closed, 2026-09-19
+
+DPS-059: ab829858df restored native Mushroom geometry and cleared at234,721.796
+DPS in119.991s. All ten survived; capture had zero gaps/retries. Clear is accepted,
+performance remains open. The prior instruction to defer other repairs until
+this baseline is now satisfied. Actor findings are current in the DPS baseline.
+
+DPS-026/DPS-029: Heart Strike55050 still has no submissions. Scope policy admission
+to the existing Magmaw body/head allowlist and preserve protected-target rejection
+for native melee chains in resolver and both executor checks. Do not remove
+protected secondary targets from the native spell or widen any native geometry.
+
+Balance: nine Mushroom damage children each selected zero targets. Parasites
+were at least7yd from the policy's Pillar-center placement; native radius is6yd.
+Repair logical ground placement near a live parasite, not native radius/selection.
+The20.132s direct-attack gap includes required pincer duty and is not recoverable idle.
+
+OBS-008: Fire moving Scorch and Survival Cobra accepted submissions still end
+unsuccessfully without terminal reason/cast correlation. Capture completeness
+does not imply these fields exist; investigate the producer before tuning spells.
+Both local Laya and hosted Jev reviewed10 actors without transport errors. Role
+packets explicitly lack detailed healing/mitigation metrics. Model agreement is
+advisory; keep predictions quarantined and preserve independent native reviews.
