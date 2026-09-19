@@ -110,6 +110,22 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 def _actor_identity(report: Mapping[str, Any] | None) -> dict[int, dict[str, Any]]:
     """Extract stable actor identity from a live validation report."""
+    from tools.bot_ml.closed_capture_inputs import (
+        canonical_actor_identity,
+        is_canonical_capture,
+    )
+
+    canonical_values = report if isinstance(report, list) else [report]
+    canonical_report = next(
+        (value for value in canonical_values if is_canonical_capture(value)),
+        None,
+    )
+    if canonical_report is not None:
+        return {
+            int(guid): dict(identity)
+            for guid, identity in canonical_actor_identity(canonical_report).items()
+        }
+
     identities: dict[int, dict[str, Any]] = {}
 
     def visit(value: Any, depth: int = 0) -> None:
@@ -145,7 +161,7 @@ def _actor_identity(report: Mapping[str, Any] | None) -> dict[int, dict[str, Any
             if identity:
                 identities[guid] = {**identities.get(guid, {}), **identity}
         for key in (
-            "diagnosis", "status", "raid_runtime", "roster", "members", "bots",
+            "diagnosis", "status", "raid_runtime", "accepted_raid_runtime", "roster", "members", "bots",
             "admission_receipt", "scenario_reports",
         ):
             nested = value.get(key)
@@ -428,11 +444,20 @@ def compare_timelines(
 ) -> dict[str, Any]:
     """Build a compact all-actor comparison from one closed bot run."""
     report = _load_json(bot_run / "report.json")
-    combat_log = _load_json(bot_run / "combat_log.json")
+    from tools.bot_ml.closed_capture_inputs import is_canonical_capture, load_canonical_capture
+    canonical = load_canonical_capture(bot_run, report) if is_canonical_capture(report) else None
+    combat_log = canonical["combat_log"] if canonical is not None else _load_json(bot_run / "combat_log.json")
     event_input = _native_event_input(combat_log)
-    combat_analysis = _load_json(bot_run / "combat_analysis.json")
+    combat_analysis = canonical["combat_analysis"] if canonical is not None else _load_json(bot_run / "combat_analysis.json")
     wcl_manifest, wcl_actors = _load_wcl_actors(wcl_manifest_path)
-    identities = _actor_identity(report)
+    identities = (
+        {
+            int(guid): dict(identity)
+            for guid, identity in (canonical.get("actor_identity", {}) or {}).items()
+        }
+        if canonical is not None
+        else _actor_identity(report)
+    )
     encounter = next(
         (
             row
@@ -457,6 +482,12 @@ def compare_timelines(
         for row in encounter.get("actors", [])
         if isinstance(row, dict) and int(row.get("actor_guid") or 0)
     }
+    if canonical is not None:
+        admitted_guids = {int(guid) for guid in identities}
+        actor_metrics = {
+            guid: row for guid, row in actor_metrics.items()
+            if guid in admitted_guids
+        }
     raw_events = combat_log["recent_events"]
     by_actor: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
     for event in raw_events:
@@ -494,11 +525,17 @@ def compare_timelines(
     actors: list[dict[str, Any]] = []
     for guid, metrics in sorted(actor_metrics.items()):
         identity = identities.get(guid, {})
-        role = str(identity.get("role") or metrics.get("actor_role") or "unknown")
+        role = str(
+            identity.get("role")
+            if canonical is not None
+            else identity.get("role") or metrics.get("actor_role") or "unknown"
+        )
         if role not in include_roles:
             continue
         class_spec = str(
             identity.get("class_spec")
+            if canonical is not None
+            else identity.get("class_spec")
             or metrics.get("class_spec")
             or CLASS_ID_TO_SPEC.get(int(metrics.get("actor_class_id") or 0), "unknown")
         )
@@ -536,7 +573,11 @@ def compare_timelines(
         )
         actor_row: dict[str, Any] = {
             "bot_guid": guid,
-            "bot_name": identity.get("bot_name") or metrics.get("actor_name"),
+            "bot_name": (
+                identity.get("bot_name")
+                if canonical is not None
+                else identity.get("bot_name") or metrics.get("actor_name")
+            ),
             "role": role,
             "class_spec": class_spec,
             "comparison_status": "comparable" if reference is not None else "missing_wcl_reference",
