@@ -25,6 +25,43 @@ def combat_log_fixture() -> dict:
         "aggregate_count": 3,
         "second_bucket_count": 2,
         "recent_events_dropped": 7,
+        "action_outcomes": [
+            {
+                "route_generation": 2,
+                "route_node_id": "corborus",
+                "actor_guid": 10,
+                "actor_name": "Firemake",
+                "actor_role": "dps",
+                "actor_class_id": 8,
+                "phase": "profile_resolve",
+                "action_type": "wait",
+                "action_name": "no_valid_profile_action",
+                "spell_id": 0,
+                "result": "no_action",
+                "reason": "no_valid_profile_action",
+                "retry_reason": "no_valid_profile_action",
+                "first_at_ms": 3000,
+                "last_at_ms": 5000,
+                "count": 3,
+            },
+        ],
+        "candidate_rejections": [
+            {
+                "route_generation": 2,
+                "route_node_id": "corborus",
+                "actor_guid": 10,
+                "actor_name": "Firemake",
+                "actor_role": "dps",
+                "actor_class_id": 8,
+                "phase": "profile_resolve",
+                "spell_id": 133,
+                "action_category": "builder",
+                "reason": "max_range_exceeded",
+                "first_at_ms": 3000,
+                "last_at_ms": 5000,
+                "count": 4,
+            },
+        ],
         "abilities": [
             {
                 "route_generation": 2,
@@ -174,16 +211,25 @@ def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     assert encounter["route_node_id"] == "corborus"
     assert encounter["party_damage"] == 10000
     assert encounter["party_dps"] == 1000
+    assert encounter["encounter_window_party_dps"] == 1000
     assert encounter["party_healing"] == 0
     assert encounter["party_hps"] == 0
     assert encounter["elapsed_party_hps"] == 0
     actor = encounter["actors"][0]
     assert actor["dps"] == 1000
     assert actor["elapsed_dps"] == 1000
+    assert actor["encounter_window_dps"] == 1000
+    assert actor["encounter_window_dps_basis"] == "originated_damage_over_duration_sec"
     assert actor["active_dps"] == 5000
     assert actor["damage_uptime"] == 0.2
     assert actor["abilities"][0]["spell_name"] == "Fireball"
     assert actor["abilities"][0]["damage_share"] == 0.9
+    assert encounter["action_outcome_count"] == 1
+    assert encounter["action_outcomes"][0]["action_name"] == "no_valid_profile_action"
+    assert encounter["action_outcomes"][0]["count"] == 3
+    assert encounter["candidate_rejection_count"] == 1
+    assert encounter["candidate_rejections"][0]["reason"] == "max_range_exceeded"
+    assert report["candidate_rejection_count"] == 1
     assert {row["kind"] for row in report["diagnostics"]} >= {
         "rotation_low_variety",
         "single_ability_damage_dominance",
@@ -292,6 +338,73 @@ def test_shared_damage_copies_are_raw_but_not_originated_dps():
     assert actor["abilities"][0]["damage"] == 100
     assert actor["abilities"][0]["raw_event_damage"] == 300
     assert actor["abilities"][0]["originated_damage"] == 100
+
+
+def test_encounter_window_excludes_healing_and_post_kill_capture_tail():
+    report = analyze_combat_log({
+        "combat_log_schema_version": 2,
+        "event_count": 3,
+        "abilities": [
+            {
+                "route_generation": 8,
+                "route_node_id": "magmaw",
+                "perspective": "healing_done",
+                "actor_guid": 10,
+                "actor_role": "healer",
+                "first_at_ms": 1000,
+                "last_at_ms": 90000,
+                "event_count": 2,
+                "amount": 500,
+            },
+            {
+                "route_generation": 8,
+                "route_node_id": "magmaw",
+                "perspective": "damage_done",
+                "actor_guid": 20,
+                "actor_role": "dps",
+                "actor_class_id": 8,
+                "first_at_ms": 10000,
+                "last_at_ms": 20000,
+                "event_count": 2,
+                "amount": 10000,
+                "originated_amount": 10000,
+            },
+            {
+                "route_generation": 8,
+                "route_node_id": "magmaw",
+                "perspective": "damage_taken",
+                "actor_guid": 20,
+                "actor_role": "dps",
+                "first_at_ms": 30000,
+                "last_at_ms": 60000,
+                "event_count": 1,
+                "amount": 100,
+            },
+        ],
+        "second_buckets": [
+            {
+                "route_generation": 8,
+                "perspective": "damage_done",
+                "actor_guid": 20,
+                "source_is_pet": False,
+                "second": 10,
+                "amount": 10000,
+                "originated_amount": 10000,
+            },
+        ],
+    })
+
+    encounter = report["encounters"][0]
+    assert encounter["first_at_ms"] == 10000
+    assert encounter["last_at_ms"] == 20000
+    assert encounter["duration_sec"] == 10
+    assert encounter["capture_first_at_ms"] == 1000
+    assert encounter["capture_last_at_ms"] == 90000
+    assert encounter["capture_duration_sec"] == 89
+    assert encounter["encounter_window_boundary_basis"] == (
+        "first_to_last_positive_originated_damage_done"
+    )
+    assert encounter["encounter_window_party_dps"] == 1000
 
 
 @pytest.mark.parametrize("schema", [3, 4, 5])

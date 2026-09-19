@@ -127,6 +127,76 @@ def _ability_rows(
     return sorted(abilities, key=lambda row: (-int(row["damage"]), int(row["spell_id"])))
 
 
+def _compact_action_outcomes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep the native full-window outcome ledger small and attribution-safe."""
+    allowed = (
+        "route_generation",
+        "route_node_id",
+        "actor_guid",
+        "actor_name",
+        "actor_role",
+        "actor_class_id",
+        "phase",
+        "action_type",
+        "action_name",
+        "spell_id",
+        "result",
+        "reason",
+        "retry_reason",
+        "first_at_ms",
+        "last_at_ms",
+        "count",
+    )
+    compact = [
+        {key: row[key] for key in allowed if key in row}
+        for row in rows
+        if isinstance(row, dict)
+    ]
+    return sorted(
+        compact,
+        key=lambda row: (
+            int(row.get("actor_guid") or 0),
+            str(row.get("phase") or ""),
+            str(row.get("action_name") or ""),
+            str(row.get("result") or ""),
+            str(row.get("reason") or ""),
+        ),
+    )
+
+
+def _compact_candidate_rejections(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep native profile-gate counts attributable to each actor and spell."""
+    allowed = (
+        "route_generation",
+        "route_node_id",
+        "actor_guid",
+        "actor_name",
+        "actor_role",
+        "actor_class_id",
+        "phase",
+        "spell_id",
+        "action_category",
+        "reason",
+        "first_at_ms",
+        "last_at_ms",
+        "count",
+    )
+    compact = [
+        {key: row[key] for key in allowed if key in row}
+        for row in rows
+        if isinstance(row, dict)
+    ]
+    return sorted(
+        compact,
+        key=lambda row: (
+            int(row.get("actor_guid") or 0),
+            str(row.get("reason") or ""),
+            int(row.get("spell_id") or 0),
+            str(row.get("action_category") or ""),
+        ),
+    )
+
+
 def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics."""
     schema_version = _combat_log_schema_version(combat_log)
@@ -137,9 +207,22 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     )
     abilities = [row for row in combat_log.get("abilities") or [] if isinstance(row, dict)]
     buckets = [row for row in combat_log.get("second_buckets") or [] if isinstance(row, dict)]
+    action_outcomes = [
+        row for row in combat_log.get("action_outcomes") or [] if isinstance(row, dict)
+    ]
+    candidate_rejections = [
+        row for row in combat_log.get("candidate_rejections") or []
+        if isinstance(row, dict)
+    ]
     by_generation: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in abilities:
         by_generation[int(row.get("route_generation") or 0)].append(row)
+    action_outcomes_by_generation: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in action_outcomes:
+        action_outcomes_by_generation[int(row.get("route_generation") or 0)].append(row)
+    candidate_rejections_by_generation: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in candidate_rejections:
+        candidate_rejections_by_generation[int(row.get("route_generation") or 0)].append(row)
 
     raw_bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
     originated_bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
@@ -168,9 +251,32 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         rows = by_generation[generation]
         timestamps = [int(row.get("first_at_ms") or 0) for row in rows] + [int(row.get("last_at_ms") or 0) for row in rows]
         timestamps = [value for value in timestamps if value > 0]
-        first_ms = min(timestamps, default=0)
-        last_ms = max(timestamps, default=first_ms)
+        capture_first_ms = min(timestamps, default=0)
+        capture_last_ms = max(timestamps, default=capture_first_ms)
+        originated_damage_rows = [
+            row
+            for row in rows
+            if row.get("perspective") == "damage_done"
+            and _originated_amount(row) > 0
+        ]
+        damage_timestamps = [
+            int(row.get("first_at_ms") or 0)
+            for row in originated_damage_rows
+        ] + [
+            int(row.get("last_at_ms") or 0)
+            for row in originated_damage_rows
+        ]
+        damage_timestamps = [value for value in damage_timestamps if value > 0]
+        # WCL Summary DPS uses the fight window, not the lifetime of cleanup
+        # telemetry. Healing, callbacks, and route-terminal heartbeats may
+        # continue after the boss is dead and must not dilute hostile damage.
+        # Keep the full capture bounds below so the tail remains diagnostic.
+        first_ms = min(damage_timestamps, default=capture_first_ms)
+        last_ms = max(damage_timestamps, default=capture_last_ms)
         duration_sec = max(1.0, (last_ms - first_ms) / 1000.0)
+        capture_duration_sec = max(
+            1.0, (capture_last_ms - capture_first_ms) / 1000.0
+        )
         party_damage_seconds: set[int] = set()
         raw_event_damage_seconds: set[int] = set()
         for (bucket_generation, _actor_guid, perspective, _source_is_pet), seconds in originated_bucket_seconds.items():
@@ -244,6 +350,12 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 "damage": total_damage,
                 "dps": round(total_damage / combat_seconds, 3),
                 "elapsed_dps": round(total_damage / duration_sec, 3),
+                # WCL's Summary DPS uses the selected fight window.  Keep an
+                # explicit name for that denominator so downstream evidence
+                # cannot confuse it with the legacy active-combat `dps` or
+                # actor damage-bearing `active_dps`.
+                "encounter_window_dps": round(total_damage / duration_sec, 3),
+                "encounter_window_dps_basis": "originated_damage_over_duration_sec",
                 "raw_event_damage": raw_event_damage,
                 "raw_event_dps": round(raw_event_damage / max(1, len(raw_event_damage_seconds)), 3),
                 "friendly_damage": friendly_damage,
@@ -354,11 +466,21 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "first_at_ms": first_ms,
             "last_at_ms": last_ms,
             "duration_sec": round(duration_sec, 3),
+            "capture_first_at_ms": capture_first_ms,
+            "capture_last_at_ms": capture_last_ms,
+            "capture_duration_sec": round(capture_duration_sec, 3),
+            "encounter_window_boundary_basis": (
+                "first_to_last_positive_originated_damage_done"
+                if damage_timestamps
+                else "full_capture_fallback_no_originated_damage"
+            ),
             "combat_duration_sec": combat_seconds,
             "originated_damage_seconds": len(party_damage_seconds),
             "party_damage": party_damage,
             "party_dps": round(party_damage / combat_seconds, 3),
             "elapsed_party_dps": round(party_damage / duration_sec, 3),
+            "encounter_window_party_dps": round(party_damage / duration_sec, 3),
+            "encounter_window_party_dps_basis": "originated_damage_over_duration_sec",
             "raw_event_damage": sum(_raw_event_amount(row) for row in outgoing_rows),
             "raw_event_dps": round(
                 sum(_raw_event_amount(row) for row in outgoing_rows)
@@ -371,6 +493,16 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "party_hps": round(party_healing / combat_seconds, 3),
             "elapsed_party_hps": round(party_healing / duration_sec, 3),
             "party_damage_taken": sum(int(row["damage_taken"]) for row in actors),
+            "action_outcome_count": len(action_outcomes_by_generation.get(generation, [])),
+            "action_outcomes": _compact_action_outcomes(
+                action_outcomes_by_generation.get(generation, [])
+            ),
+            "candidate_rejection_count": len(
+                candidate_rejections_by_generation.get(generation, [])
+            ),
+            "candidate_rejections": _compact_candidate_rejections(
+                candidate_rejections_by_generation.get(generation, [])
+            ),
             "actors": actors,
         })
 
@@ -380,6 +512,8 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         "tracked_event_count": int(combat_log.get("event_count") or 0),
         "aggregate_count": int(combat_log.get("aggregate_count") or len(abilities)),
         "second_bucket_count": int(combat_log.get("second_bucket_count") or len(buckets)),
+        "action_outcome_count": len(action_outcomes),
+        "candidate_rejection_count": len(candidate_rejections),
         "recent_event_count": len(combat_log.get("recent_events") or []),
         "recent_events_dropped": int(combat_log.get("recent_events_dropped") or 0),
         "all_events_preserved_in_aggregates": True,
