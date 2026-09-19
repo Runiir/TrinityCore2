@@ -18,9 +18,10 @@ from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from tools.bot_ml import analyze_magmaw_trace as analyzer
+from tools.bot_ml import laya_packets
 
 SCHEMA = "raid_diagnostic_shadow_v1"
-MODEL = "Qwen/Qwen3.5-0.8B"
+MODEL = laya_packets.MODEL
 ENDPOINT = "http://127.0.0.1:8000/v1/systemone"
 CONTRACT = "actor_diagnostic_v2"
 REQUIRED_IDENTITY = (
@@ -41,7 +42,7 @@ def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def actor_packets(review: dict[str, Any], model: str = MODEL) -> list[dict[str, Any]]:
+def _qwen_actor_packets(review: dict[str, Any], model: str) -> list[dict[str, Any]]:
     state = review["jev_input"]["state"]
     boss = state.get("boss_dps_review") or {}
     packets = []
@@ -70,6 +71,13 @@ def actor_packets(review: dict[str, Any], model: str = MODEL) -> list[dict[str, 
         questions = {k: v for k, v in questions.items() if k.startswith("actor_action_")}
         packets.append({"model": model, "state": actor_state, "questions": questions})
     return packets
+
+
+def actor_packets(review: dict[str, Any], model: str = MODEL) -> list[dict[str, Any]]:
+    """Build Laya packets by default, retaining the explicit Qwen path."""
+    if model == laya_packets.MODEL:
+        return laya_packets.actor_packets(review, model)
+    return _qwen_actor_packets(review, model)
 
 
 class NoRedirect(HTTPRedirectHandler):
