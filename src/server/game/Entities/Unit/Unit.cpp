@@ -580,30 +580,6 @@ void Unit::UpdateSplineMovement(uint32 t_diff)
     UpdateSplinePosition();
 }
 
-void Unit::UpdateSplinePosition()
-{
-    Movement::Location loc = movespline->ComputePosition();
-
-    if (movespline->onTransport)
-    {
-        Position& pos = m_movementInfo.transport.pos;
-        pos.m_positionX = loc.x;
-        pos.m_positionY = loc.y;
-        pos.m_positionZ = loc.z;
-        pos.SetOrientation(loc.orientation);
-
-        if (TransportBase* transport = GetDirectTransport())
-            transport->CalculatePassengerPosition(loc.x, loc.y, loc.z, &loc.orientation);
-        else
-            return;
-    }
-
-    if (HasUnitState(UNIT_STATE_CANNOT_TURN))
-        loc.orientation = GetOrientation();
-
-    UpdatePosition(loc.x, loc.y, loc.z, loc.orientation);
-}
-
 void Unit::SendFlightSplineSyncUpdate()
 {
     if (!movespline->isCyclic() || movespline->Finalized())
