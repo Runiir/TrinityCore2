@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:heart_strike_and_lawful_mushroom_placement",
+  "work_unit": "magmaw:heart_strike_mushroom_and_bane_targets",
   "owner_skill": "raid-performance-loop",
   "classification": "trace_backed_role_repair",
   "epoch_id": "wider_raid_readiness_20260909",
@@ -16,10 +16,10 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "e8c30508471870b2c119f18ddf4c73810d9d7d1a4eac9e015e39e7858cf6cab2"
+    "sha256": "45e6bd269a8e38da74dc1aafd84a48c8bde8db088af9bcb1c8505232a3d76f1a"
   },
   "scope_lock": {
-    "objective": "Repair the observed Blood admission and Balance ground-placement edges without changing native cleave/geometry; compare each actor with the closed ab829 baseline and WCL.",
+    "objective": "Repair the observed Blood admission and Balance ground-placement edges without changing native cleave/geometry; compare each actor with the closed ab829 baseline and WCL. Exclude long-delay Bane on short-lived parasites while retaining mandatory defense.",
     "owned_files": [
       "src/server/game/Bots/BotWorldPopulationMgrRaidPlanning.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
@@ -28,7 +28,10 @@
       "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.h",
       "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp",
       "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h",
-      "experiments/configs/validation_scenarios_cata_001.json"
+      "experiments/configs/validation_scenarios_cata_001.json",
+      "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
     ],
     "forbidden_changes": [
       "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -47,9 +50,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Finish independent Heart Strike and lawful Mushroom-placement reviews, refresh route asset closure, build clean master, then completion-watchdog validation and all-actor Laya/API Jev plus specialist review.",
+  "next_action": "Approved role repairs and9 combined focused tests passed. Verify regenerated route closure, build clean master, fresh-provision selected roster, then completion-watchdog live validation. Review all10 actors with Laya/API Jev and independent specialists before performance acceptance.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -91,8 +94,12 @@
     "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc"
   },
   "implementation_review": {
-    "verdict": "pending_heart_strike_and_mushroom_review",
-    "live_verified": false
+    "verdict": "independently_approved_heart_strike_mushroom_and_bane",
+    "live_verified": false,
+    "combined_focused_tests_passed": 9,
+    "heart_strike_review_sha256": "892ce1d863ba02b44b793d63ab782410ec997c9508012d6580bb1f46b3d7d471",
+    "mushroom_review_sha256": "184c8e521a486c7874c363fcf6ae36dd19a5408c46be7d45ea25589818b593b7",
+    "bane_review_sha256": "fc27cebff93edfee1d53f4cbceaa732e5a74644006e6080c5d0a3c86ae7e9cd0"
   },
   "related_edges": [
     {

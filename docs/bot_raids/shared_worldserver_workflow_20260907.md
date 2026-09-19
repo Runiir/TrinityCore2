@@ -18,8 +18,10 @@ and a different retained window, so it is not a lawful performance floor.
 
 The roster stays 1 Blood tank, 3 healers and 6 DPS. The current per-actor table is
 [the DPS baseline](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
-The next reviewed changes address Heart Strike policy admission and lawful
-Mushroom ground placement. Preserve native cleave protection and spell geometry.
+The next independently approved changes address Heart Strike policy admission,
+lawful Mushroom ground placement/detonation and Bane exclusion on short-lived
+parasites. Nine combined focused tests pass. Preserve native cleave protection
+and spell geometry. Live verification remains pending.
 No later native melee-veto removal was carried into the restart.
 
 Both local Laya and hosted Jev reviewed all ten actors successfully. Each retained

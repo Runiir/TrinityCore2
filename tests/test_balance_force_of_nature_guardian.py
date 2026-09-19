@@ -18,19 +18,20 @@ def test_native_summon_semantics_reaches_both_callers(tmp_path):
     assert fixture['native']['SpellEffect']['sha256']=='e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252'
     shared=(BOT/'BotWorldPopulationMgrSpellSemantics.cpp').read_text()
     helper=function(shared,'bool SpellHasHostileMultiTargetSemantics(')
+    melee_helper=function(shared,'bool SpellHasHostileMeleeChainSemantics(')
     resolver=(BOT/'BotWorldPopulationMgrCombatResolver.cpp').read_text()
     executor=(BOT/'BotActionExecutor.cpp').read_text()
     for source in (resolver,executor):
         assert 'bool SpellHasHostileMultiTargetSemantics(' not in source
         assert 'using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;' in source
         assert '#include "Bots/BotWorldPopulationMgrSpellSemantics.h"' in source
-    start=resolver.index('        if (HasNearbyProtectedEncounterTarget(bot, target)\n            && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))')
+    start=resolver.index('        if (HasNearbyProtectedEncounterTarget(bot, target)\n')
     gates=resolver[start:resolver.index('        if (bot->HasUnitState',start)]
     start=executor.index('    if (HasNearbyProtectedEncounterTarget(bot, target)\n        && SpellHasHostileMultiTargetSemantics(spellInfo))')
     spell_gate=executor[start:executor.index('    BotActionResult check =',start)]
     start=executor.index('    if ((action.SuppressAreaDamage\n')
     preview_gate=executor[start:executor.index('    if (!target',start)]
-    start=executor.index('    if ((action.SuppressAreaDamage || HasNearbyProtectedEncounterTarget(bot, target))')
+    start=executor.index('    if ((action.SuppressAreaDamage\n', start + 1)
     resolved_gate=executor[start:executor.index('    BotActionResult check =',start)]
     setup='\n'.join(f'force.Effects[{r[25]}]={{{r[1]},{r[8]},{r[21]},true,false}};' for r in effects)
     code=r'''
@@ -40,22 +41,24 @@ def test_native_summon_semantics_reaches_both_callers(tmp_path):
 #include <cassert>
 #include <map>
 #include <string>
-constexpr unsigned MAX_SPELL_EFFECTS=3,SPELL_EFFECT_PERSISTENT_AREA_AURA=27;
+constexpr unsigned MAX_SPELL_EFFECTS=3,SPELL_EFFECT_PERSISTENT_AREA_AURA=27,SPELL_DAMAGE_CLASS_MELEE=2;
 struct SpellEffectInfo {unsigned Effect=0,ChainTarget=0,TriggerSpell=0;bool area=false,areaAura=false;
  bool IsEffect()const{return Effect!=0;}bool IsEffect(unsigned id)const{return Effect==id;}
  bool IsTargetingArea()const{return area;}bool IsAreaAuraEffect()const{return areaAura;}};
-struct SpellInfo {unsigned Id=0;SpellEffectInfo Effects[3];bool positive=false;
+struct SpellInfo {unsigned Id=0,DmgClass=0;SpellEffectInfo Effects[3];bool positive=false;
  bool IsPositiveEffect(unsigned)const{return positive;}};
 struct Manager {std::map<unsigned,SpellInfo const*> spells;SpellInfo const* GetSpellInfo(unsigned id)const{auto i=spells.find(id);return i==spells.end()?nullptr:i->second;}}manager;
 auto* sSpellMgr=&manager;
 namespace BotWorldPopulationMgrSpellSemantics {
-''' + helper + r'''
+''' + helper + '\n' + melee_helper + r'''
 }
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMeleeChainSemantics;
 bool nearby=false;
 bool HasNearbyProtectedEncounterTarget(void*,void*){return nearby;}
 std::string Resolve(SpellInfo const* candidateSpellInfo,bool forbidArea){
  void* bot=nullptr;void* target=nullptr;struct {std::string RejectReason;}candidate;
+ bool magmawMushroomAction=false,scopedAreaAction=false;
  for(int once=0;once<1;++once){
 ''' + gates + r'''
  }return candidate.RejectReason;
@@ -66,7 +69,7 @@ BotActionResult ExecuteSpell(SpellInfo const* spellInfo){void* bot=nullptr;void*
  return BotActionResult::Ok;
 }
 BotActionResult ExecuteHostile(SpellInfo const* before,SpellInfo const* after,bool suppressed){
- void* bot=nullptr;void* target=nullptr;struct {bool SuppressAreaDamage;}action{suppressed};
+ void* bot=nullptr;void* target=nullptr;struct {bool SuppressAreaDamage=false;bool AllowMagmawBalanceMushroomSplash=false;bool AllowScopedEncounterAreaDamage=false;}action{suppressed};
  struct {SpellInfo const* Effective;}preview{before},resolved{after};
 ''' + preview_gate + resolved_gate + r'''
  return BotActionResult::Ok;

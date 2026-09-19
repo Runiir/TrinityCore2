@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrBossMechanicsSupport.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
@@ -29,6 +30,7 @@ using BotWorldBossMechanics::IsNativeCombatObserved;
 using BotWorldBossMechanics::NowMs;
 using BotWorldBossMechanics::SpellHasHostileMultiTargetSemantics;
 using BotWorldBossMechanics::UnitHealthPct;
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMeleeChainSemantics;
 
 BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget)
 {
@@ -845,8 +847,11 @@ raid_cooldown_complete:
 
     ResolvedCombatAction profileAction;
     uint32 const scopedAreaSpellId = ResolveScopedEncounterAreaSpellId(bot, result.Target);
+    bool const scopedMeleeChain = scopedAreaSpellId
+        && SpellHasHostileMeleeChainSemantics(sSpellMgr->GetSpellInfo(scopedAreaSpellId));
     bool const forbidArea = raidAdapter.ContractResolved
-        && ((!raidAdapter.AllowAreaDamage && !scopedAreaSpellId)
+        && ((!raidAdapter.AllowAreaDamage
+                && (!scopedAreaSpellId || scopedMeleeChain))
             || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
     BotActionResult actionResult = ExecuteProfileCombatAction(
         &state, bot, result.Target, &profileAction, result.Features.AddCount, false,

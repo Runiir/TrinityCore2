@@ -37,6 +37,7 @@ constexpr uint32 FelstormSpellId = 89751;
 constexpr uint32 ShadowfiendSpellId = 34433;
 
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMeleeChainSemantics;
 
 // Route protection is about preventing splash onto a future encounter that is
 // physically near the selected target.  A global "any protected entry" check
@@ -282,7 +283,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     auto const preview = BotSpellResolution::Resolve(bot, action.SpellId, action.Type == "use_item");
     if ((action.SuppressAreaDamage
             || (!action.AllowMagmawBalanceMushroomSplash
-                && !action.AllowScopedEncounterAreaDamage
+                && (!action.AllowScopedEncounterAreaDamage
+                    || SpellHasHostileMeleeChainSemantics(preview.Effective))
                 && HasNearbyProtectedEncounterTarget(bot, target)))
         && SpellHasHostileMultiTargetSemantics(preview.Effective))
         return BotActionResult::NoAction;
@@ -378,7 +380,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     auto const resolved = BotSpellResolution::Resolve(bot, action.SpellId);
     if ((action.SuppressAreaDamage
             || (!action.AllowMagmawBalanceMushroomSplash
-                && !action.AllowScopedEncounterAreaDamage
+                && (!action.AllowScopedEncounterAreaDamage
+                    || SpellHasHostileMeleeChainSemantics(resolved.Effective))
                 && HasNearbyProtectedEncounterTarget(bot, target)))
         && SpellHasHostileMultiTargetSemantics(resolved.Effective))
         return BotActionResult::NoAction;

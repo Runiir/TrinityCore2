@@ -250,6 +250,21 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
     return false;
 }
 
+bool SpellHasHostileMeleeChainSemantics(SpellInfo const* spellInfo)
+{
+    if (!spellInfo || spellInfo->DmgClass != SPELL_DAMAGE_CLASS_MELEE)
+        return false;
+
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (effect.IsEffect() && !spellInfo->IsPositiveEffect(effectIndex)
+            && effect.ChainTarget > 1)
+            return true;
+    }
+    return false;
+}
+
 // Future encounter protection must be geometry-aware. Keeping the global entry
 // set is useful for route bookkeeping, but it must not suppress AoE on a
 // current trash pack that is nowhere near the protected encounter.

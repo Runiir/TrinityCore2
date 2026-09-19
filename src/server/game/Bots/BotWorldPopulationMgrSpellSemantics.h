@@ -27,6 +27,7 @@ bool EventLooksFailure(char const* eventType, char const* result);
 std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt,
     bool groundDanger, bool tankSpike, bool raidDamage, bool adds);
 bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0);
+bool SpellHasHostileMeleeChainSemantics(SpellInfo const* spellInfo);
 bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target);
 }
 

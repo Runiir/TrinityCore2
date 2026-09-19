@@ -2196,7 +2196,7 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
         "target_control": "focus_fire",
         "target_entries": [41570, 42347, 41806, 42321],
         "allow_area_damage": False,
-        "area_damage_spell_allowlist": [421, 48505],
+        "area_damage_spell_allowlist": [421, 48505, 55050],
         "area_damage_target_allowlist": [41570, 42347],
         "allow_multidot": False,
         "main_tank_roster_slot": 2,
@@ -2350,8 +2350,9 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     assert "IsAllOffenseSuppressed(ownerGuid)" in ACTION_EXECUTOR
     assert "IsProtectedEncounterTarget(" in ACTION_EXECUTOR
     assert "HasNearbyProtectedEncounterTarget(bot, target)" in ACTION_EXECUTOR
-    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries" in resolver
-    assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" in resolver
+    assert "using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;" in resolver
+    assert "BotRaidAreaAuthority::HasProtectedEncounterEntries" not in resolver
+    assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" not in resolver
     assert "AllOffenseSuppressedOwners" in RAID_AUTHORITY
     assert "ProtectedEncounterEntriesByOwner" in RAID_AUTHORITY
     assert "ProtectedEncounterSpawnIdsByOwner" in RAID_AUTHORITY
@@ -2647,7 +2648,7 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "spellInfo->IsAffectingArea()",
         "spellInfo->Effects[effectIndex].ChainTarget > 1",
         "declarative_area_damage_semantics_forbidden",
-        "action.SuppressAreaDamage = forbidArea;",
+        "action.SuppressAreaDamage = forbidArea && !selectedMagmawMushroomAction",
         "raid_area_damage_contamination_fail_closed",
         "HandleCancelAuraOpcode(cancel)",
         "bot->RemoveDynObject(action.SpellId);",

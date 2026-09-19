@@ -454,6 +454,7 @@ uint32 BotWorldPopulationMgr::ResolveScopedEncounterAreaSpellId(Player* bot,
 {
     constexpr uint32 chainLightningSpellId = 421;
     constexpr uint32 starfallSpellId = 48505;
+    constexpr uint32 heartStrikeSpellId = 55050;
     if (!bot || !target
         || Party().ValidationRouteManifestIndex >= Party().ValidationRouteManifest.size())
         return 0;
@@ -480,6 +481,11 @@ uint32 BotWorldPopulationMgr::ResolveScopedEncounterAreaSpellId(Player* bot,
             contract.AreaDamageSpellAllowlist.end(), starfallSpellId)
             != contract.AreaDamageSpellAllowlist.end())
         return starfallSpellId;
+    if (specTag == "blood_death_knight"
+        && std::find(contract.AreaDamageSpellAllowlist.begin(),
+            contract.AreaDamageSpellAllowlist.end(), heartStrikeSpellId)
+            != contract.AreaDamageSpellAllowlist.end())
+        return heartStrikeSpellId;
     return 0;
 }
 

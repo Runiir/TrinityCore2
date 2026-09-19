@@ -10,7 +10,6 @@
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotElementalSpiritwalkersGrace.h"
 #include "Bots/BotProgressionGoalPolicy.h"
-#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotWorldPopulationMgrCombatRange.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -48,33 +47,8 @@ bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpel
 }
 
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
-// Future encounter protection must be geometry-aware.  Keeping the global
-// entry set is useful for route bookkeeping, but it must not suppress AoE on
-// a current trash pack that is nowhere near the protected encounter.
-
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
-{
-    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
-        return false;
-
-    std::vector<WorldObject*> nearbyObjects;
-    Trinity::AllWorldObjectsInRange check(target, 45.0f);
-    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
-        target, nearbyObjects, check);
-    Cell::VisitAllObjects(target, searcher, 45.0f);
-    for (WorldObject* object : nearbyObjects)
-    {
-        Creature* creature = object ? object->ToCreature() : nullptr;
-        if (!creature || creature == target || !creature->IsAlive()
-            || !owner->IsValidAttackTarget(creature))
-            continue;
-        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
-                owner->GetGUID().GetRawValue(), creature->GetEntry(),
-                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
-            return true;
-    }
-    return false;
-}
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMeleeChainSemantics;
+using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;
 
 }
 
@@ -397,7 +371,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (HasNearbyProtectedEncounterTarget(bot, target)
             && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
-            && !magmawMushroomAction && !scopedAreaAction)
+            && !magmawMushroomAction
+            && (!scopedAreaAction || SpellHasHostileMeleeChainSemantics(candidateSpellInfo)))
         {
             candidate.RejectReason = "future_encounter_splash_forbidden";
             continue;
