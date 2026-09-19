@@ -131,6 +131,16 @@ agreement nor confidence accepts a repair. Join the class/role reviewer findings
 with native observations; tank/healer packets without role metrics remain
 insufficient evidence. Keep predictions quarantined until human adjudication.
 
+Preserve native outcome meanings in model projections. A `no_action` profile
+resolution or wait is not a failed native cast. Keep those counts separate from
+submission and terminal failures. Label each healing total and HPS denominator:
+retained encounter aggregates can include post-death healing, while exact run
+HPS uses healing through native death. Check packet size with the deployed
+tokenizer; an estimated token count does not prove the local context limit.
+When both models choose the same cause, require the native causal sequence
+before implementing it. Agreement on encounter duty cannot explain an unknown
+Scorch cancellation.
+
 
 When several represented classes or roles underperform, use the
 [parallel role review](references/parallel-role-review.md) requested by the

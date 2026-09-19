@@ -157,6 +157,81 @@ def roster_review():
     return review
 
 
+def canonical_role_review():
+    """Retained canonical boss ledger with all-roster actor-scoped facts."""
+    review = roster_review()
+    state = review["jev_input"]["state"]
+    boss = state["boss_dps_review"]
+    metrics = {
+        "available": True,
+        "route_node_id": "bwd.magmaw.encounter",
+        "first_at_ms": 1000,
+        "last_at_ms": 130000,
+        "capture_first_at_ms": 1000,
+        "capture_last_at_ms": 131000,
+        "duration_sec": 129.0,
+        "combat_duration_sec": 136.0,
+        "encounter_window_boundary_basis": "first_to_last_positive_originated_damage_done",
+        "party_damage": 9999999,
+        "party_healing": 8888888,
+        "actors": [],
+        "action_outcomes": [],
+        "candidate_rejections": [],
+    }
+    for identity in boss["actor_identity"]:
+        guid = identity["bot_guid"]
+        metrics["actors"].append({
+            "bot_guid": guid,
+            # Deliberately conflicting source identity must not overwrite the
+            # admission identity in the packet.
+            "role": "dps" if guid == 8 else identity["role"],
+            "class_spec": "foreign_spec" if guid == 8 else identity["class_spec"],
+            "damage": 0 if guid in {9, 11} else guid * 100,
+            "healing": 0 if guid == 10 else guid * 200,
+            "hps": 0.0 if guid == 10 else float(guid),
+            "active_seconds": guid,
+            "damage_uptime": 0.5,
+            "moving_fraction": 0.1,
+        })
+    metrics["action_outcomes"] = [
+        {"bot_guid": 8, "action_category": "cast", "action_name": "taunt",
+         "outcome": "out_of_range", "reason_code": "out_of_range", "count": 2},
+        {"bot_guid": 8, "action_category": "cast", "action_name": "taunt",
+         "outcome": "ok", "reason_code": "", "count": 4},
+        {"bot_guid": 8, "action_category": "cast", "action_name": "shield",
+         "outcome": "ok", "reason_code": "", "count": 1},
+        {"bot_guid": 8, "action_category": "cast", "action_name": "strike",
+         "outcome": "ok", "reason_code": "", "count": 1},
+        {"bot_guid": 9, "action_category": "heal", "action_name": "regrowth",
+         "outcome": "no_action", "reason_code": "requires_ally_target", "count": 3},
+        {"bot_guid": 9, "action_category": "heal", "action_name": "lifebloom",
+         "outcome": "ok", "reason_code": "", "count": 2},
+        {"bot_guid": 10, "action_category": "heal", "action_name": "holy_light",
+         "outcome": "ok", "reason_code": "", "count": 5},
+        {"bot_guid": 11, "action_category": "wait", "action_name": "profile_resolve",
+         "outcome": "no_action", "reason_code": "no_valid_profile_action", "count": 2},
+        {"bot_guid": 999, "action_category": "cast", "action_name": "foreign",
+         "outcome": "cast_failed", "reason_code": "foreign", "count": 999},
+    ]
+    metrics["candidate_rejections"] = [
+        {"bot_guid": 8, "action_category": "defensive", "reason": "cooldown_not_ready", "count": 7},
+        {"bot_guid": 10, "action_category": "heal", "reason": "no_line_of_sight", "count": 99},
+        {"bot_guid": 999, "action_category": "foreign", "reason": "foreign", "count": 999},
+    ]
+    for row in metrics["action_outcomes"] + metrics["candidate_rejections"]:
+        row.update({
+            "first_at_ms": 1000,
+            "last_at_ms": 120000,
+        })
+    for row in metrics["action_outcomes"]:
+        row["route_node_id"] = "bwd.magmaw.encounter"
+    review["run_id"] = state["run_id"]
+    review["source_sha256"] = "a" * 64
+    review["deterministic"] = {"boss_combat_metrics": metrics}
+    boss["scope_route_node"] = "bwd.magmaw.encounter"
+    return review
+
+
 def packet():
     return {"model": shadow.MODEL, "state": {"run_id": "closed-run", "actor_review": {"bot_guid": 7}},
             "questions": {"actor_action_7": {"type": "choice", "instructions": "Choose a diagnostic.",
@@ -356,7 +431,7 @@ def test_all_admitted_roster_actors_get_unique_role_scoped_packets():
         packet = by_guid[guid]
         actor = packet["state"]["actor_review"]
         question = packet["questions"][f"actor_action_{guid}"]
-        if guid in (8, 9):
+        if guid == 8:
             assert question["criteria"] == {
                 "native_action_review": shadow.laya_packets.ROLE_OPTIONS["native_action_review"],
                 "insufficient_role_evidence": shadow.laya_packets.ROLE_OPTIONS["insufficient_role_evidence"],
@@ -391,6 +466,124 @@ def test_all_admitted_roster_actors_get_unique_role_scoped_packets():
         native = by_guid[guid]["state"]["actor_review"]["native"]
         assert native["action_outcomes"]["status"] == "unavailable"
         assert native["candidate_rejections"]["status"] == "unavailable"
+
+
+def test_canonical_role_join_projects_metrics_and_keeps_native_semantics():
+    review = canonical_role_review()
+    packets = shadow.actor_packets(review)
+    by_guid = {packet["state"]["actor_review"]["bot_guid"]: packet for packet in packets}
+
+    assert set(by_guid) == set(range(7, 17))
+    assert len({json.dumps(packet["questions"], sort_keys=True) for packet in packets}) == 10
+
+    legacy = shadow.actor_packets(roster_review())
+    assert by_guid[7]["state"] == legacy[0]["state"]
+    assert by_guid[7]["questions"] == legacy[0]["questions"]
+
+    tank_packet = by_guid[8]
+    tank = tank_packet["state"]
+    tank_actor = tank["actor_review"]
+    assert tank_actor["role"] == "tank"
+    assert "class_spec" not in tank_actor
+    assert tank_actor["observed"]["damage"] == {"status": "observed", "value": 800}
+    assert tank_actor["observed"]["healing"] == {
+        "status": "observed",
+        "value": 1600,
+        "hps": 8.0,
+        "hps_basis": "retained_ledger_combat_duration",
+        "through_death_hps": {
+            "status": "unavailable",
+            "reason": "exact_window_unknown",
+        },
+    }
+    assert tank_actor["observed"]["damage_taken"]["status"] == "unavailable"
+    assert tank_actor["observed"]["unavailable_metrics"] == {
+        "fields": ["survival", "absorption", "mana", "threat", "mitigation"],
+        "reason": "not_available_in_actor_metrics",
+    }
+    assert tank_actor["evidence_scope"] == {
+        "route_node_id": "bwd.magmaw.encounter",
+        "first_at_ms": 1000,
+        "last_at_ms": 130000,
+        "duration_sec": 129.0,
+        "combat_duration_sec": 136.0,
+        "encounter_window_boundary_basis": "first_to_last_positive_originated_damage_done",
+        "source_sha256": "a" * 64,
+    }
+    assert tank_actor["actor_identity"]["role"] == "tank"
+    assert tank_actor["actor_identity"]["class_spec"] == "blood_death_knight"
+
+    action_rows = tank_actor["native"]["action_outcomes"]
+    assert action_rows == {
+        "status": "observed",
+        "row_count": 4,
+        "detail_omitted": True,
+        "outcome_counts": {"ok": 6, "out_of_range": 2},
+        "outcome_count": 8,
+        "actionable_failure_count": 2,
+        "actionable_failure_ratio": 0.25,
+    }
+    assert "submitted_count" not in action_rows
+    candidate = tank_actor["native"]["candidate_rejections"]
+    assert candidate["status"] == "observed"
+    assert candidate["row_count"] == 1
+    assert candidate["reason_counts"] == {"cooldown_not_ready": 7}
+    assert candidate["interpretation"] == "candidate_scan_only"
+    assert candidate["route_scope_inherited"] is True
+    assert "foreign" not in candidate["reason_counts"]
+    assert tank_packet["questions"]["actor_action_8"]["criteria"] == {
+        "native_action_review": shadow.laya_packets.ROLE_OPTIONS["native_action_review"],
+        "insufficient_role_evidence": shadow.laya_packets.ROLE_OPTIONS["insufficient_role_evidence"],
+        "collect_more_canaries": shadow.laya_packets.ROLE_OPTIONS["collect_more_canaries"],
+    }
+
+    healer = by_guid[9]["state"]["actor_review"]
+    assert healer["observed"]["damage"] == {"status": "observed", "value": 0}
+    assert healer["observed"]["healing"]["value"] == 1800
+    assert healer["native"]["action_outcomes"]["actionable_failure_count"] == 0
+    assert "dps" not in healer["observed"]
+    assert "wcl_observed_dps" not in healer["observed"]
+
+    profile_wait = by_guid[11]
+    assert profile_wait["state"]["actor_review"]["native"]["action_outcomes"] == {
+        "status": "observed",
+        "row_count": 1,
+        "detail_omitted": True,
+        "outcome_counts": {"no_action": 2},
+        "outcome_count": 2,
+        "actionable_failure_count": 0,
+        "actionable_failure_ratio": 0.0,
+    }
+    assert set(profile_wait["questions"]["actor_action_11"]["criteria"]) == {
+        "insufficient_role_evidence",
+        "collect_more_canaries",
+    }
+
+    candidate_only = by_guid[10]
+    candidate_only_rows = candidate_only["state"]["actor_review"]["native"]["candidate_rejections"]
+    assert candidate_only_rows["status"] == "observed"
+    assert candidate_only_rows["reason_counts"] == {"no_line_of_sight": 99}
+    assert set(candidate_only["questions"]["actor_action_10"]["criteria"]) == {
+        "insufficient_role_evidence",
+        "collect_more_canaries",
+    }
+    assert "foreign" not in candidate_only_rows["reason_counts"]
+
+    unbound = canonical_role_review()
+    unbound["deterministic"]["boss_combat_metrics"]["route_node_id"] = "foreign.route"
+    unbound_by_guid = {
+        packet["state"]["actor_review"]["bot_guid"]: packet
+        for packet in shadow.actor_packets(unbound)
+    }
+    unbound_tank = unbound_by_guid[8]["state"]["actor_review"]
+    assert unbound_tank["observed"]["damage"]["status"] == "unavailable"
+    assert unbound_tank["native"]["action_outcomes"]["status"] == "unavailable"
+    assert "evidence_scope" not in unbound_tank
+
+    for packet in packets:
+        question = packet["questions"][next(iter(packet["questions"]))]
+        assert shadow.laya_packets.estimated_tokens(packet["state"]) <= 650
+        assert shadow.laya_packets.estimated_tokens(question) <= 160
 
 
 def test_role_packets_do_not_turn_unavailable_evidence_into_a_label():

@@ -9,6 +9,7 @@ action authority is added by this adapter.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+import math
 from typing import Any
 
 
@@ -71,6 +72,9 @@ _PET_FIELDS = (
     "raw_event_pet_damage_share",
     "pet_active_seconds",
     "pet_uptime",
+)
+_ROLE_NATIVE_FAILURES = frozenset(
+    {"cast_failed", "no_line_of_sight", "out_of_range"}
 )
 
 
@@ -167,6 +171,171 @@ def _metrics_actor(boss: Mapping[str, Any], state: Mapping[str, Any], guid: int 
         if row is not None:
             return row
     return None
+
+
+def _is_finite_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+
+
+def _canonical_role_metrics(
+    review: Mapping[str, Any],
+    boss: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    source_sha256 = review.get("source_sha256")
+    if (
+        not isinstance(source_sha256, str)
+        or len(source_sha256) != 64
+        or any(char not in "0123456789abcdefABCDEF" for char in source_sha256)
+    ):
+        return None
+    deterministic = review.get("deterministic")
+    metrics = deterministic.get("boss_combat_metrics") if isinstance(deterministic, Mapping) else None
+    if not isinstance(metrics, Mapping) or metrics.get("available") is not True:
+        return None
+    actors = metrics.get("actors")
+    if not isinstance(actors, list) or not actors:
+        return None
+    if not boss.get("scope_route_node") or metrics.get("route_node_id") != boss.get("scope_route_node"):
+        return None
+    first_at_ms = metrics.get("first_at_ms")
+    last_at_ms = metrics.get("last_at_ms")
+    if (
+        not _is_finite_number(first_at_ms)
+        or not _is_finite_number(last_at_ms)
+        or first_at_ms > last_at_ms
+        or not _is_finite_number(metrics.get("duration_sec"))
+        or metrics["duration_sec"] < 0
+    ):
+        return None
+    for key in ("capture_first_at_ms", "capture_last_at_ms", "combat_duration_sec"):
+        value = metrics.get(key)
+        if value is not None and (not _is_finite_number(value) or value < 0):
+            return None
+    input_section = review.get("jev_input")
+    state = input_section.get("state") if isinstance(input_section, Mapping) else None
+    report_run_id = review.get("run_id")
+    state_run_id = state.get("run_id") if isinstance(state, Mapping) else None
+    if (
+        not isinstance(report_run_id, str)
+        or not isinstance(state_run_id, str)
+        or report_run_id != state_run_id
+    ):
+        return None
+    return metrics
+
+
+def _role_metric_actor(
+    metrics: Mapping[str, Any] | None,
+    boss: Mapping[str, Any],
+    guid: int | str | None,
+) -> dict[str, Any] | None:
+    identity_guids = [
+        _guid(row.get("bot_guid", row.get("actor_guid")))
+        for row in _identity_rows(boss.get("actor_identity"))
+    ]
+    admitted = {str(item) for item in identity_guids if item is not None}
+    if (
+        metrics is None
+        or guid is None
+        or any(item is None for item in identity_guids)
+        or len({str(item) for item in identity_guids}) != len(identity_guids)
+        or str(guid) not in admitted
+    ):
+        return None
+    actors = metrics.get("actors")
+    if not isinstance(actors, list):
+        return None
+    matches = [
+        dict(row)
+        for row in actors
+        if isinstance(row, Mapping)
+        and _same_guid(row.get("bot_guid", row.get("actor_guid")), guid)
+    ]
+    if len(matches) != 1 or matches[0].get("available") is False:
+        return None
+    return matches[0]
+
+
+def _scoped_role_rows(
+    source: Any,
+    guid: int | str | None,
+    window: Mapping[str, Any] | None = None,
+) -> tuple[list[Mapping[str, Any]], int]:
+    if not isinstance(source, list):
+        return [], 0
+    rows: list[Mapping[str, Any]] = []
+    excluded = 0
+    for row in source:
+        if not isinstance(row, Mapping) or not _same_guid(
+            row.get("bot_guid") or row.get("actor_guid"), guid
+        ):
+            continue
+        if window is not None:
+            first_at_ms = row.get("first_at_ms")
+            last_at_ms = row.get("last_at_ms")
+            route = row.get("route_node_id")
+            if (
+                not _is_finite_number(first_at_ms)
+                or not _is_finite_number(last_at_ms)
+                or first_at_ms > last_at_ms
+                or first_at_ms < window["first_at_ms"]
+                or last_at_ms > window["last_at_ms"]
+                or route not in (None, window.get("route_node_id"))
+            ):
+                excluded += 1
+                continue
+        rows.append(row)
+    return rows, excluded
+
+
+def _role_observed_metrics(
+    actor: Mapping[str, Any] | None,
+    *,
+    unavailable_reason: str,
+) -> dict[str, Any]:
+    def scalar(name: str) -> dict[str, Any]:
+        if (
+            not isinstance(actor, Mapping)
+            or name not in actor
+            or not _is_finite_number(actor[name])
+        ):
+            return {"status": "unavailable", "reason": unavailable_reason}
+        return {"status": "observed", "value": actor[name]}
+
+    healing = scalar("healing")
+    if isinstance(actor, Mapping):
+        if "hps" in actor and _is_finite_number(actor["hps"]):
+            healing["hps"] = actor["hps"]
+            healing["hps_basis"] = "retained_ledger_combat_duration"
+            healing["through_death_hps"] = {
+                "status": "unavailable",
+                "reason": "exact_window_unknown",
+            }
+        if "elapsed_hps" in actor and _is_finite_number(actor["elapsed_hps"]):
+            healing["elapsed_hps"] = actor["elapsed_hps"]
+
+    activity = {
+        key: actor[key]
+        for key in ("active_seconds", "damage_uptime", "moving_fraction")
+        if isinstance(actor, Mapping) and _is_finite_number(actor.get(key))
+    }
+    return {
+        "damage": scalar("damage"),
+        "healing": healing,
+        "damage_taken": scalar("damage_taken"),
+        "activity": (
+            {"status": "observed", **activity}
+            if activity else {"status": "unavailable", "reason": unavailable_reason}
+        ),
+        "unavailable_metrics": {
+            "fields": ["survival", "absorption", "mana", "threat", "mitigation"],
+            "reason": "not_available_in_actor_metrics",
+        },
+    }
 
 
 def _timeline_for_guid(boss: Mapping[str, Any], guid: int | str | None) -> dict[str, Any] | None:
@@ -345,6 +514,68 @@ def _role_native_rows(
     return {"status": "observed", "rows": compact}
 
 
+def _role_native_summary(
+    source: Any,
+    guid: int | str | None,
+    window: Mapping[str, Any] | None = None,
+    *,
+    candidate: bool = False,
+) -> dict[str, Any]:
+    """Summarize one scoped producer ledger without relabeling its rows."""
+    if not isinstance(source, list):
+        return {
+            "status": "unavailable",
+            "reason": "candidate_rejections_source_missing"
+            if candidate else "action_outcomes_source_missing",
+        }
+    rows, excluded = _scoped_role_rows(source, guid, window)
+    if not rows:
+        reason = "no_actor_scoped_rows_in_window" if excluded else "no_actor_scoped_rows"
+        return {"status": "unavailable", "reason": reason}
+    counts: dict[str, int] = {}
+    for row in rows:
+        count = row.get("count")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            return {"status": "unavailable", "reason": "candidate_count_missing" if candidate else "native_outcome_count_missing"}
+        key = (
+            str(row.get("reason") or "unknown")
+            if candidate else str(row.get("outcome") or row.get("result") or "unknown")
+        )
+        counts[key] = counts.get(key, 0) + count
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    if not candidate:
+        total = sum(counts.values())
+        failures = sum(count for outcome, count in counts.items() if outcome in _ROLE_NATIVE_FAILURES)
+        result = {
+            "status": "observed",
+            "row_count": len(rows),
+            "detail_omitted": True,
+            "outcome_counts": dict(ordered),
+            "outcome_count": total,
+            "actionable_failure_count": failures,
+            "actionable_failure_ratio": round(failures / max(1, total), 6),
+            **({"excluded_count": excluded} if excluded else {}),
+        }
+        if window is not None and any(not row.get("route_node_id") for row in rows):
+            result["route_scope_inherited"] = True
+        return result
+    result: dict[str, Any] = {
+        "status": "observed",
+        "row_count": len(rows),
+        "detail_omitted": True,
+        "reason_counts": dict(ordered[:3]),
+        "count_total": sum(counts.values()),
+        "interpretation": "candidate_scan_only",
+    }
+    if len(ordered) > 3:
+        result["omitted_reason_kinds"] = len(ordered) - 3
+    if excluded:
+        result["excluded_count"] = excluded
+    if window is not None and any(not row.get("route_node_id") for row in rows):
+        result["route_scope_inherited"] = True
+    return result
+
+
 def _first_list(source: Mapping[str, Any], names: Iterable[str]) -> list[Any] | None:
     empty: list[Any] | None = None
     for name in names:
@@ -361,60 +592,124 @@ def _role_actor_state(
     state: Mapping[str, Any],
     boss: Mapping[str, Any],
     identity: Mapping[str, Any],
+    role_metrics: Mapping[str, Any] | None = None,
+    report_source_sha256: Any = None,
 ) -> tuple[dict[str, Any], bool]:
     """Build a role packet without borrowing DPS or party-level totals."""
     guid = _guid(identity.get("bot_guid", identity.get("actor_guid")))
     role = str(identity.get("role") or "unknown")
     actor_identity = _present(identity, _IDENTITY_FIELDS)
+    source = role_metrics if isinstance(role_metrics, Mapping) else boss
     action_rows = _first_list(
-        boss,
+        source,
         ("action_outcomes", "native_action_outcomes", "action_outcome_rows"),
     )
     candidate_rows = _first_list(
-        boss,
+        source,
         ("candidate_rejections", "native_candidate_rejections", "candidate_rejection_rows"),
     )
-    native = {
-        "action_outcomes": _role_native_rows(
-            action_rows,
-            guid,
-            ("action_name", "outcome", "reason_code", "count"),
-            "action_outcomes",
-        ),
-        "candidate_rejections": _role_native_rows(
-            candidate_rows,
-            guid,
-            ("action_category", "action_categories", "reason", "count"),
-            "candidate_rejections",
-        ),
-    }
-    has_native_rows = any(item.get("status") == "observed" for item in native.values())
+    if role_metrics is not None:
+        # Canonical rows are already full-window producer aggregates.  Keep
+        # their outcome semantics and scope, but omit individual action names
+        # from the small Laya packet.  Candidate scans remain a separate fact
+        # and never contribute to the native-failure question.
+        action_summary = _role_native_summary(action_rows, guid, role_metrics)
+        native = {
+            "action_outcomes": action_summary,
+            "candidate_rejections": _role_native_summary(
+                candidate_rows, guid, role_metrics, candidate=True
+            ),
+        }
+    else:
+        # Preserve the legacy review shape for older packets and explicit
+        # Qwen-compatible fixtures.
+        native = {
+            "action_outcomes": _role_native_rows(
+                action_rows,
+                guid,
+                ("action_category", "action_name", "outcome", "reason_code", "count"),
+                "action_outcomes",
+            ),
+            "candidate_rejections": _role_native_rows(
+                candidate_rows,
+                guid,
+                ("action_category", "action_categories", "reason", "count"),
+                "candidate_rejections",
+            ),
+        }
+        action_summary = _role_native_summary(action_rows, guid)
+    has_native_failure = (
+        action_summary.get("status") == "observed"
+        and action_summary.get("actionable_failure_count", 0) > 0
+    )
+    actor_metrics = _role_metric_actor(role_metrics, boss, guid)
+    metric_reason = (
+        "role_metric_not_in_canonical_metrics"
+        if role_metrics is not None
+        else "role_metric_not_in_review"
+    )
+    observed = (
+        _role_observed_metrics(actor_metrics, unavailable_reason=metric_reason)
+        if role_metrics is not None
+        else {
+            "damage": {"status": "unavailable", "reason": metric_reason},
+            "healing": {"status": "unavailable", "reason": metric_reason},
+            "threat": {"status": "unavailable", "reason": metric_reason},
+            "mitigation": {"status": "unavailable", "reason": metric_reason},
+        }
+    )
     actor_review: dict[str, Any] = {
         "bot_guid": guid,
         "role": role,
         "actor_identity": actor_identity,
         "counterfactual_status": "unavailable",
-        "observed": {
-            "damage": {"status": "unavailable", "reason": "role_metric_not_in_review"},
-            "healing": {"status": "unavailable", "reason": "role_metric_not_in_review"},
-            "threat": {"status": "unavailable", "reason": "role_metric_not_in_review"},
-            "mitigation": {"status": "unavailable", "reason": "role_metric_not_in_review"},
-        },
+        "observed": observed,
         "native": native,
-        "role_scope": "actor_scoped_role_evidence_only",
+        "role_scope": (
+            "actor_scoped_canonical_role_evidence"
+            if role_metrics is not None
+            else "actor_scoped_role_evidence_only"
+        ),
     }
-    actor_review.update(_present(identity, ("bot_name", "class_spec", "class_name")))
+    evidence_scope = {
+        key: role_metrics[key]
+        for key in (
+            "route_node_id",
+            "first_at_ms",
+            "last_at_ms",
+            "duration_sec",
+            "combat_duration_sec",
+            "encounter_window_boundary_basis",
+        )
+        if isinstance(role_metrics, Mapping) and key in role_metrics
+    }
+    if isinstance(report_source_sha256, str) and report_source_sha256:
+        evidence_scope["source_sha256"] = report_source_sha256
+    if evidence_scope:
+        actor_review["evidence_scope"] = evidence_scope
+    if role_metrics is None:
+        actor_review.update(_present(identity, ("bot_name", "class_spec", "class_name")))
+    limitations = (
+        [
+            "No DPS baseline for this role.",
+            "Survival, absorption, mana, threat, and mitigation stay unavailable.",
+            "Shared totals unknown.",
+            "Actor-only rows.",
+        ]
+        if role_metrics is not None
+        else [
+            "No DPS baseline for this role.",
+            "Damage/healing/threat/mitigation are unavailable.",
+            "Shared totals are not actor evidence.",
+            "Only actor-scoped native rows are admissible.",
+        ]
+    )
     result: dict[str, Any] = {
         "task": "role_diagnostic",
         "authority": "shadow_advisory_only",
         "detail_scope": "role rows only; missing observations stay unavailable",
         "actor_review": actor_review,
-        "limitations": [
-            "No DPS baseline for this role.",
-            "Damage/healing/threat/mitigation are unavailable.",
-            "Shared totals are not actor evidence.",
-            "Only actor-scoped native rows are admissible.",
-        ],
+        "limitations": limitations,
     }
     for key in ("run_id", "segment_id"):
         if key in state:
@@ -422,7 +717,7 @@ def _role_actor_state(
     outcome = _compact_outcome(state.get("native_gameplay_outcome"))
     if outcome is not None:
         result["native_gameplay_outcome"] = outcome
-    return result, has_native_rows
+    return result, has_native_failure
 
 
 def _compact_actor_state(
@@ -545,6 +840,21 @@ def actor_packets(review: Mapping[str, Any], model: str = MODEL) -> list[dict[st
         return []
     timeline = boss.get("timeline_comparison")
     timeline = timeline if isinstance(timeline, Mapping) else {}
+    role_metrics = _canonical_role_metrics(review, boss)
+    deterministic = review.get("deterministic")
+    if (
+        role_metrics is None
+        and isinstance(deterministic, Mapping)
+        and "boss_combat_metrics" in deterministic
+    ):
+        # A present but unbound canonical ledger must not fall back to the
+        # narrower raw boss arrays.
+        role_metrics = {}
+    report_source_sha256 = (
+        review.get("source_sha256")
+        if isinstance(role_metrics, Mapping) and role_metrics.get("available") is True
+        else None
+    )
     packets: list[dict[str, Any]] = []
     seen: set[str] = set()
     loss_signals = boss.get("actor_loss_signals")
@@ -567,8 +877,14 @@ def actor_packets(review: Mapping[str, Any], model: str = MODEL) -> list[dict[st
             state_projection = _compact_actor_state(state, boss, actor, timeline_actor)
             question = _actor_question(guid)
         else:
-            state_projection, has_native_rows = _role_actor_state(state, boss, identity_row)
-            question = _role_question(guid, has_native_rows)
+            state_projection, has_native_failure = _role_actor_state(
+                state,
+                boss,
+                identity_row,
+                role_metrics,
+                report_source_sha256,
+            )
+            question = _role_question(guid, has_native_failure)
         packets.append(
             {
                 "model": model,
