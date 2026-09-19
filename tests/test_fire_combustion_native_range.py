@@ -76,12 +76,14 @@ struct Actor {unsigned guid=0;bool dots=true;AuraEffect ignite;
  float GetSpellMaxRangeForTarget(Actor*,SpellInfo const* info){return info->maximum;}
  float GetMeleeRange(Actor*)const{return 5;}float GetCombatReach()const{return 1.5f;}
 };
-struct Profile {float MaxRange=40;};
+struct Profile {float MaxRange=40;std::string TargetSelector="enemy";};
+struct ResolvedCombatAction {float MinRange=0,MaxRange=0;bool RangeRecoveryRequired=false;};
 struct BotActionCandidate {struct Profile Profile;unsigned SpellId=11129,ResolvedSpellId=11129;std::string RejectReason;};
 std::string check(unsigned guid,float cap,float nativeMax,float distance,bool ownedDots,unsigned spellId=11129){
  Actor actor,targetUnit;actor.guid=guid;targetUnit.dots=ownedDots;auto* bot=&actor;auto* target=&targetUnit;
  mgr.info.maximum=nativeMax;Profile profile;BotActionCandidate candidate;candidate.Profile.MaxRange=cap;candidate.SpellId=candidate.ResolvedSpellId=spellId;
- bool selfTarget=false;
+ // Fixture SQL rows are ordinary enemy actions with zero minimum range.
+ bool selfTarget=false,densityOnly=false;float minRange=0;ResolvedCombatAction action;
 ''' + native + '\nfor(int once=0;once<1;++once){\n' + dots + configured + maximum + '\n}\nreturn candidate.RejectReason;\n}\nint main(){\n' + '\n'.join(cases)+r'''
  assert(check(30006,40,40,40,true).empty());
  assert(check(30006,40,40,40.01f,true)=="max_range_exceeded");
