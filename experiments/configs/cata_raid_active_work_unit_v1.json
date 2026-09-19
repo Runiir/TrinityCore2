@@ -8,7 +8,7 @@
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
   "behavior_change": false,
   "evidence_contract_change": true,
-  "gate_state": "73103 clear accepted; performance declined; native cast observation implementation active",
+  "gate_state": "OBS-008 independently approved;37 focused tests passed; queued native build next",
   "first_broken_edge": {
     "id": "native_finish_loses_cast_identity_and_failure_reason",
     "owner_classification": "bot_runtime_implementation",
@@ -16,13 +16,16 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "23b4c8d83c1b00fc8ec146be2f8bef74d3e74464b3fa16099630c6ff5b6fd6ec"
+    "sha256": "86beb4e08b696724fd7da98ed3c98fc2a3702922fd69f669936304e8f69d0614"
   },
   "scope_lock": {
     "objective": "Observe actual native cast lifecycle without changing gameplay; retain synchronous instant finishes, failed preparation and distinct same-millisecond casts through existing trace and timeline.",
     "owned_files": [
       "src/server/game/Spells/Spell.h",
       "src/server/game/Spells/Spell.cpp",
+      "src/server/game/Spells/SpellNativeCastObservation.h",
+      "src/server/game/Spells/SpellNativeCastObservation.cpp",
+      "src/server/game/Spells/SpellNativeCastObservationSpell.cpp",
       "src/server/game/Bots/BotWorldPopulationMgr.h",
       "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp",
       "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
@@ -50,9 +53,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Complete native cast identity/result/cancellation observation, focused production-path fixtures and independent review; build once and run completion-watchdog validation with all10 actor specialists and both Laya/API Jev.",
+  "next_action": "Build clean master once, fresh-provision the same roster, and completion-watchdog validate native cast observation. Inspect the first failed Fire cast before choosing gameplay repair. Review every actor with specialists and local Laya/API Jev; focused model diagnosis requires a concrete event sequence and distinct hypotheses.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -88,11 +91,12 @@
     "performance_verdict": "not_accepted_4.1_percent_below_ab829",
     "diagnosis_required": true,
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_and_reviews_remote_verified_raw_retained_for_OBS008",
+    "publication_state": "raw_reviews_addendum_remote_verified_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": false,
+    "raw_payloads_evicted": true,
     "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc",
-    "review_addendum_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.addendum.tar.gz.dvc"
+    "review_addendum_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.addendum.tar.gz.dvc",
+    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.closure.tar.gz.dvc"
   },
   "related_edges": [
     {
@@ -229,7 +233,11 @@
     "bane_review_sha256": "fc27cebff93edfee1d53f4cbceaa732e5a74644006e6080c5d0a3c86ae7e9cd0"
   },
   "implementation_review": {
-    "verdict": "OBS-008_implementation_in_progress",
-    "live_verified": false
+    "verdict": "independently_approved_OBS008",
+    "live_verified": false,
+    "focused_tests_passed": 37,
+    "review_sha256": "ca02b0db862e2a72d2835cff4a9c53d90ff56f0b5170c4f6a9adad07e02a0e7d",
+    "legacy_oversized_file": "src/server/game/Spells/Spell.cpp",
+    "legacy_file_lines": 9066
   }
 }

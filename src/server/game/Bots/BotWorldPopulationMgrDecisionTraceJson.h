@@ -221,6 +221,8 @@ void AppendDecisionTraceEntryJson(std::ostream& json,
     else
         json << "null";
     json << "}"
+         << ",\"native_spell_prepared\":"
+         << (entry.NativeSpellPreparedJson.empty() ? "null" : entry.NativeSpellPreparedJson)
          << ",\"native_spell_finish\":"
          << (entry.NativeSpellFinishJson.empty() ? "null" : entry.NativeSpellFinishJson)
          << ",\"combat_attempt\":" << combatJson(entry.CombatAttempt)

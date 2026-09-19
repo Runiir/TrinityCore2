@@ -698,6 +698,10 @@ m_caster((info->HasAttribute(SPELL_ATTR6_ORIGINATE_FROM_CONTROLLER) && caster->G
 
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         m_destTargets[i] = SpellDestination(*m_caster);
+
+    m_nativeCastObservation.SpellId = m_spellInfo->Id;
+    m_nativeCastObservation.CasterGuid = m_caster->GetGUID();
+    m_nativeCastObservation.OriginalCasterGuid = m_originalCasterGUID;
 }
 
 Spell::~Spell()
@@ -3357,6 +3361,7 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
     }
 
     InitExplicitTargets(targets);
+    ObserveNativeCastSubmittedTarget(targets.GetUnitTargetGUID());
 
     // Fill aura scaling information
     if (Unit* unitCaster = m_caster->ToUnit())
@@ -3479,6 +3484,8 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
         }
     }
 
+    sBotWorldPopulationMgr->NotifyNativeSpellPrepared(this);
+
     if (Creature* creatureCaster = m_caster->ToCreature())
         m_nativeCreatureSpellObservationSequence =
             sBotWorldPopulationMgr->NotifyNativeCreatureSpellStarted(
@@ -3545,6 +3552,8 @@ void Spell::cancel()
 {
     if (m_spellState == SPELL_STATE_FINISHED)
         return;
+
+    sBotWorldPopulationMgr->NotifyNativeSpellCancelled(this);
 
     SpellState oldState = m_spellState;
     m_spellState = SPELL_STATE_FINISHED;
@@ -4168,6 +4177,8 @@ void Spell::update(uint32 difftime)
     if (!UpdatePointers())
     {
         // cancel the spell if UpdatePointers() returned false, something wrong happened there
+        sBotWorldPopulationMgr->NotifyNativeSpellUpdate(this,
+            "update_pointers_failed");
         cancel();
         return;
     }
@@ -4175,20 +4186,33 @@ void Spell::update(uint32 difftime)
     if (m_targets.GetUnitTargetGUID() && !m_targets.GetUnitTarget())
     {
         TC_LOG_DEBUG("spells", "Spell %u is cancelled due to removal of target.", m_spellInfo->Id);
+        sBotWorldPopulationMgr->NotifyNativeSpellUpdate(this,
+            "target_unavailable");
         cancel();
         return;
     }
 
     // check if the player caster has moved before the spell finished
     // with the exception of spells affected with SPELL_AURA_CAST_WHILE_WALKING effect
-    if (m_timer != 0 && m_caster->IsUnit() && m_caster->ToUnit()->isMoving() && CheckMovement() != SPELL_CAST_OK)
+    SpellCastResult movementResult = SPELL_CAST_OK;
+    if (m_timer != 0 && m_caster->IsUnit() && m_caster->ToUnit()->isMoving())
     {
-        // if charmed by creature, trust the AI not to cheat and allow the cast to proceed
-        // @todo this is a hack, "creature" movesplines don't differentiate turning/moving right now
-        // however, checking what type of movement the spline is for every single spline would be really expensive
-        Unit* unitCaster = m_caster->ToUnit();
-        if (!unitCaster->GetCharmerGUID().IsCreature() && (!unitCaster->IsControlledByPlayer() || unitCaster->GetTypeId() == TYPEID_PLAYER))
-            cancel();
+        movementResult = CheckMovement();
+        if (movementResult != SPELL_CAST_OK)
+        {
+            // if charmed by creature, trust the AI not to cheat and allow the cast to proceed
+            // @todo this is a hack, "creature" movesplines don't differentiate turning/moving right now
+            // however, checking what type of movement the spline is for every single spline would be really expensive
+            Unit* unitCaster = m_caster->ToUnit();
+            if (!unitCaster->GetCharmerGUID().IsCreature()
+                && (!unitCaster->IsControlledByPlayer()
+                    || unitCaster->GetTypeId() == TYPEID_PLAYER))
+            {
+                sBotWorldPopulationMgr->NotifyNativeSpellUpdate(this,
+                    "movement_check_failed", uint32(movementResult));
+                cancel();
+            }
+        }
     }
 
     switch (m_spellState)
@@ -4254,6 +4278,7 @@ void Spell::finish(bool ok)
 {
     if (m_spellState == SPELL_STATE_FINISHED)
         return;
+    sBotWorldPopulationMgr->NotifyNativeSpellFinishing(this, ok);
     m_spellState = SPELL_STATE_FINISHED;
 
     if (!m_caster)
@@ -4265,7 +4290,8 @@ void Spell::finish(bool ok)
 
     if (Player* playerCaster = unitCaster->ToPlayer())
     {
-        sBotWorldPopulationMgr->NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok);
+        sBotWorldPopulationMgr->NotifyBotSpellFinishedWithObservation(
+            playerCaster, this, ok);
         if (m_initialCastItemGUID)
             sBotWorldPopulationMgr->NotifyBotItemSpellFinished(playerCaster,
                 m_spellInfo->Id, ok, m_initialCastItemGUID,
@@ -4502,6 +4528,8 @@ void Spell::SendCastResult(SpellCastResult result, uint32* param1 /*= nullptr*/,
 {
     if (result == SPELL_CAST_OK)
         return;
+
+    sBotWorldPopulationMgr->NotifyNativeSpellCastResult(this, uint32(result));
 
     Player* receiver = m_caster->ToPlayer();
     if (m_spellInfo->HasAttribute(SPELL_ATTR7_REPORT_SPELL_FAILURE_TO_UNIT_TARGET))

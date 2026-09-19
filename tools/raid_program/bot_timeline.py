@@ -414,6 +414,7 @@ def _trace_events(trace: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
     switches: dict[int, list[tuple[int, int]]] = defaultdict(list)
     last_target: dict[int, int] = {}
     seen_attempts: set[tuple[Any, ...]] = set()
+    seen_prepared: set[tuple[Any, ...]] = set()
     seen_finishes: set[tuple[Any, ...]] = set()
     for row in trace:
         at = _timestamp(row)
@@ -447,13 +448,93 @@ def _trace_events(trace: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
             failure = attempt.get("failure") or {}
             accepted = failure.get("result") == "ok"
             events.append(_event("native_submission" if accepted else "native_attempt_rejected", recorded, actor, route_generation=_int(row.get("route_generation")), spell_id=spell, action_type=action.get("action_type"), debug_name=action.get("debug_name"), target_guid=_int(action.get("target_guid")), target_entry=_int(action.get("target_entry")), action_phase=attempt.get("phase"), result=failure.get("result"), reason=failure.get("reason"), gates=failure.get("gates") if isinstance(failure.get("gates"), dict) else {}, detail=attempt.get("detail") if isinstance(attempt.get("detail"), dict) else {}, provenance="observed_native_combat_attempt", cast_correlation="unavailable"))
+        prepared = row.get("native_spell_prepared")
+        if isinstance(prepared, dict):
+            prepared_at = _int(prepared.get("observed_at_ms")) or at
+            cast_instance_id = _int(prepared.get("cast_instance_id"))
+            key = (actor, cast_instance_id, "prepared") if cast_instance_id else (
+                actor, prepared_at, _int(prepared.get("spell_id")), "prepared")
+            if prepared_at and key not in seen_prepared:
+                seen_prepared.add(key)
+                source_scope = prepared.get("source_scope")
+                events.append(_event(
+                    "native_prepared", prepared_at, actor,
+                    route_generation=_int((source_scope or {}).get("route_generation")
+                                           or row.get("route_generation"))
+                    if isinstance(source_scope, dict) else _int(row.get("route_generation")),
+                    spell_id=_int(prepared.get("spell_id")),
+                    cast_instance_id=cast_instance_id or None,
+                    actual_caster_guid=_int(prepared.get("caster_guid")),
+                    original_caster_guid=_int(prepared.get("original_caster_guid")),
+                    preparation_accepted=prepared.get("prepared", True),
+                    submitted_target_guid=_int(prepared.get("submitted_target_guid")),
+                    source_scope=source_scope if isinstance(source_scope, dict) else None,
+                    provenance="observed_native_preparation",
+                    cast_correlation="exact" if cast_instance_id else "unavailable"))
         finish = row.get("native_spell_finish")
         if isinstance(finish, dict):
             observed = _int(finish.get("observed_at_ms"))
-            key = (actor, observed, _int(finish.get("spell_id")), finish.get("success"))
+            cast_instance_id = _int(finish.get("cast_instance_id"))
+            terminal_ordinal = _int(finish.get("terminal_ordinal"))
+            trace_sequence = _int(row.get("sequence"))
+            if cast_instance_id and terminal_ordinal:
+                key = (actor, cast_instance_id, terminal_ordinal, "finish")
+            elif cast_instance_id and trace_sequence:
+                key = (actor, cast_instance_id, "finish", trace_sequence)
+            elif cast_instance_id:
+                key = (actor, observed, _int(finish.get("spell_id")),
+                       finish.get("success"), "legacy_instance")
+            else:
+                key = (
+                    actor, observed, _int(finish.get("spell_id")), finish.get("success"),
+                    "legacy")
             if observed and key not in seen_finishes:
                 seen_finishes.add(key)
-                events.append(_event("native_finish", observed, actor, route_generation=_int(finish.get("route_generation") or row.get("route_generation")), spell_id=_int(finish.get("spell_id")), success=finish.get("success"), provenance="observed_native_callback", cast_correlation="unavailable"))
+                source_scope = finish.get("source_scope")
+                terminal_scope = finish.get("terminal_scope")
+                carry_in = None
+                if isinstance(source_scope, dict) and isinstance(terminal_scope, dict):
+                    carry_in = any(source_scope.get(field) != terminal_scope.get(field)
+                                   for field in ("server_epoch", "cohort_id", "attempt_id",
+                                                 "wipe_generation", "route_node_id",
+                                                 "route_generation", "map_id", "instance_id"))
+                events.append(_event(
+                    "native_finish", observed, actor,
+                    route_generation=_int((terminal_scope or {}).get("route_generation")
+                                           or finish.get("route_generation")
+                                           or row.get("route_generation"))
+                    if isinstance(terminal_scope, dict) else _int(finish.get("route_generation")
+                                                                    or row.get("route_generation")),
+                    spell_id=_int(finish.get("spell_id")), success=finish.get("success"),
+                    cast_instance_id=cast_instance_id or None,
+                    terminal_ordinal=terminal_ordinal or None,
+                    terminal_identity_fallback=(
+                        "trace_sequence" if cast_instance_id and not terminal_ordinal
+                        and trace_sequence else (
+                            "legacy_observation_key" if cast_instance_id
+                            and not terminal_ordinal else None)),
+                    prepared=finish.get("prepared"),
+                    prepared_at_ms=finish.get("prepared_at_ms"),
+                    submitted_target_guid=_int(finish.get("submitted_target_guid")),
+                    terminal_target_guid=_int(finish.get("terminal_target_guid")),
+                    terminal_target_present=finish.get("terminal_target_present"),
+                    terminal_target_alive=finish.get("terminal_target_alive"),
+                    terminal_target_attackable=finish.get("terminal_target_attackable"),
+                    original_caster_guid=_int(finish.get("original_caster_guid")),
+                    actual_caster_guid=_int(finish.get("caster_guid")),
+                    prior_native_state=finish.get("prior_native_state"),
+                    prior_native_state_name=finish.get("prior_native_state_name"),
+                    terminal_source=finish.get("terminal_source"),
+                    cancellation_owner=finish.get("cancellation_owner"),
+                    cancellation_owner_available=finish.get("cancellation_owner_available"),
+                    last_observed_native_failure_result=finish.get("last_observed_native_failure_result"),
+                    movement_check_result=finish.get("movement_check_result"),
+                    unsuccessful_reason=finish.get("unsuccessful_reason"),
+                    source_scope=source_scope if isinstance(source_scope, dict) else None,
+                    terminal_scope=terminal_scope if isinstance(terminal_scope, dict) else None,
+                    carry_in=carry_in,
+                    provenance="observed_native_callback",
+                    cast_correlation="exact" if cast_instance_id else "unavailable"))
         actor_state = row.get("native_actor")
         if isinstance(actor_state, dict):
             events.append(_event("movement", at, actor, moving=actor_state.get("moving"), position=actor_state.get("position"), spline=actor_state.get("spline"), planner=row.get("movement_planner") if immutable else None, provenance="observed_record_time"))

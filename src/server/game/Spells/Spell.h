@@ -26,6 +26,7 @@
 #include "Position.h"
 #include "SharedDefines.h"
 #include "SpellDefines.h"
+#include "SpellNativeCastObservation.h"
 #include <any>
 #include <memory>
 
@@ -420,6 +421,14 @@ class TC_GAME_API Spell
         void SendChannelStart(uint32 duration);
         void SendResurrectRequest(Player* target);
 
+        SpellNativeCastObservation const& GetNativeCastObservation() const { return m_nativeCastObservation; }
+        void ObserveNativeCastSubmittedTarget(ObjectGuid submittedTargetGuid);
+        void ObserveNativeCastPrepared(std::string sourceScopeJson, uint64 observedAtMs);
+        void ObserveNativeCastResult(uint32 result) const;
+        void ObserveNativeCastUpdate(char const* source, uint32 movementResult = 0);
+        void ObserveNativeCastCancelled();
+        void ObserveNativeCastFinishing(bool success, std::string terminalScopeJson, uint64 observedAtMs);
+
         void HandleHolyPower(Player* caster);
         void HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGoTarget, Corpse* pCorpseTarget, uint32 i, SpellEffectHandleMode mode);
         void HandleThreatSpells();
@@ -737,6 +746,7 @@ class TC_GAME_API Spell
         uint8 m_auraScaleMask;
         std::unique_ptr<PathGenerator> m_preGeneratedPath;
         uint64 m_nativeCreatureSpellObservationSequence = 0;
+        mutable SpellNativeCastObservation m_nativeCastObservation;
 
         ByteBuffer* m_effectExecuteData[MAX_SPELL_EFFECTS];
 

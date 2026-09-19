@@ -50,6 +50,7 @@ class Group;
 class Map;
 class Player;
 class Quest;
+class Spell;
 class Unit;
 class WorldObject;
 struct BotClassSpecActionProfile;
@@ -175,6 +176,13 @@ public:
     uint64 NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
     void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
     void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
+    void NotifyBotSpellFinishedWithObservation(Player* caster,
+        Spell const* spell, bool success);
+    void NotifyNativeSpellPrepared(Spell* spell);
+    void NotifyNativeSpellCastResult(Spell const* spell, uint32 result);
+    void NotifyNativeSpellUpdate(Spell* spell, char const* source, uint32 movementResult = 0);
+    void NotifyNativeSpellCancelled(Spell* spell);
+    void NotifyNativeSpellFinishing(Spell* spell, bool success);
     void NotifyBotItemSpellFinished(Player* caster, uint32 spellId,
         bool success, ObjectGuid castItemGuid, ObjectGuid itemTargetGuid,
         uint32 castItemEntry, bool castItemIsPotion);
@@ -856,6 +864,10 @@ private:
     void UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* semanticJson);
     uint64 BeginPendingHealCast(Player* bot, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
     void FlushPendingHealCast(PendingHealCast const& cast, Player* bot, char const* outcome, char const* reason);
+    void NotifyBotSpellFinishedInternal(Player* caster, uint32 spellId,
+        bool success, bool recordLegacyTrace);
+    void RecordNativeSpellFinishObservation(Spell const* spell, bool success);
+    std::string BuildNativeSpellScopeJson(Player const* caster) const;
     void UpdatePendingHealCasts();
     void ClearPendingHealCasts(char const* reason);
     std::string BuildValidationRouteEvidenceJson(std::vector<ValidationRouteEvidence> const& evidence) const;

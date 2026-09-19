@@ -28,8 +28,10 @@ submissions. Fixture protection coverage remains distinct from observed live use
 The next repair is OBS-008 native cast observation. Fire bait lost552,787 absolute
 damage and had a29.055s direct-attack gap. Both Fire bots together had18 unsuccessful
 finishes from20 moving Scorch submissions. Their movement-permission predicates
-agree; the native cancellation/result and cast identity are missing. Implement
-those fields in the existing trace before changing gameplay. Survival's missed
+agree; the native cancellation/result and cast identity are missing. The observation patch is now independently approved with37 focused tests. It
+retains cast identity, native failure results, original/terminal targets and
+autorepeat finish ordinals through full/delta export. Native build and live
+validation are next; this does not yet identify or repair the casting cause. Survival's missed
 Horn renewal and absent Multi-Shot/Spread, Blood Death Strike cadence, Elemental
 combat potion and healer targeting remain visible in the actor table.
 
@@ -43,7 +45,10 @@ Current raw evidence is published and fresh-remote verified at
 `artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc`.
 Compact reviews, both model request/response sets and build/provisioning receipts
 are fresh-remote verified in `magmaw_master_73103_20260919.review.tar.gz.dvc`
-(68 member hashes). Raw eviction awaits the observation worker's last read. Prior restart raw, reviews and closure proofs are remotely verified
+(68 member hashes). Expanded raw captures, duplicate archives/cache objects and the controller log
+were evicted after exact hash checks against the verified remote archives:
+937,899,101 logical bytes removed. Closure proofs are retained in
+`magmaw_master_73103_20260919.closure.tar.gz.dvc`. Prior restart raw, reviews and closure proofs are remotely verified
 under `magmaw_master_ab829_20260919.*.dvc`; its expanded raw duplicates are evicted.
 Native source/build identity is73103e8646, separate from later analysis changes.
 Role projection00cad47b6d now joins observed role ledgers and labels their HPS

@@ -148,6 +148,87 @@ def test_activity_distinguishes_healing_and_pet_dot_tails_from_fresh_attacks():
     assert activity["fresh_attack_outage_basis"] == "observed_direct_landed_boundaries"
 
 
+def test_native_lifecycle_projection_keys_exact_instances_and_preserves_scope_facts():
+    source_scope = {"server_epoch": 11, "cohort_id": "raid", "attempt_id": 2,
+                    "wipe_generation": 0, "route_node_id": "bwd.magmaw.encounter",
+                    "route_generation": 4, "map_id": 669, "instance_id": 2}
+    terminal_scope = {**source_scope, "route_generation": 5,
+                      "route_node_id": "bwd.magmaw.head"}
+    prepared = {
+        "schema": "native_spell_prepared_v1", "observed_at_ms": 1000,
+        "caster_guid": 7, "original_caster_guid": 70, "spell_id": 30006,
+        "cast_instance_id": 101, "cast_instance_correlation": "exact",
+        "terminal_ordinal": 1,
+        "submitted_target_guid": 41570, "source_scope": source_scope,
+    }
+    finish_one = {
+        "schema": "native_spell_finish_v2", "observed_at_ms": 1000,
+        "caster_guid": 7, "original_caster_guid": 70, "spell_id": 30006,
+        "cast_instance_id": 101, "cast_instance_correlation": "exact",
+        "prepared": True, "prepared_at_ms": 1000,
+        "success": True, "submitted_target_guid": 41570,
+        "terminal_target_guid": 41571, "terminal_target_present": True,
+        "terminal_target_alive": True, "terminal_target_attackable": True,
+        "prior_native_state": 1, "prior_native_state_name": "preparing",
+        "terminal_source": "finish", "cancellation_owner": "unknown",
+        "cancellation_owner_available": False,
+        "last_observed_native_failure_result": None,
+        "movement_check_result": None, "unsuccessful_reason": None,
+        "source_scope": source_scope, "terminal_scope": terminal_scope,
+    }
+    prepared_two = {**prepared, "cast_instance_id": 102, "observed_at_ms": 1000}
+    finish_two = {**finish_one, "cast_instance_id": 102,
+                  "terminal_scope": source_scope, "terminal_target_guid": 41572}
+    finish_repeat = {**finish_one, "terminal_ordinal": 2, "success": False,
+                     "terminal_source": "cancel", "unsuccessful_reason": "observed_terminal_source",
+                     "terminal_scope": source_scope}
+    truncated_finish = {key: value for key, value in finish_one.items()
+                        if key != "terminal_ordinal"}
+    truncated_finish.update({"cast_instance_id": 103,
+                             "terminal_target_guid": 41573})
+    truncated_finish_two = {**truncated_finish, "terminal_target_guid": 41574}
+    legacy = {"schema": "native_spell_finish_v1", "observed_at_ms": 1000,
+              "caster_guid": 7, "spell_id": 30006, "success": True,
+              "cast_instance_correlation": "unavailable"}
+    trace = _trace([
+        {"timestamp_ms": 1000, "sequence": 1, "bot_guid": 7,
+         "route_generation": 4, "native_spell_prepared": prepared},
+        {"timestamp_ms": 1000, "sequence": 2, "bot_guid": 7,
+         "route_generation": 5, "native_spell_finish": finish_one},
+        {"timestamp_ms": 1000, "sequence": 3, "bot_guid": 7,
+         "route_generation": 4, "native_spell_prepared": prepared_two},
+        {"timestamp_ms": 1000, "sequence": 4, "bot_guid": 7,
+         "route_generation": 4, "native_spell_finish": finish_two},
+        {"timestamp_ms": 1000, "sequence": 5, "bot_guid": 7,
+         "route_generation": 4, "native_spell_finish": finish_repeat},
+        {"timestamp_ms": 1000, "sequence": 6, "bot_guid": 7,
+         "route_generation": 4, "native_spell_finish": truncated_finish},
+        {"timestamp_ms": 1000, "sequence": 7, "bot_guid": 7,
+         "route_generation": 4, "native_spell_finish": truncated_finish_two},
+        {"timestamp_ms": 1000, "sequence": 8, "bot_guid": 7,
+         "route_generation": 4, "native_spell_finish": legacy},
+    ])
+    model, _ = build_timeline_from_rows([_bound("trace", trace)], _report())
+    prepared_events = [event for event in model["events"] if event["kind"] == "native_prepared"]
+    finish_events = [event for event in model["events"] if event["kind"] == "native_finish"]
+    assert [event["cast_instance_id"] for event in prepared_events] == [101, 102]
+    assert [event["cast_instance_id"] for event in finish_events[:3]] == [101, 102, 101]
+    assert finish_events[0]["prepared"] is True
+    assert finish_events[0]["prior_native_state_name"] == "preparing"
+    assert finish_events[0]["submitted_target_guid"] == 41570
+    assert finish_events[0]["terminal_target_guid"] == 41571
+    assert finish_events[0]["carry_in"] is True
+    assert finish_events[1]["carry_in"] is False
+    assert finish_events[2]["terminal_ordinal"] == 2
+    assert finish_events[2]["success"] is False
+    assert [event["cast_instance_id"] for event in finish_events[3:5]] == [103, 103]
+    assert all(event["terminal_identity_fallback"] == "trace_sequence"
+               for event in finish_events[3:5])
+    assert finish_events[5]["cast_instance_id"] is None
+    assert finish_events[5]["cast_correlation"] == "unavailable"
+    assert not any(event["kind"] == "landed" for event in model["events"])
+
+
 def test_incoming_damage_survives_delta_and_zero_health_without_becoming_dps():
     outgoing = _event(1, 1000)
     incoming = {**_event(2, 2000, amount=0), "source_guid": 99,

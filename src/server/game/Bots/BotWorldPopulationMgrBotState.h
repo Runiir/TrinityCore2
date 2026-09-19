@@ -757,6 +757,7 @@ namespace BotWorldPopulationMgrBotState
             bool TargetReturnCurrentAtRecord = false;
             bool TargetReturnAgeAvailable = false;
             uint64 TargetReturnAgeMs = 0;
+            std::string NativeSpellPreparedJson; // Native preparation acceptance; not executor acceptance.
             std::string NativeSpellFinishJson; // Callback facts; cached CombatAttempt is not its identity.
             CombatAttemptDiagnostic CombatAttempt;
             RouteProgressDiagnostic RouteProgress;
