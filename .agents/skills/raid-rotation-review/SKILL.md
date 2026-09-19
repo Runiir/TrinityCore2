@@ -68,6 +68,14 @@ scope, also read [references/local-wowsims.md](references/local-wowsims.md).
 
 ## Establish exact inputs
 
+Resolve the current denominator with `tools.raid_program.raid_workloop spec <spec>`
+and the promoted `wowsims_cata_dps_reference_requests_v1.json` cohort. Embedded
+DPS in `all_spec_references_cata_p4_v1.json` is not current promotion authority.
+Hydrate the existing cohort through `raid-wowsims-reference` when needed; do not
+infer a changed reference from different catalogs' numbers. Historical
+`optimization_target_met` can mean only 85% of a compatible reference. Preserve
+that threshold result separately from unresolved DPS parity.
+
 Record hashes and identities before comparing:
 
 - WoWSims source revision, binary version/hash, APL bytes, exported

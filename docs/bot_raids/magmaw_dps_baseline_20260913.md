@@ -14,7 +14,12 @@ Retained native dummy results include Fire `90a181db01` (32,288.553 DPS versus
 35,138.962), Affliction `90a181db01` (28,381.680 versus 31,312.967), and Elemental
 `798a115d45` (32,911.683 versus 36,999.280). Their DVC pointers and repair
 boundaries are in the error ledger's run index. The Marksmanship runs do not
-validate the current Survival spec. Check later code/setup changes before using
+validate the current Survival spec. No exact-300 Survival native run was found;
+its retained runs 183/227 scored only 120 seconds. Balance has a historical
+three-seed 300-second campaign, but its legacy reference and setup compatibility
+need verification. Its envelope hash and the current equipment-manifest hash
+cover different projections, so unequal hashes alone do not prove changed gear.
+Check later code/setup changes before using
 any historical native result as current performance evidence.
 
 The v2 role calibration policy sets `optimization_reference_ratio` to 0.85,
