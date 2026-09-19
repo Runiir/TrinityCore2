@@ -2,6 +2,35 @@
 
 ## Active parent objective and actor acceptance
 
+### Current dummy batch (50ec)
+
+All five actors completed exact 300-second windows on `50ec676cdb`, using two
+isolated native phases on one worldserver. Addressed cleanup preserved peer
+progress, both servers exited cleanly, and no off-target contamination was
+observed. References retain the pinned `pet_identity_v4` requests.
+
+| Spec | Measured DPS | Reference mean | Comparison / next action |
+| --- | ---: | ---: | --- |
+| Survival | 35,394.117 | 36,534.932 | Close aggregate; reference omitted legitimate Blood Fury. Retain live racial and generate separately bound control. |
+| Fire | 35,324.493 | 35,138.962 | Close aggregate; extra profile potion plus fixture potion. Repair shared calibration ownership, preserve raid profile. |
+| Affliction | 27,820.990 | 31,312.967 | Setup admitted. Periodic crit realization below reported chance; one seed does not prove a native mechanics defect. |
+| Elemental | 30,763.317 | 36,999.280 | Formal setup gate passes; stat timing remains unresolved. Source APL call summons both elementals; native mapping omits Earth Elemental. No coefficient repair accepted. |
+| Balance | 30,205.077 | 35,447.589 | Same extra potion as Fire. Missing own Mark and leather specialization reconstruct the exact static intellect gap; repair these before attributing cadence/DoT losses. |
+
+Affliction effective self-healing was 116,580, or 388.600 HPS. The original
+batch summary incorrectly read a top-level healing field; full native reports
+retain it under `healer_metrics`. The runner now handles both forms.
+Detailed simulator timelines missing for Fire, Elemental and Balance were
+generated from the same pinned requests; their promoted means were unchanged.
+Capture completion, reference comparability, diagnostic completeness and
+performance acceptance are now reported separately. The user accepts the near
+aggregate Fire/Survival results for progressing the workflow; that does not
+erase their documented setup differences or the other actors' open reviews.
+
+The immediate focus is Jev/Laya-assisted worker checkpoints. Keep these actor
+rows available while testing that workflow; do not restart a raid to reproduce
+already retained class observations.
+
 ### Existing dummy evidence to reuse
 
 On 2026-09-19, the current self-provided WoWSims cohort was hydrated from
@@ -14,7 +43,7 @@ Retained native dummy results include Fire `90a181db01` (32,288.553 DPS versus
 35,138.962), Affliction `90a181db01` (28,381.680 versus 31,312.967), and Elemental
 `798a115d45` (32,911.683 versus 36,999.280). Their DVC pointers and repair
 boundaries are in the error ledger's run index. The Marksmanship runs do not
-validate the current Survival spec. No exact-300 Survival native run was found;
+validate the current Survival spec. Before the 50ec batch, no exact-300 Survival native run was found;
 its retained runs 183/227 scored only 120 seconds. Balance has a historical
 three-seed 300-second campaign, but its legacy reference and setup compatibility
 need verification. Its envelope hash and the current equipment-manifest hash

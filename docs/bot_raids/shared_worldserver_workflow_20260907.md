@@ -5,6 +5,19 @@ is preserved.
 
 ## Current work and latest native run
 
+The latest work is the `50ec676cdb` five-spec dummy batch, with all exact
+300-second measurements complete and concurrent native isolation/cleanup
+proved. Per-spec DPS and remaining setup/cadence findings are in the
+[current dummy table](magmaw_dps_baseline_20260913.md#current-dummy-batch-50ec).
+The user accepted the near-reference Fire/Survival totals for moving forward
+and requested Jev/Laya checkpoints to keep Luna workers on task. A narrow
+calibration duplicate-potion repair is committed at `fe3dadce4d`; tests and
+review passed, while native build/live validation remain pending. Workflow
+checkpoints are committed at `cbe81b0ffc`. The full continuation instructions
+are in [the handoff](handoff_magmaw_dps_20260919.md). No class coefficient change is justified by this batch.
+
+### Latest raid run (696a)
+
 Clean source `696a8f6f38` cleared in **123.672s**, with **228,230.950 exact
 DPS**, **17,884.153 exact HPS**, and all ten bots alive. The scored hostile total
 is 28,225,778, including owned pets and excluding friendly/mirror callbacks.
@@ -22,10 +35,10 @@ verified at `artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.raw.t
 verified; 1,009,972,252 logical bytes of exact raw/archive/cache duplicates were
 removed. Compact report, summary and HTML remain.
 
-Next, reuse the retained 300-second class evidence and verified current simulator
+The preceding next step was to reuse the retained 300-second class evidence and verified current simulator
 cohort. Fire/Affliction/Elemental retain valid historical repair evidence, but
 85% optimization passes are not class parity. Balance's historical reference/setup
-compatibility needs checking; Survival has no retained exact-300 native run.
+compatibility needed checking; Survival then had no retained exact-300 native run.
 Embedded `all_spec_references` DPS must not override the promoted request catalog.
 The bounded Balance primary-DoT density repair is committed and independently
 reviewed at `db16de2412`; no live benefit is claimed. Do not launch another full
