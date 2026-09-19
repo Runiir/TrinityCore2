@@ -290,7 +290,9 @@ _MAGMAW_MUSHROOM_TARGETS_LOG = re.compile(
 _MAGMAW_MUSHROOM_NEARBY_TARGETS_LOG = re.compile(
     r"MagmawWildMushroomNative event=nearby_targets "
     r"destination=(?P<x>-?\d+(?:\.\d+)?),(?P<y>-?\d+(?:\.\d+)?),"
-    r"(?P<z>-?\d+(?:\.\d+)?) radius=(?P<radius>\d+(?:\.\d+)?) "
+    r"(?P<z>-?\d+(?:\.\d+)?) (?:radius|probe_radius)=(?P<radius>\d+(?:\.\d+)?) "
+    r"(?:native_radius=(?P<native_radius>\d+(?:\.\d+)?) )?"
+    r"(?:effective_radius=\d+(?:\.\d+)? )?"
     r"target_count=(?P<count>\d+)"
 )
 _MAGMAW_MUSHROOM_TARGET_LOG = re.compile(
@@ -363,6 +365,8 @@ def _native_mushroom_diagnostics(path: Path | None) -> list[dict[str, Any]]:
                         "z": float(match.group("z")),
                     },
                     "radius": float(match.group("radius")),
+                    **({"native_radius": float(match.group("native_radius"))}
+                       if match.group("native_radius") else {}),
                     "target_count": int(match.group("count")),
                 })
                 continue
@@ -736,6 +740,20 @@ def _native_gameplay_outcome(report: Mapping[str, Any] | None) -> dict[str, Any]
             "certification_rejections": [],
         }
 
+    from tools.bot_ml.closed_capture_inputs import is_canonical_capture
+    if is_canonical_capture(report):
+        development = report.get("development_run") or {}
+        clear = development.get("native_boss_death_accepted") is True
+        return {
+            "schema": "magmaw_native_gameplay_outcome_v1",
+            "status": "clear" if clear else "incomplete",
+            "native_clear": clear,
+            "native_reason": "canonical_development_native_death_receipt" if clear else "native_clear_not_proven",
+            "certification_status": "uncertified",
+            "certification_rejections": ["development_run_not_qualification"],
+            "capture_success": report.get("capture_success"),
+        }
+
     evidence = report.get("evidence")
     evidence = evidence if isinstance(evidence, Mapping) else {}
     watchdog = report.get("watchdog_state")
@@ -1004,7 +1022,7 @@ def _actor_identity(report: Any) -> dict[str, dict[str, Any]]:
                         break
             if fields:
                 identities[str(guid)] = {**identities.get(str(guid), {}), **fields}
-        for key in ("diagnosis", "status", "raid_runtime", "roster", "members", "bots", "admission_receipt"):
+        for key in ("diagnosis", "status", "raid_runtime", "accepted_raid_runtime", "roster", "members", "bots", "admission_receipt"):
             nested = value.get(key)
             if isinstance(nested, (dict, list)):
                 visit(nested, depth + 1)
@@ -5055,7 +5073,18 @@ def analyze(
 ) -> dict[str, Any]:
     raw_path, report_path, discovered_analysis = _input_files(input_path)
     live_report: dict[str, Any] | None = None
-    if raw_path is not None and raw_path.exists():
+    canonical = None
+    if report_path is not None and report_path.exists():
+        live_report = _load_json(report_path)
+        if not isinstance(live_report, dict):
+            raise ValueError(f"live-validation report must be an object: {report_path}")
+        from tools.bot_ml.closed_capture_inputs import is_canonical_capture, load_canonical_capture
+        if is_canonical_capture(live_report):
+            canonical = load_canonical_capture(report_path.parent, live_report)
+    if canonical is not None:
+        source_path = report_path
+        rows = canonical["rows"]
+    elif raw_path is not None and raw_path.exists():
         source_path = raw_path
         rows = _load_jsonl(raw_path)
     elif report_path is not None and report_path.exists():
@@ -5069,7 +5098,7 @@ def analyze(
         missing_path = raw_path or report_path or input_path
         raise ValueError(f"trace input does not exist: {missing_path}")
     entries = _trace_rows(rows)
-    actor_identity = _actor_identity(live_report)
+    actor_identity = _actor_identity([live_report, *[_payload(row) for row in rows]])
     deterministic = _progress_summary(
         entries,
         expected_route,
@@ -5087,8 +5116,8 @@ def analyze(
         _validate_timeline_identity(raw_timeline, report_path)
         timeline_comparison = _compact_timeline_comparison(raw_timeline)
     analysis_path = combat_analysis_path or discovered_analysis
-    if analysis_path and analysis_path.exists():
-        analysis = _load_json(analysis_path)
+    if (analysis_path and analysis_path.exists()) or canonical is not None:
+        analysis = _load_json(analysis_path) if analysis_path and analysis_path.exists() else canonical["combat_analysis"]
         extracted = _analysis_metrics(analysis, scope_route_prefix, actor_identity)
         if extracted is not None:
             deterministic["latest_combat_metrics"] = extracted
@@ -5107,7 +5136,7 @@ def analyze(
             DEFAULT_BOSS_ROUTE[0],
         )
     resolved_combat_log_path = combat_log_path or _discovered_combat_log_path(input_path)
-    combat_log: dict[str, Any] | None = None
+    combat_log: dict[str, Any] | None = canonical["combat_log"] if canonical is not None else None
     if resolved_combat_log_path and resolved_combat_log_path.exists():
         loaded_combat_log = _load_json(resolved_combat_log_path)
         if not isinstance(loaded_combat_log, dict):

@@ -145,7 +145,7 @@ def _actor_identity(report: Mapping[str, Any] | None) -> dict[int, dict[str, Any
             if identity:
                 identities[guid] = {**identities.get(guid, {}), **identity}
         for key in (
-            "diagnosis", "status", "raid_runtime", "roster", "members", "bots",
+            "diagnosis", "status", "raid_runtime", "accepted_raid_runtime", "roster", "members", "bots",
             "admission_receipt", "scenario_reports",
         ):
             nested = value.get(key)
@@ -428,11 +428,13 @@ def compare_timelines(
 ) -> dict[str, Any]:
     """Build a compact all-actor comparison from one closed bot run."""
     report = _load_json(bot_run / "report.json")
-    combat_log = _load_json(bot_run / "combat_log.json")
+    from tools.bot_ml.closed_capture_inputs import is_canonical_capture, load_canonical_capture
+    canonical = load_canonical_capture(bot_run, report) if is_canonical_capture(report) else None
+    combat_log = canonical["combat_log"] if canonical is not None else _load_json(bot_run / "combat_log.json")
     event_input = _native_event_input(combat_log)
-    combat_analysis = _load_json(bot_run / "combat_analysis.json")
+    combat_analysis = canonical["combat_analysis"] if canonical is not None else _load_json(bot_run / "combat_analysis.json")
     wcl_manifest, wcl_actors = _load_wcl_actors(wcl_manifest_path)
-    identities = _actor_identity(report)
+    identities = _actor_identity([report, *(canonical["payloads"] if canonical is not None else [])])
     encounter = next(
         (
             row

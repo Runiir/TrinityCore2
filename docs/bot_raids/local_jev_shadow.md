@@ -32,6 +32,11 @@ that replay are unproven. Full-group requests exceeded the 8 GiB GPU's capacity.
 ## Review one closed run
 
 Use the existing completion-watchdog capture. Do not query a growing run.
+Canonical development captures are read directly from `report.json` and its
+hash-bound normalized raw batch. The review tools reassemble the existing combat
+stream in memory; separate copied combat exports are unnecessary. Keep that raw
+batch through review and verified DVC publication. A native death receipt remains
+separate from capture completeness and qualification.
 The following commands use shell variables naming its closed directory and a
 new output directory. No hosted key is needed.
 
