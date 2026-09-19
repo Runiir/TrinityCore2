@@ -34,26 +34,32 @@ repair is the native facing packet at
 `/tmp/magmaw-cast-facing-repair-packet-20260919.json`. Four moving Scorches across
 the two Fire actors prepared against live Magmaw and ended NOT_INFRONT after a
 spline/replacement heading overwrote their one-time facing. This is a bounded
-proven defect, not the whole Fire or raid gap. The packet is design-only and
-implementation is underway; no review, build or live acceptance is claimed.
+proven defect, not the whole Fire or raid gap. The facing repair is committed as `f7efd4fe08`, with independent approval and
+five passing focused tests. Native build and live acceptance remain pending.
+A separate pet-classification repair and passive Blood pre-spend observation
+are completing review for the same build; they retain separate acceptance checks.
 
 Blood's boss-window death, healer boss-entry cooldown and moving-triage gaps,
-Survival's target-valid Cobra interruptions, Balance cast-replacement collisions,
+Survival's target-valid Cobra interruptions, Balance interruptions preceding subsequent casts,
 Fire bait's missing Combustion opportunity, and reciprocal Fire Elemental/wolf
 damage remain open. Pincer, bait, crash, parasite and healer-demand duty costs
 stay explicit. WCL and WoWSims are comparison contexts rather than single-run
 floors.
 
-Local Laya and hosted Jev outputs for this run are pending. Do not claim the
-model review complete or use it as gameplay authority. Follow
-[the shadow workflow](local_jev_shadow.md) after the closed batch is available.
+Local Laya and hosted Jev each reviewed all ten actors without request errors.
+Independent native review found13 confirmations,7 discarded repair choices and
+zero new actionable checks. A separate focused facing case tests coherent causal
+input; model conclusions remain advisory. Follow
+[the shadow workflow](local_jev_shadow.md).
 
-Current raw publication is in progress at
+Current raw evidence is published at
 `artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc`.
 Fresh remote reconstruction now verifies the23,073,735-byte raw object with
-MD5 `cd040f7e9a4138689d4a9f4660aedc56` and zstd integrity. Preserve the seven
-frozen reviews for the review archive after both advisory model batches close;
-raw verification does not complete review or model publication. The
+MD5 `cd040f7e9a4138689d4a9f4660aedc56` and zstd integrity. The seven specialist reviews and both advisory model batches are frozen;
+compact reviews and all model requests/responses are fresh-remote verified in
+`magmaw_master_9d29_20260919.review.tar.gz.dvc` (151 hash-checked members).
+Closure receipts are in `magmaw_master_9d29_20260919.closure.tar.gz.dvc`.
+Exact verified duplicate payloads totaling1,105,060,394 bytes were evicted. The
 73103 and ab829 raw/review/closure publications remain historical verified
 evidence under their existing pointers.
 

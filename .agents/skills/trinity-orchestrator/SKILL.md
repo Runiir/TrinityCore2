@@ -25,6 +25,10 @@ Link existing receipts instead of restating them or the program charter. Send
 decisive findings when proven; a long narrative report must not delay the next
 bounded implementation or independent review.
 
+A worker's completion freezes its owned files until a new edit assignment.
+The reviewer hashes those files and finishes its verdict without requesting
+another freeze acknowledgment. A worker must not claim approval before that verdict.
+
 When replacing or resuming a worker, name the latest implementation review and
 its unresolved findings explicitly. The worker must reconcile those findings
 with the current diff before choosing more work; a directory of older reports

@@ -6,18 +6,18 @@ Repair and validate every represented spec against WCL component/cadence context
 and exact WoWSims setup. Latest clean native source `9d29edd376` cleared in
 128.742 seconds at219,627.332 raid DPS and15,100.200 exact HPS. Blood30002 died
 at+103.997s and recovered after the clear. Clear and OBS-008 observation are
-accepted; performance is not accepted. Local Laya and hosted Jev review is
-pending and remains advisory.
+accepted; performance is not accepted. Both models reviewed all ten actors. Native adjudication retained13 confirmations,
+discarded7 unsupported or insufficient repair choices, and found no new actionable check.
 
 | Actor/spec | Native DPS | WCL example DPS | Current finding / next action | State |
 | --- | ---: | ---: | --- | --- |
-| 30001 Balance | 24,801.603 | 41,029.1 | Mushroom remains accepted:3 detonations,18 effects,440,590 damage. Two target-valid casts were replaced at interrupted terminals; head damage fell644,368. Pincer and post-landing avoidance are separate duty/missing-fact costs. | Open |
+| 30001 Balance | 24,801.603 | 41,029.1 | Mushroom remains accepted:3 detonations,18 effects,440,590 damage. Two target-valid casts were interrupted before later submissions; replacement ownership is disproved by event order. One is required crash movement; head damage fell644,368. Pincer and post-landing avoidance are separate duty/missing-fact costs. | Open |
 | 30002 Blood | 9,861.087 | 26,152 | Died at+103.997s and lost24.745s of boss-window offense. Heart Strike stayed lawful and positive; no Death Strike occurred in the final14.711s. Capture health/runes/mitigation and arbitration before survival repair. | Open |
 | 30006 Fire bait | 25,267.248 | 40,189.9 | Missing combat Combustion is the largest current actor component, but its exact proc snapshot is absent. Two of four bounded moving Scorches ended NOT_INFRONT from facing overwrite; repair packet active. Bait/crash/parasite duty remains charged. | Open |
 | 30007 Fire | 43,579.780 | 40,189.9 | Absolute damage remains above ab829; longer duration lowers DPS. Two bounded moving Scorches share the facing defect. This four-cast repair is not a claim for the whole Fire gap; Flame Orb persistence is separate. | Open |
 | 30008 Affliction | 38,290.333 | 40,281 | Improved724.157 DPS; Bane exclusion remains accepted with zero parasite submissions. Prior parasite UA did not recur. Target-alive cancellations still lack owner/join evidence; no gameplay repair. | Open |
-| 30009 Survival | 36,912.414 | 43,706.4 rounded component sum | Improved2,765.400 DPS; Horn renewal is healthy. Nine exact Cobra casts were interrupted while targets remained valid, six while stationary; cancellation owner is missing. No sampled GCD-ready legal Multi-Shot opportunity. | Open |
-| 30010 Elemental | 35,577.527 | 41,866 | Improved4,603.748 DPS. Fire Elemental and Hunter wolf dealt165,675 reciprocal friendly damage; shared pet target filtering is the next proven class-independent loss. Potion still requires reference reconciliation. | Open |
+| 30009 Survival | 36,912.414 | 43,706.4 rounded component sum | Improved2,765.400 DPS; Horn renewal is healthy. Nine exact Cobra casts were interrupted while targets remained valid. Three follow required hazard movement; six sampled-stationary cases still lack an interrupt caller. No sampled GCD-ready legal Multi-Shot opportunity. | Open |
+| 30010 Elemental | 35,577.527 | 41,866 | Improved4,603.748 DPS. Through death, Fire Elemental dealt159,090 friendly damage to the wolf and received12,260. Totem-owner player classification can be skipped before an existing-victim update; repair native classification/validity, not damage. Potion still requires reference reconciliation. | Open |
 | 30003 Restoration | 2,062.318 | Unmatched | 7,225.800 HPS; supplied all final3s tank healing and most final10s healing. Reserve Tree for boss and retain movement-triage/late-Regrowth observation; no sole healer cause proven. | Open |
 | 30004 Holy | 0 | Unmatched | 3,938.047 HPS. Last tank heal was4.685s before death; hard heals were movement-gated with Holy Shock unavailable. Reserve Divine Favor and validate a movement-safe emergency fallback. | Open |
 | 30005 Discipline | 3,275.023 | Unmatched | 933.705 direct HPS excludes shields. PoM still selected non-tanks6/8 casts; Pain Suppression was spent before pull. Reserve it, repair selector/LOS resolution, and retain OBS-006 absorption work. | Open |
@@ -38,9 +38,10 @@ Shard89's enlarged Mushroom targeting is excluded from lawful recovery estimates
 Current raw publication is fresh-remote verified at
 `artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc`.
 Its23,073,735-byte object has MD5 `cd040f7e9a4138689d4a9f4660aedc56` and passed
-zstd integrity. Seven specialist reviews are frozen locally; both model passes
-are pending, so no current review archive or model conclusion is claimed
-complete. The73103 and
+zstd integrity. Seven specialist reviews and both model batches are frozen;
+compact reviews/models are fresh-remote verified in
+`magmaw_master_9d29_20260919.review.tar.gz.dvc`; closure proofs retain the
+1,105,060,394-byte exact duplicate eviction. The73103 and
 ab829 publications remain historical evidence. Every unresolved row carries
 forward even when another actor or raid total improves.
 

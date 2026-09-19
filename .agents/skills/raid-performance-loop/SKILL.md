@@ -145,6 +145,8 @@ For a proposed repair, supplement the all-actor screen with one bounded causal
 episode. Supply the preceding events, exact native result, relevant source rules,
 and distinct hypotheses plus insufficient evidence. Separate observations from
 inferences and omit the reviewer's preferred answer from the model input.
+Copy the decisive source predicate exactly; a paraphrase can reverse which actor
+owns a condition. Keep provenance outside model context when it adds no evidence.
 The specialist first records a native-evidence finding, then assesses both model
 outputs against it. Retain supported additions; discard unsupported conclusions
 with the contradicted or missing fact. Repair an ambiguous question or missing

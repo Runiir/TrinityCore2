@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "4495681983ddc2e538abf51756d8a99f67a68fb097532142c64ba908b6e19113"
+    "sha256": "b697f80e1cd376d89d6f3364f064bc13e4f8003a19f888e7f56d221b8bb481ac"
   },
   "scope_lock": {
     "objective": "Keep native permitted movement while preserving the active front-required cast target facing at spline position commits, including arrival.",
@@ -88,9 +88,9 @@
     "trace_gaps": 0,
     "combat_gaps": 0,
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_remote_verified_reviews_models_pending",
+    "publication_state": "raw_and_reviews_remote_verified_exact_duplicate_payloads_evicted",
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": false,
+    "raw_payloads_evicted": true,
     "frozen_specialist_review_count": 7,
     "advisory_model_review_complete": false,
     "raw_pointer_md5": "cd040f7e9a4138689d4a9f4660aedc56",
@@ -103,6 +103,20 @@
       "native_gameplay_source_unchanged": "9d29edd37681a3768855d0be7a985118285c1a63",
       "original_summary_immutable": true,
       "boss_window_result": "blood_dead_at_native_boss_death_post_encounter_recovery_separate"
+    },
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.review.tar.gz.dvc",
+    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.closure.tar.gz.dvc",
+    "model_review": {
+      "actors": 10,
+      "providers": [
+        "local_laya",
+        "hosted_jev"
+      ],
+      "request_errors": 0,
+      "native_confirmations": 13,
+      "discarded_repair_choices": 7,
+      "new_actionable_checks": 0,
+      "predictions_quarantined": true
     }
   },
   "related_edges": [
