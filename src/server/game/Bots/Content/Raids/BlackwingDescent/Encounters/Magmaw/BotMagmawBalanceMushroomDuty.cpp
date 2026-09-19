@@ -41,8 +41,13 @@ MagmawBalanceMushroomState ObserveMagmawBalanceMushroomState(
     std::string_view specTag, uint32 targetEntry, bool solarEclipse)
 {
     MagmawBalanceMushroomState state;
+    bool const livePillarVisible = bot
+        && bot->FindNearestCreature(
+            MagmawBalanceMushroomDuty::PillarOfFlameEntry, 60.0f, true);
+    state.LivePillarVisible = livePillarVisible;
     state.Active = MagmawBalanceMushroomDuty::IsActive(
-        validationRouteEnabled, routeNodeId, specTag, targetEntry);
+        validationRouteEnabled, routeNodeId, specTag, targetEntry,
+        livePillarVisible);
     state.SolarEclipse = solarEclipse;
     state.OwnedMushrooms = state.Active ? OwnedWildMushroomCount(bot) : 0;
     return state;
@@ -52,6 +57,7 @@ bool IsMagmawBalanceMushroomPlacement(
     MagmawBalanceMushroomState const& state, BotActionCandidate const& candidate)
 {
     return state.Active
+        && state.LivePillarVisible
         && candidate.SpellId == MagmawBalanceMushroomDuty::WildMushroomSpellId
         && candidate.Profile.TargetSelector == "ground_enemy"
         && candidate.Profile.RequiresGroundTarget;
@@ -101,33 +107,36 @@ char const* MagmawBalanceMushroomRejection(
     return nullptr;
 }
 
-void SetMagmawBalanceMushroomGroundTarget(
-    ResolvedCombatAction& action, Player const*, Unit const* target)
+bool SetMagmawBalanceMushroomGroundTarget(
+    ResolvedCombatAction& action, Player const* bot, Unit const* target)
 {
-    if (!target)
-        return;
+    if (!bot || !target)
+        return false;
 
-    // Wild Mushrooms belong directly under the live lava spawn. The parasite
-    // is airborne and moving, so never use it as the ground destination.
+    // Aim at the live Pillar of Flame's X/Y and let the map resolve the
+    // platform floor. The pillar is the encounter's ground marker; the
+    // parasites are airborne and moving targets, so they are not destination
+    // coordinates for a player-placed mushroom.
     Creature const* pillar = target->FindNearestCreature(
         MagmawBalanceMushroomDuty::PillarOfFlameEntry, 20.0f, true);
     if (!pillar)
-        return;
+        return false;
 
     Map* map = pillar->GetMap();
     if (!map)
-        return;
+        return false;
 
     float const groundX = pillar->GetPositionX();
     float const groundY = pillar->GetPositionY();
-    float const groundZ = map->GetHeight(target->GetPhaseShift(), groundX, groundY,
+    float const groundZ = map->GetHeight(bot->GetPhaseShift(), groundX, groundY,
         pillar->GetPositionZ() + 2.0f, true, 64.0f);
     if (groundZ == INVALID_HEIGHT)
-        return;
+        return false;
 
     action.HasGroundTarget = true;
     action.GroundTargetX = groundX;
     action.GroundTargetY = groundY;
     action.GroundTargetZ = groundZ;
+    return true;
 }
 }

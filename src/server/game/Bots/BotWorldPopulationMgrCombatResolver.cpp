@@ -702,6 +702,19 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (maxRange > 0.0f && distance > maxRange)
         {
+            // A ranged profile can become completely invalid when the target
+            // moves beyond every declared action envelope. Preserve that
+            // envelope for the executor so it can submit a movement-only
+            // recovery instead of entering a no-action backoff loop. Keep the
+            // narrowest rejected maximum; it is the only range that is safe
+            // for every candidate observed in this resolution.
+            if (!densityOnly && candidate.Profile.TargetSelector == "enemy")
+            {
+                action.RangeRecoveryRequired = true;
+                action.MaxRange = action.MaxRange > 0.0f
+                    ? std::min(action.MaxRange, maxRange) : maxRange;
+                action.MinRange = std::max(action.MinRange, minRange);
+            }
             candidate.RejectReason = "max_range_exceeded";
             continue;
         }
@@ -965,8 +978,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.AllowMagmawBalanceMushroomSplash = selectedMagmawMushroomAction;
     action.AllowScopedEncounterAreaDamage = scopedAreaSpellId
         && scopedAreaTargetEntry == targetEntry && best->SpellId == scopedAreaSpellId;
-    if (selectedMagmawMushroomPlacement)
-        BotEncounter::SetMagmawBalanceMushroomGroundTarget(action, bot, target);
+    if (selectedMagmawMushroomPlacement
+        && !BotEncounter::SetMagmawBalanceMushroomGroundTarget(action, bot, target))
+    {
+        // A destination-location spell must never fall back to the hostile
+        // target when the live lava spawn disappeared between observation and
+        // submission. Wait for the next lava spawn instead of placing the
+        // mushroom on Magmaw or the exposed head.
+        action.Valid = false;
+        action.ResolutionReason = "magmaw_lava_spawn_ground_target_unavailable";
+        action.DebugName = action.ResolutionReason;
+        return action;
+    }
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;

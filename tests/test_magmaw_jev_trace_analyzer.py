@@ -6,6 +6,152 @@ from pathlib import Path
 from tools.bot_ml import analyze_magmaw_trace as analyzer
 
 
+def test_native_mushroom_diagnostics_parse_compact_worldserver_events(tmp_path: Path) -> None:
+    native_log = tmp_path / "worldserver_output.log"
+    native_log.write_text(
+        "2026-09-19 INFO MagmawWildMushroomNative event=detonate "
+        "caster=Player-1-2 expected_entry=47649 mushroom_count=3\n"
+        "2026-09-19 INFO MagmawWildMushroomNative event=damage_cast "
+        "caster=Player-1-2 mushroom=Creature-1-3 entry=47649 "
+        "position=-315.957,-63.990,211.581 result=0\n"
+        "2026-09-19 INFO MagmawWildMushroomNative event=damage_targets "
+        "caster=Player-1-2 caster_entry=0 "
+        "destination=-315.957,-63.990,211.581 target_count=1\n"
+        "2026-09-19 INFO MagmawWildMushroomNative event=nearby_targets "
+        "destination=-315.957,-63.990,211.581 radius=12.000 target_count=1\n"
+        "2026-09-19 INFO MagmawWildMushroomNative event=nearby_target "
+        "target=Creature-1-4 entry=41806 position=-316.100,-64.100,211.581 "
+        "distance_2d=0.175 distance_3d=0.175\n"
+        "2026-09-19 INFO MagmawWildMushroomNative event=damage_target "
+        "caster=Player-1-2 target=Creature-1-4 entry=41806 "
+        "position=-316.100,-64.100,211.581\n",
+        encoding="utf-8",
+    )
+
+    diagnostics = analyzer._native_mushroom_diagnostics(native_log)
+
+    assert diagnostics == [
+        {
+            "event": "detonate",
+            "caster": "Player-1-2",
+            "expected_entry": 47649,
+            "mushroom_count": 3,
+        },
+        {
+            "event": "damage_cast",
+            "caster": "Player-1-2",
+            "mushroom": "Creature-1-3",
+            "entry": 47649,
+            "position": {"x": -315.957, "y": -63.99, "z": 211.581},
+            "result": 0,
+        },
+        {
+            "event": "damage_targets",
+            "caster": "Player-1-2",
+            "caster_entry": 0,
+            "destination": {"x": -315.957, "y": -63.99, "z": 211.581},
+            "target_count": 1,
+        },
+        {
+            "event": "nearby_targets",
+            "destination": {"x": -315.957, "y": -63.99, "z": 211.581},
+            "radius": 12.0,
+            "target_count": 1,
+        },
+        {
+            "event": "nearby_target",
+            "target": "Creature-1-4",
+            "entry": 41806,
+            "position": {"x": -316.1, "y": -64.1, "z": 211.581},
+            "distance_2d": 0.175,
+            "distance_3d": 0.175,
+        },
+        {
+            "event": "damage_target",
+            "caster": "Player-1-2",
+            "target": "Creature-1-4",
+            "entry": 41806,
+            "position": {"x": -316.1, "y": -64.1, "z": 211.581},
+        },
+    ]
+
+
+def test_native_mushroom_diagnostics_accept_trinity_formatted_guids(tmp_path: Path) -> None:
+    native_log = tmp_path / "Server.log"
+    native_log.write_text(
+        "MagmawWildMushroomNative event=detonate "
+        "caster=GUID Full: 0x1 Type: Player Low: 30001 "
+        "expected_entry=47649 mushroom_count=3\n"
+        "MagmawWildMushroomNative event=damage_cast "
+        "caster=GUID Full: 0x1 Type: Player Low: 30001 "
+        "mushroom=GUID Full: 0x2 Type: Creature Entry: 47649 Low: 1 "
+        "entry=47649 position=-315.957,-63.990,212.856 result=255\n",
+        encoding="utf-8",
+    )
+
+    diagnostics = analyzer._native_mushroom_diagnostics(native_log)
+
+    assert diagnostics[0]["caster"].startswith("GUID Full:")
+    assert diagnostics[1]["mushroom"].startswith("GUID Full:")
+
+
+def test_jev_mushroom_packet_compacts_geometry_without_raw_rows() -> None:
+    compact = analyzer._compact_jev_native_mushroom_diagnostics(
+        [
+            {
+                "event": "detonate",
+                "mushroom_count": 3,
+            },
+            {
+                "event": "damage_targets",
+                "target_count": 0,
+            },
+            {
+                "event": "nearby_targets",
+                "destination": {"x": -1.0, "y": -2.0, "z": 3.0},
+                "radius": 12.0,
+                "target_count": 2,
+            },
+            {
+                "event": "nearby_target",
+                "entry": 41806,
+                "distance_2d": 7.0,
+                "distance_3d": 7.1,
+            },
+            {
+                "event": "nearby_target",
+                "entry": 41806,
+                "distance_2d": 4.0,
+                "distance_3d": 4.2,
+            },
+            {
+                "event": "damage_cast",
+                "result": 255,
+            },
+        ]
+    )
+
+    assert compact["core_target_selection"] == {
+        "snapshot_count": 1,
+        "target_count_values": {"0": 1},
+        "selected_target_event_count": 0,
+        "selected_target_entry_values": {},
+    }
+    assert compact["nearby_target_snapshots"] == [
+        {
+            "destination": {"x": -1.0, "y": -2.0, "z": 3.0},
+            "radius": 12.0,
+            "scan_target_count": 2,
+            "observed_target_count": 2,
+            "entry_counts": {"41806": 2},
+            "within_5_yards_2d": 1,
+            "min_distance_2d": 4.0,
+            "min_distance_3d": 4.2,
+            "max_distance_2d": 7.0,
+        }
+    ]
+
+
 def _entry(sequence: int, route: str, action: str, **extra: object) -> dict[str, object]:
     value: dict[str, object] = {
         "sequence": sequence,
@@ -323,7 +469,13 @@ def test_analyze_requires_jev_and_records_typed_answers_and_ledger(
             assert set(questions) == {"next_fix"}
             assert "prior_judgments" in state
         else:
-            assert {"path_consistency", "stuck_behavior", "dps_loss_area", "canary_safe_to_promote"} <= set(questions)
+            assert {
+                "path_consistency",
+                "stuck_behavior",
+                "group_coherence",
+                "dps_loss_area",
+                "canary_safe_to_promote",
+            } <= set(questions)
             assert "route_review" in state
             assert "boss_dps_review" in state
         return {
@@ -518,6 +670,7 @@ def test_compact_metrics_prefers_full_window_native_action_outcomes() -> None:
                     "retry_reason": "no_valid_profile_action",
                     "first_at_ms": 1000,
                     "last_at_ms": 9000,
+                    "target_entry": 41570,
                     "count": 40,
                 }
             ],
@@ -530,6 +683,7 @@ def test_compact_metrics_prefers_full_window_native_action_outcomes() -> None:
     assert outcome["class_spec"] == "fire_mage"
     assert outcome["outcome"] == "no_action"
     assert outcome["reason_code"] == "no_valid_profile_action"
+    assert outcome["target_entry"] == 41570
     assert outcome["count"] == 40
 
 
@@ -883,6 +1037,75 @@ def test_target_duty_context_aligns_failure_windows_with_required_work() -> None
     assert actor["counterfactual_eligible"] is False
 
 
+def test_target_duty_context_marks_mangle_vehicle_gap_as_mechanic_downtime() -> None:
+    context = analyzer._target_duty_context(
+        {
+            "abilities": [{
+                "actor_guid": 10,
+                "actor_role": "dps",
+                "perspective": "damage_done",
+                "route_node_id": "bwd.magmaw.encounter",
+                "target_entry": 41570,
+                "target_name": "Magmaw",
+                "event_count": 20,
+                "amount": 100000,
+                "originated_amount": 100000,
+                "first_at_ms": 1000,
+                "last_at_ms": 9000,
+            }],
+            "recent_events": [
+                {
+                    "kind": "damage",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "source_guid": 10,
+                    "timestamp_ms": 1000,
+                },
+                {
+                    "kind": "damage",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "source_guid": 10,
+                    "timestamp_ms": 6200,
+                },
+            ],
+            "recent_event_capacity": 16384,
+            "recent_events_dropped": 0,
+        },
+        {"actors": [{"bot_guid": 10, "role": "dps"}]},
+        [],
+        {
+            "diagnosis": {
+                "bots": [{
+                    "identity": {"bot_guid": 10},
+                    "snapshot": {
+                        "server_vehicle_exit_landing": {
+                            "vehicle_observed": True,
+                            "movement_receipt": {
+                                "available": True,
+                                "bot_guid": 10,
+                                "receipt_id": 7,
+                                "armed_at_ms": 6300,
+                                "last_observed_at_ms": 8800,
+                                "terminal_at_ms": 8800,
+                                "terminal_outcome": "selected_endpoint_reached",
+                            },
+                        }
+                    },
+                }]
+            }
+        },
+    )
+
+    actor = context["actors"][0]
+    assert actor["mechanic_duty_scope"] == "mangle_vehicle"
+    assert actor["magmaw_control_receipt_count"] == 1
+    assert actor["magmaw_control_gap_count"] == 0
+    assert actor["magmaw_proximate_control_gap_count"] == 1
+    assert actor["magmaw_proximate_control_gap_seconds"] == 5.2
+    assert actor["duty_explains_idle"] is True
+    assert actor["counterfactual_status"] == "mangle_vehicle_control_observed"
+    assert actor["counterfactual_eligible"] is False
+
+
 def test_target_duty_context_keeps_incidental_add_damage_counterfactual_clean() -> None:
     context = analyzer._target_duty_context(
         {
@@ -1088,7 +1311,7 @@ def test_actor_loss_signal_routes_incomplete_balance_assignment_to_encounter_wor
     ]
 
 
-def test_jev_questions_add_assignment_judgment_for_required_duty() -> None:
+def test_jev_questions_can_keep_assignment_context_in_one_actor_request() -> None:
     questions = analyzer._jev_questions(
         False,
         actor_specs=[
@@ -1107,6 +1330,20 @@ def test_jev_questions_add_assignment_judgment_for_required_duty() -> None:
         "assignment_incomplete",
         "assignment_unobserved",
     }
+    actor_only_questions = analyzer._jev_questions(
+        False,
+        actor_specs=[
+            {
+                "bot_guid": 10,
+                "class_spec": "balance_druid",
+                "required_assignment_active": True,
+                "assignment_id": "magmaw_balance_mushroom_add_control",
+            }
+        ],
+        include_assignment=False,
+    )
+    assert "actor_action_10" in actor_only_questions
+    assert "actor_assignment_10" not in actor_only_questions
 
 
 def test_target_duty_context_marks_only_lowest_guid_fire_mage_as_baiter() -> None:

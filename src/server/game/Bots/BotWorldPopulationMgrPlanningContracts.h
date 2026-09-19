@@ -408,14 +408,17 @@
         std::string Result;
         std::string Reason;
         std::string RetryReason;
+        uint32 TargetEntry = 0;
 
         bool operator<(CombatActionOutcomeKey const& other) const
         {
             return std::tie(RouteGeneration, RouteNodeId, ActorGuid, Phase,
-                ActionType, DebugName, SpellId, Result, Reason, RetryReason)
+                ActionType, DebugName, SpellId, Result, Reason, RetryReason,
+                TargetEntry)
                 < std::tie(other.RouteGeneration, other.RouteNodeId, other.ActorGuid,
                     other.Phase, other.ActionType, other.DebugName, other.SpellId,
-                    other.Result, other.Reason, other.RetryReason);
+                    other.Result, other.Reason, other.RetryReason,
+                    other.TargetEntry);
         }
     };
 

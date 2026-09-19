@@ -1,6 +1,10 @@
 -- Restore the Balance mushroom rows changed by
 -- 2026_09_18_01_magmaw_balance_lava_mushrooms.sql.
 
+DELETE FROM `spell_script_names`
+WHERE `spell_id` = 78777
+  AND `ScriptName` = 'spell_dru_wild_mushroom_damage';
+
 SET @balance_profile := (
     SELECT `id`
     FROM `bot_rotation_profile`

@@ -263,6 +263,7 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
         key.Reason = diagnostic.DiagnosticReason.empty()
             ? diagnostic.Reason : diagnostic.DiagnosticReason;
         key.RetryReason = diagnostic.Reason;
+        key.TargetEntry = diagnostic.TargetEntry;
 
         CombatActionOutcomeAggregate& aggregate = Party().CombatActionOutcomes[key];
         if (!aggregate.Count)

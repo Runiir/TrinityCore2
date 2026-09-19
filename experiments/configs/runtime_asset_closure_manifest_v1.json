@@ -32,15 +32,15 @@
       "class_id": "validation_routes",
       "stage": "validation_scenarios",
       "output_path": "dataset/validation_scenarios",
-      "md5": "f882f698a5ff70a4710a19878d66d4f1.dir",
-      "size": 546212,
+      "md5": "c03a6e66c9eb04369b787b78d3975739.dir",
+      "size": 546432,
       "nfiles": 5
     },
     {
       "class_id": "validation_gear_profiles",
       "stage": "validation_gear",
       "output_path": "dataset/validation_gear_profiles",
-      "md5": "5f3f702eced9b77115fac43f1d04fa58.dir",
+      "md5": "9c70e60c320afe0c8097db26b79c2bb9.dir",
       "size": 1284521,
       "nfiles": 3
     }
@@ -108,9 +108,9 @@
       "audit_inventory_sha256": "bd23bc7cc3e018f542e54acb63d787bdab7bae98a2bf00249411fdb1754565be",
       "expected_inventory": {
         "file_count": 5,
-        "size_bytes": 546212,
+        "size_bytes": 546432,
         "path_set_sha256": "a1b9f088efb02f9b70174ab228d7146d4fd31128ce4009f3ec9c9c64a7e057f1",
-        "inventory_sha256": "cc3c9e8323f574e4b9b9e2d0bac974ee3020798716514ef9ab62b9d1fa9fc4e8"
+        "inventory_sha256": "0c153669fd4e3ddd3ac6243f82b5b34232e7842b6329ec6be6c1e25c67ce0014"
       },
       "expected_files": [
         {
@@ -118,7 +118,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 764,
-          "sha256": "10cc2829d5caff877fbaa1b3ba1e1f7f291835757953cdbaaa07f95c057b134a"
+          "sha256": "5a04124b551c9fdd2082655b2ef6e0205f805bbbfe13a5fa066597e1b4cbcf88"
         },
         {
           "path": "dataset/validation_scenarios/report.json",
@@ -138,8 +138,8 @@
           "path": "dataset/validation_scenarios/validation_routes.jsonl",
           "type": "file",
           "mode": "0644",
-          "size_bytes": 481815,
-          "sha256": "f00e373e5dd0579ec8639a1f0c136bf5896b280cc077df9670f03af49937643d"
+          "size_bytes": 482035,
+          "sha256": "d6729d0b17253fd9faa7593d9722b4212e4ff2f1a4746eed067226a5f6502728"
         },
         {
           "path": "dataset/validation_scenarios/validation_scenarios.jsonl",

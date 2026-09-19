@@ -1,0 +1,2136 @@
+{
+  "actors": [
+    {
+      "actor_id": "Y8ajQ7dbmKMG1RZy-source5",
+      "casts": [
+        {
+          "ability": "Insect Swarm",
+          "t": 0.385,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 0.385,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 1.562,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 4.857,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 4.858,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Force of Nature",
+          "t": 6.877,
+          "target": null
+        },
+        {
+          "ability": "Starfire",
+          "t": 10.156,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Berserking",
+          "t": 10.157,
+          "target": null
+        },
+        {
+          "ability": "Starsurge",
+          "t": 10.452,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfall",
+          "t": 11.466,
+          "target": null
+        },
+        {
+          "ability": "Starfire",
+          "t": 14.231,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Eclipse (Solar)",
+          "t": 14.248,
+          "target": null
+        },
+        {
+          "ability": "Starfire",
+          "t": 16.006,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 16.019,
+          "target": null
+        },
+        {
+          "ability": "Wrath",
+          "t": 17.563,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 18.728,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 19.884,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 21.045,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 22.428,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 23.819,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 25.204,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 26.917,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 28.5,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 30.052,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 30.052,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 31.083,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 33.465,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 34.585,
+          "target": null
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 35.852,
+          "target": null
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 37.039,
+          "target": null
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 37.906,
+          "target": null
+        },
+        {
+          "ability": "Typhoon",
+          "t": 39.015,
+          "target": null
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 40.255,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 41.27,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 42.287,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 44.675,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 46.02,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Eclipse (Lunar)",
+          "t": 46.021,
+          "target": null
+        },
+        {
+          "ability": "Wrath",
+          "t": 47.585,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 49.705,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 51.808,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 53.918,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 53.918,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 54.939,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 57.32,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 59.15,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 60.984,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 60.984,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 63.849,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 64.319,
+          "target": null
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 65.461,
+          "target": null
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 66.449,
+          "target": null
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 67.467,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 68.506,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 71.623,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wild Mushroom",
+          "t": 71.624,
+          "target": null
+        },
+        {
+          "ability": "Starfall",
+          "t": 72.906,
+          "target": null
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 73.952,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 76.86,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Eclipse (Solar)",
+          "t": 76.862,
+          "target": null
+        },
+        {
+          "ability": "Starsurge",
+          "t": 76.862,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 79.282,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 80.353,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 81.43,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 82.495,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 83.701,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 83.702,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 85.909,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 87.264,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 88.457,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 89.66,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 90.869,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 92.072,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Insect Swarm",
+          "t": 92.073,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Moonfire",
+          "t": 93.083,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 94.091,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Wrath",
+          "t": 96.157,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Eclipse (Lunar)",
+          "t": 96.158,
+          "target": null
+        },
+        {
+          "ability": "Wrath",
+          "t": 97.188,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 98.612,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 100.025,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 101.431,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 102.844,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 104.259,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 105.665,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starsurge",
+          "t": 106.708,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 108.257,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Starfire",
+          "t": 109.88,
+          "target": "Magmaw"
+        }
+      ],
+      "class_spec": "balance_druid",
+      "observed_dps": 41029.1,
+      "source_id": 5,
+      "source_name": "Inkar"
+    },
+    {
+      "actor_id": "Y8ajQ7dbmKMG1RZy-source4",
+      "casts": [
+        {
+          "ability": "Living Bomb",
+          "t": 1.231,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 4.338,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 6.054,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 6.269,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 8.369,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 8.37,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 9.527,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 9.545,
+          "target": null
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 10.712,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 12.125,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Combustion",
+          "t": 12.97,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 12.989,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 16.116,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 18.01,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 19.71,
+          "target": null
+        },
+        {
+          "ability": "Impact",
+          "t": 19.711,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 19.9,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 21.783,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 21.784,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 23.497,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 24.82,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 24.82,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 26.014,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 27.751,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 29.203,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 31.203,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 32.917,
+          "target": null
+        },
+        {
+          "ability": "Scorch",
+          "t": 35.179,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Flame Orb",
+          "t": 35.287,
+          "target": null
+        },
+        {
+          "ability": "Blast Wave",
+          "t": 37.169,
+          "target": null
+        },
+        {
+          "ability": "Impact",
+          "t": 37.189,
+          "target": null
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 38.019,
+          "target": "Lava Parasite 2"
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 39.017,
+          "target": "Lava Parasite 2"
+        },
+        {
+          "ability": "Fireball",
+          "t": 45.146,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 45.147,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 46.769,
+          "target": null
+        },
+        {
+          "ability": "Scorch",
+          "t": 47.191,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 48.876,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 49.012,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 52.078,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 54.049,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 55.699,
+          "target": null
+        },
+        {
+          "ability": "Impact",
+          "t": 55.699,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 56.174,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 57.813,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 58.128,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 58.129,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 59.302,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 59.78,
+          "target": null
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 60.478,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 63.589,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 63.59,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 65.293,
+          "target": null
+        },
+        {
+          "ability": "Scorch",
+          "t": 67.307,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 67.336,
+          "target": null
+        },
+        {
+          "ability": "Scorch",
+          "t": 68.489,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 70.035,
+          "target": null
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 71.206,
+          "target": null
+        },
+        {
+          "ability": "Blast Wave",
+          "t": 72.621,
+          "target": null
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 74.058,
+          "target": "Lava Parasite 14"
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 75.083,
+          "target": "Lava Parasite 14"
+        },
+        {
+          "ability": "Fireball",
+          "t": 78.168,
+          "target": "Lava Parasite 16"
+        },
+        {
+          "ability": "Time Warp",
+          "t": 78.169,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 80.666,
+          "target": "Lava Parasite 16"
+        },
+        {
+          "ability": "Fireball",
+          "t": 82.12,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 82.12,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Scorch",
+          "t": 84.053,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 85.65,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 87.286,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 87.463,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 88.78,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 88.894,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 89.103,
+          "target": null
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 90.06,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 90.593,
+          "target": null
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 91.247,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Combustion",
+          "t": 92.652,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 92.653,
+          "target": null
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 93.792,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 94.941,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 97.426,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 98.917,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 99.18,
+          "target": null
+        },
+        {
+          "ability": "Impact",
+          "t": 99.18,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 100.401,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 100.402,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 100.654,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 103.056,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 104.811,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fireball",
+          "t": 106.33,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Impact",
+          "t": 107.98,
+          "target": null
+        },
+        {
+          "ability": "Fireball",
+          "t": 108.086,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Living Bomb",
+          "t": 108.086,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fire Blast",
+          "t": 109.37,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Hot Streak!",
+          "t": 109.736,
+          "target": null
+        },
+        {
+          "ability": "Impact",
+          "t": 109.736,
+          "target": null
+        },
+        {
+          "ability": "Pyroblast!",
+          "t": 110.506,
+          "target": "Magmaw"
+        }
+      ],
+      "class_spec": "fire_mage",
+      "observed_dps": 40189.9,
+      "source_id": 4,
+      "source_name": "Sethra"
+    },
+    {
+      "actor_id": "Y8ajQ7dbmKMG1RZy-source3",
+      "casts": [
+        {
+          "ability": "Lightning Bolt",
+          "t": 0.367,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 0.368,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Master of the Elements",
+          "t": 0.708,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 1.525,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 3.787,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 5.035,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 6.293,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 7.503,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 7.504,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 9.73,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 10.66,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 11.965,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Fire Elemental Totem",
+          "t": 12.541,
+          "target": null
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 13.541,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 15.741,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 17.167,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Elemental Totem",
+          "t": 17.168,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 19.662,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 20.762,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 22.22,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 22.22,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 24.731,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 26.346,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 27.867,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 27.867,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Surge",
+          "t": 27.975,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 30.104,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 31.568,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 33.033,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 33.035,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 35.668,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 37.207,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Spiritwalker's Grace",
+          "t": 38.213,
+          "target": null
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 38.363,
+          "target": "Lava Parasite 7"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 39.537,
+          "target": "Lava Parasite 7"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 40.665,
+          "target": "Lava Parasite 1"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 42.696,
+          "target": "Lava Parasite 7"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 44.491,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 44.492,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 46.754,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 48.296,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 49.825,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 51.341,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 51.343,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Surge",
+          "t": 52.396,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 53.989,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 55.29,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 56.823,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 58.374,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 59.874,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Surge",
+          "t": 61.158,
+          "target": null
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 61.396,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 61.396,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 63.68,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 65.223,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 66.758,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Flame Shock",
+          "t": 66.759,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 69.415,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 70.57,
+          "target": null
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 71.728,
+          "target": "Lava Parasite 2"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 73.883,
+          "target": "Lava Parasite 12"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 75.812,
+          "target": "Lava Parasite 13"
+        },
+        {
+          "ability": "Chain Lightning",
+          "t": 77.953,
+          "target": "Lava Parasite 15"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 78.286,
+          "target": "Lava Parasite 10"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 80.541,
+          "target": "Lava Parasite 16"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 81.696,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Master of the Elements",
+          "t": 81.836,
+          "target": null
+        },
+        {
+          "ability": "Thunderstorm",
+          "t": 81.866,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 82.868,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 84.862,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 85.841,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Surge",
+          "t": 85.868,
+          "target": null
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 86.836,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 87.602,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 88.826,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 88.893,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 90.836,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 91.844,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 92.852,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 93.852,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 94.849,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Surge",
+          "t": 94.922,
+          "target": null
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 95.676,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 95.974,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 98.126,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 99.264,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 100.373,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 101.57,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Earth Shock",
+          "t": 101.571,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 103.741,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lava Burst",
+          "t": 104.631,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 105.917,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 107.089,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 108.276,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 109.447,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Lightning Bolt",
+          "t": 110.629,
+          "target": "Magmaw"
+        }
+      ],
+      "class_spec": "elemental_shaman",
+      "observed_dps": 41866.0,
+      "source_id": 3,
+      "source_name": "Roostertours"
+    },
+    {
+      "actor_id": "Y8ajQ7dbmKMG1RZy-source9",
+      "casts": [
+        {
+          "ability": "Unstable Affliction",
+          "t": 0.489,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Corruption",
+          "t": 0.647,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Doom",
+          "t": 1.787,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 3.923,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 5.85,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 8.371,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Dark Soul",
+          "t": 8.582,
+          "target": null
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 9.814,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Summon Doomguard",
+          "t": 9.967,
+          "target": null
+        },
+        {
+          "ability": "Doom",
+          "t": 11.092,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Corruption",
+          "t": 12.095,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 14.383,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 15.807,
+          "target": null
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 18.749,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 20.591,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 22.443,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 23.54,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 25.389,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 27.297,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 28.28,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 28.425,
+          "target": null
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 31.456,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 33.35,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 34.81,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 36.702,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Soulburn",
+          "t": 37.074,
+          "target": null
+        },
+        {
+          "ability": "Seed of Corruption",
+          "t": 38.888,
+          "target": "Lava Parasite 6"
+        },
+        {
+          "ability": "Seed of Corruption",
+          "t": 40.404,
+          "target": "Lava Parasite 6"
+        },
+        {
+          "ability": "Agony",
+          "t": 41.202,
+          "target": null
+        },
+        {
+          "ability": "Seed of Corruption",
+          "t": 42.06,
+          "target": "Lava Parasite 6"
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 43.765,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 45.068,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 45.069,
+          "target": null
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 46.2,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 47.339,
+          "target": null
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 50.236,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 52.122,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 54.017,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 55.141,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 57.034,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 58.944,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 59.93,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 61.971,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 64.295,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 66.185,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 68.41,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 69.988,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 71.747,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 73.232,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 73.481,
+          "target": null
+        },
+        {
+          "ability": "Agony",
+          "t": 74.78,
+          "target": null
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 75.328,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 76.326,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 76.516,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 79.09,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Life Tap",
+          "t": 79.17,
+          "target": null
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 81.623,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 82.356,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Doom",
+          "t": 83.062,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 85.266,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Demonic Breath",
+          "t": 85.498,
+          "target": null
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 87.72,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 88.93,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Shadow Bolt",
+          "t": 90.154,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 91.082,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Unstable Affliction",
+          "t": 92.118,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Drain Soul",
+          "t": 92.386,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Drain Soul",
+          "t": 97.313,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Haunt",
+          "t": 103.088,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Drain Soul",
+          "t": 103.22,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Agony",
+          "t": 111.056,
+          "target": null
+        }
+      ],
+      "class_spec": "affliction_warlock",
+      "observed_dps": 40281.0,
+      "source_id": 9,
+      "source_name": "Næñï"
+    },
+    {
+      "actor_id": "Y8ajQ7dbmKMG1RZy-source12",
+      "casts": [
+        {
+          "ability": "Dark Command",
+          "t": 0.731,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Dancing Rune Weapon",
+          "t": 1.256,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 2.548,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 4.056,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 5.349,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 6.863,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Blood Tap",
+          "t": 7.116,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 8.37,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 9.869,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 11.384,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Empower Rune Weapon",
+          "t": 12.7,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 14.176,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 15.669,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 17.168,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 18.686,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 20.182,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 21.693,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 23.183,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 24.698,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 26.204,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 27.496,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 28.994,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 29.466,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 30.504,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 32.029,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 33.517,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 35.53,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 37.038,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 38.328,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Blood Tap",
+          "t": 39.154,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 39.833,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 41.339,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 42.836,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 44.132,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 46.198,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 47.694,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 49.195,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 52.215,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 53.72,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 55.226,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Bone Shield",
+          "t": 56.981,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 58.265,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 61.276,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 62.776,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Blood Boil",
+          "t": 64.646,
+          "target": null
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 65.956,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 68.743,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Outbreak",
+          "t": 70.238,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 73.037,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 74.527,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 76.04,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Blood Tap",
+          "t": 76.914,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 77.56,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 79.062,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 80.57,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 82.481,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Heart Strike",
+          "t": 83.992,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Rune Strike",
+          "t": 85.497,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Death Strike",
+          "t": 88.426,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Synapse Springs",
+          "t": 89.496,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 89.934,
+          "target": "Magmaw"
+        },
+        {
+          "ability": "Vampiric Blood",
+          "t": 96.307,
+          "target": null
+        },
+        {
+          "ability": "Rune Tap",
+          "t": 97.204,
+          "target": null
+        },
+        {
+          "ability": "Death Strike",
+          "t": 106.476,
+          "target": "Exposed Head of Magmaw"
+        }
+      ],
+      "class_spec": "blood_death_knight",
+      "observed_dps": 26152.0,
+      "source_id": 12,
+      "source_name": "Nexry"
+    }
+  ],
+  "duration_sec": 111.3,
+  "mode": "10N",
+  "reference_id": "Y8ajQ7dbmKMG1RZy-fight22",
+  "schema": "magmaw_wcl_cast_timelines_v1",
+  "source_note": "Completed Cast rows downloaded from WCL Events pages; Begin Cast rows excluded.",
+  "target_scope": "Magmaw and parasites",
+  "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy?fight=22&type=casts&view=events"
+}

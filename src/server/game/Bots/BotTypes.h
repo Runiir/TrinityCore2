@@ -229,11 +229,11 @@ struct ResolvedCombatAction
     bool InterruptCurrentChanneledSpell = false;
     float MinRange = 0.0f;
     float MaxRange = 0.0f;
-    // Resolver found at least one otherwise eligible ranged candidate inside
-    // its native minimum range while no candidate was selectable. The shared
-    // executor may use this as a movement-only recovery signal; it must not
-    // be inferred from MinRange alone because a valid lower-priority action
-    // can coexist with a rejected short-range candidate.
+    // Resolver found otherwise eligible hostile candidates outside the
+    // declared profile range envelope while no candidate was selectable. The
+    // shared executor may use this as a movement-only recovery signal; it must
+    // not be inferred from MinRange or MaxRange alone because a valid
+    // lower-priority action can coexist with a rejected range candidate.
     bool RangeRecoveryRequired = false;
     // A narrow encounter-role exception for Balance's Magmaw add duty.  The
     // resolver fills this only for Wild Mushroom/Detonate on Lava Parasites;

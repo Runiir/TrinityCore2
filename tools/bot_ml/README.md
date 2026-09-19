@@ -106,11 +106,12 @@ The boss evidence also contains `actor_loss_signals`, one compact loss budget
 per DPS actor. It separates idle fraction, movement/range, targeting,
 profile-policy, resource/cooldown, and native actionable-failure signals; it
 records contradictions and keeps policy hypotheses separate from native
-failures. Per-actor `actor_action_*` judgments are requested from Jev, while
-expected wait rows are retained for audit but omitted from the direct-failure
-action view. A low-confidence party-level action is therefore routed to
-`collect_more_canaries` or human review instead of overriding a high-confidence
-actor-specific action.
+failures. The current request topology is deliberately split: one compact
+group review, one `actor_action_*` request for each local DPS actor, and one
+final `next_fix` request that sees the typed results. Expected wait rows remain
+audit-only and are omitted from the direct-failure action view. A low-confidence
+actor action is routed to `collect_more_canaries` or human review instead of
+being turned into a gameplay change.
 
 The boss review also includes `target_duty_context`. It is derived from the
 full-window target aggregates and timestamped native failure windows, with the
@@ -125,10 +126,19 @@ contract, native detonation, and landed Wild Mushroom effect separately from
 placement decision rows. It also reports the native fixed-bait identity for the
 lowest-GUID Fire Mage or hunter family member, full-window damage gaps, and
 normal target-eligibility gates as audit-only data. These fields let JEV classify
-assignment execution and cadence without turning expected profile eligibility
-checks into target-lease failures.
+assignment execution and cadence inside the Balance actor packet without
+turning expected profile eligibility checks into target-lease failures. There
+is no separate Balance assignment question or request; assignment evidence is
+context for `actor_action_30001`, just as it is for the other actor reviews.
 The analyzer auto-discovers `combat_log.json` beside a run directory; use
 `--combat-log` when the export is stored elsewhere.
+
+The wrapper creates `timeline_comparison.json` before calling Jev. The
+comparator retains every local actor, uses completed WCL casts versus positive
+native landed-damage observations as separate event types, and marks actors
+without a same-spec WCL timeline as `missing_wcl_reference`. The timeline is
+the primary per-actor signal; DPS, movement, native failures, and largest
+direct gaps are supporting evidence.
 
 For the normal Magmaw 10N canary, use the isolated single-boss route manifest
 (entrance regroup, Chainwielder trash, Drudge pair, then Magmaw), then analyze
@@ -157,6 +167,35 @@ Use `--baseline-report` on later canaries to make Jev classify whether the
 branch change improved, preserved, or regressed the observed behavior. Keep the
 raw run outside the repository or publish it as a compact DVC artifact; commit
 only the analyzer/configuration, not live credentials or bulky raw traces.
+
+For the normal repeatable loop, let the wrapper close one watchdog run and
+invoke the analyzer immediately afterward. Put the live-runner options after
+`--`; the wrapper owns `--output-dir`, writes `jev_report.json` and
+`canary_status.json`, and returns nonzero unless the run is a native clear.
+Jev remains review-only, so a successful wrapper run is eligible for human
+review rather than an automatic code promotion:
+
+```bash
+pixi run magmaw-jev-canary \
+  --run-dir /tmp/magmaw-normal-next \
+  --run-id magmaw-normal-next \
+  --change-id codex/magmaw-jev-canary \
+  --change-note "bounded movement recovery change" \
+  --baseline-report /tmp/magmaw-normal-previous/jev_report.json \
+  --ledger /tmp/magmaw-normal-next/progress_ledger.json \
+  -- \
+  --worldserver build/src/server/worldserver/worldserver \
+  --config trinity-worldserver-test.conf \
+  --duration-policy completion-watchdog \
+  --validation-scenario-id blackwing_descent_10n \
+  --validation-route-manifest \
+  --validation-scenario-dir dataset/validation_scenarios \
+  --heartbeat-sec 30
+```
+
+Use `--analyze-only` to rerun JEV against a closed run without starting the
+server. The wrapper always uses the repository `.env`/`JEV` lookup through the
+analyzer and never records the key in the status or ledger.
 
 ## Offline Loop
 

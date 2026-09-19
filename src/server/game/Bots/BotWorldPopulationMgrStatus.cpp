@@ -480,7 +480,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":7"
+    json << ",\"combat_log_schema_version\":8"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId
@@ -567,6 +567,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"result\":\"" << JsonEscape(key.Result) << "\""
              << ",\"reason\":\"" << JsonEscape(key.Reason) << "\""
              << ",\"retry_reason\":\"" << JsonEscape(key.RetryReason) << "\""
+             << ",\"target_entry\":" << key.TargetEntry
              << ",\"first_at_ms\":" << value.FirstAtMs
              << ",\"last_at_ms\":" << value.LastAtMs
              << ",\"count\":" << value.Count << '}';
@@ -625,7 +626,7 @@ std::string BotWorldPopulationMgr::GetCombatLogDeltaJson(uint64 cursor, uint32 l
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog_delta\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":7"
+    json << ",\"combat_log_schema_version\":8"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId

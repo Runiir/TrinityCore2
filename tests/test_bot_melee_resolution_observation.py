@@ -172,7 +172,7 @@ def test_melee_resolution_is_non_aggregate_and_explicitly_correlated() -> None:
     damage = manager.split("void BotWorldPopulationMgr::NotifyCombatDamage", 1)[1]
     assert "sharedDamage, relatedEventSequence" in damage
 
-    assert status.count('"combat_log_schema_version\\":7') == 2
+    assert status.count('"combat_log_schema_version\\":8') == 2
     assert "AppendCombatLogEventJson(json, event);" in status
     assert "AppendCombatLogEventJson(" in status.split(
         "std::string BotWorldPopulationMgr::GetCombatLogDeltaJson", 1

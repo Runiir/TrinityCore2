@@ -45,6 +45,7 @@ bot-live-artifact-promote = "python -m tools.bot_ml.promote_live_validation_arti
 bot-live-scenario-reports = "python -m tools.bot_ml.build_live_scenario_reports"
 bot-live-validate = "python -m tools.bot_ml.run_live_bot_validation"
 magmaw-jev-analyze = "python -m tools.bot_ml.analyze_magmaw_trace"
+magmaw-jev-canary = "python -m tools.bot_ml.run_magmaw_jev_canary"
 bot-ml-build-decisions = "python -m tools.bot_ml.build_decision_dataset"
 bot-ml-validate = "python -m tools.bot_ml.validate_data_quality"
 bot-ml-train = "python -m tools.bot_ml.train_policy_model"

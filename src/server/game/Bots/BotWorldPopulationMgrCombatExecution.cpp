@@ -214,24 +214,31 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         *actionOut = action;
     if (!action.Valid)
     {
+        float const targetDistance = bot && target ? bot->GetExactDist(target) : 0.0f;
+        bool const belowProfileMinimum = action.MinRange > 0.0f
+            && targetDistance < action.MinRange;
+        bool const aboveProfileMaximum = action.MaxRange > 0.0f
+            && targetDistance > action.MaxRange;
         bool const profileRangeRecovery = state && bot && target
             && action.RangeRecoveryRequired
-            && action.MinRange > 0.0f
-            && bot->GetExactDist(target) < action.MinRange
+            && (belowProfileMinimum || aboveProfileMaximum)
             && !bot->HasUnitState(UNIT_STATE_CASTING);
         if (profileRangeRecovery)
         {
             bool const moved = MoveBotToProfileRange(
                 *state, bot, target, &action);
+            char const* recoveryAttempt = aboveProfileMaximum
+                ? "profile_max_range_reconcile" : "profile_min_range_reconcile";
+            char const* recoveryResult = aboveProfileMaximum
+                ? "profile_max_range_reconciled" : "profile_min_range_reconciled";
             RecordCombatAttempt(*state, bot, target,
-                "profile_min_range_reconcile", &action,
+                recoveryAttempt, &action,
                 moved ? BotActionResult::Casting : BotActionResult::NoAction,
-                moved ? "profile_min_range_reconciled"
-                    : "profile_min_range_path_rejected");
+                moved ? recoveryResult : "profile_range_path_rejected");
             if (moved)
             {
                 TryResolveBotBlocker(*state, bot,
-                    "profile_min_range_reconciled");
+                    recoveryResult);
                 return BotActionResult::Casting;
             }
         }

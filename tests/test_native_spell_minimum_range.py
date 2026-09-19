@@ -68,13 +68,14 @@ struct Unit { float distance=4.64954f, reach=1.5f;
 };
 ''' + native_method + melee_method + helper + r'''
 struct Profile { std::string TargetSelector="enemy"; int SpellId=8921; float MinRange=0,MaxRange=40;
- bool RequiresMeleeRange=false,RequiresRangedRange=true; };
+ bool RequiresMeleeRange=false,RequiresRangedRange=true,RangeRecoveryRequired=false; };
 struct BotActionCandidate { struct Profile Profile; int ResolvedSpellId=8921,SpellId=8921; std::string RejectReason; };
 struct SpellMgr { SpellInfo info; bool missing=false;
  SpellInfo const* GetSpellInfo(int) { return missing?nullptr:&info; }
 } store;
 auto* sSpellMgr=&store;
-std::string admit(float distance, float configured=0, bool controller=false, bool melee=false, bool ranged=true) {
+std::string admit(float distance, float configured=0, bool controller=false, bool melee=false, bool ranged=true,
+    bool* rangeRecovery=nullptr) {
  Unit actor, victim; actor.distance=distance;victim.reach=2.0f;
  Unit *bot=&actor,*target=&victim,*actionTarget=target;
  Profile profile,spell,action; spell.MinRange=configured;spell.RequiresMeleeRange=melee;spell.RequiresRangedRange=ranged;
@@ -86,6 +87,7 @@ std::string admit(float distance, float configured=0, bool controller=false, boo
  bool selfTarget=false,selfCenteredHostileAction=false;
 ''' + native + r'''
  auto effectiveSpellMaxRange=[](BotActionCandidate const&, float maximum) { return maximum; };
+ bool densityOnly=false;
  for(auto& candidate:candidates) {
  if(controller) {float targetDistance=distance;
 ''' + control_gate + r'''
@@ -93,6 +95,7 @@ std::string admit(float distance, float configured=0, bool controller=false, boo
 ''' + gate + r'''
  }
  }
+ if(rangeRecovery) *rangeRecovery=action.RangeRecoveryRequired;
  return candidate.RejectReason;
 }
 // Run the production pre-rejected branch before handing its range envelope
@@ -184,6 +187,9 @@ int main(){
  store.info.range.RangeMin[0]=store.info.range.RangeMin[1]=0;
  store.missing=true;assert(admit(4.64954f)=="missing_spell_info");store.missing=false;
  movement(false);movement(true);rejectedMovement();
+ bool maxRangeRecovery=false;
+ assert(admit(41,0,false,false,true,&maxRangeRecovery)=="max_range_exceeded");
+ assert(maxRangeRecovery);
 }
 '''.replace('ROWS',rows)
     path=tmp_path/('baseline.cpp' if revision else 'repaired.cpp');path.write_text(cpp)

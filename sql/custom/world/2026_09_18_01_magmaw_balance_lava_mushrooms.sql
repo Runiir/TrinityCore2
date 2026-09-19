@@ -1,10 +1,10 @@
 -- Magmaw 10N Balance add-duty contract.
 --
 -- Wild Mushroom is an encounter action here, not a prepull fixture action:
--- when the Balance bot is targeting a Lava Parasite, the native resolver puts
--- three mushrooms at the parasite's spawn/home position and then selects
--- Detonate before returning to the ordinary profile.  The resolver still
--- owns the route, target, count, Eclipse, and area-safety gates.
+-- when the live lava parasite appears, the native resolver puts three
+-- mushrooms on its X/Y ground location and then selects Detonate before
+-- returning to the ordinary profile. The resolver still owns the route,
+-- target, count, Eclipse, and area-safety gates.
 
 SET @balance_profile := (
     SELECT `id`
@@ -30,3 +30,10 @@ SET `mechanic_tags` = 'wild_mushroom_detonate,solar_eclipse,magmaw_lava_parasite
 WHERE `profile_id` = @balance_profile
   AND `spell_id` = 88751
   AND `enabled` = 1;
+
+DELETE FROM `spell_script_names`
+WHERE `spell_id` = 78777
+  AND `ScriptName` = 'spell_dru_wild_mushroom_damage';
+
+INSERT INTO `spell_script_names` (`spell_id`, `ScriptName`)
+VALUES (78777, 'spell_dru_wild_mushroom_damage');

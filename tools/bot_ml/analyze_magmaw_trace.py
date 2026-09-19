@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -249,6 +250,258 @@ def _discovered_combat_log_path(input_path: Path) -> Path | None:
     else:
         return None
     return candidate if candidate.exists() else None
+
+
+def _discovered_native_log_path(input_path: Path) -> Path | None:
+    """Find the bounded worldserver log used for native encounter diagnostics."""
+    if input_path.is_dir():
+        candidates = (
+            input_path / "native_mushroom.log",
+            input_path / "worldserver_output.log",
+        )
+    elif input_path.name in {"raw.jsonl", "report.json", "combat_analysis.json"}:
+        candidates = (
+            input_path.parent / "native_mushroom.log",
+            input_path.parent / "worldserver_output.log",
+        )
+    else:
+        return None
+    return next((candidate for candidate in candidates if candidate.exists()), None)
+
+
+_MAGMAW_MUSHROOM_DETONATE_LOG = re.compile(
+    r"MagmawWildMushroomNative event=detonate "
+    r"caster=(?P<caster>.*?) expected_entry=(?P<entry>\d+) "
+    r"mushroom_count=(?P<count>\d+)"
+)
+_MAGMAW_MUSHROOM_DAMAGE_LOG = re.compile(
+    r"MagmawWildMushroomNative event=damage_cast "
+    r"caster=(?P<caster>.*?) mushroom=(?P<mushroom>.*?) "
+    r"entry=(?P<entry>\d+) position=(?P<x>-?\d+(?:\.\d+)?),"
+    r"(?P<y>-?\d+(?:\.\d+)?),(?P<z>-?\d+(?:\.\d+)?) "
+    r"result=(?P<result>\d+)"
+)
+_MAGMAW_MUSHROOM_TARGETS_LOG = re.compile(
+    r"MagmawWildMushroomNative event=damage_targets "
+    r"caster=(?P<caster>.*?) caster_entry=(?P<caster_entry>\d+) "
+    r"destination=(?P<x>-?\d+(?:\.\d+)?),(?P<y>-?\d+(?:\.\d+)?),"
+    r"(?P<z>-?\d+(?:\.\d+)?) target_count=(?P<count>\d+)"
+)
+_MAGMAW_MUSHROOM_NEARBY_TARGETS_LOG = re.compile(
+    r"MagmawWildMushroomNative event=nearby_targets "
+    r"destination=(?P<x>-?\d+(?:\.\d+)?),(?P<y>-?\d+(?:\.\d+)?),"
+    r"(?P<z>-?\d+(?:\.\d+)?) radius=(?P<radius>\d+(?:\.\d+)?) "
+    r"target_count=(?P<count>\d+)"
+)
+_MAGMAW_MUSHROOM_TARGET_LOG = re.compile(
+    r"MagmawWildMushroomNative event=damage_target "
+    r"caster=(?P<caster>.*?) target=(?P<target>.*?) "
+    r"entry=(?P<entry>\d+) position=(?P<x>-?\d+(?:\.\d+)?),"
+    r"(?P<y>-?\d+(?:\.\d+)?),(?P<z>-?\d+(?:\.\d+)?)"
+)
+_MAGMAW_MUSHROOM_NEARBY_TARGET_LOG = re.compile(
+    r"MagmawWildMushroomNative event=nearby_target target=(?P<target>.*?) "
+    r"entry=(?P<entry>\d+) position=(?P<x>-?\d+(?:\.\d+)?),"
+    r"(?P<y>-?\d+(?:\.\d+)?),(?P<z>-?\d+(?:\.\d+)?) "
+    r"distance_2d=(?P<distance_2d>\d+(?:\.\d+)?) "
+    r"distance_3d=(?P<distance_3d>\d+(?:\.\d+)?)"
+)
+
+
+def _native_mushroom_diagnostics(path: Path | None) -> list[dict[str, Any]]:
+    """Parse only the compact bot-scoped native mushroom events."""
+    if path is None or not path.exists():
+        return []
+    result: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            match = _MAGMAW_MUSHROOM_DETONATE_LOG.search(line)
+            if match:
+                result.append({
+                    "event": "detonate",
+                    "caster": match.group("caster"),
+                    "expected_entry": int(match.group("entry")),
+                    "mushroom_count": int(match.group("count")),
+                })
+                continue
+            match = _MAGMAW_MUSHROOM_DAMAGE_LOG.search(line)
+            if match:
+                result.append({
+                    "event": "damage_cast",
+                    "caster": match.group("caster"),
+                    "mushroom": match.group("mushroom"),
+                    "entry": int(match.group("entry")),
+                    "position": {
+                        "x": float(match.group("x")),
+                        "y": float(match.group("y")),
+                        "z": float(match.group("z")),
+                    },
+                    "result": int(match.group("result")),
+                })
+                continue
+            match = _MAGMAW_MUSHROOM_TARGETS_LOG.search(line)
+            if match:
+                result.append({
+                    "event": "damage_targets",
+                    "caster": match.group("caster"),
+                    "caster_entry": int(match.group("caster_entry")),
+                    "destination": {
+                        "x": float(match.group("x")),
+                        "y": float(match.group("y")),
+                        "z": float(match.group("z")),
+                    },
+                    "target_count": int(match.group("count")),
+                })
+                continue
+            match = _MAGMAW_MUSHROOM_NEARBY_TARGETS_LOG.search(line)
+            if match:
+                result.append({
+                    "event": "nearby_targets",
+                    "destination": {
+                        "x": float(match.group("x")),
+                        "y": float(match.group("y")),
+                        "z": float(match.group("z")),
+                    },
+                    "radius": float(match.group("radius")),
+                    "target_count": int(match.group("count")),
+                })
+                continue
+            match = _MAGMAW_MUSHROOM_TARGET_LOG.search(line)
+            if match:
+                result.append({
+                    "event": "damage_target",
+                    "caster": match.group("caster"),
+                    "target": match.group("target"),
+                    "entry": int(match.group("entry")),
+                    "position": {
+                        "x": float(match.group("x")),
+                        "y": float(match.group("y")),
+                        "z": float(match.group("z")),
+                    },
+                })
+                continue
+            match = _MAGMAW_MUSHROOM_NEARBY_TARGET_LOG.search(line)
+            if match:
+                result.append({
+                    "event": "nearby_target",
+                    "target": match.group("target"),
+                    "entry": int(match.group("entry")),
+                    "position": {
+                        "x": float(match.group("x")),
+                        "y": float(match.group("y")),
+                        "z": float(match.group("z")),
+                    },
+                    "distance_2d": float(match.group("distance_2d")),
+                    "distance_3d": float(match.group("distance_3d")),
+                })
+    return result[-64:]
+
+
+def _compact_jev_native_mushroom_diagnostics(
+    rows: Any,
+) -> dict[str, Any]:
+    """Send JEV the mushroom geometry signal without repeating raw log rows."""
+    if not isinstance(rows, list) or not rows:
+        return {
+            "available": False,
+            "reason": "native_mushroom_diagnostics_unavailable",
+        }
+
+    event_counts: Counter[str] = Counter()
+    detonation_counts: Counter[str] = Counter()
+    damage_cast_results: Counter[str] = Counter()
+    core_target_counts: Counter[str] = Counter()
+    core_target_entries: Counter[str] = Counter()
+    snapshots: list[dict[str, Any]] = []
+    snapshot: dict[str, Any] | None = None
+
+    def finish_snapshot() -> None:
+        nonlocal snapshot
+        if snapshot is None:
+            return
+        distances_2d = snapshot.pop("_distances_2d", [])
+        distances_3d = snapshot.pop("_distances_3d", [])
+        entries = snapshot.pop("_entries", Counter())
+        snapshot["observed_target_count"] = len(distances_2d)
+        snapshot["entry_counts"] = dict(sorted(entries.items()))
+        snapshot["within_5_yards_2d"] = sum(
+            distance <= 5.0 for distance in distances_2d
+        )
+        snapshot["min_distance_2d"] = round(min(distances_2d), 3) if distances_2d else None
+        snapshot["min_distance_3d"] = round(min(distances_3d), 3) if distances_3d else None
+        snapshot["max_distance_2d"] = round(max(distances_2d), 3) if distances_2d else None
+        snapshots.append(snapshot)
+        snapshot = None
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        event = str(row.get("event") or "unknown")
+        event_counts[event] += 1
+        if event == "detonate":
+            detonation_counts[str(_as_int(row.get("mushroom_count")))] += 1
+        elif event == "damage_cast":
+            damage_cast_results[str(_as_int(row.get("result")))] += 1
+        elif event == "damage_targets":
+            core_target_counts[str(_as_int(row.get("target_count")))] += 1
+        elif event == "damage_target":
+            core_target_entries[str(_as_int(row.get("entry")))] += 1
+        elif event == "nearby_targets":
+            finish_snapshot()
+            snapshot = {
+                "destination": row.get("destination"),
+                "radius": row.get("radius"),
+                "scan_target_count": _as_int(row.get("target_count")),
+                "_distances_2d": [],
+                "_distances_3d": [],
+                "_entries": Counter(),
+            }
+        elif event == "nearby_target" and snapshot is not None:
+            distance_2d = row.get("distance_2d")
+            distance_3d = row.get("distance_3d")
+            if isinstance(distance_2d, (int, float)):
+                snapshot["_distances_2d"].append(float(distance_2d))
+            if isinstance(distance_3d, (int, float)):
+                snapshot["_distances_3d"].append(float(distance_3d))
+            snapshot["_entries"][str(_as_int(row.get("entry")))] += 1
+    finish_snapshot()
+
+    all_distances = [
+        distance
+        for item in snapshots
+        for distance in (
+            item.get("min_distance_2d"),
+            item.get("max_distance_2d"),
+        )
+        if isinstance(distance, (int, float))
+    ]
+    return {
+        "available": True,
+        "event_counts": dict(sorted(event_counts.items())),
+        "detonation_count": sum(detonation_counts.values()),
+        "mushroom_count_values": dict(sorted(detonation_counts.items())),
+        "damage_cast_count": sum(damage_cast_results.values()),
+        "damage_cast_result_values": dict(sorted(damage_cast_results.items())),
+        "core_target_selection": {
+            "snapshot_count": sum(core_target_counts.values()),
+            "target_count_values": dict(sorted(core_target_counts.items())),
+            "selected_target_event_count": sum(core_target_entries.values()),
+            "selected_target_entry_values": dict(sorted(core_target_entries.items())),
+        },
+        "nearby_target_snapshots": snapshots,
+        "nearby_target_summary": {
+            "snapshot_count": len(snapshots),
+            "observed_target_count": sum(
+                _as_int(item.get("observed_target_count")) for item in snapshots
+            ),
+            "minimum_distance_2d": round(min(all_distances), 3)
+            if all_distances
+            else None,
+            "within_5_yards_snapshot_count": sum(
+                _as_int(item.get("within_5_yards_2d")) > 0 for item in snapshots
+            ),
+        },
+    }
 
 
 def _report_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
@@ -876,6 +1129,9 @@ def _compact_native_action_outcomes(
         spell_id = _as_int(row.get("spell_id"))
         if spell_id:
             item["spell_id"] = spell_id
+        target_entry = _as_int(row.get("target_entry"))
+        if target_entry:
+            item["target_entry"] = target_entry
         for source, target in (
             ("reason", "reason_code"),
             ("reason_code", "reason_code"),
@@ -910,6 +1166,7 @@ def _compact_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
         "outcome",
         "count",
         "spell_id",
+        "target_entry",
         "reason_code",
         "retry_reason",
     )
@@ -1133,10 +1390,81 @@ def _fixed_baiter_assignment(
     }
 
 
+MAGMAW_VEHICLE_CONTROL_PROXIMITY_MS = 1_000
+
+
+def _magmaw_vehicle_control_receipts(
+    live_report: dict[str, Any] | None,
+) -> dict[int, list[dict[str, Any]]]:
+    """Extract attributable Mangle/vehicle-exit control receipts.
+
+    The combat log records the resulting damage cadence, while the native
+    report records the vehicle-exit receipt in the final per-bot snapshot.
+    Keeping this overlay separate from target damage prevents a mechanic
+    receipt from being mistaken for an ordinary rotation gap. A short
+    pre-arm proximity window handles the final damage gap immediately before
+    the server arms the landing receipt without claiming the whole encounter
+    was controlled.
+    """
+    if not isinstance(live_report, dict):
+        return {}
+    diagnosis = live_report.get("diagnosis")
+    if not isinstance(diagnosis, dict):
+        return {}
+    bots = diagnosis.get("bots")
+    if not isinstance(bots, list):
+        return {}
+
+    receipts_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for bot in bots:
+        if not isinstance(bot, dict):
+            continue
+        identity = bot.get("identity")
+        snapshot = bot.get("snapshot")
+        if not isinstance(identity, dict) or not isinstance(snapshot, dict):
+            continue
+        guid = _as_int(identity.get("bot_guid"))
+        if not guid:
+            continue
+        landing = snapshot.get("server_vehicle_exit_landing")
+        if not isinstance(landing, dict):
+            continue
+        receipt = landing.get("movement_receipt")
+        if not isinstance(receipt, dict) or not bool(receipt.get("available")):
+            continue
+        if _as_int(receipt.get("bot_guid")) != guid:
+            continue
+        armed_at_ms = _as_int(receipt.get("armed_at_ms"))
+        if not armed_at_ms:
+            continue
+        last_evaluation = landing.get("last_evaluation")
+        last_evaluation_at_ms = (
+            _as_int(last_evaluation.get("timestamp_ms"))
+            if isinstance(last_evaluation, dict)
+            else 0
+        )
+        terminal_at_ms = max(
+            armed_at_ms,
+            _as_int(receipt.get("terminal_at_ms")),
+            _as_int(receipt.get("last_observed_at_ms")),
+            last_evaluation_at_ms,
+        )
+        receipts_by_guid[guid].append({
+            "kind": "mangle_vehicle_exit",
+            "receipt_id": _as_int(receipt.get("receipt_id")),
+            "armed_at_ms": armed_at_ms,
+            "terminal_at_ms": terminal_at_ms,
+            "terminal_outcome": str(receipt.get("terminal_outcome") or ""),
+            "vehicle_observed": bool(landing.get("vehicle_observed")),
+        })
+    return dict(receipts_by_guid)
+
+
 def _target_duty_context(
     combat_log: dict[str, Any] | None,
     metrics: dict[str, Any] | None,
     native_action_outcomes: Any,
+    live_report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a compact target/duty overlay without sending raw events to Jev.
 
@@ -1165,6 +1493,7 @@ def _target_duty_context(
         if isinstance(actor, dict) and str(actor.get("role") or "") == "dps"
     }
     dps_guids.discard(0)
+    vehicle_control_by_guid = _magmaw_vehicle_control_receipts(live_report)
 
     abilities_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in combat_log.get("abilities") or []:
@@ -1300,6 +1629,11 @@ def _target_duty_context(
             for earlier, later in zip(damage_timestamps, damage_timestamps[1:])
             if later > earlier
         ]
+        damage_gap_intervals = [
+            (earlier, later, (later - earlier) / 1000.0)
+            for earlier, later in zip(damage_timestamps, damage_timestamps[1:])
+            if later > earlier
+        ]
         damage_gaps_ge_3 = [gap for gap in damage_gaps if gap >= 3.0]
         damage_gaps_ge_5 = [gap for gap in damage_gaps if gap >= 5.0]
         moving_timestamps = [
@@ -1317,6 +1651,62 @@ def _target_duty_context(
             and _as_int(row.get("first_at_ms"))
             and _as_int(row.get("last_at_ms"))
         ]
+        vehicle_control_receipts = vehicle_control_by_guid.get(guid, [])
+        vehicle_control_intervals = [
+            (
+                _as_int(receipt.get("armed_at_ms")),
+                _as_int(receipt.get("terminal_at_ms")),
+            )
+            for receipt in vehicle_control_receipts
+            if _as_int(receipt.get("armed_at_ms"))
+            and _as_int(receipt.get("terminal_at_ms"))
+        ]
+
+        def interval_overlap_seconds(
+            first_at_ms: int,
+            last_at_ms: int,
+            other_first_at_ms: int,
+            other_last_at_ms: int,
+        ) -> float:
+            if not first_at_ms or not last_at_ms or not other_first_at_ms or not other_last_at_ms:
+                return 0.0
+            overlap_ms = min(last_at_ms, other_last_at_ms) - max(
+                first_at_ms,
+                other_first_at_ms,
+            )
+            return max(0.0, overlap_ms / 1000.0)
+
+        control_gap_count = 0
+        control_gap_overlap_seconds = 0.0
+        proximate_control_gap_count = 0
+        proximate_control_gap_seconds = 0.0
+        for gap_first_at_ms, gap_last_at_ms, gap_seconds in damage_gap_intervals:
+            direct_overlap = sum(
+                interval_overlap_seconds(
+                    gap_first_at_ms,
+                    gap_last_at_ms,
+                    control_first_at_ms,
+                    control_last_at_ms,
+                )
+                for control_first_at_ms, control_last_at_ms in vehicle_control_intervals
+            )
+            if direct_overlap > 0.0:
+                control_gap_count += 1
+                control_gap_overlap_seconds += min(gap_seconds, direct_overlap)
+                continue
+            if any(
+                0 <= control_first_at_ms - gap_last_at_ms
+                <= MAGMAW_VEHICLE_CONTROL_PROXIMITY_MS
+                and gap_first_at_ms < control_first_at_ms
+                for control_first_at_ms, _ in vehicle_control_intervals
+            ):
+                proximate_control_gap_count += 1
+                proximate_control_gap_seconds += gap_seconds
+
+        vehicle_control_seconds = sum(
+            max(0.0, (last_at_ms - first_at_ms) / 1000.0)
+            for first_at_ms, last_at_ms in vehicle_control_intervals
+        )
 
         def timestamp_in_intervals(timestamp_ms: int,
             intervals: list[tuple[int, int]]) -> bool:
@@ -1341,10 +1731,20 @@ def _target_duty_context(
         for row in failure_rows_by_guid.get(guid, []):
             first_at_ms = _as_int(row.get("first_at_ms"))
             last_at_ms = _as_int(row.get("last_at_ms"))
+            failure_target_entry = _as_int(row.get("target_entry"))
+            failure_target_category = _magmaw_target_class({
+                "target_entry": failure_target_entry,
+            }) if failure_target_entry else ""
             mechanic_overlap = any(
                 interval_overlaps(first_at_ms, last_at_ms, duty_first, duty_last)
                 for duty_first, duty_last in mechanic_intervals
             )
+            # An aggregate failure now carries the target entry captured at
+            # RecordCombatAttempt time.  If the failed action was explicitly
+            # aimed at Magmaw/head, an overlapping parasite damage event is
+            # not evidence that the failed cast itself was mechanic duty.
+            if failure_target_category in {"boss_or_head", "other"}:
+                mechanic_overlap = False
             movement_overlap = any(
                 first_at_ms <= timestamp <= last_at_ms
                 for timestamp in moving_timestamps
@@ -1352,7 +1752,7 @@ def _target_duty_context(
             )
             if mechanic_overlap or movement_overlap:
                 correlated_failures += 1
-                failure_windows.append({
+                failure_window = {
                     "action_name": str(row.get("action_name") or "unknown"),
                     "outcome": str(row.get("outcome") or row.get("result") or "unknown"),
                     "reason_code": str(row.get("reason_code") or row.get("reason") or ""),
@@ -1364,7 +1764,11 @@ def _target_duty_context(
                         )
                         if enabled
                     ],
-                })
+                }
+                if failure_target_entry:
+                    failure_window["target_entry"] = failure_target_entry
+                    failure_window["target_category"] = failure_target_category
+                failure_windows.append(failure_window)
 
         meaningful_mechanic_duty = (
             mechanic_damage >= MAGMAW_MATERIAL_DUTY_DAMAGE
@@ -1383,22 +1787,32 @@ def _target_duty_context(
                 meaningful_mechanic_duty
                 and (correlated_failures > 0 or bool(duty_moving_timestamps))
             )
+            or control_gap_count > 0
+            or proximate_control_gap_count > 0
         )
         if actor_abilities:
             counterfactual_status = str(
                 assignment.get("assignment_counterfactual_status")
                 if required_assignment_active
                 else (
-                    "partial_recent_capture"
-                    if recent_events_dropped > 0
-                    else "eligible"
+                    "mangle_vehicle_control_observed"
+                    if vehicle_control_receipts
+                    else (
+                        "partial_recent_capture"
+                        if recent_events_dropped > 0
+                        else "eligible"
+                    )
                 )
             )
         else:
             counterfactual_status = (
                 str(assignment.get("assignment_counterfactual_status"))
                 if required_assignment_active
-                else "unavailable"
+                else (
+                    "mangle_vehicle_control_observed"
+                    if vehicle_control_receipts
+                    else "unavailable"
+                )
             )
         target_categories = []
         for category in ("boss_or_head", "mechanic_target", "other"):
@@ -1424,9 +1838,40 @@ def _target_duty_context(
             "mechanic_duty_scope": (
                 "required_assignment"
                 if required_assignment_active
-                else ("material" if meaningful_mechanic_duty else "incidental")
+                else (
+                    "mangle_vehicle"
+                    if vehicle_control_receipts
+                    else ("material" if meaningful_mechanic_duty else "incidental")
+                )
             ),
             **assignment,
+            "magmaw_control_receipt_count": len(vehicle_control_receipts),
+            "magmaw_control_seconds": round(vehicle_control_seconds, 3),
+            "magmaw_control_gap_count": control_gap_count,
+            "magmaw_control_gap_overlap_seconds": round(
+                control_gap_overlap_seconds,
+                3,
+            ),
+            "magmaw_proximate_control_gap_count": proximate_control_gap_count,
+            "magmaw_proximate_control_gap_seconds": round(
+                proximate_control_gap_seconds,
+                3,
+            ),
+            "magmaw_control_receipts": [
+                {
+                    key: receipt[key]
+                    for key in (
+                        "kind",
+                        "receipt_id",
+                        "armed_at_ms",
+                        "terminal_at_ms",
+                        "terminal_outcome",
+                        "vehicle_observed",
+                    )
+                    if key in receipt
+                }
+                for receipt in vehicle_control_receipts[:4]
+            ],
             "recent_damage_event_count": len(recent_events),
             "damage_cadence_capture": (
                 "full_window_no_drops" if recent_events_dropped == 0
@@ -1471,7 +1916,8 @@ def _target_duty_context(
         },
         "causal_action_gate": (
             "authorize only when counterfactual_eligible is true and "
-            "duty_explains_idle is false; otherwise keep the result advisory"
+            "duty_explains_idle is false; native Mangle/vehicle receipts are "
+            "mechanic downtime; otherwise keep the result advisory"
         ),
         "actors": actor_contexts,
     }
@@ -1479,6 +1925,7 @@ def _target_duty_context(
 
 def _compact_jev_target_duty_context(
     context: dict[str, Any] | None,
+    actor_guids: set[int] | None = None,
 ) -> dict[str, Any]:
     """Keep the causal duty gate without repeating assignment metadata.
 
@@ -1519,6 +1966,13 @@ def _compact_jev_target_duty_context(
         "mechanic_target_originated_damage_share",
         "mechanic_target_window_count",
         "mechanic_duty_scope",
+        "magmaw_control_receipt_count",
+        "magmaw_control_seconds",
+        "magmaw_control_gap_count",
+        "magmaw_control_gap_overlap_seconds",
+        "magmaw_proximate_control_gap_count",
+        "magmaw_proximate_control_gap_seconds",
+        "magmaw_control_receipts",
         "required_assignment_active",
         "assignment_id",
         "assignment_role",
@@ -1554,6 +2008,10 @@ def _compact_jev_target_duty_context(
         }
         for actor in context.get("actors", [])
         if isinstance(actor, dict)
+        and (
+            actor_guids is None
+            or _as_int(actor.get("bot_guid")) in actor_guids
+        )
     ]
     return result
 
@@ -1628,6 +2086,46 @@ def _summarize_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
             }
         )
     return sorted(result, key=lambda row: int(row.get("bot_guid") or 0))
+
+
+def _summarize_jev_failure_action_outcomes(
+    rows: Any,
+    limit: int = 16,
+) -> list[dict[str, Any]]:
+    """Keep direct native failures attributable without sending every row."""
+    if not isinstance(rows, list):
+        return []
+    grouped: dict[tuple[int, str, str, str, str, int], int] = Counter()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        key = (
+            _as_int(row.get("bot_guid") or row.get("actor_guid")),
+            str(row.get("class_spec") or ""),
+            str(row.get("action_name") or "unknown"),
+            str(row.get("outcome") or row.get("result") or "unknown"),
+            str(row.get("reason_code") or row.get("retry_reason") or ""),
+            _as_int(row.get("target_entry")),
+        )
+        grouped[key] += max(1, _as_int(row.get("count")))
+
+    result = []
+    for (guid, class_spec, action_name, outcome, reason_code, target_entry), count in sorted(
+        grouped.items(), key=lambda item: (-item[1], item[0])
+    )[:limit]:
+        item: dict[str, Any] = {
+            "bot_guid": guid,
+            "class_spec": class_spec,
+            "action_name": action_name,
+            "outcome": outcome,
+            "count": count,
+        }
+        if reason_code:
+            item["reason_code"] = reason_code
+        if target_entry:
+            item["target_entry"] = target_entry
+        result.append(item)
+    return result
 
 
 def _compact_native_candidate_rejections(
@@ -3293,6 +3791,310 @@ def _route_review(
     }
 
 
+def _compact_timeline_comparison(value: Any) -> dict[str, Any] | None:
+    """Keep the all-actor timeline signal small enough for the JEV request."""
+    if not isinstance(value, dict):
+        return None
+    compact_actors: list[dict[str, Any]] = []
+    for actor in value.get("actors", []):
+        if not isinstance(actor, dict):
+            continue
+        wcl = actor.get("wcl")
+        wcl = wcl if isinstance(wcl, dict) else None
+        bot = actor.get("bot")
+        bot = bot if isinstance(bot, dict) else {}
+        diffs = [
+            row
+            for row in actor.get("ability_diffs", [])
+            if isinstance(row, dict)
+        ]
+        matched_diffs = [
+            row
+            for row in diffs
+            if _as_int(row.get("wcl_completed_casts")) > 0
+            and _as_int(row.get("bot_landed_damage_events")) > 0
+        ][:10]
+        wcl_only = [
+            {
+                "ability": row.get("ability"),
+                "wcl_completed_casts": _as_int(row.get("wcl_completed_casts")),
+            }
+            for row in diffs
+            if _as_int(row.get("wcl_completed_casts")) > 0
+            and _as_int(row.get("bot_landed_damage_events")) == 0
+        ][:8]
+        bot_only = [
+            {
+                "ability": row.get("ability"),
+                "bot_landed_damage_events": _as_int(
+                    row.get("bot_landed_damage_events")
+                ),
+            }
+            for row in diffs
+            if _as_int(row.get("wcl_completed_casts")) == 0
+            and _as_int(row.get("bot_landed_damage_events")) > 0
+        ][:8]
+        compact_actors.append({
+            key: actor[key]
+            for key in (
+                "bot_guid",
+                "bot_name",
+                "role",
+                "class_spec",
+                "comparison_status",
+                "reference_actor_id",
+                "reference_source_name",
+                "reference_reuse_index",
+                "reference_reused_for_duplicate_local_actor",
+                "wcl_observed_dps",
+                "bot_encounter_window_dps",
+                "bot_active_dps",
+                "bot_damage_uptime",
+                "bot_moving_fraction",
+                "bot_active_seconds",
+                "bot_damage",
+            )
+            if key in actor
+        })
+        compact_actors[-1]["wcl_completed_cast_cadence"] = (
+            wcl.get("cadence") if wcl else None
+        )
+        compact_actors[-1]["bot_landed_damage_cadence"] = bot.get("cadence")
+        compact_actors[-1]["bot_direct_or_unknown_cadence"] = bot.get(
+            "direct_or_unknown_cadence"
+        )
+        compact_actors[-1]["bot_largest_direct_gaps"] = (
+            bot.get("largest_gaps", [])[:6]
+            if isinstance(bot.get("largest_gaps"), list)
+            else []
+        )
+        compact_actors[-1]["matched_ability_diffs"] = matched_diffs
+        compact_actors[-1]["wcl_only_abilities"] = wcl_only
+        compact_actors[-1]["bot_only_abilities"] = bot_only
+        compact_actors[-1]["comparison_limitations"] = list(
+            actor.get("comparison_limitations", [])
+        )[:4]
+    return {
+        key: value[key]
+        for key in (
+            "schema",
+            "reference",
+            "scope",
+            "comparison_window",
+            "signal_contract",
+        )
+        if key in value
+    } | {"actors": compact_actors}
+
+
+def _timeline_actor_signal(
+    timeline_comparison: dict[str, Any] | None,
+) -> dict[int, dict[str, Any]]:
+    """Build small per-actor timeline facts for the causal actor questions."""
+    result: dict[int, dict[str, Any]] = {}
+    if not isinstance(timeline_comparison, dict):
+        return result
+    for actor in timeline_comparison.get("actors", []):
+        if not isinstance(actor, dict):
+            continue
+        guid = _as_int(actor.get("bot_guid"))
+        if not guid:
+            continue
+        wcl = actor.get("wcl_completed_cast_cadence")
+        wcl = wcl if isinstance(wcl, dict) else {}
+        bot = actor.get("bot_landed_damage_cadence")
+        bot = bot if isinstance(bot, dict) else {}
+        direct = actor.get("bot_direct_or_unknown_cadence")
+        direct = direct if isinstance(direct, dict) else {}
+        gaps = actor.get("bot_largest_direct_gaps")
+        gaps = gaps if isinstance(gaps, list) else []
+        diffs = actor.get("matched_ability_diffs")
+        diffs = diffs if isinstance(diffs, list) else []
+        result[guid] = {
+            "comparison_status": actor.get("comparison_status"),
+            "reference_actor_id": actor.get("reference_actor_id"),
+            "wcl_observed_dps": actor.get("wcl_observed_dps"),
+            "wcl_completed_casts": wcl.get("event_count"),
+            "wcl_max_gap_sec": wcl.get("max_gap_sec"),
+            "bot_landed_damage_events": bot.get("event_count"),
+            "bot_direct_or_unknown_events": direct.get("event_count"),
+            "bot_direct_max_gap_sec": direct.get("max_gap_sec"),
+            "largest_direct_gap": gaps[0] if gaps else None,
+            "matched_ability_diffs": [
+                {
+                    key: row[key]
+                    for key in (
+                        "ability",
+                        "wcl_completed_casts",
+                        "bot_landed_damage_events",
+                        "delta_landed_events_minus_casts",
+                    )
+                    if key in row
+                }
+                for row in diffs[:4]
+                if isinstance(row, dict)
+            ],
+        }
+    return result
+
+
+def _compact_group_timeline(
+    timeline_comparison: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Reduce the full comparison to the group-coherence signal."""
+    if not isinstance(timeline_comparison, dict):
+        return {
+            "available": False,
+            "reason": "timeline_comparison_unavailable",
+            "actors": [],
+        }
+    actors: list[dict[str, Any]] = []
+    for actor in timeline_comparison.get("actors", []):
+        if not isinstance(actor, dict):
+            continue
+        wcl = actor.get("wcl_completed_cast_cadence")
+        wcl = wcl if isinstance(wcl, dict) else {}
+        bot = actor.get("bot_landed_damage_cadence")
+        bot = bot if isinstance(bot, dict) else {}
+        direct = actor.get("bot_direct_or_unknown_cadence")
+        direct = direct if isinstance(direct, dict) else {}
+        gaps = actor.get("bot_largest_direct_gaps")
+        gaps = gaps if isinstance(gaps, list) else []
+        actors.append({
+            key: actor[key]
+            for key in (
+                "bot_guid",
+                "bot_name",
+                "role",
+                "class_spec",
+                "comparison_status",
+                "reference_actor_id",
+                "wcl_observed_dps",
+                "bot_encounter_window_dps",
+                "bot_damage_uptime",
+                "bot_moving_fraction",
+            )
+            if key in actor
+        } | {
+            "wcl_cast_count": wcl.get("event_count"),
+            "wcl_max_gap_sec": wcl.get("max_gap_sec"),
+            "bot_landed_event_count": bot.get("event_count"),
+            "bot_max_gap_sec": bot.get("max_gap_sec"),
+            "bot_direct_event_count": direct.get("event_count"),
+            "bot_direct_max_gap_sec": direct.get("max_gap_sec"),
+            "largest_direct_gap_sec": (
+                gaps[0].get("gap_sec")
+                if gaps and isinstance(gaps[0], dict)
+                else None
+            ),
+        })
+    return {
+        "available": True,
+        "reference": timeline_comparison.get("reference"),
+        "scope": timeline_comparison.get("scope"),
+        "comparison_window": timeline_comparison.get("comparison_window"),
+        "actors": actors,
+        "signal_contract": timeline_comparison.get("signal_contract"),
+    }
+
+
+def _group_jev_state(state: dict[str, Any]) -> dict[str, Any]:
+    """Build the small shared packet used for route and group coherence."""
+    boss = state.get("boss_dps_review")
+    boss = boss if isinstance(boss, dict) else {}
+    actor_rows: list[dict[str, Any]] = []
+    for actor in boss.get("actor_loss_signals", []):
+        if not isinstance(actor, dict):
+            continue
+        actor_rows.append({
+            key: actor[key]
+            for key in (
+                "bot_guid",
+                "class_spec",
+                "encounter_dps",
+                "wcl_observed_dps",
+                "encounter_dps_gap_vs_wcl",
+                "active_dps_gap_vs_wcl",
+                "damage_uptime",
+                "moving_fraction",
+                "native_actionable_failure_ratio",
+                "duty_explains_idle",
+                "required_assignment_active",
+                "assignment_status",
+                "counterfactual_status",
+                "timeline_signal",
+            )
+            if key in actor
+        })
+    compact_boss = {
+        key: boss[key]
+        for key in (
+            "scope_route_node",
+            "wcl_dps_contract",
+            "combat_metrics",
+            "action_outcomes",
+            "action_outcome_view",
+            "native_outcome_signal",
+            "candidate_rejection_summary",
+            "native_mushroom_diagnostics",
+            "candidate_rejection_count",
+            "candidate_rejection_groups",
+            "actor_identity",
+            "trace_capture",
+            "wcl_reference",
+        )
+        if key in boss
+    }
+    compact_boss["actor_loss_signals"] = actor_rows
+    compact_boss["timeline_comparison"] = _compact_group_timeline(
+        boss.get("timeline_comparison")
+    )
+    return {
+        "task": state.get("task"),
+        "authority": state.get("authority"),
+        "run_id": state.get("run_id"),
+        "segment_id": state.get("segment_id"),
+        "change": state.get("change"),
+        "expected_route_nodes": state.get("expected_route_nodes"),
+        "scope_route_prefix": state.get("scope_route_prefix"),
+        "route_review": state.get("route_review"),
+        "boss_dps_review": compact_boss,
+        "native_gameplay_outcome": state.get("native_gameplay_outcome"),
+        "baseline": state.get("baseline"),
+    }
+
+
+def _actor_jev_state(
+    state: dict[str, Any],
+    actor: dict[str, Any],
+    timeline_actor: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Build one isolated packet for one DPS actor."""
+    boss = state.get("boss_dps_review")
+    boss = boss if isinstance(boss, dict) else {}
+    timeline = boss.get("timeline_comparison")
+    timeline = timeline if isinstance(timeline, dict) else {}
+    return {
+        "task": "Magmaw 10N individual DPS actor review",
+        "authority": state.get("authority"),
+        "run_id": state.get("run_id"),
+        "segment_id": state.get("segment_id"),
+        "change": state.get("change"),
+        "native_gameplay_outcome": state.get("native_gameplay_outcome"),
+        "wcl_dps_contract": boss.get("wcl_dps_contract"),
+        "actor_review": actor,
+        "timeline_comparison": {
+            "reference": timeline.get("reference"),
+            "comparison_window": timeline.get("comparison_window"),
+            "signal_contract": timeline.get("signal_contract"),
+            "actor": timeline_actor or {
+                "bot_guid": actor.get("bot_guid"),
+                "comparison_status": "missing_actor_timeline",
+            },
+        },
+    }
+
+
 def _boss_dps_review(
     deterministic: dict[str, Any],
     entries: list[dict[str, Any]],
@@ -3300,6 +4102,7 @@ def _boss_dps_review(
     actor_identity: Mapping[str, dict[str, Any]] | None,
     wcl_reference: dict[str, Any] | None,
     target_duty_context: dict[str, Any] | None = None,
+    timeline_comparison: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     metrics = deterministic.get("boss_combat_metrics")
     if not isinstance(metrics, dict):
@@ -3353,7 +4156,28 @@ def _boss_dps_review(
         native_candidate_rejections,
         target_duty_context,
     )
+    timeline_actor_signals = _timeline_actor_signal(timeline_comparison)
+    for actor in actor_loss_signals:
+        if not isinstance(actor, dict):
+            continue
+        timeline_signal = timeline_actor_signals.get(_as_int(actor.get("bot_guid")))
+        if timeline_signal is not None:
+            actor["timeline_signal"] = timeline_signal
     failure_action_outcomes = _jev_action_outcome_slice(native_action_outcomes)
+    failure_action_summary = _summarize_jev_failure_action_outcomes(
+        failure_action_outcomes
+    )
+    dps_actor_guids = {
+        _as_int(actor.get("bot_guid"))
+        for actor in actor_loss_signals
+        if isinstance(actor, dict) and _as_int(actor.get("bot_guid"))
+    }
+    jev_combat_metrics = _jev_combat_metrics(metrics)
+    # actor_loss_signals is the attributable per-DPS view. Sending another
+    # actor array with the same DPS/ability fields only increases the JEV
+    # packet and makes the typed judgment less reliable on long canaries.
+    jev_combat_metrics.pop("actors", None)
+    jev_combat_metrics["actor_metrics_source"] = "actor_loss_signals"
     return {
         "scope_route_node": DEFAULT_BOSS_ROUTE[0],
         "wcl_dps_contract": {
@@ -3374,13 +4198,17 @@ def _boss_dps_review(
                 "route entrance/recovery wall clock is a separate progress metric."
             ),
         },
-        "combat_metrics": _jev_combat_metrics(metrics),
+        "combat_metrics": jev_combat_metrics,
         "combat_diagnostics": deterministic.get("boss_combat_diagnostics", []),
-        "action_outcomes": failure_action_outcomes,
-        "action_outcome_view": "direct_native_failures_only",
+        "action_outcomes": failure_action_summary,
+        "action_outcome_view": "grouped_direct_native_failures",
         "native_outcome_summary": native_outcome_summary,
         "target_duty_context": _compact_jev_target_duty_context(
-            target_duty_context
+            target_duty_context,
+            dps_actor_guids,
+        ),
+        "native_mushroom_diagnostics": _compact_jev_native_mushroom_diagnostics(
+            deterministic.get("native_mushroom_diagnostics", [])
         ),
         "causal_signal_view": "full_window_target_overlay_and_failure_window_overlap",
         "native_outcome_signal": {
@@ -3395,6 +4223,7 @@ def _boss_dps_review(
             ),
         },
         "actor_loss_signals": actor_loss_signals,
+        "timeline_comparison": timeline_comparison,
         # Only gates outside the expected profile-wait set are sent as the
         # short candidate list. The complete native rows remain in the
         # deterministic report for local audit and replay.
@@ -3416,7 +4245,7 @@ def _boss_dps_review(
             "attributable_dps_action_outcomes": len(
                 native_action_outcomes
             ),
-            "jev_action_outcome_rows": len(failure_action_outcomes),
+            "jev_action_outcome_rows": len(failure_action_summary),
             "omitted_expected_wait_rows": max(
                 0,
                 len(native_action_outcomes) - len(failure_action_outcomes),
@@ -3447,6 +4276,8 @@ def _jev_questions(
     *,
     include_next_fix: bool = True,
     actor_specs: list[dict[str, Any]] | None = None,
+    include_timeline: bool = True,
+    include_assignment: bool = True,
 ) -> dict[str, dict[str, Any]]:
     questions: dict[str, dict[str, Any]] = {
         "path_consistency": {
@@ -3471,9 +4302,27 @@ def _jev_questions(
                 "lifecycle": "Death, recovery, readiness, or route lifecycle is dominant.",
             },
         },
+        "timeline_consistency": {
+            "type": "choice",
+            "instructions": (
+                "Use boss_dps_review.timeline_comparison as the primary DPS signal for every local actor. "
+                "Compare normalized WCL completed-cast cadence with bot landed-damage "
+                "cadence and largest direct gaps. These event types are intentionally "
+                "different: periodic ticks and multi-target rows can outnumber casts. "
+                "Use matched ability timing and actor-level gaps, not raw count equality. "
+                "A missing WCL reference is an explicit not_comparable result, never a "
+                "passing or failing inference."
+            ),
+            "criteria": {
+                "aligned": "Comparable actors show broadly aligned normalized cadence with no material unexplained gap.",
+                "cadence_gap": "One or more comparable actors show a repeated material bot gap against the WCL cadence.",
+                "mechanic_gap": "The largest gap overlaps a documented mechanic, assignment, or native control window.",
+                "not_comparable": "The actor lacks a WCL timeline or the windows/identity cannot be aligned.",
+            },
+        },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use wcl_window_dps/encounter_window_dps (originated damage divided by the first-to-last positive hostile damage_done window in duration_sec) for the WCL Summary comparison. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-window DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, or failure windows overlap material mechanic work. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use wcl_window_dps/encounter_window_dps (originated damage divided by the first-to-last positive hostile damage_done window in duration_sec) for the WCL Summary comparison. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-window DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -3493,6 +4342,8 @@ def _jev_questions(
             },
         },
     }
+    if not include_timeline:
+        questions.pop("timeline_consistency", None)
     for actor in actor_specs or []:
         if not isinstance(actor, dict):
             continue
@@ -3504,31 +4355,31 @@ def _jev_questions(
         questions[question_id] = {
             "type": "choice",
             "instructions": (
-                f"For {class_spec} bot_guid {guid}, choose the smallest bounded action from "
-                "actor_loss_signals and its matching target_duty_context. Use encounter-window "
-                "WCL DPS (`wcl_window_dps`), active-combat `dps`, actor `active_dps`, movement, "
-                "native failure ratio, "
-                "candidate_actions, required assignment status/evidence, full-window damage "
-                "gap cadence, abilities, and sample quality. Route wall-clock overhead "
-                "alone is not an actor DPS gap; reserve rotation_profile for an active- "
-                "and encounter-window-DPS gap. "
-                "Policy gates are not native failures. duty_explains_idle=true or "
-                "required_assignment_active=true or counterfactual_status!=eligible blocks an "
-                "actor repair; use encounter_assignment only for incomplete required duty, and "
-                "collect_more_canaries for executed, identity-assigned, unobserved, mixed, or sparse evidence. "
-                "WCL is context only."
+                f"For {class_spec} bot_guid {guid}, choose one bounded action from "
+                "actor_review and its matching timeline_comparison.actor. Read the normalized "
+                "WCL-cast versus bot-landed cadence and largest direct gaps before using "
+                "encounter-window DPS as the result. Use uptime, movement/range, native "
+                "failure ratio, candidate gates, duty context, assignment status, control "
+                "receipts, damage gaps, and counterfactual_status. "
+                "WCL is context only. Do not authorize actor repair when duty_explains_idle, "
+                "required_assignment_active, or counterfactual_status != eligible. Incomplete "
+                "required duty means encounter_assignment; otherwise mixed or sparse evidence "
+                "means collect_more_canaries."
             ),
             "criteria": {
-                "no_material_action": "No attributable material loss or at/above comparison context.",
-                "movement_recovery": "Movement/formation/range/LOS facts align with the loss.",
-                "uptime_cadence": "Low uptime remains with low movement/failure, no duty explanation, and eligible counterfactual evidence.",
-                "rotation_profile": "Profile priority, cooldown, resource, or policy explains a material gap.",
-                "target_lease": "Target ownership/return/churn is material for this actor.",
-                "shared_arbitration": "Material native submission failures are attributable to this actor.",
-                "collect_more_canaries": "Evidence is mixed, sparse, partial, or not reproducible.",
+                "no_material_action": "No attributable material gap.",
+                "movement_recovery": "Movement, range, LOS, or uptime facts align with the loss.",
+                "uptime_cadence": "Eligible counterfactual; low uptime with low movement/failures.",
+                "rotation_profile": "Profile priority, cooldown, resource, or policy is the edge.",
+                "target_lease": "Target ownership, return, or churn is material.",
+                "shared_arbitration": "Native submission failures are attributable.",
+                "collect_more_canaries": "Evidence is mixed, sparse, or not reproducible.",
             },
         }
-        if actor.get("assignment_id") == "magmaw_balance_mushroom_add_control":
+        if (
+            include_assignment
+            and actor.get("assignment_id") == "magmaw_balance_mushroom_add_control"
+        ):
             questions[f"actor_assignment_{guid}"] = {
                 "type": "choice",
                 "instructions": (
@@ -3562,17 +4413,50 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next action from the typed judgments and named evidence views. Keep authority native and require an attributable, reproducible cause. Use admission_lifecycle for admission failure. If required_assignment_active is true, use encounter_assignment only when assignment_status is incomplete; use collect_more_canaries when it is executed, identity_assigned, or unobserved because the no-duty counterfactual is missing. If duty_explains_idle is true or counterfactual_status is partial/unavailable/required-assignment, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for a material encounter-window-DPS gap with low movement/native failure and eligible counterfactual evidence; route wall-clock overhead alone cannot authorize a fix. Prefer movement_recovery when movement/range facts align with the encounter-window-DPS loss. Prefer shared_arbitration/rotation_profile only for material native/profile evidence. Conflicting or low-confidence actor judgments require collect_more_canaries.",
+        "instructions": "Choose one bounded next action from the typed judgments. Native evidence is authoritative. Use admission_lifecycle for admission failure; encounter_assignment only for incomplete required duty; collect_more_canaries for executed, unobserved, mixed, or sparse duty evidence. If duty_explains_idle, a control receipt, or ineligible counterfactual_status is present, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for an eligible material encounter-window DPS gap with low movement/failure; movement_recovery only when movement/range facts align. Require direct evidence for shared_arbitration, rotation_profile, or native_mechanics.",
         "criteria": {
-            "collect_more_canaries": "Evidence is insufficient or the behavior is not reproducible yet.",
-            "admission_lifecycle": "Repair the run admission, exact roster, or lifecycle contract before judging gameplay.",
-            "movement_recovery": "Repair or tune movement arbitration/recovery using the trace evidence.",
-            "uptime_cadence": "Low uptime remains after duty/movement/native failure are ruled out and counterfactual evidence is eligible.",
-            "target_lease": "Repair target ownership, target return, or target churn handling.",
-            "shared_arbitration": "Repair a shared candidate arbitration/submission edge.",
-            "encounter_assignment": "Repair the encounter mechanic assignment or transfer/hook/parasite contract.",
-            "rotation_profile": "Repair a class/spec priority, resource, cooldown, or target gate.",
-            "native_mechanics": "Repair a native spell, aura, pet, or outcome mismatch.",
+            "collect_more_canaries": "Evidence is insufficient or not reproducible.",
+            "admission_lifecycle": "Repair run admission, roster, or lifecycle first.",
+            "movement_recovery": "Movement, range, or recovery is the first broken edge.",
+            "uptime_cadence": "Eligible clean counterfactual has material window-DPS loss.",
+            "target_lease": "Target ownership, return, or churn is material.",
+            "shared_arbitration": "Shared native candidate/submission edge is material.",
+            "encounter_assignment": "Required encounter assignment is incomplete.",
+            "rotation_profile": "Class priority, resource, or cooldown gate is material.",
+            "native_mechanics": "Native spell, aura, pet, or outcome mismatch is material.",
+        },
+    }
+
+
+def _group_coherence_question() -> dict[str, Any]:
+    """Ask one small group-level question after actor reviews are isolated."""
+    return {
+        "type": "choice",
+        "instructions": (
+            "Classify group coherence from route_review, native_gameplay_outcome, and "
+            "boss_dps_review.timeline_comparison. Use the actor rows only to decide "
+            "whether the group has one shared cadence/mechanic pattern or whether the "
+            "loss is actor-specific. WCL completed casts and bot landed events are "
+            "different event types; periodic and multi-target rows must not be counted "
+            "as casts. Missing WCL references are not failures."
+        ),
+        "criteria": {
+            "coherent": (
+                "Comparable actors have broadly aligned cadence and no shared unresolved "
+                "gap; any remaining loss is actor-specific."
+            ),
+            "actor_divergence": (
+                "The group is live, but one or more actors materially diverge while "
+                "others do not; use individual actor judgments for action."
+            ),
+            "mechanic_aligned_gap": (
+                "The largest common gap aligns with an encounter mechanic, assignment, "
+                "or native control window."
+            ),
+            "insufficient_data": (
+                "The run, actor identity, or comparable timeline evidence is insufficient "
+                "to judge group coherence."
+            ),
         },
     }
 
@@ -3756,6 +4640,9 @@ def _ledger_record(report: dict[str, Any]) -> dict[str, Any]:
         "boss_dps_review": report.get("jev_input", {}).get("state", {}).get(
             "boss_dps_review", {}
         ),
+        "timeline_comparison": report.get("jev_input", {}).get("state", {}).get(
+            "boss_dps_review", {}
+        ).get("timeline_comparison"),
         "jev": report.get("jev", {}).get("answers", {}),
     }
 
@@ -3784,8 +4671,10 @@ def analyze(
     baseline_path: Path | None,
     combat_analysis_path: Path | None,
     combat_log_path: Path | None = None,
+    native_log_path: Path | None = None,
     scope_route_prefix: str = MAGMAW_ROUTE_PREFIX,
     wcl_reference_path: Path | None = None,
+    timeline_comparison_path: Path | None = None,
 ) -> dict[str, Any]:
     raw_path, report_path, discovered_analysis = _input_files(input_path)
     live_report: dict[str, Any] | None = None
@@ -3815,6 +4704,11 @@ def analyze(
     wcl_reference: dict[str, Any] | None = None
     if wcl_reference_path is not None and wcl_reference_path.exists():
         wcl_reference = _compact_wcl_reference(_load_json(wcl_reference_path))
+    timeline_comparison: dict[str, Any] | None = None
+    if timeline_comparison_path is not None and timeline_comparison_path.exists():
+        timeline_comparison = _compact_timeline_comparison(
+            _load_json(timeline_comparison_path)
+        )
     analysis_path = combat_analysis_path or discovered_analysis
     if analysis_path and analysis_path.exists():
         analysis = _load_json(analysis_path)
@@ -3844,6 +4738,10 @@ def analyze(
                 f"combat log must be an object: {resolved_combat_log_path}"
             )
         combat_log = loaded_combat_log
+    resolved_native_log_path = native_log_path or _discovered_native_log_path(input_path)
+    deterministic["native_mushroom_diagnostics"] = _native_mushroom_diagnostics(
+        resolved_native_log_path
+    )
     boss_trace_entries, boss_trace_capture = _boss_trace_window(
         entries,
         deterministic.get("boss_combat_metrics"),
@@ -3882,6 +4780,7 @@ def analyze(
         combat_log,
         deterministic.get("boss_combat_metrics"),
         deterministic.get("boss_action_outcomes", []),
+        live_report,
     )
     deterministic["boss_combat_diagnostics"] = _dps_diagnostics(
         deterministic.get("boss_combat_diagnostics", []),
@@ -3924,6 +4823,7 @@ def analyze(
         actor_identity,
         wcl_reference,
         deterministic["boss_target_duty_context"],
+        timeline_comparison,
     )
     boss_dps_review["actor_identity"] = _compact_actor_identity(actor_identity)
     state = {
@@ -3937,23 +4837,100 @@ def analyze(
         "route_review": route_review,
         "boss_dps_review": boss_dps_review,
         "native_gameplay_outcome": native_gameplay_outcome,
-        "reference_context": wcl_reference,
         "baseline": baseline,
     }
-    review_questions = _jev_questions(
+    group_questions = _jev_questions(
         baseline is not None,
         include_next_fix=False,
-        actor_specs=boss_dps_review.get("actor_loss_signals", []),
+        actor_specs=[],
+        include_timeline=False,
     )
+    group_questions["group_coherence"] = _group_coherence_question()
+    group_state = _group_jev_state(state)
     api_key = _jev_key(env_file)
-    review_response = _call_jev(state, api_key, review_questions)
-    review_answers = _answer_summary(review_response)
-    fix_state = dict(state)
-    fix_state["prior_judgments"] = review_answers
+    group_response = _call_jev(group_state, api_key, group_questions)
+    group_answers = _answer_summary(group_response)
+    responses = [group_response]
+    actor_answers: dict[str, Any] = {}
+    actor_question_sets: dict[str, dict[str, Any]] = {}
+    actor_stage_records: list[dict[str, Any]] = []
+    timeline_actors = {
+        _as_int(actor.get("bot_guid")): actor
+        for actor in (boss_dps_review.get("timeline_comparison") or {}).get(
+            "actors", []
+        )
+        if isinstance(actor, dict) and _as_int(actor.get("bot_guid"))
+    }
+    for actor in boss_dps_review.get("actor_loss_signals", []):
+        if not isinstance(actor, dict) or not _as_int(actor.get("bot_guid")):
+            continue
+        actor_questions = _jev_questions(
+            False,
+            include_next_fix=False,
+            actor_specs=[actor],
+            include_timeline=False,
+            include_assignment=False,
+        )
+        actor_questions = {
+            key: value
+            for key, value in actor_questions.items()
+            if key.startswith("actor_action_")
+        }
+        if not actor_questions:
+            continue
+        guid = _as_int(actor.get("bot_guid"))
+        actor_state = _actor_jev_state(
+            state,
+            actor,
+            timeline_actors.get(guid),
+        )
+        actor_response = _call_jev(actor_state, api_key, actor_questions)
+        actor_answers.update(_answer_summary(actor_response))
+        responses.append(actor_response)
+        actor_key = str(guid)
+        actor_question_sets[actor_key] = actor_questions
+        actor_stage_records.append({
+            "stage": "actor_review",
+            "bot_guid": guid,
+            "class_spec": actor.get("class_spec"),
+            "question_ids": sorted(actor_questions),
+            "state_sections": sorted(actor_state),
+        })
+
+    review_answers = {**group_answers, **actor_answers}
+    fix_state = {
+        "task": "Magmaw 10N bounded next-fix selection",
+        "authority": state.get("authority"),
+        "run_id": state.get("run_id"),
+        "segment_id": state.get("segment_id"),
+        "change": state.get("change"),
+        "route_review": state.get("route_review"),
+        "native_gameplay_outcome": state.get("native_gameplay_outcome"),
+        "baseline": state.get("baseline"),
+        "group_timeline": _compact_group_timeline(
+            boss_dps_review.get("timeline_comparison")
+        ),
+        "prior_judgments": review_answers,
+    }
     fix_questions = {"next_fix": _next_fix_question()}
     fix_response = _call_jev(fix_state, api_key, fix_questions)
+    responses.append(fix_response)
     answers = {**review_answers, **_answer_summary(fix_response)}
-    questions = {**review_questions, **fix_questions}
+    questions = dict(group_questions)
+    for actor_questions in actor_question_sets.values():
+        questions.update(actor_questions)
+    questions.update(fix_questions)
+    stage_records = [{
+        "stage": "group_review",
+        "question_ids": sorted(group_questions),
+        "state_sections": sorted(group_state),
+    }]
+    stage_records.extend(actor_stage_records)
+    stage_records.append({
+        "stage": "next_fix",
+        "question_ids": sorted(fix_questions),
+        "state_sections": sorted(fix_state),
+    })
     confidences = [
         _as_float(answer.get("confidence"))
         for answer in answers.values()
@@ -3977,7 +4954,7 @@ def analyze(
         )
     )
     usage: dict[str, Any] = {}
-    for response in (review_response, fix_response):
+    for response in responses:
         response_usage = response.get("usage")
         if not isinstance(response_usage, dict):
             continue
@@ -3986,6 +4963,14 @@ def analyze(
                 usage[key] = usage.get(key, 0) + value
             elif key not in usage:
                 usage[key] = value
+    question_sets_by_stage: dict[str, dict[str, Any]] = {
+        "group_review": group_questions,
+    }
+    question_sets_by_stage.update({
+        f"actor_review_{guid}": question_set
+        for guid, question_set in actor_question_sets.items()
+    })
+    question_sets_by_stage["next_fix"] = fix_questions
     report = {
         "schema_version": 1,
         "tool": "magmaw_jev_trace_analyzer",
@@ -3998,22 +4983,11 @@ def analyze(
         "native_authority": "native_runtime_only",
         "native_gameplay_outcome": native_gameplay_outcome,
         "jev": {
-            "model": review_response.get("model", JEV_MODEL),
+            "model": group_response.get("model", JEV_MODEL),
             "answers": answers,
             "usage": usage,
             "question_ids": sorted(questions),
-            "request_stages": [
-                {
-                    "stage": "evidence_review",
-                    "question_ids": sorted(review_questions),
-                    "state_sections": sorted(state),
-                },
-                {
-                    "stage": "next_fix",
-                    "question_ids": sorted(fix_questions),
-                    "state_sections": sorted(fix_state),
-                },
-            ],
+            "request_stages": stage_records,
             "confidence_floor": JEV_CONFIDENCE_FLOOR,
             "low_confidence_questions": low_confidence,
             "minimum_confidence": min(confidences) if confidences else None,
@@ -4028,10 +5002,7 @@ def analyze(
                     }
                     for question_id, question in question_set.items()
                 }
-                for stage, question_set in (
-                    ("evidence_review", review_questions),
-                    ("next_fix", fix_questions),
-                )
+                for stage, question_set in question_sets_by_stage.items()
             },
             "typed_answer_fields": {
                 "choice": ["type", "choice", "confidence", "probabilities"],
@@ -4054,6 +5025,7 @@ def analyze(
                 for key, value in answers.items()
                 if key.startswith("actor_assignment_")
             },
+            "group_coherence": answers.get("group_coherence"),
             "actor_action_gate": _actor_action_gate(answers),
             "fix_tracking": {
                 "change_id": change_id,
@@ -4074,6 +5046,12 @@ def main() -> int:
     parser.add_argument("--baseline-report", type=Path, help="previous analyzer report for change-effect comparison")
     parser.add_argument("--combat-analysis", type=Path, help="optional combat_analysis.json")
     parser.add_argument("--combat-log", type=Path, help="optional combat_log.json; auto-discovered beside a run directory")
+    parser.add_argument("--native-log", type=Path, help="optional worldserver_output.log for native encounter diagnostics; auto-discovered beside a run directory")
+    parser.add_argument(
+        "--timeline-comparison",
+        type=Path,
+        help="optional all-actor WCL-vs-bot timeline comparison JSON",
+    )
     parser.add_argument(
         "--wcl-reference",
         type=Path,
@@ -4110,8 +5088,10 @@ def main() -> int:
             baseline_path=args.baseline_report,
             combat_analysis_path=args.combat_analysis,
             combat_log_path=args.combat_log,
+            native_log_path=args.native_log,
             scope_route_prefix=args.scope_route_prefix,
             wcl_reference_path=args.wcl_reference,
+            timeline_comparison_path=args.timeline_comparison,
         )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

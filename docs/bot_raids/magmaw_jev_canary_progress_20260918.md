@@ -441,3 +441,71 @@ the same duty and fight-window boundaries before and after one narrow change.
 Run the full sequence after that change: build/tests, completion-watchdog
 Magmaw clear, corrected combat analysis, JEV, and ledger update. A low-
 confidence JEV recommendation remains collection evidence, not an action.
+
+## Per-actor timeline requests and assignment context (shard87, 2026-09-19)
+
+The analyzer now uses the WCL-vs-native timeline as the primary DPS signal and
+decomposes the mandatory Jev review into small requests:
+
+1. one group request for route/path, stuck behavior, promotion safety, DPS-loss
+   area, and group coherence;
+2. one `actor_action_*` request for each local DPS actor; and
+3. one final `next_fix` request that receives the typed group and actor
+   judgments.
+
+The local roster is not collapsed to only the WCL actors. Shard87 compared all
+10 local actors, with six same-spec WCL references available (Balance, both
+Fire Mage actors using an explicitly marked duplicate reference, Affliction,
+and Elemental plus the Blood tank) and four actors explicitly marked
+`missing_wcl_reference` (the Survival Hunter and three healers). A missing
+reference is diagnostic-only; it is never treated as a pass or a failure.
+WCL completed casts and native landed-damage observations remain separate event
+types because periodic ticks and multi-target rows can outnumber originating
+casts.
+
+Balance's mushroom assignment is now context inside the Balance actor packet.
+The run emitted `actor_action_30001`, but no `actor_assignment_30001` request;
+`progress.actor_assignment_judgments` is empty by design. Native assignment
+evidence remains available for interpreting the actor timeline, matching the
+existing Mage and Hunter treatment.
+
+Shard87 was a native Magmaw clear with completion reason
+`validation_route_manifest_complete`, but certification was incomplete, so the
+wrapper correctly classified it as `diagnostic_only`. There was one death, no
+active stuck behavior, and no death-loop or no-progress watchdog stop. The
+native encounter-window party rate was 211.9k. The per-actor comparison was:
+
+| Actor | Bot encounter-window DPS | WCL reference DPS | Jev actor direction |
+| --- | ---: | ---: | --- |
+| Balance | 18.5k | 41.0k | collect more canaries (0.58) |
+| Fire A | 27.9k | 40.2k | collect more canaries (0.63) |
+| Fire B | 31.1k | 40.2k | movement recovery (0.64) |
+| Affliction | 40.7k | 40.3k | collect more canaries (0.60) |
+| Survival Hunter | 38.0k | no reference | collect more canaries (0.61) |
+| Elemental | 37.8k | 41.9k | movement recovery (0.53) |
+
+These values are a diagnostic comparison, not a claim of WCL parity or an
+automatic acceptance floor. Group Jev classified the run as actor-divergent
+(0.84), with no active stuck behavior (0.86), and selected
+`collect_more_canaries` as the next fix (0.76). The low-confidence actor
+directions therefore remain review evidence; no rotation, assignment, or
+shared-arbitration patch is authorized from shard87 alone.
+
+Runs84–86 were route-closure preflight failures rather than DPS canaries. The
+wrapper now stages the repository's exact route manifest and route JSONL into
+the external validation source only for preflight, preserves the external
+bytes/modes, and restores them after the run. Shard87 passed that preflight;
+the external route files were restored afterward.
+
+| Behavior | Evidence | Status |
+| --- | --- | --- |
+| Separate Balance Jev assignment request duplicated actor review | shard87 request-stage manifest | fixed: assignment context stays in the Balance actor packet; no separate assignment question is emitted |
+
+## Next bounded action after the request split
+
+Keep the per-actor/group request topology. Do not patch Balance, Fire, or
+shared movement based on shard87's low-confidence actor directions. The next
+canary should repeat the same normalized timeline comparison with a matched
+baseline and use the actor-specific cadence/gap evidence to select one narrow
+repair only after it repeats. Native completion-watchdog outcome remains the
+gameplay authority; Jev remains review-only.

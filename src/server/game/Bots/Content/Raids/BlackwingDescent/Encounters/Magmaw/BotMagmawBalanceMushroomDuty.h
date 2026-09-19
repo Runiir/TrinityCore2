@@ -29,12 +29,12 @@ struct MagmawBalanceMushroomDuty
 
     static bool IsActive(bool validationRouteEnabled,
         std::string_view routeNodeId, std::string_view specTag,
-        uint32 targetEntry)
+        uint32 targetEntry, bool livePillarVisible = false)
     {
         return validationRouteEnabled
             && routeNodeId == "bwd.magmaw.encounter"
             && specTag == "balance_druid"
-            && IsParasiteEntry(targetEntry);
+            && (livePillarVisible || IsParasiteEntry(targetEntry));
     }
 
     static bool NeedsPlacement(std::size_t ownedMushrooms)
@@ -51,6 +51,7 @@ struct MagmawBalanceMushroomDuty
 struct MagmawBalanceMushroomState
 {
     bool Active = false;
+    bool LivePillarVisible = false;
     bool SolarEclipse = false;
     uint32 OwnedMushrooms = 0;
 };
@@ -66,7 +67,7 @@ bool IsMagmawBalanceMushroomAction(
     MagmawBalanceMushroomState const& state, BotActionCandidate const& candidate);
 char const* MagmawBalanceMushroomRejection(
     MagmawBalanceMushroomState const& state, BotActionCandidate const& candidate);
-void SetMagmawBalanceMushroomGroundTarget(
+bool SetMagmawBalanceMushroomGroundTarget(
     ResolvedCombatAction& action, Player const* bot, Unit const* target);
 }
 

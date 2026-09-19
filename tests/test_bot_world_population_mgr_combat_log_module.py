@@ -93,4 +93,5 @@ def test_combat_attempts_feed_the_full_window_action_ledger() -> None:
     assert "action_outcomes" in status
     assert "first_at_ms" in status
     assert "retry_reason" in status
+    assert "target_entry" in status
     assert "candidate_rejections" in status
