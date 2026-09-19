@@ -70,7 +70,18 @@ a coefficient change.
 
 Bind the Trinity commit/binary, WoWSims request/result/ComputeStats hashes,
 gear manifest, owner and pet scoring-start stats, calibration actor and target,
-spell identity, and duration. Separate:
+spell identity, and duration.
+
+Player spells must retain Blizzard targeting, radius, LOS, range, immunity,
+resource and damage rules. An encounter assignment does not authorize a spell
+exception. Never enlarge a radius, ignore vertical distance or append targets
+that native selection rejected to make an add duty succeed. Repair lawful
+placement/timing or a separately proven encounter geometry defect instead.
+Observation hooks must not change their observed target lists. Review imported
+experimental spell changes before using their DPS as a baseline; withdraw a
+baseline produced by an unsupported spell override even when it is the best kill.
+
+Separate:
 
 - owner damage from primary-pet and guardian damage;
 - action/cast starts from landed damage events;

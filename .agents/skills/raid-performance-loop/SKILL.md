@@ -120,6 +120,10 @@ spec's passing row cannot validate the repaired path.
 
 Keep typed arbitration and persistent tasks. Native pathing owns terrain; no bot Z
 steering, teleportation, global tolerance relaxation, or encounter MMAP workaround.
+Keep player combat Blizzard-like. Better DPS never justifies encounter-specific
+spell radius, LOS, target-selection, resource or damage exceptions. Check imported
+experimental changes for these before selecting a best-run baseline. JEV confidence
+cannot authorize a gameplay change or establish spell correctness.
 
 ## Workers
 

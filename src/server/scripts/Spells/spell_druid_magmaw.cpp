@@ -15,7 +15,6 @@
 #include "SpellScript.h"
 #include "Unit.h"
 
-#include <algorithm>
 #include <cmath>
 #include <list>
 
@@ -23,8 +22,6 @@ namespace Spells::Druid
 {
 namespace
 {
-constexpr float MagmawParasiteGroundRadius = 8.0f;
-
 class spell_dru_wild_mushroom_damage : public SpellScript
 {
     void TraceTargets(std::list<WorldObject*>& targets)
@@ -39,12 +36,8 @@ class spell_dru_wild_mushroom_damage : public SpellScript
         float const destinationZ = destination ? destination->GetPositionZ() : caster->GetPositionZ();
         float const nativeRadius = GetSpellInfo()->Effects[EFFECT_0].CalcRadius(
             caster, SpellTargetIndex::TargetB);
-        // Magmaw's airborne parasite ring is 7 yards from the ground marker.
-        // The ordinary DBC radius is 6 yards, so the explicitly allowlisted
-        // encounter duty needs a small ground-plane envelope to hit the
-        // parasites without moving the player's mushroom destination.
-        float const effectiveRadius = std::max(
-            nativeRadius, MagmawParasiteGroundRadius);
+        // Observe native selection without changing player spell semantics.
+        // Encounter assignments do not authorize extra radius or ignoring Z.
 
         struct LavaParasiteNearbyCheck
         {
@@ -75,8 +68,8 @@ class spell_dru_wild_mushroom_damage : public SpellScript
 
         TC_LOG_INFO("server",
             "MagmawWildMushroomNative event=nearby_targets destination=%.3f,%.3f,%.3f "
-            "probe_radius=12.000 native_radius=%.3f effective_radius=%.3f target_count=%zu",
-            destinationX, destinationY, destinationZ, nativeRadius, effectiveRadius,
+            "probe_radius=12.000 native_radius=%.3f target_count=%zu",
+            destinationX, destinationY, destinationZ, nativeRadius,
             nearbyTargets.size());
 
         for (WorldObject* object : nearbyTargets)
@@ -99,13 +92,6 @@ class spell_dru_wild_mushroom_damage : public SpellScript
                 target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
                 distance2d, distance3d);
 
-            // The native DBC area query measures the airborne parasite's Z and
-            // rejects a ground mushroom even when its X/Y is inside the spell
-            // radius. Apply the bounded ground-plane envelope for this
-            // explicitly allowlisted Magmaw add duty.
-            if (distance2d <= effectiveRadius
-                && std::find(targets.begin(), targets.end(), object) == targets.end())
-                targets.push_back(object);
         }
 
         TC_LOG_INFO("server",

@@ -1,38 +1,43 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-13. This is the current status. Historical run narratives remain
-in Git; failed assumptions and bounded next repairs belong in the
-[error ledger](error_ledger.md). Closed generated evidence is tracked by DVC.
+Updated 2026-09-19. Current work is on `codex/magmaw-parity` in the isolated
+`trinity-magmaw-parity` checkout. The ongoing JEV branch is unchanged.
 
 ## Current work and latest native run
 
-Source `779f62087f` cleared Magmaw in129.792s at217,217.725 exact raid DPS
-and12,961.739 exact-window HPS. The all-bot review accepted Balance33831
-(three Treants,34 landed hits,83,995 damage), OBS-012 periodic outcome retention,
-and MOV-001's actual native hazard traversal (receipt373, endpoint reached).
-No Infection or boss-window deaths occurred. Overall roster performance is open;
-the latest DPS is0.54% below a3a. Historical head-to-body failure is not covered
-by this kill, which ended during head exposure.
+Shard89 recorded a native clear and241,249.360 DPS over a116.863s retained
+damage span, with1tank/3healers/6DPS. This is **rejected as a legal performance
+baseline**. Its Wild Mushroom hook enlarged the native6yd radius to8yd and
+appended targets using only horizontal distance. Its binary also lacks a matching
+build receipt. The correction removes the spell override and retains passive
+diagnostics. Independent review approved that correction for build;2 focused
+tests passed. No corrected live run or WCL-parity acceptance exists yet.
 
-The active task is the duty-aware, spell-level WCL comparison linked in the
-[all-actor table](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
-Fresh WCL breakdowns expose larger cadence, guardian and strike-damage gaps,
-plus excess native components that can conceal losses. Drain Soul is above the
-selected reference; its variance does not explain the roster deficit. Separate
-investigation priorities from small proven bugs and from recoverable damage.
-No additional worldserver or dummy experiment was launched for this comparison.
-The next causal check should resolve a material gap using retained evidence first.
+The last previously accepted development clear remains source `779f62087f`:
+129.792s,217,217.725 exact raid DPS,12,961.739 HPS, with no boss-window deaths
+or Infection. It used different subsequent policy/script state, so it is not a
+controlled comparator for attributing the next run's changes. Its evidence is
+`artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc`.
 
-Affliction Bane-purpose, Fire/Survival potions and optional Elemental earth slot
-are committed and independently reviewed, but not built/applied/live validated.
-The authserver remains available; worldserver is stopped after clean closure.
-Current evidence: `artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc`.
-The82,856,023-byte archive and every member passed fresh-cache remote verification.
-Exact raw/full timeline and archive/cache/reconstruction duplicates were evicted.
-The readable comparison, normalized references and timeline HTML remain local.
+Continue from [the all-actor work packet](magmaw_shard89_next_work.md), keeping
+Blood's rejected Heart Strike, Fire burst differences and every other actor open.
+Heart Strike's aggregate rejects lack the actual protected target. Add that
+passive observation without weakening protection, then use a clean reviewed
+build and the canonical development completion-watchdog capture. Native player
+spell legality takes precedence over keeping a previous headline DPS result.
 
-The sections below retain September10 diagnostic history. Their run-specific
-acceptance and follow-up descriptions do not override the current status above.
+Local JEV is available at `127.0.0.1:8000`. Its six previous actor suggestions
+were quarantined; five contradict observed duty state. Use the
+[local shadow workflow](local_jev_shadow.md) after capture closure and compare
+its suggestions with native evidence. Keep raw event/cast evidence until the
+all-bot review and remote verification finish. Model confidence is not acceptance.
+
+The selected Magmaw pool has been provisioned. Current route/gear DVC lineage
+and complete native asset closure are verified. Code/config and generated
+preparation receipts are pinned separately. Build/live validation remain pending.
+The authserver and local JEV remain available; no worldserver has been launched.
+
+The sections below retain historical diagnostics and do not override this status.
 
 ## Prior diagnostic run
 

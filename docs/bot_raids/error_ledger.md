@@ -430,11 +430,21 @@ through the local prompt. Malformed local responses are retained as errors.
 See `docs/bot_raids/local_jev_shadow.md`; this is diagnostic acceptance, not a
 native throughput repair.
 
-DPS-059: Shard89 remains the best observed 241,249.360 DPS clear over the retained
-116.863s first-to-last originated-damage span. It is uncertified, not a fully
-matched baseline. Best-run analysis must retain 1 tank/3 healers/6 DPS, actual
-phase coverage and existing script-fidelity limitations. The compact archive
-lacks the raw damage-event file; do not manufacture a corrected full timeline.
+DPS-059: Shard89's observed241,249.360 DPS over116.863s is rejected as a legal
+performance baseline. Native review found spell78777 radius inflated from6 to8yd
+with a2D target append bypassing native selection. The correction removes all
+target-list mutation; independent review approved it for build and focused tests
+passed2/2. Clean-build/live acceptance remains pending. The oldbinary has no
+matching queued-build receipt, and its compact archive lacks raw damage events.
+Keep1tank/3healers/6DPS and phase coverage explicit. Do not restore the override
+to preserve a headline DPS result or manufacture a corrected historical timeline.
+
+DPS-026 continuation: retained rejection aggregates prove Heart Strike was
+blocked, but omit protected-target identity. Native55050 can chain via two5yd
+LOS hops; the policy scans45yd and also has an independent forbid_area gate.
+Capture the actual protection match and authority at evaluation before changing
+either gate. A code-level far-target counterexample is not proof that it occurred
+in shard89, and a rejection does not quantify recoverable damage.
 
 DPS-057: Within shard89 Fire30006 trails30007 by12,674.362 DPS. Combustion child
 83853 differs by567,468 damage and Pyroblast92315 by545,509, together about75.1%

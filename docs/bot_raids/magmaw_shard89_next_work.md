@@ -8,6 +8,13 @@ by this compact aggregate. Treat this as the best observed clear, not a certifie
 performance baseline: run identity was incomplete and native script changes
 remain under review.
 
+September19 continuation: independent native review rejected this run as a legal
+performance baseline. Its Mushroom hook enlarged spell78777 from the native6yd
+radius to8yd, ignored vertical separation and appended otherwise rejected targets.
+The correction removes that mutation and keeps diagnostics. Focused tests pass;
+clean build and live validation are pending. Historical241k remains an observed
+clear only. No recovery or WCL-parity claim follows from it.
+
 Evidence:
 
 - Original report and hosted review: `artifacts/cata_raid_program/magmaw_jev_canary_compact_20260919.tar.gz.dvc`, member directory `magmaw-normal-shard-89-balance-ground-radius-repeat-20260919`.
