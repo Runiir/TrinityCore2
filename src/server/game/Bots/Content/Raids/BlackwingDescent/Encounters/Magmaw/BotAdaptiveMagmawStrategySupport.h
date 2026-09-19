@@ -170,7 +170,7 @@
 
     static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
         ObjectGuid botGuid,
-        std::string_view role, std::string_view classSpec,
+        std::string_view role, std::string_view /*classSpec*/,
         MagmawParasiteCombatContract const& contract)
     {
         if (observed.Head)
@@ -207,18 +207,14 @@
                     <= RangedParasiteSupportTargetDistance
                 && contract.IsSupportTarget(botGuid,
                     observed.SupportParasite->Guid))
-                return observed.SupportParasite->Guid;
-
-            bool const optionalSupportChoice =
-                observed.SupportOpportunitiesObserved
-                && observed.NearestParasite
-                && observed.NearestParasiteDistance
-                    <= RangedParasiteSupportTargetDistance
-                && !contract.IsAssignedBaiter(botGuid)
-                && IsRangedParasiteSupportSpec(classSpec);
-            if (optionalSupportChoice)
-                return observed.BossStaticDamageOpportunity
-                    ? observed.Boss->Guid : ObjectGuid{};
+            {
+                // Ordinary ranged DPS stays on Magmaw while the fixed baiters
+                // and personal-threat branch handle parasite duty.  The exact
+                // support opportunity remains in the contract for telemetry
+                // and area-damage restrictions, but it must not turn a normal
+                // DPS actor into a parasite chaser during an add window.
+                return observed.Boss->Guid;
+            }
         }
         return observed.Boss->Guid;
     }
@@ -361,9 +357,9 @@
             return std::sqrt(dx * dx + dy * dy + dz * dz);
         };
         float const nominalRange = distance(anchors.Support);
-        if (range.MinRange == 0.0f)
-            return anchors.Support;
         if (nominalRange >= range.MinRange && nominalRange <= range.MaxRange
+            && std::fabs(nominalRange - range.PreferredRange)
+                <= RangedStackTolerance
             && MagmawParasitePolicy::FullLaneCorridorSafe(anchors))
             return anchors.Support;
 

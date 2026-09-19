@@ -1,0 +1,5 @@
+outs:
+- md5: b11d55eb2117384e2ae0046fecc06487
+  size: 5889687
+  hash: md5
+  path: shared_validation_stale_scratch_compact_20260919.tar.gz

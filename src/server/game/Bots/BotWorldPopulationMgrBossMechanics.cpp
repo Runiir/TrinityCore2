@@ -180,16 +180,23 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
-    auto closeRecallableAreaDamage = [this, bot]() -> bool
+    auto closeRecallableAreaDamage = [this, bot, &result](bool preserveScopedArea) -> bool
     {
         if (!bot)
             return false;
+        uint32 const scopedAreaSpellId = preserveScopedArea
+            ? ResolveScopedEncounterAreaSpellId(bot, result.Target) : 0;
+        auto keepCurrent = [preserveScopedArea, scopedAreaSpellId](Spell const* current)
+        {
+            return preserveScopedArea && current && current->GetSpellInfo()
+                && current->GetSpellInfo()->Id == scopedAreaSpellId;
+        };
         ReconcileRaidAreaAutocasts(bot, true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
             if (Spell* current = bot->GetCurrentSpell(spellType))
-                if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
+                if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()) && !keepCurrent(current))
                     bot->InterruptSpell(spellType, false);
-        if (bot->HasAura(48505))
+        if (bot->HasAura(48505) && scopedAreaSpellId != 48505)
         {
             WorldPacket cancel(CMSG_CANCEL_AURA, sizeof(uint32));
             cancel << uint32(48505);
@@ -208,7 +215,8 @@ raid_cooldown_complete:
 
         BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
         for (BotActionProfileSpell const& action : profile.Spells)
-            if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId)))
+            if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId))
+                && action.SpellId != scopedAreaSpellId)
                 bot->RemoveDynObject(action.SpellId);
         return true;
     };
@@ -220,7 +228,7 @@ raid_cooldown_complete:
         && (!raidAnchors.Active || bot->GetExactDist2d(raidAnchors.ResolvedX, raidAnchors.ResolvedY)
             <= raidAnchors.ArrivalToleranceYards))
     {
-        if (!closeRecallableAreaDamage())
+        if (!closeRecallableAreaDamage(false))
         {
             result.Action = "raid_area_damage_contamination_fail_closed";
             result.Failure = true;
@@ -253,7 +261,8 @@ raid_cooldown_complete:
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && raidAdapter.TargetControl == "focus_fire" && std::string(role) != "healer")
     {
-        if (!closeRecallableAreaDamage())
+        if (!closeRecallableAreaDamage(
+            ResolveScopedEncounterAreaSpellId(bot, result.Target) != 0))
         {
             result.Action = "raid_area_damage_contamination_fail_closed";
             result.Failure = true;
@@ -750,7 +759,7 @@ raid_cooldown_complete:
     if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe"
         && !controlledAoeReleased)
     {
-        if (!closeRecallableAreaDamage())
+        if (!closeRecallableAreaDamage(false))
         {
             result.Action = "raid_area_damage_contamination_fail_closed";
             result.Failure = true;
@@ -781,7 +790,7 @@ raid_cooldown_complete:
             ResolvedCombatAction profileAction;
             if (!controlledAoeReleased)
             {
-                if (!closeRecallableAreaDamage())
+                if (!closeRecallableAreaDamage(false))
                 {
                     result.Action = "raid_area_damage_contamination_fail_closed";
                     result.Failure = true;
@@ -835,12 +844,14 @@ raid_cooldown_complete:
         return result;
 
     ResolvedCombatAction profileAction;
+    uint32 const scopedAreaSpellId = ResolveScopedEncounterAreaSpellId(bot, result.Target);
     bool const forbidArea = raidAdapter.ContractResolved
-        && (!raidAdapter.AllowAreaDamage
+        && ((!raidAdapter.AllowAreaDamage && !scopedAreaSpellId)
             || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
     BotActionResult actionResult = ExecuteProfileCombatAction(
         &state, bot, result.Target, &profileAction, result.Features.AddCount, false,
-        0, false, false, forbidArea, raidAdapter.AllowMultidot);
+        0, false, false, forbidArea, raidAdapter.AllowMultidot, false, 0,
+        scopedAreaSpellId, result.Target ? result.Target->GetEntry() : 0);
     uint32 spellId = profileAction.SpellId;
     bool const nativePositionReconciled = actionResult == BotActionResult::Casting
         && state.ActivePathTargetGuid == result.Target->GetGUID()

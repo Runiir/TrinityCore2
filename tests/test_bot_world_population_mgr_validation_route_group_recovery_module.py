@@ -40,6 +40,11 @@ def test_group_recovery_is_extracted_at_the_validation_route_boundary():
         "validation_route_hold_retreat",
     ):
         assert marker in module
+    hold = module.index('"native_full_wipe_hold_partial_death"')
+    assert 'Target = nullptr;' in module[hold:]
+    assert 'State.TargetGuid.Clear();' in module[hold:]
+    assert '"native_full_wipe_hold_partial_death"' in module[hold:]
+    assert 'BotMeleeAutoAttack::Kind::Suppress' in module[hold:]
     assert "Partial deaths do not make a trash pull terminal" in module
     assert "drudge_partial_death_before_threat_seed" not in module
     assert "drudge_native_full_wipe_hold_partial_death" not in module

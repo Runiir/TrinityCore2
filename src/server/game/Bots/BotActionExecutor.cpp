@@ -281,7 +281,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::NoAction;
     auto const preview = BotSpellResolution::Resolve(bot, action.SpellId, action.Type == "use_item");
     if ((action.SuppressAreaDamage
-            || HasNearbyProtectedEncounterTarget(bot, target))
+            || (!action.AllowMagmawBalanceMushroomSplash
+                && !action.AllowScopedEncounterAreaDamage
+                && HasNearbyProtectedEncounterTarget(bot, target)))
         && SpellHasHostileMultiTargetSemantics(preview.Effective))
         return BotActionResult::NoAction;
 
@@ -374,7 +376,10 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     // Auto Shot/pet startup above can change auras. Resolve again for submission
     // and carry this one result through every remaining gate and the cast.
     auto const resolved = BotSpellResolution::Resolve(bot, action.SpellId);
-    if ((action.SuppressAreaDamage || HasNearbyProtectedEncounterTarget(bot, target))
+    if ((action.SuppressAreaDamage
+            || (!action.AllowMagmawBalanceMushroomSplash
+                && !action.AllowScopedEncounterAreaDamage
+                && HasNearbyProtectedEncounterTarget(bot, target)))
         && SpellHasHostileMultiTargetSemantics(resolved.Effective))
         return BotActionResult::NoAction;
     BotActionResult check = CheckHostileSpell(owner, bot, target, resolved,
@@ -422,7 +427,10 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     // matches WoWSims' tick-then-interruptIf ordering and avoids discarding a
     // channel tick before a failed replacement submission.
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
-        ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, spellInfo->Id, castArgs)
+        ? bot->CastSpell(action.HasGroundTarget
+                ? Position{ action.GroundTargetX, action.GroundTargetY, action.GroundTargetZ }
+                : Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() },
+            spellInfo->Id, castArgs)
         : bot->CastSpell(target, spellInfo->Id, castArgs);
     _lastSpellCastResult = uint32(result);
     if (result != SPELL_CAST_OK)

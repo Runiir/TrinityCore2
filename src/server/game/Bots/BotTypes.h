@@ -216,6 +216,10 @@ struct ResolvedCombatAction
     ObjectGuid TargetGuid;
     bool Valid = false;
     std::string DebugName;
+    // Native profile resolution can have no new spell while an earlier cast
+    // is still in flight. Keep that scheduler state distinct from a profile
+    // with no legal action so callers do not enter retry backoff mid-cast.
+    std::string ResolutionReason;
     std::string MovementDirective;
     std::string AutoAttackMode;
     // World-bot scheduling owns the persistent melee toggle through its typed
@@ -225,6 +229,26 @@ struct ResolvedCombatAction
     bool InterruptCurrentChanneledSpell = false;
     float MinRange = 0.0f;
     float MaxRange = 0.0f;
+    // Resolver found otherwise eligible hostile candidates outside the
+    // declared profile range envelope while no candidate was selectable. The
+    // shared executor may use this as a movement-only recovery signal; it must
+    // not be inferred from MinRange or MaxRange alone because a valid
+    // lower-priority action can coexist with a rejected range candidate.
+    bool RangeRecoveryRequired = false;
+    // A narrow encounter-role exception for Balance's Magmaw add duty.  The
+    // resolver fills this only for Wild Mushroom/Detonate on Lava Parasites;
+    // the executor keeps the normal future/current encounter splash guard for
+    // every other area action.
+    bool AllowMagmawBalanceMushroomSplash = false;
+    // A route may admit one explicitly allowlisted area spell on one explicitly
+    // allowlisted target class while keeping generic area damage suppressed.
+    // This is used by the Magmaw Elemental Chain Lightning experiment only;
+    // native target, LOS, range and cast checks remain authoritative.
+    bool AllowScopedEncounterAreaDamage = false;
+    bool HasGroundTarget = false;
+    float GroundTargetX = 0.0f;
+    float GroundTargetY = 0.0f;
+    float GroundTargetZ = 0.0f;
     // Declarative raid target-control authority.  The executor must not start
     // implicit pet or spell damage capable of reaching additional hostiles.
     bool SuppressAreaDamage = false;

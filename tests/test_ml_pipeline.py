@@ -9583,6 +9583,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert report["config"].endswith("worldserver.validation.conf")
     generated_config = (tmp_path / "worldserver.validation.conf").read_text(encoding="utf-8")
     assert 'BotWorld.PoolTagFilter = "blackwing_descent_10n"' in generated_config
+    assert 'BotWorld.RuntimeProfile = "blackwing_descent_10n"' in generated_config
     assert "BotWorld.ValidationRoute.Enable = 1" in generated_config
     assert "BotWorld.TargetPopulation = 10" in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "bwd_magmaw"' in generated_config

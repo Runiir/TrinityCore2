@@ -2192,10 +2192,12 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
     magmaw = next(row for row in bwd["route"] if row["label"] == "Magmaw")
     assert magmaw["source_entry"] == 41570
     assert magmaw["mechanic_contract"] == {
-        "id": "phase1_magmaw_native_engagement_recovery_v1",
+        "id": "phase1_magmaw_native_engagement_recovery_v2_balance_starfall",
         "target_control": "focus_fire",
         "target_entries": [41570, 42347, 41806, 42321],
         "allow_area_damage": False,
+        "area_damage_spell_allowlist": [421, 48505],
+        "area_damage_target_allowlist": [41570, 42347],
         "allow_multidot": False,
         "main_tank_roster_slot": 2,
         "off_tank_roster_slot": 1,
@@ -3135,6 +3137,9 @@ def test_phase1_partial_critical_death_holds_native_fight_without_tactical_retre
     assert hold < retreat_action
     assert 'Action = "native_full_wipe_hold";' in objective[hold:retreat_action]
     assert 'State.LastRecoveryMode = "native_full_wipe_only";' in objective[hold:retreat_action]
+    assert 'State.TargetGuid.Clear();' in objective[hold:retreat_action]
+    assert 'Target = nullptr;' in objective[hold:retreat_action]
+    assert 'BotMeleeAutoAttack::Kind::Suppress' in objective[hold:retreat_action]
     assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_partial_wipe_retreat_rendezvous"' not in objective[hold:retreat_action]
 
 

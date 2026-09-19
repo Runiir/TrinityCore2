@@ -3,7 +3,7 @@
   "manifest_id": "cata_runtime_asset_input_closure_v1",
   "asset_class_source": {
     "path": "experiments/configs/runtime_asset_closure_manifest_v1.json",
-    "sha256": "89c668b7d14759c760710f50a1bb90e7925729ce5ab4d5567cadee30cb9acf8b",
+    "sha256": "f7932f16fbc4fe1500c42fe7c4c08c15201fa94f1b93ed2b62a5ec9584db273d",
     "exclude_class_ids": [
       "atomic_bundle"
     ]

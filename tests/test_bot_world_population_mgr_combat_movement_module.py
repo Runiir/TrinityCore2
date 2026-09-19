@@ -47,6 +47,23 @@ def test_combat_movement_preserves_profile_range_and_path_guards() -> None:
     assert "preciseMaximumRangeApproach" in module
 
 
+def test_los_reposition_requires_target_visible_from_candidate_point() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    start = module.index("auto moveProfilePoint")
+    end = module.index("auto moveToTerrainProjectedPoint", start)
+    point_move = module[start:end]
+    assert "forceRangedReposition" in point_move
+    assert "reference->IsWithinLOS(x, y, z)" in point_move
+    assert_ordered = [
+        "if (forceRangedReposition",
+        "reference->IsWithinLOS(x, y, z)",
+        "return false;",
+        "MoveBotToPoint",
+    ]
+    positions = [point_move.index(marker) for marker in assert_ordered]
+    assert positions == sorted(positions)
+
+
 def test_profile_range_diagnostic_uses_object_guid_counters() -> None:
     module = MODULE.read_text(encoding="utf-8")
     start = module.index("auto annotateProfileRangeReceipt")

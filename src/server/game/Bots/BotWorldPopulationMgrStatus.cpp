@@ -480,13 +480,14 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":5"
+    json << ",\"combat_log_schema_version\":8"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId
          << ",\"event_count\":" << Party().CombatLogEventCount
-         << ",\"recent_event_capacity\":4096"
+         << ",\"recent_event_capacity\":"
+         << BotWorldPopulationMgr::CombatLogRecentEventCapacity
          << ",\"recent_events_dropped\":" << Party().CombatLogRecentEventsDropped
          << ",\"aggregate_count\":" << Party().CombatLogAbilities.size()
          << ",\"second_bucket_count\":" << Party().CombatLogSecondBuckets.size()
@@ -546,6 +547,54 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"originated_amount\":" << bucket.OriginatedAmount << '}';
     }
 
+    json << "],\"action_outcomes\":[";
+    first = true;
+    for (auto const& [key, value] : Party().CombatActionOutcomes)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"route_generation\":" << key.RouteGeneration
+             << ",\"route_node_id\":\"" << JsonEscape(key.RouteNodeId) << "\""
+             << ",\"actor_guid\":" << key.ActorGuid
+             << ",\"actor_name\":\"" << JsonEscape(value.ActorName) << "\""
+             << ",\"actor_role\":\"" << JsonEscape(value.ActorRole) << "\""
+             << ",\"actor_class_id\":" << uint32(value.ActorClassId)
+             << ",\"phase\":\"" << JsonEscape(key.Phase) << "\""
+             << ",\"action_type\":\"" << JsonEscape(key.ActionType) << "\""
+             << ",\"action_name\":\"" << JsonEscape(key.DebugName) << "\""
+             << ",\"spell_id\":" << key.SpellId
+             << ",\"result\":\"" << JsonEscape(key.Result) << "\""
+             << ",\"reason\":\"" << JsonEscape(key.Reason) << "\""
+             << ",\"retry_reason\":\"" << JsonEscape(key.RetryReason) << "\""
+             << ",\"target_entry\":" << key.TargetEntry
+             << ",\"first_at_ms\":" << value.FirstAtMs
+             << ",\"last_at_ms\":" << value.LastAtMs
+             << ",\"count\":" << value.Count << '}';
+    }
+
+    json << "],\"candidate_rejections\":[";
+    first = true;
+    for (auto const& [key, value] : Party().CombatCandidateRejections)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"route_generation\":" << key.RouteGeneration
+             << ",\"route_node_id\":\"" << JsonEscape(key.RouteNodeId) << "\""
+             << ",\"actor_guid\":" << key.ActorGuid
+             << ",\"actor_name\":\"" << JsonEscape(value.ActorName) << "\""
+             << ",\"actor_role\":\"" << JsonEscape(value.ActorRole) << "\""
+             << ",\"actor_class_id\":" << uint32(value.ActorClassId)
+             << ",\"phase\":\"" << JsonEscape(key.Phase) << "\""
+             << ",\"spell_id\":" << key.SpellId
+             << ",\"action_category\":\"" << JsonEscape(key.ActionCategory) << "\""
+             << ",\"reason\":\"" << JsonEscape(key.Reason) << "\""
+             << ",\"first_at_ms\":" << value.FirstAtMs
+             << ",\"last_at_ms\":" << value.LastAtMs
+             << ",\"count\":" << value.Count << '}';
+    }
+
     json << "],\"recent_events\":[";
     first = true;
     for (CombatLogEvent const& event : Party().CombatLogRecentEvents)
@@ -577,13 +626,14 @@ std::string BotWorldPopulationMgr::GetCombatLogDeltaJson(uint64 cursor, uint32 l
     json << std::fixed << std::setprecision(3)
          << "{\"ok\":true,\"action\":\"botauto_combatlog_delta\"";
     AppendGenericRuntimeIdentityJson(json);
-    json << ",\"combat_log_schema_version\":5"
+    json << ",\"combat_log_schema_version\":8"
          << ",\"damage_attribution_schema\":\"originated_amount_v2_friendly_split\""
          << ",\"combat_log_epoch\":" << Cohort().CombatLogEpoch
          << ",\"experiment_id\":" << Cohort().ExperimentId
          << ",\"run_id\":" << Cohort().RunId
          << ",\"event_count_at_export\":" << Party().CombatLogEventCount
-         << ",\"recent_event_capacity\":4096"
+         << ",\"recent_event_capacity\":"
+         << BotWorldPopulationMgr::CombatLogRecentEventCapacity
          << ",\"recent_events_dropped\":" << Party().CombatLogRecentEventsDropped;
     BotWorldTrace::WriteExportCursorFields(json, transition);
     json << ",\"recent_events\":[";

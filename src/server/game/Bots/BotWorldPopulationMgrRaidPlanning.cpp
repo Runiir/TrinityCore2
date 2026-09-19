@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 
 #include "Group.h"
@@ -316,6 +317,8 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
         adapter.AllowAreaDamage = contract->AllowAreaDamage;
         adapter.AllowMultidot = contract->AllowMultidot;
         adapter.TargetEntries = contract->TargetEntries;
+        adapter.AreaDamageSpellAllowlist = contract->AreaDamageSpellAllowlist;
+        adapter.AreaDamageTargetAllowlist = contract->AreaDamageTargetAllowlist;
         adapter.ControlledAoeMinimumTargets = contract->ControlledAoeMinimumTargets;
         adapter.KillSyncTolerancePct = contract->KillSyncTolerancePct;
         adapter.KillSyncExecutionFloorPct = contract->KillSyncExecutionFloorPct;
@@ -444,6 +447,40 @@ BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMecha
     if (adapter.MechanicFamily == "boss_pressure")
         adapter.RecommendedAction = assignment.Role == "tank" ? "tank_boss_position" : "boss_single_target";
     return adapter;
+}
+
+uint32 BotWorldPopulationMgr::ResolveScopedEncounterAreaSpellId(Player* bot,
+    Unit const* target) const
+{
+    constexpr uint32 chainLightningSpellId = 421;
+    constexpr uint32 starfallSpellId = 48505;
+    if (!bot || !target
+        || Party().ValidationRouteManifestIndex >= Party().ValidationRouteManifest.size())
+        return 0;
+
+    ValidationRouteManifestNode const& contract =
+        Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
+    if (!contract.MechanicContractResolved
+        || contract.NodeId != "bwd.magmaw.encounter"
+        || contract.AllowAreaDamage
+        || std::find(contract.AreaDamageTargetAllowlist.begin(),
+            contract.AreaDamageTargetAllowlist.end(), target->GetEntry())
+            == contract.AreaDamageTargetAllowlist.end())
+        return 0;
+
+    std::string const specTag = BotClassSpecActionProfileStore::Build(
+        bot, GetDungeonRole(bot)).SpecTag;
+    if (specTag == "elemental_shaman"
+        && std::find(contract.AreaDamageSpellAllowlist.begin(),
+            contract.AreaDamageSpellAllowlist.end(), chainLightningSpellId)
+            != contract.AreaDamageSpellAllowlist.end())
+        return chainLightningSpellId;
+    if (specTag == "balance_druid"
+        && std::find(contract.AreaDamageSpellAllowlist.begin(),
+            contract.AreaDamageSpellAllowlist.end(), starfallSpellId)
+            != contract.AreaDamageSpellAllowlist.end())
+        return starfallSpellId;
+    return 0;
 }
 
 BotWorldPopulationMgr::RaidGearTargetPlan BotWorldPopulationMgr::BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& /*power*/, BotProgressionStage stage) const

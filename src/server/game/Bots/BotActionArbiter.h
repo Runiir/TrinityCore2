@@ -311,6 +311,18 @@ public:
         _admissionPolicy = {};
     }
 
+    // Route nodes are independent decision lifecycles.  Do not carry a
+    // candidate's retry backoff from a dead trash pack into the next pack or
+    // boss; that turns a valid new target into a synthetic no-action loop.
+    // Route completion may be reported from inside a candidate callback while
+    // Resolve() is still iterating the current candidate vector.  Preserve
+    // that in-flight resolution; Begin() owns the next tick's frame reset.
+    void ResetLifecycleHistory(uint64 nowMs)
+    {
+        _lifecycles.clear();
+        _nowMs = nowMs;
+    }
+
     using AdmissionPolicy = std::function<std::string(Candidate const&,
         AdmissionMetadata const*)>;
 

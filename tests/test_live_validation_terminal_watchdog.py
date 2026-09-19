@@ -4,6 +4,7 @@ import json
 
 from tools.bot_ml.run_live_bot_validation import (
     command_script,
+    native_gameplay_outcome,
     raid_terminal_watchdog_failure,
     run_transport_completion_watchdog,
     run_worldserver_completion_watchdog,
@@ -295,6 +296,41 @@ def test_successful_clear_precedes_later_action_gate_failure() -> None:
     )
 
     assert raid_terminal_watchdog_failure(report) is None
+
+
+def test_native_gameplay_clear_is_not_reported_as_wipe_by_certification_gap() -> None:
+    report = _report({"alive_size": 10, "wipe_state": "engaged"})
+    scope = {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4}
+    report.update(
+        {
+            "active_bots": 10,
+            "completion_reason": "validation_route_manifest_complete",
+            "acceptable_final_evidence": False,
+            "final_evidence_rejections": ["incomplete_evidence_identity"],
+            "acceptance_verification": {
+                "accepted": False,
+                "rejections": ["incomplete_evidence_identity"],
+            },
+            "watchdog_state": {
+                "all_dead_wiped": False,
+                "death_loop": False,
+                "no_progress": False,
+                "repeated_decision_loop": False,
+            },
+            "evidence": {
+                "manifest_completion_evidence": [scope],
+                "real_boss_kill_evidence": [scope],
+                "cohort_all_dead_wiped": False,
+            },
+        }
+    )
+
+    outcome = native_gameplay_outcome(report)
+
+    assert outcome["status"] == "clear"
+    assert outcome["native_clear"] is True
+    assert outcome["certification_status"] == "uncertified"
+    assert outcome["certification_rejections"] == ["incomplete_evidence_identity"]
 
 
 def test_incomplete_or_wrong_manifest_completion_does_not_hide_action_gate() -> None:

@@ -48,11 +48,27 @@ def test_combat_execution_preserves_position_reconciliation_and_backoff() -> Non
         "native_position_reconciled",
         "native_out_of_range",
         "native_no_line_of_sight",
+        "move_to_action_line_of_sight",
+        "return BotActionResult::Casting;",
+        "RangeRecoveryRequired",
+        "profile_min_range_reconcile",
+        "profile_min_range_reconciled",
+        "profile_max_range_reconcile",
+        "profile_max_range_reconciled",
+        "profile_range_path_rejected",
+        "UNIT_STATE_CASTING",
         "ProfileCastSuppressedSpellId",
         "candidate_backoff",
         "cast_succeeded",
     ):
         assert marker in module
+
+
+def test_in_flight_profile_cast_is_not_reported_as_a_retryable_no_action() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    assert 'action.DebugName == "already_casting"' in module
+    assert "BotActionResult::Casting" in module
+    assert "action.ResolutionReason.empty()" in module
 
 
 def test_failed_totem_and_offensive_cooldown_attempts_release_profile_fallback() -> None:

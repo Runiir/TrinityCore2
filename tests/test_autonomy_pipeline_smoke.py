@@ -2810,6 +2810,11 @@ def test_validation_route_status_persists_terminal_and_boss_death_evidence():
     assert '\\"terminal_evidence\\"' in mgr
     assert '\\"boss_death_evidence\\"' in mgr
     assert '\\"contamination_evidence\\"' in mgr
+    assert_ordered(
+        notify_death,
+        'RecordEvent(*reporterState, reporter, "validation_route_terminal"',
+        "MaybeAdvanceValidationRouteManifest();",
+    )
 
 
 def test_validation_route_boss_terminal_requires_unit_kill_provenance():
@@ -5262,6 +5267,25 @@ def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     )
 
 
+def test_profile_los_recovery_returns_casting_after_native_reposition():
+    executor = function_body(
+        read(BOT_MGR),
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
+    )
+    los = executor.split("if (recoverLineOfSight && target)", 1)[1].split(
+        "if (state && target", 1
+    )[0]
+    assert "bool const moved = MoveBotToProfileRange" in los
+    assert_ordered(
+        los,
+        "if (moved)",
+        '"native_position_reconciled"',
+        '"position_reconcile"',
+        '"native_no_line_of_sight"',
+        "return BotActionResult::Casting;",
+    )
+
+
 def test_profile_combat_reconciles_native_position_feedback_before_retrying():
     manager = read(BOT_DIR / "BotWorldPopulationMgrCombatExecution.cpp")
     executor = read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp")
@@ -6035,8 +6059,10 @@ def test_rerun157_preserves_global_cooldown_scheduling_identity():
 
     assert 'candidate.RejectReason == "global_cooldown"' in resolver
     assert 'globalCooldownSchedulingWait ? "global_cooldown"' in resolver
+    assert 'action.ResolutionReason == "already_casting"' in resolver
     assert 'action.DebugName == "global_cooldown"' in executor
     assert "BotActionResult::GlobalCooldown : BotActionResult::NoAction" in executor
+    assert 'action.DebugName == "already_casting"' in executor
     assert "RecordCombatAttempt(*state, bot, target, \"profile_resolve\", &action," in executor
     assert "return invalidResult;" in executor
 
@@ -6450,6 +6476,20 @@ def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
 
     assert "MoveBotToProfileRange(*state, bot, target, &action, true);" in manager
     assert "if (!forceRangedReposition && distance >= desiredRange - 1.0f" in manager
+
+
+def test_profile_minimum_range_rejection_enters_shared_recovery_lane():
+    resolver = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp")
+    execution = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp")
+    assert "action.RangeRecoveryRequired = true;" in resolver
+    assert_ordered(
+        execution,
+        "action.RangeRecoveryRequired",
+        "!bot->HasUnitState(UNIT_STATE_CASTING)",
+        "bool const moved = MoveBotToProfileRange(",
+        '"profile_min_range_reconcile"',
+        '"profile_min_range_reconciled"',
+    )
 
 
 def test_rerun206_feral_dps_provisions_and_maintains_cat_form():

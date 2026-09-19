@@ -233,6 +233,8 @@
         bool AllowAreaDamage = false;
         bool AllowMultidot = false;
         std::vector<uint32> TargetEntries;
+        std::vector<uint32> AreaDamageSpellAllowlist;
+        std::vector<uint32> AreaDamageTargetAllowlist;
         uint32 ControlledAoeMinimumTargets = 0;
         float KillSyncTolerancePct = 0.0f;
         float KillSyncExecutionFloorPct = 0.0f;
@@ -389,6 +391,75 @@
         // OriginatedAmount is the subset attributable to the original source.
         uint64 RawAmount = 0;
         uint64 OriginatedAmount = 0;
+    };
+
+    // The regular bot trace is a tail export. This compact ledger preserves
+    // full-window native action outcomes so a DPS can be distinguished from
+    // a bot that spent the encounter waiting or being rejected.
+    struct CombatActionOutcomeKey
+    {
+        uint64 RouteGeneration = 0;
+        std::string RouteNodeId;
+        uint32 ActorGuid = 0;
+        std::string Phase;
+        std::string ActionType;
+        std::string DebugName;
+        uint32 SpellId = 0;
+        std::string Result;
+        std::string Reason;
+        std::string RetryReason;
+        uint32 TargetEntry = 0;
+
+        bool operator<(CombatActionOutcomeKey const& other) const
+        {
+            return std::tie(RouteGeneration, RouteNodeId, ActorGuid, Phase,
+                ActionType, DebugName, SpellId, Result, Reason, RetryReason,
+                TargetEntry)
+                < std::tie(other.RouteGeneration, other.RouteNodeId, other.ActorGuid,
+                    other.Phase, other.ActionType, other.DebugName, other.SpellId,
+                    other.Result, other.Reason, other.RetryReason,
+                    other.TargetEntry);
+        }
+    };
+
+    struct CombatActionOutcomeAggregate
+    {
+        std::string ActorName;
+        std::string ActorRole;
+        uint8 ActorClassId = 0;
+        uint64 FirstAtMs = 0;
+        uint64 LastAtMs = 0;
+        uint64 Count = 0;
+    };
+
+    struct CombatCandidateRejectKey
+    {
+        uint64 RouteGeneration = 0;
+        std::string RouteNodeId;
+        uint32 ActorGuid = 0;
+        std::string Phase;
+        uint32 SpellId = 0;
+        std::string ActionCategory;
+        std::string Reason;
+
+        bool operator<(CombatCandidateRejectKey const& other) const
+        {
+            return std::tie(RouteGeneration, RouteNodeId, ActorGuid, Phase,
+                SpellId, ActionCategory, Reason)
+                < std::tie(other.RouteGeneration, other.RouteNodeId,
+                    other.ActorGuid, other.Phase, other.SpellId,
+                    other.ActionCategory, other.Reason);
+        }
+    };
+
+    struct CombatCandidateRejectAggregate
+    {
+        std::string ActorName;
+        std::string ActorRole;
+        uint8 ActorClassId = 0;
+        uint64 FirstAtMs = 0;
+        uint64 LastAtMs = 0;
+        uint64 Count = 0;
     };
 
     struct CombatLogLandedDamageObservation

@@ -25,6 +25,7 @@
 #include "Containers.h"
 #include "Creature.h"
 #include "DynamicObject.h"
+#include "Log.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Spell.h"
@@ -33,6 +34,7 @@
 #include "SpellMgr.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
+#include "WorldSession.h"
 
 namespace Spells::Druid
 {
@@ -1395,7 +1397,14 @@ class spell_dru_wild_mushroom_detonate : public SpellScript
             return;
 
         std::list<Creature*> mushrooms;
-        caster->GetAllMinionsByEntry(mushrooms, spell->Effects[EFFECT_0].MiscValue);
+        uint32 const mushroomEntry = uint32(spell->Effects[EFFECT_0].MiscValue);
+        caster->GetAllMinionsByEntry(mushrooms, mushroomEntry);
+        Player* playerCaster = caster->ToPlayer();
+        bool const traceBot = playerCaster != nullptr;
+        if (traceBot)
+            TC_LOG_INFO("server",
+                "MagmawWildMushroomNative event=detonate caster=%s expected_entry=%u mushroom_count=%zu",
+                caster->GetGUID().ToString().c_str(), mushroomEntry, mushrooms.size());
         if (mushrooms.empty())
             return;
 
@@ -1408,7 +1417,16 @@ class spell_dru_wild_mushroom_detonate : public SpellScript
                 else if (caster->HasAura(SPELL_DRUID_FUNGAL_GROWTH_R2))
                     caster->CastSpell(mushroom, SPELL_DRUID_FUNGAL_GROWTH_SUMMON_R2, true);
 
-                caster->CastSpell(mushroom, SPELL_DRUID_WILD_MUSHROOM_DAMAGE, true);
+                SpellCastResult const damageResult = caster->CastSpell(
+                    Position{ mushroom->GetPositionX(), mushroom->GetPositionY(), mushroom->GetPositionZ() },
+                    SPELL_DRUID_WILD_MUSHROOM_DAMAGE, true);
+                if (traceBot)
+                    TC_LOG_INFO("server",
+                        "MagmawWildMushroomNative event=damage_cast caster=%s mushroom=%s entry=%u position=%.3f,%.3f,%.3f result=%u",
+                        caster->GetGUID().ToString().c_str(),
+                        mushroom->GetGUID().ToString().c_str(), mushroom->GetEntry(),
+                        mushroom->GetPositionX(), mushroom->GetPositionY(),
+                        mushroom->GetPositionZ(), uint32(damageResult));
                 mushroom->CastSpell(mushroom, SPELL_DRUID_WILD_MUSHROOM_VISUAL, true);
                 mushroom->CastSpell(mushroom, SPELL_DRUID_WILD_MUSHROOM_SUICIDE, true);
                 mushroom->UnSummon(1500);

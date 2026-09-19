@@ -32,8 +32,12 @@ def test_trace_context_is_captured_and_both_exports_share_one_encoder() -> None:
         "MechanicFamily",
         "EncounterRoleResponsibility",
         "NextExpectedAction",
+        "EncounterPath",
     ):
-        assert f"entry.{field} = state.Last{field};" in trace
+        if field == "EncounterPath":
+            assert "entry.EncounterPath = MagmawEncounterPath" in trace
+        else:
+            assert f"entry.{field} = state.Last{field};" in trace
         assert f"entry.{field}" in encoder
 
     assert diagnosis.count("AppendDecisionTraceEntryJson") == 1
@@ -116,6 +120,7 @@ int main()
     row.EncounterRoleResponsibility =
         mutableState.LastEncounterRoleResponsibility;
     row.NextExpectedAction = mutableState.LastNextExpectedAction;
+    row.EncounterPath = "magmaw.damage";
 
     std::string const fullEncoderBefore = Encode(row);
     mutableState.LastActionCategory = "wait";
@@ -133,6 +138,8 @@ int main()
     assert(fullEncoderAfter.find("\"action_category\":\"damage\"")
         != std::string::npos);
     assert(fullEncoderAfter.find("\"mechanic_family\":\"mangle\"")
+        != std::string::npos);
+    assert(fullEncoderAfter.find("\"encounter_path\":\"magmaw.damage\"")
         != std::string::npos);
     assert(fullEncoderAfter.find("\"policy_observed_at_ms\":1100")
         != std::string::npos);
@@ -175,6 +182,11 @@ int main()
     current.TimestampMs = 1300;
     current.NativeSelectedTarget.LineOfSightAvailable = true;
     current.NativeSelectedTarget.LineOfSight = true;
+    assert(!BotWorldTrace::CanCoalesceDecisionTrace(row, current, 0, false));
+
+    current = row;
+    current.TimestampMs = 1300;
+    current.EncounterPath = "magmaw.hook";
     assert(!BotWorldTrace::CanCoalesceDecisionTrace(row, current, 0, false));
 
     BotEncounter::MagmawTargetReturnObservation::Record targetReturn;

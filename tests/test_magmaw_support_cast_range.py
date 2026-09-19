@@ -61,6 +61,7 @@ struct Blackboard { uint64 ProfileGeneration=1; std::string ProfileContentHash="
  struct {std::vector<Vector3> NavigationHints;} Route; };
 }
 using namespace BotEncounter;
+enum class BotCombatActionCategory { Builder, Dot };
 struct Creature;
 struct Unit {
  ObjectGuid Guid{39}; uint32 Entry=41570; bool Alive=true, InWorld=true, Attackable=true;
@@ -75,7 +76,7 @@ struct Player:Unit {
  bool Known=true; bool HasSpell(uint32)const{return Known;}
  bool IsValidAttackTarget(Unit const* u)const{return u->Attackable;}
 };
-struct BotActionProfileSpell {uint32 SpellId=403; std::string TargetSelector="enemy";
+struct BotActionProfileSpell {uint32 SpellId=403; BotCombatActionCategory Category=BotCombatActionCategory::Builder; std::string TargetSelector="enemy";
  bool RequiresRangedRange=false, RequiresMeleeRange=false,RequiresGroundTarget=false,RequiresInterruptibleTarget=false;
  float DamageWeight=1,MinRange=12,MaxRange=35; std::string MechanicTags="lightning_bolt,filler";};
 struct BotClassSpecActionProfile {bool MissingProfile=false; uint64 SnapshotGeneration=1;
@@ -104,13 +105,13 @@ struct MagmawParasitePolicy {
 ''' + segment + "\n" + safety + r'''
 };
 struct Geometry {
- static constexpr float RangedStackDistance=30,SupportStackDistance=8,RangedStackLateralOffset=24;
+ static constexpr float RangedStackDistance=30,SupportStackDistance=8,RangedStackLateralOffset=18;
 ''' + anchors + r'''
 };
 struct Policy {
  static constexpr uint32 BossEntry=41570;
  static constexpr float RangedStackTolerance=4;
- static inline MagmawRangedAnchors Anchors{{8,0,0},{30,24,0},{30,-24,0}};
+ static inline MagmawRangedAnchors Anchors{{8,0,0},{30,18,0},{30,-18,0}};
  static std::optional<MagmawRangedAnchors> ResolveRangedAnchors(Blackboard const&,ActorSnapshot const&){return Anchors;}
  static bool IsPillarBaiter(Blackboard const&,ObjectGuid id){return id.value==9 || id.value==6;}
  static Vector3 FormationAnchor(Blackboard const&,MagmawRangedAnchors const&a,ObjectGuid id){return id.value==9?a.Left:a.Right;}
@@ -123,6 +124,12 @@ int main(){
  assert(fact && fact->SourceSpellId==403 && fact->MinRange==12 && fact->PreferredRange==16);
  assert(GenericPreferred(*fact)==fact->PreferredRange);
  assert(fact->TargetGuid==target.Guid && fact->TargetEntry==41570);
+ // Balance's Eclipse builders are the real profile shape: they are ranged
+ // builders, but their tags do not include the generic filler marker.
+ profile.Spells[0].MechanicTags="starfire,eclipse";
+ profile.Spells[0].Category=BotCombatActionCategory::Builder;
+ assert(ObserveConfiguredCombatRange(&player,&target,profile));
+ profile.Spells[0].MechanicTags="lightning_bolt,filler";
  profile.Spells[0].MinRange=0; profile.MinRange=14;
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->MinRange==14);
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->PreferredRange==18);
@@ -138,18 +145,28 @@ int main(){
  profile.Spells[0].MechanicTags="steady_shot,focus_builder,apl_inactive";
  profile.Spells[1].MechanicTags="steady_shot,focus_builder,apl_expiring";
  assert(ObserveConfiguredCombatRange(&player,&target,profile)->SourceSpellId==56641);
- profile.Spells[0].SpellId=403; profile.Spells[1].SpellId=403;
- profile.Spells.pop_back(); profile.Spells[0].MechanicTags="not_filler";
- assert(!ObserveConfiguredCombatRange(&player,&target,profile));
- profile.Spells[0].MechanicTags="lightning_bolt,filler";
+    profile.Spells[0].SpellId=403; profile.Spells[1].SpellId=403;
+    profile.Spells.pop_back(); profile.Spells[0].MechanicTags="not_filler";
+    profile.Spells[0].Category=BotCombatActionCategory::Dot;
+    assert(!ObserveConfiguredCombatRange(&player,&target,profile));
+    profile.Spells[0].MechanicTags="lightning_bolt,filler";
+    profile.Spells[0].Category=BotCombatActionCategory::Builder;
  player.Known=false; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); player.Known=true;
  target.Instance=3; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); target.Instance=2;
  target.Attackable=false; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); target.Attackable=true;
  BotRaidAreaAuthority::Suppressed=true; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); BotRaidAreaAuthority::Suppressed=false;
  profile.Spells[0].MaxRange=10; assert(!ObserveConfiguredCombatRange(&player,&target,profile)); profile.Spells[0].MaxRange=35;
- Blackboard board; ActorSnapshot boss{{39},41570,{0,0,0}}, bot{{10},0,{8,0,0}};
+ Blackboard board; board.Route.NavigationHints={{0,-1,0}};
+ ActorSnapshot boss{{39},41570,{0,0,0}}, bot{{10},0,{8,0,0}};
  bot.PreferredCombatRange=fact;
- // Real 30/24 bait chord cannot admit preferred16 shoulders with separation20.
+ auto resolved=Geometry::ResolveRangedAnchors(board,boss);
+ assert(resolved);
+ assert(std::hypot(resolved->Left.X-boss.Position.X,
+     resolved->Left.Y-boss.Position.Y)<=35.001f);
+ assert(std::hypot(resolved->Right.X-boss.Position.X,
+     resolved->Right.Y-boss.Position.Y)<=35.001f);
+ assert(MagmawParasitePolicy::FullLaneCorridorSafe(*resolved));
+ // Real 30/18 bait chord cannot admit preferred16 shoulders with separation20.
  // Old formation emits a return to8 after the range mover; new one abstains.
  bot.Position={GenericPreferred(*fact),0,0};
  assert(!Policy::ProposeRangedFormationRestore(board,bot,boss,"dps"));
@@ -170,6 +187,17 @@ int main(){
  assert(move); bot.Position=move->Destination;
  assert(std::hypot(bot.Position.X,bot.Position.Y)>=15);
  assert(!Policy::ProposeRangedFormationRestore(board,bot,boss,"dps"));
+ // A zero-minimum native filler still carries a 25-yard preferred range.
+ // The fixed 8-yard support anchor must not override that preference.
+ bot.PreferredCombatRange=fact;
+ bot.PreferredCombatRange->MinRange=0;
+ bot.PreferredCombatRange->PreferredRange=25;
+ Policy::Anchors.Left={50,24,0}; Policy::Anchors.Right={50,-24,0};
+ bot.Position={8,0,0}; move=Policy::ProposeRangedFormationRestore(board,bot,boss,"dps");
+ assert(move); assert(std::hypot(move->Destination.X,move->Destination.Y)>=24);
+ bot.Position=move->Destination;
+ assert(!Policy::ProposeRangedFormationRestore(board,bot,boss,"dps"));
+ bot.PreferredCombatRange=fact;
  // Formation tolerance cannot declare a below-preference position settled.
  bot.PreferredCombatRange->MinRange=14;
  bot.Position.X*=0.8f; bot.Position.Y*=0.8f;

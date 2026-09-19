@@ -53,6 +53,7 @@ def test_combat_diagnostics_preserves_native_gate_observations() -> None:
         assert gate in module
     assert "HasPowerForSpell" in module
     assert "BotActionArbitration::Priority::Survival" in module
+    assert "key.TargetEntry = diagnostic.TargetEntry" in module
 
 
 def test_combat_diagnostics_keeps_blocker_resolution_contract() -> None:

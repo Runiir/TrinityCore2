@@ -216,8 +216,8 @@ void Evaluate(std::vector<Candidate>& candidates, Caster const& caster)
             continue;
         }
         if (candidate.SpellId == BotElementalSpiritwalkersGrace::SpiritwalkersGraceSpellId
-            && !BotElementalSpiritwalkersGrace::HasMovementBlockedLavaBurst(candidates))
-            candidate.RejectReason = "no_movement_blocked_lava_burst";
+            && !BotElementalSpiritwalkersGrace::HasMovementBlockedDamageOpportunity(candidates))
+            candidate.RejectReason = "no_movement_blocked_damage_opportunity";
     }
 }
 
@@ -256,19 +256,19 @@ int main()
         std::vector<Candidate> rows{{79206, "", "", false}, {51505, blocker, "", true}};
         Evaluate(rows, {Capability::None});
         assert(Find(rows, 51505).RejectReason == blocker);
-        assert(Find(rows, 79206).RejectReason == "no_movement_blocked_lava_burst");
+        assert(Find(rows, 79206).RejectReason == "no_movement_blocked_damage_opportunity");
     }
     for (std::string blocker : {"enemy_count_too_high", "target_immune", "max_range_exceeded"})
     {
         std::vector<Candidate> rows{{79206, "", "", false}, {51505, "", blocker, true}};
         Evaluate(rows, {Capability::None});
         assert(Find(rows, 51505).RejectReason == blocker);
-        assert(Find(rows, 79206).RejectReason == "no_movement_blocked_lava_burst");
+        assert(Find(rows, 79206).RejectReason == "no_movement_blocked_damage_opportunity");
     }
 
     std::vector<Candidate> missingLava{{79206, "", "", false}};
     Evaluate(missingLava, {Capability::None});
-    assert(Find(missingLava, 79206).RejectReason == "no_movement_blocked_lava_burst");
+    assert(Find(missingLava, 79206).RejectReason == "no_movement_blocked_damage_opportunity");
 
     std::vector<Candidate> stationary{{79206, "movement_gate", "", false}, {51505, "", "", true}};
     Evaluate(stationary, {Capability::None});
@@ -277,7 +277,18 @@ int main()
     std::vector<Candidate> graceActive{{79206, "", "", false}, {51505, "", "", true}};
     Evaluate(graceActive, {Capability::SpiritwalkersGrace});
     assert(Find(graceActive, 51505).RejectReason.empty());
-    assert(Find(graceActive, 79206).RejectReason == "no_movement_blocked_lava_burst");
+    assert(Find(graceActive, 79206).RejectReason == "no_movement_blocked_damage_opportunity");
+
+    // Chain Lightning is also a meaningful cast-time damage opportunity. A
+    // movement window with Lava Burst gated for another reason must still be
+    // recoverable without inventing a target or a movement path.
+    std::vector<Candidate> chainLightningRows{{79206, "", "", false}, {421, "movement_requires_instant_action", "", true}};
+    Evaluate(chainLightningRows, {Capability::None});
+    assert(Find(chainLightningRows, 79206).RejectReason.empty());
+
+    std::vector<Candidate> nonDamageRows{{79206, "", "", false}, {57994, "movement_requires_instant_action", "", true}};
+    Evaluate(nonDamageRows, {Capability::None});
+    assert(Find(nonDamageRows, 79206).RejectReason == "no_movement_blocked_damage_opportunity");
 
     // Glyph 101052's native family mask covers Lightning Bolt 403, not Lava
     // Burst 51505. The exact LvB probe therefore remains movement-blocked.
@@ -318,9 +329,9 @@ int main()
     resolver = resolver_source
     assert "EvaluateGraceAfterDamageOpportunities" in resolver
     assert "DeferLavaBurstMovementRejection" in resolver
-    assert "HasMovementBlockedLavaBurst" in resolver
+    assert "HasMovementBlockedDamageOpportunity" in resolver
     assert resolver.index("EvaluateGraceAfterDamageOpportunities") < resolver.index(
         "for (BotActionCandidate& candidate : candidates)")
     deferred = resolver.index("if (deferLavaBurstMovementRejection)")
     assert resolver.index('candidate.RejectReason = "max_range_exceeded"') < deferred
-    assert deferred < resolver.index("HasMovementBlockedLavaBurst")
+    assert deferred < resolver.index("HasMovementBlockedDamageOpportunity")

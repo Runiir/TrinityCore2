@@ -9,7 +9,10 @@ namespace BotEncounter
 namespace
 {
 constexpr float RangedStackDistance = 30.0f;
-constexpr float RangedStackLateralOffset = 24.0f;
+// Keep the shadow/authority lane identical to AdaptiveMagmawStrategy. At
+// 30/18 the bait endpoints are at the 35-yard native ranged ceiling while
+// the support-to-chord clearance remains 22 yards.
+constexpr float RangedStackLateralOffset = 18.0f;
 
 bool AllTrue(std::initializer_list<bool> values)
 {

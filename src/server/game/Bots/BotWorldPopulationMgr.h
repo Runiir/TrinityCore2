@@ -82,6 +82,10 @@ class BotWorldPopulationMgr
 {
 public:
     static constexpr uint32 MaxActiveCohorts = 2;
+    // Normal Magmaw validation windows retain roughly 8k landed events across
+    // the route. Keep the bounded forensic ring large enough to preserve the
+    // complete boss counterfactual without making the event stream unbounded.
+    static constexpr uint32 CombatLogRecentEventCapacity = 16384;
 
     static BotWorldPopulationMgr* instance();
 
@@ -710,6 +714,8 @@ private:
     RaidRoleAssignment BuildRaidRoleAssignment(Player* bot) const;
     bool ResolveConfiguredRaidTankAssignment(ObjectGuid& mainTankGuid,
         ObjectGuid& offTankGuid) const;
+    uint32 ResolveScopedEncounterAreaSpellId(Player* bot,
+        Unit const* target) const;
     RaidPositioningAnchors BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidGearTargetPlan BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
@@ -747,9 +753,9 @@ private:
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, bool movementCompatibleOnly = false, char const* specTagOverride = nullptr, bool publishDiagnostics = true, uint32 policyExcludedSpellId = 0) const;
-    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, uint32 policyExcludedSpellId = 0);
-    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, uint32 policyExcludedSpellId = 0);
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, bool movementCompatibleOnly = false, char const* specTagOverride = nullptr, bool publishDiagnostics = true, uint32 policyExcludedSpellId = 0, uint32 scopedAreaSpellId = 0, uint32 scopedAreaTargetEntry = 0) const;
+    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, uint32 policyExcludedSpellId = 0, uint32 scopedAreaSpellId = 0, uint32 scopedAreaTargetEntry = 0);
+    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false, bool selfCenteredOnly = false, bool forbidArea = false, bool allowMultidot = true, bool hostileTargetOnly = false, uint32 policyExcludedSpellId = 0, uint32 scopedAreaSpellId = 0, uint32 scopedAreaTargetEntry = 0);
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference,
         ResolvedCombatAction const* action = nullptr,
         bool forceRangedReposition = false,

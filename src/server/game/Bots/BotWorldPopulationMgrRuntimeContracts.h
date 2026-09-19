@@ -155,6 +155,8 @@
         std::map<uint64, PendingHealCast> PendingHealCasts;
         std::map<CombatLogAbilityKey, CombatLogAbilityAggregate> CombatLogAbilities;
         std::map<std::tuple<uint64, CombatLogPerspective, uint32, bool, uint64>, CombatLogSecondBucket> CombatLogSecondBuckets;
+        mutable std::map<CombatActionOutcomeKey, CombatActionOutcomeAggregate> CombatActionOutcomes;
+        mutable std::map<CombatCandidateRejectKey, CombatCandidateRejectAggregate> CombatCandidateRejections;
         std::deque<CombatLogEvent> CombatLogRecentEvents;
         uint64 CombatLogEventCount = 0;
         uint64 CombatLogRecentEventsDropped = 0;

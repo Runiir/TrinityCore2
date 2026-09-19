@@ -43,13 +43,159 @@ The harness writes `commands.txt`, `worldserver_output.log` when executed, and `
 
 `.botauto combatlog` exports exact landed damage and healing as compact per-spell aggregates, one-second activity buckets, and a bounded recent-event ring. The console export is chunked so long encounters cannot exceed the command transport limit. Live validation collects it only during cleanup, stores decoded `combat_log.json` once, and builds `combat_analysis.json` with encounter and actor DPS/HPS, spell shares, pet contribution, player/pet uptime, cast movement, range, incoming-damage sources, and rotation or positioning warnings. Share-damage callbacks are retained in `amount` and `raw_event_*`, while hostile user-facing `damage`/`dps` use originated amounts from `damage_done` and exclude engine callbacks identified as `NODAMAGE` with `SPELL_AURA_SHARE_DAMAGE_PCT`; this applies equally to player and pet sources. Friendly/self callbacks are retained under `friendly_damage_done` for attribution and raw forensic totals.
 
-`dps` and `party_dps` use party active-combat seconds, so route traversal does not dilute comparisons. `raw_event_dps` is the explicitly named all-landed-callback comparison. `elapsed_dps` and `elapsed_party_dps` retain wall-time values. Pet and player one-second buckets are separate in combat-log schema v2, and schema v3 adds the `friendly_damage_done` perspective. Schema v3 uses `damage_attribution_schema: "originated_amount_v2_friendly_split"`; hostile DPS/progress use `DamageDone` originated amounts, while `party_friendly_damage` and `party_raw_event_friendly_damage` retain the native friendly split. `raw_event_damage`, `raw_event_dps`, and `raw_event_pet_damage` continue to include landed callbacks from both outgoing perspectives, while originated `pet_damage` remains hostile-only. The analyzer emits `bot_combat_analysis_v3` and can still read schema v1/v2 with their old best-available originated meaning; those legacy payloads cannot reconstruct a friendly split. The diagnostic envelope is `bot_combat_metrics_v3` with `measurement_basis: "hostile_originated_damage"`; archived v2 metrics with `measurement_basis: "originated_damage"` remain accepted, and the `party_hps` denominator remains the historical active-combat window.
+`dps` and `party_dps` use active-combat seconds, so route traversal does not
+dilute the diagnostic. `active_dps` uses the actor's damage-bearing seconds and
+is a cadence diagnostic. `encounter_window_dps` and
+`encounter_window_party_dps` use originated damage divided by `duration_sec`,
+where the fight window is bounded by the first and last positive hostile
+`damage_done` aggregate. This prevents healing, callbacks, and post-kill route
+heartbeats from diluting the WCL Summary denominator. `capture_duration_sec`
+retains the full aggregate capture lifetime for diagnostics; it is not a WCL
+denominator. These are the local fields used for WCL Summary DPS comparison.
+`elapsed_dps` and `elapsed_party_dps` are retained as legacy aliases for that
+same local encounter-window arithmetic, not route entrance-to-kill wall clock.
+Route wall clock is a separate progress metric in the live validation report.
+`raw_event_dps` is the explicitly named all-landed-callback comparison. Pet and
+player one-second buckets are separate
+in combat-log schema v2, and schema v3 adds the `friendly_damage_done`
+perspective. Schema v3 uses `damage_attribution_schema:
+"originated_amount_v2_friendly_split"`; hostile DPS/progress use `DamageDone`
+originated amounts, while `party_friendly_damage` and
+`party_raw_event_friendly_damage` retain the native friendly split.
+`raw_event_damage`, `raw_event_dps`, and `raw_event_pet_damage` continue to
+include landed callbacks from both outgoing perspectives, while originated
+`pet_damage` remains hostile-only. The analyzer emits
+`bot_combat_analysis_v3` and can still read schema v1/v2 with their old
+best-available originated meaning; those legacy payloads cannot reconstruct a
+friendly split. The diagnostic envelope is `bot_combat_metrics_v3` with
+`measurement_basis: "hostile_originated_damage"`; archived v2 metrics with
+`measurement_basis: "originated_damage"` remain accepted, and the `party_hps`
+denominator remains the historical active-combat window.
+
+For WCL comparison, use `encounter_window_dps` (or the legacy
+`elapsed_dps` alias) and `encounter_window_party_dps` (or
+`elapsed_party_dps`). Do not use `dps`, `active_dps`, or route wall clock as
+the WCL denominator. An actor whose active rate is high but encounter-window
+rate is low has an activity-window problem to explain before changing spell
+priorities.
 
 ```bash
 pixi run python tools/bot_ml/analyze_combat_log.py \
   artifacts/live_validation_instances/<run>/combat_log.json \
   --output artifacts/live_validation_instances/<run>/combat_analysis.json
 ```
+
+### Magmaw Jev canary review
+
+Every Magmaw canary must pass its compact native trace through Jev. The
+analyzer records ordered route/path observations, repeated-decision and recovery
+signals, combat-metric DPS, combat warnings, and typed judgments for path
+consistency, stuck cause, DPS-loss area, and the next bounded fix. Raw stuck
+history is retained for progress tracking, while `active_stuck_*` is restricted
+to the latest non-terminal route generation so completed-node backoff history is
+not misreported as a current loop. JEV receives two named evidence views: a
+`route_review` and a boss-only `boss_dps_review`. The latter includes spec
+identity, wall-clock versus active DPS, top ability aggregates, action outcomes
+when present, and the repository-tracked WCL comparison context. The next-fix
+question is sent only after the evidence judgments, with those typed judgments
+included as context. Jev is shadow-only: it cannot submit an in-game action. The
+`JEV` key is loaded from the process environment or the repository `.env`; the
+command fails closed if the key or typed answers are unavailable.
+
+The boss evidence also contains `actor_loss_signals`, one compact loss budget
+per DPS actor. It separates idle fraction, movement/range, targeting,
+profile-policy, resource/cooldown, and native actionable-failure signals; it
+records contradictions and keeps policy hypotheses separate from native
+failures. The current request topology is deliberately split: one compact
+group review, one `actor_action_*` request for each local DPS actor, and one
+final `next_fix` request that sees the typed results. Expected wait rows remain
+audit-only and are omitted from the direct-failure action view. A low-confidence
+actor action is routed to `collect_more_canaries` or human review instead of
+being turned into a gameplay change.
+
+The boss review also includes `target_duty_context`. It is derived from the
+full-window target aggregates and timestamped native failure windows, with the
+bounded recent event ring used only for movement correlation. It reports boss
+versus mechanic-target damage, duty/failure-window overlap,
+`duty_explains_idle`, and `counterfactual_status`. JEV must not authorize an
+uptime, movement, or rotation repair when required duty explains the loss or
+the movement capture is partial. This preserves low-confidence judgments as
+review evidence while preventing them from silently becoming gameplay changes.
+For the Magmaw 10N Balance assignment, the same view reports the three-mushroom
+contract, native detonation, and landed Wild Mushroom effect separately from
+placement decision rows. It also reports the native fixed-bait identity for the
+lowest-GUID Fire Mage or hunter family member, full-window damage gaps, and
+normal target-eligibility gates as audit-only data. These fields let JEV classify
+assignment execution and cadence inside the Balance actor packet without
+turning expected profile eligibility checks into target-lease failures. There
+is no separate Balance assignment question or request; assignment evidence is
+context for `actor_action_30001`, just as it is for the other actor reviews.
+The analyzer auto-discovers `combat_log.json` beside a run directory; use
+`--combat-log` when the export is stored elsewhere.
+
+The wrapper creates `timeline_comparison.json` before calling Jev. The
+comparator retains every local actor, uses completed WCL casts versus positive
+native landed-damage observations as separate event types, and marks actors
+without a same-spec WCL timeline as `missing_wcl_reference`. The timeline is
+the primary per-actor signal; DPS, movement, native failures, and largest
+direct gaps are supporting evidence.
+
+For the normal Magmaw 10N canary, use the isolated single-boss route manifest
+(entrance regroup, Chainwielder trash, Drudge pair, then Magmaw), then analyze
+the complete `bwd.magmaw.` route prefix:
+
+```bash
+pixi run magmaw-jev-analyze \
+  --input /tmp/magmaw-normal-shard/report.json \
+  --output /tmp/magmaw-normal/jev_report.json \
+  --ledger /tmp/magmaw-normal/progress_ledger.json \
+  --run-id magmaw-normal-001 \
+  --segment-id magmaw_shard \
+  --scope-route-prefix bwd.magmaw. \
+  --change-id codex/magmaw-jev-canary \
+  --change-note "added native encounter_path telemetry" \
+  --combat-analysis /tmp/magmaw-normal-shard/combat_analysis.json \
+  --wcl-reference experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json
+```
+
+Do not use a full-instance report for this boss judgment; it mixes later
+encounters into the same evidence bundle. Use the exact
+`bwd.magmaw.encounter` scope only for a boss-only trace that intentionally
+omits the approach and trash nodes.
+
+Use `--baseline-report` on later canaries to make Jev classify whether the
+branch change improved, preserved, or regressed the observed behavior. Keep the
+raw run outside the repository or publish it as a compact DVC artifact; commit
+only the analyzer/configuration, not live credentials or bulky raw traces.
+
+For the normal repeatable loop, let the wrapper close one watchdog run and
+invoke the analyzer immediately afterward. Put the live-runner options after
+`--`; the wrapper owns `--output-dir`, writes `jev_report.json` and
+`canary_status.json`, and returns nonzero unless the run is a native clear.
+Jev remains review-only, so a successful wrapper run is eligible for human
+review rather than an automatic code promotion:
+
+```bash
+pixi run magmaw-jev-canary \
+  --run-dir /tmp/magmaw-normal-next \
+  --run-id magmaw-normal-next \
+  --change-id codex/magmaw-jev-canary \
+  --change-note "bounded movement recovery change" \
+  --baseline-report /tmp/magmaw-normal-previous/jev_report.json \
+  --ledger /tmp/magmaw-normal-next/progress_ledger.json \
+  -- \
+  --worldserver build/src/server/worldserver/worldserver \
+  --config trinity-worldserver-test.conf \
+  --duration-policy completion-watchdog \
+  --validation-scenario-id blackwing_descent_10n \
+  --validation-route-manifest \
+  --validation-scenario-dir dataset/validation_scenarios \
+  --heartbeat-sec 30
+```
+
+Use `--analyze-only` to rerun JEV against a closed run without starting the
+server. The wrapper always uses the repository `.env`/`JEV` lookup through the
+analyzer and never records the key in the status or ledger.
 
 ## Offline Loop
 

@@ -67,12 +67,14 @@ public:
     static constexpr float RangedStackDistance = 30.0f;
     // Keep the fixed bait corridor outside the support/boss stack.  The
     // support anchor is intentionally close to Magmaw; with a 30-yard lane
-    // center and 24-yard lateral offset this leaves 22 yards of clearance
+    // center and 18-yard lateral offset this leaves 22 yards of clearance
     // across the complete left/right chord instead of only at its endpoints.
     static constexpr float SupportStackDistance = 8.0f;
-    // The two bait endpoints must be outside the support stack while still
-    // leaving a full left/right lane for the mobile team to cross.
-    static constexpr float RangedStackLateralOffset = 24.0f;
+    // Keep bait endpoints inside the native ranged profile's 35-yard maximum
+    // while preserving the full left/right lane.  At 30/18 the endpoint
+    // radius is exactly 35 yards and the support-to-chord clearance remains
+    // 22 yards (30 - 8), above the 20-yard stack separation contract.
+    static constexpr float RangedStackLateralOffset = 18.0f;
     static constexpr float RangedStackTolerance = 4.0f;
     static constexpr float MangleSupportMaxDistance = 35.0f;
     static constexpr float ParasiteKiteLeadDistance =

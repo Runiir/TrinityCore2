@@ -141,7 +141,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     return false;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId)
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry)
 {
     if (target && IsImmediateNextValidationRouteEncounterMember(target->ToCreature()))
     {
@@ -206,18 +206,51 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
         selfCenteredOnly, forbidArea, allowMultidot && !forbidArea,
-        hostileTargetOnly, movementCompatibleOnly, nullptr, true, policyExcludedSpellId);
+        hostileTargetOnly, movementCompatibleOnly, nullptr, true, policyExcludedSpellId,
+        scopedAreaSpellId, scopedAreaTargetEntry);
     action.MeleeAutoAttackExternallyReconciled = state
         && action.AutoAttackMode == "melee";
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)
     {
+        float const targetDistance = bot && target ? bot->GetExactDist(target) : 0.0f;
+        bool const belowProfileMinimum = action.MinRange > 0.0f
+            && targetDistance < action.MinRange;
+        bool const aboveProfileMaximum = action.MaxRange > 0.0f
+            && targetDistance > action.MaxRange;
+        bool const profileRangeRecovery = state && bot && target
+            && action.RangeRecoveryRequired
+            && (belowProfileMinimum || aboveProfileMaximum)
+            && !bot->HasUnitState(UNIT_STATE_CASTING);
+        if (profileRangeRecovery)
+        {
+            bool const moved = MoveBotToProfileRange(
+                *state, bot, target, &action);
+            char const* recoveryAttempt = aboveProfileMaximum
+                ? "profile_max_range_reconcile" : "profile_min_range_reconcile";
+            char const* recoveryResult = aboveProfileMaximum
+                ? "profile_max_range_reconciled" : "profile_min_range_reconciled";
+            RecordCombatAttempt(*state, bot, target,
+                recoveryAttempt, &action,
+                moved ? BotActionResult::Casting : BotActionResult::NoAction,
+                moved ? recoveryResult : "profile_range_path_rejected");
+            if (moved)
+            {
+                TryResolveBotBlocker(*state, bot,
+                    recoveryResult);
+                return BotActionResult::Casting;
+            }
+        }
         BotActionResult invalidResult = action.DebugName == "global_cooldown"
             ? BotActionResult::GlobalCooldown : BotActionResult::NoAction;
+        if (action.DebugName == "already_casting")
+            invalidResult = BotActionResult::Casting;
         if (state)
             RecordCombatAttempt(*state, bot, target, "profile_resolve", &action,
-                invalidResult, action.DebugName.c_str());
+                invalidResult,
+                action.ResolutionReason.empty()
+                    ? action.DebugName.c_str() : action.ResolutionReason.c_str());
         if (state && invalidResult == BotActionResult::NoAction)
         {
             state->DecisionKernel.Observe("world.profile_resolve",
@@ -345,7 +378,29 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         // spell topology so per-spell suppression cannot cycle other actions
         // from the same blocked point.
         if (recoverLineOfSight && target)
-            MoveBotToProfileRange(*state, bot, target, &action, true);
+        {
+            bool const moved = MoveBotToProfileRange(
+                *state, bot, target, &action, true);
+            if (moved)
+            {
+                state->DecisionKernel.Observe(
+                    "world.profile_position:" +
+                        std::to_string(action.TargetGuid.GetCounter()),
+                    BotActionArbitration::Outcome::Started(
+                        "native_position_reconciled"),
+                    nowMs, 100, 3000, 5);
+                state->LastRecoveryMode = "native_position_reconciliation";
+                state->LastRecoveryResult = "move_to_action_line_of_sight";
+                state->LastNoProgressReason.clear();
+                RecordCombatAttempt(*state, bot, target,
+                    "position_reconcile", &action,
+                    BotActionResult::Casting,
+                    "native_no_line_of_sight");
+                TryResolveBotBlocker(*state, bot,
+                    "native_position_reconciled");
+                return BotActionResult::Casting;
+            }
+        }
     }
     if (state && target
         && (result == BotActionResult::OutOfRange
@@ -409,9 +464,10 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     return result;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId)
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry)
 {
     return ExecuteProfileCombatAction(nullptr, bot, target, actionOut,
         hostileCount, densityOnly, excludedSpellId, areaOnly,
-        selfCenteredOnly, forbidArea, allowMultidot, hostileTargetOnly, policyExcludedSpellId);
+        selfCenteredOnly, forbidArea, allowMultidot, hostileTargetOnly, policyExcludedSpellId,
+        scopedAreaSpellId, scopedAreaTargetEntry);
 }

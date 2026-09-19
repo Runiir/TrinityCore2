@@ -700,6 +700,9 @@ namespace BotWorldPopulationMgrBotState
             std::string Situation = "unknown";
             std::string Action = "wait";
             std::string RouteNodeId;
+            // Stable, additive path label for offline encounter analysis. This
+            // is telemetry only; native action selection remains authoritative.
+            std::string EncounterPath = "none";
             uint64 RouteGeneration = 0;
             uint32 QuestId = 0;
             uint64 TargetGuid = 0;

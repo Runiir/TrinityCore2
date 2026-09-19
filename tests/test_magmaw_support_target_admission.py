@@ -218,31 +218,43 @@ int main()
     assert(bodyFallback.DamageTarget == boss.Guid);
     assert(bodyFallback.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
-    // A farther legal parasite wins over the blocked nearest parasite.
+    // A farther legal parasite is observed, but ordinary ranged damage stays
+    // on the boss so it cannot acquire an add-chasing target lease.
     MagmawSupportTargetOpportunities legalAlternative = bodyOnly;
     legalAlternative.Admit(legal.Guid);
     AdaptiveMagmawPlan alternative = Propose(
         strategy, board, supportActor, legalAlternative);
-    assert(alternative.DamageTarget == legal.Guid);
+    assert(alternative.DamageTarget == boss.Guid);
     assert(alternative.ParasiteCombat.SupportTargetGuid == legal.Guid);
 
-    // A current legal support target is retained while another legal parasite
-    // becomes nearer, avoiding a per-tick target flip.
+    // A current legal support observation does not lease the ordinary damage
+    // target away from the boss when another parasite becomes nearer.
     Blackboard retained = board;
     retained.BotTargets[supportActor].DamageTarget = legal.Guid;
     retained.Hostiles[1].Position = { 18.0f, 0.0f, 210.0f };
     legalAlternative.Admit(blocked.Guid);
     AdaptiveMagmawPlan retainedPlan = Propose(
         strategy, retained, supportActor, legalAlternative);
-    assert(retainedPlan.DamageTarget == legal.Guid);
+    assert(retainedPlan.DamageTarget == boss.Guid);
 
-    // No observed parasite or body opportunity leaves the optional selector
-    // empty instead of binding a target that support movement may not chase.
+    // Optional support is best effort.  When no parasite is currently
+    // admitted, ordinary ranged DPS keeps the boss target and waits for the
+    // native range/LOS path to reconcile instead of dropping combat intent.
     MagmawSupportTargetOpportunities noneLegal;
     AdaptiveMagmawPlan none = Propose(
         strategy, board, supportActor, noneLegal);
-    assert(none.DamageTarget.IsEmpty());
-    assert(none.ClearOptionalDamageTarget);
+    #define MAGMAW_EXPECT_LEGACY 0
+#if MAGMAW_EXPECT_LEGACY
+    {
+        assert(none.DamageTarget.IsEmpty());
+        assert(none.ClearOptionalDamageTarget);
+    }
+#else
+    {
+        assert(none.DamageTarget == boss.Guid);
+        assert(!none.ClearOptionalDamageTarget);
+    }
+#endif
     assert(none.ParasiteCombat.SupportTargetGuid.IsEmpty());
 
     // DPS-043: fixed Mage and Hunter baiters use actual native opportunity
@@ -385,7 +397,8 @@ int main()
         == MagmawDamageTargetBindResult::Cleared);
     assert(context.Target == nullptr && context.State.TargetGuid.IsEmpty());
 
-    // Opportunity selection does not consume or replace encounter movement.
+    // Ordinary ranged DPS keeps the boss target while the support opportunity
+    // remains available for telemetry and encounter movement is independent.
     Blackboard moving = board;
     ActorSnapshot pillar = Hostile(AdaptiveMagmawStrategy::PillarEntry, 800,
         moving.Players.back().Position);
@@ -394,7 +407,7 @@ int main()
     movementOpportunities.Admit(legal.Guid);
     AdaptiveMagmawPlan simultaneous = Propose(
         strategy, moving, supportActor, movementOpportunities);
-    assert(simultaneous.DamageTarget == legal.Guid);
+    assert(simultaneous.DamageTarget == boss.Guid);
     assert(simultaneous.Movement);
 
     // No observed boss is the pre-existing unowned-node boundary, not a
@@ -413,12 +426,14 @@ int main()
     assert(ordinaryBody.DamageTarget == boss.Guid);
     assert(!ordinaryBody.ClearOptionalDamageTarget);
 }
-'''.replace("marksmanship_hunter", hunter_spec),
+    '''.replace("marksmanship_hunter", hunter_spec).replace(
+        "#define MAGMAW_EXPECT_LEGACY 0",
+        "#define MAGMAW_EXPECT_LEGACY " + ("1" if revision else "0")),
     )
     result = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
     if revision:
         assert result.returncode != 0
-        assert "baitContext.State.TargetGuid == legal.Guid" in result.stderr
+        assert "alternative.DamageTarget == boss.Guid" in result.stderr
     else:
         assert result.returncode == 0, result.stderr
 

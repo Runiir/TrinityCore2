@@ -67,7 +67,7 @@ struct Unit {
  bool IsWithinMeleeRange(Unit*) { return distance<=5; }
 };
 '''+helper+r'''
-struct Profile { float MinRange=0, MaxRange=35; bool RequiresMeleeRange=false,RequiresRangedRange=false; };
+struct Profile { float MinRange=0, MaxRange=35; bool RequiresMeleeRange=false,RequiresRangedRange=false,RangeRecoveryRequired=false; };
 struct BotActionCandidate { struct Profile Profile; int ResolvedSpellId=0; std::string RejectReason; };
 std::string check(float configuredMin,float distance,float nativeMin=0,bool requiresRanged=false) {
  Unit actor; actor.distance=distance;actor.nativeMin=nativeMin;

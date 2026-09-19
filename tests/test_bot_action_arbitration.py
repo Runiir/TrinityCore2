@@ -1793,7 +1793,7 @@ int main()
         &immediateCrashNonownerPlan.Movement->Action);
     assert(immediateCrashMove && immediateCrashNonownerMove);
     assert(immediateCrashMove->X == -10.0f
-        && immediateCrashMove->Y == 24.0f);
+        && immediateCrashMove->Y == 18.0f);
     assert(immediateCrashNonownerMove->X == 12.0f
         && immediateCrashNonownerMove->Y == 8.0f);
     assert(immediateCrashMove->Z == immediateCrash.Route.NavigationHints.front().Z);

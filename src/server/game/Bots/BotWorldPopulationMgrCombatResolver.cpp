@@ -15,6 +15,7 @@
 #include "Bots/BotWorldPopulationMgrCombatRange.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
@@ -28,7 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <list>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -46,9 +47,7 @@ bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpel
     return !spell.RefreshAuraBelowMs || durationMs < 0 || uint32(durationMs) > spell.RefreshAuraBelowMs;
 }
 
-
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
-
 // Future encounter protection must be geometry-aware.  Keeping the global
 // entry set is useful for route bookkeeping, but it must not suppress AoE on
 // a current trash pack that is nowhere near the protected encounter.
@@ -79,7 +78,7 @@ bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
 
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics, uint32 policyExcludedSpellId) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly, bool forbidArea, bool allowMultidot, bool hostileTargetOnly, bool movementCompatibleOnly, char const* specTagOverride, bool publishDiagnostics, uint32 policyExcludedSpellId, uint32 scopedAreaSpellId, uint32 scopedAreaTargetEntry) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -104,6 +103,15 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.AutoAttackMode = profile.AutoAttackMode;
     action.MinRange = profile.MinRange;
     action.MaxRange = profile.MaxRange;
+
+    Creature const* targetCreature = target->ToCreature();
+    uint32 const targetEntry = targetCreature ? targetCreature->GetEntry() : 0;
+    bool const solarEclipse = bot->HasAura(48517);
+    BotEncounter::MagmawBalanceMushroomState const mushroomState =
+        BotEncounter::ObserveMagmawBalanceMushroomState(
+            bot, Cohort().Config.ValidationRouteEnable,
+            Cohort().Config.ValidationRouteNodeId, profile.SpecTag,
+            targetEntry, solarEclipse);
 
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
@@ -293,12 +301,23 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     bool const exactSingleTargetCalibration =
         Cohort().CalibrationMode == "single_target_300"
         && bot->GetGUID() == Cohort().CalibrationTargetGuid;
+    BotActionCandidate* bestMagmawMushroomPlacement = nullptr;
+    BotActionCandidate* bestMagmawMushroomDetonation = nullptr;
     if (profile.SpecTag == BotElementalSpiritwalkersGrace::ElementalSpec)
         BotElementalSpiritwalkersGrace::EvaluateGraceAfterDamageOpportunities(
             candidates);
     for (BotActionCandidate& candidate : candidates)
     {
-        if (hostileTargetOnly && candidate.Profile.TargetSelector != "enemy")
+        bool const magmawMushroomPlacement =
+            BotEncounter::IsMagmawBalanceMushroomPlacement(mushroomState, candidate);
+        bool const magmawMushroomDetonation =
+            BotEncounter::IsMagmawBalanceMushroomDetonation(mushroomState, candidate);
+        bool const magmawMushroomAction =
+            BotEncounter::IsMagmawBalanceMushroomAction(mushroomState, candidate);
+        bool const scopedAreaAction = scopedAreaSpellId
+            && scopedAreaTargetEntry == targetEntry && candidate.SpellId == scopedAreaSpellId;
+        if (hostileTargetOnly && candidate.Profile.TargetSelector != "enemy"
+            && !magmawMushroomAction)
         {
             candidate.RejectReason = "hostile_target_required";
             continue;
@@ -337,7 +356,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             continue;
         }
         if (forbidArea && (candidate.Category == BotCombatActionCategory::Aoe
-            || candidate.Category == BotCombatActionCategory::Cleave))
+            || candidate.Category == BotCombatActionCategory::Cleave)
+            && !magmawMushroomAction && !scopedAreaAction)
         {
             candidate.RejectReason = "declarative_area_damage_forbidden";
             continue;
@@ -376,12 +396,14 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             continue;
         }
         if (HasNearbyProtectedEncounterTarget(bot, target)
-            && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
+            && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
+            && !magmawMushroomAction && !scopedAreaAction)
         {
             candidate.RejectReason = "future_encounter_splash_forbidden";
             continue;
         }
-        if (forbidArea && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
+        if (forbidArea && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
+            && !magmawMushroomAction && !scopedAreaAction)
         {
             candidate.RejectReason = "declarative_area_damage_semantics_forbidden";
             continue;
@@ -463,15 +485,13 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (bot->getClass() == CLASS_DRUID && profile.SpecTag == "balance_druid")
         {
-            bool const solarEclipse = bot->HasAura(48517);
             bool const lunarEclipse = bot->HasAura(48518);
             bool const solarMarker = bot->HasAura(67483);
-            if (candidate.SpellId == 88747)
+            if (char const* mushroomRejection =
+                    BotEncounter::MagmawBalanceMushroomRejection(
+                        mushroomState, candidate))
             {
-                // The base v1 exact fixture owns no Balance mushroom prepull.
-                // Placement therefore cannot leak into the scored priority as
-                // an unbound simulator-only start-state manufacture.
-                candidate.RejectReason = "prepull_only";
+                candidate.RejectReason = mushroomRejection;
                 continue;
             }
             if ((candidate.SpellId == 93402 && !solarEclipse)
@@ -488,18 +508,6 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 // exists outside the exact base fixture.
                 candidate.RejectReason = "solar_aoe_required";
                 continue;
-            }
-            if (candidate.SpellId == 88751)
-            {
-                SpellInfo const* mushroomSpell = sSpellMgr->GetSpellInfo(88747);
-                std::list<Creature*> mushrooms;
-                if (mushroomSpell)
-                    bot->GetAllMinionsByEntry(mushrooms, uint32(mushroomSpell->Effects[EFFECT_0].MiscValue));
-                if (!solarEclipse || mushrooms.size() < 3)
-                {
-                    candidate.RejectReason = "solar_mushrooms_not_ready";
-                    continue;
-                }
             }
             if (candidate.SpellId == 2912 || candidate.SpellId == 5176)
             {
@@ -688,11 +696,25 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (minRange > 0.0f && distance < minRange)
         {
             action.MinRange = std::max(action.MinRange, minRange);
+            action.RangeRecoveryRequired = true;
             candidate.RejectReason = "min_range_required";
             continue;
         }
         if (maxRange > 0.0f && distance > maxRange)
         {
+            // A ranged profile can become completely invalid when the target
+            // moves beyond every declared action envelope. Preserve that
+            // envelope for the executor so it can submit a movement-only
+            // recovery instead of entering a no-action backoff loop. Keep the
+            // narrowest rejected maximum; it is the only range that is safe
+            // for every candidate observed in this resolution.
+            if (!densityOnly && candidate.Profile.TargetSelector == "enemy")
+            {
+                action.RangeRecoveryRequired = true;
+                action.MaxRange = action.MaxRange > 0.0f
+                    ? std::min(action.MaxRange, maxRange) : maxRange;
+                action.MinRange = std::max(action.MinRange, minRange);
+            }
             candidate.RejectReason = "max_range_exceeded";
             continue;
         }
@@ -704,9 +726,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (profile.SpecTag == BotElementalSpiritwalkersGrace::ElementalSpec
             && candidate.SpellId == BotElementalSpiritwalkersGrace::SpiritwalkersGraceSpellId
-            && !BotElementalSpiritwalkersGrace::HasMovementBlockedLavaBurst(candidates))
+            && !BotElementalSpiritwalkersGrace::HasMovementBlockedDamageOpportunity(candidates))
         {
-            candidate.RejectReason = "no_movement_blocked_lava_burst";
+            candidate.RejectReason = "no_movement_blocked_damage_opportunity";
             continue;
         }
         if (!candidate.RejectReason.empty())
@@ -737,6 +759,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
 
         candidate.Score = roleScore;
         candidate.Reason = saturation.SaturationReason;
+        if (magmawMushroomPlacement)
+            bestMagmawMushroomPlacement = &candidate;
+        if (magmawMushroomDetonation)
+            bestMagmawMushroomDetonation = &candidate;
         bool densityRecovery = densityOnly
             && (candidate.Category == BotCombatActionCategory::ResourceGenerator
                 || candidate.Category == BotCombatActionCategory::UseItem)
@@ -777,6 +803,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     // already passed resource, cooldown, range, and all other profile gates.
     if (bestInterrupt)
         best = bestInterrupt;
+    else if (bestMagmawMushroomDetonation)
+        best = bestMagmawMushroomDetonation;
+    else if (bestMagmawMushroomPlacement)
+        best = bestMagmawMushroomPlacement;
     else if (!densityOnly && bestRangeRecovery
         && candidatePreferred(*bestRangeRecovery, best))
         best = bestRangeRecovery;
@@ -795,7 +825,46 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 ? bestDensityResourceFallback
                 : (resourcePressure && bestDensityGenerator
                     ? bestDensityGenerator
-                    : (bestDensityFallback ? bestDensityFallback : bestDensityGenerator)));
+                : (bestDensityFallback ? bestDensityFallback : bestDensityGenerator)));
+    }
+
+    // A generic no_valid_profile_action is not actionable by itself. Preserve
+    // the full-window native reasons that made every candidate in this
+    // resolution invalid, so a canary can distinguish a bad DB gate from a
+    // shared arbitration or movement problem without replaying the tail trace.
+    if ((!best || !best->SpellId) && bot
+        && Cohort().Active && Cohort().Config.ValidationRouteEnable
+        && Cohort().Config.ValidationRouteKind == "boss"
+        && Party().ValidationRouteGeneration)
+    {
+        uint32 const botKey = bot->GetGUID().GetCounter();
+        uint64 const recordedAtMs = BotWorldPopulationMgrSpellSemantics::NowMs();
+        for (BotActionCandidate const& candidate : candidates)
+        {
+            if (!candidate.SpellId || candidate.RejectReason.empty())
+                continue;
+
+            CombatCandidateRejectKey key;
+            key.RouteGeneration = Party().ValidationRouteGeneration;
+            key.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
+            key.ActorGuid = botKey;
+            key.Phase = "profile_resolve";
+            key.SpellId = candidate.SpellId;
+            key.ActionCategory = BotCombatActionCatalog::ToString(candidate.Category);
+            key.Reason = candidate.RejectReason;
+
+            CombatCandidateRejectAggregate& aggregate =
+                Party().CombatCandidateRejections[key];
+            if (!aggregate.Count)
+            {
+                aggregate.ActorName = bot->GetName();
+                aggregate.ActorRole = GetDungeonRole(bot);
+                aggregate.ActorClassId = bot->getClass();
+                aggregate.FirstAtMs = recordedAtMs;
+            }
+            aggregate.LastAtMs = recordedAtMs;
+            ++aggregate.Count;
+        }
     }
 
     if (publishDiagnostics)
@@ -853,6 +922,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             {
                 return candidate.RejectReason == "global_cooldown";
             });
+        std::map<std::string, uint32> rejectionCounts;
+        for (BotActionCandidate const& candidate : candidates)
+            if (!candidate.RejectReason.empty())
+                ++rejectionCounts[candidate.RejectReason];
+        auto dominantRejection = std::max_element(
+            rejectionCounts.begin(), rejectionCounts.end(),
+            [](auto const& left, auto const& right)
+            {
+                return left.second < right.second;
+            });
+        action.ResolutionReason = dominantRejection != rejectionCounts.end()
+            ? dominantRejection->first : "no_valid_profile_action";
         // Rerun157 showed that a legal Fire filler rejected only by the native
         // GCD lost its spell identity here, so the diagnostic layer could not
         // observe HasGlobalCooldown and mislabeled the scheduling wait as an
@@ -860,7 +941,9 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         // candidate, cooldown, or role-quality threshold.
         action.DebugName = profile.MissingProfile ? profile.ProfileSource
             : (globalCooldownSchedulingWait ? "global_cooldown"
-                                            : "no_valid_profile_action");
+                                            : (action.ResolutionReason == "already_casting"
+                                                ? "already_casting"
+                                                : "no_valid_profile_action"));
         if (!profile.MissingProfile && !areaOnly && profile.AutoAttackMode == "melee"
             && bot->IsValidAttackTarget(target))
         {
@@ -886,6 +969,27 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.SpellId = best->SpellId;
     bool selfTarget = best->Profile.TargetSelector == "self";
     action.TargetGuid = selfTarget ? bot->GetGUID() : target->GetGUID();
+    bool const selectedMagmawMushroomPlacement =
+        BotEncounter::IsMagmawBalanceMushroomPlacement(mushroomState, *best);
+    bool const selectedMagmawMushroomDetonation =
+        BotEncounter::IsMagmawBalanceMushroomDetonation(mushroomState, *best);
+    bool const selectedMagmawMushroomAction =
+        selectedMagmawMushroomPlacement || selectedMagmawMushroomDetonation;
+    action.AllowMagmawBalanceMushroomSplash = selectedMagmawMushroomAction;
+    action.AllowScopedEncounterAreaDamage = scopedAreaSpellId
+        && scopedAreaTargetEntry == targetEntry && best->SpellId == scopedAreaSpellId;
+    if (selectedMagmawMushroomPlacement
+        && !BotEncounter::SetMagmawBalanceMushroomGroundTarget(action, bot, target))
+    {
+        // A destination-location spell must never fall back to the hostile
+        // target when the live lava spawn disappeared between observation and
+        // submission. Wait for the next lava spawn instead of placing the
+        // mushroom on Magmaw or the exposed head.
+        action.Valid = false;
+        action.ResolutionReason = "magmaw_lava_spawn_ground_target_unavailable";
+        action.DebugName = action.ResolutionReason;
+        return action;
+    }
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
@@ -908,7 +1012,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         ? selfCenteredHostileMaxRange
         : (best->Profile.MaxRange > 0.0f
             ? best->Profile.MaxRange : profile.MaxRange);
-    action.SuppressAreaDamage = forbidArea;
+    action.SuppressAreaDamage = forbidArea && !selectedMagmawMushroomAction
+        && !action.AllowScopedEncounterAreaDamage;
     if (!selfTarget && best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->ResolvedSpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));

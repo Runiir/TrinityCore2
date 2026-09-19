@@ -97,6 +97,7 @@ inline bool CanCoalesceDecisionTrace(DecisionTraceEntry const& previous,
         && previous.ActorRole == current.ActorRole
         && previous.Situation == current.Situation
         && previous.Action == current.Action
+        && previous.EncounterPath == current.EncounterPath
         && previous.TargetGuid == current.TargetGuid
         && previous.Result == current.Result
         && previous.ReasonCode == current.ReasonCode

@@ -120,6 +120,7 @@ void AppendDecisionTraceEntryJson(std::ostream& json,
          << ",\"situation\":\"" << escape(entry.Situation) << "\""
          << ",\"action\":\"" << escape(entry.Action) << "\""
          << ",\"route_node_id\":\"" << escape(entry.RouteNodeId) << "\""
+         << ",\"encounter_path\":\"" << escape(entry.EncounterPath) << "\""
          << ",\"route_generation\":" << entry.RouteGeneration
          << ",\"quest_id\":" << entry.QuestId
          << ",\"target_id\":" << entry.TargetGuid

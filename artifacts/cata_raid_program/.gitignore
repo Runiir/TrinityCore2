@@ -231,7 +231,15 @@
 /magmaw_balance_outcome_779f62087f_20260913.tar.gz
 
 /magmaw_jev_canary_compact_20260919.tar.gz
-
 /magmaw_jev_locality_replay_20260919.tar.gz
 /magmaw_local_jev_shadow_20260919
 /magmaw_laya_migration_20260919.tar.gz
+/magmaw_jev_canary_cast_state_signal_20260918.tar.gz
+/magmaw_jev_canary_ranged_bait_envelope_20260918.tar.gz
+/magmaw_jev_canary_actor_loss_signal_20260918.tar.gz
+/magmaw_balance_mushroom_canaries_20260918.tar.gz
+/magmaw_jev_full_window_canaries_20260918.tar.gz
+/magmaw_jev_wcl_window_canaries_20260918.json
+/magmaw_stale_scratch_compact_20260919.tar.gz
+/magmaw_stale_validation_compact_20260919.tar.gz
+/shared_validation_stale_scratch_compact_20260919.tar.gz

@@ -192,6 +192,22 @@ std::string BotWorldPopulationMgr::BuildRaidMechanicAdapterJson(RaidMechanicAdap
          << ",\"swap_trigger\":\"" << JsonEscape(adapter.SwapTrigger) << "\""
          << ",\"target_control\":\"" << JsonEscape(adapter.TargetControl) << "\""
          << ",\"allow_area_damage\":" << (adapter.AllowAreaDamage ? "true" : "false")
+         << ",\"area_damage_spell_allowlist\":[";
+    for (size_t index = 0; index < adapter.AreaDamageSpellAllowlist.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        json << adapter.AreaDamageSpellAllowlist[index];
+    }
+    json << "]"
+         << ",\"area_damage_target_allowlist\":[";
+    for (size_t index = 0; index < adapter.AreaDamageTargetAllowlist.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        json << adapter.AreaDamageTargetAllowlist[index];
+    }
+    json << "]"
          << ",\"controlled_aoe_minimum_targets\":" << adapter.ControlledAoeMinimumTargets
          << ",\"kill_sync_tolerance_pct\":" << adapter.KillSyncTolerancePct
          << ",\"kill_sync_execution_floor_pct\":" << adapter.KillSyncExecutionFloorPct
@@ -240,4 +256,3 @@ std::string BotWorldPopulationMgr::BuildHeroicRaidProgressionJson(HeroicRaidProg
          << ",\"target_item_level\":" << progression.TargetItemLevel << "}";
     return json.str();
 }
-

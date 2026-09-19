@@ -146,7 +146,20 @@ bool GroupRecoveryContext::Run()
                 State.LastNoProgressReason = "native_full_wipe_hold_partial_death";
                 Situation = "validation_route_recovery";
                 Action = "native_full_wipe_hold";
-                Target = retreatThreat;
+                // The tank victim is evidence for the recovery receipt, not
+                // a combat lease for the surviving bot.  Re-publishing it as
+                // Target lets the deferred trash/profile candidates restore a
+                // future-route creature after the contamination guard cleared
+                // the stale lease.  Hold the native fight with no actionable
+                // target and let the next tick observe the authoritative
+                // recovery state again.
+                Manager.SubmitMeleeAutoAttackIntent(State,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Recovery,
+                    BotActionArbitration::Priority::Survival,
+                    "native_full_wipe_hold_partial_death");
+                State.TargetGuid.Clear();
+                Target = nullptr;
                 return true;
             }
 

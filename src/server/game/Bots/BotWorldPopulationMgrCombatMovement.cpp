@@ -221,6 +221,14 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     };
     auto moveProfilePoint = [&](float x, float y, float z)
     {
+        // A native LOS failure must resolve to a point that can actually see
+        // the target.  Reusing the first path-safe point without this check
+        // merely moves the bot and lets the same spell fail again on the next
+        // tick.  The target owns the LOS ray here so the candidate is checked
+        // against the target's collision model before the movement intent is
+        // submitted.
+        if (forceRangedReposition && !reference->IsWithinLOS(x, y, z))
+            return false;
         return annotateProfileRangeReceipt(MoveBotToPoint(state, bot, x, y, z,
             false, BotMovementArbitration::Owner::CombatRange,
             BotMovementArbitration::Priority::Combat, nullptr, 0.0f, {},

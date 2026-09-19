@@ -33,6 +33,47 @@ uint64 NowMs()
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
         GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
+
+std::string MagmawEncounterPath(std::string const& routeNodeId,
+    std::string const& situation, std::string const& action,
+    std::string const& reasonCode, std::string const& mechanicFamily,
+    std::string const& responsibility, std::string const& recoveryMode)
+{
+    if (routeNodeId.rfind("bwd.magmaw.", 0) != 0)
+        return "none";
+
+    std::string context = situation + "|" + action + "|" + reasonCode
+        + "|" + mechanicFamily + "|" + responsibility + "|" + recoveryMode;
+    auto contains = [&context](char const* token)
+    {
+        return context.find(token) != std::string::npos;
+    };
+
+    if (contains("recovery") || contains("dead") || contains("wipe"))
+        return "magmaw.recovery";
+    if (contains("parasite"))
+        return "magmaw.parasite_escape";
+    if (contains("transfer") || contains("lane"))
+        return "magmaw.transfer_lane";
+    if (contains("hook") || contains("vehicle")
+        || contains("mangle"))
+        return "magmaw.hook";
+    if (contains("head") || contains("body_return")
+        || contains("target_return"))
+        return "magmaw.head_return";
+    if (contains("formation") || contains("anchor"))
+        return "magmaw.formation";
+    if (routeNodeId == "bwd.magmaw.chainwielder"
+        || routeNodeId == "bwd.magmaw.drudges")
+        return "magmaw.trash";
+    if (contains("suppress") || contains("prepull")
+        || contains("contract_fail_closed"))
+        return "magmaw.suppression";
+    if (routeNodeId == "bwd.magmaw.encounter")
+        return action == "wait" || action.find("wait_") == 0
+            ? "magmaw.wait" : "magmaw.damage";
+    return "magmaw.route";
+}
 }
 
 void BotWorldPopulationMgr::PersistDecisionFingerprintDelta(WorldBotState& state, uint32 repeatDelta, uint32 failureDelta) const
@@ -265,6 +306,10 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.Situation = situation ? situation : "unknown";
     entry.Action = action ? action : "wait";
     entry.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
+    entry.EncounterPath = MagmawEncounterPath(entry.RouteNodeId,
+        entry.Situation, entry.Action, reasonCode ? reasonCode : "",
+        state.LastMechanicFamily, state.LastEncounterRoleResponsibility,
+        state.LastRecoveryMode);
     entry.RouteGeneration = state.ValidationRouteGeneration;
     entry.QuestId = questId;
     entry.TargetGuid = target ? target->GetGUID().GetCounter() : 0;

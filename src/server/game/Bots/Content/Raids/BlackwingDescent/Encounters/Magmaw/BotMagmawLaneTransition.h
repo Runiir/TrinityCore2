@@ -18,8 +18,9 @@ namespace BotEncounter
 // to bypass the generic boss-mechanics resolver, so keep the same immutable
 // constraints beside the encounter assignment that selects the bait pair.
 // The assigned fire mage and marksmanship hunter retain broad parasite
-// ownership. Other ranged DPS may assist one exact nearby parasite without
-// chasing or area damage; an actor's exact personal threat remains eligible.
+// ownership. Other ranged DPS observe one exact nearby parasite for contract
+// telemetry and safety restrictions, but keep their damage target on Magmaw;
+// an actor's exact personal threat remains eligible.
 struct MagmawParasiteCombatContract
 {
     struct ProfileParameters
