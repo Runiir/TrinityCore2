@@ -438,6 +438,13 @@ passed2/2. Clean-build/live acceptance remains pending. The oldbinary has no
 matching queued-build receipt, and its compact archive lacks raw damage events.
 Keep1tank/3healers/6DPS and phase coverage explicit. Do not restore the override
 to preserve a headline DPS result or manufacture a corrected historical timeline.
+The legality audit also found a post-redirect melee veto in Unit.cpp. Native
+redirect selection can already consume an aura charge; bot policy must not erase
+the resulting hit. Removed only that late veto, retaining pre-swing suppression
+and ordinary auto-repeat cancellation. Six focused source guards passed. These
+guards prevent reinstating the overrides; they do not prove live performance.
+The corrected Mushroom source built successfully at9eee91e4f2; the late-veto
+removal requires a new incremental build before capture.
 
 DPS-026 continuation: retained rejection aggregates prove Heart Strike was
 blocked, but omit protected-target identity. Native55050 can chain via two5yd

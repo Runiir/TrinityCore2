@@ -68,15 +68,22 @@ def test_controlled_melee_and_spell_attack_recheck_at_submission():
     assert "me->AttackStop();" in spell_attack
 
 
-def test_shared_damage_and_autorepeat_sinks_are_fail_closed():
+def test_offense_suppression_precedes_native_melee_redirect_and_autorepeat_cast():
     attacker = UNIT[UNIT.index("void Unit::AttackerStateUpdate"):
                     UNIT.index("void Unit::HandleProcExtraAttackFor")]
     autorepeat = UNIT[UNIT.index("void Unit::_UpdateAutoRepeatSpell"):
                       UNIT.index("void Unit::SetCurrentCastSpell")]
 
     assert "RaidControlledUnitOffenseRejected(this, victim)" in attacker
-    assert attacker.count("RaidControlledUnitOffenseRejected(this, victim)") == 2
-    assert "GetMeleeHitRedirectTarget(victim)" in attacker
+    assert attacker.count("RaidControlledUnitOffenseRejected(this, victim)") == 1
+    assert attacker.index("RaidControlledUnitOffenseRejected(this, victim)") < attacker.index(
+        "GetMeleeHitRedirectTarget(victim)"
+    )
+    # Redirect selection can consume an aura charge. After that native outcome,
+    # bot policy cannot cancel the redirected hit or its damage/procs.
+    assert "RaidControlledUnitOffenseRejected" not in attacker.split(
+        "GetMeleeHitRedirectTarget(victim)", 1
+    )[1]
     assert "m_targets.GetUnitTarget()" in autorepeat
     assert "InterruptSpell(CURRENT_AUTOREPEAT_SPELL" in autorepeat
     assert autorepeat.index("if (RaidControlledUnitOffenseRejected") < autorepeat.index(

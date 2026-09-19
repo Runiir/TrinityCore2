@@ -1701,9 +1701,6 @@ void Unit::AttackerStateUpdate(Unit* victim, WeaponAttackType attType, bool extr
         // attack can be redirected to another target
         victim = GetMeleeHitRedirectTarget(victim);
 
-        if (RaidControlledUnitOffenseRejected(this, victim))
-            return;
-
         AuraEffectList const& meleeAttackOverrides = GetAuraEffectsByType(SPELL_AURA_OVERRIDE_AUTOATTACK_WITH_MELEE_SPELL);
         AuraEffect const* meleeAttackAuraEffect = nullptr;
         uint32 meleeAttackSpellId = 0;
