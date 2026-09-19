@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 import time
 from collections import Counter
 from datetime import datetime, timezone
@@ -40,6 +41,31 @@ def encoded(value: Any) -> bytes:
 
 def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def execution_source() -> dict[str, dict[str, str | None]]:
+    """Hash source files backing the imported modules at batch startup.
+
+    Supplied backend receipts retain their own client claims.  A missing
+    source file remains unknown instead of being represented by a guessed
+    digest.
+    """
+    modules = {
+        "writer": sys.modules[__name__],
+        "packet_builder": laya_packets,
+        "hosted_serializer": analyzer,
+    }
+    result: dict[str, dict[str, str | None]] = {}
+    for name, module in modules.items():
+        source_path = getattr(module, "__file__", None)
+        path = Path(source_path) if isinstance(source_path, str) else None
+        if path is not None and path.suffix == ".pyc":
+            path = path.with_suffix(".py")
+        result[name] = {
+            "module": getattr(module, "__name__", None),
+            "source_sha256": sha(path.read_bytes()) if path is not None and path.is_file() else None,
+        }
+    return result
 
 
 def _qwen_actor_packets(review: dict[str, Any], model: str) -> list[dict[str, Any]]:
@@ -238,13 +264,20 @@ def main() -> int:
     identity = json.loads(args.identity.read_text())
     identity["review_sha256"] = sha(args.review.read_bytes())
     backend = json.loads(args.backend_receipt.read_text())
+    supplied_execution_source = backend.get("execution_source")
+    if supplied_execution_source is not None:
+        backend["supplied_execution_source"] = supplied_execution_source
+    backend["execution_source"] = execution_source()
     request_fn = None
     if args.backend == "hosted":
         if args.model not in (None, analyzer.JEV_MODEL) or args.endpoint != ENDPOINT:
             parser.error("hosted review uses the configured Jev API model and endpoint")
         packets = laya_packets.actor_packets(review, analyzer.JEV_MODEL)
-        backend.update(provider="typesafe_hosted", endpoint=analyzer.JEV_URL,
-                       requested_model=analyzer.JEV_MODEL)
+        backend["execution_backend"] = {
+            "provider": "typesafe_hosted",
+            "endpoint": analyzer.JEV_URL,
+            "requested_model": analyzer.JEV_MODEL,
+        }
         if not args.prepare_only:
             key = analyzer._jev_key(args.env_file)
             def request_fn(packet, _endpoint):

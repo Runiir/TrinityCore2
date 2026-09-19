@@ -16,7 +16,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "0975ac089219b36d653df7d87c5353b7695296bb8edc1e589bca92ecaea5e3dc"
+    "sha256": "23b4c8d83c1b00fc8ec146be2f8bef74d3e74464b3fa16099630c6ff5b6fd6ec"
   },
   "scope_lock": {
     "objective": "Observe actual native cast lifecycle without changing gameplay; retain synchronous instant finishes, failed preparation and distinct same-millisecond casts through existing trace and timeline.",

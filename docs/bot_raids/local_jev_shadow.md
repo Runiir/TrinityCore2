@@ -99,6 +99,11 @@ closed evidence manifest, not desired configuration. Unknown fields stay absent.
 The collector lists required identities in `REQUIRED_IDENTITY` and quarantines
 incomplete identity. `backend_json` records upstream source, model checkpoint,
 prompt revision, Pixi lock hash, device, dtype and context limit.
+The CLI records current source-file hashes under `backend.execution_source`
+before building packets. Supplied `client_files_sha256` remains a receipt claim;
+it can be stale and must not override the observed execution-source hashes.
+Run from a clean, frozen analysis checkout. These hashes bind source files at
+startup, not historical predictions or remote hosted model weights.
 
 All examples currently remain in quarantine, even when identities are complete.
 They have no adjudicated labels. `examples.jsonl` stores the exact ordered HTTP

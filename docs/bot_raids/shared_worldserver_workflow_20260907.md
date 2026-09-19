@@ -53,7 +53,8 @@ the current run successfully. Their later requests, reviews and the Elemental
 reference contradiction are remote-verified in
 `magmaw_master_73103_20260919.addendum.tar.gz.dvc` (25members). The supplied
 backend receipts contain stale client hashes; preserve that provenance limit
-for these predictions. Automatic execution-source binding is being repaired.
+for these predictions. Future CLI batches automatically record current source-file hashes separately
+from supplied backend claims;22 focused tests pass.
 
 
 The later `2fcd4133aa` run at 152,244.042 DPS remains regression evidence, not the

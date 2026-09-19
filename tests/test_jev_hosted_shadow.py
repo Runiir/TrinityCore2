@@ -1,11 +1,13 @@
 import json
 import sys
 from io import BytesIO
+from pathlib import Path
 
 from tools.bot_ml import jev_shadow as shadow
 
 
 def run_hosted(tmp_path, monkeypatch, *, prepare=False, fail=False):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     review = {"jev_input": {"state": {"run_id": "closed", "boss_dps_review": {
         "actor_identity": [{"bot_guid": 7, "role": "dps", "class_spec": "fire_mage"}],
         "actor_loss_signals": [{"bot_guid": 7, "counterfactual_status": "unavailable"}],
@@ -13,7 +15,15 @@ def run_hosted(tmp_path, monkeypatch, *, prepare=False, fail=False):
     inputs = {
         "review": review,
         "identity": {"run_id": "closed", "closed": True},
-        "backend": {"provider": "typesafe_hosted"},
+        "backend": {
+            "provider": "receipt-provider",
+            "requested_model": "receipt-model",
+            "endpoint": "receipt-endpoint",
+            "client_files_sha256": {
+                "tools/bot_ml/jev_shadow.py": "stale-writer",
+                "tools/bot_ml/laya_packets.py": "stale-packet-builder",
+            },
+        },
     }
     for name, value in inputs.items():
         (tmp_path / f"{name}.json").write_text(json.dumps(value))
@@ -48,6 +58,51 @@ def run_hosted(tmp_path, monkeypatch, *, prepare=False, fail=False):
     return result, json.loads(payload), calls
 
 
+def run_local_prepare(tmp_path, monkeypatch):
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    review = {"jev_input": {"state": {"run_id": "closed", "boss_dps_review": {
+        "actor_identity": [{"bot_guid": 7, "role": "dps", "class_spec": "fire_mage"}],
+        "actor_loss_signals": [{"bot_guid": 7, "counterfactual_status": "unavailable"}],
+    }}}}
+    for name, value in (
+        ("review", review),
+        ("identity", {"run_id": "closed", "closed": True}),
+        ("backend", {
+            "provider": "receipt-local",
+            "requested_model": "receipt-local-model",
+            "client_files_sha256": {
+                "tools/bot_ml/jev_shadow.py": "stale-writer",
+                "tools/bot_ml/laya_packets.py": "stale-packet-builder",
+            },
+        }),
+    ):
+        (tmp_path / f"{name}.json").write_text(json.dumps(value))
+    monkeypatch.setattr(sys, "argv", [
+        "shadow", "--review", str(tmp_path / "review.json"), "--identity",
+        str(tmp_path / "identity.json"), "--backend-receipt", str(tmp_path / "backend.json"),
+        "--output", str(tmp_path / "out"), "--backend", "local", "--prepare-only",
+    ])
+    code = shadow.main()
+    row = json.loads((tmp_path / "out/examples.jsonl").read_text())
+    return code, row
+
+
+def assert_actual_execution_source(row):
+    expected = {
+        "writer": shadow,
+        "packet_builder": shadow.laya_packets,
+        "hosted_serializer": shadow.analyzer,
+    }
+    for name, module in expected.items():
+        source = row["backend"]["execution_source"][name]
+        assert source["module"] == module.__name__
+        assert source["source_sha256"] == shadow.sha(Path(module.__file__).read_bytes())
+    assert row["backend"]["client_files_sha256"] == {
+        "tools/bot_ml/jev_shadow.py": "stale-writer",
+        "tools/bot_ml/laya_packets.py": "stale-packet-builder",
+    }
+
+
 def test_explicit_hosted_batch_retains_request_and_resolved_model(tmp_path, monkeypatch):
     code, row, calls = run_hosted(tmp_path, monkeypatch)
     assert code == 0 and len(calls) == 1
@@ -71,6 +126,29 @@ def test_hosted_prepare_needs_no_key_or_request(tmp_path, monkeypatch):
     code, row, calls = run_hosted(tmp_path, monkeypatch, prepare=True)
     assert code == 0 and calls == []
     assert row["source"] == "prepared" and row["response"] is None
+
+
+def test_prepare_main_records_actual_sources_for_local_and_hosted(tmp_path, monkeypatch):
+    hosted_code, hosted_row, calls = run_hosted(tmp_path / "hosted", monkeypatch, prepare=True)
+    local_code, local_row = run_local_prepare(tmp_path / "local", monkeypatch)
+    assert hosted_code == 0 and local_code == 0 and calls == []
+    assert hosted_row["backend"]["provider"] == "receipt-provider"
+    assert hosted_row["backend"]["requested_model"] == "receipt-model"
+    assert hosted_row["backend"]["execution_backend"]["provider"] == "typesafe_hosted"
+    assert hosted_row["backend"]["execution_backend"]["requested_model"] == shadow.analyzer.JEV_MODEL
+    assert local_row["backend"]["provider"] == "receipt-local"
+    assert local_row["backend"]["requested_model"] == "receipt-local-model"
+    assert_actual_execution_source(hosted_row)
+    assert_actual_execution_source(local_row)
+
+
+def test_execution_source_keeps_missing_module_hash_unknown(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        shadow.analyzer,
+        "__file__",
+        str(tmp_path / "missing-analyzer.py"),
+    )
+    assert shadow.execution_source()["hosted_serializer"]["source_sha256"] is None
 
 
 def test_retained_hosted_bytes_match_actual_http_request(monkeypatch):
