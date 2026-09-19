@@ -549,3 +549,25 @@ after publication. Compact analysis, JEV, timeline, status and native-mushroom
 evidence are retained in
 `artifacts/cata_raid_program/magmaw_jev_canary_compact_20260919.tar.gz.dvc`;
 the Git-tracked WCL DPS and cast-timeline references remain local.
+
+## Disk and evidence lifecycle closeout (2026-09-19)
+
+Seven detached, clean experimental worktrees and their generated build/source
+copies were removed after confirming that no build or worldserver process was
+using them. The active checkout and the detached shared-instance source
+checkout remain. Forty-six shared-instance Magmaw run directories were
+verified against their existing DVC pointers before eviction; four unmatched
+runs, temporary Magmaw scratch, stale route/preflight records and handoffs
+were captured in
+`artifacts/cata_raid_program/magmaw_stale_scratch_compact_20260919.tar.gz.dvc`
+and the local archive was then evicted.
+
+Remote-backed materialized outputs under `artifacts/` were pushed and evicted
+where verification succeeded. Outputs whose cache or remote could not be
+verified were retained, as were the local WoWSims reference bundles used for
+the DPS denominator. The WCL DPS and cast-timeline references remain local.
+The cleanup increased free space from roughly 37 GiB to 48 GiB; the remaining
+large local trees are the active build, game data, dataset, Pixi environment
+and DVC cache. A workspace-scoped DVC garbage-collection check was run; no
+broad cache deletion was performed because the current repository still
+references those objects.
