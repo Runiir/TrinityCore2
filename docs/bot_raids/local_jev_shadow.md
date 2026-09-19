@@ -43,12 +43,14 @@ own truncation. Retain that replay as historical boundary evidence; it does not
 validate the new untruncated projection or establish diagnostic accuracy.
 
 The replacement was exercised on the closed lawful Magmaw run `2fcd4133aa`.
-All six DPS actor requests returned typed responses, using 881–913 input tokens
-with no truncated fields. Four suggestions failed deterministic evidence checks
+All six DPS actor requests returned typed responses, using 896–928 input tokens
+with no truncated fields. Two suggestions failed deterministic evidence checks
 and remain flagged for review. All six examples are quarantined and unlabeled.
 This validates the local transport and packet limits, not model accuracy or raid
 performance. Exact requests, responses and backend identity are retained in
 `artifacts/cata_raid_program/magmaw_laya_migration_20260919.tar.gz.dvc`.
+An earlier packet wording produced four flagged suggestions; both batches are
+retained. The final batch is `shadow_verified/`, generated from commit `00784a1708`.
 
 ## Review one closed run
 
