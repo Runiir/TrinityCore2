@@ -14,12 +14,13 @@ import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from tools.bot_ml import analyze_magmaw_trace as analyzer
 from tools.bot_ml import laya_packets
+from tools.bot_ml import shadow_timeline_context
 
 SCHEMA = "raid_diagnostic_shadow_v1"
 MODEL = laya_packets.MODEL
@@ -54,6 +55,7 @@ def execution_source() -> dict[str, dict[str, str | None]]:
         "writer": sys.modules[__name__],
         "packet_builder": laya_packets,
         "hosted_serializer": analyzer,
+        "timeline_context": shadow_timeline_context,
     }
     result: dict[str, dict[str, str | None]] = {}
     for name, module in modules.items():
@@ -160,10 +162,21 @@ def review_prediction(packet: dict[str, Any], response: dict[str, Any] | None) -
             "reasons": sorted(set(reasons)), "ground_truth_label": False}
 
 
+def _packet_actor_guid(packet: Mapping[str, Any]) -> Any:
+    actor = packet.get("state", {}).get("actor_review", {})
+    if not isinstance(actor, Mapping):
+        return None
+    if actor.get("bot_guid") is not None:
+        return actor.get("bot_guid")
+    identity = actor.get("actor_identity")
+    return identity.get("bot_guid") if isinstance(identity, Mapping) else None
+
+
 def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[str, Any],
              response: dict[str, Any] | None, latency_sec: float | None,
              error: str | None = None, source: str = "local_request",
-             teacher: dict[str, Any] | None = None) -> dict[str, Any]:
+             teacher: dict[str, Any] | None = None,
+             timeline_provenance: dict[str, Any] | None = None) -> dict[str, Any]:
     # Match the hosted client's actual serializer, including top-level order
     # and ASCII escaping. Local requests use encoded(packet) directly.
     body = (json.dumps({"state": packet["state"], "model": packet["model"],
@@ -178,7 +191,7 @@ def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[
         "schema": SCHEMA, "task": "post_run_diagnostic_review",
         "contract": CONTRACT, "recorded_at": datetime.now(timezone.utc).isoformat(),
         "example_id": sha(encoded([run_id, actor.get("bot_guid"), sha(body)])),
-        "run_id": run_id, "actor_guid": actor.get("bot_guid"),
+        "run_id": run_id, "actor_guid": _packet_actor_guid(packet),
         "split_group": run_id, "split_assignment": "unassigned",
         "identity": identity, "backend": backend, "source": source,
         "request_json": body.decode(), "request_sha256": sha(body),
@@ -189,6 +202,11 @@ def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[
         "admission": "quarantine", "quarantine_reasons": training_reasons(identity, response),
         "training_eligible": False, "action_policy_eligible": False,
         "action_authorized": False,
+        "timeline_provenance": timeline_provenance or {
+            "schema": shadow_timeline_context.SCHEMA,
+            "status": "unknown",
+            "reason": shadow_timeline_context.UNKNOWN_REASON,
+        },
     }
 
 
@@ -196,12 +214,13 @@ def write_batch(packets: list[dict[str, Any]], output: Path, *, identity: dict[s
                 backend: dict[str, Any], endpoint: str = ENDPOINT,
                 prepare_only: bool = False,
                 request_fn: Callable[[dict[str, Any], str], dict[str, Any]] | None = None,
-                request_source: str = "local_request") -> dict[str, Any]:
+                request_source: str = "local_request",
+                timeline_provenance: dict[str, Any] | None = None) -> dict[str, Any]:
     if identity.get("closed") is not True:
         raise ValueError("shadow capture requires an explicitly closed evidence batch")
     if not packets:
         raise ValueError("review has no actor packets")
-    if len({p["state"]["actor_review"]["bot_guid"] for p in packets}) != len(packets):
+    if len({_packet_actor_guid(p) for p in packets}) != len(packets):
         raise ValueError("duplicate actor packets")
     for packet in packets:
         if packet["state"]["run_id"] != identity.get("run_id"):
@@ -220,7 +239,8 @@ def write_batch(packets: list[dict[str, Any]], output: Path, *, identity: dict[s
                 error = f"{type(exc).__name__}: {exc}"
             row = make_row(packet, identity=identity, backend=backend, response=response,
                 latency_sec=round(time.monotonic() - start, 4) if not prepare_only else None,
-                error=error, source="prepared" if prepare_only else request_source)
+                error=error, source="prepared" if prepare_only else request_source,
+                timeline_provenance=timeline_provenance)
             stream.write(encoded(row).decode() + "\n")
             stream.flush()
             rows.append(row)
@@ -258,12 +278,33 @@ def main() -> int:
     parser.add_argument("--model")
     parser.add_argument("--backend", choices=("local", "hosted"), default="local")
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    parser.add_argument(
+        "--native-report",
+        type=Path,
+        help="closed native report JSON paired with --timeline-summary",
+    )
+    parser.add_argument(
+        "--timeline-summary",
+        type=Path,
+        help="closed compact native-death timeline summary paired with --native-report",
+    )
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()
     review = json.loads(args.review.read_text())
     identity = json.loads(args.identity.read_text())
     identity["review_sha256"] = sha(args.review.read_bytes())
     backend = json.loads(args.backend_receipt.read_text())
+    try:
+        review, timeline_provenance = shadow_timeline_context.join_timeline_context(
+            review,
+            native_report=args.native_report,
+            timeline_summary=args.timeline_summary,
+            supplied_identity=identity,
+        )
+    except ValueError as exc:
+        # Validate paired evidence before loading a hosted key or creating any
+        # request.  argparse gives callers a deterministic non-zero failure.
+        parser.error(str(exc))
     supplied_execution_source = backend.get("execution_source")
     if supplied_execution_source is not None:
         backend["supplied_execution_source"] = supplied_execution_source
@@ -287,7 +328,8 @@ def main() -> int:
     summary = write_batch(packets, args.output, identity=identity,
         backend=backend, endpoint=args.endpoint, prepare_only=args.prepare_only,
         request_fn=request_fn,
-        request_source="hosted_request" if args.backend == "hosted" else "local_request")
+        request_source="hosted_request" if args.backend == "hosted" else "local_request",
+        timeline_provenance=timeline_provenance)
     print(json.dumps(summary))
     return 2 if summary["errors"] else 0
 

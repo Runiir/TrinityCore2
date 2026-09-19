@@ -345,6 +345,93 @@ def _timeline_for_guid(boss: Mapping[str, Any], guid: int | str | None) -> dict[
     return _row_for_guid(timeline.get("actors"), guid)
 
 
+def _shadow_timeline_context(boss: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    context = boss.get("_shadow_timeline_context")
+    return context if isinstance(context, Mapping) else None
+
+
+def _shadow_timeline_actor(
+    context: Mapping[str, Any] | None,
+    guid: int | str | None,
+) -> Mapping[str, Any] | None:
+    if not isinstance(context, Mapping):
+        return None
+    actors = context.get("actors")
+    if not isinstance(actors, Mapping):
+        return None
+    row = actors.get(str(guid))
+    if not isinstance(row, Mapping):
+        row = actors.get(guid)
+    return row if isinstance(row, Mapping) else None
+
+
+def _shadow_value(metric: Any, missing: str) -> Any:
+    if isinstance(metric, Mapping) and metric.get("status") == "observed":
+        return metric.get("value")
+    reason = metric.get("reason") if isinstance(metric, Mapping) else missing
+    return f"unknown:{reason or missing}"
+
+
+def _shadow_native_metrics(actor: Mapping[str, Any] | None) -> dict[str, Any]:
+    """One compact copy of the joined native death-window facts."""
+    if not isinstance(actor, Mapping):
+        return {"status": "unknown", "reason": "timeline_actor_missing"}
+    damage = actor.get("damage") if isinstance(actor.get("damage"), Mapping) else {}
+    dps = actor.get("dps")
+    hps = actor.get("hps")
+    owner = damage.get("owner")
+    owned = damage.get("owned_source")
+    survival = actor.get("survival", "unknown:survival_missing")
+    if isinstance(survival, Mapping):
+        if survival.get("status") != "observed":
+            survival = f"unknown:{survival.get('reason', 'survival_missing')}"
+        else:
+            survival = {
+                key: value
+                for key, value in survival.items()
+                if key in {"alive_at_end", "alive_at_end_basis", "death_observed", "scope"}
+            }
+    window = actor.get("window")
+    window = {
+        "basis": window.get("basis", "native_trace_boss_death"),
+        "elapsed_seconds": window.get("elapsed_seconds")
+        if isinstance(window, Mapping)
+        else "unknown:window_missing",
+    }
+    metrics: dict[str, Any] = {
+        "window": window,
+        "basis": "native_death_window",
+        "dps": _shadow_value(dps, "death_window_dps_missing"),
+        "hps": _shadow_value(hps, "native_elapsed_hps_through_death_missing"),
+        "damage": {
+            "hostile": _shadow_value(damage.get("total_hostile_originated"), "damage_missing"),
+            "owner": _shadow_value(owner, "owner_damage_split_unavailable"),
+            "owned": _shadow_value(owned, "owned_source_damage_missing"),
+        },
+        "survival": survival,
+    }
+    activity = actor.get("activity")
+    if isinstance(activity, Mapping) and activity.get("status") == "observed":
+        metrics["activity"] = {
+            key: activity[key]
+            for key in (
+                "active_seconds",
+                "fresh_attack_active_seconds",
+                "longest_fresh_attack_outage_ms",
+            )
+            if key in activity
+        }
+    else:
+        metrics["activity"] = "unknown:" + str(
+            activity.get("reason") if isinstance(activity, Mapping) else "activity_missing"
+        )
+    unknown = ["damage_taken", "absorption", "mana", "overheal", "threat", "mitigation"]
+    if not isinstance(activity, Mapping) or activity.get("status") != "observed":
+        unknown.insert(0, "activity")
+    metrics["unknown"] = unknown
+    return metrics
+
+
 def _bounded_rows(value: Any, fields: Iterable[str], limit: int) -> Any:
     """Keep a deterministic small sample while stating its scope.
 
@@ -428,10 +515,13 @@ def _compact_timeline(timeline: Mapping[str, Any] | None, actor: Mapping[str, An
     result = _present(
         source,
         (
+            "reference_actor_id",
             "comparison_status",
             "bot_event_input_status",
+            "event_input_status",
             "wcl_common_window_dps",
             "dps_comparison_status",
+            "gap_basis",
         ),
     )
     if "comparison_status" not in result and "comparison_status" in actor:
@@ -471,6 +561,96 @@ def _compact_timeline(timeline: Mapping[str, Any] | None, actor: Mapping[str, An
                 result[target_key] = cadence[source_key]
     if not result:
         result["comparison_status"] = "missing_actor_timeline"
+    return result
+
+
+def _shadow_comparison(
+    timeline: Mapping[str, Any] | None,
+    actor: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Keep comparison classification without repeating native totals."""
+    source = _compact_timeline(timeline, actor)
+    result = _present(
+        source,
+        (
+            "reference_actor_id",
+            "comparison_status",
+            "wcl_common_window_dps",
+            "dps_comparison_status",
+            "gap_basis",
+        ),
+    )
+    bot_input = source.get("bot_event_input_status")
+    event_input = source.get("event_input_status")
+    if bot_input is not None:
+        result["input_status"] = bot_input
+    if event_input is not None and event_input != bot_input:
+        result["event_input_status"] = event_input
+    largest = source.get("largest_direct_gap")
+    if isinstance(largest, Mapping) and "gap_sec" in largest:
+        result["largest_gap_sec"] = largest["gap_sec"]
+    overlap = source.get("gap_overlap_evidence")
+    if isinstance(overlap, Mapping):
+        compact_overlap = _present(overlap, ("status", "first_gap"))
+        if compact_overlap:
+            result["gap_overlap"] = compact_overlap
+    cadence = {
+        output: source[key]
+        for key, output in (
+            ("wcl_event_count", "wcl_events"),
+            ("wcl_max_gap_sec", "wcl_max_gap_sec"),
+            ("bot_event_count", "bot_events"),
+            ("bot_max_gap_sec", "bot_max_gap_sec"),
+            ("bot_direct_event_count", "bot_direct_events"),
+            ("bot_direct_max_gap_sec", "bot_direct_max_gap_sec"),
+        )
+        if key in source
+    }
+    if cadence:
+        result["cadence"] = cadence
+    return result
+
+
+def _shadow_native_signal(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Bound native failure evidence while retaining exact aggregate values."""
+    result = _present(
+        value,
+        (
+            "native_outcome_count",
+            "native_actionable_failure_count",
+            "native_actionable_failure_ratio",
+            "native_outcome_counts",
+            "candidate_scan_count",
+            "candidate_gate_counts",
+        ),
+    )
+    return result or {"status": "unknown", "reason": "native_failure_signal_missing"}
+
+
+def _shadow_role_native(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Project role action/candidate summaries without repeated status prose."""
+    result: dict[str, Any] = {}
+    actions = value.get("action_outcomes")
+    if isinstance(actions, Mapping) and actions.get("status") == "observed":
+        result["action_outcomes"] = _present(
+            actions,
+            (
+                "outcome_count",
+                "actionable_failure_count",
+                "actionable_failure_ratio",
+                "outcome_counts",
+            ),
+        )
+    else:
+        result["action_outcomes"] = "unknown:action_outcomes_unavailable"
+    candidates = value.get("candidate_rejections")
+    if isinstance(candidates, Mapping) and candidates.get("status") == "observed":
+        result["candidate_rejections"] = _present(
+            candidates,
+            ("count_total", "reason_counts"),
+        )
+    else:
+        result["candidate_rejections"] = "unknown:candidate_rejections_unavailable"
     return result
 
 
@@ -594,6 +774,8 @@ def _role_actor_state(
     identity: Mapping[str, Any],
     role_metrics: Mapping[str, Any] | None = None,
     report_source_sha256: Any = None,
+    timeline_actor: Mapping[str, Any] | None = None,
+    comparison_timeline: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], bool]:
     """Build a role packet without borrowing DPS or party-level totals."""
     guid = _guid(identity.get("bot_guid", identity.get("actor_guid")))
@@ -648,69 +830,86 @@ def _role_actor_state(
         if role_metrics is not None
         else "role_metric_not_in_review"
     )
-    observed = (
-        _role_observed_metrics(actor_metrics, unavailable_reason=metric_reason)
-        if role_metrics is not None
-        else {
-            "damage": {"status": "unavailable", "reason": metric_reason},
-            "healing": {"status": "unavailable", "reason": metric_reason},
-            "threat": {"status": "unavailable", "reason": metric_reason},
-            "mitigation": {"status": "unavailable", "reason": metric_reason},
-        }
-    )
+    shadow_context = _shadow_timeline_context(boss)
+    if shadow_context is None:
+        observed = (
+            _role_observed_metrics(actor_metrics, unavailable_reason=metric_reason)
+            if role_metrics is not None
+            else {
+                "damage": {"status": "unavailable", "reason": metric_reason},
+                "healing": {"status": "unavailable", "reason": metric_reason},
+                "threat": {"status": "unavailable", "reason": metric_reason},
+                "mitigation": {"status": "unavailable", "reason": metric_reason},
+            }
+        )
     actor_review: dict[str, Any] = {
-        "bot_guid": guid,
-        "role": role,
         "actor_identity": actor_identity,
         "counterfactual_status": "unavailable",
-        "observed": observed,
         "native": native,
-        "role_scope": (
-            "actor_scoped_canonical_role_evidence"
-            if role_metrics is not None
-            else "actor_scoped_role_evidence_only"
-        ),
     }
-    evidence_scope = {
-        key: role_metrics[key]
-        for key in (
-            "route_node_id",
-            "first_at_ms",
-            "last_at_ms",
-            "duration_sec",
-            "combat_duration_sec",
-            "encounter_window_boundary_basis",
-        )
-        if isinstance(role_metrics, Mapping) and key in role_metrics
-    }
-    if isinstance(report_source_sha256, str) and report_source_sha256:
-        evidence_scope["source_sha256"] = report_source_sha256
+    if shadow_context is None:
+        actor_review.update({
+            "bot_guid": guid,
+            "role": role,
+            "role_scope": (
+                "actor_scoped_canonical_role_evidence"
+                if role_metrics is not None
+                else "actor_scoped_role_evidence_only"
+            ),
+        })
+    if shadow_context is not None:
+        actor_review["native"] = _shadow_role_native(native)
+        actor_review["native_metrics"] = _shadow_native_metrics(timeline_actor)
+        actor_review["comparison"] = _shadow_comparison(comparison_timeline, identity)
+    else:
+        actor_review["observed"] = observed
+    if shadow_context is not None:
+        window = shadow_context.get("window")
+        evidence_scope = {
+            "basis": window.get("basis") if isinstance(window, Mapping) else "unknown",
+            "elapsed_seconds": window.get("elapsed_seconds") if isinstance(window, Mapping) else None,
+        }
+    else:
+        evidence_scope = {
+            key: role_metrics[key]
+            for key in (
+                "route_node_id",
+                "first_at_ms",
+                "last_at_ms",
+                "duration_sec",
+                "combat_duration_sec",
+                "encounter_window_boundary_basis",
+            )
+            if isinstance(role_metrics, Mapping) and key in role_metrics
+        }
+        if isinstance(report_source_sha256, str) and report_source_sha256:
+            evidence_scope["source_sha256"] = report_source_sha256
     if evidence_scope:
         actor_review["evidence_scope"] = evidence_scope
-    if role_metrics is None:
+    if role_metrics is None and shadow_context is None:
         actor_review.update(_present(identity, ("bot_name", "class_spec", "class_name")))
-    limitations = (
-        [
+    if shadow_context is None and role_metrics is not None:
+        limitations = [
             "No DPS baseline for this role.",
             "Survival, absorption, mana, threat, and mitigation stay unavailable.",
             "Shared totals unknown.",
             "Actor-only rows.",
         ]
-        if role_metrics is not None
-        else [
+    elif shadow_context is None:
+        limitations = [
             "No DPS baseline for this role.",
             "Damage/healing/threat/mitigation are unavailable.",
             "Shared totals are not actor evidence.",
             "Only actor-scoped native rows are admissible.",
         ]
-    )
     result: dict[str, Any] = {
         "task": "role_diagnostic",
         "authority": "shadow_advisory_only",
-        "detail_scope": "role rows only; missing observations stay unavailable",
         "actor_review": actor_review,
-        "limitations": limitations,
     }
+    if shadow_context is None:
+        result["detail_scope"] = "role rows only; missing observations stay unavailable"
+        result["limitations"] = limitations
     for key in ("run_id", "segment_id"):
         if key in state:
             result[key] = state[key]
@@ -725,70 +924,111 @@ def _compact_actor_state(
     boss: Mapping[str, Any],
     actor: Mapping[str, Any],
     timeline: Mapping[str, Any] | None,
+    timeline_actor: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     guid = _guid(actor.get("bot_guid", actor.get("actor_guid")))
     identity = _identity_for_guid(boss, guid)
     full_actor = _metrics_actor(boss, state, guid)
+    shadow_context = _shadow_timeline_context(boss)
 
-    # Keep the old actor_review key because review_prediction and row identity
-    # consumers intentionally read it.  Its nested sections are the bounded
-    # Laya projection rather than the unbounded source actor row.
-    actor_review: dict[str, Any] = {}
-    actor_review.update(_present(actor, ("bot_guid", "class_spec")))
-    actor_review.update(
-        _present(
-            actor,
-            (
-                "duty_explains_idle",
-                "required_assignment_active",
-                "assignment_id",
-                "assignment_status",
-                "assignment_counterfactual_status",
-                "counterfactual_status",
-            ),
+    # Keep the historical projection for reviews without a joined timeline.
+    # A joined context uses one canonical native_metrics section so the model
+    # never sees the same death-window values under three different keys.
+    if shadow_context is None:
+        actor_review: dict[str, Any] = {}
+        actor_review.update(_present(actor, ("bot_guid", "class_spec")))
+        actor_review.update(
+            _present(
+                actor,
+                (
+                    "duty_explains_idle",
+                    "required_assignment_active",
+                    "assignment_id",
+                    "assignment_status",
+                    "assignment_counterfactual_status",
+                    "counterfactual_status",
+                ),
+            )
         )
-    )
-    if identity:
-        actor_review["actor_identity"] = identity
-    actor_review["observed"] = _present(actor, _OBSERVED_FIELDS)
-    actor_review["native"] = _compact_native(actor)
-    actor_review["duty"] = _present(
-        actor,
-        tuple(field for field in _DUTY_FIELDS if field not in {
-            "duty_explains_idle", "required_assignment_active", "assignment_status"
-        }),
-    )
-    actor_review["counterfactual"] = _present(
-        actor,
-        tuple(field for field in _COUNTERFACTUAL_FIELDS if field != "counterfactual_status"),
-    )
+        if identity:
+            actor_review["actor_identity"] = identity
+        actor_review["observed"] = _present(actor, _OBSERVED_FIELDS)
+        pet_source = full_actor or actor
+        owner_pet = _present(pet_source, _PET_FIELDS)
+        if owner_pet:
+            actor_review["owner_pet"] = owner_pet
+        else:
+            actor_review["owner_pet_evidence"] = "unavailable"
 
-    pet_source = full_actor or actor
-    owner_pet = _present(pet_source, _PET_FIELDS)
-    if owner_pet:
-        actor_review["owner_pet"] = owner_pet
-    else:
-        actor_review["owner_pet_evidence"] = "unavailable"
+        actor_review["native"] = _compact_native(actor)
+        actor_review["duty"] = _present(
+            actor,
+            tuple(field for field in _DUTY_FIELDS if field not in {
+                "duty_explains_idle", "required_assignment_active", "assignment_status"
+            }),
+        )
+        actor_review["counterfactual"] = _present(
+            actor,
+            tuple(field for field in _COUNTERFACTUAL_FIELDS if field != "counterfactual_status"),
+        )
 
-    actor_review["timeline_signal"] = _compact_timeline(
-        actor.get("timeline_signal") if isinstance(actor.get("timeline_signal"), Mapping) else timeline,
-        actor,
-    )
-
-    result: dict[str, Any] = {
-        "task": "actor_diagnostic",
-        "authority": "shadow_advisory_only",
-        "detail_scope": "bounded summaries; omitted rows stay unknown",
-        "actor_review": actor_review,
-        "limitations": [
+        actor_review["timeline_signal"] = _compact_timeline(
+            actor.get("timeline_signal") if isinstance(actor.get("timeline_signal"), Mapping) else timeline,
+            actor,
+        )
+        result_detail_scope = "bounded summaries; omitted rows stay unknown"
+        result_limitations = [
             "WCL unmatched is context only.",
             "Landed effects != completed casts.",
             "Owner gaps exclude pets; unknown stays unknown.",
             "Duty overlap blocks repair.",
             "Repair requires eligible counterfactual.",
             "Candidate scans != native failures.",
-        ],
+        ]
+    else:
+        actor_review = {
+            "actor_identity": identity or _present(actor, ("bot_guid", "class_spec")),
+            "native_metrics": _shadow_native_metrics(timeline_actor),
+            "native": _shadow_native_signal(actor),
+            "duty": _present(
+                actor,
+                tuple(field for field in _DUTY_FIELDS if field not in {
+                    "duty_explains_idle", "required_assignment_active", "assignment_status"
+                }),
+            ),
+            "counterfactual": _present(
+                actor,
+                tuple(field for field in _COUNTERFACTUAL_FIELDS if field != "counterfactual_status"),
+            ),
+            "comparison": _shadow_comparison(
+                actor.get("timeline_signal")
+                if isinstance(actor.get("timeline_signal"), Mapping)
+                else timeline,
+                actor,
+            ),
+        }
+        actor_review.update(
+            _present(
+                actor,
+                (
+                    "duty_explains_idle",
+                    "required_assignment_active",
+                    "assignment_id",
+                    "assignment_status",
+                    "assignment_counterfactual_status",
+                    "counterfactual_status",
+                ),
+            )
+        )
+
+    result: dict[str, Any] = {
+        "task": "actor_diagnostic",
+        "authority": "shadow_advisory_only",
+        "actor_review": actor_review,
     }
+    if shadow_context is None:
+        result["detail_scope"] = result_detail_scope
+        result["limitations"] = result_limitations
     for key in ("run_id", "segment_id"):
         if key in state:
             result[key] = state[key]
@@ -838,6 +1078,7 @@ def actor_packets(review: Mapping[str, Any], model: str = MODEL) -> list[dict[st
     boss = state.get("boss_dps_review")
     if not isinstance(boss, Mapping):
         return []
+    shadow_context = _shadow_timeline_context(boss)
     timeline = boss.get("timeline_comparison")
     timeline = timeline if isinstance(timeline, Mapping) else {}
     role_metrics = _canonical_role_metrics(review, boss)
@@ -872,9 +1113,16 @@ def actor_packets(review: Mapping[str, Any], model: str = MODEL) -> list[dict[st
         seen.add(str(guid))
         actor = _row_for_guid(loss_signals, guid)
         role = str(identity_row.get("role") or "").lower()
+        legacy_timeline_actor = _row_for_guid(timeline.get("actors"), guid)
+        joined_timeline_actor = (
+            _shadow_timeline_actor(shadow_context, guid)
+            if shadow_context is not None
+            else legacy_timeline_actor
+        )
         if actor is not None and role in {"", "dps"}:
-            timeline_actor = _row_for_guid(timeline.get("actors"), guid)
-            state_projection = _compact_actor_state(state, boss, actor, timeline_actor)
+            state_projection = _compact_actor_state(
+                state, boss, actor, legacy_timeline_actor, joined_timeline_actor
+            )
             question = _actor_question(guid)
         else:
             state_projection, has_native_failure = _role_actor_state(
@@ -883,6 +1131,8 @@ def actor_packets(review: Mapping[str, Any], model: str = MODEL) -> list[dict[st
                 identity_row,
                 role_metrics,
                 report_source_sha256,
+                joined_timeline_actor,
+                legacy_timeline_actor,
             )
             question = _role_question(guid, has_native_failure)
         packets.append(
