@@ -3848,6 +3848,10 @@ def _compact_timeline_comparison(value: Any) -> dict[str, Any] | None:
                 "reference_reused_for_duplicate_local_actor",
                 "wcl_observed_dps",
                 "bot_encounter_window_dps",
+                "bot_native_encounter_window_dps",
+                "bot_common_window_damage",
+                "bot_common_window_dps",
+                "bot_common_window_dps_basis",
                 "bot_active_dps",
                 "bot_damage_uptime",
                 "bot_moving_fraction",
@@ -3910,10 +3914,35 @@ def _timeline_actor_signal(
         gaps = gaps if isinstance(gaps, list) else []
         diffs = actor.get("matched_ability_diffs")
         diffs = diffs if isinstance(diffs, list) else []
+        wcl_only = actor.get("wcl_only_abilities")
+        wcl_only = wcl_only if isinstance(wcl_only, list) else []
+        bot_only = actor.get("bot_only_abilities")
+        bot_only = bot_only if isinstance(bot_only, list) else []
+        wcl_dps = actor.get("wcl_observed_dps")
+        common_dps = actor.get("bot_common_window_dps")
+        denominator_matched_delta = None
+        denominator_matched_ratio = None
+        if isinstance(wcl_dps, (int, float)) and isinstance(common_dps, (int, float)):
+            denominator_matched_delta = round(float(common_dps) - float(wcl_dps), 3)
+            denominator_matched_ratio = round(
+                float(common_dps) / max(1.0, float(wcl_dps)),
+                6,
+            )
         result[guid] = {
             "comparison_status": actor.get("comparison_status"),
             "reference_actor_id": actor.get("reference_actor_id"),
             "wcl_observed_dps": actor.get("wcl_observed_dps"),
+            "bot_common_window_damage": actor.get("bot_common_window_damage"),
+            "bot_common_window_dps": actor.get("bot_common_window_dps"),
+            "bot_common_window_dps_basis": actor.get(
+                "bot_common_window_dps_basis"
+            ),
+            "bot_common_window_dps_delta_vs_wcl": denominator_matched_delta,
+            "bot_common_window_dps_ratio_vs_wcl": denominator_matched_ratio,
+            "bot_native_encounter_window_dps": actor.get(
+                "bot_native_encounter_window_dps",
+                actor.get("bot_encounter_window_dps"),
+            ),
             "wcl_completed_casts": wcl.get("event_count"),
             "wcl_max_gap_sec": wcl.get("max_gap_sec"),
             "bot_landed_damage_events": bot.get("event_count"),
@@ -3934,6 +3963,8 @@ def _timeline_actor_signal(
                 for row in diffs[:4]
                 if isinstance(row, dict)
             ],
+            "wcl_only_abilities": wcl_only[:8],
+            "bot_only_abilities": bot_only[:8],
         }
     return result
 
@@ -3971,6 +4002,10 @@ def _compact_group_timeline(
                 "reference_actor_id",
                 "wcl_observed_dps",
                 "bot_encounter_window_dps",
+                "bot_native_encounter_window_dps",
+                "bot_common_window_damage",
+                "bot_common_window_dps",
+                "bot_common_window_dps_basis",
                 "bot_damage_uptime",
                 "bot_moving_fraction",
             )
@@ -4322,7 +4357,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use wcl_window_dps/encounter_window_dps (originated damage divided by the first-to-last positive hostile damage_done window in duration_sec) for the WCL Summary comparison. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material encounter-window DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. When timeline_comparison is available, use each actor's bot_common_window_dps: positive landed damage divided by the normalized common window shared with WCL. Do not compare bot_native_encounter_window_dps or legacy encounter_window_dps when the local fight is longer than the WCL window. The timeline lists WCL-only abilities, but those are observation gaps only: do not call one a missing damage action unless its name identifies a damage action and native action outcomes or an attributable damage gap corroborate it. Proc, aura, utility, and pet-state rows such as Lava Surge, Master of the Elements, or Earth Elemental Totem are context, not cast deficits. The aggregate wcl_window_dps contract remains originated damage divided by the first-to-last positive hostile damage_done window in duration_sec. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material denominator-matched DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -4357,8 +4392,12 @@ def _jev_questions(
             "instructions": (
                 f"For {class_spec} bot_guid {guid}, choose one bounded action from "
                 "actor_review and its matching timeline_comparison.actor. Read the normalized "
-                "WCL-cast versus bot-landed cadence and largest direct gaps before using "
-                "encounter-window DPS as the result. Use uptime, movement/range, native "
+                "WCL-cast versus bot-landed cadence, WCL-only abilities, and largest direct "
+                "gaps. WCL-only abilities are not automatically missing casts: require a "
+                "native action or attributable damage-gap join, and ignore proc/state/utility "
+                "rows as direct deficits. Use bot_common_window_dps as the denominator-matched DPS result; "
+                "bot_native_encounter_window_dps is diagnostic when the local window is "
+                "longer than WCL. Use uptime, movement/range, native "
                 "failure ratio, candidate gates, duty context, assignment status, control "
                 "receipts, damage gaps, and counterfactual_status. "
                 "WCL is context only. Do not authorize actor repair when duty_explains_idle, "

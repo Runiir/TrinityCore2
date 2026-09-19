@@ -7,10 +7,11 @@ The two sides intentionally keep different event semantics:
   combat log.
 
 Those are not interchangeable event types.  The report exposes both cadence
-views, their normalized first-to-first window, the largest bot gaps, and the
-encounter-window DPS result.  It never turns a missing WCL reference into a
-passing actor and never treats a utility cast with no landed damage row as a
-rotation failure.
+views, their normalized first-to-first window, the largest bot gaps, and a
+denominator-matched `bot_common_window_dps` value. The native full-fight metric
+is retained separately for diagnostics. It never turns a missing WCL reference
+into a passing actor and never treats a utility cast with no landed damage row
+as a rotation failure.
 """
 
 from __future__ import annotations
@@ -442,6 +443,11 @@ def compare_timelines(
             else None
         )
         bot_summary = _bot_actor_summary(by_actor.get(guid, []), window_sec=common_window)
+        common_window_damage = int(bot_summary.get("landed_damage") or 0)
+        common_window_dps = round(
+            common_window_damage / common_window,
+            3,
+        )
         actor_row: dict[str, Any] = {
             "bot_guid": guid,
             "bot_name": identity.get("bot_name") or metrics.get("actor_name"),
@@ -453,7 +459,19 @@ def compare_timelines(
             "reference_reuse_index": reference_reuse_index,
             "reference_reused_for_duplicate_local_actor": bool(reference_reuse_index and reference_reuse_index > 1),
             "wcl_observed_dps": reference.get("observed_dps") if reference else None,
+            # This is the native actor metric over the whole local encounter
+            # window. Keep it for diagnostics, but do not compare it directly
+            # with WCL when the local fight is longer than the reference.
             "bot_encounter_window_dps": metrics.get("encounter_window_dps"),
+            "bot_native_encounter_window_dps": metrics.get("encounter_window_dps"),
+            # This is the denominator-matched metric for the WCL comparison:
+            # the same normalized first-to-first window used by both cadence
+            # views, using positive originated landed damage only.
+            "bot_common_window_damage": common_window_damage,
+            "bot_common_window_dps": common_window_dps,
+            "bot_common_window_dps_basis": (
+                "positive_landed_damage_over_normalized_common_window_sec"
+            ),
             "bot_active_dps": metrics.get("active_dps"),
             "bot_damage_uptime": metrics.get("damage_uptime"),
             "bot_moving_fraction": metrics.get("moving_fraction"),
@@ -465,9 +483,30 @@ def compare_timelines(
             "comparison_limitations": [
                 "WCL rows are completed casts; bot rows are positive landed damage observations.",
                 "Periodic ticks and multi-target damage can outnumber the originating cast.",
+                "WCL-only rows may be proc, aura, utility, or pet-state observations; join them to native action outcomes before treating them as missing damage actions.",
                 "WCL is a reference timeline, not an acceptance floor; gear and assignments differ.",
             ],
         }
+        actor_row["wcl_only_abilities"] = [
+            {
+                "ability": row.get("ability"),
+                "wcl_completed_casts": int(row.get("wcl_completed_casts") or 0),
+            }
+            for row in actor_row["ability_diffs"]
+            if int(row.get("wcl_completed_casts") or 0) > 0
+            and int(row.get("bot_landed_damage_events") or 0) == 0
+        ][:8]
+        actor_row["bot_only_abilities"] = [
+            {
+                "ability": row.get("ability"),
+                "bot_landed_damage_events": int(
+                    row.get("bot_landed_damage_events") or 0
+                ),
+            }
+            for row in actor_row["ability_diffs"]
+            if int(row.get("wcl_completed_casts") or 0) == 0
+            and int(row.get("bot_landed_damage_events") or 0) > 0
+        ][:8]
         if reference is None:
             actor_row["comparison_limitations"].append(
                 "No same-class/spec WCL cast timeline was supplied; cadence is diagnostic only."
@@ -507,7 +546,10 @@ def compare_timelines(
         "actors": actors,
         "signal_contract": {
             "primary_signal": "per_actor_wcl_cast_cadence_vs_bot_landed_event_cadence",
-            "secondary_signal": "movement_gaps_native_failures_and_encounter_window_dps",
+            "secondary_signal": "denominator_matched_common_window_dps_movement_gaps_and_native_failures",
+            "dps_metric": "bot_common_window_dps",
+            "dps_metric_formula": "positive_landed_damage_over_normalized_common_window_sec",
+            "native_full_window_metric": "bot_native_encounter_window_dps",
             "jev_role": "review_compact_diff_and_propose_one_bounded_next_fix; never submit actions",
             "missing_reference_policy": "report_actor_explicitly_as_missing_wcl_reference",
         },

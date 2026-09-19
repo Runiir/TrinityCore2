@@ -85,6 +85,9 @@ def test_sql_and_native_path_keep_the_exception_narrow():
     assert "event=damage_targets" in druid_magmaw_spells
     assert "event=nearby_targets" in druid_magmaw_spells
     assert "probe_radius=12.000 native_radius" in druid_magmaw_spells
+    assert "MagmawParasiteGroundRadius = 8.0f" in druid_magmaw_spells
+    assert "effective_radius" in druid_magmaw_spells
+    assert "distance2d <= effectiveRadius" in druid_magmaw_spells
     assert "Cell::VisitAllObjects" in druid_magmaw_spells
     assert "distance_2d" in druid_magmaw_spells
     assert "CalcRadius(" in druid_magmaw_spells

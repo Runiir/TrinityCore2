@@ -196,6 +196,16 @@ def test_compare_timelines_covers_all_local_roles_and_marks_missing_wcl(
                     "kind": "damage",
                     "route_node_id": "bwd.magmaw.encounter",
                     "target_entry": 41570,
+                    "actor_guid": 30001,
+                    "timestamp_ms": 7100,
+                    "spell_id": 2912,
+                    "spell_name": "Starfire",
+                    "originated_amount": 700,
+                },
+                {
+                    "kind": "damage",
+                    "route_node_id": "bwd.magmaw.encounter",
+                    "target_entry": 41570,
                     "actor_guid": 30002,
                     "timestamp_ms": 1500,
                     "spell_id": 45477,
@@ -240,6 +250,7 @@ def test_compare_timelines_covers_all_local_roles_and_marks_missing_wcl(
                     "casts": [
                         {"t": 0.1, "ability": "Starfire"},
                         {"t": 1.1, "ability": "Starfire"},
+                        {"t": 2.1, "ability": "Wrath"},
                     ],
                 },
                 {
@@ -271,6 +282,15 @@ def test_compare_timelines_covers_all_local_roles_and_marks_missing_wcl(
     assert actors[30001]["comparison_status"] == "comparable"
     assert actors[30001]["bot"]["landed_damage_events"] == 3
     assert actors[30001]["bot"]["direct_or_unknown_cadence"]["event_count"] == 2
+    assert actors[30001]["bot_common_window_damage"] == 2100
+    assert actors[30001]["bot_common_window_dps"] == 420.0
+    assert actors[30001]["bot_native_encounter_window_dps"] == 1000
+    assert actors[30001]["wcl_only_abilities"] == [
+        {
+            "ability": "Wrath",
+            "wcl_completed_casts": 1,
+        }
+    ]
     assert actors[30001]["reference_reuse_index"] == 1
     assert actors[30007]["reference_reused_for_duplicate_local_actor"] is True
     assert actors[30009]["comparison_status"] == "missing_wcl_reference"
@@ -278,3 +298,4 @@ def test_compare_timelines_covers_all_local_roles_and_marks_missing_wcl(
     assert result["signal_contract"]["primary_signal"] == (
         "per_actor_wcl_cast_cadence_vs_bot_landed_event_cadence"
     )
+    assert result["signal_contract"]["dps_metric"] == "bot_common_window_dps"
