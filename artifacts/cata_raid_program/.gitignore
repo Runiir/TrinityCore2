@@ -243,3 +243,8 @@
 /magmaw_stale_scratch_compact_20260919.tar.gz
 /magmaw_stale_validation_compact_20260919.tar.gz
 /shared_validation_stale_scratch_compact_20260919.tar.gz
+
+/parity_prestart
+/parity_prepare_20260919
+/magmaw_native_parity_2fcd4133_20260919.raw.tar.zst
+/magmaw_native_parity_2fcd4133_20260919_review

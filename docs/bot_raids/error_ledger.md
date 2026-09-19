@@ -451,3 +451,11 @@ Local Qwen replay selected encounter_assignment for all six DPS packets, includi
 actors without an observed incomplete required duty. Keep raw suggestions as
 quarantined prediction data. Deterministic contradiction checks and native
 review decide which suggestions become work units; model confidence cannot.
+
+## Current restart instruction, 2026-09-19
+
+WCL remains the benchmark. Restore shard89's 241k native source (unchanged
+between 2f13baea11 and 68621071cc), apply only native Mushroom radius/selection
+restoration, retain needed diagnostics/Laya, merge to master, build and measure.
+The 152k source is later regression evidence, not the new target. Do not add
+Blood, movement or Mushroom-placement repairs before this baseline rerun.

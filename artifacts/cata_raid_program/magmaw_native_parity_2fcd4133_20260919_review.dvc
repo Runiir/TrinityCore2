@@ -1,0 +1,6 @@
+outs:
+- md5: 8a3bfee228502d4552a3955b86651223.dir
+  size: 220952
+  nfiles: 16
+  hash: md5
+  path: magmaw_native_parity_2fcd4133_20260919_review

@@ -1,0 +1,6 @@
+outs:
+- md5: 98beb738b27bf91bd21ebf0bf0339b29.dir
+  size: 10911908
+  nfiles: 2
+  hash: md5
+  path: parity_prestart

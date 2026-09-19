@@ -85,14 +85,16 @@ def test_sql_and_native_path_keep_the_exception_narrow():
     assert "event=damage_targets" in druid_magmaw_spells
     assert "event=nearby_targets" in druid_magmaw_spells
     assert "probe_radius=12.000 native_radius" in druid_magmaw_spells
-    assert "MagmawParasiteGroundRadius = 8.0f" in druid_magmaw_spells
-    assert "effective_radius" in druid_magmaw_spells
-    assert "distance2d <= effectiveRadius" in druid_magmaw_spells
+    # This hook observes selection; assignments cannot enlarge a player spell.
+    assert "MagmawParasiteGroundRadius" not in druid_magmaw_spells
+    assert "effectiveRadius" not in druid_magmaw_spells
     assert "Cell::VisitAllObjects" in druid_magmaw_spells
     assert "distance_2d" in druid_magmaw_spells
     assert "CalcRadius(" in druid_magmaw_spells
     assert "SpellTargetIndex::TargetB" in druid_magmaw_spells
-    assert "targets.push_back(object)" in druid_magmaw_spells
+    assert "targets.push_back" not in druid_magmaw_spells
+    assert "targets.insert" not in druid_magmaw_spells
+    assert "targets.remove" not in druid_magmaw_spells
     assert "TARGET_UNIT_DEST_AREA_ENEMY" in druid_magmaw_spells
     assert "spell_dru_wild_mushroom_damage" in sql
     assert "GetHomePosition" not in duty_source

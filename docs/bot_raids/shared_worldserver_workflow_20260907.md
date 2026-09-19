@@ -1,38 +1,42 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-13. This is the current status. Historical run narratives remain
-in Git; failed assumptions and bounded next repairs belong in the
-[error ledger](error_ledger.md). Closed generated evidence is tracked by DVC.
+Updated 2026-09-19. Work continues on master. The separate ongoing JEV branch
+is preserved.
 
 ## Current work and latest native run
 
-Source `779f62087f` cleared Magmaw in129.792s at217,217.725 exact raid DPS
-and12,961.739 exact-window HPS. The all-bot review accepted Balance33831
-(three Treants,34 landed hits,83,995 damage), OBS-012 periodic outcome retention,
-and MOV-001's actual native hazard traversal (receipt373, endpoint reached).
-No Infection or boss-window deaths occurred. Overall roster performance is open;
-the latest DPS is0.54% below a3a. Historical head-to-body failure is not covered
-by this kill, which ended during head exposure.
+WCL is the performance benchmark. Per the user's instruction, restart from the
+code that produced shard89's 241,249.360 DPS clear, restore native Mushroom
+radius/selection, run again, then continue repairs from the measured result.
+Do not replace the WCL goal with the later 152k run or treat 241k as the final
+acceptance threshold.
 
-The active task is the duty-aware, spell-level WCL comparison linked in the
-[all-actor table](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
-Fresh WCL breakdowns expose larger cadence, guardian and strike-damage gaps,
-plus excess native components that can conceal losses. Drain Soul is above the
-selected reference; its variance does not explain the roster deficit. Separate
-investigation priorities from small proven bugs and from recoverable damage.
-No additional worldserver or dummy experiment was launched for this comparison.
-The next causal check should resolve a material gap using retained evidence first.
+Shard89 native code is retained at `2f13baea11` and unchanged through
+`68621071cc`. Master now merges that source with the reviewed canonical timeline,
+schema-8 capture and local Laya tooling. The only native source/SQL difference
+for the new baseline run is `spell_druid_magmaw.cpp`: remove the eight-yard
+radius and horizontal-only target append, retaining ordinary native selection.
+Do not carry the later Blood observation refactor, melee-veto change or a new
+Mushroom policy fix into this baseline measurement.
 
-Affliction Bane-purpose, Fire/Survival potions and optional Elemental earth slot
-are committed and independently reviewed, but not built/applied/live validated.
-The authserver remains available; worldserver is stopped after clean closure.
-Current evidence: `artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc`.
-The82,856,023-byte archive and every member passed fresh-cache remote verification.
-Exact raw/full timeline and archive/cache/reconstruction duplicates were evicted.
-The readable comparison, normalized references and timeline HTML remain local.
+Keep 1 Blood tank, 3 healers, 6 DPS and the shard89 class/profile setup. Use clean
+source/build identity, fresh provisioning/readback and the completion watchdog.
+The next result must report exact pull-to-death damage, owned pets, per-actor
+output, phase/duty coverage and deaths. Exclude friendly damage and mirrored
+79010 callbacks. Compare to shard89 and WCL; unexplained actor losses remain open.
 
-The sections below retain September10 diagnostic history. Their run-specific
-acceptance and follow-up descriptions do not override the current status above.
+The later `2fcd4133aa` run cleared in 197.847 seconds at 152,244.042 DPS and
+19,332.722 HPS. It is retained regression evidence, not the restart source or
+performance target. Its compact all-actor review is
+`artifacts/cata_raid_program/magmaw_native_parity_2fcd4133_20260919_review.dvc`.
+Shard89 evidence is `artifacts/cata_raid_program/magmaw_jev_canary_compact_20260919.tar.gz.dvc`.
+
+Local Laya runs at `127.0.0.1:8000`; use the
+[local shadow workflow](local_jev_shadow.md) after closure. Predictions remain
+advisory and quarantined until adjudicated. The authserver is available; the
+next worldserver launch follows reviewed build and preparation.
+
+Historical entries below do not override this restart instruction.
 
 ## Prior diagnostic run
 

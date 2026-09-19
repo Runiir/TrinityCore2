@@ -165,7 +165,7 @@
         "file_count": 3,
         "size_bytes": 1284521,
         "path_set_sha256": "81fe798451c158e40821a07936b2c9913381648d4ff986af61484c1075a1a32d",
-        "inventory_sha256": "0cd587146ba394c0688b8d50d4f58e921ba87c5b4f91b44d5d63408164bf1bc7"
+        "inventory_sha256": "32b7a2961a5d8f347bc1e4e1a4d67477d97d06599677670c3357ed0bd9a3f635"
       },
       "expected_files": [
         {
@@ -173,7 +173,7 @@
           "type": "file",
           "mode": "0644",
           "size_bytes": 629,
-          "sha256": "4fafcab10da8336b16245f5142d39488476116feac73af4e4de28cf86e1f3495"
+          "sha256": "69e2a38f05e066e289fa30f23869b6c562f94c1a6111f3732a45af5fbcb1a9f1"
         },
         {
           "path": "dataset/validation_gear_profiles/profiles.json",

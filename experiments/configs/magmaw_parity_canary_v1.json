@@ -1,0 +1,36 @@
+{
+  "schema": "magmaw_parity_canary_v1",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "composition": {
+    "tank": 1,
+    "healer": 3,
+    "dps": 6
+  },
+  "base_config_sha256": "8a80c67f6c1ecca22bee90bda81e779a8371c027bb703f2f1b30f446ca3aa65f",
+  "config_overrides": {
+    "BotWorld.RuntimeProfile": "\"blackwing_descent_10n_magmaw_diagnostic\"",
+    "BotWorld.PoolTagFilter": "\"blackwing_descent_10n_magmaw_diagnostic\""
+  },
+  "provisioning_scenario_ids": [
+    "blackwing_descent_10n_magmaw_diagnostic"
+  ],
+  "controller": "tools.raid_program.capture_phase1_raid_foundation",
+  "development_run": true,
+  "duration_policy": "completion-watchdog",
+  "runtime_asset_input_manifest": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+  "build_policy": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+  "jev": {
+    "mode": "local_advisory_after_closure",
+    "endpoint": "http://127.0.0.1:8000/v1/systemone",
+    "model": "convaiinnovations/laya-typed-decisions",
+    "action_authority": false
+  },
+  "acceptance": {
+    "native_clear": "separate",
+    "repair": "separate",
+    "performance": "WCL is the performance benchmark; rerun 241k source with native Mushroom correction, measure new result, then repair attributable gaps",
+    "script_fidelity": "native player targeting and radius; no encounter-specific spell overrides"
+  },
+  "restart_source": "68621071ccb3df1eb6927fbafa83a8c5dccdbb3a",
+  "native_change_scope": "Restore native Wild Mushroom radius and target selection only"
+}
