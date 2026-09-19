@@ -19,6 +19,17 @@ Work directly by default. Delegate one bounded implementation when useful; use a
 agent for independent review of risky runtime/encounter changes. Multiple implementation
 workers require explicit user authorization and disjoint ownership. No nested workers.
 Worker prompts include: "Work directly. Do not launch another model or subprocess agent."
+For the user's Jev/Laya-assisted worker workflow, apply the two bounded
+[worker checkpoints](../../../docs/bot_raids/worker_checkpoints.md): proposed
+repair and returned result. Reuse the assignment and exact evidence; models
+flag scope drift or unsupported claims, while the coordinator sends corrections.
+Keep deterministic file/test checks separate. Model agreement is not review
+approval, and an unavailable model routes to the existing reviewer rather than
+blocking unrelated work. Do not add a model call to every worker tool action.
+For parent-plan drift, use `plan-drift-review` at
+`../plan-drift-review/SKILL.md` when requested or after a substantive change of
+focus. Include the latest user direction and all remaining actor requirements;
+the currently selected repair does not replace the parent objective.
 Keep the causal handoff short: one proven edge, exact evidence/file locations,
 owned files, the behavioral counterexample, command and acceptance conditions.
 Link existing receipts instead of restating them or the program charter. Send
