@@ -3,8 +3,10 @@
 
 #include "Define.h"
 
+#include <cmath>
 #include <cstddef>
 #include <string_view>
+#include <vector>
 
 struct BotActionCandidate;
 struct ResolvedCombatAction;
@@ -17,6 +19,7 @@ struct MagmawBalanceMushroomDuty
 {
     static constexpr uint32 WildMushroomSpellId = 88747;
     static constexpr uint32 WildMushroomDetonateSpellId = 88751;
+    static constexpr uint32 WildMushroomDamageSpellId = 78777;
     static constexpr uint32 RequiredMushroomCount = 3;
     static constexpr uint32 PillarOfFlameEntry = 41843;
     static constexpr uint32 ParasiteEntry = 41806;
@@ -46,12 +49,84 @@ struct MagmawBalanceMushroomDuty
     {
         return ownedMushrooms >= RequiredMushroomCount;
     }
+
+    struct GroundCandidate
+    {
+        uint64 ParasiteGuid = 0;
+        float GroundX = 0.0f;
+        float GroundY = 0.0f;
+        float GroundZ = 0.0f;
+        float ParasiteToGroundDistance = 0.0f;
+        float ActorToGroundDistance = 0.0f;
+        bool Live = false;
+        bool Attackable = false;
+        bool Engaged = false;
+        bool GroundProjectionValid = false;
+        bool ActorRangeValid = false;
+        bool ActorLineOfSight = false;
+    };
+
+    struct GroundPoint
+    {
+        uint64 ParasiteGuid = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
+    };
+
+    static bool SelectGroundPoint(std::vector<GroundCandidate> const& candidates,
+        float nativeRadius, GroundPoint& selected)
+    {
+        if (!std::isfinite(nativeRadius) || nativeRadius <= 0.0f)
+            return false;
+
+        auto lawful = [nativeRadius](GroundCandidate const& candidate)
+        {
+            return candidate.Live && candidate.Attackable && candidate.Engaged
+                && candidate.GroundProjectionValid
+                && std::isfinite(candidate.GroundX)
+                && std::isfinite(candidate.GroundY)
+                && std::isfinite(candidate.GroundZ)
+                && std::isfinite(candidate.ParasiteToGroundDistance)
+                && std::isfinite(candidate.ActorToGroundDistance)
+                && candidate.ParasiteToGroundDistance <= nativeRadius
+                && candidate.ActorRangeValid
+                && candidate.ActorLineOfSight;
+        };
+        auto better = [](GroundCandidate const& left, GroundCandidate const& right)
+        {
+            if (left.ParasiteToGroundDistance != right.ParasiteToGroundDistance)
+                return left.ParasiteToGroundDistance < right.ParasiteToGroundDistance;
+            if (left.ParasiteGuid != right.ParasiteGuid)
+                return left.ParasiteGuid < right.ParasiteGuid;
+            if (left.GroundX != right.GroundX)
+                return left.GroundX < right.GroundX;
+            if (left.GroundY != right.GroundY)
+                return left.GroundY < right.GroundY;
+            return left.GroundZ < right.GroundZ;
+        };
+
+        GroundCandidate const* best = nullptr;
+        for (GroundCandidate const& candidate : candidates)
+            if (lawful(candidate) && (!best || better(candidate, *best)))
+                best = &candidate;
+        if (!best)
+            return false;
+
+        selected.ParasiteGuid = best->ParasiteGuid;
+        selected.X = best->GroundX;
+        selected.Y = best->GroundY;
+        selected.Z = best->GroundZ;
+        return true;
+    }
 };
 
 struct MagmawBalanceMushroomState
 {
     bool Active = false;
     bool LivePillarVisible = false;
+    bool GroundTargetAvailable = false;
+    bool OwnedMushroomHasNativeRangeCandidate = false;
     bool SolarEclipse = false;
     uint32 OwnedMushrooms = 0;
 };
