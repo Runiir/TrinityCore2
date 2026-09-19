@@ -583,3 +583,48 @@ reports and scripts at the shared validation root was captured in
 and evicted as well. The shared source checkout and WoWSims source/toolchain
 were retained because they are still reusable runtime/reference inputs; the
 canonical WCL references in the active repository were verified present.
+
+## Hosted Jev versus local SimpleJev replay (2026-09-19)
+
+At the user's direction, shard90 was stopped before boss engagement. Its
+watchdog evidence showed ordered entrance/Chainwielder/Drudge progress, partial
+deaths, and zero `boss_engagement_actions`; it has no DPS result and is not
+counted as a regression or acceptance run.
+
+The existing shard89 report was replayed offline with the analyzer's current
+eight-request topology: one six-question group packet, six one-question actor
+packets, and one next-fix packet. Hosted Jev was queried with the repository
+`.env` key; the key was not captured. The exact group packet was rejected by
+hosted Jev with `max_tokens_exceeded`, while all six actor packets and the
+next-fix packet succeeded. The same untouched group packet was rejected by
+SimpleJev's 16,384-token branch limit. The CPU SimpleJev replay completed the
+seven smaller requests in 29.2–49.2 seconds each, versus 0.75–0.97 seconds
+hosted, with only 2/6 actor choices agreeing and 3/7 choices agreeing when the
+next-fix row is included.
+
+The host has an RTX 2070, but the first Pixi environment selected CPU PyTorch.
+After replacing the indirect conda CPU dependency with the CUDA PyPI wheel,
+`torch.cuda.is_available()` was true and Qwen3.5-0.8B ran on CUDA/float16.
+Compact actor packets completed in 0.96–1.66 seconds locally. With the
+order-preserving SimpleJev serializer, only 1/6 actor choices agreed with the
+hosted compact replay. Re-running with the current production `sort_keys=True`
+serialization produced 4/6 apparent agreements, but that is not a quality
+result: SimpleJev's prompt contract makes candidate order semantically
+significant, so sorting is a compatibility confounder and must not be used as
+an acceptance trick. Local confidence distributions also diverged materially
+and are not calibrated TypeSafe confidence values.
+
+A compact group projection retained route, denominator-matched DPS/cadence,
+native failure, duty/assignment, and gap-overlap status while removing repeated
+event arrays. Hosted Jev accepted it (19,263 input tokens); the local 8 GiB
+GPU still OOMed at the 16k window. Therefore SimpleJev is currently useful as
+a fast shadow comparator for compact per-actor packets, not as a hosted Jev
+replacement or an action-authorizing signal. Keep hosted Jev authoritative;
+calibrate any local threshold separately and require held-out native-evidence
+agreement before promotion.
+
+The exact request packets, compact projections, backend responses, latency and
+agreement summaries are retained in
+`artifacts/cata_raid_program/magmaw_jev_locality_replay_20260919.tar.gz.dvc`.
+The tracked WCL DPS and cast-timeline references remain the comparison
+authority.
