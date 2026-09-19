@@ -16,7 +16,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "41c0950a202a9ea48acd00c6b1a0e1dcf559c9d792ebe618b9a9ef113db1e810"
+    "sha256": "e8c30508471870b2c119f18ddf4c73810d9d7d1a4eac9e015e39e7858cf6cab2"
   },
   "scope_lock": {
     "objective": "Repair the observed Blood admission and Balance ground-placement edges without changing native cleave/geometry; compare each actor with the closed ab829 baseline and WCL.",
@@ -85,9 +85,10 @@
     "performance_verdict": "not_accepted_roster_gaps_remain",
     "diagnosis_required": true,
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_remote_verified_compact_reviews_pending",
+    "publication_state": "raw_and_reviews_remote_verified_raw_duplicates_evicted",
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": false
+    "raw_payloads_evicted": true,
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc"
   },
   "implementation_review": {
     "verdict": "pending_heart_strike_and_mushroom_review",

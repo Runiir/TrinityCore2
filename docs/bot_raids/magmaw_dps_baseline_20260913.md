@@ -29,7 +29,8 @@ Shard89's enlarged Mushroom targeting is excluded from lawful recovery estimates
 
 Current raw publication:
 `artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc`.
-Compact independent reviews retain exact counts, source hashes and limitations.
+Compact independent reviews retain exact counts, source hashes and limitations in
+`artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc`.
 Every unresolved row carries forward even when another actor or raid total improves.
 
 ## Retained reference research

@@ -256,3 +256,12 @@ Pass live coordination to `raid-shard-architecture` and publication to
 Return one before/after first-broken edge, changed files, focused tests, role
 metrics, evidence paths, and the next dependency. Do not broaden the patch to
 another class family or boss.
+
+### Scoped action permission
+
+When admitting one spell through a scoped area policy, trace the caller that
+constructs the general `forbidArea` flag. A resolver-only test can pass while
+that caller has disabled protection for every other candidate. Exercise the
+actual caller with the allowed spell and an unrelated area spell, then the
+resolver and both native executor checks. Preserve native secondary targets;
+policy permission must not become a custom spell target filter.

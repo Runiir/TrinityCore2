@@ -30,10 +30,13 @@ Follow [the shadow workflow](local_jev_shadow.md) after every closed run.
 
 Raw evidence is published and fresh-remote verified at
 `artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc`.
-The 17,975,541-byte archive preserves the raw capture and timeline; local expanded
-copies remain temporarily available to reviewers. Compact reviews and model
-requests are being closed separately. The native source/build identity is
-ab829858df, not the later diagnostic-tooling commit.
+The 17,975,541-byte archive preserves the raw capture and timeline. Raw expanded
+copies and the duplicate archive/cache were evicted after review and remote
+verification. The 220,098-byte compact archive contains all specialist reviews,
+both model request/response sets, preparation/build receipts and DVCLive metrics:
+`artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc`.
+Fresh remote reconstruction verified all62 member hashes. Native source/build
+identity is ab829858df, not the later diagnostic-tooling commit.
 
 The later `2fcd4133aa` run at 152,244.042 DPS remains regression evidence, not the
 restart source or target. Its review pointer is
