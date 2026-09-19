@@ -59,6 +59,15 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
         Cohort().CalibrationWindowComplete && Cohort().CalibrationPreviousWindowValid
             ? Cohort().CalibrationPreviousMetrics
             : Cohort().CalibrationMetricsByGuid;
+    bool const calibrationPhaseMatch =
+        Cohort().CalibrationPhaseId
+        && Cohort().CalibrationBotPhaseObserved
+        && Cohort().CalibrationTargetPhaseObserved
+        && Cohort().CalibrationObservedBotPhaseId
+            == Cohort().CalibrationPhaseId
+        && Cohort().CalibrationObservedTargetPhaseId
+            == Cohort().CalibrationPhaseId
+        && Cohort().CalibrationOwnTargetVisibilityObserved;
     auto const executeMetricsItr = executeMetricsByGuid.find(
         Cohort().CalibrationTargetGuid.GetCounter());
     CalibrationMetrics const* executeMetrics = executeMetricsItr == executeMetricsByGuid.end()
@@ -78,6 +87,31 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
          << ",\"mode\":\"" << JsonEscape(Cohort().CalibrationMode) << "\""
          << ",\"target_spec\":\"" << JsonEscape(Cohort().CalibrationTargetSpec) << "\""
          << ",\"target_guid\":" << Cohort().CalibrationTargetGuid.GetCounter()
+         << ",\"calibration_phase_id\":" << Cohort().CalibrationPhaseId
+         << ",\"calibration_isolation\":{\"phase_lease_held\":"
+         << (Cohort().CalibrationPhaseLease.Held ? "true" : "false")
+         << ",\"expected_phase_id\":" << Cohort().CalibrationPhaseId
+         << ",\"observed_bot_phase_id\":"
+         << Cohort().CalibrationObservedBotPhaseId
+         << ",\"observed_target_phase_id\":"
+         << Cohort().CalibrationObservedTargetPhaseId
+         << ",\"bot_phase_observed\":"
+         << (Cohort().CalibrationBotPhaseObserved ? "true" : "false")
+         << ",\"target_phase_observed\":"
+         << (Cohort().CalibrationTargetPhaseObserved ? "true" : "false")
+         << ",\"bot_phase_observation_missing\":"
+         << (Cohort().CalibrationBotPhaseObserved ? "false" : "true")
+         << ",\"target_phase_observation_missing\":"
+         << (Cohort().CalibrationTargetPhaseObserved ? "false" : "true")
+         << ",\"phase_match\":"
+         << (calibrationPhaseMatch ? "true" : "false")
+         << ",\"own_target_visibility_observed\":"
+         << (Cohort().CalibrationOwnTargetVisibilityObserved ? "true" : "false")
+         << ",\"own_target_visibility_observation_missing\":"
+         << (Cohort().CalibrationOwnTargetVisibilityObservationMissing ? "true" : "false")
+         << ",\"peer_visibility_observed\":false"
+         << ",\"peer_visibility_observation_missing\":true"
+         << ",\"visibility_authority\":\"native_phase_shift\"}"
          << ",\"seed\":" << Cohort().CalibrationSeed
          << ",\"profile_generation\":" << Cohort().PinnedProfileGeneration
          << ",\"profile_content_hash\":\"" << JsonEscape(Cohort().PinnedProfileContentHash) << "\""

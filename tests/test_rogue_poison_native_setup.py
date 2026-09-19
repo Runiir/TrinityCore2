@@ -146,7 +146,7 @@ def test_missing_poison_inputs_fail_setup_without_manufacturing_state() -> None:
 def test_poison_readiness_and_previous_window_receipts_are_fail_closed() -> None:
     world = read(WORLD)
     calibration = function_body(
-        world, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const"
+        world, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const"
     )
 
     assert "case CLASS_ROGUE:" in calibration

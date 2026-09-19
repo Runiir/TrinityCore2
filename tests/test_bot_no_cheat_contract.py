@@ -990,7 +990,7 @@ def test_fixture_mutations_remain_outside_live_update_paths() -> None:
     calibration = function_body(source, "void BotWorldPopulationMgr::UpdateCalibrationControlledDamage")
     calibration_start = function_body(source, "std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mode")
     calibration_status = function_body(
-        source, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const"
+        source, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const"
     ) + function_body(
         source, "void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson"
     )

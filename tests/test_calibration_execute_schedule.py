@@ -163,7 +163,7 @@ def test_status_exposes_reconstructable_observations_without_a_pass_flag() -> No
     source = WORLD.read_text(encoding="utf-8")
     header = HEADER.read_text(encoding="utf-8")
     status = source.split(
-        "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const", 1
+        "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const", 1
     )[1].split(
         "void BotWorldPopulationMgr::EnsureCalibrationPopulation", 1
     )[0]

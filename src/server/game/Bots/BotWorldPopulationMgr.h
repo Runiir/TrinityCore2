@@ -144,7 +144,7 @@ public:
         uint64 cursor, uint32 limit) const;
     std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibrationForCohort(std::string const& cohortId);
-    std::string GetCombatCalibrationJsonForCohort(std::string const& cohortId) const;
+    std::string GetCombatCalibrationJsonForCohort(std::string const& cohortId, bool includeBotDetails = true) const;
 
     void Update(uint32 diff);
     bool Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig = nullptr);
@@ -155,7 +155,7 @@ public:
     bool SpawnAutonomyBots(uint32 count);
     std::string StartCombatCalibration(std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibration();
-    std::string GetCombatCalibrationJson() const;
+    std::string GetCombatCalibrationJson(bool includeBotDetails = true) const;
     std::string GetRuntimeProfilesJson();
     std::string SelectRuntimeProfile(std::string const& name);
     std::string ClearRuntimeProfile();

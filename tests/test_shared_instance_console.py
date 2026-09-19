@@ -27,6 +27,15 @@ for line in sys.stdin:
             continue
         time.sleep(.02)
         action+='_complete'
+    if verb=='calibrate' and line.split()[2]!='rejected':
+        action='botauto_calibrate_status'
+        if line.split()[3]=='status':
+            print('{"action":"botauto_calibrate_status_chunk"}',flush=True)
+            if line.split()[2]=='incomplete':
+                print('TC>',flush=True)
+                continue
+            time.sleep(.02)
+            action+='_complete'
     ok='false' if line.split()[2]=='rejected' else 'true'
     print('{"ok":'+ok+',"action":"'+action+'"}',flush=True)
     print('TC>',flush=True)
@@ -77,6 +86,31 @@ def test_native_combatlog_rejection_is_a_reply_not_a_timeout(console):
 def test_combatlog_chunk_without_completion_is_insufficient(console):
     _, code, timed_out = console(".botauto combatlog incomplete", 0.1)
     assert code and timed_out
+
+
+@pytest.mark.parametrize("cohort,operation,action", [
+    ("test", "progress", "botauto_calibrate_status"),
+    ("test", "status", "botauto_calibrate_status_complete"),
+    ("rejected", "progress", "botauto_calibrate"),
+])
+def test_calibration_reply_variants(console, cohort, operation, action):
+    raw, code, expired = console(f".botauto calibrate {cohort} {operation}", 2)
+    assert not code and not expired
+    assert f'"action":"{action}"' in raw
+    assert console(".botauto status test", 2)[1:] == (0, False)
+
+
+def test_incomplete_calibration_chunks_poison_transport(console):
+    _, code, expired = console(".botauto calibrate incomplete status", .1)
+    assert code and expired
+    assert console(".botauto status test", 2) == ("", 1, False)
+
+
+def test_configured_response_cap_is_enforced(console):
+    console.max_response_bytes = 10
+    raw, code, expired = console(".botauto calibrate test status", 2)
+    assert code and not expired and "byte budget" in raw
+    assert console.failed
 
 
 def test_command_injection_rejected(console):

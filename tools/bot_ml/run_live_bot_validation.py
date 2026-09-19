@@ -624,7 +624,7 @@ class CohortCommandExecutor:
         target_spec: str = "",
         seed: int = 1,
     ) -> tuple[str, int, bool]:
-        if operation not in {"start", "stop", "status"}:
+        if operation not in {"start", "stop", "status", "progress"}:
             raise ValueError("invalid calibration operation")
         suffix = ""
         if operation == "start":

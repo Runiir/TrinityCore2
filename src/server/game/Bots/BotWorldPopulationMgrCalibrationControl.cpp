@@ -1,12 +1,16 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationIsolation.h"
 
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
+#include "DBCStores.h"
 #include "GameTime.h"
 #include "Map.h"
 #include "MapManager.h"
+#include "PhasingHandler.h"
+#include "Player.h"
 #include "TemporarySummon.h"
 
 #include <chrono>
@@ -62,8 +66,40 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
 
     if (Cohort().CalibrationStopping)
         return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"calibration_stopping\"}";
-    if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
+    if (Cohort().CalibrationActive || !Party().CalibrationBots.empty()
+        || Cohort().CalibrationPhaseLease.Held)
         StopCombatCalibration();
+
+    BotCalibrationIsolation::PhaseAllocation phaseAllocation;
+    if (mode == "single_target_300")
+    {
+        CohortRuntime* const currentCohort = &Cohort();
+        phaseAllocation = BotCalibrationIsolation::AcquirePhase(
+                [this, currentCohort](uint16 phaseId)
+                {
+                    for (auto const& [_, runtime] : _cohorts)
+                        if (runtime && runtime.get() != currentCohort
+                            && runtime->CalibrationPhaseLease.Held
+                            && runtime->CalibrationPhaseLease.PhaseId == phaseId)
+                            return true;
+                    return false;
+                },
+                [](uint16 phaseId)
+                {
+                    return sPhaseStore.LookupEntry(phaseId) != nullptr;
+                });
+        if (!phaseAllocation)
+        {
+            char const* reason = phaseAllocation.NativeCollision
+                ? "calibration_phase_native_collision"
+                : "calibration_phase_capacity_exhausted";
+            return std::string("{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"")
+                + reason + "\"}";
+        }
+        BotCalibrationIsolation::Hold(Cohort().CalibrationPhaseLease,
+            phaseAllocation, Cohort().AttemptId);
+        Cohort().CalibrationPhaseId = phaseAllocation.PhaseId;
+    }
 
     Cohort().RuntimeMode = BotWorldRuntimeMode::CalibrationFixture;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::CalibrationFixture;
@@ -77,6 +113,12 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationSeed = seed ? seed : 1;
     Cohort().CalibrationTargetGuid.Clear();
     Cohort().CalibrationFixtureTargetGuid.Clear();
+    Cohort().CalibrationObservedBotPhaseId = 0;
+    Cohort().CalibrationObservedTargetPhaseId = 0;
+    Cohort().CalibrationBotPhaseObserved = false;
+    Cohort().CalibrationTargetPhaseObserved = false;
+    Cohort().CalibrationOwnTargetVisibilityObserved = false;
+    Cohort().CalibrationOwnTargetVisibilityObservationMissing = true;
     Cohort().CalibrationFixtureTargetEntry = 0;
     Cohort().CalibrationFixtureExpectedTargetLevel = 0;
     Cohort().CalibrationFixtureExpectedTargetArmor = 0;
@@ -141,8 +183,15 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
     Cohort().CalibrationPreviousWindowValid = false;
     EnsureCalibrationPopulation();
     if (!Cohort().CalibrationFailureReason.empty())
+    {
+        std::string const failureReason = Cohort().CalibrationFailureReason;
+        StopCombatCalibration();
+        Cohort().LastPopulationFailureReason = failureReason;
+        Cohort().CalibrationFailureReason = failureReason;
+        Cohort().CalibrationWindowComplete = true;
         return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\""
-            + JsonEscape(Cohort().CalibrationFailureReason) + "\"}";
+            + JsonEscape(failureReason) + "\"}";
+    }
     EnsureCalibrationCohortGroup();
     return GetCombatCalibrationJson();
 }
@@ -164,11 +213,17 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     }
 
     Cohort().CalibrationStopping = true;
+    uint16 const calibrationPhaseId = Cohort().CalibrationPhaseId;
     std::vector<ObjectGuid> calibrationBotGuids;
     calibrationBotGuids.reserve(Party().CalibrationBots.size());
     for (WorldBotState const& state : Party().CalibrationBots)
+    {
+        if (calibrationPhaseId)
+            if (Player* bot = GetLoadedBot(state))
+                PhasingHandler::RemovePhase(bot, calibrationPhaseId, true);
         if (!state.Guid.IsEmpty())
             calibrationBotGuids.push_back(state.Guid);
+    }
 
     bool fixtureTargetFound = false;
     bool fixtureCleanupSubmittedOrAbsent = true;
@@ -179,6 +234,8 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
                 Cohort().CalibrationFixtureTargetGuid))
             {
                 fixtureTargetFound = true;
+                if (calibrationPhaseId)
+                    PhasingHandler::RemovePhase(target, calibrationPhaseId, true);
                 if (TempSummon* summon = target->ToTempSummon())
                     summon->UnSummon();
                 else
@@ -200,6 +257,13 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationSeed = 1;
     Cohort().CalibrationTargetGuid.Clear();
     Cohort().CalibrationFixtureTargetGuid.Clear();
+    Cohort().CalibrationPhaseId = 0;
+    Cohort().CalibrationObservedBotPhaseId = 0;
+    Cohort().CalibrationObservedTargetPhaseId = 0;
+    Cohort().CalibrationBotPhaseObserved = false;
+    Cohort().CalibrationTargetPhaseObserved = false;
+    Cohort().CalibrationOwnTargetVisibilityObserved = false;
+    Cohort().CalibrationOwnTargetVisibilityObservationMissing = true;
     Cohort().CalibrationFixtureTargetEntry = 0;
     Cohort().CalibrationFixtureExpectedTargetLevel = 0;
     Cohort().CalibrationFixtureExpectedTargetArmor = 0;
@@ -259,6 +323,7 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationFixtureTargetMaximumPassiveObservationGapMs = 0;
     Cohort().CalibrationResetId.clear();
     Cohort().CalibrationCurrentDamagePhase.clear();
+    BotCalibrationIsolation::Release(Cohort().CalibrationPhaseLease);
 
     // Remove each clone through the normal bot lifecycle. CleanupBot removes the
     // member from its group, and Group::RemoveMember owns any resulting disband;
@@ -291,4 +356,3 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
          << ",\"failure_reason\":null}";
     return json.str();
 }
-

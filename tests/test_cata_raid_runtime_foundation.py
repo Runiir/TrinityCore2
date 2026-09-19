@@ -2867,8 +2867,8 @@ def test_cleanup_preserves_terminal_raid_identity_for_final_status_demux():
         IMPL.index("std::string BotWorldPopulationMgr::SelectRuntimeProfileForCohort")
     ]
     for token in (
-        "uint64 const serverEpoch = Cohort().Raid.ServerEpoch;",
-        "uint64 const attemptId = Cohort().Raid.AttemptId;",
+        "uint64 const serverEpoch = _serverEpoch;",
+        "uint64 const attemptId = Cohort().AttemptId;",
         "Cohort().Raid.Active = false;",
         "Cohort().Raid.ActiveSize = 0;",
         "Cohort().Raid.AliveSize = 0;",

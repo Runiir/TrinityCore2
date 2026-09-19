@@ -157,7 +157,7 @@ using BotWorldPopulationMgrSpellSemantics::SpellLooksTankSpike;
 
 }
 
-std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
+std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const
 {
     uint64 nowMs = NowMs();
     BotCalibrationFixtureContractGenerated::SpecContract const*
@@ -165,15 +165,41 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             BotCalibrationFixtureContractGenerated::FindSpec(
                 Cohort().CalibrationTargetSpec);
     std::ostringstream json;
-    auto writeBots = [this, &json, nowMs, fixtureSpecContract](
+    auto writeBots = [this, &json, nowMs, fixtureSpecContract, includeBotDetails](
         std::map<uint32, CalibrationMetrics> const& metricsByGuid,
         bool completedWindow)
     {
+        if (!includeBotDetails)
+        {
+            json << '[';
+            bool first = true;
+            for (auto const& [guid, metrics] : metricsByGuid)
+            {
+                if (!first)
+                    json << ',';
+                first = false;
+                uint64 endMs = metrics.WindowEndedMs ? metrics.WindowEndedMs : nowMs;
+                double seconds = metrics.WindowStartedMs && endMs >= metrics.WindowStartedMs
+                    ? double(endMs - metrics.WindowStartedMs) / 1000.0 : 0.0;
+                json << "{\"guid\":" << guid << ",\"details_included\":false"
+                     << ",\"damage\":" << metrics.Damage
+                     << ",\"pet_damage\":" << metrics.PetDamage
+                     << ",\"effective_healing\":" << metrics.EffectiveHealing
+                     << ",\"dps\":" << (seconds > 0.0 ? double(metrics.Damage) / seconds : 0.0)
+                     << ",\"effective_hps\":" << (seconds > 0.0 ? double(metrics.EffectiveHealing) / seconds : 0.0)
+                     << '}';
+            }
+            json << ']';
+            return;
+        }
         AppendCombatCalibrationBotRowsJson(
             json, metricsByGuid, nowMs, fixtureSpecContract, completedWindow);
     };
     AppendCombatCalibrationSummaryJson(json, nowMs, writeBots);
-    return json.str();
+    std::string result = json.str();
+    if (!includeBotDetails)
+        result.insert(1, "\"detail_level\":\"progress\",");
+    return result;
 }
 
 // UpdateBot's preparation phase retains the original death boundary:

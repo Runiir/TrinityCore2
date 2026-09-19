@@ -25,9 +25,13 @@ def verify_process_binary(process: subprocess.Popen[bytes], expected_sha256: str
 
 
 class ConsoleTransport:
-    def __init__(self, process: subprocess.Popen[bytes], log_path: Path):
+    def __init__(self, process: subprocess.Popen[bytes], log_path: Path,
+                 max_response_bytes: int = 16 * 1024 * 1024):
         self.process = process
         self.log_path = log_path
+        if max_response_bytes <= 0:
+            raise ValueError("positive console response budget required")
+        self.max_response_bytes = max_response_bytes
         self.failed = False
 
     def wait_ready(self, timeout_sec: float) -> None:
@@ -58,6 +62,10 @@ class ConsoleTransport:
         actions = b"(?:botauto_status|botauto_start)" if tokens[1] == "start" else action.encode()
         if tokens[1] == "combatlog":
             actions = b"(?:botauto_combatlog|botauto_combatlog_complete)"
+        if tokens[1] == "calibrate":
+            # Full status may be chunked; progress/direct and rejection replies
+            # also terminate at the console prompt. Chunks alone never do.
+            actions = b"(?:botauto_calibrate|botauto_calibrate_start|botauto_calibrate_stop|botauto_calibrate_status|botauto_calibrate_status_complete)"
         marker = re.compile(rb'"action"\s*:\s*"' + actions + rb'"')
         deadline = time.monotonic() + timeout_sec
         output = bytearray()
@@ -72,7 +80,7 @@ class ConsoleTransport:
                 return "", 1, False
             while time.monotonic() < deadline:
                 output.extend(stream.read(65536))
-                if len(output) > 16 * 1024 * 1024:
+                if len(output) > self.max_response_bytes:
                     self.failed = True
                     return "console response exceeded byte budget", 1, False
                 found = marker.search(output)

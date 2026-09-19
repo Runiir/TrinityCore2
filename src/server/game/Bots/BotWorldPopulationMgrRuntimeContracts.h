@@ -514,6 +514,23 @@
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;
         bool CalibrationStopping = false;
+        // A calibration attempt owns one private native phase for its entire
+        // warmup and scored window.  The lease is per cohort; no global phase
+        // reset is allowed while a witness cohort remains active.
+        struct CalibrationPhaseLeaseState
+        {
+            uint16 PhaseId = 0;
+            uint64 AttemptId = 0;
+            bool Held = false;
+        };
+        CalibrationPhaseLeaseState CalibrationPhaseLease;
+        uint16 CalibrationPhaseId = 0;
+        uint16 CalibrationObservedBotPhaseId = 0;
+        uint16 CalibrationObservedTargetPhaseId = 0;
+        bool CalibrationBotPhaseObserved = false;
+        bool CalibrationTargetPhaseObserved = false;
+        bool CalibrationOwnTargetVisibilityObserved = false;
+        bool CalibrationOwnTargetVisibilityObservationMissing = true;
         bool CalibrationAoePhase = false;
         bool CalibrationWindowComplete = false;
         std::string CalibrationFailureReason;

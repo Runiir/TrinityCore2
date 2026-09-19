@@ -589,11 +589,11 @@ private:
         }
         else if (operation == "stop")
             result = sBotWorldPopulationMgr->StopCombatCalibrationForCohort(cohortId);
-        else if (operation == "status")
-            result = sBotWorldPopulationMgr->GetCombatCalibrationJsonForCohort(cohortId);
+        else if (operation == "status" || operation == "progress")
+            result = sBotWorldPopulationMgr->GetCombatCalibrationJsonForCohort(cohortId, operation == "status");
         else
-            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate [cohort_id] start <mode> <target_spec> [seed]|stop|status\"}";
-        if (operation == "status")
+            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate [cohort_id] start <mode> <target_spec> [seed]|stop|status|progress\"}";
+        if (operation == "status" || operation == "progress")
             return SendCalibrationStatusResult(handler, cohortId, result);
         return SendAutoResult(handler, result);
     }

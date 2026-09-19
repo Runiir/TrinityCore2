@@ -137,7 +137,7 @@ BOT_MGR_FAMILIES = {
     "void BotWorldPopulationMgr::UpdateBot": UPDATE_BOT_FAMILY,
     "bool BotWorldPopulationMgr::TryValidationRouteObjective": ROUTE_OBJECTIVE_FAMILY,
     "bool BotWorldPopulationMgr::MoveBotToPoint": MOVEMENT_FAMILY,
-    "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const": CALIBRATION_FAMILY,
+    "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const": CALIBRATION_FAMILY,
 }
 
 
@@ -1120,7 +1120,7 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target,", "metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs")
     assert "TryEnsurePersistentCombatSetup(*state, bot, target)" in execute_profile
 
-    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const")
+    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const")
     assert '\\"persistent_setup\\"' in calibration_json
     assert '\\"mainhand_temp_enchant\\"' in calibration_json
     assert '\\"offhand_temp_enchant\\"' in calibration_json
@@ -1135,7 +1135,7 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
 
 def test_reference_calibration_reports_only_conditions_it_applies():
     mgr = read(BOT_MGR)
-    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const")
+    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const")
 
     assert '\\"flask\\"' in calibration_json
     assert '\\"potions\\":' in calibration_json
@@ -6360,7 +6360,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "Cohort().CalibrationWindowComplete = true" in population
     stop = manager.split(
         "std::string BotWorldPopulationMgr::StopCombatCalibration()", 1
-    )[1].split("std::string BotWorldPopulationMgr::GetCombatCalibrationJson()", 1)[0]
+    )[1].split("std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails)", 1)[0]
     assert "sMapMgr->FindMap(" in stop
     assert "CalibrationFixtureTargetMapId, 0" in stop
     assert "fixture_cleanup_submitted_or_absent" in stop

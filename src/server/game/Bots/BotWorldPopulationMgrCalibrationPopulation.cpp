@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationIsolation.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotMgr.h"
@@ -337,6 +338,78 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
             continue;
         }
 
+        uint16 const calibrationPhaseId = Cohort().CalibrationPhaseId;
+        if (isolatedSingleTargetMode)
+        {
+            // AddPhase uses the native controlled-unit recursion, so existing
+            // pets and guardians enter the cohort phase before any fixture is
+            // created or any clearance/combat check can observe them. A
+            // reserved phase already present on a reused actor is an ownership
+            // collision and fails closed.
+            auto const botPhaseBeforeAdd = BotCalibrationIsolation::Observe(
+                calibrationPhaseId,
+                [bot](uint16 phaseId)
+                {
+                    return bot->GetPhaseShift().HasPhase(phaseId);
+                });
+            if (botPhaseBeforeAdd.Present)
+            {
+                Cohort().LastPopulationFailureReason =
+                    "calibration_phase_actor_collision";
+                Cohort().CalibrationFailureReason =
+                    Cohort().LastPopulationFailureReason;
+                Cohort().CalibrationWindowComplete = true;
+                sBotMgr->RemoveWorldBot(bot->GetGUID());
+                if (ReleaseBotGuid(candidateGuid))
+                    CharacterDatabase.DirectPExecute(
+                        "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
+                        candidateGuid);
+                break;
+            }
+            if (!calibrationPhaseId)
+            {
+                Cohort().LastPopulationFailureReason =
+                    "calibration_phase_missing";
+                Cohort().CalibrationFailureReason =
+                    Cohort().LastPopulationFailureReason;
+                Cohort().CalibrationWindowComplete = true;
+                sBotMgr->RemoveWorldBot(bot->GetGUID());
+                if (ReleaseBotGuid(candidateGuid))
+                    CharacterDatabase.DirectPExecute(
+                        "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
+                        candidateGuid);
+                break;
+            }
+            PhasingHandler::AddPhase(bot, calibrationPhaseId, true);
+            auto const botPhaseObservation = BotCalibrationIsolation::Observe(
+                calibrationPhaseId,
+                [bot](uint16 phaseId)
+                {
+                    return bot->GetPhaseShift().HasPhase(phaseId);
+                });
+            if (!botPhaseObservation.Matches())
+            {
+                Cohort().LastPopulationFailureReason =
+                    "calibration_phase_observation_failed";
+                Cohort().CalibrationFailureReason =
+                    Cohort().LastPopulationFailureReason;
+                Cohort().CalibrationWindowComplete = true;
+                PhasingHandler::RemovePhase(bot, calibrationPhaseId, true);
+                sBotMgr->RemoveWorldBot(bot->GetGUID());
+                if (ReleaseBotGuid(candidateGuid))
+                    CharacterDatabase.DirectPExecute(
+                        "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
+                        candidateGuid);
+                break;
+            }
+            if (!Cohort().CalibrationBotPhaseObserved)
+            {
+                Cohort().CalibrationObservedBotPhaseId =
+                    botPhaseObservation.ObservedPhaseId;
+                Cohort().CalibrationBotPhaseObserved = true;
+            }
+        }
+
         if (isolatedSingleTargetMode
             && Cohort().CalibrationFixtureTargetGuid.IsEmpty())
         {
@@ -355,6 +428,46 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                     Position{ IsolatedSingleTargetDummyX,
                         IsolatedSingleTargetDummyY, fixtureZ, 0.0f },
                     fixtureArgs);
+            }
+
+            if (fixtureTarget)
+            {
+                // Map::SummonCreature has no summoner in this fixture lane, so
+                // native summon inheritance cannot run. Copy the bot phase
+                // immediately and refresh visibility before any scan or target
+                // admission. Native phase visibility remains authoritative.
+                PhasingHandler::InheritPhaseShift(fixtureTarget, bot);
+                fixtureTarget->UpdateObjectVisibility(true);
+                auto const targetPhaseObservation =
+                    BotCalibrationIsolation::Observe(
+                        calibrationPhaseId,
+                        [fixtureTarget](uint16 phaseId)
+                        {
+                            return fixtureTarget->GetPhaseShift().HasPhase(phaseId);
+                        });
+                Cohort().CalibrationObservedTargetPhaseId =
+                    targetPhaseObservation.ObservedPhaseId;
+                Cohort().CalibrationTargetPhaseObserved =
+                    targetPhaseObservation.Matches();
+                Cohort().CalibrationOwnTargetVisibilityObserved =
+                    bot->IsInPhase(fixtureTarget);
+                Cohort().CalibrationOwnTargetVisibilityObservationMissing = false;
+                if (!targetPhaseObservation.Matches())
+                {
+                    Cohort().LastPopulationFailureReason =
+                        "calibration_phase_target_observation_failed";
+                    Cohort().CalibrationFailureReason =
+                        Cohort().LastPopulationFailureReason;
+                    Cohort().CalibrationWindowComplete = true;
+                    fixtureTarget->UnSummon();
+                    PhasingHandler::RemovePhase(bot, calibrationPhaseId, true);
+                    sBotMgr->RemoveWorldBot(bot->GetGUID());
+                    if (ReleaseBotGuid(candidateGuid))
+                        CharacterDatabase.DirectPExecute(
+                            "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u",
+                            candidateGuid);
+                    break;
+                }
             }
 
             // Set the native physical armor basis once, immediately after the

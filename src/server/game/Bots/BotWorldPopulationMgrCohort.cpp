@@ -425,8 +425,8 @@ std::string BotWorldPopulationMgr::StopAutonomyForCohort(std::string const& coho
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
-    uint64 const serverEpoch = Cohort().Raid.ServerEpoch;
-    uint64 const attemptId = Cohort().Raid.AttemptId;
+    uint64 const serverEpoch = _serverEpoch;
+    uint64 const attemptId = Cohort().AttemptId;
     std::string const raidBeforeCleanup = BuildRaidRuntimeJson();
     if (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
         StopAutonomy();
@@ -715,14 +715,14 @@ std::string BotWorldPopulationMgr::StopCombatCalibrationForCohort(std::string co
     return result;
 }
 
-std::string BotWorldPopulationMgr::GetCombatCalibrationJsonForCohort(std::string const& cohortId) const
+std::string BotWorldPopulationMgr::GetCombatCalibrationJsonForCohort(std::string const& cohortId, bool includeBotDetails) const
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_calibrate_status", cohortId);
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
-    std::string result = GetCombatCalibrationJson();
+    std::string result = GetCombatCalibrationJson(includeBotDetails);
     _selectedCohortId = previous;
     return result;
 }
