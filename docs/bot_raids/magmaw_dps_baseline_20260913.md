@@ -2,8 +2,32 @@
 
 ## Active parent objective and actor acceptance
 
+### Existing dummy evidence to reuse
+
+On 2026-09-19, the current self-provided WoWSims cohort was hydrated from
+`wowsims_exact_reference_bundle_pet_identity_v4.dvc` and verified: 16 references,
+181 files, pinned simulator `70d87383a9b92f30fb9e370c4676d3ce33b6e6b6`.
+The request generator's `--check` also passed. These exact 300-second references
+already exist; do not regenerate them to restart class diagnosis.
+
+Retained native dummy results include Fire `90a181db01` (32,288.553 DPS versus
+35,138.962), Affliction `90a181db01` (28,381.680 versus 31,312.967), and Elemental
+`798a115d45` (32,911.683 versus 36,999.280). Their DVC pointers and repair
+boundaries are in the error ledger's run index. The Marksmanship runs do not
+validate the current Survival spec. Check later code/setup changes before using
+any historical native result as current performance evidence.
+
+The v2 role calibration policy sets `optimization_reference_ratio` to 0.85,
+and `role_calibration_harness` reports `optimization_target_met` at that threshold.
+That historical threshold pass does not resolve the remaining DPS deficit or
+establish class parity. Preserve accepted narrow repairs while comparing the
+retained stats, cadence and damage per event. Refresh only missing or materially
+changed native comparisons, with the same exact 300-second scoring window.
+
+### Previous reviewed baseline (d495)
+
 Repair and validate every represented spec using WCL spell/cadence context and
-exact WoWSims setup. Latest clean source `d495bd1556` cleared in 117.523 seconds
+exact WoWSims setup. Previous clean source `d495bd1556` cleared in 117.523 seconds
 at **239,894.514 raid DPS** and **14,412.302 exact HPS**, with all ten surviving.
 Clear and moving-cast facing are accepted. Overall WCL performance is not accepted.
 The matched 9d29 total rose 9.23%, while individual preservation flags still need
