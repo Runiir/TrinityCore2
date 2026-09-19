@@ -156,7 +156,7 @@ bool HasMagmawBalanceMushroomGroundPoint(Player const* bot)
     return SelectMagmawBalanceMushroomGroundPoint(bot, point);
 }
 
-bool HasMagmawBalanceMushroomNativeRangeCandidate(Player const* bot,
+bool HasMagmawBalanceMushroomNativeRangeCandidate(Player* bot,
     uint32 ownedMushrooms)
 {
     if (!bot || ownedMushrooms < BotEncounter::MagmawBalanceMushroomDuty::RequiredMushroomCount)
