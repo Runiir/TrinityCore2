@@ -450,7 +450,22 @@ Player* WorldObject::GetAffectingPlayer() const
         return const_cast<WorldObject*>(this)->ToPlayer();
 
     if (Unit* owner = GetCharmerOrOwner())
-        return owner->GetCharmerOrOwnerPlayerOrPlayerItself();
+    {
+        if (Player* player = owner->GetCharmerOrOwnerPlayerOrPlayerItself())
+            return player;
+
+        Creature const* creature = ToCreature();
+        if (!creature || !creature->IsGuardian() || creature->GetEntry() != 15438
+            || creature->IsCharmed() || creature->GetOwnerGUID() != owner->GetGUID())
+            return nullptr;
+
+        Totem* totem = owner->ToTotem();
+        if (!totem || totem->GetEntry() != 15439 || !totem->GetCharmerOrOwnerGUID().IsEmpty())
+            return nullptr;
+
+        if (Unit* totemOwner = totem->GetOwner())
+            return totemOwner->ToPlayer();
+    }
 
     return nullptr;
 }

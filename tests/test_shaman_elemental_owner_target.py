@@ -4,6 +4,7 @@ import subprocess
 from test_warlock_doomguard_guardian import function as extract_function
 
 ROOT = Path(__file__).resolve().parents[1]
+function_source = extract_function
 
 
 def nth_function(source: str, signature: str, occurrence: int) -> str:
@@ -25,6 +26,17 @@ def test_elemental_acquires_native_owner_helper_only_without_victim(tmp_path):
     end = text.index("\nenum ShamanSpells", start)
     function = text[start:end]
     native_spells = (ROOT / "src/server/game/Entities/Object/WorldObjectSpells.cpp").read_text()
+    native_owner_source = (ROOT / "src/server/game/Entities/Object/WorldObjectSummons.cpp").read_text()
+    native_owner_player = function_source(
+        native_owner_source,
+        "Player* WorldObject::GetCharmerOrOwnerPlayerOrPlayerItself() const",
+    )
+    native_affecting = function_source(
+        native_owner_source,
+        "Player* WorldObject::GetAffectingPlayer() const",
+    )
+    assert "totem->GetCharmerOrOwnerGUID().IsEmpty()" in native_affecting
+    assert "creature->GetOwnerGUID() != owner->GetGUID()" in native_affecting
     reaction_start = native_spells.index("            if (selfPlayerOwner && targetPlayerOwner)")
     reaction_end = native_spells.index("            // check FFA_PVP", reaction_start)
     native_reaction_block = native_spells[reaction_start:reaction_end]
@@ -34,6 +46,15 @@ def test_elemental_acquires_native_owner_helper_only_without_victim(tmp_path):
     assert "selfPlayerOwner->IsInRaidWith(targetPlayerOwner)" in native_reaction_block
     assert "selfPlayerOwner->duel->opponent" in native_reaction_block
     assert "if (IsFriendlyTo(target) || target->IsFriendlyTo(this))" in native_friendly_rejection
+    forced_start = native_spells.index("    // check forced reputation")
+    forced_end = native_spells.index("    Unit const* unit =", forced_start)
+    native_forced_block = native_spells[forced_start:forced_end]
+    assert "GetForcedRankIfAny" in native_forced_block
+    spell_source = (ROOT / "src/server/game/Spells/Spell.cpp").read_text()
+    enemy_start = spell_source.index("            case TARGET_CHECK_ENEMY:")
+    enemy_end = spell_source.index("                break;", enemy_start) + len("                break;")
+    native_enemy_check = spell_source[enemy_start:enemy_end]
+    assert "_caster->IsValidAttackTarget(unitTarget, _spellInfo)" in native_enemy_check
     attack = nth_function(text, "void AttackStart(Unit* target) override", 0)
     attack_second = nth_function(text, "void AttackStart(Unit* target) override", 1)
     reset = nth_function(text, "void Reset() override", 0)
@@ -63,105 +84,131 @@ def test_elemental_acquires_native_owner_helper_only_without_victim(tmp_path):
 #include <functional>
 #include "Bots/BotRaidAreaAuthority.h"
 #include "ObjectGuid.h"
+ObjectGuid const ObjectGuid::Empty{};
 constexpr int UNIT_FIELD_FLAGS = 1;
 constexpr int UNIT_FLAG_PLAYER_CONTROLLED = 8;
 constexpr int UNIT_STATE_CASTING = 1;
+constexpr int TARGET_CHECK_ENEMY = 0;
 enum ReputationRank { REP_HATED = 0, REP_HOSTILE = 1, REP_UNFRIENDLY = 2,
     REP_NEUTRAL = 3, REP_FRIENDLY = 4 };
-struct Player;struct Totem;struct Creature;struct Unit;
+struct FactionTemplateEntry {};
+struct WorldObject; struct Player; struct Totem; struct Creature; struct TempSummon; struct Unit;
+struct SpellInfo {};
+struct ReputationMgr {
+    bool forced = false; ReputationRank rank = REP_NEUTRAL;
+    ReputationRank const* GetForcedRankIfAny(FactionTemplateEntry const*) const { return forced ? &rank : nullptr; }
+};
 struct CombatRef {Unit* target;bool suppressed=false;Unit* GetOther(Unit const*)const{return target;}bool IsSuppressedFor(Unit const*)const{return suppressed;}};
 struct CombatManager {std::vector<std::pair<int,CombatRef*>> pve,pvp;
  auto const& GetPvECombatRefs()const{return pve;}auto const& GetPvPCombatRefs()const{return pvp;}};
-struct Unit {
-    virtual ~Unit()=default;
-    ObjectGuid guid{HighGuid::Player,30010u};uint32 entry=0;CombatManager combat;
-    ObjectGuid GetGUID()const{return guid;}uint32 GetEntry()const{return entry;}
-    Creature const* ToCreature()const;
-    CombatManager& GetCombatManager(){return combat;}
-    Unit* owner = nullptr;
-    Unit* victim = nullptr;
-    Unit* helper = nullptr;
-    Player* affectingPlayer = nullptr;
-    bool alive = true, valid = true, engaged = true, totem = false, hostile = false;
-    int type = TYPEID_UNIT, helperCalls = 0, raidId = 0, flags = 0;
-    bool IsTotem() const { return totem; }
-    Totem* ToTotem();
-    // Base owner access is nonvirtual; Totem hides it with its native owner.
-    Unit* GetOwner() const { return owner; }
-    Unit* GetCharmerOrOwner() const { return owner; }
-    Unit* GetVictim() const { return victim; }
-    Unit* getAttackerForHelper() { ++helperCalls; return engaged ? helper : nullptr; }
-    bool IsAlive() const { return alive; }
-    bool HasFlag(int field, int flag) const { return field == UNIT_FIELD_FLAGS && (flags & flag) == flag; }
-    void SetFlag(int field, int flag) { assert(field == UNIT_FIELD_FLAGS); flags |= flag; }
+struct ObjectAccessor {
+    static Unit* GetUnit(WorldObject const&, ObjectGuid);
+    static Player* GetPlayer(WorldObject const&, ObjectGuid);
+};
+struct WorldObject {
+    virtual ~WorldObject()=default;
+    virtual Player* ToPlayer(){return nullptr;}
+    virtual Unit* ToUnit(){return nullptr;}
+    virtual Unit const* ToUnit() const {return nullptr;}
+    virtual Creature const* ToCreature() const {return nullptr;}
+    virtual ObjectGuid GetOwnerGUID() const {return ObjectGuid::Empty;}
+    virtual ObjectGuid GetCharmerOrOwnerGUID() const {return GetOwnerGUID();}
+    virtual FactionTemplateEntry const* GetFactionTemplateEntry() const {return nullptr;}
+    bool IsCorpse() const {return false;}
+    Unit* GetOwner() const;
+    Unit* GetCharmerOrOwner() const;
     Player* GetCharmerOrOwnerPlayerOrPlayerItself() const;
     Player* GetAffectingPlayer() const;
-    ReputationRank GetReactionTo(Unit const* target) const;
-    bool IsFriendlyTo(Unit const* target) const { return GetReactionTo(target) >= REP_FRIENDLY; }
-    bool IsValidAttackTarget(Unit const* target) const;
-    int GetTypeId() const { return type; }
+    ReputationRank GetReactionTo(WorldObject const* target) const;
+    bool IsFriendlyTo(WorldObject const* target) const {return GetReactionTo(target) >= REP_FRIENDLY;}
+    bool IsValidAttackTarget(Unit const* target, SpellInfo const* spell = nullptr) const;
+};
+struct Unit : WorldObject {
+    virtual ~Unit()=default;
+    ObjectGuid guid{HighGuid::Unit,30010u},ownerGuid=ObjectGuid::Empty,charmerGuid=ObjectGuid::Empty;
+    uint32 entry=0;CombatManager combat;Unit* charmer=nullptr;Unit* victim=nullptr;Unit* helper=nullptr;
+    FactionTemplateEntry* faction=nullptr;ReputationMgr reputation;
+    bool alive=true,valid=true,engaged=true,totem=false,guardian=false,hostile=false,charmed=false;
+    int type=TYPEID_UNIT,helperCalls=0,raidId=0,flags=0;
+    ObjectGuid GetGUID()const{return guid;}uint32 GetEntry()const{return entry;}
+    CombatManager& GetCombatManager(){return combat;}
+    ObjectGuid GetOwnerGUID() const override {return ownerGuid;}
+    ObjectGuid GetCharmerOrOwnerGUID() const override {return charmed ? charmerGuid : GetOwnerGUID();}
+    Unit* ToUnit() override {return this;} Unit const* ToUnit() const override {return this;}
+    Unit* GetCharmerOrOwner() const {return charmed ? charmer : GetOwner();}
+    virtual Totem* ToTotem(){return nullptr;}
+    FactionTemplateEntry const* GetFactionTemplateEntry() const override {return faction;}
+    bool IsTotem()const{return totem;}bool IsGuardian()const{return guardian;}bool IsCharmed()const{return charmed;}
+    Unit* GetVictim()const{return victim;}
+    Unit* getAttackerForHelper(){++helperCalls;return engaged?helper:nullptr;}
+    bool IsAlive()const{return alive;}
+    bool HasFlag(int field,int flag)const{return field==UNIT_FIELD_FLAGS&&(flags&flag)==flag;}
+    void SetFlag(int field,int flag){assert(field==UNIT_FIELD_FLAGS);flags|=flag;}
+    int GetTypeId()const{return type;}
 };
 struct Player : Unit {
-    struct DuelInfo { Player* opponent; int startTime; };
-    DuelInfo* duel = nullptr;
-    Player() { type = TYPEID_PLAYER; affectingPlayer = this; }
-    bool IsInRaidWith(Player const* other) const { return other && raidId && raidId == other->raidId; }
+    struct DuelInfo {Player* opponent;int startTime;}; DuelInfo* duel=nullptr;
+    Player(){type=TYPEID_PLAYER;} Player* ToPlayer()override{return this;}
+    ReputationMgr const& GetReputationMgr()const{return reputation;}
+    bool IsInRaidWith(Player const* other)const{return other&&raidId&&raidId==other->raidId;}
 };
-Player* Unit::GetCharmerOrOwnerPlayerOrPlayerItself() const { return affectingPlayer; }
-Player* Unit::GetAffectingPlayer() const { return affectingPlayer; }
-ReputationRank Unit::GetReactionTo(Unit const* target) const {
-    if (this == target)
-        return REP_FRIENDLY;
-    Player const* selfPlayerOwner = GetAffectingPlayer();
-    Player const* targetPlayerOwner = target->GetAffectingPlayer();
-    Unit const* unit = this;
-    Unit const* targetUnit = target;
-    if (unit && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)
-        && targetUnit && targetUnit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
-    {
+struct Totem : Unit {
+    Unit* nativeOwner=nullptr;
+    Totem(){totem=true;type=3;} Totem* ToTotem()override{return this;}
+    Unit* GetOwner()const{return nativeOwner;}
+};
+struct Creature : Unit {
+    Creature(){hostile=true;}TempSummon* summon=nullptr;Unit* selected=nullptr;
+    bool HasReactState(int)const{return false;}bool IsInCombat()const{return true;}
+    Unit* SelectVictim(){return selected;}
+    int interrupts=0,stops=0,casts=0,melee=0;bool casting=false;Unit* lastCastTarget=nullptr;uint32 lastSpell=0;
+    uint32 GetSpawnId()const{return 0;}void InterruptNonMeleeSpells(bool){++interrupts;casting=false;}
+    void AttackStop(){++stops;victim=nullptr;}bool HasUnitState(int state)const{return state==UNIT_STATE_CASTING&&casting;}
+    void ApplySpellImmune(int,int,int,bool){}bool CanStartAttack(Unit*,bool)const{return true;}
+    struct Controller {Creature* parent;int attacks=0;Unit* target=nullptr;bool reject=false;std::function<void(Unit*)> dispatch{};
+        void AttackStart(Unit* unit){if(dispatch){dispatch(unit);return;}++attacks;if(!reject){target=unit;parent->victim=unit;}}} ai{this};
+    virtual TempSummon* ToTempSummon(){return summon;}Creature const* ToCreature()const override{return this;}
+    Controller* AI(){return &ai;}
+};
+struct TempSummon : Creature {
+    Unit* summoner=nullptr;TempSummon(){summon=this;}Unit* GetSummoner()const{return summoner;}
+    TempSummon* ToTempSummon()override{return this;}
+};
+std::vector<Unit*> unitRegistry;
+Unit* ObjectAccessor::GetUnit(WorldObject const&, ObjectGuid guid){for(Unit* unit:unitRegistry)if(unit&&unit->GetGUID()==guid)return unit;return nullptr;}
+Player* ObjectAccessor::GetPlayer(WorldObject const&, ObjectGuid guid){for(Unit* unit:unitRegistry)if(unit&&unit->GetGUID()==guid)if(Player* player=unit->ToPlayer())return player;return nullptr;}
+void Register(Unit& unit){unitRegistry.push_back(&unit);}
+Unit* WorldObject::GetOwner()const{return ObjectAccessor::GetUnit(*this,GetOwnerGUID());}
+Unit* WorldObject::GetCharmerOrOwner()const{if(Unit const* unit=ToUnit())return unit->GetCharmerOrOwner();return nullptr;}
+''' + native_owner_player + r'''
+''' + native_affecting + r'''
+Player* HistoricalGetAffectingPlayer(WorldObject const* object){
+    if(!object->GetCharmerOrOwnerGUID())return const_cast<WorldObject*>(object)->ToPlayer();
+    if(Unit* owner=object->GetCharmerOrOwner())return owner->GetCharmerOrOwnerPlayerOrPlayerItself();
+    return nullptr;
+}
+ReputationRank WorldObject::GetReactionTo(WorldObject const* target)const{
+    if(this==target)return REP_FRIENDLY;
+    Player const* selfPlayerOwner=GetAffectingPlayer();Player const* targetPlayerOwner=target->GetAffectingPlayer();
+''' + native_forced_block + r'''
+    Unit const* unit=ToUnit();Unit const* targetUnit=target->ToUnit();
+    if(unit&&unit->HasFlag(UNIT_FIELD_FLAGS,UNIT_FLAG_PLAYER_CONTROLLED)&&targetUnit&&targetUnit->HasFlag(UNIT_FIELD_FLAGS,UNIT_FLAG_PLAYER_CONTROLLED)){
 ''' + native_reaction_block + r'''
     }
-    return hostile || target->hostile ? REP_HOSTILE : REP_NEUTRAL;
+    return (unit&&unit->hostile)||(targetUnit&&targetUnit->hostile)?REP_HOSTILE:REP_NEUTRAL;
 }
-bool Unit::IsValidAttackTarget(Unit const* target) const {
-    if (!target || !target->alive || !target->valid)
-        return false;
+bool WorldObject::IsValidAttackTarget(Unit const* target,SpellInfo const*)const{
+    if(!target||!target->alive||!target->valid)return false;
 ''' + native_friendly_rejection + r'''
     return true;
 }
-struct Totem : Unit {
-    Unit* nativeOwner = nullptr;
-    Totem() { totem = true; type = 3; }
-    Unit* GetOwner() const { return nativeOwner; }
-};
-Totem* Unit::ToTotem() { return static_cast<Totem*>(this); }
-struct TempSummon;
-struct Creature : Unit {
-    Creature() { hostile = true; }
-    TempSummon* summon = nullptr;
-    Unit* selected=nullptr;
-    bool HasReactState(int)const{return false;}
-    bool IsInCombat()const{return true;}
-    Unit* SelectVictim(){return selected;} // native selection boundary: protected helper can be selected
-
-    int interrupts=0,stops=0,casts=0,melee=0;bool casting=false;Unit* lastCastTarget=nullptr;uint32 lastSpell=0;
-    uint32 GetSpawnId()const{return 0;}
-    void InterruptNonMeleeSpells(bool){++interrupts;casting=false;}
-    void AttackStop(){++stops;victim=nullptr;}
-    bool HasUnitState(int state)const{return state == UNIT_STATE_CASTING && casting;}
-    void ApplySpellImmune(int, int, int, bool){}
-    bool CanStartAttack(Unit*, bool) const { return true; }
-    struct Controller {Creature* parent;int attacks=0;Unit* target=nullptr;bool reject=false;std::function<void(Unit*)> dispatch{};
-        void AttackStart(Unit* unit){if(dispatch){dispatch(unit);return;}++attacks;if(!reject){target=unit;parent->victim=unit;}}} ai{this};
-    TempSummon* ToTempSummon() { return summon; }
-    Controller* AI() { return &ai; }
-};
-Creature const* Unit::ToCreature()const{return dynamic_cast<Creature const*>(this);}
-struct TempSummon : Creature {
-    Unit* summoner = nullptr;
-    TempSummon() { summon = this; }
-    Unit* GetSummoner() const { return summoner; }
-};
+static bool NativeEnemyTargetAdmission(WorldObject const* caster,WorldObject* target){
+    WorldObject const* _caster=caster;Unit* unitTarget=target?target->ToUnit():nullptr;SpellInfo const* _spellInfo=nullptr;
+    switch(0){
+''' + native_enemy_check + r'''
+    }
+    return true;
+}
 ''' + function + r'''
 enum ShamanSpells {
     SPELL_SHAMAN_ANGEREDEARTH = 36213,
@@ -222,25 +269,27 @@ static void Reject(Creature& elemental, bool playerOwned = false) {
 }
 int main() {
     Player player;
+    player.guid = ObjectGuid(HighGuid::Player, 30010u);
+    Register(player);
     Unit target, different;
     Unit nearbyHostile;
     target.hostile = different.hostile = nearbyHostile.hostile = true;
     player.helper = &target;
     Creature direct;
-    direct.owner = &player;
+    direct.ownerGuid = player.guid;
     assert(AcquireShamanOwnerVictim(&direct));
     assert(direct.ai.attacks == 1 && direct.ai.target == &target);
     assert(direct.flags == UNIT_FLAG_PLAYER_CONTROLLED && player.helperCalls == 1);
 
     // An existing victim always wins, even if the helper would choose another.
     player.victim = &target; player.helper = &different; player.helperCalls = 0;
-    Creature current; current.owner = &player;
+    Creature current; current.ownerGuid = player.guid;
     assert(AcquireShamanOwnerVictim(&current));
     assert(current.ai.attacks == 1 && current.ai.target == &target);
     assert(player.helperCalls == 0);
     for (bool dead : {false, true}) {
         target.alive = !dead; target.valid = dead;
-        Creature rejected; rejected.owner = &player;
+        Creature rejected; rejected.ownerGuid = player.guid;
         Reject(rejected, true);
         assert(player.helperCalls == 0); // no fallback from invalid/dead victim
     }
@@ -249,12 +298,13 @@ int main() {
         player.helper = failure == 0 ? nullptr : &target;
         player.engaged = failure != 1;
         target.alive = failure != 2; target.valid = failure != 3;
-        Creature rejected; rejected.owner = &player;
+        Creature rejected; rejected.ownerGuid = player.guid;
         Reject(rejected, true);
     }
     player.engaged = target.alive = target.valid = true;
     player.helper = &target;
-    Totem totem; totem.nativeOwner = &player;
+    Totem totem; totem.guid = ObjectGuid(HighGuid::Unit, 154390u); totem.entry = 15439; totem.nativeOwner = &player;
+    Register(totem);
     assert(static_cast<Unit*>(&totem)->GetOwner() == nullptr);
     assert(totem.GetOwner() == &player);
     TempSummon chained; chained.summoner = &totem;
@@ -269,13 +319,14 @@ int main() {
     totem.nativeOwner = nullptr;
     TempSummon ownerlessTotem; ownerlessTotem.summoner = &totem; Reject(ownerlessTotem);
     assert(!AcquireShamanOwnerVictim(nullptr));
-    Unit npc; npc.type = 3; npc.helper = &target;
-    Creature npcElemental; npcElemental.owner = &npc;
+    Unit npc; npc.guid = ObjectGuid(HighGuid::Unit, 9000u); npc.type = 3; npc.helper = &target;
+    Register(npc);
+    Creature npcElemental; npcElemental.ownerGuid = npc.guid;
     assert(AcquireShamanOwnerVictim(&npcElemental));
     assert(npcElemental.ai.attacks == 1 && npcElemental.flags == 0);
 
     // No acquisition claim on an actual AI binding refusal.
-    Creature refused;refused.owner=&player;refused.ai.reject=true;
+    Creature refused;refused.ownerGuid=player.guid;refused.ai.reject=true;
     assert(!AcquireShamanOwnerVictim(&refused)&&!refused.victim);
     using namespace BotRaidAreaAuthority;
     auto key=player.GetGUID().GetRawValue();player.victim=nullptr;
@@ -286,7 +337,7 @@ int main() {
     allowed.entry=42321;allowed.guid=ObjectGuid(HighGuid::Unit,42321u,192u);
     CombatRef parasiteRef{&parasite},bodyRef{&body},headRef{&head},allowedRef{&allowed};
     player.helper=&parasite;player.combat.pve={{0,&parasiteRef},{1,&allowedRef},{2,&headRef},{3,&bodyRef}};
-    Creature evolving;evolving.owner=&player;
+    Creature evolving;evolving.ownerGuid=player.guid;
     assert(AcquireShamanOwnerVictim(&evolving)&&evolving.victim==&parasite);evolving.casting=true;
     SetCurrentEncounterRestrictions(key,{41806,42321},{allowed.guid.GetRawValue()});
     StopShamanProtectedVictim(&evolving);assert(!evolving.victim&&!evolving.casting&&evolving.interrupts==1);
@@ -312,22 +363,83 @@ int main() {
     // The native reaction contract rejects a same-raid controlled wolf, while
     // its duel state remains a lawful hostile exception.
     totem.nativeOwner=&player;
-    Player wolfOwner;player.raidId=17;wolfOwner.raidId=17;
-    Unit wolf;wolf.hostile=true;wolf.flags=UNIT_FLAG_PLAYER_CONTROLLED;wolf.affectingPlayer=&wolfOwner;
-    TempSummon nativeFire;nativeFire.summoner=&totem;nativeFire.affectingPlayer=&player;
+    Player wolfOwner;wolfOwner.guid=ObjectGuid(HighGuid::Player,30011u);Register(wolfOwner);
+    player.raidId=17;wolfOwner.raidId=17;
+    FactionTemplateEntry fireFaction,wolfFaction;
+    Unit wolf;wolf.guid=ObjectGuid(HighGuid::Unit,8959u);wolf.hostile=true;
+    wolf.flags=UNIT_FLAG_PLAYER_CONTROLLED;wolf.ownerGuid=wolfOwner.guid;wolf.faction=&wolfFaction;Register(wolf);
+    TempSummon nativeFire;nativeFire.guid=ObjectGuid(HighGuid::Unit,15438u);nativeFire.entry=15438;
+    nativeFire.guardian=true;nativeFire.summoner=&totem;nativeFire.ownerGuid=totem.guid;
+    nativeFire.faction=&fireFaction;Register(nativeFire);
+    // Historical accessor result: this is the recorded pre-fix counterexample.
+    assert(HistoricalGetAffectingPlayer(&nativeFire)==nullptr);
     InitializeShamanElementalPlayerControlled(&nativeFire);
+    assert(nativeFire.GetAffectingPlayer()==&player);
     assert(nativeFire.GetReactionTo(&wolf)==REP_FRIENDLY);
-    assert(!nativeFire.IsValidAttackTarget(&wolf));
+    assert(!NativeEnemyTargetAdmission(&nativeFire,&wolf));
+    player.reputation.forced=true;player.reputation.rank=REP_HOSTILE;
+    assert(nativeFire.GetReactionTo(&wolf)==REP_HOSTILE);
+    player.reputation.forced=false;
     Player::DuelInfo playerDuel{&wolfOwner,1},wolfDuel{&player,1};
     player.duel=&playerDuel;wolfOwner.duel=&wolfDuel;
     assert(nativeFire.GetReactionTo(&wolf)==REP_HOSTILE);
-    assert(nativeFire.IsValidAttackTarget(&wolf));
+    assert(NativeEnemyTargetAdmission(&nativeFire,&wolf));
+    player.reputation.forced=true;player.reputation.rank=REP_FRIENDLY;
+    assert(nativeFire.GetReactionTo(&wolf)==REP_FRIENDLY);
+    assert(!NativeEnemyTargetAdmission(&nativeFire,&wolf));
+    player.reputation.forced=false;
     player.duel=nullptr;wolfOwner.duel=nullptr;
+    assert(NativeEnemyTargetAdmission(&nativeFire,&nearbyHostile));
+
+    // Exact owner-chain guards retain ordinary, NPC, unresolved, and special
+    // charmer paths around the narrow 15438 -> 15439 fallback.
+    assert(player.GetAffectingPlayer()==&player);
+    TempSummon playerPet;playerPet.ownerGuid=player.guid;
+    assert(playerPet.GetAffectingPlayer()==&player);
+    Creature directGuardian;directGuardian.guardian=true;directGuardian.entry=15352;directGuardian.ownerGuid=player.guid;
+    assert(directGuardian.GetAffectingPlayer()==&player);
+    Creature npcGuardian;npcGuardian.guardian=true;npcGuardian.entry=15438;npcGuardian.ownerGuid=npc.guid;
+    assert(npcGuardian.GetAffectingPlayer()==nullptr);
+    Creature ownerlessObject;assert(ownerlessObject.GetAffectingPlayer()==nullptr);
+    Creature unresolvedOwner;unresolvedOwner.ownerGuid=ObjectGuid(HighGuid::Unit,999999u);
+    assert(unresolvedOwner.GetAffectingPlayer()==nullptr);
+    Totem hiddenNull;hiddenNull.guid=ObjectGuid(HighGuid::Unit,154391u);hiddenNull.entry=15439;hiddenNull.nativeOwner=nullptr;Register(hiddenNull);
+    TempSummon nullFire;nullFire.guardian=true;nullFire.entry=15438;nullFire.ownerGuid=hiddenNull.guid;
+    assert(nullFire.GetAffectingPlayer()==nullptr);
+    Totem hiddenNpc;hiddenNpc.guid=ObjectGuid(HighGuid::Unit,154392u);hiddenNpc.entry=15439;hiddenNpc.nativeOwner=&npc;Register(hiddenNpc);
+    TempSummon npcFire;npcFire.guardian=true;npcFire.entry=15438;npcFire.ownerGuid=hiddenNpc.guid;
+    assert(npcFire.GetAffectingPlayer()==nullptr);
+    Creature wrongGuardian;wrongGuardian.guardian=true;wrongGuardian.entry=999;wrongGuardian.ownerGuid=totem.guid;
+    assert(wrongGuardian.GetAffectingPlayer()==nullptr);
+    Totem wrongTotem;wrongTotem.guid=ObjectGuid(HighGuid::Unit,154393u);wrongTotem.entry=999;wrongTotem.nativeOwner=&player;Register(wrongTotem);
+    TempSummon wrongTotemFire;wrongTotemFire.guardian=true;wrongTotemFire.entry=15438;wrongTotemFire.ownerGuid=wrongTotem.guid;
+    assert(wrongTotemFire.GetAffectingPlayer()==nullptr);
+    Creature nonGuardian;nonGuardian.entry=15438;nonGuardian.ownerGuid=totem.guid;
+    assert(nonGuardian.GetAffectingPlayer()==nullptr);
+    Player charmer;charmer.guid=ObjectGuid(HighGuid::Player,30012u);Register(charmer);
+    TempSummon charmedFire;charmedFire.guardian=true;charmedFire.entry=15438;charmedFire.ownerGuid=totem.guid;
+    charmedFire.charmed=true;charmedFire.charmer=&charmer;charmedFire.charmerGuid=charmer.guid;
+    assert(charmedFire.GetAffectingPlayer()==&charmer);
+    Totem explicitTotem;explicitTotem.guid=ObjectGuid(HighGuid::Unit,154394u);explicitTotem.entry=15439;explicitTotem.nativeOwner=&player;
+    explicitTotem.ownerGuid=npc.guid;Register(explicitTotem);
+    TempSummon explicitFire;explicitFire.guardian=true;explicitFire.entry=15438;explicitFire.ownerGuid=explicitTotem.guid;
+    assert(explicitFire.GetAffectingPlayer()==nullptr);
+    Totem explicitPlayerTotem;explicitPlayerTotem.guid=ObjectGuid(HighGuid::Unit,154396u);explicitPlayerTotem.entry=15439;
+    explicitPlayerTotem.nativeOwner=&player;explicitPlayerTotem.ownerGuid=wolfOwner.guid;Register(explicitPlayerTotem);
+    TempSummon explicitPlayerFire;explicitPlayerFire.guardian=true;explicitPlayerFire.entry=15438;
+    explicitPlayerFire.ownerGuid=explicitPlayerTotem.guid;
+    assert(explicitPlayerFire.GetAffectingPlayer()==&wolfOwner);
+    Totem charmedTotem;charmedTotem.guid=ObjectGuid(HighGuid::Unit,154395u);charmedTotem.entry=15439;charmedTotem.nativeOwner=&player;
+    charmedTotem.charmed=true;charmedTotem.charmer=&npc;charmedTotem.charmerGuid=npc.guid;Register(charmedTotem);
+    TempSummon charmedTotemFire;charmedTotemFire.guardian=true;charmedTotemFire.entry=15438;
+    charmedTotemFire.ownerGuid=charmedTotem.guid;
+    assert(charmedTotemFire.GetAffectingPlayer()==nullptr);
 
     // Execute both production Reset/UpdateAI bodies.  A pre-existing lawful
     // victim exercises the UpdateVictim short circuit; a same-raid victim is
     // stopped by native validity before it can receive a spell.
-    TempSummon chainedUpdate;chainedUpdate.summoner=&totem;chainedUpdate.affectingPlayer=&player;
+    TempSummon chainedUpdate;chainedUpdate.summoner=&totem;chainedUpdate.ownerGuid=totem.guid;
+    chainedUpdate.guardian=true;chainedUpdate.entry=15438;
     chainedUpdate.victim=&wolf;chainedUpdate.selected=&wolf;
     ActualEarthElementalAI earth(&chainedUpdate);
     chainedUpdate.ai.dispatch=[&](Unit* target){earth.AttackStart(target);};
@@ -337,7 +449,8 @@ int main() {
     assert(chainedUpdate.victim==&body&&chainedUpdate.lastCastTarget==&body);
     assert(chainedUpdate.melee==1);
 
-    TempSummon fireSummon;fireSummon.summoner=&totem;fireSummon.affectingPlayer=&player;
+    TempSummon fireSummon;fireSummon.summoner=&totem;fireSummon.ownerGuid=totem.guid;
+    fireSummon.guardian=true;fireSummon.entry=15438;
     fireSummon.victim=&nearbyHostile;fireSummon.selected=&nearbyHostile;
     ActualFireElementalAI fire(&fireSummon);
     fireSummon.ai.dispatch=[&](Unit* target){fire.AttackStart(target);};
