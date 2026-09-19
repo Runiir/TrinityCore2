@@ -16,7 +16,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "7dff75dfd3e5559e33b6697924db8c54b11e1f6d45fa94a2404f59df9151dd59"
+    "sha256": "0975ac089219b36d653df7d87c5353b7695296bb8edc1e589bca92ecaea5e3dc"
   },
   "scope_lock": {
     "objective": "Observe actual native cast lifecycle without changing gameplay; retain synchronous instant finishes, failed preparation and distinct same-millisecond casts through existing trace and timeline.",
@@ -91,7 +91,8 @@
     "publication_state": "raw_and_reviews_remote_verified_raw_retained_for_OBS008",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": false,
-    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc"
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc",
+    "review_addendum_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.addendum.tar.gz.dvc"
   },
   "related_edges": [
     {

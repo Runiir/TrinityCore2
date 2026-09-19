@@ -16,7 +16,7 @@ and hosted Jev reviewed all ten actors; their suggestions remain quarantined.
 | 30007 Fire | 44,308.921 | 40,189.9 | Absolute damage rose47,347; longer duration lowered DPS.6 of7 moving Scorches finished false; Flame Orb still zero. Same observation repair. | Open |
 | 30008 Affliction | 37,566.175 | 40,281 | Bane parasite exclusion accepted; absolute damage rose122,797. UA parasite casts7 with one10,068 tick are a bounded later candidate. Doomguard event-value gap remains unproven. | Open |
 | 30009 Survival | 34,147.014 | 43,706.4 rounded component sum | Add damage fell246,931; zero Multi-Shot/Spread vs177,002 baseline. Need per-hostile aura/legality. Horn renewal missed hunter at46.824yd, losing549 Agility. | Open |
-| 30010 Elemental | 30,973.779 | 41,866 | Absolute damage rose88,525; duration/duty/proc variance. Combat potion absent. Friendly leakage452 damage is a small separate defect. | Open |
+| 30010 Elemental | 30,973.779 | 41,866 | Absolute damage rose88,525; duration/duty/proc variance. Combat potion absent, but pinned simulator also used only the pre-pot despite the two-use contract. Reconcile reference before role repair. Friendly leakage452 is separate. | Open |
 | 30003 Restoration | 1,633.170 | Unmatched | 8,261.7 exact HPS; higher demand explains damage loss. Four stationary LOS retries on30007; mana/overheal incomplete. | Open |
 | 30004 Holy | 0 | Unmatched | 4,903.8 exact HPS. Twelve LOS failures; longest quiet gap had no incoming damage/deaths. Pre-pull cooldown readiness needs duty context. | Open |
 | 30005 Discipline | 2,873.108 | Unmatched | 888.7 exact HPS excludes unattributed shields; PoM tank selector mismatch persists. Three LOS retries on30007. | Open |

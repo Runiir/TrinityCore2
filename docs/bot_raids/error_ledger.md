@@ -517,3 +517,10 @@ through-death healing, not the broader encounter aggregate's post-death healing.
 The geometry fixture did not compile the legacy GetAllMinionsByEntry API call;
 the failed native build caught its non-const signature. The one-line correction
 was independently reviewed before the successful73103 build and live run.
+
+Elemental reference follow-up: native combat potion is absent, but the pinned
+WoWSims result also reports only one item58091 use per iteration (2,000 uses over
+2,000 iterations), accounted for by the pre-pot. Its combat APL condition never
+fires. The declared one-pre-pot/one-combat contract remains authoritative; repair
+that reference inconsistency before attributing a missed simulator action to the
+bot. Provisioned inventory is present. Keep this separate from OBS-008.
