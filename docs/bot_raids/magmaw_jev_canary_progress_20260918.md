@@ -509,3 +509,43 @@ canary should repeat the same normalized timeline comparison with a matched
 baseline and use the actor-specific cadence/gap evidence to select one narrow
 repair only after it repeats. Native completion-watchdog outcome remains the
 gameplay authority; Jev remains review-only.
+
+## Regression audit and compact evidence closeout (shards88b–89, 2026-09-19)
+
+The apparent regression from the earlier roughly 214k numbers mixed two
+denominators. The current WCL-matched signal is the first 111.3 seconds of the
+normalized timeline; the native encounter-window signal is the complete local
+fight. On the same current branch, shard88b was a low-throughput clear at
+179.4k encounter-window party DPS with one death, while the zero-death shard89
+repeat cleared in 116.863 seconds at 241.2k encounter-window party DPS and
+254.0k active DPS. The six local DPS actors summed to 222.8k over the full
+local fight. The WCL Summary context is 246.2k wall-clock DPS, so the group
+native rate in shard89 is 2.0% below that context; it is not evidence of a
+cumulative native throughput regression.
+
+The per-actor parity problem remains real. Shard89's denominator-matched
+common-window values were Balance 33.3k/41.0k, Fire A 27.6k/40.2k, Fire B
+39.9k/40.2k, Affliction 35.0k/40.3k and Elemental 32.4k/41.9k; Survival was
+33.7k with no WCL same-spec reference. The corresponding full-local rates were
+37.4k, 31.9k, 44.6k, 36.7k, 36.0k and 36.3k. Fire A has the clearest repeated
+actor lead to investigate: a 24.99-second direct-damage gap and 101 grouped
+`max_range_exceeded` candidate rejections in the shard89 native evidence.
+Jev's high-confidence actor judgments were `collect_more_canaries` for Fire A
+(0.93), `uptime_cadence` for Affliction (0.81), and `uptime_cadence` for
+Elemental (0.79). Group Jev found actor divergence (0.86), but no active stuck
+behavior (0.77); terminal-tail repeated-decision counts therefore remain
+historical diagnostics, not proof of a live loop.
+
+The radius change did fix a native correctness edge: shard88b's mushroom log
+recorded three damage casts with five parasite targets per cast. That repair is
+not promoted as a DPS fix by itself. The next gameplay change must join Fire
+A's range-gap endpoints and Elemental's charge/cadence evidence to native
+action outcomes, then repeat the full completion-watchdog plus per-actor JEV
+review. No arbitrary Earth Shock threshold or shared movement change is
+admitted from this batch.
+
+The 92 staged raw run directories and temporary comparison files were evicted
+after publication. Compact analysis, JEV, timeline, status and native-mushroom
+evidence are retained in
+`artifacts/cata_raid_program/magmaw_jev_canary_compact_20260919.tar.gz.dvc`;
+the Git-tracked WCL DPS and cast-timeline references remain local.
