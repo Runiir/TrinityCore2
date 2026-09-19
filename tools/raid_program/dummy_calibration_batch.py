@@ -46,6 +46,39 @@ def identity(calibration: dict) -> tuple:
     ))
 
 
+def measurement_outcome(report: dict, *, terminal: str) -> dict:
+    """Keep measured activity independent of reference and diagnostic admission."""
+    full = report.get("combat_calibration") or {}
+    capture = report.get("calibration_acceptance") or {}
+    checks = (report.get("role_calibration_evaluation") or {}).get("checks") or {}
+    exact = (full.get("scored_seconds") == 300 and
+             full.get("scored_ended_at_ms", 0) - full.get("scored_started_at_ms", 0) == 300000)
+    isolation = all(checks.get(key) is True for key in
+                    ("isolated_single_target_fixture", "single_target_damage_isolated"))
+    completed = bool(exact and terminal == "complete" and capture.get("transport_passed") and isolation)
+    compatibility = ((report.get("role_calibration_record") or {})
+                     .get("reference_condition_compatibility") or {})
+    comparable = checks.get("reference_conditions_compatible") is True
+    row = actor_row(full)
+    healing = row.get("effective_healing")
+    if healing is None:
+        healing = (row.get("healer_metrics") or {}).get("effective_healing")
+    return {
+        "measurement_completed": completed,
+        "measurement_status": "complete" if completed else "incomplete_or_invalid",
+        "diagnostics_complete": capture.get("diagnostics_passed") is True,
+        "reference_comparable": comparable,
+        "comparison_status": "ready_for_review" if completed and comparable else
+                             "blocked_by_reference_setup" if completed else "measurement_unavailable",
+        "comparison_rejections": list(compatibility.get("reasons") or
+                                      ([] if comparable else ["reference_conditions_compatible"])),
+        "dps": float(row["damage"]) / 300 if completed and row.get("damage") is not None else None,
+        "hps": float(healing) / 300 if completed and healing is not None else None,
+        "performance_accepted": False,
+        "training_eligible": False,
+    }
+
+
 def observe(attempt: Attempt, calibration: dict, epoch: int) -> None:
     if calibration.get("cohort_id") != attempt.cohort or calibration.get("server_epoch") != epoch:
         raise RuntimeError("calibration responder identity mismatch")
@@ -210,14 +243,14 @@ def run_batch(*, execute: Callable, specs: list[str], output: Path, epoch: int,
                                                               and not report["capture_rejections"])
                 report["performance_accepted"] = False
                 report["training_eligible"] = False
+                outcome = measurement_outcome(report, terminal=a.terminal)
+                report["measurement_outcome"] = outcome
                 write(a.output / "report.json", report)
                 row = actor_row(full)
                 result = {"spec": a.spec, "cohort_id": a.cohort, "identity": list(a.identity),
                           "terminal_reason": a.terminal, "capture_accepted": report["exact_window_capture_accepted"],
                           "scored_seconds": full.get("scored_seconds"), "damage": row.get("damage"),
-                          "dps": float(row.get("damage") or 0) / 300 if exact else None,
-                          "hps": float(row.get("effective_healing") or 0) / 300 if exact else None,
-                          "performance_accepted": False}
+                          **outcome}
                 stop(a)
                 active.remove(a)
                 for peer in active:
@@ -248,6 +281,10 @@ def run_batch(*, execute: Callable, specs: list[str], output: Path, epoch: int,
                 and all(r["capture_accepted"] for r in results))
     cleanup_proved = any(w["proved"] for w in witnesses)
     return {"actors": results, "cleanup_witnesses": witnesses,
+            "all_measurements_completed": len(results) == len(specs) and all(
+                r["measurement_completed"] for r in results),
+            "all_references_comparable": len(results) == len(specs) and all(
+                r["reference_comparable"] for r in results),
             "all_captures_accepted": captures,
             "concurrent_cleanup_proved": cleanup_proved,
             "batch_accepted": captures and (concurrency == 1 or len(specs) == 1 or cleanup_proved),

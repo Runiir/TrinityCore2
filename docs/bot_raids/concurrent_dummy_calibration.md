@@ -50,8 +50,16 @@ another cohort stops. Phase observations prove each actor and target share
 their assigned phase; peer invisibility is not directly sampled and is marked
 unobserved rather than manufactured from expected values.
 
-`batch_accepted` means complete, isolated, attributable measurements and
-verified cleanup. `performance_accepted` and `training_eligible` remain false.
+`measurement_completed` means an exact, isolated window with complete transport.
+`reference_comparable` separately reports whether the setup matches the pinned
+reference; `comparison_rejections` names each mismatch. `diagnostics_complete`
+is independent of both. A completed run can retain valid DPS/HPS while an extra
+potion or omitted simulator racial blocks comparison. Do not remove legitimate
+live actions merely to satisfy an incomplete reference. Preserve that reference
+and generate a separately attributable corrected control.
+
+`batch_accepted` remains the strict capture/reference gate, including verified
+cleanup. `performance_accepted` and `training_eligible` remain false.
 Review effective stats, native consumable use, spell cadence, damage per
 event, pet contribution, and downtime against the promoted request before
 claiming class parity. Legacy role thresholds are not full WoWSims parity.

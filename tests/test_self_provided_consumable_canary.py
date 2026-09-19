@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -119,6 +120,106 @@ def test_native_self_provided_path_uses_inventory_without_injecting_auras() -> N
     assert "AddAura" not in use_item
     assert "SetCount" not in use_item
     assert "DestroyItem" not in use_item
+
+
+def test_single_target_calibration_excludes_fixture_potion_from_profile_candidates(
+    tmp_path: Path,
+) -> None:
+    """Cover policy wiring and candidate fallback, not native receipt accounting."""
+    calibration_bot = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp"
+    )
+    resolver = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+    )
+    executor = _source(
+        "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp"
+    )
+
+    update = calibration_bot[
+        calibration_bot.index("void BotWorldPopulationMgr::UpdateCalibrationBot") :
+    ]
+    assert "EnsureCalibrationSelfProvidedConsumables(state, bot, target, scored)" in update
+    assert "Cohort().CalibrationMode == \"single_target_300\"" in update
+    assert "&& IsSelfProvidedCalibrationBaseline()" in update
+    assert "metrics.CombatPotionConsumable.SpellId" in update
+    assert update.index("policyExcludedCombatPotionSpellId") < update.index(
+        "ResolveProfileCombatAction("
+    )
+    assert (
+        "Cohort().CalibrationTargetSpec.c_str(), true,\n"
+        "        policyExcludedCombatPotionSpellId"
+    ) in update
+    assert (
+        "allowMultidot, false,\n"
+        "        policyExcludedCombatPotionSpellId"
+    ) in update
+    assert "hostileTargetOnly, movementCompatibleOnly, nullptr, true, policyExcludedSpellId" in executor
+
+    # Execute the exact production candidate admission block from the native
+    # resolver. This keeps the fallback counterexample tied to its source
+    # rather than copying a second exclusion predicate into the fixture.
+    exclusion = _between(
+        resolver,
+        "        if (policyExcludedSpellId && candidate.SpellId == policyExcludedSpellId)",
+        "        if (exactSingleTargetCalibration",
+    )
+    assert 'candidate.RejectReason = "target_purpose_excluded";' in exclusion
+    program = r'''
+#include <cassert>
+#include <string>
+#include <vector>
+
+struct Candidate
+{
+    unsigned SpellId;
+    std::string RejectReason;
+};
+
+unsigned ResolveWithProductionPolicy(unsigned policyExcludedSpellId,
+    std::vector<Candidate> candidates)
+{
+    for (Candidate& candidate : candidates)
+    {
+''' + exclusion + r'''
+        if (!candidate.RejectReason.empty())
+            continue;
+        return candidate.SpellId;
+    }
+    return 0;
+}
+
+int main()
+{
+    constexpr unsigned combatPotion = 79476;
+    constexpr unsigned fireball = 133;
+    std::vector<Candidate> profile = {
+        { combatPotion, {} },
+        { fireball, {} },
+    };
+
+    // Both production resolver passes choose the offensive fallback when the
+    // configured potion is excluded for self-provided single-target policy.
+    unsigned const preview = ResolveWithProductionPolicy(combatPotion, profile);
+    unsigned const execution = ResolveWithProductionPolicy(combatPotion, profile);
+    assert(preview == fireball && execution == fireball);
+
+    // Outside self-provided calibration, the ordinary profile still owns and
+    // selects its configured potion row.
+    assert(ResolveWithProductionPolicy(0, profile) == combatPotion);
+}
+'''
+    cpp = tmp_path / "self_provided_potion_policy.cpp"
+    binary = tmp_path / "self_provided_potion_policy"
+    cpp.write_text(program, encoding="utf-8")
+    result = subprocess.run(
+        ["c++", "-std=c++17", str(cpp), "-o", str(binary)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    subprocess.run([str(binary)], cwd=REPO_ROOT, check=True)
 
 
 def test_affliction_combat_potion_gate_binds_execute_window_and_prepot_clear() -> None:

@@ -679,6 +679,16 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
 
     if (EnsureCalibrationSelfProvidedConsumables(state, bot, target, scored))
         return;
+    bool const selfProvidedSingleTargetCalibration =
+        Cohort().CalibrationMode == "single_target_300"
+        && IsSelfProvidedCalibrationBaseline();
+    // The fixture-owned receipt submits the one scored combat potion. Keep
+    // the ordinary profile's duplicate item candidate out of both resolver
+    // passes, but only for this calibration lane; normal combat and other
+    // calibration modes retain their profile action.
+    uint32 const policyExcludedCombatPotionSpellId =
+        selfProvidedSingleTargetCalibration
+            ? metrics.CombatPotionConsumable.SpellId : 0;
     auto [referenceBuffsReady, referenceTargetDebuffsReady] = ApplyCalibrationReferenceConditions(bot, target);
     metrics.ReferenceBuffsReady = referenceBuffsReady;
     metrics.ReferenceReplenishmentObserved = metrics.ReferenceReplenishmentObserved || bot->HasAura(57669);
@@ -816,7 +826,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, Cohort().CalibrationAoePhase, 0, false,
         false, forbidArea, allowMultidot, false, false,
-        Cohort().CalibrationTargetSpec.c_str());
+        Cohort().CalibrationTargetSpec.c_str(), true,
+        policyExcludedCombatPotionSpellId);
     auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
     std::string actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
         ? actionCategory->second : action.DebugName;
@@ -862,7 +873,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     BotActionResult result = ExecuteProfileCombatAction(
         &state, bot, target, &action, hostileCount,
         Cohort().CalibrationAoePhase, 0, false, false,
-        forbidArea, allowMultidot);
+        forbidArea, allowMultidot, false,
+        policyExcludedCombatPotionSpellId);
     auto observedActionCategory = Party().LastActionCategoryByBot.find(
         bot->GetGUID().GetCounter());
     actionGroup = observedActionCategory != Party().LastActionCategoryByBot.end()

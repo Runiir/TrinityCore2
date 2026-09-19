@@ -145,6 +145,32 @@ def test_reference_contamination_keeps_dps_but_rejects_capture(tmp_path, monkeyp
     result = run(NativeConsole(), tmp_path, monkeypatch, contaminated=True)
     assert not result["all_captures_accepted"] and not result["batch_accepted"]
     assert all(row["dps"] == 32000 for row in result["actors"])
+    assert result["all_measurements_completed"]
+    assert not result["all_references_comparable"]
+    assert all(row["comparison_status"] == "blocked_by_reference_setup" for row in result["actors"])
+
+
+def test_full_healing_metrics_and_incomplete_diagnostics_do_not_erase_measurement():
+    report = {
+        "combat_calibration": dict(scored_seconds=300, scored_started_at_ms=1000,
+            scored_ended_at_ms=301000, target_guid=1, window_complete=True,
+            previous_window={"bots": [dict(guid=1, damage=9000000,
+                healer_metrics={"effective_healing": 116580})]}),
+        "calibration_acceptance": {"transport_passed": True, "diagnostics_passed": False},
+        "role_calibration_evaluation": {"checks": dict(isolated_single_target_fixture=True,
+            single_target_damage_isolated=True, reference_conditions_compatible=False)},
+        "role_calibration_record": {"reference_condition_compatibility":
+                                    {"reasons": ["manifest_requirement:combat_potion"]}},
+    }
+    outcome = batch.measurement_outcome(report, terminal="complete")
+    assert outcome["measurement_completed"] and not outcome["diagnostics_complete"]
+    assert outcome["hps"] == 388.6 and outcome["dps"] == 30000
+    assert outcome["comparison_rejections"] == ["manifest_requirement:combat_potion"]
+    assert not outcome["performance_accepted"] and not outcome["training_eligible"]
+    report["calibration_acceptance"]["transport_passed"] = False
+    outcome = batch.measurement_outcome(report, terminal="complete")
+    assert not outcome["measurement_completed"]
+    assert outcome["dps"] is None and outcome["hps"] is None
 
 
 def test_missing_native_phase_observation_rejects_scoring(tmp_path, monkeypatch):

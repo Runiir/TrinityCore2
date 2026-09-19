@@ -135,7 +135,8 @@ def main() -> int:
             live.log_metric("performance_accepted", 0)
             live.log_metric("training_eligible", 0)
             for actor in (report.get("results") or {}).get("actors", []):
-                for key in ("dps", "hps", "scored_seconds", "capture_accepted"):
+                for key in ("dps", "hps", "scored_seconds", "capture_accepted",
+                            "measurement_completed", "reference_comparable", "diagnostics_complete"):
                     if actor.get(key) is not None:
                         live.log_metric(f"{actor['spec']}/{key}", float(actor[key]))
     return 0 if report["results"]["batch_accepted"] else 1
