@@ -1,5 +1,11 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotCalibrationIsolation.h"
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
+
+#include "Creature.h"
+#include "Map.h"
+#include "MapManager.h"
+#include "Player.h"
 
 #include <array>
 #include <functional>
@@ -59,15 +65,66 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
         Cohort().CalibrationWindowComplete && Cohort().CalibrationPreviousWindowValid
             ? Cohort().CalibrationPreviousMetrics
             : Cohort().CalibrationMetricsByGuid;
-    bool const calibrationPhaseMatch =
+
+    // The provisioning observations above are historical. Re-read the native
+    // objects for every status response so a later OnAreaChange phase reset is
+    // visible to the runner instead of being hidden by the cached setup proof.
+    Player* currentCalibrationBot = nullptr;
+    for (WorldBotState const& state : Party().CalibrationBots)
+        if (state.Guid == Cohort().CalibrationTargetGuid)
+        {
+            currentCalibrationBot = GetLoadedBot(state);
+            break;
+        }
+
+    Creature* currentFixtureTarget = nullptr;
+    if (!Cohort().CalibrationFixtureTargetGuid.IsEmpty())
+        if (Map* fixtureMap = sMapMgr->FindMap(
+            Cohort().CalibrationFixtureTargetMapId, 0))
+            currentFixtureTarget = fixtureMap->GetCreature(
+                Cohort().CalibrationFixtureTargetGuid);
+
+    uint16 currentObservedBotPhaseId = 0;
+    uint16 currentObservedTargetPhaseId = 0;
+    bool currentBotPhaseObserved = false;
+    bool currentTargetPhaseObserved = false;
+    bool currentOwnTargetVisibilityObserved = false;
+    bool const currentBotPhaseObservationMissing = !currentCalibrationBot;
+    bool const currentTargetPhaseObservationMissing = !currentFixtureTarget;
+    bool const currentOwnTargetVisibilityObservationMissing =
+        !currentCalibrationBot || !currentFixtureTarget;
+    if (currentCalibrationBot)
+    {
+        auto const observation = BotCalibrationIsolation::Observe(
+            Cohort().CalibrationPhaseId,
+            [currentCalibrationBot](uint16 phaseId)
+            {
+                return currentCalibrationBot->GetPhaseShift().HasPhase(phaseId);
+            });
+        currentObservedBotPhaseId = observation.ObservedPhaseId;
+        currentBotPhaseObserved = observation.Matches();
+    }
+    if (currentFixtureTarget)
+    {
+        auto const observation = BotCalibrationIsolation::Observe(
+            Cohort().CalibrationPhaseId,
+            [currentFixtureTarget](uint16 phaseId)
+            {
+                return currentFixtureTarget->GetPhaseShift().HasPhase(phaseId);
+            });
+        currentObservedTargetPhaseId = observation.ObservedPhaseId;
+        currentTargetPhaseObserved = observation.Matches();
+    }
+    if (currentCalibrationBot && currentFixtureTarget)
+        currentOwnTargetVisibilityObserved =
+            currentCalibrationBot->IsInPhase(currentFixtureTarget);
+    bool const currentCalibrationPhaseMatch =
         Cohort().CalibrationPhaseId
-        && Cohort().CalibrationBotPhaseObserved
-        && Cohort().CalibrationTargetPhaseObserved
-        && Cohort().CalibrationObservedBotPhaseId
-            == Cohort().CalibrationPhaseId
-        && Cohort().CalibrationObservedTargetPhaseId
-            == Cohort().CalibrationPhaseId
-        && Cohort().CalibrationOwnTargetVisibilityObserved;
+        && currentBotPhaseObserved
+        && currentTargetPhaseObserved
+        && currentOwnTargetVisibilityObserved;
+    uint64 const currentPhaseObservedAtMs =
+        currentCalibrationBot && currentFixtureTarget ? nowMs : 0;
     auto const executeMetricsItr = executeMetricsByGuid.find(
         Cohort().CalibrationTargetGuid.GetCounter());
     CalibrationMetrics const* executeMetrics = executeMetricsItr == executeMetricsByGuid.end()
@@ -91,24 +148,35 @@ void BotWorldPopulationMgr::AppendCombatCalibrationSummaryJson(
          << ",\"calibration_isolation\":{\"phase_lease_held\":"
          << (Cohort().CalibrationPhaseLease.Held ? "true" : "false")
          << ",\"expected_phase_id\":" << Cohort().CalibrationPhaseId
+         << ",\"observed_at_ms\":" << currentPhaseObservedAtMs
          << ",\"observed_bot_phase_id\":"
-         << Cohort().CalibrationObservedBotPhaseId
+         << currentObservedBotPhaseId
          << ",\"observed_target_phase_id\":"
-         << Cohort().CalibrationObservedTargetPhaseId
+         << currentObservedTargetPhaseId
          << ",\"bot_phase_observed\":"
-         << (Cohort().CalibrationBotPhaseObserved ? "true" : "false")
+         << (currentBotPhaseObserved ? "true" : "false")
          << ",\"target_phase_observed\":"
-         << (Cohort().CalibrationTargetPhaseObserved ? "true" : "false")
+         << (currentTargetPhaseObserved ? "true" : "false")
          << ",\"bot_phase_observation_missing\":"
-         << (Cohort().CalibrationBotPhaseObserved ? "false" : "true")
+         << (currentBotPhaseObservationMissing ? "true" : "false")
          << ",\"target_phase_observation_missing\":"
-         << (Cohort().CalibrationTargetPhaseObserved ? "false" : "true")
+         << (currentTargetPhaseObservationMissing ? "true" : "false")
          << ",\"phase_match\":"
-         << (calibrationPhaseMatch ? "true" : "false")
+         << (currentCalibrationPhaseMatch ? "true" : "false")
          << ",\"own_target_visibility_observed\":"
-         << (Cohort().CalibrationOwnTargetVisibilityObserved ? "true" : "false")
+         << (currentOwnTargetVisibilityObserved ? "true" : "false")
          << ",\"own_target_visibility_observation_missing\":"
-         << (Cohort().CalibrationOwnTargetVisibilityObservationMissing ? "true" : "false")
+         << (currentOwnTargetVisibilityObservationMissing ? "true" : "false")
+         << ",\"provisioning_observed_bot_phase_id\":"
+         << Cohort().CalibrationObservedBotPhaseId
+         << ",\"provisioning_observed_target_phase_id\":"
+         << Cohort().CalibrationObservedTargetPhaseId
+         << ",\"provisioning_bot_phase_observed\":"
+         << (Cohort().CalibrationBotPhaseObserved ? "true" : "false")
+         << ",\"provisioning_target_phase_observed\":"
+         << (Cohort().CalibrationTargetPhaseObserved ? "true" : "false")
+         << ",\"provisioning_own_target_visibility_observed\":"
+         << (Cohort().CalibrationOwnTargetVisibilityObserved ? "true" : "false")
          << ",\"peer_visibility_observed\":false"
          << ",\"peer_visibility_observation_missing\":true"
          << ",\"visibility_authority\":\"native_phase_shift\"}"

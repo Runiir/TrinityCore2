@@ -30,6 +30,8 @@ for line in sys.stdin:
     if verb=='calibrate' and line.split()[2]!='rejected':
         action='botauto_calibrate_status'
         if line.split()[3]=='status':
+            if line.split()[2]=='large':
+                print('{"action":"botauto_calibrate_status_chunk","data":"'+'x'*(20*1024*1024)+'"}',flush=True)
             print('{"action":"botauto_calibrate_status_chunk"}',flush=True)
             if line.split()[2]=='incomplete':
                 print('TC>',flush=True)
@@ -111,6 +113,13 @@ def test_configured_response_cap_is_enforced(console):
     raw, code, expired = console(".botauto calibrate test status", 2)
     assert code and not expired and "byte budget" in raw
     assert console.failed
+
+
+def test_large_calibration_export_uses_configured_budget_without_tiny_read_throttling(console):
+    console.max_response_bytes = 32 * 1024 * 1024
+    raw, code, expired = console(".botauto calibrate large status", 5)
+    assert not code and not expired and len(raw) > 20 * 1024 * 1024
+    assert "botauto_calibrate_status_complete" in raw
 
 
 def test_command_injection_rejected(console):

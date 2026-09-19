@@ -79,7 +79,7 @@ class ConsoleTransport:
                 self.failed = True
                 return "", 1, False
             while time.monotonic() < deadline:
-                output.extend(stream.read(65536))
+                output.extend(stream.read(1024 * 1024))
                 if len(output) > self.max_response_bytes:
                     self.failed = True
                     return "console response exceeded byte budget", 1, False

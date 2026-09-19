@@ -30,6 +30,10 @@ Do not regenerate a reference merely because its payload was evicted.
 Provisioning and pool reset happen once before server launch. Never start two
 copies of this runner or reset the pool while another cohort is active.
 The runner owns the worldserver and refuses to replace an existing one.
+The asset receipt identifies missing offline map files. When creating a new
+worktree, materialize the exact selected-map members from the verified native
+data into independent files under `data/mmaps`, with the contracted `0444`
+mode. Do not chmod hardlinks to the live DataDir or bypass an inventory mismatch.
 
 Each spec directory contains the request, addressed command responses,
 compact native progress, complete final calibration report, and cleanup.

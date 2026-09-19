@@ -11,6 +11,7 @@ POPULATION = BOT_DIR / "BotWorldPopulationMgrCalibrationPopulation.cpp"
 CONTROL = BOT_DIR / "BotWorldPopulationMgrCalibrationControl.cpp"
 SUMMARY = BOT_DIR / "BotWorldPopulationMgrCalibrationSummaryJson.cpp"
 PHASING = ROOT / "src/server/game/Phasing/PhasingHandler.cpp"
+PLAYER = ROOT / "src/server/game/Entities/Player/Player.cpp"
 
 
 def test_production_path_phases_before_native_fixture_admission() -> None:
@@ -18,6 +19,7 @@ def test_production_path_phases_before_native_fixture_admission() -> None:
     control = CONTROL.read_text()
     summary = SUMMARY.read_text()
     phasing = PHASING.read_text()
+    player = PLAYER.read_text()
 
     assert len(HELPER.read_text().splitlines()) < 1000
     assert "BotCalibrationIsolation::AcquirePhase" in control
@@ -28,6 +30,7 @@ def test_production_path_phases_before_native_fixture_admission() -> None:
     assert "PhasingHandler::InheritPhaseShift(fixtureTarget, bot);" in population
     assert "fixtureTarget->UpdateObjectVisibility(true);" in population
     assert "BotCalibrationIsolation::Observe" in population
+    assert "bot->UpdateZoneAndAreaId();" in population
     assert "BotCalibrationIsolation::Release(Cohort().CalibrationPhaseLease);" in control
     assert "PhasingHandler::RemovePhase(bot, calibrationPhaseId, true);" in control
     assert "PhasingHandler::RemovePhase(target, calibrationPhaseId, true);" in control
@@ -35,6 +38,12 @@ def test_production_path_phases_before_native_fixture_admission() -> None:
     assert '\\"calibration_isolation\\"' in summary
     assert '\\"own_target_visibility_observed\\"' in summary
     assert '\\"own_target_visibility_observation_missing\\"' in summary
+    assert '\\"observed_at_ms\\"' in summary
+    assert "currentCalibrationBot = GetLoadedBot(state);" in summary
+    assert "currentFixtureTarget = fixtureMap->GetCreature" in summary
+    assert "currentCalibrationBot && currentFixtureTarget ? nowMs : 0" in summary
+    assert '\\"provisioning_observed_bot_phase_id\\"' in summary
+    assert '\\"provisioning_observed_target_phase_id\\"' in summary
     assert '\\"peer_visibility_observed\\":false' in summary
     assert '\\"peer_visibility_observation_missing\\":true' in summary
 
@@ -45,6 +54,8 @@ def test_production_path_phases_before_native_fixture_admission() -> None:
         "fixtureTarget = map->SummonCreature"
     )
     phase_add = population.index("PhasingHandler::AddPhase(bot, calibrationPhaseId, true);")
+    zone_init = population.index("bot->UpdateZoneAndAreaId();")
+    assert population.index("Player* bot = sBotMgr->SpawnWorldBot") < zone_init < phase_add
     assert population.rfind("if (isolatedSingleTargetMode)", 0, phase_add) > population.index(
         "uint16 const calibrationPhaseId"
     )
@@ -59,6 +70,17 @@ def test_production_path_phases_before_native_fixture_admission() -> None:
     assert "AddPhase(controlled, phaseId, updateVisibility);" in phasing
     assert "target->GetPhaseShift() = source->GetPhaseShift();" in phasing
     assert "target->GetSuppressedPhaseShift() = source->GetSuppressedPhaseShift();" in phasing
+
+    # Bind the lifecycle regression to the native path that caused the live
+    # loss: placement is followed by one explicit zone/area initialization,
+    # and that native area update rebuilds phase state before our AddPhase.
+    update_zone = player.index("void Player::UpdateZoneAndAreaId()")
+    update_area = player.index("void Player::UpdateArea(uint32 newArea)")
+    area_change = player.index("PhasingHandler::OnAreaChange(this);", update_area)
+    assert "UpdateArea(newarea);" in player[update_zone:update_zone + 700]
+    assert update_zone < area_change
+    assert "ClearPhases();" in phasing[phasing.index("void PhasingHandler::OnAreaChange"):
+        phasing.index("void PhasingHandler::OnAreaChange") + 1000]
 
 
 def test_allocator_and_native_phase_visibility_fixture(tmp_path: Path) -> None:
@@ -129,6 +151,16 @@ int main()
     assert(!bot.phase.CanSee(foreignTarget.phase));
     NativeObject unphased;
     assert(!bot.phase.CanSee(unphased.phase));
+
+    // The first Player heartbeat's native area refresh clears explicit
+    // phases. The production order restores the reserved phase only after
+    // that refresh; no per-tick phase reapplication is involved.
+    NativeObject lifecycle;
+    lifecycle.phase.AddPhase(first.PhaseId, PhaseFlags::None, nullptr);
+    lifecycle.phase.ClearPhases();
+    assert(!lifecycle.phase.HasPhase(first.PhaseId));
+    lifecycle.phase.AddPhase(first.PhaseId, PhaseFlags::None, nullptr);
+    assert(lifecycle.phase.HasPhase(first.PhaseId));
 
     auto observation = Observe(first.PhaseId,
         [&](std::uint16_t phaseId) { return bot.phase.HasPhase(phaseId); });

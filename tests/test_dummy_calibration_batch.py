@@ -34,6 +34,7 @@ class NativeConsole:
             profile_content_hash="a" * 64, active=True, mode="single_target_300",
             fixture_target={"runtime_guid": a["actor"] + 100}, failure_reason=None,
             calibration_isolation=dict(phase_lease_held=True, phase_match=True,
+                observed_at_ms=int(self.now * 1000),
                 observed_bot_phase_id=60100 if self.collision else a["actor"],
                 observed_target_phase_id=60100 if self.collision else a["actor"],
                 own_target_visibility_observed=True, peer_visibility_observed=False),
@@ -158,6 +159,18 @@ def test_missing_native_phase_observation_rejects_scoring(tmp_path, monkeypatch)
         run(console, tmp_path, monkeypatch)
 
 
+def test_cached_spawn_phase_cannot_qualify_scored_window(tmp_path, monkeypatch):
+    console = NativeConsole()
+    original = console.calibration
+    def stale(cohort, **kwargs):
+        row = original(cohort, **kwargs)
+        row["calibration_isolation"]["observed_at_ms"] = int(console.cohorts[cohort]["start"] * 1000)
+        return row
+    console.calibration = stale
+    with pytest.raises(RuntimeError, match="observed native phase isolation"):
+        run(console, tmp_path, monkeypatch)
+
+
 def test_foreign_cleanup_receipt_cannot_mark_attempt_stopped(tmp_path, monkeypatch):
     class ForeignCleanup(NativeConsole):
         def __call__(self, command, timeout):
@@ -179,3 +192,15 @@ def test_native_stop_uses_generic_identity_for_dummy_and_raid():
     assert "uint64 const serverEpoch = _serverEpoch;" in body
     assert "uint64 const attemptId = Cohort().AttemptId;" in body
     assert "Cohort().Raid.ServerEpoch" not in body
+
+
+def test_progress_during_slow_export_is_not_post_cleanup_progress(tmp_path, monkeypatch):
+    class SlowExport(NativeConsole):
+        def __call__(self, command, timeout):
+            if command == ".botauto calibrate fixture-1 status":
+                self.now += 40
+            return super().__call__(command, timeout)
+    result = run(SlowExport(), tmp_path, monkeypatch)
+    assert result["all_captures_accepted"]
+    assert not result["concurrent_cleanup_proved"]
+    assert not result["batch_accepted"]

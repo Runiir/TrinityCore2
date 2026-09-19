@@ -423,6 +423,15 @@ not route other shards through the Chainwielder module.
 
 ## Keep timing semantics separate
 
+For concurrent DPS calibration, use
+[the shared dummy runner](../../../docs/bot_raids/concurrent_dummy_calibration.md).
+Name filtering does not isolate buffs, debuffs, pets, or splash damage. With a
+private native phase, finish the spawned player's zone/area initialization
+before assigning it: the first heartbeat's `OnAreaChange` rebuild clears direct
+phase additions. Observe current actor/target phases at capture time; a cached
+spawn match cannot prove isolation during scoring. Do not repair drift by
+silently reapplying phases every tick.
+
 - Reserve the exact 300-second scoring window for isolated training-dummy DPS
   calibration. It measures stable throughput, action mix, cadence, and pet
   contribution; it does not model raid or dungeon completion.

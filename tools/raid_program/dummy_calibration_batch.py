@@ -57,12 +57,16 @@ def observe(attempt: Attempt, calibration: dict, epoch: int) -> None:
     if not all(observed):
         raise RuntimeError("incomplete calibration identity")
     isolation = calibration.get("calibration_isolation") or {}
+    observed_at = int(isolation.get("observed_at_ms") or 0)
+    previous_observed_at = int((attempt.latest.get("calibration_isolation") or {}).get("observed_at_ms") or 0)
     if calibration.get("scored_started_at_ms") and (
             isolation.get("phase_lease_held") is not True
             or isolation.get("phase_match") is not True
             or isolation.get("observed_bot_phase_id") != observed[4]
             or isolation.get("observed_target_phase_id") != observed[4]
-            or isolation.get("own_target_visibility_observed") is not True):
+            or isolation.get("own_target_visibility_observed") is not True
+            or observed_at < int(calibration["scored_started_at_ms"])
+            or observed_at < previous_observed_at):
         raise RuntimeError("scoring calibration lacks observed native phase isolation")
     attempt.identity = observed
     attempt.latest = calibration
@@ -141,7 +145,7 @@ def run_batch(*, execute: Callable, specs: list[str], output: Path, epoch: int,
         while pending or active:
             # Give the first scorer a head start. This lets a later peer prove
             # continuing native progress after the first addressed cleanup.
-            can_start = not active or any(float(a.latest.get("scored_seconds") or 0) >= 5 for a in active)
+            can_start = not active or any(float(a.latest.get("scored_seconds") or 0) >= 20 for a in active)
             if pending and len(active) < concurrency and can_start:
                 spec = pending.pop(0)
                 folder = output / spec
@@ -214,13 +218,21 @@ def run_batch(*, execute: Callable, specs: list[str], output: Path, epoch: int,
                           "dps": float(row.get("damage") or 0) / 300 if exact else None,
                           "hps": float(row.get("effective_healing") or 0) / 300 if exact else None,
                           "performance_accepted": False}
-                for peer in active:
-                    if peer is not a and peer.latest.get("scored_started_at_ms") and not peer.latest.get("window_complete"):
-                        witnesses.append({"stopped_cohort": a.cohort, "cohort_id": peer.cohort,
-                                          "scored_seconds": float(peer.latest.get("scored_seconds") or 0),
-                                          "damage": int(actor_row(peer.latest).get("damage") or 0), "proved": False})
                 stop(a)
                 active.remove(a)
+                for peer in active:
+                    # Freeze the witness baseline after cleanup. An older
+                    # heartbeat cannot prove progress occurred after the stop.
+                    after_stop, _ = calibration(peer, "progress")
+                    observe(peer, after_stop, epoch)
+                    validate_pair(active)
+                    with (peer.output / "progress.jsonl").open("a") as stream:
+                        stream.write(json.dumps(after_stop, separators=(",", ":")) + "\n")
+                    if after_stop.get("scored_started_at_ms") and not after_stop.get("window_complete"):
+                        witnesses.append({"stopped_cohort": a.cohort, "cohort_id": peer.cohort,
+                                          "baseline_observed_after_cleanup": True,
+                                          "scored_seconds": float(after_stop.get("scored_seconds") or 0),
+                                          "damage": int(actor_row(after_stop).get("damage") or 0), "proved": False})
                 results.append(result)
                 write(output / "results.json", {"actors": results, "cleanup_witnesses": witnesses})
             if active:

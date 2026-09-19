@@ -380,6 +380,12 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                         candidateGuid);
                 break;
             }
+            // World-bot placement leaves the loaded Player's zone/area cache
+            // uninitialized. The first native heartbeat calls this method and
+            // UpdateArea()->OnAreaChange() clears explicit phases. Initialize
+            // that native state once before taking the private phase lease so
+            // the phase remains authoritative for the whole calibration.
+            bot->UpdateZoneAndAreaId();
             PhasingHandler::AddPhase(bot, calibrationPhaseId, true);
             auto const botPhaseObservation = BotCalibrationIsolation::Observe(
                 calibrationPhaseId,
