@@ -69,6 +69,25 @@ pixi run python -m tools.bot_ml.analyze_magmaw_trace --input "$closed_run" --pre
 pixi run python -m tools.bot_ml.jev_shadow --review "$review_dir/review.json" --identity "$identity_json" --backend-receipt "$backend_json" --output "$review_dir/shadow"
 ```
 
+Every run now receives both local Laya and hosted Jev review for each admitted
+bot, followed by the class or role reviewer. Run the second collection explicitly:
+
+```sh
+pixi run python -m tools.bot_ml.jev_shadow --review "$review_dir/review.json" --identity "$identity_json" --backend-receipt "$hosted_backend_json" --backend hosted --env-file "$jev_env_file" --output "$review_dir/hosted"
+```
+
+The hosted adapter reads `JEV` from the environment or the specified file and
+uses the existing TypeSafe client. Credentials are never part of retained rows.
+Retain exact ordered requests, resolved response model identity, failures and
+latency separately for each provider. Neither provider is a fallback for the
+other. Both retain quarantine and no action authority.
+
+DPS packets preserve the existing causal screen. Tank/healer packets use their
+own identity and actor-scoped native rows; unavailable healing, mitigation,
+threat or damage observations remain unavailable. A sparse role packet cannot
+replace the specialist's review of full native evidence. An insufficient-evidence
+answer is an advisory result, not a contradictory repair recommendation.
+
 If raw damage events are unavailable, omit the timeline command/argument.
 The resulting review must preserve the missing observation; an old derived
 timeline cannot be silently promoted to a newly corrected one. Review inputs

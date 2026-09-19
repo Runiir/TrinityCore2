@@ -13,7 +13,7 @@ import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -128,7 +128,7 @@ def review_prediction(packet: dict[str, Any], response: dict[str, Any] | None) -
         if choice == "encounter_assignment":
             if not actor.get("required_assignment_active") or actor.get("assignment_status") != "incomplete":
                 reasons.append("assignment_repair_not_supported_by_observed_duty")
-        elif choice != "collect_more_canaries" and actor.get("counterfactual_status") != "eligible":
+        elif choice not in {"collect_more_canaries", "insufficient_role_evidence"} and actor.get("counterfactual_status") != "eligible":
             reasons.append("counterfactual_evidence_unavailable_or_ineligible")
     return {"status": "unavailable" if response is None else "review_required" if reasons else "advisory_only",
             "reasons": sorted(set(reasons)), "ground_truth_label": False}
@@ -138,7 +138,12 @@ def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[
              response: dict[str, Any] | None, latency_sec: float | None,
              error: str | None = None, source: str = "local_request",
              teacher: dict[str, Any] | None = None) -> dict[str, Any]:
-    body = encoded(packet)
+    # Match the hosted client's actual serializer, including top-level order
+    # and ASCII escaping. Local requests use encoded(packet) directly.
+    body = (json.dumps({"state": packet["state"], "model": packet["model"],
+                        "questions": packet["questions"]},
+                       separators=(",", ":"), sort_keys=False).encode()
+            if source == "hosted_request" else encoded(packet))
     run_id = packet["state"]["run_id"]
     if identity.get("run_id") != run_id:
         raise ValueError("packet and evidence run identities differ")
@@ -163,7 +168,9 @@ def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[
 
 def write_batch(packets: list[dict[str, Any]], output: Path, *, identity: dict[str, Any],
                 backend: dict[str, Any], endpoint: str = ENDPOINT,
-                prepare_only: bool = False) -> dict[str, Any]:
+                prepare_only: bool = False,
+                request_fn: Callable[[dict[str, Any], str], dict[str, Any]] | None = None,
+                request_source: str = "local_request") -> dict[str, Any]:
     if identity.get("closed") is not True:
         raise ValueError("shadow capture requires an explicitly closed evidence batch")
     if not packets:
@@ -182,12 +189,12 @@ def write_batch(packets: list[dict[str, Any]], output: Path, *, identity: dict[s
             response, error = None, None
             try:
                 if not prepare_only:
-                    response = call_local(packet, endpoint)
+                    response = (request_fn or call_local)(packet, endpoint)
             except (OSError, ValueError, analyzer.JevError) as exc:
                 error = f"{type(exc).__name__}: {exc}"
             row = make_row(packet, identity=identity, backend=backend, response=response,
                 latency_sec=round(time.monotonic() - start, 4) if not prepare_only else None,
-                error=error, source="prepared" if prepare_only else "local_request")
+                error=error, source="prepared" if prepare_only else request_source)
             stream.write(encoded(row).decode() + "\n")
             stream.flush()
             rows.append(row)
@@ -222,15 +229,32 @@ def main() -> int:
                         help="server revision, model checkpoint, device/dtype and prompt revision")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--endpoint", default=ENDPOINT)
-    parser.add_argument("--model", default=MODEL)
+    parser.add_argument("--model")
+    parser.add_argument("--backend", choices=("local", "hosted"), default="local")
+    parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()
     review = json.loads(args.review.read_text())
     identity = json.loads(args.identity.read_text())
     identity["review_sha256"] = sha(args.review.read_bytes())
-    summary = write_batch(actor_packets(review, args.model), args.output, identity=identity,
-        backend=json.loads(args.backend_receipt.read_text()), endpoint=args.endpoint,
-        prepare_only=args.prepare_only)
+    backend = json.loads(args.backend_receipt.read_text())
+    request_fn = None
+    if args.backend == "hosted":
+        if args.model not in (None, analyzer.JEV_MODEL) or args.endpoint != ENDPOINT:
+            parser.error("hosted review uses the configured Jev API model and endpoint")
+        packets = laya_packets.actor_packets(review, analyzer.JEV_MODEL)
+        backend.update(provider="typesafe_hosted", endpoint=analyzer.JEV_URL,
+                       requested_model=analyzer.JEV_MODEL)
+        if not args.prepare_only:
+            key = analyzer._jev_key(args.env_file)
+            def request_fn(packet, _endpoint):
+                return analyzer._call_jev(packet["state"], key, packet["questions"])
+    else:
+        packets = actor_packets(review, args.model or MODEL)
+    summary = write_batch(packets, args.output, identity=identity,
+        backend=backend, endpoint=args.endpoint, prepare_only=args.prepare_only,
+        request_fn=request_fn,
+        request_source="hosted_request" if args.backend == "hosted" else "local_request")
     print(json.dumps(summary))
     return 2 if summary["errors"] else 0
 

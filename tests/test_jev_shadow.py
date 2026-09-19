@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 
@@ -97,6 +98,63 @@ def laya_review():
             }
         }
     }
+
+
+def roster_review():
+    """Ten admitted actors: six DPS signals plus four role-only identities."""
+    review = laya_review()
+    state = review["jev_input"]["state"]
+    boss = state["boss_dps_review"]
+    identities = [
+        {"bot_guid": 7, "class_spec": "hunter", "role": "dps", "bot_name": "Aster", "class_name": "Hunter"},
+        {"bot_guid": 8, "class_spec": "blood_death_knight", "role": "tank", "bot_name": "Tank-8"},
+        {"bot_guid": 9, "class_spec": "restoration_druid", "role": "healer", "bot_name": "Healer-9"},
+        {"bot_guid": 10, "class_spec": "holy_paladin", "role": "healer", "bot_name": "Healer-10"},
+        {"bot_guid": 11, "class_spec": "discipline_priest", "role": "healer", "bot_name": "Healer-11"},
+        {"bot_guid": 12, "class_spec": "fire_mage", "role": "dps", "bot_name": "Dps-12"},
+        {"bot_guid": 13, "class_spec": "fire_mage", "role": "dps", "bot_name": "Dps-13"},
+        {"bot_guid": 14, "class_spec": "affliction_warlock", "role": "dps", "bot_name": "Dps-14"},
+        {"bot_guid": 15, "class_spec": "survival_hunter", "role": "dps", "bot_name": "Dps-15"},
+        {"bot_guid": 16, "class_spec": "elemental_shaman", "role": "dps", "bot_name": "Dps-16"},
+    ]
+    base_actor = boss["actor_loss_signals"][0]
+    dps_specs = [(7, "hunter"), (12, "fire_mage"), (13, "fire_mage"),
+                 (14, "affliction_warlock"), (15, "survival_hunter"), (16, "elemental_shaman")]
+    signals = []
+    for guid, class_spec in dps_specs:
+        actor = copy.deepcopy(base_actor)
+        actor["bot_guid"] = guid
+        actor["class_spec"] = class_spec
+        signals.append(actor)
+    boss["actor_identity"] = identities
+    boss["actor_loss_signals"] = signals
+    boss["action_outcomes"] = [
+        {
+            "bot_guid": 8,
+            "action_name": "taunt",
+            "outcome": "cast_failed",
+            "reason_code": "no_line_of_sight",
+            "count": 2,
+        },
+        {
+            "bot_guid": 9,
+            "action_name": "heal",
+            "outcome": "no_action",
+            "reason_code": "target_missing",
+            "count": 3,
+        },
+        {"action_name": "foreign_row", "outcome": "cast_failed", "count": 999},
+    ]
+    boss["candidate_rejections"] = [
+        {
+            "bot_guid": 9,
+            "action_categories": ["heal"],
+            "reason": "target_missing",
+            "count": 4,
+        },
+        {"reason": "foreign_row", "count": 999},
+    ]
+    return review
 
 
 def packet():
@@ -274,3 +332,87 @@ def test_laya_packet_keeps_duty_and_counterfactual_review_restrictions():
     verdict = shadow.review_prediction(packet, result)
     assert verdict["status"] == "review_required"
     assert "counterfactual_evidence_unavailable_or_ineligible" in verdict["reasons"]
+
+
+def test_all_admitted_roster_actors_get_unique_role_scoped_packets():
+    review = roster_review()
+    packets = shadow.actor_packets(review)
+    by_guid = {packet["state"]["actor_review"]["bot_guid"]: packet for packet in packets}
+    assert set(by_guid) == set(range(7, 17))
+    assert len(by_guid) == 10
+    assert len({json.dumps(packet["questions"], sort_keys=True) for packet in packets}) == 10
+
+    baseline = shadow.actor_packets(laya_review())[0]
+    assert by_guid[7]["state"] == baseline["state"]
+    assert by_guid[7]["questions"] == baseline["questions"]
+
+    for guid in (7, 12, 13, 14, 15, 16):
+        packet = by_guid[guid]
+        assert packet["questions"][f"actor_action_{guid}"]["criteria"] == shadow.laya_packets.ACTOR_OPTIONS
+        assert "encounter_dps" in packet["state"]["actor_review"]["observed"]
+        assert "No DPS baseline for this role." not in packet["state"]["limitations"]
+
+    for guid in (8, 9, 10, 11):
+        packet = by_guid[guid]
+        actor = packet["state"]["actor_review"]
+        question = packet["questions"][f"actor_action_{guid}"]
+        if guid in (8, 9):
+            assert question["criteria"] == {
+                "native_action_review": shadow.laya_packets.ROLE_OPTIONS["native_action_review"],
+                "insufficient_role_evidence": shadow.laya_packets.ROLE_OPTIONS["insufficient_role_evidence"],
+                "collect_more_canaries": shadow.laya_packets.ROLE_OPTIONS["collect_more_canaries"],
+            }
+        else:
+            assert question["criteria"] == {
+                "insufficient_role_evidence": shadow.laya_packets.ROLE_OPTIONS["insufficient_role_evidence"],
+                "collect_more_canaries": shadow.laya_packets.ROLE_OPTIONS["collect_more_canaries"],
+            }
+        assert max(map(len, question["criteria"].values())) <= 48
+        assert shadow.laya_packets.estimated_tokens(question) <= 160
+        assert actor["role"] in {"tank", "healer"}
+        assert actor["class_spec"]
+        assert actor["observed"] == {
+            "damage": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+            "healing": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+            "threat": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+            "mitigation": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+        }
+        assert "timeline_signal" not in actor
+        assert "encounter_dps" not in actor["observed"]
+        assert "wcl_observed_dps" not in actor["observed"]
+        assert "No DPS baseline for this role." in packet["state"]["limitations"]
+        assert "party_damage" not in packet["state"]
+
+    assert by_guid[8]["state"]["actor_review"]["native"]["action_outcomes"]["status"] == "observed"
+    assert by_guid[8]["state"]["actor_review"]["native"]["candidate_rejections"]["status"] == "unavailable"
+    assert by_guid[9]["state"]["actor_review"]["native"]["action_outcomes"]["status"] == "observed"
+    assert by_guid[9]["state"]["actor_review"]["native"]["candidate_rejections"]["status"] == "observed"
+    for guid in (10, 11):
+        native = by_guid[guid]["state"]["actor_review"]["native"]
+        assert native["action_outcomes"]["status"] == "unavailable"
+        assert native["candidate_rejections"]["status"] == "unavailable"
+
+
+def test_role_packets_do_not_turn_unavailable_evidence_into_a_label():
+    packet = next(
+        packet for packet in shadow.actor_packets(roster_review())
+        if packet["state"]["actor_review"]["bot_guid"] == 10
+    )
+    question = packet["questions"]["actor_action_10"]
+    assert set(question["criteria"]) == {
+        "insufficient_role_evidence",
+        "collect_more_canaries",
+    }
+    answer = {
+        "type": "choice",
+        "choice": "collect_more_canaries",
+        "confidence": 0.95,
+        "probabilities": {choice: 0.0 for choice in question["criteria"]},
+    }
+    answer["probabilities"]["collect_more_canaries"] = 0.95
+    verdict = shadow.review_prediction(
+        packet,
+        {"model": shadow.MODEL, "answers": {"actor_action_10": answer}},
+    )
+    assert verdict["status"] == "advisory_only"
+    assert not verdict["ground_truth_label"]

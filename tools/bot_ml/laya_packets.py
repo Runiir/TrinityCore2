@@ -26,6 +26,11 @@ ACTOR_OPTIONS = {
     "encounter_assignment": "Required duty incomplete.",
     "collect_more_canaries": "Mixed/unmatched evidence.",
 }
+ROLE_OPTIONS = {
+    "native_action_review": "Observed actor native failure.",
+    "insufficient_role_evidence": "Role evidence is insufficient.",
+    "collect_more_canaries": "Collect actor-scoped role rows.",
+}
 
 _IDENTITY_FIELDS = ("bot_guid", "bot_name", "role", "class_spec", "class_name")
 _OBSERVED_FIELDS = (
@@ -123,6 +128,23 @@ def _row_for_guid(rows: Any, guid: int | str | None) -> dict[str, Any] | None:
 def _identity_for_guid(boss: Mapping[str, Any], guid: int | str | None) -> dict[str, Any]:
     identity = _row_for_guid(boss.get("actor_identity"), guid)
     return _present(identity, _IDENTITY_FIELDS) if identity else {}
+
+
+def _identity_rows(value: Any) -> list[dict[str, Any]]:
+    """Return roster identity rows in producer order without inventing rows."""
+    if isinstance(value, list):
+        return [dict(row) for row in value if isinstance(row, Mapping)]
+    if isinstance(value, Mapping):
+        rows: list[dict[str, Any]] = []
+        for key, value_row in value.items():
+            if not isinstance(value_row, Mapping):
+                continue
+            row = dict(value_row)
+            if "bot_guid" not in row and "actor_guid" not in row:
+                row["bot_guid"] = key
+            rows.append(row)
+        return rows
+    return []
 
 
 def _metrics_actor(boss: Mapping[str, Any], state: Mapping[str, Any], guid: int | str | None) -> dict[str, Any] | None:
@@ -303,6 +325,106 @@ def _compact_outcome(value: Any) -> dict[str, Any] | None:
     return result or None
 
 
+def _role_native_rows(
+    source: Any,
+    guid: int | str | None,
+    fields: Iterable[str],
+    source_name: str,
+) -> dict[str, Any]:
+    """Project only rows explicitly attributed to one non-DPS actor."""
+    if not isinstance(source, list):
+        return {"status": "unavailable", "reason": f"{source_name}_source_missing"}
+    rows = [
+        row for row in source
+        if isinstance(row, Mapping)
+        and _same_guid(row.get("bot_guid", row.get("actor_guid")), guid)
+    ]
+    if not rows:
+        return {"status": "unavailable", "reason": "no_actor_scoped_rows"}
+    compact = _bounded_rows(rows, fields, 3)
+    return {"status": "observed", "rows": compact}
+
+
+def _first_list(source: Mapping[str, Any], names: Iterable[str]) -> list[Any] | None:
+    empty: list[Any] | None = None
+    for name in names:
+        value = source.get(name)
+        if isinstance(value, list):
+            if value:
+                return value
+            if empty is None:
+                empty = value
+    return empty
+
+
+def _role_actor_state(
+    state: Mapping[str, Any],
+    boss: Mapping[str, Any],
+    identity: Mapping[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    """Build a role packet without borrowing DPS or party-level totals."""
+    guid = _guid(identity.get("bot_guid", identity.get("actor_guid")))
+    role = str(identity.get("role") or "unknown")
+    actor_identity = _present(identity, _IDENTITY_FIELDS)
+    action_rows = _first_list(
+        boss,
+        ("action_outcomes", "native_action_outcomes", "action_outcome_rows"),
+    )
+    candidate_rows = _first_list(
+        boss,
+        ("candidate_rejections", "native_candidate_rejections", "candidate_rejection_rows"),
+    )
+    native = {
+        "action_outcomes": _role_native_rows(
+            action_rows,
+            guid,
+            ("action_name", "outcome", "reason_code", "count"),
+            "action_outcomes",
+        ),
+        "candidate_rejections": _role_native_rows(
+            candidate_rows,
+            guid,
+            ("action_category", "action_categories", "reason", "count"),
+            "candidate_rejections",
+        ),
+    }
+    has_native_rows = any(item.get("status") == "observed" for item in native.values())
+    actor_review: dict[str, Any] = {
+        "bot_guid": guid,
+        "role": role,
+        "actor_identity": actor_identity,
+        "counterfactual_status": "unavailable",
+        "observed": {
+            "damage": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+            "healing": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+            "threat": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+            "mitigation": {"status": "unavailable", "reason": "role_metric_not_in_review"},
+        },
+        "native": native,
+        "role_scope": "actor_scoped_role_evidence_only",
+    }
+    actor_review.update(_present(identity, ("bot_name", "class_spec", "class_name")))
+    result: dict[str, Any] = {
+        "task": "role_diagnostic",
+        "authority": "shadow_advisory_only",
+        "detail_scope": "role rows only; missing observations stay unavailable",
+        "actor_review": actor_review,
+        "limitations": [
+            "No DPS baseline for this role.",
+            "Damage/healing/threat/mitigation are unavailable.",
+            "Shared totals are not actor evidence.",
+            "Only actor-scoped native rows are admissible.",
+        ],
+    }
+    for key in ("run_id", "segment_id"):
+        if key in state:
+            result[key] = state[key]
+    outcome = _compact_outcome(state.get("native_gameplay_outcome"))
+    if outcome is not None:
+        result["native_gameplay_outcome"] = outcome
+    return result, has_native_rows
+
+
 def _compact_actor_state(
     state: Mapping[str, Any],
     boss: Mapping[str, Any],
@@ -384,11 +506,31 @@ def _compact_actor_state(
 def _actor_question(guid: int | str | None) -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": (
-            "Choose one diagnosis from evidence. "
-            "Unknown stays unknown; advisory only."
-        ),
+        "instructions": "Choose one diagnosis. Unknown stays unknown; advisory only.",
         "criteria": dict(ACTOR_OPTIONS),
+    }
+
+
+def _role_question(guid: int | str | None, has_native_rows: bool) -> dict[str, Any]:
+    criteria = (
+        {
+            "native_action_review": ROLE_OPTIONS["native_action_review"],
+            "insufficient_role_evidence": ROLE_OPTIONS["insufficient_role_evidence"],
+            "collect_more_canaries": ROLE_OPTIONS["collect_more_canaries"],
+        }
+        if has_native_rows
+        else {
+            "insufficient_role_evidence": ROLE_OPTIONS["insufficient_role_evidence"],
+            "collect_more_canaries": ROLE_OPTIONS["collect_more_canaries"],
+        }
+    )
+    return {
+        "type": "choice",
+        "instructions": (
+            "Choose only from actor-scoped role evidence. "
+            "Missing data stays unavailable; advisory only."
+        ),
+        "criteria": criteria,
     }
 
 
@@ -405,20 +547,33 @@ def actor_packets(review: Mapping[str, Any], model: str = MODEL) -> list[dict[st
     timeline = timeline if isinstance(timeline, Mapping) else {}
     packets: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for actor in boss.get("actor_loss_signals", []):
-        if not isinstance(actor, Mapping):
+    loss_signals = boss.get("actor_loss_signals")
+    loss_signals = loss_signals if isinstance(loss_signals, list) else []
+    identity_rows = _identity_rows(boss.get("actor_identity"))
+    roster_rows = identity_rows or [
+        row for row in loss_signals if isinstance(row, Mapping)
+    ]
+    for identity_row in roster_rows:
+        if not isinstance(identity_row, Mapping):
             continue
-        guid = _guid(actor.get("bot_guid", actor.get("actor_guid")))
+        guid = _guid(identity_row.get("bot_guid", identity_row.get("actor_guid")))
         if guid is None or str(guid) in seen:
             continue
         seen.add(str(guid))
-        timeline_actor = _row_for_guid(timeline.get("actors"), guid)
-        state_projection = _compact_actor_state(state, boss, actor, timeline_actor)
+        actor = _row_for_guid(loss_signals, guid)
+        role = str(identity_row.get("role") or "").lower()
+        if actor is not None and role in {"", "dps"}:
+            timeline_actor = _row_for_guid(timeline.get("actors"), guid)
+            state_projection = _compact_actor_state(state, boss, actor, timeline_actor)
+            question = _actor_question(guid)
+        else:
+            state_projection, has_native_rows = _role_actor_state(state, boss, identity_row)
+            question = _role_question(guid, has_native_rows)
         packets.append(
             {
                 "model": model,
                 "state": state_projection,
-                "questions": {f"actor_action_{guid}": _actor_question(guid)},
+                "questions": {f"actor_action_{guid}": question},
             }
         )
     return packets
@@ -436,4 +591,10 @@ def estimated_tokens(value: Any) -> int:
     return max(1, (len(text) + 2) // 3)
 
 
-__all__ = ["MODEL", "ACTOR_OPTIONS", "actor_packets", "estimated_tokens"]
+__all__ = [
+    "MODEL",
+    "ACTOR_OPTIONS",
+    "ROLE_OPTIONS",
+    "actor_packets",
+    "estimated_tokens",
+]
