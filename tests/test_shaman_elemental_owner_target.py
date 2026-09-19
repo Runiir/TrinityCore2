@@ -6,15 +6,53 @@ from test_warlock_doomguard_guardian import function as extract_function
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def nth_function(source: str, signature: str, occurrence: int) -> str:
+    start = -1
+    for _ in range(occurrence + 1):
+        start = source.index(signature, start + 1)
+    brace = source.index("{", start)
+    depth = 1
+    end = brace + 1
+    while depth:
+        depth += (source[end] == "{") - (source[end] == "}")
+        end += 1
+    return source[start:end]
+
+
 def test_elemental_acquires_native_owner_helper_only_without_victim(tmp_path):
     text = (ROOT / "src/server/scripts/Pet/pet_shaman.cpp").read_text()
     start = text.index("Unit* ShamanElementalOwner(")
     end = text.index("\nenum ShamanSpells", start)
     function = text[start:end]
-    attack = extract_function(text, "void AttackStart(Unit* target) override")
-    assert text.count(attack) == 2
-    update = extract_function((ROOT / "src/server/game/AI/CreatureAI.cpp").read_text(), "bool CreatureAI::UpdateVictim()")
+    native_spells = (ROOT / "src/server/game/Entities/Object/WorldObjectSpells.cpp").read_text()
+    reaction_start = native_spells.index("            if (selfPlayerOwner && targetPlayerOwner)")
+    reaction_end = native_spells.index("            // check FFA_PVP", reaction_start)
+    native_reaction_block = native_spells[reaction_start:reaction_end]
+    friendly_start = native_spells.index("    // PvP, PvC, CvP case")
+    friendly_end = native_spells.index("    Player const* playerAffectingAttacker", friendly_start)
+    native_friendly_rejection = native_spells[friendly_start:friendly_end]
+    assert "selfPlayerOwner->IsInRaidWith(targetPlayerOwner)" in native_reaction_block
+    assert "selfPlayerOwner->duel->opponent" in native_reaction_block
+    assert "if (IsFriendlyTo(target) || target->IsFriendlyTo(this))" in native_friendly_rejection
+    attack = nth_function(text, "void AttackStart(Unit* target) override", 0)
+    attack_second = nth_function(text, "void AttackStart(Unit* target) override", 1)
+    reset = nth_function(text, "void Reset() override", 0)
+    reset_second = nth_function(text, "void Reset() override", 1)
+    update = nth_function(text, "void UpdateAI(uint32 diff) override", 0)
+    update_second = nth_function(text, "void UpdateAI(uint32 diff) override", 1)
+    assert attack == attack_second
+    assert reset.startswith("void Reset() override\n            {")
+    assert reset_second.startswith("void Reset() override\n            {")
+    assert "InitializeShamanElementalPlayerControlled(me);" in reset
+    assert "InitializeShamanElementalPlayerControlled(me);" in reset_second
+    assert "InitializeShamanElementalPlayerControlled(me);" in update
+    assert "InitializeShamanElementalPlayerControlled(me);" in update_second
+    assert "target && me->IsValidAttackTarget(target)" in text
+    victim_update = extract_function((ROOT / "src/server/game/AI/CreatureAI.cpp").read_text(), "bool CreatureAI::UpdateVictim()")
     assert text.count("StopShamanProtectedVictim(me);") == 2
+    assert "IsInSameRaidWith" not in text
+    assert text.count("SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)") == 1
+    assert "SetTargetMap" not in text
     source = tmp_path / "elemental_owner.cpp"
     source.write_text(r'''
 #include <cassert>
@@ -27,7 +65,10 @@ def test_elemental_acquires_native_owner_helper_only_without_victim(tmp_path):
 #include "ObjectGuid.h"
 constexpr int UNIT_FIELD_FLAGS = 1;
 constexpr int UNIT_FLAG_PLAYER_CONTROLLED = 8;
-struct Totem;struct Creature;struct Unit;
+constexpr int UNIT_STATE_CASTING = 1;
+enum ReputationRank { REP_HATED = 0, REP_HOSTILE = 1, REP_UNFRIENDLY = 2,
+    REP_NEUTRAL = 3, REP_FRIENDLY = 4 };
+struct Player;struct Totem;struct Creature;struct Unit;
 struct CombatRef {Unit* target;bool suppressed=false;Unit* GetOther(Unit const*)const{return target;}bool IsSuppressedFor(Unit const*)const{return suppressed;}};
 struct CombatManager {std::vector<std::pair<int,CombatRef*>> pve,pvp;
  auto const& GetPvECombatRefs()const{return pve;}auto const& GetPvPCombatRefs()const{return pvp;}};
@@ -40,8 +81,9 @@ struct Unit {
     Unit* owner = nullptr;
     Unit* victim = nullptr;
     Unit* helper = nullptr;
-    bool alive = true, valid = true, engaged = true, totem = false;
-    int type = TYPEID_PLAYER, helperCalls = 0;
+    Player* affectingPlayer = nullptr;
+    bool alive = true, valid = true, engaged = true, totem = false, hostile = false;
+    int type = TYPEID_UNIT, helperCalls = 0, raidId = 0, flags = 0;
     bool IsTotem() const { return totem; }
     Totem* ToTotem();
     // Base owner access is nonvirtual; Totem hides it with its native owner.
@@ -50,9 +92,43 @@ struct Unit {
     Unit* GetVictim() const { return victim; }
     Unit* getAttackerForHelper() { ++helperCalls; return engaged ? helper : nullptr; }
     bool IsAlive() const { return alive; }
-    bool IsValidAttackTarget(Unit* target) const { return target->valid; }
+    bool HasFlag(int field, int flag) const { return field == UNIT_FIELD_FLAGS && (flags & flag) == flag; }
+    void SetFlag(int field, int flag) { assert(field == UNIT_FIELD_FLAGS); flags |= flag; }
+    Player* GetCharmerOrOwnerPlayerOrPlayerItself() const;
+    Player* GetAffectingPlayer() const;
+    ReputationRank GetReactionTo(Unit const* target) const;
+    bool IsFriendlyTo(Unit const* target) const { return GetReactionTo(target) >= REP_FRIENDLY; }
+    bool IsValidAttackTarget(Unit const* target) const;
     int GetTypeId() const { return type; }
 };
+struct Player : Unit {
+    struct DuelInfo { Player* opponent; int startTime; };
+    DuelInfo* duel = nullptr;
+    Player() { type = TYPEID_PLAYER; affectingPlayer = this; }
+    bool IsInRaidWith(Player const* other) const { return other && raidId && raidId == other->raidId; }
+};
+Player* Unit::GetCharmerOrOwnerPlayerOrPlayerItself() const { return affectingPlayer; }
+Player* Unit::GetAffectingPlayer() const { return affectingPlayer; }
+ReputationRank Unit::GetReactionTo(Unit const* target) const {
+    if (this == target)
+        return REP_FRIENDLY;
+    Player const* selfPlayerOwner = GetAffectingPlayer();
+    Player const* targetPlayerOwner = target->GetAffectingPlayer();
+    Unit const* unit = this;
+    Unit const* targetUnit = target;
+    if (unit && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)
+        && targetUnit && targetUnit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
+    {
+''' + native_reaction_block + r'''
+    }
+    return hostile || target->hostile ? REP_HOSTILE : REP_NEUTRAL;
+}
+bool Unit::IsValidAttackTarget(Unit const* target) const {
+    if (!target || !target->alive || !target->valid)
+        return false;
+''' + native_friendly_rejection + r'''
+    return true;
+}
 struct Totem : Unit {
     Unit* nativeOwner = nullptr;
     Totem() { totem = true; type = 3; }
@@ -61,21 +137,24 @@ struct Totem : Unit {
 Totem* Unit::ToTotem() { return static_cast<Totem*>(this); }
 struct TempSummon;
 struct Creature : Unit {
+    Creature() { hostile = true; }
     TempSummon* summon = nullptr;
     Unit* selected=nullptr;
     bool HasReactState(int)const{return false;}
     bool IsInCombat()const{return true;}
     Unit* SelectVictim(){return selected;} // native selection boundary: protected helper can be selected
 
-    int flags = 0,interrupts=0,stops=0;bool casting=false;
+    int interrupts=0,stops=0,casts=0,melee=0;bool casting=false;Unit* lastCastTarget=nullptr;uint32 lastSpell=0;
     uint32 GetSpawnId()const{return 0;}
     void InterruptNonMeleeSpells(bool){++interrupts;casting=false;}
     void AttackStop(){++stops;victim=nullptr;}
+    bool HasUnitState(int state)const{return state == UNIT_STATE_CASTING && casting;}
+    void ApplySpellImmune(int, int, int, bool){}
+    bool CanStartAttack(Unit*, bool) const { return true; }
     struct Controller {Creature* parent;int attacks=0;Unit* target=nullptr;bool reject=false;std::function<void(Unit*)> dispatch{};
         void AttackStart(Unit* unit){if(dispatch){dispatch(unit);return;}++attacks;if(!reject){target=unit;parent->victim=unit;}}} ai{this};
     TempSummon* ToTempSummon() { return summon; }
     Controller* AI() { return &ai; }
-    void SetFlag(int field, int flag) { assert(field == UNIT_FIELD_FLAGS); flags |= flag; }
 };
 Creature const* Unit::ToCreature()const{return dynamic_cast<Creature const*>(this);}
 struct TempSummon : Creature {
@@ -84,27 +163,68 @@ struct TempSummon : Creature {
     Unit* GetSummoner() const { return summoner; }
 };
 ''' + function + r'''
+enum ShamanSpells {
+    SPELL_SHAMAN_ANGEREDEARTH = 36213,
+    SPELL_SHAMAN_FIREBLAST = 57984,
+    SPELL_SHAMAN_FIRENOVA = 12470,
+    SPELL_SHAMAN_FIRESHIELD = 13376
+};
+enum ShamanEvents {
+    EVENT_SHAMAN_ANGEREDEARTH = 1,
+    EVENT_SHAMAN_FIRENOVA = 1,
+    EVENT_SHAMAN_FIRESHIELD = 2,
+    EVENT_SHAMAN_FIREBLAST = 3
+};
 constexpr int REACT_PASSIVE=0,EVADE_REASON_NO_HOSTILES=0;
+constexpr int IMMUNITY_SCHOOL=0,SPELL_SCHOOL_MASK_NATURE=1,SPELL_SCHOOL_MASK_FIRE=2;
+struct EventMap {
+    std::vector<uint32> ready;
+    void Reset(){ready.clear();}
+    void ScheduleEvent(uint32 id,uint32 delay){if(delay==0)ready.push_back(id);}
+    void Update(uint32){}
+    uint32 ExecuteEvent(){if(ready.empty())return 0;uint32 id=ready.front();ready.erase(ready.begin());return id;}
+};
+uint32 urand(uint32 min,uint32){return min;}
 struct ScriptedAI {
  Creature* me;explicit ScriptedAI(Creature* value):me(value){}
  virtual ~ScriptedAI()=default;
+ virtual void Reset(){}
+ virtual void UpdateAI(uint32){}
  virtual void AttackStart(Unit* target){me->victim=target;}
- bool IsEngaged()const{return true;}void EngagementOver(){}
+ bool IsEngaged()const{return me->engaged;}void EngagementOver(){me->engaged=false;}
  void EnterEvadeMode(int){me->AttackStop();}
+ void DoCastVictim(uint32 spell){++me->casts;me->lastSpell=spell;me->lastCastTarget=me->GetVictim();}
+ void DoMeleeAttackIfReady(){++me->melee;}
  bool UpdateVictim();
 };
-''' + update.replace('CreatureAI::', 'ScriptedAI::') + r'''
-struct ActualElementalAI : ScriptedAI {
+''' + victim_update.replace('CreatureAI::', 'ScriptedAI::') + r'''
+struct ActualEarthElementalAI : ScriptedAI {
  using ScriptedAI::ScriptedAI;
+''' + reset + r'''
 ''' + attack + r'''
+''' + update + r'''
+ private:
+ EventMap _events;
+};
+struct ActualFireElementalAI : ScriptedAI {
+ using ScriptedAI::ScriptedAI;
+''' + reset_second + r'''
+''' + attack_second + r'''
+''' + update_second + r'''
+ private:
+ EventMap _events;
 };
 '''+r'''
-static void Reject(Creature& elemental) {
+static void Reject(Creature& elemental, bool playerOwned = false) {
     assert(!AcquireShamanOwnerVictim(&elemental));
-    assert(elemental.ai.attacks == 0 && elemental.flags == 0);
+    assert(elemental.ai.attacks == 0);
+    assert(elemental.flags == (playerOwned ? UNIT_FLAG_PLAYER_CONTROLLED : 0));
 }
 int main() {
-    Unit player, target, different;
+    Player player;
+    Unit target, different;
+    Unit nearbyHostile;
+    target.hostile = different.hostile = nearbyHostile.hostile = true;
     player.helper = &target;
     Creature direct;
     direct.owner = &player;
@@ -121,7 +241,7 @@ int main() {
     for (bool dead : {false, true}) {
         target.alive = !dead; target.valid = dead;
         Creature rejected; rejected.owner = &player;
-        Reject(rejected);
+        Reject(rejected, true);
         assert(player.helperCalls == 0); // no fallback from invalid/dead victim
     }
     target.alive = target.valid = true; player.victim = nullptr;
@@ -130,7 +250,7 @@ int main() {
         player.engaged = failure != 1;
         target.alive = failure != 2; target.valid = failure != 3;
         Creature rejected; rejected.owner = &player;
-        Reject(rejected);
+        Reject(rejected, true);
     }
     player.engaged = target.alive = target.valid = true;
     player.helper = &target;
@@ -189,25 +309,64 @@ int main() {
     SetAllOffenseSuppressed(key,true);evolving.casting=true;StopShamanProtectedVictim(&evolving);
     assert(!evolving.victim&&!evolving.casting&&!AcquireShamanOwnerVictim(&evolving));
     Clear(key);
-    // Actual CreatureAI::UpdateVictim plus both production AttackStart overrides.
-    // The native selection boundary intentionally keeps returning a protected helper.
-    totem.nativeOwner=&player;TempSummon chainedUpdate;chainedUpdate.summoner=&totem;
-    ActualElementalAI actual(&chainedUpdate);
-    chainedUpdate.ai.dispatch=[&](Unit* target){actual.AttackStart(target);};
-    chainedUpdate.selected=&parasite;player.helper=&parasite;player.victim=nullptr;
-    player.combat.pvp.clear();player.combat.pve={{0,&parasiteRef},{1,&bodyRef}};
-    bodyRef.suppressed=false;SetCurrentEncounterRestrictions(key,{41806},{});
-    assert(!actual.UpdateVictim()&&!chainedUpdate.victim);
-    assert(AcquireShamanOwnerVictim(&chainedUpdate)&&chainedUpdate.victim==&body);
-    assert(actual.UpdateVictim()&&chainedUpdate.victim==&body);
-    assert(actual.UpdateVictim()&&chainedUpdate.victim==&body);
-    SetCurrentEncounterRestrictions(key,{41806},{parasite.guid.GetRawValue()});
-    assert(actual.UpdateVictim()&&chainedUpdate.victim==&parasite);
-    SetCurrentEncounterRestrictions(key,{41806},{});chainedUpdate.casting=true;
-    StopShamanProtectedVictim(&chainedUpdate);
-    assert(!actual.UpdateVictim()&&!chainedUpdate.victim&&!chainedUpdate.casting);
-    assert(AcquireShamanOwnerVictim(&chainedUpdate)&&actual.UpdateVictim()&&chainedUpdate.victim==&body);
-    Clear(key);assert(actual.UpdateVictim()&&chainedUpdate.victim==&parasite);
+    // The native reaction contract rejects a same-raid controlled wolf, while
+    // its duel state remains a lawful hostile exception.
+    totem.nativeOwner=&player;
+    Player wolfOwner;player.raidId=17;wolfOwner.raidId=17;
+    Unit wolf;wolf.hostile=true;wolf.flags=UNIT_FLAG_PLAYER_CONTROLLED;wolf.affectingPlayer=&wolfOwner;
+    TempSummon nativeFire;nativeFire.summoner=&totem;nativeFire.affectingPlayer=&player;
+    InitializeShamanElementalPlayerControlled(&nativeFire);
+    assert(nativeFire.GetReactionTo(&wolf)==REP_FRIENDLY);
+    assert(!nativeFire.IsValidAttackTarget(&wolf));
+    Player::DuelInfo playerDuel{&wolfOwner,1},wolfDuel{&player,1};
+    player.duel=&playerDuel;wolfOwner.duel=&wolfDuel;
+    assert(nativeFire.GetReactionTo(&wolf)==REP_HOSTILE);
+    assert(nativeFire.IsValidAttackTarget(&wolf));
+    player.duel=nullptr;wolfOwner.duel=nullptr;
+
+    // Execute both production Reset/UpdateAI bodies.  A pre-existing lawful
+    // victim exercises the UpdateVictim short circuit; a same-raid victim is
+    // stopped by native validity before it can receive a spell.
+    TempSummon chainedUpdate;chainedUpdate.summoner=&totem;chainedUpdate.affectingPlayer=&player;
+    chainedUpdate.victim=&wolf;chainedUpdate.selected=&wolf;
+    ActualEarthElementalAI earth(&chainedUpdate);
+    chainedUpdate.ai.dispatch=[&](Unit* target){earth.AttackStart(target);};
+    earth.Reset();assert(chainedUpdate.flags==UNIT_FLAG_PLAYER_CONTROLLED);
+    player.helper=&body;bodyRef.suppressed=false;player.victim=nullptr;
+    earth.UpdateAI(1);
+    assert(chainedUpdate.victim==&body&&chainedUpdate.lastCastTarget==&body);
+    assert(chainedUpdate.melee==1);
+
+    TempSummon fireSummon;fireSummon.summoner=&totem;fireSummon.affectingPlayer=&player;
+    fireSummon.victim=&nearbyHostile;fireSummon.selected=&nearbyHostile;
+    ActualFireElementalAI fire(&fireSummon);
+    fireSummon.ai.dispatch=[&](Unit* target){fire.AttackStart(target);};
+    fire.Reset();assert(fireSummon.flags==UNIT_FLAG_PLAYER_CONTROLLED);
+    fire.UpdateAI(1);
+    assert(fireSummon.lastSpell==SPELL_SHAMAN_FIRESHIELD);
+    assert(fireSummon.lastCastTarget==&nearbyHostile);
+    fire.AttackStart(nullptr);assert(fireSummon.victim==&nearbyHostile);
+
+    // Existing friendly victim, protected target, and offense suppression all
+    // fail closed; ordinary hostile acquisition remains available.
+    fireSummon.victim=&wolf;fireSummon.selected=&wolf;fireSummon.casts=0;fireSummon.melee=0;
+    player.helper=&nearbyHostile;player.victim=nullptr;fire.Reset();
+    fire.UpdateAI(1);
+    assert(fireSummon.victim==&nearbyHostile&&fireSummon.lastCastTarget==&nearbyHostile);
+    assert(fireSummon.interrupts==1);
+    fire.AttackStart(&wolf);assert(fireSummon.victim==&nearbyHostile);
+    SetProtectedEncounterEntries(key,{0});
+    fire.AttackStart(&nearbyHostile);assert(fireSummon.victim==&nearbyHostile);
+    SetAllOffenseSuppressed(key,true);fire.AttackStart(&nearbyHostile);
+    assert(fireSummon.victim==&nearbyHostile);
+    Clear(key);
+
+    // NPC-owned elementals retain the native non-player path and do not gain
+    // the player-controlled classification.
+    TempSummon npcSummon;npcSummon.summoner=&npc;npcSummon.helper=&target;
+    ActualEarthElementalAI npcEarth(&npcSummon);npcEarth.Reset();
+    assert(npcSummon.flags==0);
+    Clear(key);
 }
 ''')
     binary = tmp_path / "elemental_owner"

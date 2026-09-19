@@ -44,6 +44,13 @@ Unit* ShamanElementalOwner(Creature* elemental)
     return owner && owner->IsTotem() ? owner->ToTotem()->GetOwner() : owner;
 }
 
+void InitializeShamanElementalPlayerControlled(Creature* elemental)
+{
+    Unit* owner = ShamanElementalOwner(elemental);
+    if (owner && owner->GetTypeId() == TYPEID_PLAYER)
+        elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+}
+
 bool ShamanAuthorityAllows(Unit* owner, Unit* target)
 {
     if (!owner || !target)
@@ -59,7 +66,9 @@ bool ShamanAuthorityAllows(Unit* owner, Unit* target)
 void StopShamanProtectedVictim(Creature* elemental)
 {
     Unit* owner = ShamanElementalOwner(elemental);
-    if (owner && elemental->GetVictim() && !ShamanAuthorityAllows(owner, elemental->GetVictim()))
+    if (owner && elemental->GetVictim()
+        && (!elemental->IsValidAttackTarget(elemental->GetVictim())
+            || !ShamanAuthorityAllows(owner, elemental->GetVictim())))
     {
         elemental->InterruptNonMeleeSpells(false);
         elemental->AttackStop();
@@ -68,16 +77,16 @@ void StopShamanProtectedVictim(Creature* elemental)
 
 bool AcquireShamanOwnerVictim(Creature* elemental)
 {
+    InitializeShamanElementalPlayerControlled(elemental);
     Unit* owner = ShamanElementalOwner(elemental);
     if (!owner)
         return false;
     auto tryTarget = [&](Unit* victim)
     {
-        if (!victim || !victim->IsAlive() || !owner->IsValidAttackTarget(victim)
+        if (!victim || !victim->IsAlive() || !elemental->IsValidAttackTarget(victim)
+            || !owner->IsValidAttackTarget(victim)
             || !ShamanAuthorityAllows(owner, victim))
             return false;
-        if (owner->GetTypeId() == TYPEID_PLAYER)
-            elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
         elemental->AI()->AttackStart(victim);
         return elemental->GetVictim() == victim;
     };
@@ -189,6 +198,7 @@ class npc_pet_shaman_earth_elemental : public CreatureScript
 
             void Reset() override
             {
+                InitializeShamanElementalPlayerControlled(me);
                 _events.Reset();
                 _events.ScheduleEvent(EVENT_SHAMAN_ANGEREDEARTH, 0);
                 me->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_NATURE, true);
@@ -197,12 +207,13 @@ class npc_pet_shaman_earth_elemental : public CreatureScript
             void AttackStart(Unit* target) override
             {
                 Unit* owner = ShamanElementalOwner(me);
-                if (!owner || ShamanAuthorityAllows(owner, target))
+                if (!owner || (target && me->IsValidAttackTarget(target) && ShamanAuthorityAllows(owner, target)))
                     ScriptedAI::AttackStart(target);
             }
 
             void UpdateAI(uint32 diff) override
             {
+                InitializeShamanElementalPlayerControlled(me);
                 StopShamanProtectedVictim(me);
                 if (!UpdateVictim() && (!AcquireShamanOwnerVictim(me) || !UpdateVictim()))
                     return;
@@ -239,6 +250,7 @@ class npc_pet_shaman_fire_elemental : public CreatureScript
 
             void Reset() override
             {
+                InitializeShamanElementalPlayerControlled(me);
                 _events.Reset();
                 _events.ScheduleEvent(EVENT_SHAMAN_FIRENOVA, urand(5000, 20000));
                 _events.ScheduleEvent(EVENT_SHAMAN_FIREBLAST, urand(5000, 20000));
@@ -249,12 +261,13 @@ class npc_pet_shaman_fire_elemental : public CreatureScript
             void AttackStart(Unit* target) override
             {
                 Unit* owner = ShamanElementalOwner(me);
-                if (!owner || ShamanAuthorityAllows(owner, target))
+                if (!owner || (target && me->IsValidAttackTarget(target) && ShamanAuthorityAllows(owner, target)))
                     ScriptedAI::AttackStart(target);
             }
 
             void UpdateAI(uint32 diff) override
             {
+                InitializeShamanElementalPlayerControlled(me);
                 StopShamanProtectedVictim(me);
                 if (!UpdateVictim() && (!AcquireShamanOwnerVictim(me) || !UpdateVictim()))
                     return;
