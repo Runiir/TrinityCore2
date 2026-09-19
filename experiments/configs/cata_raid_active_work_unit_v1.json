@@ -1,39 +1,38 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:TANK-001_death_strike_priority",
+  "work_unit": "magmaw:REF-003_current_class_calibration",
   "owner_skill": "raid-performance-loop",
-  "classification": "role_implementation",
+  "classification": "rotation_review",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "d495bd15560291bd59a34b6faca7ee2f4ad00513",
-  "architecture_scope": "Keep accepted typed arbiter and movement. Correct a trace-proven Blood profile ordering; all actors remain under independent review.",
-  "behavior_change": true,
+  "observed_at_commit": "696a8f6f38ad6c783ff7d0321a74cc93b8b81e0a",
+  "architecture_scope": "Reuse existing native and promoted simulator evidence before further class tuning.",
+  "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "696a clear; performance not accepted; all-actor causal reviews and model adjudication in progress",
+  "gate_state": "696a reviews closed; performance not accepted; current controlled class comparison required",
   "first_broken_edge": {
-    "id": "blood_death_strike_bucket_loses_before_higher_score",
-    "owner_classification": "role_implementation",
-    "cause": "15 exact accepted Heart Strike decisions had valid higher-scored Death Strike, including health63.33%; DS bucket2 loses to HS bucket1 before score comparison.",
-    "limit": "Survival and throughput effect unknown until native validation; later rune flow diverges."
+    "id": "current_controlled_class_comparison_incomplete",
+    "owner_classification": "rotation_review",
+    "cause": "Historical repair/85-percent threshold acceptance was being mistaken for current class parity; a retained inventory also selected stale embedded reference numbers.",
+    "limit": "Reference-selection error corrected; current native stat/event/cadence comparison and exact-300 Survival measurement remain outstanding."
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "fd012b7c7a3ac2f4cc8e82533394b28b2b0b2c38e8f4fac70f844fbc56ba74e8"
+    "sha256": "5983ff3197438efc2272270be4bb892396424f712bcf4653cfd8e67221d4fc0c"
   },
   "scope_lock": {
-    "objective": "Put Blood Death Strike in the same bucket as Heart Strike so existing score can win when legal; preserve Heart Strike with invalid Death Strike runes.",
+    "objective": "Establish current attributable class comparisons from retained evidence, refreshing only missing or materially changed native measurements.",
     "owned_files": [
-      "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
-      "tests/test_blood_death_strike_priority.py"
+      "docs/bot_raids/magmaw_dps_baseline_20260913.md"
     ],
     "forbidden_changes": [
-      "No native rune costs, coefficients, target lists, spell geometry, roster or encounter changes."
+      "No stale embedded DPS denominators, guessed coefficients, mixed reference classes, or blanket simulator regeneration."
     ]
   },
   "acceptance_conditions": [
-    "Actual native comparator selects Death Strike when both are valid under retained candidate facts.",
-    "Blood-only ready runes retain Heart Strike when Death Strike is invalid.",
-    "Idempotent native storage-aware migration changes only intended Blood profile ordering.",
-    "Next canary verifies loaded ordering, selected immutable facts, native finishes, healing, survival and all-actor performance separately."
+    "Current promoted reference and reference class bound explicitly.",
+    "Retained native window, gear, effective stats and changed source paths checked before reuse.",
+    "Threshold acceptance separated from unresolved performance gap.",
+    "Missing current native comparisons use exact 300 scoring seconds and native consumables."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -44,7 +43,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Adjudicate all actors and Blood throughput/mitigation change before deciding replacement/revert or queued role-enchant setup repair.",
+  "next_action": "Reuse retained Fire/Affliction/Elemental stats and spell evidence, verify Balance historical conditions, and prepare only the missing exact-300 Survival native comparison.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -75,14 +74,21 @@
     "pull_to_death_party_dps": 228230.94960864223,
     "exact_effective_healing": 2211769,
     "exact_hps": 17884.153244064946,
-    "performance_verdict": "not_accepted_raid_balance_blood_declined_reviews_in_progress",
+    "performance_verdict": "all_actor_review_complete_performance_not_accepted",
     "diagnosis_required": true,
     "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.raw.tar.zst.dvc",
     "raw_pointer_md5": "26e76d8c152518090527a096c2a98274",
     "remote_reconstruction_verified": true,
-    "publication_state": "raw_remote_verified_reviews_in_progress",
+    "publication_state": "raw_review_closure_remote_verified_exact_duplicates_evicted",
     "requested_repair_id": "TANK-001_death_strike_priority",
-    "requested_repair_achieved": null
+    "requested_repair_achieved": true,
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.review.tar.gz.dvc",
+    "review_pointer_md5": "063867adae122b77fa406bd779453b36",
+    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.closure.tar.gz.dvc",
+    "raw_payloads_evicted": true,
+    "logical_bytes_evicted": 1009972252,
+    "frozen_specialist_review_count": 7,
+    "advisory_model_review_complete": true
   },
   "related_edges": [
     {
@@ -139,7 +145,7 @@
     }
   ],
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "TANK-001",
+  "error_id": "REF-003",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -261,7 +267,7 @@
   },
   "implementation_review": {
     "verdict": "Blood_priority_independently_approved",
-    "live_verified": false,
+    "live_verified": true,
     "review": "/tmp/magmaw-blood-priority-review-20260919.json",
     "commit": "a283a51228",
     "focused_tests_passed": 2
@@ -327,5 +333,44 @@
       "missing": "Exact boss-pull latch and raid diagnosis_stats_observation join to review_rotation_mechanics scoring_start_stats; guardians outside permanent-pet producer scope",
       "constraint": "Reuse existing producer; do not infer a pre-proc state or class parity from raid DPS exceeding self-only WoWSims."
     }
+  },
+  "previous_completed_selection_work_unit": {
+    "work_unit": "magmaw:TANK-001_death_strike_priority",
+    "first_broken_edge": {
+      "id": "blood_death_strike_bucket_loses_before_higher_score",
+      "owner_classification": "role_implementation",
+      "cause": "15 exact accepted Heart Strike decisions had valid higher-scored Death Strike, including health63.33%; DS bucket2 loses to HS bucket1 before score comparison.",
+      "limit": "Survival and throughput effect unknown until native validation; later rune flow diverges."
+    },
+    "scope_lock": {
+      "objective": "Put Blood Death Strike in the same bucket as Heart Strike so existing score can win when legal; preserve Heart Strike with invalid Death Strike runes.",
+      "owned_files": [
+        "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+        "tests/test_blood_death_strike_priority.py"
+      ],
+      "forbidden_changes": [
+        "No native rune costs, coefficients, target lists, spell geometry, roster or encounter changes."
+      ]
+    },
+    "acceptance_conditions": [
+      "Actual native comparator selects Death Strike when both are valid under retained candidate facts.",
+      "Blood-only ready runes retain Heart Strike when Death Strike is invalid.",
+      "Idempotent native storage-aware migration changes only intended Blood profile ordering.",
+      "Next canary verifies loaded ordering, selected immutable facts, native finishes, healing, survival and all-actor performance separately."
+    ],
+    "implementation_review": {
+      "verdict": "Blood_priority_independently_approved",
+      "live_verified": true,
+      "review": "/tmp/magmaw-blood-priority-review-20260919.json",
+      "commit": "a283a51228",
+      "focused_tests_passed": 2
+    }
+  },
+  "queued_balance_density_repair": {
+    "commit": "db16de2412",
+    "independent_review": "approved",
+    "focused_tests_passed": 3,
+    "live_accepted": false,
+    "performance_accepted": false
   }
 }

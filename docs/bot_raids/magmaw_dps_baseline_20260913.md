@@ -29,58 +29,46 @@ establish class parity. Preserve accepted narrow repairs while comparing the
 retained stats, cadence and damage per event. Refresh only missing or materially
 changed native comparisons, with the same exact 300-second scoring window.
 
-### Previous reviewed baseline (d495)
+### Current reviewed canary (696a)
 
-Repair and validate every represented spec using WCL spell/cadence context and
-exact WoWSims setup. Previous clean source `d495bd1556` cleared in 117.523 seconds
-at **239,894.514 raid DPS** and **14,412.302 exact HPS**, with all ten surviving.
-Clear and moving-cast facing are accepted. Overall WCL performance is not accepted.
-The matched 9d29 total rose 9.23%, while individual preservation flags still need
-the duty, phase and proc explanations below. Both models reviewed all ten actors;
-unsupported suggestions do not become implementation tasks.
+Source `696a8f6f38` cleared in 123.672 seconds at **228,230.950 raid DPS**
+and **17,884.153 exact HPS**, with all ten alive at boss death. Capture and clear
+are accepted. Performance is not accepted: raid DPS fell 4.86% from d495's
+239,894.514 over 117.523 seconds. Seven native specialist reviews and both model
+reviews cover all ten actors. Neither model added a new actionable finding.
 
-| Actor/spec | Native DPS | Exact HPS | WCL example DPS | Current finding / next action | State |
-| --- | ---: | ---: | ---: | --- | --- |
-| 30001 Balance | 32,119.772 | 0.000 | 41,029.1 | Lawful Mushroom: 20 effects / 251,415 damage. Post-pincer landing gap 0.338s. Unknown cancellation caller, not proven replacement-cast collision. | Open |
-| 30002 Blood | 15,677.986 | 2,641.985 | 26,152 | Survived; 15 Heart Strikes selected while higher-scored Death Strike was valid. Bucket correction independently approved; rune-invalid HS fallback retained. IBF readiness and native enchant readback separate. | Repair in progress |
-| 30006 Fire bait | 31,228.560 | 0.000 | 40,189.9 | Moving-Scorch facing accepted. Bait duty remains explicit; Combustion and Orb reviewed separately. | Open |
-| 30007 Fire | 39,591.289 | 0.000 | 40,189.9 | Moving-Scorch facing accepted. Orb had no damage; nonattackable secondary head repeatedly failed native casts. | Open |
-| 30008 Affliction | 35,889.630 | 687.959 | 40,281 | Bane exclusion accepted. Largest decline is Cunning proc/target multiplicity and shorter phase; sustained DoTs/pet/channel contradict broad idle claim. Two parasite UAs yield no ticks. | Open |
-| 30009 Survival | 40,992.223 | 133.242 | 43,706.4 rounded component sum | Two Multi-Shots/Spread; Horn healthy. Cobra cancellation attributed to required hazard movement. Friendly wolf combat occurs after death, not in scored DPS. | No new in-window rotation defect |
-| 30010 Elemental | 37,427.567 | 0.000 | 41,866 | Guardian hostile damage 540,382. One in-window friendly Nova 532 remains; reciprocal targeted attacks occur post-clear. Fire Shield legality unproved; potion reference unresolved. | Partial pet repair |
-| 30003 Restoration | 3,124.742 | 4,571.301 | Unmatched | Critical tank coverage succeeded. Tree spent on trash; exact HPS excludes post-clear healing. | Open |
-| 30004 Holy | 0.000 | 5,165.057 | Unmatched | Critical tank coverage succeeded after one moving hard-heal failure. Divine Favor spent on trash. | Open |
-| 30005 Discipline | 3,842.746 | 1,212.758 | Unmatched | Critical tank coverage succeeded; absorbed healing unmeasured. PoM tank 2/7; Pain Suppression spent on trash. | Open |
+| Actor/spec | Native DPS | Exact HPS | WCL example DPS | Current finding / next action |
+| --- | ---: | ---: | ---: | --- |
+| 30001 Balance | 24,303.335 | 0.000 | 41,029.1 | Head damage fell during mandatory evade; instant Moonfire/Insect Swarm rejected by density. Bounded repair committed and reviewed, not live accepted. |
+| 30002 Blood | 12,090.125 | 2,869.841 | 26,152 | DS ordering executes end to end; damage fell. Optimal rune/mitigation policy unresolved. Separate calculated-heal/Blood Shield mismatch reviewed, not repaired. |
+| 30006 Fire bait | 29,613.712 | 0.000 | 40,189.9 | Non-damaging bait duty must remain visible. Orb has no child damage; off-platform trajectory observed. |
+| 30007 Fire | 45,540.033 | 0.000 | 40,189.9 | DPS improved; Orb target-filter fix still has no landed child damage. No overall class-parity claim. |
+| 30008 Affliction | 38,853.944 | 939.065 | 40,281 | DPS improved; parasite UA has little value. Largest gap is not proven to be Drain Soul or broad idle. |
+| 30009 Survival | 37,087.530 | 113.914 | 43,706.4 | Boss damage nearly unchanged; lower add damage and longer fight reduce total DPS. One unexplained Cobra cancellation. Exact-300 native baseline missing. |
+| 30010 Elemental | 35,788.675 | 0.000 | 41,866 | Owner-chain repair accepted: zero friendly damage and 605,865 guardian hostile damage. Class parity unresolved. |
+| 30003 Restoration | 1,936.372 | 7,938.604 | Unmatched | 7,938.604 exact HPS; all survive. Tree used during boss. Native role enchant setup remains unresolved. |
+| 30004 Holy | 0.000 | 4,787.640 | Unmatched | Tank coverage succeeded; Divine Favor spent on trash. Native role enchant setup remains unresolved. |
+| 30005 Discipline | 3,017.223 | 1,235.090 | Unmatched | Tank coverage succeeded; absorbs unknown, PoM tank 1/6, Pain Suppression spent on trash. Native role enchant setup unresolved. |
 
-Death Strike's priority bucket is the next proven repair. Fifteen recorded choices
-had both spells valid, including three below 80% health. The higher existing DS
-score could not beat HS because bucket ordering precedes score. The repair must
-preserve native resource gates and Heart Strike when DS is invalid. Its damage
-and survival effect requires the next matched canary.
+These WCL examples have different composition, gear, duties and phase coverage;
+they are not controlled per-actor floors. A raid result above a self-only dummy
+reference does not establish class parity. Do not count DoT or pet tails as new
+owner casts, or treat mandatory evade damage loss as fully recoverable.
 
-The next setup comparison must reuse the existing effective-stat observations.
-The d495 HTML retains 30 observations per bot, nearest pull at -12.475s and
-+2.759s, plus permanent pets for Affliction and Survival. The raid observations
-are not joined to `review_rotation_mechanics`, which consumes calibration
-`scoring_start_stats`; an exact boss-pull latch is also absent. Guardians and
-totems are outside the permanent-pet snapshot. Do not call stats wholly absent,
-or treat a raid result above the self-only dummy reference as class acceptance.
+Reuse the existing exact dummy evidence before choosing another performance
+canary. The d495 raid HTML also retains 30 effective-stat observations per bot,
+nearest pull at -12.475s and +2.759s, plus permanent pets for Affliction and
+Survival. These are observed brackets, not an exact pull latch. They are not yet
+joined to the calibration comparator's scoring_start_stats. Guardian stats and
+absorbed healing remain separate observation gaps.
 
-WCL Y8 fight22 lasts 111.3s with nine participants, 2T/2H/5DPS; Survival xAhk
-fight10 lasts 70.9s with 1T/1H/8DPS. Native uses 1T/3H/6DPS. These are comparison
-targets, not controlled per-actor floors. Separate event damage from cadence,
-duty, target lifetime and phase/proc coverage. Do not normalize DoT/pet tails by
-duty-free time. Shard89's enlarged Mushroom geometry is excluded from lawful
-recovery estimates. The ab829 route assets differ from d495, so its 234,721.796
-DPS is a qualified historical comparison.
-
-Current raw publication is fresh-remote verified at
-`artifacts/cata_raid_program/magmaw_master_d495_20260919.raw.tar.zst.dvc`,
-MD5 `c9b27044cae9c7c628bb8473c3c29e35`. Seven specialist reviews and both model batches are verified remotely in
-`magmaw_master_d495_20260919.review.tar.gz.dvc`. Native adjudication found
-11 confirmations, eight unsupported claims, one insufficient claim and zero new
-actionable checks. Every unresolved actor stays
-in this table when another actor or the raid total improves.
+Raw, review and closure evidence are remotely verified under
+`artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.*.tar.*.dvc`.
+The review archive includes all native reviews, model adjudications, corrected
+calibration inventory, stat brackets and independently reviewed Balance repair.
+Detailed raw duplicates are evicted after verification; the report, summary and
+inspectable HTML remain locally available. The previous d495 evidence remains
+under its own immutable DVC pointers.
 
 ## Retained reference research
 

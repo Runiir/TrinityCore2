@@ -9,16 +9,27 @@ Clean source `696a8f6f38` cleared in **123.672s**, with **228,230.950 exact
 DPS**, **17,884.153 exact HPS**, and all ten bots alive. The scored hostile total
 is 28,225,778, including owned pets and excluding friendly/mirror callbacks.
 DPS declined 4.86% against d495. Performance is not accepted; all-actor causal
-reviews and both model reviews are in progress. Balance fell to 24,303.335 DPS
+reviews and both model reviews are complete; neither model added a new actionable finding. Balance fell to 24,303.335 DPS
 and Blood to 12,090.125; regular Fire rose to 45,540.033 and Affliction to
 38,853.944. The Blood migration loaded profile267 v25 and both priority buckets1.
-Its selected/native outcomes require causal review before any revert or further
-setup change. The elemental owner-chain fix is live accepted: zero reciprocal
+Its selected/native outcomes confirm DS delivery and HS fallback. Throughput and
+mitigation tradeoffs remain unresolved; no revert is justified by the aggregate alone. The elemental owner-chain fix is live accepted: zero reciprocal
 friendly events, 605,865 legal guardian damage, and observed legal Fire Shield.
 Capture has 8,236 combat events, 29,641 trace rows and no gaps or identity rejects.
 Cleanup, zero bots/leases and server exit0 passed. Raw evidence is fresh-remote
 verified at `artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.raw.tar.zst.dvc`
-(MD5 `26e76d8c152518090527a096c2a98274`). Raw remains local for specialist review.
+(MD5 `26e76d8c152518090527a096c2a98274`). Reviews and closure are also remotely
+verified; 1,009,972,252 logical bytes of exact raw/archive/cache duplicates were
+removed. Compact report, summary and HTML remain.
+
+Next, reuse the retained 300-second class evidence and verified current simulator
+cohort. Fire/Affliction/Elemental retain valid historical repair evidence, but
+85% optimization passes are not class parity. Balance's historical reference/setup
+compatibility needs checking; Survival has no retained exact-300 native run.
+Embedded `all_spec_references` DPS must not override the promoted request catalog.
+The bounded Balance primary-DoT density repair is committed and independently
+reviewed at `db16de2412`; no live benefit is claimed. Do not launch another full
+raid simply to repeat the same unresolved class comparison.
 
 ### Previous reviewed baseline
 
