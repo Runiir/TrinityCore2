@@ -46,6 +46,12 @@ references, runtime evidence or encounter ownership.
 For the dedicated DPS review of a closed raid, dungeon, or calibration run,
 start with [references/post-run-dps-review.md](references/post-run-dps-review.md).
 The same reference includes the compact local-Jev/Luna handoff recipe.
+For the current local Laya service and one-command shadow collection, follow
+`docs/bot_raids/local_jev_shadow.md`. Check `/health` for the pinned model and
+revision before replay. Laya packets must fit both the question/options budget
+and the full context; token-limit saturation or prediction agreement does not
+prove context was retained. Keep rejected requests and missing evidence explicit.
+Model judgments remain advisory and cannot establish repair or DPS acceptance.
 It reviews every bot and compares each DPS actor with promoted WoWSims action
 structure and identified Warcraft Logs kills, then selects the next bounded
 repair. Missing external access stays explicit. One accepted repair does not

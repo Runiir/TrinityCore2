@@ -1041,6 +1041,29 @@ def test_combat_event_final_full_count_and_abandoned_export_boundary():
     assert combined["event_stream_receipt"]["complete"] is False
 
 
+@pytest.mark.parametrize("schema", [6, 7, 8])
+def test_current_native_delta_schema_advances_controller_cursor(schema):
+    from tools.bot_ml.combat_log_event_stream import CombatLogDeltaController
+
+    controller = CombatLogDeltaController(send_commands=lambda rows: None,
+        read_rows=lambda: [], command_counts={})
+    delta = _decoded_delta(list(range(1, 9)), cursor_before=0,
+        cursor_after=8, event_count=8)
+    delta["combat_log_schema_version"] = schema
+    controller.bind_status(delta)
+    commands = []
+    controller.append_command(commands, now=0)
+    controller.observe_rows(_framed_combat_payload(delta, 47))
+    assert controller.stream.cursor == 8
+    controller.append_command(commands, now=2)
+    assert commands[-1] == "botauto combatlog raid delta 8 4096"
+    receipt = controller.stream.receipt()
+    assert receipt["accepted_response_count"] == 1
+    assert receipt["event_count"] == 8
+    assert receipt["retry_count"] == 0
+    assert receipt["transport_rejections"] == []
+
+
 @pytest.mark.parametrize("new_count", [1, 2, 3])
 def test_combat_event_controller_epoch_reset_retries_zero_without_contamination(new_count):
     from tools.bot_ml.combat_log_event_stream import CombatLogDeltaController

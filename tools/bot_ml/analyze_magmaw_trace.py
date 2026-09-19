@@ -290,7 +290,9 @@ _MAGMAW_MUSHROOM_TARGETS_LOG = re.compile(
 _MAGMAW_MUSHROOM_NEARBY_TARGETS_LOG = re.compile(
     r"MagmawWildMushroomNative event=nearby_targets "
     r"destination=(?P<x>-?\d+(?:\.\d+)?),(?P<y>-?\d+(?:\.\d+)?),"
-    r"(?P<z>-?\d+(?:\.\d+)?) (?:radius|probe_radius)=(?P<radius>\d+(?:\.\d+)?) "
+    r"(?P<z>-?\d+(?:\.\d+)?) "
+    r"(?:(?:probe_radius=(?P<probe_radius>\d+(?:\.\d+)?))|"
+    r"(?:radius=(?P<legacy_radius>\d+(?:\.\d+)?))) "
     r"(?:native_radius=(?P<native_radius>\d+(?:\.\d+)?) )?"
     r"(?:effective_radius=\d+(?:\.\d+)? )?"
     r"target_count=(?P<count>\d+)"
@@ -357,18 +359,29 @@ def _native_mushroom_diagnostics(path: Path | None) -> list[dict[str, Any]]:
                 continue
             match = _MAGMAW_MUSHROOM_NEARBY_TARGETS_LOG.search(line)
             if match:
-                result.append({
+                probe_radius = match.group("probe_radius")
+                legacy_radius = match.group("legacy_radius")
+                row = {
                     "event": "nearby_targets",
                     "destination": {
                         "x": float(match.group("x")),
                         "y": float(match.group("y")),
                         "z": float(match.group("z")),
                     },
-                    "radius": float(match.group("radius")),
                     **({"native_radius": float(match.group("native_radius"))}
                        if match.group("native_radius") else {}),
                     "target_count": int(match.group("count")),
-                })
+                }
+                if probe_radius:
+                    # ``probe_radius`` is the diagnostic nearby-target scan;
+                    # ``native_radius`` is the spell/native geometry value.
+                    # Keep the old parser alias for legacy callers, while the
+                    # compact JEV packet below emits only the typed fields.
+                    row["probe_radius"] = float(probe_radius)
+                    row["radius"] = float(probe_radius)
+                elif legacy_radius:
+                    row["radius"] = float(legacy_radius)
+                result.append(row)
                 continue
             match = _MAGMAW_MUSHROOM_TARGET_LOG.search(line)
             if match:
@@ -452,14 +465,29 @@ def _compact_jev_native_mushroom_diagnostics(
             core_target_entries[str(_as_int(row.get("entry")))] += 1
         elif event == "nearby_targets":
             finish_snapshot()
-            snapshot = {
-                "destination": row.get("destination"),
-                "radius": row.get("radius"),
-                "scan_target_count": _as_int(row.get("target_count")),
-                "_distances_2d": [],
-                "_distances_3d": [],
-                "_entries": Counter(),
-            }
+            probe_radius = row.get("probe_radius")
+            legacy_radius = row.get("radius")
+            if probe_radius is None:
+                # Preserve the exact legacy packet shape for old offline
+                # callers. Producer-shaped rows use the typed packet fields.
+                snapshot = {
+                    "destination": row.get("destination"),
+                    "radius": legacy_radius,
+                    "scan_target_count": _as_int(row.get("target_count")),
+                    "_distances_2d": [],
+                    "_distances_3d": [],
+                    "_entries": Counter(),
+                }
+            else:
+                snapshot = {
+                    "destination": row.get("destination"),
+                    "probe_radius": probe_radius,
+                    "native_radius": row.get("native_radius"),
+                    "scan_target_count": _as_int(row.get("target_count")),
+                    "_distances_2d": [],
+                    "_distances_3d": [],
+                    "_entries": Counter(),
+                }
         elif event == "nearby_target" and snapshot is not None:
             distance_2d = row.get("distance_2d")
             distance_3d = row.get("distance_3d")
@@ -469,6 +497,12 @@ def _compact_jev_native_mushroom_diagnostics(
                 snapshot["_distances_3d"].append(float(distance_3d))
             snapshot["_entries"][str(_as_int(row.get("entry")))] += 1
     finish_snapshot()
+
+    for item in snapshots:
+        if "probe_radius" in item and "radius" not in item:
+            continue
+        if "radius" not in item:
+            raise ValueError("mushroom packet missing probe_radius")
 
     all_distances = [
         distance
@@ -612,7 +646,12 @@ def _report_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def _compact_live_report(report: dict[str, Any]) -> dict[str, Any]:
+def _compact_live_report(
+    report: dict[str, Any],
+    actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    *,
+    authoritative_identity: bool = False,
+) -> dict[str, Any]:
     """Keep lifecycle/admission facts when native trace rows are absent."""
     result: dict[str, Any] = {}
     result["native_gameplay_outcome"] = _native_gameplay_outcome(report)
@@ -649,7 +688,11 @@ def _compact_live_report(report: dict[str, Any]) -> dict[str, Any]:
     if isinstance(diagnosis, dict):
         result["diagnosis"] = {
             "failure_reason": diagnosis.get("failure_reason"),
-            "combat_metrics": _compact_metrics(diagnosis.get("combat_metrics")),
+            "combat_metrics": _compact_metrics(
+                diagnosis.get("combat_metrics"),
+                actor_identity,
+                authoritative_identity=authoritative_identity,
+            ),
             "raid_runtime": _compact_status(diagnosis),
         }
     evidence = report.get("evidence")
@@ -845,6 +888,9 @@ def _trace_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
         for bot in bots:
             if not isinstance(bot, dict):
                 continue
+            binding = bot.get("identity_binding")
+            if isinstance(binding, dict) and binding.get("state") != "bound":
+                continue
             bot_guid = _as_int(bot.get("bot_guid"))
             bot_name = str(bot.get("bot_name") or "")
             bot_entries = bot.get("entries")
@@ -992,6 +1038,21 @@ def _compact_status(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _actor_identity(report: Any) -> dict[str, dict[str, Any]]:
     """Extract only stable identity fields needed to join combat metrics."""
+    from tools.bot_ml.closed_capture_inputs import (
+        canonical_actor_identity,
+        is_canonical_capture,
+    )
+
+    canonical_values = report if isinstance(report, list) else [report]
+    canonical_report = next(
+        (value for value in canonical_values if is_canonical_capture(value)),
+        None,
+    )
+    if canonical_report is not None:
+        # Canonical telemetry is intentionally unable to add identity fields.
+        # The accepted admission receipt is the only stable source for joins.
+        return canonical_actor_identity(canonical_report)
+
     identities: dict[str, dict[str, Any]] = {}
 
     def visit(value: Any, depth: int = 0) -> None:
@@ -1051,6 +1112,8 @@ def _compact_ability(ability: dict[str, Any]) -> dict[str, Any]:
 def _compact_actor(
     actor: dict[str, Any],
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    *,
+    authoritative_identity: bool = False,
 ) -> dict[str, Any]:
     guid = _as_int(actor.get("bot_guid") or actor.get("actor_guid"))
     identity = (actor_identity or {}).get(str(guid), {})
@@ -1078,6 +1141,8 @@ def _compact_actor(
         "range_seconds": ("range_seconds",),
     }
     for target, keys in aliases.items():
+        if authoritative_identity and target in {"bot_name", "role"}:
+            continue
         for key in keys:
             if key in actor:
                 result[target] = actor[key]
@@ -1085,12 +1150,20 @@ def _compact_actor(
     if guid:
         result["bot_guid"] = guid
     for key in ("bot_name", "role"):
-        if key not in result and identity.get(key) not in (None, ""):
+        if identity.get(key) not in (None, ""):
             result[key] = identity[key]
-    class_spec = identity.get("class_spec") or actor.get("class_spec") or actor.get("spec")
+    class_spec = (
+        identity.get("class_spec")
+        if authoritative_identity
+        else identity.get("class_spec") or actor.get("class_spec") or actor.get("spec")
+    )
     if class_spec:
         result["class_spec"] = class_spec
-    class_name = identity.get("class_name") or actor.get("class_name") or actor.get("class")
+    class_name = (
+        identity.get("class_name")
+        if authoritative_identity
+        else identity.get("class_name") or actor.get("class_name") or actor.get("class")
+    )
     if class_name:
         result["class_name"] = class_name
     abilities = actor.get("abilities")
@@ -1107,6 +1180,8 @@ def _compact_native_action_outcomes(
     rows: Any,
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
     focus_roles: set[str] | None = None,
+    *,
+    authoritative_identity: bool = False,
 ) -> list[dict[str, Any]]:
     """Normalize the native full-window action ledger for JEV."""
     if not isinstance(rows, list):
@@ -1116,13 +1191,23 @@ def _compact_native_action_outcomes(
         if not isinstance(row, dict):
             continue
         guid = _as_int(row.get("actor_guid") or row.get("bot_guid"))
+        if authoritative_identity and str(guid) not in (actor_identity or {}):
+            continue
         identity = (actor_identity or {}).get(str(guid), {})
-        role = str(row.get("actor_role") or identity.get("role") or "")
+        role = str(
+            identity.get("role")
+            if authoritative_identity
+            else row.get("actor_role") or identity.get("role") or ""
+        )
         if focus_roles and role and role not in focus_roles:
             continue
         item: dict[str, Any] = {
             "bot_guid": guid,
-            "class_spec": str(identity.get("class_spec") or row.get("class_spec") or ""),
+            "class_spec": str(
+                identity.get("class_spec")
+                if authoritative_identity
+                else identity.get("class_spec") or row.get("class_spec") or ""
+            ),
             "route_node_id": str(row.get("route_node_id") or ""),
             "phase": str(row.get("phase") or ""),
             # Accept both raw combat-analysis keys and the already compacted
@@ -1136,7 +1221,11 @@ def _compact_native_action_outcomes(
             "outcome": str(row.get("result") or row.get("outcome") or "unknown"),
             "count": max(1, _as_int(row.get("count"))),
         }
-        bot_name = str(row.get("actor_name") or identity.get("bot_name") or "")
+        bot_name = str(
+            identity.get("bot_name")
+            if authoritative_identity
+            else row.get("actor_name") or identity.get("bot_name") or ""
+        )
         if bot_name:
             item["bot_name"] = bot_name
         if role:
@@ -2165,6 +2254,8 @@ def _compact_native_candidate_rejections(
     rows: Any,
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
     focus_roles: set[str] | None = None,
+    *,
+    authoritative_identity: bool = False,
 ) -> list[dict[str, Any]]:
     """Normalize full-window profile-gate counts for JEV attribution."""
     if not isinstance(rows, list):
@@ -2174,13 +2265,23 @@ def _compact_native_candidate_rejections(
         if not isinstance(row, dict):
             continue
         guid = _as_int(row.get("actor_guid") or row.get("bot_guid"))
+        if authoritative_identity and str(guid) not in (actor_identity or {}):
+            continue
         identity = (actor_identity or {}).get(str(guid), {})
-        role = str(row.get("actor_role") or identity.get("role") or "")
+        role = str(
+            identity.get("role")
+            if authoritative_identity
+            else row.get("actor_role") or identity.get("role") or ""
+        )
         if focus_roles and role and role not in focus_roles:
             continue
         item: dict[str, Any] = {
             "bot_guid": guid,
-            "class_spec": str(identity.get("class_spec") or row.get("class_spec") or ""),
+            "class_spec": str(
+                identity.get("class_spec")
+                if authoritative_identity
+                else identity.get("class_spec") or row.get("class_spec") or ""
+            ),
             "spell_id": _as_int(row.get("spell_id")),
             "action_category": str(row.get("action_category") or "unknown"),
             "reason": str(row.get("reason") or "unknown"),
@@ -2735,6 +2836,8 @@ def _actor_loss_signals(
 def _compact_metrics(
     metrics: Any,
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    *,
+    authoritative_identity: bool = False,
 ) -> dict[str, Any]:
     if not isinstance(metrics, dict):
         return {"available": False}
@@ -2773,19 +2876,105 @@ def _compact_metrics(
     }
     actors = metrics.get("actors")
     if isinstance(actors, list):
-        result["actors"] = [
-            _compact_actor(actor, actor_identity)
-            for actor in actors
+        admitted_actors = [
+            actor for actor in actors
             if isinstance(actor, dict)
+            and (
+                not authoritative_identity
+                or str(_as_int(actor.get("bot_guid") or actor.get("actor_guid")))
+                in (actor_identity or {})
+            )
         ]
+        result["actors"] = [
+            _compact_actor(
+                actor,
+                actor_identity,
+                authoritative_identity=authoritative_identity,
+            )
+            for actor in admitted_actors
+        ]
+        if authoritative_identity:
+            # Native status metrics may carry actor rows and precomputed party
+            # totals.  Rebuild the totals from the admitted rows so a foreign
+            # actor cannot survive through a scalar summary field.
+            def actor_total(field: str) -> int | float:
+                values = [
+                    actor.get(field)
+                    for actor in admitted_actors
+                    if isinstance(actor.get(field), (int, float))
+                    and not isinstance(actor.get(field), bool)
+                ]
+                return sum(values)
+
+            for target, source in (
+                ("party_damage", "damage"),
+                ("raw_event_damage", "raw_event_damage"),
+                ("party_friendly_damage", "friendly_damage"),
+                ("party_raw_event_friendly_damage", "raw_event_friendly_damage"),
+                ("party_healing", "healing"),
+                ("party_damage_taken", "damage_taken"),
+            ):
+                if target in result:
+                    result[target] = actor_total(source)
+            combat_seconds = _as_float(
+                metrics.get("combat_seconds") or metrics.get("combat_duration_sec")
+                or metrics.get("active_party_damage_seconds")
+            )
+            duration_seconds = _as_float(
+                metrics.get("duration_sec") or metrics.get("combat_duration_sec")
+            )
+            if "party_dps" in result:
+                result["party_dps"] = round(
+                    _as_float(result.get("party_damage")) / max(1.0, combat_seconds),
+                    3,
+                )
+            for key in ("elapsed_party_dps", "encounter_window_party_dps"):
+                if key in result:
+                    result[key] = round(
+                        _as_float(result.get("party_damage"))
+                        / max(1.0, duration_seconds),
+                        3,
+                    )
+            if "party_hps" in result:
+                result["party_hps"] = round(
+                    _as_float(result.get("party_healing")) / max(1.0, combat_seconds),
+                    3,
+                )
+            if "elapsed_party_hps" in result:
+                result["elapsed_party_hps"] = round(
+                    _as_float(result.get("party_healing"))
+                    / max(1.0, duration_seconds),
+                    3,
+                )
+    elif authoritative_identity:
+        # A scalar-only canonical metric has no actor-bound basis.  Keep the
+        # field missing rather than allowing an unscoped total through.
+        for key in (
+            "party_damage",
+            "party_dps",
+            "elapsed_party_dps",
+            "encounter_window_party_dps",
+            "raw_event_damage",
+            "raw_event_dps",
+            "party_friendly_damage",
+            "party_raw_event_friendly_damage",
+            "party_healing",
+            "party_hps",
+            "elapsed_party_hps",
+            "party_damage_taken",
+        ):
+            result.pop(key, None)
+        result["available"] = False
     if isinstance(metrics.get("action_outcomes"), list):
         result["action_outcomes"] = _compact_native_action_outcomes(
-            metrics["action_outcomes"], actor_identity
+            metrics["action_outcomes"], actor_identity,
+            authoritative_identity=authoritative_identity,
         )
         result["action_outcome_count"] = len(result["action_outcomes"])
     if isinstance(metrics.get("candidate_rejections"), list):
         result["candidate_rejections"] = _compact_native_candidate_rejections(
-            metrics["candidate_rejections"], actor_identity
+            metrics["candidate_rejections"], actor_identity,
+            authoritative_identity=authoritative_identity,
         )
         result["candidate_rejection_count"] = len(result["candidate_rejections"])
     if "party_dps" in result:
@@ -2833,6 +3022,8 @@ def _progress_summary(
     rows: list[dict[str, Any]],
     scope_route_prefix: str = MAGMAW_ROUTE_PREFIX,
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    *,
+    authoritative_identity: bool = False,
 ) -> dict[str, Any]:
     path_counts: Counter[str] = Counter()
     route_counts: Counter[str] = Counter()
@@ -3044,7 +3235,11 @@ def _progress_summary(
             ):
                 latest_scoped_status = compact_status
         if isinstance(payload.get("combat_metrics"), dict):
-            compact = _compact_metrics(payload["combat_metrics"], actor_identity)
+            compact = _compact_metrics(
+                payload["combat_metrics"],
+                actor_identity,
+                authoritative_identity=authoritative_identity,
+            )
             metric_route = str(compact.get("route_node_id") or "")
             row_route = str(payload.get("route_node_id") or "")
             if not row_route:
@@ -3120,6 +3315,8 @@ def _analysis_metrics(
     analysis: Any,
     scope_route_prefix: str,
     actor_identity: Mapping[str, dict[str, Any]] | None = None,
+    *,
+    authoritative_identity: bool = False,
 ) -> dict[str, Any] | None:
     if not isinstance(analysis, dict):
         return None
@@ -3129,7 +3326,11 @@ def _analysis_metrics(
         if (not route or _route_in_scope(route, scope_route_prefix)) and (
             extracted.get("available") or "party_dps" in extracted
         ):
-            return _compact_metrics(extracted, actor_identity)
+            return _compact_metrics(
+                extracted,
+                actor_identity,
+                authoritative_identity=authoritative_identity,
+            )
     encounters = analysis.get("encounters")
     if not isinstance(encounters, list):
         return None
@@ -3145,7 +3346,11 @@ def _analysis_metrics(
         return None
     metrics = dict(scoped[-1])
     metrics["available"] = True
-    return _compact_metrics(metrics, actor_identity)
+    return _compact_metrics(
+        metrics,
+        actor_identity,
+        authoritative_identity=authoritative_identity,
+    )
 
 
 def _analysis_diagnostics(analysis: Any, scope_route_prefix: str) -> list[dict[str, Any]]:
@@ -5081,6 +5286,13 @@ def analyze(
         from tools.bot_ml.closed_capture_inputs import is_canonical_capture, load_canonical_capture
         if is_canonical_capture(live_report):
             canonical = load_canonical_capture(report_path.parent, live_report)
+    if canonical is not None and (
+        combat_analysis_path is not None or combat_log_path is not None
+    ):
+        raise ValueError(
+            "canonical capture uses report-bound combat analysis and combat log; "
+            "explicit overrides are not admissible"
+        )
     if canonical is not None:
         source_path = report_path
         rows = canonical["rows"]
@@ -5105,6 +5317,7 @@ def analyze(
         rows,
         scope_route_prefix=scope_route_prefix,
         actor_identity=actor_identity,
+        authoritative_identity=canonical is not None,
     )
     baseline = _compact_baseline(baseline_path)
     wcl_reference: dict[str, Any] | None = None
@@ -5115,10 +5328,21 @@ def analyze(
         raw_timeline = _load_json(timeline_comparison_path)
         _validate_timeline_identity(raw_timeline, report_path)
         timeline_comparison = _compact_timeline_comparison(raw_timeline)
-    analysis_path = combat_analysis_path or discovered_analysis
-    if (analysis_path and analysis_path.exists()) or canonical is not None:
-        analysis = _load_json(analysis_path) if analysis_path and analysis_path.exists() else canonical["combat_analysis"]
-        extracted = _analysis_metrics(analysis, scope_route_prefix, actor_identity)
+    analysis_path = None if canonical is not None else (
+        combat_analysis_path or discovered_analysis
+    )
+    if canonical is not None or (analysis_path and analysis_path.exists()):
+        analysis = (
+            canonical["combat_analysis"]
+            if canonical is not None
+            else _load_json(analysis_path)
+        )
+        extracted = _analysis_metrics(
+            analysis,
+            scope_route_prefix,
+            actor_identity,
+            authoritative_identity=canonical is not None,
+        )
         if extracted is not None:
             deterministic["latest_combat_metrics"] = extracted
         deterministic["combat_diagnostics"] = _analysis_diagnostics(
@@ -5128,6 +5352,7 @@ def analyze(
             analysis,
             DEFAULT_BOSS_ROUTE[0],
             actor_identity,
+            authoritative_identity=canonical is not None,
         )
         if boss_metrics is not None:
             deterministic["boss_combat_metrics"] = boss_metrics
@@ -5135,7 +5360,9 @@ def analyze(
             analysis,
             DEFAULT_BOSS_ROUTE[0],
         )
-    resolved_combat_log_path = combat_log_path or _discovered_combat_log_path(input_path)
+    resolved_combat_log_path = None if canonical is not None else (
+        combat_log_path or _discovered_combat_log_path(input_path)
+    )
     combat_log: dict[str, Any] | None = canonical["combat_log"] if canonical is not None else None
     if resolved_combat_log_path and resolved_combat_log_path.exists():
         loaded_combat_log = _load_json(resolved_combat_log_path)
@@ -5193,7 +5420,11 @@ def analyze(
         actor_identity,
     )
     if live_report is not None:
-        deterministic["live_report"] = _compact_live_report(live_report)
+        deterministic["live_report"] = _compact_live_report(
+            live_report,
+            actor_identity,
+            authoritative_identity=canonical is not None,
+        )
         diagnosis = live_report.get("diagnosis")
         diagnosis = diagnosis if isinstance(diagnosis, dict) else {}
         failure_reason = str(

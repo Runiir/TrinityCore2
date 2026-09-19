@@ -5,29 +5,52 @@ Imported the offline analyzer, all-actor WCL timeline comparison, combat summary
 consumer and their tests/references. Native runtime, class, boss, SQL and live
 runner changes remain on the canary branch for separate causal review.
 
-Local SimpleJev supplies diagnostic suggestions. Native evidence and independent
-review determine correctness. Hosted Jev predictions are comparison data, not
-ground truth. Neither backend may authorize actions or accept a repair.
+Local Laya now supplies diagnostic suggestions at `http://127.0.0.1:8000/v1/systemone`.
+Native evidence and independent review determine correctness. Model predictions,
+confidence and agreement with hosted Jev are not labels or action authority.
 
 ## Start the local service
 
-The persistent checkout is `$HOME/.local/share/trinity-simple-jev`. Its upstream
-revision is `0dd5396ffce671ab7c4bfc031506d8e558cf8d23`. The integration includes
-the deployment Pixi manifest/lock in `experiments/configs/local_jev/`. These files
-are deployed to the upstream checkout root, where `hf-server` exists:
+Deployment: `$HOME/.local/share/trinity-laya`. The package is `laya==0.3.3`,
+with `convaiinnovations/laya` subfolder `typed-decisions` pinned to revision
+`c5d78730f3493e4fe16d61507ef4b78eef7318cf`. The request/response model identifier
+is `convaiinnovations/laya-typed-decisions`. The adapter and Pixi manifest/lock
+are tracked in `experiments/configs/local_laya/`.
 
 ```sh
-git clone https://github.com/featherless-ai/simple-jev.git "$HOME/.local/share/trinity-simple-jev"
-git -C "$HOME/.local/share/trinity-simple-jev" checkout 0dd5396ffce671ab7c4bfc031506d8e558cf8d23
-cp experiments/configs/local_jev/pixi.toml experiments/configs/local_jev/pixi.lock "$HOME/.local/share/trinity-simple-jev/"
-pixi run --manifest-path "$HOME/.local/share/trinity-simple-jev/pixi.toml" --frozen serve --revision 2fc06364715b967f1860aea9cf38778875588b17
+mkdir -p "$HOME/.local/share/trinity-laya"
+cp experiments/configs/local_laya/{server.py,pixi.toml,pixi.lock} "$HOME/.local/share/trinity-laya/"
+pixi run --manifest-path "$HOME/.local/share/trinity-laya/pixi.toml" --frozen serve
 ```
 
-For an existing checkout, run only the last command. Do not start a second
-service on an occupied port. Readiness: `curl http://127.0.0.1:8000/health`.
-This pins Qwen3.5-0.8B, CUDA float16, an 8192-token window and serial requests.
-The prior replay's model checkpoint was not recorded, so identical weights to
-that replay are unproven. Full-group requests exceeded the 8 GiB GPU's capacity.
+For an existing deployment run only the last command, after checking that no
+service already owns port 8000. Readiness: `curl http://127.0.0.1:8000/health`.
+Health records the actual model, revision, device, dtype and context limits.
+The current deployment uses CUDA/float16. Local Qwen SimpleJev was stopped;
+its checkout/config remains available for explicit rollback, not automatic fallback.
+
+The pinned checkpoint accepts 1,024 tokens per question and a 256-token question/options
+head. The adapter rejects any truncated instructions, criteria or state with
+HTTP 422 and a token-budget receipt. The client uses an explicit compact Laya
+projection and preserves unavailable evidence and reference limitations. Never
+truncate silently or sort option keys to improve agreement.
+
+The previous thread's implementation is retained by commit `60ae9760b4` and
+`artifacts/cata_raid_program/magmaw_jev_laya_cpu_replay_20260919.tar.gz.dvc`.
+It was a temporary CPU adapter on port 8001. Its context-fit requests
+still reached 1,024 tokens, and its long question headers were subject to Laya's
+own truncation. Retain that replay as historical boundary evidence; it does not
+validate the new untruncated projection or establish diagnostic accuracy.
+
+The replacement was exercised on the closed lawful Magmaw run `2fcd4133aa`.
+All six DPS actor requests returned typed responses, using 896–928 input tokens
+with no truncated fields. Two suggestions failed deterministic evidence checks
+and remain flagged for review. All six examples are quarantined and unlabeled.
+This validates the local transport and packet limits, not model accuracy or raid
+performance. Exact requests, responses and backend identity are retained in
+`artifacts/cata_raid_program/magmaw_laya_migration_20260919.tar.gz.dvc`.
+An earlier packet wording produced four flagged suggestions; both batches are
+retained. The final batch is `shadow_verified/`, generated from commit `00784a1708`.
 
 ## Review one closed run
 
@@ -38,7 +61,7 @@ stream in memory; separate copied combat exports are unnecessary. Keep that raw
 batch through review and verified DVC publication. A native death receipt remains
 separate from capture completeness and qualification.
 The following commands use shell variables naming its closed directory and a
-new output directory. No hosted key is needed.
+new output directory. No hosted key is needed. The default local model is Laya.
 
 ```sh
 pixi run python -m tools.bot_ml.compare_magmaw_timelines --bot-run "$closed_run" --wcl-manifest experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_v1.json --output "$review_dir/timeline.json"
@@ -77,7 +100,7 @@ issue/fix, complete run identity, script fidelity and capture quality. Predictio
 and hosted agreement never become labels automatically. Keep all actors from a
 run in the same partition; group related attempts/rosters before assigning a
 holdout. The current `split_group` is a minimum grouping, not a finalized split.
-Local confidence is not calibrated TypeSafe confidence. Evaluate it on held-out
+Local confidence has not been calibrated on this raid diagnostic task. Evaluate it on held-out
 adjudicated examples before choosing any threshold.
 
 Publish only the compact review/shadow batch through `dvc add`, `dvc status` and
@@ -97,5 +120,6 @@ or the published local payload. Retain the Git pointer and reconstruction recipe
 - WCL completed casts and native landed effects retain separate counts. Their
   difference is not ranked as a cast deficit.
 
-Contracts: [TypeSafe API](https://docs.typesafe.ai/api) and
-[pinned SimpleJev README](https://github.com/featherless-ai/simple-jev/blob/0dd5396ffce671ab7c4bfc031506d8e558cf8d23/README.md).
+Contracts: [TypeSafe API](https://docs.typesafe.ai/api),
+[Laya source](https://github.com/NandhaKishorM/laya), and
+[model card](https://huggingface.co/convaiinnovations/laya).
