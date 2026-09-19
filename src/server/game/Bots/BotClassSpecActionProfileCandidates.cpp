@@ -1,5 +1,6 @@
 #include "Bots/BotSpellMinimumRange.h"
 #include "Bots/BotSpellResolution.h"
+#include "Bots/BotBloodDecisionObservation.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Cryptography/CryptoHash.h"
 #include "DataStores/DBCStores.h"
@@ -208,39 +209,9 @@ float ProfileSpellMaximumRange(Player const* bot, Unit const* target,
     return maximumRange + bot->GetCombatReach() + target->GetCombatReach();
 }
 
-struct ReadyRuneObservation
-{
-    uint8 Total = 0;
-    uint8 Blood = 0;
-    uint8 Unholy = 0;
-    uint8 Frost = 0;
-    uint8 Death = 0;
-};
-
-ReadyRuneObservation ObserveReadyRunes(Player const* bot)
-{
-    ReadyRuneObservation observation;
-    if (!bot || bot->getClass() != CLASS_DEATH_KNIGHT)
-        return observation;
-    for (uint8 rune = 0; rune < MAX_RUNES; ++rune)
-        if (std::abs(bot->GetRuneCooldown(rune)) <= 0.0001f)
-        {
-            ++observation.Total;
-            switch (bot->GetCurrentRune(rune))
-            {
-                case RuneType::Blood: ++observation.Blood; break;
-                case RuneType::Unholy: ++observation.Unholy; break;
-                case RuneType::Frost: ++observation.Frost; break;
-                case RuneType::Death: ++observation.Death; break;
-                default: break;
-            }
-        }
-    return observation;
-}
-
 uint8 ReadyRuneCount(Player const* bot)
 {
-    return ObserveReadyRunes(bot).Total;
+    return BotBloodDecisionObservation::ObserveReadyRunes(bot).Total;
 }
 
 uint32 EquippedTemporaryEnchant(Player const* bot, uint8 slot)
@@ -461,7 +432,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         // every other class.
         if (profile.SpecTag == "frost_death_knight")
         {
-            ReadyRuneObservation const runes = ObserveReadyRunes(bot);
+            BotBloodDecisionObservation::ReadyRunes const runes = BotBloodDecisionObservation::ObserveReadyRunes(bot);
             Powers const primaryPowerType = bot->GetPowerType();
             uint32 const currentPrimaryPower = bot->GetPower(primaryPowerType);
             uint32 const maximumPrimaryPower = bot->GetMaxPower(primaryPowerType);

@@ -216,6 +216,9 @@ struct ResolvedCombatAction
     ObjectGuid TargetGuid;
     bool Valid = false;
     std::string DebugName;
+    // Immutable candidate-time facts carried into the exact native submission
+    // attempt. Runtime diagnostics must not reread resources after execution.
+    std::string ObservationJson = "{}";
     // Native profile resolution can have no new spell while an earlier cast
     // is still in flight. Keep that scheduler state distinct from a profile
     // with no legal action so callers do not enter retry backoff mid-cast.

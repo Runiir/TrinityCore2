@@ -1,11 +1,11 @@
 #include "Bots/BotSpellMinimumRange.h"
+#include "Bots/BotBloodDecisionObservation.h"
 #include "Bots/BotFireCombustionObservation.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatMaskEvaluation.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
-
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotElementalSpiritwalkersGrace.h"
@@ -853,6 +853,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidates.front().ObservationJson = BotFireCombustionObservation::ToJson(observation);
         }
         uint32 botKey = bot->GetGUID().GetCounter();
+        BotBloodDecisionObservation::Attach(bot, candidates, best, profile.SpecTag, maskEvaluatedAtMs, BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), action.ObservationJson);
         std::ostringstream rejectionJson;
         rejectionJson << '[';
         bool firstReject = true;

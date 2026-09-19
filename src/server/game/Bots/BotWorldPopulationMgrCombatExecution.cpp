@@ -373,7 +373,8 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
             }
         }
         RecordCombatAttempt(*state, bot, target, "cast", &action, result,
-            castFailureReason.empty() ? nullptr : castFailureReason.c_str());
+            castFailureReason.empty() ? nullptr : castFailureReason.c_str(),
+            nullptr, action.ObservationJson.c_str());
         // Preserve the real failed submission above, then leave the rejected
         // spell topology so per-spell suppression cannot cycle other actions
         // from the same blocked point.
