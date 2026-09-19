@@ -39,7 +39,7 @@ Heart Strike must remain available when Death Strike lacks valid runes. No rune
 cost, spell coefficient, target or encounter change is proposed. The reviewed
 Flame Orb change filters native-illegal candidates before choosing the nearest
 target. A narrowly guarded Fire Elemental owner-chain correction is also ready
-for independent review. These repairs require the next native canary.
+and independently approved. These repairs require the next native canary.
 
 All represented actors remain under review. Balance's post-pincer landing gap
 fell to 0.338s; same-tick replacement submissions do not identify interruption
@@ -57,7 +57,11 @@ A separate focused Blood case supplied exact pre-spend decisions and the native
 comparator. Jev selected the supported profile-ordering cause; Laya selected
 rune legality despite the observed valid Death Strike. Both suggested a rune
 probe already covered by the retained control. Neither supplied a new repair.
-Neither model has supplied repair authority. Follow [the shadow workflow](local_jev_shadow.md).
+The revised collector binds exact native report and summary identity, preserves
+unknowns and comparison context, and fits all ten deployed-tokenizer packets
+(maximum 941/1024 tokens). Independent review and 31 focused tests passed.
+The corrected retained replay is pending; packet correctness is not diagnostic
+accuracy. Neither model has supplied repair authority. Follow [the shadow workflow](local_jev_shadow.md).
 
 Raw evidence is published and fresh-remote verified at
 `artifacts/cata_raid_program/magmaw_master_d495_20260919.raw.tar.zst.dvc`

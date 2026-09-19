@@ -8,7 +8,7 @@
   "architecture_scope": "Keep accepted typed arbiter and movement. Correct a trace-proven Blood profile ordering; all actors remain under independent review.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Native Blood, Flame Orb and elemental owner-chain changes independently approved; model packet compaction in progress; next native validation pending",
+  "gate_state": "Blood, Flame Orb, elemental ownership and exact compact model inputs independently approved; ready for matched build and canary",
   "first_broken_edge": {
     "id": "blood_death_strike_bucket_loses_before_higher_score",
     "owner_classification": "role_implementation",
@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "24937cd5c2a25730a438636731db4cdafa1e59c00d3bd05bc6882db7fee7e7ed"
+    "sha256": "52e8335dcb59b326af3848e9ecab3d9deb51aeee5076f3d41fe9abeafc8f3945"
   },
   "scope_lock": {
     "objective": "Put Blood Death Strike in the same bucket as Heart Strike so existing score can win when legal; preserve Heart Strike with invalid Death Strike runes.",
@@ -42,9 +42,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": false,
+  "ready_for_build": true,
   "ready_for_live_verification": false,
-  "next_action": "Finish compact model projection and independent review, build approved native batch once, run matched completion-watchdog canary, then review all actors with native evidence, Laya and Jev. Apply queued legal role enchants after this comparison.",
+  "next_action": "Configure/build/verify the clean reviewed batch, replay corrected d495 model packets, then run the fresh-provisioned matched completion-watchdog canary and all-actor review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -336,7 +336,17 @@
       "review": "/tmp/magmaw-pet-owner-chain-review-20260919.json",
       "tests_passed": 2,
       "live_verified": false
-    }
+    },
+    "model_timeline_context": {
+      "commit": "98756584ce",
+      "tests_passed": 31,
+      "review": "/tmp/magmaw-model-input-review-20260919.json",
+      "token_preflight": "/tmp/magmaw-model-input-token-preflight-20260919-v3.json",
+      "actors_fitting_without_truncation": 10,
+      "maximum_input_tokens": 941,
+      "model_replay_accepted": false
+    },
+    "evidence_pointer": "artifacts/cata_raid_program/magmaw_master_d495_followup_20260919.tar.gz.dvc"
   },
   "queued_setup_repair": {
     "id": "DPS-055",
