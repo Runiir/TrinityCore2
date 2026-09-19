@@ -564,39 +564,37 @@ class spell_mage_flame_orb_aoe_dummy : public SpellScript
 
     void FilterTargets(std::list<WorldObject*>& targets)
     {
+        Unit* caster = GetCaster();
+        TempSummon* summon = caster ? caster->ToTempSummon() : nullptr;
+        Unit* summoner = summon ? summon->GetSummoner() : nullptr;
+        SpellInfo const* damageInfo = ResolveDamageSpell(summoner);
+        targets.remove_if([summoner, damageInfo](WorldObject* target)
+        {
+            return !IsLegalDamageTarget(summoner, target, damageInfo);
+        });
+
         if (targets.empty())
             return;
 
-        targets.sort(Trinity::ObjectDistanceOrderPred(GetCaster(), true));
+        targets.sort(Trinity::ObjectDistanceOrderPred(caster, true));
         targets.resize(1);
     }
 
     void HandleDummy(SpellEffIndex /*effIndex*/)
     {
-        if (TempSummon* caster = GetCaster()->ToTempSummon())
-            if (Unit* summoner = caster->GetSummoner())
-                if (Unit* target = GetHitUnit())
-                {
-                    switch (dummySpellId)
+        if (Unit* unitCaster = GetCaster())
+            if (TempSummon* caster = unitCaster->ToTempSummon())
+                if (Unit* summoner = caster->GetSummoner())
+                    if (Unit* target = GetHitUnit())
                     {
-                        case SPELL_MAGE_FLAME_ORB_AOE:
-                            caster->CastSpell(caster, SPELL_MAGE_FLAME_ORB_SELF_SNARE, true);
-                            caster->CastSpell(target, SPELL_MAGE_FLAME_ORB_BEAM_DUMMY, true);
-                            summoner->CastSpell(target, SPELL_MAGE_FLAME_ORB_DAMAGE, true);
-                            break;
-                        case SPELL_MAGE_FROSTFIRE_ORB_AOE:
-                            caster->CastSpell(caster, SPELL_MAGE_FLAME_ORB_SELF_SNARE, true);
-                            caster->CastSpell(target, SPELL_MAGE_FLAME_ORB_BEAM_DUMMY, true);
+                        SpellInfo const* damageInfo = ResolveDamageSpell(summoner);
+                        if (!IsLegalDamageTarget(summoner, target, damageInfo))
+                            return;
 
-                            if (summoner->HasAura(SPELL_MAGE_FROSTFIRE_ORB_RANK_R2))
-                                summoner->CastSpell(target, SPELL_MAGE_FROSTFIRE_ORB_DAMAGE_R2, true);
-                            else
-                                summoner->CastSpell(target, SPELL_MAGE_FROSTFIRE_ORB_DAMAGE_R1, true);
-                            break;
-                        default:
-                            break;
+                        caster->CastSpell(caster, SPELL_MAGE_FLAME_ORB_SELF_SNARE, true);
+                        caster->CastSpell(target, SPELL_MAGE_FLAME_ORB_BEAM_DUMMY, true);
+                        summoner->CastSpell(target, damageInfo->Id, true);
                     }
-                }
     }
 
     void Register() override
@@ -606,6 +604,31 @@ class spell_mage_flame_orb_aoe_dummy : public SpellScript
     }
 
 private:
+    SpellInfo const* ResolveDamageSpell(Unit const* summoner) const
+    {
+        if (!summoner)
+            return nullptr;
+
+        switch (dummySpellId)
+        {
+            case SPELL_MAGE_FLAME_ORB_AOE:
+                return sSpellMgr->GetSpellInfo(SPELL_MAGE_FLAME_ORB_DAMAGE);
+            case SPELL_MAGE_FROSTFIRE_ORB_AOE:
+                return sSpellMgr->GetSpellInfo(summoner->HasAura(SPELL_MAGE_FROSTFIRE_ORB_RANK_R2)
+                    ? SPELL_MAGE_FROSTFIRE_ORB_DAMAGE_R2 : SPELL_MAGE_FROSTFIRE_ORB_DAMAGE_R1);
+            default:
+                return nullptr;
+        }
+    }
+
+    static bool IsLegalDamageTarget(Unit const* summoner, WorldObject const* target, SpellInfo const* damageInfo)
+    {
+        Unit const* unitTarget = target ? target->ToUnit() : nullptr;
+        return summoner && unitTarget && damageInfo
+            && damageInfo->CheckExplicitTarget(summoner, unitTarget) == SPELL_CAST_OK
+            && damageInfo->CheckTarget(summoner, unitTarget, true) == SPELL_CAST_OK;
+    }
+
     uint32 dummySpellId;
 };
 
