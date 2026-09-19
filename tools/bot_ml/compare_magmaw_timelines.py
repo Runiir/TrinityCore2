@@ -7,8 +7,9 @@ The two sides intentionally keep different event semantics:
   combat log.
 
 Those are not interchangeable event types.  The report exposes both cadence
-views, their normalized first-to-first window, the largest bot gaps, and a
-denominator-matched `bot_common_window_dps` value. The native full-fight metric
+views, their normalized encounter window, owner-only landed-effect gaps, and
+`bot_common_window_dps`. WCL whole-fight DPS remains context: same-window WCL
+DPS requires timestamped damage observations. The native full-fight metric
 is retained separately for diagnostics. It never turns a missing WCL reference
 into a passing actor and never treats a utility cast with no landed damage row
 as a rotation failure.
@@ -18,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import re
@@ -32,26 +34,7 @@ ENCOUNTER_TARGET_ENTRIES = frozenset({41570, 41806, 42321, 42347, 48270})
 TIME_RE = re.compile(r"^(?:(?P<hours>\d+):)?(?P<minutes>\d+):(?P<seconds>\d+(?:\.\d+)?)$")
 CAST_DURATION_RE = re.compile(r"\s+\d+(?:\.\d+)?\s+sec$")
 
-# These are landed damage rows whose cadence is expected to be denser than the
-# corresponding WCL cast count.  Keep this list conservative: unknown spells
-# remain "direct_or_unknown" instead of being silently classified as ticks.
-PERIODIC_SPELL_IDS = frozenset({
-    172,       # Corruption
-    5570,      # Insect Swarm
-    8921,      # Moonfire
-    93402,     # Sunfire
-    12654,     # Ignite
-    1978,      # Serpent Sting
-    30108,     # Unstable Affliction
-    3674,      # Black Arrow
-    44457,     # Living Bomb
-    44461,     # Living Bomb
-    8050,      # Flame Shock
-    83077,     # Improved Serpent Sting
-    88453,     # Serpent Sting
-    109800,    # Shadowbolt Volley
-    109858,    # Speaking of Rage
-})
+OWNER_GAP_BASIS = "owner_direct_or_unknown_landed_damage_not_casts"
 
 CLASS_ID_TO_SPEC = {
     2: "holy_paladin",
@@ -252,7 +235,8 @@ def _bot_actor_summary(
     direct_events = [
         event
         for event in window_events
-        if not bool(event.get("periodic"))
+        if not event.get("source_is_pet")
+        and event.get("damage_classification", "unknown") != "periodic"
     ]
     by_ability: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in window_events:
@@ -265,7 +249,9 @@ def _bot_actor_summary(
             "spell_ids": sorted({int(row.get("spell_id") or 0) for row in rows}),
             "landed_damage_events": cadence["event_count"],
             "landed_damage": round(sum(float(row.get("amount") or 0.0) for row in rows)),
-            "periodic": all(bool(row.get("periodic")) for row in rows),
+            "damage_classification_counts": dict(Counter(
+                row.get("damage_classification", "unknown") for row in rows
+            )),
             "first_t": cadence["first_t"],
             "last_t": cadence["last_t"],
             "max_gap_sec": cadence["max_gap_sec"],
@@ -279,7 +265,21 @@ def _bot_actor_summary(
         "landed_damage": round(sum(float(event.get("amount") or 0.0) for event in window_events)),
         "cadence": _cadence(event["t"] for event in window_events),
         "direct_or_unknown_cadence": _cadence(event["t"] for event in direct_events),
-        "largest_gaps": _largest_gaps(direct_events),
+        "owner_direct_cadence": _cadence(
+            event["t"] for event in direct_events
+            if event.get("damage_classification") == "direct"
+        ),
+        "owner_unknown_cadence": _cadence(
+            event["t"] for event in direct_events
+            if event.get("damage_classification", "unknown") == "unknown"
+        ),
+        "damage_classification_counts": dict(Counter(
+            event.get("damage_classification", "unknown") for event in window_events
+        )),
+        "gap_basis": OWNER_GAP_BASIS,
+        "largest_gaps": [
+            {**gap, "basis": OWNER_GAP_BASIS} for gap in _largest_gaps(direct_events)
+        ],
         "ability_summary": ability_summary[:24],
     }
 
@@ -310,20 +310,90 @@ def _ability_diffs(
             "ability": ability,
             "wcl_completed_casts": wcl_count,
             "bot_landed_damage_events": bot_count,
-            "delta_landed_events_minus_casts": bot_count - wcl_count,
-            "event_to_cast_ratio": round(bot_count / max(1, wcl_count), 3),
             "interpretation": (
                 "landed_damage_events_are_not_casts; periodic effects and multi-target "
                 "damage can legitimately exceed WCL casts"
             ),
         })
-    rows.sort(
-        key=lambda row: (
-            -abs(int(row["delta_landed_events_minus_casts"])),
-            row["ability"],
-        )
-    )
+    # Alphabetical presentation: neither event counts nor their differences
+    # measure a cast deficit when one cast can cause many landed effects.
     return rows[:limit]
+
+
+def _damage_classification(event: Mapping[str, Any]) -> str:
+    """Classify observed effects, never all effects of a spell by its ID."""
+    classifications = set()
+    for key in ("is_periodic", "periodic"):
+        if isinstance(event.get(key), bool):
+            classifications.add("periodic" if event[key] else "direct")
+    # Native DamageEffectType: DIRECT_DAMAGE=0, SPELL_DIRECT_DAMAGE=1, DOT=2.
+    effect_type = event.get("effect_type")
+    if not isinstance(effect_type, bool):
+        if effect_type in (0, 1, "DIRECT_DAMAGE", "SPELL_DIRECT_DAMAGE"):
+            classifications.add("direct")
+        elif effect_type in (2, "DOT"):
+            classifications.add("periodic")
+    return next(iter(classifications)) if len(classifications) == 1 else "unknown"
+
+
+def _wcl_window_damage(actor: Mapping[str, Any], window_sec: float) -> float | None:
+    """Sum an optional complete damage_events [{t: seconds, amount: damage}] export.
+
+    Cast rows and observed_dps cannot reconstruct damage in a clipped window.
+    Reject malformed exports as a whole rather than reporting partial DPS.
+    """
+    events = actor.get("damage_events")
+    if not isinstance(events, list):
+        return None
+    total = 0.0
+    for event in events:
+        if not isinstance(event, dict):
+            return None
+        timestamp, amount = event.get("t"), event.get("amount")
+        if any(
+            isinstance(value, bool) or not isinstance(value, (int, float))
+            or not math.isfinite(value) for value in (timestamp, amount)
+        ) or amount < 0:
+            return None
+        if 0.0 <= timestamp <= window_sec:
+            total += amount
+    return total
+
+
+def _native_event_input(combat_log: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate raw input availability and detect known retention loss."""
+    events = combat_log.get("recent_events")
+    if not isinstance(events, list):
+        raise ValueError(
+            "combat_log.json requires a recent_events array; summary-only or evicted "
+            "combat logs cannot supply timeline damage"
+        )
+    reasons = []
+    dropped = combat_log.get("recent_events_dropped", 0)
+    if not isinstance(dropped, int) or isinstance(dropped, bool) or dropped < 0:
+        reasons.append("invalid_recent_events_dropped")
+    elif dropped > 0:
+        reasons.append("recent_events_dropped")
+    declared_counts = {}
+    for field in ("event_count", "event_count_at_export"):
+        if field not in combat_log:
+            continue
+        declared = combat_log[field]
+        declared_counts[field] = declared
+        if not isinstance(declared, int) or isinstance(declared, bool) or declared < 0:
+            reasons.append(f"invalid_{field}")
+        elif declared != len(events):
+            reasons.append(f"{field}_differs_from_retained_length")
+    if any(not isinstance(event, dict) for event in events):
+        reasons.append("invalid_retained_event_rows")
+    return {
+        "status": "incomplete" if reasons else "no_known_truncation",
+        "retained_event_count": len(events),
+        "declared_counts": declared_counts,
+        "recent_events_dropped": dropped,
+        "reasons": reasons,
+        "basis": "retained_rows_and_export_counters; absence_of_loss_is_not_coverage_proof",
+    }
 
 
 def _load_wcl_actors(manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
@@ -359,6 +429,7 @@ def compare_timelines(
     """Build a compact all-actor comparison from one closed bot run."""
     report = _load_json(bot_run / "report.json")
     combat_log = _load_json(bot_run / "combat_log.json")
+    event_input = _native_event_input(combat_log)
     combat_analysis = _load_json(bot_run / "combat_analysis.json")
     wcl_manifest, wcl_actors = _load_wcl_actors(wcl_manifest_path)
     identities = _actor_identity(report)
@@ -386,7 +457,7 @@ def compare_timelines(
         for row in encounter.get("actors", [])
         if isinstance(row, dict) and int(row.get("actor_guid") or 0)
     }
-    raw_events = combat_log.get("recent_events", [])
+    raw_events = combat_log["recent_events"]
     by_actor: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
     for event in raw_events:
         if not isinstance(event, dict):
@@ -411,7 +482,7 @@ def compare_timelines(
             "ability": str(event.get("spell_name") or "unknown"),
             "spell_id": spell_id,
             "amount": round(amount),
-            "periodic": spell_id in PERIODIC_SPELL_IDS,
+            "damage_classification": _damage_classification(event),
             "source_is_pet": bool(event.get("source_is_pet")),
             "target_entry": target_entry,
         })
@@ -443,10 +514,25 @@ def compare_timelines(
             else None
         )
         bot_summary = _bot_actor_summary(by_actor.get(guid, []), window_sec=common_window)
-        common_window_damage = int(bot_summary.get("landed_damage") or 0)
-        common_window_dps = round(
-            common_window_damage / common_window,
-            3,
+        bot_summary["event_input_status"] = event_input["status"]
+        retained_window_damage = int(bot_summary.get("landed_damage") or 0)
+        common_window_damage = (
+            retained_window_damage if event_input["status"] != "incomplete" else None
+        )
+        common_window_dps = (
+            round(common_window_damage / common_window, 3)
+            if common_window_damage is not None else None
+        )
+        wcl_common_damage = (
+            _wcl_window_damage(reference, common_window) if reference is not None else None
+        )
+        dps_comparison_status = (
+            "incomplete_native_event_input" if event_input["status"] == "incomplete" else
+            "missing_wcl_reference" if reference is None else
+            "timestamped_common_window" if wcl_common_damage is not None else
+            "unmatched_windows_without_wcl_damage_timestamps"
+            if wcl_duration != common_window else
+            "unavailable_wcl_damage_timestamps"
         )
         actor_row: dict[str, Any] = {
             "bot_guid": guid,
@@ -459,17 +545,28 @@ def compare_timelines(
             "reference_reuse_index": reference_reuse_index,
             "reference_reused_for_duplicate_local_actor": bool(reference_reuse_index and reference_reuse_index > 1),
             "wcl_observed_dps": reference.get("observed_dps") if reference else None,
+            "wcl_observed_dps_basis": "whole_wcl_fight_context_only",
+            "wcl_observed_dps_window_sec": wcl_duration if reference else None,
+            "wcl_common_window_damage": wcl_common_damage,
+            "wcl_common_window_dps": (
+                round(wcl_common_damage / common_window, 3)
+                if wcl_common_damage is not None else None
+            ),
+            "dps_comparison_status": dps_comparison_status,
             # This is the native actor metric over the whole local encounter
             # window. Keep it for diagnostics, but do not compare it directly
             # with WCL when the local fight is longer than the reference.
             "bot_encounter_window_dps": metrics.get("encounter_window_dps"),
             "bot_native_encounter_window_dps": metrics.get("encounter_window_dps"),
-            # This is the denominator-matched metric for the WCL comparison:
-            # the same normalized first-to-first window used by both cadence
-            # views, using positive originated landed damage only.
+            # The native damage is clipped to the cadence window. This alone
+            # does not clip WCL's whole-fight observed_dps to the same window.
             "bot_common_window_damage": common_window_damage,
             "bot_common_window_dps": common_window_dps,
+            "bot_retained_common_window_damage": retained_window_damage,
+            "bot_event_input_status": event_input["status"],
             "bot_common_window_dps_basis": (
+                "unavailable_incomplete_native_event_input"
+                if event_input["status"] == "incomplete" else
                 "positive_landed_damage_over_normalized_common_window_sec"
             ),
             "bot_active_dps": metrics.get("active_dps"),
@@ -482,6 +579,8 @@ def compare_timelines(
             "ability_diffs": _ability_diffs(wcl_summary, bot_summary) if wcl_summary else [],
             "comparison_limitations": [
                 "WCL rows are completed casts; bot rows are positive landed damage observations.",
+                "Owner landed-effect gaps exclude pets but do not prove cast inactivity; missing or conflicting effect metadata is unknown.",
+                "WCL observed_dps is whole-fight context only; DPS comparisons require timestamped WCL common-window damage.",
                 "Periodic ticks and multi-target damage can outnumber the originating cast.",
                 "WCL-only rows may be proc, aura, utility, or pet-state observations; join them to native action outcomes before treating them as missing damage actions.",
                 "WCL is a reference timeline, not an acceptance floor; gear and assignments differ.",
@@ -511,6 +610,10 @@ def compare_timelines(
             actor_row["comparison_limitations"].append(
                 "No same-class/spec WCL cast timeline was supplied; cadence is diagnostic only."
             )
+        if event_input["status"] == "incomplete":
+            actor_row["comparison_limitations"].insert(
+                0, "Native events are incomplete: damage, cadence, and gaps describe retained effects only; common-window native DPS is unavailable."
+            )
         actors.append(actor_row)
 
     comparable = [row for row in actors if row["comparison_status"] == "comparable"]
@@ -525,6 +628,7 @@ def compare_timelines(
         },
         "bot_run": {
             "path": str(bot_run),
+            "report_sha256": hashlib.sha256((bot_run / "report.json").read_bytes()).hexdigest(),
             "run_id": report.get("run_id"),
             "completion_reason": report.get("completion_reason"),
             "native_gameplay_outcome": report.get("native_gameplay_outcome"),
@@ -542,13 +646,20 @@ def compare_timelines(
             "bot_encounter_duration_sec": round(bot_duration, 3),
             "common_window_sec": round(common_window, 3),
             "bot_clipped_to_common_window": bot_duration > common_window,
+            "wcl_casts_clipped_to_common_window": wcl_duration > common_window,
+            "wcl_observed_dps_window_matches_common_window": wcl_duration == common_window,
         },
         "actors": actors,
+        "bot_event_input": event_input,
         "signal_contract": {
             "primary_signal": "per_actor_wcl_cast_cadence_vs_bot_landed_event_cadence",
-            "secondary_signal": "denominator_matched_common_window_dps_movement_gaps_and_native_failures",
+            "secondary_signal": "native_common_window_dps_owner_effect_gaps_and_native_failures",
             "dps_metric": "bot_common_window_dps",
             "dps_metric_formula": "positive_landed_damage_over_normalized_common_window_sec",
+            "wcl_comparison_dps_metric": "wcl_common_window_dps",
+            "dps_comparison_requires": "dps_comparison_status=timestamped_common_window",
+            "owner_gap_basis": OWNER_GAP_BASIS,
+            "ability_counts_basis": "side_by_side_completed_casts_and_landed_effects_no_arithmetic",
             "native_full_window_metric": "bot_native_encounter_window_dps",
             "jev_role": "review_compact_diff_and_propose_one_bounded_next_fix; never submit actions",
             "missing_reference_policy": "report_actor_explicitly_as_missing_wcl_reference",
@@ -569,6 +680,7 @@ def main() -> int:
         "Magmaw timeline comparison "
         f"actors={result['scope']['actor_count']} "
         f"comparable={result['scope']['comparable_actor_count']} "
+        f"timestamped_dps_pairs={sum(actor['dps_comparison_status'] == 'timestamped_common_window' for actor in result['actors'])} "
         f"output={args.output}"
     )
     return 0

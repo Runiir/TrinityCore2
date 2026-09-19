@@ -1719,3 +1719,80 @@ def test_decision_receipts_are_normalized_and_limited_to_boss_window() -> None:
     assert outcomes[0]["outcome"] == "rejected"
     assert outcomes[0]["reason_code"] == "global_cooldown"
     assert outcomes[0]["count"] == 2
+
+
+def test_aggregate_envelope_cannot_place_failures_between_its_endpoints():
+    evidence = analyzer._timeline_gap_overlap_evidence(
+        {"actors": [{"bot_guid": 10, "bot_largest_direct_gaps": [
+            {"from_t": 10, "to_t": 20}]}]}, [],
+        [{"actor_guid": 10, "reason": "max_range_exceeded", "count": 2,
+          "first_at_ms": 1000, "last_at_ms": 31000}], 1000)
+    actor = evidence[10]
+    assert actor["status"] == "possible_overlap"
+    gap = actor["gaps_considered"][0]
+    assert gap["movement_or_range_rejection_count"] == 0
+    assert gap["partial_overlap_row_count"] == 1
+    assert gap["overlap_rows"][0]["in_gap_count"] is None
+
+
+def test_whole_fight_wcl_dps_does_not_become_common_window_dps():
+    signal = analyzer._timeline_actor_signal({"actors": [{
+        "bot_guid": 10, "wcl_observed_dps": 40000,
+        "bot_common_window_dps": 20000}]})[10]
+    assert signal["bot_common_window_dps_delta_vs_wcl"] is None
+    assert signal["bot_common_window_dps_ratio_vs_wcl"] is None
+
+
+def test_timeline_join_binds_exact_report_not_reused_actor_guid(tmp_path):
+    import hashlib
+    import pytest
+    report = tmp_path / "report.json"
+    report.write_text('{"run_id":"run-b"}')
+    with pytest.raises(ValueError, match="identity"):
+        analyzer._validate_timeline_identity({"bot_run": {"run_id": "run-a"}}, report)
+    analyzer._validate_timeline_identity({"bot_run": {
+        "report_sha256": hashlib.sha256(report.read_bytes()).hexdigest()}}, report)
+    report.write_text('{"run_id":"run-c"}')
+    with pytest.raises(ValueError, match="identity"):
+        analyzer._validate_timeline_identity({"bot_run": {"report_sha256": "old"}}, report)
+
+
+def test_local_signal_keeps_missing_and_unknown_event_limits():
+    compact = analyzer._compact_timeline_comparison({
+        "bot_run": {"report_sha256": "abc"}, "bot_event_input": {"status": "incomplete"},
+        "actors": [{"bot_guid": 7, "bot_event_input_status": "incomplete",
+            "comparison_limitations": ["partial capture"], "bot": {
+                "owner_unknown_cadence": {"event_count": 3},
+                "damage_classification_counts": {"unknown": 3}, "gap_basis": "not_casts"}}]})
+    assert compact["bot_run"]["report_sha256"] == "abc"
+    signal = analyzer._timeline_actor_signal(compact)[7]
+    assert signal["owner_unknown_cadence"] == {"event_count": 3}
+    assert signal["comparison_limitations"] == ["partial capture"]
+    assert signal["bot_event_input_status"] == "incomplete"
+    assert analyzer._timeline_gap_overlap_evidence(compact, [], [], 1000)[7]["status"] == "unavailable"
+
+
+def test_missing_damage_log_does_not_claim_complete_gap_measurement():
+    context = analyzer._target_duty_context({}, {"actors": [{
+        "bot_guid": 7, "class_spec": "affliction_warlock", "role": "dps"}]}, [])
+    # Inspect the real target context schema rather than inventing replacement observations.
+    actor = next(row for row in context["actors"] if row["bot_guid"] == 7)
+    assert actor["damage_cadence_capture"] == "unavailable"
+    assert actor["damage_gap_max_seconds"] is None
+
+
+def test_actor_assignment_action_is_an_available_choice():
+    questions = analyzer._jev_questions(False, include_next_fix=False,
+        actor_specs=[{"bot_guid": 7, "class_spec": "balance_druid"}])
+    assert "encounter_assignment" in questions["actor_action_7"]["criteria"]
+
+
+def test_aggregate_abilities_without_events_cannot_prove_counterfactual():
+    context = analyzer._target_duty_context({"abilities": [{
+        "actor_guid": 7, "perspective": "damage_done", "target_entry": 41570,
+        "amount": 1000, "originated_amount": 1000}]}, {"actors": [{
+        "bot_guid": 7, "class_spec": "affliction_warlock", "role": "dps"}]}, [])
+    actor = context["actors"][0]
+    assert actor["damage_cadence_capture"] == "unavailable"
+    assert actor["counterfactual_status"] == "unavailable"
+    assert actor["counterfactual_eligible"] is False

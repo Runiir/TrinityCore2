@@ -1802,7 +1802,7 @@ def _target_duty_context(
                     else (
                         "partial_recent_capture"
                         if recent_events_dropped > 0
-                        else "eligible"
+                        else "unavailable" if not recent_events else "eligible"
                     )
                 )
             )
@@ -1876,15 +1876,15 @@ def _target_duty_context(
             ],
             "recent_damage_event_count": len(recent_events),
             "damage_cadence_capture": (
-                "full_window_no_drops" if recent_events_dropped == 0
+                "unavailable" if not recent_events else "full_window_no_drops" if recent_events_dropped == 0
                 else "partial_recent_capture"
             ),
             "damage_event_first_at_ms": min(damage_timestamps, default=0),
             "damage_event_last_at_ms": max(damage_timestamps, default=0),
-            "damage_gap_max_seconds": round(max(damage_gaps, default=0.0), 3),
-            "damage_gap_count_ge_3_seconds": len(damage_gaps_ge_3),
-            "damage_gap_count_ge_5_seconds": len(damage_gaps_ge_5),
-            "damage_gap_seconds_ge_3_total": round(sum(damage_gaps_ge_3), 3),
+            "damage_gap_max_seconds": round(max(damage_gaps, default=0.0), 3) if recent_events else None,
+            "damage_gap_count_ge_3_seconds": len(damage_gaps_ge_3) if recent_events else None,
+            "damage_gap_count_ge_5_seconds": len(damage_gaps_ge_5) if recent_events else None,
+            "damage_gap_seconds_ge_3_total": round(sum(damage_gaps_ge_3), 3) if recent_events else None,
             "recent_mechanic_damage_event_count": recent_mechanic_event_count,
             "recent_moving_damage_event_count": len(moving_timestamps),
             "recent_moving_damage_event_fraction": round(
@@ -2691,18 +2691,10 @@ def _actor_loss_signals(
             "damage_cadence_capture": str(
                 target_context.get("damage_cadence_capture") or "unavailable"
             ),
-            "damage_gap_max_seconds": _as_float(
-                target_context.get("damage_gap_max_seconds")
-            ),
-            "damage_gap_count_ge_3_seconds": _as_int(
-                target_context.get("damage_gap_count_ge_3_seconds")
-            ),
-            "damage_gap_count_ge_5_seconds": _as_int(
-                target_context.get("damage_gap_count_ge_5_seconds")
-            ),
-            "damage_gap_seconds_ge_3_total": _as_float(
-                target_context.get("damage_gap_seconds_ge_3_total")
-            ),
+            "damage_gap_max_seconds": target_context.get("damage_gap_max_seconds"),
+            "damage_gap_count_ge_3_seconds": target_context.get("damage_gap_count_ge_3_seconds"),
+            "damage_gap_count_ge_5_seconds": target_context.get("damage_gap_count_ge_5_seconds"),
+            "damage_gap_seconds_ge_3_total": target_context.get("damage_gap_seconds_ge_3_total"),
             "counterfactual_status": counterfactual_status,
             "candidate_scan_count": candidate_scan_count,
             "candidate_gate_counts": dict(sorted(bucket_counts.items())),
@@ -3874,11 +3866,15 @@ def _compact_timeline_comparison(value: Any) -> dict[str, Any] | None:
                 "role",
                 "class_spec",
                 "comparison_status",
+                "bot_event_input_status",
                 "reference_actor_id",
                 "reference_source_name",
                 "reference_reuse_index",
                 "reference_reused_for_duplicate_local_actor",
                 "wcl_observed_dps",
+                "wcl_observed_dps_window_sec",
+                "wcl_common_window_dps",
+                "dps_comparison_status",
                 "bot_encounter_window_dps",
                 "bot_native_encounter_window_dps",
                 "bot_common_window_damage",
@@ -3899,6 +3895,8 @@ def _compact_timeline_comparison(value: Any) -> dict[str, Any] | None:
         compact_actors[-1]["bot_direct_or_unknown_cadence"] = bot.get(
             "direct_or_unknown_cadence"
         )
+        for field in ("owner_direct_cadence", "owner_unknown_cadence", "damage_classification_counts", "gap_basis", "event_input_status"):
+            compact_actors[-1][field] = bot.get(field)
         compact_actors[-1]["bot_largest_direct_gaps"] = (
             bot.get("largest_gaps", [])[:6]
             if isinstance(bot.get("largest_gaps"), list)
@@ -3917,6 +3915,8 @@ def _compact_timeline_comparison(value: Any) -> dict[str, Any] | None:
             "reference",
             "scope",
             "comparison_window",
+            "bot_run",
+            "bot_event_input",
             "signal_contract",
         )
         if key in value
@@ -3950,11 +3950,11 @@ def _timeline_actor_signal(
         wcl_only = wcl_only if isinstance(wcl_only, list) else []
         bot_only = actor.get("bot_only_abilities")
         bot_only = bot_only if isinstance(bot_only, list) else []
-        wcl_dps = actor.get("wcl_observed_dps")
+        wcl_dps = actor.get("wcl_common_window_dps")
         common_dps = actor.get("bot_common_window_dps")
         denominator_matched_delta = None
         denominator_matched_ratio = None
-        if isinstance(wcl_dps, (int, float)) and isinstance(common_dps, (int, float)):
+        if actor.get("dps_comparison_status") == "timestamped_common_window" and isinstance(wcl_dps, (int, float)) and isinstance(common_dps, (int, float)):
             denominator_matched_delta = round(float(common_dps) - float(wcl_dps), 3)
             denominator_matched_ratio = round(
                 float(common_dps) / max(1.0, float(wcl_dps)),
@@ -3964,6 +3964,8 @@ def _timeline_actor_signal(
             "comparison_status": actor.get("comparison_status"),
             "reference_actor_id": actor.get("reference_actor_id"),
             "wcl_observed_dps": actor.get("wcl_observed_dps"),
+            "wcl_common_window_dps": wcl_dps,
+            "dps_comparison_status": actor.get("dps_comparison_status", "unmatched"),
             "bot_common_window_damage": actor.get("bot_common_window_damage"),
             "bot_common_window_dps": actor.get("bot_common_window_dps"),
             "bot_common_window_dps_basis": actor.get(
@@ -3981,6 +3983,12 @@ def _timeline_actor_signal(
             "bot_direct_or_unknown_events": direct.get("event_count"),
             "bot_direct_max_gap_sec": direct.get("max_gap_sec"),
             "largest_direct_gap": gaps[0] if gaps else None,
+            "bot_event_input_status": actor.get("bot_event_input_status"),
+            "gap_basis": actor.get("gap_basis"),
+            "owner_direct_cadence": actor.get("owner_direct_cadence"),
+            "owner_unknown_cadence": actor.get("owner_unknown_cadence"),
+            "damage_classification_counts": actor.get("damage_classification_counts"),
+            "comparison_limitations": actor.get("comparison_limitations", []),
             "matched_ability_diffs": [
                 {
                     key: row[key]
@@ -3988,7 +3996,6 @@ def _timeline_actor_signal(
                         "ability",
                         "wcl_completed_casts",
                         "bot_landed_damage_events",
-                        "delta_landed_events_minus_casts",
                     )
                     if key in row
                 }
@@ -4014,9 +4021,9 @@ def _timeline_gap_overlap_evidence(
 
     Timeline gaps are relative to the first encounter event, while native
     action and candidate rows use absolute timestamps.  Aggregate native rows
-    are intentionally labeled as first/last intervals: overlap corroborates
-    that the native category was present during the gap window, but it is not
-    treated as an event-level proof when the source did not retain events.
+    are first/last envelopes, not continuous observations. Only an envelope
+    fully contained in the gap has an exact in-gap count. Partial overlap is
+    possible context, never proof that any event occurred inside the gap.
     """
     result: dict[int, dict[str, Any]] = {}
     if not isinstance(timeline_comparison, dict):
@@ -4064,6 +4071,9 @@ def _timeline_gap_overlap_evidence(
             continue
         gaps = actor.get("bot_largest_direct_gaps")
         gaps = gaps if isinstance(gaps, list) else []
+        if actor.get("bot_event_input_status") == "incomplete":
+            result[guid] = {"status": "unavailable", "reason": "incomplete_damage_event_input", "gaps_considered": []}
+            continue
         if not encounter_first_at_ms:
             result[guid] = {
                 "status": "unavailable",
@@ -4115,6 +4125,9 @@ def _timeline_gap_overlap_evidence(
                     "first_at_ms": row_first_at_ms,
                     "last_at_ms": row_last_at_ms,
                     "overlap_seconds": round(row_overlap_ms / 1000.0, 3),
+                    "in_gap_count": (max(1, _as_int(row.get("count")))
+                        if gap_first_at_ms <= row_first_at_ms <= row_last_at_ms <= gap_last_at_ms
+                        else None),
                     "actionable_failure": (
                         outcome in NATIVE_ACTIONABLE_FAILURE_OUTCOMES
                         or reason in {"no_line_of_sight", "out_of_range"}
@@ -4144,6 +4157,9 @@ def _timeline_gap_overlap_evidence(
                     "first_at_ms": row_first_at_ms,
                     "last_at_ms": row_last_at_ms,
                     "overlap_seconds": round(row_overlap_ms / 1000.0, 3),
+                    "in_gap_count": (max(1, _as_int(row.get("count")))
+                        if gap_first_at_ms <= row_first_at_ms <= row_last_at_ms <= gap_last_at_ms
+                        else None),
                     "movement_or_range": reason in MOVEMENT_SIGNAL_REASONS,
                 }
                 spell_id = _as_int(row.get("spell_id"))
@@ -4170,15 +4186,17 @@ def _timeline_gap_overlap_evidence(
                 "action_overlap_count": len(action_overlaps),
                 "candidate_overlap_count": len(candidate_overlaps),
                 "actionable_failure_count": sum(
-                    int(row["count"])
+                    int(row["in_gap_count"] or 0)
                     for row in action_overlaps
                     if row.get("actionable_failure")
                 ),
                 "movement_or_range_rejection_count": sum(
-                    int(row["count"])
+                    int(row["in_gap_count"] or 0)
                     for row in candidate_overlaps
                     if row.get("movement_or_range")
                 ),
+                "count_basis": "known_contained_aggregate_counts_only; partial_overlap_count_unknown",
+                "partial_overlap_row_count": sum(row["in_gap_count"] is None for row in overlap_rows),
                 "overlap_reasons": sorted({
                     str(row.get("reason_code") or row.get("reason") or row.get("outcome"))
                     for row in overlap_rows
@@ -4196,9 +4214,12 @@ def _timeline_gap_overlap_evidence(
             row.get("action_overlap_count") or row.get("candidate_overlap_count")
             for row in gap_rows
         )
-        if has_overlap:
+        if any(row["actionable_failure_count"] or row["movement_or_range_rejection_count"] for row in gap_rows):
             status = "corroborated"
-            reason = "timestamped_native_aggregate_overlaps_damage_gap"
+            reason = "native_failure_envelope_contained_in_gap; causation_not_established"
+        elif has_overlap:
+            status = "possible_overlap"
+            reason = "aggregate_envelope_overlap_does_not_locate_events"
         elif timestamped_actions or timestamped_candidates:
             status = "no_timestamped_overlap"
             reason = "timestamped_native_rows_do_not_overlap_damage_gap"
@@ -4249,8 +4270,12 @@ def _compact_group_timeline(
                 "role",
                 "class_spec",
                 "comparison_status",
+                "bot_event_input_status",
                 "reference_actor_id",
                 "wcl_observed_dps",
+                "wcl_observed_dps_window_sec",
+                "wcl_common_window_dps",
+                "dps_comparison_status",
                 "bot_encounter_window_dps",
                 "bot_native_encounter_window_dps",
                 "bot_common_window_damage",
@@ -4268,6 +4293,12 @@ def _compact_group_timeline(
             "bot_direct_event_count": direct.get("event_count"),
             "bot_direct_max_gap_sec": direct.get("max_gap_sec"),
             "largest_direct_gap": gaps[0] if gaps else None,
+            "bot_event_input_status": actor.get("bot_event_input_status"),
+            "gap_basis": actor.get("gap_basis"),
+            "owner_direct_cadence": actor.get("owner_direct_cadence"),
+            "owner_unknown_cadence": actor.get("owner_unknown_cadence"),
+            "damage_classification_counts": actor.get("damage_classification_counts"),
+            "comparison_limitations": actor.get("comparison_limitations", []),
             "largest_direct_gap_sec": (
                 gaps[0].get("gap_sec")
                 if gaps and isinstance(gaps[0], dict)
@@ -4637,7 +4668,7 @@ def _jev_questions(
                 "A missing WCL reference is an explicit not_comparable result, never a "
                 "passing or failing inference. A gap-overlap causal claim is admissible "
                 "only when the actor's timeline_signal.gap_overlap_evidence.status is "
-                "corroborated. no_timestamped_overlap and unavailable are insufficient. "
+                "corroborated. possible_overlap, no_timestamped_overlap and unavailable are insufficient. "
                 "native_aggregate_first_last_interval is corroboration, not event-level "
                 "proof, so do not treat it as high-confidence by itself."
             ),
@@ -4650,7 +4681,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. When timeline_comparison is available, use each actor's bot_common_window_dps: positive landed damage divided by the normalized common window shared with WCL. Do not compare bot_native_encounter_window_dps or legacy encounter_window_dps when the local fight is longer than the WCL window. The timeline lists WCL-only abilities, but those are observation gaps only: do not call one a missing damage action unless its name identifies a damage action and native action outcomes or an attributable damage gap corroborate it. Proc, aura, utility, and pet-state rows such as Lava Surge, Master of the Elements, or Earth Elemental Totem are context, not cast deficits. The aggregate wcl_window_dps contract remains originated damage divided by the first-to-last positive hostile damage_done window in duration_sec. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material denominator-matched DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. For movement, range, or action-rejection claims, require timeline_signal.gap_overlap_evidence.status=corroborated; no_timestamped_overlap or unavailable means insufficient_data. Even corroborated native_aggregate_first_last_interval evidence is only interval-level support, not event-level proof. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. Use native full-fight DPS as descriptive context. bot_common_window_dps is a clipped native window, not a phase-matched comparison. Compare it numerically only to wcl_common_window_dps when dps_comparison_status=timestamped_common_window; otherwise WCL whole-fight DPS is unmatched context. The timeline lists WCL-only abilities, but those are observation gaps only: do not call one a missing damage action unless its name identifies a damage action and native action outcomes or an attributable damage gap corroborate it. Proc, aura, utility, and pet-state rows such as Lava Surge, Master of the Elements, or Earth Elemental Totem are context, not cast deficits. The aggregate wcl_window_dps contract remains originated damage divided by the first-to-last positive hostile damage_done window in duration_sec. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material denominator-matched DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. For movement, range, or action-rejection claims, require timeline_signal.gap_overlap_evidence.status=corroborated; possible_overlap, no_timestamped_overlap or unavailable means insufficient_data. Even corroborated native_aggregate_first_last_interval evidence is only interval-level support, not event-level proof. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -4688,7 +4719,7 @@ def _jev_questions(
                 "WCL-cast versus bot-landed cadence, WCL-only abilities, and largest direct "
                 "gaps. WCL-only abilities are not automatically missing casts: require a "
                 "native action or attributable damage-gap join, and ignore proc/state/utility "
-                "rows as direct deficits. Use bot_common_window_dps as the denominator-matched DPS result; "
+                "rows as direct deficits. Treat bot_common_window_dps as clipped native context unless dps_comparison_status=timestamped_common_window; "
                 "bot_native_encounter_window_dps is diagnostic when the local window is "
                 "longer than WCL. Use uptime, movement/range, native "
                 "failure ratio, candidate gates, duty context, assignment status, control "
@@ -4708,6 +4739,7 @@ def _jev_questions(
                 "rotation_profile": "Profile priority, cooldown, resource, or policy is the edge.",
                 "target_lease": "Target ownership, return, or churn is material.",
                 "shared_arbitration": "Native submission failures are attributable.",
+                "encounter_assignment": "A required duty is incomplete; review its observed execution.",
                 "collect_more_canaries": "Evidence is mixed, sparse, or not reproducible.",
             },
         }
@@ -4825,7 +4857,7 @@ def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str
     body = json.dumps(
         {"state": state, "model": JEV_MODEL, "questions": questions},
         separators=(",", ":"),
-        sort_keys=True,
+        sort_keys=False,
     ).encode()
     request = Request(
         JEV_URL,
@@ -4887,7 +4919,7 @@ def _validate_typed_answers(
         if expected_type == "choice":
             choice = answer.get("choice")
             criteria = question.get("criteria")
-            if not isinstance(criteria, dict) or choice not in criteria:
+            if not isinstance(criteria, dict) or not isinstance(choice, str) or choice not in criteria:
                 raise JevError(f"JEV returned an invalid choice for {question_id}")
             confidence = answer.get("confidence")
             if not isinstance(confidence, (int, float)) or not 0.0 <= float(confidence) <= 1.0:
@@ -4994,6 +5026,15 @@ def _append_ledger(path: Path, report: dict[str, Any]) -> None:
     path.write_text(json.dumps(existing, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _validate_timeline_identity(timeline: dict[str, Any], report_path: Path | None) -> None:
+    source = timeline.get("bot_run") or {}
+    if report_path is None or not report_path.is_file():
+        raise ValueError("timeline join requires the original closed report")
+    actual = hashlib.sha256(report_path.read_bytes()).hexdigest()
+    if source.get("report_sha256") != actual:
+        raise ValueError("timeline/report identity missing or mismatched; regenerate timeline")
+
+
 def analyze(
     input_path: Path,
     *,
@@ -5010,6 +5051,7 @@ def analyze(
     scope_route_prefix: str = MAGMAW_ROUTE_PREFIX,
     wcl_reference_path: Path | None = None,
     timeline_comparison_path: Path | None = None,
+    prepare_only: bool = False,
 ) -> dict[str, Any]:
     raw_path, report_path, discovered_analysis = _input_files(input_path)
     live_report: dict[str, Any] | None = None
@@ -5041,9 +5083,9 @@ def analyze(
         wcl_reference = _compact_wcl_reference(_load_json(wcl_reference_path))
     timeline_comparison: dict[str, Any] | None = None
     if timeline_comparison_path is not None and timeline_comparison_path.exists():
-        timeline_comparison = _compact_timeline_comparison(
-            _load_json(timeline_comparison_path)
-        )
+        raw_timeline = _load_json(timeline_comparison_path)
+        _validate_timeline_identity(raw_timeline, report_path)
+        timeline_comparison = _compact_timeline_comparison(raw_timeline)
     analysis_path = combat_analysis_path or discovered_analysis
     if analysis_path and analysis_path.exists():
         analysis = _load_json(analysis_path)
@@ -5174,6 +5216,11 @@ def analyze(
         "native_gameplay_outcome": native_gameplay_outcome,
         "baseline": baseline,
     }
+    if prepare_only:
+        return {"schema_version": 2, "run_id": run_id, "source_sha256": source_sha256,
+                "change": {"id": change_id, "git": identity},
+                "native_authority": "native_runtime_only", "jev_input": {"state": state},
+                "deterministic": deterministic, "jev": {"answers": {}, "status": "not_requested"}}
     group_questions = _jev_questions(
         baseline is not None,
         include_next_fix=False,
@@ -5394,6 +5441,7 @@ def main() -> int:
         help="compact, repository-tracked WCL comparison context",
     )
     parser.add_argument("--env-file", type=Path, default=Path(".env"), help="file containing the mandatory JEV key")
+    parser.add_argument("--prepare-only", action="store_true", help="deterministic review only; no key or model request")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--segment-id", default="04_magmaw")
     parser.add_argument("--change-id", default="")
@@ -5427,6 +5475,7 @@ def main() -> int:
             scope_route_prefix=args.scope_route_prefix,
             wcl_reference_path=args.wcl_reference,
             timeline_comparison_path=args.timeline_comparison,
+            prepare_only=args.prepare_only,
         )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
