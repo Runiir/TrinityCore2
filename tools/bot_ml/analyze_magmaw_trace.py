@@ -1802,7 +1802,7 @@ def _target_duty_context(
                     else (
                         "partial_recent_capture"
                         if recent_events_dropped > 0
-                        else "eligible"
+                        else "unavailable" if not recent_events else "eligible"
                     )
                 )
             )
@@ -4919,7 +4919,7 @@ def _validate_typed_answers(
         if expected_type == "choice":
             choice = answer.get("choice")
             criteria = question.get("criteria")
-            if not isinstance(criteria, dict) or choice not in criteria:
+            if not isinstance(criteria, dict) or not isinstance(choice, str) or choice not in criteria:
                 raise JevError(f"JEV returned an invalid choice for {question_id}")
             confidence = answer.get("confidence")
             if not isinstance(confidence, (int, float)) or not 0.0 <= float(confidence) <= 1.0:

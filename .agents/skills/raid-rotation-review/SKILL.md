@@ -45,6 +45,7 @@ references, runtime evidence or encounter ownership.
 
 For the dedicated DPS review of a closed raid, dungeon, or calibration run,
 start with [references/post-run-dps-review.md](references/post-run-dps-review.md).
+The same reference includes the compact local-Jev/Luna handoff recipe.
 It reviews every bot and compares each DPS actor with promoted WoWSims action
 structure and identified Warcraft Logs kills, then selects the next bounded
 repair. Missing external access stays explicit. One accepted repair does not

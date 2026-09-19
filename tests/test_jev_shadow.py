@@ -92,3 +92,18 @@ def test_actual_http_path_preserves_request_and_validates_answer(payload):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_unhashable_choice_is_a_captured_model_error():
+    bad = response()
+    bad["answers"]["actor_action_7"]["choice"] = []
+    with pytest.raises(shadow.analyzer.JevError, match="invalid choice"):
+        shadow.analyzer._validate_typed_answers(bad["answers"], packet()["questions"])
+
+
+def test_assignment_prediction_without_required_duty_is_flagged_not_labeled():
+    result = response()
+    result["answers"]["actor_action_7"]["choice"] = "encounter_assignment"
+    verdict = shadow.review_prediction(packet(), result)
+    assert verdict["status"] == "review_required"
+    assert not verdict["ground_truth_label"]

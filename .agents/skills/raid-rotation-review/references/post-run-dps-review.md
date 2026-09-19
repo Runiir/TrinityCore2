@@ -139,3 +139,40 @@ On the next run, compare the repaired edge, per-actor output and clear/survival
 outcomes against the prior review. Admit only the improvement actually observed.
 Choose one next actionable loss; do not reopen repaired lifecycle failures or
 require a new documentation/authorization chain for ordinary tuning iterations.
+
+
+## Compact local-Jev and Luna handoff
+
+Use [the local shadow commands](../../../../docs/bot_raids/local_jev_shadow.md)
+after native closure. Do not send the entire group packet to the 8 GiB local
+service. Keep the exact per-actor inputs, responses and model revision. Local
+confidence or agreement with hosted Jev is not evidence that a repair is right.
+Run deterministic checks on predicted assignment/repair eligibility. Preserve
+contradictory predictions as diagnostic negatives pending adjudication; do not
+execute them or silently discard them.
+
+Before dispatch, keep a single all-roster table with DPS/HPS, known duties,
+reference availability, the largest component differences and unresolved edges.
+For same-spec peers, decompose the total gap by spell and owner/pet using the
+same native interval. Check setup and assignment differences before treating
+that gap as recoverable. Native rejection reasons can establish a blocked
+spell; its missing damage does not establish the amount a repair will recover.
+
+Send a Luna max worker one short packet, linked to existing receipts:
+
+1. Mode: diagnosis or implementation; exact error-ledger ID and first broken edge.
+2. Frozen code/source, run/report hash, actor/target/spell and the decisive rows.
+3. At most one hypothesis, including the strongest conflicting observation.
+4. Exact owned production/test files and affected callers. If those are not
+   known, dispatch diagnosis, not a guessed implementation.
+5. Forbidden changes: other specs, coefficients without parity, global safety
+   bypasses, altered boss values, teleport/Z steering, metrics/denominators.
+6. One production-path counterexample, required Pixi test command, and expected
+   native submission/landed outcome. A string assertion is insufficient.
+7. Acceptance: clear, intended behavior, and all-roster performance are separate.
+   Coordinator owns the single reviewed build/watchdog run and DVC publication.
+
+Worker returns changed files, test result, proven behavior and unknowns. It
+must not launch another worker or a live server. Reuse existing references;
+request the exact missing observation once. At the next run review the whole
+roster again, without reopening previously accepted edges.

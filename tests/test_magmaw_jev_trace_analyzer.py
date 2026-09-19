@@ -1785,3 +1785,14 @@ def test_actor_assignment_action_is_an_available_choice():
     questions = analyzer._jev_questions(False, include_next_fix=False,
         actor_specs=[{"bot_guid": 7, "class_spec": "balance_druid"}])
     assert "encounter_assignment" in questions["actor_action_7"]["criteria"]
+
+
+def test_aggregate_abilities_without_events_cannot_prove_counterfactual():
+    context = analyzer._target_duty_context({"abilities": [{
+        "actor_guid": 7, "perspective": "damage_done", "target_entry": 41570,
+        "amount": 1000, "originated_amount": 1000}]}, {"actors": [{
+        "bot_guid": 7, "class_spec": "affliction_warlock", "role": "dps"}]}, [])
+    actor = context["actors"][0]
+    assert actor["damage_cadence_capture"] == "unavailable"
+    assert actor["counterfactual_status"] == "unavailable"
+    assert actor["counterfactual_eligible"] is False

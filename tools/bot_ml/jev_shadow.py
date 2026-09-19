@@ -111,6 +111,21 @@ def training_reasons(identity: dict[str, Any], response: dict[str, Any] | None) 
     return reasons
 
 
+def review_prediction(packet: dict[str, Any], response: dict[str, Any] | None) -> dict[str, Any]:
+    """Record deterministic contradictions separately from the raw prediction."""
+    actor = packet["state"].get("actor_review") or {}
+    reasons = []
+    for answer in (response or {}).get("answers", {}).values():
+        choice = answer.get("choice")
+        if choice == "encounter_assignment":
+            if not actor.get("required_assignment_active") or actor.get("assignment_status") != "incomplete":
+                reasons.append("assignment_repair_not_supported_by_observed_duty")
+        elif choice != "collect_more_canaries" and actor.get("counterfactual_status") != "eligible":
+            reasons.append("counterfactual_evidence_unavailable_or_ineligible")
+    return {"status": "unavailable" if response is None else "review_required" if reasons else "advisory_only",
+            "reasons": sorted(set(reasons)), "ground_truth_label": False}
+
+
 def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[str, Any],
              response: dict[str, Any] | None, latency_sec: float | None,
              error: str | None = None, source: str = "local_request",
@@ -131,6 +146,7 @@ def make_row(packet: dict[str, Any], *, identity: dict[str, Any], backend: dict[
         "response": response, "response_sha256": sha(encoded(response)) if response else None,
         "latency_sec": latency_sec, "error": error,
         "teacher_prediction": teacher, "label": None,
+        "prediction_review": review_prediction(packet, response),
         "admission": "quarantine", "quarantine_reasons": training_reasons(identity, response),
         "training_eligible": False, "action_policy_eligible": False,
         "action_authorized": False,
@@ -172,6 +188,7 @@ def write_batch(packets: list[dict[str, Any]], output: Path, *, identity: dict[s
         "predictions": sum(row["response"] is not None for row in rows),
         "errors": sum(row["error"] is not None for row in rows),
         "training_eligible": 0, "quarantined": len(rows),
+        "predictions_requiring_review": sum(row["prediction_review"]["status"] == "review_required" for row in rows),
         "reason_counts": dict(Counter(reason for row in rows for reason in row["quarantine_reasons"])),
         "payload_bytes": (output / "examples.jsonl").stat().st_size,
         "action_authorized": False,

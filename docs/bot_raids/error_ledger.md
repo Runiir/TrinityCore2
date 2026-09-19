@@ -65,7 +65,7 @@ what has already failed. Do not create a new handoff document merely to copy it.
 | DPS-027 | Marksmanship aura and filler accepted live on a152 | Actor30009 checks53221 for Steady Shot maintenance; native paired Steady Shots apply haste53220. Required53221 is missing in107 stationary masks. | Scoped aura53220 gates plus exact-APL final Steady filler preserve focus generation; seven focused tests and independent review pass. Review caught MySQL comment syntax missed by SQLite; corrected with a compatibility check. Native aura gates and row 72 filler executed on a152; separate priority hypothesis DPS-031 was rejected. |
 | DPS-028 | Elemental movement cooldown accepted live on a152 | Actor30010 lacks79206 in learned spells and action profile; four movement-only masks reject otherwise-ready Lava Burst solely for movement. | One native79206 success unblocks a successful moving51505 cast; stationary, unavailable-opportunity and cooldown controls pass. Glyph101052 still affects Lightning Bolt only. Whole-fight cadence differs with phase duration; no new Elemental repair admitted. |
 | DPS-029 | Affliction Shadowflame area restriction proven on a152 | Actor30008 has zero Shadowflame submissions; all191 corrected a152 boss masks reject declarative_area_damage_semantics_forbidden. | Join with DPS-026 shared area protection. Admit only a reviewed action-aware safety repair; do not clear protections globally or tune coefficients. |
-| DPS-026 | Heart Strike blocked by declared encounter area filter | Source4b24 DK is actual MT, 17,075.296 DPS, 19 DS and20 RS, but zero HS/DRW. Both actions are enabled and learned. | Actual20/20 execution masks reject HS cleave with forbid_area=true; passive range previews overwrite the last mask with a false appearance of selection. Native cooldown and total-rune hypotheses rejected. Keep existing encounter protection until a safe replacement is reviewed; batch with multi-class findings. |
+| DPS-026 | Still blocked in shard89, the 241k clear | Source4b24 DK is actual MT, 17,075.296 DPS, 19 DS and20 RS, but zero HS/DRW. Both actions are enabled and learned. | Shard89: Blood30002 12,567.827 elapsed DPS; no landed55050, 46 declarative-area-semantics and47 future-encounter-splash rejections. Same previously proven edge. Actual20/20 execution masks reject HS cleave with forbid_area=true; passive range previews overwrite the last mask with a false appearance of selection. Native cooldown and total-rune hypotheses rejected. Keep existing encounter protection until a safe replacement is reviewed; batch with multi-class findings. |
 | DPS-025 | Native Vengeance repaired; self-owned AP observed on4b24 | Current native code replaces accumulated AP with 33% of the last two seconds of damage and removes it on an empty window. Official 4.3 notes and pinned WoWSims require accumulated AP with a one-third floor and gradual decay. | Independent recurrence review and focused fixtures passed; live self-owned Vengeance effect0 reached13,817 AP with cap14,738. Accepted; preserve this behavior in the class batch. |
 | DPS-024 | DS/RS cadence repaired live on4b24; HS/DRW remain DPS-026 | Manual 21c kill has 3 Death Strike and 3 Rune Strike hits, no Heart Strike or Dancing Rune Weapon damage over 218.902 seconds. DK took a Mangle cycle and substantial incoming damage; survival is not throughput acceptance. | Shared world-bot resolver incorrectly capped unset melee actions at raw five-yard range. Native-reach repair independently approved and accepted live with19 DS and20 RS landings. Scoped Rune Strike cap migration and user-requested DK main-tank assignment independently approved; native Vengeance is DPS-025. WCL Catamara source 11 provides 14 DS casts, 12 RS, 12 HS and 1 DRW in 70.9 seconds, with different solo-tank pressure and gear. |
 | DPS-023 | User-observed head-return outage; causal diagnosis active | Manual spectator run on 21c survives beyond exposed head; user reports damage targets recover only after the next Pillar/add switch. Earlier accepted kill ended during head exposure and did not cover this return transition. | Retained evidence proves damage outage but not its internal cause. Fixed-size target/native-stat observation independently approved; one-second capture4b24 is valid but UNEXERCISED because kill ends during first head. The a152 head return passes with 195/195 valid post-return DPS targets and native body damage. This is run-specific acceptance; no targeted repair or universal claim. Preserve the prior intermittent occurrence; no unchanged retry. |
@@ -418,3 +418,33 @@ Publication pointer:
 The adjacent publication receipt and contained independent reviews define exact
 acceptance scope. Next observation is OBS-008; DPS-023 remains historically
 unresolved. Do not rerun this accepted capture/retention edge unchanged.
+
+
+## 2026-09-19 local Jev integration and best-run review
+
+OBS-013: Offline consumers hid owner gaps with pet events, promoted aggregate
+failure-envelope overlap into in-gap counts, joined timelines without source
+report identity, and turned missing event data into complete zero gaps. Master
+now separates these cases, binds the exact report hash, and preserves uncertainty
+through the local prompt. Malformed local responses are retained as errors.
+See `docs/bot_raids/local_jev_shadow.md`; this is diagnostic acceptance, not a
+native throughput repair.
+
+DPS-059: Shard89 remains the best observed 241,249.360 DPS clear over the retained
+116.863s first-to-last originated-damage span. It is uncertified, not a fully
+matched baseline. Best-run analysis must retain 1 tank/3 healers/6 DPS, actual
+phase coverage and existing script-fidelity limitations. The compact archive
+lacks the raw damage-event file; do not manufacture a corrected full timeline.
+
+DPS-057: Within shard89 Fire30006 trails30007 by12,674.362 DPS. Combustion child
+83853 differs by567,468 damage and Pyroblast92315 by545,509, together about75.1%
+of the peer gap. Native landed-effect counts are12vs15 and6vs36, not completed
+casts. Different bait duties, target/head coverage, procs and Ignite snapshot
+inputs are unresolved. Prioritize those joins over another coefficient change.
+DPS-026 remains a stronger proven blocked-action lead; neither gap is a promised
+recoverable DPS gain.
+
+Local Qwen replay selected encounter_assignment for all six DPS packets, including
+actors without an observed incomplete required duty. Keep raw suggestions as
+quarantined prediction data. Deterministic contradiction checks and native
+review decide which suggestions become work units; model confidence cannot.
