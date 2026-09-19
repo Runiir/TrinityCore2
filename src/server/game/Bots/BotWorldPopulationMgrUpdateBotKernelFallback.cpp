@@ -754,8 +754,10 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotEncounter::MagmawParasiteCombatContract const& magmawContract =
                 context.State.MagmawParasiteCombat;
             bool const magmawContractActive = magmawContract.Active;
-            uint32 const policyExcludedSpellId = magmawContract.IsOptionalSupportTarget(
-                context.Bot->GetGUID(), context.Target->GetGUID()) ? 603 : 0;
+            uint32 const policyExcludedSpellId = magmawContract
+                .IsLongDelayBaneTargetPurposeExcluded(
+                    context.Bot->GetGUID(), context.Target->GetGUID(),
+                    targetCreature ? targetCreature->GetEntry() : 0) ? 603 : 0;
             bool const hazardRetained = hasRetainedMagmawHazard();
             BotEncounter::MagmawParasiteCombatContract::ProfileParameters
                 magmawProfile = magmawContract.ResolveProfileParameters(

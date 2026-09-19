@@ -76,6 +76,14 @@ struct MagmawParasiteCombatContract
             && targetGuid != PersonalThreatGuid;
     }
 
+    bool IsLongDelayBaneTargetPurposeExcluded(ObjectGuid guid,
+        ObjectGuid targetGuid, uint32 targetEntry) const
+    {
+        return Active && guid == ActorGuid
+            && TargetAllowed(guid, targetGuid, targetEntry)
+            && (targetEntry == ParasiteEntry || targetEntry == ParasiteAltEntry);
+    }
+
     bool AllowsParasiteTarget(ObjectGuid guid, ObjectGuid targetGuid) const
     {
         return !Active || IsAssignedBaiter(guid)
