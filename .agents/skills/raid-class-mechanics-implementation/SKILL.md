@@ -80,6 +80,9 @@ placement/timing or a separately proven encounter geometry defect instead.
 Observation hooks must not change their observed target lists. Review imported
 experimental spell changes before using their DPS as a baseline; withdraw a
 baseline produced by an unsupported spell override even when it is the best kill.
+Do not make a test bless the implementation's new radius or damage value without
+an independent spell-data reference. A nearby diagnostic probe is not native
+target selection: join selected targets and landed effects before claiming hits.
 
 Separate:
 

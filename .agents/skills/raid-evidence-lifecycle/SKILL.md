@@ -49,6 +49,10 @@ native statuses; mocking completion as true can hide a controller that records
 nothing until the encounter ends.
 
 Retain native bytes and bind scenario, server epoch, cohort, attempt, roster and route.
+When native combat schema changes, test framed full and delta consumers through
+the controller's next cursor request. A complete final export can conceal a delta
+reader retrying cursor zero throughout the run. Report both results separately;
+verify final event coverage before deciding whether the run lost evidence.
 Use status heartbeats with delta trace and slower diagnosis; force final diagnostics at
 material failure/termination. Statistics-window rotation must preserve attempt-scoped
 trace identity. Count repeated actor death episodes or unique native wipes separately

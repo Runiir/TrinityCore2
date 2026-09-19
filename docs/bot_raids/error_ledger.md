@@ -470,3 +470,43 @@ Local Qwen replay selected encounter_assignment for all six DPS packets, includi
 actors without an observed incomplete required duty. Keep raw suggestions as
 quarantined prediction data. Deterministic contradiction checks and native
 review decide which suggestions become work units; model confidence cannot.
+
+### Closed lawful canary: 2fcd4133aa
+
+DPS-059 legality repair passed independent review, a clean queued build and a
+completion-watchdog run. Native Magmaw death took 197.847 seconds, with
+30,121,027 originated hostile damage: 152,244.042 raid DPS. Owned pets are included;
+friendly damage and mirrored 79010 callbacks are excluded. Effective healing
+through death was 3,824,921, or 19,332.722 HPS. All ten actors survived and cleanup
+confirmed zero bots/leases. Clear is accepted; overall performance is not.
+The earlier 241k result remains an invalid legal baseline.
+
+The all-actor review identifies Balance's final 93.840 seconds with no damage
+while alive, and zero head damage. The cause still needs the target/submission
+join. Two detonations across six Mushrooms selected zero native damage targets.
+The six nearby parasites were a diagnostic probe, not selected targets: their
+horizontal distance was seven yards, outside the native six-yard radius, with
+some also airborne. Inspect legal placement and timing; do not enlarge the spell.
+
+DPS-026 now has six passive observations of `forbid_area:true` with no protected
+target found in the existing scan, alongside rejected Heart Strike candidates.
+Native chain selection and the recoverable damage remain unobserved. The paired
+Fire actors differ by 15,811.652 DPS; Affliction has a final 27.781-second direct
+damage gap while periodic/pet damage continues. Survival dealt 31.710% to adds;
+Elemental has a 14.001-second direct gap. Duties and native outcomes still need
+joining before attributing each gap to a policy change.
+
+OBS-014: The live reader rejected schema 8 delta responses and retried cursor
+zero 321 times. The final full export retained all 10,361 events below ring
+capacity, so this run's final damage evidence is complete. Master commit
+2283b30dc7 admits schema 8 and tests controller cursor advancement; retained
+export replay advances 0 to 8 with no retry. New live overhead is not yet measured.
+Use the corrected reader before another capture.
+
+Raw archive: `artifacts/cata_raid_program/magmaw_native_parity_2fcd4133_20260919.raw.tar.zst.dvc`
+(MD5 `8f4732902f0fb185b551a04d2d6fbc94`). Compact all-actor review, exact accounting,
+build receipts and capture replay:
+`artifacts/cata_raid_program/magmaw_native_parity_2fcd4133_20260919_review.dvc`.
+Both were pushed and independently downloaded from the remote for checksum
+verification before local raw-payload eviction. Reconstruct the raw archive
+only when a bounded causal join needs its events.
