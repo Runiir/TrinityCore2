@@ -141,6 +141,17 @@ When both models choose the same cause, require the native causal sequence
 before implementing it. Agreement on encounter duty cannot explain an unknown
 Scorch cancellation.
 
+For a proposed repair, supplement the all-actor screen with one bounded causal
+episode. Supply the preceding events, exact native result, relevant source rules,
+and distinct hypotheses plus insufficient evidence. Separate observations from
+inferences and omit the reviewer's preferred answer from the model input.
+The specialist first records a native-evidence finding, then assesses both model
+outputs against it. Retain supported additions; discard unsupported conclusions
+with the contradicted or missing fact. Repair an ambiguous question or missing
+input once and retain both versions, rather than rewording until models agree.
+Track whether a model supplied a useful new check or repair, merely confirmed an
+existing finding, or failed. Model review must not erase other actors' open issues.
+
 
 When several represented classes or roles underperform, use the
 [parallel role review](references/parallel-role-review.md) requested by the

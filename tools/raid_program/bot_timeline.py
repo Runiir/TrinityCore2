@@ -544,6 +544,58 @@ def _trace_events(trace: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
     return events, switches
 
 
+def _survival_summary(trace: list[dict[str, Any]], start: int | None,
+                      end: int | None, scope: dict[str, Any]) -> dict[str, Any]:
+    """Keep encounter observations separate from later corpse recovery."""
+    encounter: list[tuple[int, bool]] = []
+    after: list[tuple[int, bool]] = []
+    if start is not None and end is not None and end > start:
+        for row in trace:
+            at = _timestamp(row)
+            if at < start:
+                continue
+            native = row.get("native_actor") or {}
+            alive = None
+            if (row.get("server_epoch") and isinstance(row.get("actor"), dict)
+                    and native.get("native_present") is True
+                    and isinstance(native.get("alive"), bool)):
+                alive = native["alive"]
+            if row.get("action") in {"death", "bot_died", "native_death"}:
+                alive = False
+            if alive is None:
+                continue
+            if at > end:
+                after.append((at, alive))
+            elif all(not scope.get(key) or row.get(key) == scope[key]
+                     for key in ("route_generation", "route_node_id")):
+                encounter.append((at, alive))
+    encounter.sort(key=lambda observation: observation[0])
+    after.sort(key=lambda observation: observation[0])
+    death_at = next((at for at, alive in encounter if not alive), None)
+    last_at, last_alive = encounter[-1] if encounter else (None, None)
+    recovered_at = None
+    previous_alive = last_alive
+    for at, alive in after:
+        if previous_alive is False and alive and recovered_at is None:
+            recovered_at = at
+        previous_alive = alive
+    post_at, post_alive = after[-1] if after else (None, None)
+    return {
+        "scope": "first_hostile_through_native_boss_death",
+        "death_observed": death_at is not None if encounter else None,
+        "death_observed_at_ms": death_at,
+        "alive_at_end": last_alive,
+        "alive_observed_at_ms": last_at,
+        "alive_at_end_basis": "last_observed_encounter_state" if encounter else "unavailable",
+        "post_encounter": {
+            "alive": post_alive,
+            "observed_at_ms": post_at,
+            "first_observed_dead_at_ms": next((at for at, alive in after if not alive), None),
+            "recovered_at_ms": recovered_at,
+        },
+    }
+
+
 def build_timeline_from_rows(
     normalized_rows: Iterable[dict[str, Any]],
     report_metadata: dict[str, Any] | None = None,
@@ -731,7 +783,6 @@ def build_timeline_from_rows(
     boss_entries = set(target_taxonomy["boss_entries"])
     add_entries = set(target_taxonomy["add_entries"])
     clear_accepted = bool(report.get("classification") == "success" and (report.get("development_run") or {}).get("native_boss_death_accepted") is True and (report.get("terminal_failure") or {}).get("detected") is not True)
-    closed_all_alive = bool(clear_accepted and _int(runtime.get("alive_size")) == len(actors) and _int(runtime.get("active_size")) == len(actors))
     trace_by_actor: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in trace:
         trace_by_actor[_int(row.get("bot_guid") or (row.get("actor") or {}).get("guid"))].append(row)
@@ -776,8 +827,11 @@ def build_timeline_from_rows(
             landed = min((event["at_ms"] for event in timeline_events if event["kind"] == "landed" and event["actor_guid"] == actor and event.get("target_guid") == target and event.get("attack_origin") == "direct" and event.get("source_is_pet") is not True and event["at_ms"] >= switched_at), default=None)
             if landed is not None:
                 data["target_switch_latency_ms"].append({"start_ms": switched_at, "end_ms": landed, "latency_ms": landed - switched_at, "boundary_provenance": "observed_target_transition_to_observed_landed"})
-        death_at = min((_timestamp(row) for row in trace_by_actor[actor] if row.get("action") in {"death", "bot_died", "native_death"} and first_hostile and _timestamp(row) >= first_hostile), default=None)
-        data["survival"] = {"first_activity_at_ms": min(points, default=None), "last_activity_at_ms": max(points, default=None), "death_observed": False if closed_all_alive else (True if death_at else None), "death_observed_at_ms": death_at, "alive_at_end": True if closed_all_alive else (False if death_at else None)}
+        data["survival"] = {
+            "first_activity_at_ms": min(points, default=None),
+            "last_activity_at_ms": max(points, default=None),
+            **_survival_summary(trace_by_actor[actor], first_hostile, death_ms, accepted_scope),
+        }
         immutable_rows = [row for row in trace_by_actor[actor] if row.get("server_epoch") and isinstance(row.get("native_selected_target"), dict)]
         data["target_switch_observation_complete"] = bool(trace_by_actor[actor]) and len(immutable_rows) == len(trace_by_actor[actor])
         data["effective_healing"] = _int(data.get("effective_healing"))

@@ -71,6 +71,88 @@ def _report(failed=False):
                                         "profile_context": PROFILE, "gap_ranges": []}}
 
 
+def _survival_replay(observations, *, complete=True):
+    report = _report(failed=not complete)
+    report["accepted_raid_runtime"] = {"active_size": 1, "alive_size": 1}
+    report["development_run"]["accepted_boss_identity"].update(
+        route_generation=4, route_node_id="boss")
+    context = {**IDENTITY, "actor": {"guid": 7},
+               "route_generation": 4, "route_node_id": "boss"}
+    entries = [{**context, **row, "sequence": index}
+               for index, row in enumerate(observations, 1)]
+    if complete:
+        entries.append({**context, "timestamp_ms": 3000, "sequence": 99,
+                        "action": "boss_killed", "result": "confirmed_unit_death",
+                        "target": {"entry": 41570}})
+    model, summary = build_timeline_from_rows([
+        _bound("combat_log", _full([_event(1, 1000)])),
+        _bound("trace", _trace(entries)),
+    ], report)
+    assert model["actors"]["7"]["survival"] == summary["actors"]["7"]["survival"]
+    return summary["actors"]["7"]["survival"]
+
+
+@pytest.mark.parametrize("death", [
+    {"action": "death", "result": "dead"},
+    {"native_actor": {"native_present": True, "alive": False}},
+])
+def test_encounter_death_is_not_erased_by_post_clear_recovery(death):
+    survival = _survival_replay([
+        {"timestamp_ms": 1000, "native_actor": {"native_present": True, "alive": True}},
+        {"timestamp_ms": 2000, **death},
+        {"timestamp_ms": 4000, "native_actor": {"native_present": True, "alive": True}},
+    ])
+    assert survival["death_observed"] is True
+    assert survival["death_observed_at_ms"] == 2000
+    assert survival["alive_at_end"] is False
+    assert survival["alive_observed_at_ms"] == 2000
+    assert survival["alive_at_end_basis"] == "last_observed_encounter_state"
+    assert survival["post_encounter"]["alive"] is True
+    assert survival["post_encounter"]["recovered_at_ms"] == 4000
+
+
+def test_survival_excludes_deaths_outside_encounter_and_wrong_route():
+    survival = _survival_replay([
+        {"timestamp_ms": 500, "action": "death"},
+        {"timestamp_ms": 1000, "native_actor": {"native_present": True, "alive": True}},
+        {"timestamp_ms": 1800, "action": "death", "attempt_id": 3},
+        {"timestamp_ms": 2000, "action": "death", "route_generation": 5},
+        {"timestamp_ms": 2100, "action": "death", "route_node_id": "other"},
+        {"timestamp_ms": 3500, "action": "death"},
+        {"timestamp_ms": 4000, "native_actor": {"native_present": True, "alive": True}},
+        {"timestamp_ms": 4200, "action": "death", "attempt_id": 3},
+    ])
+    assert survival["death_observed"] is False
+    assert survival["death_observed_at_ms"] is None
+    assert survival["alive_at_end"] is True
+    assert survival["post_encounter"]["first_observed_dead_at_ms"] == 3500
+    assert survival["post_encounter"]["recovered_at_ms"] == 4000
+    assert survival["post_encounter"]["observed_at_ms"] == 4000
+
+
+def test_in_encounter_recovery_preserves_death_history():
+    survival = _survival_replay([
+        {"timestamp_ms": 2000, "action": "death"},
+        {"timestamp_ms": 2500, "native_actor": {"native_present": True, "alive": True}},
+    ])
+    assert survival["death_observed"] is True
+    assert survival["death_observed_at_ms"] == 2000
+    assert survival["alive_at_end"] is True
+    assert survival["alive_observed_at_ms"] == 2500
+
+
+@pytest.mark.parametrize("complete", [True, False])
+def test_survival_unknown_is_not_filled_from_final_all_alive_totals(complete):
+    observations = [{"timestamp_ms": 2000,
+                     "native_actor": {"native_present": False, "alive": False}}]
+    if not complete:
+        observations.append({"timestamp_ms": 2100, "action": "death"})
+    survival = _survival_replay(observations, complete=complete)
+    assert survival["death_observed"] is None
+    assert survival["death_observed_at_ms"] is None
+    assert survival["alive_at_end"] is None
+
+
 def test_melee_stages_and_zero_callback_survive_delta_eviction_without_extra_damage():
     resolution = {**_event(1, 500, amount=0), "kind": "melee_resolution",
                   "source_guid": 99, "source_entry": 41570, "target_guid": 8,

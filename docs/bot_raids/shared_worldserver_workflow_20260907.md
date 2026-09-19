@@ -5,61 +5,62 @@ is preserved.
 
 ## Current work and latest native run
 
-WCL remains the performance benchmark. Latest clean native source `73103e8646`
-killed Magmaw in126.233 seconds:28,425,227 originated hostile damage,
-**225,180.634 exact DPS** and **17,606.410 exact HPS**, all ten alive. Owned pets
-are included; friendly damage and mirrored79010 callbacks are excluded. The
-completion watchdog accepted native death, cleanup and exit. Capture retained
-8,276 combat events without gaps or identity rejects. Clear is accepted;
-performance is not accepted, down4.1% against the lawful restart baseline.
+WCL remains the performance benchmark. Latest clean native source `9d29edd376`
+killed Magmaw in128.742 seconds:28,275,262 originated hostile damage,
+**219,627.332 exact DPS** and **15,100.200 exact HPS**. Owned pets are included;
+friendly damage and mirrored79010 callbacks are excluded. The completion
+watchdog accepted native death, cleanup and exit. Capture retained8,350 combat
+events and32,031 trace entries without gaps or identity rejects. Clear and the
+OBS-008 observation contract are accepted; performance is not accepted. Blood
+30002 died at+103.997s and recovered only after the clear, so the later alive
+status is not boss-window survival.
 
 The requested historical-source restart `ab829858df` remains the comparison:
 119.991s,234,721.796 DPS,13,064.738 HPS. Its native source differs from shard89
 only by restoring ordinary Mushroom geometry. Historical shard89's241,249.360
 used enlarged targeting and a different retained window; it is not a lawful floor.
 
-The roster stays1 Blood tank,3 healers and6 DPS. The current per-actor table is
+The roster stays1 Blood tank,3 healers and6 DPS. The current all-actor table is
 [the DPS baseline](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
-Heart Strike's normal path, lawful Mushroom detonation and Bane parasite exclusion
-are now exercised and independently reviewed. Heart Strike landed34 effects for
-677,680 damage; both Mushroom detonations dealt damage; Bane made zero parasite
-submissions. Fixture protection coverage remains distinct from observed live use.
+All seven specialist reviews are frozen locally. Heart Strike's positive native
+path, lawful Mushroom selection and Bane parasite exclusion remain accepted.
+The latest run adds three successful Mushroom detonations,18 landed78777 effects
+for440,590 damage, and exact native terminal reasons. It does not accept whole
+roster throughput.
 
-The next repair is OBS-008 native cast observation. Fire bait lost552,787 absolute
-damage and had a29.055s direct-attack gap. Both Fire bots together had18 unsuccessful
-finishes from20 moving Scorch submissions. Their movement-permission predicates
-agree; the native cancellation/result and cast identity are missing. The observation patch is now independently approved with37 focused tests. It
-retains cast identity, native failure results, original/terminal targets and
-autorepeat finish ordinals through full/delta export. Native build and live
-validation are next; this does not yet identify or repair the casting cause. Survival's missed
-Horn renewal and absent Multi-Shot/Spread, Blood Death Strike cadence, Elemental
-combat potion and healer targeting remain visible in the actor table.
+OBS-008 is live exercised. Exact cast identity now separates successful finishes,
+dead-target failures, LOS, interruption and UNIT_NOT_INFRONT. The next bounded
+repair is the native facing packet at
+`/tmp/magmaw-cast-facing-repair-packet-20260919.json`. Four moving Scorches across
+the two Fire actors prepared against live Magmaw and ended NOT_INFRONT after a
+spline/replacement heading overwrote their one-time facing. This is a bounded
+proven defect, not the whole Fire or raid gap. The packet is design-only and
+implementation is underway; no review, build or live acceptance is claimed.
 
-Both local Laya and hosted Jev reviewed all ten actors without transport errors.
-They flagged four and three predictions respectively for review. All predictions
-remain quarantined. Detailed role evidence is limited in their current projection;
-independent specialists reviewed the full native evidence. Follow
-[the shadow workflow](local_jev_shadow.md) after every closed run.
+Blood's boss-window death, healer boss-entry cooldown and moving-triage gaps,
+Survival's target-valid Cobra interruptions, Balance cast-replacement collisions,
+Fire bait's missing Combustion opportunity, and reciprocal Fire Elemental/wolf
+damage remain open. Pincer, bait, crash, parasite and healer-demand duty costs
+stay explicit. WCL and WoWSims are comparison contexts rather than single-run
+floors.
 
-Current raw evidence is published and fresh-remote verified at
-`artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc`.
-Compact reviews, both model request/response sets and build/provisioning receipts
-are fresh-remote verified in `magmaw_master_73103_20260919.review.tar.gz.dvc`
-(68 member hashes). Expanded raw captures, duplicate archives/cache objects and the controller log
-were evicted after exact hash checks against the verified remote archives:
-937,899,101 logical bytes removed. Closure proofs are retained in
-`magmaw_master_73103_20260919.closure.tar.gz.dvc`. Prior restart raw, reviews and closure proofs are remotely verified
-under `magmaw_master_ab829_20260919.*.dvc`; its expanded raw duplicates are evicted.
-Native source/build identity is73103e8646, separate from later analysis changes.
-Role projection00cad47b6d now joins observed role ledgers and labels their HPS
-scope. Twenty focused tests passed; the deployed tokenizer accepted all20
-retained packets without truncation (maximum915tokens). Both providers replayed
-the current run successfully. Their later requests, reviews and the Elemental
-reference contradiction are remote-verified in
-`magmaw_master_73103_20260919.addendum.tar.gz.dvc` (25members). The supplied
-backend receipts contain stale client hashes; preserve that provenance limit
-for these predictions. Future CLI batches automatically record current source-file hashes separately
-from supplied backend claims;22 focused tests pass.
+Local Laya and hosted Jev outputs for this run are pending. Do not claim the
+model review complete or use it as gameplay authority. Follow
+[the shadow workflow](local_jev_shadow.md) after the closed batch is available.
+
+Current raw publication is in progress at
+`artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc`.
+Fresh remote reconstruction now verifies the23,073,735-byte raw object with
+MD5 `cd040f7e9a4138689d4a9f4660aedc56` and zstd integrity. Preserve the seven
+frozen reviews for the review archive after both advisory model batches close;
+raw verification does not complete review or model publication. The
+73103 and ab829 raw/review/closure publications remain historical verified
+evidence under their existing pointers.
+
+A separate post-run survival-accounting repair passed59 tests and replay at
+`/tmp/magmaw-master-9d29-survival-replay-20260919.json`: Blood is dead at native
+boss death and its later recovery remains post-encounter. The original run
+summary is immutable, and native gameplay source remains `9d29edd376`.
 
 
 The later `2fcd4133aa` run at 152,244.042 DPS remains regression evidence, not the

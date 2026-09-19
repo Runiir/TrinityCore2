@@ -1,50 +1,41 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:OBS-008_native_cast_lifecycle",
+  "work_unit": "magmaw:DPS-063_native_moving_cast_facing",
   "owner_skill": "raid-performance-loop",
-  "classification": "missing_native_observation",
+  "classification": "bot_runtime_implementation",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "73103e86467d6ce18ac65091e38b345a5da49b69",
-  "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": false,
-  "evidence_contract_change": true,
-  "gate_state": "OBS-008 independently approved;37 focused tests passed; queued native build next",
+  "observed_at_commit": "9d29edd37681a3768855d0be7a985118285c1a63",
+  "architecture_scope": "Accepted shared-instance architecture and Magmaw 10N clear; OBS-008 exercised; next bounded shared-runtime edge is moving-cast facing.",
+  "behavior_change": true,
+  "evidence_contract_change": false,
+  "gate_state": "DPS-063 design packet frozen; implementation underway; not yet independently reviewed, built or live verified",
   "first_broken_edge": {
-    "id": "native_finish_loses_cast_identity_and_failure_reason",
+    "id": "moving_cast_spline_overwrites_required_target_facing",
     "owner_classification": "bot_runtime_implementation",
-    "cause": "18 of20 moving Scorch submissions finish false; native movement permission agrees but cancellation/result and cast identity are absent."
+    "cause": "Four exact moving Scorches prepared against live attackable Magmaw and ended UNIT_NOT_INFRONT after active/replacement spline orientation overwrote one-time executor facing.",
+    "limit": "Four casts are bounded evidence and do not explain the whole Fire or raid gap."
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "86beb4e08b696724fd7da98ed3c98fc2a3702922fd69f669936304e8f69d0614"
+    "sha256": "4495681983ddc2e538abf51756d8a99f67a68fb097532142c64ba908b6e19113"
   },
   "scope_lock": {
-    "objective": "Observe actual native cast lifecycle without changing gameplay; retain synchronous instant finishes, failed preparation and distinct same-millisecond casts through existing trace and timeline.",
+    "objective": "Keep native permitted movement while preserving the active front-required cast target facing at spline position commits, including arrival.",
     "owned_files": [
-      "src/server/game/Spells/Spell.h",
-      "src/server/game/Spells/Spell.cpp",
-      "src/server/game/Spells/SpellNativeCastObservation.h",
-      "src/server/game/Spells/SpellNativeCastObservation.cpp",
-      "src/server/game/Spells/SpellNativeCastObservationSpell.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgr.h",
-      "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
-      "src/server/game/Bots/BotWorldPopulationMgrDecisionTraceJson.h",
-      "src/server/game/Bots/BotWorldPopulationMgrSpellObservation.cpp",
-      "tools/raid_program/bot_timeline.py",
-      "tests/test_bot_native_spell_finish_observation.py",
-      "tests/test_bot_timeline.py"
+      "src/server/game/Entities/Unit/Unit.cpp",
+      "src/server/game/Entities/Unit/UnitSplinePosition.cpp",
+      "tests/test_bot_combat_facing.py"
     ],
     "forbidden_changes": [
-      "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes.",
-      "No gameplay, priority, movement, target selection or coefficient changes in OBS-008."
+      "No repeated SetFacing, zero-distance spline, spline stop/restart, teleport, Z/radius/LOS workaround, relaxed native arc check or damage tuning.",
+      "No class rotation, encounter duty, spell coefficient or target-list change."
     ]
   },
   "acceptance_conditions": [
-    "All represented actors remain visible; exact native damage/HPS window reconciles.",
-    "WCL components and source identity retained; unmatched setup/phase/duty and spell aliases explicit.",
-    "Required duty is not classified as avoidable idle; unknown recoverable damage remains null.",
-    "Next implementation requires a material, trace-backed causal mismatch; a clear alone does not accept performance."
+    "Compiled replay reproduces the retained spline replacement and arrival ordering while preserving XYZ/path/duration and native arc validation.",
+    "The four scoped Scorch casts no longer end UNIT_NOT_INFRONT; other native failures remain failures.",
+    "All represented actors remain visible; Blood death, pincer/bait/crash/parasite duty and same-raid pet combat remain separately classified.",
+    "A clear alone does not accept performance, qualification or training."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -53,9 +44,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Build clean master once, fresh-provision the same roster, and completion-watchdog validate native cast observation. Inspect the first failed Fire cast before choosing gameplay repair. Review every actor with specialists and local Laya/API Jev; focused model diagnosis requires a concrete event sequence and distinct hypotheses.",
+  "next_action": "Complete the bounded Unit::UpdateSplinePosition facing repair from /tmp/magmaw-cast-facing-repair-packet-20260919.json; run the focused compiled replay, independent review and clean build, then validate the same four-cast terminal edge in a completion-watchdog run. Preserve separate Blood survival and pet-filtering work.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -71,7 +62,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "73103e86467d6ce18ac65091e38b345a5da49b69",
+    "source_commit": "9d29edd37681a3768855d0be7a985118285c1a63",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -80,23 +71,39 @@
     "server_exit_code": 0,
     "training_eligible": false,
     "qualification_eligible": false,
-    "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 126.233,
-    "hostile_originated_damage": 28425227,
-    "pull_to_death_party_dps": 225180.634224,
-    "exact_effective_healing": 2222510,
-    "exact_hps": 17606.410368,
-    "requested_repair_id": "heart_strike_normal_path,mushroom_native_outcome,bane_parasite_exclusion",
+    "boss_fight_casualties": 1,
+    "pull_to_death_seconds": 128.742,
+    "hostile_originated_damage": 28275262,
+    "pull_to_death_party_dps": 219627.33218374735,
+    "exact_effective_healing": 1944030,
+    "exact_hps": 15100.200400801605,
+    "requested_repair_id": "OBS-008_native_cast_lifecycle",
     "requested_repair_achieved": true,
-    "performance_verdict": "not_accepted_4.1_percent_below_ab829",
+    "performance_verdict": "not_accepted_raid_and_balance_declined_blood_died",
     "diagnosis_required": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_reviews_addendum_remote_verified_exact_duplicates_evicted",
+    "blood_death_at_seconds": 103.997,
+    "blood_recovery": "post_clear_only",
+    "combat_event_count": 8350,
+    "trace_entry_count": 32031,
+    "trace_gaps": 0,
+    "combat_gaps": 0,
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc",
+    "publication_state": "raw_remote_verified_reviews_models_pending",
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true,
-    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc",
-    "review_addendum_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.addendum.tar.gz.dvc",
-    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.closure.tar.gz.dvc"
+    "raw_payloads_evicted": false,
+    "frozen_specialist_review_count": 7,
+    "advisory_model_review_complete": false,
+    "raw_pointer_md5": "cd040f7e9a4138689d4a9f4660aedc56",
+    "raw_object_bytes": 23073735,
+    "remote_verification_receipt": "/tmp/magmaw-master-9d29-20260919/raw-remote-verification.json",
+    "survival_accounting_replay": {
+      "state": "postrun_diagnostic_repair_implemented",
+      "focused_tests_passed": 59,
+      "replay": "/tmp/magmaw-master-9d29-survival-replay-20260919.json",
+      "native_gameplay_source_unchanged": "9d29edd37681a3768855d0be7a985118285c1a63",
+      "original_summary_immutable": true,
+      "boss_window_result": "blood_dead_at_native_boss_death_post_encounter_recovery_separate"
+    }
   },
   "related_edges": [
     {
@@ -138,10 +145,22 @@
     {
       "id": "fire_exit_submitted_ground_receipt_unobserved",
       "review": "native_capture_and_landing_accepted_9423"
+    },
+    {
+      "id": "OBS-008_native_cast_lifecycle",
+      "review": "live_exercised_exact_terminal_reasons_and_cast_identity"
+    },
+    {
+      "id": "Blood_boss_window_survival",
+      "review": "death_at_103.997s_postclear_recovery_missing_event_local_health_runes_mitigation"
+    },
+    {
+      "id": "same_raid_pet_target_filter",
+      "review": "Fire_Elemental_and_wolf_reciprocal_damage_proven_repair_separate"
     }
   ],
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "OBS-008",
+  "error_id": "DPS-063",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -159,7 +178,10 @@
     "DPS-057",
     "DPS-058",
     "DPS-059",
-    "OBS-008"
+    "OBS-008",
+    "DPS-063",
+    "TANK-001",
+    "PET-001"
   ],
   "requested_tank_assignment": {
     "main_tank": {
@@ -199,7 +221,7 @@
   "parent_objective": "Repair and validate DPS across every represented spec; narrow repair acceptance does not complete the roster objective.",
   "actor_acceptance_path": "docs/bot_raids/magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance",
   "previous_closed_magmaw_canary": {
-    "source_commit": "ab829858df86a19d1ede9cad5d1017f5e8a3004b",
+    "source_commit": "73103e86467d6ce18ac65091e38b345a5da49b69",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -209,35 +231,38 @@
     "training_eligible": false,
     "qualification_eligible": false,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 119.991,
-    "hostile_originated_damage": 28164503,
-    "pull_to_death_party_dps": 234721.79580135178,
-    "exact_effective_healing": 1567651,
-    "exact_hps": 13064.738188697485,
-    "requested_repair_id": "native_mushroom_radius_restart",
+    "pull_to_death_seconds": 126.233,
+    "hostile_originated_damage": 28425227,
+    "pull_to_death_party_dps": 225180.634224,
+    "exact_effective_healing": 2222510,
+    "exact_hps": 17606.410368,
+    "requested_repair_id": "heart_strike_normal_path,mushroom_native_outcome,bane_parasite_exclusion",
     "requested_repair_achieved": true,
-    "performance_verdict": "not_accepted_roster_gaps_remain",
+    "performance_verdict": "not_accepted_4.1_percent_below_ab829",
     "diagnosis_required": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_and_reviews_remote_verified_raw_duplicates_evicted",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc",
+    "publication_state": "raw_reviews_addendum_remote_verified_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc"
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc",
+    "review_addendum_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.addendum.tar.gz.dvc",
+    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.closure.tar.gz.dvc"
   },
   "previous_implementation_review": {
-    "verdict": "independently_approved_heart_strike_mushroom_and_bane",
-    "live_verified": true,
-    "combined_focused_tests_passed": 9,
-    "heart_strike_review_sha256": "892ce1d863ba02b44b793d63ab782410ec997c9508012d6580bb1f46b3d7d471",
-    "mushroom_review_sha256": "184c8e521a486c7874c363fcf6ae36dd19a5408c46be7d45ea25589818b593b7",
-    "bane_review_sha256": "fc27cebff93edfee1d53f4cbceaa732e5a74644006e6080c5d0a3c86ae7e9cd0"
-  },
-  "implementation_review": {
     "verdict": "independently_approved_OBS008",
-    "live_verified": false,
+    "live_verified": true,
     "focused_tests_passed": 37,
     "review_sha256": "ca02b0db862e2a72d2835cff4a9c53d90ff56f0b5170c4f6a9adad07e02a0e7d",
     "legacy_oversized_file": "src/server/game/Spells/Spell.cpp",
-    "legacy_file_lines": 9066
+    "legacy_file_lines": 9066,
+    "live_source_commit": "9d29edd37681a3768855d0be7a985118285c1a63",
+    "live_observation_accepted": true
+  },
+  "implementation_review": {
+    "verdict": "pending_DPS063_implementation_and_independent_review",
+    "live_verified": false,
+    "design_packet": "/tmp/magmaw-cast-facing-repair-packet-20260919.json",
+    "observed_cast_count": 4,
+    "bounded_scope_not_whole_gap": true
   }
 }
