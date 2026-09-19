@@ -61,6 +61,10 @@ wrong branch or dropped value. Bind the intended behavior to pinned source or
 spell data. Preserve coefficients and unrelated classes, and include the missing
 stat observations in that repair's verification. This establishes code correctness,
 not recovered DPS or numeric parity; those remain live acceptance questions.
+For ownership defects, construct the real owner GUID/pointer chain in the
+fixture and execute its native accessors. Assigning the expected resolved player
+to a stub bypasses the very failure being tested. Preserve charmer precedence
+and distinguish inherited GUID access from a summon subclass's owner pointer.
 
 Otherwise, missing runtime attribution belongs to a capture-only
 `raid-shard-architecture` work unit. Never compensate for missing evidence with

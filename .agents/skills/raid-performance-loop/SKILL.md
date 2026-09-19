@@ -130,13 +130,18 @@ Use the commands in `docs/bot_raids/local_jev_shadow.md`. Neither prediction
 agreement nor confidence accepts a repair. Join the class/role reviewer findings
 with native observations; tank/healer packets without role metrics remain
 insufficient evidence. Keep predictions quarantined until human adjudication.
+Keep each model fact once. Bind hashes and source receipts outside model context;
+within its context preserve native outcomes, duty, reference comparison and
+explicit unknowns. Adding exact totals must not discard the causal comparison
+or copy a legacy timeline into an explicitly missing native observation.
 
 Preserve native outcome meanings in model projections. A `no_action` profile
 resolution or wait is not a failed native cast. Keep those counts separate from
 submission and terminal failures. Label each healing total and HPS denominator:
 retained encounter aggregates can include post-death healing, while exact run
-HPS uses healing through native death. Check packet size with the deployed
-tokenizer; an estimated token count does not prove the local context limit.
+HPS uses healing through native death. Before freezing a packet-builder change, prepare the retained full-roster inputs
+and check each actual packet with the deployed tokenizer. Small synthetic
+fixtures and estimated counts do not prove the local context limit.
 When both models choose the same cause, require the native causal sequence
 before implementing it. Agreement on encounter duty cannot explain an unknown
 Scorch cancellation.
@@ -153,6 +158,11 @@ with the contradicted or missing fact. Repair an ambiguous question or missing
 input once and retain both versions, rather than rewording until models agree.
 Track whether a model supplied a useful new check or repair, merely confirmed an
 existing finding, or failed. Model review must not erase other actors' open issues.
+Typed choices can only select the supplied alternatives; assess useful ranking
+and contradicted claims, not an expectation of free-form repair discovery.
+The legacy `collect_more_canaries` choice denotes insufficient evidence. Inspect
+retained native records and repair missing packet fields before scheduling a run
+solely because that option was selected.
 
 
 When several represented classes or roles underperform, use the

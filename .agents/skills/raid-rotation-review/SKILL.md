@@ -25,6 +25,11 @@ native GCD, mana and cast-state checks and validate any moving-only fallback
 end to end before claiming a DPS gain.
 A current-spell ID can remain during projectile flight. Join native spell state
 and blocked-action results before treating its presence as casting time.
+For an interrupted cast followed by another submission, inspect exact event
+sequence, not just equal timestamps. An old terminal preceding the new prepare
+does not identify the cancellation caller. Require its native call path or an
+explicit initiator observation before adding an active-cast gate; preserve
+legitimate hazard, target-change and vehicle interruptions.
 
 For pet support spells, inspect the owner's actual group/subgroup state and
 the native friendly-target list. A one-bot or "solo" fixture can still create
@@ -385,3 +390,8 @@ live trace. Do not require an observation-only build solely to admit that repair
 Keep native frequency, DPS cost and improvement claims unproven until measured.
 This does not justify coefficient tuning, missing-reference assumptions or
 fabricated runtime outcomes.
+
+A raid result above the self-buffed dummy reference does not exclude a shared
+class defect or establish parity. Raid buffs, head modifiers, adds and duties
+change that comparison. Use matched stats and event/cadence evidence before
+accepting or rejecting a mechanics hypothesis.

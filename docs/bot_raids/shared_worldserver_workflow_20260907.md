@@ -5,71 +5,69 @@ is preserved.
 
 ## Current work and latest native run
 
-WCL remains the performance benchmark. Latest clean native source `9d29edd376`
-killed Magmaw in128.742 seconds:28,275,262 originated hostile damage,
-**219,627.332 exact DPS** and **15,100.200 exact HPS**. Owned pets are included;
-friendly damage and mirrored79010 callbacks are excluded. The completion
-watchdog accepted native death, cleanup and exit. Capture retained8,350 combat
-events and32,031 trace entries without gaps or identity rejects. Clear and the
-OBS-008 observation contract are accepted; performance is not accepted. Blood
-30002 died at+103.997s and recovered only after the clear, so the later alive
-status is not boss-window survival.
+WCL remains the performance benchmark. Clean native source `d495bd1556`
+killed Magmaw in 117.523 seconds with 28,193,123 originated hostile damage,
+**239,894.514 exact DPS** and **14,412.302 exact HPS**. Owned pets are included;
+friendly damage and mirrored 79010 callbacks are excluded. All ten bots survived
+through native boss death. The completion watchdog accepted the clear, capture,
+cleanup and exit. There are 8,089 combat events and 28,647 trace entries without
+gaps or identity rejects. This clear is not overall WCL performance acceptance.
 
-The requested historical-source restart `ab829858df` remains the comparison:
-119.991s,234,721.796 DPS,13,064.738 HPS. Its native source differs from shard89
-only by restoring ordinary Mushroom geometry. Historical shard89's241,249.360
-used enlarged targeting and a different retained window; it is not a lawful floor.
+DPS rose 9.23% against the matched `9d29edd376` run (128.742s, 219,627.332 DPS,
+one Blood death). The lawful `ab829858df` restart reached 234,721.796 DPS in
+119.991s; its route asset differs, so it is not an exact matched comparison.
+Historical shard89's 241,249.360 used enlarged Mushroom targeting and is not a
+lawful floor. The roster remains one Blood tank, three healers and six DPS.
+Per-actor results and unresolved work are in [the DPS baseline](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
 
-The roster stays1 Blood tank,3 healers and6 DPS. The current all-actor table is
-[the DPS baseline](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
-All seven specialist reviews are frozen locally. Heart Strike's positive native
-path, lawful Mushroom selection and Bane parasite exclusion remain accepted.
-The latest run adds three successful Mushroom detonations,18 landed78777 effects
-for440,590 damage, and exact native terminal reasons. It does not accept whole
-roster throughput.
+The moving-cast facing repair is live exercised: five moving Scorch preparations
+succeeded, four finished while still moving, and neither Fire actor had a
+Scorch UNIT_NOT_INFRONT failure. A dead-parasite BAD_TARGETS failure remains
+correctly distinct. Native arc checks, movement and spell geometry were preserved.
 
-OBS-008 is live exercised. Exact cast identity now separates successful finishes,
-dead-target failures, LOS, interruption and UNIT_NOT_INFRONT. The next bounded
-repair is the native facing packet at
-`/tmp/magmaw-cast-facing-repair-packet-20260919.json`. Four moving Scorches across
-the two Fire actors prepared against live Magmaw and ended NOT_INFRONT after a
-spline/replacement heading overwrote their one-time facing. This is a bounded
-proven defect, not the whole Fire or raid gap. The facing repair is committed as `f7efd4fe08`, with independent approval and
-five passing focused tests. Native build and live acceptance remain pending.
-Pet classification `da85ab7798` and passive Blood pre-spend observation
-`8167623e51` are independently approved too. Their focused tests pass (1 and11
-respectively). The combined source is ready for one native build and a matched
-completion-watchdog canary; each repair retains separate acceptance checks.
+The elemental repair has only partial acceptance. Targeted reciprocal attacks
+ceased during the boss window, but one Fire Nova still hit the allied wolf for
+532. Reciprocal melee resumed after boss death and is excluded from DPS. Fire
+Shield has no landed event, so its legal-enemy preservation remains unproved.
+Do not attribute the full post-clear pet fight to encounter throughput.
 
-Blood's boss-window death, healer boss-entry cooldown and moving-triage gaps,
-Survival's target-valid Cobra interruptions, Balance interruptions preceding subsequent casts,
-Fire bait's missing Combustion opportunity, and reciprocal Fire Elemental/wolf
-damage remain open. Pincer, bait, crash, parasite and healer-demand duty costs
-stay explicit. WCL and WoWSims are comparison contexts rather than single-run
-floors.
+The passive Blood observation exposed the next proven policy defect. Heart
+Strike won 15 times while Death Strike was valid and had the higher score,
+including at 63.33% health. Death Strike's bucket 2 lost to Heart Strike's bucket
+1 before score comparison. A forward profile correction passed its two focused tests and independent review;
+Heart Strike must remain available when Death Strike lacks valid runes. No rune
+cost, spell coefficient, target or encounter change is proposed. The reviewed
+Flame Orb change filters native-illegal candidates before choosing the nearest
+target. A narrowly guarded Fire Elemental owner-chain correction is also ready
+for independent review. These repairs require the next native canary.
 
-Local Laya and hosted Jev each reviewed all ten actors without request errors.
-Independent native review found13 confirmations,7 discarded repair choices and
-zero new actionable checks. A separate focused facing case tests coherent causal
-input; model conclusions remain advisory. Follow
-[the shadow workflow](local_jev_shadow.md).
+All represented actors remain under review. Balance's post-pincer landing gap
+fell to 0.338s; same-tick replacement submissions do not identify interruption
+owners. Survival has no unexplained in-window rotation loss in this run and
+landed two Multi-Shots. Affliction's largest decline is proc/target and phase
+variation; short-lived parasite UA is a smaller proven waste. Healer critical
+coverage improved, while major cooldowns were again spent on trash. Fire Orb
+still has zero damage and repeated native failures on a nonattackable body part.
 
-Current raw evidence is published at
-`artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc`.
-Fresh remote reconstruction now verifies the23,073,735-byte raw object with
-MD5 `cd040f7e9a4138689d4a9f4660aedc56` and zstd integrity. The seven specialist reviews and both advisory model batches are frozen;
-compact reviews and all model requests/responses are fresh-remote verified in
-`magmaw_master_9d29_20260919.review.tar.gz.dvc` (151 hash-checked members).
-Closure receipts are in `magmaw_master_9d29_20260919.closure.tar.gz.dvc`.
-Exact verified duplicate payloads totaling1,105,060,394 bytes were evicted. The
-73103 and ab829 raw/review/closure publications remain historical verified
-evidence under their existing pointers.
+Laya and hosted Jev each completed ten actor reviews without errors or
+truncation. Native reviewers discard unsupported cadence/assignment diagnoses.
+The original packets omit useful retained facts, including exact healer-window
+results; the new projection joins the existing native-death timeline summary.
+A separate focused Blood case supplied exact pre-spend decisions and the native
+comparator. Jev selected the supported profile-ordering cause; Laya selected
+rune legality despite the observed valid Death Strike. Both suggested a rune
+probe already covered by the retained control. Neither supplied a new repair.
+Neither model has supplied repair authority. Follow [the shadow workflow](local_jev_shadow.md).
 
-A separate post-run survival-accounting repair passed59 tests and replay at
-`/tmp/magmaw-master-9d29-survival-replay-20260919.json`: Blood is dead at native
-boss death and its later recovery remains post-encounter. The original run
-summary is immutable, and native gameplay source remains `9d29edd376`.
-
+Raw evidence is published and fresh-remote verified at
+`artifacts/cata_raid_program/magmaw_master_d495_20260919.raw.tar.zst.dvc`
+(MD5 `c9b27044cae9c7c628bb8473c3c29e35`, 20,431,486 bytes). The compact review archive is also fresh-remote verified at
+`magmaw_master_d495_20260919.review.tar.gz.dvc` (77 hash-checked members,
+MD5 `6df4b6147083f750b2f52d28f6ff905c`). The closure archive retains remote verification and exact eviction receipts;
+985,219,163 bytes of duplicate raw/log/timeline/archive/cache payloads were removed.
+The 9d29 raw/review/closure publications remain verified historical evidence;
+its original survival summary has a separate corrected replay. The 73103 and
+ab829 publications are also retained remotely.
 
 The later `2fcd4133aa` run at 152,244.042 DPS remains regression evidence, not the
 restart source or target. Its review pointer is

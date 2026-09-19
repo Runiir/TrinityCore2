@@ -1,41 +1,39 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:DPS-063_native_moving_cast_facing",
+  "work_unit": "magmaw:TANK-001_death_strike_priority",
   "owner_skill": "raid-performance-loop",
-  "classification": "bot_runtime_implementation",
+  "classification": "role_implementation",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "9d29edd37681a3768855d0be7a985118285c1a63",
-  "architecture_scope": "Accepted shared-instance architecture and Magmaw 10N clear; OBS-008 exercised; next bounded shared-runtime edge is moving-cast facing.",
+  "observed_at_commit": "d495bd15560291bd59a34b6faca7ee2f4ad00513",
+  "architecture_scope": "Keep accepted typed arbiter and movement. Correct a trace-proven Blood profile ordering; all actors remain under independent review.",
   "behavior_change": true,
   "evidence_contract_change": false,
-  "gate_state": "Facing and elemental ownership repairs plus passive Blood decision observation independently approved; focused tests passed; queued build next",
+  "gate_state": "Native Blood, Flame Orb and elemental owner-chain changes independently approved; model packet compaction in progress; next native validation pending",
   "first_broken_edge": {
-    "id": "moving_cast_spline_overwrites_required_target_facing",
-    "owner_classification": "bot_runtime_implementation",
-    "cause": "Four exact moving Scorches prepared against live attackable Magmaw and ended UNIT_NOT_INFRONT after active/replacement spline orientation overwrote one-time executor facing.",
-    "limit": "Four casts are bounded evidence and do not explain the whole Fire or raid gap."
+    "id": "blood_death_strike_bucket_loses_before_higher_score",
+    "owner_classification": "role_implementation",
+    "cause": "15 exact accepted Heart Strike decisions had valid higher-scored Death Strike, including health63.33%; DS bucket2 loses to HS bucket1 before score comparison.",
+    "limit": "Survival and throughput effect unknown until native validation; later rune flow diverges."
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "2d4b3e3e71f05533ffbf404bb2307c4a8a0392b974b85df6251c76ab2c692529"
+    "sha256": "24937cd5c2a25730a438636731db4cdafa1e59c00d3bd05bc6882db7fee7e7ed"
   },
   "scope_lock": {
-    "objective": "Keep native permitted movement while preserving the active front-required cast target facing at spline position commits, including arrival.",
+    "objective": "Put Blood Death Strike in the same bucket as Heart Strike so existing score can win when legal; preserve Heart Strike with invalid Death Strike runes.",
     "owned_files": [
-      "src/server/game/Entities/Unit/Unit.cpp",
-      "src/server/game/Entities/Unit/UnitSplinePosition.cpp",
-      "tests/test_bot_combat_facing.py"
+      "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "tests/test_blood_death_strike_priority.py"
     ],
     "forbidden_changes": [
-      "No repeated SetFacing, zero-distance spline, spline stop/restart, teleport, Z/radius/LOS workaround, relaxed native arc check or damage tuning.",
-      "No class rotation, encounter duty, spell coefficient or target-list change."
+      "No native rune costs, coefficients, target lists, spell geometry, roster or encounter changes."
     ]
   },
   "acceptance_conditions": [
-    "Compiled replay reproduces the retained spline replacement and arrival ordering while preserving XYZ/path/duration and native arc validation.",
-    "The four scoped Scorch casts no longer end UNIT_NOT_INFRONT; other native failures remain failures.",
-    "All represented actors remain visible; Blood death, pincer/bait/crash/parasite duty and same-raid pet combat remain separately classified.",
-    "A clear alone does not accept performance, qualification or training."
+    "Actual native comparator selects Death Strike when both are valid under retained candidate facts.",
+    "Blood-only ready runes retain Heart Strike when Death Strike is invalid.",
+    "Idempotent native storage-aware migration changes only intended Blood profile ordering.",
+    "Next canary verifies loaded ordering, selected immutable facts, native finishes, healing, survival and all-actor performance separately."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -44,9 +42,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Configure and build the clean combined source once with fast4_v2; verify receipt; run the freshly provisioned unchanged roster through completion watchdog. Validate moving-cast native results, elemental friendly/hostile damage, and immutable Blood decision facts. Then review all10 actors with specialists and both models; retain performance acceptance separately.",
+  "next_action": "Finish compact model projection and independent review, build approved native batch once, run matched completion-watchdog canary, then review all actors with native evidence, Laya and Jev. Apply queued legal role enchants after this comparison.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -62,7 +60,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "9d29edd37681a3768855d0be7a985118285c1a63",
+    "source_commit": "d495bd15560291bd59a34b6faca7ee2f4ad00513",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -71,41 +69,30 @@
     "server_exit_code": 0,
     "training_eligible": false,
     "qualification_eligible": false,
-    "boss_fight_casualties": 1,
-    "pull_to_death_seconds": 128.742,
-    "hostile_originated_damage": 28275262,
-    "pull_to_death_party_dps": 219627.33218374735,
-    "exact_effective_healing": 1944030,
-    "exact_hps": 15100.200400801605,
-    "requested_repair_id": "OBS-008_native_cast_lifecycle",
-    "requested_repair_achieved": true,
-    "performance_verdict": "not_accepted_raid_and_balance_declined_blood_died",
+    "boss_fight_casualties": 0,
+    "pull_to_death_seconds": 117.523,
+    "hostile_originated_damage": 28193123,
+    "pull_to_death_party_dps": 239894.51426529276,
+    "exact_effective_healing": 1693777,
+    "exact_hps": 14412.302272746612,
+    "performance_verdict": "all_actor_review_complete_not_WCL_accepted",
     "diagnosis_required": true,
-    "blood_death_at_seconds": 103.997,
-    "blood_recovery": "post_clear_only",
-    "combat_event_count": 8350,
-    "trace_entry_count": 32031,
+    "combat_event_count": 8089,
+    "trace_entry_count": 28647,
     "trace_gaps": 0,
     "combat_gaps": 0,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_and_reviews_remote_verified_exact_duplicate_payloads_evicted",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_d495_20260919.raw.tar.zst.dvc",
+    "raw_pointer_md5": "c9b27044cae9c7c628bb8473c3c29e35",
+    "raw_object_bytes": 20431486,
+    "publication_state": "raw_review_closure_remote_verified_exact_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
     "frozen_specialist_review_count": 7,
-    "advisory_model_review_complete": false,
-    "raw_pointer_md5": "cd040f7e9a4138689d4a9f4660aedc56",
-    "raw_object_bytes": 23073735,
-    "remote_verification_receipt": "/tmp/magmaw-master-9d29-20260919/raw-remote-verification.json",
-    "survival_accounting_replay": {
-      "state": "postrun_diagnostic_repair_implemented",
-      "focused_tests_passed": 59,
-      "replay": "/tmp/magmaw-master-9d29-survival-replay-20260919.json",
-      "native_gameplay_source_unchanged": "9d29edd37681a3768855d0be7a985118285c1a63",
-      "original_summary_immutable": true,
-      "boss_window_result": "blood_dead_at_native_boss_death_post_encounter_recovery_separate"
-    },
-    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.review.tar.gz.dvc",
-    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.closure.tar.gz.dvc",
+    "advisory_model_review_complete": true,
+    "requested_repair_id": "DPS-063_native_moving_cast_facing",
+    "requested_repair_achieved": true,
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_d495_20260919.review.tar.gz.dvc",
+    "review_pointer_md5": "6df4b6147083f750b2f52d28f6ff905c",
     "model_review": {
       "actors": 10,
       "providers": [
@@ -113,11 +100,14 @@
         "hosted_jev"
       ],
       "request_errors": 0,
-      "native_confirmations": 13,
-      "discarded_repair_choices": 7,
+      "native_confirmations": 11,
+      "discarded_repair_choices": 8,
+      "insufficient_choices": 1,
       "new_actionable_checks": 0,
       "predictions_quarantined": true
-    }
+    },
+    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_d495_20260919.closure.tar.gz.dvc",
+    "logical_bytes_evicted": 985219163
   },
   "related_edges": [
     {
@@ -174,7 +164,7 @@
     }
   ],
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-063",
+  "error_id": "TANK-001",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -235,7 +225,7 @@
   "parent_objective": "Repair and validate DPS across every represented spec; narrow repair acceptance does not complete the roster objective.",
   "actor_acceptance_path": "docs/bot_raids/magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance",
   "previous_closed_magmaw_canary": {
-    "source_commit": "73103e86467d6ce18ac65091e38b345a5da49b69",
+    "source_commit": "9d29edd37681a3768855d0be7a985118285c1a63",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -244,23 +234,53 @@
     "server_exit_code": 0,
     "training_eligible": false,
     "qualification_eligible": false,
-    "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 126.233,
-    "hostile_originated_damage": 28425227,
-    "pull_to_death_party_dps": 225180.634224,
-    "exact_effective_healing": 2222510,
-    "exact_hps": 17606.410368,
-    "requested_repair_id": "heart_strike_normal_path,mushroom_native_outcome,bane_parasite_exclusion",
+    "boss_fight_casualties": 1,
+    "pull_to_death_seconds": 128.742,
+    "hostile_originated_damage": 28275262,
+    "pull_to_death_party_dps": 219627.33218374735,
+    "exact_effective_healing": 1944030,
+    "exact_hps": 15100.200400801605,
+    "requested_repair_id": "OBS-008_native_cast_lifecycle",
     "requested_repair_achieved": true,
-    "performance_verdict": "not_accepted_4.1_percent_below_ab829",
+    "performance_verdict": "not_accepted_raid_and_balance_declined_blood_died",
     "diagnosis_required": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_reviews_addendum_remote_verified_exact_duplicates_evicted",
+    "blood_death_at_seconds": 103.997,
+    "blood_recovery": "post_clear_only",
+    "combat_event_count": 8350,
+    "trace_entry_count": 32031,
+    "trace_gaps": 0,
+    "combat_gaps": 0,
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc",
+    "publication_state": "raw_and_reviews_remote_verified_exact_duplicate_payloads_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc",
-    "review_addendum_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.addendum.tar.gz.dvc",
-    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.closure.tar.gz.dvc"
+    "frozen_specialist_review_count": 7,
+    "advisory_model_review_complete": false,
+    "raw_pointer_md5": "cd040f7e9a4138689d4a9f4660aedc56",
+    "raw_object_bytes": 23073735,
+    "remote_verification_receipt": "/tmp/magmaw-master-9d29-20260919/raw-remote-verification.json",
+    "survival_accounting_replay": {
+      "state": "postrun_diagnostic_repair_implemented",
+      "focused_tests_passed": 59,
+      "replay": "/tmp/magmaw-master-9d29-survival-replay-20260919.json",
+      "native_gameplay_source_unchanged": "9d29edd37681a3768855d0be7a985118285c1a63",
+      "original_summary_immutable": true,
+      "boss_window_result": "blood_dead_at_native_boss_death_post_encounter_recovery_separate"
+    },
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.review.tar.gz.dvc",
+    "closure_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_9d29_20260919.closure.tar.gz.dvc",
+    "model_review": {
+      "actors": 10,
+      "providers": [
+        "local_laya",
+        "hosted_jev"
+      ],
+      "request_errors": 0,
+      "native_confirmations": 13,
+      "discarded_repair_choices": 7,
+      "new_actionable_checks": 0,
+      "predictions_quarantined": true
+    }
   },
   "previous_implementation_review": {
     "verdict": "independently_approved_OBS008",
@@ -273,28 +293,62 @@
     "live_observation_accepted": true
   },
   "implementation_review": {
-    "verdict": "pending_DPS063_implementation_and_independent_review",
+    "verdict": "Blood_priority_independently_approved",
     "live_verified": false,
-    "design_packet": "/tmp/magmaw-cast-facing-repair-packet-20260919.json",
-    "observed_cast_count": 4,
-    "bounded_scope_not_whole_gap": true
+    "review": "/tmp/magmaw-blood-priority-review-20260919.json",
+    "commit": "a283a51228",
+    "focused_tests_passed": 2
   },
   "reviewed_batch": {
     "DPS-063": {
       "commit": "f7efd4fe08",
       "tests_passed": 5,
-      "review": "/tmp/magmaw-cast-facing-review-20260919.json"
+      "review": "/tmp/magmaw-cast-facing-review-20260919.json",
+      "live_verified": true
     },
     "PET-001": {
       "commit": "da85ab7798",
       "tests_passed": 1,
-      "review": "/tmp/magmaw-pet-friendly-review-20260919.json"
+      "review": "/tmp/magmaw-pet-friendly-review-20260919.json",
+      "live_verified": "partial"
     },
     "TANK-001_observation": {
       "commit": "8167623e51",
       "tests_passed": 11,
       "review": "/tmp/magmaw-blood-observation-review-20260919.json",
-      "gameplay_change": false
+      "gameplay_change": false,
+      "live_verified": true
+    },
+    "TANK-001": {
+      "commit": "a283a51228",
+      "review": "/tmp/magmaw-blood-priority-review-20260919.json",
+      "tests_passed": 2,
+      "live_verified": false
+    },
+    "DPS-048_flame_orb": {
+      "commit": "c34a27fc28",
+      "review": "/tmp/magmaw-flame-orb-review-20260919.json",
+      "tests_passed": 8,
+      "live_verified": false
+    },
+    "PET-001_owner_chain": {
+      "commit": "c168c0ea3d",
+      "review": "/tmp/magmaw-pet-owner-chain-review-20260919.json",
+      "tests_passed": 2,
+      "live_verified": false
+    }
+  },
+  "queued_setup_repair": {
+    "id": "DPS-055",
+    "state": "native_zero_permanent_enchants_confirmed_not_previously_implemented",
+    "evidence": "/tmp/magmaw-role-enchant-cause-20260919.json",
+    "next_action": "Apply retained legal role overlays after matched Blood/Orb canary; preserve current gear for this validation.",
+    "implementation_packet": "/tmp/magmaw-role-enchant-implementation-packet-20260919.json",
+    "stat_comparison_followup": {
+      "producer": "BotWorldPopulationMgrCalibrationStatLedger.cpp / botauto diagnose effective_stats",
+      "existing_evidence": "d495 timeline HTML: 30 observations per admitted actor, nearest -12.475s and +2.759s to pull; permanent pets for 30008 and 30009",
+      "missing": "Exact boss-pull latch and raid diagnosis_stats_observation join to review_rotation_mechanics scoring_start_stats; guardians outside permanent-pet producer scope",
+      "constraint": "Reuse existing producer; do not infer a pre-proc state or class parity from raid DPS exceeding self-only WoWSims."
     }
   }
 }

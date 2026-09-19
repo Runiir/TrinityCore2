@@ -2,48 +2,56 @@
 
 ## Active parent objective and actor acceptance
 
-Repair and validate every represented spec against WCL component/cadence context
-and exact WoWSims setup. Latest clean native source `9d29edd376` cleared in
-128.742 seconds at219,627.332 raid DPS and15,100.200 exact HPS. Blood30002 died
-at+103.997s and recovered after the clear. Clear and OBS-008 observation are
-accepted; performance is not accepted. Both models reviewed all ten actors. Native adjudication retained13 confirmations,
-discarded7 unsupported or insufficient repair choices, and found no new actionable check.
+Repair and validate every represented spec using WCL spell/cadence context and
+exact WoWSims setup. Latest clean source `d495bd1556` cleared in 117.523 seconds
+at **239,894.514 raid DPS** and **14,412.302 exact HPS**, with all ten surviving.
+Clear and moving-cast facing are accepted. Overall WCL performance is not accepted.
+The matched 9d29 total rose 9.23%, while individual preservation flags still need
+the duty, phase and proc explanations below. Both models reviewed all ten actors;
+unsupported suggestions do not become implementation tasks.
 
-| Actor/spec | Native DPS | WCL example DPS | Current finding / next action | State |
-| --- | ---: | ---: | --- | --- |
-| 30001 Balance | 24,801.603 | 41,029.1 | Mushroom remains accepted:3 detonations,18 effects,440,590 damage. Two target-valid casts were interrupted before later submissions; replacement ownership is disproved by event order. One is required crash movement; head damage fell644,368. Pincer and post-landing avoidance are separate duty/missing-fact costs. | Open |
-| 30002 Blood | 9,861.087 | 26,152 | Died at+103.997s and lost24.745s of boss-window offense. Heart Strike stayed lawful and positive; no Death Strike occurred in the final14.711s. Capture health/runes/mitigation and arbitration before survival repair. | Open |
-| 30006 Fire bait | 25,267.248 | 40,189.9 | Missing combat Combustion is the largest current actor component, but its exact proc snapshot is absent. Two of four bounded moving Scorches ended NOT_INFRONT from facing overwrite; repair packet active. Bait/crash/parasite duty remains charged. | Open |
-| 30007 Fire | 43,579.780 | 40,189.9 | Absolute damage remains above ab829; longer duration lowers DPS. Two bounded moving Scorches share the facing defect. This four-cast repair is not a claim for the whole Fire gap; Flame Orb persistence is separate. | Open |
-| 30008 Affliction | 38,290.333 | 40,281 | Improved724.157 DPS; Bane exclusion remains accepted with zero parasite submissions. Prior parasite UA did not recur. Target-alive cancellations still lack owner/join evidence; no gameplay repair. | Open |
-| 30009 Survival | 36,912.414 | 43,706.4 rounded component sum | Improved2,765.400 DPS; Horn renewal is healthy. Nine exact Cobra casts were interrupted while targets remained valid. Three follow required hazard movement; six sampled-stationary cases still lack an interrupt caller. No sampled GCD-ready legal Multi-Shot opportunity. | Open |
-| 30010 Elemental | 35,577.527 | 41,866 | Improved4,603.748 DPS. Through death, Fire Elemental dealt159,090 friendly damage to the wolf and received12,260. Totem-owner player classification can be skipped before an existing-victim update; repair native classification/validity, not damage. Potion still requires reference reconciliation. | Open |
-| 30003 Restoration | 2,062.318 | Unmatched | 7,225.800 HPS; supplied all final3s tank healing and most final10s healing. Reserve Tree for boss and retain movement-triage/late-Regrowth observation; no sole healer cause proven. | Open |
-| 30004 Holy | 0 | Unmatched | 3,938.047 HPS. Last tank heal was4.685s before death; hard heals were movement-gated with Holy Shock unavailable. Reserve Divine Favor and validate a movement-safe emergency fallback. | Open |
-| 30005 Discipline | 3,275.023 | Unmatched | 933.705 direct HPS excludes shields. PoM still selected non-tanks6/8 casts; Pain Suppression was spent before pull. Reserve it, repair selector/LOS resolution, and retain OBS-006 absorption work. | Open |
+| Actor/spec | Native DPS | Exact HPS | WCL example DPS | Current finding / next action | State |
+| --- | ---: | ---: | ---: | --- | --- |
+| 30001 Balance | 32,119.772 | 0.000 | 41,029.1 | Lawful Mushroom: 20 effects / 251,415 damage. Post-pincer landing gap 0.338s. Unknown cancellation caller, not proven replacement-cast collision. | Open |
+| 30002 Blood | 15,677.986 | 2,641.985 | 26,152 | Survived; 15 Heart Strikes selected while higher-scored Death Strike was valid. Bucket correction independently approved; rune-invalid HS fallback retained. IBF readiness and native enchant readback separate. | Repair in progress |
+| 30006 Fire bait | 31,228.560 | 0.000 | 40,189.9 | Moving-Scorch facing accepted. Bait duty remains explicit; Combustion and Orb reviewed separately. | Open |
+| 30007 Fire | 39,591.289 | 0.000 | 40,189.9 | Moving-Scorch facing accepted. Orb had no damage; nonattackable secondary head repeatedly failed native casts. | Open |
+| 30008 Affliction | 35,889.630 | 687.959 | 40,281 | Bane exclusion accepted. Largest decline is Cunning proc/target multiplicity and shorter phase; sustained DoTs/pet/channel contradict broad idle claim. Two parasite UAs yield no ticks. | Open |
+| 30009 Survival | 40,992.223 | 133.242 | 43,706.4 rounded component sum | Two Multi-Shots/Spread; Horn healthy. Cobra cancellation attributed to required hazard movement. Friendly wolf combat occurs after death, not in scored DPS. | No new in-window rotation defect |
+| 30010 Elemental | 37,427.567 | 0.000 | 41,866 | Guardian hostile damage 540,382. One in-window friendly Nova 532 remains; reciprocal targeted attacks occur post-clear. Fire Shield legality unproved; potion reference unresolved. | Partial pet repair |
+| 30003 Restoration | 3,124.742 | 4,571.301 | Unmatched | Critical tank coverage succeeded. Tree spent on trash; exact HPS excludes post-clear healing. | Open |
+| 30004 Holy | 0.000 | 5,165.057 | Unmatched | Critical tank coverage succeeded after one moving hard-heal failure. Divine Favor spent on trash. | Open |
+| 30005 Discipline | 3,842.746 | 1,212.758 | Unmatched | Critical tank coverage succeeded; absorbed healing unmeasured. PoM tank 2/7; Pain Suppression spent on trash. | Open |
 
-Incoming health damage fell8.1% from73103, while tank damage rose23.3% and ended
-in the Blood death. Exact HPS uses native healing through death. No coefficient
-change follows from these unadjusted DPS gaps. The ranked active repair is the
-four-cast native facing failure; Blood survival and same-raid pet filtering are
-separate proven/missing-fact work units, and the facing repair cannot explain the
-whole raid delta.
+Death Strike's priority bucket is the next proven repair. Fifteen recorded choices
+had both spells valid, including three below 80% health. The higher existing DS
+score could not beat HS because bucket ordering precedes score. The repair must
+preserve native resource gates and Heart Strike when DS is invalid. Its damage
+and survival effect requires the next matched canary.
 
-WCL Y8fight22 lasts111.3s with nine participants, 2T/2H/5DPS; Survival xAhkfight10
-lasts70.9s with1T/1H/8DPS. Native uses1T/3H/6DPS. These are comparison targets,
-not controlled per-actor floors. Separate event damage from cadence, duty, target
-lifetime and phase/proc coverage. Do not normalize DoT/pet tails by duty-free time.
-Shard89's enlarged Mushroom targeting is excluded from lawful recovery estimates.
+The next setup comparison must reuse the existing effective-stat observations.
+The d495 HTML retains 30 observations per bot, nearest pull at -12.475s and
++2.759s, plus permanent pets for Affliction and Survival. The raid observations
+are not joined to `review_rotation_mechanics`, which consumes calibration
+`scoring_start_stats`; an exact boss-pull latch is also absent. Guardians and
+totems are outside the permanent-pet snapshot. Do not call stats wholly absent,
+or treat a raid result above the self-only dummy reference as class acceptance.
+
+WCL Y8 fight22 lasts 111.3s with nine participants, 2T/2H/5DPS; Survival xAhk
+fight10 lasts 70.9s with 1T/1H/8DPS. Native uses 1T/3H/6DPS. These are comparison
+targets, not controlled per-actor floors. Separate event damage from cadence,
+duty, target lifetime and phase/proc coverage. Do not normalize DoT/pet tails by
+duty-free time. Shard89's enlarged Mushroom geometry is excluded from lawful
+recovery estimates. The ab829 route assets differ from d495, so its 234,721.796
+DPS is a qualified historical comparison.
 
 Current raw publication is fresh-remote verified at
-`artifacts/cata_raid_program/magmaw_master_9d29_20260919.raw.tar.zst.dvc`.
-Its23,073,735-byte object has MD5 `cd040f7e9a4138689d4a9f4660aedc56` and passed
-zstd integrity. Seven specialist reviews and both model batches are frozen;
-compact reviews/models are fresh-remote verified in
-`magmaw_master_9d29_20260919.review.tar.gz.dvc`; closure proofs retain the
-1,105,060,394-byte exact duplicate eviction. The73103 and
-ab829 publications remain historical evidence. Every unresolved row carries
-forward even when another actor or raid total improves.
+`artifacts/cata_raid_program/magmaw_master_d495_20260919.raw.tar.zst.dvc`,
+MD5 `c9b27044cae9c7c628bb8473c3c29e35`. Seven specialist reviews and both model batches are verified remotely in
+`magmaw_master_d495_20260919.review.tar.gz.dvc`. Native adjudication found
+11 confirmations, eight unsupported claims, one insufficient claim and zero new
+actionable checks. Every unresolved actor stays
+in this table when another actor or the raid total improves.
 
 ## Retained reference research
 

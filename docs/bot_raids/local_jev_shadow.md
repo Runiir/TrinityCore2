@@ -66,15 +66,24 @@ new output directory. No hosted key is needed. The default local model is Laya.
 ```sh
 pixi run python -m tools.bot_ml.compare_magmaw_timelines --bot-run "$closed_run" --wcl-manifest experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_v1.json --output "$review_dir/timeline.json"
 pixi run python -m tools.bot_ml.analyze_magmaw_trace --input "$closed_run" --prepare-only --run-id "$run_id" --timeline-comparison "$review_dir/timeline.json" --output "$review_dir/review.json"
-pixi run python -m tools.bot_ml.jev_shadow --review "$review_dir/review.json" --identity "$identity_json" --backend-receipt "$backend_json" --output "$review_dir/shadow"
+pixi run python -m tools.bot_ml.jev_shadow --review "$review_dir/review.json" --identity "$identity_json" --backend-receipt "$backend_json" --native-report "$closed_run/report.json" --timeline-summary "$closed_run/report.timeline-summary.json" --output "$review_dir/shadow"
 ```
 
 Every run now receives both local Laya and hosted Jev review for each admitted
 bot, followed by the class or role reviewer. Run the second collection explicitly:
 
 ```sh
-pixi run python -m tools.bot_ml.jev_shadow --review "$review_dir/review.json" --identity "$identity_json" --backend-receipt "$hosted_backend_json" --backend hosted --env-file "$jev_env_file" --output "$review_dir/hosted"
+pixi run python -m tools.bot_ml.jev_shadow --review "$review_dir/review.json" --identity "$identity_json" --backend-receipt "$hosted_backend_json" --backend hosted --env-file "$jev_env_file" --native-report "$closed_run/report.json" --timeline-summary "$closed_run/report.timeline-summary.json" --output "$review_dir/hosted"
 ```
+
+Supply `--native-report` and `--timeline-summary` together. The collector binds
+both to the review, run identity and admitted actor GUIDs before either API call.
+It projects exact pull-to-native-death DPS/HPS, owner and owned damage, and
+survival from the existing timeline summary. Missing absorption, mana,
+overhealing, threat and mitigation remain unknown; healer damage activity is
+not healing activity. Omitted paired inputs remain explicitly unknown.
+Use `--prepare-only` first and check those actual packets with the deployed
+Laya tokenizer. A successful heuristic estimate does not prove they fit.
 
 The hosted adapter reads `JEV` from the environment or the specified file and
 uses the existing TypeSafe client. Credentials are never part of retained rows.
