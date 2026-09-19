@@ -5,40 +5,47 @@ is preserved.
 
 ## Current work and latest native run
 
-WCL remains the performance benchmark. The requested 241k-source restart is
-complete. Clean source `ab829858df` differs from the shard89 native source only
-by restoring ordinary Mushroom radius/target selection. It killed Magmaw in
-119.991 seconds: 28,164,503 originated hostile damage, **234,721.796 DPS** and
-**13,064.738 HPS**, with all ten alive. Owned pets are included; friendly damage
-and mirrored 79010 callbacks are excluded. The completion watchdog accepted
-native death, cleanup and exit. Schema-8 capture retained 7,767 events with no
-gaps, conflicts or retries. Encounter clear is accepted; roster performance is
-still open. Historical shard89's 241,249.360 DPS used enlarged Mushroom targeting
-and a different retained window, so it is not a lawful performance floor.
+WCL remains the performance benchmark. Latest clean native source `73103e8646`
+killed Magmaw in126.233 seconds:28,425,227 originated hostile damage,
+**225,180.634 exact DPS** and **17,606.410 exact HPS**, all ten alive. Owned pets
+are included; friendly damage and mirrored79010 callbacks are excluded. The
+completion watchdog accepted native death, cleanup and exit. Capture retained
+8,276 combat events without gaps or identity rejects. Clear is accepted;
+performance is not accepted, down4.1% against the lawful restart baseline.
 
-The roster stays 1 Blood tank, 3 healers and 6 DPS. The current per-actor table is
+The requested historical-source restart `ab829858df` remains the comparison:
+119.991s,234,721.796 DPS,13,064.738 HPS. Its native source differs from shard89
+only by restoring ordinary Mushroom geometry. Historical shard89's241,249.360
+used enlarged targeting and a different retained window; it is not a lawful floor.
+
+The roster stays1 Blood tank,3 healers and6 DPS. The current per-actor table is
 [the DPS baseline](magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance).
-The next independently approved changes address Heart Strike policy admission,
-lawful Mushroom ground placement/detonation and Bane exclusion on short-lived
-parasites. Nine combined focused tests pass. Preserve native cleave protection
-and spell geometry. Live verification remains pending.
-No later native melee-veto removal was carried into the restart.
+Heart Strike's normal path, lawful Mushroom detonation and Bane parasite exclusion
+are now exercised and independently reviewed. Heart Strike landed34 effects for
+677,680 damage; both Mushroom detonations dealt damage; Bane made zero parasite
+submissions. Fixture protection coverage remains distinct from observed live use.
 
-Both local Laya and hosted Jev reviewed all ten actors successfully. Each retained
-two suggestions requiring review; all predictions remain quarantined. Tank and
-healer packets lack detailed role metrics, which is explicitly reported rather
-than inferred. Independent class/role reviewers use the full native evidence.
-Follow [the shadow workflow](local_jev_shadow.md) after every closed run.
+The next repair is OBS-008 native cast observation. Fire bait lost552,787 absolute
+damage and had a29.055s direct-attack gap. Both Fire bots together had18 unsuccessful
+finishes from20 moving Scorch submissions. Their movement-permission predicates
+agree; the native cancellation/result and cast identity are missing. Implement
+those fields in the existing trace before changing gameplay. Survival's missed
+Horn renewal and absent Multi-Shot/Spread, Blood Death Strike cadence, Elemental
+combat potion and healer targeting remain visible in the actor table.
 
-Raw evidence is published and fresh-remote verified at
-`artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc`.
-The 17,975,541-byte archive preserves the raw capture and timeline. Raw expanded
-copies and the duplicate archive/cache were evicted after review and remote
-verification. The 220,098-byte compact archive contains all specialist reviews,
-both model request/response sets, preparation/build receipts and DVCLive metrics:
-`artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc`.
-Fresh remote reconstruction verified all62 member hashes. Native source/build
-identity is ab829858df, not the later diagnostic-tooling commit.
+Both local Laya and hosted Jev reviewed all ten actors without transport errors.
+They flagged four and three predictions respectively for review. All predictions
+remain quarantined. Detailed role evidence is limited in their current projection;
+independent specialists reviewed the full native evidence. Follow
+[the shadow workflow](local_jev_shadow.md) after every closed run.
+
+Current raw evidence is published and fresh-remote verified at
+`artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc`.
+Compact reviews, both model request/response sets and build/provisioning receipts
+are fresh-remote verified in `magmaw_master_73103_20260919.review.tar.gz.dvc`
+(68 member hashes). Raw eviction awaits the observation worker's last read. Prior restart raw, reviews and closure proofs are remotely verified
+under `magmaw_master_ab829_20260919.*.dvc`; its expanded raw duplicates are evicted.
+Native source/build identity is73103e8646, separate from later analysis changes.
 
 The later `2fcd4133aa` run at 152,244.042 DPS remains regression evidence, not the
 restart source or target. Its review pointer is

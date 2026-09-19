@@ -1,40 +1,40 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:heart_strike_mushroom_and_bane_targets",
+  "work_unit": "magmaw:OBS-008_native_cast_lifecycle",
   "owner_skill": "raid-performance-loop",
-  "classification": "trace_backed_role_repair",
+  "classification": "missing_native_observation",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "ab829858df86a19d1ede9cad5d1017f5e8a3004b",
+  "observed_at_commit": "73103e86467d6ce18ac65091e38b345a5da49b69",
   "architecture_scope": "Accepted shared-instance architecture and Magmaw 10 normal development clear; correct player gear and trace-backed DPS losses.",
-  "behavior_change": true,
-  "evidence_contract_change": false,
-  "gate_state": "241k-source native-radius baseline closed; role repairs undergoing implementation and independent review",
+  "behavior_change": false,
+  "evidence_contract_change": true,
+  "gate_state": "73103 clear accepted; performance declined; native cast observation implementation active",
   "first_broken_edge": {
-    "id": "scoped_heart_strike_permission_and_pillar_center_mushroom_destination",
-    "owner_classification": "role_implementation",
-    "cause": "Blood55050 blocked by area policy; Balance Mushroom children have zero native targets because selected Pillar center lies outside6yd native range."
+    "id": "native_finish_loses_cast_identity_and_failure_reason",
+    "owner_classification": "bot_runtime_implementation",
+    "cause": "18 of20 moving Scorch submissions finish false; native movement permission agrees but cancellation/result and cast identity are absent."
   },
   "source_handoff": {
     "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "45e6bd269a8e38da74dc1aafd84a48c8bde8db088af9bcb1c8505232a3d76f1a"
+    "sha256": "7dff75dfd3e5559e33b6697924db8c54b11e1f6d45fa94a2404f59df9151dd59"
   },
   "scope_lock": {
-    "objective": "Repair the observed Blood admission and Balance ground-placement edges without changing native cleave/geometry; compare each actor with the closed ab829 baseline and WCL. Exclude long-delay Bane on short-lived parasites while retaining mandatory defense.",
+    "objective": "Observe actual native cast lifecycle without changing gameplay; retain synchronous instant finishes, failed preparation and distinct same-millisecond casts through existing trace and timeline.",
     "owned_files": [
-      "src/server/game/Bots/BotWorldPopulationMgrRaidPlanning.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
-      "src/server/game/Bots/BotActionExecutor.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrSpellSemantics.h",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h",
-      "experiments/configs/validation_scenarios_cata_001.json",
-      "src/server/game/Bots/BotWorldPopulationMgrBossMechanics.cpp",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
+      "src/server/game/Spells/Spell.h",
+      "src/server/game/Spells/Spell.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "src/server/game/Bots/BotWorldPopulationMgrSemantic.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgrBotState.h",
+      "src/server/game/Bots/BotWorldPopulationMgrDecisionTraceJson.h",
+      "src/server/game/Bots/BotWorldPopulationMgrSpellObservation.cpp",
+      "tools/raid_program/bot_timeline.py",
+      "tests/test_bot_native_spell_finish_observation.py",
+      "tests/test_bot_timeline.py"
     ],
     "forbidden_changes": [
-      "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
+      "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes.",
+      "No gameplay, priority, movement, target selection or coefficient changes in OBS-008."
     ]
   },
   "acceptance_conditions": [
@@ -50,9 +50,9 @@
     "policy": "completion_watchdog",
     "fixed_success_timer_seconds": null
   },
-  "ready_for_build": true,
+  "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Approved role repairs and9 combined focused tests passed. Verify regenerated route closure, build clean master, fresh-provision selected roster, then completion-watchdog live validation. Review all10 actors with Laya/API Jev and independent specialists before performance acceptance.",
+  "next_action": "Complete native cast identity/result/cancellation observation, focused production-path fixtures and independent review; build once and run completion-watchdog validation with all10 actor specialists and both Laya/API Jev.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -68,7 +68,7 @@
     "training_eligible": false
   },
   "closed_magmaw_canary": {
-    "source_commit": "ab829858df86a19d1ede9cad5d1017f5e8a3004b",
+    "source_commit": "73103e86467d6ce18ac65091e38b345a5da49b69",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
@@ -78,28 +78,20 @@
     "training_eligible": false,
     "qualification_eligible": false,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 119.991,
-    "hostile_originated_damage": 28164503,
-    "pull_to_death_party_dps": 234721.79580135178,
-    "exact_effective_healing": 1567651,
-    "exact_hps": 13064.738188697485,
-    "requested_repair_id": "native_mushroom_radius_restart",
+    "pull_to_death_seconds": 126.233,
+    "hostile_originated_damage": 28425227,
+    "pull_to_death_party_dps": 225180.634224,
+    "exact_effective_healing": 2222510,
+    "exact_hps": 17606.410368,
+    "requested_repair_id": "heart_strike_normal_path,mushroom_native_outcome,bane_parasite_exclusion",
     "requested_repair_achieved": true,
-    "performance_verdict": "not_accepted_roster_gaps_remain",
+    "performance_verdict": "not_accepted_4.1_percent_below_ab829",
     "diagnosis_required": true,
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc",
-    "publication_state": "raw_and_reviews_remote_verified_raw_duplicates_evicted",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.raw.tar.zst.dvc",
+    "publication_state": "raw_and_reviews_remote_verified_raw_retained_for_OBS008",
     "remote_reconstruction_verified": true,
-    "raw_payloads_evicted": true,
-    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc"
-  },
-  "implementation_review": {
-    "verdict": "independently_approved_heart_strike_mushroom_and_bane",
-    "live_verified": false,
-    "combined_focused_tests_passed": 9,
-    "heart_strike_review_sha256": "892ce1d863ba02b44b793d63ab782410ec997c9508012d6580bb1f46b3d7d471",
-    "mushroom_review_sha256": "184c8e521a486c7874c363fcf6ae36dd19a5408c46be7d45ea25589818b593b7",
-    "bane_review_sha256": "fc27cebff93edfee1d53f4cbceaa732e5a74644006e6080c5d0a3c86ae7e9cd0"
+    "raw_payloads_evicted": false,
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_73103_20260919.review.tar.gz.dvc"
   },
   "related_edges": [
     {
@@ -144,7 +136,7 @@
     }
   ],
   "error_ledger": "docs/bot_raids/error_ledger.md",
-  "error_id": "DPS-059",
+  "error_id": "OBS-008",
   "related_open_error_ids": [
     "DPS-037",
     "DPS-021",
@@ -161,7 +153,8 @@
     "DPS-056",
     "DPS-057",
     "DPS-058",
-    "DPS-059"
+    "DPS-059",
+    "OBS-008"
   ],
   "requested_tank_assignment": {
     "main_tank": {
@@ -201,36 +194,41 @@
   "parent_objective": "Repair and validate DPS across every represented spec; narrow repair acceptance does not complete the roster objective.",
   "actor_acceptance_path": "docs/bot_raids/magmaw_dps_baseline_20260913.md#active-parent-objective-and-actor-acceptance",
   "previous_closed_magmaw_canary": {
-    "source_commit": "779f62087f43afa9996a09817eabac045b5999ee",
+    "source_commit": "ab829858df86a19d1ede9cad5d1017f5e8a3004b",
     "native_boss_death_accepted": true,
     "capture_accepted": true,
     "boss_clear": true,
     "terminal_reason": "clear",
     "cleanup_passed": true,
     "server_exit_code": 0,
-    "postrun_build_verified": true,
     "training_eligible": false,
     "qualification_eligible": false,
-    "recorded_casualties": 0,
     "boss_fight_casualties": 0,
-    "pull_to_death_seconds": 129.792,
-    "hostile_originated_damage": 28193123,
-    "pull_to_death_party_dps": 217217.72528353057,
-    "exact_effective_healing": 1682330,
-    "exact_hps": 12961.738782051281,
-    "requested_repair_id": "DPS-051,OBS-012,MOV-001",
+    "pull_to_death_seconds": 119.991,
+    "hostile_originated_damage": 28164503,
+    "pull_to_death_party_dps": 234721.79580135178,
+    "exact_effective_healing": 1567651,
+    "exact_hps": 13064.738188697485,
+    "requested_repair_id": "native_mushroom_radius_restart",
     "requested_repair_achieved": true,
     "performance_verdict": "not_accepted_roster_gaps_remain",
     "diagnosis_required": true,
-    "primary_baseline_source": "a3a74056c871a1083577f52f8a2e9516ce159e84",
-    "dvc_pointer": "artifacts/cata_raid_program/magmaw_balance_outcome_779f62087f_20260913.tar.gz.dvc",
-    "publication_state": "remote_verified_and_exact_duplicates_evicted",
+    "dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.raw.tar.zst.dvc",
+    "publication_state": "raw_and_reviews_remote_verified_raw_duplicates_evicted",
     "remote_reconstruction_verified": true,
     "raw_payloads_evicted": true,
-    "requested_repair_scope": "Three Treants and native damage; periodic outcome full/delta/timeline; receipt373 native hazard traversal.",
-    "infection_damage_event_count": 0,
-    "infection_affected_actor_count": 0,
-    "safety_retained": true,
-    "independent_review_sha256": "7d9a569f02f8a3c95e010e5ef1635c3ce2fbef6fad69f5a2ca2132c211561d67"
+    "review_dvc_pointer": "artifacts/cata_raid_program/magmaw_master_ab829_20260919.review.tar.gz.dvc"
+  },
+  "previous_implementation_review": {
+    "verdict": "independently_approved_heart_strike_mushroom_and_bane",
+    "live_verified": true,
+    "combined_focused_tests_passed": 9,
+    "heart_strike_review_sha256": "892ce1d863ba02b44b793d63ab782410ec997c9508012d6580bb1f46b3d7d471",
+    "mushroom_review_sha256": "184c8e521a486c7874c363fcf6ae36dd19a5408c46be7d45ea25589818b593b7",
+    "bane_review_sha256": "fc27cebff93edfee1d53f4cbceaa732e5a74644006e6080c5d0a3c86ae7e9cd0"
+  },
+  "implementation_review": {
+    "verdict": "OBS-008_implementation_in_progress",
+    "live_verified": false
   }
 }

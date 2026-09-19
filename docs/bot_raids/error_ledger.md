@@ -483,3 +483,37 @@ does not imply these fields exist; investigate the producer before tuning spells
 Both local Laya and hosted Jev reviewed10 actors without transport errors. Role
 packets explicitly lack detailed healing/mitigation metrics. Model agreement is
 advisory; keep predictions quarantined and preserve independent native reviews.
+
+## Scoped repairs measured, 2026-09-19
+
+Source73103e8646 cleared in126.233s at225,180.634 exact DPS and17,606.410 exact
+HPS, all ten alive. Performance is not accepted: DPS fell4.1% against ab829.
+Heart Strike's normal path is accepted:25 submissions,34 native effects and
+677,680 damage, with secondary target selection preserved. Protected-target
+negative coverage remains fixture evidence, not an independently observed live
+rejection. Both Mushroom detonations landed, seven child effects for161,126.
+Bane of Doom made zero parasite submissions while other defensive casts remained.
+These repairs do not establish whole-roster parity.
+
+OBS-008 is the next active edge. Fire30006 lost552,787 absolute damage despite
+the longer fight; its direct-attack outage reached29.055s. Across both Fire bots,
+18 of20 moving Scorch submissions finished unsuccessfully. Admission, executor
+and native movement permission use the same aura predicate. The native failure
+or cancellation reason and cast instance are missing; do not invent a movement
+permission fix. Extend the existing trace through native lifecycle and timeline,
+preserving synchronous finishes and distinct same-millisecond casts.
+
+Survival lost246,931 add damage, including absent Multi-Shot/Spread versus177,002
+baseline damage. Per-hostile legal/aura state is insufficient for a priority edit.
+Horn of Winter renewal demonstrably missed the hunter at46.824yd; preserve this
+buff-coverage issue. Healers faced46.93% more incoming health damage. Elemental
+and regular Fire dealt more absolute damage, with lower DPS over the longer fight.
+Missing Elemental combat potion, Blood Death Strike cadence, healer LOS/PoM and
+remaining Mushroom placement timing stay open in the actor table.
+
+Both local Laya and hosted Jev returned10 predictions without errors. All remain
+quarantined; neither model closes missing native observations. Exact HPS uses
+through-death healing, not the broader encounter aggregate's post-death healing.
+The geometry fixture did not compile the legacy GetAllMinionsByEntry API call;
+the failed native build caught its non-const signature. The one-line correction
+was independently reviewed before the successful73103 build and live run.
