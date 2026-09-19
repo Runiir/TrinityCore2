@@ -1169,6 +1169,8 @@ def _compact_jev_action_outcomes(rows: Any) -> list[dict[str, Any]]:
         "target_entry",
         "reason_code",
         "retry_reason",
+        "first_at_ms",
+        "last_at_ms",
     )
     return [
         {key: row[key] for key in allowed if key in row}
@@ -2095,7 +2097,7 @@ def _summarize_jev_failure_action_outcomes(
     """Keep direct native failures attributable without sending every row."""
     if not isinstance(rows, list):
         return []
-    grouped: dict[tuple[int, str, str, str, str, int], int] = Counter()
+    grouped: dict[tuple[int, str, str, str, str, int], dict[str, Any]] = {}
     for row in rows:
         if not isinstance(row, dict):
             continue
@@ -2107,23 +2109,36 @@ def _summarize_jev_failure_action_outcomes(
             str(row.get("reason_code") or row.get("retry_reason") or ""),
             _as_int(row.get("target_entry")),
         )
-        grouped[key] += max(1, _as_int(row.get("count")))
+        item = grouped.setdefault(key, {"count": 0, "first_at_ms": 0, "last_at_ms": 0})
+        item["count"] += max(1, _as_int(row.get("count")))
+        first_at_ms = _as_int(row.get("first_at_ms"))
+        last_at_ms = _as_int(row.get("last_at_ms"))
+        if first_at_ms:
+            item["first_at_ms"] = min(
+                first_at_ms,
+                int(item["first_at_ms"] or first_at_ms),
+            )
+        if last_at_ms:
+            item["last_at_ms"] = max(int(item["last_at_ms"]), last_at_ms)
 
     result = []
-    for (guid, class_spec, action_name, outcome, reason_code, target_entry), count in sorted(
-        grouped.items(), key=lambda item: (-item[1], item[0])
+    for (guid, class_spec, action_name, outcome, reason_code, target_entry), summary in sorted(
+        grouped.items(), key=lambda item: (-int(item[1]["count"]), item[0])
     )[:limit]:
         item: dict[str, Any] = {
             "bot_guid": guid,
             "class_spec": class_spec,
             "action_name": action_name,
             "outcome": outcome,
-            "count": count,
+            "count": int(summary["count"]),
         }
         if reason_code:
             item["reason_code"] = reason_code
         if target_entry:
             item["target_entry"] = target_entry
+        if summary["first_at_ms"] and summary["last_at_ms"]:
+            item["first_at_ms"] = int(summary["first_at_ms"])
+            item["last_at_ms"] = int(summary["last_at_ms"])
         result.append(item)
     return result
 
@@ -2153,6 +2168,12 @@ def _compact_native_candidate_rejections(
             "reason": str(row.get("reason") or "unknown"),
             "count": max(1, _as_int(row.get("count"))),
         }
+        first_at_ms = _as_int(row.get("first_at_ms"))
+        last_at_ms = _as_int(row.get("last_at_ms"))
+        if first_at_ms:
+            item["first_at_ms"] = first_at_ms
+        if last_at_ms:
+            item["last_at_ms"] = last_at_ms
         phase = str(row.get("phase") or "")
         if phase:
             item["phase"] = phase
@@ -2193,6 +2214,15 @@ def _summarize_jev_candidate_rejections(rows: Any) -> list[dict[str, Any]]:
             },
         )
         item["count"] += max(1, _as_int(row.get("count")))
+        first_at_ms = _as_int(row.get("first_at_ms"))
+        last_at_ms = _as_int(row.get("last_at_ms"))
+        if first_at_ms:
+            item["first_at_ms"] = min(
+                first_at_ms,
+                int(item.get("first_at_ms") or first_at_ms),
+            )
+        if last_at_ms:
+            item["last_at_ms"] = max(int(item.get("last_at_ms") or 0), last_at_ms)
         action_category = str(row.get("action_category") or "unknown")
         item["action_categories"].add(action_category)
         spell_id = _as_int(row.get("spell_id"))
@@ -2223,16 +2253,18 @@ def _summarize_jev_candidate_rejections(rows: Any) -> list[dict[str, Any]]:
             and (item["bot_guid"], item["reason"]) not in selected_keys
         )
         for item in selected:
-            result.append(
-                {
-                    "bot_guid": item["bot_guid"],
-                    "class_spec": item["class_spec"],
-                    "reason": item["reason"],
-                    "count": item["count"],
-                    "action_categories": sorted(item["action_categories"]),
-                    "spell_ids": sorted(item["spell_ids"])[:4],
-                }
-            )
+            summary = {
+                "bot_guid": item["bot_guid"],
+                "class_spec": item["class_spec"],
+                "reason": item["reason"],
+                "count": item["count"],
+                "action_categories": sorted(item["action_categories"]),
+                "spell_ids": sorted(item["spell_ids"])[:4],
+            }
+            if item.get("first_at_ms") and item.get("last_at_ms"):
+                summary["first_at_ms"] = int(item["first_at_ms"])
+                summary["last_at_ms"] = int(item["last_at_ms"])
+            result.append(summary)
     return sorted(
         result,
         key=lambda row: (
@@ -3969,6 +4001,224 @@ def _timeline_actor_signal(
     return result
 
 
+def _timeline_gap_overlap_evidence(
+    timeline_comparison: dict[str, Any] | None,
+    native_action_outcomes: Any,
+    native_candidate_rejections: Any,
+    encounter_first_at_ms: int,
+    *,
+    gap_limit: int = 3,
+    overlap_row_limit: int = 8,
+) -> dict[int, dict[str, Any]]:
+    """Join actor damage gaps to timestamped native evidence.
+
+    Timeline gaps are relative to the first encounter event, while native
+    action and candidate rows use absolute timestamps.  Aggregate native rows
+    are intentionally labeled as first/last intervals: overlap corroborates
+    that the native category was present during the gap window, but it is not
+    treated as an event-level proof when the source did not retain events.
+    """
+    result: dict[int, dict[str, Any]] = {}
+    if not isinstance(timeline_comparison, dict):
+        return result
+
+    def interval(row: Any) -> tuple[int, int] | None:
+        if not isinstance(row, dict):
+            return None
+        first_at_ms = _as_int(row.get("first_at_ms"))
+        last_at_ms = _as_int(row.get("last_at_ms"))
+        if not first_at_ms or not last_at_ms or last_at_ms < first_at_ms:
+            return None
+        return first_at_ms, last_at_ms
+
+    def overlap_ms(
+        left_first_at_ms: int,
+        left_last_at_ms: int,
+        right_first_at_ms: int,
+        right_last_at_ms: int,
+    ) -> int | None:
+        first_at_ms = max(left_first_at_ms, right_first_at_ms)
+        last_at_ms = min(left_last_at_ms, right_last_at_ms)
+        if first_at_ms > last_at_ms:
+            return None
+        return max(0, last_at_ms - first_at_ms)
+
+    actions_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in native_action_outcomes if isinstance(native_action_outcomes, list) else []:
+        if isinstance(row, dict):
+            actions_by_guid[_as_int(row.get("bot_guid") or row.get("actor_guid"))].append(row)
+    candidates_by_guid: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in (
+        native_candidate_rejections
+        if isinstance(native_candidate_rejections, list)
+        else []
+    ):
+        if isinstance(row, dict):
+            candidates_by_guid[_as_int(row.get("bot_guid") or row.get("actor_guid"))].append(row)
+
+    for actor in timeline_comparison.get("actors", []):
+        if not isinstance(actor, dict):
+            continue
+        guid = _as_int(actor.get("bot_guid"))
+        if not guid:
+            continue
+        gaps = actor.get("bot_largest_direct_gaps")
+        gaps = gaps if isinstance(gaps, list) else []
+        if not encounter_first_at_ms:
+            result[guid] = {
+                "status": "unavailable",
+                "reason": "encounter_first_at_ms_missing",
+                "gaps_considered": [],
+            }
+            continue
+
+        timestamped_actions = [
+            row for row in actions_by_guid.get(guid, []) if interval(row) is not None
+        ]
+        timestamped_candidates = [
+            row for row in candidates_by_guid.get(guid, []) if interval(row) is not None
+        ]
+        gap_rows: list[dict[str, Any]] = []
+        for gap in gaps[:gap_limit]:
+            if not isinstance(gap, dict):
+                continue
+            try:
+                from_t = float(gap.get("from_t"))
+                to_t = float(gap.get("to_t"))
+            except (TypeError, ValueError):
+                continue
+            if to_t < from_t:
+                from_t, to_t = to_t, from_t
+            gap_first_at_ms = encounter_first_at_ms + round(from_t * 1000.0)
+            gap_last_at_ms = encounter_first_at_ms + round(to_t * 1000.0)
+            action_overlaps: list[dict[str, Any]] = []
+            candidate_overlaps: list[dict[str, Any]] = []
+            for row in timestamped_actions:
+                row_interval = interval(row)
+                assert row_interval is not None
+                row_first_at_ms, row_last_at_ms = row_interval
+                row_overlap_ms = overlap_ms(
+                    gap_first_at_ms,
+                    gap_last_at_ms,
+                    row_first_at_ms,
+                    row_last_at_ms,
+                )
+                if row_overlap_ms is None:
+                    continue
+                outcome = str(row.get("outcome") or row.get("result") or "unknown")
+                reason = str(row.get("reason_code") or row.get("reason") or "")
+                action_row = {
+                    "source": "native_action_outcome",
+                    "action_name": str(row.get("action_name") or "unknown"),
+                    "outcome": outcome,
+                    "count": max(1, _as_int(row.get("count"))),
+                    "first_at_ms": row_first_at_ms,
+                    "last_at_ms": row_last_at_ms,
+                    "overlap_seconds": round(row_overlap_ms / 1000.0, 3),
+                    "actionable_failure": (
+                        outcome in NATIVE_ACTIONABLE_FAILURE_OUTCOMES
+                        or reason in {"no_line_of_sight", "out_of_range"}
+                    ),
+                }
+                if reason:
+                    action_row["reason_code"] = reason
+                action_overlaps.append(action_row)
+            for row in timestamped_candidates:
+                row_interval = interval(row)
+                assert row_interval is not None
+                row_first_at_ms, row_last_at_ms = row_interval
+                row_overlap_ms = overlap_ms(
+                    gap_first_at_ms,
+                    gap_last_at_ms,
+                    row_first_at_ms,
+                    row_last_at_ms,
+                )
+                if row_overlap_ms is None:
+                    continue
+                reason = str(row.get("reason") or "unknown")
+                candidate_row = {
+                    "source": "native_candidate_rejection",
+                    "reason": reason,
+                    "action_category": str(row.get("action_category") or "unknown"),
+                    "count": max(1, _as_int(row.get("count"))),
+                    "first_at_ms": row_first_at_ms,
+                    "last_at_ms": row_last_at_ms,
+                    "overlap_seconds": round(row_overlap_ms / 1000.0, 3),
+                    "movement_or_range": reason in MOVEMENT_SIGNAL_REASONS,
+                }
+                spell_id = _as_int(row.get("spell_id"))
+                if spell_id:
+                    candidate_row["spell_id"] = spell_id
+                candidate_overlaps.append(candidate_row)
+
+            overlap_rows = [*action_overlaps, *candidate_overlaps]
+            overlap_rows.sort(
+                key=lambda row: (
+                    -int(bool(row.get("actionable_failure") or row.get("movement_or_range"))),
+                    -float(row.get("overlap_seconds") or 0.0),
+                    -int(row.get("count") or 0),
+                )
+            )
+            gap_rows.append({
+                "gap_sec": round(to_t - from_t, 3),
+                "from_t": round(from_t, 3),
+                "to_t": round(to_t, 3),
+                "from_at_ms": gap_first_at_ms,
+                "to_at_ms": gap_last_at_ms,
+                "from_ability": gap.get("from_ability"),
+                "to_ability": gap.get("to_ability"),
+                "action_overlap_count": len(action_overlaps),
+                "candidate_overlap_count": len(candidate_overlaps),
+                "actionable_failure_count": sum(
+                    int(row["count"])
+                    for row in action_overlaps
+                    if row.get("actionable_failure")
+                ),
+                "movement_or_range_rejection_count": sum(
+                    int(row["count"])
+                    for row in candidate_overlaps
+                    if row.get("movement_or_range")
+                ),
+                "overlap_reasons": sorted({
+                    str(row.get("reason_code") or row.get("reason") or row.get("outcome"))
+                    for row in overlap_rows
+                    if row.get("reason_code") or row.get("reason") or row.get("outcome")
+                }),
+                "overlap_rows": overlap_rows[:overlap_row_limit],
+                "evidence_precision": (
+                    "native_aggregate_first_last_interval"
+                    if overlap_rows
+                    else "none"
+                ),
+            })
+
+        has_overlap = any(
+            row.get("action_overlap_count") or row.get("candidate_overlap_count")
+            for row in gap_rows
+        )
+        if has_overlap:
+            status = "corroborated"
+            reason = "timestamped_native_aggregate_overlaps_damage_gap"
+        elif timestamped_actions or timestamped_candidates:
+            status = "no_timestamped_overlap"
+            reason = "timestamped_native_rows_do_not_overlap_damage_gap"
+        else:
+            status = "unavailable"
+            reason = "native_rows_have_no_timestamped_intervals"
+        result[guid] = {
+            "status": status,
+            "reason": reason,
+            "evidence_precision": (
+                "native_aggregate_first_last_interval" if has_overlap else "none"
+            ),
+            "encounter_first_at_ms": encounter_first_at_ms,
+            "timestamped_action_row_count": len(timestamped_actions),
+            "timestamped_candidate_row_count": len(timestamped_candidates),
+            "gaps_considered": gap_rows,
+        }
+    return result
+
+
 def _compact_group_timeline(
     timeline_comparison: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -4017,6 +4267,7 @@ def _compact_group_timeline(
             "bot_max_gap_sec": bot.get("max_gap_sec"),
             "bot_direct_event_count": direct.get("event_count"),
             "bot_direct_max_gap_sec": direct.get("max_gap_sec"),
+            "largest_direct_gap": gaps[0] if gaps else None,
             "largest_direct_gap_sec": (
                 gaps[0].get("gap_sec")
                 if gaps and isinstance(gaps[0], dict)
@@ -4077,6 +4328,7 @@ def _group_jev_state(state: dict[str, Any]) -> dict[str, Any]:
             "actor_identity",
             "trace_capture",
             "wcl_reference",
+            "timeline_gap_overlap_evidence",
         )
         if key in boss
     }
@@ -4192,11 +4444,32 @@ def _boss_dps_review(
         target_duty_context,
     )
     timeline_actor_signals = _timeline_actor_signal(timeline_comparison)
+    boss_metrics = deterministic.get("boss_combat_metrics")
+    boss_metrics = boss_metrics if isinstance(boss_metrics, dict) else {}
+    encounter_first_at_ms = _as_int(boss_metrics.get("first_at_ms"))
+    if not encounter_first_at_ms:
+        encounter_first_at_ms = _as_int(trace_capture.get("combat_window_start_ms"))
+    timeline_gap_overlap = _timeline_gap_overlap_evidence(
+        timeline_comparison,
+        native_action_outcomes,
+        native_candidate_rejections,
+        encounter_first_at_ms,
+    )
     for actor in actor_loss_signals:
         if not isinstance(actor, dict):
             continue
-        timeline_signal = timeline_actor_signals.get(_as_int(actor.get("bot_guid")))
+        bot_guid = _as_int(actor.get("bot_guid"))
+        timeline_signal = timeline_actor_signals.get(bot_guid)
         if timeline_signal is not None:
+            timeline_signal = dict(timeline_signal)
+            timeline_signal["gap_overlap_evidence"] = timeline_gap_overlap.get(
+                bot_guid,
+                {
+                    "status": "unavailable",
+                    "reason": "actor_timeline_gap_join_missing",
+                    "gaps_considered": [],
+                },
+            )
             actor["timeline_signal"] = timeline_signal
     failure_action_outcomes = _jev_action_outcome_slice(native_action_outcomes)
     failure_action_summary = _summarize_jev_failure_action_outcomes(
@@ -4245,7 +4518,9 @@ def _boss_dps_review(
         "native_mushroom_diagnostics": _compact_jev_native_mushroom_diagnostics(
             deterministic.get("native_mushroom_diagnostics", [])
         ),
-        "causal_signal_view": "full_window_target_overlay_and_failure_window_overlap",
+        "causal_signal_view": (
+            "full_window_target_overlay_failure_window_and_timeline_gap_overlap"
+        ),
         "native_outcome_signal": {
             "outcome_count": native_outcome_count,
             "actionable_failure_count": native_failure_count,
@@ -4259,6 +4534,10 @@ def _boss_dps_review(
         },
         "actor_loss_signals": actor_loss_signals,
         "timeline_comparison": timeline_comparison,
+        "timeline_gap_overlap_evidence": {
+            str(bot_guid): evidence
+            for bot_guid, evidence in timeline_gap_overlap.items()
+        },
         # Only gates outside the expected profile-wait set are sent as the
         # short candidate list. The complete native rows remain in the
         # deterministic report for local audit and replay.
@@ -4298,8 +4577,18 @@ def _boss_dps_review(
                 or 0
             ),
             "attributable_dps_decision_outcomes": len(decision_outcomes),
+            "timeline_gap_overlap_actor_count": len(timeline_gap_overlap),
+            "timeline_gap_overlap_corroborated_actor_count": sum(
+                1
+                for evidence in timeline_gap_overlap.values()
+                if evidence.get("status") == "corroborated"
+            ),
             "trace_capture": trace_capture,
-            "interpretation": "full_window_native_aggregate_is_authoritative_when_present; retained_tail_is_missing_capture_not_proof_of_no_rejection",
+            "interpretation": (
+                "full_window_native_aggregate_is_authoritative_when_present; "
+                "retained_tail_is_missing_capture_not_proof_of_no_rejection; "
+                "timeline_gap_overlap_is_aggregate_interval_corroboration_only"
+            ),
         },
         "trace_capture": trace_capture,
         "wcl_reference": wcl_reference,
@@ -4346,7 +4635,11 @@ def _jev_questions(
                 "different: periodic ticks and multi-target rows can outnumber casts. "
                 "Use matched ability timing and actor-level gaps, not raw count equality. "
                 "A missing WCL reference is an explicit not_comparable result, never a "
-                "passing or failing inference."
+                "passing or failing inference. A gap-overlap causal claim is admissible "
+                "only when the actor's timeline_signal.gap_overlap_evidence.status is "
+                "corroborated. no_timestamped_overlap and unavailable are insufficient. "
+                "native_aggregate_first_last_interval is corroboration, not event-level "
+                "proof, so do not treat it as high-confidence by itself."
             ),
             "criteria": {
                 "aligned": "Comparable actors show broadly aligned normalized cadence with no material unexplained gap.",
@@ -4357,7 +4650,7 @@ def _jev_questions(
         },
         "dps_loss_area": {
             "type": "choice",
-            "instructions": "Classify the actionable DPS loss from boss_dps_review. When timeline_comparison is available, use each actor's bot_common_window_dps: positive landed damage divided by the normalized common window shared with WCL. Do not compare bot_native_encounter_window_dps or legacy encounter_window_dps when the local fight is longer than the WCL window. The timeline lists WCL-only abilities, but those are observation gaps only: do not call one a missing damage action unless its name identifies a damage action and native action outcomes or an attributable damage gap corroborate it. Proc, aura, utility, and pet-state rows such as Lava Surge, Master of the Elements, or Earth Elemental Totem are context, not cast deficits. The aggregate wcl_window_dps contract remains originated damage divided by the first-to-last positive hostile damage_done window in duration_sec. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material denominator-matched DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. WCL is comparison context, not an acceptance floor.",
+            "instructions": "Classify the actionable DPS loss from boss_dps_review. When timeline_comparison is available, use each actor's bot_common_window_dps: positive landed damage divided by the normalized common window shared with WCL. Do not compare bot_native_encounter_window_dps or legacy encounter_window_dps when the local fight is longer than the WCL window. The timeline lists WCL-only abilities, but those are observation gaps only: do not call one a missing damage action unless its name identifies a damage action and native action outcomes or an attributable damage gap corroborate it. Proc, aura, utility, and pet-state rows such as Lava Surge, Master of the Elements, or Earth Elemental Totem are context, not cast deficits. The aggregate wcl_window_dps contract remains originated damage divided by the first-to-last positive hostile damage_done window in duration_sec. Treat capture_duration_sec as telemetry lifetime only. Treat legacy `dps` as active-combat DPS and `active_dps` as actor damage-bearing cadence context; do not use either as the WCL denominator. Keep route entrance/recovery wall clock separate from the Magmaw encounter window. Candidate scans are not failures: require material native no_action/cast_failed/LOS/range evidence. Low native failure plus no active stuck event rules out action_rejection. A material denominator-matched DPS deficit with low movement and failure can be uptime; use the full-window damage-gap fields to distinguish repeated cadence gaps from one missing trace segment. A required assignment is a separate causal branch: use its assignment_status and landed-effect evidence before labeling the actor's rotation. Do not call low uptime cadence loss when duty_explains_idle is true, required_assignment_active is true, magmaw_control_receipt_count is nonzero, or failure windows overlap material mechanic work. A native Mangle/vehicle receipt or proximate damage gap is mechanic downtime, not proof of a rotation defect. Require counterfactual_status=eligible for an actor repair; partial/unavailable/required-assignment/mechanic-control statuses mean insufficient_data or collect_more_canaries. For movement, range, or action-rejection claims, require timeline_signal.gap_overlap_evidence.status=corroborated; no_timestamped_overlap or unavailable means insufficient_data. Even corroborated native_aggregate_first_last_interval evidence is only interval-level support, not event-level proof. WCL is comparison context, not an acceptance floor.",
             "criteria": {
                 "no_material_loss": "DPS is available and the trace shows no material execution blocker.",
                 "uptime": "Idle/cadence loss remains after duty overlap is ruled out.",
@@ -4399,11 +4692,14 @@ def _jev_questions(
                 "bot_native_encounter_window_dps is diagnostic when the local window is "
                 "longer than WCL. Use uptime, movement/range, native "
                 "failure ratio, candidate gates, duty context, assignment status, control "
-                "receipts, damage gaps, and counterfactual_status. "
+                "receipts, damage gaps, gap_overlap_evidence, and counterfactual_status. "
                 "WCL is context only. Do not authorize actor repair when duty_explains_idle, "
                 "required_assignment_active, or counterfactual_status != eligible. Incomplete "
                 "required duty means encounter_assignment; otherwise mixed or sparse evidence "
-                "means collect_more_canaries."
+                "means collect_more_canaries. Treat gap_overlap_evidence.status=corroborated "
+                "as aggregate corroboration only; native_aggregate_first_last_interval is "
+                "not event-level proof. no_timestamped_overlap or unavailable cannot support "
+                "a high-confidence movement/range/action-rejection choice."
             ),
             "criteria": {
                 "no_material_action": "No attributable material gap.",
@@ -4452,7 +4748,7 @@ def _jev_questions(
 def _next_fix_question() -> dict[str, Any]:
     return {
         "type": "choice",
-        "instructions": "Choose one bounded next action from the typed judgments. Native evidence is authoritative. Use admission_lifecycle for admission failure; encounter_assignment only for incomplete required duty; collect_more_canaries for executed, unobserved, mixed, or sparse duty evidence. If duty_explains_idle, a control receipt, or ineligible counterfactual_status is present, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for an eligible material encounter-window DPS gap with low movement/failure; movement_recovery only when movement/range facts align. Require direct evidence for shared_arbitration, rotation_profile, or native_mechanics.",
+        "instructions": "Choose one bounded next action from the typed judgments. Native evidence is authoritative. Use admission_lifecycle for admission failure; encounter_assignment only for incomplete required duty; collect_more_canaries for executed, unobserved, mixed, or sparse duty evidence. If duty_explains_idle, a control receipt, or ineligible counterfactual_status is present, do not choose uptime_cadence or movement_recovery. Use uptime_cadence only for an eligible material encounter-window DPS gap with low movement/failure; movement_recovery only when movement/range facts align. Require a corroborated timeline_signal.gap_overlap_evidence.status for movement/range/action-rejection claims; native_aggregate_first_last_interval remains interval-level support, not event-level proof. Require direct evidence for shared_arbitration, rotation_profile, or native_mechanics.",
         "criteria": {
             "collect_more_canaries": "Evidence is insufficient or not reproducible.",
             "admission_lifecycle": "Repair run admission, roster, or lifecycle first.",

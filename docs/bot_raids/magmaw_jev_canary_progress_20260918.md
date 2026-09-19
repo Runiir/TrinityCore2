@@ -571,3 +571,15 @@ large local trees are the active build, game data, dataset, Pixi environment
 and DVC cache. A workspace-scoped DVC garbage-collection check was run; no
 broad cache deletion was performed because the current repository still
 references those objects.
+
+The follow-up audit found one more layer outside the active worktree: old
+Magmaw admission/composite/provisioning bundles, a small WCL-derived scratch
+extraction, one stale run-receipt directory, and generated server logs. They
+were captured in
+`artifacts/cata_raid_program/magmaw_stale_validation_compact_20260919.tar.gz.dvc`
+and evicted after a successful DVC push. The remaining 55 MiB of auxiliary
+reports and scripts at the shared validation root was captured in
+`artifacts/cata_raid_program/shared_validation_stale_scratch_compact_20260919.tar.gz.dvc`
+and evicted as well. The shared source checkout and WoWSims source/toolchain
+were retained because they are still reusable runtime/reference inputs; the
+canonical WCL references in the active repository were verified present.

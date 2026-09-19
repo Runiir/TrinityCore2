@@ -724,6 +724,8 @@ def test_compact_metrics_preserves_full_window_candidate_rejections() -> None:
                     "action_category": "builder",
                     "reason": "max_range_exceeded",
                     "count": 12,
+                    "first_at_ms": 21000,
+                    "last_at_ms": 31000,
                 }
             ],
         },
@@ -735,6 +737,8 @@ def test_compact_metrics_preserves_full_window_candidate_rejections() -> None:
     assert rejection["class_spec"] == "fire_mage"
     assert rejection["reason"] == "max_range_exceeded"
     assert rejection["count"] == 12
+    assert rejection["first_at_ms"] == 21000
+    assert rejection["last_at_ms"] == 31000
 
 
 def test_jev_candidate_rejection_summary_groups_spell_rows_and_keeps_movement() -> None:
@@ -769,6 +773,89 @@ def test_jev_candidate_rejection_summary_groups_spell_rows_and_keeps_movement() 
             "spell_ids": [133, 2136],
         }
     ]
+
+
+def test_timeline_gap_overlap_joins_absolute_native_failure_intervals() -> None:
+    evidence = analyzer._timeline_gap_overlap_evidence(
+        {
+            "actors": [{
+                "bot_guid": 10,
+                "bot_largest_direct_gaps": [{
+                    "gap_sec": 10.0,
+                    "from_t": 20.0,
+                    "to_t": 30.0,
+                    "from_ability": "Fireball",
+                    "to_ability": "Fireball",
+                }],
+            }]
+        },
+        [{
+            "bot_guid": 10,
+            "action_name": "fireball",
+            "outcome": "no_action",
+            "reason_code": "out_of_range",
+            "count": 2,
+            "first_at_ms": 25000,
+            "last_at_ms": 26000,
+        }],
+        [{
+            "bot_guid": 10,
+            "reason": "max_range_exceeded",
+            "action_category": "builder",
+            "spell_id": 133,
+            "count": 5,
+            "first_at_ms": 26000,
+            "last_at_ms": 27500,
+        }],
+        1000,
+    )
+
+    actor = evidence[10]
+    gap = actor["gaps_considered"][0]
+    assert actor["status"] == "corroborated"
+    assert actor["evidence_precision"] == "native_aggregate_first_last_interval"
+    assert (gap["from_at_ms"], gap["to_at_ms"]) == (21000, 31000)
+    assert gap["actionable_failure_count"] == 2
+    assert gap["movement_or_range_rejection_count"] == 5
+    assert {row["source"] for row in gap["overlap_rows"]} == {
+        "native_action_outcome",
+        "native_candidate_rejection",
+    }
+
+
+def test_timeline_gap_overlap_does_not_promote_nonoverlapping_native_rows() -> None:
+    evidence = analyzer._timeline_gap_overlap_evidence(
+        {
+            "actors": [{
+                "bot_guid": 10,
+                "bot_largest_direct_gaps": [{
+                    "gap_sec": 10.0,
+                    "from_t": 20.0,
+                    "to_t": 30.0,
+                }],
+            }]
+        },
+        [{
+            "bot_guid": 10,
+            "action_name": "fireball",
+            "outcome": "no_action",
+            "count": 2,
+            "first_at_ms": 1000,
+            "last_at_ms": 5000,
+        }],
+        [{
+            "bot_guid": 10,
+            "reason": "max_range_exceeded",
+            "count": 5,
+            "first_at_ms": 6000,
+            "last_at_ms": 9000,
+        }],
+        1000,
+    )
+
+    actor = evidence[10]
+    assert actor["status"] == "no_timestamped_overlap"
+    assert actor["gaps_considered"][0]["overlap_rows"] == []
 
 
 def test_jev_target_duty_projection_keeps_causal_gates_without_contract_noise() -> None:
