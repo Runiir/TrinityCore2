@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
+  "next_action": "Review every actor; compare matched baseline, native outcome, and performance separately. Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 50,
+    "revision": 51,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "assess",
     "actor_ids": [
       "30001",
       "30002",
@@ -1375,6 +1375,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 50,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 50,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "advance",
+          "claim_token": "16710bf877ff80934f2b2e035d53f055b9d5d74545ad1fc144560f4e0fa22fe2",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json",
+            "sha256": "1432495b7b357a8e820aef0eb24e785bd8d628768ecb53824a38e003126505cd"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1448,6 +1466,10 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_build_20260920.json",
         "sha256": "034b43d7d33c7ee1ba247c00a584212e89ade482e16c5a9ff7da5f6d44887fa6"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json",
+        "sha256": "1432495b7b357a8e820aef0eb24e785bd8d628768ecb53824a38e003126505cd"
       }
     },
     "tested_files": {
@@ -1461,11 +1483,11 @@
       "source_commit": "fe093325f3922e4007dab33105987ce99725172e",
       "binary_sha256": "9c09d7eabdc513ad131bdc1f814ec6a0f5cf71b7f3b927a8ff2248bc102e1690"
     },
-    "claim": {
-      "owner": "codex-magmaw-10n-observer-validate",
-      "token": "16710bf877ff80934f2b2e035d53f055b9d5d74545ad1fc144560f4e0fa22fe2",
-      "operation_id": "16710bf877ff80934f2b2e035d53f055b9d5d74545ad1fc144560f4e0fa22fe2",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 16878463685461682,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
     }
   },
   "parked_scenarios": {

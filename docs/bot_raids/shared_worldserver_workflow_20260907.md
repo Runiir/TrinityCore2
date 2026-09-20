@@ -1,11 +1,34 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-19. Work continues on master. The separate ongoing JEV branch
+Updated 2026-09-20. Work continues on master. The separate ongoing JEV branch
 is preserved.
 
 ## Current work and latest native run
 
-The latest work is the `50ec676cdb` five-spec dummy batch, with all exact
+Latest closed measurement: Balance observer repair on source `3457a5eba5`,
+build source `fe093325f3`, completed exactly 300 seconds at **31,877.553 DPS**
+and 0 HPS. Capture, diagnostics, reference comparability and server cleanup
+passed. WoWSims is 35,447.589 DPS; performance remains unaccepted. The graph is
+at `assess`, revision 51, with no claim. Resume this assessment, not another run.
+The next agent must obtain attributable independent review: the prior receipt
+labelled `independent-reviewer` does not cite a separate reviewer's result.
+All actor and encounter requirements remain open.
+
+The run adapter is
+`artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json`.
+Raw evidence is remote-verified and locally evicted. Restore only when needed:
+
+```sh
+pixi run dvc pull artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc
+tar -xzf artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz -C /tmp
+```
+
+Do not reset the saved graph or remove the parity worktree: the runner currently
+uses its verified runtime assets. The JEV worktree also contains uncommitted
+work. Future new builds use host12; historical fast4 receipts retain their own
+policy. Remaining workflow defects are recorded in FLOW-003.
+
+The earlier baseline is the `50ec676cdb` five-spec dummy batch, with all exact
 300-second measurements complete and concurrent native isolation/cleanup
 proved. Per-spec DPS and remaining setup/cadence findings are in the
 [current dummy table](magmaw_dps_baseline_20260913.md#current-dummy-batch-50ec).

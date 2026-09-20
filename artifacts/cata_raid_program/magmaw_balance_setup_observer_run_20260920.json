@@ -1,0 +1,130 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "run",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "coordinator",
+  "operation_id": "16710bf877ff80934f2b2e035d53f055b9d5d74545ad1fc144560f4e0fa22fe2",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_plan_20260920.json",
+      "sha256": "5199478893d53ef3fc77a2a6b987251b8a16c8772caa1bfab9f15d6cae76d7d5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_build_20260920.json",
+      "sha256": "034b43d7d33c7ee1ba247c00a584212e89ade482e16c5a9ff7da5f6d44887fa6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_validate_claim_event_20260920.json",
+      "sha256": "9d107106e2ea0ece1d9941883bf442bc2970297527484fbf861f58c6d73894ac"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc",
+      "sha256": "627a72bc40a2e92c6d64b841240f0a059cedab6c582957293fc77a27924cb9d8"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ],
+  "source_commit": "3457a5eba544d9ae5bd6a4cb59b39e3848996607",
+  "source_tree": "4f5d32d03a45942ede3cd4b06fd2a9ffed35862b",
+  "build_identity": {
+    "source_commit": "fe093325f3922e4007dab33105987ce99725172e",
+    "binary_sha256": "9c09d7eabdc513ad131bdc1f814ec6a0f5cf71b7f3b927a8ff2248bc102e1690"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "attempt_id": 1,
+  "server_epoch": 16878463685461682,
+  "cohort_id": "dummy-135dbffe9b67-1",
+  "target_guid": 30540,
+  "target_phase": 32512,
+  "profile_content_hash": "E223B33AA2E195AFDFAABC3839FE571D818FD1F0F64F678D625BB5A641A2A954",
+  "terminal_reason": "measurement_complete",
+  "native_terminal_reason": "complete",
+  "scenario_kind": "dummy",
+  "scoring_ms": 300000,
+  "closed": true,
+  "cleanup_verified": true,
+  "cleanup_observation": {
+    "batch_process_exited": true,
+    "batch_process_return_code": 0,
+    "server_started": true,
+    "server_exited": true,
+    "server_pid": 4042041,
+    "cleanup_active": false,
+    "cleanup_lease_count": 0
+  },
+  "measurement_completed": true,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": true,
+  "comparison_rejections": [],
+  "all_measurements_completed": true,
+  "all_references_comparable": true,
+  "all_captures_accepted": true,
+  "batch_accepted": true,
+  "measured_dps": 31877.553333333333,
+  "reference_dps": 35447.58892725215,
+  "dps_ratio": 0.899287,
+  "performance_accepted": false,
+  "training_eligible": false,
+  "runtime_asset_source_checkout": "/home/runiir/Games/trinity-magmaw-parity",
+  "native_setup_observations": {
+    "mark_of_the_wild": {
+      "spell_id": 79061,
+      "active_samples": 2998,
+      "inactive_samples": 0,
+      "sample_count": 2998,
+      "source": "self_provided_player_aura_observation",
+      "reference_condition_compatibility": true
+    },
+    "scoring_start_intellect_modifier_ledger": {
+      "mark_of_the_wild_spell_id": 79061,
+      "mark_of_the_wild_amount_pct": 5,
+      "armor_specialization_spell_id": 86093,
+      "armor_specialization_amount_pct": 5,
+      "gear_manifest_sha256": "67bc86c55fc10ee87228dd5aa6a4076b45fbd1009a82650712cee686fb4ea55a"
+    },
+    "native_scoring_start_setup": true,
+    "unexpected_player_aura_active_samples": 0,
+    "unexpected_target_aura_active_samples": 0
+  },
+  "calibration_acceptance": {
+    "passed": true,
+    "scored_window_seconds": 300.0,
+    "diagnostics_passed": true,
+    "role_calibration_passed": true
+  },
+  "captured_output_hashes": {
+    "batch.json": "0f20eafdbe7fad4c635f87acf837aea3ac2da1db9665ef0e3a089ead3b95e282",
+    "results.json": "346f4e26cbcc3756df5b64010675bd823bd160a94b1e92e2353fc3051c263f09",
+    "balance_druid/report.json": "23c9fab4a3d1416bd7dc458fb97704352e7f7d9a808eb69926fcd3ebbd217a44",
+    "balance_druid/cleanup.json": "45337ee17bd4d351f69629e5de2bb452365fd0ca637f93412a7870354213d39d",
+    "runtime-assets.json": "f5959f840e4065562a8af8d540f3fdf725c35cc908109bb1ab55fb8d7ff101e4"
+  },
+  "archive": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc",
+    "sha256": "627a72bc40a2e92c6d64b841240f0a059cedab6c582957293fc77a27924cb9d8",
+    "md5": "94950c0fec6447c05ba7f9a948e292fc",
+    "size_bytes": 2939037,
+    "remote_verified": true,
+    "remote_copy_size_bytes": 2939037,
+    "remote_copy_sha256": "7857f08181be6978ff24c17ac39d26b6b2a057846d5bd2e92b3e80ec84ee5f0c"
+  }
+}
