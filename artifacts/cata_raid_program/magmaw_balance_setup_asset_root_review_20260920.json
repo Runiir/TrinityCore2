@@ -1,0 +1,40 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "review",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "independent-balance-asset-root-reviewer",
+  "verdict": "approved",
+  "source_commit": "94405a80171e72d1667237ade395b601512a5b15",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_asset_root_20260920.json",
+      "sha256": "58f6868fbd71012478a7665395829064e72c0b83174f13159ee241cc1889853e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_tests_20260920.json",
+      "sha256": "2c1d74251a0ce17551ecf946b7cefaa66a1d2e62f565c82109a85629af2350ff"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_rebased_20260920.json",
+      "sha256": "45c55fe70ff1eb2b7576dc8072bd449e9ec0e6022d5ce0042ffa5532ceacfc97"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "1982bc564ae74894a74798a388a4d50564a447431217556fecfad8af73521777"
+    }
+  ],
+  "file_hashes": {
+    "tools/raid_program/run_dummy_calibrations.py": "49c531bfd6d7a1f0700b5745b81a8a7f1bf3018a3a07395387da82dda8f30f39"
+  },
+  "review_summary": "The bounded repair adds an explicit offline runtime-asset source checkout to dummy calibration closure admission. The source root is validated as a directory and is passed only to closure verification; the configured DataDir remains the native asset root, the default remains the coordinator checkout for compatibility, and no gameplay, roster, reference, or scoring logic changes were introduced.",
+  "review_findings": [
+    "The runner now records the selected source checkout in its report, making the offline/native asset-root split attributable.",
+    "The closure contract remains fail-closed; the repair resolves the normalized source-checkout versus configured-DataDir mmaps mode collision observed on the coordinator checkout.",
+    "The combined source-compatibility and runtime-closure suite passed 102 tests with 1 skip after one isolated fixture path-drift retry; focused calibration, fixture, reference-catalog, and catalog-validation checks also passed.",
+    "The hosted Jev advice is retained in the test receipt; Laya was unavailable and is not treated as favorable evidence."
+  ],
+  "limitations": [
+    "A fresh native worldserver build and Balance dummy run at this current source commit remain required.",
+    "Balance setup and Magmaw raid performance acceptance remain open in the parent graph."
+  ]
+}

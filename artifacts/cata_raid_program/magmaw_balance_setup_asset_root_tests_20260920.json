@@ -1,0 +1,85 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "tests",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "2e970c1d7419ec863230451014478428c4a87d966b778af0425bcdc5529c5bc0",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_asset_root_20260920.json",
+      "sha256": "58f6868fbd71012478a7665395829064e72c0b83174f13159ee241cc1889853e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_implement_claim_20260920.json",
+      "sha256": "b217706c85eda17807ad24fa9fe78a6c79a1c234956d1bd0cbdd2ba3ed9aaba5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_rebased_20260920.json",
+      "sha256": "45c55fe70ff1eb2b7576dc8072bd449e9ec0e6022d5ce0042ffa5532ceacfc97"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "7edb80f8e6a76c2bc7705f8b3912d19a95fa76e236eaf3994f0853cc42d64e73"
+    }
+  ],
+  "file_hashes": {
+    "tools/raid_program/run_dummy_calibrations.py": "49c531bfd6d7a1f0700b5745b81a8a7f1bf3018a3a07395387da82dda8f30f39"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_build_source_compatibility.py tests/test_runtime_asset_closure.py",
+      "exit_status": 0,
+      "passed": 102,
+      "skipped": 1
+    },
+    {
+      "command": "pixi run pytest -q tests/test_runtime_asset_closure.py::test_selected_map_explicit_contract_malformed_fields_fail_closed[expected_files-None-map_contract_expected_files_invalid]",
+      "exit_status": 0,
+      "passed": 1
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+      "exit_status": 0,
+      "passed": 9
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
+      "exit_status": 0,
+      "passed": true
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "passed": true
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "passed": true
+    }
+  ],
+  "observations": {
+    "transient_first_combined_test_failure": {
+      "command": "pixi run pytest -q tests/test_build_source_compatibility.py tests/test_runtime_asset_closure.py",
+      "exit_status": 1,
+      "failure": "test_selected_map_explicit_contract_malformed_fields_fail_closed[expected_files-None-map_contract_expected_files_invalid] failed during fixture setup with path_drift",
+      "classification": "transient_filesystem_fixture_race_or_overlayfs_path_drift",
+      "isolated_reproduction": "passed; immediate full rerun passed 102 tests with 1 skip"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_advice_20260920.json",
+        "sha256": "106d47a652c162d4cf26928e2f3d48714a1825f7c1a32d181ce9afd215c1383e"
+      },
+      "adjudication": "Retained hosted Jev review supports the native Balance hypothesis; this test checkpoint covers only the explicit runtime-asset source-root adapter discovered by the revised closure contract."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; the reproducible closure contract and passing focused tests control this runner checkpoint."
+    }
+  }
+}

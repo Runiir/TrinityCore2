@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 33,
+    "revision": 35,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -1092,6 +1092,41 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 33,
+        "unit_id": "magmaw:balance_self_setup_01",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 33,
+          "unit_id": "magmaw:balance_self_setup_01",
+          "action": "advance",
+          "claim_token": "2e970c1d7419ec863230451014478428c4a87d966b778af0425bcdc5529c5bc0",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_tests_20260920.json",
+            "sha256": "2c1d74251a0ce17551ecf946b7cefaa66a1d2e62f565c82109a85629af2350ff"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 34,
+        "unit_id": "magmaw:balance_self_setup_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 34,
+          "unit_id": "magmaw:balance_self_setup_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_review_20260920.json",
+            "sha256": "043336953f97536ac7beec2852c4a3111636ebd9839e752c87c0ab189e0ea6f6"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1100,7 +1135,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "acbba08c89831e81a25e4466a89ac77912310389",
+    "source_base_commit": "94405a80171e72d1667237ade395b601512a5b15",
     "assignment": {
       "hypothesis": "The Balance validation failure is a runner admission defect, not a native Balance defect: the updated runtime-asset contract requires the offline source-checkout root and native configured DataDir root to be physically distinct, but run_dummy_calibrations hardcodes both to the coordinator checkout. Expose an explicit source-checkout binding and pass it through the closure audit/report.",
       "owned_files": [
@@ -1152,14 +1187,21 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_asset_root_20260920.json",
         "sha256": "58f6868fbd71012478a7665395829064e72c0b83174f13159ee241cc1889853e"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_tests_20260920.json",
+        "sha256": "2c1d74251a0ce17551ecf946b7cefaa66a1d2e62f565c82109a85629af2350ff"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_review_20260920.json",
+        "sha256": "043336953f97536ac7beec2852c4a3111636ebd9839e752c87c0ab189e0ea6f6"
       }
     },
-    "claim": {
-      "owner": "codex-magmaw-10n-asset-root",
-      "token": "2e970c1d7419ec863230451014478428c4a87d966b778af0425bcdc5529c5bc0",
-      "operation_id": "2e970c1d7419ec863230451014478428c4a87d966b778af0425bcdc5529c5bc0",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "tools/raid_program/run_dummy_calibrations.py": "49c531bfd6d7a1f0700b5745b81a8a7f1bf3018a3a07395387da82dda8f30f39"
+    },
+    "tested_commit": "94405a80171e72d1667237ade395b601512a5b15",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
