@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 66,
+    "revision": 67,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -1664,6 +1664,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 66,
+        "unit_id": "magmaw:balance_effective_stat_parity_01",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "revision": 66,
+          "action": "advance",
+          "unit_id": "magmaw:balance_effective_stat_parity_01",
+          "claim_token": "724c2f2a2a0bf1066e3a0c60daf57358188855cbe209fabc6a100b3618319356",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_20260920.json",
+            "sha256": "4ae54420dcbad1404cf3a7ebb0d23e39164bd865ca701a1bb980337e58fa2cd1"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1739,6 +1757,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_20260920.json",
         "sha256": "2c69d5d30934e5437d82866f435b86f5e27fb80b4976b85c840f8dc77ba83069"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_20260920.json",
+        "sha256": "4ae54420dcbad1404cf3a7ebb0d23e39164bd865ca701a1bb980337e58fa2cd1"
       }
     },
     "tested_files": {
@@ -1754,11 +1776,9 @@
     },
     "tested_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
     "implementer": "codex-magmaw-10n-balance-effective-stat-parity",
-    "claim": {
-      "owner": "codex-magmaw-10n-balance-build",
-      "token": "724c2f2a2a0bf1066e3a0c60daf57358188855cbe209fabc6a100b3618319356",
-      "operation_id": "724c2f2a2a0bf1066e3a0c60daf57358188855cbe209fabc6a100b3618319356",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+      "binary_sha256": "157fa75574a5dc15e1fdc23ce2edf99a89680ca197a80b0663aa414ce81840f5"
     }
   },
   "parked_scenarios": {
