@@ -1,38 +1,34 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:REF-003_current_class_calibration",
+  "work_unit": "magmaw:balance_self_setup_01",
   "owner_skill": "raid-performance-loop",
-  "classification": "rotation_review",
+  "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
-  "observed_at_commit": "696a8f6f38ad6c783ff7d0321a74cc93b8b81e0a",
+  "observed_at_commit": "430a1691a2b971f211d5c9603990a12cd16eddce",
   "architecture_scope": "Reuse existing native and promoted simulator evidence before further class tuning.",
   "behavior_change": false,
   "evidence_contract_change": false,
-  "gate_state": "696a reviews closed; performance not accepted; current controlled class comparison required",
+  "gate_state": "Five measurements complete; class comparability and raid performance remain open",
   "first_broken_edge": {
-    "id": "current_controlled_class_comparison_incomplete",
-    "owner_classification": "rotation_review",
-    "cause": "Historical repair/85-percent threshold acceptance was being mistaken for current class parity; a retained inventory also selected stale embedded reference numbers.",
-    "limit": "Reference-selection error corrected; current native stat/event/cadence comparison and exact-300 Survival measurement remain outstanding."
+    "id": "balance_missing_self_buff_and_leather_specialization",
+    "owner_classification": "class_mechanics_review",
+    "cause": "Mark of the Wild absent in retained samples; leather specialization absent from scoring-start intellect ledger.",
+    "limit": "Normal native application path needs bounded diagnosis; no coefficient tuning justified."
   },
   "source_handoff": {
-    "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
-    "sha256": "5983ff3197438efc2272270be4bb892396424f712bcf4653cfd8e67221d4fc0c"
+    "path": "docs/bot_raids/handoff_magmaw_dps_20260919.md",
+    "sha256": "e9c3abcea093dc99cc6d46f92d578053527f6d57fb5093ee3d6888f0350e07c7"
   },
   "scope_lock": {
-    "objective": "Establish current attributable class comparisons from retained evidence, refreshing only missing or materially changed native measurements.",
-    "owned_files": [
-      "docs/bot_raids/magmaw_dps_baseline_20260913.md"
-    ],
+    "objective": "Diagnose the proven Balance setup mismatch before implementation; preserve all remaining actor work.",
+    "owned_files": [],
     "forbidden_changes": [
-      "No stale embedded DPS denominators, guessed coefficients, mixed reference classes, or blanket simulator regeneration."
+      "No injected stats/auras, spell radius inflation, guessed coefficients, hidden roster changes or reference weakening."
     ]
   },
   "acceptance_conditions": [
-    "Current promoted reference and reference class bound explicitly.",
-    "Retained native window, gear, effective stats and changed source paths checked before reuse.",
-    "Threshold acceptance separated from unresolved performance gap.",
-    "Missing current native comparisons use exact 300 scoring seconds and native consumables."
+    "Native self-buff/passive application observed with correct gear.",
+    "Separate setup repair, class throughput and raid performance acceptance."
   ],
   "forbidden": [
     "No guessed coefficients, altered native spell ranges, Z steering, boss-health reduction, fabricated outcomes or silent roster changes."
@@ -43,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reuse retained Fire/Affliction/Elemental stats and spell evidence, verify Balance historical conditions, and prepare only the missing exact-300 Survival native comparison.",
+  "next_action": "Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -372,5 +368,189 @@
     "focused_tests_passed": 3,
     "live_accepted": false,
     "performance_accepted": false
+  },
+  "previous_selection_before_graph": {
+    "work_unit": "magmaw:REF-003_current_class_calibration",
+    "next_action": "Reuse retained Fire/Affliction/Elemental stats and spell evidence, verify Balance historical conditions, and prepare only the missing exact-300 Survival native comparison.",
+    "first_broken_edge": {
+      "id": "current_controlled_class_comparison_incomplete",
+      "owner_classification": "rotation_review",
+      "cause": "Historical repair/85-percent threshold acceptance was being mistaken for current class parity; a retained inventory also selected stale embedded reference numbers.",
+      "limit": "Reference-selection error corrected; current native stat/event/cadence comparison and exact-300 Survival measurement remain outstanding."
+    },
+    "source_handoff": {
+      "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
+      "sha256": "5983ff3197438efc2272270be4bb892396424f712bcf4653cfd8e67221d4fc0c"
+    }
+  },
+  "development_graph": {
+    "version": 1,
+    "revision": 0,
+    "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+    "stage": "diagnose",
+    "actor_ids": [
+      "30001",
+      "30002",
+      "30003",
+      "30004",
+      "30005",
+      "30006",
+      "30007",
+      "30008",
+      "30009",
+      "30010"
+    ],
+    "requirements": {
+      "balance_setup": {
+        "status": "open",
+        "description": "Repair normal Balance self-buff/passive application"
+      },
+      "potion_ownership": {
+        "status": "open",
+        "description": "Live-validate reviewed calibration potion exclusion"
+      },
+      "survival_reference": {
+        "status": "open",
+        "description": "Reconcile legitimate cooldown reference and Explosive Shot cadence"
+      },
+      "affliction_comparison": {
+        "status": "open",
+        "description": "Resolve event/cadence differences with exact setup"
+      },
+      "elemental_comparison": {
+        "status": "open",
+        "description": "Reconcile summon mapping, stats and native event/cadence evidence"
+      },
+      "actor_30001": {
+        "status": "open",
+        "description": "Balance encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30001"
+      },
+      "actor_30002": {
+        "status": "open",
+        "description": "Blood tank encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30002"
+      },
+      "actor_30003": {
+        "status": "open",
+        "description": "Healer 30003 encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30003"
+      },
+      "actor_30004": {
+        "status": "open",
+        "description": "Healer 30004 encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30004"
+      },
+      "actor_30005": {
+        "status": "open",
+        "description": "Healer 30005 encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30005"
+      },
+      "actor_30006": {
+        "status": "open",
+        "description": "Fire 30006 encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30006"
+      },
+      "actor_30007": {
+        "status": "open",
+        "description": "Fire 30007 encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30007"
+      },
+      "actor_30008": {
+        "status": "open",
+        "description": "Affliction encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30008"
+      },
+      "actor_30009": {
+        "status": "open",
+        "description": "Survival encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30009"
+      },
+      "actor_30010": {
+        "status": "open",
+        "description": "Elemental encounter behavior and duty-adjusted performance",
+        "needs_raid": true,
+        "needs_performance": true,
+        "actor_id": "30010"
+      },
+      "magmaw_10n": {
+        "status": "open",
+        "description": "Lawful matched WCL encounter performance, all actors reviewed and published",
+        "needs_raid": true,
+        "needs_performance": true,
+        "needs_all_actors": true
+      }
+    },
+    "unit": {
+      "id": "magmaw:balance_self_setup_01",
+      "edge": "balance_missing_self_buff_and_leather_specialization",
+      "requirements": [
+        "balance_setup"
+      ],
+      "next_action": "Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement."
+    },
+    "completed_measurements": [
+      {
+        "spec": "Survival",
+        "source": "50ec676cdb",
+        "scoring_ms": 300000,
+        "dps": 35394.1167,
+        "evidence_pointer": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc"
+      },
+      {
+        "spec": "Fire",
+        "source": "50ec676cdb",
+        "scoring_ms": 300000,
+        "dps": 35324.49333,
+        "evidence_pointer": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc"
+      },
+      {
+        "spec": "Affliction",
+        "source": "50ec676cdb",
+        "scoring_ms": 300000,
+        "dps": 27820.99,
+        "evidence_pointer": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc"
+      },
+      {
+        "spec": "Elemental",
+        "source": "50ec676cdb",
+        "scoring_ms": 300000,
+        "dps": 30763.31667,
+        "evidence_pointer": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc"
+      },
+      {
+        "spec": "Balance",
+        "source": "50ec676cdb",
+        "scoring_ms": 300000,
+        "dps": 30205.07667,
+        "evidence_pointer": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc"
+      }
+    ],
+    "failures": {},
+    "history": [],
+    "coordinator_worktree": "/home/runiir/Games/trinity-magmaw-parity",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    }
   }
 }

@@ -1,5 +1,10 @@
 # Handoff: faster lawful Magmaw kills and agent supervision
 
+For resuming after this handoff, first run
+`pixi run python -m tools.raid_program.raid_workloop resume` and read
+[the saved development workflow](development_graph.md). The handoff below is a
+historical snapshot; saved progress and newer evidence own the next action.
+
 ## Objective and stopping point
 
 The parent objective is to improve all represented bots until Magmaw damage,

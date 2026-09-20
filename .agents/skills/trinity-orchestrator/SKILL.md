@@ -5,6 +5,16 @@ description: Coordinate TrinityCore repair workers and serialized builds/live ex
 
 # Trinity orchestrator
 
+For a fresh tab or resumed raid program, first run
+`pixi run python -m tools.raid_program.raid_workloop resume` in the coordinator's
+current checkout. The saved development graph owns current task progress;
+historical prose must not restart completed measurements. Follow
+[development_graph.md](../../../docs/bot_raids/development_graph.md) for receipt-backed
+transitions, model-checkpoint dispositions and all-actor acceptance. Reconcile
+existing controller/build ownership before any launch. This command does not
+start a background worker or replace native admission checks.
+
+
 Use the [error ledger](../../../docs/bot_raids/error_ledger.md) before dispatch or
 retry. Give workers the relevant error ID and its current evidence, rejected
 approaches and affected callers. Update that entry when the result changes;

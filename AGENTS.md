@@ -8,3 +8,8 @@ Bot diagnostics: Codex agents can run `make host-world` or `make host-world-bote
 Try to keep as little data as possible on the disk. offload to dvc as much as possible
 
 Keep C and C++ source and header files below 1,000 lines. Split by concern so small changes invalidate as little of the build cache as practical.
+
+For "implement/continue Magmaw 10N bots", start with
+`pixi run python -m tools.raid_program.raid_workloop resume` on the current
+mainline coordinator checkout. Follow `docs/bot_raids/development_graph.md`.
+Retain all open actors; historical handoffs do not override saved progress.

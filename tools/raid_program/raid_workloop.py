@@ -627,6 +627,19 @@ def _descriptor_documentation_descendant(root: Path, descriptor_commit: str | No
 
 def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
     active = _load_json(root / ACTIVE_WORK_UNIT_PATH)
+    if "development_graph" in active:
+        from tools.raid_program.development_graph import resume
+        progress = resume(root)
+        # Persisted workflow evidence, not the age of a prose handoff, owns
+        # the next step. Legacy descriptors retain their strict old checks.
+        return {
+            **active, "descriptor_valid": True, "issues": [],
+            "workflow": progress,
+            "next_action": progress["next_action"] + " " + progress["unit"]["next_action"],
+            "ready_for_bounded_repair": progress["stage"] == "implement" and not progress["claim"],
+            "ready_for_live_verification": progress["stage"] == "validate" and not progress["claim"],
+            "ready_for_fixture_expansion": False,
+        }
     source = active.get("source_handoff") or {}
     source_path = _repo_file(root, source.get("path"))
     expected_hash = str(source.get("sha256") or "")
@@ -1194,6 +1207,10 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", type=Path, default=ROOT)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("status")
+    subparsers.add_parser("resume", help="Read saved task, remaining actors and next step without launching anything")
+    transition = subparsers.add_parser("advance", help="Apply one evidence-backed development transition")
+    transition.add_argument("--event", type=Path, required=True)
+    transition.add_argument("--expect", required=True, help="state_sha256 from resume; rejects stale writers")
     spec = subparsers.add_parser("spec")
     spec.add_argument("spec")
     boss = subparsers.add_parser("boss")
@@ -1207,13 +1224,16 @@ def main() -> int:
     args = _parser().parse_args()
     root = args.root.resolve()
     try:
-        if args.command == "status":
+        if args.command in {"resume", "advance"}:
+            from tools.raid_program.development_graph import advance, resume
+            output = resume(root) if args.command == "resume" else advance(root, _load_json(args.event), args.expect)
+        elif args.command == "status":
             output = build_status(root)
         elif args.command == "spec":
             output = build_spec_work_unit(args.spec, root)
         else:
             output = build_boss_work_unit(args.raid, args.boss, args.mode, root)
-    except WorkloopError as exc:
+    except (ValueError, KeyError, OSError) as exc:
         print(json.dumps({"schema": "raid_performance_workloop_error_v1", "error": str(exc)}))
         return 2
     print(json.dumps(output, indent=2, sort_keys=True))

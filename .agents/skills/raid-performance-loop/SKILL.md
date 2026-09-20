@@ -5,6 +5,16 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 
 # Raid performance loop
 
+For a fresh tab or resumed raid program, first run
+`pixi run python -m tools.raid_program.raid_workloop resume` in the coordinator's
+current checkout. The saved development graph owns current task progress;
+historical prose must not restart completed measurements. Follow
+[development_graph.md](../../../docs/bot_raids/development_graph.md) for receipt-backed
+transitions, model-checkpoint dispositions and all-actor acceptance. Reconcile
+existing controller/build ownership before any launch. This command does not
+start a background worker or replace native admission checks.
+
+
 For a roster-wide request, preserve that parent objective while selecting one
 bounded repair. Keep an actor acceptance table in the existing baseline document:
 current native result, reference limitations, unresolved cause, next action and
