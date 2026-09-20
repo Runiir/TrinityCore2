@@ -1,0 +1,63 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_application_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "cfd6b5cfcfa8c7b3c7386c18fac16a12a1e2190436841fc457aff142226d6800",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "62bd4e54e37e56c159d724349c600dcef456b9990baf5aca51787dcb3824f1bd",
+    "tests/test_balance_native_effective_stat_parity.py": "ac93375040e2c1e1293c7cdc8c2694671f5a251166faffc8d2d938c682d060ae"
+  },
+  "source_commit": "679c23327accc1c88ce01f348a3497de024c9cc5",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "result": "6 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "result": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "result": "request_count=16"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_result_checkpoint_20260920.json",
+        "sha256": "4334a582941cde8785727b700a1d9b603648b2aaca397b947a337e97f3b6007d"
+      },
+      "adjudication": "Advisory only. The bounded diagnostic claim is supported; runtime and performance remain pending."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from the local service.",
+      "adjudication": "No Laya result is used as approval or acceptance."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_diagnosis_20260920.json",
+      "sha256": "4fdab39552e42bfcccab30c189e95ebd54253ac6b421bb874a060990f969d8b4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_result_checkpoint_20260920.json",
+      "sha256": "4334a582941cde8785727b700a1d9b603648b2aaca397b947a337e97f3b6007d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+      "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+    }
+  ],
+  "interpretation": "The patch extends diagnostic visibility to the paired 24905 and 24907 handler path. It does not claim that either the native build or runtime effective-stat mismatch is repaired."
+}
