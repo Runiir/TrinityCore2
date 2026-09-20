@@ -1,0 +1,75 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "independent-native-aura-reviewer-v3",
+  "verdict": "approved",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "3c5f205c36d160e29b0a0f185a9703a359be73b7b614e251f23afed5f0e9ab35",
+    "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationAuraObservation.cpp": "cc81ba0b81a35111964cdd4316c084e6f0e1e53bddfa95ab7eed6d12ca02d3b6",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "d656053a1d0cb5dd0129348160a3f7820d0db43cb3f014ef1a54c97440d5d2f4",
+    "tests/test_balance_native_effective_stat_parity.py": "f2cbf0fbaaebe714cc32b1aa73380b3e60f053b1a33114c73820983da8a1e232"
+  },
+  "findings": [
+    {
+      "scope": "owner observation",
+      "status": "pass",
+      "detail": "The calibration observer now records the Moonkin Aura 24907 owner application alongside the existing owner-aura observations, with matching metrics storage capacity."
+    },
+    {
+      "scope": "repair boundary",
+      "status": "pass",
+      "detail": "This checkpoint changes only diagnostic observation coverage; it does not alter aura lifecycle, cast-speed ledger values, coefficients, or Balance rotation policy."
+    },
+    {
+      "scope": "native lifecycle context",
+      "status": "pass",
+      "detail": "The reviewed native owner materialization and owner-only area-aura preservation remain unchanged, while non-owner propagation and existing removal behavior remain on their prior paths."
+    },
+    {
+      "scope": "tests",
+      "status": "pass",
+      "detail": "The focused native parity, effective-stat diagnosis, source compatibility, reference-catalog, and exact-reference catalog checks all pass."
+    },
+    {
+      "scope": "runtime acceptance",
+      "status": "pending_canary",
+      "detail": "A rebuilt exact 300-second native canary must show the 24907 owner observation and the pinned direct-cast speed envelope before this edge can be accepted."
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_rework4_20260920.json",
+      "sha256": "0161a9aa28866ad2489bd0d0f6f5684e863885ea89acd8324db63ac97cc36087"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_implementation_rework4_20260920.json",
+      "sha256": "781d39c12a90ad0831dad4dcda9b806496e82844697532145f12f62f6e7305df"
+    },
+    {
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCalibrationAuraObservation.cpp",
+      "sha256": "cc81ba0b81a35111964cdd4316c084e6f0e1e53bddfa95ab7eed6d12ca02d3b6"
+    },
+    {
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+      "sha256": "d656053a1d0cb5dd0129348160a3f7820d0db43cb3f014ef1a54c97440d5d2f4"
+    },
+    {
+      "path": "tests/test_balance_native_effective_stat_parity.py",
+      "sha256": "f2cbf0fbaaebe714cc32b1aa73380b3e60f053b1a33114c73820983da8a1e232"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "The bounded observation-only checkpoint is approved for exact build and canary validation; no separate JEV checkpoint was requested.",
+      "reason": "The current gate is native evidence collection for the missing 24907 owner application.",
+      "status": "not_reviewed"
+    },
+    "laya": {
+      "adjudication": "The exact build and canary remain the acceptance authority for the native materialization edge.",
+      "reason": "No local Laya provider checkpoint was requested for this diagnostic-only change.",
+      "status": "not_reviewed"
+    }
+  }
+}
