@@ -1,0 +1,106 @@
+{
+  "task_id": "magmaw_balance_rotation_cadence_05_rebound_implementation_20260920",
+  "stage": "result",
+  "subject": "orchestrator",
+  "changed_files_source": "coordinator_observed",
+  "objective": "Implement the bounded Balance Starfall post-opener lunar-window policy repair identified by the exact native event-mix counterexample.",
+  "first_broken_edge": "owner_balance_post_opener_event_cadence_gap",
+  "allowed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+    "tests/test_balance_rotation_cadence.py",
+    "tools/bot_ml/jev_shadow.py",
+    "experiments/configs/local_laya/checkpoint_examples.json"
+  ],
+  "forbidden_changes": [
+    "No effective-stat, gear, coefficient, proc, target, consumable, reference, denominator, encounter-script, route, other-spec, or workflow-support changes.",
+    "No direct Eclipse-power writes, forced casts, cooldown edits, blanket Starfall priority changes, or changes to the accepted neutral-opener behavior.",
+    "The workflow support files are frozen provenance only; this checkpoint does not accept native gameplay or live performance."
+  ],
+  "acceptance_conditions": [
+    "The typed candidate builder rejects tagged Starfall after the neutral opener exception when native signed Eclipse power is >= -70 without Lunar Eclipse aura.",
+    "The idempotent SQL migration scopes the new mechanic tag to Balance Starfall and preserves the earlier neutral tag.",
+    "The frozen workflow support files match the separate supporting review, and all required deterministic checks pass; native candidate visibility, exact-300 validation, performance, and raid acceptance remain open."
+  ],
+  "observations": [
+    "The prior exact-300 post-opener run accepted five Starfall casts at 5700, 65733, 126678, 187384 and 247966 ms while the pinned WoWSims reference averaged 3.001 casts per iteration.",
+    "The same run lost named filler casts without movement, range recovery, resource starvation, or native action-submission failures.",
+    "The pinned APL uses currentLunarEnergy > 70 early and >= 100 thereafter; Trinity's signed POWER_ECLIPSE uses the negative side for Lunar.",
+    "The gameplay delta is limited to the Balance Starfall tag/migration, typed candidate predicate, and focused tests. The resolver and frozen workflow files are unchanged."
+  ],
+  "proposed_change": "Add balance_starfall_lunar_window to Balance Starfall and reject it unless Lunar Eclipse is active or native POWER_ECLIPSE is below -70, with the neutral opener predicate first.",
+  "acceptance_claim": "The bounded source/config/test implementation is complete and all required deterministic checks passed under the corrected source binding. This does not claim native candidate-mask visibility, live exact-300 behavior, actor performance acceptance, raid clear, or parent-objective completion.",
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "observation": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "observation": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "observation": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "observation": "fixture contract and 16 request entries validated"
+    }
+  ],
+  "changed_files": [
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+    "tests/test_balance_rotation_cadence.py"
+  ],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+    "latest_user_direction": "Continue implementing Magmaw 10N bots through the saved scenario.",
+    "current_plan": "Implement one bounded Balance post-opener Starfall lunar-window edge, independently review it, build on host12, apply the reviewed SQL, run exact-300 validation, publish evidence, and keep actor/raid acceptance separate.",
+    "remaining_requirements": [
+      "actor_30001 Balance performance and raid behavior",
+      "actors 30002-30010 independently reviewed",
+      "affliction and elemental comparisons",
+      "potion ownership",
+      "survival reference",
+      "Magmaw 10N matched-WCL clear and publication"
+    ]
+  },
+  "evidence_excerpts": [
+    {
+      "id": "replacement_plan",
+      "path": "magmaw_balance_rotation_cadence_05_replacement_plan_20260920.json",
+      "sha256": "2b192c2ac641e930c1b6d4fd296b94bbc86ffac6045506f69826142e0224b90a",
+      "excerpt": "The replacement plan retains native baseline 8a6b377, freezes workflow inputs, and scopes the same Balance-only Starfall repair."
+    },
+    {
+      "id": "supporting_review",
+      "path": "magmaw_balance_rotation_cadence_05_supporting_workflow_review_report_20260920.json",
+      "sha256": "0216824b58daa2179710ac91f149154e143711192a2f72ba00d38c3bd4332781",
+      "excerpt": "Independent review approves the workflow-only deltas for supporting provenance only and rejects using them as native acceptance."
+    },
+    {
+      "id": "native_diagnosis",
+      "path": "magmaw_balance_rotation_cadence_05_diagnosis_20260920.json",
+      "sha256": "818fcaa332e9e2dfa3dce08ef37f2fe0787e10988a55f5f95dc5441b4a9d038b",
+      "excerpt": "The exact run proves five native Starfall casts versus 3.001 WoWSims casts and no movement or submission-failure signal."
+    },
+    {
+      "id": "source",
+      "path": "../../src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "sha256": "8df6026d696961e0c4e960d7fd20173ae0f29ae64a333ca1ad5a422a92d1db28",
+      "excerpt": "The typed candidate predicate keeps the neutral opener gate first and adds the signed lunar-window rejection."
+    }
+  ]
+}
