@@ -229,6 +229,14 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
         && !bot->HasAura(48517) && !bot->HasAura(48518)
         && bot->GetPower(POWER_ECLIPSE) == 0)
         return "balance_neutral_opener";
+    // WoWSims exposes currentLunarEnergy as the positive distance on the
+    // signed native Eclipse bar.  Its >70 lunar window therefore accepts
+    // native power below -70; keep the neutral gate above first so its
+    // original rejection reason remains stable.
+    if (HasMechanicTag(spell.MechanicTags, "balance_starfall_lunar_window")
+        && !bot->HasAura(48518)
+        && bot->GetPower(POWER_ECLIPSE) >= -70)
+        return "balance_starfall_lunar_window";
     if (HasMechanicTag(spell.MechanicTags, "combustion_ready"))
     {
         SpellInfo const* combustion = sSpellMgr->GetSpellInfo(11129);
