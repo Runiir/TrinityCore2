@@ -6,11 +6,12 @@ SOURCE = ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 MIGRATION = ROOT / "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql"
 
 
-def test_balance_starsurge_neutral_gate_is_a_typed_native_predicate() -> None:
+def test_balance_neutral_opener_gate_is_a_typed_native_predicate() -> None:
     source = " ".join(SOURCE.read_text(encoding="utf-8").split())
 
     predicate = (
-        'HasMechanicTag(spell.MechanicTags, "balance_starsurge_neutral_gate")'
+        '(HasMechanicTag(spell.MechanicTags, "balance_starsurge_neutral_gate")'
+        ' || HasMechanicTag(spell.MechanicTags, "balance_starfall_neutral_gate"))'
         ' and !bot->HasAura(48517) && !bot->HasAura(48518)'
         ' and bot->GetPower(POWER_ECLIPSE) == 0'
     )
@@ -26,4 +27,15 @@ def test_balance_migration_tags_only_starsurge_and_is_idempotent() -> None:
     assert "`spell_id` = 78674" in sql
     assert "balance_starsurge_neutral_gate" in sql
     assert "FIND_IN_SET('balance_starsurge_neutral_gate', `mechanic_tags`) = 0" in sql
+    assert "`spell_id` IN (8921, 5570, 93402)" not in sql
+
+
+def test_balance_starfall_migration_is_idempotent_and_scoped() -> None:
+    migration = ROOT / "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql"
+    sql = migration.read_text(encoding="utf-8")
+
+    assert "`spec_tag` = 'balance_druid'" in sql
+    assert "`spell_id` = 48505" in sql
+    assert "balance_starfall_neutral_gate" in sql
+    assert "FIND_IN_SET('balance_starfall_neutral_gate', `mechanic_tags`) = 0" in sql
     assert "`spell_id` IN (8921, 5570, 93402)" not in sql
