@@ -1,0 +1,12 @@
+{
+  "reviewer_session_id": "/root/stat_premise_audit",
+  "returned_message": "Approved. The admission-time check now rejects symlinks and Git modes other than 100644 before comparing hashes. Tests cover content changes, identical-byte symlink replacement, and executable-mode changes. Validation: 68 passed; git diff --check clean.",
+  "file_hashes": {
+    "tools/raid_program/development_graph.py": "c664fb1339bafc3542b14ffc2bdbccc03e584da74e8d515612e8dc8d7cd0193a",
+    "tools/raid_program/workflow_build.py": "83eb83c873c66aa26ac9c035eb15638d88abf6c9de0b43c696438ed507eacdfb",
+    "tools/raid_program/publication_delta.py": "a14d39336d7facab18e5f57bb58bfbcfde47f98d936fa79dee37389f457bee7e",
+    "tests/test_development_graph.py": "4daee43428fe71371f490de6845a886f989e3b0cd48e37d59eb6114f4b5be9e2",
+    "tests/test_publication_delta.py": "5f59d2f2f3464bab1231bab1a623e3625462f1c861e0f1022e757d10f00f0263"
+  },
+  "scope": "Workflow code and regression fixtures only; no native gameplay approval."
+}

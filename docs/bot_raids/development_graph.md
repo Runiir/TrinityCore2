@@ -130,7 +130,7 @@ are explicit attestations, not cryptographic proof or a model's verdict.
 | --- | --- | --- |
 | diagnose | plan | full Git base_commit, hypothesis, owned_files, forbidden_changes, acceptance_conditions, required_test_commands, policy reference, validation_identity, advice |
 | implement | tests | file_hashes for every owned file, tests containing command/exit_status, advice |
-| review | review | file_hashes, verdict=approved; producer differs from implementer |
+| review | review | file_hashes, verdict=approved, distinct producer, reviewer_session_id and hash-bound review_report from the separate reviewer |
 | build | build | file_hashes, source_commit, binary_sha256, build_receipt and exact policy references |
 | validate | run | build_identity matching source_commit/binary_sha256; attempt_id, server_epoch, closed=true, cleanup_verified=true, terminal_reason, scenario_kind, validation_identity |
 | assess | assessment | attempt_id, baseline, comparison, actor_reviews, separate encounter_clear/repair_accepted/performance_accepted, accepted_requirements |
@@ -141,6 +141,15 @@ file references. For a raid it also includes route and encounter (raid/boss/mode
 matching the saved program. For a dummy it includes actor_id, spec and a reference
 file reference. Run adapters must match that complete reviewed identity. The
 plan's policy reference must also match the build adapter's policy exactly.
+
+If a separately reviewed workflow repair lands during a paused native unit,
+keep the old base and native owned files. A replacement plan may include
+`supporting_review`, a hash-bound JSON review with `verdict=approved`, a separate
+`reviewer_session_id`, `review_report` and `file_hashes` for the supporting
+workflow Python/tests only. Those files are frozen, not added to worker ownership.
+The graph checks their hashes on every source admission. Native files and selected
+runtime/reference inputs cannot use this path. Rework the incomplete unit and
+record the replacement plan; never move its base past unreviewed native edits.
 These adapter identities are checked alongside the canonical controller's own
 native identity admission; copying expected values is not a native observation.
 
@@ -233,6 +242,20 @@ Fix stale reference/fixture authority before spending time on compilation.
 This is not native readiness or database validation; those remain launch checks.
 `refs` and `snapshot` generate hashes, not test results or review approval.
 
+After review, claim the build and commit its state, then run:
+
+```sh
+pixi run python -m tools.raid_program.workflow_build run
+```
+
+This executes policy-derived configure/build argv through the existing queue,
+with no Git writes between them. Unique canonical receipts stay in the queue's
+Git-common directory. The command prints their paths, stops on failure and never
+retries automatically. Copy receipts into publication evidence after it returns.
+`workflow_build commands` prints the same argv without running either step.
+Existing successful receipts should still be reused; this command is for a new
+reviewed build, not a reason to rebuild for progress metadata.
+
 Commit reviewed source, claim/state and any preparation before queued compilation.
 After the build, commit the build adapter, graph advance and validation claim.
 Launch with the original queued receipt and its original policy. The dummy and
@@ -242,8 +265,13 @@ under docs or skills, and JSON evidence under artifacts/cata_raid_program.
 Selected runtime fixtures and their declared inputs cannot use an evidence-directory
 exemption. Executable files and symlinks cannot use these exemptions. No dirty-file exemption
 exists. Source, tools, configuration, references, DVC pointers and build policy
-changes require a new matching build. This conservative boundary is shared with
-the graph's source-delta checks.
+changes require a new matching build. The graph additionally recognizes newly
+added adjacent DVC output pointers under `artifacts/cata_raid_program/` and exact
+appended ignore lines for those outputs. Publication does not invalidate a closed
+run or require pointer removal before the next unit. Changed existing pointers,
+selected inputs, broad ignore patterns, executable files and symlinks remain
+source changes. This does not loosen native build/launch compatibility or attest
+archive contents.
 
 The run retains `build_source_commit` and a `source_compatibility` proof listing
 all intervening coordination paths. `source_commit`/`source_tree` identify the
@@ -271,6 +299,11 @@ reason and a receipt reference. Each failed rework or closed run accepting no re
 current edge's counter. A closed live failure passes through assessment and publication before
 routing. At ten failures, route requires a hash-bound causal_summary and a
 changed causal hypothesis; unchanged retries are rejected.
+`recent_attempts` returns the last ten assessment/rework receipts across unit
+names; `failure_counts_by_edge` keeps the other counters visible. These are
+history, not proof that differently named causes are identical. Inspect them
+before retrying. A completed failed measurement must be assessed/published,
+not described as `completed_operation=false` to abandon its validation claim.
 
 At route, submit `action=route`, reason and a new `unit` with unique id, edge,
 nonempty open requirements and next_action. To finish, submit `action=complete`.

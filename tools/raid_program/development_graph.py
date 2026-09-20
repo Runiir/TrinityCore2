@@ -183,6 +183,8 @@ def resume(root: Path) -> dict:
         'latest_assessment': next((h['event']['receipt'] for h in reversed(g['history'])
                                    if h['from'] == 'assess' and h['event']['action'] == 'advance'), None),
         'same_edge_failures': g.get('failures', {}).get(unit['edge'], 0),
+        'failure_counts_by_edge': g.get('failures', {}),
+        'recent_attempts': recent_attempts(g),
         'retry_limit': 10,
         'claim': g.get('claim'), 'coordinator_worktree': g['coordinator_worktree'],
         'model_advice': 'Use worker_checkpoint at plan/result and plan-drift-review at work-unit changes; never auto-accept scores.',
@@ -192,6 +194,19 @@ def resume(root: Path) -> dict:
                       'Respect explicit user limits or interruption; otherwise stop only for a demonstrated external blocker. ')
                      + ' This command is read-only. Reconcile queued_build and active controller receipts; never duplicate launches.',
     }
+
+
+def recent_attempts(g: dict) -> list[dict]:
+    """Expose retained failures across renamed units without guessing causality."""
+    attempts = []
+    for row in g['history']:
+        event = row['event']
+        if event['action'] == 'rework' or (row['from'] == 'assess' and event['action'] == 'advance'):
+            attempts.append({'unit_id': row['unit_id'], 'revision': row['revision'],
+                             'stage': row['from'], 'action': event['action'],
+                             'reason': event.get('reason'), 'receipt': event.get('receipt'),
+                             'proposed_acceptance': row.get('proposed_acceptance', [])})
+    return attempts[-10:]
 
 
 def required(value: dict, *keys: str) -> None:
@@ -224,21 +239,43 @@ def code_path(path: str) -> bool:
     return not coordination_path(path)
 
 
+def input_paths(value) -> set[str]:
+    if isinstance(value, dict):
+        paths = {value['path']} if isinstance(value.get('path'), str) else set()
+        for child in value.values():
+            paths.update(input_paths(child))
+        return paths
+    if isinstance(value, list):
+        return set().union(*(input_paths(child) for child in value))
+    return set()
+
+
 def source_binding(root: Path, assignment: dict, expected_commit: str | None = None) -> str:
+    from tools.raid_program.publication_delta import publication_paths
     head = git(root, 'rev-parse', 'HEAD')
     base = assignment['base_commit']
     git(root, 'merge-base', '--is-ancestor', base, head)
+    protected = input_paths(assignment.get('validation_identity', {})) | input_paths(assignment.get('policy', {}))
     dirty = git(root, 'ls-files', '--modified', '--others', '--exclude-standard', '-z').split('\0')
-    if any(p and code_path(p) for p in dirty):
+    if any(p and (p in protected or code_path(p)) for p in dirty):
         raise GraphError('commit source changes before recording tests/review/build')
     # Inspect committed delta, including files omitted by a worker's declaration.
     changed = git(root, 'diff', '--name-only', '--no-renames', '-z', base, head).split('\0')
-    if any(p and code_path(p) and p not in assignment['owned_files'] for p in changed):
+    published = publication_paths(root, base, head)
+    # A selected input never becomes bookkeeping by being stored with outputs.
+    published -= protected
+    support = assignment.get('supporting_files', {})
+    if support and (any((root / p).is_symlink() or not git(root, 'ls-tree', head, '--', p).startswith('100644 blob ')
+                        for p in support) or snapshot(root, list(support)) != support):
+        raise GraphError('separately reviewed supporting files changed; obtain a new review')
+    if any(p and (p in protected or (code_path(p) and p not in published
+                  and p not in assignment['owned_files'] and p not in support)) for p in changed):
         raise GraphError('source delta contains files outside bounded assignment')
     if expected_commit is not None:
         git(root, 'merge-base', '--is-ancestor', expected_commit, head)
         delta = git(root, 'diff', '--name-only', '--no-renames', '-z', expected_commit, head).split('\0')
-        if any(p and code_path(p) for p in delta):
+        published = publication_paths(root, expected_commit, head) - protected
+        if any(p and (p in protected or code_path(p)) and p not in published for p in delta):
             raise GraphError('source changed since recorded tests/review/build')
     return head
 
@@ -341,6 +378,21 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             if not isinstance(paths, list) or not paths or any(not isinstance(p, str) or Path(p).is_absolute() or '..' in Path(p).parts for p in paths):
                 raise GraphError('invalid owned_files')
             g['assignment'] = {k: r[k] for k in ('hypothesis', 'owned_files', 'forbidden_changes', 'acceptance_conditions', 'required_test_commands', 'base_commit', 'policy', 'validation_identity')}
+            if r.get('supporting_review'):
+                review = read(file_ref(root, r['supporting_review']))
+                required(review, 'reviewer_session_id', 'review_report', 'file_hashes')
+                file_ref(root, review['review_report'])
+                if review.get('verdict') != 'approved' or review['reviewer_session_id'] == r['producer']:
+                    raise GraphError('separate approving review required for supporting changes')
+                support = {p: sha for p, sha in review['file_hashes'].items() if p not in paths}
+                protected = input_paths(validation) | input_paths(r['policy'])
+                if any(p in protected or not p.endswith('.py') or not p.startswith(('tools/raid_program/', 'tests/'))
+                       or (root / p).is_symlink() for p in support):
+                    raise GraphError('supporting changes are limited to workflow Python/tests, excluding selected inputs')
+                if not support or snapshot(root, list(support)) != support:
+                    raise GraphError('supporting review does not bind current files')
+                g['assignment']['supporting_review'] = r['supporting_review']
+                g['assignment']['supporting_files'] = support
         elif stage in ('implement', 'review', 'build'):
             current_commit = source_binding(root, g['assignment'], g.get('tested_commit'))
             current = snapshot(root, g['assignment']['owned_files'])
@@ -360,6 +412,12 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             elif stage == 'review':
                 if r['producer'] == g['implementer'] or r.get('verdict') != 'approved':
                     raise GraphError('independent approving reviewer required')
+                required(r, 'reviewer_session_id', 'review_report')
+                if r['reviewer_session_id'] == g['implementer']:
+                    raise GraphError('reviewer session must differ from implementer')
+                report = file_ref(root, r['review_report'])
+                if not report.read_text().strip() or r['review_report'] in (g.get('receipts', {}).get('tests'), event['receipt']):
+                    raise GraphError('retain the separate reviewer response, not the implementation or adapter')
                 g['source_base_commit'] = g['tested_commit']
             else:
                 required(r, 'source_commit', 'binary_sha256', 'build_receipt')

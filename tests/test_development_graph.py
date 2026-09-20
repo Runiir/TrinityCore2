@@ -44,7 +44,8 @@ def receipt(root, state, evidence, **changes):
     r.update({
         'diagnose': {'policy':evidence,'validation_identity':{'scenario_kind':'raid','encounter':g['encounter'],'roster':evidence,'runtime_profile':evidence,'route':evidence},'base_commit':graph.git(root,'rev-parse','HEAD'),'hypothesis':'native setup missing','owned_files':['code.cpp'],'forbidden_changes':['no coefficient tuning'],'acceptance_conditions':['observe setup'],'required_test_commands':['pytest focused']},
         'implement': {'file_hashes':graph.snapshot(root,['code.cpp']), 'tests':[{'command':'pytest focused','exit_status':0}]},
-        'review': {'file_hashes':graph.snapshot(root,['code.cpp']), 'verdict':'approved'},
+        'review': {'file_hashes':graph.snapshot(root,['code.cpp']), 'verdict':'approved',
+                   'reviewer_session_id':'fixture-independent-session', 'review_report': evidence},
         'build': {'policy':evidence,'file_hashes':graph.snapshot(root,['code.cpp']), 'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64,'build_receipt':put(root/'build-native.json',{'commit':graph.git(root,'rev-parse','HEAD'),'exit_code':0,'source_identity_stable':True,'test_mode':False,'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True}]})},
         'validate': {'validation_identity':g.get('assignment',{}).get('validation_identity'),'build_identity':{'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64},'attempt_id':'attempt1','server_epoch':'epoch1','closed':True,'cleanup_verified':True,'terminal_reason':'clear','scenario_kind':'raid','clock':'completion_watchdog'},
         'assess': {'attempt_id':'attempt1','baseline':evidence,'comparison':evidence,'actor_reviews':{'1':{'status':'reviewed','receipt':evidence},'2':{'status':'not_exercised','reason':'not in this fixture'}},'encounter_clear':True,'repair_accepted':True,'performance_accepted':False,'accepted_requirements':['setup']},
@@ -127,6 +128,91 @@ def test_changed_code_invalidates_review(case):
     (root/'code.cpp').write_text('unreviewed change')
     with pytest.raises(graph.GraphError,match='commit source changes'):
         graph.reduce(root,state,receipt(root,state,evidence))
+
+
+def test_renaming_producer_does_not_supply_a_separate_review(case):
+    root, state, evidence = reach(case, 'review')
+    with pytest.raises(graph.GraphError, match='reviewer_session_id'):
+        graph.reduce(root, state, receipt(root, state, evidence, producer='independent-sounding-name', reviewer_session_id=None))
+    with pytest.raises(graph.GraphError, match='separate reviewer response'):
+        graph.reduce(root, state, receipt(root, state, evidence, review_report=state['development_graph']['receipts']['tests']))
+
+
+@pytest.mark.parametrize('mutation', ['content', 'symlink', 'executable'])
+def test_separately_reviewed_support_preserves_native_delta_and_remains_frozen(case, mutation):
+    root, state, evidence=case
+    base=graph.git(root,'rev-parse','HEAD')
+    support_file='tools/raid_program/workflow.py'
+    (root/support_file).parent.mkdir(parents=True)
+    (root/support_file).write_text('reviewed workflow fix')
+    (root/'code.cpp').write_text('reviewed workflow fix')
+    graph.git(root,'add',support_file,'code.cpp')
+    graph.git(root,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','separate changes')
+    state['development_graph']['source_base_commit']=base
+    review=put(root/'support-review.json',{'verdict':'approved','reviewer_session_id':'separate-reviewer',
+        'review_report':evidence,'file_hashes':graph.snapshot(root,[support_file])})
+    state=graph.reduce(root,state,receipt(root,state,evidence,base_commit=base,supporting_review=review))
+    assignment=state['development_graph']['assignment']
+    assert assignment['base_commit']==base and assignment['owned_files']==['code.cpp']
+    assert set(assignment['supporting_files'])=={support_file}
+    assert graph.git(root,'diff',base,'--','code.cpp') # Native patch was not hidden in a new base.
+    graph.source_binding(root,assignment)
+    if mutation == 'symlink':
+        (root/support_file).unlink()
+        (root/support_file).symlink_to('../../code.cpp') # Identical bytes, different source identity.
+    elif mutation == 'executable':
+        (root/support_file).chmod(0o755)
+    else:
+        (root/support_file).write_text('unreviewed support edit')
+    graph.git(root,'add',support_file)
+    graph.git(root,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','changed support')
+    with pytest.raises(graph.GraphError,match='supporting files changed'):
+        graph.source_binding(root,assignment)
+
+
+@pytest.mark.parametrize('path,selected', [('src/unowned.cpp',False), ('runtime.conf',False),
+                                        ('tools/raid_program/input.py',True)])
+def test_supporting_review_cannot_admit_native_or_selected_inputs(case,path,selected):
+    root,state,evidence=case
+    target=root/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_text('unreviewed input')
+    review=put(root/'support-review.json',{'verdict':'approved','reviewer_session_id':'separate-reviewer',
+        'review_report':evidence,'file_hashes':graph.snapshot(root,[path])})
+    event=receipt(root,state,evidence,supporting_review=review)
+    if selected:
+        r=graph.read(root/event['receipt']['path'])
+        r['validation_identity']['extra_input']={'path':path,'sha256':graph.digest(target.read_bytes())}
+        event['receipt']=put(root/event['receipt']['path'],r)
+    with pytest.raises(graph.GraphError,match='supporting changes are limited'):
+        graph.reduce(root,state,event)
+
+
+def test_new_output_publication_does_not_invalidate_closed_run(case):
+    root, state, evidence = reach(case, 'validate')
+    event = receipt(root, state, evidence)
+    folder = root/'artifacts/cata_raid_program'
+    folder.mkdir(parents=True)
+    (folder/'closed-run.tar.gz.dvc').write_text('outs:\n- md5: abc123\n  path: closed-run.tar.gz\n  size: 42\n')
+    (folder/'.gitignore').write_text('/closed-run.tar.gz\n')
+    graph.git(root,'add',str(folder))
+    graph.git(root,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','publish evidence')
+    result = graph.reduce(root, state, event)
+    assert result['development_graph']['stage'] == 'assess'
+    assert result['development_graph']['build_identity'] == state['development_graph']['build_identity']
+
+
+def test_retry_history_survives_edge_rename(case):
+    root, state, evidence = case
+    state = graph.reduce(root,state,{'action':'rework','revision':0,'unit_id':'u1','receipt':evidence,'reason':'observation absent'})
+    root, state, evidence = reach((root,state,evidence), 'publish')
+    state = graph.reduce(root,state,receipt(root,state,evidence))
+    g=state['development_graph']
+    state=graph.reduce(root,state,{'action':'route','revision':g['revision'],'unit_id':'u1','reason':'new actor cause',
+        'unit':{'id':'u2','edge':'renamed-edge','requirements':['actor_1'],'next_action':'inspect'}})
+    put(root/graph.STATE_PATH,state)
+    resumed=graph.resume(root)
+    assert resumed['same_edge_failures'] == 0
+    assert resumed['failure_counts_by_edge']['edge1'] == 1
+    assert resumed['recent_attempts'][0]['reason'] == 'observation absent'
 
 
 def test_changed_receipt_fails(case):
@@ -327,6 +413,43 @@ def test_dummy_prebuild_cannot_validate_another_checkouts_catalog(case):
     assignment['validation_identity'].update(scenario_kind='dummy', spec='balance_druid', reference=evidence)
     with pytest.raises(ValueError, match="coordinator checkout's module"):
         preflight(root, assignment)
+
+
+@pytest.mark.parametrize('outcome', ['success', 'configure_failure', 'source_changed', 'dirty_claim'])
+def test_workflow_build_uses_one_source_and_queue_owned_receipts(case, monkeypatch, outcome):
+    from tools.raid_program import workflow_build, queued_build as queue
+    root, state, evidence=reach(case, 'build')
+    policy_ref=put(root/'policy.json', json.loads(queue.DEFAULT_POLICY.read_text()))
+    state['development_graph']['assignment']['policy']=policy_ref
+    put(root/graph.STATE_PATH,state)
+    graph.git(root,'add','-f',str(graph.STATE_PATH))
+    graph.git(root,'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','claim')
+    commands=[]
+    def run(worktree, policy, kind, command, ticket, output, timeout):
+        commands.append((kind, command))
+        assert ticket is None and output is None
+        queue.validate_command(command, policy['parallelism']['maximum_compiler_jobs'], resource_class=kind, policy=policy)
+        if outcome == 'source_changed': (root/'code.cpp').write_text('changed after configure')
+        failed=outcome == 'configure_failure'
+        return int(failed), {'ticket_id':kind, 'classification':'failed' if failed else 'success'}
+    monkeypatch.setattr(queue,'run_ticket',run)
+    if outcome == 'dirty_claim':
+        saved=json.loads((root/graph.STATE_PATH).read_text()); saved['pending_note']='new claim state'
+        put(root/graph.STATE_PATH,saved)
+        with pytest.raises(ValueError,match='commit source, review and build claim'):
+            workflow_build.run_build(root)
+        assert not commands
+    elif outcome == 'source_changed':
+        with pytest.raises(ValueError,match='source changed between configure and build'):
+            workflow_build.run_build(root)
+        assert len(commands)==1
+    else:
+        result=workflow_build.run_build(root)
+        assert result['success'] == (outcome=='success')
+        assert [kind for kind,_ in commands] == (['configure','worldserver_build'] if outcome=='success' else ['configure'])
+        if outcome=='success':
+            assert commands[-1][1][-2:]==['--parallel','12']
+            assert all('.git' in row['receipt'] for row in result['steps'])
 
 
 def test_published_unit_routes_to_next_task_without_losing_parent_or_assessment(case):

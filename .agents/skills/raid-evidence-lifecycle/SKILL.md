@@ -82,6 +82,12 @@ in a separate addendum once publication starts; do not edit a file while it is
 being hashed or archived.
 
 Use one compact report plus the generated receipts. Commit code/configuration to Git.
+In the development graph, record the closed run and assessment even when the
+repair failed, then publish. New adjacent DVC output pointers under
+`artifacts/cata_raid_program/` and their exact appended ignore entries are
+recognized as publication metadata by the graph. Existing/input pointers remain
+protected. Never delete, temporarily hide or revert evidence pointers to pass
+a source check; inspect the reported delta. Native launch admission remains stricter.
 Publish immutable raw/report/log/receipt data through DVC, run targeted dvc status and
 dvc push, and verify the remote bytes with an empty-cache reconstruction. Preserve
 pointer visibility and enough space for transport; never print private credentials.

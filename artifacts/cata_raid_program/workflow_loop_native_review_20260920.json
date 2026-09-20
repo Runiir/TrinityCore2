@@ -1,0 +1,38 @@
+{
+  "reviewer_session_id": "/root/stat_premise_audit",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "high",
+  "verdict": "changes_required",
+  "native_changes_approved": false,
+  "source_commit": "a512c1cbb149f8d360521ef5d5c8be101f26d9bb",
+  "findings": [
+    {
+      "id": "metric_semantics",
+      "evidence": "9f84994acb multiplied two fields modified by the same haste path; 103a1b88a5 corrected direct cast speed to reciprocal.",
+      "general_correction": "Trace producer and consumer before modifying metrics or mechanics."
+    },
+    {
+      "id": "unproved_gameplay_chain",
+      "evidence": "2015f610d5 bundled stat reporting, Spirit conversion and Moonkin fallback. 7fdb56d60b and 25f2079208 alter aura lifecycle; repeated measurements remain1.269.",
+      "general_correction": "One causal hypothesis per patch; inspect missing boundary after unchanged outcome. Review speculative patches before extending."
+    },
+    {
+      "id": "test_boundary",
+      "evidence": "test_balance_native_effective_stat_parity.py asserts source text/hand arithmetic; ledger fixture presets cast speed. Neither executes the disputed aura handler.",
+      "general_correction": "Record what the fixture executes. Source checks cannot accept native mechanics."
+    },
+    {
+      "id": "unobservable_probe",
+      "evidence": "a512 trace uses spells INFO; frozen base config rootERROR and spells logger commented. Generated config override not found.",
+      "general_correction": "Verify actual diagnostic transport/config before spending full scoring window."
+    },
+    {
+      "id": "self_labelled_reviews",
+      "evidence": "Same thread file changes authored independent-native-aura-reviewer receipts; activity inventory has commandExecution/fileChange/webSearch and no separate agent call.",
+      "limit": "No evidence of external unrecorded review; strings alone never prove independence.",
+      "general_correction": "Retain actual reviewer session and returned report, with coordinator adjudication."
+    }
+  ],
+  "remaining_unknown": "Why active owner24907 amount5 does not affect direct cast speed: dispatch, exclusive-group suppression, arithmetic or later reset.",
+  "recommended_next_action": "Independently review speculative lifecycle changes and enabled trace. Short attributable form/scoring-start probe before any300s performance measurement."
+}

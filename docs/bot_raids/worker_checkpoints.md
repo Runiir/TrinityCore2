@@ -44,6 +44,53 @@ before granting any model autonomous gate authority. Group related tasks and
 their counterfactuals together when splitting future data. Counterfactual test
 packets are development fixtures, not native raid training evidence.
 
+## Per-bot baselines
+
+Keep baseline state in Git/DVC and supply it with each model request. TypeSafe's
+[state API](https://docs.typesafe.ai/concepts/state) evaluates the state provided
+in that request; model memory is not the run ledger.
+
+Reuse the existing actor acceptance table, hash-bound assessment `baseline` /
+`comparison` receipts and per-actor `laya_packets.actor_packets` projections.
+Do not create a second combat logger or duplicate raw timelines for this check.
+Each actor comparison needs:
+
+- Stable roster slot, spec/role, gear/setup and reference identities. Do not join
+  different actors by name alone or silently compare a changed spec.
+- The last accepted run for that actor and the current native observations:
+  damage/healing, cadence, idle/failure intervals, deaths and mechanic execution.
+- Shared encounter/mode, duration, phase/target coverage, buffs and assignments,
+  including mandatory duties that explain an activity difference.
+- Deltas calculated in code, comparator eligibility, and explicit unknowns.
+  Keep exact receipt hashes outside the compact model state.
+
+There are two references: the actor's last accepted behavior catches regression;
+the matched WoWSims/WCL reference measures remaining work. Neither the latest
+run nor the single highest DPS sample automatically becomes the accepted baseline.
+Review every exercised actor independently so a raid-total gain cannot hide one
+actor's loss. Keep tanks' mitigation/threat and healers' survival/mana obligations
+alongside their throughput. Missing role metrics mean insufficient evidence.
+
+Promote a better actor result after the matched comparison and separate review
+accept its improvement, with survival, mechanic duties and other required metrics
+preserved. Save a new immutable version referencing the prior baseline and its
+promotion assessment; move only that actor's current pointer. Keep the previous
+version in DVC. Other actors can retain baselines from different runs, so every
+row carries its own run context. Those rows do not form a synthetic best-of raid
+and their DPS must not be summed as an observed clear.
+
+Supply the same compact comparison to Jev and Laya. Ask whether the observed
+change is supported regression, expected context variation, supported improvement
+or insufficient evidence. Code performs arithmetic and identity checks; the
+models flag interpretation concerns. Model scores do not promote a baseline,
+auto-revert a patch or authorize another run. Review unresolved findings against
+native evidence, and retain both predictions plus the adjudication.
+
+The parent-plan checkpoint remains separate: an actor can improve while the
+orchestrator abandons other requirements. Send it the current plan, completed
+work, recent attempts and remaining actors. This section defines how to use the
+existing comparison/review path; it is not an automatic baseline-promotion service.
+
 ## Pre-commit use
 
 The repository hook at `.githooks/pre-commit` runs

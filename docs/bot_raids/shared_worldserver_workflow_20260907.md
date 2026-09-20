@@ -5,42 +5,38 @@ is preserved.
 
 ## Current work and latest native run
 
-Latest closed measurement: Balance observer repair on source `3457a5eba5`,
-build source `fe093325f3`, completed exactly 300 seconds at **31,877.553 DPS**
-and 0 HPS. Capture, diagnostics, reference comparability and server cleanup
-passed. WoWSims is 35,447.589 DPS; performance remains unaccepted. The graph is
-at `diagnose`, revision 55. A separate attributable review accepted only the
-native setup observer repair, so `balance_setup` is published and closed while
-the Balance actor, performance, and raid requirements remain open. The next
-unit is the first proven native edge: Balance scoring-start effective-stat
-parity. Do not repeat the completed 300-second run or tune rotation/coefficient
-behavior before that edge is repaired and reverified.
+The implementation agent was paused by the user for a workflow audit. No live
+server or build was active when checked. Its saved unit04 remains unaccepted.
+The latest closed Balance measurement is source `81c30e54d9`, build source
+`1576446024`, exactly 300 seconds at **31,726.157 DPS**, versus 35,447.589 WoWSims.
+The capture completed and cleanup passed; performance remains unaccepted.
+Aura24907 is observed on the owner at amount5, but effective direct cast speed
+remains1.269 versus1.332199768 expected. That identifies a missing effect in the
+result, not whether dispatch, stacking suppression or a later reset caused it.
 
-The run adapter is
-`artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json`.
-The independent review is
-`artifacts/cata_raid_program/magmaw_balance_setup_observer_actor_30001_review_20260920.json`.
-The assessment and publication receipts are
-`artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json`
-and
-`artifacts/cata_raid_program/magmaw_balance_setup_observer_publication_20260920.json`.
-The compact review and next-unit checkpoint are retained through
-`artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz.dvc`
-and
-`artifacts/cata_raid_program/magmaw_balance_setup_route_checkpoint_20260920.tar.gz.dvc`.
-Raw evidence is remote-verified and locally evicted. The cleanup manifest and
-drift review are in `artifacts/cata_raid_program/balance_interruption_cleanup_20260920.tar.gz.dvc`.
-Restore only when needed:
+Read FLOW-005 and
+`artifacts/cata_raid_program/workflow_loop_native_review_20260920.json`
+before another native edit or build. The separate reviewer found that the new
+handler trace uses an INFO logger disabled by the frozen config. Existing
+source-string tests do not execute the disputed handler. Review the speculative
+area-aura changes at `7fdb56d60b` and `25f2079208`; do not stack another guessed
+lifecycle repair. Verify diagnostic visibility, then use a short attributable
+startup probe to distinguish the remaining causes. That probe cannot establish
+DPS acceptance. A later performance comparison still needs the exact300s window.
 
-```sh
-pixi run dvc pull artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc
-tar -xzf artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz -C /tmp
-```
+The latest run adapter and remote evidence are
+`artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json`
+and the adjacent `.tar.gz.dvc` pointer. Earlier observer-only setup acceptance
+remains retained; all actor performance and encounter requirements stay open.
+The active graph owns continuation. Preserve its original source base and native
+delta when incorporating the separately reviewed workflow repair; never rebase
+past unreviewed native edits simply to pass source admission.
 
-Do not reset the saved graph or remove the parity worktree: the runner currently
-uses its verified runtime assets. The JEV worktree also contains uncommitted
-work. Future new builds use host12; historical fast4 receipts retain their own
-policy. Remaining workflow defects are recorded in FLOW-003.
+Do not remove the parity worktree: it supplies verified runtime assets. The JEV
+worktree contains unrelated uncommitted work. New builds use host12; historical
+build receipts retain their own policy. Use `workflow_build run` for a new
+reviewed build, with its claim committed first. It creates canonical configure
+and build receipts without committing between the two steps.
 
 The earlier baseline is the `50ec676cdb` five-spec dummy batch, with all exact
 300-second measurements complete and concurrent native isolation/cleanup

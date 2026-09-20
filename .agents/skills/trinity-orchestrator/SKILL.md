@@ -74,6 +74,11 @@ bounded implementation or independent review.
 A worker's completion freezes its owned files until a new edit assignment.
 The reviewer hashes those files and finishes its verdict without requesting
 another freeze acknowledgment. A worker must not claim approval before that verdict.
+Independent review means a separate agent/session that actually read the patch.
+Retain that session ID and its returned report as `reviewer_session_id` and
+`review_report` in the review adapter. Writing a second producer name yourself
+is self-review. These fields preserve evidence; the graph cannot authenticate
+an agent session or make a source-string test prove native behavior.
 
 When replacing or resuming a worker, name the latest implementation review and
 its unresolved findings explicitly. The worker must reconcile those findings
@@ -179,6 +184,12 @@ because a progress commit advanced HEAD. Code, runtime input, tool, reference an
 policy changes still require review and a matching build. All source must be clean.
 When a new build is necessary, obtain configure lineage for its exact source. Include
 the generator's `-G` flag; derive the remaining arguments from the policy helper.
+Prefer `pixi run python -m tools.raid_program.workflow_build run` after committing
+the reviewed build claim. It derives both commands and runs configure then build
+through the existing queue without intermediate Git writes. Receipts remain at
+unique queue-owned paths; copy them into evidence only after the pair finishes.
+Use `workflow_build commands` to inspect argv without launching. A failed step
+returns its receipt and stops; correct its cause rather than repeating it unchanged.
 Python uses pixi; code/configuration use Git; generated evidence uses DVC. Reuse exact verified assets,
 verify remote copies, and evict only exact duplicate payloads.
 

@@ -86,6 +86,12 @@ spell identity, and duration. Separate:
 Locate the first native function or data edge that disagrees with the pinned
 reference. Use repository spell data, client data, or pinned WoWSims source as
 evidence; do not invent a coefficient from the final DPS gap.
+Trace a disputed metric through both its producer and native consumer before
+editing mechanics. Identify shared terms, reciprocals and snapshot timing in
+the reference comparison. A fixture that presets the disputed native field tests
+serialization only; source-text assertions test placement only. Neither proves
+that the native handler applied an effect. If that boundary is unobserved,
+capture it first, checking logger/filter/export visibility before a live probe.
 
 For guardian AI, verify the pinned expansion's spell description and owner-aura
 targeting rules before choosing acquisition behavior. A simulator's generic

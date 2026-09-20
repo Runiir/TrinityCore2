@@ -1,4 +1,8 @@
-"""Regression coverage for the native Balance scoring-start stat path."""
+"""Source-shape checks and hand arithmetic for proposed Balance stat changes.
+
+These do not execute aura application, casting-speed handlers or spell-group
+stacking. Passing them is not behavioral proof or native repair acceptance.
+"""
 
 from __future__ import annotations
 

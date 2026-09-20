@@ -87,6 +87,19 @@ repair it, test the affected behavior, review risky changes, build, run, and clo
 A worker or attempt ending does not end the user's task. Continue automatically after
 passing checks. Stop unchanged retries at ten occurrences of the same first-broken edge,
 write the causal summary, and change the hypothesis or architecture before resuming.
+Before repeating a failed measurement, inspect `recent_attempts` and
+`failure_counts_by_edge` from resume, including previous unit names. State what
+new observation or tested repair will distinguish the remaining hypotheses.
+A renamed edge is not new evidence. Separate setup/admission failures from
+completed measurements; a completed run with an unsuccessful repair still goes
+through assessment/publication, not a claim that no operation completed.
+
+For startup state or lifecycle questions, use the shortest attributable observation
+that answers them before requesting another scoring run. Verify the diagnostic is
+enabled and reaches its consumer. A short probe has no accepted DPS result;
+dummy performance still requires exactly 300 seconds, raids their watchdog.
+After a repair leaves the same symptom, inspect the missing causal boundary and
+review earlier speculative changes before stacking another gameplay patch.
 
 When choosing a throughput repair, estimate the recoverable damage from observed
 lost events or activity and label the estimate's limits. A real small defect
@@ -167,6 +180,10 @@ Keep each model fact once. Bind hashes and source receipts outside model context
 within its context preserve native outcomes, duty, reference comparison and
 explicit unknowns. Adding exact totals must not discard the causal comparison
 or copy a legacy timeline into an explicitly missing native observation.
+Use the per-actor baseline rules in
+[worker_checkpoints.md](../../../docs/bot_raids/worker_checkpoints.md#per-bot-baselines)
+when interpreting drift. An accepted improvement advances only that actor's
+versioned baseline; preserve the prior run and other actors' open requirements.
 
 Preserve native outcome meanings in model projections. A `no_action` profile
 resolution or wait is not a failed native cast. Keep those counts separate from
