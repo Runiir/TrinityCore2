@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 23,
+    "revision": 24,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -930,6 +930,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 23,
+        "unit_id": "magmaw:balance_self_setup_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 23,
+          "unit_id": "magmaw:balance_self_setup_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_rebased_20260920.json",
+            "sha256": "10dc640062f45249df28c19967a589f1a6c8e209658d81b99575a638e7f82999"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -938,7 +955,107 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "05895cc6094753f953995bfcd70cbcb97ed47036"
+    "source_base_commit": "05895cc6094753f953995bfcd70cbcb97ed47036",
+    "assignment": {
+      "hypothesis": "Balance's missing Mark of the Wild and Leather Specialization are native setup and provisioning defects. Keep setup spells outside simulator/action catalogs so native spellbook provisioning cannot perturb the exact WoWSims fixture; provide explicit Druid setup spells through validation provisioning while preserving native parent 87505 to child 86530 expansion.",
+      "owned_files": [
+        "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4.dvc",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/e4a18dd220d3264eefcc48d57d77d83bbcd35b7f8b6f94c7f8d6807a736a20a0.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/253a264d5f08515bf20613005a8e84a66b300a025e70d61313d5fe1a111b108b.log",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/40b832a7d27c5b9a26a808dd0f4438bfe76581b32e487af30474bab8ee3d7175.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/4818d7995d28f5fdc4c1ffa38e4cc9a7e7669d73865180615debf6994bfff97b.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/486cbd73eda71a162555d3971c3ddcc5c26228d9df926756ecef546b90346a31.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/5787cfb1e380f199fa5b4967c13429842c2bb3a0e58d33a1a9390357321dae78.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/5d28660a8634fdead28fb4ff5e7d1858f794577827d24546d2435d7d0cba5ef5.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/6163c26c96874ffb178d47eb751c3e91021a2127e62e21f119072cdee314f023.log",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/76aab1418b8c947b2af1c83c2e8af9bf6bfe0ae5348a7b7e9f86befdf1416e7e.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/894a5b51847f5deac1f7c4592350b77e9280ee0eb229b53463f72555ef14cc58.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/96fa494af8ed2b35c6e397fff1766ffc13da2f9e7af8365a9b30b4069ac2b9a1.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/a5d0b1359b08ed34893839fa94b90e4bda70a6eded33667775916885da98353c.log",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/d1397c7cb4e6ccda0708dc32f4d63c99463684f3207ee9cb71f8ab4ee192e26d.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/d615240a36b3a048b13ecd77d8eb5aa0b6e7adcee62739fe9650798a3c6ca082.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/db51d2007542d58fc3142bcefb52d1fba9f80208b648838641c57b51234bceec.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/e0acd5e7c7afb808d19d33ad097ce55de87dc6a4a15f8bd2888eb82cec056fbf.log",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/e3cad5e6d2c44c097963034ecd0736318af3186794c613ba1f9177dedf76f2a7.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/e459a1348c939c6703d89197e1e41c5d4eb3d29c1539d3268d72265f9fe36443.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/ec5abd6b69746cc2b164deb6abc848e5944e75c33f7b6e703479b14f9a1867be.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/f3a9d32ac27e4033c99b0c44ab9520243b57e9732d234b27c2badf913d1d1db8.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/f6ac2827c58fa2bc4962716f6748e9533dc622283b4ec1f9c9a81b7d63e7e373.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/ff62be32529f1e035323ecdcd1a35221dfe115411af48505edce10f223c45042.json",
+        "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/promotion-index.json",
+        "artifacts/cata_raid_program/.gitignore",
+        "artifacts/cata_raid_program/legacy_storage_rescue_20260920.tar.gz.dvc",
+        "artifacts/cata_raid_program/storage_cleanup_host12_20260920.tar.gz.dvc",
+        "artifacts/cata_raid_program/workflow_build_repair_20260920.tar.gz.dvc",
+        "experiments/configs/all_spec_targets_cata_p4_v1.json",
+        "experiments/configs/cata_434_action_profiles.json",
+        "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+        "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+        "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h",
+        "tests/test_bot_world_population_mgr_persistent_setup_module.py",
+        "tests/test_build_source_compatibility.py",
+        "tests/test_development_graph.py",
+        "tests/test_raid_build_coordinator.py",
+        "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+        "tools/bot_ml/build_validation_provisioning.py",
+        "tools/raid_program/build_control_compatibility.py",
+        "tools/raid_program/development_graph.py",
+        "tools/raid_program/queued_build.py",
+        "tools/raid_program/run_dummy_calibrations.py",
+        "tools/raid_program/run_shared_instance_canary.py",
+        "tools/raid_program/shared_instance_preparation.py",
+        "tools/raid_program/workflow_build.py"
+      ],
+      "forbidden_changes": [
+        "No injected stats or auras, reference weakening, coefficient tuning, spell-radius/range changes, roster changes, encounter changes, route changes or hidden live controls.",
+        "Do not persist armor-specialization child aura 86530 directly; retain the learned parent 87505 -> 86530 spell_learn_spell path.",
+        "Do not add native persistent setup spells to simulator/action catalogs or repeat the completed 50ec Survival measurement; preserve all open Balance, Blood, healer, Fire, Affliction, Survival, Elemental and Magmaw 10N requirements.",
+        "Do not treat the exact WoWSims denominator as live acceptance; keep reference publication, native dummy validation, and completion-watchdog raid validation as separate gates."
+      ],
+      "acceptance_conditions": [
+        "Native Druid self-setup retains base spell 1126 and current alternate aura 79061, and the calibration self-provided aura validator can attribute its own source.",
+        "Validation provisioning supplies the Druid setup spells for every Druid target, including learned parent 87505, while bot_known_spell_ids excludes child aura 86530 and the Druid action/target catalogs exclude setup-only spells.",
+        "The regenerated Phase 8 materialized contract/header passes its check and the promoted exact WoWSims request catalog is independently validated against fixture hash 95fb64340a0ad6e0b405cc8478adf4d9a0d49d70b16e9f6c337a7ed8e8d56224.",
+        "The pinned 16-spec cohort is DVC-reconstructed from pushed commit 5edb9e76a0c12130827124747bef9ab2af2a86d0 and published through the commit-B control plane; its promoted catalog file identity is 0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6.",
+        "The parent-commit failure in test_actual_reference_observer_attributes_every_wrath_air_application remains a separately recorded baseline issue; it is not used to weaken evidence or claim success.",
+        "Native build, matched 300-second Balance validation, completion-watchdog raid validation and DVC publication remain separate pending gates."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+        "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
+        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+      ],
+      "base_commit": "05895cc6094753f953995bfcd70cbcb97ed47036",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+        "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+      },
+      "validation_identity": {
+        "scenario_kind": "dummy",
+        "actor_id": "30001",
+        "spec": "balance_druid",
+        "reference": {
+          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "runtime_profile": {
+          "path": "experiments/configs/validation_scenarios_cata_001.json",
+          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+        }
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_rebased_20260920.json",
+        "sha256": "10dc640062f45249df28c19967a589f1a6c8e209658d81b99575a638e7f82999"
+      }
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
