@@ -1,0 +1,38 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_effective_stat_application_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "cb47bc7acd59c6e695f676600a876020070ef4ab5de878a4300751ed9753b832",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_verification": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_paired_probe_20260920.tar.gz.dvc",
+      "sha256": "e5f1e6073fd3b2084b1d82964eeb315920e71eb307898c33ebdaa7f25fc11969",
+      "content_md5": "1670b4d72a4cdeb68895e83f3d1010c4",
+      "size_bytes": 2152145
+    },
+    "status": "Cache and remote object are in sync.",
+    "local_archive_evicted": true,
+    "local_archive_recovery": "The raw capture is recoverable with DVC from the committed pointer.",
+    "temporary_probe_dirs_removed": true,
+    "workspace_status_note": "The full workspace DVC status contains pre-existing unrelated dirty stages; the new paired probe pointer was pushed and its targeted remote check is clean."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_assessment_20260920.json",
+      "sha256": "83643adb049a9810cde7620456d44c129ef6533b615516c1b185d163ed86076d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+      "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_paired_probe_20260920.tar.gz.dvc",
+      "sha256": "e5f1e6073fd3b2084b1d82964eeb315920e71eb307898c33ebdaa7f25fc11969"
+    }
+  ]
+}
