@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 118,
+    "revision": 119,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -2550,6 +2550,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 118,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "action": "advance",
+          "revision": 118,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "producer": "coordinator",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_review_rework4_20260920.json",
+            "sha256": "11bdf9b66f8ffc8645c7bc20fa56789ba6db97971cb97072798a2e593d227aca"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2558,7 +2576,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "25f207920855479e0f096a1fcad775b8a9dfd962",
+    "source_base_commit": "b39cd8eed35b49a10f9df36ce7418e2131f3cb29",
     "assignment": {
       "hypothesis": "The prior owner-lifecycle repair did not change the exact canary's direct-cast SpellSpeedMultiplier, but the calibration observer did not track spell 24907. The next bounded diagnosis must expose the native 24907 owner application at scoring start, including application mask, caster and effect amount, so the remaining edge can be classified as missing owner materialization versus an effect-handler or later-stat-reset problem. Preserve the triggered area-aura propagation and do not change the cast-speed ledger or Balance policy.",
       "owned_files": [
@@ -2617,6 +2635,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_implementation_rework4_20260920.json",
         "sha256": "781d39c12a90ad0831dad4dcda9b806496e82844697532145f12f62f6e7305df"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_review_rework4_20260920.json",
+        "sha256": "11bdf9b66f8ffc8645c7bc20fa56789ba6db97971cb97072798a2e593d227aca"
       }
     },
     "tested_files": {
