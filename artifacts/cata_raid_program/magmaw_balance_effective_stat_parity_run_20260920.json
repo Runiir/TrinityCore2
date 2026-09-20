@@ -1,0 +1,108 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "b205e71e364b311d4fe54f3f2699672c526033502d505ebde70235fefa9dd6ca",
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+    "binary_sha256": "157fa75574a5dc15e1fdc23ce2edf99a89680ca197a80b0663aa414ce81840f5"
+  },
+  "source_commit": "6683f79f03c37538052a7149df0db2bf96724268",
+  "attempt_id": 1,
+  "server_epoch": 16273018413277551,
+  "cohort_id": "dummy-e5945604982d-1",
+  "terminal_reason": "measurement_complete",
+  "closed": true,
+  "cleanup_verified": true,
+  "scoring_ms": 300000,
+  "controller": "tools.raid_program.run_dummy_calibrations",
+  "source_run_root": "/tmp/magmaw-balance-effective-stat-parity-20260920-r1",
+  "measurement": {
+    "spec": "balance_druid",
+    "damage": 10156580,
+    "dps": 33855.26666666667,
+    "scored_seconds": 300.0,
+    "comparison_status": "ready_for_review",
+    "comparison_rejections": [],
+    "diagnostics_complete": true,
+    "reference_comparable": true,
+    "performance_accepted": false,
+    "training_eligible": false
+  },
+  "file_hashes": {
+    "src/server/game/Entities/Player/Player.h": "c7424987be5ebfa44bb59d55c7c0f2cf89da06057657c006c49f9a79ae21385a",
+    "src/server/game/Entities/Player/Player.cpp": "ca09174ed5c4c2afaa5aeaf188c52282a622da11e19fd0059cdd77b0748771f3",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "645724f9a0d48dea165cee29111e50365c9e63d453969f4f70a83e1de069b5ab",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "9c43a794110d2523d3db1740601d128b5ca9250bca799abdc526e72c6082b9f4",
+    "tests/test_bot_effective_stats_diagnosis.py": "e83197173d988f063ee7026808e954b53ebae3001976bee36d505a85dde056e3",
+    "tests/test_balance_native_effective_stat_parity.py": "759147d99fbb0ef0509d16d4463ee870e82a6a750c8de979a8ab007a1facd258",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_drift_review_20260920_review/examples.jsonl": "f48af93e9f8bb90303c3409ff4da6584a9be6f0040f625434e7a351c38445f8b",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/examples.jsonl": "47dc2f7802f27d702d6d283370dfe2a617d54d0ed3473ace17635cc805ad0eb8",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/examples.jsonl": "88562e00bb0f44d0542b417221939b44731b647e89ea7692b68144e82c348d45"
+  },
+  "run_evidence": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_evidence_20260920.json",
+    "sha256": "4e75546f22af08e2d4d2fbd42dda9f13aafe69632da69df47ffa4188b17819fd"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_evidence_20260920.json",
+      "sha256": "4e75546f22af08e2d4d2fbd42dda9f13aafe69632da69df47ffa4188b17819fd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_20260920.json",
+      "sha256": "4ae54420dcbad1404cf3a7ebb0d23e39164bd865ca701a1bb980337e58fa2cd1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_queued_build_retry_20260920.json",
+      "sha256": "d3460e0cf16f88e763196c53569e4c288648693f62ca4ca870101ef716959647"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_20260920.json",
+      "sha256": "58fe8b3ba16eeab3aef2ba2f511a4f5b858ec7a5c7759b56ac33ffc737b44afd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_implementation_20260920.json",
+      "sha256": "e7969992f0252b1d1c284ce0d2b7fc89a39e9ddb06fc5413ad398b9cf533f8b9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_20260920.json",
+      "sha256": "2c69d5d30934e5437d82866f435b86f5e27fb80b4976b85c840f8dc77ba83069"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_validate_claim_20260920.json",
+      "sha256": "a6ec887019575e42dabb597257b2fd7ba00ff34f3fe66ce15b65ed9223242a09"
+    },
+    {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ]
+}
