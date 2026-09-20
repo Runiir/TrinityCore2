@@ -1,0 +1,56 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "15d2633764be0545fddda840a66ba53df3c8f1eeaee5bcc7c0c7cedfc019a781",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_checks": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_calibration_20260920.tar.gz.dvc",
+      "sha256": "e2eaa7e2c29500a24521b1477634245542d611f52ab5fd00db2a351281b3ffa0"
+    },
+    "remote_status": {},
+    "reconstructed_tar_sha256": "8d476d33d1f662dc0490417c622a5d0c7f5ff2932fb5a69f93e684976c6fd1bd",
+    "reconstructed_payload_verified": true,
+    "raw_tar_local_present": false,
+    "exact_duplicate_payloads_evicted": true,
+    "cleanup_note": "The current and prior Balance calibration archives were moved to recoverable trash after remote verification; the two generated /tmp extraction trees were moved to the explicit recoverable trash directory because gio trash is unsupported on the internal /tmp mount."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_assessment_20260920.json",
+      "sha256": "3766f4665f4b496faf575ed5056b7158af2d0af692f971c7f8dbacdc2d8115a1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_actor_30001_review_20260920.json",
+      "sha256": "377fc817c971415e8900b43fcb6cb242f7425624c99cb37bc03221683f6657e2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_calibration_20260920.tar.gz.dvc",
+      "sha256": "e2eaa7e2c29500a24521b1477634245542d611f52ab5fd00db2a351281b3ffa0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_build_20260920.json",
+      "sha256": "cfb1e5e8e8dfd28b84e7c662271b02c49712149351f82a142879e82ff781c43d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_db_migration_20260920.json",
+      "sha256": "e59e76c02a658049c7cb9033615b5948056006dd3ea24c9291d909bda20554c6"
+    }
+  ],
+  "outcomes": {
+    "repair_accepted": true,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "actor_30001_requirement_accepted": false
+  },
+  "interpretation": "The exact-300 Balance evidence is closed and remotely reproducible. It supports the bounded Starfall lunar-window behavior repair, but not actor performance, raid clear, or parent-objective completion; the next route must diagnose the remaining Balance cadence loss and preserve all other open actor and raid requirements."
+}
