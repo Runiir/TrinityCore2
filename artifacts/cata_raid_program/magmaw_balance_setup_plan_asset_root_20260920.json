@@ -1,0 +1,84 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "6cf9c92737ad6671af094234648e25fac8c54b3da9cfe993ed35d2d184254e1e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_rebased_20260920.json",
+      "sha256": "45c55fe70ff1eb2b7576dc8072bd449e9ec0e6022d5ce0042ffa5532ceacfc97"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_rebased_20260920.json",
+      "sha256": "10dc640062f45249df28c19967a589f1a6c8e209658d81b99575a638e7f82999"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/promotion-index.json",
+      "sha256": "9332fc84c69ea872003a6f7d838dc5f241cf5894145f6af007f76106f5fe62fa"
+    }
+  ],
+  "hypothesis": "The Balance validation failure is a runner admission defect, not a native Balance defect: the updated runtime-asset contract requires the offline source-checkout root and native configured DataDir root to be physically distinct, but run_dummy_calibrations hardcodes both to the coordinator checkout. Expose an explicit source-checkout binding and pass it through the closure audit/report.",
+  "owned_files": [
+    "tools/raid_program/run_dummy_calibrations.py"
+  ],
+  "forbidden_changes": [
+    "No native C++ spell, aura, coefficient, stat, rotation, encounter, route, roster, database, or simulator/reference changes.",
+    "Do not relax root-alias, mode, hash, inventory, DVC, or provenance checks; do not copy or mutate runtime assets to hide a root mismatch.",
+    "Do not start a worldserver during unit tests, reuse the failed pre-launch attempt as validation, or treat exact WoWSims denominators as live acceptance."
+  ],
+  "acceptance_conditions": [
+    "run_dummy_calibrations accepts an explicit --runtime-asset-source-checkout directory, defaults compatibly for existing callers, and records the selected root in the batch report.",
+    "The closure verifier receives the explicit source root while configured native DataDir and DVC workspace remain bound to the current coordinator checkout.",
+    "The clean parity asset checkout plus the current configured DataDir passes the full closure contract for map 0 without root_mismatch, while the original shared-root configuration remains rejected.",
+    "The current exact WoWSims catalog, fixture contract, and native Druid setup tests remain passing; the prior parent-only observer failure remains a separately recorded baseline issue.",
+    "A fresh policy-bound native build and a new exact 300-second Balance run remain required before any repair or performance acceptance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_build_source_compatibility.py tests/test_runtime_asset_closure.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+    "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "acbba08c89831e81a25e4466a89ac77912310389",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_advice_20260920.json",
+        "sha256": "106d47a652c162d4cf26928e2f3d48714a1825f7c1a32d181ce9afd215c1383e"
+      },
+      "adjudication": "Retained hosted Jev review remains relevant to the native Balance hypothesis; this rework is limited to the validation runner's explicit runtime-asset root binding discovered by the revised contract."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; the closure contract's reproducible root conflict and explicit-source-root pass control this infrastructure repair."
+    }
+  }
+}

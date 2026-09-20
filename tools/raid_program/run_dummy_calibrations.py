@@ -31,6 +31,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
+    parser.add_argument(
+        "--runtime-asset-source-checkout",
+        type=Path,
+        help="explicit clean source root for offline runtime assets",
+    )
     parser.add_argument("--concurrency", type=int, choices=(1, 2), default=2)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--heartbeat", type=float, default=5)
@@ -44,6 +49,14 @@ def main() -> int:
     output = args.output.resolve()
     if output.is_relative_to(ROOT):
         raise ValueError("capture output must be outside source")
+    runtime_asset_source_checkout = (
+        args.runtime_asset_source_checkout or ROOT
+    ).resolve()
+    if not runtime_asset_source_checkout.is_dir():
+        raise ValueError(
+            "runtime asset source checkout must be an existing directory: "
+            + str(runtime_asset_source_checkout)
+        )
     for spec in specs:
         preflight_calibration_reference_binding(calibration_only=True, calibration_mode="single_target_300", target_spec=spec)
     build = json.loads(args.build_receipt.read_text())
@@ -76,6 +89,7 @@ def main() -> int:
               "build_source_commit": build["commit"], "source_compatibility": source_compatibility,
               "build_receipt": str(args.build_receipt.resolve()), "build_receipt_sha256": sha256(args.build_receipt),
               "binary_sha256": sha256(binary), "config_sha256": sha256(config), "config_derivation": derivation,
+              "runtime_asset_source_checkout": str(runtime_asset_source_checkout),
               "specs": specs, "seed": args.seed, "concurrency": args.concurrency,
               "cleanup": {}, "performance_accepted": False, "training_eligible": False}
 
@@ -83,7 +97,8 @@ def main() -> int:
         data_dir = Path(json.loads((ROOT / BASE_CONFIG).read_text())["typed_inputs"]["data_dir"])
         assets = verify_runtime_asset_closure(
             manifest_path=ROOT / "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
-            source_checkout=ROOT, configured_data_dir=data_dir, dvc_workspace=ROOT,
+            source_checkout=runtime_asset_source_checkout,
+            configured_data_dir=data_dir, dvc_workspace=ROOT,
             sealed_bundle=output, worldserver_config=config, scenario_map_id=0)
         write(output / "runtime-assets.json", assets)
         if not assets["complete"]:
