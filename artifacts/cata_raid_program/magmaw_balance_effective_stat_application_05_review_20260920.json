@@ -1,0 +1,31 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_effective_stat_application_05",
+  "authority": "coordinator_attestation",
+  "producer": "Rawls",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_review_report_20260920.json",
+    "sha256": "e41f27f6bc01cb3e0ee6f4c982b9160c36477ead64b85c3f949c1bfaf3b28e7e"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "62bd4e54e37e56c159d724349c600dcef456b9990baf5aca51787dcb3824f1bd",
+    "tests/test_balance_native_effective_stat_parity.py": "ac93375040e2c1e1293c7cdc8c2694671f5a251166faffc8d2d938c682d060ae"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_review_report_20260920.json",
+      "sha256": "e41f27f6bc01cb3e0ee6f4c982b9160c36477ead64b85c3f949c1bfaf3b28e7e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_implementation_20260920.json",
+      "sha256": "de4e60023f224a6ec65e8dca8170b4ac46c8803dd2d94ba38bcc283b1295abaa"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_result_checkpoint_20260920.json",
+      "sha256": "4334a582941cde8785727b700a1d9b603648b2aaca397b947a337e97f3b6007d"
+    }
+  ],
+  "interpretation": "Independent review approves build handoff for diagnostic-only paired handler tracing. Runtime and performance remain unaccepted."
+}

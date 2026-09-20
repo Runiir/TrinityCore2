@@ -1,0 +1,32 @@
+{
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "reviewer": "Rawls",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "verdict": "approved",
+  "native_changes_approved": true,
+  "source_base_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
+  "implementation_commit": "679c23327accc1c88ce01f348a3497de024c9cc5",
+  "tested_graph_commit": "6b2ddceda8",
+  "findings": [
+    "SpellAuraEffects.cpp changes only the existing Moonkin calibration marker: it now selects spell IDs 24905 and 24907 and prints the actual ID through spell=%u.",
+    "Moonkin form maps to both 24905 and 24907 through the existing native lifecycle, and the owner materialization code is unchanged.",
+    "The canonical worldserver template enables Logger.server=3,Console Server while Logger.spells remains commented, so the selected category is visible under the frozen runtime configuration.",
+    "The exclusive-skip branch, both ApplyCastTimePercentMod calls, and all native arithmetic remain unchanged. No gameplay, stacking, coefficients, or calibration-metric behavior changed.",
+    "The focused source test and diff checks pass. The test is source/config shape coverage only and does not prove handler execution, emitted output, native stat parity, or live success."
+  ],
+  "checks": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "result": "6 passed"
+    },
+    {
+      "command": "git diff --check 1fa950dc012936ece10b67be46a748aebbb002a9..679c23327accc1c88ce01f348a3497de024c9cc5",
+      "exit_status": 0
+    }
+  ],
+  "concrete_concern": "The review applies to the immutable source patch at 679c23327accc1c88ce01f348a3497de024c9cc5. Later commits contain bookkeeping and graph receipts only; the coordinator must preserve the owned-file hashes before building.",
+  "next_action": "Proceed to the coordinator-owned policy-bound native build and then an attributable startup probe. Do not treat this review as live, repair, performance, or raid acceptance.",
+  "requirements_status": "All actor, class-comparability, Magmaw, raid-performance, and roster requirements remain open."
+}
