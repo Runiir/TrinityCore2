@@ -1,0 +1,41 @@
+{
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "actor_id": "30001",
+  "status": "reviewed",
+  "accepted": false,
+  "scenario_kind": "dummy",
+  "comparison": {
+    "baseline_run": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+      "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+    },
+    "post_change_run": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+    },
+    "baseline_dps": 31993.74,
+    "post_change_dps": 32585.296666666665,
+    "reference_dps": 35447.58892725215,
+    "post_change_reference_ratio": 0.9192528364493374,
+    "baseline_matched": true,
+    "unexplained_material_decline": false
+  },
+  "native_outcome": {
+    "first_successful_actions": [
+      {"elapsed_ms": 0, "spell_id": 8921, "spell_name": "Moonfire"},
+      {"elapsed_ms": 1200, "spell_id": 5570, "spell_name": "Insect Swarm"},
+      {"elapsed_ms": 2200, "spell_id": 33831, "spell_name": "Force of Nature"},
+      {"elapsed_ms": 3301, "spell_id": 5176, "spell_name": "Wrath"},
+      {"elapsed_ms": 4500, "spell_id": 78674, "spell_name": "Starsurge"},
+      {"elapsed_ms": 5700, "spell_id": 48505, "spell_name": "Starfall"}
+    ],
+    "moonfire_first_action_requirement": true,
+    "starsurge_neutral_reject_reason_observed": false,
+    "candidate_mask_observed": false,
+    "cleanup_verified": true,
+    "exact_scoring_ms": 300000,
+    "repair_accepted": true
+  },
+  "disposition": "The Starfall neutral gate changes the first native action to the pinned Moonfire opener. The bounded opener repair is accepted, while the actor's 32585.30 DPS versus the 35447.59 reference and all encounter-performance requirements remain open."
+}
