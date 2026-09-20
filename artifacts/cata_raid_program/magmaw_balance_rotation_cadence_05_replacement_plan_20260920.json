@@ -34,12 +34,13 @@
     "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
     "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
     "tests/test_balance_rotation_cadence.py",
+    "tools/bot_ml/jev_shadow.py",
     "experiments/configs/local_laya/checkpoint_examples.json"
   ],
   "forbidden_changes": [
     "No effective-stat, gear, coefficient, proc, target, consumable, reference, denominator, encounter-script, route, other-spec, or workflow-support changes.",
     "No direct Eclipse-power writes, forced casts, cooldown edits, blanket Starfall priority changes, or changes to the already accepted neutral-opener behavior.",
-    "The three supporting workflow Python files and the local Laya JSON fixture are frozen and cannot be modified by this native unit.",
+    "The two eligible supporting workflow Python files, tools/bot_ml/jev_shadow.py, and the local Laya JSON fixture are frozen and cannot be modified by this native unit.",
     "Do not accept actor_30001, Balance performance, or Magmaw 10N from this dummy diagnosis or its exact-300 follow-up alone."
   ],
   "acceptance_conditions": [
