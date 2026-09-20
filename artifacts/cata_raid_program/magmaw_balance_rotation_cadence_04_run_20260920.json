@@ -1,0 +1,130 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "2beea1a83154e0d2fbbc0326771d78dfb342541dd2906c45667efc3d74aff661",
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "618b20a2d2793e3f26b3b9d45ed2728f3b97d881",
+    "binary_sha256": "cfc37c09b0f39f59ee5292742c411b8132ecba36cdb5fc55622e70391b1f87eb"
+  },
+  "source_commit": "6253c9766f1af4e09b10e62db0bec1940d8ccf9",
+  "attempt_id": 1,
+  "server_epoch": 786108962479090,
+  "cohort_id": "dummy-3453ffe65c22-1",
+  "target_guid": 30540,
+  "target_spec": "balance_druid",
+  "calibration_mode": "single_target_300",
+  "duration_policy": "completion-watchdog",
+  "terminal_reason": "measurement_complete",
+  "native_terminal_reason": "complete",
+  "scoring_ms": 300000,
+  "scored_seconds": 300.0,
+  "closed": true,
+  "cleanup_verified": true,
+  "measurement_completed": true,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": true,
+  "calibration_acceptance_passed": true,
+  "comparison_rejections": [],
+  "performance_accepted": false,
+  "training_eligible": false,
+  "batch_accepted": true,
+  "dps": 32585.296666666665,
+  "reference_dps": 35447.58892725215,
+  "reference_ratio": 0.9192528364493374,
+  "hard_floor_passed": true,
+  "optimization_target_met": true,
+  "native_observation": {
+    "target_guid": 30540,
+    "profile_generation": 1,
+    "profile_content_hash": "37896BC3D8E430637CCEEBC9CB1DE0DC4B4A6B9EB8E168BC2BBB296418768801",
+    "fixture_contract_sha256": "95fb64340a0ad6e0b405cc8478adf4d9a0d49d70b16e9f6c337a7ed8e8d56224",
+    "phase_id": 32512,
+    "phase_match": true,
+    "own_target_visibility_observed": true,
+    "target_is_passive": true,
+    "target_distance_yards": 15.003,
+    "no_cross_window_contamination": true,
+    "first_successful_actions": [
+      {"elapsed_ms": 0, "spell_id": 8921, "spell_name": "Moonfire"},
+      {"elapsed_ms": 1200, "spell_id": 5570, "spell_name": "Insect Swarm"},
+      {"elapsed_ms": 2200, "spell_id": 33831, "spell_name": "Force of Nature"},
+      {"elapsed_ms": 3301, "spell_id": 5176, "spell_name": "Wrath"},
+      {"elapsed_ms": 4500, "spell_id": 78674, "spell_name": "Starsurge"},
+      {"elapsed_ms": 5700, "spell_id": 48505, "spell_name": "Starfall"},
+      {"elapsed_ms": 6702, "spell_id": 5176, "spell_name": "Wrath"}
+    ],
+    "action_attempts": [
+      {"spell_id": 2912, "spell_name": "Starfire", "count": 49},
+      {"spell_id": 5176, "spell_name": "Wrath", "count": 73},
+      {"spell_id": 5570, "spell_name": "Insect Swarm", "count": 19},
+      {"spell_id": 8921, "spell_name": "Moonfire", "count": 17},
+      {"spell_id": 33831, "spell_name": "Force of Nature", "count": 2},
+      {"spell_id": 48505, "spell_name": "Starfall", "count": 5},
+      {"spell_id": 78674, "spell_name": "Starsurge", "count": 26},
+      {"spell_id": 93402, "spell_name": "Sunfire", "count": 6}
+    ],
+    "accepted_action_count": 197,
+    "starsurge_neutral_reject_reason_observed": false,
+    "candidate_mask_observed": false,
+    "acceptance_first_action_moonfire": true,
+    "repair_accepted": true
+  },
+  "report_summary": {
+    "batch_report_sha256": "d26b0247d344ccf4e09376f0f9708e2a60a2cfa97ef70dcc42f1996b7aa3bdb8",
+    "actor_report_sha256": "f4a480678198a68413aa131bb1144c60609a802ba3a97a75f02bdc0b60427bfc",
+    "cleanup_sha256": "356e2e56e8529c1fed6649badd771026e76ad52032f8c128dd7e8dd1aa984c83",
+    "worldserver_console_log_sha256": "d2cb94d588cc2a64ce8d779cca9369c4c490da7b287b03bc7ea6dfe869174f01",
+    "config_sha256": "2241bc86db03b6cb6616d1611480b1892c5ae99a490fdd3c2fb59f619a8ca8f4",
+    "dps": 32585.296666666665,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.9192528364493374,
+    "batch_accepted": true,
+    "all_measurements_completed": true,
+    "all_references_comparable": true,
+    "cleanup_witnesses": []
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_calibration_20260920.tar.gz.dvc",
+      "sha256": "04ca5c08278f04f2b25693084688a579d5600184601238ea20682ede3ffffce1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_build_20260920.json",
+      "sha256": "ca7e1ac42bf021c64679f693d3b4ef5f1db5fce51f552010606647a6e4003714"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_20260920.json",
+      "sha256": "3bcc0e799ea21b00bc5dc2e1403dcf6698ba4e3be2c7e2dd72f2fd2962689eeb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_review_20260920.json",
+      "sha256": "f82136a6cdedae37cd1d507717a085bd2f588ba86b36666f0b2a2281a18599c5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_db_migration_20260920.json",
+      "sha256": "7b5c5c299f82b31d845ab25202b5f16304d72832afabd400cdf2642e53b1c321"
+    }
+  ],
+  "interpretation": "The exact-300 isolated Balance validation completed with intact phase, target attribution, reference comparability, and cleanup. The bounded neutral-opener repair is accepted because Moonfire 8921 is the first successful action at 0 ms and Starfall 48505 follows at 5700 ms. Candidate-mask telemetry remains unavailable; actor performance, raid clear, and parent completion remain open."
+}
