@@ -1,0 +1,44 @@
+{
+  "kind": "native_review_report",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "reviewed_range": {
+    "base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
+    "checkout_commit_at_review": "fe048a22b0f9dbd61e7e277bd9bfb36bfed2826b"
+  },
+  "verdict": "approved",
+  "native_approval": true,
+  "actor_performance_acceptance": false,
+  "raid_acceptance": false,
+  "findings": [
+    {
+      "id": "signed_eclipse_mapping",
+      "status": "pass",
+      "evidence": "POWER_ECLIPSE has native minimum -100 and the Druid Eclipse implementation uses negative power for Lunar; >= -70 correctly rejects non-lunar/<=70 energy while permitting native power below -70."
+    },
+    {
+      "id": "neutral_ordering",
+      "status": "pass",
+      "evidence": "The existing balance_neutral_opener rejection remains before the new balance_starfall_lunar_window predicate, preserving the neutral exception and its typed reason."
+    },
+    {
+      "id": "read_only_policy",
+      "status": "pass",
+      "evidence": "The new predicate reads aura and Eclipse power only; there are no state writes, cooldown/stat changes, or blanket priority changes, and BotWorldPopulationMgrCombatResolver.cpp is unchanged."
+    },
+    {
+      "id": "sql_scope",
+      "status": "pass",
+      "evidence": "The migration is restricted to Balance Druid DPS, enabled Starfall 48505, and uses an idempotent FIND_IN_SET guard."
+    },
+    {
+      "id": "test_and_size_scope",
+      "status": "pass",
+      "evidence": "Tests cover ordering, threshold, scope, and idempotence; source is 704 lines, test is 69 lines, and SQL is 21 lines."
+    }
+  ],
+  "evidence_limit": "The pinned APL also has a later currentLunarEnergy >= 100 branch; this patch intentionally does not add timestamp/phase logic. Candidate mask, Eclipse-power timestamps, native exact-300 behavior, actor performance, and raid acceptance remain pending.",
+  "recommendation": "Proceed to the coordinator-owned host12 build and reviewed SQL/runtime validation gates; do not claim actor, exact-300, or raid acceptance from this review."
+}
