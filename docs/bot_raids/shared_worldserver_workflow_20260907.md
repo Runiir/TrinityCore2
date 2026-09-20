@@ -16,7 +16,9 @@ All actor and encounter requirements remain open.
 
 The run adapter is
 `artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json`.
-Raw evidence is remote-verified and locally evicted. Restore only when needed:
+Raw evidence is remote-verified and locally evicted. The cleanup manifest and
+drift review are in `artifacts/cata_raid_program/balance_interruption_cleanup_20260920.tar.gz.dvc`.
+Restore only when needed:
 
 ```sh
 pixi run dvc pull artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc
