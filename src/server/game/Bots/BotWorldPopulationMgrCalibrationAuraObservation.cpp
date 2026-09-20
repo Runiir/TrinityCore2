@@ -12,7 +12,7 @@
 
 namespace
 {
-constexpr std::array<uint32, 4> OwnerAuraSpellIds = {24604, 76659, 82925, 82926};
+constexpr std::array<uint32, 5> OwnerAuraSpellIds = {24604, 76659, 82925, 82926, 24907};
 }
 
 void BotWorldPopulationMgr::ObserveCalibrationOwnerAuras(

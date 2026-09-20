@@ -1,0 +1,63 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "codex-magmaw-10n-balance-aura-instrumentation",
+  "operation_id": "2f40184e7414586fc070a2382ea17b2d54e1cfc8529cf9bf2ccd1479a11eca69",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "3c5f205c36d160e29b0a0f185a9703a359be73b7b614e251f23afed5f0e9ab35",
+    "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationAuraObservation.cpp": "cc81ba0b81a35111964cdd4316c084e6f0e1e53bddfa95ab7eed6d12ca02d3b6",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "d656053a1d0cb5dd0129348160a3f7820d0db43cb3f014ef1a54c97440d5d2f4",
+    "tests/test_balance_native_effective_stat_parity.py": "f2cbf0fbaaebe714cc32b1aa73380b3e60f053b1a33114c73820983da8a1e232"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 exact requests validated against provider revision 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6"
+    }
+  ],
+  "summary": "Added native calibration observation for Moonkin Aura 24907 owner application; no aura lifecycle, cast-speed ledger, or Balance policy change in this checkpoint.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_rework4_20260920.json",
+      "sha256": "0161a9aa28866ad2489bd0d0f6f5684e863885ea89acd8324db63ac97cc36087"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework3_reconciliation_20260920.json",
+      "sha256": "9cd2ceebd3ace951cd8a53741be9d337413698ee2c5126f8f1124efa2ba8d517"
+    },
+    {
+      "path": "tests/test_balance_native_effective_stat_parity.py",
+      "sha256": "f2cbf0fbaaebe714cc32b1aa73380b3e60f053b1a33114c73820983da8a1e232"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "The instrumentation is bounded to the missing native observation and all required tests pass; live acceptance remains pending.",
+      "reason": "No separate JEV checkpoint was requested for this implementation result.",
+      "status": "not_reviewed"
+    },
+    "laya": {
+      "adjudication": "The changed files preserve the existing aura lifecycle and ledger; the next canary is required to interpret the new evidence.",
+      "reason": "No local Laya provider checkpoint was requested for this implementation result.",
+      "status": "not_reviewed"
+    }
+  }
+}

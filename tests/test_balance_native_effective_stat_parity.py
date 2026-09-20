@@ -11,6 +11,8 @@ PLAYER_SOURCE = ROOT / "src/server/game/Entities/Player/Player.cpp"
 LEDGER_SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp"
 AURA_SOURCE = ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp"
 AURA_LIFECYCLE_SOURCE = ROOT / "src/server/game/Spells/Auras/SpellAuras.cpp"
+AURA_OBSERVATION_SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationAuraObservation.cpp"
+CALIBRATION_METRICS_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
 
 
 def test_balance_of_power_uses_gained_spirit_only():
@@ -59,3 +61,12 @@ def test_area_aura_owner_application_is_preserved_without_changing_propagation()
     assert "target == GetUnitOwner() && GetSpellInfo()->Effects[i].IsAreaAuraEffect()" in source
     assert "GetSpellInfo()->Effects[i].Effect != SPELL_EFFECT_APPLY_AURA" in source
     assert "Area auras normally materialize through FillTargetMap" in source
+
+
+def test_calibration_observes_moonkin_aura_owner_application():
+    source = AURA_OBSERVATION_SOURCE.read_text(encoding="utf-8")
+    metrics = CALIBRATION_METRICS_HEADER.read_text(encoding="utf-8")
+
+    assert "std::array<uint32, 5> OwnerAuraSpellIds" in source
+    assert "24604, 76659, 82925, 82926, 24907" in source
+    assert "std::array<OwnerAuraObservation, 5> OwnerAuraObservations" in metrics
