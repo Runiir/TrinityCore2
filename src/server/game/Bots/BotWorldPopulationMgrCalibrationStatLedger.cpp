@@ -99,8 +99,7 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
     {
         auto rating = [player](CombatRating type)
         {
-            return player->GetUInt32Value(
-                PLAYER_FIELD_COMBAT_RATING_1 + AsUnderlyingType(type));
+            return uint32(std::max<int32>(0, player->GetBaseRatingValue(type)));
         };
         stats.HitRating = rating(CR_HIT_SPELL);
         stats.CritRating = rating(CR_CRIT_SPELL);

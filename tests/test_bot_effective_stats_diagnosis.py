@@ -72,6 +72,7 @@ struct Unit{
 struct Player:Unit{
  Pet* CurrentPet=nullptr;std::array<float,8> RatingBonus{};
  Player const* ToPlayer()const override{return this;}float GetRatingBonusValue(CombatRating rating)const{return RatingBonus[rating];}
+ int32 GetBaseRatingValue(CombatRating rating)const{return int32(GetUInt32Value(PLAYER_FIELD_COMBAT_RATING_1+AsUnderlyingType(rating)));}
  Pet* GetPet()const{return CurrentPet;}
 };
 struct Pet:Unit{

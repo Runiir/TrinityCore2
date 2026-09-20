@@ -1,0 +1,8 @@
+{
+  "operation_id": "bec9cae42228a60727a6e0e98bd2674b992bb475112e0a50a76c93afa5c9138e",
+  "active_operation": false,
+  "ownership_checked": true,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The required compatibility test fixture must be included in the bounded assignment because the raw-rating accessor changes the production-code stub it compiles. Rework the plan before recording implementation tests."
+}

@@ -120,6 +120,7 @@
 #include "WorldSession.h"
 #include "WorldStateMgr.h"
 #include "WorldStatePackets.h"
+#include <algorithm>
 #include <boost/dynamic_bitset.hpp>
 #include <G3D/g3dmath.h>
 
@@ -127,6 +128,7 @@
 static constexpr uint32 DEATH_EXPIRE_STEP = 5 * MINUTE;
 static constexpr uint8 MAX_DEATH_COUNT = 3;
 static constexpr std::array<uint32, MAX_DEATH_COUNT> CorpseReclaimDelay = { 30, 60, 120 };
+static constexpr uint32 SPELL_BALANCE_OF_POWER = 33596;
 
 std::array<uint32, MAX_CLASSES> const MasterySpells =
 {
@@ -5065,6 +5067,21 @@ void Player::ApplyRatingMod(CombatRating combatRating, int32 value, bool apply)
     UpdateRating(combatRating);
 }
 
+int32 Player::GetRatingFromStatValue(AuraEffect const* aura) const
+{
+    if (!aura)
+        return 0;
+
+    Stats stat = Stats(aura->GetMiscValueB());
+    float statValue = GetStat(stat);
+
+    // Balance of Power converts spirit gained from gear and effects, not base spirit.
+    if (aura->GetId() == SPELL_BALANCE_OF_POWER && stat == STAT_SPIRIT)
+        statValue = std::max(0.0f, statValue - GetCreateStat(stat));
+
+    return int32(CalculatePct(statValue, aura->GetAmount()));
+}
+
 void Player::UpdateRating(CombatRating cr)
 {
     int32 amount = m_baseRatingValue[cr];
@@ -5073,7 +5090,7 @@ void Player::UpdateRating(CombatRating cr)
     AuraEffectList const& modRatingFromStat = GetAuraEffectsByType(SPELL_AURA_MOD_RATING_FROM_STAT);
     for (AuraEffectList::const_iterator i = modRatingFromStat.begin(); i != modRatingFromStat.end(); ++i)
         if ((*i)->GetMiscValue() & (1<<cr))
-            amount += int32(CalculatePct(GetStat(Stats((*i)->GetMiscValueB())), (*i)->GetAmount()));
+            amount += GetRatingFromStatValue(*i);
     if (amount < 0)
         amount = 0;
     SetUInt32Value(PLAYER_FIELD_COMBAT_RATING_1 + AsUnderlyingType(cr), uint32(amount));

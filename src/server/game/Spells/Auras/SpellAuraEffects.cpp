@@ -1327,7 +1327,14 @@ void AuraEffect::HandleShapeshiftBoosts(Unit* target, bool apply) const
             target->CastSpell(target, spellId, this);
 
         if (spellId2)
+        {
             target->CastSpell(target, spellId2, this);
+
+            // Moonkin Aura is a passive form effect. Keep the native aura present
+            // when the triggered cast does not materialize it during form setup.
+            if (apply && GetMiscValue() == FORM_MOONKIN && !target->HasAura(spellId2))
+                target->AddAura(spellId2, target);
+        }
 
         if (target->GetTypeId() == TYPEID_PLAYER)
         {

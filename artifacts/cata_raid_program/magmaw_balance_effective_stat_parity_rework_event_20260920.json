@@ -1,0 +1,11 @@
+{
+  "revision": 57,
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "action": "rework",
+  "reason": "The new production raw-rating accessor is intentionally exercised by the existing effective-stat source fixture. Reopen diagnose to bind that fixture as an owned test file before implementation acceptance.",
+  "claim_token": "bec9cae42228a60727a6e0e98bd2674b992bb475112e0a50a76c93afa5c9138e",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_rework_reconciliation_20260920.json",
+    "sha256": "67b03b675254dc7328dcbd163d04a4c43b1ca2efd5f4b9a5be5535ac44edc40a"
+  }
+}

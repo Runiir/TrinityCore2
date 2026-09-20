@@ -1769,6 +1769,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         float GetSpellCritFromIntellect() const;
         float GetRatingMultiplier(CombatRating cr) const;
         float GetRatingBonusValue(CombatRating cr) const;
+        int32 GetRatingFromStatValue(AuraEffect const* aura) const;
+        int32 GetBaseRatingValue(CombatRating cr) const { return m_baseRatingValue[cr]; }
 
         /// Returns base spellpower bonus from spellpower stat on items, without spellpower from intellect stat
         uint32 GetBaseSpellPowerBonus() const { return m_baseSpellPower; }

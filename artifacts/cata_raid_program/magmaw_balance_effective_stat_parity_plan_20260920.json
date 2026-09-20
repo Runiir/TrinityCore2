@@ -1,0 +1,100 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_route_event_20260920.json",
+      "sha256": "759afe7412a9853f2fc6456c5010af17d4e355a3ff1162bf7d4f4b77d830f072"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json",
+      "sha256": "9ebc25cb25096f7cc21ee77935a52fcc629ba32c01c595edf4c25f778d49eea9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json",
+      "sha256": "1432495b7b357a8e820aef0eb24e785bd8d628768ecb53824a38e003126505cd"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/compute_stats/f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867.json",
+      "sha256": "f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920.json",
+      "sha256": "a9d2458578113e63e271f7cb6daf9a3e2f9345f79f729b50fb85e99f7fad9de7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v3/summary.json",
+      "sha256": "0019a2f0c7a022536178b0223ff97cb8eff8499b2393f5c8cb8b6c13d3cb68ef"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_drift_review_20260920_review/summary.json",
+      "sha256": "06d151c9f871f425620280b3d1f1a5b981a93b194ceed34d0e7d844ca4fb4634"
+    }
+  ],
+  "hypothesis": "Balance's first native parity failure is in owner effective-stat materialization: Balance of Power currently converts base spirit into spell hit rating, the calibration ledger compares effective rating fields against raw WoWSims rating fields, and Moonkin form can leave its 24907 passive cast-speed aura unapplied after the triggered cast. Repair only these native edges before interpreting Balance cadence or total DPS.",
+  "owned_files": [
+    "src/server/game/Entities/Player/Player.h",
+    "src/server/game/Entities/Player/Player.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tests/test_bot_effective_stats_diagnosis.py",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, or raid route behavior.",
+    "Do not globally remove or weaken rating-from-stat behavior; scope the base-spirit correction to the Balance of Power native mechanic.",
+    "Do not accept Balance performance, actor_30001, or Magmaw 10N before the focused test, clean build, and exact-300 evidence are reviewed.",
+    "Do not alter the unrelated effective-stat fields or hide native aura/rating state from diagnostics."
+  ],
+  "acceptance_conditions": [
+    "Balance of Power converts spirit gained above GetCreateStat(STAT_SPIRIT), matching the pinned WoWSims reference without changing unrelated rating-from-stat auras.",
+    "The scoring ledger reports raw combat-rating fields for comparison with WoWSims raw rating fields while retaining native effective hit/crit/haste percentage fields.",
+    "Moonkin form materializes the native 24907 Moonkin Aura when its triggered cast does not leave the passive aura applied, and form removal still removes it.",
+    "The focused source-contract regression passes, the required native build succeeds, and an identical Balance exact-300 run provides the repaired stat receipt before any actor or performance acceptance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/summary.json",
+        "sha256": "a0b2a8f24440bbec49f16fbd1e1f0abeab133264a74419acf4ec91fb7f27ffc7"
+      },
+      "adjudication": "Jev supported the bounded scope and evidence direction. Its acceptance answer remained insufficient because this is a plan and no native change or validation has executed; the coordinator retains that limitation."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Local Laya was unavailable. The coordinator retains the deterministic evidence, the hosted advisory, and the requirement for focused, build, and exact-300 validation."
+    }
+  }
+}
