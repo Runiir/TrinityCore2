@@ -1,0 +1,46 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "0dfc70ebdb96136998f419833af2e17dd6bf6397b87d1d3c88b83b1505b572b0",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_review_20260920.json",
+      "sha256": "043336953f97536ac7beec2852c4a3111636ebd9839e752c87c0ab189e0ea6f6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_tests_20260920.json",
+      "sha256": "2c1d74251a0ce17551ecf946b7cefaa66a1d2e62f565c82109a85629af2350ff"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_build_claim_event_20260920.json",
+      "sha256": "714b810e7c69f5568e03d022d152dcc5b15a6cf96352ff0b4e70fb4edc0f5854"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+      "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_configure_20260920.json",
+      "sha256": "68d589a818b333de99d7997a8a9d6128e58b77f82c5bba46038fd78b87354987"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_queued_build_20260920.json",
+      "sha256": "45be9d715564f77cc89755ba59a456609ed4a8960e0428aef45a04be552d2de4"
+    }
+  ],
+  "file_hashes": {
+    "tools/raid_program/run_dummy_calibrations.py": "49c531bfd6d7a1f0700b5745b81a8a7f1bf3018a3a07395387da82dda8f30f39"
+  },
+  "source_commit": "8fa9ce5f10e9eafcf2a62354affed20316ccd5cb",
+  "binary_sha256": "278ebf1520969bfd9824159f514b0ae1fe2331eddcb3d71354516ad5c97f048a",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_queued_build_20260920.json",
+    "sha256": "45be9d715564f77cc89755ba59a456609ed4a8960e0428aef45a04be552d2de4"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  }
+}

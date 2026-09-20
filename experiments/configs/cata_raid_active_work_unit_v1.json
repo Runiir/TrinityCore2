@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 36,
+    "revision": 37,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -1141,6 +1141,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 36,
+        "unit_id": "magmaw:balance_self_setup_01",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "revision": 36,
+          "unit_id": "magmaw:balance_self_setup_01",
+          "action": "advance",
+          "claim_token": "0dfc70ebdb96136998f419833af2e17dd6bf6397b87d1d3c88b83b1505b572b0",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_build_20260920.json",
+            "sha256": "6a304304b161994db732f374272cbc0bb72bdfc39736469c58cc147df39f4965"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1209,6 +1227,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_review_20260920.json",
         "sha256": "043336953f97536ac7beec2852c4a3111636ebd9839e752c87c0ab189e0ea6f6"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_build_20260920.json",
+        "sha256": "6a304304b161994db732f374272cbc0bb72bdfc39736469c58cc147df39f4965"
       }
     },
     "tested_files": {
@@ -1216,11 +1238,9 @@
     },
     "tested_commit": "94405a80171e72d1667237ade395b601512a5b15",
     "implementer": "coordinator",
-    "claim": {
-      "owner": "codex-magmaw-10n-asset-root-build",
-      "token": "0dfc70ebdb96136998f419833af2e17dd6bf6397b87d1d3c88b83b1505b572b0",
-      "operation_id": "0dfc70ebdb96136998f419833af2e17dd6bf6397b87d1d3c88b83b1505b572b0",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "8fa9ce5f10e9eafcf2a62354affed20316ccd5cb",
+      "binary_sha256": "278ebf1520969bfd9824159f514b0ae1fe2331eddcb3d71354516ad5c97f048a"
     }
   },
   "parked_scenarios": {
