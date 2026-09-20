@@ -1,0 +1,11 @@
+{
+  "revision": 81,
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "action": "rework",
+  "claim_token": "58f6f78923f85ce48da62428f9f68c9201583283eea189c13a8d6d35e7e536a6",
+  "reason": "The validation review rejected the cast-speed measurement as a double-counted native factor; release the validation claim and rework the same bounded collector edge before rebuilding.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_reconciliation_20260920.json",
+    "sha256": "65e9dbe68914e6fad84cb5867f950a3893450a3dee2e93c325c55880b9b69907"
+  }
+}

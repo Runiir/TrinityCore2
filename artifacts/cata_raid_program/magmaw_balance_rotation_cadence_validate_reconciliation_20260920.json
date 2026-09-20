@@ -1,0 +1,25 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "validate_rework_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "operation_id": "58f6f78923f85ce48da62428f9f68c9201583283eea189c13a8d6d35e7e536a6",
+  "owner": "codex-magmaw-10n-balance-castspeed-validate",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The exact canary completed and cleanup passed, but the independent rotation review showed the new SpellSpeedMultiplier product double-counts Trinity's cast-time haste path: UNIT_MOD_CAST_SPEED already carries the effective cast-time factor while UNIT_MOD_CAST_HASTE is the periodic-haste path. The reported 1.61x speed is therefore not admissible as native effective-stat parity.",
+  "evidence": [
+    {
+      "path": "/tmp/magmaw-balance-rotation-cadence-20260920-r1/rotation-review.json",
+      "sha256": "408445b1b25c14ba72f5ff5e4cf99cd04822209b107a2d621c8dd05bf95e983f"
+    },
+    {
+      "path": "/tmp/magmaw-balance-rotation-cadence-20260920-r1/batch.json",
+      "sha256": "ff92687d2e1f7d4e11e7fc0fe24de7daa1fe4271bd791674a98e8f81e68ad525"
+    }
+  ],
+  "disposition": "release_claim_and_rework_same_native_measurement_edge"
+}
