@@ -1,0 +1,74 @@
+{
+  "kind": "plan_drift_review",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "task_id": "magmaw-10n-plan-drift-post-comparator-20260920",
+  "checkpoint_sha256": "62199a442fc362bedfe6e0efdc98383ba8c4f05786d0cc174bd5c32beb70a899",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "prior_unit": "magmaw:balance_effective_stat_application_06",
+  "prior_unit_outcome": {
+    "repair_accepted": true,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "publication": "DVC remote verification passed; local exact-300 capture evicted"
+  },
+  "checks": {
+    "parent_objective_preserved": true,
+    "all_actor_requirements_preserved_open": true,
+    "raid_clear_requirement_preserved_open": true,
+    "accepted_comparator_not_reopened": true,
+    "next_unit_is_bounded_to_one_edge": true,
+    "no_scope_expansion_to_encounter_or_other_actors": true,
+    "rotation_change_deferred_until_causal_evidence": true
+  },
+  "advisory_review": {
+    "hosted_jev": {
+      "status": "advisory",
+      "model": "jev-1.13.0",
+      "scope_fit": "supported",
+      "scope_fit_confidence": 0.99,
+      "evidence_supports_proposed_change": "supported",
+      "evidence_supports_proposed_change_confidence": 0.96,
+      "acceptance_claim_supported": "supported",
+      "acceptance_claim_supported_confidence": 0.64,
+      "response_sha256": "ecaff4d4ba92b738a9cce6c89d8d7738b49c7dc3fc0057d997c6074f521ceb92"
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone"
+    }
+  },
+  "verdict": "aligned",
+  "next_unit": {
+    "id": "magmaw:balance_rotation_cadence_03",
+    "edge": "owner_rotation_execution_after_effective_stat_parity",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-rotation-review",
+    "next_action": "Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
+    "objective": "Close the Balance actor-performance gap lawfully while preserving native stats, spell coefficients, roster, consumables and encounter route."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_assessment_20260920.json",
+      "sha256": "dce0cf716fb1447f36cd859ee8aaa62cc090e06325a1dec5e5ab7b12c2f720b9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_run_20260920.json",
+      "sha256": "45a50de88a414c3a12bc8f6dbfe373563b17ff029ffb528f2ca3824bbc7575f3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_publication_20260920.json",
+      "sha256": "51269bd57adb04cb1383e7efe511e8ed6b0aab4872cc82cf6f7abca7f41b36e0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_diagnosis_20260920.json",
+      "sha256": "9449a682082680d7ce7dde6a0d6e84c99608e191544706b492dac291b4d53cf1"
+    }
+  ],
+  "interpretation": "The parent objective remains active. The accepted comparator repair closes one causal edge only; the next bounded post-parity rotation/cadence review is aligned and must preserve all remaining actor, class-comparability and Magmaw 10N requirements."
+}
