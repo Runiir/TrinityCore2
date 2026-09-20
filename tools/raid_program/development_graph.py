@@ -22,7 +22,7 @@ ACTIONS = {
     'diagnose': 'Read retained evidence; identify one causal mismatch and prepare a bounded worker task.',
     'implement': 'Implement the bounded task, run its required tests, and obtain a result checkpoint.',
     'review': 'Obtain independent review of the exact tested files. Resolve findings before building.',
-    'build': 'Commit reviewed code and graph state, then use queued_build with the retained policy; reuse a matching verified build receipt.',
+    'build': 'Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits.',
     'validate': 'Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks.',
     'assess': 'Review every actor; compare matched baseline, native outcome, and performance separately.',
     'publish': 'Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates.',
@@ -212,7 +212,8 @@ def git(root: Path, *args: str) -> str:
 
 
 def code_path(path: str) -> bool:
-    return path != STATE_PATH.as_posix() and path != 'AGENTS.md' and not path.startswith(('docs/', 'artifacts/', '.agents/skills/'))
+    from tools.raid_program.build_control_compatibility import coordination_path
+    return not coordination_path(path)
 
 
 def source_binding(root: Path, assignment: dict, expected_commit: str | None = None) -> str:
@@ -285,6 +286,12 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         if claim:
             raise GraphError('operation already claimed')
         required(event, 'owner')
+        if stage == 'build':
+            from tools.raid_program.workflow_build import preflight
+            try:
+                preflight(root, g['assignment'])
+            except (ValueError, KeyError, SystemExit) as exc:
+                raise GraphError('pre-build validation failed: ' + str(exc)) from exc
         token = digest(f"{g['unit']['id']}:{stage}:{g['revision']}:{event['owner']}".encode())
         g['claim'] = {'owner': event['owner'], 'token': token, 'operation_id': token, 'stage': stage}
     elif action == 'release':

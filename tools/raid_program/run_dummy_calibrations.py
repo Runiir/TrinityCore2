@@ -14,6 +14,7 @@ from tools.bot_ml.run_live_bot_validation import (
 )
 from tools.raid_program.dummy_calibration_batch import run_batch, write
 from tools.raid_program.queued_build import DEFAULT_POLICY, verify_receipt
+from tools.raid_program.build_control_compatibility import require_coordination_build
 from tools.raid_program.runtime_asset_closure import verify_runtime_asset_closure
 from tools.raid_program.shared_instance_console import owned_console, verify_process_binary
 from tools.raid_program.shared_instance_fixture import BASE_CONFIG, sha256, validate_shared_config
@@ -48,7 +49,8 @@ def main() -> int:
     build = json.loads(args.build_receipt.read_text())
     verification = verify_receipt(args.build_receipt, json.loads(args.policy.read_text()))
     commit, tree = git(ROOT, "rev-parse", "HEAD"), git(ROOT, "rev-parse", "HEAD^{tree}")
-    if (verification.get("gate_bearing") is not True or build.get("commit") != commit
+    source_compatibility = require_coordination_build(ROOT, build)
+    if (verification.get("gate_bearing") is not True
             or Path(build["worktree"]).resolve() != ROOT or build.get("classification") != "success"):
         raise ValueError("build receipt does not cover current clean source")
     binaries = [r for r in build["output_artifacts"] if r.get("kind") == "worldserver_elf"]
@@ -71,6 +73,7 @@ def main() -> int:
     validate_shared_config(config)
     catalog = ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
     report = {"schema": "dummy_calibration_batch_v1", "source_commit": commit, "source_tree": tree,
+              "build_source_commit": build["commit"], "source_compatibility": source_compatibility,
               "build_receipt": str(args.build_receipt.resolve()), "build_receipt_sha256": sha256(args.build_receipt),
               "binary_sha256": sha256(binary), "config_sha256": sha256(config), "config_derivation": derivation,
               "specs": specs, "seed": args.seed, "concurrency": args.concurrency,

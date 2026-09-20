@@ -299,3 +299,38 @@ def test_wrong_scenario_or_policy_cannot_validate(case):
     root,state,evidence=reach(case,'validate')
     with pytest.raises(graph.GraphError,match='run scenario'):
         graph.reduce(root,state,receipt(root,state,evidence,validation_identity={'scenario_kind':'raid','encounter':'different boss'}))
+
+
+def test_build_claim_rejects_stale_validation_before_claiming(case):
+    root, state, evidence = reach(case, 'review')
+    state = graph.reduce(root, state, receipt(root, state, evidence))
+    (root / evidence['path']).write_text('{"changed":true}')
+    with pytest.raises(graph.GraphError, match='pre-build validation failed.*hash mismatch'):
+        claimed(root, state)
+    assert not state['development_graph'].get('claim')
+
+
+def test_build_claim_uses_real_calibration_preflight_and_preserves_failure(case, monkeypatch):
+    from tools.bot_ml import run_live_bot_validation as live
+    from tools.raid_program import workflow_build
+    root, state, evidence = reach(case, 'review')
+    monkeypatch.setattr(workflow_build, 'ROOT', root)
+    state = graph.reduce(root, state, receipt(root, state, evidence))
+    state['development_graph']['assignment']['validation_identity'].update(
+        scenario_kind='dummy', spec='balance_druid', reference=evidence)
+    monkeypatch.setattr(live, 'load_reference_request_binding', lambda spec: {
+        'valid': False, 'reasons': ['catalog_fixture_contract_content_hash']})
+    with pytest.raises(graph.GraphError, match='catalog_fixture_contract_content_hash'):
+        claimed(root, state)
+    assert not state['development_graph'].get('claim')
+    monkeypatch.setattr(live, 'load_reference_request_binding', lambda spec: {'valid': True})
+    assert claimed(root, state)['development_graph']['claim']['stage'] == 'build'
+
+
+def test_dummy_prebuild_cannot_validate_another_checkouts_catalog(case):
+    from tools.raid_program.workflow_build import preflight
+    root, state, evidence = reach(case, 'review')
+    assignment = state['development_graph']['assignment']
+    assignment['validation_identity'].update(scenario_kind='dummy', spec='balance_druid', reference=evidence)
+    with pytest.raises(ValueError, match="coordinator checkout's module"):
+        preflight(root, assignment)

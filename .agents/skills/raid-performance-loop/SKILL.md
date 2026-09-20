@@ -10,7 +10,10 @@ Specialist stop/handoff rules bound that specialist, not the parent task. Contin
 after its result through review, valid source/build preparation and the next
 authorized experiment. Keep any failing broader checks visible when reporting a
 passing narrow suite; classify pre-existing, unrelated and blocking failures.
-For build admission errors, use the retained policy and verified configure lineage;
+Before compilation run `pixi run python -m tools.raid_program.workflow_build preflight`.
+Reuse a verified build across committed graph/receipt-only progress; canonical runners
+record its original source identity separately. Do not rebuild solely for a new HEAD.
+For genuine build admission errors, use the retained policy and verified configure lineage;
 isolate/commit owned changes without resetting unrelated work. Setup errors are
 repair tasks unless a demonstrated external dependency prevents progress.
 

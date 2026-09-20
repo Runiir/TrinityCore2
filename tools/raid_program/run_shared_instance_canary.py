@@ -71,6 +71,8 @@ def main() -> int:
                                           "sha256": sha256(output / "launch_preflight.json")}
             report["source_commit"] = commit
             report["source_tree"] = tree
+            report["build_source_commit"] = preflight["build_source_commit"]
+            report["source_compatibility"] = preflight["source_compatibility"]
             report["binary_sha256"] = preflight["binary_sha256"]
             report["config_sha256"] = preflight["config_sha256"]
             report["provisioning"] = provision_pair(source=source, config=config,

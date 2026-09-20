@@ -8,6 +8,7 @@ import sys
 from typing import Any
 
 from tools.raid_program.queued_build import verify_receipt
+from tools.raid_program.build_control_compatibility import require_coordination_build
 from tools.raid_program.runtime_asset_closure import require_runtime_asset_closure
 from tools.raid_program.shared_instance_fixture import (
     BASE_CONFIG, load_fixture, sha256, validate_shared_config,
@@ -50,7 +51,10 @@ def verify_launch(*, source: Path, fixture_path: Path, config: Path,
     if verified.get("gate_bearing") is not True:
         raise ValueError("build receipt cannot admit a live run")
     build = json.loads(build_receipt.read_text())
-    if (build.get("commit") != commit or Path(build["worktree"]).resolve() != source.resolve()
+    source_compatibility = require_coordination_build(source, build, runtime_inputs=(
+        fixture_path, build_policy, source / BASE_CONFIG,
+        *(source / path for path in pair["fixture"]["inputs"])))
+    if (Path(build["worktree"]).resolve() != source.resolve()
             or build.get("classification") != "success"
             or build.get("resource_class") != "worldserver_build"):
         raise ValueError("build receipt does not cover this source and worldserver")
@@ -70,6 +74,7 @@ def verify_launch(*, source: Path, fixture_path: Path, config: Path,
     ) for map_id in sorted(maps)]
     return {"schema": "cata_shared_instance_launch_preflight_v1",
             "source_commit": commit, "source_tree": tree,
+            "build_source_commit": build["commit"], "source_compatibility": source_compatibility,
             "fixture_sha256": pair["fixture_sha256"],
             "config_sha256": sha256(config), "config_derivation": config_proof,
             "build_receipt_sha256": sha256(build_receipt), "build_verification": verified,

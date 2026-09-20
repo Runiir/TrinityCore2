@@ -208,6 +208,42 @@ atomically. A stale tab must resume and reassess; never silently overwrite.
 Commit updated state with code/configuration. Publish generated adapters and
 source evidence through DVC. Do not edit a published receipt to fit new code.
 
+## Build once across progress commits
+
+Before claiming `build`, run:
+
+```sh
+pixi run python -m tools.raid_program.workflow_build preflight
+pixi run python -m tools.raid_program.workflow_build snapshot
+pixi run python -m tools.raid_program.workflow_build refs artifacts/cata_raid_program/current-build.json
+```
+
+`preflight` verifies the reviewed policy and validation references. For dummy
+calibration it also calls the same exact WoWSims binding check used at launch.
+The build claim repeats this check and leaves the graph unchanged on failure.
+Fix stale reference/fixture authority before spending time on compilation.
+This is not native readiness or database validation; those remain launch checks.
+`refs` and `snapshot` generate hashes, not test results or review approval.
+
+Commit reviewed source, claim/state and any preparation before queued compilation.
+After the build, commit the build adapter, graph advance and validation claim.
+Launch with the original queued receipt and its original policy. The dummy and
+shared-instance runners verify the canonical receipt and allow its clean descendant
+when only coordination files changed: the active graph JSON, AGENTS.md, Markdown
+under docs or skills, and JSON evidence under artifacts/cata_raid_program.
+Selected runtime fixtures and their declared inputs cannot use an evidence-directory
+exemption. Executable files and symlinks cannot use these exemptions. No dirty-file exemption
+exists. Source, tools, configuration, references, DVC pointers and build policy
+changes require a new matching build. This conservative boundary is shared with
+the graph's source-delta checks.
+
+The run retains `build_source_commit` and a `source_compatibility` proof listing
+all intervening coordination paths. `source_commit`/`source_tree` identify the
+current clean checkout used to derive runtime configuration. Never relabel the
+binary as built from a later commit. No configure/build is needed solely because
+recording progress advanced HEAD. Existing receipts, binary hashes and toolchain
+checks remain mandatory; a compatibility proof alone cannot admit a run.
+
 ## Jev/Laya and retries
 
 At plan and result, use the existing
@@ -277,3 +313,24 @@ baseline failure is retained, not reclassified as passing. Independent review,
 model advice/dispositions, test output and CLI receipts are published at
 `artifacts/cata_raid_program/scenario_bootstrap_20260920.tar.gz.dvc`.
 Local Laya was unavailable; Jev advice did not substitute for independent review.
+
+## Build workflow repair (2026-09-20)
+
+FLOW-002 removes the progress-commit rebuild loop in canonical dummy/shared
+admission using the existing build-control verifier's strict coordination mode.
+The focused suite passed 185 tests, including both production admission paths,
+changed runtime input rejection, pre-build reference failure and the older
+recurrence admission tests. Native provenance remains covered by queued-build
+verifier tests; the runner fixtures do not start or validate a worldserver.
+
+The earlier broader check had 97 passes and two failures in
+`test_shared_instance_fixture.py`, both from the existing generated gear-profile
+hash mismatch. The unchanged HEAD fixture loader reproduced the mismatch
+(expected `0d8919d5...`, actual `8a2efd46...`). No fixture authority was refreshed.
+The live Balance preflight still rejects `catalog_fixture_contract_content_hash`
+and `reference_request_catalog_independently_validated`; fix those before building.
+Other coordinator WIP is preserved and no calibration or raid was launched here.
+
+Hosted Jev supported the bounded workflow claim. Local Laya was offline; its
+failure is retained, not an approval. The remote-verified evidence pointer is
+`artifacts/cata_raid_program/workflow_build_repair_20260920.tar.gz.dvc`.

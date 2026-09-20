@@ -160,8 +160,16 @@ Do not assume the CLI's default policy or guess a `-j` spelling. Policy-bound
 builds require the exact CMake invocation; configure arguments come from
 `queued_build.expected_build_configuration(policy)`, with `-S . -B build` and
 the policy's generator. Retain the successful argv once and reuse it on resumes.
-After advancing the frozen checkout, obtain configure lineage for that exact
-source before submitting the build, even when native code is unchanged. Include
+Before claiming a build, run `pixi run python -m tools.raid_program.workflow_build preflight`.
+The claim repeats validation-reference checks, so stale catalogs fail before compilation.
+Generate receipt file references with `workflow_build refs <paths...>` and owned-file
+hashes with `workflow_build snapshot`; never copy hashes by hand.
+Commit graph/receipt progress before launch. The canonical dummy/shared runners retain
+the original build commit and separately record the current coordinator commit when
+only recognized coordination files changed. Do not rebuild or stash state merely
+because a progress commit advanced HEAD. Code, runtime input, tool, reference and
+policy changes still require review and a matching build. All source must be clean.
+When a new build is necessary, obtain configure lineage for its exact source. Include
 the generator's `-G` flag; derive the remaining arguments from the policy helper.
 Python uses pixi; code/configuration use Git; generated evidence uses DVC. Reuse exact verified assets,
 verify remote copies, and evict only exact duplicate payloads.

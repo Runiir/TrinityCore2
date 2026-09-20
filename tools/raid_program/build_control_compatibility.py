@@ -36,6 +36,19 @@ LAYERED_AUTHORITY_FIELDS = {
 GLOB_CHARACTERS = frozenset("*?[]{}")
 
 
+GRAPH = "experiments/configs/cata_raid_active_work_unit_v1.json"
+
+
+def coordination_path(name: str) -> bool:
+    """An explicit boundary, not a general exemption for ignored/generated files."""
+    path = PurePosixPath(name)
+    return (
+        name in (GRAPH, "AGENTS.md")
+        or path.suffix == ".md" and name.startswith(("docs/", ".agents/skills/"))
+        or path.suffix == ".json" and name.startswith("artifacts/cata_raid_program/")
+    )
+
+
 def _git(worktree: Path, *args: str, binary: bool = False) -> str | bytes:
     value = subprocess.check_output(
         ["git", "-C", str(worktree), *args],
@@ -269,6 +282,7 @@ def compatibility_projection(report: Mapping[str, Any]) -> dict[str, Any]:
 def verify_build_control_compatibility(
     *, worktree: Path, receipt: Mapping[str, Any],
     authority_path: Path | None = None, authority_sha256: str | None = None,
+    coordination_only: bool = False,
 ) -> dict[str, Any]:
     """Bind one built binary to an exact or control-only clean descendant.
 
@@ -281,6 +295,8 @@ def verify_build_control_compatibility(
     worktree = worktree.resolve()
     rejections: list[str] = []
     authority_supplied = authority_path is not None or authority_sha256 is not None
+    if coordination_only and authority_supplied:
+        rejections.append("coordination_only_disallows_layered_authority")
     if (authority_path is None) != (authority_sha256 is None):
         rejections.append("build_control_authority_binding_incomplete")
     build_commit = str(receipt.get("commit") or "")
@@ -367,8 +383,15 @@ def verify_build_control_compatibility(
             rejections.append(f"build_control_authority:{error}")
     elif relationship == "control_only_descendant":
         for path in changed_paths:
-            if not _allowed_control_path(path):
+            if not (coordination_path(path) if coordination_only else _allowed_control_path(path)):
                 rejections.append(f"control_path_not_allowed:{path}")
+
+    if coordination_only:
+        for revision in (build_commit, control_commit):
+            for path in changed_paths:
+                entry = str(_git(worktree, "ls-tree", revision, "--", path))
+                if entry and not entry.startswith("100644 blob "):
+                    rejections.append("coordination_path_not_regular:" + path)
 
     if relationship == "exact" and completion:
         if completion.get("tree") != control_tree:
@@ -407,4 +430,20 @@ def verify_build_control_compatibility(
         "changed_control_path_count": len(changed_paths),
         "changed_control_paths_sha256": changed_paths_sha256,
         "layered_authority": layered_authority,
+        **({"coordination_changes": changed_paths} if coordination_only else {}),
     }
+
+
+def require_coordination_build(worktree: Path, receipt: Mapping[str, Any], *,
+                               runtime_inputs: tuple[Path, ...] = ()) -> dict[str, Any]:
+    """Supplement canonical receipt verification for dummy/shared launch admission."""
+    report = verify_build_control_compatibility(
+        worktree=worktree, receipt=receipt, coordination_only=True)
+    if not report['valid']:
+        raise ValueError('build source incompatible: ' + ', '.join(report['rejections']))
+    # A caller may select a JSON fixture from an evidence directory. Its actual
+    # role as a runtime input takes precedence over the coordination path rule.
+    protected = {p.resolve().relative_to(worktree.resolve()).as_posix() for p in runtime_inputs}
+    if protected.intersection(report.get('coordination_changes', [])):
+        raise ValueError('runtime input changed since build')
+    return report
