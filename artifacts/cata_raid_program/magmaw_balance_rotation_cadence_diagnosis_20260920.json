@@ -1,0 +1,53 @@
+{
+  "kind": "diagnosis",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "review_output": {
+    "path": "/tmp/magmaw-balance-rotation-review-20260920/rotation-review.json",
+    "sha256": "531c3eee68b91b428c682f3f60afd49d23d43888d797ed2e22ead328608ac39e"
+  },
+  "run_identity": {
+    "run_receipt": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+      "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+    },
+    "source_commit": "6683f79f03c37538052a7149df0db2bf96724268",
+    "build_source_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+    "binary_sha256": "157fa75574a5dc15e1fdc23ce2edf99a89680ca197a80b0663aa414ce81840f5",
+    "attempt_id": 1,
+    "server_epoch": 16273018413277551,
+    "cohort_id": "dummy-e5945604982d-1",
+    "spec": "balance_druid"
+  },
+  "comparison_gates": {
+    "gear_parity": "match",
+    "consumable_parity": "match",
+    "effective_stat_parity": "mismatch",
+    "dps_tuning_admitted": false,
+    "total_dps_comparison_admitted": false,
+    "trace_only_signals_usable": true
+  },
+  "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+  "decisive_counterexample": {
+    "production_path": "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "current_expression": "1.0f / unit->GetFloatValue(UNIT_MOD_CAST_HASTE)",
+    "wowsims_expected_spell_speed_multiplier": 1.332199768447153,
+    "native_observed_spell_speed_multiplier": 1.269,
+    "native_spell_haste_component": 1.269,
+    "wowsims_cast_speed_component": 1.05,
+    "missing_component": "UNIT_MOD_CAST_SPEED",
+    "delta": -0.06319976844715303
+  },
+  "unaffected_signals": {
+    "shared_wowsims_spell_count": 9,
+    "wowsims_spell_coverage_ratio": 1.0,
+    "priority_inversion_count": 4,
+    "condition_family_gap_count": 7,
+    "interpretation": "These rotation signals remain diagnostic only until effective-stat parity is restored; they do not authorize a priority change."
+  },
+  "hypothesis": "The Moonkin form passive is present in native gameplay, but the scoring ledger reports only UNIT_MOD_CAST_HASTE and omits the independent UNIT_MOD_CAST_SPEED factor required by the promoted WoWSims effective-stat contract.",
+  "smallest_fix": "Multiply native cast-haste and cast-speed time factors when serializing SpellSpeedMultiplier; preserve all gameplay policy and coefficients.",
+  "acceptance": "After the focused source test and clean build, the identical exact-300 canary must produce effective_stat_parity.status=match in the canonical rotation review before any Balance rotation implementation is considered."
+}

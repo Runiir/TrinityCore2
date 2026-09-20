@@ -1,0 +1,89 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "Rotation tuning is not yet admissible because the canonical comparator still finds the first broken edge in the native scoring ledger: SpellSpeedMultiplier serializes UNIT_MOD_CAST_HASTE but omits UNIT_MOD_CAST_SPEED. Repair this measurement path only, then recapture before interpreting Balance priority inversions or condition gaps.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "tests/test_bot_effective_stats_diagnosis.py",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, or raid route behavior.",
+    "Do not weaken the effective-stat comparator or reinterpret a mismatch as a rotation loss.",
+    "Do not manufacture a cast-speed value; read the native UNIT_MOD_CAST_SPEED factor and preserve the existing UNIT_MOD_CAST_HASTE observation.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later raid evidence."
+  ],
+  "acceptance_conditions": [
+    "The native scoring ledger serializes SpellSpeedMultiplier as the reciprocal of the native cast-haste factor multiplied by the native cast-speed factor.",
+    "Focused source-contract and effective-stat diagnosis tests pass without changing the Balance rotation.",
+    "The required native build succeeds with stable source and binary identity.",
+    "An identical exact-300 canary followed by tools.bot_ml.review_rotation_mechanics reports effective_stat_parity.status=match before any rotation implementation is considered."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/summary.json",
+        "sha256": "a0b2a8f24440bbec49f16fbd1e1f0abeab133264a74419acf4ec91fb7f27ffc7"
+      },
+      "adjudication": "The retained hosted review supports the same bounded native-stat evidence path; the canonical comparator now supplies the decisive cast-speed omission and the coordinator keeps rotation tuning blocked."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Local Laya was unavailable. The deterministic comparator, source path, and exact run identity control this bounded correction."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_diagnosis_20260920.json",
+      "sha256": "9449a682082680d7ce7dde6a0d6e84c99608e191544706b492dac291b4d53cf1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+      "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_publication_20260920.json",
+      "sha256": "226fcdda54178afa7149c4f4bd5959aada070057303e51bba2ef020bb3f08167"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_queued_build_retry_20260920.json",
+      "sha256": "d3460e0cf16f88e763196c53569e4c288648693f62ca4ca870101ef716959647"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ]
+}
