@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 173,
+    "revision": 176,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -554,7 +554,7 @@
     "failures": {
       "balance_missing_self_buff_and_leather_specialization": 7,
       "owner_effective_stat_application_before_rotation_execution": 3,
-      "owner_rotation_execution_after_effective_stat_parity": 2,
+      "owner_rotation_execution_after_effective_stat_parity": 3,
       "owner_effective_stat_application_moonkin_aura_materialization": 5,
       "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 2,
       "owner_effective_stat_application_after_moonkin_aura_handler_application": 1,
@@ -3538,6 +3538,55 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 173,
+        "unit_id": "magmaw:balance_rotation_cadence_03",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 173,
+          "unit_id": "magmaw:balance_rotation_cadence_03",
+          "action": "advance",
+          "claim_token": "70516fa3e29f6f239126fe0047a2af1dc56eb05cf1052832acd33e6fba412985",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+            "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 174,
+        "unit_id": "magmaw:balance_rotation_cadence_03",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 174,
+          "unit_id": "magmaw:balance_rotation_cadence_03",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_assessment_20260920.json",
+            "sha256": "edf30d664c4944dd4d11ee750616930eda6eb4b51762a41aa435279f32c73887"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 175,
+        "unit_id": "magmaw:balance_rotation_cadence_03",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "revision": 175,
+          "unit_id": "magmaw:balance_rotation_cadence_03",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n-publish-03"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3612,6 +3661,14 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_build_20260920.json",
         "sha256": "472044cd1daa63a8df1af2399cdfa4598488bd4e87d32bdee52f518340746c57"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+        "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_assessment_20260920.json",
+        "sha256": "edf30d664c4944dd4d11ee750616930eda6eb4b51762a41aa435279f32c73887"
       }
     },
     "tested_files": {
@@ -3625,11 +3682,23 @@
       "source_commit": "411b53cc5ffc2d933d539eb9ebc377588f59f571",
       "binary_sha256": "cb97bbebe251c916f22afafb642ecad678848c835ef3f684cde7a73cd031b3b3"
     },
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 702277858260638,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
+    },
     "claim": {
-      "owner": "coordinator-magmaw-10n-validate-03",
-      "token": "70516fa3e29f6f239126fe0047a2af1dc56eb05cf1052832acd33e6fba412985",
-      "operation_id": "70516fa3e29f6f239126fe0047a2af1dc56eb05cf1052832acd33e6fba412985",
-      "stage": "validate"
+      "owner": "coordinator-magmaw-10n-publish-03",
+      "token": "fa58f75af371e98bd2129551917707348f87b1d7f7144119bb8bef4bbbd67ba3",
+      "operation_id": "fa58f75af371e98bd2129551917707348f87b1d7f7144119bb8bef4bbbd67ba3",
+      "stage": "publish"
     }
   },
   "parked_scenarios": {

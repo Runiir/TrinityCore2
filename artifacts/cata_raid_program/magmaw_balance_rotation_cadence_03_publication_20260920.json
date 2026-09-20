@@ -1,0 +1,39 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "fa58f75af371e98bd2129551917707348f87b1d7f7144119bb8bef4bbbd67ba3",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_verification": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_calibration_20260920.tar.gz.dvc",
+      "sha256": "f853e2702957ff9b944a25a2be88bbc7433bb61a9c4af1d123ffe25083fd9864",
+      "content_md5": "59819ebf524dd6e2f408fd50ab3691b0",
+      "size_bytes": 2969877
+    },
+    "targeted_status": "{}",
+    "status": "Targeted DVC status is clean after push; remote object verified.",
+    "local_archive_evicted": true,
+    "temporary_capture_directory_removed": true,
+    "workspace_status_note": "The full workspace DVC status contains pre-existing unrelated missing cache entries; this unit's pointer was pushed and its targeted remote check is clean."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+      "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_assessment_20260920.json",
+      "sha256": "edf30d664c4944dd4d11ee750616930eda6eb4b51762a41aa435279f32c73887"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_calibration_20260920.tar.gz.dvc",
+      "sha256": "f853e2702957ff9b944a25a2be88bbc7433bb61a9c4af1d123ffe25083fd9864"
+    }
+  ],
+  "interpretation": "The failed exact-300 Balance opener validation is durably published and remotely verified. It is retained as diagnostic evidence only; no actor performance or Magmaw 10N requirement is promoted."
+}
