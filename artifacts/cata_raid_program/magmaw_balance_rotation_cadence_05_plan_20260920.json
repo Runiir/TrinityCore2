@@ -54,7 +54,7 @@
     "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
     "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
   ],
-  "base_commit": "d05e954d1360c3338464ac6acc519848cb0565ba",
+  "base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
   "policy": {
     "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
     "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
