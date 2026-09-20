@@ -1,0 +1,79 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "0b59ec7fdc20a7f02d1ee849d6765807cc5fd454b5ee5b757d802a63f4ed94fa",
+  "source_commit": "2b4a3322ae1d3997af8ab9d9d61a6bb840ea980e",
+  "implementation": {
+    "summary": "Added a Balance-tagged native candidate predicate that rejects Starfall only in the neutral Eclipse state; preserved the existing Starsurge gate and added an idempotent world migration.",
+    "reject_reason": "balance_neutral_opener",
+    "candidate_observation_status": "pending_native_focused_validation",
+    "source_line_counts": {
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": 696,
+      "tests/test_balance_rotation_cadence.py": 41,
+      "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql": 20
+    }
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "4f8e6659a4aef2381e8e788ce6d5cc4cfd9826e49e04a884e0caf8ce37d8a0b4",
+    "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql": "fd42f8adc6406ae5e3f826b09f8768115da334e677d5763d56d03769ae6a04e3",
+    "tests/test_balance_rotation_cadence.py": "9f99651e314131848b7ed2864f125958877ed07bad6872366768c144482b5072"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "summary": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16-request catalog validated against fixture contract"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_plan_20260920.json",
+      "sha256": "8fbcfb0de5e5d517db0738ae9a1b53857489ea6e3d1d7883a6e3b610244848a0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_checkpoint_20260920.json",
+      "sha256": "891ec261096f7e9a226a18eeee6cbbd070353479c0fe5358ab5ee0719360169d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_checkpoint_review_20260920.json/summary.json",
+      "sha256": "23cd2d4499235c712c019c885a0e1c939c3c8b0ae8c99775aed1226ffb623869"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+      "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_checkpoint_review_20260920.json/summary.json",
+        "sha256": "23cd2d4499235c712c019c885a0e1c939c3c8b0ae8c99775aed1226ffb623869"
+      },
+      "adjudication": "Hosted advisory review supported scope and evidence; it remains advisory and does not replace independent native code review."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "HTTP 422 from http://127.0.0.1:8000/v1/systemone",
+      "adjudication": "Provider unavailable; separate native code review remains required."
+    }
+  },
+  "acceptance_claim": "The bounded source/config/test implementation is complete and tested. Native candidate-mask visibility, post-change exact-300 validation, actor performance, raid clear, and parent-objective completion remain open."
+}
