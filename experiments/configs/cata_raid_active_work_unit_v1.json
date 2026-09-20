@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 94,
+    "revision": 101,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -553,7 +553,8 @@
     "failures": {
       "balance_missing_self_buff_and_leather_specialization": 7,
       "owner_effective_stat_application_before_rotation_execution": 3,
-      "owner_rotation_execution_after_effective_stat_parity": 2
+      "owner_rotation_execution_after_effective_stat_parity": 2,
+      "owner_effective_stat_application_moonkin_aura_materialization": 1
     },
     "history": [
       {
@@ -2145,6 +2146,122 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 94,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 94,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_20260920.json",
+            "sha256": "aa23e4f1384393cb6113393dbde907487d4d712f9e68f5cc77b110a78748ac87"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 95,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 95,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "claim",
+          "owner": "codex-magmaw-10n-moonkin-aura-owner"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 96,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "implement",
+        "to": "diagnose",
+        "event": {
+          "revision": 96,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "rework",
+          "reason": "Reconcile the pre-existing coordination-only DVC pointers and artifact ignore file before recording the already-tested native owner-application repair.",
+          "claim_token": "8697ab9bd879e207533d0f077b4c782c103c13a0d003ffb2d0b4399eef5a7359",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_source_binding_reconciliation_20260920.json",
+            "sha256": "27ef0adb0ea8bd7d3f6274f49f48e816585b3862889f83828d8861e78fb972e0"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 97,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 97,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_rebound_20260920.json",
+            "sha256": "6cf800f3de8717d028c2d1cdca965a1555fd344dbb314141860731fd42776bea"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 98,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 98,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "claim",
+          "owner": "codex-magmaw-10n-moonkin-aura-owner-rebound"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 99,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 99,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "advance",
+          "claim_token": "9499ce2d3787e1eb1c0b5851419e13849ceb4d88bcd926e92d5c4135f816236f",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_implementation_rebound_20260920.json",
+            "sha256": "a07cfbacd0ac2722f015608d75d38a147359c3df8a5776fae8a7b237bd16b945"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 100,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 100,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_review_20260920.json",
+            "sha256": "3292f54268ecead5f0457ef7de7483685485297383554be925423d5ce78e830d"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2153,7 +2270,80 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "103a1b88a5a9b980bc376e1eeed22487572ef189"
+    "source_base_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+    "assignment": {
+      "hypothesis": "Spell 24907 Moonkin Aura is a SPELL_EFFECT_APPLY_AREA_AURA_RAID effect whose explicit target is the caster. UnitAura::AddStaticApplication currently strips every area-aura effect, including the owner application, so the existing native form fallback can create the aura object without materializing the owner's cast-speed application. Preserve the area-aura effect only for the aura owner; retain normal area propagation and owned removal. This is the first broken native aura-lifecycle edge, not a Balance rotation or stat-ledger tuning problem.",
+      "owned_files": [
+        "src/server/game/Spells/Auras/SpellAuras.cpp",
+        "tests/test_balance_native_effective_stat_parity.py",
+        "artifacts/cata_raid_program/.gitignore",
+        "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc",
+        "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc"
+      ],
+      "forbidden_changes": [
+        "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, route behavior, or cast-speed ledger semantics.",
+        "Do not inject a hidden percentage, manufacture UNIT_MOD_CAST_SPEED, weaken the effective-stat comparator, or reinterpret a native aura mismatch as a rotation loss.",
+        "Do not alter area-aura propagation for non-owner targets, periodic-haste handling, or unrelated aura types.",
+        "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later matched raid evidence."
+      ],
+      "acceptance_conditions": [
+        "The native owner application path retains a SPELL_EFFECT_APPLY_AREA_AURA effect only when the selected target is the aura owner; non-owner area-aura filtering remains unchanged.",
+        "Focused source-contract and effective-stat diagnosis tests pass without changing Balance action policy or the direct-cast stat ledger.",
+        "The required native build succeeds with stable source and binary identity.",
+        "An identical exact-300 Balance canary shows Moonkin Aura 24907 present at scoring start and direct-cast SpellSpeedMultiplier within the pinned WoWSims reference envelope; any remaining cadence or encounter loss stays separately attributable."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+        "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+      ],
+      "base_commit": "103a1b88a5a9b980bc376e1eeed22487572ef189",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+      },
+      "validation_identity": {
+        "scenario_kind": "dummy",
+        "actor_id": "30001",
+        "spec": "balance_druid",
+        "reference": {
+          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "runtime_profile": {
+          "path": "experiments/configs/validation_scenarios_cata_001.json",
+          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+        }
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_rebound_20260920.json",
+        "sha256": "6cf800f3de8717d028c2d1cdca965a1555fd344dbb314141860731fd42776bea"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_implementation_rebound_20260920.json",
+        "sha256": "a07cfbacd0ac2722f015608d75d38a147359c3df8a5776fae8a7b237bd16b945"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_review_20260920.json",
+        "sha256": "3292f54268ecead5f0457ef7de7483685485297383554be925423d5ce78e830d"
+      }
+    },
+    "tested_files": {
+      "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+      "tests/test_balance_native_effective_stat_parity.py": "8c844c68b1903b93bb4f8364d80cde7f86560ce158f2fac81f23e0be62efdb10",
+      "artifacts/cata_raid_program/.gitignore": "b9d9d6e479468594f2086e4f969aaff02c2b2d9e693692d4910181d803a01b7b",
+      "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc": "d1f1f174bb00bfa6b70859c0bba28b69ad4f9ccd9b7e4001a26d592d3ea05074",
+      "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc": "3d8a27e41356b5a86b4dda27abe793cae71bf4ca51c412631d6f6adbb21c3d89"
+    },
+    "tested_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

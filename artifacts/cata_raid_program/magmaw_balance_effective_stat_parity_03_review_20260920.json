@@ -1,0 +1,51 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "independent-native-aura-reviewer",
+  "verdict": "approved",
+  "source_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+    "tests/test_balance_native_effective_stat_parity.py": "8c844c68b1903b93bb4f8364d80cde7f86560ce158f2fac81f23e0be62efdb10",
+    "artifacts/cata_raid_program/.gitignore": "b9d9d6e479468594f2086e4f969aaff02c2b2d9e693692d4910181d803a01b7b",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc": "d1f1f174bb00bfa6b70859c0bba28b69ad4f9ccd9b7e4001a26d592d3ea05074",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc": "3d8a27e41356b5a86b4dda27abe793cae71bf4ca51c412631d6f6adbb21c3d89"
+  },
+  "findings": [
+    {
+      "status": "pass",
+      "scope": "owner application",
+      "detail": "The exception is guarded by target == GetUnitOwner() and IsAreaAuraEffect(), so the explicit owner can receive an area-aura application without treating arbitrary area targets as static applications."
+    },
+    {
+      "status": "pass",
+      "scope": "non-owner propagation",
+      "detail": "The existing non-area filter remains in place for non-owner targets; FillTargetMap remains the propagation path."
+    },
+    {
+      "status": "pass",
+      "scope": "stat integrity",
+      "detail": "The patch writes no stat or percentage value and leaves the UNIT_MOD_CAST_SPEED ledger unchanged."
+    },
+    {
+      "status": "pass",
+      "scope": "lifecycle",
+      "detail": "Existing native Moonkin form setup still uses CastSpell/AddAura and RemoveOwnedAura; no synthetic aura or removal path was introduced."
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_implementation_rebound_20260920.json",
+      "sha256": "a07cfbacd0ac2722f015608d75d38a147359c3df8a5776fae8a7b237bd16b945"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_source_binding_reconciliation_20260920.json",
+      "sha256": "27ef0adb0ea8bd7d3f6274f49f48e816585b3862889f83828d8861e78fb972e0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+      "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+    }
+  ]
+}

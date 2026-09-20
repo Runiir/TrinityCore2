@@ -1,0 +1,11 @@
+{
+  "revision": 96,
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "action": "rework",
+  "reason": "Reconcile the pre-existing coordination-only DVC pointers and artifact ignore file before recording the already-tested native owner-application repair.",
+  "claim_token": "8697ab9bd879e207533d0f077b4c782c103c13a0d003ffb2d0b4399eef5a7359",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_source_binding_reconciliation_20260920.json",
+    "sha256": "27ef0adb0ea8bd7d3f6274f49f48e816585b3862889f83828d8861e78fb972e0"
+  }
+}

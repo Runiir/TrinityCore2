@@ -1,0 +1,62 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "8697ab9bd879e207533d0f077b4c782c103c13a0d003ffb2d0b4399eef5a7359",
+  "source_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+  "hypothesis": "Spell 24907's area-aura effect was being filtered from the explicit owner application. Retaining area-aura effects only for the aura owner lets native Moonkin Aura materialize its owner cast-speed application while preserving normal non-owner area propagation.",
+  "change_summary": "Updated UnitAura::AddStaticApplication to preserve an area-aura effect for the owner target only, and added a source-contract regression test covering the owner guard and unchanged non-area filter.",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "4 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 specs validated"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+    "tests/test_balance_native_effective_stat_parity.py": "8c844c68b1903b93bb4f8364d80cde7f86560ce158f2fac81f23e0be62efdb10"
+  },
+  "advice": {
+    "jev": {
+      "status": "not_reviewed",
+      "reason": "The preceding plan-drift review already checked this coordinator transition; no new provider checkpoint was requested for the same one-edge native implementation.",
+      "adjudication": "The implementation is limited to the reviewed native owner-application guard and its deterministic source contract."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "No local Laya provider checkpoint was requested for this bounded continuation.",
+      "adjudication": "Focused tests and the required native build/validation gates remain authoritative."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_20260920.json",
+      "sha256": "aa23e4f1384393cb6113393dbde907487d4d712f9e68f5cc77b110a78748ac87"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+      "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_actor_30001_review_rework2_20260920.json",
+      "sha256": "cd873ceacd688caba548c5969f01a25fcc54c9896f7aa432e0ff14a87a99037a"
+    }
+  ]
+}

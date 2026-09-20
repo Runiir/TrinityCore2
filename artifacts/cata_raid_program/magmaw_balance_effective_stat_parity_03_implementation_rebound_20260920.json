@@ -1,0 +1,65 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "9499ce2d3787e1eb1c0b5851419e13849ceb4d88bcd926e92d5c4135f816236f",
+  "source_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+  "hypothesis": "Spell 24907's area-aura effect was being filtered from the explicit owner application. Retaining area-aura effects only for the aura owner lets native Moonkin Aura materialize its owner cast-speed application while preserving normal non-owner area propagation.",
+  "change_summary": "Recorded the already-tested native UnitAura::AddStaticApplication owner guard after reconciling pre-existing coordination-only DVC pointers and the artifact ignore file in the source-binding boundary.",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "4 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 specs validated"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+    "tests/test_balance_native_effective_stat_parity.py": "8c844c68b1903b93bb4f8364d80cde7f86560ce158f2fac81f23e0be62efdb10",
+    "artifacts/cata_raid_program/.gitignore": "b9d9d6e479468594f2086e4f969aaff02c2b2d9e693692d4910181d803a01b7b",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc": "d1f1f174bb00bfa6b70859c0bba28b69ad4f9ccd9b7e4001a26d592d3ea05074",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc": "3d8a27e41356b5a86b4dda27abe793cae71bf4ca51c412631d6f6adbb21c3d89"
+  },
+  "advice": {
+    "jev": {
+      "status": "not_reviewed",
+      "reason": "The preceding plan-drift review already checked this coordinator transition; the rebound only makes coordination-only source binding explicit.",
+      "adjudication": "The implementation is limited to the reviewed native owner-application guard and its deterministic source contract."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "No local Laya provider checkpoint was requested for this bounded continuation.",
+      "adjudication": "Focused tests and the required native build/validation gates remain authoritative."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_rebound_20260920.json",
+      "sha256": "6cf800f3de8717d028c2d1cdca965a1555fd344dbb314141860731fd42776bea"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_source_binding_reconciliation_20260920.json",
+      "sha256": "27ef0adb0ea8bd7d3f6274f49f48e816585b3862889f83828d8861e78fb972e0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+      "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+    }
+  ]
+}

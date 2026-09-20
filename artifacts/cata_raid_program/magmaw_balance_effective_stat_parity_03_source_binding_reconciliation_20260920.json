@@ -1,0 +1,23 @@
+{
+  "kind": "source_binding_reconciliation",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "operation_id": "8697ab9bd879e207533d0f077b4c782c103c13a0d003ffb2d0b4399eef5a7359",
+  "active_operation": false,
+  "ownership_checked": true,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "source_binding_repaired": true,
+  "previous_source_base_commit": "103a1b88a5a9b980bc376e1eeed22487572ef189",
+  "rebound_source_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+  "reason": "The saved source base predates coordination-only DVC pointers and the artifact .gitignore committed during the preceding Balance canary. The guard classifies those paths as source unless they are explicitly included in the bounded coordination ownership; the native Moonkin owner-application patch and its focused test are otherwise the only code changes.",
+  "coordination_only_paths": [
+    "artifacts/cata_raid_program/.gitignore",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "owned_native_file_hashes_unchanged_since_implementation": true,
+  "reconciliation_scope": "coordination_only",
+  "rebuild_required": false,
+  "gameplay_repair_reopened": false
+}

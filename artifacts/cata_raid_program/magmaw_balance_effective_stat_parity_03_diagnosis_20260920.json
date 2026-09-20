@@ -1,0 +1,85 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "Spell 24907 Moonkin Aura is a SPELL_EFFECT_APPLY_AREA_AURA_RAID effect whose explicit target is the caster. UnitAura::AddStaticApplication currently strips every area-aura effect, including the owner application, so the existing native form fallback can create the aura object without materializing the owner's cast-speed application. Preserve the area-aura effect only for the aura owner; retain normal area propagation and owned removal. This is the first broken native aura-lifecycle edge, not a Balance rotation or stat-ledger tuning problem.",
+  "owned_files": [
+    "src/server/game/Spells/Auras/SpellAuras.cpp",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, route behavior, or cast-speed ledger semantics.",
+    "Do not inject a hidden percentage, manufacture UNIT_MOD_CAST_SPEED, weaken the effective-stat comparator, or reinterpret a native aura mismatch as a rotation loss.",
+    "Do not alter area-aura propagation for non-owner targets, periodic-haste handling, or unrelated aura types.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later matched raid evidence."
+  ],
+  "acceptance_conditions": [
+    "The native owner application path retains a SPELL_EFFECT_APPLY_AREA_AURA effect only when the selected target is the aura owner; non-owner area-aura filtering remains unchanged.",
+    "Focused source-contract and effective-stat diagnosis tests pass without changing Balance action policy or the direct-cast stat ledger.",
+    "The required native build succeeds with stable source and binary identity.",
+    "An identical exact-300 Balance canary shows Moonkin Aura 24907 present at scoring start and direct-cast SpellSpeedMultiplier within the pinned WoWSims reference envelope; any remaining cadence or encounter loss stays separately attributable."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "103a1b88a5a9b980bc376e1eeed22487572ef189",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "not_reviewed",
+      "reason": "The preceding plan-drift review already checked this coordinator transition; no new provider checkpoint was requested for the same one-edge native evidence.",
+      "adjudication": "Coordinator retained the deterministic source/DBC diagnosis and exact-canary acceptance boundary."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "No local Laya provider checkpoint was requested for this bounded continuation.",
+      "adjudication": "The native source contract, focused tests, and exact canary remain the acceptance authority."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+      "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_actor_30001_review_rework2_20260920.json",
+      "sha256": "cd873ceacd688caba548c5969f01a25fcc54c9896f7aa432e0ff14a87a99037a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_assessment_rework2_20260920.json",
+      "sha256": "c422a7375dbe0ea1e36f4734d5633d6a3f52bc9ca7ea06abfa67d5b3a73b3e8c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_route_rework2_20260920.json",
+      "sha256": "55c695c936609c8a8dd407c06410a606cc58dc6972cc67261a7bf7114c125b96"
+    },
+    {
+      "path": "src/server/game/Spells/Auras/SpellAuras.cpp",
+      "sha256": "2ffc7e5672aeaadb320d51115d40d193055d767ed1d1765693fb4e9a17ad7b46"
+    }
+  ]
+}
