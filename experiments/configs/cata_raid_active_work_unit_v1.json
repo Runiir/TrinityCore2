@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 68,
+    "revision": 70,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -552,7 +552,7 @@
     ],
     "failures": {
       "balance_missing_self_buff_and_leather_specialization": 7,
-      "owner_effective_stat_application_before_rotation_execution": 2
+      "owner_effective_stat_application_before_rotation_execution": 3
     },
     "history": [
       {
@@ -1696,6 +1696,41 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 68,
+        "unit_id": "magmaw:balance_effective_stat_parity_01",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 68,
+          "unit_id": "magmaw:balance_effective_stat_parity_01",
+          "action": "advance",
+          "claim_token": "b205e71e364b311d4fe54f3f2699672c526033502d505ebde70235fefa9dd6ca",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+            "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 69,
+        "unit_id": "magmaw:balance_effective_stat_parity_01",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 69,
+          "unit_id": "magmaw:balance_effective_stat_parity_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_assessment_20260920.json",
+            "sha256": "d811804628ec2b21b052685049afe99a62b1c16a1ac634ffbe571ad3357dce08"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1775,6 +1810,14 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_20260920.json",
         "sha256": "4ae54420dcbad1404cf3a7ebb0d23e39164bd865ca701a1bb980337e58fa2cd1"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+        "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_assessment_20260920.json",
+        "sha256": "d811804628ec2b21b052685049afe99a62b1c16a1ac634ffbe571ad3357dce08"
       }
     },
     "tested_files": {
@@ -1794,11 +1837,17 @@
       "source_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
       "binary_sha256": "157fa75574a5dc15e1fdc23ce2edf99a89680ca197a80b0663aa414ce81840f5"
     },
-    "claim": {
-      "owner": "codex-magmaw-10n-balance-validate",
-      "token": "b205e71e364b311d4fe54f3f2699672c526033502d505ebde70235fefa9dd6ca",
-      "operation_id": "b205e71e364b311d4fe54f3f2699672c526033502d505ebde70235fefa9dd6ca",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 16273018413277551,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": true,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {
