@@ -1,0 +1,39 @@
+{
+  "schema": "raid_independent_review_v1",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "reviewer": "Rawls",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "reviewed_commit": "2b4a3322ae1d3997af8ab9d9d61a6bb840ea980e",
+  "verdict": "approved",
+  "scope": "Approved for coordinator-owned native build, reviewed SQL application, and focused exact-300 validation.",
+  "findings": [
+    {
+      "severity": "none",
+      "path": "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "lines": "227-231, 505, 524-525",
+      "finding": "The typed predicate covers only the Balance Starsurge and Starfall tags, requires no Solar/Lunar Eclipse aura and zero POWER_ECLIPSE, and returns balance_neutral_opener without mutation or forced casting. Existing Starsurge behavior remains preserved."
+    },
+    {
+      "severity": "none",
+      "path": "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql",
+      "lines": "6-20",
+      "finding": "The migration binds only the Balance Druid DPS profile and spell 48505, preserves existing tags, and is idempotent through FIND_IN_SET."
+    },
+    {
+      "severity": "none",
+      "path": "tests/test_balance_rotation_cadence.py",
+      "lines": "1-41",
+      "finding": "The focused source/SQL contract tests cover the shared predicate and migration scope; the exact diff is limited to the three assigned files and git diff --check passes."
+    }
+  ],
+  "tests_observed": [
+    "3 cadence tests passed",
+    "50 rotation review tests passed",
+    "WoWSims reference request catalog check passed",
+    "16-request fixture catalog validation passed"
+  ],
+  "limitations": [
+    "The tests are source/SQL contract checks, not compiled native behavior.",
+    "Candidate-mask visibility, focused native replay, exact-300 outcome, actor performance, and raid acceptance remain pending and are not claimed by this review."
+  ]
+}
