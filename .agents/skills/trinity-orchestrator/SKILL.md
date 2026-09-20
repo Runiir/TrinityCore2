@@ -139,8 +139,15 @@ provisioning, and DVC publication. Never mutate a live frozen checkout.
 Use `pixi run python -m tools.raid_program.queued_build status --compact` to
 check admission; the full status includes historical receipts and is unnecessary
 for deciding whether another build is active.
-For a matched rebuild, read `policy_id` from the baseline build receipt and pass
-that exact policy with `--policy` to configure, build and receipt verification.
+Batch the current work unit's code changes and independent review before one
+coordinator-owned build; workers do not each launch builds. New builds default to
+`cata_raid_build_resource_policy_host12_v1.json`: all 12 logical CPUs, one shared
+heavyweight lease and one linker. Load average is diagnostic; memory reserve,
+PSI, swap growth and disk space still stop unsafe builds. Do not silently return
+to the historical four-job policy. If memory pressure proves 12 jobs unsafe,
+record that receipt and derive a bounded lower-memory retry.
+When verifying or reusing an existing binary, pass the exact policy in its receipt;
+never relabel an old build as host12. A new policy needs its own configure lineage.
 Do not assume the CLI's default policy or guess a `-j` spelling. Policy-bound
 builds require the exact CMake invocation; configure arguments come from
 `queued_build.expected_build_configuration(policy)`, with `-S . -B build` and

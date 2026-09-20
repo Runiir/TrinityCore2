@@ -13,7 +13,7 @@ from tools.bot_ml.run_live_bot_validation import (
     upsert_trinity_config, write_validation_config,
 )
 from tools.raid_program.dummy_calibration_batch import run_batch, write
-from tools.raid_program.queued_build import verify_receipt
+from tools.raid_program.queued_build import DEFAULT_POLICY, verify_receipt
 from tools.raid_program.runtime_asset_closure import verify_runtime_asset_closure
 from tools.raid_program.shared_instance_console import owned_console, verify_process_binary
 from tools.raid_program.shared_instance_fixture import BASE_CONFIG, sha256, validate_shared_config
@@ -29,7 +29,7 @@ def main() -> int:
     parser.add_argument("--spec", action="append", dest="specs")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build-receipt", type=Path, required=True)
-    parser.add_argument("--policy", type=Path, default=ROOT / "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json")
+    parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--concurrency", type=int, choices=(1, 2), default=2)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--heartbeat", type=float, default=5)

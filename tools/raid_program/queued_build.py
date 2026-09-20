@@ -59,7 +59,8 @@ except ImportError:  # Direct execution: python tools/raid_program/queued_build.
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_POLICY = ROOT / "experiments/configs/cata_raid_build_resource_policy_v1.json"
+DEFAULT_POLICY_RELATIVE = Path("experiments/configs/cata_raid_build_resource_policy_host12_v1.json")
+DEFAULT_POLICY = ROOT / DEFAULT_POLICY_RELATIVE
 STATE_VERSION = 1
 TERMINAL_STATES = {"canceled", "finished", "recovered_stale"}
 FANOUT_OPTIONS = {"-j", "--jobs", "--parallel"}
@@ -273,7 +274,8 @@ def pressure_reasons(policy: dict, snapshot: dict, initial_swap_used: int | None
         reasons.append("memory_psi_some")
     if float(snapshot["memory_psi_full_avg10"]) > float(thresholds["maximum_memory_psi_full_avg10"]):
         reasons.append("memory_psi_full")
-    if float(snapshot["load_average_1m"]) > float(thresholds["maximum_load_average_1m"]):
+    load_limit = thresholds["maximum_load_average_1m"]
+    if load_limit is not None and float(snapshot["load_average_1m"]) > float(load_limit):
         reasons.append("load_average")
     minimum_disk = float(thresholds["minimum_filesystem_available_gib"]) * 1024**3
     if int(snapshot["filesystem_available_bytes"]) < minimum_disk:
