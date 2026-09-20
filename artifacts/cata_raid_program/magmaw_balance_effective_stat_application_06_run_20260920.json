@@ -1,0 +1,101 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_effective_stat_application_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "cf6b30e3c5873ea6285432117375ee0d331a8b25dc657d2e9cbca001fb2f64e9",
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "6560216123d9007fd4f49fe716128719363d56ad",
+    "binary_sha256": "d61bac692269f40ac162707981837228a72ee2dd753fe26c1d2b118975f255be"
+  },
+  "source_commit": "4d568ca1d6d58dc120c73b8e5015c086c6ef4285",
+  "attempt_id": 1,
+  "server_epoch": 1655711210716205,
+  "cohort_id": "dummy-8b36d100a15e-1",
+  "target_guid": 30540,
+  "target_spec": "balance_druid",
+  "calibration_mode": "single_target_300",
+  "duration_policy": "fixed-window",
+  "terminal_reason": "measurement_complete",
+  "native_terminal_reason": "complete",
+  "scoring_ms": 300000,
+  "scored_seconds": 300.0,
+  "closed": true,
+  "cleanup_verified": true,
+  "measurement_completed": true,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": true,
+  "calibration_acceptance_passed": true,
+  "comparison_rejections": [],
+  "performance_accepted": false,
+  "training_eligible": false,
+  "batch_accepted": true,
+  "dps": 31860.983333333334,
+  "reference_dps": 35447.58892725215,
+  "reference_ratio": 0.898819,
+  "hard_floor_passed": true,
+  "optimization_target_met": true,
+  "native_observation": {
+    "target_guid": 30540,
+    "profile_generation": 1,
+    "profile_content_hash": "E223B33AA2E195AFDFAABC3839FE571D818FD1F0F64F678D625BB5A641A2A954",
+    "fixture_contract_sha256": "95fb64340a0ad6e0b405cc8478adf4d9a0d49d70b16e9f6c337a7ed8e8d56224",
+    "phase_id": 32512,
+    "phase_match": true,
+    "own_target_visibility_observed": true,
+    "target_is_passive": true,
+    "no_cross_window_contamination": true
+  },
+  "report_summary": {
+    "batch_report_sha256": "412f5488327b3476eb973c0b6f5f2c42c893b4d294f12ed5053f27ec41ad3bab",
+    "actor_report_sha256": "91a1c0d0b85489d6aea2841d3b2e08a5caa3630d6635634e15a58fb655354104",
+    "cleanup_sha256": "74e9483238b332f4bb264a2a5694dc8e5a9d30da04f747475673a5fccb3334a1",
+    "worldserver_console_log_sha256": "b4f975ec7a1e0e9cae84a4eb26117f7b3a19324cd9a06ee0ddd29d77e26d80e9",
+    "config_sha256": "2241bc86db03b6cb6616d1611480b1892c5ae99a490fdd3c2fb59f619a8ca8f4",
+    "dps": 31860.983333333334,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.898819,
+    "batch_accepted": true,
+    "all_measurements_completed": true,
+    "all_references_comparable": true,
+    "cleanup_witnesses": []
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_calibration_20260920.tar.gz.dvc",
+      "sha256": "dd9f4e1c72503bf6fc752431de934493040e108fb579cf4b1d4ef6bf4878eb66"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_build_20260920.json",
+      "sha256": "a0bc2604c68fae0702e23ef66fe9de203d299595eae0fa5728739d9f35fbf889"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_implementation_20260920.json",
+      "sha256": "b84a03142e56378ce321ff2da9d4aa9fc0748a7a3ed0c6f296de1d2f0e7ccf55"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_20260920.json",
+      "sha256": "c0f5aeb70c63c6978cd4080347dca163acf7292374daefd22ff86e72b6edf34d"
+    }
+  ],
+  "interpretation": "The canonical exact-300 isolated Balance calibration completed with intact phase and target attribution, exact scoring duration, reference-comparable conditions, complete diagnostics, and verified cleanup. It demonstrates a valid Balance measurement at 31860.9833 DPS versus the pinned 35447.5889 reference (0.898819 ratio); the run itself does not auto-accept performance or the actor requirement, and all raid requirements remain open."
+}
