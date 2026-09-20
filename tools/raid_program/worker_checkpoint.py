@@ -199,6 +199,17 @@ def questions() -> dict[str, dict[str, Any]]:
 
 
 def build_packet(checkpoint: Mapping[str, Any], model: str) -> dict[str, Any]:
+    # Lossless references remove repeated paths/commands, not evidence or limits.
+    # The full checkpoint remains in the receipt and deterministic checks.
+    allowed = checkpoint["allowed_files"]
+    required = checkpoint["required_test_commands"]
+    changed = checkpoint["changed_files"]
+    tests = []
+    for test in checkpoint["tests"]:
+        compact = dict(test)
+        if compact.get("command") in required:
+            compact["required_test_commands_index"] = required.index(compact.pop("command"))
+        tests.append(compact)
     evidence = []
     for index, item in enumerate(checkpoint["evidence_excerpts"]):
         if isinstance(item, Mapping):
@@ -210,7 +221,6 @@ def build_packet(checkpoint: Mapping[str, Any], model: str) -> dict[str, Any]:
         "task": "Review one bounded " + checkpoint.get("subject", "worker") + " checkpoint",
         "authority": "advisory only; coordinator owns execution, acceptance, and user approval",
         "checkpoint": {
-            "task_id": checkpoint["task_id"],
             "objective": checkpoint["objective"],
             "first_broken_edge": checkpoint["first_broken_edge"],
             "allowed_files": checkpoint["allowed_files"],
@@ -222,10 +232,11 @@ def build_packet(checkpoint: Mapping[str, Any], model: str) -> dict[str, Any]:
             "proposed_change": checkpoint["proposed_change"],
             "stage": checkpoint["stage"],
             "changed_files": {
-                "paths": checkpoint["changed_files"],
+                "allowed_files_indices": [allowed.index(path) for path in changed if path in allowed],
+                "other_paths": [path for path in changed if path not in allowed],
                 "source": checkpoint.get("changed_files_source", "unknown"),
             },
-            "tests": checkpoint["tests"],
+            "tests": tests,
             "required_test_commands": checkpoint["required_test_commands"],
         },
     }

@@ -125,6 +125,27 @@ def test_local_supported_advice_remains_coordinator_review(tmp_path, monkeypatch
     assert "path" not in state["evidence_excerpts"][0]
 
 
+def test_packet_compaction_preserves_paths_commands_failures_and_input(tmp_path):
+    checkpoint = make_checkpoint(tmp_path)
+    checkpoint["changed_files"].append("outside.cpp")
+    checkpoint["tests"][0]["exit_status"] = 9
+    checkpoint["tests"].append({"command": "extra check", "exit_status": 1})
+    original = copy.deepcopy(checkpoint)
+    packet = worker.build_packet(checkpoint, laya_packets.MODEL)
+    state = packet["state"]["checkpoint"]
+    files = state["changed_files"]
+    assert [state["allowed_files"][i] for i in files["allowed_files_indices"]] + files["other_paths"] == checkpoint["changed_files"]
+    restored = []
+    for test in state["tests"]:
+        test = dict(test)
+        if "required_test_commands_index" in test:
+            test["command"] = state["required_test_commands"][test.pop("required_test_commands_index")]
+        restored.append(test)
+    assert restored == checkpoint["tests"]
+    assert checkpoint == original
+    assert worker.build_packet(checkpoint, analyzer.JEV_MODEL)["state"] == packet["state"]
+
+
 def test_provider_failure_is_unknown_and_not_a_pass(tmp_path, monkeypatch):
     checkpoint = make_checkpoint(tmp_path)
     def fail(packet, endpoint):
@@ -142,6 +163,52 @@ def test_provider_failure_is_unknown_and_not_a_pass(tmp_path, monkeypatch):
     assert "token budget" in row["error"]
     assert row["response_sha256"] is None
     assert summary["automatic_pass"] is False
+
+
+def test_local_422_retains_budget_receipt_without_retry(tmp_path, monkeypatch):
+    import io
+    from types import SimpleNamespace
+    from urllib.error import HTTPError
+
+    calls = []
+    detail = {"detail": {"error": "context_budget_exceeded", "token_budget": {
+        "scope_fit": {"state_tokens": 1288, "state_budget": 894,
+                      "truncated_fields": ["state"]}}}}
+
+    def reject(request, timeout):
+        calls.append(request)
+        raise HTTPError(request.full_url, 422, "Unprocessable Content", {},
+                        io.BytesIO(json.dumps(detail).encode()))
+
+    monkeypatch.setattr(worker.jev_shadow, "build_opener",
+                        lambda *args: SimpleNamespace(open=reject))
+    output = tmp_path / "rejected"
+    summary = worker.review_checkpoint(make_checkpoint(tmp_path), output,
+                                       backend="local", base_dir=tmp_path)
+    row = json.loads((output / "examples.jsonl").read_text().splitlines()[0])
+    assert len(calls) == 1
+    assert row["response"] is None and row["model_status"] == "unknown"
+    assert json.loads(row["error"].split("local HTTP 422: ", 1)[1]) == detail
+    assert summary["responses"] == 0 and summary["automatic_pass"] is False
+
+
+def test_local_http_error_body_is_bounded(tmp_path, monkeypatch):
+    import io
+    from types import SimpleNamespace
+    from urllib.error import HTTPError
+    import pytest
+
+    def reject(request, timeout):
+        raise HTTPError(request.full_url, 500, "Server Error", {},
+                        io.BytesIO(b"x" * 10000))
+
+    monkeypatch.setattr(worker.jev_shadow, "build_opener",
+                        lambda *args: SimpleNamespace(open=reject))
+    packet = worker.build_packet(make_checkpoint(tmp_path), laya_packets.MODEL)
+    with pytest.raises(ValueError, match="local HTTP 500") as caught:
+        worker.jev_shadow.call_local(packet, worker.jev_shadow.ENDPOINT)
+    assert str(caught.value).count("x") == 8192
+    assert "error body truncated" in str(caught.value)
 
 
 def test_hosted_backend_uses_jev_and_retains_provider_failure(tmp_path, monkeypatch):

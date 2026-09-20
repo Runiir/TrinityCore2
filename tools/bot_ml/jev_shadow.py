@@ -15,6 +15,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -119,8 +120,17 @@ def call_local(packet: dict[str, Any], endpoint: str, timeout: float = 30) -> di
         raise ValueError("local shadow requires an unauthenticated loopback HTTP endpoint")
     request = Request(endpoint, data=encoded(packet), method="POST",
                       headers={"Content-Type": "application/json"})
-    with build_opener(NoRedirect).open(request, timeout=timeout) as response:
-        payload = response.read(2_000_001)
+    try:
+        with build_opener(NoRedirect).open(request, timeout=timeout) as response:
+            payload = response.read(2_000_001)
+    except HTTPError as exc:
+        # urllib's default message drops Laya's useful token-budget receipt.
+        # Bound the retained body, but never mistake a rejection for advice.
+        with exc:
+            body = exc.read(8193)
+        detail = body[:8192].decode("utf-8", errors="replace")
+        suffix = " [error body truncated at 8192 bytes]" if len(body) > 8192 else ""
+        raise ValueError(f"local HTTP {exc.code}: {detail}{suffix}") from exc
     if len(payload) > 2_000_000:
         raise ValueError("local response exceeds 2 MB")
     result = json.loads(payload)

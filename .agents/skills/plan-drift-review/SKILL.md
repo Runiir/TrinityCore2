@@ -44,6 +44,14 @@ average them into automatic approval. Inspect current receipts and source to
 adjudicate. Local context rejection or provider failure means not reviewed;
 continue the coordinator's own check rather than waiting indefinitely.
 
+Write short checkpoint fields: state each fact once, use actor IDs with concise
+open requirements, and keep hashes/paths in evidence metadata. Local HTTP 422
+with `context_budget_exceeded` means the packet was not reviewed, not that the
+service is down or the model disagrees. Read its token-budget receipt, compact
+the wording without dropping constraints or unknowns, and retain the rejected
+request. See the packet-size guidance in `worker_checkpoints.md` above. Do not
+retry the same oversized packet or silently truncate it.
+
 Return one short verdict: aligned, drift found, or insufficient evidence. State
 the exact divergence and the smallest correction, with any parked requirement
 that must remain visible. If aligned, continue the active work. If drift is

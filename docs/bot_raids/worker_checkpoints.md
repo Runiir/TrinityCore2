@@ -30,6 +30,41 @@ evidence, then sends one concrete correction to the worker. Service failure
 routes to the existing reviewer; it does not halt unrelated work or request
 user approval. A justified scope change updates the assignment explicitly.
 
+### Packet size and HTTP 422
+
+Compose checkpoint fields for the model, with each fact stated once. Aim for
+roughly 600 tokens of state to leave room for the questions; this is a writing
+budget, not a tokenizer guarantee. Keep the full source artifacts and hashes in
+`evidence_excerpts` metadata, which the packet builder excludes from model state.
+Use short excerpts rather than repeating observations. List every open actor or
+requirement by ID and a short description; preserve the parent objective, latest
+direction, forbidden changes, acceptance limits, failures and unknowns. Send the
+same compact facts to both providers. Do not clip strings or drop trailing actors
+to fit. Large staged diffs may still require a narrower review.
+The builder uses zero-based `allowed_files_indices` for changed paths already
+listed in `allowed_files`, retains other paths explicitly, and references repeated
+test commands with `required_test_commands_index`. Full paths/commands remain in
+the checkpoint and deterministic checks; these references remove no facts.
+The audit-only `task_id` also stays in the full receipt, outside model state.
+
+See the two compact historical inputs in
+[`checkpoint_examples.json`](../../experiments/configs/local_laya/checkpoint_examples.json)
+for field length and structure. They are examples, not current task state.
+
+The local adapter returns HTTP 422 with `context_budget_exceeded` when any
+question would truncate instructions, options or state. The error includes
+`state_tokens`, `state_budget` and `truncated_fields` for each question. This means
+**not reviewed**. It is neither a model judgment nor a stopped service. Other 422
+reasons, such as an invalid question or wrong model, need their own correction;
+read the response body rather than assuming every 422 is a size failure.
+
+Keep the rejected request and error receipt. Shorten repeated prose, then submit
+one corrected packet and inspect its returned `token_budget`: every
+`truncated_fields` list must be empty. If essential evidence still cannot fit,
+record Laya as not reviewed and continue independent review. Do not retry the
+unchanged packet, restart a healthy service, or treat hosted success as local
+review. Provider errors are advisory-path failures; they never close a task.
+
 For example, the Fire dummy task is to prevent two owners from using the combat
 potion. A patch that excludes the fixture-owned potion from the ordinary
 calibration resolver can satisfy that task. Globally removing raid potions or

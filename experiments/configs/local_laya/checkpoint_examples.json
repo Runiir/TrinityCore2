@@ -1,0 +1,189 @@
+{
+  "purpose": "Historical checkpoint compaction examples; not current task state or acceptance. Full originals remain hash-bound.",
+  "examples": [
+    {
+      "historical_checkpoint": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/checkpoint.json",
+      "sha256": "91752e5b94ce66769c70f73133d6fc236ff579a13434a2ac8116888fabcf70fc",
+      "checkpoint": {
+        "task_id": "magmaw_balance_rotation_cadence_05_plan_drift_20260920",
+        "stage": "plan",
+        "subject": "orchestrator",
+        "changed_files_source": "coordinator_observed",
+        "objective": "Review the next Balance diagnosis route.",
+        "first_broken_edge": "Post-opener Balance cadence/event loss",
+        "allowed_files": [
+          "experiments/configs/cata_raid_active_work_unit_v1.json"
+        ],
+        "forbidden_changes": [
+          "No actor, comparison, potion or raid closure; no stat, coefficient, gear, consume, fixture, route or other-class changes.",
+          "Preserve the accepted opener; no blind priority/denominator changes."
+        ],
+        "acceptance_conditions": [
+          "Route only; retain all parent requirements and separate repair/performance/clear acceptance."
+        ],
+        "observations": [
+          "Graph revision 190: diagnose; parent incomplete.",
+          "300000ms: Moonfire 8921@0, Insect Swarm@1200, Force of Nature@2200, Wrath@3301, Starsurge@4500, Starfall 48505@5700ms.",
+          "Comparable, cleaned run: 32585.296666666665 DPS vs 35447.58892725215 (0.9192528364493374). Performance unaccepted.",
+          "Candidate mask/rejection telemetry unavailable; rank measured event/cadence losses."
+        ],
+        "proposed_change": "Diagnose the remaining post-opener loss.",
+        "acceptance_claim": "Route alignment only; no new repair, performance, clear or completion claim.",
+        "required_test_commands": [],
+        "tests": [],
+        "changed_files": [],
+        "goal_context": {
+          "parent_objective": "Lawful Magmaw 10N, every role vs matched WCL; exact WoWSims dummy diagnosis.",
+          "latest_user_direction": "Continue saved scenario through implementation and live validation.",
+          "current_plan": "Diagnose, repair, independent review, host12 build, exact-300 class validation, publish; then other actors and raid.",
+          "completed_work": [
+            "Stat comparator and neutral Starsurge/Starfall opener accepted and published; opener repair only."
+          ],
+          "remaining_requirements": [
+            "30001 Balance",
+            "30002 Blood",
+            "30003/30004/30005 healers",
+            "30006/30007 Fire",
+            "30008 Affliction",
+            "30009 Survival",
+            "30010 Elemental",
+            "All actors: encounter behavior and duty-adjusted performance",
+            "affliction_comparison",
+            "elemental_comparison",
+            "potion_ownership",
+            "survival_reference",
+            "magmaw_10n matched WCL, every actor reviewed, published"
+          ],
+          "known_blockers": [
+            "Historical workflow prose stale; current receipts govern.",
+            "No candidate-mask telemetry."
+          ]
+        },
+        "evidence_excerpts": [
+          {
+            "id": "active_graph",
+            "path": "../../experiments/configs/cata_raid_active_work_unit_v1.json",
+            "sha256": "cf41f806354297c9382e89eda4f52a7e34381eccadd80feb9e106ec44580fe7c",
+            "excerpt": "Graph confirms every requirement open."
+          },
+          {
+            "id": "accepted_opener_run",
+            "path": "magmaw_balance_rotation_cadence_04_run_20260920.json",
+            "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00",
+            "excerpt": "Run: exact window/opener above; repair accepted, performance not."
+          },
+          {
+            "id": "assessment",
+            "path": "magmaw_balance_rotation_cadence_04_assessment_20260920.json",
+            "sha256": "04991e39e2acfde418b1e7661bd0ec2b0f9c6428ca5054098b3bd9fec7482b85",
+            "excerpt": "Assessment accepts opener only."
+          },
+          {
+            "id": "workflow",
+            "path": "../../docs/bot_raids/shared_worldserver_workflow_20260907.md",
+            "sha256": "aa273fa2baffaf0b61a9ba91de4f1242f21fc15a97e1de665dbf5ae65d0f9536",
+            "excerpt": "Historical prose superseded by graph/receipts."
+          }
+        ]
+      }
+    },
+    {
+      "historical_checkpoint": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_checkpoint_review_20260920.json/checkpoint.json",
+      "sha256": "c8ebc22cca70e576b73c5bf55713b1b475961ee19be6f0a47507cee08423f796",
+      "checkpoint": {
+        "task_id": "magmaw_balance_rotation_cadence_04_implementation_20260920",
+        "stage": "result",
+        "subject": "orchestrator",
+        "changed_files_source": "coordinator_observed",
+        "objective": "Balance Starfall opener repair.",
+        "first_broken_edge": "Starfall before Moonfire.",
+        "allowed_files": [
+          "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+          "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql",
+          "tests/test_balance_rotation_cadence.py"
+        ],
+        "forbidden_changes": [
+          "No stats, gear, coefficients, damage, haste, roster, consumes, simulator reference or denominator changes.",
+          "No encounter, route, movement, fixture, manufactured state, forced casts or hidden controls.",
+          "Preserve Starsurge and Starfall outside neutral state; no performance/raid/completion acceptance."
+        ],
+        "acceptance_conditions": [
+          "Starfall shares no-Eclipse-aura AND zero-POWER_ECLIPSE predicate.",
+          "Idempotent Balance/Starfall-only SQL; tests/catalog pass. Native validation pending."
+        ],
+        "observations": [
+          "Prior exact-300: Starfall 48505@0ms, Moonfire 8921@1204ms. APL requires reverse order.",
+          "Starfall lacked neutral predicate; now shares typed gate."
+        ],
+        "proposed_change": "Add balance_starfall_neutral_gate tag/SQL and source-shape tests.",
+        "acceptance_claim": "Source/config tests only; candidate-mask, exact-300, performance, clear and completion unproved.",
+        "required_test_commands": [
+          "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+          "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+          "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+          "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+        ],
+        "tests": [
+          {
+            "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+            "exit_status": 0,
+            "observation": "3 passed"
+          },
+          {
+            "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+            "exit_status": 0,
+            "observation": "50 passed"
+          },
+          {
+            "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+            "exit_status": 0,
+            "observation": "catalog passed"
+          },
+          {
+            "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+            "exit_status": 0,
+            "observation": "contract and 16 requests validated"
+          }
+        ],
+        "changed_files": [
+          "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+          "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql",
+          "tests/test_balance_rotation_cadence.py"
+        ],
+        "goal_context": {
+          "parent_objective": "Lawful Magmaw 10N all roles vs matched WCL; WoWSims dummy diagnosis.",
+          "latest_user_direction": "Continue saved scenario.",
+          "current_plan": "Repair opener, independent review, host12 build, SQL, exact-300 run, publish.",
+          "remaining_requirements": [
+            "30001 Balance performance/raid behavior",
+            "30002-30010 independent reviews",
+            "Affliction/Elemental comparisons",
+            "Potion ownership",
+            "Survival reference",
+            "Matched-WCL Magmaw 10N clear/publication"
+          ]
+        },
+        "evidence_excerpts": [
+          {
+            "id": "plan",
+            "path": "magmaw_balance_rotation_cadence_04_plan_20260920.json",
+            "sha256": "8fbcfb0de5e5d517db0738ae9a1b53857489ea6e3d1d7883a6e3b610244848a0",
+            "excerpt": "Plan bounds Starfall-only repair."
+          },
+          {
+            "id": "native_counterexample",
+            "path": "magmaw_balance_rotation_cadence_03_run_20260920.json",
+            "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71",
+            "excerpt": "Failed repair run confirms reversed opener above."
+          },
+          {
+            "id": "source",
+            "path": "../../src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+            "sha256": "4f8e6659a4aef2381e8e788ce6d5cc4cfd9826e49e04a884e0caf8ce37d8a0b4",
+            "excerpt": "Both tags use shared predicate; no state mutation."
+          }
+        ]
+      }
+    }
+  ]
+}
