@@ -1,0 +1,11 @@
+{
+  "revision": 30,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "rework",
+  "claim_token": "deaeff5a23fb8ee9bdfad64d0a691a56d552990b1a5e97c63bf691a3aa5f8bbc",
+  "reason": "The pre-launch runtime closure gate requires a distinct explicit source-checkout root; the runner currently hardcodes the coordinator checkout for both offline and native asset roots.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_rebased_20260920.json",
+    "sha256": "45c55fe70ff1eb2b7576dc8072bd449e9ec0e6022d5ce0042ffa5532ceacfc97"
+  }
+}

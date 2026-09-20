@@ -1,0 +1,25 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "stage": "validate",
+  "operation_id": "deaeff5a23fb8ee9bdfad64d0a691a56d552990b1a5e97c63bf691a3aa5f8bbc",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The canonical Balance dummy runner reached its pre-launch runtime closure gate and failed with root_mismatch before starting a worldserver. The revised closure contract requires offline navmesh data under a distinct source-checkout root with mode 0444 while native navmesh data remains under configured DataDir with mode 0664; the runner hardcoded both roots to the coordinator checkout. A bounded runner adapter must bind an explicit clean source-checkout root before the validation can be retried.",
+  "failed_attempt": {
+    "output_root": "/tmp/magmaw-balance-validation-rebased-20260920",
+    "batch_sha256": "87a385e2a9954e74cbcf3c084c823bfb2b36b9682e9f10b7a6ff873e013e5221",
+    "runtime_assets_sha256": "5f12a726fb38ab6eb0d75aae2dabb2d5f194e755983a7693ad2e0990910922b3",
+    "terminal_reason": "runtime_asset_closure_incomplete:root_mismatch",
+    "server_started": false,
+    "scoring_started": false
+  },
+  "causal_check": {
+    "source_checkout": "/home/runiir/Games/trinity-magmaw-parity",
+    "configured_data_dir": "/home/runiir/Games/trinity-cata/data",
+    "dvc_workspace": "/home/runiir/Games/trinity-cata",
+    "closure_with_explicit_source_checkout": "complete"
+  }
+}
