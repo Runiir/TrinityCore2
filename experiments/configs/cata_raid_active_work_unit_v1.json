@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Diagnose the downstream effective cast-speed transition after the proven 24907 owner handler apply. Preserve native arithmetic and the observed handler boundary; inspect stat recomputation/reset consumers before any gameplay change, then use an attributable native probe or exact 300-second canary only when the evidence warrants it. Keep all actor and Magmaw 10N performance requirements open.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose the downstream effective cast-speed transition after the proven 24907 owner handler apply. Preserve native arithmetic and the observed handler boundary; inspect stat recomputation/reset consumers before any gameplay change, then use an attributable native probe or exact 300-second canary only when the evidence warrants it. Keep all actor and Magmaw 10N performance requirements open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 142,
+    "revision": 143,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -2983,6 +2983,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 142,
+        "unit_id": "magmaw:balance_effective_stat_application_05",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "action": "advance",
+          "revision": 142,
+          "unit_id": "magmaw:balance_effective_stat_application_05",
+          "producer": "coordinator",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_diagnosis_20260920.json",
+            "sha256": "4fdab39552e42bfcccab30c189e95ebd54253ac6b421bb874a060990f969d8b4"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2991,7 +3009,72 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "1fa950dc012936ece10b67be46a748aebbb002a9"
+    "source_base_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
+    "assignment": {
+      "hypothesis": "The exact canary expects a 1.05 personal Moonkin Form cast-speed factor in addition to the observed native haste, but scoring-start UNIT_MOD_CAST_SPEED remains 1.269 rather than 1.332199768447153. The startup probe proves that the owner-side 24907 area-aura handler applies and changes cast speed from 0.827578366 to 0.788169861. The remaining causal alternatives are the companion 24905 personal form passive not applying, or a later form/setup recomputation replacing its contribution. Trace both existing handler boundaries and inspect the scoring-start reset consumers before any gameplay change.",
+      "owned_files": [
+        "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+        "tests/test_balance_native_effective_stat_parity.py"
+      ],
+      "forbidden_changes": [
+        "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, route behavior, or cast-speed ledger semantics.",
+        "Do not inject a hidden percentage, manufacture UNIT_MOD_CAST_SPEED, alter ApplyCastTimePercentMod arithmetic, weaken the effective-stat comparator, or reinterpret a native aura mismatch as a rotation loss.",
+        "Do not change Moonkin Form or Moonkin Aura amount/sign, exclusive-aura rules, area-aura propagation, or scoring reset behavior until the paired handler trace identifies the first broken transition.",
+        "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later matched raid evidence."
+      ],
+      "acceptance_conditions": [
+        "Only diagnostic visibility is added in this unit; native aura arithmetic and lifecycle behavior remain unchanged.",
+        "The trace distinguishes 24905 personal-form application, 24907 owner-area application, exclusive suppression, and any later cast-speed overwrite using target identity and before/after values.",
+        "Focused source-contract and effective-stat diagnosis tests pass without changing Balance action policy or the direct-cast stat ledger.",
+        "A separate attributable startup probe or exact canary classifies the paired handler path. An incomplete probe cannot accept repair or performance.",
+        "All actor, encounter-clear, and overall Magmaw 10N performance requirements remain open."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+        "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+      ],
+      "base_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+      },
+      "validation_identity": {
+        "actor_id": "30001",
+        "reference": {
+          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "runtime_profile": {
+          "path": "experiments/configs/validation_scenarios_cata_001.json",
+          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+        },
+        "scenario_kind": "dummy",
+        "spec": "balance_druid"
+      },
+      "supporting_review": {
+        "path": "artifacts/cata_raid_program/workflow_loop_repair_supporting_review_20260920.json",
+        "sha256": "b29161ee7b237eeaade5a1b2771c82a99aada111aac5292cd36e006039da2aec"
+      },
+      "supporting_files": {
+        "tools/raid_program/development_graph.py": "c664fb1339bafc3542b14ffc2bdbccc03e584da74e8d515612e8dc8d7cd0193a",
+        "tools/raid_program/workflow_build.py": "83eb83c873c66aa26ac9c035eb15638d88abf6c9de0b43c696438ed507eacdfb",
+        "tools/raid_program/publication_delta.py": "a14d39336d7facab18e5f57bb58bfbcfde47f98d936fa79dee37389f457bee7e",
+        "tests/test_development_graph.py": "4daee43428fe71371f490de6845a886f989e3b0cd48e37d59eb6114f4b5be9e2",
+        "tests/test_publication_delta.py": "5f59d2f2f3464bab1231bab1a623e3625462f1c861e0f1022e757d10f00f0263"
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_diagnosis_20260920.json",
+        "sha256": "4fdab39552e42bfcccab30c189e95ebd54253ac6b421bb874a060990f969d8b4"
+      }
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

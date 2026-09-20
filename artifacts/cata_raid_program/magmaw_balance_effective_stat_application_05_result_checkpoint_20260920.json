@@ -1,0 +1,55 @@
+{
+  "kind": "worker_checkpoint",
+  "unit_id": "magmaw:balance_effective_stat_application_05",
+  "task_id": "magmaw-10n-balance-effective-stat-application-05",
+  "stage": "result",
+  "authority": "advisory_only",
+  "producer": "coordinator",
+  "checkpoint_sha256": "38a1b3934b60f456df21b397ceaf415ea82b56668f870195c36f7733d7104f29",
+  "deterministic_status": "pass",
+  "model_advice": {
+    "hosted_jev": {
+      "status": "advisory",
+      "model": "jev-1.13.0",
+      "scope_fit": "supported",
+      "scope_fit_confidence": 0.99,
+      "evidence_supports_proposed_change": "insufficient_evidence",
+      "evidence_supports_proposed_change_confidence": 0.26,
+      "acceptance_claim_supported": "supported",
+      "acceptance_claim_supported_confidence": 0.92,
+      "response_sha256": "c8ca22a85aea511863cefc1727a44f17b483ab5b4ecf54b0b8a5ccceae7a702c"
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone"
+    }
+  },
+  "coordinator_adjudication": "The implementation claim is limited to diagnostic source changes and passing static/reference checks. Runtime behavior remains unaccepted until the separate reviewer, native build, and attributable probe complete.",
+  "source_commit": "679c23327accc1c88ce01f348a3497de024c9cc5",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "62bd4e54e37e56c159d724349c600dcef456b9990baf5aca51787dcb3824f1bd",
+    "tests/test_balance_native_effective_stat_parity.py": "ac93375040e2c1e1293c7cdc8c2694671f5a251166faffc8d2d938c682d060ae"
+  },
+  "tests": [
+    {"command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py", "exit_status": 0, "result": "6 passed"},
+    {"command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py", "exit_status": 0, "result": "20 passed"},
+    {"command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check", "exit_status": 0},
+    {"command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog", "exit_status": 0, "result": "request_count=16"}
+  ],
+  "remaining_requirements": [
+    "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005",
+    "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010",
+    "affliction_comparison", "elemental_comparison", "magmaw_10n", "potion_ownership",
+    "survival_reference"
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_diagnosis_20260920.json",
+      "sha256": "4fdab39552e42bfcccab30c189e95ebd54253ac6b421bb874a060990f969d8b4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+      "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+    }
+  ]
+}
