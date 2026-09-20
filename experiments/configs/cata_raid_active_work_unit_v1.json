@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose one native Moonkin Aura 24907 cast-speed handler application edge, instrument or repair only the effective UNIT_MOD_CAST_SPEED path, rebuild with exact provenance, and rerun the identical 300-second canary before any Balance rotation tuning.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 131,
+    "revision": 132,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -2788,6 +2788,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 131,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 131,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2860,6 +2874,12 @@
         "path": "artifacts/cata_raid_program/workflow_loop_replacement_observation_plan_20260920.json",
         "sha256": "207d0deb829ff5d814f7f1483d3cf0961cc880503293da61b36720b9f6be729d"
       }
+    },
+    "claim": {
+      "owner": "coordinator-magmaw-10n",
+      "token": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
+      "operation_id": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
+      "stage": "implement"
     }
   },
   "parked_scenarios": {

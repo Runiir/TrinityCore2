@@ -17,6 +17,7 @@ AURA_SOURCE = ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp"
 AURA_LIFECYCLE_SOURCE = ROOT / "src/server/game/Spells/Auras/SpellAuras.cpp"
 AURA_OBSERVATION_SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationAuraObservation.cpp"
 CALIBRATION_METRICS_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h"
+RUNTIME_CONFIG_TEMPLATE = ROOT / "src/server/worldserver/worldserver.conf.dist"
 
 
 def test_balance_of_power_uses_gained_spirit_only():
@@ -78,8 +79,11 @@ def test_calibration_observes_moonkin_aura_owner_application():
 
 def test_moonkin_cast_speed_handler_trace_preserves_native_arithmetic():
     source = AURA_SOURCE.read_text(encoding="utf-8")
+    config = RUNTIME_CONFIG_TEMPLATE.read_text(encoding="utf-8")
 
-    assert "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER" in source
+    assert 'TC_LOG_INFO("server", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER' in source
+    assert 'TC_LOG_INFO("spells", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER' not in source
+    assert "Logger.server=3,Console Server" in config
     assert "GetFloatValue(UNIT_MOD_CAST_SPEED)" in source
     assert "cast_speed_before" in source
     assert "cast_speed_after" in source
