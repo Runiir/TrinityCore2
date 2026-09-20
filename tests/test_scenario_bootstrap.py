@@ -227,3 +227,20 @@ def test_scenario_switch_invalidates_old_operation_claim(repo):
     bootstrap.start(repo,'magmaw 25hc')
     with pytest.raises(graph.GraphError,match='state changed'):
         graph.advance(repo,{'action':'claim','revision':old['revision'],'unit_id':old['unit']['id'],'owner':'stale-tab'},old['state_sha256'])
+
+
+def test_plain_implementation_request_preserves_saved_task_and_coordinator_role(repo):
+    saved = graph.read(repo/graph.STATE_PATH)
+    saved['development_graph']['unit'].update(
+        id='saved-stat-repair', owner_skill='raid-class-mechanics-implementation',
+        next_action='Inspect retained effective stats before repeating measurement')
+    write(repo, graph.STATE_PATH, saved)
+    before = (repo/graph.STATE_PATH).read_bytes()
+    cmd = [sys.executable, '-m', 'tools.raid_program.raid_workloop', '--root', str(repo),
+           'start', 'implement magmaw 10n bots']
+    result = json.loads(subprocess.check_output(cmd, cwd=ROOT, text=True))
+    assert result['unit']['id'] == 'saved-stat-repair'
+    assert result['coordinator_skill'] == 'trinity-orchestrator'
+    assert not result['parent_objective_complete']
+    assert result['completed_measurements'] == saved['development_graph']['completed_measurements']
+    assert (repo/graph.STATE_PATH).read_bytes() == before

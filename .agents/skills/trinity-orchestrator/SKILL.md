@@ -9,8 +9,16 @@ For a broad boss-bot request, keep coordinator ownership even when performing a
 specialist's work directly. Resolve the mainline checkout from `git worktree list
 --porcelain`, read its AGENTS.md and skills, and check the saved coordinator path.
 A detached or old side branch must not silently replace the current task.
-After `start` or `resume`, execute `unit.next_action` using its linked evidence.
-The command's return is a handoff to you, not completion of the user's request.
+"Implement <boss> <mode> bots" is sufficient both initially and on a fresh tab.
+After `start` or `resume`, execute the returned stage using its linked evidence;
+at diagnosis use `unit.next_action` and `latest_assessment` if present. The primary
+agent stays coordinator even when `unit.owner_skill` names a specialist.
+After each transition, execute the next returned step. Assessment, publication,
+routing and worker completion are intermediate steps, not stopping boundaries.
+Before ending an implementation/resume turn, run `resume`: if the parent objective
+is incomplete, continue unless the user explicitly limited/stopped the task or
+a demonstrated external blocker prevents remaining authorized work. Do not
+substitute a final handoff asking the user to restart the next unit.
 Do not choose an unrelated small patch merely because its fixture passes.
 
 For a user request naming a boss and difficulty, first select it with

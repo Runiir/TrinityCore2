@@ -173,16 +173,24 @@ def resume(root: Path) -> dict:
         'parked_scenarios': sorted(state.get('parked_scenarios', {})),
         'bootstrap_inputs': inputs, 'changed_bootstrap_sources': input_changes,
         'objective': g['objective'], 'stage': g['stage'], 'unit': unit,
+        'coordinator_skill': 'trinity-orchestrator',
+        'parent_objective_complete': g['stage'] == 'complete',
         'owner_skill': unit.get('owner_skill'),
         'next_action': ('Initialization inputs have changed; consult current reviewed inputs before reusing that historical snapshot. ' if input_changes else '') + ('Claimed by ' + g['claim']['owner'] + '; reconcile this operation before continuing. ' if g.get('claim') else '') + ACTIONS[g['stage']],
         'open_requirements': {k: v for k, v in g['requirements'].items() if v['status'] != 'accepted'},
         'completed_measurements': g.get('completed_measurements', []),
         'receipts': g.get('receipts', {}), 'outcomes': g.get('outcomes', {}),
+        'latest_assessment': next((h['event']['receipt'] for h in reversed(g['history'])
+                                   if h['from'] == 'assess' and h['event']['action'] == 'advance'), None),
         'same_edge_failures': g.get('failures', {}).get(unit['edge'], 0),
         'retry_limit': 10,
         'claim': g.get('claim'), 'coordinator_worktree': g['coordinator_worktree'],
         'model_advice': 'Use worker_checkpoint at plan/result and plan-drift-review at work-unit changes; never auto-accept scores.',
-        'execution': 'Resume is read-only. Reconcile queued_build and active controller receipts; it never authorizes duplicate launches.',
+        'execution': ('Parent objective accepted; report its evidence.' if g['stage'] == 'complete' else
+                      'For implementation/resume requests, remain the coordinator and execute this stage, then the next returned stage. '
+                      'An assessment, publication, route or specialist handoff does not finish the parent objective. '
+                      'Respect explicit user limits or interruption; otherwise stop only for a demonstrated external blocker. ')
+                     + ' This command is read-only. Reconcile queued_build and active controller receipts; never duplicate launches.',
     }
 
 

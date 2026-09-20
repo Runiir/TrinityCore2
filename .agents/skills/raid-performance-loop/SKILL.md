@@ -5,10 +5,12 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 
 # Raid performance loop
 
-"Implement <boss> <mode> bots" is an encounter-wide coordinator assignment.
-Specialist stop/handoff rules bound that specialist, not the parent task. Continue
-after its result through review, valid source/build preparation and the next
-authorized experiment. Keep any failing broader checks visible when reporting a
+"Implement <boss> <mode> bots" starts or resumes the saved encounter-wide objective;
+it needs no special continuation wording. Specialist stop/handoff rules bound
+that specialist, not the primary coordinator. Continue after its result through
+review, validation, assessment, publication and the next routed task. A completed
+class assessment is a progress update, not a final reply while the parent remains
+open. Respect explicit user limits and interruption. Keep any failing broader checks visible when reporting a
 passing narrow suite; classify pre-existing, unrelated and blocking failures.
 Before compilation run `pixi run python -m tools.raid_program.workflow_build preflight`.
 Reuse a verified build across committed graph/receipt-only progress; canonical runners

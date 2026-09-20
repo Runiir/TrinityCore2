@@ -6,12 +6,20 @@ on `master` (relocated 2026-09-20). For another tab/worktree, inspect
 The saved `coordinator_worktree` must agree. Preserve side-branch work; do not
 copy an older state file over current progress.
 
-For a broad "implement boss bots" request, the primary agent owns the full loop.
-Use the coordinator skills before choosing a bounded specialist; an implementation
-handoff is not completion of the parent task. `start` selects work and the agent
-then executes `unit.next_action`. This tool does not keep an agent running or
-prevent it from replying early. Fresh-agent execution must be evaluated separately
-from selector/graph fixture tests.
+The normal request is simply "implement <boss> <mode> bots", including on a new
+tab after an interruption. No handoff paragraph or extra "continue" instruction
+is required. `start` resumes the matching saved scenario, completed measurements
+and current unfinished unit. The primary agent owns the parent objective;
+`owner_skill` identifies the bounded specialist and does not change that ownership.
+
+`start`, `resume` and transitions return `coordinator_skill`,
+`parent_objective_complete` and the last `latest_assessment` reference, including
+after routing clears the current unit's receipts. Use that evidence for the next
+diagnosis. After each step, execute the next returned stage. Before a final reply
+on an implementation/resume task, check the saved parent state; publication or
+routing alone is not completion. Explicit user scope limits/interruption and
+real external blockers still apply. The CLI does not run an agent in the background;
+its output and repository instructions direct the active coordinator.
 
 Select the requested encounter:
 
@@ -334,3 +342,19 @@ Other coordinator WIP is preserved and no calibration or raid was launched here.
 Hosted Jev supported the bounded workflow claim. Local Laya was offline; its
 failure is retained, not an approval. The remote-verified evidence pointer is
 `artifacts/cata_raid_program/workflow_build_repair_20260920.tar.gz.dvc`.
+
+## Plain-request continuation check (2026-09-20)
+
+The exact request `implement magmaw 10n bots` resumed revision 55 and the saved
+Balance effective-stat diagnosis without changing state. A fresh-context agent
+loaded the prior assessment and inspected the native stat producer, while keeping
+the full encounter as its objective. It identified assessment/publication/routing
+as intermediate steps. This is an entry/diagnostic trial, not proof of completing
+an autonomous raid program.
+
+The focused suite passed 72 tests. The first run exposed a test that incorrectly
+pinned live state to the old Balance setup edge; routed-unit regression coverage
+replaces that assertion. Independent broader checks reported 104 passes and the
+previously documented script-readiness hash failure (0855911a versus df4c8ee5).
+Jev supported the limited claim; Laya was offline. Evidence and the independent
+review are at `artifacts/cata_raid_program/plain_request_continuation_20260920.tar.gz.dvc`.

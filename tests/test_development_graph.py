@@ -169,13 +169,6 @@ def test_dummy_requires_exact_window_but_failed_attempt_can_be_closed(case):
         graph.reduce(root,result,receipt(root,result,evidence,encounter_clear=False))
 
 
-def test_repo_seed_has_all_actors_and_completed_measurements():
-    root=Path(__file__).resolve().parents[1];status=graph.resume(root)
-    assert len(status['completed_measurements'])==5
-    assert {str(n) for n in range(30001,30011)}=={k.removeprefix('actor_') for k in status['open_requirements'] if k.startswith('actor_')}
-    assert status['unit']['edge']=='balance_missing_self_buff_and_leather_specialization'
-
-
 def test_fabricated_completion_and_skipped_stage_rejected(case):
     root,state,evidence=case;g=state['development_graph']
     g['stage']='route'
@@ -334,3 +327,28 @@ def test_dummy_prebuild_cannot_validate_another_checkouts_catalog(case):
     assignment['validation_identity'].update(scenario_kind='dummy', spec='balance_druid', reference=evidence)
     with pytest.raises(ValueError, match="coordinator checkout's module"):
         preflight(root, assignment)
+
+
+def test_published_unit_routes_to_next_task_without_losing_parent_or_assessment(case):
+    # Exercise legitimate progress instead of pinning the live repository to a
+    # historical Balance edge that must eventually close.
+    root, state, evidence = reach(case, 'publish')
+    assessment = state['development_graph']['receipts']['assessment']
+    state = graph.reduce(root, state, receipt(root, state, evidence))
+    g = state['development_graph']
+    state = graph.reduce(root, state, {'action': 'route', 'revision': g['revision'],
+        'unit_id': g['unit']['id'], 'reason': 'next proven actor edge',
+        'unit': {'id': 'actor-next', 'edge': 'stat-application', 'requirements': ['actor_1'],
+                 'owner_skill': 'raid-class-mechanics-implementation', 'next_action': 'Inspect retained stat producer'}})
+    put(root/graph.STATE_PATH, state)
+    output = subprocess.check_output([sys.executable, '-m', 'tools.raid_program.raid_workloop',
+        '--root', str(root), 'resume'], cwd=Path(__file__).resolve().parents[1], text=True)
+    status = json.loads(output)
+    assert status['coordinator_skill'] == 'trinity-orchestrator'
+    assert status['owner_skill'] == 'raid-class-mechanics-implementation'
+    assert status['unit']['id'] == 'actor-next' and status['stage'] == 'diagnose'
+    assert not status['parent_objective_complete']
+    assert status['latest_assessment'] == assessment
+    assert graph.file_ref(root, status['latest_assessment']).is_file()
+    assert set(status['open_requirements']) == {'actor_1', 'actor_2'}
+    assert status['completed_measurements'][0]['spec'] == 'Survival'
