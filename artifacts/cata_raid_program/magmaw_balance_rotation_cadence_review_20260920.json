@@ -1,0 +1,50 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "operation_id": "f4ee0d8f20be96030f7446b821f8df040bc05f237db8d00118b0d8e31deb091c",
+  "producer": "independent-reviewer",
+  "authority": "coordinator_attestation",
+  "verdict": "approved",
+  "review_scope": "Read-only review of the exact tested files and their bounded implementation contract.",
+  "findings": [],
+  "conclusions": [
+    "The calibration ledger now observes both native UNIT_MOD_CAST_HASTE and UNIT_MOD_CAST_SPEED factors and serializes their reciprocal product without changing rotation policy.",
+    "The focused tests cover the source contract, the native fixture, and the effective-stat diagnosis path; the recorded test results are successful.",
+    "The implementation does not claim build, exact-300 canary, actor performance, or Magmaw acceptance; those gates remain required."
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "a9bfc0e3c0f63ff8ddad3d1d54056db0b33113916a0901f59e67840af1476f07",
+    "tests/test_bot_effective_stats_diagnosis.py": "0ea9abf7d916a2f401f1e15b3d6d122f894b255582612c96f2ee7c5d8cf671ce",
+    "tests/test_balance_native_effective_stat_parity.py": "a8d875c6d3f6a40e35538ee004aeb04a9c00589efb2e70b5fae228bff34805cf"
+  },
+  "evidence": [
+    {
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+      "sha256": "a9bfc0e3c0f63ff8ddad3d1d54056db0b33113916a0901f59e67840af1476f07"
+    },
+    {
+      "path": "tests/test_bot_effective_stats_diagnosis.py",
+      "sha256": "0ea9abf7d916a2f401f1e15b3d6d122f894b255582612c96f2ee7c5d8cf671ce"
+    },
+    {
+      "path": "tests/test_balance_native_effective_stat_parity.py",
+      "sha256": "a8d875c6d3f6a40e35538ee004aeb04a9c00589efb2e70b5fae228bff34805cf"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_implementation_20260920.json",
+      "sha256": "a8948428d99d227180d4add7e2645f48d69c2b5e0f625fd3e24470cb2096a189"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_diagnosis_20260920.json",
+      "sha256": "9449a682082680d7ce7dde6a0d6e84c99608e191544706b492dac291b4d53cf1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_20260920.json",
+      "sha256": "82f4ed9f4574e8f0730ca6e1957f585c7f63c158275fa412c4fdf9beec505bb0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_source_binding_reconciliation_20260920.json",
+      "sha256": "af13926a2e9ddba0bbe7f6f620fb2334a1fe0ba94e549d2478eec965a570eb6a"
+    }
+  ]
+}
