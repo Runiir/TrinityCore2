@@ -1,0 +1,96 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "d6e863f6ba4824210db7916344d3e4c09ef822ab0a75366681c476f3a122ce28",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_review_rebased_20260920.json",
+      "sha256": "b9a82e3fb11b9c47f520aef8c8057b02bd380a7f97d7415b2665a929363f3b14"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_tests_rebased_20260920.json",
+      "sha256": "9140ca8c5993e5c116c51077e6280e4a09b7db67f20e84627f089aa4d9696ac1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_build_claim_rebased_20260920.json",
+      "sha256": "81ff43a8aa7db8f1ae3840a8b91b7f523ca42da13e612c292efcf7154f58ce81"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+      "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_configure_rebased_20260920.json",
+      "sha256": "4cacd57dc023711a6243048894d7ab37c38a08ccdad7f67548c0e643a5175ffe"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_queued_build_rebased_20260920.json",
+      "sha256": "0ed98048577e82e911b6c6ac42ac9ed23d2ab01df17fbbf5373e5599d7f3d15c"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "bbbd0ef7077ff626233b3e6d84e77064035b5d874f2d79a75fe6b69366c45545"
+    }
+  ],
+  "file_hashes": {
+    "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4.dvc": "088c19c5a27e16bd4126a4ba8f4f6adaf648f4d65e460b29d9820706be361268",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/dvc_reconstruction_receipts/e4a18dd220d3264eefcc48d57d77d83bbcd35b7f8b6f94c7f8d6807a736a20a0.json": "e4a18dd220d3264eefcc48d57d77d83bbcd35b7f8b6f94c7f8d6807a736a20a0",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/253a264d5f08515bf20613005a8e84a66b300a025e70d61313d5fe1a111b108b.log": "253a264d5f08515bf20613005a8e84a66b300a025e70d61313d5fe1a111b108b",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/40b832a7d27c5b9a26a808dd0f4438bfe76581b32e487af30474bab8ee3d7175.json": "40b832a7d27c5b9a26a808dd0f4438bfe76581b32e487af30474bab8ee3d7175",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/4818d7995d28f5fdc4c1ffa38e4cc9a7e7669d73865180615debf6994bfff97b.json": "4818d7995d28f5fdc4c1ffa38e4cc9a7e7669d73865180615debf6994bfff97b",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/486cbd73eda71a162555d3971c3ddcc5c26228d9df926756ecef546b90346a31.json": "486cbd73eda71a162555d3971c3ddcc5c26228d9df926756ecef546b90346a31",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/5787cfb1e380f199fa5b4967c13429842c2bb3a0e58d33a1a9390357321dae78.json": "5787cfb1e380f199fa5b4967c13429842c2bb3a0e58d33a1a9390357321dae78",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/5d28660a8634fdead28fb4ff5e7d1858f794577827d24546d2435d7d0cba5ef5.json": "5d28660a8634fdead28fb4ff5e7d1858f794577827d24546d2435d7d0cba5ef5",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/6163c26c96874ffb178d47eb751c3e91021a2127e62e21f119072cdee314f023.log": "6163c26c96874ffb178d47eb751c3e91021a2127e62e21f119072cdee314f023",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/76aab1418b8c947b2af1c83c2e8af9bf6bfe0ae5348a7b7e9f86befdf1416e7e.json": "76aab1418b8c947b2af1c83c2e8af9bf6bfe0ae5348a7b7e9f86befdf1416e7e",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/894a5b51847f5deac1f7c4592350b77e9280ee0eb229b53463f72555ef14cc58.json": "894a5b51847f5deac1f7c4592350b77e9280ee0eb229b53463f72555ef14cc58",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/96fa494af8ed2b35c6e397fff1766ffc13da2f9e7af8365a9b30b4069ac2b9a1.json": "96fa494af8ed2b35c6e397fff1766ffc13da2f9e7af8365a9b30b4069ac2b9a1",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/a5d0b1359b08ed34893839fa94b90e4bda70a6eded33667775916885da98353c.log": "a5d0b1359b08ed34893839fa94b90e4bda70a6eded33667775916885da98353c",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/d1397c7cb4e6ccda0708dc32f4d63c99463684f3207ee9cb71f8ab4ee192e26d.json": "d1397c7cb4e6ccda0708dc32f4d63c99463684f3207ee9cb71f8ab4ee192e26d",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/d615240a36b3a048b13ecd77d8eb5aa0b6e7adcee62739fe9650798a3c6ca082.json": "d615240a36b3a048b13ecd77d8eb5aa0b6e7adcee62739fe9650798a3c6ca082",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/db51d2007542d58fc3142bcefb52d1fba9f80208b648838641c57b51234bceec.json": "db51d2007542d58fc3142bcefb52d1fba9f80208b648838641c57b51234bceec",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/e0acd5e7c7afb808d19d33ad097ce55de87dc6a4a15f8bd2888eb82cec056fbf.log": "e0acd5e7c7afb808d19d33ad097ce55de87dc6a4a15f8bd2888eb82cec056fbf",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/e3cad5e6d2c44c097963034ecd0736318af3186794c613ba1f9177dedf76f2a7.json": "e3cad5e6d2c44c097963034ecd0736318af3186794c613ba1f9177dedf76f2a7",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/e459a1348c939c6703d89197e1e41c5d4eb3d29c1539d3268d72265f9fe36443.json": "e459a1348c939c6703d89197e1e41c5d4eb3d29c1539d3268d72265f9fe36443",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/ec5abd6b69746cc2b164deb6abc848e5944e75c33f7b6e703479b14f9a1867be.json": "ec5abd6b69746cc2b164deb6abc848e5944e75c33f7b6e703479b14f9a1867be",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/f3a9d32ac27e4033c99b0c44ab9520243b57e9732d234b27c2badf913d1d1db8.json": "f3a9d32ac27e4033c99b0c44ab9520243b57e9732d234b27c2badf913d1d1db8",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/f6ac2827c58fa2bc4962716f6748e9533dc622283b4ec1f9c9a81b7d63e7e373.json": "f6ac2827c58fa2bc4962716f6748e9533dc622283b4ec1f9c9a81b7d63e7e373",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/process_logs/ff62be32529f1e035323ecdcd1a35221dfe115411af48505edce10f223c45042.json": "ff62be32529f1e035323ecdcd1a35221dfe115411af48505edce10f223c45042",
+    "artifacts/all_spec_program/wowsims_exact_reference_control_plane_pet_identity_v4/promotion-index.json": "9332fc84c69ea872003a6f7d838dc5f241cf5894145f6af007f76106f5fe62fa",
+    "artifacts/cata_raid_program/.gitignore": "71171961932b681da87de7c039629c7861da7d2b4c649da9c277c288d153f049",
+    "artifacts/cata_raid_program/legacy_storage_rescue_20260920.tar.gz.dvc": "4e88c6367db7643f8c764e67697d8f4c51f39470c0fc8067809c7b8b882eca6b",
+    "artifacts/cata_raid_program/storage_cleanup_host12_20260920.tar.gz.dvc": "98e5474f3e721f600d1b0bdd6510e3fe7168d4d619c7fc905d24b671fd41ffd9",
+    "artifacts/cata_raid_program/workflow_build_repair_20260920.tar.gz.dvc": "427bc1fe1c4c59afe13a9423973a0e27c4afe2ab8213dbf11f1c739aae61c62e",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099",
+    "experiments/configs/cata_434_action_profiles.json": "8c29ba9e7d5bce03ceb41946bd9ea17d8d2c4d9e005f5471634aaa8094206c38",
+    "experiments/configs/cata_raid_build_resource_policy_host12_v1.json": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json": "95fb64340a0ad6e0b405cc8478adf4d9a0d49d70b16e9f6c337a7ed8e8d56224",
+    "experiments/configs/wowsims_cata_dps_reference_requests_v1.json": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h": "2568b8b31a4ba4d10c9edc21195421fc75adadfa2073df5504af847b6a8f7d10",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py": "ac6cfeb63f6160024e1076aa5ccf29ae1a3d9a8115fdce006bd6d0ebb4066794",
+    "tests/test_build_source_compatibility.py": "676c52556afe42f4adb65c8d3636ffc50722837d4442c5cc86b649c214b213c1",
+    "tests/test_development_graph.py": "45f97b7bdd6a22473311aed91bf554d4d27f5171e63c4cfa304f3a3258c745c4",
+    "tests/test_raid_build_coordinator.py": "0241daaf2d69d1b82f121f43a0750663132ed0c8e03de1de9c27eadda639bdad",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "4a759ab4d00f59eef384ae18003ae70adc8dd47047cdc35a852380fb38a10b4e",
+    "tools/bot_ml/build_validation_provisioning.py": "025fdb3a95685e27fd4512c996849d366dcd93421e4632d1eca7d069b4976761",
+    "tools/raid_program/build_control_compatibility.py": "6d1073d6eb63a57dbdf70fd87768e88e7fd614f446da97b0737b3ee58949fa5c",
+    "tools/raid_program/development_graph.py": "2f4139500861305c51e6bfb4a403a4bed60944a2bb4e6dc80ddbb722ff566439",
+    "tools/raid_program/queued_build.py": "a0fddfb1ee9f6270e5c76f9c91c2eecf4ea7bbbf9a5f84162b16f48d895fa3b9",
+    "tools/raid_program/run_dummy_calibrations.py": "5f92a4ab205d5fb503a648271a4e4476defd4402fe86893937e739a00bf16db6",
+    "tools/raid_program/run_shared_instance_canary.py": "73a7c6e245269380c6f7f5a68518878ffb0a70d3453c1d653758612c46053450",
+    "tools/raid_program/shared_instance_preparation.py": "c1fb8c7b2a0b86a9d111d000fdc3b2f1cfe895c469e193ae99989377296ddb80",
+    "tools/raid_program/workflow_build.py": "4353e65e7d4671291dedb32badd40e005d7976b4f515e846e780c108a5c341c3"
+  },
+  "source_commit": "d22ee83e657436d7c22831da5b0bb2c7c57c06db",
+  "binary_sha256": "2d3369e689764cdc9eec0c2316898148cac6c39736f1b834236b94b9b19bce12",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_queued_build_rebased_20260920.json",
+    "sha256": "0ed98048577e82e911b6c6ac42ac9ed23d2ab01df17fbbf5373e5599d7f3d15c"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  }
+}
