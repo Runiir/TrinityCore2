@@ -1,0 +1,23 @@
+{
+  "kind": "source_binding_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "operation_id": "18a17ba9fdcbf615de3fc6e446ef27c8b944a832e8edf4e5587fbb288004295a",
+  "old_assignment_base_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+  "rebound_source_commit": "9f84994acb12f95cfdb4f87df66514f282c75e02",
+  "reason": "The source-binding guard treated the already-published coordination DVC pointer and artifact .gitignore as source delta when compared with the older build base. The gameplay and focused test files are unchanged after the implementation commit.",
+  "coordination_only_paths": [
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_validation_20260920.tar.gz.dvc",
+    "artifacts/cata_raid_program/.gitignore",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "owned_source_paths_unchanged_since_implementation": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "tests/test_bot_effective_stats_diagnosis.py",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "reconciliation_scope": "coordination_only",
+  "rebuild_required": false,
+  "gameplay_repair_reopened": false
+}

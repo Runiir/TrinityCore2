@@ -1832,7 +1832,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+    "source_base_commit": "9f84994acb12f95cfdb4f87df66514f282c75e02",
     "assignment": {
       "hypothesis": "Rotation tuning is not yet admissible because the canonical comparator still finds the first broken edge in the native scoring ledger: SpellSpeedMultiplier serializes UNIT_MOD_CAST_HASTE but omits UNIT_MOD_CAST_SPEED. Repair this measurement path only, then recapture before interpreting Balance priority inversions or condition gaps.",
       "owned_files": [
@@ -1858,7 +1858,7 @@
         "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
         "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
       ],
-      "base_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+      "base_commit": "9f84994acb12f95cfdb4f87df66514f282c75e02",
       "policy": {
         "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
         "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
