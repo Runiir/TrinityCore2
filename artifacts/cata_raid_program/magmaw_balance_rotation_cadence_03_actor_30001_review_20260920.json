@@ -1,0 +1,33 @@
+{
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "actor_id": "30001",
+  "status": "reviewed",
+  "accepted": false,
+  "scenario_kind": "dummy",
+  "comparison": {
+    "baseline_run": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_run_20260920.json",
+      "sha256": "45a50de88a414c3a12bc8f6dbfe373563b17ff029ffb528f2ca3824bbc7575f3"
+    },
+    "post_change_run": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+      "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+    },
+    "baseline_dps": 31860.983333333334,
+    "post_change_dps": 31993.74,
+    "reference_dps": 35447.58892725215,
+    "post_change_reference_ratio": 0.9025646304367735,
+    "baseline_matched": true,
+    "unexplained_material_decline": false
+  },
+  "native_outcome": {
+    "first_successful_action": {"elapsed_ms": 0, "spell_id": 48505, "spell_name": "Starfall"},
+    "moonfire_first_action_requirement": false,
+    "starsurge_neutral_reject_reason_observed": false,
+    "candidate_mask_observed": false,
+    "cleanup_verified": true,
+    "exact_scoring_ms": 300000
+  },
+  "disposition": "The Starsurge gate changed the first action, but Starfall still wins the neutral opener; the bounded repair is not accepted and the next plan must cover the remaining Starfall/Moonfire arbitration edge. Actor performance and Magmaw raid acceptance remain open."
+}
