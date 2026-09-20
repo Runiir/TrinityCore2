@@ -31,6 +31,29 @@ The immediate focus is Jev/Laya-assisted worker checkpoints. Keep these actor
 rows available while testing that workflow; do not restart a raid to reproduce
 already retained class observations.
 
+### Latest native diagnostic probe (2026-09-20)
+
+The reviewed logger-visibility change was built with the host12 policy and
+exercised in a canonical 30-second Balance startup probe. Runtime-asset closure
+was complete, worldserver started and exited cleanly, and the raw capture was
+published through DVC. The probe was intentionally too short to enter the
+300-second scoring window, so it is not DPS or parity evidence.
+
+The native 24907 Moonkin Aura handler is now observable on actor 1310. The
+owner apply path changed `UNIT_MOD_CAST_SPEED` from `0.827578366` to
+`0.788169861`; the owner remove path restored it to `0.827578306`. The trace
+also recorded the separate spell-group-5 exclusive skips. This rules out a
+missing owner-handler invocation for this startup path, but it does not explain
+the later scoring-start multiplier or prove Balance performance. The next
+bounded edge is the downstream effective-stat transition after handler
+application. Keep actor 30001 and every other actor, raid clear, and performance
+requirements open.
+
+Evidence: `artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json`,
+`artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_assessment_20260920.json`,
+and DVC pointer
+`artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_short_probe_20260920.tar.gz.dvc`.
+
 ### Existing dummy evidence to reuse
 
 On 2026-09-19, the current self-provided WoWSims cohort was hydrated from

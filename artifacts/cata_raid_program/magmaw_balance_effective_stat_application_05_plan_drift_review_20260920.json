@@ -1,0 +1,56 @@
+{
+  "kind": "plan_drift_review",
+  "subject": "orchestrator",
+  "task_id": "magmaw-10n-plan-drift-post-moonkin-probe-20260920",
+  "stage": "plan",
+  "verdict": "aligned",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "latest_user_direction": "Implement magmaw 10n bots.",
+  "first_broken_edge": "owner_effective_stat_application_after_moonkin_aura_handler_application",
+  "completed_work": [
+    "Focused source and catalog checks passed.",
+    "Separate review approved the logger-visibility patch.",
+    "The host12 policy-bound native build succeeded.",
+    "A canonical startup probe observed owner-side handler apply/remove behavior and clean shutdown.",
+    "The diagnostic capture was assessed and published through DVC."
+  ],
+  "proposed_next_action": "Route a new bounded diagnosis unit for the downstream effective-stat transition, preserving the proven handler boundary and all open actor and raid requirements.",
+  "acceptance_claim": "No gameplay repair, DPS parity, actor acceptance or raid acceptance is claimed by this plan review.",
+  "deterministic_review": {
+    "status": "pass",
+    "checkpoint_sha256": "4b4e3476c131af3d11936ce7fb4ca53719e22cb0b34998e5fb954ea643e33255"
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "supported",
+      "confidence": {
+        "scope_fit": 0.96,
+        "evidence_supports_proposed_change": 0.81,
+        "acceptance_claim_supported": 0.84
+      },
+      "response_sha256": "81698437daefcade104c84c089f2877e6e6c7b9ae614bf28497a0a7f3801dc19"
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local endpoint refused the connection at 127.0.0.1:8000."
+    }
+  },
+  "coordinator_adjudication": "Aligned. The handler boundary is now proven on the startup path, and routing downstream preserves the parent objective. All actor, performance and Magmaw 10N requirements remain open.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+      "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_assessment_20260920.json",
+      "sha256": "c9190ff77ea1e770bc3cedd26ca9f778a35e1e6f50ff4fcaac406611deefc06a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_publication_20260920.json",
+      "sha256": "608d420448230687f676f11114bcef813373d4410e92b7f27f53e387c666b884"
+    }
+  ]
+}

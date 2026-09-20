@@ -1,0 +1,25 @@
+{
+  "revision": 141,
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "action": "route",
+  "reason": "The canonical startup probe proves that the owner-side Moonkin Aura handler executes and changes UNIT_MOD_CAST_SPEED. It does not enter the scoring window, so route the remaining downstream effective-stat transition as a new bounded edge while preserving every open actor and raid requirement.",
+  "unit": {
+    "id": "magmaw:balance_effective_stat_application_05",
+    "edge": "owner_effective_stat_application_after_moonkin_aura_handler_application",
+    "owner_skill": "raid-class-mechanics-implementation",
+    "requirements": [
+      "actor_30001"
+    ],
+    "next_action": "Diagnose the downstream effective cast-speed transition after the proven 24907 owner handler apply. Preserve native arithmetic and the observed handler boundary; inspect stat recomputation/reset consumers before any gameplay change, then use an attributable native probe or exact 300-second canary only when the evidence warrants it. Keep all actor and Magmaw 10N performance requirements open."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_plan_drift_review_20260920.json",
+      "sha256": "918820b2e50b0dc051a17467bc3b830305fb6a1b95b3fdbd4822c161d1575d0d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+      "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+    }
+  ]
+}

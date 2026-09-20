@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
+  "next_action": "Select the next proven edge, or complete only when every requirement is accepted. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 137,
+    "revision": 141,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "route",
     "actor_ids": [
       "30001",
       "30002",
@@ -555,7 +555,7 @@
       "owner_effective_stat_application_before_rotation_execution": 3,
       "owner_rotation_execution_after_effective_stat_parity": 2,
       "owner_effective_stat_application_moonkin_aura_materialization": 5,
-      "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 1
+      "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 2
     },
     "history": [
       {
@@ -2883,6 +2883,73 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 137,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 137,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "advance",
+          "claim_token": "eee9f8c60370a53d4062b8906da67b7cf16a0c228cb3260c4ff025384f66248f",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+            "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 138,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 138,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_assessment_20260920.json",
+            "sha256": "c9190ff77ea1e770bc3cedd26ca9f778a35e1e6f50ff4fcaac406611deefc06a"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 139,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "revision": 139,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n-publication"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 140,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "revision": 140,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "advance",
+          "claim_token": "79e960b0b254e95292aaf3bcca08befc50159daf77fa2271357f7f1f66b0f073",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_publication_20260920.json",
+            "sha256": "608d420448230687f676f11114bcef813373d4410e92b7f27f53e387c666b884"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2966,6 +3033,18 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_build_20260920.json",
         "sha256": "0a24479f2500b4a8b41f981b4cb4e79f5e95333396616650f95777c49a44a713"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+        "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_assessment_20260920.json",
+        "sha256": "c9190ff77ea1e770bc3cedd26ca9f778a35e1e6f50ff4fcaac406611deefc06a"
+      },
+      "publication": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_publication_20260920.json",
+        "sha256": "608d420448230687f676f11114bcef813373d4410e92b7f27f53e387c666b884"
       }
     },
     "tested_files": {
@@ -2978,11 +3057,17 @@
       "source_commit": "b36ce7abb94849354b022c7560c8a784b45a86cc",
       "binary_sha256": "74fa50b18004ba069fafc308f2b0b906fe25f52c6fb86dddeb3a893b9f3bcce4"
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n-probe",
-      "token": "eee9f8c60370a53d4062b8906da67b7cf16a0c228cb3260c4ff025384f66248f",
-      "operation_id": "eee9f8c60370a53d4062b8906da67b7cf16a0c228cb3260c4ff025384f66248f",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 1274734759496539,
+      "scenario_kind": "dummy",
+      "terminal_reason": "interruption"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {
