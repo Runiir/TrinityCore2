@@ -77,6 +77,19 @@
     }
   },
   "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/summary.json",
+        "sha256": "4731532003544f125955efa060c65152d1fcf3cf1375c87f49d7ae9ad41aa3d9"
+      },
+      "adjudication": "Hosted Jev supports the bounded post-opener diagnosis and evidence direction; its acceptance judgment was insufficient_evidence, so it does not authorize native acceptance."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone",
+      "adjudication": "Provider unavailable; the coordinator retains the candidate-mask limitation and requires independent native review before build."
+    },
     "plan_drift": {
       "checkpoint": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_checkpoint_20260920.json",
