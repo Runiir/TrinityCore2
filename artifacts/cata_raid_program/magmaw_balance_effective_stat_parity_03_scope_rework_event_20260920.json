@@ -1,0 +1,11 @@
+{
+  "action": "rework",
+  "revision": 106,
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "producer": "coordinator",
+  "reason": "Remove the self-mutating active graph file from the worker snapshot before recording the implementation tests.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_scope_rework_reconciliation_20260920.json",
+    "sha256": "9bcb7b154957b2ae9c3aeac4e5df6a6da2ec38b92d9d7cf65cf901e3de06fe0d"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "codex-magmaw-10n-balance-aura-materialization",
+  "operation_id": "ed0181d704adcbd7b4810370653311750ba2afe536283d7ae30f5cd79086e6b5",
+  "source_commit": "25f2079208",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuras.cpp": "77b3a8c051849c6fdd956b60a7e2afbe96509c6e09fd45374e520452573f2437",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "3c5f205c36d160e29b0a0f185a9703a359be73b7b614e251f23afed5f0e9ab35",
+    "tests/test_balance_native_effective_stat_parity.py": "852f8260bd7b166806e44bfecf27a1d551e07b060c668e632f6a4ad7f9961c15",
+    "artifacts/cata_raid_program/.gitignore": "b9d9d6e479468594f2086e4f969aaff02c2b2d9e693692d4910181d803a01b7b",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc": "d1f1f174bb00bfa6b70859c0bba28b69ad4f9ccd9b7e4001a26d592d3ea05074",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc": "3d8a27e41356b5a86b4dda27abe793cae71bf4ca51c412631d6f6adbb21c3d89"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "4 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 requests; provider revision 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6; fixture contract validated"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_diagnosis_rework3_20260920.json",
+      "sha256": "4fcec2e2a3d49d3f8f866eb988d7e6acaa8b5a96238b5b58fa4fe21643588ddb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_scope_rework_reconciliation_20260920.json",
+      "sha256": "9bcb7b154957b2ae9c3aeac4e5df6a6da2ec38b92d9d7cf65cf901e3de06fe0d"
+    },
+    {
+      "path": "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+      "sha256": "3c5f205c36d160e29b0a0f185a9703a359be73b7b614e251f23afed5f0e9ab35"
+    },
+    {
+      "path": "tests/test_balance_native_effective_stat_parity.py",
+      "sha256": "852f8260bd7b166806e44bfecf27a1d551e07b060c668e632f6a4ad7f9961c15"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "The bounded rework is limited to native Moonkin owner materialization and the focused regression contract.",
+      "reason": "The local native evidence is sufficient for this implementation checkpoint; no separate JEV checkpoint was requested.",
+      "status": "not_reviewed"
+    },
+    "laya": {
+      "adjudication": "The exact focused test commands and later native canary remain the acceptance authority.",
+      "reason": "No local Laya provider checkpoint was requested for this bounded continuation.",
+      "status": "not_reviewed"
+    }
+  }
+}

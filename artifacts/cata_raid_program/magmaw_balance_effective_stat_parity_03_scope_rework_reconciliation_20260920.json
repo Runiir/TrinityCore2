@@ -1,0 +1,13 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "implement_scope_rework_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The rebased implementation assignment accidentally included experiments/configs/cata_raid_active_work_unit_v1.json. That graph-control file changes on every workflow transition and cannot be part of the tested native-file snapshot. Remove it from the bounded ownership while retaining the native source, focused test, and historical coordination pointers.",
+  "disposition": "rebind_assignment_before_recording_implementation_tests"
+}

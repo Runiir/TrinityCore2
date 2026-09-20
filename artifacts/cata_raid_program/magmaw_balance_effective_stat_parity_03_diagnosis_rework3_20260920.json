@@ -1,0 +1,77 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "The first area-aura owner-filter repair was present in the rebuilt binary but the exact canary still measured spell_speed_multiplier=1.269. The remaining failure is setup-time owner materialization: HandleShapeshiftBoosts must refresh the native Moonkin Aura propagation cast and explicitly bind its owner effect mask after the triggered cast, including the already-owned-aura refresh path. Keep the existing area-aura propagation and owned removal semantics; do not tune the Balance ledger or rotation.",
+  "owned_files": [
+    "src/server/game/Spells/Auras/SpellAuras.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tests/test_balance_native_effective_stat_parity.py",
+    "artifacts/cata_raid_program/.gitignore",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, route behavior, or cast-speed ledger semantics.",
+    "Do not inject a hidden percentage, manufacture UNIT_MOD_CAST_SPEED, weaken the effective-stat comparator, or reinterpret a native aura mismatch as a rotation loss.",
+    "Do not alter area-aura propagation for non-owner targets, periodic-haste handling, or unrelated aura types.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later matched raid evidence."
+  ],
+  "acceptance_conditions": [
+    "The native Moonkin Form setup keeps the triggered 24907 area-aura cast for normal propagation and explicitly materializes the owner application through the native aura API, including an existing owned-aura refresh.",
+    "Focused source-contract and effective-stat diagnosis tests pass without changing Balance action policy or the direct-cast stat ledger.",
+    "The required native build succeeds with stable source and binary identity.",
+    "An identical exact-300 Balance canary shows direct-cast SpellSpeedMultiplier within the pinned WoWSims reference envelope and records the owner application evidence; any remaining cadence or encounter loss stays separately attributable."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "7fdb56d60b3c72bca44bceff23a489b34cb81028",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework_reconciliation_20260920.json",
+      "sha256": "821b0ebede4232bfce9a181e6c04a29b2615ca5dcb53cfd95f987120941d5764"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_scope_rework_reconciliation_20260920.json",
+      "sha256": "9bcb7b154957b2ae9c3aeac4e5df6a6da2ec38b92d9d7cf65cf901e3de06fe0d"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "The failed exact canary reopens the same native owner-materialization edge; no rotation or stat-ledger scope expansion is authorized.",
+      "reason": "The local native evidence is sufficient for this bounded rework; no separate JEV checkpoint was requested.",
+      "status": "not_reviewed"
+    },
+    "laya": {
+      "adjudication": "The native source contract, focused tests, and exact canary remain the acceptance authority.",
+      "reason": "No local Laya provider checkpoint was requested for this bounded continuation.",
+      "status": "not_reviewed"
+    }
+  }
+}
