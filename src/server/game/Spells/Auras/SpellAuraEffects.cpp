@@ -4133,7 +4133,9 @@ void AuraEffect::HandleModCastingSpeed(AuraApplication const* aurApp, uint8 mode
         return;
 
     Unit* target = aurApp->GetTarget();
-    bool const moonkinAuraCalibration = GetId() == 24907;
+    uint32 const calibrationSpellId = GetId();
+    bool const moonkinAuraCalibration = calibrationSpellId == 24905
+        || calibrationSpellId == 24907;
     float const castSpeedBefore = moonkinAuraCalibration
         ? target->GetFloatValue(UNIT_MOD_CAST_SPEED) : 0.0f;
 
@@ -4141,8 +4143,8 @@ void AuraEffect::HandleModCastingSpeed(AuraApplication const* aurApp, uint8 mode
     if (abs(spellGroupVal) >= abs(GetAmount()))
     {
         if (moonkinAuraCalibration)
-            TC_LOG_INFO("server", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER spell=24907 target=%u owner=%u apply=%u mode=%u amount=%d spell_group=%d outcome=exclusive_skip cast_speed_before=%.9g cast_speed_after=%.9g",
-                target->GetGUID().GetCounter(), GetBase()->GetUnitOwner()->GetGUID().GetCounter(), apply, mode,
+            TC_LOG_INFO("server", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER spell=%u target=%u owner=%u apply=%u mode=%u amount=%d spell_group=%d outcome=exclusive_skip cast_speed_before=%.9g cast_speed_after=%.9g",
+                calibrationSpellId, target->GetGUID().GetCounter(), GetBase()->GetUnitOwner()->GetGUID().GetCounter(), apply, mode,
                 GetAmount(), spellGroupVal, castSpeedBefore, target->GetFloatValue(UNIT_MOD_CAST_SPEED));
         return;
     }
@@ -4153,8 +4155,8 @@ void AuraEffect::HandleModCastingSpeed(AuraApplication const* aurApp, uint8 mode
     target->ApplyCastTimePercentMod((float)GetAmount(), apply, GetAmount() < CAST_HASTE_AMOUNT_THRESHOLD);
 
     if (moonkinAuraCalibration)
-        TC_LOG_INFO("server", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER spell=24907 target=%u owner=%u apply=%u mode=%u amount=%d spell_group=%d outcome=applied cast_speed_before=%.9g cast_speed_after=%.9g cast_haste_after=%.9g",
-            target->GetGUID().GetCounter(), GetBase()->GetUnitOwner()->GetGUID().GetCounter(), apply, mode,
+        TC_LOG_INFO("server", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER spell=%u target=%u owner=%u apply=%u mode=%u amount=%d spell_group=%d outcome=applied cast_speed_before=%.9g cast_speed_after=%.9g cast_haste_after=%.9g",
+            calibrationSpellId, target->GetGUID().GetCounter(), GetBase()->GetUnitOwner()->GetGUID().GetCounter(), apply, mode,
             GetAmount(), spellGroupVal, castSpeedBefore, target->GetFloatValue(UNIT_MOD_CAST_SPEED),
             target->GetFloatValue(UNIT_MOD_CAST_HASTE));
 }

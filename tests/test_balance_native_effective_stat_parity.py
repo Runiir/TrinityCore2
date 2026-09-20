@@ -83,6 +83,10 @@ def test_moonkin_cast_speed_handler_trace_preserves_native_arithmetic():
 
     assert 'TC_LOG_INFO("server", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER' in source
     assert 'TC_LOG_INFO("spells", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER' not in source
+    assert "uint32 const calibrationSpellId = GetId();" in source
+    assert "calibrationSpellId == 24905" in source
+    assert "calibrationSpellId == 24907" in source
+    assert "spell=%u" in source
     assert "Logger.server=3,Console Server" in config
     assert "GetFloatValue(UNIT_MOD_CAST_SPEED)" in source
     assert "cast_speed_before" in source
