@@ -1,0 +1,13 @@
+{
+  "action": "route",
+  "revision": 189,
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "reason": "The Starfall/Moonfire neutral-opener repair is accepted from the exact native first-action observation and has been published. Balance actor 30001 remains open at 32585.30 DPS versus the matched 35447.59 WoWSims reference, so diagnose the remaining post-opener event/cadence loss without reopening the closed Starfall edge or changing stats/denominators.",
+  "unit": {
+    "id": "magmaw:balance_rotation_cadence_05",
+    "edge": "owner_balance_post_opener_event_cadence_gap",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-rotation-review",
+    "next_action": "Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL."
+  }
+}
