@@ -1,0 +1,95 @@
+{
+  "task_id": "magmaw:balance_observer_route_20260920",
+  "subject": "orchestrator",
+  "objective": "Choose the next bounded Magmaw 10N work unit after publishing the Balance observer assessment without closing unresolved actor or encounter requirements.",
+  "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+  "allowed_files": [
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "forbidden_changes": [
+    "Do not accept Balance performance or raid completion from the dummy run.",
+    "Do not close or delete actor_30001 through actor_30010 or magmaw_10n.",
+    "Do not tune Balance priorities or spell coefficients before effective-stat parity.",
+    "Do not rerun the completed 300-second Balance measurement merely to route work.",
+    "Do not switch to the parked Magmaw 25H scenario."
+  ],
+  "acceptance_conditions": [
+    "Route one unique bounded unit for the proven Balance effective-stat mismatch.",
+    "Retain potion_ownership, survival_reference, affliction_comparison, elemental_comparison, every actor requirement and magmaw_10n as open.",
+    "The routed unit must require exact scoring-start stat parity before any total-DPS interpretation or new Balance canary."
+  ],
+  "observations": [
+    "The completed Balance observer run is exact 300 seconds at 31,877.553 DPS versus 35,447.589 reference; capture, diagnostics, cleanup and narrow Mark of the Wild 79061 setup observation passed.",
+    "The attributable independent reviewer accepted only the narrow observer/setup repair and rejected performance and raid-clear acceptance.",
+    "The same independent review found gear and consumable parity, but effective-stat parity failed: hit rating 1,912 versus 289, spell hit 18.664% versus 17.004%, and spell-speed multiplier 1.269 versus 1.332.",
+    "The published assessment accepted balance_setup only. The graph is at route revision 54; all actor and encounter requirements remain open.",
+    "The current ledger says FLOW-003 requires retaining this capture, obtaining attributable review, and keeping performance/all actors open."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "assessment",
+      "path": "magmaw_balance_setup_observer_assessment_20260920.json",
+      "sha256": "9ebc25cb25096f7cc21ee77935a52fcc629ba32c01c595edf4c25f778d49eea9",
+      "excerpt": "repair_accepted=true; accepted_requirements=[balance_setup]; encounter_clear=false; performance_accepted=false; all ten actor rows are reviewed or not_exercised and remain unaccepted."
+    },
+    {
+      "id": "independent_review",
+      "path": "magmaw_balance_setup_observer_actor_30001_review_20260920.json",
+      "sha256": "9c37690b9d1614b3b3d8de675cc5c62fc297b81a4cb1a33e794fe5a26641bdfb",
+      "excerpt": "Separate delegated reviewer accepts narrow setup only; first unresolved edge is owner_effective_stat_application_before_rotation_execution; all other actors and encounter requirements remain open."
+    },
+    {
+      "id": "publication",
+      "path": "magmaw_balance_setup_observer_publication_20260920.json",
+      "sha256": "15d6b5db2769868289fe82955ff9c7932463e8ed80a1779f54a7f9756aac6cf9",
+      "excerpt": "DVC status, push, remote verification and exact raw/temp cleanup are complete."
+    },
+    {
+      "id": "error_ledger",
+      "path": "../../docs/bot_raids/error_ledger.md",
+      "sha256": "c578667c9999f55bf271a1a1fa51f1407530e90f281762e237120d2458987dc8",
+      "excerpt": "FLOW-003 directs the coordinator to preserve the valid Balance capture, retain the attributable review, and keep performance and all actors open."
+    },
+    {
+      "id": "workflow_status",
+      "path": "../../docs/bot_raids/shared_worldserver_workflow_20260907.md",
+      "sha256": "8045a2fb1e8ab10e35c086510b7fbca71913482bff575a5dc760f96b1a9ef630",
+      "excerpt": "The latest closed Balance measurement remains 31,877.553 DPS, performance is unaccepted, and the next step is assessment followed by retained actor requirements."
+    },
+    {
+      "id": "active_graph",
+      "path": "../../experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "9469de1caa45140c38f284d5210df63fd40dc7de1ed8d140852d38fe9536f3a0",
+      "excerpt": "Graph revision 54 is at route after publishing the narrow Balance setup assessment; open requirements include actor_30001 through actor_30010, magmaw_10n, potion_ownership, survival_reference, affliction_comparison and elemental_comparison."
+    }
+  ],
+  "proposed_change": "Route a unique Balance effective-stat-parity diagnosis/repair unit under actor_30001. Bind the unit to the observed scoring-start mismatch, exact gear/effective-stat parity, and a required identical exact-300-second follow-up only after the stat gate is repaired. Keep all other open requirements visible and untouched.",
+  "acceptance_claim": "Routing this unit does not accept actor_30001, Balance performance, or Magmaw 10N. It only selects the next bounded dependency identified by independent review.",
+  "stage": "plan",
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "tests": [],
+  "required_test_commands": [],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+    "latest_user_direction": "Resume the saved Magmaw 10N task. Assess the completed Balance run and obtain attributable independent review before accepting it. Preserve every unresolved actor requirement.",
+    "current_plan": "The completed Balance observer run has been assessed, independently reviewed, narrowly accepted for balance_setup only, published through DVC, and is ready to route the next proven edge.",
+    "remaining_requirements": [
+      "actor_30001: Balance encounter behavior and duty-adjusted performance",
+      "actor_30002: Blood tank encounter behavior and duty-adjusted performance",
+      "actor_30003: Healer 30003 encounter behavior and duty-adjusted performance",
+      "actor_30004: Healer 30004 encounter behavior and duty-adjusted performance",
+      "actor_30005: Healer 30005 encounter behavior and duty-adjusted performance",
+      "actor_30006: Fire 30006 encounter behavior and duty-adjusted performance",
+      "actor_30007: Fire 30007 encounter behavior and duty-adjusted performance",
+      "actor_30008: Affliction encounter behavior and duty-adjusted performance",
+      "actor_30009: Survival encounter behavior and duty-adjusted performance",
+      "actor_30010: Elemental encounter behavior and duty-adjusted performance",
+      "magmaw_10n: matched WCL encounter performance, all actors reviewed and published",
+      "potion_ownership: live-validate reviewed calibration potion exclusion",
+      "survival_reference: reconcile legitimate cooldown reference and Explosive Shot cadence",
+      "affliction_comparison: resolve event/cadence differences with exact setup",
+      "elemental_comparison: reconcile summon mapping, stats and native event/cadence evidence"
+    ]
+  }
+}

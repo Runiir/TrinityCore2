@@ -1,0 +1,24 @@
+{
+  "revision": 54,
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "action": "route",
+  "reason": "The completed Balance observer run is now assessed and published. Independent review accepted only the native setup observer repair, while exact gear and consumables matched but scoring-start effective stats did not. Route the first proven native mechanics edge without tuning rotation or coefficients, and preserve every other open actor and encounter requirement.",
+  "coordinator_verdict": "aligned",
+  "independent_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_actor_30001_review_20260920.json",
+    "sha256": "9c37690b9d1614b3b3d8de675cc5c62fc297b81a4cb1a33e794fe5a26641bdfb"
+  },
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_route_checkpoint_20260920_review/summary.json",
+    "sha256": "2b2929f71fe75c05bad3e587bf0eab08da1c99a1501076fdb23b677adf7159ab"
+  },
+  "unit": {
+    "id": "magmaw:balance_effective_stat_parity_01",
+    "edge": "owner_effective_stat_application_before_rotation_execution",
+    "requirements": [
+      "actor_30001"
+    ],
+    "next_action": "Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
+    "owner_skill": "raid-class-mechanics-implementation"
+  }
+}

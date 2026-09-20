@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:balance_self_setup_observer_02",
-  "owner_skill": "raid-performance-loop",
+  "work_unit": "magmaw:balance_effective_stat_parity_01",
+  "owner_skill": "raid-class-mechanics-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "430a1691a2b971f211d5c9603990a12cd16eddce",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Assess the completed Balance observer run in magmaw_balance_setup_observer_run_20260920.json; do not repeat the completed 300-second measurement. Obtain attributable independent review before accepting setup, publish the assessment, then route the next proven gap while retaining every actor requirement.",
+  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 51,
+    "revision": 55,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "assess",
+    "stage": "diagnose",
     "actor_ids": [
       "30001",
       "30002",
@@ -402,8 +402,13 @@
     ],
     "requirements": {
       "balance_setup": {
-        "status": "open",
-        "description": "Repair normal Balance self-buff/passive application"
+        "status": "accepted",
+        "description": "Repair normal Balance self-buff/passive application",
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_publication_20260920.json",
+          "sha256": "15d6b5db2769868289fe82955ff9c7932463e8ed80a1779f54a7f9756aac6cf9"
+        },
+        "accepted_at_revision": 53
       },
       "potion_ownership": {
         "status": "open",
@@ -500,13 +505,13 @@
       }
     },
     "unit": {
-      "id": "magmaw:balance_self_setup_observer_02",
-      "edge": "balance_reference_observer_missing_native_mark",
+      "id": "magmaw:balance_effective_stat_parity_01",
+      "edge": "owner_effective_stat_application_before_rotation_execution",
       "requirements": [
-        "balance_setup"
+        "actor_30001"
       ],
-      "next_action": "Assess the completed Balance observer run in magmaw_balance_setup_observer_run_20260920.json; do not repeat the completed 300-second measurement. Obtain attributable independent review before accepting setup, publish the assessment, then route the next proven gap while retaining every actor requirement.",
-      "owner_skill": "raid-performance-loop"
+      "next_action": "Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
+      "owner_skill": "raid-class-mechanics-implementation"
     },
     "completed_measurements": [
       {
@@ -1393,6 +1398,91 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 51,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 51,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json",
+            "sha256": "9ebc25cb25096f7cc21ee77935a52fcc629ba32c01c595edf4c25f778d49eea9"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [
+          "balance_setup"
+        ]
+      },
+      {
+        "revision": 52,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "revision": 52,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "claim",
+          "owner": "codex-magmaw-10n-observer-publish"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 53,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "revision": 53,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "advance",
+          "claim_token": "88c041e850e15edadeb58e906d0dd1b9ca0cf0b811208d3ea6b58420a030e984",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_publication_20260920.json",
+            "sha256": "15d6b5db2769868289fe82955ff9c7932463e8ed80a1779f54a7f9756aac6cf9"
+          }
+        },
+        "accepted_requirements": [
+          "balance_setup"
+        ],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 54,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "revision": 54,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "route",
+          "reason": "The completed Balance observer run is now assessed and published. Independent review accepted only the native setup observer repair, while exact gear and consumables matched but scoring-start effective stats did not. Route the first proven native mechanics edge without tuning rotation or coefficients, and preserve every other open actor and encounter requirement.",
+          "coordinator_verdict": "aligned",
+          "independent_review": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_actor_30001_review_20260920.json",
+            "sha256": "9c37690b9d1614b3b3d8de675cc5c62fc297b81a4cb1a33e794fe5a26641bdfb"
+          },
+          "plan_drift_review": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_route_checkpoint_20260920_review/summary.json",
+            "sha256": "2b2929f71fe75c05bad3e587bf0eab08da1c99a1501076fdb23b677adf7159ab"
+          },
+          "unit": {
+            "id": "magmaw:balance_effective_stat_parity_01",
+            "edge": "owner_effective_stat_application_before_rotation_execution",
+            "requirements": [
+              "actor_30001"
+            ],
+            "next_action": "Trace the Balance scoring-start owner stat producer and materialization against the pinned WoWSims ComputeStats and runtime receipt. Prove the first native stat edge with attributable values, preserve policy and coefficients, then use one focused test and one identical exact-300 follow-up only after effective-stat parity is restored.",
+            "owner_skill": "raid-class-mechanics-implementation"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1401,94 +1491,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d",
-    "assignment": {
-      "hypothesis": "The native Balance setup is now present, but the reference observer's Python self-provided primary-stat allowlist omits native Druid Mark of the Wild 79061. This makes reference_condition_projections reject an otherwise valid run as raid_buffs_valid=false. Add only 79061 to the allowlist and retain the aggregate unexpected-aura counter and foreign-aura rejection gates.",
-      "owned_files": [
-        "tools/bot_ml/phase8_reference_conditions.py",
-        "tests/test_phase8_reference_conditions.py",
-        "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc"
-      ],
-      "forbidden_changes": [
-        "No native C++ spell, aura, coefficient, stat, rotation, encounter, route, roster, database, simulator/reference, or runtime-runner changes.",
-        "Do not remove or weaken unexpected_player_aura_active_samples validation, per-aura row continuity, foreign-source rejection, or exact reference gates.",
-        "Do not alter the historical closed run, exact WoWSims catalog, DVC object, or validation identity; do not accept Balance performance from a setup-only observer repair."
-      ],
-      "acceptance_conditions": [
-        "reference_condition_projections accepts a self-provided Balance observation with continuous native 79061 and no unexpected player aura samples.",
-        "The same observation is rejected when unexpected_player_aura_active_samples is nonzero, proving the allowlist does not bypass foreign or unknown-aura rejection.",
-        "The full phase8 reference-condition test file, fixture/header contract, exact-reference catalog checks, and source/runtime compatibility tests pass.",
-        "A fresh policy-bound build and an exact 300-second Balance run using the already published runtime-asset identity are required before accepting balance_setup."
-      ],
-      "required_test_commands": [
-        "pixi run pytest -q tests/test_phase8_reference_conditions.py",
-        "pixi run pytest -q tests/test_build_source_compatibility.py tests/test_runtime_asset_closure.py",
-        "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
-        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
-        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
-      ],
-      "base_commit": "94405a80171e72d1667237ade395b601512a5b15",
-      "policy": {
-        "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
-        "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
-      },
-      "validation_identity": {
-        "scenario_kind": "dummy",
-        "actor_id": "30001",
-        "spec": "balance_druid",
-        "reference": {
-          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
-          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
-        },
-        "roster": {
-          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
-        },
-        "runtime_profile": {
-          "path": "experiments/configs/validation_scenarios_cata_001.json",
-          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
-        }
-      }
-    },
-    "receipts": {
-      "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_plan_20260920.json",
-        "sha256": "5199478893d53ef3fc77a2a6b987251b8a16c8772caa1bfab9f15d6cae76d7d5"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_implementation_20260920.json",
-        "sha256": "16729c1781b833a1604aca637c12600324cf7bfb3a9888545c794810dddfc190"
-      },
-      "review": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.json",
-        "sha256": "87317693e6c278902a723128b1ace294aa0cfe65b60ffcd150cf0e073bb2b23e"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_build_20260920.json",
-        "sha256": "034b43d7d33c7ee1ba247c00a584212e89ade482e16c5a9ff7da5f6d44887fa6"
-      },
-      "run": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json",
-        "sha256": "1432495b7b357a8e820aef0eb24e785bd8d628768ecb53824a38e003126505cd"
-      }
-    },
-    "tested_files": {
-      "tools/bot_ml/phase8_reference_conditions.py": "63276181912dfccc277ffef81b6eb9e6fc565a02a23b6fcb3ecfe064e5b7089a",
-      "tests/test_phase8_reference_conditions.py": "c7bc47d60969e87cb2e37efd3e97f9390b90f4048b04670f3647481a9ed9042c",
-      "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
-    },
-    "tested_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d",
-    "implementer": "coordinator",
-    "build_identity": {
-      "source_commit": "fe093325f3922e4007dab33105987ce99725172e",
-      "binary_sha256": "9c09d7eabdc513ad131bdc1f814ec6a0f5cf71b7f3b927a8ff2248bc102e1690"
-    },
-    "run": {
-      "attempt_id": 1,
-      "server_epoch": 16878463685461682,
-      "scenario_kind": "dummy",
-      "terminal_reason": "measurement_complete"
-    }
+    "source_base_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

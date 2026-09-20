@@ -9,13 +9,25 @@ Latest closed measurement: Balance observer repair on source `3457a5eba5`,
 build source `fe093325f3`, completed exactly 300 seconds at **31,877.553 DPS**
 and 0 HPS. Capture, diagnostics, reference comparability and server cleanup
 passed. WoWSims is 35,447.589 DPS; performance remains unaccepted. The graph is
-at `assess`, revision 51, with no claim. Resume this assessment, not another run.
-The next agent must obtain attributable independent review: the prior receipt
-labelled `independent-reviewer` does not cite a separate reviewer's result.
-All actor and encounter requirements remain open.
+at `diagnose`, revision 55. A separate attributable review accepted only the
+native setup observer repair, so `balance_setup` is published and closed while
+the Balance actor, performance, and raid requirements remain open. The next
+unit is the first proven native edge: Balance scoring-start effective-stat
+parity. Do not repeat the completed 300-second run or tune rotation/coefficient
+behavior before that edge is repaired and reverified.
 
 The run adapter is
 `artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json`.
+The independent review is
+`artifacts/cata_raid_program/magmaw_balance_setup_observer_actor_30001_review_20260920.json`.
+The assessment and publication receipts are
+`artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json`
+and
+`artifacts/cata_raid_program/magmaw_balance_setup_observer_publication_20260920.json`.
+The compact review and next-unit checkpoint are retained through
+`artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz.dvc`
+and
+`artifacts/cata_raid_program/magmaw_balance_setup_route_checkpoint_20260920.tar.gz.dvc`.
 Raw evidence is remote-verified and locally evicted. The cleanup manifest and
 drift review are in `artifacts/cata_raid_program/balance_interruption_cleanup_20260920.tar.gz.dvc`.
 Restore only when needed:

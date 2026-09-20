@@ -1,0 +1,122 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "independent-reviewer",
+  "reviewer": {
+    "system": "multi_agent_v1",
+    "agent_id": "01a0be34-e7ec-7aa1-b06c-b9b0bb1f4c99",
+    "nickname": "Nietzsche",
+    "role": "independent read-only raid-rotation-review reviewer",
+    "scope": "Magmaw 10N Balance calibration attempt 1"
+  },
+  "review_basis": "Separate delegated review result. This is independent of the earlier code-review receipt, which did not cite a separate reviewer result.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_run_20260920.json",
+      "sha256": "1432495b7b357a8e820aef0eb24e785bd8d628768ecb53824a38e003126505cd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_rotation_review_20260920.json",
+      "sha256": "20836a6d510f395dda49a06007f8e05098586489e88d8f01b5c912fd2ca6c462"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc",
+      "sha256": "627a72bc40a2e92c6d64b841240f0a059cedab6c582957293fc77a27924cb9d8"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/native_requests/0c4c602061353354f051e04c9c218c00a50cecdff78c21d36b060023b70fa379.json",
+      "sha256": "0c4c602061353354f051e04c9c218c00a50cecdff78c21d36b060023b70fa379"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/native_results/3f300dedbdb88cd8095de1747ce2e6904d4ba06ee67a5f852fefc0fd1ed78880.json",
+      "sha256": "3f300dedbdb88cd8095de1747ce2e6904d4ba06ee67a5f852fefc0fd1ed78880"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/compute_stats/f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867.json",
+      "sha256": "f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867"
+    }
+  ],
+  "run_identity": {
+    "scenario_kind": "dummy",
+    "attempt_id": 1,
+    "cohort_id": "dummy-135dbffe9b67-1",
+    "server_epoch": 16878463685461682,
+    "target_guid": 30540,
+    "target_phase": 32512,
+    "scoring_seconds": 300.0,
+    "terminal_reason": "measurement_complete"
+  },
+  "facts": {
+    "measured_dps": 31877.553333333333,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.899287,
+    "capture_diagnostics_cleanup_passed": true,
+    "mark_of_the_wild_spell_id": 79061,
+    "mark_of_the_wild_active_samples": 2998,
+    "mark_of_the_wild_inactive_samples": 0,
+    "mark_of_the_wild_sample_count": 2998,
+    "unexpected_player_aura_active_samples": 0,
+    "gear_parity": "match",
+    "consumable_parity": "match",
+    "effective_stat_parity": "mismatch",
+    "total_dps_comparison_admitted": false,
+    "trace_only_action_cadence_signals_usable": true,
+    "trinity_profile_identity": "informational_only_identity_incomplete"
+  },
+  "stat_mismatch": {
+    "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    "hit_rating": {
+      "observed": 1912.0,
+      "expected": 289.0
+    },
+    "spell_hit_pct": {
+      "observed": 18.664,
+      "expected": 17.00412335349425
+    },
+    "spell_speed_multiplier": {
+      "observed": 1.269,
+      "expected": 1.332199768447153
+    }
+  },
+  "inferences": [
+    "The DPS gap cannot be attributed to Balance rotation or spell coefficients while effective-stat parity is unresolved.",
+    "This exact-duration dummy calibration does not establish raid execution or encounter completion."
+  ],
+  "verdict": {
+    "narrow_balance_observer_setup_repair": "accepted",
+    "performance_accepted": false,
+    "raid_clear_accepted": false,
+    "actor_30001_requirement_accepted": false
+  },
+  "next_action": {
+    "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    "action": "Repair or verify scoring-start owner effective-stat application, then run one identical exact-300-second Balance canary and rerun the parity gate.",
+    "forbidden_until_parity": [
+      "Do not tune Balance priorities.",
+      "Do not change spell coefficients."
+    ],
+    "acceptance_condition": "Exact gear and effective-stat parity pass before interpreting total DPS or accepting Balance performance."
+  },
+  "open_scope_confirmation": {
+    "all_other_actors_open": true,
+    "balance_performance_open": true,
+    "encounter_clear_open": true,
+    "magmaw_10n_open": true,
+    "unexercised_actor_ids": [
+      "30002",
+      "30003",
+      "30004",
+      "30005",
+      "30006",
+      "30007",
+      "30008",
+      "30009",
+      "30010"
+    ]
+  }
+}

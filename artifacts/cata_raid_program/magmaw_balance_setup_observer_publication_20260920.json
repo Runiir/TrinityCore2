@@ -1,0 +1,49 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "publication",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "coordinator",
+  "operation_id": "88c041e850e15edadeb58e906d0dd1b9ca0cf0b811208d3ea6b58420a030e984",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json",
+      "sha256": "9ebc25cb25096f7cc21ee77935a52fcc629ba32c01c595edf4c25f778d49eea9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_actor_30001_review_20260920.json",
+      "sha256": "9c37690b9d1614b3b3d8de675cc5c62fc297b81a4cb1a33e794fe5a26641bdfb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz.dvc",
+      "sha256": "b0e70d2dc4ae16589add09b10c54647111ded8138283ff790f5e74b1d7ac256a"
+    }
+  ],
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "remote_verification": {
+    "target": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz.dvc",
+    "status_command": "pixi run dvc status -c artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz.dvc --json",
+    "status_result": {},
+    "archive_md5": "1497a35802891ef1821e0d5d1e06f8c6",
+    "archive_size_bytes": 77717
+  },
+  "cleanup_verified": true,
+  "cleanup": {
+    "evicted_exact_raw_archive": "artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz",
+    "evicted_exact_temp_directory": "/tmp/magmaw-balance-review.nFe490",
+    "retained": [
+      "artifacts/cata_raid_program/magmaw_balance_setup_observer_validation_20260920.tar.gz.dvc",
+      "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.tar.gz.dvc",
+      "artifacts/cata_raid_program/magmaw_balance_setup_observer_actor_30001_review_20260920.json",
+      "artifacts/cata_raid_program/magmaw_balance_setup_observer_rotation_review_20260920.json",
+      "artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json"
+    ]
+  },
+  "scope": {
+    "accepted_requirement": "balance_setup",
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "all_actor_requirements_preserved_open": true
+  }
+}
