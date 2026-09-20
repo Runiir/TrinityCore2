@@ -1,0 +1,93 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_effective_stat_application_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "The exact canary expects a 1.05 personal Moonkin Form cast-speed factor in addition to the observed native haste, but scoring-start UNIT_MOD_CAST_SPEED remains 1.269 rather than 1.332199768447153. The startup probe proves that the owner-side 24907 area-aura handler applies and changes cast speed from 0.827578366 to 0.788169861. The remaining causal alternatives are the companion 24905 personal form passive not applying, or a later form/setup recomputation replacing its contribution. Trace both existing handler boundaries and inspect the scoring-start reset consumers before any gameplay change.",
+  "owned_files": [
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, route behavior, or cast-speed ledger semantics.",
+    "Do not inject a hidden percentage, manufacture UNIT_MOD_CAST_SPEED, alter ApplyCastTimePercentMod arithmetic, weaken the effective-stat comparator, or reinterpret a native aura mismatch as a rotation loss.",
+    "Do not change Moonkin Form or Moonkin Aura amount/sign, exclusive-aura rules, area-aura propagation, or scoring reset behavior until the paired handler trace identifies the first broken transition.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later matched raid evidence."
+  ],
+  "acceptance_conditions": [
+    "Only diagnostic visibility is added in this unit; native aura arithmetic and lifecycle behavior remain unchanged.",
+    "The trace distinguishes 24905 personal-form application, 24907 owner-area application, exclusive suppression, and any later cast-speed overwrite using target identity and before/after values.",
+    "Focused source-contract and effective-stat diagnosis tests pass without changing Balance action policy or the direct-cast stat ledger.",
+    "A separate attributable startup probe or exact canary classifies the paired handler path. An incomplete probe cannot accept repair or performance.",
+    "All actor, encounter-clear, and overall Magmaw 10N performance requirements remain open."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_route_event_20260920.json",
+      "sha256": "29095f349e2e443a4d100e22ea8f5f8658b5c29b0c199479657a82b2ac379e14"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+      "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_assessment_20260920.json",
+      "sha256": "c9190ff77ea1e770bc3cedd26ca9f778a35e1e6f50ff4fcaac406611deefc06a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_plan_drift_review_20260920.json",
+      "sha256": "918820b2e50b0dc051a17467bc3b830305fb6a1b95b3fdbd4822c161d1575d0d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/workflow_loop_native_review_20260920.json",
+      "sha256": "d91d3f7891eb802012822a3e2b13fafc7577931d01109fead4141a4d676117f4"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/workflow_loop_resume_advice_20260920.json",
+        "sha256": "29c4b8a0082b7322c66c752e941ab3e4738d7d85191b3773dbbb3fde6040596d"
+      },
+      "adjudication": "Advisory only; retain the paired native unknown and do not accept performance from the diagnostic edge."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "The local Laya provider was unavailable during the required plan-drift review.",
+      "adjudication": "No Laya result is used as approval or performance evidence."
+    }
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/workflow_loop_repair_supporting_review_20260920.json",
+    "sha256": "b29161ee7b237eeaade5a1b2771c82a99aada111aac5292cd36e006039da2aec"
+  }
+}
