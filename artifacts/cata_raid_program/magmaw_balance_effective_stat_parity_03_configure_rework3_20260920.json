@@ -1,6 +1,6 @@
 {
-  "admitted_at_utc": "2026-09-20T13:21:51.836458Z",
-  "artifact_provenance_required": true,
+  "admitted_at_utc": "2026-09-20T13:22:36.996994Z",
+  "artifact_provenance_required": false,
   "build_configuration": {
     "admission": {
       "build_graph": {
@@ -150,11 +150,11 @@
   "build_configuration_stable": false,
   "classification": "build_provenance_abort",
   "command_arguments_retained": false,
-  "command_sha256": "8530139fb971bd9ae886d44b4380470008a9308865ca227ef2e246d4793ce242",
+  "command_sha256": "be70ed356d98ec9b6b158e6237ffb8a00fe0ab7d125862735f2df2e1e85c5d5f",
   "commit": "6a7cf65f1b0d037e656c6771d4fa7bb4c7f8e4f9",
   "compiler_job_ceiling": 12,
   "configure_lineage": null,
-  "ended_at_utc": "2026-09-20T13:21:55.411021Z",
+  "ended_at_utc": "2026-09-20T13:22:40.528357Z",
   "environment_contract": {
     "base_environment": {
       "LANG": "C.UTF-8",
@@ -175,61 +175,23 @@
     ],
     "inherit_parent_environment": false
   },
-  "error": "build_configuration_or_configure_lineage_missing_before_admission",
+  "error": "source_identity_changed_or_dirty_before_admission",
   "exit_code": 76,
   "linker_job_ceiling": 1,
-  "log_sha256": "a4da6757d251ec4e40b30617549b3e2a54a3f6feecdacf313d3ec63d69a76a80",
+  "log_sha256": "926d9bfe95a93aad799a6e4335bf14feeba98b14a22fa2a44b33d149fd6cb30b",
   "mysql_build_identity": {
     "binary_runtime": null,
     "error": null,
     "rebuilt_objects": null,
     "relinked_outputs": null,
-    "required": true,
+    "required": false,
     "snapshots": {
-      "admission": {
-        "header": {
-          "compile_version_id": 80411,
-          "include_dir": "/usr/include/mysql",
-          "path": "/usr/include/mysql/mysql_version.h",
-          "sha256": "18b3153c7bf080e2c882b3854a2df95fbdb1fe59b5a993df235454d2dc792749",
-          "size_bytes": 1072,
-          "version_macro": "MYSQL_VERSION_ID"
-        },
-        "identity_sha256": "8c98c09a98d49560be61b52819d8e9aa7037706738de9394bbd6b5958db0c1e4",
-        "runtime_library": {
-          "client_info": "8.4.11",
-          "configured_path": "/usr/lib/x86_64-linux-gnu/libmysqlclient.so.24.0.11",
-          "configured_symlink_target": "libmysqlclient.so.24",
-          "resolved_path": "/usr/lib/x86_64-linux-gnu/libmysqlclient.so.24.0.11",
-          "runtime_version_id": 80411,
-          "sha256": "937e328a849b66b92266e5249db0fd7888bb237601c6da03db512cb60648f10d",
-          "size_bytes": 6823832
-        }
-      },
+      "admission": null,
       "completion": null,
       "prebuild": null,
-      "request": {
-        "header": {
-          "compile_version_id": 80411,
-          "include_dir": "/usr/include/mysql",
-          "path": "/usr/include/mysql/mysql_version.h",
-          "sha256": "18b3153c7bf080e2c882b3854a2df95fbdb1fe59b5a993df235454d2dc792749",
-          "size_bytes": 1072,
-          "version_macro": "MYSQL_VERSION_ID"
-        },
-        "identity_sha256": "8c98c09a98d49560be61b52819d8e9aa7037706738de9394bbd6b5958db0c1e4",
-        "runtime_library": {
-          "client_info": "8.4.11",
-          "configured_path": "/usr/lib/x86_64-linux-gnu/libmysqlclient.so.24.0.11",
-          "configured_symlink_target": "libmysqlclient.so.24",
-          "resolved_path": "/usr/lib/x86_64-linux-gnu/libmysqlclient.so.24.0.11",
-          "runtime_version_id": 80411,
-          "sha256": "937e328a849b66b92266e5249db0fd7888bb237601c6da03db512cb60648f10d",
-          "size_bytes": 6823832
-        }
-      }
+      "request": null
     },
-    "stable": false,
+    "stable": true,
     "targeted_invalidation": null
   },
   "operator_identity": {
@@ -240,66 +202,66 @@
   },
   "output_artifacts": [],
   "peak_observations": {
-    "maximum_load_average_1m": 0.212890625,
+    "maximum_load_average_1m": 0.7158203125,
     "maximum_memory_psi_full_avg10": 0.0,
     "maximum_memory_psi_some_avg10": 0.0,
-    "maximum_swap_used_bytes": 4390756352,
-    "minimum_filesystem_available_bytes": 31707496448,
-    "minimum_memory_available_bytes": 22439854080,
+    "maximum_swap_used_bytes": 4390739968,
+    "minimum_filesystem_available_bytes": 31707852800,
+    "minimum_memory_available_bytes": 22458646528,
     "sample_count": 1
   },
   "policy_id": "cata_raid_build_resource_policy_host12_v1",
   "policy_sha256": "6a6bf4d03172af8b873e727c9c7e0bd17eb740dc1b189771d1c0a57d49b093f9",
   "preflight": {
-    "captured_at_utc": "2026-09-20T13:21:51.737991Z",
-    "filesystem_available_bytes": 31707496448,
-    "load_average_15m": 0.35791015625,
-    "load_average_1m": 0.212890625,
-    "load_average_5m": 0.25341796875,
-    "memory_available_bytes": 22439854080,
+    "captured_at_utc": "2026-09-20T13:22:36.890088Z",
+    "filesystem_available_bytes": 31707852800,
+    "load_average_15m": 0.39990234375,
+    "load_average_1m": 0.7158203125,
+    "load_average_5m": 0.3896484375,
+    "memory_available_bytes": 22458646528,
     "memory_psi_full_avg10": 0.0,
     "memory_psi_some_avg10": 0.0,
     "memory_total_bytes": 32513712128,
-    "swap_used_bytes": 4390756352
+    "swap_used_bytes": 4390739968
   },
   "pressure_reasons": [],
   "provenance_reasons": [
-    "build_configuration_or_configure_lineage_missing_before_admission",
-    "build_configuration_changed_or_mismatched_at_completion",
-    "mysql_build_identity_changed_or_unproven"
+    "source_identity_changed_or_dirty_before_admission",
+    "source_identity_changed_or_dirty_before_completion",
+    "build_configuration_changed_or_mismatched_at_completion"
   ],
-  "queue_sequence": 1692,
-  "queue_wait_seconds": 0.172631,
-  "receipt_sha256": "a0ba7bc9c0383fefe9dbb2589a86c7929e79673daa9f9291d0a27274ff7b3242",
-  "resource_class": "worldserver_build",
+  "queue_sequence": 1693,
+  "queue_wait_seconds": 0.180523,
+  "receipt_sha256": "6a28ba71a66a6d55c89c5bd32877a5412c99b9a6e83546bf9d54893c777cf9e4",
+  "resource_class": "configure",
   "schema_version": 3,
   "signal": null,
   "source_identity": {
     "admission": {
-      "clean": true,
+      "clean": false,
       "commit": "6a7cf65f1b0d037e656c6771d4fa7bb4c7f8e4f9",
-      "dirty": false,
-      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dirty": true,
+      "porcelain_sha256": "e872668c02dc11c2f31b2f4b5c9fb2d22ab9db20e06904352f1c39176b8a0418",
       "tree": "1c830a25182f2eb055b7a24f28b90fe5f9ba6487"
     },
     "completion": {
-      "clean": true,
+      "clean": false,
       "commit": "6a7cf65f1b0d037e656c6771d4fa7bb4c7f8e4f9",
-      "dirty": false,
-      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dirty": true,
+      "porcelain_sha256": "e872668c02dc11c2f31b2f4b5c9fb2d22ab9db20e06904352f1c39176b8a0418",
       "tree": "1c830a25182f2eb055b7a24f28b90fe5f9ba6487"
     },
     "request": {
-      "clean": true,
+      "clean": false,
       "commit": "6a7cf65f1b0d037e656c6771d4fa7bb4c7f8e4f9",
-      "dirty": false,
-      "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dirty": true,
+      "porcelain_sha256": "e872668c02dc11c2f31b2f4b5c9fb2d22ab9db20e06904352f1c39176b8a0418",
       "tree": "1c830a25182f2eb055b7a24f28b90fe5f9ba6487"
     }
   },
-  "source_identity_stable": true,
+  "source_identity_stable": false,
   "test_mode": false,
-  "ticket_id": "raid-build-9f536c1e6a704d10b639aa146cd6be63",
+  "ticket_id": "raid-build-445281050c8641908a41d1398629e1c5",
   "toolchain_identity": {
     "admission": {
       "actual": {
@@ -348,6 +310,6 @@
     "stable": true
   },
   "worktree": "/home/runiir/Games/trinity-cata",
-  "worktree_dirty_at_request": false,
-  "worktree_porcelain_sha256_at_request": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  "worktree_dirty_at_request": true,
+  "worktree_porcelain_sha256_at_request": "e872668c02dc11c2f31b2f4b5c9fb2d22ab9db20e06904352f1c39176b8a0418"
 }
