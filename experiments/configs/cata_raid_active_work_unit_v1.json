@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 185,
+    "revision": 187,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -553,7 +553,7 @@
     "failures": {
       "balance_missing_self_buff_and_leather_specialization": 7,
       "owner_effective_stat_application_before_rotation_execution": 3,
-      "owner_rotation_execution_after_effective_stat_parity": 3,
+      "owner_rotation_execution_after_effective_stat_parity": 4,
       "owner_effective_stat_application_moonkin_aura_materialization": 5,
       "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 2,
       "owner_effective_stat_application_after_moonkin_aura_handler_application": 1,
@@ -3743,6 +3743,41 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 185,
+        "unit_id": "magmaw:balance_rotation_cadence_04",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_04",
+          "revision": 185,
+          "claim_token": "2beea1a83154e0d2fbbc0326771d78dfb342541dd2906c45667efc3d74aff661",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+            "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 186,
+        "unit_id": "magmaw:balance_rotation_cadence_04",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_04",
+          "revision": 186,
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_assessment_20260920.json",
+            "sha256": "04991e39e2acfde418b1e7661bd0ec2b0f9c6428ca5054098b3bd9fec7482b85"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3817,6 +3852,14 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_build_20260920.json",
         "sha256": "ca7e1ac42bf021c64679f693d3b4ef5f1db5fce51f552010606647a6e4003714"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+        "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_assessment_20260920.json",
+        "sha256": "04991e39e2acfde418b1e7661bd0ec2b0f9c6428ca5054098b3bd9fec7482b85"
       }
     },
     "tested_files": {
@@ -3830,11 +3873,17 @@
       "source_commit": "618b20a2d2793e3f26b3b9d45ed2728f3b97d881",
       "binary_sha256": "cfc37c09b0f39f59ee5292742c411b8132ecba36cdb5fc55622e70391b1f87eb"
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n-validate-04",
-      "token": "2beea1a83154e0d2fbbc0326771d78dfb342541dd2906c45667efc3d74aff661",
-      "operation_id": "2beea1a83154e0d2fbbc0326771d78dfb342541dd2906c45667efc3d74aff661",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 786108962479090,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": true,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {
