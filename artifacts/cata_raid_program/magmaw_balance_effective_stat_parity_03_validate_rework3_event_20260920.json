@@ -1,0 +1,12 @@
+{
+  "action": "rework",
+  "revision": 114,
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "claim_token": "6bde3b285c89bb0933546d045e5301d5ce79227d8c64bc6b0c9284b0c3b1cc4b",
+  "producer": "coordinator",
+  "reason": "The exact canary completed and cleanup passed, but SpellSpeedMultiplier remained 1.269 rather than the matched 1.332199768447153; the observer does not track spell 24907, so reopen the same native owner-materialization edge for explicit instrumentation before the next lifecycle repair.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework3_reconciliation_20260920.json",
+    "sha256": "9cd2ceebd3ace951cd8a53741be9d337413698ee2c5126f8f1124efa2ba8d517"
+  }
+}
