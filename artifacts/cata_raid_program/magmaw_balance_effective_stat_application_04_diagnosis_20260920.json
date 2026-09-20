@@ -1,0 +1,77 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "The exact canary now proves that Moonkin Aura 24907 is present on the owner with amount 5 and effect mask 1, but the effective spell-speed multiplier is unchanged at 1.269. The remaining uncertainty is whether AuraEffect::HandleModCastingSpeed ran for the owner application and changed UNIT_MOD_CAST_SPEED, or whether the value was reset/overridden later in form setup. Add a bounded native trace at the existing handler boundary and retain the scoring-start owner-aura observation; do not change the handler's arithmetic or inject a replacement percentage until the trace identifies the first broken transition.",
+  "owned_files": [
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, route behavior, or cast-speed ledger semantics.",
+    "Do not inject a hidden percentage, manufacture UNIT_MOD_CAST_SPEED, alter ApplyCastTimePercentMod arithmetic, weaken the effective-stat comparator, or reinterpret a native aura mismatch as a rotation loss.",
+    "Do not change Moonkin Aura amount/sign, unrelated aura types, area-aura propagation, or periodic-haste handling before the handler trace establishes the causal edge.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later matched raid evidence."
+  ],
+  "acceptance_conditions": [
+    "A native diagnostic marker records the 24907 handler apply/remove boundary, target identity, amount, mode, and UNIT_MOD_CAST_SPEED before/after values without changing the arithmetic path.",
+    "Focused source-contract and effective-stat diagnosis tests pass without changing Balance action policy or the direct-cast stat ledger.",
+    "The required native build succeeds with stable source and binary identity after the bounded instrumentation is reviewed.",
+    "An identical exact-300 Balance canary classifies handler omission versus later UNIT_MOD_CAST_SPEED reset before any behavior tuning."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "b39cd8eed35b49a10f9df36ce7418e2131f3cb29",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_route_event_20260920.json",
+      "sha256": "29095f349e2e443a4d100e22ea8f5f8658b5c29b0c199479657a82b2ac379e14"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json",
+      "sha256": "97e21cd6dc52e1d1686b53b0f420198ee6b0b42e7748e5fd111b5ddfc83a4edc"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_assessment_rework4_20260920.json",
+      "sha256": "2c25d21c42f15de1a18c347a69d7e95013866efd4f75c92b330635fc582de539"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "The remaining uncertainty is a native handler-boundary question; the next checkpoint is observation-only and keeps the exact canary gate.",
+      "reason": "No separate JEV checkpoint was requested for this bounded continuation.",
+      "status": "not_reviewed"
+    },
+    "laya": {
+      "adjudication": "The trace preserves native arithmetic and narrows the issue to handler invocation versus later stat mutation.",
+      "reason": "No local Laya provider checkpoint was requested for this diagnostic instrumentation.",
+      "status": "not_reviewed"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "action": "advance",
+  "revision": 127,
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "producer": "coordinator",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_diagnosis_20260920.json",
+    "sha256": "baafbddb52bba528ef5575caa715d126924e04af22aee49c88a361dca5a806bf"
+  }
+}
