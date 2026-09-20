@@ -43,11 +43,13 @@ def test_calibration_ledger_keeps_raw_rating_separate_from_effective_percentages
     assert "PLAYER_FIELD_COMBAT_RATING_1" not in source
 
 
-def test_moonkin_form_reapplies_missing_passive_and_removes_owned_aura():
+def test_moonkin_form_materializes_owner_passive_and_removes_owned_aura():
     source = AURA_SOURCE.read_text(encoding="utf-8")
 
-    assert "GetMiscValue() == FORM_MOONKIN && !target->HasAura(spellId2)" in source
-    assert "target->AddAura(spellId2, target);" in source
+    assert "apply && GetMiscValue() == FORM_MOONKIN" in source
+    assert "target->AddAura(spellId2, target)" in source
+    assert "BuildEffectMaskForOwner" in source
+    assert "AddStaticApplication(target, ownerEffectMask)" in source
     assert "target->RemoveOwnedAura(spellId2, target->GetGUID());" in source
 
 

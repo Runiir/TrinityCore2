@@ -1,0 +1,12 @@
+{
+  "action": "rework",
+  "revision": 104,
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "claim_token": "0bb1705661e008b599affe865f50b789068b67c803e5f5353c547f9f4bcc8084",
+  "producer": "coordinator",
+  "reason": "The exact canary completed and cleanup passed, but spell_speed_multiplier remained 1.269 rather than the matched 1.332199768447153; rework owner materialization and rerun the identical canary.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework_reconciliation_20260920.json",
+    "sha256": "821b0ebede4232bfce9a181e6c04a29b2615ca5dcb53cfd95f987120941d5764"
+  }
+}

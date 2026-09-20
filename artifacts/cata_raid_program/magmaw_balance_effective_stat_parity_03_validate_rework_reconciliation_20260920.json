@@ -1,0 +1,26 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "validate_rework_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "operation_id": "0bb1705661e008b599affe865f50b789068b67c803e5f5353c547f9f4bcc8084",
+  "owner": "codex-magmaw-10n-balance-aura-canary",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The exact 300-second canary launched and cleaned up, but the independent native snapshot still reported spell_speed_multiplier=1.269 instead of the matched 1.332199768447153. The owner application remains absent from the effective cast-speed outcome; rework the same aura-lifecycle edge so Moonkin Form explicitly materializes the owner application after the triggered propagation cast, then rebuild and rerun the identical canary.",
+  "failed_attempt": {
+    "output_root": "/tmp/magmaw-balance-effective-stat-parity-03-20260920-r2",
+    "batch_sha256": "1b0d8bd8bf55a711a3dd6fd9efefaf9a6dc78885a2bd12b90aa1856a3b55d035",
+    "report_sha256": "2d885dc75c3641cb0e3213f66c776dfae565ef74628127937f83a6ec7a0cbd3a",
+    "server_started": true,
+    "scoring_started": true,
+    "scoring_ms": 300000,
+    "terminal_reason": "measurement_complete",
+    "observed_spell_speed_multiplier": 1.269,
+    "expected_spell_speed_multiplier": 1.332199768447153
+  },
+  "disposition": "release_claim_and_rework_same_native_measurement_edge"
+}
