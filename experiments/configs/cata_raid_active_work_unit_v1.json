@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 155,
+    "revision": 158,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -3226,6 +3226,58 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 155,
+        "unit_id": "magmaw:balance_effective_stat_application_06",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 155,
+          "unit_id": "magmaw:balance_effective_stat_application_06",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n-comparator-implementation"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 156,
+        "unit_id": "magmaw:balance_effective_stat_application_06",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "action": "advance",
+          "revision": 156,
+          "unit_id": "magmaw:balance_effective_stat_application_06",
+          "producer": "coordinator",
+          "claim_token": "03f3c5eadd23853ffecf91ee7532ff313533209f917baf00799865c8367387f5",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_implementation_20260920.json",
+            "sha256": "b84a03142e56378ce321ff2da9d4aa9fc0748a7a3ed0c6f296de1d2f0e7ccf55"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 157,
+        "unit_id": "magmaw:balance_effective_stat_application_06",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "action": "advance",
+          "revision": 157,
+          "unit_id": "magmaw:balance_effective_stat_application_06",
+          "producer": "coordinator",
+          "claim_token": "03f3c5eadd23853ffecf91ee7532ff313533209f917baf00799865c8367387f5",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_20260920.json",
+            "sha256": "c0f5aeb70c63c6978cd4080347dca163acf7292374daefd22ff86e72b6edf34d"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3234,7 +3286,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "6b2ddceda8e78e53230ba9cdb05298991c701928",
+    "source_base_commit": "340fbd4d8ca35a0206e48774761e789707b2f5cb",
     "assignment": {
       "hypothesis": "The routed 24905 companion hypothesis is rejected by the pinned client data and the native trace. Spell 24905 owns damage/stat effects, while 24907 owns the 5% cast-speed effect and its owner apply/remove path is observed. The apparent native deficit is produced by the WoWSims comparator multiplying cast_speed_multiplier by spell_haste_pct even though WoWSims reports spell_haste_pct as the already-composed total. Repair the comparator conversion and preserve native aura arithmetic.",
       "owned_files": [
@@ -3285,8 +3337,22 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_diagnosis_20260920.json",
         "sha256": "02bfa0026697247fb03fe1cb26569b11832aadb83d03d6dc340486a1943d6b4f"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_implementation_20260920.json",
+        "sha256": "b84a03142e56378ce321ff2da9d4aa9fc0748a7a3ed0c6f296de1d2f0e7ccf55"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_20260920.json",
+        "sha256": "c0f5aeb70c63c6978cd4080347dca163acf7292374daefd22ff86e72b6edf34d"
       }
-    }
+    },
+    "tested_files": {
+      "tools/bot_ml/review_rotation_mechanics.py": "03ef43d4775a6e2b49a4e418fdad503edd087e1dade2d067ef2697ca7e0b88ca",
+      "tests/test_rotation_mechanics_review.py": "ffcf789c98b817c142f8be24529e4735aa92f3343dc4aa1c9c3c49f2ed0e697b"
+    },
+    "tested_commit": "340fbd4d8ca35a0206e48774761e789707b2f5cb",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

@@ -1,0 +1,44 @@
+{
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "reviewer": "Rawls",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "verdict": "approved",
+  "implementation_changes_approved": true,
+  "native_changes_approved": false,
+  "source_base_commit": "6b2ddceda8e78e53230ba9cdb05298991c701928",
+  "implementation_commit": "a1a45598b9499024700364ffd3412b2d57577866",
+  "findings": [
+    "The exact diff is limited to the two owned Python files and introduces one shared conversion helper plus its regression coverage.",
+    "The helper correctly returns 1 + total_haste_pct / 100 when the matching WoWSims total field exists; the pinned Balance values compose to 1.2687616842353837, so the former cast_speed_multiplier multiplication would double-count the 1.05 component.",
+    "Spell, ranged, and melee callers use their matching component and total-haste field pairs. No cross-path issue was found.",
+    "The fallback preserves component-only behavior when the total field is absent or None, and a zero total field remains valid rather than falling back.",
+    "The patch does not change native aura arithmetic, coefficients, class policy, roster, encounter scripts, or the WoWSims request catalog.",
+    "The focused comparator tests, reference fixture check, 16-request catalog validation, and native Balance parity guard all pass. These checks establish bounded comparator/source-contract correctness only."
+  ],
+  "checks": [
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "result": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "result": "fixture contract valid"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "result": "reference catalog valid; request_count=16"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "result": "6 passed"
+    }
+  ],
+  "concrete_concern": "The fallback is directly covered for the spell path; the ranged and melee total-field paths are covered, but their component-only fallback is not separately exercised. This is a minor coverage gap and does not contradict the bounded repair.",
+  "next_action": "Proceed to the coordinator-owned policy-bound build with exact source and binary provenance, then run an attributable Balance canary. Do not treat this review as native, live, actor, performance, encounter-clear, or raid acceptance.",
+  "requirements_status": "All actor, class-comparability, Magmaw, raid-performance, and roster requirements remain open."
+}

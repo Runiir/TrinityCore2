@@ -1,0 +1,31 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_effective_stat_application_06",
+  "authority": "coordinator_attestation",
+  "producer": "Rawls",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_report_20260920.json",
+    "sha256": "41cea998af206a3c6204915e8fac32e8fb2d24d624c3fcd313ac0435038f311c"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "tools/bot_ml/review_rotation_mechanics.py": "03ef43d4775a6e2b49a4e418fdad503edd087e1dade2d067ef2697ca7e0b88ca",
+    "tests/test_rotation_mechanics_review.py": "ffcf789c98b817c142f8be24529e4735aa92f3343dc4aa1c9c3c49f2ed0e697b"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_report_20260920.json",
+      "sha256": "41cea998af206a3c6204915e8fac32e8fb2d24d624c3fcd313ac0435038f311c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_implementation_20260920.json",
+      "sha256": "b84a03142e56378ce321ff2da9d4aa9fc0748a7a3ed0c6f296de1d2f0e7ccf55"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_result_checkpoint_20260920.json",
+      "sha256": "4196ada313228d43d8f81e2d0764ded7f459957e070ede9f281d9c2648748aaa"
+    }
+  ],
+  "interpretation": "Independent read-only review approves the bounded comparator repair for the coordinator-owned build handoff. It grants no native, live, actor, performance, encounter-clear, or raid acceptance."
+}

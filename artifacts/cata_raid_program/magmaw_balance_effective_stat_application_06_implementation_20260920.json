@@ -41,7 +41,7 @@
       "adjudication": "Advisory only. The bounded comparator claim is supported; native build, attributable canary, actor, raid-clear and performance acceptance remain pending."
     },
     "laya": {
-      "status": "unavailable",
+      "status": "not_reviewed",
       "reason": "Connection refused from the local service.",
       "adjudication": "No Laya result is used as approval or acceptance."
     }
