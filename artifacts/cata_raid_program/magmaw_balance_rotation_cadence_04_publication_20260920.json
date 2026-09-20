@@ -1,0 +1,43 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "1f21eb2ef1292672214a655f93d17c94c5443b944cbd39e2ab63254cc003a97c",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_verification": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_calibration_20260920.tar.gz.dvc",
+      "sha256": "04ca5c08278f04f2b25693084688a579d5600184601238ea20682ede3ffffce1",
+      "content_md5": "2e343d98956b0d89ee711182204517f4",
+      "size_bytes": 2949779
+    },
+    "targeted_status": "{}",
+    "status": "Targeted DVC status is clean after push; remote object verified.",
+    "local_archive_evicted": true,
+    "temporary_capture_directory_removed": true,
+    "workspace_status_note": "The raw capture directory and local archive were moved to the workspace trash after the targeted remote check; unrelated full-workspace DVC cache gaps were not used for this unit."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_assessment_20260920.json",
+      "sha256": "04991e39e2acfde418b1e7661bd0ec2b0f9c6428ca5054098b3bd9fec7482b85"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_actor_30001_review_20260920.json",
+      "sha256": "9033e57b06a042e496357c5213b3e71a60358dd1e62873827e206ee901e1ee0c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_calibration_20260920.tar.gz.dvc",
+      "sha256": "04ca5c08278f04f2b25693084688a579d5600184601238ea20682ede3ffffce1"
+    }
+  ],
+  "interpretation": "The successful exact-300 Balance opener evidence is durably published and remotely verified. It supports the bounded native Starfall/Moonfire repair only; actor performance, encounter clear, and parent Magmaw 10N completion remain open."
+}
