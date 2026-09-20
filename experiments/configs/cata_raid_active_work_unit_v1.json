@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 154,
+    "revision": 155,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -3208,6 +3208,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 154,
+        "unit_id": "magmaw:balance_effective_stat_application_06",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 154,
+          "unit_id": "magmaw:balance_effective_stat_application_06",
+          "action": "advance",
+          "producer": "coordinator",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_diagnosis_20260920.json",
+            "sha256": "02bfa0026697247fb03fe1cb26569b11832aadb83d03d6dc340486a1943d6b4f"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3216,7 +3234,59 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "6b2ddceda8e78e53230ba9cdb05298991c701928"
+    "source_base_commit": "6b2ddceda8e78e53230ba9cdb05298991c701928",
+    "assignment": {
+      "hypothesis": "The routed 24905 companion hypothesis is rejected by the pinned client data and the native trace. Spell 24905 owns damage/stat effects, while 24907 owns the 5% cast-speed effect and its owner apply/remove path is observed. The apparent native deficit is produced by the WoWSims comparator multiplying cast_speed_multiplier by spell_haste_pct even though WoWSims reports spell_haste_pct as the already-composed total. Repair the comparator conversion and preserve native aura arithmetic.",
+      "owned_files": [
+        "tools/bot_ml/review_rotation_mechanics.py",
+        "tests/test_rotation_mechanics_review.py"
+      ],
+      "forbidden_changes": [
+        "Do not change Moonkin Form or Moonkin Aura arithmetic, aura ownership, area-aura propagation, spell coefficients, class priority, gear, consumables, roster, encounter scripts or native cast-speed ledger semantics.",
+        "Do not add a synthetic 24905 cast-speed handler, inject a hidden percentage, weaken acceptance thresholds, or alter the WoWSims request catalog.",
+        "Do not accept actor_30001, any other actor, Balance performance, or Magmaw 10N before an attributable matched canary and later raid evidence."
+      ],
+      "acceptance_conditions": [
+        "The comparator derives the native-equivalent total spell-speed multiplier from the pinned WoWSims effective-stat fields without double-counting cast_speed_multiplier.",
+        "Focused tests cover the Balance case and preserve a non-form caster case such as Fire or Shadow.",
+        "The exact files receive separate implementation review; a later build retains source and binary provenance even though the native C++ path is unchanged.",
+        "A fresh attributable Balance canary is required after the comparator repair; no short or incomplete run accepts performance.",
+        "All actor, encounter-clear and overall Magmaw 10N requirements remain open."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+      ],
+      "base_commit": "6b2ddceda8e78e53230ba9cdb05298991c701928",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+      },
+      "validation_identity": {
+        "actor_id": "30001",
+        "reference": {
+          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "runtime_profile": {
+          "path": "experiments/configs/validation_scenarios_cata_001.json",
+          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+        },
+        "scenario_kind": "dummy",
+        "spec": "balance_druid"
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_diagnosis_20260920.json",
+        "sha256": "02bfa0026697247fb03fe1cb26569b11832aadb83d03d6dc340486a1943d6b4f"
+      }
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
