@@ -75,6 +75,16 @@ def check_graph(g: dict) -> None:
         raise GraphError('unit references unknown requirements')
     if not g.get('actor_ids') or len(set(g['actor_ids'])) != len(g['actor_ids']):
         raise GraphError('unique actor IDs required')
+    encounter = g.get('encounter', {})
+    if any(not isinstance(encounter.get(k), str) or not encounter[k] for k in ('raid', 'boss', 'mode')) or encounter['mode'] not in ('10N', '10H', '25N', '25H'):
+        raise GraphError('explicit raid/boss/difficulty identity required')
+    inputs = g.get('bootstrap_inputs')
+    if inputs is not None:
+        required(unit, 'owner_skill')
+        roster = inputs.get('roster', {})
+        actors = roster.get('actors', [])
+        if inputs.get('encounter') != encounter or roster.get('size') != int(encounter['mode'][:-1]) or len(actors) != roster['size'] or [a.get('actor_id') for a in actors] != g['actor_ids']:
+            raise GraphError('mixed bootstrap encounter/size/actor identity')
     history = g['history']
     if g['revision'] != len(history):
         raise GraphError('revision/history mismatch')
@@ -125,18 +135,46 @@ def check_graph(g: dict) -> None:
         raise GraphError('complete graph still has open requirements')
 
 
-def resume(root: Path) -> dict:
-    data = (root / STATE_PATH).read_bytes()
-    state = json.loads(data)
+def check_state(root: Path, state: dict) -> None:
     g = state['development_graph']
     check_graph(g)
     if Path(g['coordinator_worktree']).resolve() != root.resolve():
         raise GraphError('use the canonical coordinator worktree; do not fork progress across worktrees')
+    active = ':'.join(g['encounter'][k] for k in ('raid', 'boss', 'mode'))
+    parked = state.get('parked_scenarios', {})
+    if not isinstance(parked, dict) or active in parked:
+        raise GraphError('invalid parked registry or duplicate active scenario')
+    for key, saved in parked.items():
+        if not isinstance(saved, dict) or 'parked_scenarios' in saved:
+            raise GraphError('invalid nested parked scenario')
+        other = saved['development_graph']
+        check_graph(other)
+        identity = ':'.join(other['encounter'][k] for k in ('raid', 'boss', 'mode'))
+        if key != identity or other.get('claim') or other['stage'] in ('validate', 'assess', 'publish') or Path(other['coordinator_worktree']).resolve() != root.resolve():
+            raise GraphError('invalid parked scenario identity/ownership')
+
+
+def resume(root: Path) -> dict:
+    data = (root / STATE_PATH).read_bytes()
+    state = json.loads(data)
+    g = state['development_graph']
+    check_state(root, state)
     unit = g['unit']
+    inputs = g.get('bootstrap_inputs')
+    input_changes = []
+    for path, reference in (inputs or {}).get('sources', {}).items():
+        file = (root / path).resolve()
+        current_hash = digest(file.read_bytes()) if file.is_relative_to(root.resolve()) and file.is_file() else None
+        if current_hash != (reference or {}).get('sha256'):
+            input_changes.append(path)
     return {
         'state_sha256': digest(data), 'revision': g['revision'],
+        'encounter': g['encounter'],
+        'parked_scenarios': sorted(state.get('parked_scenarios', {})),
+        'bootstrap_inputs': inputs, 'changed_bootstrap_sources': input_changes,
         'objective': g['objective'], 'stage': g['stage'], 'unit': unit,
-        'next_action': ('Claimed by ' + g['claim']['owner'] + '; reconcile this operation before continuing. ' if g.get('claim') else '') + ACTIONS[g['stage']],
+        'owner_skill': unit.get('owner_skill'),
+        'next_action': ('Initialization inputs have changed; consult current reviewed inputs before reusing that historical snapshot. ' if input_changes else '') + ('Claimed by ' + g['claim']['owner'] + '; reconcile this operation before continuing. ' if g.get('claim') else '') + ACTIONS[g['stage']],
         'open_requirements': {k: v for k, v in g['requirements'].items() if v['status'] != 'accepted'},
         'completed_measurements': g.get('completed_measurements', []),
         'receipts': g.get('receipts', {}), 'outcomes': g.get('outcomes', {}),
@@ -443,21 +481,28 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
     g['revision'] += 1
     result['next_action'] = ACTIONS[g['stage']] + (' ' + g['unit']['next_action'] if g['stage'] != 'complete' else '')
     result['work_unit'] = g['unit']['id']
+    result['owner_skill'] = g['unit'].get('owner_skill')
     return result
 
 
-def advance(root: Path, event: dict, expected_sha256: str) -> dict:
+def update_state(root: Path, reducer, expected_sha256: str | None = None) -> None:
+    """Shared atomic update for transitions and explicit scenario selection."""
     path = root / STATE_PATH
     common = subprocess.check_output(['git', 'rev-parse', '--git-common-dir'], cwd=root, text=True).strip()
     lock = (root / common).resolve() / 'raid-development-graph.lock'
     with lock.open('a') as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
         original = path.read_bytes()
-        if digest(original) != expected_sha256:
+        if expected_sha256 is not None and digest(original) != expected_sha256:
             raise GraphError('state changed; resume before applying this event')
         if Path(json.loads(original)['development_graph']['coordinator_worktree']).resolve() != root.resolve():
             raise GraphError('use the canonical coordinator worktree; do not fork progress across worktrees')
-        state = reduce(root, json.loads(original), event)
+        old = json.loads(original)
+        check_state(root, old)
+        state = reducer(old)
+        check_state(root, state)
+        if state == old:
+            return
         encoded = (json.dumps(state, indent=2) + '\n').encode()
         with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as temp:
             name = Path(temp.name)
@@ -471,4 +516,8 @@ def advance(root: Path, event: dict, expected_sha256: str) -> dict:
                 os.replace(name, path)
             finally:
                 name.unlink(missing_ok=True)
+
+
+def advance(root: Path, event: dict, expected_sha256: str) -> dict:
+    update_state(root, lambda state: reduce(root, state, event), expected_sha256)
     return resume(root)

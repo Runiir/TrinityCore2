@@ -1,12 +1,27 @@
 # Resume raid development
 
-Run from the current mainline checkout:
+Run from the current mainline coordinator checkout:
+
+```sh
+pixi run python -m tools.raid_program.raid_workloop start "implement magmaw 25hc bots"
+```
+
+`start` resolves the boss from the strategy catalog and normalizes 10N/10HC/25N/25HC
+(including "25-player heroic"). A matching saved scenario resumes unchanged.
+A new scenario binds its requested-mode research, native source, roster and class
+reference catalogs. No server or database is changed. Unknown bosses, unsupported
+modes, missing difficulty and conflicting requests fail without changing progress.
+For structured calls, use `start magmaw --mode 25hc --raid blackwing_descent`.
+`--preview` inspects inputs without selecting anything; `--expect` optionally
+binds a selection to the state SHA256 observed by the caller.
+
+To continue whichever scenario is already selected:
 
 ```sh
 pixi run python -m tools.raid_program.raid_workloop resume
 ```
 
-This is the entry point for "continue Magmaw 10N bots". It returns the parent
+This is the entry point for continuation without a new encounter/difficulty. It returns the parent
 objective, current bounded task, stage, every open requirement, completed
 measurements, retained receipts and a state hash. Read the referenced evidence
 and specialist skill before implementing. The saved state is
@@ -30,6 +45,50 @@ queued_build and the controller's actual ownership/attempt receipts. Graph file
 locking prevents conflicting updates to this state, not concurrent server
 launches. The existing build/server locks remain authoritative. Pick one
 coordinator checkout; do not fork independent progress files across worktrees.
+
+## Scenario initialization and preservation
+
+The same atomic state file holds one active scenario and a `parked_scenarios`
+map of inactive scenario states. Switching parks the full prior state, including
+its accepted work, receipts, counters, claims history and completed measurements.
+Reselecting restores it; no completed experiment is rerun by the initializer.
+There is no duplicate active copy to reconcile. Claimed operations and unresolved
+validate/assess/publish stages block switching until the current lifecycle closes.
+The state lock and compare-before-write protect selection and ordinary transitions.
+
+For 25-player requests, initialization uses all slots from the frozen 25-player
+roster, preserving duplicate specs and recording logical slot IDs. Native GUID
+binding, exact gear/setup readback and encounter assignments remain work. It never
+reuses the ten Magmaw diagnostic GUIDs as a 25-player raid. Existing explicit
+Blackwing Descent 10N shards retain their declared roster/profile/route. Where an
+exact ten-player roster is absent, ten visibly unassigned slots and a roster task
+are created; the initializer does not guess an encounter composition.
+
+Simulator references bind the current self-provided request catalog, provider
+revision and request/source-contract hashes. No embedded historical DPS number is
+promoted. Missing DPS requests and tank/healer role diagnostics stay explicit.
+DVC hydration, exact gear comparison and native readback remain required before
+using references to tune damage. A catalog row is not a live-ready bot.
+
+Each scenario retains requirements for encounter research, native script, exact
+roster/setup, role references, runtime scenario, assignments, every actor, and
+final encounter performance. Missing native scripts route to the research contract
+and implementation work. Missing exact-mode runtime scenarios require the shard
+specialist; a normal-mode route is never relabeled heroic. Initial acceptance is
+false for all requirements, even when a script or contract file exists. Findings
+in another size/difficulty are context, not inherited validation or DPS baselines.
+
+`resume` includes the bound catalogs, their source hashes, owner skill, current
+encounter and parked scenario IDs. Changed bound source files are reported in
+`changed_bootstrap_sources`; reselecting does not silently overwrite the prior
+snapshot or erase progress. Reconcile changed authority before using that input.
+The bootstrap snapshot is provenance; later plans bind the actual reviewed runtime
+and reference inputs through the ordinary graph receipts.
+
+Initialization does not promise an automatic successful raid. The agent continues
+from the first unresolved dependency using the existing specialist and review
+workflow. It is a general entry point for catalog-supported encounters, including
+ones whose scripts have not been implemented yet.
 
 ## Record a step
 
@@ -190,3 +249,18 @@ The evidence bundle is
 It contains tests, independent review, resume output, baseline-failure proof,
 and exact model requests/responses. These are development records and are not
 eligible for native raid-policy training. No new build or live raid was run.
+
+## Scenario initializer validation (2026-09-20)
+
+The catalog dry run initialized all 110 declared boss/mode combinations. A real
+CLI round trip selected Magmaw 25H with 25 frozen slots, reselected it without
+changing the state hash, then restored the existing Magmaw 10N state and its five
+completed measurements exactly. The 25H task remains parked for later selection.
+No native build, server, raid or training-data admission ran.
+
+The related suite passed 112 tests. One existing source-readiness audit mismatch
+(`test_script_readiness_uses_source_tree_identity`) was excluded; its unchanged
+baseline failure is retained, not reclassified as passing. Independent review,
+model advice/dispositions, test output and CLI receipts are published at
+`artifacts/cata_raid_program/scenario_bootstrap_20260920.tar.gz.dvc`.
+Local Laya was unavailable; Jev advice did not substitute for independent review.

@@ -633,7 +633,8 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         # Persisted workflow evidence, not the age of a prose handoff, owns
         # the next step. Legacy descriptors retain their strict old checks.
         return {
-            **active, "descriptor_valid": True, "issues": [],
+            **active, **progress["encounter"], "work_unit": progress["unit"]["id"],
+            "owner_skill": progress["owner_skill"], "descriptor_valid": True, "issues": [],
             "workflow": progress,
             "next_action": progress["next_action"] + " " + progress["unit"]["next_action"],
             "ready_for_bounded_repair": progress["stage"] == "implement" and not progress["claim"],
@@ -1208,6 +1209,12 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("status")
     subparsers.add_parser("resume", help="Read saved task, remaining actors and next step without launching anything")
+    start = subparsers.add_parser("start", help="Select or initialize a boss/difficulty; preserve existing progress")
+    start.add_argument("request", help="For example: implement magmaw 25hc bots")
+    start.add_argument("--mode", help="Explicit mode when request contains only the boss name")
+    start.add_argument("--raid", help="Canonical raid slug to disambiguate a boss")
+    start.add_argument("--preview", action="store_true", help="Resolve catalogs without changing active progress")
+    start.add_argument("--expect", help="Optional state SHA256 to reject a stale scenario switch")
     transition = subparsers.add_parser("advance", help="Apply one evidence-backed development transition")
     transition.add_argument("--event", type=Path, required=True)
     transition.add_argument("--expect", required=True, help="state_sha256 from resume; rejects stale writers")
@@ -1224,7 +1231,10 @@ def main() -> int:
     args = _parser().parse_args()
     root = args.root.resolve()
     try:
-        if args.command in {"resume", "advance"}:
+        if args.command == "start":
+            from tools.raid_program.scenario_bootstrap import start
+            output = start(root, args.request, args.mode, args.raid, args.preview, args.expect)
+        elif args.command in {"resume", "advance"}:
             from tools.raid_program.development_graph import advance, resume
             output = resume(root) if args.command == "resume" else advance(root, _load_json(args.event), args.expect)
         elif args.command == "status":

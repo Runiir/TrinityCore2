@@ -5,7 +5,16 @@ description: Coordinate TrinityCore repair workers and serialized builds/live ex
 
 # Trinity orchestrator
 
-For a fresh tab or resumed raid program, first run
+For a user request naming a boss and difficulty, first select it with
+`pixi run python -m tools.raid_program.raid_workloop start "<request>"`.
+For example, `start "implement magmaw 25hc bots"` resolves 25H, preserves 10N
+progress, and resumes an existing matching scenario. Read the returned source
+bindings and owner skill. Missing research, scripts, roster, references or exact
+runtime configuration are explicit work; initialization is not live readiness.
+Use `--preview` for read-only inspection. Never switch away from claimed or
+unclosed operations. Do not copy normal-mode assignments or acceptance into heroic.
+
+For a fresh tab resuming the already selected raid program, first run
 `pixi run python -m tools.raid_program.raid_workloop resume` in the coordinator's
 current checkout. The saved development graph owns current task progress;
 historical prose must not restart completed measurements. Follow

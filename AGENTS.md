@@ -9,7 +9,11 @@ Try to keep as little data as possible on the disk. offload to dvc as much as po
 
 Keep C and C++ source and header files below 1,000 lines. Split by concern so small changes invalidate as little of the build cache as practical.
 
-For "implement/continue Magmaw 10N bots", start with
-`pixi run python -m tools.raid_program.raid_workloop resume` on the current
-mainline coordinator checkout. Follow `docs/bot_raids/development_graph.md`.
-Retain all open actors; historical handoffs do not override saved progress.
+For boss-bot implementation requests naming an encounter and difficulty, run
+`pixi run python -m tools.raid_program.raid_workloop start "<request>"`
+on the current mainline coordinator checkout. Example: `start "implement magmaw 25hc bots"`.
+This selects or initializes the requested scenario; it does not launch a server.
+For continuation without a new encounter/difficulty, use `raid_workloop resume`.
+Follow `docs/bot_raids/development_graph.md`. Preserve other scenarios and every
+open actor requirement; missing research/scripts/runtime assets are implementation
+work, not permission to borrow a different difficulty's acceptance.

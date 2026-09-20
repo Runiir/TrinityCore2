@@ -505,7 +505,8 @@
       "requirements": [
         "balance_setup"
       ],
-      "next_action": "Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement."
+      "next_action": "Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
+      "owner_skill": "raid-performance-loop"
     },
     "completed_measurements": [
       {
@@ -551,6 +552,725 @@
       "raid": "blackwing_descent",
       "boss": "magmaw",
       "mode": "10N"
+    }
+  },
+  "parked_scenarios": {
+    "blackwing_descent:magmaw:25H": {
+      "schema": "cata_raid_active_work_unit_v1",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "25H",
+      "work_unit": "boss:blackwing_descent:magmaw:25H:initial_diagnosis",
+      "classification": "scenario_initialization",
+      "owner_skill": "raid-encounter-research",
+      "next_action": "Review the bound requested-mode contract and native script; identify the first unresolved dependency. Use the listed specialist skill and source references. Missing research, roster, simulator, native scripts or runtime assets are work to implement, not permission to borrow another difficulty. Keep every actor open; initialize no server or database from this descriptor.",
+      "ready_for_build": false,
+      "ready_for_live_verification": false,
+      "validation_clock": {
+        "policy": "completion_watchdog",
+        "fixed_success_timer_seconds": null
+      },
+      "development_graph": {
+        "version": 1,
+        "revision": 0,
+        "coordinator_worktree": "/home/runiir/Games/trinity-magmaw-parity",
+        "objective": "Implement and validate lawful magmaw 25H bots across every DPS, tank and healer against matched encounter evidence.",
+        "encounter": {
+          "raid": "blackwing_descent",
+          "boss": "magmaw",
+          "mode": "25H"
+        },
+        "stage": "diagnose",
+        "actor_ids": [
+          "tank_1",
+          "tank_2",
+          "healer_1",
+          "healer_2",
+          "healer_3",
+          "healer_4",
+          "healer_5",
+          "healer_6",
+          "ranged_1",
+          "ranged_2",
+          "ranged_3",
+          "ranged_4",
+          "ranged_5",
+          "ranged_6",
+          "ranged_7",
+          "ranged_8",
+          "ranged_9",
+          "ranged_10",
+          "ranged_11",
+          "ranged_12",
+          "melee_1",
+          "melee_2",
+          "melee_3",
+          "melee_4",
+          "melee_5"
+        ],
+        "requirements": {
+          "encounter_research": {
+            "status": "open",
+            "description": "Review requested-mode WCL, DBM, client/server values and unresolved contract claims"
+          },
+          "native_script": {
+            "status": "open",
+            "description": "audit_and_validate_existing_script",
+            "needs_raid": true
+          },
+          "roster_setup": {
+            "status": "open",
+            "description": "Bind exact gear/talents/glyphs/consumes/pets and native actor identities for requested raid size"
+          },
+          "role_references": {
+            "status": "open",
+            "description": "Match current simulator requests and tank/healer diagnostics to the selected roster"
+          },
+          "runtime_scenario": {
+            "status": "open",
+            "description": "Prepare exact-mode route/profile/provisioning, native unlocks and isolated instance ownership",
+            "needs_raid": true
+          },
+          "assignments": {
+            "status": "open",
+            "description": "Implement requested-mode raid assignments and persistent mechanic tasks",
+            "needs_raid": true
+          },
+          "actor_tank_1": {
+            "status": "open",
+            "actor_id": "tank_1",
+            "description": "tank_1: blood_death_knight behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_tank_2": {
+            "status": "open",
+            "actor_id": "tank_2",
+            "description": "tank_2: protection_paladin behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_healer_1": {
+            "status": "open",
+            "actor_id": "healer_1",
+            "description": "healer_1: holy_paladin behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_healer_2": {
+            "status": "open",
+            "actor_id": "healer_2",
+            "description": "healer_2: holy_paladin behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_healer_3": {
+            "status": "open",
+            "actor_id": "healer_3",
+            "description": "healer_3: discipline_priest behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_healer_4": {
+            "status": "open",
+            "actor_id": "healer_4",
+            "description": "healer_4: restoration_shaman behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_healer_5": {
+            "status": "open",
+            "actor_id": "healer_5",
+            "description": "healer_5: restoration_druid behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_healer_6": {
+            "status": "open",
+            "actor_id": "healer_6",
+            "description": "healer_6: holy_priest behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_1": {
+            "status": "open",
+            "actor_id": "ranged_1",
+            "description": "ranged_1: fire_mage behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_2": {
+            "status": "open",
+            "actor_id": "ranged_2",
+            "description": "ranged_2: fire_mage behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_3": {
+            "status": "open",
+            "actor_id": "ranged_3",
+            "description": "ranged_3: fire_mage behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_4": {
+            "status": "open",
+            "actor_id": "ranged_4",
+            "description": "ranged_4: demonology_warlock behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_5": {
+            "status": "open",
+            "actor_id": "ranged_5",
+            "description": "ranged_5: affliction_warlock behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_6": {
+            "status": "open",
+            "actor_id": "ranged_6",
+            "description": "ranged_6: survival_hunter behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_7": {
+            "status": "open",
+            "actor_id": "ranged_7",
+            "description": "ranged_7: marksmanship_hunter behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_8": {
+            "status": "open",
+            "actor_id": "ranged_8",
+            "description": "ranged_8: shadow_priest behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_9": {
+            "status": "open",
+            "actor_id": "ranged_9",
+            "description": "ranged_9: shadow_priest behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_10": {
+            "status": "open",
+            "actor_id": "ranged_10",
+            "description": "ranged_10: balance_druid behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_11": {
+            "status": "open",
+            "actor_id": "ranged_11",
+            "description": "ranged_11: balance_druid behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_ranged_12": {
+            "status": "open",
+            "actor_id": "ranged_12",
+            "description": "ranged_12: elemental_shaman behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_melee_1": {
+            "status": "open",
+            "actor_id": "melee_1",
+            "description": "melee_1: combat_rogue behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_melee_2": {
+            "status": "open",
+            "actor_id": "melee_2",
+            "description": "melee_2: arms_warrior behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_melee_3": {
+            "status": "open",
+            "actor_id": "melee_3",
+            "description": "melee_3: retribution_paladin behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_melee_4": {
+            "status": "open",
+            "actor_id": "melee_4",
+            "description": "melee_4: unholy_death_knight behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "actor_melee_5": {
+            "status": "open",
+            "actor_id": "melee_5",
+            "description": "melee_5: feral_druid_dps behavior and duty-adjusted performance",
+            "needs_raid": true,
+            "needs_performance": true
+          },
+          "encounter_performance": {
+            "status": "open",
+            "description": "Matched encounter clear, every actor reviewed, performance accepted and evidence published",
+            "needs_raid": true,
+            "needs_performance": true,
+            "needs_all_actors": true
+          }
+        },
+        "unit": {
+          "id": "boss:blackwing_descent:magmaw:25H:initial_diagnosis",
+          "edge": "requested_mode_encounter_baseline_unverified",
+          "owner_skill": "raid-encounter-research",
+          "requirements": [
+            "encounter_research"
+          ],
+          "next_action": "Review the bound requested-mode contract and native script; identify the first unresolved dependency. Use the listed specialist skill and source references. Missing research, roster, simulator, native scripts or runtime assets are work to implement, not permission to borrow another difficulty. Keep every actor open; initialize no server or database from this descriptor."
+        },
+        "completed_measurements": [],
+        "failures": {},
+        "history": [],
+        "bootstrap_inputs": {
+          "encounter": {
+            "raid": "blackwing_descent",
+            "boss": "magmaw",
+            "mode": "25H"
+          },
+          "sources": {
+            "experiments/configs/cata_raid_strategy_catalog_v1.json": {
+              "path": "experiments/configs/cata_raid_strategy_catalog_v1.json",
+              "sha256": "371cc8ccb6f0f4cb3bdd967f29f08cfd9f6cc1e23be13ab1ee9fd27745d61e39"
+            },
+            "experiments/configs/cata_raid_script_readiness_v1.json": {
+              "path": "experiments/configs/cata_raid_script_readiness_v1.json",
+              "sha256": "47bdeb5a3ba6972843e75f293cdcc7bc6a535d2021d7037d4fe5836232f95d67"
+            },
+            "experiments/configs/cata_raid_roster_25_v1.json": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            },
+            "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json": {
+              "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+              "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+            },
+            "experiments/configs/all_spec_targets_cata_p4_v1.json": {
+              "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+              "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+            },
+            "experiments/configs/wowsims_cata_dps_reference_requests_v1.json": {
+              "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+              "sha256": "801043d7d25cdcdf69921e3a478b0ee426d3de357c0584dbeeeb71ffba75cb5e"
+            },
+            "experiments/configs/validation_scenarios_cata_001.json": {
+              "path": "experiments/configs/validation_scenarios_cata_001.json",
+              "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+            },
+            "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json": {
+              "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json",
+              "sha256": "f25097aead04bd72382ebea5d73d20e38bb80ffafae0ab9b8a10d89d97c4c41f"
+            },
+            "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json": {
+              "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+              "sha256": "33c5a43078ec310af7186f6a94b5cecae8d5a8ffb07b830a5b9dbb2ccba08991"
+            },
+            "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md": {
+              "path": "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+              "sha256": "bdb69daec9ccef580478f32c1fe734708cd26516ee932e2bf6a0ed7a8d8a8e9b"
+            },
+            "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp": {
+              "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+              "sha256": "e357412cb729dc3559448e12c7a815e241f8637054fd99f369bd932c4fa6c5a5"
+            },
+            "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp": {
+              "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+              "sha256": "a9fdb24bc72c527072521da279097d15ed94d0b1eafd10f05b4f48e37f7f5470"
+            }
+          },
+          "research": {
+            "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+            "contract": {
+              "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json",
+              "sha256": "f25097aead04bd72382ebea5d73d20e38bb80ffafae0ab9b8a10d89d97c4c41f"
+            },
+            "ledger": {
+              "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+              "sha256": "33c5a43078ec310af7186f6a94b5cecae8d5a8ffb07b830a5b9dbb2ccba08991"
+            },
+            "fidelity_state": "fidelity_blocked",
+            "unresolved_material_count": 8,
+            "mode_observations": {
+              "health_guide_reported": 120000000,
+              "magma_spit_targets_repository": 8,
+              "heroic": true,
+              "nefarian_add_repository": true,
+              "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%",
+              "health_native_calculated": 120016040,
+              "health_wcl_derived": 120016403,
+              "health_reference_note": "Native current configuration; historical WCL-derived value where present. Guide values are non-authoritative."
+            },
+            "accepted": false
+          },
+          "script": {
+            "source": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+            "source_present": true,
+            "catalog_status": "source_present_not_runtime_validated",
+            "audit_current": false,
+            "task": "audit_and_validate_existing_script"
+          },
+          "roster": {
+            "source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            },
+            "status": "frozen_logical_slots_need_encounter_assignments_and_native_guid_binding",
+            "size": 25,
+            "actors": [
+              {
+                "actor_id": "tank_1",
+                "slot": "tank_1",
+                "class_spec": "blood_death_knight",
+                "role": "tank"
+              },
+              {
+                "actor_id": "tank_2",
+                "slot": "tank_2",
+                "class_spec": "protection_paladin",
+                "role": "tank"
+              },
+              {
+                "actor_id": "healer_1",
+                "slot": "healer_1",
+                "class_spec": "holy_paladin",
+                "role": "healer"
+              },
+              {
+                "actor_id": "healer_2",
+                "slot": "healer_2",
+                "class_spec": "holy_paladin",
+                "role": "healer"
+              },
+              {
+                "actor_id": "healer_3",
+                "slot": "healer_3",
+                "class_spec": "discipline_priest",
+                "role": "healer"
+              },
+              {
+                "actor_id": "healer_4",
+                "slot": "healer_4",
+                "class_spec": "restoration_shaman",
+                "role": "healer"
+              },
+              {
+                "actor_id": "healer_5",
+                "slot": "healer_5",
+                "class_spec": "restoration_druid",
+                "role": "healer"
+              },
+              {
+                "actor_id": "healer_6",
+                "slot": "healer_6",
+                "class_spec": "holy_priest",
+                "role": "healer"
+              },
+              {
+                "actor_id": "ranged_1",
+                "slot": "ranged_1",
+                "class_spec": "fire_mage",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_2",
+                "slot": "ranged_2",
+                "class_spec": "fire_mage",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_3",
+                "slot": "ranged_3",
+                "class_spec": "fire_mage",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_4",
+                "slot": "ranged_4",
+                "class_spec": "demonology_warlock",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_5",
+                "slot": "ranged_5",
+                "class_spec": "affliction_warlock",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_6",
+                "slot": "ranged_6",
+                "class_spec": "survival_hunter",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_7",
+                "slot": "ranged_7",
+                "class_spec": "marksmanship_hunter",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_8",
+                "slot": "ranged_8",
+                "class_spec": "shadow_priest",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_9",
+                "slot": "ranged_9",
+                "class_spec": "shadow_priest",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_10",
+                "slot": "ranged_10",
+                "class_spec": "balance_druid",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_11",
+                "slot": "ranged_11",
+                "class_spec": "balance_druid",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "ranged_12",
+                "slot": "ranged_12",
+                "class_spec": "elemental_shaman",
+                "role": "ranged_dps"
+              },
+              {
+                "actor_id": "melee_1",
+                "slot": "melee_1",
+                "class_spec": "combat_rogue",
+                "role": "melee_dps"
+              },
+              {
+                "actor_id": "melee_2",
+                "slot": "melee_2",
+                "class_spec": "arms_warrior",
+                "role": "melee_dps"
+              },
+              {
+                "actor_id": "melee_3",
+                "slot": "melee_3",
+                "class_spec": "retribution_paladin",
+                "role": "melee_dps"
+              },
+              {
+                "actor_id": "melee_4",
+                "slot": "melee_4",
+                "class_spec": "unholy_death_knight",
+                "role": "melee_dps"
+              },
+              {
+                "actor_id": "melee_5",
+                "slot": "melee_5",
+                "class_spec": "feral_druid_dps",
+                "role": "melee_dps"
+              }
+            ]
+          },
+          "references": {
+            "blood_death_knight": {
+              "role": "tank",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "protection_paladin": {
+              "role": "tank",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "holy_paladin": {
+              "role": "healer",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "discipline_priest": {
+              "role": "healer",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "restoration_shaman": {
+              "role": "healer",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "restoration_druid": {
+              "role": "healer",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "holy_priest": {
+              "role": "healer",
+              "target_definition_present": true,
+              "reference_class": null,
+              "provider_revision": null,
+              "request_sha256": null,
+              "source_contract_sha256": null,
+              "status": "role_harness_required"
+            },
+            "fire_mage": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "05a5a10c69a51a40c700db48cb79386c14b99139882dd2c6ebb6ca1503f92b04",
+              "source_contract_sha256": "00835a1d42bdde0d93591c44ca12ecdb18c0da4d6195304d82f605281dbe11a9",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "demonology_warlock": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "ac60475c47acc910f3195e15eb570ed7466848e6753f351d844744477d432a5f",
+              "source_contract_sha256": "90a56cd5b299c7c20a9730b528c4cf547500bb4f782d91a6da797ea837405b4f",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "affliction_warlock": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "040f21c6565ea07a5f39124cc8e7741a94cd0e5dfdac19ead921f881e97e31b7",
+              "source_contract_sha256": "30fb5a7c1614691c69327013e81ba2a6b2c4c3cccb6f6c6e8381fa399efd5a38",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "survival_hunter": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "e1f6684a5dae2924110005c9044bce4aeef369b919113795dda31bf75e7ee47e",
+              "source_contract_sha256": "9af412a3deaa79cfb2a0f38e4147209db0c6cb8b80ed7fa185875ef027a487d3",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "marksmanship_hunter": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "bca4802c30b9ab7a9067fd6d02eccd79905900f0c72fa0182ccc3d6b025e1b35",
+              "source_contract_sha256": "90172ada0dd4c424a6dcd20beaf9ccdbac79db56a723e8589fc6b09534b648a2",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "shadow_priest": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "41fd14708b1e0df0c9e15a90d30835baae5827d143a18b59f770f87c041e47a5",
+              "source_contract_sha256": "780000c4fe269dbc97ee65a312f25bda38de53cab7490c1c2f1d34e18391cea1",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "balance_druid": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "0010d83a86af22ba9c2a65c47a7db8fe8db3ff68e29c6bd276fa9244c11354fc",
+              "source_contract_sha256": "80ad6cf6c6e8b5eeaf643b81c6f67a057525981a568886e1ca6e16ff917e2001",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "elemental_shaman": {
+              "role": "ranged_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "443b04ecd792f9857dd227e823031c8edde575d64394f5ead6d34db811b99c00",
+              "source_contract_sha256": "c55220b921ec52c8079bc6604a4cc1d57bcb6a4b1da93521aa52f0d26baa66f4",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "combat_rogue": {
+              "role": "melee_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "54b0a009b9523e01d50b4ef351bfaa14fcce467efec0e74a6befe9289b43bcd6",
+              "source_contract_sha256": "355f7a5691d873a095b89b57d3126a5b42cd63b213b666ee851a4a3bc5c48bf6",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "arms_warrior": {
+              "role": "melee_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "d5bb57078788cfc501c35094c5093ed245db86b5b1def43fe439f341bcca3d2a",
+              "source_contract_sha256": "f978e4199d95b02e70bb87c6379518ebeeb28f4b1062d468db9727c545a18a5b",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "retribution_paladin": {
+              "role": "melee_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "a1a3902271bc8308c9fea146a857b9fcfedf74f26d23ae329f43f899db8b23f7",
+              "source_contract_sha256": "9f11d9d520c24f4a3c29a73678e3a2d4825b24702345a8f646dc7cebdabbe366",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "unholy_death_knight": {
+              "role": "melee_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "087f1ecce20fda4dcc17a0b991611a2434a7ad1f19116d6c76e7e03735efaac0",
+              "source_contract_sha256": "dea0235940c7e09fabe44333f0cf0794ac10b67b4a1fd43be599aa7563e60766",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            },
+            "feral_druid_dps": {
+              "role": "melee_dps",
+              "target_definition_present": true,
+              "reference_class": "self_provided_baseline",
+              "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+              "request_sha256": "bdf99c0b1465a498f365d342e66246faf134c34bc9b6710f89a16f9f4b8c0f4d",
+              "source_contract_sha256": "7d2d4a3640a4052fbf1f74b8ba00a4c3f89310a0bed8372d0d118750676a49fc",
+              "status": "pinned_request_requires_exact_native_setup_match"
+            }
+          },
+          "runtime": {
+            "status": "missing_exact_runtime_scenario",
+            "scenario_id": null,
+            "profile_id": null,
+            "pool_tag": null
+          },
+          "binding_use": "initialization_provenance_only_current_plans_bind_reviewed_inputs",
+          "accepted": false,
+          "launch_authorized": false
+        }
+      }
     }
   }
 }
