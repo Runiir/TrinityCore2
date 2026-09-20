@@ -5,6 +5,6 @@
   "producer": "coordinator",
   "receipt": {
     "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_diagnosis_20260920.json",
-    "sha256": "435e42e7895bf2db09785faeaae9bfd732db3e7690c1af60b238139b3992a02a"
+    "sha256": "4fdab39552e42bfcccab30c189e95ebd54253ac6b421bb874a060990f969d8b4"
   }
 }
