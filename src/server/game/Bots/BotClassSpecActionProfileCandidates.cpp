@@ -224,6 +224,10 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
 {
     if (!bot)
         return "missing_bot";
+    if (HasMechanicTag(spell.MechanicTags, "balance_starsurge_neutral_gate")
+        && !bot->HasAura(48517) && !bot->HasAura(48518)
+        && bot->GetPower(POWER_ECLIPSE) == 0)
+        return "balance_neutral_opener";
     if (HasMechanicTag(spell.MechanicTags, "combustion_ready"))
     {
         SpellInfo const* combustion = sSpellMgr->GetSpellInfo(11129);
