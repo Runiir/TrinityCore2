@@ -18,6 +18,7 @@ from tools.bot_ml.review_rotation_mechanics import (
     normalize_wowsims_result,
     normalize_runtime_report,
     trinity_profile_document_from_database_rows,
+    _wowsims_total_speed_multiplier,
 )
 
 
@@ -141,6 +142,38 @@ def _compute_stats() -> dict:
     return {"raidStats": {"parties": [{"players": [player]}]}}
 
 
+def test_wowsims_total_speed_multiplier_does_not_double_count_haste() -> None:
+    pseudo = {
+        "cast_speed_multiplier": 1.05,
+        "spell_haste_pct": 26.87616842353837,
+        "ranged_speed_multiplier": 1.1,
+        "ranged_haste_pct": 13.3,
+        "melee_speed_multiplier": 1.1,
+        "melee_haste_pct": 13.3,
+    }
+
+    assert _wowsims_total_speed_multiplier(
+        pseudo,
+        component_key="cast_speed_multiplier",
+        total_haste_key="spell_haste_pct",
+    ) == pytest.approx(1.2687616842353837)
+    assert _wowsims_total_speed_multiplier(
+        pseudo,
+        component_key="ranged_speed_multiplier",
+        total_haste_key="ranged_haste_pct",
+    ) == pytest.approx(1.133)
+    assert _wowsims_total_speed_multiplier(
+        pseudo,
+        component_key="melee_speed_multiplier",
+        total_haste_key="melee_haste_pct",
+    ) == pytest.approx(1.133)
+    assert _wowsims_total_speed_multiplier(
+        {"cast_speed_multiplier": 1.05},
+        component_key="cast_speed_multiplier",
+        total_haste_key="spell_haste_pct",
+    ) == pytest.approx(1.05)
+
+
 def _gear_fixture() -> tuple[dict, list[dict]]:
     slot_map = [0, 1, 2, 14, 4, 8, 9, 5, 6, 7, 10, 11, 12, 13, 15, 16, 17]
     wowsims_items = [
@@ -199,7 +232,7 @@ def _effective_stats_runtime(
                                 "spell_power": 12_500,
                                 "spell_hit_pct": 17,
                                 "spell_crit_pct": 25,
-                                "spell_speed_multiplier": 1.365,
+                                "spell_speed_multiplier": 1.3,
                             },
                             "pet": {
                                 "observed": True,

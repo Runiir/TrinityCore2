@@ -3835,6 +3835,25 @@ def _stat_check(
     }
 
 
+def _wowsims_total_speed_multiplier(
+    pseudo_stats: Mapping[str, Any],
+    *,
+    component_key: str,
+    total_haste_key: str,
+) -> float:
+    """Return the total speed multiplier represented by WoWSims pseudo stats.
+
+    WoWSims exposes both the base multiplicative component and a display haste
+    percentage. The display percentage is emitted from the already-composed
+    speed, so multiplying both fields double-counts form or raid haste. The
+    native calibration ledger reports that composed speed directly.
+    """
+    total_haste_pct = pseudo_stats.get(total_haste_key)
+    if total_haste_pct is not None:
+        return 1.0 + float(total_haste_pct) / 100.0
+    return float(pseudo_stats.get(component_key) or 1.0)
+
+
 def compare_gear_identity(
     wowsims_gear: dict[str, Any] | None,
     runtime: dict[str, Any] | None,
@@ -4131,8 +4150,11 @@ def compare_effective_stats(
                 ("spell_crit_pct", expected_pseudo.get("spell_crit_pct"), observed_player.get("spell_crit_pct"), 0.05, 0.0),
                 (
                     "spell_speed_multiplier",
-                    float(expected_pseudo.get("cast_speed_multiplier") or 1.0)
-                    * (1.0 + float(expected_pseudo.get("spell_haste_pct") or 0.0) / 100.0),
+                    _wowsims_total_speed_multiplier(
+                        expected_pseudo,
+                        component_key="cast_speed_multiplier",
+                        total_haste_key="spell_haste_pct",
+                    ),
                     observed_player.get("spell_speed_multiplier"),
                     0.002,
                     0.0,
@@ -4147,8 +4169,11 @@ def compare_effective_stats(
                 ("ranged_crit_pct", expected_pseudo.get("physical_crit_pct"), observed_player.get("ranged_crit_pct"), 0.05, 0.0),
                 (
                     "ranged_speed_multiplier",
-                    float(expected_pseudo.get("ranged_speed_multiplier") or 1.0)
-                    * (1.0 + float(expected_pseudo.get("ranged_haste_pct") or 0.0) / 100.0),
+                    _wowsims_total_speed_multiplier(
+                        expected_pseudo,
+                        component_key="ranged_speed_multiplier",
+                        total_haste_key="ranged_haste_pct",
+                    ),
                     observed_player.get("ranged_speed_multiplier"),
                     0.002,
                     0.0,
@@ -4164,8 +4189,11 @@ def compare_effective_stats(
                 ("melee_crit_pct", expected_pseudo.get("physical_crit_pct"), observed_player.get("melee_crit_pct"), 0.05, 0.0),
                 (
                     "melee_speed_multiplier",
-                    float(expected_pseudo.get("melee_speed_multiplier") or 1.0)
-                    * (1.0 + float(expected_pseudo.get("melee_haste_pct") or 0.0) / 100.0),
+                    _wowsims_total_speed_multiplier(
+                        expected_pseudo,
+                        component_key="melee_speed_multiplier",
+                        total_haste_key="melee_haste_pct",
+                    ),
                     observed_player.get("melee_speed_multiplier"),
                     0.002,
                     0.0,
