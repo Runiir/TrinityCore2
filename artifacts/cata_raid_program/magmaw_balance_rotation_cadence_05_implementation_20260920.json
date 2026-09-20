@@ -1,0 +1,87 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "125fc420ba90eed1a8e10e321f96166fc5060f4744a571b7c50d2b757801b0a7",
+  "source_commit": "b3fbe648e06abd61db022fe8e7e4076645af69d9",
+  "implementation": {
+    "summary": "Added a Balance-only Starfall lunar-window tag and typed candidate rejection after the existing neutral opener gate, using the signed native Eclipse bar without mutating state.",
+    "predicate": "HasMechanicTag(balance_starfall_lunar_window) && !HasAura(48518) && GetPower(POWER_ECLIPSE) >= -70",
+    "reject_reason": "balance_starfall_lunar_window",
+    "native_state_mapping": "WoWSims currentLunarEnergy > 70 maps to native POWER_ECLIPSE < -70; active Lunar Eclipse remains legal.",
+    "candidate_observation_status": "pending_independent_native_review_and_exact_validation",
+    "source_line_counts": {
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": 930,
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": 704,
+      "tests/test_balance_rotation_cadence.py": 69,
+      "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql": 21
+    }
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": "8351bafeb8dbcdd7e359b75c3afa9b36483988b338623ac3afa6965bba47582a",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "8df6026d696961e0c4e960d7fd20173ae0f29ae64a333ca1ad5a422a92d1db28",
+    "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql": "6422717197c576a42f8e4d3a13df060642e8075d9d5707ca2f3e2ea4ab5c835e",
+    "tests/test_balance_rotation_cadence.py": "a660c176007218d9addca5375c28686f2f4700ab1335994274d53eed45af974c"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "summary": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "fixture contract and 16 request entries validated"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_20260920.json",
+      "sha256": "1dea91d0503ea1caec1d84779e0c96b081e5505187068a850560ba0144b703e1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_implementation_checkpoint_20260920.json",
+      "sha256": "6595e6f1a919eefd4cc481cd69749131f0a2ec79b417fd094f29f62cdd93f4b3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_implementation_checkpoint_review_20260920.json/summary.json",
+      "sha256": "d7bbaf28f6668b68f24ab92fe904991b1d8ac444f5a932d0e1eee7ba615833ed"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_implementation_checkpoint_review_20260920.json/checkpoint.json",
+      "sha256": "4e6fa0d3e9cc5bd8e9cd947a12af05b0b4f8150a11d85bdfbe23611b1ee518ed"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_implementation_checkpoint_review_20260920.json/examples.jsonl.dvc",
+      "sha256": "7526b72f9ea1e176ee2d16570c6cc5264265365a408e8234c0931ef2541e7493"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_implementation_checkpoint_review_20260920.json/summary.json",
+        "sha256": "d7bbaf28f6668b68f24ab92fe904991b1d8ac444f5a932d0e1eee7ba615833ed"
+      },
+      "adjudication": "Hosted Jev marked scope_fit, evidence_supports_proposed_change, and acceptance_claim_supported as supported; advisory only, not independent native approval."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local provider returned HTTP 422 context_budget_exceeded for the checkpoint packet.",
+      "adjudication": "Provider unavailable for this checkpoint; independent native review remains required."
+    }
+  },
+  "acceptance_claim": "The bounded source/config/test implementation is complete and required deterministic checks passed. Native candidate-mask visibility, exact-300 post-change behavior, actor performance, raid clear, and parent-objective completion remain open."
+}
