@@ -259,9 +259,11 @@ def test_swap_growth_limit_scales_per_compiler_job() -> None:
     ) == ["swap_growth"]
 
 
+@pytest.mark.parametrize('policy_path', [POLICY_PATH, qb.DEFAULT_POLICY])
 def test_fifo_single_admission_and_cancel_waiter(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, policy_path: Path
 ) -> None:
+    frozen = json.loads(policy_path.read_text())
     paths = state_paths(tmp_path, monkeypatch)
     first = qb.new_ticket(ROOT, "synthetic", [sys.executable, "-c", "pass"])
     second = qb.new_ticket(ROOT, "synthetic", [sys.executable, "-c", "pass"])
@@ -272,10 +274,10 @@ def test_fifo_single_admission_and_cancel_waiter(
 
     monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
     monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
-    admitted, _, reasons = qb.try_admit(paths, policy(), second["ticket_id"], ROOT)
+    admitted, _, reasons = qb.try_admit(paths, frozen, second["ticket_id"], ROOT)
     assert admitted is False
     assert reasons == ["fifo_wait"]
-    admitted, _, reasons = qb.try_admit(paths, policy(), first["ticket_id"], ROOT)
+    admitted, _, reasons = qb.try_admit(paths, frozen, first["ticket_id"], ROOT)
     assert admitted is True
     assert reasons == []
     assert qb.cancel_ticket(paths, second["ticket_id"])["state"] == "canceled"
@@ -1402,3 +1404,25 @@ def test_all_registered_worktrees_share_git_common_queue_state() -> None:
     worktrees = [Path(line.split(" ", 1)[1]) for line in output.splitlines() if line.startswith("worktree ")]
     assert worktrees
     assert all(qb.git_common_dir(worktree) == main_common for worktree in worktrees)
+
+
+def test_full_host_default_uses_twelve_jobs_and_keeps_resource_safety(tmp_path, monkeypatch):
+    selected = qb.parser().parse_args(['status']).policy
+    frozen = json.loads(selected.read_text())
+    assert frozen['policy_id'] == 'cata_raid_build_resource_policy_host12_v1'
+    paths = state_paths(tmp_path, monkeypatch)
+    env = qb.coordinated_environment(frozen, paths, 'test')
+    assert env['CMAKE_BUILD_PARALLEL_LEVEL'] == '12'
+    assert env['MAKEFLAGS'] == '-j12'
+    assert env['TRINITY_RAID_BUILD_LINKER_JOBS'] == '1'
+    command = ['/usr/bin/cmake', '--build', 'build', '--target', 'worldserver', '--parallel', '12']
+    qb.validate_command(command, 12, resource_class='worldserver_build', policy=frozen)
+    with pytest.raises(qb.CoordinatorError):
+        qb.validate_command(command[:-1]+['13'], 12, resource_class='worldserver_build', policy=frozen)
+    assert qb.pressure_reasons(frozen, synthetic_snapshot(load=24)) == []
+    assert 'load_average' in qb.pressure_reasons(policy(), synthetic_snapshot(load=24))
+    assert 'memory_reserve' in qb.pressure_reasons(frozen, synthetic_snapshot(available_gib=7))
+    assert 'memory_psi_full' in qb.pressure_reasons(frozen, synthetic_snapshot(psi_full=6))
+    assert 'swap_growth' in qb.pressure_reasons(frozen, synthetic_snapshot(swap_used_bytes=7*1024**3), 0)
+    low_disk = synthetic_snapshot(); low_disk['filesystem_available_bytes'] = 19*1024**3
+    assert 'filesystem_reserve' in qb.pressure_reasons(frozen, low_disk)

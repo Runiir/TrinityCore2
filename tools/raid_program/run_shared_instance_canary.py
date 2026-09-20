@@ -13,6 +13,7 @@ from tools.raid_program.shared_instance_fixture import BASE_CONFIG, load_fixture
 from tools.raid_program.shared_instance_preparation import git, provision_pair, verify_launch
 from tools.raid_program.shared_instance_validation import run_shared_instance_validation
 from tools.raid_program.tracked_runtime_config_derivation import derive_runtime_config
+from tools.raid_program.queued_build import DEFAULT_POLICY_RELATIVE
 
 
 def write(path: Path, value: object) -> None:
@@ -28,7 +29,7 @@ def main() -> int:
     parser.add_argument("--build-receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--fixture", default="experiments/configs/cata_shared_instance_fixture_v1.json")
-    parser.add_argument("--policy", default="experiments/configs/cata_raid_build_resource_policy_fast4_v2.json")
+    parser.add_argument("--policy", default=str(DEFAULT_POLICY_RELATIVE))
     args = parser.parse_args()
     source, repository, output = args.source.resolve(), args.repository.resolve(), args.output.resolve()
     if Path(__file__).resolve().parents[2] != source:
