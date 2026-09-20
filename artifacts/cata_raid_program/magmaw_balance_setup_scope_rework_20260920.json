@@ -1,0 +1,14 @@
+{
+  "revision": 1,
+  "action": "rework",
+  "authority": "coordinator_attestation",
+  "kind": "rework",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "receipt": "artifacts/cata_raid_program/magmaw_balance_setup_scope_rework_20260920.json",
+  "producer": "coordinator",
+  "reason": "The retained trace shows that the native persistent setup contract is gated by HasSpell, while the canonical provisioning generator omits Balance Druid Mark of the Wild and the learned Druid leather-specialization parent. Expand the bounded unit to include that generator and its linked catalog reconciliation before implementation.",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false
+}

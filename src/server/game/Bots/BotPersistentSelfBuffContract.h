@@ -27,6 +27,7 @@ inline constexpr SelfBuff Buffs[] =
     { CLASS_DEATH_KNIGHT, "tank", "blood_death_knight", 48263, 48263, 0, "blood_presence" },
     { CLASS_DEATH_KNIGHT, "dps", "frost_death_knight", 48265, 48265, 0, "unholy_presence" },
     { CLASS_DEATH_KNIGHT, "dps", "unholy_death_knight", 48265, 48265, 0, "unholy_presence" },
+    { CLASS_DRUID, nullptr, nullptr, 1126, 1126, 79061, "mark_of_the_wild" },
     { CLASS_DRUID, "tank", "feral_druid_tank", 5487, 5487, 0, "bear_form" },
     { CLASS_DRUID, "dps", "feral_druid_dps", 768, 768, 0, "cat_form" },
     { CLASS_DRUID, "dps", "balance_druid", 24858, 24858, 0, "moonkin_form" },

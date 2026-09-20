@@ -1,0 +1,20 @@
+{
+  "schema": "worker_checkpoint_advice_v1",
+  "stage": "plan",
+  "subject": "orchestrator",
+  "provider": "hosted_jev",
+  "status": "reviewed",
+  "request_sha256": "bc87c29a6bc59b0c77d7841a08e8f58267a6a4f6d036327e495a087304f12854",
+  "response_sha256": "29c5364bf17958102713c85a3cb80231eea8744ba7ad5dc659bd4b9025485b36",
+  "checkpoint_sha256": "95e3e66a6cfc75b8f9f1d731c531fa5f08a6e8582e16b0860d2752ce8aeb9589",
+  "answers": {
+    "scope_fit": {"choice": "supported", "confidence": 0.94},
+    "evidence_supports_proposed_change": {"choice": "supported", "confidence": 0.93},
+    "acceptance_claim_supported": {"choice": "insufficient_evidence", "confidence": 0.87}
+  },
+  "source_output": {
+    "summary_sha256": "950dda8e07ff98b59632c9189d934af16e3205bd36c600aa79ea50b24ed044e2",
+    "examples_sha256": "3b0ef7d9b5d24cd717137ce0ed70c2690920bcca4be6ba8f1bd1339aefc2f4fd"
+  },
+  "coordinator_adjudication": "Use Jev's scope and evidence support as advisory confirmation. Its insufficient-evidence acceptance answer is correct for a plan stage; no native or live acceptance is claimed."
+}

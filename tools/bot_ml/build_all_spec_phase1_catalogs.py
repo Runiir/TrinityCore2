@@ -426,8 +426,13 @@ PERSISTENT_SETUP_SPELL_IDS = {
     # Master of Ghouls talent aura and reconciles the resulting permanent pet;
     # provisioning only guarantees that the player knows these setup spells.
     "unholy_death_knight": [46584, 48265],
-    "feral_druid_tank": [5487],
-    "feral_druid_dps": [768, 20484],
+    # Mark of the Wild is a native self-cast. The learned leather parent
+    # expands through spell_learn_spell to child 86530, which the existing
+    # Player::UpdateArmorSpecialization path applies from equipped leather.
+    "feral_druid_tank": [5487, 1126, 87505],
+    "feral_druid_dps": [768, 20484, 1126, 87505],
+    "balance_druid": [1126, 87505],
+    "restoration_druid": [1126, 87505],
     # Wizardry is the ordinary learned Mage cloth intellect passive.
     "arcane_mage": [1459, 30482, 89744],
     "fire_mage": [759, 1459, 30482, 89744],
@@ -1482,6 +1487,29 @@ def reconcile_hunter_setup_spell_catalogs(
     return targets, actions
 
 
+def reconcile_druid_setup_spell_catalogs(
+    target_catalog: dict[str, Any], action_profiles: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Reconcile Druid self-buffs and the learned leather parent."""
+    targets = json.loads(json.dumps(target_catalog))
+    actions = json.loads(json.dumps(action_profiles))
+    druid_specs = {
+        "balance_druid", "feral_druid_dps", "feral_druid_tank", "restoration_druid",
+    }
+    selected = [row for row in targets["targets"] if row["spec_target_id"] in druid_specs]
+    if len(selected) != len(druid_specs) or {row["spec_target_id"] for row in selected} != druid_specs:
+        raise ValueError("expected exactly four Druid setup targets")
+    for target in selected:
+        spec = target["spec_target_id"]
+        linked = actions["action_profile_spells_by_spec"][spec]
+        if target["action_profile_spell_ids"] != linked:
+            raise ValueError(f"{spec} target/action spell lists are not linked")
+        spells = sorted(set(linked) | set(PERSISTENT_SETUP_SPELL_IDS[spec]))
+        target["action_profile_spell_ids"] = spells
+        actions["action_profile_spells_by_spec"][spec] = list(spells)
+    return targets, actions
+
+
 def update_linked_configs(target_catalog: dict[str, Any]) -> None:
     provisioning = json.loads(PROVISIONING_PATH.read_text(encoding="utf-8"))
     provisioning["canonical_target_catalog"] = str(TARGET_CATALOG_PATH.relative_to(REPO_ROOT))
@@ -1639,6 +1667,26 @@ def reconcile_checked_in_elemental_runtime_actions():
     return reconciled
 
 
+def reconcile_checked_in_druid_setup_spell_catalogs():
+    originals = [
+        json.loads(TARGET_CATALOG_PATH.read_text(encoding="utf-8")),
+        json.loads(ACTION_PROFILES_PATH.read_text(encoding="utf-8")),
+    ]
+    reconciled = reconcile_druid_setup_spell_catalogs(*originals)
+    for path, original, payload in zip(
+            (TARGET_CATALOG_PATH, ACTION_PROFILES_PATH), originals, reconciled):
+        if original == payload:
+            continue
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as temporary:
+            temporary.write(json.dumps(payload, indent=2) + "\n")
+            temporary_path = Path(temporary.name)
+        temporary_path.replace(path)
+    return reconciled
+
+
 def write_bundle(output_dir: Path, payloads: dict[str, dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     for stale in output_dir.glob("*.json"):
@@ -1667,7 +1715,20 @@ def main() -> int:
     parser.add_argument("--reconcile-controlled-consumables", action="store_true")
     parser.add_argument("--reconcile-professions", action="store_true")
     parser.add_argument("--reconcile-elemental-runtime-actions", action="store_true")
+    parser.add_argument("--reconcile-druid-setup-spells", action="store_true")
     args = parser.parse_args()
+    if args.reconcile_druid_setup_spells:
+        if (args.refresh_sources or args.reconcile_rogue_poisons
+                or args.reconcile_controlled_consumables or args.reconcile_professions
+                or args.reconcile_elemental_runtime_actions):
+            parser.error("Druid setup reconciliation is exclusive")
+        targets, _ = reconcile_checked_in_druid_setup_spell_catalogs()
+        print(json.dumps({
+            "druid_setup_spells_valid": True,
+            "target_count": len(targets["targets"]),
+            "reconciled": [str(TARGET_CATALOG_PATH), str(ACTION_PROFILES_PATH)],
+        }, sort_keys=True))
+        return 0
     if args.reconcile_elemental_runtime_actions:
         if (args.refresh_sources or args.reconcile_rogue_poisons
                 or args.reconcile_controlled_consumables

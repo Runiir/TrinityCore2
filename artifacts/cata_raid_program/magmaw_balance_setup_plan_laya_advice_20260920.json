@@ -1,0 +1,8 @@
+{
+  "schema": "worker_checkpoint_advice_receipt_v1",
+  "provider": "local_laya",
+  "status": "not_reviewed",
+  "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+  "source_output": "/tmp/cata_raid_magmaw_balance_setup_plan_review2_20260920/examples.jsonl",
+  "coordinator_adjudication": "Local Laya was unavailable at the configured endpoint. Continue with the deterministic coordinator review and independent review; do not treat this as favorable model advice."
+}

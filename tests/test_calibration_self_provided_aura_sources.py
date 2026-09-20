@@ -160,6 +160,9 @@ int main() {
  assert(observe().PreScoreSelfProvidedPlayerAuraSource=="unknown_source");
  player.auras.clear(); player.auras.emplace(8076,&e); m=observe();
  assert(m.PreScoreSelfProvidedPlayerAuraSource=="not_class_setup");
+ player.classId=CLASS_DRUID; manager.state.CalibrationTargetSpec="balance_druid";
+ for(uint32 id:{1126,79061}) { player.auras.clear(); player.auras.emplace(id,&e); m=observe();
+  assert(m.PreScoreSelfProvidedPlayerAurasCompatible && !m.PreScoreSelfProvidedPlayerAuraSpellId); }
  player.classId=CLASS_PALADIN; manager.state.CalibrationTargetSpec="retribution_paladin";
  for(uint32 id:{20217,79063}) { player.auras.clear();player.auras.emplace(id,&e);assert(observe().PreScoreSelfProvidedPlayerAurasCompatible); }
  player.auras.clear(); player.auras.emplace(79058,&e); assert(!observe().PreScoreSelfProvidedPlayerAurasCompatible);

@@ -1,0 +1,15 @@
+{
+  "schema": "worker_checkpoint_advice_receipt_v1",
+  "provider": "hosted_jev",
+  "model": "jev-1.13.0",
+  "status": "reviewed",
+  "request_sha256": "f3ffcb4f24392de069d71597e4d77de10da1841735cef19b54f61a734268d0d8",
+  "response_sha256": "ee352a21bdc859a40dc538f2b5f1cab431b2e1d88919f85b46fdc75acb6bebfa",
+  "answers": {
+    "scope_fit": {"choice": "supported", "confidence": 1.0},
+    "evidence_supports_proposed_change": {"choice": "supported", "confidence": 0.72},
+    "acceptance_claim_supported": {"choice": "supported", "confidence": 0.58}
+  },
+  "source_output": "/tmp/cata_raid_magmaw_balance_setup_plan_review2_20260920/examples.jsonl",
+  "coordinator_adjudication": "Jev's advisory result agrees with the saved graph. It does not authorize implementation or native acceptance. The provider's raw request/response remains in the temporary review output for DVC retention."
+}

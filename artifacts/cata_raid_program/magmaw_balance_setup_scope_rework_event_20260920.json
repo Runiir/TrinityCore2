@@ -1,0 +1,10 @@
+{
+  "revision": 1,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "rework",
+  "reason": "The native setup trace requires the canonical provisioning generator and linked catalogs in addition to the C++ contract.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_scope_rework_20260920.json",
+    "sha256": "db248002b72849050543379d439d3343177c9b7accd93cf6b9e35f2f053d5396"
+  }
+}

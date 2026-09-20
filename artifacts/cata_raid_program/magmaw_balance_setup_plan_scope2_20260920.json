@@ -1,0 +1,74 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "evidence": [
+    {"path": "docs/bot_raids/handoff_magmaw_dps_20260919.md", "sha256": "73a402ef5447476671623151e8874a2ca3758c81b52419aff814693b4700a68e"},
+    {"path": "docs/bot_raids/error_ledger.md", "sha256": "4e97c963393d1af2443abfe5556870dc85730de64e17767fffe2a6a71d8bd011"},
+    {"path": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc", "sha256": "da50911a0103dafde5692e33c01eb4937a5a97e4a99c62bbe10bce4b834936ae"},
+    {"path": "src/server/game/Bots/BotPersistentSelfBuffContract.h", "sha256": "7aade1c5b29093d429ad5bf762652f3e49c744bf170c196529f789aa64431735"},
+    {"path": "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h", "sha256": "3af01ec615de72796f5e757edf7760a4ea6af0ec19c8defb7242ee1eeaa98ce4"},
+    {"path": "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp", "sha256": "2ef73b484177232805848a029378e0ed15d0ca088b29c6a160ab1722fd06710f"},
+    {"path": "src/server/game/Entities/Player/Player.h", "sha256": "bbc2860b53a502ba046aa7dbdedbc3b939660cdfbcd4f35d374ec9a6f85303a0"},
+    {"path": "tools/bot_ml/build_all_spec_phase1_catalogs.py", "sha256": "04b5ff8a5bd661405cd9326887e472f29b9b9516b38c4625514af702632071be"},
+    {"path": "experiments/configs/cata_434_action_profiles.json", "sha256": "8c29ba9e7d5bce03ceb41946bd9ea17d8d2c4d9e005f5471634aaa8094206c38"},
+    {"path": "experiments/configs/all_spec_targets_cata_p4_v1.json", "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"},
+    {"path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json", "sha256": "f5fe127a069dc01551d7ad62f656f92fb3e5bc5ca93e983ff36d73ee11e02ba1"},
+    {"path": "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h", "sha256": "ff487a4fb8ff2bbe15da25433524768ca19884447e42a6aa8a099196f3f53297"},
+    {"path": "experiments/configs/cata_raid_active_work_unit_v1.json", "sha256": "d764fbbde7d0afd13aa145e3b9be1ba22a4fbec23eb0556be928e5ae3f3b88ee"}
+  ],
+  "hypothesis": "Balance's missing Mark of the Wild and Leather Specialization are setup materialization defects. The native persistent setup contract lacks the Mark row, and the canonical Druid spell catalog lacks learned Mark and leather-specialization parent 87505; the existing Player armor path already consumes the learned parent relationship and needs no direct stat injection.",
+  "owned_files": [
+    "src/server/game/Bots/BotPersistentSelfBuffContract.h",
+    "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h",
+    "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+    "experiments/configs/cata_434_action_profiles.json",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h",
+    "tests/test_calibration_self_provided_aura_sources.py",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py"
+  ],
+  "forbidden_changes": [
+    "No injected stats or auras, reference weakening, coefficient tuning, spell-radius/range changes, roster changes, encounter changes, route changes or hidden live controls.",
+    "Do not persist armor-specialization child aura 86530 directly; retain the learned parent 87505 -> 86530 spell_learn_spell path.",
+    "Do not repeat the completed 50ec Survival measurement; preserve all open Balance, Blood, healer, Fire, Affliction, Survival, Elemental and Magmaw 10N requirements."
+  ],
+  "acceptance_conditions": [
+    "Add native Druid Mark of the Wild self-setup with base spell 1126 and current alternate aura 79061, and observe its own source in the calibration self-provided aura validator.",
+    "Provision learned Druid parent 87505 for every Druid target whose native setup can use it, reconcile the linked target/action catalogs, and keep child aura 86530 native.",
+    "Regenerate the materialized phase8 contract/header against the changed target catalog so the validation identity is not stale.",
+    "Run the focused source/contract/catalog tests and the materialized-contract check; native build, matched 300-second validation, watchdog raid validation and DVC publication remain separate pending gates."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_calibration_self_provided_aura_sources.py tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+    "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header"
+  ],
+  "base_commit": "81d21c2f89c2fc308ebcca1e0f337f693a4314e5",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {"path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json", "sha256": "801043d7d25cdcdf69921e3a478b0ee426d3de357c0584dbeeeb71ffba75cb5e"},
+    "roster": {"path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json", "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"},
+    "runtime_profile": {"path": "experiments/configs/validation_scenarios_cata_001.json", "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"}
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {"path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope2_jev_advice_20260920.json", "sha256": "cdc92862d80c9ce3d4f73cb9e6c2dc8034df6bea93eafe17ea14cb45d651d934"},
+      "adjudication": "Supported scope/evidence; acceptance remains unproved at plan stage."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; coordinator review required."
+    }
+  }
+}

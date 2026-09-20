@@ -1239,6 +1239,7 @@
       "action_profile_spell_ids": [
         99,
         779,
+        1126,
         5176,
         5185,
         5487,
@@ -1277,7 +1278,8 @@
         80965,
         84735,
         84840,
-        87335
+        87335,
+        87505
       ],
       "runtime_rotation_profile": {
         "class_id": 11,
@@ -2887,6 +2889,7 @@
       "action_profile_identity": "cata_434:11:restoration_druid",
       "action_profile_spell_ids": [
         774,
+        1126,
         2782,
         5176,
         5185,
@@ -2918,6 +2921,7 @@
         81275,
         85101,
         87305,
+        87505,
         88423,
         92364,
         96429
@@ -13162,6 +13166,7 @@
       ],
       "action_profile_identity": "cata_434:11:balance_druid",
       "action_profile_spell_ids": [
+        1126,
         2912,
         5176,
         5185,
@@ -13194,6 +13199,7 @@
         79060,
         80965,
         81062,
+        87505,
         88747,
         88751,
         93399,
@@ -13695,6 +13701,7 @@
       "action_profile_spell_ids": [
         768,
         1079,
+        1126,
         1822,
         5176,
         5185,
@@ -13733,7 +13740,8 @@
         80965,
         84735,
         84840,
-        87335
+        87335,
+        87505
       ],
       "runtime_rotation_profile": {
         "class_id": 11,

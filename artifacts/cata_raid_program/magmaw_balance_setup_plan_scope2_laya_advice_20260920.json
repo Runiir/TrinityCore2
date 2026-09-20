@@ -1,0 +1,12 @@
+{
+  "schema": "worker_checkpoint_advice_v1",
+  "stage": "plan",
+  "subject": "orchestrator",
+  "provider": "local_laya",
+  "status": "not_reviewed",
+  "request_sha256": "25d64fbdf897b089f71dd494cf6d7cccb20db63c1857d01bc45d01b9104fc56c",
+  "response_sha256": null,
+  "checkpoint_sha256": "95e3e66a6cfc75b8f9f1d731c531fa5f08a6e8582e16b0860d2752ce8aeb9589",
+  "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+  "coordinator_adjudication": "Local Laya was unavailable. Continue with deterministic source checks, hosted advisory output, and independent review."
+}

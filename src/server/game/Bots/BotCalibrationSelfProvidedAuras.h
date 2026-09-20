@@ -7,8 +7,9 @@
 
 namespace BotCalibrationSelfProvidedAuras
 {
-inline constexpr std::array<uint32, 11> PlayerAuraIds = {
+inline constexpr std::array<uint32, 13> PlayerAuraIds = {
     53646, 79058, 24932, 2895, 8515, 8076, 82930, 57669, 20217, 79063, 79102,
+    1126, 79061,
 };
 inline constexpr std::array<uint32, 4> TargetAuraIds = { 1490, 22959, 81326, 58567 };
 enum class Source { Own, Foreign, Unknown };
