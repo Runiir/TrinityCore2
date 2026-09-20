@@ -97,7 +97,7 @@ struct BotWorldPopulationMgr{
 int main(){
  spellMgr.Spells.emplace(100,SpellInfo{100,1u<<SPELL_SCHOOL_FIRE,true});
  Player caster;caster.GuidValue={11};caster.Entry=77;caster.StatValues={100,200,300,400,500};caster.AttackPower=900;caster.RangedAttackPower=1100;caster.Armor=2200;caster.MaxHealth=33000;caster.Mana=44000;
- caster.FloatValues[UNIT_FIELD_BASEATTACKTIME]=1000;caster.FloatValues[UNIT_FIELD_RANGEDATTACKTIME]=1250;caster.FloatValues[UNIT_MOD_CAST_HASTE]=0.8f;caster.FloatValues[UNIT_MOD_CAST_SPEED]=1.05f;caster.FloatValues[PLAYER_CRIT_PERCENTAGE]=9.5f;caster.FloatValues[PLAYER_RANGED_CRIT_PERCENTAGE]=17.0f;
+ caster.FloatValues[UNIT_FIELD_BASEATTACKTIME]=1000;caster.FloatValues[UNIT_FIELD_RANGEDATTACKTIME]=1250;caster.FloatValues[UNIT_MOD_CAST_HASTE]=0.8f;caster.FloatValues[UNIT_MOD_CAST_SPEED]=0.75f;caster.FloatValues[PLAYER_CRIT_PERCENTAGE]=9.5f;caster.FloatValues[PLAYER_RANGED_CRIT_PERCENTAGE]=17.0f;
  caster.SchoolPower[SPELL_SCHOOL_HOLY]=6800;caster.SchoolPower[SPELL_SCHOOL_FIRE]=7123;caster.SchoolPower[SPELL_SCHOOL_SHADOW]=6900;
  caster.FloatValues[PLAYER_SPELL_CRIT_PERCENTAGE1+SPELL_SCHOOL_FIRE]=18.25f;caster.FloatValues[PLAYER_SPELL_CRIT_PERCENTAGE1+SPELL_SCHOOL_SHADOW]=22.5f;
  Pet pet;pet.GuidValue={21};pet.Entry=416;pet.Owner=&caster;pet.Permanent=true;pet.BonusDamage=1550;pet.NativeSpellCrit=12.5f;pet.AutoSpells={100};pet.SchoolPower[SPELL_SCHOOL_FIRE]=1600;caster.CurrentPet=&pet;
@@ -117,7 +117,7 @@ int main(){
     assert caster["owner"]["guid"] == 11
     assert caster["owner"]["intellect"] == 400
     assert caster["owner"]["spell_power"] == 7123  # Legacy max-school scalar.
-    assert abs(caster["owner"]["spell_speed_multiplier"] - (1.0 / (0.8 * 1.05))) < 1e-4
+    assert abs(caster["owner"]["spell_speed_multiplier"] - (1.0 / 0.75)) < 1e-4
     assert caster["owner"]["spell_crit_pct"] == 22.5  # Legacy Shadow scalar.
     assert caster["owner"]["spell_schools"]["fire"] == {
         "spell_power": 7123,
