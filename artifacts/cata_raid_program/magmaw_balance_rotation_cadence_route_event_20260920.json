@@ -1,0 +1,19 @@
+{
+  "revision": 72,
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "action": "route",
+  "reason": "The Balance effective-stat repair is published and the exact 300-second canary is closed, but actor performance and Magmaw completion remain open. Route the next first-broken edge to post-parity rotation/cadence review without changing encounter behavior or the other actors.",
+  "coordinator_verdict": "aligned",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_20260920.json",
+    "sha256": "99cc6c56bd649af3dc404300793c8f95e5a594a1bbcedba7f95128bf138eb01a"
+  },
+  "unit": {
+    "id": "magmaw:balance_rotation_cadence_02",
+    "edge": "owner_rotation_execution_after_effective_stat_parity",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-rotation-review",
+    "next_action": "Compare the repaired native Balance scoring-start receipt and exact action timeline against the pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then run focused evidence and the canonical exact-300 canary.",
+    "objective": "Close the Balance actor-performance gap lawfully while preserving native stats, spell coefficients, roster, consumables and encounter route."
+  }
+}

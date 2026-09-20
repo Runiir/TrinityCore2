@@ -1,0 +1,33 @@
+{
+  "kind": "plan_drift_review",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "prior_unit": "magmaw:balance_effective_stat_parity_01",
+  "prior_unit_outcome": {
+    "repair_accepted": true,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "publication": "DVC remote reconstruction verified"
+  },
+  "checks": {
+    "parent_objective_preserved": true,
+    "all_actor_requirements_preserved_open": true,
+    "raid_clear_requirement_preserved_open": true,
+    "native_stat_repair_not_mislabeled_as_performance": true,
+    "next_unit_is_bounded_to_one_edge": true,
+    "no_scope_expansion_to_encounter_or_other_actors": true
+  },
+  "verdict": "aligned",
+  "next_unit": {
+    "id": "magmaw:balance_rotation_cadence_02",
+    "edge": "owner_rotation_execution_after_effective_stat_parity",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-rotation-review"
+  }
+}
