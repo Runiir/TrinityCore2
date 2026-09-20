@@ -1,0 +1,31 @@
+{
+  "schema": "magmaw_balance_rotation_review_report_v1",
+  "verdict": "approved",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "reviewer": "Rawls",
+  "reviewed_commit": "17e8cdfdf6e84d3844b253e8d4db443885bc0ae4",
+  "reviewed_files": [
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql",
+    "tests/test_balance_rotation_cadence.py"
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "36219b2551fd259fd71d87203bfb54bfb28082614b94cf9ae3ab50ed48f71391",
+    "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql": "62be5d02145e2055a67aa155eee6330f4bb85e9a4b86f5f1b57c95144f2de795",
+    "tests/test_balance_rotation_cadence.py": "b1057dc84864444df4f8dc7f7bae08bc482df1faf17f63bec4e77c83caa8fc53"
+  },
+  "findings": [],
+  "observations": [
+    "The typed predicate rejects only tagged Balance actions when both Eclipse auras 48517 and 48518 are absent and POWER_ECLIPSE is zero, returning balance_neutral_opener.",
+    "The predicate uses existing HasMechanicTag, HasAura, GetPower and POWER_ECLIPSE APIs through the normal candidate path; native spell legality and fallback candidates remain intact.",
+    "The SQL update is limited to class 11, balance_druid, DPS, spell 78674 and is idempotent through FIND_IN_SET plus CONCAT_WS.",
+    "The patch is policy-only and player-like: it observes state and rejects a candidate without mutating Eclipse power, forcing a cast, changing coefficients, or touching encounter logic.",
+    "The source-shape test is appropriately scoped but does not execute the candidate builder; native candidate observation and exact validation remain required before repair acceptance."
+  ],
+  "acceptance_scope": {
+    "repair_accepted": false,
+    "actor_performance_accepted": false,
+    "raid_clear_accepted": false,
+    "native_candidate_observation_required": true
+  }
+}

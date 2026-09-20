@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 169,
+    "revision": 170,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -3475,6 +3475,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 169,
+        "unit_id": "magmaw:balance_rotation_cadence_03",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_03",
+          "revision": 169,
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_review_20260920.json",
+            "sha256": "2548002b5d4e10128f7308ed4b490e515d8afe174cbc487f45c8663a260679fb"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3483,7 +3500,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "340fbd4d8ca35a0206e48774761e789707b2f5cb",
+    "source_base_commit": "17e8cdfdf6e84d3844b253e8d4db443885bc0ae4",
     "assignment": {
       "hypothesis": "After effective-stat parity, Balance still loses lawful cadence at the first policy edge: the neutral, zero-Eclipse-power opener admits Starsurge through bucketed native arbitration before the pinned WoWSims APL can cast Moonfire. A Balance-tagged candidate gate for that exact neutral state should restore the opener without changing stats, coefficients, roster, consumables, encounter route, or the simulator denominator.",
       "owned_files": [
@@ -3541,6 +3558,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_implementation_20260920.json",
         "sha256": "f2a3d1346696413a66b3d92cc095d809a41c5b3a8e4abb47049269ddb67fea53"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_review_20260920.json",
+        "sha256": "2548002b5d4e10128f7308ed4b490e515d8afe174cbc487f45c8663a260679fb"
       }
     },
     "tested_files": {
