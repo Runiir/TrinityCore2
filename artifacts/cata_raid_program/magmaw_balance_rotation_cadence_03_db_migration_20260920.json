@@ -1,0 +1,27 @@
+{
+  "kind": "db_migration",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "applied_at": "2026-09-20T16:40:30Z",
+  "migration": {
+    "path": "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql",
+    "sha256": "62be5d02145e2055a67aa155eee6330f4bb85e9a4b86f5f1b57c95144f2de795",
+    "idempotent": true
+  },
+  "target": {
+    "table": "bot_rotation_action",
+    "profile_id": 290,
+    "action_id": 2542,
+    "spell_id": 78674,
+    "enabled": 1,
+    "profile": "balance_druid/dps"
+  },
+  "before": {
+    "mechanic_tags": "starsurge,primary"
+  },
+  "after": {
+    "mechanic_tags": "starsurge,primary,balance_starsurge_neutral_gate",
+    "tag_occurrences": 1
+  },
+  "changed_rows": 1,
+  "verification": "readback after commit confirmed the reviewed tag is present exactly once"
+}
