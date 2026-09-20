@@ -1,0 +1,115 @@
+{
+  "schema": "magmaw_balance_rotation_cadence_dummy_run_evidence_v1",
+  "operation_id": "bbcfd6a338304bcb3dccace3ef9a76f733ffe3ba80e30fec46d72be3145ea45c",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "source_run_root": "/tmp/magmaw-balance-rotation-cadence-20260920-r2",
+  "batch": {
+    "path": "batch.json",
+    "sha256": "0c552ccf512ed0bfed95e09da7ce777a687129a610813c489cf45ff010e03a9f",
+    "schema": "dummy_calibration_batch_v1",
+    "source_commit": "4c18537e5dcdb42ed31513fc480e06d2b40ed48f",
+    "build_source_commit": "73e8b043fac05ff79f4f17c6ab239ef1551480db",
+    "binary_sha256": "ef82a286e8e74d0cbd3af823e0a42f0be0b8b681ec1c5c8d38d5d8fd672b1854",
+    "server_epoch": 1698406955295968,
+    "seed": 1,
+    "concurrency": 1,
+    "specs": ["balance_druid"],
+    "config_sha256": "2241bc86db03b6cb6616d1611480b1892c5ae99a490fdd3c2fb59f619a8ca8f4",
+    "build_receipt_sha256": "6bfee4197027a70f7a8a4717d0bf6379b797d8c3345a22431c2b6c93d98f442e",
+    "batch_accepted": true,
+    "all_captures_accepted": true,
+    "all_measurements_completed": true,
+    "all_references_comparable": true,
+    "performance_accepted": false,
+    "training_eligible": false
+  },
+  "report": {
+    "path": "balance_druid/report.json",
+    "sha256": "ee63dfcc29c1dee92236cc955319b284444f048da55ccabbff07d3b75736d314",
+    "returncode": 0,
+    "passed": true,
+    "failed": false,
+    "timed_out": false,
+    "completion_reason": "combat_calibration_complete",
+    "batch_terminal_reason": "complete",
+    "exact_window_capture_accepted": true,
+    "measurement_completed": true,
+    "diagnostics_complete": true,
+    "reference_comparable": true,
+    "comparison_rejections": [],
+    "cleanup": {
+      "path": "balance_druid/cleanup.json",
+      "sha256": "d333035bd50d7787089c6450ce51fbc3656dfd28e53f1626c31c6dbc449cc3b7",
+      "process_exited": true,
+      "process_return_code": 0,
+      "server_started": true
+    }
+  },
+  "measurement": {
+    "spec": "balance_druid",
+    "damage": 9442718,
+    "dps": 31475.726666666666,
+    "scored_seconds": 300.0,
+    "action_attempts": 197,
+    "deaths": 0,
+    "performance_accepted": false,
+    "training_eligible": false
+  },
+  "effective_stat_observation": {
+    "guid": 30540,
+    "scoring_start_intellect": 11078.0,
+    "scoring_start_spirit": 1623.0,
+    "scoring_start_hit_rating": 289,
+    "scoring_start_haste_rating": 2668,
+    "scoring_start_crit_rating": 231,
+    "scoring_start_mastery_rating": 2257,
+    "scoring_start_spell_hit_pct": 16.975,
+    "scoring_start_spell_speed_multiplier": 1.269,
+    "scoring_start_spell_power": 13854,
+    "wowsims_expected_spell_speed_multiplier": 1.332199768447153,
+    "direct_cast_speed_delta": -0.06319976844715303,
+    "interpretation": "Direct-cast serialization now uses UNIT_MOD_CAST_SPEED only; the remaining 1.05 Moonkin Aura parity gap is still visible and belongs to a separate native aura-lifecycle edge."
+  },
+  "rotation_review": {
+    "path": "rotation-review.json",
+    "sha256": "4550643dbf7fd0ca87f527464c772d2366b0c3d35c54f521f59d04e338057b07",
+    "schema": "trinity_wowsims_rotation_mechanics_review_v1",
+    "effective_stat_parity": "mismatch",
+    "dps_tuning_gate": "mismatch",
+    "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    "gear_parity": "match",
+    "consumable_parity": "match",
+    "cast_mix_status": "available",
+    "trinity_casts_per_second": 0.656666666667,
+    "wowsims_casts_per_second": 0.703405,
+    "trinity_to_wowsims_cadence_ratio": 0.933554163913,
+    "cast_mix_overlap": 0.928270654838,
+    "maximum_absolute_share_delta": 0.064687324484,
+    "interpretation": "Rotation tuning remains inadmissible until effective-stat parity is repaired; cadence signals are retained for the next native edge review."
+  },
+  "raw_output_hashes": {
+    "results.json": "e7a613f602af59f81b2b740d9c7f8b30df4f20c59ac238e1bec92968d7e885cb",
+    "runtime-assets.json": "b72aed332f058a1f46f2f2ee56a063d6305b8c5b6cc66112bdea81f3ac108ab0"
+  },
+  "cleanup_verified": true,
+  "closed": true,
+  "terminal_reason": "measurement_complete",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_gate_rework2_20260920.json",
+      "sha256": "5b64ff0c5c44fb956c68a25251aed96615138fe984940ad13e9451389b6b16a4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_claim_rework2_20260920.json",
+      "sha256": "f8b1810117a762069642ebd37432849e76bf8f3f389c8758ac646cb147bb1fa9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_rework_20260920.json",
+      "sha256": "96acef752ea57c34a0a5ff309246b974ca62dfeea680cdca3bcac912c7c5e3f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_review_rework_20260920.json",
+      "sha256": "713f6bb8a46112e3f02c3f18109f2d405262dc48ba836440b51e93375ea5f421"
+    }
+  ]
+}

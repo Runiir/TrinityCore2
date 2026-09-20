@@ -1,0 +1,10 @@
+{
+  "revision": 89,
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "action": "advance",
+  "claim_token": "bbcfd6a338304bcb3dccace3ef9a76f733ffe3ba80e30fec46d72be3145ea45c",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+    "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+  }
+}

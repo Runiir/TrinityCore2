@@ -1,0 +1,67 @@
+{
+  "kind": "plan_drift_review",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "task_id": "magmaw:balance_rotation_cadence_02:plan-drift-20260920",
+  "checkpoint_sha256": "8df0f7332b27412e876b251c56d071d3176376a111287fe625b6461c1b5ec2d2",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.dvc",
+      "sha256": "d1f1f174bb00bfa6b70859c0bba28b69ad4f9ccd9b7e4001a26d592d3ea05074"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_assessment_rework2_20260920.json",
+      "sha256": "c422a7375dbe0ea1e36f4734d5633d6a3f52bc9ca7ea06abfa67d5b3a73b3e8c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_evidence_rework2_20260920.json",
+      "sha256": "20f90c5a7d5a4949ca257dd2993043656be5a67fa33e9063415422766c999aca"
+    }
+  ],
+  "checks": {
+    "parent_objective_preserved": true,
+    "all_actor_requirements_preserved_open": true,
+    "raid_clear_requirement_preserved_open": true,
+    "native_stat_repair_not_mislabeled_as_performance": true,
+    "next_unit_is_bounded_to_one_edge": true,
+    "no_scope_expansion_to_encounter_or_other_actors": true
+  },
+  "deterministic": {
+    "status": "pass",
+    "findings": []
+  },
+  "advisory_models": {
+    "hosted_jev": {
+      "status": "advisory",
+      "choices": {
+        "scope_fit": "supported",
+        "evidence_supports_proposed_change": "supported",
+        "acceptance_claim_supported": "supported"
+      },
+      "confidence": {
+        "scope_fit": 1.0,
+        "evidence_supports_proposed_change": 0.98,
+        "acceptance_claim_supported": 0.88
+      }
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "error": "HTTPError: HTTP Error 422: Unprocessable Content",
+      "interpretation": "The pinned local context rejected this packet; no favorable or unfavorable model judgment was inferred."
+    }
+  },
+  "verdict": "aligned",
+  "next_unit": {
+    "id": "magmaw:balance_effective_stat_parity_03",
+    "edge": "owner_effective_stat_application_moonkin_aura_materialization",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-class-mechanics-implementation",
+    "next_action": "Diagnose and repair the native Moonkin Aura 24907 materialization edge only; preserve direct-cast/periodic-haste separation and rerun exact effective-stat evidence before any rotation tuning."
+  }
+}

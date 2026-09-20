@@ -1,0 +1,17 @@
+{
+  "revision": 93,
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "action": "route",
+  "reason": "The exact canary and independent review closed the direct-cast semantics edge but left a native Moonkin Aura effective-stat mismatch. Route the next bounded repair to native aura materialization before interpreting Balance cadence or DPS, while preserving every open actor and encounter requirement.",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_drift_review_rework2_20260920.json",
+    "sha256": "9e742c3655dec0556678052e20c42f7ae3111113a96eb9acee45664bad9753e0"
+  },
+  "unit": {
+    "id": "magmaw:balance_effective_stat_parity_03",
+    "edge": "owner_effective_stat_application_moonkin_aura_materialization",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-class-mechanics-implementation",
+    "next_action": "Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning."
+  }
+}

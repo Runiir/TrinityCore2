@@ -1,0 +1,56 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "3fb04198e90b00f03b1b69061c7fba28081c945ce88f6a776612b30d93246a18",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_assessment_rework2_20260920.json",
+      "sha256": "c422a7375dbe0ea1e36f4734d5633d6a3f52bc9ca7ea06abfa67d5b3a73b3e8c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+      "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_actor_30001_review_rework2_20260920.json",
+      "sha256": "cd873ceacd688caba548c5969f01a25fcc54c9896f7aa432e0ff14a87a99037a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc",
+      "sha256": "3d8a27e41356b5a86b4dda27abe793cae71bf4ca51c412631d6f6adbb21c3d89"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_gate_rework2_20260920.json",
+      "sha256": "5b64ff0c5c44fb956c68a25251aed96615138fe984940ad13e9451389b6b16a4"
+    }
+  ],
+  "archive": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz",
+    "dvc_pointer_path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc",
+    "dvc_pointer_sha256": "3d8a27e41356b5a86b4dda27abe793cae71bf4ca51c412631d6f6adbb21c3d89",
+    "dvc_md5": "c29859cea86a943c060cb496ad9b05c7",
+    "size_bytes": 2989115,
+    "archive_sha256": "789206417119726f434c7e3abd501f46866cbeab03356230a9bb19f00ec4c67d"
+  },
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "remote_verification": {
+    "method": "targeted dvc status -q -c plus empty-cache reconstruction",
+    "empty_cache_reconstruction": true,
+    "reconstructed_archive_sha256": "789206417119726f434c7e3abd501f46866cbeab03356230a9bb19f00ec4c67d",
+    "reconstructed_size_bytes": 2989115,
+    "remote_status_exit_code": 0
+  },
+  "cleanup_verified": true,
+  "cleanup": {
+    "raw_run_root_evicted": true,
+    "local_archive_evicted": true,
+    "compact_receipts_retained": true,
+    "dvc_pointer_retained": true,
+    "remote_reconstruction_path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validation_rework2_20260920.tar.gz.dvc"
+  },
+  "publication_status": "remote_verified_local_duplicates_evicted"
+}

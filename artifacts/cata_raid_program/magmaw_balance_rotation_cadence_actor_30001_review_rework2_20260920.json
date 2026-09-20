@@ -1,0 +1,69 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "producer": "coordinator",
+  "reviewer_role": "coordinator closed-run evidence review",
+  "review_basis": "Exact WoWSims identity, native scoring-start effective-stat receipt, native 300-second calibration output, independent rotation review, and cleanup evidence were compared without accepting DPS or raid performance.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_rework2_20260920.json",
+      "sha256": "f8eb0f0749e838e4a5f203ee5dfa46c4202fe36d4cad734f37a82ab6fca15839"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_evidence_rework2_20260920.json",
+      "sha256": "20f90c5a7d5a4949ca257dd2993043656be5a67fa33e9063415422766c999aca"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ],
+  "actor_id": "30001",
+  "spec": "balance_druid",
+  "status": "reviewed",
+  "accepted": false,
+  "reference_comparable": true,
+  "run_identity": {
+    "scenario_kind": "dummy",
+    "attempt_id": 1,
+    "cohort_id": "dummy-d10a4f7d8ba3-1",
+    "server_epoch": 1698406955295968,
+    "target_guid": 30540,
+    "target_phase": 32512,
+    "scoring_seconds": 300.0,
+    "terminal_reason": "measurement_complete"
+  },
+  "facts": {
+    "measured_dps": 31475.726666666666,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.88808,
+    "damage": 9442718,
+    "deaths": 0,
+    "capture_diagnostics_cleanup_passed": true,
+    "gear_parity": "match",
+    "consumable_parity": "match",
+    "effective_stat_parity": "mismatch",
+    "direct_cast_speed_multiplier": 1.269,
+    "wowsims_direct_cast_speed_multiplier": 1.332199768447153,
+    "total_dps_comparison_admitted": false,
+    "cast_cadence_ratio": 0.933554163913,
+    "cast_mix_overlap": 0.928270654838
+  },
+  "verdict": {
+    "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    "direct_cast_semantics_repair": "accepted_for_follow_up",
+    "performance_accepted": false,
+    "raid_clear_accepted": false,
+    "actor_30001_requirement_accepted": false
+  },
+  "next_action": {
+    "action": "Route the remaining native Moonkin Aura effective-stat mismatch for a separate bounded repair before interpreting Balance cadence or DPS.",
+    "forbidden_until_parity": [
+      "Do not tune Balance priorities.",
+      "Do not change spell coefficients.",
+      "Do not accept Balance performance or Magmaw 10N from this dummy run."
+    ],
+    "acceptance_condition": "Exact effective-stat parity must pass before total-DPS or rotation-performance acceptance."
+  }
+}

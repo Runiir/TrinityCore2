@@ -1,0 +1,98 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "bbcfd6a338304bcb3dccace3ef9a76f733ffe3ba80e30fec46d72be3145ea45c",
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "73e8b043fac05ff79f4f17c6ab239ef1551480db",
+    "binary_sha256": "ef82a286e8e74d0cbd3af823e0a42f0be0b8b681ec1c5c8d38d5d8fd672b1854"
+  },
+  "source_commit": "4c18537e5dcdb42ed31513fc480e06d2b40ed48f",
+  "source_tree": "5bdd63a64b7f0a85a727cd6067e154b52e16ac00",
+  "attempt_id": 1,
+  "server_epoch": 1698406955295968,
+  "cohort_id": "dummy-d10a4f7d8ba3-1",
+  "target_guid": 30540,
+  "target_phase": 32512,
+  "terminal_reason": "measurement_complete",
+  "native_terminal_reason": "complete",
+  "closed": true,
+  "cleanup_verified": true,
+  "scoring_ms": 300000,
+  "controller": "tools.raid_program.run_dummy_calibrations",
+  "source_run_root": "/tmp/magmaw-balance-rotation-cadence-20260920-r2",
+  "measurement": {
+    "spec": "balance_druid",
+    "damage": 9442718,
+    "dps": 31475.726666666666,
+    "scored_seconds": 300.0,
+    "action_attempts": 197,
+    "deaths": 0,
+    "diagnostics_complete": true,
+    "reference_comparable": true,
+    "comparison_rejections": [],
+    "performance_accepted": false,
+    "training_eligible": false
+  },
+  "effective_stat_observation": {
+    "scoring_start_spell_speed_multiplier": 1.269,
+    "wowsims_expected_spell_speed_multiplier": 1.332199768447153,
+    "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    "direct_cast_speed_semantics": "UNIT_MOD_CAST_SPEED reciprocal; UNIT_MOD_CAST_HASTE remains separate periodic-haste observation",
+    "remaining_native_aura_gap": "Moonkin Aura 5% direct-cast parity remains unresolved and separately attributable"
+  },
+  "rotation_review": {
+    "path": "rotation-review.json",
+    "sha256": "4550643dbf7fd0ca87f527464c772d2366b0c3d35c54f521f59d04e338057b07",
+    "effective_stat_parity": "mismatch",
+    "dps_tuning_admitted": false,
+    "trinity_to_wowsims_cadence_ratio": 0.933554163913,
+    "cast_mix_overlap": 0.928270654838
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "03f46f72376d750eba3147c19ad7574f3718df0de2c8399a2ff16f9aac089844",
+    "tests/test_bot_effective_stats_diagnosis.py": "d5dba7f99523edf9b42fe24cb1f5b6fe9b53617f2a811b69b9bc2325954b58b4",
+    "tests/test_balance_native_effective_stat_parity.py": "7ac08337b4d7340a9df85ea9d8ac98a40ee6134d2d28ea734c538498c91884ce"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_run_evidence_rework2_20260920.json",
+      "sha256": "20f90c5a7d5a4949ca257dd2993043656be5a67fa33e9063415422766c999aca"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_gate_rework2_20260920.json",
+      "sha256": "5b64ff0c5c44fb956c68a25251aed96615138fe984940ad13e9451389b6b16a4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_claim_rework2_20260920.json",
+      "sha256": "f8b1810117a762069642ebd37432849e76bf8f3f389c8758ac646cb147bb1fa9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_rework_20260920.json",
+      "sha256": "96acef752ea57c34a0a5ff309246b974ca62dfeea680cdca3bcac912c7c5e3f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_review_rework_20260920.json",
+      "sha256": "713f6bb8a46112e3f02c3f18109f2d405262dc48ba836440b51e93375ea5f421"
+    }
+  ]
+}
