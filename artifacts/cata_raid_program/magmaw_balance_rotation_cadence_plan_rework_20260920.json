@@ -1,0 +1,85 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "The previous scoring-ledger repair conflated two native Trinity timing factors. UNIT_MOD_CAST_SPEED is the factor used by direct spell cast-time and global-cooldown calculation, while UNIT_MOD_CAST_HASTE is the separate periodic-haste factor. SpellSpeedMultiplier must therefore serialize the reciprocal of the direct cast-speed factor only; any remaining difference from the pinned 1.05 Moonkin Aura belongs to native aura materialization and must remain separately attributable.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "tests/test_bot_effective_stats_diagnosis.py",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, action buckets, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, or raid route behavior.",
+    "Do not weaken the effective-stat comparator or reinterpret a native aura mismatch as a rotation loss.",
+    "Do not multiply UNIT_MOD_CAST_SPEED and UNIT_MOD_CAST_HASTE, manufacture a cast-speed value, or remove the periodic-haste observation from native diagnostics.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N before the focused review gate and later raid evidence."
+  ],
+  "acceptance_conditions": [
+    "The native scoring ledger serializes direct-cast SpellSpeedMultiplier as the reciprocal of UNIT_MOD_CAST_SPEED and does not double-count UNIT_MOD_CAST_HASTE.",
+    "Focused source-contract and effective-stat diagnosis tests pass without changing the Balance rotation or native aura lifecycle.",
+    "The required native build succeeds with stable source and binary identity.",
+    "An identical exact-300 canary followed by tools.bot_ml.review_rotation_mechanics reports the actual direct-cast effective-stat outcome; any remaining Moonkin Aura discrepancy stays visible for a separate native aura repair."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "83b32aff98a17cf2cbb8a1cb92b60b128730a7de",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/summary.json",
+        "sha256": "a0b2a8f24440bbec49f16fbd1e1f0abeab133264a74419acf4ec91fb7f27ffc7"
+      },
+      "adjudication": "The new plan narrows the measurement to the native direct-cast path and preserves separate periodic-haste semantics; the canary remains the acceptance authority."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Local Laya was unavailable. Native source semantics, deterministic fixtures, and the exact canary control this bounded correction."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_reconciliation_20260920.json",
+      "sha256": "65e9dbe68914e6fad84cb5867f950a3893450a3dee2e93c325c55880b9b69907"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_review_20260920.json",
+      "sha256": "b2594f207269c2c5ed8ff829e2508095f0f2efe3fd80741fd4ef449e0be66d7a"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_pet_identity_v4/compute_stats/f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867.json",
+      "sha256": "f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ]
+}
