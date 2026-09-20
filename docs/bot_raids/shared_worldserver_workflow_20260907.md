@@ -27,10 +27,12 @@ Join those native reports to the exact simulator inputs and reconcile signed
 spell/effect losses and gains, including pets, copies and an unknown residual.
 The prior diagnosis counted Dragonwrath copies as player casts; this exaggerates
 cadence differences but does not prove missing native DTR damage. Its normalized
-review also lacked the runtime/ComputeStats join. Do not select another gameplay
+review also lacked the runtime/ComputeStats join. Do not select another DPS optimization
 patch until the retained-data comparison supports its expected net gain, or route
 a specific missing observation when it does not. Review the latest decline before
 stacking a change; preserve unrelated accepted repairs and all other actors.
+An urgent correctness repair may proceed with separate behavior acceptance;
+the unexplained DPS gap and overall performance requirement remain open.
 
 The earlier Moonkin haste expectation of 1.332199768 was a comparator error:
 WoWSims already included the 5% form multiplier. Native speed 1.269 matches the
