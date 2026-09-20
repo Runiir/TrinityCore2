@@ -1,0 +1,38 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "independent-reviewer",
+  "reviewer": "independent-reviewer",
+  "verdict": "approved",
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "03f46f72376d750eba3147c19ad7574f3718df0de2c8399a2ff16f9aac089844",
+    "tests/test_bot_effective_stats_diagnosis.py": "d5dba7f99523edf9b42fe24cb1f5b6fe9b53617f2a811b69b9bc2325954b58b4",
+    "tests/test_balance_native_effective_stat_parity.py": "7ac08337b4d7340a9df85ea9d8ac98a40ee6134d2d28ea734c538498c91884ce"
+  },
+  "scope_check": "The patch is limited to the Balance calibration stat ledger and directly affected source-contract fixture assertions. The only gameplay expression changed is the native direct-cast speed measurement; no rotation policy, spell coefficient, proc, gear, consumable, simulator, roster, encounter or route file changed.",
+  "findings": [],
+  "review_notes": [
+    "WorldObject::ModSpellCastTime and Spell::UpdateGlobalCooldown consume UNIT_MOD_CAST_SPEED, whereas SpellInfo::CalcPeriodicHasteMod consumes UNIT_MOD_CAST_HASTE; the product formula was therefore a double count for the serialized direct-cast field.",
+    "The fixture keeps distinct cast-haste and cast-speed values and asserts that only the native direct-cast factor determines SpellSpeedMultiplier.",
+    "The review does not claim that the separate 5% Moonkin Aura lifecycle is repaired; the exact canary must keep that outcome attributable."
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_rework_20260920.json",
+      "sha256": "96acef752ea57c34a0a5ff309246b974ca62dfeea680cdca3bcac912c7c5e3f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_implementation_rework_20260920.json",
+      "sha256": "50468d59e637b5d0527c68a3729962d7e9cf2f3074ad98c958f43c6b2dad68b8"
+    },
+    {
+      "path": "src/server/game/Entities/Object/WorldObjectSpells.cpp",
+      "sha256": "2001a61f9616a7b48dbbd45576a39f5083aa4110199aedc9a910258d5dce9586"
+    },
+    {
+      "path": "src/server/game/Spells/SpellInfo.cpp",
+      "sha256": "58ade09ac347297dc2b18aa2c8fd0858d7e681743d79e5ca10c2c84d8640471c"
+    }
+  ]
+}
