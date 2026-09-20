@@ -1,9 +1,17 @@
 ---
 name: trinity-orchestrator
-description: Coordinate TrinityCore repair workers and serialized builds/live experiments with minimal handoff overhead.
+description: Own broad requests such as implement boss bots through diagnosis, repair workers, builds and live validation. Use for encounter-wide implementation and optimization, not only explicit orchestration requests.
 ---
 
 # Trinity orchestrator
+
+For a broad boss-bot request, keep coordinator ownership even when performing a
+specialist's work directly. Resolve the mainline checkout from `git worktree list
+--porcelain`, read its AGENTS.md and skills, and check the saved coordinator path.
+A detached or old side branch must not silently replace the current task.
+After `start` or `resume`, execute `unit.next_action` using its linked evidence.
+The command's return is a handoff to you, not completion of the user's request.
+Do not choose an unrelated small patch merely because its fixture passes.
 
 For a user request naming a boss and difficulty, first select it with
 `pixi run python -m tools.raid_program.raid_workloop start "<request>"`.

@@ -5,6 +5,15 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 
 # Raid performance loop
 
+"Implement <boss> <mode> bots" is an encounter-wide coordinator assignment.
+Specialist stop/handoff rules bound that specialist, not the parent task. Continue
+after its result through review, valid source/build preparation and the next
+authorized experiment. Keep any failing broader checks visible when reporting a
+passing narrow suite; classify pre-existing, unrelated and blocking failures.
+For build admission errors, use the retained policy and verified configure lineage;
+isolate/commit owned changes without resetting unrelated work. Setup errors are
+repair tasks unless a demonstrated external dependency prevents progress.
+
 For a user request naming a boss and difficulty, first select it with
 `pixi run python -m tools.raid_program.raid_workloop start "<request>"`.
 For example, `start "implement magmaw 25hc bots"` resolves 25H, preserves 10N

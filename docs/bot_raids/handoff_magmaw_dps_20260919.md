@@ -22,10 +22,13 @@ resume the parent DPS task when instructed.
 
 ## Worktree, source and processes
 
-- Continue on master at `/home/runiir/Games/trinity-magmaw-parity`.
-- `/home/runiir/Games/trinity-cata` remains the separate, dirty/ongoing
-  `codex/magmaw-jev-canary` checkout at `60ae9760b4`. Preserve it and the other
-  dirty JEV integration worktree. Do not reset or blindly cherry-pick them.
+- Current coordinator (2026-09-20): `master` at `/home/runiir/Games/trinity-cata`.
+  The previous parity checkout is detached and is not the coordinator.
+- Old canary uncommitted work is preserved in Git stash
+  `61bd3108e45633c3e5811151267cc2d40ea30ca4` on `codex/magmaw-jev-canary`.
+  It includes the stopped thread's unreviewed lifecycle patch, unrelated `dvc.lock`
+  edits and local skill files. Do not apply the entire stash to mainline; review
+  needed changes separately. Preserve the JEV integration worktree.
 - `master` is the repository mainline; no separate `main` branch exists.
 - Native potion/reporting changes are committed at `fe3dadce4d`. Worker and
   orchestrator checkpoints are committed at `cbe81b0ffc`.

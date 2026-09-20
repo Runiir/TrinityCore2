@@ -1,6 +1,19 @@
 # Resume raid development
 
-Run from the current mainline coordinator checkout:
+Run from the current mainline coordinator checkout, `/home/runiir/Games/trinity-cata`
+on `master` (relocated 2026-09-20). For another tab/worktree, inspect
+`git worktree list --porcelain` and read that checkout's AGENTS.md first.
+The saved `coordinator_worktree` must agree. Preserve side-branch work; do not
+copy an older state file over current progress.
+
+For a broad "implement boss bots" request, the primary agent owns the full loop.
+Use the coordinator skills before choosing a bounded specialist; an implementation
+handoff is not completion of the parent task. `start` selects work and the agent
+then executes `unit.next_action`. This tool does not keep an agent running or
+prevent it from replying early. Fresh-agent execution must be evaluated separately
+from selector/graph fixture tests.
+
+Select the requested encounter:
 
 ```sh
 pixi run python -m tools.raid_program.raid_workloop start "implement magmaw 25hc bots"

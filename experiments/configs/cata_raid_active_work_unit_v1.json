@@ -17,7 +17,7 @@
   },
   "source_handoff": {
     "path": "docs/bot_raids/handoff_magmaw_dps_20260919.md",
-    "sha256": "e9c3abcea093dc99cc6d46f92d578053527f6d57fb5093ee3d6888f0350e07c7"
+    "sha256": "73a402ef5447476671623151e8874a2ca3758c81b52419aff814693b4700a68e"
   },
   "scope_lock": {
     "objective": "Diagnose the proven Balance setup mismatch before implementation; preserve all remaining actor work.",
@@ -547,7 +547,7 @@
     ],
     "failures": {},
     "history": [],
-    "coordinator_worktree": "/home/runiir/Games/trinity-magmaw-parity",
+    "coordinator_worktree": "/home/runiir/Games/trinity-cata",
     "encounter": {
       "raid": "blackwing_descent",
       "boss": "magmaw",
@@ -573,7 +573,7 @@
       "development_graph": {
         "version": 1,
         "revision": 0,
-        "coordinator_worktree": "/home/runiir/Games/trinity-magmaw-parity",
+        "coordinator_worktree": "/home/runiir/Games/trinity-cata",
         "objective": "Implement and validate lawful magmaw 25H bots across every DPS, tank and healer against matched encounter evidence.",
         "encounter": {
           "raid": "blackwing_descent",

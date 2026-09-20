@@ -5,6 +5,12 @@ description: Implement or repair one Cataclysm raid boss or instance-script slic
 
 # Raid Encounter Implementation
 
+This skill owns a bounded native-script task. A direct user request to implement
+an encounter's bots belongs first to `trinity-orchestrator` and
+`raid-performance-loop`; their saved work unit determines whether a native script
+repair is needed. Returning this specialist's result does not complete that parent
+request. Resolve scope using the current checkout's AGENTS.md before proceeding.
+
 Implement one bounded encounter work unit without inventing missing mechanics or hiding server-side assistance in bot behavior. The reviewed dossier and claim ledger define the intended encounter; native execution and telemetry prove it.
 
 Before inspection or editing, apply
@@ -21,10 +27,10 @@ Before editing code:
 1. Run the exact work-unit query:
 
    ```bash
-   pixi run python -m tools.raid_program.raid_workloop boss INSTANCE BOSS --mode 25H
+   pixi run python -m tools.raid_program.raid_workloop boss <raid_slug> <boss_slug> --mode <requested_mode>
    ```
 
-2. Read the returned strategy dossier, encounter contract, claim ledger, script-readiness entry, and source paths.
+2. Use the exact catalog slugs and requested difficulty; the query inspects a specialist slice and does not replace the coordinator's `start`/`resume`. Read the returned strategy dossier, encounter contract, claim ledger, script-readiness entry, and source paths.
 3. Read [references/native-script-contract.md](references/native-script-contract.md).
 4. Stop if a material numeric or behavioral claim is unresolved. Hand it back to `raid-encounter-research`; do not guess.
 

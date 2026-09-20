@@ -9,6 +9,15 @@ Try to keep as little data as possible on the disk. offload to dvc as much as po
 
 Keep C and C++ source and header files below 1,000 lines. Split by concern so small changes invalidate as little of the build cache as practical.
 
+For a broad request such as "implement Magmaw 10N bots", act as the coordinator
+using `.agents/skills/trinity-orchestrator/SKILL.md` and
+`.agents/skills/raid-performance-loop/SKILL.md`. A specialist's bounded patch
+and handoff do not replace the requested encounter implementation and live validation.
+Read these skills from the current checkout, even if a cached skill points elsewhere.
+First inspect `git worktree list --porcelain`. Use the checkout holding `master`
+and verify it matches the saved graph's `coordinator_worktree`; preserve unrelated
+dirty work rather than building an old branch or copying its task state.
+
 For boss-bot implementation requests naming an encounter and difficulty, run
 `pixi run python -m tools.raid_program.raid_workloop start "<request>"`
 on the current mainline coordinator checkout. Example: `start "implement magmaw 25hc bots"`.
@@ -17,3 +26,9 @@ For continuation without a new encounter/difficulty, use `raid_workloop resume`.
 Follow `docs/bot_raids/development_graph.md`. Preserve other scenarios and every
 open actor requirement; missing research/scripts/runtime assets are implementation
 work, not permission to borrow a different difficulty's acceptance.
+Continue from the returned unit through evidence, repair, review, build preparation,
+watchdog validation and publication. A dirty checkout or stale build configuration
+requires source isolation/configuration repair, not a generic completion reply.
+Report any earlier failing tests even if a narrower selection later passes; classify
+their relevance without silently dropping them. Only stop for the user's requested
+boundary, accepted objective, or a specific external blocker that cannot be resolved.
