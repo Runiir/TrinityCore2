@@ -1,0 +1,15 @@
+{
+  "revision": 42,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "route",
+  "reason": "The closed native run observed Mark of the Wild 79061 continuously and armor specialization 86093 at scoring start, but the exact reference gate rejected the run because the Python native_self_buff_ids allowlist omitted 79061. Repair the observer contract without weakening foreign or unexpected aura rejection, then rerun the exact Balance dummy.",
+  "unit": {
+    "id": "magmaw:balance_self_setup_observer_02",
+    "edge": "balance_reference_observer_missing_native_mark",
+    "requirements": [
+      "balance_setup"
+    ],
+    "next_action": "Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
+    "owner_skill": "raid-performance-loop"
+  }
+}
