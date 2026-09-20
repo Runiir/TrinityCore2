@@ -1,0 +1,22 @@
+{
+  "schema": "worker_checkpoint_adjudication_v1",
+  "task_id": "magmaw:balance_self_setup_01",
+  "checkpoint_sha256": "f7679e110c1d5685aa372c3e73ab136d025dff6da7401ee2f30b6b0c7b3c18e7",
+  "deterministic": "pass",
+  "jev": {
+    "status": "reviewed",
+    "request_sha256": "963bc48be147d1ad619d477c6f27e2842229e266c43f9653d3d2fdb15e3f0ec9",
+    "response_sha256": "6982bf224da075468f9c65399f0c69e9d7bf97bf35bf86966f0610b1b5576eaf",
+    "answers": {
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "supported"
+    },
+    "adjudication": "The narrowed plan remains within the Balance setup edge, preserves all parent requirements, and keeps the unrelated parent-commit failure visible rather than refreshing historical evidence."
+  },
+  "laya": {
+    "status": "not_reviewed",
+    "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+    "adjudication": "Provider unavailable; coordinator retained the exact baseline reproduction and passing bounded checks."
+  }
+}

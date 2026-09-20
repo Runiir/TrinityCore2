@@ -1,0 +1,8 @@
+{
+  "operation_id": "0281769abcf7930054179a39475c203b8546a74837b9c73476d10daeff265773",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The implement result cannot satisfy the original combined test gate because one unchanged parent-commit fixture-identity test fails. No build, server, controller, or DVC operation is active; split the unrelated baseline failure from the bounded Druid gate."
+}

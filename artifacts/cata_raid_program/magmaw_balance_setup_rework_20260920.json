@@ -1,0 +1,11 @@
+{
+  "revision": 4,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "rework",
+  "claim_token": "0281769abcf7930054179a39475c203b8546a74837b9c73476d10daeff265773",
+  "reason": "The original required pytest command contains a pre-existing fixture-identity failure reproduced on the unchanged parent commit. Re-scope the bounded gate to the Druid native/catalog tests and retain the failing compatibility test as an explicit baseline issue; do not weaken or refresh its frozen evidence.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_rework_reconciliation_20260920.json",
+    "sha256": "fbbc706cef8044995a369a67aa7b85da43777cccc5003e462b4fd2dfe9fbd113"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "worker_checkpoint_adjudication_v1",
+  "task_id": "magmaw:balance_self_setup_01",
+  "checkpoint_sha256": "56349aa603a18d052bb08ba5aab1cdb62557ab038571dc23d29106847be8c0ee",
+  "deterministic": {
+    "status": "fail",
+    "finding": "The required combined pytest command exits 1 because test_actual_reference_observer_attributes_every_wrath_air_application fails on the parent commit as well; the new native/catalog subset exits 0.",
+    "phase8_contract_check": "pass"
+  },
+  "jev": {
+    "status": "reviewed",
+    "response_sha256": "fa80a6efda0d132fe803190b678591c639d253a2badcf3633f57404730ce664a",
+    "answers": {
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "supported"
+    },
+    "adjudication": "Advisory supports the bounded source/catalog claim; it does not replace the remaining build, dummy, raid, or publication gates. Preserve the reproduced parent baseline failure in the receipt."
+  },
+  "laya": {
+    "status": "not_reviewed",
+    "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+    "adjudication": "Provider unavailable; coordinator used an exact parent-commit reproduction and narrower passing checks."
+  }
+}

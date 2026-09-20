@@ -1,0 +1,6 @@
+{
+  "revision": 3,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "claim",
+  "owner": "codex-magmaw-10n-coordinator"
+}

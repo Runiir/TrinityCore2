@@ -1,0 +1,22 @@
+{
+  "schema": "worker_checkpoint_adjudication_v1",
+  "task_id": "magmaw:balance_self_setup_01",
+  "checkpoint_sha256": "2f040eb0d8ebbc8fd0ec12d1ef2b35f65cbebc5cdc912291e9e283e62f3515b3",
+  "deterministic": "pass",
+  "jev": {
+    "status": "reviewed",
+    "request_sha256": "5df685734d308da32fb3cfae70c06ed060d59c062feb21d400df87f24f89a461",
+    "response_sha256": "3678a485a8b9393dab10984aa88acaa683f3e9b210eb3415f5b2c9b4418f4c77",
+    "answers": {
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "supported"
+    },
+    "adjudication": "The split required gates pass and the bounded source/catalog claim is ready for independent review. The parent-commit fixture failure remains visible and does not authorize live acceptance."
+  },
+  "laya": {
+    "status": "not_reviewed",
+    "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+    "adjudication": "Provider unavailable; coordinator retained the baseline reproduction."
+  }
+}

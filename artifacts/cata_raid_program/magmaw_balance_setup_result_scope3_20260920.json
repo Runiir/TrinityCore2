@@ -1,0 +1,81 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "tests",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "609b6b619ce4348b24d3d22e34ca678c87ada4a19ba093f06a8bb3cac21109a5",
+  "source_commit": "b9d5a706b3",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_result_scope3_advice_20260920.json",
+      "sha256": "2b27cf6f733cbd8d60a3cdcc8c169009521217ebf83e53ed7b489be4a895f489"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_20260920.json",
+      "sha256": "6b3ab3c8324e2d82ebb7eb5583e48ac93bb194bbe27b0dd691f7183e980b56f2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_result_20260920.json",
+      "sha256": "98013a52db0b927ce7539e0e5112fda68891abd4e34ac0834ff401060e363116"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_rework_20260920.json",
+      "sha256": "aaf5e936f913e98c80df4ed8a7fb96ec5164e0189b3dea345bf5e4a1a924bf0a"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "4d7d5adbc13707376f440952e088d15725810a23b9f0b8fdf561fa56f299dffe"
+    },
+    {
+      "path": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc",
+      "sha256": "da50911a0103dafde5692e33c01eb4937a5a97e4a99c62bbe10bce4b834936ae"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotPersistentSelfBuffContract.h": "ef80b672443983155d01c697006e23d502270dc5f17b86593be0919553623e84",
+    "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h": "968b20b3e4cf4d56a94b1d6760c90c3193feafe0814cb07ddce1c4361e987560",
+    "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp": "2ef73b484177232805848a029378e0ed15d0ca088b29c6a160ab1722fd06710f",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "41b347cce99220ebfa0cbd57b6c993bcd09b6d1baf85869d7624ae2622915b46",
+    "experiments/configs/cata_434_action_profiles.json": "0459f9899d4c3c4e9727e296c67c105fa7ab1b322663989ee47dfae99ac9c247",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "1539479c478e401178c5be0754d626f2f686601502f144b6c30ea667ef2a6ce9",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json": "0fa95e520dfd05683fbda957406b2f781d3d85999f28743bc7362f3712b77444",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h": "16a356b8c6b595042c68e0b9c80e92f35718167098e6c0479999a75dc49ff999",
+    "tests/test_calibration_self_provided_aura_sources.py": "874b1c38f870da2aa6f22ffb9fd3ca9f794dcd3e1df2474f328b3f73a2278774",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py": "bfbc3d49e7b7ecccc0500c4876f6449005b06bb10db48b88cab9315afd6b65ca"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+      "exit_status": 0,
+      "passed": 9
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
+      "exit_status": 0,
+      "passed": true
+    },
+    {
+      "command": "pixi run pytest -q tests/test_calibration_self_provided_aura_sources.py tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+      "exit_status": 1,
+      "passed": 9,
+      "failed": 1,
+      "failure": "tests/test_calibration_self_provided_aura_sources.py::test_actual_reference_observer_attributes_every_wrath_air_application",
+      "classification": "pre_existing_parent_failure_reproduced"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_result_scope3_advice_20260920.json",
+        "sha256": "2b27cf6f733cbd8d60a3cdcc8c169009521217ebf83e53ed7b489be4a895f489"
+      },
+      "adjudication": "Supported bounded source/catalog result; independent review, build and live gates remain open."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Coordinator baseline reproduction used."
+    }
+  }
+}

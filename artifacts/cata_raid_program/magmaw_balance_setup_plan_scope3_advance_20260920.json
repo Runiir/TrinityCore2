@@ -1,0 +1,9 @@
+{
+  "revision": 5,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "advance",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_20260920.json",
+    "sha256": "6b3ab3c8324e2d82ebb7eb5583e48ac93bb194bbe27b0dd691f7183e980b56f2"
+  }
+}
