@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
+  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 180,
+    "revision": 181,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "review",
     "actor_ids": [
       "30001",
       "30002",
@@ -3662,6 +3662,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 180,
+        "unit_id": "magmaw:balance_rotation_cadence_04",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_04",
+          "revision": 180,
+          "claim_token": "0b59ec7fdc20a7f02d1ee849d6765807cc5fd454b5ee5b757d802a63f4ed94fa",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_20260920.json",
+            "sha256": "3bcc0e799ea21b00bc5dc2e1403dcf6698ba4e3be2c7e2dd72f2fd2962689eeb"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3724,14 +3742,19 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_plan_20260920.json",
         "sha256": "8fbcfb0de5e5d517db0738ae9a1b53857489ea6e3d1d7883a6e3b610244848a0"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_20260920.json",
+        "sha256": "3bcc0e799ea21b00bc5dc2e1403dcf6698ba4e3be2c7e2dd72f2fd2962689eeb"
       }
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n-implement-04",
-      "token": "0b59ec7fdc20a7f02d1ee849d6765807cc5fd454b5ee5b757d802a63f4ed94fa",
-      "operation_id": "0b59ec7fdc20a7f02d1ee849d6765807cc5fd454b5ee5b757d802a63f4ed94fa",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "4f8e6659a4aef2381e8e788ce6d5cc4cfd9826e49e04a884e0caf8ce37d8a0b4",
+      "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql": "fd42f8adc6406ae5e3f826b09f8768115da334e677d5763d56d03769ae6a04e3",
+      "tests/test_balance_rotation_cadence.py": "9f99651e314131848b7ed2864f125958877ed07bad6872366768c144482b5072"
+    },
+    "tested_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
