@@ -1,0 +1,27 @@
+{
+  "kind": "db_migration",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "applied_at": "2026-09-20T17:12:51Z",
+  "migration": {
+    "path": "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql",
+    "sha256": "fd42f8adc6406ae5e3f826b09f8768115da334e677d5763d56d03769ae6a04e3",
+    "idempotent": true
+  },
+  "target": {
+    "table": "bot_rotation_action",
+    "profile_id": 290,
+    "action_id": 2544,
+    "spell_id": 48505,
+    "enabled": 1,
+    "profile": "balance_druid/dps"
+  },
+  "before": {
+    "mechanic_tags": "starfall,cooldown,pinned_apl"
+  },
+  "after": {
+    "mechanic_tags": "starfall,cooldown,pinned_apl,balance_starfall_neutral_gate",
+    "tag_occurrences": 1
+  },
+  "changed_rows": 1,
+  "verification": "readback after commit confirmed the reviewed Starfall tag is present exactly once"
+}
