@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Use retained 50ec Balance review to trace Mark of the Wild and leather specialization. Do not repeat completed Survival measurement.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 26,
+    "revision": 27,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -979,6 +979,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 26,
+        "unit_id": "magmaw:balance_self_setup_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 26,
+          "unit_id": "magmaw:balance_self_setup_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_review_rebased_20260920.json",
+            "sha256": "b9a82e3fb11b9c47f520aef8c8057b02bd380a7f97d7415b2665a929363f3b14"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -987,7 +1004,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "05895cc6094753f953995bfcd70cbcb97ed47036",
+    "source_base_commit": "acbba08c89831e81a25e4466a89ac77912310389",
     "assignment": {
       "hypothesis": "Balance's missing Mark of the Wild and Leather Specialization are native setup and provisioning defects. Keep setup spells outside simulator/action catalogs so native spellbook provisioning cannot perturb the exact WoWSims fixture; provide explicit Druid setup spells through validation provisioning while preserving native parent 87505 to child 86530 expansion.",
       "owned_files": [
@@ -1090,6 +1107,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_balance_setup_tests_rebased_20260920.json",
         "sha256": "9140ca8c5993e5c116c51077e6280e4a09b7db67f20e84627f089aa4d9696ac1"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_review_rebased_20260920.json",
+        "sha256": "b9a82e3fb11b9c47f520aef8c8057b02bd380a7f97d7415b2665a929363f3b14"
       }
     },
     "tested_files": {
