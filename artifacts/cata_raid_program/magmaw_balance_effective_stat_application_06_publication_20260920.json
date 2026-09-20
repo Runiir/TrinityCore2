@@ -1,0 +1,39 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_effective_stat_application_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "d2f46c1912f93e37a5331404d3beecd378d4913f63862aa77070dd38ea39fccd",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_verification": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_calibration_20260920.tar.gz.dvc",
+      "sha256": "dd9f4e1c72503bf6fc752431de934493040e108fb579cf4b1d4ef6bf4878eb66",
+      "content_md5": "cb49310efa23a09dd35767fe7adced03",
+      "size_bytes": 2955757
+    },
+    "status": "Cache and remote object are in sync.",
+    "local_archive_evicted": true,
+    "local_archive_recovery": "The exact-300 capture is recoverable with DVC from the committed pointer.",
+    "temporary_capture_directory_removed": true,
+    "workspace_status_note": "The full workspace DVC status contains pre-existing unrelated dirty stages; the new exact-300 Balance pointer was pushed and its targeted remote check is clean."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_assessment_20260920.json",
+      "sha256": "dce0cf716fb1447f36cd859ee8aaa62cc090e06325a1dec5e5ab7b12c2f720b9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_run_20260920.json",
+      "sha256": "45a50de88a414c3a12bc8f6dbfe373563b17ff029ffb528f2ca3824bbc7575f3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_calibration_20260920.tar.gz.dvc",
+      "sha256": "dd9f4e1c72503bf6fc752431de934493040e108fb579cf4b1d4ef6bf4878eb66"
+    }
+  ],
+  "interpretation": "The exact-300 Balance calibration evidence is closed, DVC-pushed, remotely verified, and locally evicted after cleanup. Publication preserves the measured 31860.9833 DPS versus 35447.5889 reference and does not promote actor or raid performance."
+}
