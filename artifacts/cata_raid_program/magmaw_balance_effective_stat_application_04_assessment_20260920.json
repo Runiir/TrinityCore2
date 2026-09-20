@@ -1,0 +1,106 @@
+{
+  "kind": "assessment",
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+    "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+    "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+  },
+  "comparison_detail": {
+    "measurement_status": "short_probe_incomplete",
+    "scored_seconds": 0.0,
+    "baseline_matched": false,
+    "unexplained_material_decline": true,
+    "handler_execution_observed": true,
+    "owner_apply_cast_speed_before": 0.827578366,
+    "owner_apply_cast_speed_after": 0.788169861,
+    "owner_remove_cast_speed_before": 0.788169861,
+    "owner_remove_cast_speed_after": 0.827578306,
+    "exclusive_skip_observed": true,
+    "interpretation": "The diagnostic logger is now visible and the owner-side handler executes on both apply and remove. The short probe did not enter the scoring window, so it does not establish the later scoring-start multiplier or performance parity."
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+        "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+      },
+      "accepted": false
+    },
+    "30002": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise the Blood tank actor."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise healer actor 30003."
+    },
+    "30004": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise healer actor 30004."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise healer actor 30005."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise Fire actor 30006."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise Fire actor 30007."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise the Affliction actor."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise the Survival actor."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "reason": "The isolated Balance startup probe did not exercise the Elemental actor."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "accepted_requirements": [],
+  "baseline_matched": false,
+  "unexplained_material_decline": true,
+  "adjudication": {
+    "accepted_scope": "Attributable logger visibility and owner-handler execution evidence only.",
+    "rejected_scope": [
+      "Moonkin Aura scoring-start effective-stat parity",
+      "Balance actor performance parity",
+      "Balance encounter behavior",
+      "Magmaw 10N clear",
+      "Any other actor requirement",
+      "Overall Magmaw 10N performance"
+    ],
+    "next_action": "Route the remaining post-handler effective cast-speed mismatch. Preserve the observed handler boundary and do not change arithmetic until the next trace identifies the reset or missing downstream transition."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+      "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_short_probe_20260920.tar.gz.dvc",
+      "sha256": "2bdbf217d06b1aaa999dac27b20205d0632212ee23c3cd73c6fa82dd9d308255"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ]
+}
