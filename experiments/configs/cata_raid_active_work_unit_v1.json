@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 44,
+    "revision": 47,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -1280,6 +1280,55 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 44,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 44,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "claim",
+          "owner": "codex-magmaw-10n-observer-implement"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 45,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 45,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "advance",
+          "claim_token": "900da48a4c73477b9c9b4b073ddcbcbe39de86931cab9ed1ac5d7a517270c71e",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_implementation_20260920.json",
+            "sha256": "16729c1781b833a1604aca637c12600324cf7bfb3a9888545c794810dddfc190"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 46,
+        "unit_id": "magmaw:balance_self_setup_observer_02",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 46,
+          "unit_id": "magmaw:balance_self_setup_observer_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.json",
+            "sha256": "87317693e6c278902a723128b1ace294aa0cfe65b60ffcd150cf0e073bb2b23e"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -1288,7 +1337,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "94405a80171e72d1667237ade395b601512a5b15",
+    "source_base_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d",
     "assignment": {
       "hypothesis": "The native Balance setup is now present, but the reference observer's Python self-provided primary-stat allowlist omits native Druid Mark of the Wild 79061. This makes reference_condition_projections reject an otherwise valid run as raid_buffs_valid=false. Add only 79061 to the allowlist and retain the aggregate unexpected-aura counter and foreign-aura rejection gates.",
       "owned_files": [
@@ -1341,8 +1390,23 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_plan_20260920.json",
         "sha256": "5199478893d53ef3fc77a2a6b987251b8a16c8772caa1bfab9f15d6cae76d7d5"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_implementation_20260920.json",
+        "sha256": "16729c1781b833a1604aca637c12600324cf7bfb3a9888545c794810dddfc190"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.json",
+        "sha256": "87317693e6c278902a723128b1ace294aa0cfe65b60ffcd150cf0e073bb2b23e"
       }
-    }
+    },
+    "tested_files": {
+      "tools/bot_ml/phase8_reference_conditions.py": "63276181912dfccc277ffef81b6eb9e6fc565a02a23b6fcb3ecfe064e5b7089a",
+      "tests/test_phase8_reference_conditions.py": "c7bc47d60969e87cb2e37efd3e97f9390b90f4048b04670f3647481a9ed9042c",
+      "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
+    },
+    "tested_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

@@ -1,0 +1,10 @@
+{
+  "revision": 45,
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "action": "advance",
+  "claim_token": "900da48a4c73477b9c9b4b073ddcbcbe39de86931cab9ed1ac5d7a517270c71e",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_implementation_20260920.json",
+    "sha256": "16729c1781b833a1604aca637c12600324cf7bfb3a9888545c794810dddfc190"
+  }
+}

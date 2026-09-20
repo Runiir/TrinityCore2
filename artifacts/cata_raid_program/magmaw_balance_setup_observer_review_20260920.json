@@ -1,0 +1,52 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "review",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "independent-reviewer",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_plan_20260920.json",
+      "sha256": "5199478893d53ef3fc77a2a6b987251b8a16c8772caa1bfab9f15d6cae76d7d5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_implementation_20260920.json",
+      "sha256": "16729c1781b833a1604aca637c12600324cf7bfb3a9888545c794810dddfc190"
+    },
+    {
+      "path": "tools/bot_ml/phase8_reference_conditions.py",
+      "sha256": "63276181912dfccc277ffef81b6eb9e6fc565a02a23b6fcb3ecfe064e5b7089a"
+    },
+    {
+      "path": "tests/test_phase8_reference_conditions.py",
+      "sha256": "c7bc47d60969e87cb2e37efd3e97f9390b90f4048b04670f3647481a9ed9042c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_run_20260920.json",
+      "sha256": "51308264b67157d3ce9f355e9dc0d0692ba1c6bd2b61bcd3d581ef72b54f2bd3"
+    }
+  ],
+  "file_hashes": {
+    "tools/bot_ml/phase8_reference_conditions.py": "63276181912dfccc277ffef81b6eb9e6fc565a02a23b6fcb3ecfe064e5b7089a",
+    "tests/test_phase8_reference_conditions.py": "c7bc47d60969e87cb2e37efd3e97f9390b90f4048b04670f3647481a9ed9042c",
+    "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
+  },
+  "verdict": "approved",
+  "reviewer": "independent-reviewer",
+  "findings": [],
+  "scope_check": "The patch adds only native Druid 79061 to the Python self-provided observer allowlist and adds a regression test. It does not weaken unexpected-aura counters, foreign-source handling, continuity checks, exact reference identity, or runtime setup.",
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_advice_20260920.json",
+        "sha256": "106d47a652c162d4cf26928e2f3d48714a1825f7c1a32d181ce9afd215c1383e"
+      },
+      "adjudication": "Independent review confirms the allowlist change matches the native run observation and the regression keeps aggregate rejection strict."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; no unresolved review finding remains in the bounded diff."
+    }
+  }
+}
