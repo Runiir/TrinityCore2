@@ -1,0 +1,73 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "acd27dd31b6e46b3ebddab6049d2562955e582af161c746202d8b04f43ad8b24",
+  "source_commit": "17e8cdfdf6e84d3844b253e8d4db443885bc0ae4",
+  "implementation": {
+    "summary": "Added a Balance-tagged native candidate predicate that rejects Starsurge only in NeutralPhase with zero Eclipse power and no Solar/Lunar Eclipse aura; added an idempotent world migration binding the tag to Starsurge.",
+    "reject_reason": "balance_neutral_opener",
+    "candidate_observation_status": "pending_native_focused_validation",
+    "source_line_counts": {
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": 695,
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": 999
+    }
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "36219b2551fd259fd71d87203bfb54bfb28082614b94cf9ae3ab50ed48f71391",
+    "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql": "62be5d02145e2055a67aa155eee6330f4bb85e9a4b86f5f1b57c95144f2de795",
+    "tests/test_balance_rotation_cadence.py": "b1057dc84864444df4f8dc7f7bae08bc482df1faf17f63bec4e77c83caa8fc53"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "summary": "2 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "summary": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16-request catalog validated against fixture contract"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_20260920.json",
+      "sha256": "6cda8e0c36899cad7d334f5ae844b4d73bc3af859a310d7963500124aaa97ca6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_diagnosis_20260920.json",
+      "sha256": "f3fadbb73a5ac9d96529bdc9c2e5df64aa19ed4983e39bfdb2a1f1dfc42a3738"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_run_20260920.json",
+      "sha256": "45a50de88a414c3a12bc8f6dbfe373563b17ff029ffb528f2ca3824bbc7575f3"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_route_review_20260920.json",
+        "sha256": "794eb9ee2cf70b83b8ec28ef39f959747406e6c6386ec0e71370d89dfbf7aeac"
+      },
+      "adjudication": "The retained advisory review supports the bounded post-parity Balance route; it is not used as code approval."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone",
+      "adjudication": "Provider unavailable; separate native code review remains required."
+    }
+  }
+}

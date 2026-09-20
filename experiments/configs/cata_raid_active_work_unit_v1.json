@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
+  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Compare the accepted comparator evidence, exact-300 Balance action timeline and pinned WoWSims APL. Identify one attributable cadence or policy mismatch before changing rotation code, then obtain focused evidence and separate review.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 167,
+    "revision": 169,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "review",
     "actor_ids": [
       "30001",
       "30002",
@@ -3443,6 +3443,38 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 167,
+        "unit_id": "magmaw:balance_rotation_cadence_03",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "action": "claim",
+          "unit_id": "magmaw:balance_rotation_cadence_03",
+          "revision": 167,
+          "owner": "codex-magmaw-10n-coordinator"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 168,
+        "unit_id": "magmaw:balance_rotation_cadence_03",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_03",
+          "revision": 168,
+          "claim_token": "acd27dd31b6e46b3ebddab6049d2562955e582af161c746202d8b04f43ad8b24",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_implementation_20260920.json",
+            "sha256": "f2a3d1346696413a66b3d92cc095d809a41c5b3a8e4abb47049269ddb67fea53"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3505,8 +3537,19 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_20260920.json",
         "sha256": "6cda8e0c36899cad7d334f5ae844b4d73bc3af859a310d7963500124aaa97ca6"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_implementation_20260920.json",
+        "sha256": "f2a3d1346696413a66b3d92cc095d809a41c5b3a8e4abb47049269ddb67fea53"
       }
-    }
+    },
+    "tested_files": {
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "36219b2551fd259fd71d87203bfb54bfb28082614b94cf9ae3ab50ed48f71391",
+      "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql": "62be5d02145e2055a67aa155eee6330f4bb85e9a4b86f5f1b57c95144f2de795",
+      "tests/test_balance_rotation_cadence.py": "b1057dc84864444df4f8dc7f7bae08bc482df1faf17f63bec4e77c83caa8fc53"
+    },
+    "tested_commit": "17e8cdfdf6e84d3844b253e8d4db443885bc0ae4",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
