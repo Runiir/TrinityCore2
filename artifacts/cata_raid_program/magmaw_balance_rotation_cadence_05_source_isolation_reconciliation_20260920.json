@@ -1,0 +1,15 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "implement_source_isolation_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "stage": "implement",
+  "operation_id": "125fc420ba90eed1a8e10e321f96166fc5060f4744a571b7c50d2b757801b0a7",
+  "owner": "coordinator-magmaw-10n-implement-05",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The controller rejected the implementation receipt before recording tests because the saved native baseline predates four committed workflow-only deltas: three Python checkpoint/advisory files and the local Laya checkpoint fixture. No native build, server, controller, or validation operation was launched. Preserve the Starfall source patch and deterministic test artifacts, obtain a separate hash-bound supporting review for the eligible workflow Python files, freeze the checkpoint fixture in the replacement assignment, and rebind the same native task without relabeling the gameplay patch as accepted."
+}

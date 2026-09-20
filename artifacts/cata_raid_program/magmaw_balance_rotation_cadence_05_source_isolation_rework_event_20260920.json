@@ -1,0 +1,11 @@
+{
+  "revision": 192,
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "action": "rework",
+  "claim_token": "125fc420ba90eed1a8e10e321f96166fc5060f4744a571b7c50d2b757801b0a7",
+  "reason": "Rebind the same Starfall lunar-window implementation under a replacement plan that hash-binds the pre-existing workflow-only deltas as supporting/frozen control files; no native build or live operation was started.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_source_isolation_reconciliation_20260920.json",
+    "sha256": "f4febd2545db421de7a59f40c91971f592d422eb42c462f8050aa9d3bf229d93"
+  }
+}
