@@ -1,0 +1,20 @@
+{
+  "kind": "historical_checkpoint_transport_replay",
+  "source_commit": "226c468e0e",
+  "dvc_pointer": "artifacts/cata_raid_program/laya_checkpoint_compaction_20260920.tar.gz.dvc",
+  "md5": "4086604fb0465f70adfd8c162e70e4e6",
+  "bytes": 10215,
+  "remote_verified_by": "direct remote object read; MD5 and byte count match",
+  "validation": "31 focused tests and skill validation passed; independent Luna max review approved",
+  "original_state_tokens": [
+    1288,
+    1244
+  ],
+  "compact_state_tokens": [
+    734,
+    814
+  ],
+  "all_final_truncated_fields_empty": true,
+  "acceptance": "Transport/context fit only; no raid, actor or model-accuracy acceptance",
+  "failed_intermediate_compactions_retained": true
+}
