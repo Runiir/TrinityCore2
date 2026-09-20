@@ -1,0 +1,70 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "18a17ba9fdcbf615de3fc6e446ef27c8b944a832e8edf4e5587fbb288004295a",
+  "source_commit": "9f84994acb12f95cfdb4f87df66514f282c75e02",
+  "hypothesis": "The native scoring ledger omitted UNIT_MOD_CAST_SPEED from the combined spell-speed observation, leaving the comparator at 1.269 instead of 1.3322.",
+  "change_summary": "Serialize SpellSpeedMultiplier from the product of native cast-haste and cast-speed factors; extend the focused C++ fixture and source contract assertion.",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 specs validated"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "a9bfc0e3c0f63ff8ddad3d1d54056db0b33113916a0901f59e67840af1476f07",
+    "tests/test_bot_effective_stats_diagnosis.py": "0ea9abf7d916a2f401f1e15b3d6d122f894b255582612c96f2ee7c5d8cf671ce",
+    "tests/test_balance_native_effective_stat_parity.py": "a8d875c6d3f6a40e35538ee004aeb04a9c00589efb2e70b5fae228bff34805cf"
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/summary.json",
+        "sha256": "a0b2a8f24440bbec49f16fbd1e1f0abeab133264a74419acf4ec91fb7f27ffc7"
+      },
+      "adjudication": "The bounded change is limited to the diagnosed native stat ledger and focused fixture; deterministic tests are the acceptance authority."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Local Laya was unavailable; the source contract, native fixture, and required catalog checks passed."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_20260920.json",
+      "sha256": "82f4ed9f4574e8f0730ca6e1957f585c7f63c158275fa412c4fdf9beec505bb0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_diagnosis_20260920.json",
+      "sha256": "9449a682082680d7ce7dde6a0d6e84c99608e191544706b492dac291b4d53cf1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+      "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_20260920.json",
+      "sha256": "2c69d5d30934e5437d82866f435b86f5e27fb80b4976b85c840f8dc77ba83069"
+    }
+  ]
+}
