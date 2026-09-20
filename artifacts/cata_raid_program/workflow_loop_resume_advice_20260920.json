@@ -1,0 +1,58 @@
+{
+  "stage": "plan",
+  "providers": [
+    {
+      "provider": "local_laya",
+      "request_sha256": "d5866ef812fc019348477d0e2cafbfae31e29baa5898fb63d2470083224d7454",
+      "response": null,
+      "latency_sec": 0.0073,
+      "error": "URLError: <urlopen error [Errno 111] Connection refused>"
+    },
+    {
+      "provider": "hosted_jev",
+      "request_sha256": "64518aba65c2f26edd79c3c0ef14e7d12b51ccdd63f23dcdaf484cafba063259",
+      "response": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "scope_fit": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.97,
+            "probabilities": {
+              "supported": 0.98,
+              "insufficient_evidence": 0.01,
+              "contradicted": 0.01
+            }
+          },
+          "evidence_supports_proposed_change": {
+            "type": "choice",
+            "choice": "insufficient_evidence",
+            "confidence": 0.61,
+            "probabilities": {
+              "supported": 0.26,
+              "contradicted": 0.0,
+              "insufficient_evidence": 0.74
+            }
+          },
+          "acceptance_claim_supported": {
+            "type": "choice",
+            "choice": "insufficient_evidence",
+            "confidence": 0.78,
+            "probabilities": {
+              "supported": 0.14,
+              "insufficient_evidence": 0.86,
+              "contradicted": 0.0
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 1278,
+          "output_tokens": 159
+        }
+      },
+      "latency_sec": 0.7107,
+      "error": null
+    }
+  ],
+  "adjudication": "Advice supports only observation/review scope, not native acceptance. Keep original source base, unresolved mechanics and all actor requirements. Local Laya unavailable. Full requests/responses are in workflow_loop_repair_20260920.tar.gz.dvc."
+}

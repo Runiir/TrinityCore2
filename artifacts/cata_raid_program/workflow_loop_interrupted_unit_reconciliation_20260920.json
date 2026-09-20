@@ -1,0 +1,12 @@
+{
+  "operation_id": "28fcd3dbc2fbcd5a552a588684bc5c01c07d1bc852521319c731d1492e8df230",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "basis": "User paused implementation before its graph tests/review gates. No active native build/server. Draft implementation is incomplete: independent review found disabled trace logger and no actual-handler proof. Preserve all source changes and historical run receipts. This is not abandonment of a completed live validation.",
+  "review": {
+    "path": "artifacts/cata_raid_program/workflow_loop_native_review_20260920.json",
+    "sha256": "d91d3f7891eb802012822a3e2b13fafc7577931d01109fead4141a4d676117f4"
+  }
+}
