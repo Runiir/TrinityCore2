@@ -1,0 +1,68 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "producer": "coordinator",
+  "operation_id": "724c2f2a2a0bf1066e3a0c60daf57358188855cbe209fabc6a100b3618319356",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_20260920.json",
+      "sha256": "58fe8b3ba16eeab3aef2ba2f511a4f5b858ec7a5c7759b56ac33ffc737b44afd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_implementation_20260920.json",
+      "sha256": "e7969992f0252b1d1c284ce0d2b7fc89a39e9ddb06fc5413ad398b9cf533f8b9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_20260920.json",
+      "sha256": "2c69d5d30934e5437d82866f435b86f5e27fb80b4976b85c840f8dc77ba83069"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_claim_20260920.json",
+      "sha256": "f939619ea2e7518220eef3ad046f18327b9634bc40d646e0ce700fac57a1af15"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_configure_retry_20260920.json",
+      "sha256": "008651c4f5470e8685a3a1a2be5a26869c92b163abe1e975b71072a7ed26d148"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_queued_build_20260920.json",
+      "sha256": "13e8e5cc4369d716d47cb241f0a509055c1aa7ecbd1b14451b7cde1481eae199"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_queued_build_retry_20260920.json",
+      "sha256": "d3460e0cf16f88e763196c53569e4c288648693f62ca4ca870101ef716959647"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Entities/Player/Player.h": "c7424987be5ebfa44bb59d55c7c0f2cf89da06057657c006c49f9a79ae21385a",
+    "src/server/game/Entities/Player/Player.cpp": "ca09174ed5c4c2afaa5aeaf188c52282a622da11e19fd0059cdd77b0748771f3",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "645724f9a0d48dea165cee29111e50365c9e63d453969f4f70a83e1de069b5ab",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "9c43a794110d2523d3db1740601d128b5ca9250bca799abdc526e72c6082b9f4",
+    "tests/test_bot_effective_stats_diagnosis.py": "e83197173d988f063ee7026808e954b53ebae3001976bee36d505a85dde056e3",
+    "tests/test_balance_native_effective_stat_parity.py": "759147d99fbb0ef0509d16d4463ee870e82a6a750c8de979a8ab007a1facd258",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_drift_review_20260920_review/examples.jsonl": "f48af93e9f8bb90303c3409ff4da6584a9be6f0040f625434e7a351c38445f8b",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/examples.jsonl": "47dc2f7802f27d702d6d283370dfe2a617d54d0ed3473ace17635cc805ad0eb8",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/examples.jsonl": "88562e00bb0f44d0542b417221939b44731b647e89ea7692b68144e82c348d45"
+  },
+  "source_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+  "binary_sha256": "157fa75574a5dc15e1fdc23ce2edf99a89680ca197a80b0663aa414ce81840f5",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_queued_build_retry_20260920.json",
+    "sha256": "d3460e0cf16f88e763196c53569e4c288648693f62ca4ca870101ef716959647"
+  },
+  "configure_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_configure_retry_20260920.json",
+    "sha256": "008651c4f5470e8685a3a1a2be5a26869c92b163abe1e975b71072a7ed26d148"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "source_identity_stable": true,
+  "build_configuration_stable": true,
+  "configure_lineage_refreshed": true,
+  "build_command": "/usr/bin/cmake --build build --target worldserver --parallel 12",
+  "failed_attempt_resolved": "The first worldserver admission was retained as a provenance abort because its configure ticket belonged to the preceding coordination commit. A fresh configure on the final source commit supplied the matching lineage before this successful build.",
+  "build_status": "success"
+}

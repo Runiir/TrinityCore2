@@ -1,0 +1,30 @@
+{
+  "kind": "source_binding_reconciliation",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "operation_id": "724c2f2a2a0bf1066e3a0c60daf57358188855cbe209fabc6a100b3618319356",
+  "source_binding_repaired": true,
+  "previous_source_base_commit": "2015f610d594b64312daa531fb21a869f55834a3",
+  "previous_tested_commit": "2015f610d594b64312daa531fb21a869f55834a3",
+  "rebound_source_base_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+  "rebound_tested_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
+  "owned_native_file_hashes_unchanged": true,
+  "coordination_only_changes_after_test": [
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_claim_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_configure_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_implement_claim_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_implementation_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_implementation_event_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_event_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_queued_build_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/checkpoint.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/examples.jsonl",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/summary.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_event_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_source_isolation_reconciliation_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_source_isolation_rework_event_20260920.json"
+  ],
+  "reason": "The native patch and test files are byte-identical to the recorded implementation result. The remaining committed deltas are coordination receipts and advisory checkpoint examples; rebind the graph boundary to the clean final build commit so the verified build can be consumed without repeating compilation."
+}

@@ -1672,7 +1672,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "2015f610d594b64312daa531fb21a869f55834a3",
+    "source_base_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
     "assignment": {
       "hypothesis": "Balance's first native parity failure is in owner effective-stat materialization: Balance of Power currently converts base spirit into spell hit rating, the calibration ledger compares effective rating fields against raw WoWSims rating fields, and Moonkin form can leave its 24907 passive cast-speed aura unapplied after the triggered cast. Repair only these native edges before interpreting Balance cadence or total DPS.",
       "owned_files": [
@@ -1752,7 +1752,7 @@
       "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/examples.jsonl": "47dc2f7802f27d702d6d283370dfe2a617d54d0ed3473ace17635cc805ad0eb8",
       "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/examples.jsonl": "88562e00bb0f44d0542b417221939b44731b647e89ea7692b68144e82c348d45"
     },
-    "tested_commit": "2015f610d594b64312daa531fb21a869f55834a3",
+    "tested_commit": "707370424dc0117d350205b2fd552c4e25808b7a",
     "implementer": "codex-magmaw-10n-balance-effective-stat-parity",
     "claim": {
       "owner": "codex-magmaw-10n-balance-build",
