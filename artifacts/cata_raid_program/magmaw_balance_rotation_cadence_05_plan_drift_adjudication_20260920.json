@@ -1,0 +1,37 @@
+{
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw_balance_rotation_cadence_05_plan_drift_20260920",
+  "verdict": "aligned",
+  "coordinator": "coordinator",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_checkpoint_20260920.json",
+    "sha256": "dd74c87969999468751d8643cc05a1a79b787d998aa8f906ba76ed806608c7db"
+  },
+  "model_reviews": {
+    "hosted_jev": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/summary.json",
+        "sha256": "82f3cfb2bc970814ca442cf98f9d5957d2d1bffadc3d30fe070ff477345d1808"
+      },
+      "scope_fit": "supported",
+      "evidence_support": "supported",
+      "acceptance_claim": "insufficient_evidence",
+      "status": "advisory"
+    },
+    "local_laya": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/summary.json",
+        "sha256": "82f3cfb2bc970814ca442cf98f9d5957d2d1bffadc3d30fe070ff477345d1808"
+      },
+      "status": "not_reviewed",
+      "reason": "HTTP 422 from http://127.0.0.1:8000/v1/systemone"
+    }
+  },
+  "deterministic_review": {
+    "status": "pass",
+    "summary_path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/summary.json",
+    "summary_sha256": "82f3cfb2bc970814ca442cf98f9d5957d2d1bffadc3d30fe070ff477345d1808"
+  },
+  "coordinator_reasoning": "The proposed route is aligned with the parent objective because it preserves every open actor, comparison, potion and raid requirement while addressing the newly observed post-opener Balance event/cadence gap. The exact-300 run is reference-comparable and cleanup-complete, but its native candidate mask and typed rejection reason remain unavailable; therefore the evidence supports diagnosis only, not a further patch or actor acceptance. The current graph and run receipts are authoritative; the older shared workflow prose is historical and does not override them. Hosted Jev's judgments are advisory, and local Laya did not return a decision.",
+  "next_correction": "Proceed to a bounded post-opener Balance diagnosis using the exact native event timeline and matching WoWSims cadence; identify one attributable policy edge before changing source or SQL, then independently review any proposed repair."
+}

@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:balance_rotation_cadence_04",
+  "work_unit": "magmaw:balance_rotation_cadence_05",
   "owner_skill": "raid-rotation-review",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Select the next proven edge, or complete only when every requirement is accepted. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
+  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 189,
+    "revision": 190,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "route",
+    "stage": "diagnose",
     "actor_ids": [
       "30001",
       "30002",
@@ -505,13 +505,13 @@
       }
     },
     "unit": {
-      "id": "magmaw:balance_rotation_cadence_04",
-      "edge": "owner_rotation_execution_after_effective_stat_parity",
+      "id": "magmaw:balance_rotation_cadence_05",
+      "edge": "owner_balance_post_opener_event_cadence_gap",
       "requirements": [
         "actor_30001"
       ],
       "owner_skill": "raid-rotation-review",
-      "next_action": "Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable."
+      "next_action": "Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL."
     },
     "completed_measurements": [
       {
@@ -3810,6 +3810,29 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 189,
+        "unit_id": "magmaw:balance_rotation_cadence_04",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "action": "route",
+          "revision": 189,
+          "unit_id": "magmaw:balance_rotation_cadence_04",
+          "reason": "The Starfall/Moonfire neutral-opener repair is accepted from the exact native first-action observation and has been published. Balance actor 30001 remains open at 32585.30 DPS versus the matched 35447.59 WoWSims reference, so diagnose the remaining post-opener event/cadence loss without reopening the closed Starfall edge or changing stats/denominators.",
+          "unit": {
+            "id": "magmaw:balance_rotation_cadence_05",
+            "edge": "owner_balance_post_opener_event_cadence_gap",
+            "requirements": [
+              "actor_30001"
+            ],
+            "owner_skill": "raid-rotation-review",
+            "next_action": "Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL."
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3818,109 +3841,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
-    "assignment": {
-      "hypothesis": "The remaining neutral opener mismatch is an ungated Balance Starfall candidate: the pinned APL allows Starfall only under its known-aura and lunar-energy conditions, while the native profile row is legal at the fresh neutral state and wins bucketed arbitration once Starsurge is gated. A Balance-only Starfall neutral gate using the same no-Eclipse-aura and zero-POWER_ECLIPSE predicate should leave Moonfire as the first native action while preserving Starfall outside that state.",
-      "owned_files": [
-        "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
-        "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql",
-        "tests/test_balance_rotation_cadence.py"
-      ],
-      "forbidden_changes": [
-        "No effective-stat, gear, coefficient, damage, haste, roster, consumable, WoWSims request/result, or denominator changes.",
-        "No encounter script, Magmaw route, movement envelope, target fixture, direct state manufacture, forced casts, or hidden live controls.",
-        "Do not change Starsurge outside its existing exact gate or alter Starfall's behavior after Eclipse state/power makes it legal.",
-        "Do not touch other classes, specs, actors, healer/tank policy, or the open raid acceptance requirements."
-      ],
-      "acceptance_conditions": [
-        "Focused source and SQL tests prove the new Balance tag is attached only to Starfall and the typed predicate is exact and idempotent.",
-        "A focused native replay records the remaining opener state and the first successful post-change timeline action is Moonfire; any missing candidate-mask field remains explicitly recorded as an evidence limitation.",
-        "Independent review approves the exact tested files and confirms the repair is policy-only, player-like, and preserves both spell paths outside the exact neutral state.",
-        "A clean gate-bearing native build is produced from the reviewed source, then one exact-300 Balance validation is run with the frozen actor, roster, runtime profile, WoWSims reference, and host12 build policy.",
-        "Assessment keeps repair acceptance, actor performance acceptance, and Magmaw raid-clear acceptance separate; a dummy cannot close actor performance or raid requirements."
-      ],
-      "required_test_commands": [
-        "pixi run pytest -q tests/test_balance_rotation_cadence.py",
-        "pixi run pytest -q tests/test_rotation_mechanics_review.py",
-        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
-        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
-      ],
-      "base_commit": "17e8cdfdf6e84d3844b253e8d4db443885bc0ae4",
-      "policy": {
-        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
-        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
-      },
-      "validation_identity": {
-        "scenario_kind": "dummy",
-        "actor_id": "30001",
-        "spec": "balance_druid",
-        "reference": {
-          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
-          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
-        },
-        "roster": {
-          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
-        },
-        "runtime_profile": {
-          "path": "experiments/configs/validation_scenarios_cata_001.json",
-          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
-        }
-      }
-    },
-    "receipts": {
-      "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_plan_20260920.json",
-        "sha256": "8fbcfb0de5e5d517db0738ae9a1b53857489ea6e3d1d7883a6e3b610244848a0"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_20260920.json",
-        "sha256": "3bcc0e799ea21b00bc5dc2e1403dcf6698ba4e3be2c7e2dd72f2fd2962689eeb"
-      },
-      "review": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_review_20260920.json",
-        "sha256": "f82136a6cdedae37cd1d507717a085bd2f588ba86b36666f0b2a2281a18599c5"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_build_20260920.json",
-        "sha256": "ca7e1ac42bf021c64679f693d3b4ef5f1db5fce51f552010606647a6e4003714"
-      },
-      "run": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
-        "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
-      },
-      "assessment": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_assessment_20260920.json",
-        "sha256": "04991e39e2acfde418b1e7661bd0ec2b0f9c6428ca5054098b3bd9fec7482b85"
-      },
-      "publication": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_publication_20260920.json",
-        "sha256": "272982a8804a1d9e0c929a177ac27ee64d0662859378516b78144231ac73cad5"
-      }
-    },
-    "tested_files": {
-      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "4f8e6659a4aef2381e8e788ce6d5cc4cfd9826e49e04a884e0caf8ce37d8a0b4",
-      "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql": "fd42f8adc6406ae5e3f826b09f8768115da334e677d5763d56d03769ae6a04e3",
-      "tests/test_balance_rotation_cadence.py": "9f99651e314131848b7ed2864f125958877ed07bad6872366768c144482b5072"
-    },
-    "tested_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
-    "implementer": "coordinator",
-    "build_identity": {
-      "source_commit": "618b20a2d2793e3f26b3b9d45ed2728f3b97d881",
-      "binary_sha256": "cfc37c09b0f39f59ee5292742c411b8132ecba36cdb5fc55622e70391b1f87eb"
-    },
-    "run": {
-      "attempt_id": 1,
-      "server_epoch": 786108962479090,
-      "scenario_kind": "dummy",
-      "terminal_reason": "measurement_complete"
-    },
-    "pending_acceptance": [],
-    "outcomes": {
-      "encounter_clear": false,
-      "repair_accepted": true,
-      "performance_accepted": false
-    }
+    "source_base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

@@ -1,0 +1,178 @@
+{
+  "kind": "diagnosis",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "first_broken_edge": {
+    "edge": "policy_post_opener_balance_event_cadence",
+    "status": "proven_event_mix_mismatch_pending_lunar_window_repair",
+    "confidence": "high_for_starfall_overuse_and_filler_cadence_gap",
+    "decisive_counterexample": {
+      "fixture": "balance_druid single_target_300 seed-1",
+      "scored_seconds": 300,
+      "native_accepted_actions": 197,
+      "native_result_counts": {
+        "ok": 197,
+        "casting": 2221,
+        "global_cooldown": 579,
+        "other_failures": 0
+      },
+      "movement_or_range_recovery": false,
+      "native_first_actions": [
+        {"elapsed_ms": 0, "spell_id": 8921, "result": "ok"},
+        {"elapsed_ms": 1200, "spell_id": 5570, "result": "ok"},
+        {"elapsed_ms": 2200, "spell_id": 33831, "result": "ok"},
+        {"elapsed_ms": 3301, "spell_id": 5176, "result": "ok"},
+        {"elapsed_ms": 4500, "spell_id": 78674, "result": "ok"},
+        {"elapsed_ms": 5700, "spell_id": 48505, "result": "ok"}
+      ],
+      "native_starfall_timeline_ms": [5700, 65733, 126678, 187384, 247966]
+    },
+    "native_vs_wowsims_cast_mix": {
+      "spell_counts": {
+        "2912_starfire": {"native": 49, "wowsims": 59.672},
+        "5176_wrath": {"native": 73, "wowsims": 94.505},
+        "5570_insect_swarm": {"native": 19, "wowsims": 17.68},
+        "8921_moonfire": {"native": 17, "wowsims": 12.184},
+        "33831_force_of_nature": {"native": 2, "wowsims": 2.0},
+        "48505_starfall": {"native": 5, "wowsims": 3.001},
+        "78674_starsurge": {"native": 26, "wowsims": 29.173},
+        "93402_sunfire": {"native": 6, "wowsims": 7.945}
+      },
+      "interpretation": "The native actor spends more accepted actions on Moonfire, Insect Swarm and Starfall while losing filler casts; this is a policy/cadence discrepancy, not an idle or native submission-failure denominator."
+    },
+    "performance": {
+      "native_dps": 32585.296666666665,
+      "wowsims_dps": 35447.58892725215,
+      "native_to_reference_ratio": 0.9192528364493374,
+      "performance_acceptance": false
+    }
+  },
+  "policy_evidence": {
+    "wowsims_apl": {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/source_assets/90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2.apl.json",
+      "sha256": "90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2",
+      "starfall_conditions": [
+        "current_time < 12s and current_lunar_energy > 70 during the early window",
+        "current_lunar_energy >= 100 thereafter"
+      ]
+    },
+    "native_profile": {
+      "spell_id": 48505,
+      "sort_order": 35,
+      "priority_bucket": 1,
+      "mechanic_tags": "starfall,cooldown,pinned_apl,balance_starfall_neutral_gate",
+      "native_cooldown_ms": 60000,
+      "missing_post_opener_predicate": "the row only has the neutral-zero-power exception; it does not represent the pinned APL lunar-energy window"
+    },
+    "native_resolver": {
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+      "balance_filler_gate": "eclipse_direction",
+      "starfall_gate": "none after POWER_ECLIPSE leaves the exact neutral state"
+    }
+  },
+  "hypothesis": "After the accepted neutral-opener repair, Starfall remains eligible on every native cooldown once Eclipse power is nonzero, while the pinned APL only schedules it in its lunar-energy window. The five native Starfall casts at approximately 60-second intervals versus 3.001 WoWSims casts are the smallest attributable post-opener policy mismatch and consume GCDs that correlate with the missing Starfire/Wrath filler casts.",
+  "smallest_lawful_repair_shape": {
+    "profile_contract": "Add a Balance-only post-opener Starfall lunar-window tag in a new idempotent SQL migration and evaluate it in the typed candidate builder/resolver.",
+    "predicate": "Preserve the existing neutral opener exception, then reject the tagged Starfall candidate unless the native lunar Eclipse/energy state represents the pinned APL lunar window.",
+    "reject_reason": "balance_starfall_lunar_window",
+    "preserved_behavior": "Do not change the neutral opener, Starsurge, Eclipse energy production, Starfall spell cooldown, coefficients, effective stats, gear, consumables, target geometry, route, or WoWSims denominator."
+  },
+  "evidence_limit": "The retained calibration report exposes accepted actions and the decision result mix but not the per-decision candidate mask, native Eclipse energy at each Starfall timestamp, or a typed Starfall reject reason. The diagnosis proves the event mix and identifies one high-confidence policy lead; the implementation must use the native lunar state already owned by the resolver and must be independently reviewed before build.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+    "tests/test_balance_rotation_cadence.py"
+  ],
+  "forbidden_changes": [
+    "No effective-stat, gear, coefficient, proc, target, consumable, reference, denominator, encounter-script, route, or other-spec changes.",
+    "No direct Eclipse-power writes, forced casts, cooldown edits, blanket Starfall priority changes, or changes to the already accepted neutral-opener behavior.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N from this dummy diagnosis or its next exact-300 follow-up alone."
+  ],
+  "acceptance_conditions": [
+    "Focused tests prove the new tag is Balance-only, attached only to Starfall, idempotent, and preserves the neutral opener exception.",
+    "Independent reviewer approves the exact source, SQL, and test delta with the candidate-mask limitation retained.",
+    "A clean host12 gate-bearing build is produced from the reviewed source.",
+    "One identical exact-300 Balance calibration shows the neutral opener remains Moonfire, Starfall is limited to the native lunar-window predicate, and native event mix/cadence moves toward the pinned WoWSims reference without setup or geometry changes.",
+    "Assessment keeps repair acceptance, actor performance acceptance, and raid-clear acceptance separate."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "2b4a3322ae1d3997af8ab9d9d61a6bb840ea980e",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "plan_drift": {
+      "checkpoint": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_checkpoint_20260920.json",
+        "sha256": "dd74c87969999468751d8643cc05a1a79b787d998aa8f906ba76ed806608c7db"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/summary.json",
+        "sha256": "4731532003544f125955efa060c65152d1fcf3cf1375c87f49d7ae9ad41aa3d9"
+      },
+      "adjudication": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_adjudication_20260920.json",
+        "sha256": "1b9ec2f29b63dc002c901a0c9b482a40ece90a0c484c2053fc4374cdb2afeeb3"
+      },
+      "status": "aligned; deterministic review passed; hosted Jev supports scope and evidence direction but finds acceptance insufficient_evidence; local Laya was unavailable"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_actor_30001_review_20260920.json",
+      "sha256": "9033e57b06a042e496357c5213b3e71a60358dd1e62873827e206ee901e1ee0c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_diagnosis_review_20260920.json",
+      "sha256": "fc1b414114a7eea96eae5d5ac60db6f4f51df6ac38836ad2d4e2c5cf6e9e78dd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_calibration_20260920.tar.gz.dvc",
+      "sha256": "04ca5c08278f04f2b25693084688a579d5600184601238ea20682ede3ffffce1"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f.json",
+      "sha256": "7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_results/b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8.json",
+      "sha256": "b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8"
+    }
+  ],
+  "interpretation": "The accepted neutral-opener repair is still bounded and actor performance remains open. The retained exact trace now isolates a post-opener event-mix loss: five native Starfall casts on a 60-second glyph cooldown versus 3.001 simulated casts, with 32 fewer named filler casts and no observed movement, range, resource-starvation, or native submission-failure signal. This routes one Balance-only lunar-window policy repair; it does not accept the actor, roster, or raid."
+}
