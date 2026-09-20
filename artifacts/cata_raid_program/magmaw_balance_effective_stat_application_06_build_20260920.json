@@ -1,0 +1,36 @@
+{
+  "kind": "build",
+  "unit_id": "magmaw:balance_effective_stat_application_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "eb903a94620dd97a2abba54e4cccc57177370c75dbaf1459b35b76e6218bf6c9",
+  "source_commit": "6560216123d9007fd4f49fe716128719363d56ad",
+  "binary_sha256": "d61bac692269f40ac162707981837228a72ee2dd753fe26c1d2b118975f255be",
+  "file_hashes": {
+    "tools/bot_ml/review_rotation_mechanics.py": "03ef43d4775a6e2b49a4e418fdad503edd087e1dade2d067ef2697ca7e0b88ca",
+    "tests/test_rotation_mechanics_review.py": "ffcf789c98b817c142f8be24529e4735aa92f3343dc4aa1c9c3c49f2ed0e697b"
+  },
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_queued_build_20260920.json",
+    "sha256": "3c0eec6048295800eca9c28bb018f46a0b3218e97ca8b8adf9203322bc1202c9"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_implementation_20260920.json",
+      "sha256": "b84a03142e56378ce321ff2da9d4aa9fc0748a7a3ed0c6f296de1d2f0e7ccf55"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_20260920.json",
+      "sha256": "c0f5aeb70c63c6978cd4080347dca163acf7292374daefd22ff86e72b6edf34d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_queued_build_20260920.json",
+      "sha256": "3c0eec6048295800eca9c28bb018f46a0b3218e97ca8b8adf9203322bc1202c9"
+    }
+  ],
+  "interpretation": "The reviewed comparator source is bound to a successful policy-conforming worldserver build. The build provides source and binary provenance; it does not claim live, actor, performance, encounter-clear, or Magmaw 10N acceptance."
+}

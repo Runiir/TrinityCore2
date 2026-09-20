@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 159,
+    "revision": 160,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -3292,6 +3292,25 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 159,
+        "unit_id": "magmaw:balance_effective_stat_application_06",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "action": "advance",
+          "revision": 159,
+          "unit_id": "magmaw:balance_effective_stat_application_06",
+          "producer": "coordinator",
+          "claim_token": "eb903a94620dd97a2abba54e4cccc57177370c75dbaf1459b35b76e6218bf6c9",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_build_20260920.json",
+            "sha256": "a0bc2604c68fae0702e23ef66fe9de203d299595eae0fa5728739d9f35fbf889"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3359,6 +3378,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_review_20260920.json",
         "sha256": "c0f5aeb70c63c6978cd4080347dca163acf7292374daefd22ff86e72b6edf34d"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_build_20260920.json",
+        "sha256": "a0bc2604c68fae0702e23ef66fe9de203d299595eae0fa5728739d9f35fbf889"
       }
     },
     "tested_files": {
@@ -3367,11 +3390,9 @@
     },
     "tested_commit": "340fbd4d8ca35a0206e48774761e789707b2f5cb",
     "implementer": "coordinator",
-    "claim": {
-      "owner": "coordinator-magmaw-10n-build-06",
-      "token": "eb903a94620dd97a2abba54e4cccc57177370c75dbaf1459b35b76e6218bf6c9",
-      "operation_id": "eb903a94620dd97a2abba54e4cccc57177370c75dbaf1459b35b76e6218bf6c9",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "6560216123d9007fd4f49fe716128719363d56ad",
+      "binary_sha256": "d61bac692269f40ac162707981837228a72ee2dd753fe26c1d2b118975f255be"
     }
   },
   "parked_scenarios": {
