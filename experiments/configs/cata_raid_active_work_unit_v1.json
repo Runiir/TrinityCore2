@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Review every actor; compare matched baseline, native outcome, and performance separately. Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning.",
+  "next_action": "Select the next proven edge, or complete only when every requirement is accepted. Diagnose one native Moonkin Aura 24907 materialization edge, implement only the reviewed aura-lifecycle repair, rebuild with exact provenance, and rerun the identical effective-stat canary before any Balance rotation tuning.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 123,
+    "revision": 126,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "assess",
+    "stage": "route",
     "actor_ids": [
       "30001",
       "30002",
@@ -554,7 +554,7 @@
       "balance_missing_self_buff_and_leather_specialization": 7,
       "owner_effective_stat_application_before_rotation_execution": 3,
       "owner_rotation_execution_after_effective_stat_parity": 2,
-      "owner_effective_stat_application_moonkin_aura_materialization": 4
+      "owner_effective_stat_application_moonkin_aura_materialization": 5
     },
     "history": [
       {
@@ -2634,6 +2634,57 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 123,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "action": "advance",
+          "revision": 123,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "producer": "coordinator",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_assessment_rework4_20260920.json",
+            "sha256": "2c25d21c42f15de1a18c347a69d7e95013866efd4f75c92b330635fc582de539"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 124,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "action": "claim",
+          "revision": 124,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "owner": "codex-magmaw-10n-balance-aura-publish-rework4"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 125,
+        "unit_id": "magmaw:balance_effective_stat_parity_03",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "action": "advance",
+          "revision": 125,
+          "unit_id": "magmaw:balance_effective_stat_parity_03",
+          "claim_token": "c93876e2e53054ccc02bc7b51aa10a17671604fda4d0ca551d76bddb03c3d169",
+          "producer": "coordinator",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_publication_rework4_20260920.json",
+            "sha256": "97db9eb09240cf7afd9f8e626c7d87189c5b26a9435b59c751a086109eefb8b6"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2713,6 +2764,14 @@
       "run": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json",
         "sha256": "97e21cd6dc52e1d1686b53b0f420198ee6b0b42e7748e5fd111b5ddfc83a4edc"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_assessment_rework4_20260920.json",
+        "sha256": "2c25d21c42f15de1a18c347a69d7e95013866efd4f75c92b330635fc582de539"
+      },
+      "publication": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_publication_rework4_20260920.json",
+        "sha256": "97db9eb09240cf7afd9f8e626c7d87189c5b26a9435b59c751a086109eefb8b6"
       }
     },
     "tested_files": {
@@ -2733,6 +2792,12 @@
       "server_epoch": 1975759599377080,
       "scenario_kind": "dummy",
       "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {

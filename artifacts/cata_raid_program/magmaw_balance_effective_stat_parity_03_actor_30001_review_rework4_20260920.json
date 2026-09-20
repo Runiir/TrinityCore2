@@ -1,0 +1,42 @@
+{
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "actor_id": "30001",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "verdict": "not_accepted",
+  "accepted": false,
+  "scope": "Balance effective-stat diagnosis only",
+  "findings": [
+    {
+      "scope": "measurement",
+      "status": "pass",
+      "detail": "The exact 300-second Balance calibration completed with accepted capture, comparable reference setup, zero deaths, and verified cleanup."
+    },
+    {
+      "scope": "Moonkin Aura owner application",
+      "status": "pass",
+      "detail": "Spell 24907 was active on the owner for all observed samples with amount 5, effect mask 1, and owner caster GUID 30540."
+    },
+    {
+      "scope": "effective cast speed",
+      "status": "fail",
+      "detail": "The scoring-start spell-speed multiplier remained 1.269, below the pinned WoWSims value 1.332199768447153; the 5% 24907 modifier is not reflected in the effective result."
+    },
+    {
+      "scope": "performance",
+      "status": "blocked",
+      "detail": "Balance DPS comparison remains inadmissible until native effective-stat parity is repaired; no actor or raid performance requirement is accepted."
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json",
+      "sha256": "97e21cd6dc52e1d1686b53b0f420198ee6b0b42e7748e5fd111b5ddfc83a4edc"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ]
+}

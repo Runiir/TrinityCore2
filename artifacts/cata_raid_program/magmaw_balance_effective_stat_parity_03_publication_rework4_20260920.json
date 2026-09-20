@@ -1,0 +1,42 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "c93876e2e53054ccc02bc7b51aa10a17671604fda4d0ca551d76bddb03c3d169",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "archive": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.tar.gz.dvc",
+    "sha256": "c0070418982f9387356c0eab1c9af09c1080687e629cc1a1b97776b406c11aee",
+    "remote_status": "Cache and remote 'object' are in sync.",
+    "local_raw_run_removed": true,
+    "local_archive_removed": true
+  },
+  "disposition": {
+    "repair_accepted": false,
+    "performance_accepted": false,
+    "accepted_requirements": [],
+    "reason": "The run is closed and attributable, but the active 24907 owner aura still does not contribute its 5% direct-cast modifier to effective spell speed."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_assessment_rework4_20260920.json",
+      "sha256": "2c25d21c42f15de1a18c347a69d7e95013866efd4f75c92b330635fc582de539"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json",
+      "sha256": "97e21cd6dc52e1d1686b53b0f420198ee6b0b42e7748e5fd111b5ddfc83a4edc"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.tar.gz.dvc",
+      "sha256": "c0070418982f9387356c0eab1c9af09c1080687e629cc1a1b97776b406c11aee"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_actor_30001_review_rework4_20260920.json",
+      "sha256": "13b2f081e3ba36c7ecf97e4863a222d0a5e4ef634d47142f36f448ec69adbd55"
+    }
+  ]
+}
