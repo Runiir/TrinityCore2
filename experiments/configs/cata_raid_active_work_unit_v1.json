@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 133,
+    "revision": 134,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -2820,6 +2820,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 133,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 133,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_review_20260920.json",
+            "sha256": "61fe6841962d2151b1434bd2b25983a92aac897d14697eaad5d45ce2eb25935d"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2828,7 +2845,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "b39cd8eed35b49a10f9df36ce7418e2131f3cb29",
+    "source_base_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
     "assignment": {
       "hypothesis": "The active owner aura lacks its expected direct-cast-speed effect. Dispatch, exclusive stacking and later reset remain alternatives. The new trace is currently silent under the frozen logger configuration, so fix observation visibility and verify its real path before another performance measurement. Review prior speculative lifecycle edits at 7fdb56d60b and 25f2079208; do not treat them as proven fixes or stack another gameplay guess.",
       "owned_files": [
@@ -2895,6 +2912,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_implementation_20260920.json",
         "sha256": "20d73d4b79e7f3bb6b61229d2fd7298df0d7b9d7c7542e96162481b15eeeb28f"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_review_20260920.json",
+        "sha256": "61fe6841962d2151b1434bd2b25983a92aac897d14697eaad5d45ce2eb25935d"
       }
     },
     "tested_files": {

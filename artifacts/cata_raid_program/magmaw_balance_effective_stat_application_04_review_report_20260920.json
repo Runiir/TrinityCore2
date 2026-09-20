@@ -1,0 +1,28 @@
+{
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "verdict": "approved",
+  "native_changes_approved": true,
+  "source_base_commit": "b39cd8eed35b49a10f9df36ce7418e2131f3cb29",
+  "tested_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
+  "findings": [
+    "SpellAuraEffects.cpp changes only the Moonkin calibration trace category from spells to server at the exclusive-skip and applied log sites.",
+    "The canonical worldserver template enables Logger.server=3,Console Server while Logger.spells is commented; the server category is therefore visible through the frozen runtime configuration.",
+    "The normal aura lifecycle reaches HandleModCastingSpeed through the existing aura mapping, application/removal and dispatch paths.",
+    "spellGroupVal handling and both ApplyCastTimePercentMod calls are unchanged; no gameplay or calibration-metric behavior changed.",
+    "The focused test and diff checks pass. The test is source/config shape coverage only and does not prove handler execution, emitted output, native stat parity or live success."
+  ],
+  "checks": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "result": "6 passed"
+    },
+    {
+      "command": "git diff --check b39cd8eed35b49a10f9df36ce7418e2131f3cb29..HEAD",
+      "exit_status": 0
+    }
+  ],
+  "next_action": "Proceed to the coordinator-owned short native startup probe with the matching server logger configuration; do not treat the review as a live or performance acceptance."
+}

@@ -1,0 +1,30 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "authority": "coordinator_attestation",
+  "producer": "Rawls",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_review_report_20260920.json",
+    "sha256": "c36588d6063362e7a1b06987bad76eb076ad745e9658ab9af9cf65078c0d93ef"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "80fc284653b00cde9b338aa99870a0dadd0b28738e2e6e7361e61b638a56405c",
+    "tests/test_balance_native_effective_stat_parity.py": "413545188bce90e43e4ad6d19dd2eeb1f02c6fc1fd4ac23afdb5a0391d19bd90"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_review_report_20260920.json",
+      "sha256": "c36588d6063362e7a1b06987bad76eb076ad745e9658ab9af9cf65078c0d93ef"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_implementation_20260920.json",
+      "sha256": "20d73d4b79e7f3bb6b61229d2fd7298df0d7b9d7c7542e96162481b15eeeb28f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/workflow_loop_native_review_20260920.json",
+      "sha256": "d91d3f7891eb802012822a3e2b13fafc7577931d01109fead4141a4d676117f4"
+    }
+  ]
+}
