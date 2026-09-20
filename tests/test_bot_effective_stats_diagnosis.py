@@ -42,7 +42,7 @@ enum CombatRating:uint8{CR_HIT_SPELL,CR_CRIT_SPELL,CR_HASTE_SPELL,CR_EXPERTISE,C
 enum AuraType:uint8{SPELL_AURA_MOD_STAT,SPELL_AURA_MOD_PERCENT_STAT,SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE,SPELL_AURA_MOD_HIT_CHANCE,SPELL_AURA_MOD_SPELL_HIT_CHANCE};
 enum UnitMods:uint8{UNIT_MOD_STAT_START};
 enum UnitModifierType:uint8{BASE_VALUE,BASE_PCT,TOTAL_VALUE,TOTAL_PCT};
-constexpr uint32 UNIT_FIELD_BASEATTACKTIME=10,UNIT_FIELD_RANGEDATTACKTIME=11,UNIT_MOD_CAST_HASTE=12;
+constexpr uint32 UNIT_FIELD_BASEATTACKTIME=10,UNIT_FIELD_RANGEDATTACKTIME=11,UNIT_MOD_CAST_HASTE=12,UNIT_MOD_CAST_SPEED=13;
 constexpr uint32 PLAYER_FIELD_COMBAT_RATING_1=100,PLAYER_CRIT_PERCENTAGE=200,PLAYER_RANGED_CRIT_PERCENTAGE=201,PLAYER_SPELL_CRIT_PERCENTAGE1=210;
 struct Guid{uint64 Value=0;uint32 GetCounter()const{return uint32(Value);}uint64 GetRawValue()const{return Value;}};
 struct AuraEffect{AuraType GetAuraType()const{return SPELL_AURA_MOD_STAT;}int GetMiscValueB()const{return 0;}int GetMiscValue()const{return 0;}uint32 GetId()const{return 0;}uint8 GetEffIndex()const{return 0;}int GetAmount()const{return 0;}Guid GetCasterGUID()const{return {};}};
@@ -97,11 +97,11 @@ struct BotWorldPopulationMgr{
 int main(){
  spellMgr.Spells.emplace(100,SpellInfo{100,1u<<SPELL_SCHOOL_FIRE,true});
  Player caster;caster.GuidValue={11};caster.Entry=77;caster.StatValues={100,200,300,400,500};caster.AttackPower=900;caster.RangedAttackPower=1100;caster.Armor=2200;caster.MaxHealth=33000;caster.Mana=44000;
- caster.FloatValues[UNIT_FIELD_BASEATTACKTIME]=1000;caster.FloatValues[UNIT_FIELD_RANGEDATTACKTIME]=1250;caster.FloatValues[UNIT_MOD_CAST_HASTE]=0.8f;caster.FloatValues[PLAYER_CRIT_PERCENTAGE]=9.5f;caster.FloatValues[PLAYER_RANGED_CRIT_PERCENTAGE]=17.0f;
+ caster.FloatValues[UNIT_FIELD_BASEATTACKTIME]=1000;caster.FloatValues[UNIT_FIELD_RANGEDATTACKTIME]=1250;caster.FloatValues[UNIT_MOD_CAST_HASTE]=0.8f;caster.FloatValues[UNIT_MOD_CAST_SPEED]=1.05f;caster.FloatValues[PLAYER_CRIT_PERCENTAGE]=9.5f;caster.FloatValues[PLAYER_RANGED_CRIT_PERCENTAGE]=17.0f;
  caster.SchoolPower[SPELL_SCHOOL_HOLY]=6800;caster.SchoolPower[SPELL_SCHOOL_FIRE]=7123;caster.SchoolPower[SPELL_SCHOOL_SHADOW]=6900;
  caster.FloatValues[PLAYER_SPELL_CRIT_PERCENTAGE1+SPELL_SCHOOL_FIRE]=18.25f;caster.FloatValues[PLAYER_SPELL_CRIT_PERCENTAGE1+SPELL_SCHOOL_SHADOW]=22.5f;
  Pet pet;pet.GuidValue={21};pet.Entry=416;pet.Owner=&caster;pet.Permanent=true;pet.BonusDamage=1550;pet.NativeSpellCrit=12.5f;pet.AutoSpells={100};pet.SchoolPower[SPELL_SCHOOL_FIRE]=1600;caster.CurrentPet=&pet;
- Player physical;physical.GuidValue={12};physical.Entry=88;physical.StatValues={800,700,600,100,50};physical.AttackPower=5200;physical.RangedAttackPower=300;physical.FloatValues[UNIT_FIELD_BASEATTACKTIME]=2000;physical.FloatValues[UNIT_FIELD_RANGEDATTACKTIME]=2500;physical.FloatValues[UNIT_MOD_CAST_HASTE]=1;
+ Player physical;physical.GuidValue={12};physical.Entry=88;physical.StatValues={800,700,600,100,50};physical.AttackPower=5200;physical.RangedAttackPower=300;physical.FloatValues[UNIT_FIELD_BASEATTACKTIME]=2000;physical.FloatValues[UNIT_FIELD_RANGEDATTACKTIME]=2500;physical.FloatValues[UNIT_MOD_CAST_HASTE]=1;physical.FloatValues[UNIT_MOD_CAST_SPEED]=1;
  std::cout<<BotWorldPopulationMgr::BuildEffectiveStatsSnapshotJson(&caster,123456)<<'\n';
  std::cout<<BotWorldPopulationMgr::BuildEffectiveStatsSnapshotJson(&physical,123457)<<'\n';
 }
@@ -117,6 +117,7 @@ int main(){
     assert caster["owner"]["guid"] == 11
     assert caster["owner"]["intellect"] == 400
     assert caster["owner"]["spell_power"] == 7123  # Legacy max-school scalar.
+    assert abs(caster["owner"]["spell_speed_multiplier"] - (1.0 / (0.8 * 1.05))) < 1e-4
     assert caster["owner"]["spell_crit_pct"] == 22.5  # Legacy Shadow scalar.
     assert caster["owner"]["spell_schools"]["fire"] == {
         "spell_power": 7123,

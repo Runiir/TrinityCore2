@@ -79,7 +79,10 @@ void BotWorldPopulationMgr::ObserveCalibrationEffectiveStats(
 
     float const meleeTime = unit->GetFloatValue(UNIT_FIELD_BASEATTACKTIME);
     float const rangedTime = unit->GetFloatValue(UNIT_FIELD_RANGEDATTACKTIME);
-    float const spellTime = unit->GetFloatValue(UNIT_MOD_CAST_HASTE);
+    float const castHaste = unit->GetFloatValue(UNIT_MOD_CAST_HASTE);
+    float const castSpeed = unit->GetFloatValue(UNIT_MOD_CAST_SPEED);
+    float const spellTime = castHaste > 0.0f && castSpeed > 0.0f
+        ? castHaste * castSpeed : 0.0f;
     stats.MeleeSpeedMultiplier = meleeTime > 0.0f
         ? float(unit->GetBaseAttackTime(BASE_ATTACK)) / meleeTime : 1.0f;
     stats.RangedSpeedMultiplier = rangedTime > 0.0f

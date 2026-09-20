@@ -36,6 +36,8 @@ def test_calibration_ledger_keeps_raw_rating_separate_from_effective_percentages
 
     assert "player->GetBaseRatingValue(type)" in source
     assert "stats.SpellHitPct = player->GetRatingBonusValue(CR_HIT_SPELL);" in source
+    assert "float const castSpeed = unit->GetFloatValue(UNIT_MOD_CAST_SPEED);" in source
+    assert "castHaste * castSpeed" in source
     assert "PLAYER_FIELD_COMBAT_RATING_1" not in source
 
 
