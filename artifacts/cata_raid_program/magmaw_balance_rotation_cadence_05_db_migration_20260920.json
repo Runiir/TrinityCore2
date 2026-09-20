@@ -1,0 +1,28 @@
+{
+  "kind": "db_migration",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "operation_id": "11cc97d4c26417bd66a5b6b3386757a87cb71a1e9f23726ebca566f3be97ff4c",
+  "applied_at": "2026-09-20T18:17:22Z",
+  "migration": {
+    "path": "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+    "sha256": "6422717197c576a42f8e4d3a13df060642e8075d9d5707ca2f3e2ea4ab5c835e",
+    "idempotent": true
+  },
+  "target": {
+    "table": "bot_rotation_action",
+    "profile_id": 290,
+    "action_id": 2544,
+    "spell_id": 48505,
+    "enabled": 1,
+    "profile": "balance_druid/dps"
+  },
+  "before": {
+    "mechanic_tags": "starfall,cooldown,pinned_apl,balance_starfall_neutral_gate"
+  },
+  "after": {
+    "mechanic_tags": "starfall,cooldown,pinned_apl,balance_starfall_neutral_gate,balance_starfall_lunar_window",
+    "tag_occurrences": 1
+  },
+  "changed_rows": 1,
+  "verification": "readback after commit confirmed the reviewed Balance Starfall lunar-window tag is present exactly once"
+}
