@@ -1,0 +1,34 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build_attempt",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_plan_20260920.json",
+      "sha256": "5199478893d53ef3fc77a2a6b987251b8a16c8772caa1bfab9f15d6cae76d7d5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.json",
+      "sha256": "87317693e6c278902a723128b1ace294aa0cfe65b60ffcd150cf0e073bb2b23e"
+    }
+  ],
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "ticket_id": "raid-build-a3d8e9540b9e440faccb11314fd5ff81",
+  "source_commit": "fe093325f3922e4007dab33105987ce99725172e",
+  "resource_class": "worldserver_build",
+  "command": "/usr/bin/cmake --build build --target worldserver --parallel 4",
+  "classification": "build_provenance_abort",
+  "exit_code": 76,
+  "error": "build_configuration_or_configure_lineage_missing_before_admission",
+  "provenance_reasons": [
+    "build_configuration_or_configure_lineage_missing_before_admission",
+    "build_configuration_changed_or_mismatched_at_completion",
+    "mysql_build_identity_changed_or_unproven"
+  ],
+  "server_started": false,
+  "resolution": "The current source required a fresh policy-bound configure lineage. Configure ticket raid-build-330fb01389d74fbf92e54e5cb67c165c completed successfully before the succeeding build ticket."
+}

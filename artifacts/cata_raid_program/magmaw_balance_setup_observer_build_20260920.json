@@ -1,0 +1,58 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "coordinator",
+  "operation_id": "1b724edc81006f1061205bd1bb0ce931f14f7be592c518f29ced3ae0141e92a1",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_plan_20260920.json",
+      "sha256": "5199478893d53ef3fc77a2a6b987251b8a16c8772caa1bfab9f15d6cae76d7d5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_review_20260920.json",
+      "sha256": "87317693e6c278902a723128b1ace294aa0cfe65b60ffcd150cf0e073bb2b23e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_implementation_20260920.json",
+      "sha256": "16729c1781b833a1604aca637c12600324cf7bfb3a9888545c794810dddfc190"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_build_provenance_failure_20260920.json",
+      "sha256": "8d262774b92cd14f6aaf1642d1f7ebc9d205c3295b56127386f0d789be101a8f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_configure_20260920.json",
+      "sha256": "fd4364e5149f2da4332d3e66b7a12a251f73b54a6816758427eeab03b66a2637"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_queued_build_20260920.json",
+      "sha256": "b7e3e9eab709b50d1ee3179371858570a43f4ec163d0b9dd15c95ca7938acbeb"
+    }
+  ],
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_queued_build_20260920.json",
+    "sha256": "b7e3e9eab709b50d1ee3179371858570a43f4ec163d0b9dd15c95ca7938acbeb"
+  },
+  "configure_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_configure_20260920.json",
+    "sha256": "fd4364e5149f2da4332d3e66b7a12a251f73b54a6816758427eeab03b66a2637"
+  },
+  "file_hashes": {
+    "tools/bot_ml/phase8_reference_conditions.py": "63276181912dfccc277ffef81b6eb9e6fc565a02a23b6fcb3ecfe064e5b7089a",
+    "tests/test_phase8_reference_conditions.py": "c7bc47d60969e87cb2e37efd3e97f9390b90f4048b04670f3647481a9ed9042c",
+    "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
+  },
+  "source_commit": "fe093325f3922e4007dab33105987ce99725172e",
+  "binary_sha256": "9c09d7eabdc513ad131bdc1f814ec6a0f5cf71b7f3b927a8ff2248bc102e1690",
+  "source_identity_stable": true,
+  "build_configuration_stable": true,
+  "configure_lineage_refreshed": true,
+  "build_command": "/usr/bin/cmake --build build --target worldserver --parallel 4",
+  "failed_attempt_resolved": "Fresh configure lineage was required after the reviewed Python observer change; the initial stale-lineage admission was retained as a separate non-server provenance failure.",
+  "build_status": "success"
+}
