@@ -1,0 +1,11 @@
+{
+  "revision": 60,
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "action": "rework",
+  "reason": "Repair the stale source-isolation boundary before accepting the implementation result; preserve the native patch and reopen diagnose for a current-mainline plan binding.",
+  "claim_token": "980e08fe75d2fb75ce68e9e17e51c1025107745f683aa3f40eba5d4cd33ae6b4",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_source_isolation_reconciliation_20260920.json",
+    "sha256": "a7825eefd0e848f4ede39a9ce83996bf0298c091fd5fa211081159f89cb3e9f7"
+  }
+}

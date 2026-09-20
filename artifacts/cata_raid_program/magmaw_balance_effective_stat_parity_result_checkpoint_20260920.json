@@ -1,0 +1,94 @@
+{
+  "task_id": "magmaw:balance_effective_stat_parity_01",
+  "subject": "worker",
+  "objective": "Repair and regression-test the first native Balance scoring-start effective-stat mismatch for Magmaw 10N.",
+  "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+  "allowed_files": [
+    "src/server/game/Entities/Player/Player.h",
+    "src/server/game/Entities/Player/Player.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tests/test_bot_effective_stats_diagnosis.py",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Balance priority policy, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, or raid route behavior.",
+    "Do not accept Balance performance, actor_30001, or Magmaw 10N before native build and exact-300 validation.",
+    "Do not close or remove any open actor, comparison, potion, or Magmaw requirement."
+  ],
+  "acceptance_conditions": [
+    "Balance of Power excludes base spirit from its rating-from-stat conversion.",
+    "The native scoring ledger reports raw combat ratings separately from effective hit/crit/haste percentages.",
+    "Moonkin form re-materializes missing 24907 and retains the existing owned-aura removal path.",
+    "All required focused tests and catalog checks pass; native build and exact-300 validation remain outstanding."
+  ],
+  "observations": [
+    "The source batch is committed at 2015f610d5 after the repository advisory pre-commit checkpoint.",
+    "The focused Balance regression passes 3 tests.",
+    "The effective-stat production fixture plus build-source compatibility tests pass 20 tests.",
+    "The WoWSims request and reference catalogs pass their deterministic checks.",
+    "The patch changes only the four native source paths and two directly affected regression fixtures; it does not change policy or encounter code."
+  ],
+  "proposed_change": "The committed patch adds a Player-owned Balance of Power stat conversion helper, exposes raw base combat ratings to the calibration ledger, makes Moonkin form reapply missing 24907, and updates the production-code test fixture for the new accessor.",
+  "acceptance_claim": "The bounded source repair and its focused regressions are complete. Native compilation, exact-300 Balance validation, actor acceptance, and Magmaw 10N acceptance remain unproved.",
+  "stage": "result",
+  "changed_files": [
+    "src/server/game/Entities/Player/Player.h",
+    "src/server/game/Entities/Player/Player.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tests/test_bot_effective_stats_diagnosis.py",
+    "tests/test_balance_native_effective_stat_parity.py"
+  ],
+  "changed_files_source": "coordinator_observed",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "3 passed in 0.05s"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed in 1.52s"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "fixture contract valid; provider revision 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6; 16 requests"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "reference catalog valid; 16 specs"
+    }
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+    "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "file_hashes": {
+    "src/server/game/Entities/Player/Player.h": "c7424987be5ebfa44bb59d55c7c0f2cf89da06057657c006c49f9a79ae21385a",
+    "src/server/game/Entities/Player/Player.cpp": "ca09174ed5c4c2afaa5aeaf188c52282a622da11e19fd0059cdd77b0748771f3",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "645724f9a0d48dea165cee29111e50365c9e63d453969f4f70a83e1de069b5ab",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "9c43a794110d2523d3db1740601d128b5ca9250bca799abdc526e72c6082b9f4",
+    "tests/test_bot_effective_stats_diagnosis.py": "e83197173d988f063ee7026808e954b53ebae3001976bee36d505a85dde056e3",
+    "tests/test_balance_native_effective_stat_parity.py": "759147d99fbb0ef0509d16d4463ee870e82a6a750c8de979a8ab007a1facd258"
+  },
+  "evidence_excerpts": [
+    {
+      "id": "plan",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_20260920.json",
+      "sha256": "58fe8b3ba16eeab3aef2ba2f511a4f5b858ec7a5c7759b56ac33ffc737b44afd",
+      "excerpt": "The assignment binds the first native Balance effective-stat edge and requires a focused test, clean build, and identical exact-300 follow-up."
+    },
+    {
+      "id": "assessment",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json",
+      "sha256": "9ebc25cb25096f7cc21ee77935a52fcc629ba32c01c595edf4c25f778d49eea9",
+      "excerpt": "The retained run fails effective-stat parity and performance acceptance remains false."
+    }
+  ]
+}

@@ -25,12 +25,16 @@
       "sha256": "a9d2458578113e63e271f7cb6daf9a3e2f9345f79f729b50fb85e99f7fad9de7"
     },
     {
-      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v3/summary.json",
-      "sha256": "0019a2f0c7a022536178b0223ff97cb8eff8499b2393f5c8cb8b6c13d3cb68ef"
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/summary.json",
+      "sha256": "a0b2a8f24440bbec49f16fbd1e1f0abeab133264a74419acf4ec91fb7f27ffc7"
     },
     {
       "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_drift_review_20260920_review/summary.json",
       "sha256": "06d151c9f871f425620280b3d1f1a5b981a93b194ceed34d0e7d844ca4fb4634"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_source_isolation_reconciliation_20260920.json",
+      "sha256": "a7825eefd0e848f4ede39a9ce83996bf0298c091fd5fa211081159f89cb3e9f7"
     }
   ],
   "hypothesis": "Balance's first native parity failure is in owner effective-stat materialization: Balance of Power currently converts base spirit into spell hit rating, the calibration ledger compares effective rating fields against raw WoWSims rating fields, and Moonkin form can leave its 24907 passive cast-speed aura unapplied after the triggered cast. Repair only these native edges before interpreting Balance cadence or total DPS.",
@@ -40,7 +44,10 @@
     "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
     "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
     "tests/test_bot_effective_stats_diagnosis.py",
-    "tests/test_balance_native_effective_stat_parity.py"
+    "tests/test_balance_native_effective_stat_parity.py",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_drift_review_20260920_review/examples.jsonl",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/examples.jsonl",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/examples.jsonl"
   ],
   "forbidden_changes": [
     "Do not change Balance priority policy, spell coefficients, proc formulas, gear, consumables, WoWSims requests, roster, encounter scripts, or raid route behavior.",
@@ -60,7 +67,7 @@
     "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
     "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
   ],
-  "base_commit": "ae58ee1a603476e4bbe32936a96b3b73b0cf8e2d",
+  "base_commit": "90b64f6b64465128f4ac0bbd849c7e89c7debf40",
   "policy": {
     "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
     "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"

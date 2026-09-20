@@ -1,0 +1,103 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "producer": "codex-magmaw-10n-balance-effective-stat-parity",
+  "operation_id": "b2ed52bae84fd33efea428f89e648c59676f4eaa711e109a81a0025c205f0975",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_20260920.json",
+      "sha256": "58fe8b3ba16eeab3aef2ba2f511a4f5b858ec7a5c7759b56ac33ffc737b44afd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920.json",
+      "sha256": "11d49224b7bee7414c69356e248639c2a8a883ca792546e5662013c8ba8a2a99"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/summary.json",
+      "sha256": "a4f66ba2dfcc8b2ed450f52fbb7f66ead781e9969c4962962d99a0ad3ffb6e84"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_assessment_20260920.json",
+      "sha256": "9ebc25cb25096f7cc21ee77935a52fcc629ba32c01c595edf4c25f778d49eea9"
+    },
+    {
+      "path": "src/server/game/Entities/Player/Player.h",
+      "sha256": "c7424987be5ebfa44bb59d55c7c0f2cf89da06057657c006c49f9a79ae21385a"
+    },
+    {
+      "path": "src/server/game/Entities/Player/Player.cpp",
+      "sha256": "ca09174ed5c4c2afaa5aeaf188c52282a622da11e19fd0059cdd77b0748771f3"
+    },
+    {
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp",
+      "sha256": "645724f9a0d48dea165cee29111e50365c9e63d453969f4f70a83e1de069b5ab"
+    },
+    {
+      "path": "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+      "sha256": "9c43a794110d2523d3db1740601d128b5ca9250bca799abdc526e72c6082b9f4"
+    },
+    {
+      "path": "tests/test_bot_effective_stats_diagnosis.py",
+      "sha256": "e83197173d988f063ee7026808e954b53ebae3001976bee36d505a85dde056e3"
+    },
+    {
+      "path": "tests/test_balance_native_effective_stat_parity.py",
+      "sha256": "759147d99fbb0ef0509d16d4463ee870e82a6a750c8de979a8ab007a1facd258"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Entities/Player/Player.h": "c7424987be5ebfa44bb59d55c7c0f2cf89da06057657c006c49f9a79ae21385a",
+    "src/server/game/Entities/Player/Player.cpp": "ca09174ed5c4c2afaa5aeaf188c52282a622da11e19fd0059cdd77b0748771f3",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "645724f9a0d48dea165cee29111e50365c9e63d453969f4f70a83e1de069b5ab",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "9c43a794110d2523d3db1740601d128b5ca9250bca799abdc526e72c6082b9f4",
+    "tests/test_bot_effective_stats_diagnosis.py": "e83197173d988f063ee7026808e954b53ebae3001976bee36d505a85dde056e3",
+    "tests/test_balance_native_effective_stat_parity.py": "759147d99fbb0ef0509d16d4463ee870e82a6a750c8de979a8ab007a1facd258",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_drift_review_20260920_review/examples.jsonl": "f48af93e9f8bb90303c3409ff4da6584a9be6f0040f625434e7a351c38445f8b",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/examples.jsonl": "47dc2f7802f27d702d6d283370dfe2a617d54d0ed3473ace17635cc805ad0eb8",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/examples.jsonl": "88562e00bb0f44d0542b417221939b44731b647e89ea7692b68144e82c348d45"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "3 passed in 0.05s"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed in 1.52s"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "fixture contract valid; 16 requests"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "reference catalog valid; 16 specs"
+    }
+  ],
+  "implementation_summary": "Committed 2015f610d5: Balance of Power now excludes base spirit from its stat-derived rating, the calibration ledger compares raw ratings with raw WoWSims fields while preserving effective percentages, and Moonkin form re-materializes missing passive aura 24907 with existing owned-aura cleanup retained.",
+  "outstanding_validation": [
+    "Host12 queued native build is still required.",
+    "An identical exact-300 Balance run is still required to verify scoring-start stats and downstream DPS.",
+    "Independent review, assessment, publication, and routing remain required; actor_30001 and Magmaw 10N are not accepted."
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_result_checkpoint_20260920_review/summary.json",
+        "sha256": "a4f66ba2dfcc8b2ed450f52fbb7f66ead781e9969c4962962d99a0ad3ffb6e84"
+      },
+      "adjudication": "Hosted Jev supported the bounded scope, cited evidence and limited implementation claim. Its advisory result does not replace native build or exact-300 validation."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Local Laya was unavailable; deterministic test receipts and the independent reviewer remain the acceptance controls."
+    }
+  }
+}

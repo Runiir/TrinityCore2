@@ -1,0 +1,8 @@
+{
+  "operation_id": "980e08fe75d2fb75ce68e9e17e51c1025107745f683aa3f40eba5d4cd33ae6b4",
+  "active_operation": false,
+  "ownership_checked": true,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The saved source_base_commit predates unrelated committed source changes and makes the bounded result appear to own historical work. Rebind the active graph to the current pre-repair mainline parent and include the committed advisory JSONL receipts explicitly in the bounded coordination ownership."
+}
