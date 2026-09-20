@@ -1,0 +1,70 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "producer": "coordinator",
+  "operation_id": "e33dffe2bdd1df3f83b74faa8091a34b23d3ba4ec611f8b406c494b032758215",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_rework_20260920.json",
+      "sha256": "96acef752ea57c34a0a5ff309246b974ca62dfeea680cdca3bcac912c7c5e3f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_implementation_rework_20260920.json",
+      "sha256": "50468d59e637b5d0527c68a3729962d7e9cf2f3074ad98c958f43c6b2dad68b8"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_review_rework_20260920.json",
+      "sha256": "713f6bb8a46112e3f02c3f18109f2d405262dc48ba836440b51e93375ea5f421"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_claim_rework_20260920.json",
+      "sha256": "d34726e2101ab07be2065eb0aad816f98a0688c361f4b5a206984a99269503f8"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_configure_rework2_20260920.json",
+      "sha256": "dd6f1f80d9631c17eae0a145c24887d7194beabe3fb19d7936c519e75a3d84de"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_rework2_20260920.json",
+      "sha256": "6bfee4197027a70f7a8a4717d0bf6379b797d8c3345a22431c2b6c93d98f442e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_reconciliation_20260920.json",
+      "sha256": "65e9dbe68914e6fad84cb5867f950a3893450a3dee2e93c325c55880b9b69907"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_source_binding_reconciliation_20260920.json",
+      "sha256": "af13926a2e9ddba0bbe7f6f620fb2334a1fe0ba94e549d2478eec965a570eb6a"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "03f46f72376d750eba3147c19ad7574f3718df0de2c8399a2ff16f9aac089844",
+    "tests/test_bot_effective_stats_diagnosis.py": "d5dba7f99523edf9b42fe24cb1f5b6fe9b53617f2a811b69b9bc2325954b58b4",
+    "tests/test_balance_native_effective_stat_parity.py": "7ac08337b4d7340a9df85ea9d8ac98a40ee6134d2d28ea734c538498c91884ce"
+  },
+  "source_commit": "73e8b043fac05ff79f4f17c6ab239ef1551480db",
+  "binary_sha256": "ef82a286e8e74d0cbd3af823e0a42f0be0b8b681ec1c5c8d38d5d8fd672b1854",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_rework2_20260920.json",
+    "sha256": "6bfee4197027a70f7a8a4717d0bf6379b797d8c3345a22431c2b6c93d98f442e"
+  },
+  "configure_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_configure_rework2_20260920.json",
+    "sha256": "dd6f1f80d9631c17eae0a145c24887d7194beabe3fb19d7936c519e75a3d84de"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "source_identity_stable": true,
+  "build_configuration_stable": true,
+  "configure_lineage_refreshed": true,
+  "build_command": "/usr/bin/cmake --build build --target worldserver --parallel 12",
+  "failed_attempts_resolved": [
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_build_retry_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_configure_rework_20260920.json"
+  ],
+  "build_status": "success"
+}
