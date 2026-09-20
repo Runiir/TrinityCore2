@@ -1,0 +1,74 @@
+{
+  "kind": "worker_checkpoint",
+  "unit_id": "magmaw:balance_effective_stat_application_06",
+  "task_id": "magmaw-balance-comparator-20260920",
+  "stage": "result",
+  "authority": "advisory_only",
+  "producer": "coordinator",
+  "checkpoint_sha256": "14c6f23c4ae2eb2e543ea7ba8739b870f182c843b14beb9785a5ab8a448f3d32",
+  "deterministic_status": "pass",
+  "model_advice": {
+    "hosted_jev": {
+      "status": "advisory",
+      "model": "jev-1.13.0",
+      "scope_fit": "supported",
+      "scope_fit_confidence": 0.97,
+      "evidence_supports_proposed_change": "supported",
+      "evidence_supports_proposed_change_confidence": 0.99,
+      "acceptance_claim_supported": "supported",
+      "acceptance_claim_supported_confidence": 0.98,
+      "response_sha256": "b89e69a719b9547d365b50c7d1dc8a04e715493865f7dffebddcf3705f9f7df8"
+    },
+    "local_laya": {
+      "status": "unavailable",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone"
+    }
+  },
+  "coordinator_adjudication": "The bounded comparator repair is recorded with deterministic tests and advisory support. It makes no native, live, actor, raid-clear, performance, or overall Magmaw 10N acceptance claim.",
+  "source_commit": "a1a45598b9",
+  "file_hashes": {
+    "tools/bot_ml/review_rotation_mechanics.py": "03ef43d4775a6e2b49a4e418fdad503edd087e1dade2d067ef2697ca7e0b88ca",
+    "tests/test_rotation_mechanics_review.py": "ffcf789c98b817c142f8be24529e4735aa92f3343dc4aa1c9c3c49f2ed0e697b"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "result": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "result": "fixture contract valid"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "result": "reference catalog valid; request_count=16"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "result": "6 passed; native aura source contract remains unchanged"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_diagnosis_20260920.json",
+      "sha256": "02bfa0026697247fb03fe1cb26569b11832aadb83d03d6dc340486a1943d6b4f"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+      "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+    }
+  ],
+  "remaining_requirements": [
+    "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005",
+    "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010",
+    "magmaw_10n"
+  ]
+}
