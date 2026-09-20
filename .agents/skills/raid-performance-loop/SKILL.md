@@ -101,9 +101,14 @@ dummy performance still requires exactly 300 seconds, raids their watchdog.
 After a repair leaves the same symptom, inspect the missing causal boundary and
 review earlier speculative changes before stacking another gameplay patch.
 
-When choosing a throughput repair, estimate the recoverable damage from observed
-lost events or activity and label the estimate's limits. A real small defect
-need not explain the main gap. When several canaries remain near the same total
+Before selecting a DPS optimization repair, require the existing review to follow
+[damage-loss accounting](../raid-rotation-review/references/post-run-dps-review.md#account-for-the-dps-loss-before-selecting-a-repair):
+join native/reference inputs, separate casts from triggered damage, reconcile
+signed component losses and gains with an explicit unknown residual, and justify
+the selected repair's net gain including displaced damage/time. If unsupported,
+dispatch diagnosis of the largest unexplained component, not an implementation
+chosen for its small scope. A small correctness defect need not explain the main
+gap; identify that separate purpose. When several canaries remain near the same total
 and actor changes are dominated by proc, crit or phase variation, prioritize a
 controlled stat/cadence/per-event comparison over another series of minor raid
 patches. Reuse exact promoted simulator inputs; do not mistake matching gear IDs

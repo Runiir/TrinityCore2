@@ -65,6 +65,10 @@ For parent-plan drift, use `plan-drift-review` at
 `../plan-drift-review/SKILL.md` when requested or after a substantive change of
 focus. Include the latest user direction and all remaining actor requirements;
 the currently selected repair does not replace the parent objective.
+For DPS optimization, first require the
+[damage-loss accounting](../raid-rotation-review/references/post-run-dps-review.md#account-for-the-dps-loss-before-selecting-a-repair)
+in the existing review. Dispatch diagnosis when the selected repair cannot be
+supported by a reconciled gap and bounded net gain; model agreement is insufficient.
 Keep the causal handoff short: one proven edge, exact evidence/file locations,
 owned files, the behavioral counterexample, command and acceptance conditions.
 Link existing receipts instead of restating them or the program charter. Send

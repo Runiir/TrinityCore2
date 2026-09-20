@@ -54,6 +54,15 @@ The graph is:
 
 `diagnose -> implement -> review -> build -> validate -> assess -> publish -> route`
 
+For DPS optimization, `diagnose -> implement` requires the existing review's
+[damage-loss accounting](../../.agents/skills/raid-rotation-review/references/post-run-dps-review.md#account-for-the-dps-loss-before-selecting-a-repair):
+joined native/reference inputs, separate ordinary casts and triggered damage,
+signed component gaps reconciled to the total with an explicit unknown residual,
+and a supported net gain estimate for the selected repair. This is a coordinator
+and reviewer requirement, not an automatic truth check by the graph CLI. Missing
+causal attribution routes to diagnosis using retained evidence; it does not
+authorize another small gameplay patch or require a new live run by default.
+
 From route, select another open requirement or finish when every requirement is
 accepted. Passing tests, getting a kill or accepting one repair does not finish
 the parent objective. Magmaw's five 50ec measurements are already recorded;

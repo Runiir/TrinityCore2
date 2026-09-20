@@ -50,6 +50,10 @@ references, runtime evidence or encounter ownership.
 
 For the dedicated DPS review of a closed raid, dungeon, or calibration run,
 start with [references/post-run-dps-review.md](references/post-run-dps-review.md).
+For DPS optimization, complete its damage-loss accounting before recommending
+implementation: reconcile signed component gaps, separate casts from proc copies,
+and bound the selected repair's expected net gain. Missing attribution routes to
+diagnosis, not a guessed gameplay patch.
 The same reference includes the compact local-Jev/Luna handoff recipe.
 For the current local Laya service and one-command shadow collection, follow
 `docs/bot_raids/local_jev_shadow.md`. Check `/health` for the pinned model and

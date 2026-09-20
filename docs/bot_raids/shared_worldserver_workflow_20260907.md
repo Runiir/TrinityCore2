@@ -5,32 +5,39 @@ is preserved.
 
 ## Current work and latest native run
 
-The implementation agent was paused by the user for a workflow audit. No live
-server or build was active when checked. Its saved unit04 remains unaccepted.
-The latest closed Balance measurement is source `81c30e54d9`, build source
-`1576446024`, exactly 300 seconds at **31,726.157 DPS**, versus 35,447.589 WoWSims.
-The capture completed and cleanup passed; performance remains unaccepted.
-Aura24907 is observed on the owner at amount5, but effective direct cast speed
-remains1.269 versus1.332199768 expected. That identifies a missing effect in the
-result, not whether dispatch, stacking suppression or a later reset caused it.
+The user paused the implementation agent to add damage-loss accounting before
+another DPS repair. Resume the saved `magmaw:balance_damage_loss_accounting_06`
+diagnosis through `raid_workloop resume`; this workflow edit launches no canary.
+Read FLOW-006 and the
+[accounting requirement](../../.agents/skills/raid-rotation-review/references/post-run-dps-review.md#account-for-the-dps-loss-before-selecting-a-repair).
+All 15 previously open requirements remain open; accepted setup work is preserved.
 
-Read FLOW-005 and
-`artifacts/cata_raid_program/workflow_loop_native_review_20260920.json`
-before another native edit or build. The separate reviewer found that the new
-handler trace uses an INFO logger disabled by the frozen config. Existing
-source-string tests do not execute the disputed handler. Review the speculative
-area-aura changes at `7fdb56d60b` and `25f2079208`; do not stack another guessed
-lifecycle repair. Verify diagnostic visibility, then use a short attributable
-startup probe to distinguish the remaining causes. That probe cannot establish
-DPS acceptance. A later performance comparison still needs the exact300s window.
+The latest published Balance run, unit05, completed exactly 300 seconds at
+**31,544.057 DPS** against **35,447.589 WoWSims** (88.99%). Its build source is
+`92dbee8863`; the run adapter records source `7ad6da74d9`. Capture, isolation and
+cleanup passed. The preceding unit04 produced **32,585.297 DPS** (91.93%). Unit05
+therefore lost **1,041.24 DPS** against that baseline, with **3,903.532 DPS** still
+below the reference. Starfall submissions changed from five to four. The existing
+assessment accepts the bounded behavior separately, rejects performance, and
+leaves the decline's cause unresolved; one run per condition is not a causal proof.
 
-The latest run adapter and remote evidence are
-`artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json`
-and the adjacent `.tar.gz.dvc` pointer. Earlier observer-only setup acceptance
-remains retained; all actor performance and encounter requirements stay open.
-The active graph owns continuation. Preserve its original source base and native
-delta when incorporating the separately reviewed workflow repair; never rebase
-past unreviewed native edits simply to pass source admission.
+Reuse the unit04/unit05 run, assessment and `.tar.gz.dvc` capture pointers under
+`artifacts/cata_raid_program/magmaw_balance_rotation_cadence_*_20260920*`.
+Join those native reports to the exact simulator inputs and reconcile signed
+spell/effect losses and gains, including pets, copies and an unknown residual.
+The prior diagnosis counted Dragonwrath copies as player casts; this exaggerates
+cadence differences but does not prove missing native DTR damage. Its normalized
+review also lacked the runtime/ComputeStats join. Do not select another gameplay
+patch until the retained-data comparison supports its expected net gain, or route
+a specific missing observation when it does not. Review the latest decline before
+stacking a change; preserve unrelated accepted repairs and all other actors.
+
+The earlier Moonkin haste expectation of 1.332199768 was a comparator error:
+WoWSims already included the 5% form multiplier. Native speed 1.269 matches the
+correct expectation 1.26876. The comparator repair is retained; the old handler
+probe and `workflow_loop_native_review_20260920.json` are historical evidence,
+not authority to reopen a missing-haste hypothesis. The active graph owns
+continuation and source binding; do not rebase past unreviewed gameplay changes.
 
 Do not remove the parity worktree: it supplies verified runtime assets. The JEV
 worktree contains unrelated uncommitted work. New builds use host12; historical

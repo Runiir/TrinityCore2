@@ -91,6 +91,69 @@ Rank improvements across the roster before selecting one bounded implementation;
 "one repair per iteration" does not mean "review only one bot."
 Do not estimate recoverable DPS by subtracting an unmatched simulator total.
 
+## Account for the DPS loss before selecting a repair
+
+For a DPS optimization task, add this accounting to the existing `dps_review.json`
+before handing off an implementation. Reuse retained reports and simulator
+results; no new logger, simulator run or live canary is required for this step.
+A visible APL difference alone is not a quantified performance cause.
+
+1. Join the native report with the pinned request, aggregate result, ComputeStats
+   and relevant debug timeline. Bind actor, window, target filters, owner/pet
+   attribution and setup. A normalized review with `runtime=null`, missing stats
+   or rejected comparison gates cannot establish matched damage or cadence.
+   Restore/join retained inputs first; keep trace-only findings within their scope.
+2. Produce a signed table by spell/effect and owner/pet: native/reference damage
+   and DPS, ordinary cast starts, hits, crits, ticks, triggered copies, damage per
+   comparable event, and limitations. Use matched scoring windows or describe
+   encounter/phase/duty normalization. Losses and native gains must reconcile to
+   total reference-minus-native DPS, including a numeric unattributed residual.
+   Unknown attribution is not zero missing damage.
+3. Separate player actions from passive/triggered copies before comparing cadence.
+   Preserve simulator ActionID tags and native trigger provenance. For example,
+   pinned WoWSims Dragonwrath copies use tag 71086: they contribute damage, not
+   extra player casts or GCDs. Verify producer semantics for other tags. Keep
+   copies, DoT ticks, AoE impacts and pet actions out of ordinary cast counts;
+   unknown native provenance remains unclassified rather than assumed ordinary.
+4. For the largest losses, separate event-count from damage-per-event differences.
+   Check class-state/phase coverage, DoT refreshes, buff snapshots, cooldowns,
+   pets, misses and crit/proc variation as relevant. Account for casting/channel/
+   GCD time, waits, movement, target loss and duties without overlapping intervals.
+   A damage-event gap is not automatically idle time; fewer casts do not prove
+   why time was lost.
+5. Rank apparent losses separately from proven recoverable gains. For the selected
+   repair, give a bounded net DPS estimate or justified bound, its supporting
+   observations, damage/time sacrificed to the replacement, uncertainty, and the
+   strongest conflicting evidence. Do not sum overlapping gains. Two extra
+   instant casts cannot alone explain many seconds of missing filler without
+   another measured mechanism.
+
+Use a compact row shape such as:
+
+| Component / owner / event kind | Native DPS | Reference DPS | Signed gap | Count / size evidence | Cause status | Next check |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+
+Keep `proven`, `hypothesis`, `expected duty/setup effect` and `unknown` distinct.
+Arithmetic reconciliation is required; proving every cause is not. If the selected
+gain cannot be bounded, return a diagnosis task with the missing join/observation
+instead of guessing an implementation. A small correctness repair can still be
+justified explicitly, but cannot stand in for closing the main DPS gap. Tank and
+healer throughput remains subordinate to their role obligations.
+
+After a decline, compare with the identified prior baseline and reconcile changed
+component damage first. Inspect retained event/crit/proc variation before blaming
+a single-run difference on code. Use a bounded matched repeat only if uncertainty
+cannot be resolved offline. Revert or replace a change when controlled evidence
+establishes regression; preserve unrelated repairs. Matching cast totals or a
+passing behavior fixture does not establish a performance improvement.
+
+The reviewer checks joined inputs, event classification, reconciled totals and
+the repair estimate before approving a DPS optimization patch. Send Jev/Laya the
+largest signed gaps, unknown residual, selected estimate and acceptance limits;
+agreement with a prose hypothesis does not explain the loss.
+
+## Select the next work unit
+
 Rank large unexplained component differences separately from small proven bugs.
 Join duty/vehicle/safety intervals before labeling a cast gap avoidable; union
 overlaps and retain unknown boundaries. Assignment time is not automatically

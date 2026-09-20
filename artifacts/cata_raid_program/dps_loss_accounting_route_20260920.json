@@ -1,0 +1,15 @@
+{
+  "action": "route",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "revision": 204,
+  "reason": "User paused the canary to require damage-loss accounting before another DPS optimization repair. Unit-05 is published but performance remains unaccepted; FLOW-006 identifies mixed player/proc counts and an unjoined runtime comparison. Reconcile retained losses and the latest decline before selecting a gameplay patch.",
+  "unit": {
+    "id": "magmaw:balance_damage_loss_accounting_06",
+    "edge": "owner_damage_attribution_before_policy_tuning",
+    "requirements": [
+      "actor_30001"
+    ],
+    "owner_skill": "raid-rotation-review",
+    "next_action": "FLOW-006: use the damage-loss accounting section of .agents/skills/raid-rotation-review/references/post-run-dps-review.md. Join retained unit-04 and unit-05 native reports with pinned WoWSims request/result/ComputeStats. Separate player casts from DTR copies, periodic events and pets. Reconcile signed spell/effect DPS losses and gains plus unknown residual to the 3903.5323 reference gap and the 1041.24 decline from unit-04. Rank event-count, per-event damage and time/phase losses; preserve crit/proc uncertainty and missing candidate/Eclipse-state observations. Return one bounded diagnosis or evidence-backed repair with a net gain estimate and displaced damage/time. Do not assume missing DTR damage or blame/revert Starfall from one total. Reuse existing reports before any new capture; no gameplay change or live run solely to redo accounting. All other actor and raid requirements remain open."
+  }
+}
