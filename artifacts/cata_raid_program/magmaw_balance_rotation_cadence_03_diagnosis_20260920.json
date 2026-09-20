@@ -1,0 +1,95 @@
+{
+  "kind": "diagnosis",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "first_broken_edge": {
+    "edge": "policy_candidate_arbitration_before_native_submission",
+    "status": "focused_policy_lead_pending_native_candidate_mask",
+    "confidence": "high_for_opener_counterexample",
+    "decisive_counterexample": {
+      "fixture": "balance_druid single_target_300 seed-1",
+      "elapsed_ms": 0,
+      "initial_eclipse_phase": "NeutralPhase",
+      "initial_eclipse_power": 0,
+      "active_eclipse_auras": [],
+      "target_distance_yards": 15.003,
+      "movement_or_range_recovery": false,
+      "first_native_timeline_spell_id": 78674,
+      "first_native_timeline_result": "ok",
+      "expected_wowsims_first_action_spell_id": 8921,
+      "expected_wowsims_first_action_predicate": "NeutralPhase and not aura 61345 and current_time < 2s"
+    },
+    "policy_evidence": {
+      "starsurge_profile": {
+        "spell_id": 78674,
+        "priority_bucket": 1,
+        "damage_weight": 1.0,
+        "resolver_score_before_role_adjustment": 0.97
+      },
+      "moonfire_profile": {
+        "spell_id": 8921,
+        "priority_bucket": 1,
+        "damage_weight": 0.92,
+        "resolver_score_before_role_adjustment": 0.89
+      },
+      "resolver_order": "lower priority bucket, then higher candidate score, then lower sort order",
+      "missing_native_predicate": "neutral Eclipse plus zero Eclipse power is not represented for Starsurge"
+    },
+    "native_outcome": {
+      "successful_cast": true,
+      "cast_failure_count": 0,
+      "movement_event_count": 0,
+      "off_target_damage_event_count": 0,
+      "effective_stat_parity": "match",
+      "gear_parity": "match",
+      "consumable_parity": "match"
+    },
+    "evidence_limit": "The completed calibration report retains the accepted timeline and final chosen action, but not the per-decision candidate mask or score. The source/profile comparison therefore identifies the first policy lead; a focused native candidate observation is required before claiming the repair is proven."
+  },
+  "cadence_comparison": {
+    "wowsims_total_casts": 211.0215,
+    "trinity_successful_timeline_casts": 198,
+    "trinity_to_wowsims_cast_rate": 0.938293,
+    "cast_mix_overlap": 0.91493937247,
+    "performance_ratio": 0.898819,
+    "wowsims_apl_sha256": "f4b6d15b40f9b31ef6a321905d4d894cfd67e1a8d0ad1db850bd07c18a07599e",
+    "wowsims_request_sha256": "7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f",
+    "wowsims_result_sha256": "b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8"
+  },
+  "smallest_lawful_repair_shape": {
+    "profile_contract": "Add a Balance-only mechanic tag to Starsurge and evaluate it in the typed candidate builder.",
+    "predicate": "Reject Starsurge only while the Druid is in NeutralPhase with POWER_ECLIPSE equal to zero and neither Eclipse aura is active.",
+    "reject_reason": "balance_neutral_opener",
+    "preserved_behavior": "Do not alter native spell coefficients, effective stats, gear, consumables, target geometry, encounter route, or WoWSims denominator. Preserve Starsurge eligibility once Eclipse state or Eclipse power makes the APL path legal."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_run_20260920.json",
+      "sha256": "45a50de88a414c3a12bc8f6dbfe373563b17ff029ffb528f2ca3824bbc7575f3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_calibration_20260920.tar.gz.dvc",
+      "sha256": "dd9f4e1c72503bf6fc752431de934493040e108fb579cf4b1d4ef6bf4878eb66"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_publication_20260920.json",
+      "sha256": "51269bd57adb04cb1383e7efe511e8ed6b0aab4872cc82cf6f7abca7f41b36e0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_route_review_20260920.json",
+      "sha256": "794eb9ee2cf70b83b8ec28ef39f959747406e6c6386ec0e71370d89dfbf7aeac"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1.dvc",
+      "sha256": "25e1fbe6954db0699c45879f2ecf4d5551fb75f0884d5c266dbff84a9490f33c"
+    }
+  ],
+  "interpretation": "Effective-stat, gear, consumable, geometry, movement, and native landing gates are closed for this actor. The first attributable mismatch is the Balance opener policy: a legal Starsurge wins bucketed arbitration before the APL's neutral opener can apply Moonfire. This remains a diagnosis until candidate eligibility and the post-change native timeline are separately observed."
+}

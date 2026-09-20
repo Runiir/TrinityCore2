@@ -1,0 +1,94 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_diagnosis_20260920.json",
+      "sha256": "f3fadbb73a5ac9d96529bdc9c2e5df64aa19ed4983e39bfdb2a1f1dfc42a3738"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_run_20260920.json",
+      "sha256": "45a50de88a414c3a12bc8f6dbfe373563b17ff029ffb528f2ca3824bbc7575f3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_publication_20260920.json",
+      "sha256": "51269bd57adb04cb1383e7efe511e8ed6b0aab4872cc82cf6f7abca7f41b36e0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_route_review_20260920.json",
+      "sha256": "794eb9ee2cf70b83b8ec28ef39f959747406e6c6386ec0e71370d89dfbf7aeac"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1.dvc",
+      "sha256": "25e1fbe6954db0699c45879f2ecf4d5551fb75f0884d5c266dbff84a9490f33c"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "a306a85397f5ed087f37144277b9ae6e23b038777f019faf48c34da4b9a62192"
+    }
+  ],
+  "hypothesis": "After effective-stat parity, Balance still loses lawful cadence at the first policy edge: the neutral, zero-Eclipse-power opener admits Starsurge through bucketed native arbitration before the pinned WoWSims APL can cast Moonfire. A Balance-tagged candidate gate for that exact neutral state should restore the opener without changing stats, coefficients, roster, consumables, encounter route, or the simulator denominator.",
+  "owned_files": [
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_00_balance_starsurge_neutral_opener.sql",
+    "tests/test_balance_rotation_cadence.py"
+  ],
+  "forbidden_changes": [
+    "No effective-stat, gear, coefficient, damage, haste, roster, consumable, WoWSims request/result, or denominator changes.",
+    "No encounter script, Magmaw route, movement envelope, target fixture, direct state manufacture, forced casts, or hidden live controls.",
+    "Do not lower the WoWSims reference or tune score weights to hide the opener mismatch; preserve Starsurge outside the exact neutral-and-zero-Eclipse-power predicate.",
+    "Do not touch other classes, specs, actors, healer/tank policy, or the open raid acceptance requirements."
+  ],
+  "acceptance_conditions": [
+    "The focused source and SQL test proves the new Balance tag is attached only to Starsurge and the typed candidate predicate rejects only NeutralPhase with zero POWER_ECLIPSE and no Eclipse aura, while allowing the candidate outside that state.",
+    "A native candidate observation or focused replay records reject_reason=balance_neutral_opener for Starsurge and an eligible Moonfire candidate in the initial exact fixture state; the first successful post-change timeline action is Moonfire.",
+    "Independent review approves the exact tested files and confirms the repair is policy-only, player-like, and does not bypass native action legality.",
+    "A clean gate-bearing native build is produced from the reviewed source, then one exact-300 Balance validation is run with the frozen actor, roster, runtime profile, WoWSims reference, and host12 build policy.",
+    "Assessment keeps repair acceptance, actor performance acceptance, and Magmaw raid-clear acceptance separate; a dummy can close only the bounded repair evidence, not actor or raid requirements."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "340fbd4d8ca35a0206e48774761e789707b2f5cb",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_route_review_20260920.json",
+        "sha256": "794eb9ee2cf70b83b8ec28ef39f959747406e6c6386ec0e71370d89dfbf7aeac"
+      },
+      "adjudication": "The retained hosted Jev plan-drift review supports continuing the Balance actor after comparator parity and keeping the next unit bounded to one policy edge; it is advisory only and does not replace native candidate evidence or independent code review."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone",
+      "adjudication": "Provider unavailable; coordinator retains the explicit evidence limitation and will require separate reviewer approval before build."
+    }
+  }
+}
