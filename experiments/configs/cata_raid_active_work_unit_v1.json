@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 193,
+    "revision": 195,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -3884,6 +3884,37 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 193,
+        "unit_id": "magmaw:balance_rotation_cadence_05",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 193,
+          "unit_id": "magmaw:balance_rotation_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_replacement_plan_20260920.json",
+            "sha256": "2b192c2ac641e930c1b6d4fd296b94bbc86ffac6045506f69826142e0224b90a"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 194,
+        "unit_id": "magmaw:balance_rotation_cadence_05",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 194,
+          "unit_id": "magmaw:balance_rotation_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n-implement-05-rebound"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3892,7 +3923,80 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50"
+    "source_base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
+    "assignment": {
+      "hypothesis": "After the accepted neutral-opener repair, the Balance Starfall row remains eligible on every native cooldown once Eclipse power is nonzero. The pinned WoWSims APL instead uses currentLunarEnergy > 70 in its early window and currentLunarEnergy >= 100 thereafter. Trinity stores the signed Eclipse bar with Lunar on the negative side, so the smallest faithful native predicate is to preserve the existing neutral-zero-power gate, then allow the tagged Starfall only when Lunar Eclipse is active or POWER_ECLIPSE < -70; otherwise reject it with a typed balance_starfall_lunar_window reason. This should remove the extra 60-second Starfall GCDs while preserving existing Eclipse-direction and neutral-opener behavior.",
+      "owned_files": [
+        "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+        "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+        "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+        "tests/test_balance_rotation_cadence.py",
+        "tools/bot_ml/jev_shadow.py",
+        "experiments/configs/local_laya/checkpoint_examples.json"
+      ],
+      "forbidden_changes": [
+        "No effective-stat, gear, coefficient, proc, target, consumable, reference, denominator, encounter-script, route, other-spec, or workflow-support changes.",
+        "No direct Eclipse-power writes, forced casts, cooldown edits, blanket Starfall priority changes, or changes to the already accepted neutral-opener behavior.",
+        "The two eligible supporting workflow Python files, tools/bot_ml/jev_shadow.py, and the local Laya JSON fixture are frozen and cannot be modified by this native unit.",
+        "Do not accept actor_30001, Balance performance, or Magmaw 10N from this dummy diagnosis or its exact-300 follow-up alone."
+      ],
+      "acceptance_conditions": [
+        "The supporting review is hash-bound to the current three workflow Python files and the JSON fixture is frozen in the owned-file snapshot; this is control provenance, not native gameplay approval.",
+        "Focused tests prove the new tag is Balance-only, attached only to Starfall, idempotent, and evaluated after the neutral opener exception with the exact signed Eclipse threshold.",
+        "Independent native reviewer approves the exact gameplay source, SQL, and test delta and retains the candidate-mask evidence limitation.",
+        "A clean host12 gate-bearing build is produced from the reviewed source.",
+        "One identical exact-300 Balance calibration keeps Moonfire as the neutral first action, limits Starfall to the native lunar-window predicate, and moves event cadence toward the pinned WoWSims reference without setup or geometry changes.",
+        "Assessment keeps repair acceptance, actor performance acceptance, and raid-clear acceptance separate."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+        "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+      ],
+      "base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+      },
+      "validation_identity": {
+        "scenario_kind": "dummy",
+        "actor_id": "30001",
+        "spec": "balance_druid",
+        "reference": {
+          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "runtime_profile": {
+          "path": "experiments/configs/validation_scenarios_cata_001.json",
+          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+        }
+      },
+      "supporting_review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_supporting_workflow_review_20260920.json",
+        "sha256": "62a997ae2ea7555088607255fe728d06d2a762f0280c0b6cc35c8334bbbdc75a"
+      },
+      "supporting_files": {
+        "tests/test_worker_checkpoint.py": "56f105db9e71ca47976315c2472b5159c2942f1469e498809e11eddb45ca8b75",
+        "tools/raid_program/worker_checkpoint.py": "bea91eb87147e47921e9bbc69f80f157ddd36ef572c28f2ba42bf6711a022a19"
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_replacement_plan_20260920.json",
+        "sha256": "2b192c2ac641e930c1b6d4fd296b94bbc86ffac6045506f69826142e0224b90a"
+      }
+    },
+    "claim": {
+      "owner": "coordinator-magmaw-10n-implement-05-rebound",
+      "token": "b3080bbf2b16de3e0f5f6863322510b93817428d45d2be18b197c2a1b4147efc",
+      "operation_id": "b3080bbf2b16de3e0f5f6863322510b93817428d45d2be18b197c2a1b4147efc",
+      "stage": "implement"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
