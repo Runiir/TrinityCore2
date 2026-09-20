@@ -1,6 +1,7 @@
 {
   "kind": "assessment",
   "unit_id": "magmaw:balance_rotation_cadence_03",
+  "authority": "coordinator_attestation",
   "producer": "coordinator",
   "attempt_id": 1,
   "baseline": {
