@@ -1,0 +1,26 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "rework_reconciliation",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "ef266f2344855bc76374cd9e391fd7014c004b9fd0dc64bbfbfad6dcf1ddd5de",
+  "reason": "The canonical Balance calibration did not launch because adding Druid setup spells to the live target/action catalogs changed the Phase 8 fixture identity without regenerating the independently validated WoWSims request catalog. Rework the bounded setup so native spellbook provisioning remains explicit while frozen reference identity stays unchanged.",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_20260920.json",
+      "sha256": "1f508b4ffb488c17748f73d1ce550392390d2460d982ab6b771bf692b0876b06"
+    },
+    {
+      "path": "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+      "sha256": "0fa95e520dfd05683fbda957406b2f781d3d85999f28743bc7362f3712b77444"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "801043d7d25cdcdf69921e3a478b0ee426d3de357c0584dbeeeb71ffba75cb5e"
+    }
+  ]
+}

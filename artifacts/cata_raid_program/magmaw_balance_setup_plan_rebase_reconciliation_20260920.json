@@ -1,0 +1,11 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "stage": "implement",
+  "operation_id": "cfc852c887cd1ae0122245156cc7545f6543f4bdae3c0708ff44091f99e931a3",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The first native-provisioning plan was accepted before accounting for the executable workflow files changed after the saved reviewed source baseline. Reconcile the claim and record a complete bounded ownership set before continuing."
+}

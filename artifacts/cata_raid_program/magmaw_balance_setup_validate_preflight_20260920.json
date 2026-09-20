@@ -1,0 +1,11 @@
+{
+  "schema": "bot_calibration_reference_preflight_v1",
+  "valid": false,
+  "calibration_mode": "single_target_300",
+  "target_spec": "balance_druid",
+  "reasons": [
+    "catalog_fixture_contract_content_hash",
+    "reference_request_catalog_independently_validated"
+  ],
+  "hydrate_command": "pixi run python -m tools.raid_program.wowsims_reference_workspace hydrate"
+}

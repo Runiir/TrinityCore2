@@ -3,6 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tools.bot_ml.build_validation_provisioning import (
+    NATIVE_SELF_SETUP_SPELL_IDS,
+    bot_known_spell_ids,
+    load_config_with_bwd_diagnostic_shards,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
@@ -10,7 +16,6 @@ MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 CONTRACT = ROOT / "src/server/game/Bots/BotPersistentSelfBuffContract.h"
 SELF_AURAS = ROOT / "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h"
-CATALOG_BUILDER = ROOT / "tools/bot_ml/build_all_spec_phase1_catalogs.py"
 TARGETS = ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
 ACTION_PROFILES = ROOT / "experiments/configs/cata_434_action_profiles.json"
 
@@ -51,7 +56,6 @@ def test_druid_self_setup_is_native_and_provisioned_as_learned_parent() -> None:
     module = MODULE.read_text(encoding="utf-8")
     contract = CONTRACT.read_text(encoding="utf-8")
     self_auras = SELF_AURAS.read_text(encoding="utf-8")
-    builder = CATALOG_BUILDER.read_text(encoding="utf-8")
     targets = json.loads(TARGETS.read_text(encoding="utf-8"))
     actions = json.loads(ACTION_PROFILES.read_text(encoding="utf-8"))
     druid_specs = {
@@ -61,11 +65,27 @@ def test_druid_self_setup_is_native_and_provisioned_as_learned_parent() -> None:
     assert '{ CLASS_DRUID, nullptr, nullptr, 1126, 1126, 79061, "mark_of_the_wild" }' in contract
     assert "std::array<uint32, 13> PlayerAuraIds" in self_auras
     assert "1126, 79061" in self_auras
+    assert NATIVE_SELF_SETUP_SPELL_IDS == {
+        "feral_druid_tank": (5487, 1126, 87505),
+        "feral_druid_dps": (768, 20484, 1126, 87505),
+        "balance_druid": (1126, 87505),
+        "restoration_druid": (1126, 87505),
+    }
     for spec in druid_specs:
-        assert f'"{spec}"' in builder
         target = next(row for row in targets["targets"] if row["spec_target_id"] == spec)
-        assert {1126, 87505} <= set(target["action_profile_spell_ids"])
-        assert {1126, 87505} <= set(actions["action_profile_spells_by_spec"][spec])
+        assert 1126 not in target["action_profile_spell_ids"]
+        assert 87505 not in actions["action_profile_spells_by_spec"][spec]
+    config = load_config_with_bwd_diagnostic_shards(
+        ROOT / "experiments/configs/validation_provisioning_cata_001.json",
+        ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+    )
+    for scenario in config["scenarios"]:
+        for bot in scenario["bots"]:
+            spec = bot.get("class_spec")
+            if spec not in druid_specs:
+                continue
+            assert set(NATIVE_SELF_SETUP_SPELL_IDS[spec]) <= set(bot_known_spell_ids(bot))
+            assert 86530 not in bot_known_spell_ids(bot)
     assert "BotPersistentSelfBuffContract::Buffs" in module
     assert "bot->HasSpell(buff.SpellId)" in module
     assert "executor.ExecuteCombat(bot, bot, action)" in module

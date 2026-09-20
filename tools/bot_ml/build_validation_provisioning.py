@@ -871,6 +871,18 @@ def bot_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = 
     })
 
 
+# These are native persistent setup spells, not rotation actions. Keep them
+# outside the simulator/action catalog so their provisioning cannot change the
+# frozen WoWSims fixture identity. The learned leather parent expands natively
+# to child aura 86530; persist only the parent.
+NATIVE_SELF_SETUP_SPELL_IDS = {
+    "feral_druid_tank": (5487, 1126, 87505),
+    "feral_druid_dps": (768, 20484, 1126, 87505),
+    "balance_druid": (1126, 87505),
+    "restoration_druid": (1126, 87505),
+}
+
+
 def bot_talent_spell_ids(bot: dict[str, Any]) -> list[int]:
     return [int(talent["spell_id"]) for talent in bot.get("talents", [])]
 
@@ -896,10 +908,12 @@ def bot_known_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | N
     # aura through the normal learn-spell relationship after the primary talent
     # tree is loaded. Persisting that dependent child in character_spell is both
     # redundant and unstable: Player::_SaveSpells removes it again on logout.
+    native_setup = NATIVE_SELF_SETUP_SPELL_IDS.get(str(bot.get("class_spec") or ""), ())
     return sorted({
         *bot_spell_ids(bot, action_profiles),
         *bot_talent_spell_ids(bot),
         *bot_primary_tree_spell_ids(bot),
+        *native_setup,
     })
 
 

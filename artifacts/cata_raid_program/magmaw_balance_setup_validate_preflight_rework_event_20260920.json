@@ -1,0 +1,11 @@
+{
+  "revision": 19,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "rework",
+  "claim_token": "ef266f2344855bc76374cd9e391fd7014c004b9fd0dc64bbfbfad6dcf1ddd5de",
+  "reason": "Rework native Druid spellbook provisioning without changing the frozen WoWSims fixture identity.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_20260920.json",
+    "sha256": "88b7890f4156ed8ad1cf93aa16046d2eda3e2de79f27d284f19c56a91798770f"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_20260920.json",
+      "sha256": "88b7890f4156ed8ad1cf93aa16046d2eda3e2de79f27d284f19c56a91798770f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_event_20260920.json",
+      "sha256": "1f69e55a3bf65873b0973777916c1e111ffa0488fb44485a371d71e2402a907a"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "b316871c0c3face5508cc13415e48168323542a4b6c74d1bbd29542a0be36b0e"
+    }
+  ],
+  "hypothesis": "Balance's missing Mark of the Wild and Leather Specialization are native setup and provisioning defects. Keep these setup spells outside the simulator/action catalogs so native spellbook provisioning cannot perturb the exact WoWSims fixture; add explicit Druid setup spells to validation provisioning while preserving native parent 87505 to child 86530 expansion.",
+  "owned_files": [
+    "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "tools/bot_ml/build_validation_provisioning.py",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+    "experiments/configs/cata_434_action_profiles.json",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py",
+    "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+    "tests/test_build_source_compatibility.py",
+    "tests/test_development_graph.py",
+    "tests/test_raid_build_coordinator.py",
+    "tools/raid_program/build_control_compatibility.py",
+    "tools/raid_program/development_graph.py",
+    "tools/raid_program/queued_build.py",
+    "tools/raid_program/run_dummy_calibrations.py",
+    "tools/raid_program/run_shared_instance_canary.py",
+    "tools/raid_program/shared_instance_preparation.py",
+    "tools/raid_program/workflow_build.py"
+  ],
+  "forbidden_changes": [
+    "No injected stats or auras, reference weakening, coefficient tuning, spell-radius/range changes, roster changes, encounter changes, route changes or hidden live controls.",
+    "Do not persist armor-specialization child aura 86530 directly; retain the learned parent 87505 -> 86530 spell_learn_spell path.",
+    "Do not add native persistent setup spells to the simulator/action catalogs or repeat the completed 50ec Survival measurement; preserve all open Balance, Blood, healer, Fire, Affliction, Survival, Elemental and Magmaw 10N requirements."
+  ],
+  "acceptance_conditions": [
+    "Native Druid self-setup retains base spell 1126 and current alternate aura 79061, and the calibration self-provided aura validator can attribute its own source.",
+    "Validation provisioning supplies the Druid setup spells for every Druid target, including learned parent 87505, while bot_known_spell_ids excludes child aura 86530 and the Druid action/target catalogs exclude setup-only spells.",
+    "The regenerated Phase 8 materialized contract/header passes its check and the exact WoWSims request catalog is independently validated against that current fixture identity before build or calibration.",
+    "The parent-commit failure in test_actual_reference_observer_attributes_every_wrath_air_application remains a separately recorded baseline issue; it is not used to weaken evidence or claim success.",
+    "Native build, matched 300-second validation, watchdog raid validation and DVC publication remain separate pending gates."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+    "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "05895cc6094753f953995bfcd70cbcb97ed47036",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "801043d7d25cdcdf69921e3a478b0ee426d3de357c0584dbeeeb71ffba75cb5e"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_advice_20260920.json",
+        "sha256": "106d47a652c162d4cf26928e2f3d48714a1825f7c1a32d181ce9afd215c1383e"
+      },
+      "adjudication": "Retained hosted Jev review supports the same native setup hypothesis; the coordinator narrows the repair by separating native setup provisioning from simulator/action catalogs and owns the current reference reconciliation."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; coordinator review and the prior independent native-mechanics approval remain the controlling evidence."
+    }
+  }
+}

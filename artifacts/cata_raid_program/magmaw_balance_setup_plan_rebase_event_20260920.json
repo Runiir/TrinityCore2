@@ -1,0 +1,11 @@
+{
+  "revision": 22,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "rework",
+  "claim_token": "cfc852c887cd1ae0122245156cc7545f6543f4bdae3c0708ff44091f99e931a3",
+  "reason": "Rebase the bounded plan over the full saved source baseline before recording implementation tests.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_rebase_reconciliation_20260920.json",
+    "sha256": "7236cf749bde5c891c07d495e962d3fe25db546ab6b962fb47b12aa59b361cbc"
+  }
+}

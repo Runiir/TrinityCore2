@@ -1,0 +1,51 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "build",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "b9e8dc70677838417efbdd3eb8189aee712a1e0a2012bfaf5d04d3e226190d94",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_review_rebuild_20260920.json",
+      "sha256": "4967a074e878fc595f9593f083b220d65175026de2f9a0120022ffe620c33451"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_result_rebuild_20260920.json",
+      "sha256": "9d426a7f936723896d29579374ae07208db6475a7961c05c9e0b66197912a230"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_build_claim_20260920.json",
+      "sha256": "8395acacccf765cb32c9670fa6b8012a0aeafa3293acb3ce743c71022e98d025"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+      "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_queued_build_rebuild_receipt_20260920.json",
+      "sha256": "06d2680b4ee3f9735e99c830fbc3916ae9e605a68266b52f00787832de8d9925"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotPersistentSelfBuffContract.h": "ef80b672443983155d01c697006e23d502270dc5f17b86593be0919553623e84",
+    "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h": "968b20b3e4cf4d56a94b1d6760c90c3193feafe0814cb07ddce1c4361e987560",
+    "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp": "2ef73b484177232805848a029378e0ed15d0ca088b29c6a160ab1722fd06710f",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "41b347cce99220ebfa0cbd57b6c993bcd09b6d1baf85869d7624ae2622915b46",
+    "experiments/configs/cata_434_action_profiles.json": "0459f9899d4c3c4e9727e296c67c105fa7ab1b322663989ee47dfae99ac9c247",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "1539479c478e401178c5be0754d626f2f686601502f144b6c30ea667ef2a6ce9",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json": "0fa95e520dfd05683fbda957406b2f781d3d85999f28743bc7362f3712b77444",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h": "16a356b8c6b595042c68e0b9c80e92f35718167098e6c0479999a75dc49ff999",
+    "tests/test_calibration_self_provided_aura_sources.py": "874b1c38f870da2aa6f22ffb9fd3ca9f794dcd3e1df2474f328b3f73a2278774",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py": "bfbc3d49e7b7ecccc0500c4876f6449005b06bb10db48b88cab9315afd6b65ca"
+  },
+  "source_commit": "8560ea00197bbf3762cfb03363b79d1173654060",
+  "binary_sha256": "0ccb1bdc6d45c5bfa4009ca7f346f949a0995ab8ed61da22701e3bb5e02c8b60",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_queued_build_rebuild_receipt_20260920.json",
+    "sha256": "06d2680b4ee3f9735e99c830fbc3916ae9e605a68266b52f00787832de8d9925"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  }
+}
