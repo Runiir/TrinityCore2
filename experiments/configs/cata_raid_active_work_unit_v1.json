@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Review the post-opener native event mix and exact WoWSims cadence for Balance actor 30001; identify one attributable remaining loss before changing source or SQL.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 200,
+    "revision": 202,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -558,7 +558,7 @@
       "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 2,
       "owner_effective_stat_application_after_moonkin_aura_handler_application": 1,
       "owner_effective_stat_application_moonkin_form_companion_24905": 1,
-      "owner_balance_post_opener_event_cadence_gap": 1
+      "owner_balance_post_opener_event_cadence_gap": 2
     },
     "history": [
       {
@@ -3996,6 +3996,41 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 200,
+        "unit_id": "magmaw:balance_rotation_cadence_05",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_05",
+          "revision": 200,
+          "claim_token": "11cc97d4c26417bd66a5b6b3386757a87cb71a1e9f23726ebca566f3be97ff4c",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+            "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 201,
+        "unit_id": "magmaw:balance_rotation_cadence_05",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_05",
+          "revision": 201,
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_assessment_20260920.json",
+            "sha256": "3766f4665f4b496faf575ed5056b7158af2d0af692f971c7f8dbacdc2d8115a1"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4082,6 +4117,14 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_build_20260920.json",
         "sha256": "cfb1e5e8e8dfd28b84e7c662271b02c49712149351f82a142879e82ff781c43d"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+        "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_assessment_20260920.json",
+        "sha256": "3766f4665f4b496faf575ed5056b7158af2d0af692f971c7f8dbacdc2d8115a1"
       }
     },
     "tested_files": {
@@ -4098,11 +4141,17 @@
       "source_commit": "92dbee8863bd47b3b204d209ae5e1f463b8d4a92",
       "binary_sha256": "eba9e7c5912442c6a27dd9fec4b96a2393ee4296e49e5a260149f5b13f6b6ab0"
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n-validate-05",
-      "token": "11cc97d4c26417bd66a5b6b3386757a87cb71a1e9f23726ebca566f3be97ff4c",
-      "operation_id": "11cc97d4c26417bd66a5b6b3386757a87cb71a1e9f23726ebca566f3be97ff4c",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 901922340657647,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": true,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {
