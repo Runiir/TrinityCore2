@@ -1,11 +1,10 @@
 {
-  "action": "advance",
-  "revision": 129,
+  "revision": 132,
   "unit_id": "magmaw:balance_effective_stat_application_04",
-  "claim_token": "28fcd3dbc2fbcd5a552a588684bc5c01c07d1bc852521319c731d1492e8df230",
-  "producer": "coordinator",
+  "action": "advance",
+  "claim_token": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
   "receipt": {
     "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_implementation_20260920.json",
-    "sha256": "50821dcc8191d729d77b3ccc61af91994415e93b0b673372c82ca06a28dd9f93"
+    "sha256": "20d73d4b79e7f3bb6b61229d2fd7298df0d7b9d7c7542e96162481b15eeeb28f"
   }
 }

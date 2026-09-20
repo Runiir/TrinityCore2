@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
+  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Read the replacement plan and workflow_loop_native_review_20260920.json. Preserve native base b39cd8e and the two owned files; workflow support is separately reviewed and frozen. Review speculative aura lifecycle changes, fix diagnostic logger visibility only, obtain an actual separate review, then capture a short attributable startup probe. Do not run another300s scoring window until the causal observation or a trace-backed repair warrants it. All actor/raid performance requirements remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 132,
+    "revision": 133,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "review",
     "actor_ids": [
       "30001",
       "30002",
@@ -2802,6 +2802,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 132,
+        "unit_id": "magmaw:balance_effective_stat_application_04",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 132,
+          "unit_id": "magmaw:balance_effective_stat_application_04",
+          "action": "advance",
+          "claim_token": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_implementation_20260920.json",
+            "sha256": "20d73d4b79e7f3bb6b61229d2fd7298df0d7b9d7c7542e96162481b15eeeb28f"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -2873,14 +2891,18 @@
       "plan": {
         "path": "artifacts/cata_raid_program/workflow_loop_replacement_observation_plan_20260920.json",
         "sha256": "207d0deb829ff5d814f7f1483d3cf0961cc880503293da61b36720b9f6be729d"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_implementation_20260920.json",
+        "sha256": "20d73d4b79e7f3bb6b61229d2fd7298df0d7b9d7c7542e96162481b15eeeb28f"
       }
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n",
-      "token": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
-      "operation_id": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "80fc284653b00cde9b338aa99870a0dadd0b28738e2e6e7361e61b638a56405c",
+      "tests/test_balance_native_effective_stat_parity.py": "413545188bce90e43e4ad6d19dd2eeb1f02c6fc1fd4ac23afdb5a0391d19bd90"
+    },
+    "tested_commit": "1fa950dc012936ece10b67be46a748aebbb002a9",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

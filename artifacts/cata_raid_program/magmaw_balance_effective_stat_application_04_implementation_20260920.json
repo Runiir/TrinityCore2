@@ -2,59 +2,60 @@
   "kind": "tests",
   "unit_id": "magmaw:balance_effective_stat_application_04",
   "authority": "coordinator_attestation",
-  "producer": "codex-magmaw-10n-balance-aura-handler-trace",
-  "operation_id": "28fcd3dbc2fbcd5a552a588684bc5c01c07d1bc852521319c731d1492e8df230",
+  "producer": "coordinator",
+  "operation_id": "bee206df3b4ccd8976f8e086aff5733bc0077b5dca28f706baa711965cee2ee3",
   "file_hashes": {
-    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "9e7a0df10d8e849e0dcd3d9281aada182fe2542ef85638c209acab12fa72372b",
-    "tests/test_balance_native_effective_stat_parity.py": "33cb65dfc7c25d4eb9fa2cc5865b00dc4d7d649a552760e030f2a4d8d658609f"
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "80fc284653b00cde9b338aa99870a0dadd0b28738e2e6e7361e61b638a56405c",
+    "tests/test_balance_native_effective_stat_parity.py": "413545188bce90e43e4ad6d19dd2eeb1f02c6fc1fd4ac23afdb5a0391d19bd90"
   },
   "tests": [
     {
       "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
       "exit_status": 0,
-      "summary": "6 passed"
+      "result": "6 passed"
     },
     {
       "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
       "exit_status": 0,
-      "summary": "20 passed"
+      "result": "20 passed"
     },
     {
       "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
-      "exit_status": 0,
-      "summary": "reference request catalog check passed"
+      "exit_status": 0
     },
     {
       "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
       "exit_status": 0,
-      "summary": "16 exact requests validated against provider revision 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6"
-    }
-  ],
-  "summary": "Added bounded native logging at the spell 24907 HandleModCastingSpeed boundary to record owner identity, amount, mode, exclusive-group outcome, and UNIT_MOD_CAST_SPEED before/after values; the handler arithmetic and effective-stat ledger are unchanged.",
-  "evidence": [
-    {
-      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_diagnosis_20260920.json",
-      "sha256": "baafbddb52bba528ef5575caa715d126924e04af22aee49c88a361dca5a806bf"
-    },
-    {
-      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_route_event_20260920.json",
-      "sha256": "29095f349e2e443a4d100e22ea8f5f8658b5c29b0c199479657a82b2ac379e14"
-    },
-    {
-      "path": "tests/test_balance_native_effective_stat_parity.py",
-      "sha256": "33cb65dfc7c25d4eb9fa2cc5865b00dc4d7d649a552760e030f2a4d8d658609f"
+      "result": "ok; request_count=16"
     }
   ],
   "advice": {
     "jev": {
-      "adjudication": "The trace is observation-only and preserves the native handler arithmetic; exact build and canary evidence remain required.",
-      "reason": "No separate JEV checkpoint was requested for this implementation result.",
-      "status": "not_reviewed"
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/workflow_loop_resume_advice_20260920.json",
+        "sha256": "29c4b8a0082b7322c66c752e941ab3e4738d7d85191b3773dbbb3fde6040596d"
+      },
+      "adjudication": "Advisory only; retain native unknowns and separate review. No performance accepted."
     },
     "laya": {
-      "adjudication": "The changed source only adds a spell-24907 diagnostic marker and a source-contract test; no lifecycle or policy semantics were changed.",
-      "reason": "No local Laya provider checkpoint was requested for this implementation result.",
-      "status": "not_reviewed"
+      "status": "not_reviewed",
+      "reason": "Connection refused from the local service.",
+      "adjudication": "No Laya result is used as approval or performance evidence."
     }
-  }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_claim_event_20260920.json",
+      "sha256": "88f6e026cd54d892784751fb07bde1b71b42511b64587fa26b0b9b810f3ef8a1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/workflow_loop_replacement_observation_plan_20260920.json",
+      "sha256": "207d0deb829ff5d814f7f1483d3cf0961cc880503293da61b36720b9f6be729d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/workflow_loop_native_review_20260920.json",
+      "sha256": "d91d3f7891eb802012822a3e2b13fafc7577931d01109fead4141a4d676117f4"
+    }
+  ]
 }
