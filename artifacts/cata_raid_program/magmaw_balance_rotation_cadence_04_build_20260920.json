@@ -1,0 +1,37 @@
+{
+  "kind": "build",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "d267cbf9d2e3f56736d82b3d7d37266f085e53ab2bec4d168103fd96f8812f55",
+  "source_commit": "618b20a2d2793e3f26b3b9d45ed2728f3b97d881",
+  "binary_sha256": "cfc37c09b0f39f59ee5292742c411b8132ecba36cdb5fc55622e70391b1f87eb",
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "4f8e6659a4aef2381e8e788ce6d5cc4cfd9826e49e04a884e0caf8ce37d8a0b4",
+    "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql": "fd42f8adc6406ae5e3f826b09f8768115da334e677d5763d56d03769ae6a04e3",
+    "tests/test_balance_rotation_cadence.py": "9f99651e314131848b7ed2864f125958877ed07bad6872366768c144482b5072"
+  },
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_queued_build_20260920.json",
+    "sha256": "bb49f687b395dcb627709b3fc1b2a6006b522dedee39679d35b28cd04ac4ee6a"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_20260920.json",
+      "sha256": "3bcc0e799ea21b00bc5dc2e1403dcf6698ba4e3be2c7e2dd72f2fd2962689eeb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_review_20260920.json",
+      "sha256": "f82136a6cdedae37cd1d507717a085bd2f588ba86b36666f0b2a2281a18599c5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_queued_build_20260920.json",
+      "sha256": "bb49f687b395dcb627709b3fc1b2a6006b522dedee39679d35b28cd04ac4ee6a"
+    }
+  ],
+  "interpretation": "The reviewed Balance Starfall opener patch is bound to a clean, policy-conforming host12 worldserver build from source commit 618b20a2d279. The binary and queued receipt provide build provenance only; native focused behavior, actor-performance, encounter-clear, and Magmaw 10N acceptance remain pending."
+}
