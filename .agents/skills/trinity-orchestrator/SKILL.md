@@ -85,7 +85,7 @@ its unresolved findings explicitly. The worker must reconcile those findings
 with the current diff before choosing more work; a directory of older reports
 is not an adequate handoff. Preserve completed repairs and distinguish missing
 live acceptance from an implementation defect. Honor the user's requested model
-for the current experiment; the defaults below are not mandatory model choices.
+for the current experiment; use the current model preference in AGENTS.md.
 For a critical regression, run its explicit pytest node ID or verify that the
 focused selector actually collects it. A passing filtered suite is not evidence
 for a new test whose name the filter excludes.
@@ -143,10 +143,12 @@ a legal second candidate through the affected pet/totem selectors. A final cast
 rejection cannot replace skipping ineligible candidates during selection, and
 an acquisition helper must not report success when target binding failed.
 
-Use Luna max for exact narrow implementation with immutable evidence, owned production
-and affected test files, one hypothesis, excluded changes, a focused command, and concrete
-acceptance. Use Sol high for causal ambiguity, architecture, or independent risky-change
-review. Do not interrupt a quiet worker arbitrarily. Send decisive new context; resume a
+Use `gpt-5.6-luna` with `reasoning_effort: max` for implementation, causal diagnosis,
+architecture and independent review, per the current user preference. Keep a separate
+reviewer session. Supply immutable evidence, owned production and affected test files,
+one hypothesis, excluded changes, a focused command and concrete acceptance. Resolve
+missing evidence or narrow a stuck task without silently switching models.
+Do not interrupt a quiet worker arbitrarily. Send decisive new context; resume a
 completed worker with followup_task, not a message that cannot start its next turn.
 
 For development: cheap preflight -> affected behavioral tests -> review -> build ->

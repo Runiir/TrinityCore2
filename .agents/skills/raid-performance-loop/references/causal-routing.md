@@ -11,8 +11,9 @@ state mutation or production fixture boundary is unproven, route one evidence,
 telemetry, or fixture-expansion unit rather than an implementation or canary.
 Reject a causal receipt that connects a candidate to a later mutation only by
 actor and time proximity. It must carry an owner-to-owner execution correlation
-key through the consumed mutation. If that join is absent, route a Sol-level
-causal/telemetry unit and do not dispatch a Luna implementation worker.
+key through the consumed mutation. If that join is absent, route a Luna max
+causal/telemetry unit before dispatching an implementation worker. Keep diagnosis
+and implementation scopes distinct even when both use the same model.
 
 Use decision complexity as a routing signal when a trace shows ownership
 conflicts, oscillation, or opaque fallback behavior. The 2026-08-28 native bot

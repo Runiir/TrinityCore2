@@ -9,6 +9,14 @@ Try to keep as little data as possible on the disk. offload to dvc as much as po
 
 Keep C and C++ source and header files below 1,000 lines. Split by concern so small changes invalidate as little of the build cache as practical.
 
+Current user model preference: use `gpt-5.6-luna` with `reasoning_effort: max`
+for all delegated roles, including implementation, causal diagnosis, architecture,
+coordination and independent review. Keep implementer and reviewer in separate
+sessions. Do not silently escalate to Sol/Astra; narrow the task or improve its
+evidence when stuck. Jev/Laya remain advisory. Historical receipts retain their
+actual model identities; old Sol requirements do not override this preference.
+This controls model selection for new agents, not the model of an existing session.
+
 For a broad request such as "implement Magmaw 10N bots", act as the coordinator
 using `.agents/skills/trinity-orchestrator/SKILL.md` and
 `.agents/skills/raid-performance-loop/SKILL.md`. A specialist's bounded patch

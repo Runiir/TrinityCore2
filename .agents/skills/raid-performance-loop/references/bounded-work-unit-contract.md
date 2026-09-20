@@ -26,7 +26,8 @@ understand it; do not substitute a dump of the program charter or old handoffs.
 Before dispatch, the coordinator checks that the packet includes the relevant
 callers, lifecycle boundary and duplicate/legacy test expectations. Include the
 small concrete examples, not just filenames. Do not assign Luna a causal guess
-as an exact implementation task. Resolve ambiguity locally or with Sol first.
+as an exact implementation task. Resolve ambiguity locally or with a Luna max
+diagnosis worker first, following the current model preference in AGENTS.md.
 Search for sibling candidates and fallback calls that can mutate the same target
 or movement state; reading only the named candidate is not a complete caller check.
 When bypassing a legacy action path, preserve its native-outcome attribution and

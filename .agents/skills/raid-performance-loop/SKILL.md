@@ -221,7 +221,7 @@ coordinator. One reviewer can cover duplicate bots of the same spec. Keep one
 overall reviewer responsible for attribution and joining shared failures.
 
 Assign one dedicated `raid-rotation-review` owner to the DPS side of every raid,
-dungeon, or calibration attempt, including successful clears. Use Sol high for
+dungeon, or calibration attempt, including successful clears. Use Luna max for
 this causal review. The reviewer follows that skill's post-run review mode,
 reads the closed diagnostics before raw payload eviction, and returns a compact
 all-bot DPS/HPS breakdown, per-DPS-actor WoWSims and Warcraft Logs comparisons,
@@ -250,8 +250,9 @@ with zero affected rows does not prove the repair was installed.
 After regenerating routes, refresh the `validation_routes` inventory and DVC
 binding in the runtime asset manifests, preserve other asset classes, normalize
 route file modes to the declared 0644, and verify closure before building.
-Use Luna max for exact narrow implementation, Sol high for ambiguous
-causal diagnosis and independent review of risky runtime/encounter changes. Work directly
+Use Luna max for implementation, ambiguous causal diagnosis and independent review
+of risky runtime/encounter changes, following AGENTS.md. Keep the reviewer separate
+from the implementer; improve evidence instead of silently escalating models. Work directly
 when delegation would add more coordination than useful work. Serialize builds, shared
 server ownership, provisioning, and DVC publication. Independent reads may overlap.
 Use `followup_task` for every new edit, investigation, or review assignment,

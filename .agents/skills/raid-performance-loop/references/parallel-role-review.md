@@ -24,7 +24,7 @@ not remembered names or a prior handoff. If prose disagrees with that receipt,
 correct the shared context and notify affected reviewers; do not misclassify a
 handwritten label error as an actual roster change.
 
-Use Sol high for causal diagnosis. Group duplicate DPS specs under one reviewer;
+Use Luna max for causal diagnosis. Group duplicate DPS specs under one reviewer;
 assign tank and healer review coverage too. Split a role group further when its
 distinct class failures warrant independent work. A worker applies one shared
 specialist skill and reads only its relevant class notes.
