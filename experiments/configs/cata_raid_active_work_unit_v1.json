@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 179,
+    "revision": 180,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -3648,6 +3648,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 179,
+        "unit_id": "magmaw:balance_rotation_cadence_04",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 179,
+          "unit_id": "magmaw:balance_rotation_cadence_04",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n-implement-04"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3711,6 +3725,12 @@
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_plan_20260920.json",
         "sha256": "8fbcfb0de5e5d517db0738ae9a1b53857489ea6e3d1d7883a6e3b610244848a0"
       }
+    },
+    "claim": {
+      "owner": "coordinator-magmaw-10n-implement-04",
+      "token": "0b59ec7fdc20a7f02d1ee849d6765807cc5fd454b5ee5b757d802a63f4ed94fa",
+      "operation_id": "0b59ec7fdc20a7f02d1ee849d6765807cc5fd454b5ee5b757d802a63f4ed94fa",
+      "stage": "implement"
     }
   },
   "parked_scenarios": {
