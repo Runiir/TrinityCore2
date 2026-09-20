@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Review every actor; compare matched baseline, native outcome, and performance separately. Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
+  "next_action": "Assess the completed Balance observer run in magmaw_balance_setup_observer_run_20260920.json; do not repeat the completed 300-second measurement. Obtain attributable independent review before accepting setup, publish the assessment, then route the next proven gap while retaining every actor requirement.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -505,7 +505,7 @@
       "requirements": [
         "balance_setup"
       ],
-      "next_action": "Add native Druid Mark of the Wild 79061 to the reference observer allowlist, preserve unexpected-aura rejection, and rerun the exact 300-second Balance validation.",
+      "next_action": "Assess the completed Balance observer run in magmaw_balance_setup_observer_run_20260920.json; do not repeat the completed 300-second measurement. Obtain attributable independent review before accepting setup, publish the assessment, then route the next proven gap while retaining every actor requirement.",
       "owner_skill": "raid-performance-loop"
     },
     "completed_measurements": [
