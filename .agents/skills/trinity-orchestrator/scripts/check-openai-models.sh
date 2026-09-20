@@ -2,6 +2,8 @@
 set -euo pipefail
 
 readonly required_models=(
+    gpt-5.6-sol
+    gpt-5.6-terra
     gpt-5.6-luna
 )
 
@@ -34,7 +36,9 @@ if ((${#missing[@]})); then
 fi
 
 printf 'Required CLIProxyAPI models are available:\n'
-printf '  %s\n' "${required_models[@]}"
+printf '  gpt-5.6-sol\n'
+printf '  gpt-5.6-terra\n'
+printf '  gpt-5.6-luna\n'
 
 if [[ "$smoke" == false ]]; then
     exit 0
