@@ -1459,7 +1459,7 @@ def reference_condition_projections(
     # class setup across this universe; full-window/row coverage is checked below.
     # Wrath retains its stronger, already-serialized per-source proof.
     native_self_buff_ids = {53646, 79058, 24932, 2895, 8515, 8076, 82930,
-                            57669, 20217, 79063, 79102}
+                            57669, 20217, 79063, 79061, 79102}
     native_self_buffs_valid = bool(
         type(raw.get("unexpected_player_aura_active_samples")) is int
         and raw["unexpected_player_aura_active_samples"] == 0

@@ -1947,6 +1947,38 @@ def test_reference_condition_projections_reconstruct_full_window_raw_facts() -> 
     }
 
 
+def test_balance_native_mark_of_the_wild_is_allowlisted_without_bypassing_rejection():
+    target = _reference_condition_observation()
+    raw = target["reference_condition_observation"]
+    raw["reference_class"] = "self_provided_baseline"
+    raw["unexpected_player_aura_active_samples"] = 0
+    raw["unexpected_target_aura_active_samples"] = 0
+    for spell_id in (2895, 79102):
+        row = next(row for row in raw["player_auras"] if row["spell_id"] == spell_id)
+        row.update(active_samples=0, inactive_samples=raw["sample_count"])
+
+    _projection, valid = reference_condition_projections(
+        "balance_druid",
+        target,
+        fixture_target_guid=90,
+        fixture_contract_sha256="e" * 64,
+        scored_started_at_ms=1_000,
+        scored_ended_at_ms=301_000,
+    )
+    assert valid is True
+
+    raw["unexpected_player_aura_active_samples"] = 1
+    _projection, valid = reference_condition_projections(
+        "balance_druid",
+        target,
+        fixture_target_guid=90,
+        fixture_contract_sha256="e" * 64,
+        scored_started_at_ms=1_000,
+        scored_ended_at_ms=301_000,
+    )
+    assert valid is False
+
+
 def test_reference_condition_projections_tolerate_attributed_other_item_keys() -> None:
     target = _reference_condition_observation()
     dynamic = target["reference_condition_observation"]["dynamic_disabled"]

@@ -1,0 +1,81 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_self_setup_observer_02",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_observer_route_event_20260920.json",
+      "sha256": "415fcbf65ad2bcb0e0061805facf292df37e4310f2060f355bee37195069984c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_run_20260920.json",
+      "sha256": "51308264b67157d3ce9f355e9dc0d0692ba1c6bd2b61bcd3d581ef72b54f2bd3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_assessment_20260920.json",
+      "sha256": "80428373f6222f17b538b90520e1a0b4546900627e414cd867188b6eb12dd828"
+    }
+  ],
+  "hypothesis": "The native Balance setup is now present, but the reference observer's Python self-provided primary-stat allowlist omits native Druid Mark of the Wild 79061. This makes reference_condition_projections reject an otherwise valid run as raid_buffs_valid=false. Add only 79061 to the allowlist and retain the aggregate unexpected-aura counter and foreign-aura rejection gates.",
+  "owned_files": [
+    "tools/bot_ml/phase8_reference_conditions.py",
+    "tests/test_phase8_reference_conditions.py",
+    "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc"
+  ],
+  "forbidden_changes": [
+    "No native C++ spell, aura, coefficient, stat, rotation, encounter, route, roster, database, simulator/reference, or runtime-runner changes.",
+    "Do not remove or weaken unexpected_player_aura_active_samples validation, per-aura row continuity, foreign-source rejection, or exact reference gates.",
+    "Do not alter the historical closed run, exact WoWSims catalog, DVC object, or validation identity; do not accept Balance performance from a setup-only observer repair."
+  ],
+  "acceptance_conditions": [
+    "reference_condition_projections accepts a self-provided Balance observation with continuous native 79061 and no unexpected player aura samples.",
+    "The same observation is rejected when unexpected_player_aura_active_samples is nonzero, proving the allowlist does not bypass foreign or unknown-aura rejection.",
+    "The full phase8 reference-condition test file, fixture/header contract, exact-reference catalog checks, and source/runtime compatibility tests pass.",
+    "A fresh policy-bound build and an exact 300-second Balance run using the already published runtime-asset identity are required before accepting balance_setup."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_phase8_reference_conditions.py",
+    "pixi run pytest -q tests/test_build_source_compatibility.py tests/test_runtime_asset_closure.py",
+    "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "94405a80171e72d1667237ade395b601512a5b15",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_advice_20260920.json",
+        "sha256": "106d47a652c162d4cf26928e2f3d48714a1825f7c1a32d181ce9afd215c1383e"
+      },
+      "adjudication": "The retained review is relevant to the same native Balance setup/observer boundary; the current unit is narrowed to the directly observed 79061 comparator mismatch."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; the closed run, native setup ledger, and deterministic observer test control the bounded repair."
+    }
+  }
+}
