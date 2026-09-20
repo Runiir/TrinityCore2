@@ -1,0 +1,17 @@
+{
+  "schema": "worker_checkpoint_advice_v1",
+  "task_id": "magmaw-10n-plan-drift-comparator-20260920",
+  "producer": "hosted_jev",
+  "model": "jev-1.13.0",
+  "response_sha256": "9224d20475d2abf1aa626ad88faf3aa94d6c998cf112afc075cf3c3a7763a234",
+  "answers": {
+    "scope_fit": "supported",
+    "evidence_supports_proposed_change": "supported",
+    "acceptance_claim_supported": "insufficient_evidence"
+  },
+  "adjudication": "The advisory supports correcting the comparator scope and evidence, but does not approve a live or performance claim.",
+  "local_laya": {
+    "status": "not_reviewed",
+    "reason": "URLError: connection refused at the local Laya endpoint"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_effective_stat_application_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "hypothesis": "The routed 24905 companion hypothesis is rejected by the pinned client data and the native trace. Spell 24905 owns damage/stat effects, while 24907 owns the 5% cast-speed effect and its owner apply/remove path is observed. The apparent native deficit is produced by the WoWSims comparator multiplying cast_speed_multiplier by spell_haste_pct even though WoWSims reports spell_haste_pct as the already-composed total. Repair the comparator conversion and preserve native aura arithmetic.",
+  "owned_files": [
+    "tools/bot_ml/review_rotation_mechanics.py",
+    "tests/test_rotation_mechanics_review.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Moonkin Form or Moonkin Aura arithmetic, aura ownership, area-aura propagation, spell coefficients, class priority, gear, consumables, roster, encounter scripts or native cast-speed ledger semantics.",
+    "Do not add a synthetic 24905 cast-speed handler, inject a hidden percentage, weaken acceptance thresholds, or alter the WoWSims request catalog.",
+    "Do not accept actor_30001, any other actor, Balance performance, or Magmaw 10N before an attributable matched canary and later raid evidence."
+  ],
+  "acceptance_conditions": [
+    "The comparator derives the native-equivalent total spell-speed multiplier from the pinned WoWSims effective-stat fields without double-counting cast_speed_multiplier.",
+    "Focused tests cover the Balance case and preserve a non-form caster case such as Fire or Shadow.",
+    "The exact files receive separate implementation review; a later build retains source and binary provenance even though the native C++ path is unchanged.",
+    "A fresh attributable Balance canary is required after the comparator repair; no short or incomplete run accepts performance.",
+    "All actor, encounter-clear and overall Magmaw 10N requirements remain open."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "6b2ddceda8e78e53230ba9cdb05298991c701928",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_comparator_review_20260920.json",
+      "sha256": "76d2bea4f65165f5eb8f082b6f5c3601439c8ff968e29f14fb9f4e8d099ee75f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+      "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_assessment_20260920.json",
+      "sha256": "83643adb049a9810cde7620456d44c129ef6533b615516c1b185d163ed86076d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_publication_20260920.json",
+      "sha256": "d8b544e7600ff6b7079b02290aaf74d4f0787faef69ab2afb92aa8563162f1d8"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_comparator_advice_20260920.json",
+        "sha256": "c2227d6a361b14926c347aa0957e1d518d82cfe9606553ab5c71932ca059395c"
+      },
+      "adjudication": "Advisory supports comparator correction; it does not approve live or performance acceptance."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "The local Laya provider was unavailable during the required plan-drift review.",
+      "adjudication": "No Laya result is used as approval or performance evidence."
+    }
+  }
+}

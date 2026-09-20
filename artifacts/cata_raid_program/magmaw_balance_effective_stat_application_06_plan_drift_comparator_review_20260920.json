@@ -1,0 +1,27 @@
+{
+  "schema": "plan_drift_review_v1",
+  "task_id": "magmaw-10n-plan-drift-comparator-20260920",
+  "work_unit": "magmaw:balance_effective_stat_application_06",
+  "recorded_at": "2026-09-20T00:00:00Z",
+  "verdict": "drift_found",
+  "coordinator_adjudication": "The current unit premise is invalid. The pinned SpellEffect data makes 24905 a damage/stat aura, not a cast-speed aura. The native 24907 owner handler applies the 5% aura and produces the native-equivalent total spell speed. The comparator at tools/bot_ml/review_rotation_mechanics.py multiplies cast_speed_multiplier by a spell_haste_pct field that already includes that multiplier, so it double-counts the 1.05 factor. Correct the comparator, preserve native aura arithmetic, and keep all actor and Magmaw requirements open.",
+  "first_broken_edge": "wowsims_spell_speed_comparator_double_counts_cast_speed_multiplier",
+  "smallest_correction": "Add a focused conversion helper/test in the comparator, review the exact files independently, then repeat the attributable Balance canary before making any performance claim.",
+  "checkpoint_sha256": "f3ad449c5dbf7717801f98e3ade3155cae1e4b9213256d9c7f8ebe22dc5066eb",
+  "hosted_jev": {
+    "model": "jev-1.13.0",
+    "response_sha256": "9224d20475d2abf1aa626ad88faf3aa94d6c998cf112afc075cf3c3a7763a234",
+    "scope_fit": "supported",
+    "evidence_supports_proposed_change": "supported",
+    "acceptance_claim_supported": "insufficient_evidence",
+    "confidence": {"scope_fit": 1.0, "evidence_supports_proposed_change": 1.0, "acceptance_claim_supported": 0.25}
+  },
+  "local_laya": {
+    "status": "not_reviewed",
+    "reason": "URLError: connection refused at the local Laya endpoint",
+    "adjudication": "No Laya result is used as approval or acceptance evidence."
+  },
+  "remaining_requirements_open": true,
+  "dvc_required": false,
+  "source_changes": false
+}
