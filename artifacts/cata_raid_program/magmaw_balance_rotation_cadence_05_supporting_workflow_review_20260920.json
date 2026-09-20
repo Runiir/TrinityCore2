@@ -1,0 +1,15 @@
+{
+  "verdict": "approved",
+  "producer": "Rawls",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_supporting_workflow_review_report_20260920.json",
+    "sha256": "0216824b58daa2179710ac91f149154e143711192a2f72ba00d38c3bd4332781"
+  },
+  "file_hashes": {
+    "tests/test_worker_checkpoint.py": "56f105db9e71ca47976315c2472b5159c2942f1469e498809e11eddb45ca8b75",
+    "tools/bot_ml/jev_shadow.py": "af8ae9931220d74a229a53310287f3468f0c1b2ee245dbb0be939d7a0366a8fd",
+    "tools/raid_program/worker_checkpoint.py": "bea91eb87147e47921e9bbc69f80f157ddd36ef572c28f2ba42bf6711a022a19"
+  },
+  "remaining_native_acceptance": "open; this report is supporting workflow review only"
+}

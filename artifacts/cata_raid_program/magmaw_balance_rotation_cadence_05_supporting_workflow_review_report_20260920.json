@@ -1,0 +1,43 @@
+{
+  "kind": "supporting_workflow_review",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "reviewed_range": {
+    "base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
+    "checkout_commit_at_review": "4f7b9a94c4c5ea221d1529e7e96056d842e3d501",
+    "files": [
+      "tests/test_worker_checkpoint.py",
+      "tools/bot_ml/jev_shadow.py",
+      "tools/raid_program/worker_checkpoint.py",
+      "experiments/configs/local_laya/checkpoint_examples.json"
+    ]
+  },
+  "verdict": "approved",
+  "scope": "supporting_review_only",
+  "native_acceptance": false,
+  "summary": "The scoped diff is workflow/test/example-only. It does not alter native gameplay, build configuration, server runtime policy, or SQL, and is eligible to be frozen alongside the native assignment while the gameplay patch remains independently reviewed.",
+  "findings": [
+    {
+      "file": "tools/bot_ml/jev_shadow.py",
+      "finding": "Preserves bounded local HTTP error details while still producing no advisory response on provider failure."
+    },
+    {
+      "file": "tools/raid_program/worker_checkpoint.py",
+      "finding": "Compacts advisory packets while retaining full checkpoints, coordinator authority, failure status, and disabled automatic pass."
+    },
+    {
+      "file": "tests/test_worker_checkpoint.py",
+      "finding": "Covers path/command/failure preservation and HTTP 422/size-bounded error behavior."
+    },
+    {
+      "file": "experiments/configs/local_laya/checkpoint_examples.json",
+      "finding": "Valid historical example data explicitly marked non-current."
+    }
+  ],
+  "risks": [
+    "Packet consumers expecting the old advisory task_id or literal changed_files.paths shape need compatibility checking.",
+    "Up to 8 KiB of provider error body may enter receipts.",
+    "Historical examples could be misused as current state."
+  ],
+  "disposition": "Freeze the three Python files through supporting_review and freeze the JSON fixture as an explicitly owned, unchanged control file in the replacement native assignment. Do not treat this review as native gameplay approval."
+}
