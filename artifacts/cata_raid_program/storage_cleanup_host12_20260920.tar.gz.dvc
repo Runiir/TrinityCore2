@@ -1,0 +1,5 @@
+outs:
+- md5: cc5a9923ea7be88bc8d80168fab5355d
+  size: 1276024
+  hash: md5
+  path: storage_cleanup_host12_20260920.tar.gz
