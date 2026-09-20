@@ -70,3 +70,13 @@ def test_calibration_observes_moonkin_aura_owner_application():
     assert "std::array<uint32, 5> OwnerAuraSpellIds" in source
     assert "24604, 76659, 82925, 82926, 24907" in source
     assert "std::array<OwnerAuraObservation, 5> OwnerAuraObservations" in metrics
+
+
+def test_moonkin_cast_speed_handler_trace_preserves_native_arithmetic():
+    source = AURA_SOURCE.read_text(encoding="utf-8")
+
+    assert "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER" in source
+    assert "GetFloatValue(UNIT_MOD_CAST_SPEED)" in source
+    assert "cast_speed_before" in source
+    assert "cast_speed_after" in source
+    assert "target->ApplyCastTimePercentMod((float)GetAmount(), apply" in source

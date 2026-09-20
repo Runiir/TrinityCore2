@@ -1,0 +1,60 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "authority": "coordinator_attestation",
+  "producer": "codex-magmaw-10n-balance-aura-handler-trace",
+  "operation_id": "28fcd3dbc2fbcd5a552a588684bc5c01c07d1bc852521319c731d1492e8df230",
+  "file_hashes": {
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "9e7a0df10d8e849e0dcd3d9281aada182fe2542ef85638c209acab12fa72372b",
+    "tests/test_balance_native_effective_stat_parity.py": "33cb65dfc7c25d4eb9fa2cc5865b00dc4d7d649a552760e030f2a4d8d658609f"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "6 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 exact requests validated against provider revision 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6"
+    }
+  ],
+  "summary": "Added bounded native logging at the spell 24907 HandleModCastingSpeed boundary to record owner identity, amount, mode, exclusive-group outcome, and UNIT_MOD_CAST_SPEED before/after values; the handler arithmetic and effective-stat ledger are unchanged.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_diagnosis_20260920.json",
+      "sha256": "baafbddb52bba528ef5575caa715d126924e04af22aee49c88a361dca5a806bf"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_route_event_20260920.json",
+      "sha256": "29095f349e2e443a4d100e22ea8f5f8658b5c29b0c199479657a82b2ac379e14"
+    },
+    {
+      "path": "tests/test_balance_native_effective_stat_parity.py",
+      "sha256": "33cb65dfc7c25d4eb9fa2cc5865b00dc4d7d649a552760e030f2a4d8d658609f"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "The trace is observation-only and preserves the native handler arithmetic; exact build and canary evidence remain required.",
+      "reason": "No separate JEV checkpoint was requested for this implementation result.",
+      "status": "not_reviewed"
+    },
+    "laya": {
+      "adjudication": "The changed source only adds a spell-24907 diagnostic marker and a source-contract test; no lifecycle or policy semantics were changed.",
+      "reason": "No local Laya provider checkpoint was requested for this implementation result.",
+      "status": "not_reviewed"
+    }
+  }
+}

@@ -4133,15 +4133,30 @@ void AuraEffect::HandleModCastingSpeed(AuraApplication const* aurApp, uint8 mode
         return;
 
     Unit* target = aurApp->GetTarget();
+    bool const moonkinAuraCalibration = GetId() == 24907;
+    float const castSpeedBefore = moonkinAuraCalibration
+        ? target->GetFloatValue(UNIT_MOD_CAST_SPEED) : 0.0f;
 
     int32 spellGroupVal = target->GetHighestExclusiveSameEffectSpellGroupValue(this, GetAuraType());
     if (abs(spellGroupVal) >= abs(GetAmount()))
+    {
+        if (moonkinAuraCalibration)
+            TC_LOG_INFO("spells", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER spell=24907 target=%u owner=%u apply=%u mode=%u amount=%d spell_group=%d outcome=exclusive_skip cast_speed_before=%.9g cast_speed_after=%.9g",
+                target->GetGUID().GetCounter(), GetBase()->GetUnitOwner()->GetGUID().GetCounter(), apply, mode,
+                GetAmount(), spellGroupVal, castSpeedBefore, target->GetFloatValue(UNIT_MOD_CAST_SPEED));
         return;
+    }
 
     if (spellGroupVal)
         target->ApplyCastTimePercentMod((float)GetAmount(), !apply, GetAmount() < CAST_HASTE_AMOUNT_THRESHOLD);
 
     target->ApplyCastTimePercentMod((float)GetAmount(), apply, GetAmount() < CAST_HASTE_AMOUNT_THRESHOLD);
+
+    if (moonkinAuraCalibration)
+        TC_LOG_INFO("spells", "BOT_CALIBRATION_MOONKIN_CAST_SPEED_HANDLER spell=24907 target=%u owner=%u apply=%u mode=%u amount=%d spell_group=%d outcome=applied cast_speed_before=%.9g cast_speed_after=%.9g cast_haste_after=%.9g",
+            target->GetGUID().GetCounter(), GetBase()->GetUnitOwner()->GetGUID().GetCounter(), apply, mode,
+            GetAmount(), spellGroupVal, castSpeedBefore, target->GetFloatValue(UNIT_MOD_CAST_SPEED),
+            target->GetFloatValue(UNIT_MOD_CAST_HASTE));
 }
 
 void AuraEffect::HandleModMeleeRangedSpeedPct(AuraApplication const* aurApp, uint8 mode, bool apply) const
