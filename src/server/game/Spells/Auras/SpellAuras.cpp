@@ -2607,10 +2607,14 @@ void UnitAura::FillTargetMap(std::unordered_map<Unit*, uint8>& targets, Unit* ca
 
 void UnitAura::AddStaticApplication(Unit* target, uint8 effMask)
 {
-    // only valid for non-area auras
+    // Area auras normally materialize through FillTargetMap. Preserve the
+    // explicit owner's application as well; form setup can target the owner
+    // before the area search has a world object to visit.
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
-        if ((effMask & (1 << i)) && GetSpellInfo()->Effects[i].Effect != SPELL_EFFECT_APPLY_AURA)
+        if ((effMask & (1 << i))
+            && GetSpellInfo()->Effects[i].Effect != SPELL_EFFECT_APPLY_AURA
+            && !(target == GetUnitOwner() && GetSpellInfo()->Effects[i].IsAreaAuraEffect()))
             effMask &= ~(1 << i);
     }
 

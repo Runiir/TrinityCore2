@@ -10,6 +10,7 @@ PLAYER_HEADER = ROOT / "src/server/game/Entities/Player/Player.h"
 PLAYER_SOURCE = ROOT / "src/server/game/Entities/Player/Player.cpp"
 LEDGER_SOURCE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp"
 AURA_SOURCE = ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp"
+AURA_LIFECYCLE_SOURCE = ROOT / "src/server/game/Spells/Auras/SpellAuras.cpp"
 
 
 def test_balance_of_power_uses_gained_spirit_only():
@@ -48,3 +49,11 @@ def test_moonkin_form_reapplies_missing_passive_and_removes_owned_aura():
     assert "GetMiscValue() == FORM_MOONKIN && !target->HasAura(spellId2)" in source
     assert "target->AddAura(spellId2, target);" in source
     assert "target->RemoveOwnedAura(spellId2, target->GetGUID());" in source
+
+
+def test_area_aura_owner_application_is_preserved_without_changing_propagation():
+    source = AURA_LIFECYCLE_SOURCE.read_text(encoding="utf-8")
+
+    assert "target == GetUnitOwner() && GetSpellInfo()->Effects[i].IsAreaAuraEffect()" in source
+    assert "GetSpellInfo()->Effects[i].Effect != SPELL_EFFECT_APPLY_AURA" in source
+    assert "Area auras normally materialize through FillTargetMap" in source
