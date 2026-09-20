@@ -1,0 +1,31 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_run_20260920.json",
+      "sha256": "51308264b67157d3ce9f355e9dc0d0692ba1c6bd2b61bcd3d581ef72b54f2bd3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc",
+      "sha256": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
+    }
+  ],
+  "actor_id": "30001",
+  "spec": "balance_druid",
+  "status": "reviewed",
+  "accepted": false,
+  "reference_comparable": false,
+  "measured_dps": 32908.07,
+  "reference_dps": 35447.58892725215,
+  "dps_ratio": 0.928358,
+  "disposition": "setup_observed_but_comparison_blocked_by_native_druid_aura_allowlist",
+  "native_setup_observed": {
+    "mark_of_the_wild_spell_id": 79061,
+    "mark_of_the_wild_active_samples": 3000,
+    "armor_specialization_spell_id": 86093,
+    "armor_specialization_amount_pct": 5
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "assessment",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_run_20260920.json",
+      "sha256": "51308264b67157d3ce9f355e9dc0d0692ba1c6bd2b61bcd3d581ef72b54f2bd3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_actor_30001_review_20260920.json",
+      "sha256": "f4ca922a00c319d4af9c35df6c2904dbc67f9eadd0ea9e45c42af359a8b4e9f0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc",
+      "sha256": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ],
+  "attempt_id": 1,
+  "baseline": {
+    "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+    "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_run_20260920.json",
+    "sha256": "51308264b67157d3ce9f355e9dc0d0692ba1c6bd2b61bcd3d581ef72b54f2bd3"
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_actor_30001_review_20260920.json",
+        "sha256": "f4ca922a00c319d4af9c35df6c2904dbc67f9eadd0ea9e45c42af359a8b4e9f0"
+      },
+      "accepted": false
+    },
+    "30002": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30004": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "reason": "This unit validates only Balance actor 30001 setup."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "accepted_requirements": [],
+  "baseline_matched": false,
+  "unexplained_material_decline": false,
+  "comparison_status": "blocked_by_reference_setup",
+  "comparison_rejection": "runtime_prepull_setup_receipts_valid",
+  "assessment": "Native Balance setup was observed: Mark of the Wild 79061 was active for all 3000 scoring samples and armor specialization 86093 contributed 5 percent. The exact WoWSims comparison was withheld because the reference observer rejects 79061 as an unexpected player aura. No requirement or performance is accepted; route a bounded observer-allowlist repair before rerunning the comparison."
+}

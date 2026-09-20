@@ -1,0 +1,28 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "publication",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "operation_id": "4e81894fd11101876145d5f3cee5c9a413e6ca83634fae1fc1a9527a31bfd824",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_run_20260920.json",
+      "sha256": "51308264b67157d3ce9f355e9dc0d0692ba1c6bd2b61bcd3d581ef72b54f2bd3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_assessment_20260920.json",
+      "sha256": "80428373f6222f17b538b90520e1a0b4546900627e414cd867188b6eb12dd828"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_asset_root_validation_20260920.tar.gz.dvc",
+      "sha256": "c067f773630aa6ebe08628c09d5312613ca25e03cecb340aa43ae5df3347d735"
+    }
+  ],
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "accepted_requirements": [],
+  "publication_status": "evidence_closed_nonaccepting",
+  "note": "The exact 300-second native Balance run and its DVC archive are published as closed evidence. No setup or performance acceptance is published because the reference observer rejected native Mark of the Wild 79061 before comparison."
+}
