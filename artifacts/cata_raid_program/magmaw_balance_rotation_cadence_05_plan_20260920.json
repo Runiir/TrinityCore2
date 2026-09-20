@@ -1,0 +1,145 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "first_broken_edge": {
+    "edge": "owner_balance_post_opener_event_cadence_gap",
+    "status": "bounded_policy_repair_ready",
+    "confidence": "high_for_starfall_lunar_window_overuse",
+    "decisive_counterexample": {
+      "fixture": "balance_druid single_target_300 seed-1",
+      "native_starfall_timeline_ms": [5700, 65733, 126678, 187384, 247966],
+      "native_starfall_casts": 5,
+      "wowsims_starfall_casts_per_iteration": 3.001,
+      "native_accepted_actions": 197,
+      "native_to_reference_ratio": 0.9192528364493374
+    },
+    "evidence_limit": "The retained calibration has no per-decision candidate mask, Eclipse-power timestamp, or typed Starfall rejection reason; the implementation must use and expose the native state already owned by the candidate pipeline, and review must retain this limitation."
+  },
+  "hypothesis": "After the accepted neutral-opener repair, the Balance Starfall row remains eligible on every native cooldown once Eclipse power is nonzero. The pinned WoWSims APL instead uses currentLunarEnergy > 70 in its early window and currentLunarEnergy >= 100 thereafter. Trinity stores the signed Eclipse bar in POWER_ECLIPSE with Lunar on the negative side, so the smallest faithful native predicate is to preserve the existing neutral-zero-power gate, then allow the tagged Starfall only when Lunar Eclipse is active or POWER_ECLIPSE < -70; otherwise reject it with a typed balance_starfall_lunar_window reason. This should remove the extra 60-second Starfall GCDs while preserving the existing Eclipse-direction and neutral-opener behavior.",
+  "smallest_lawful_repair_shape": {
+    "profile_contract": "Add a Balance-only post-opener Starfall lunar-window mechanic tag in a new idempotent SQL migration.",
+    "native_predicate": "After the existing balance_neutral_opener predicate, reject the tagged Starfall when !HasAura(48518) && GetPower(POWER_ECLIPSE) >= -70; the native negative Eclipse range maps to positive WoWSims currentLunarEnergy.",
+    "reject_reason": "balance_starfall_lunar_window",
+    "preserved_behavior": "Do not change neutral opening, Starsurge, Eclipse energy production, Starfall cooldown, spell coefficients, effective stats, gear, consumables, target geometry, route, or WoWSims denominator."
+  },
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+    "tests/test_balance_rotation_cadence.py"
+  ],
+  "forbidden_changes": [
+    "No effective-stat, gear, coefficient, proc, target, consumable, reference, denominator, encounter-script, route, or other-spec changes.",
+    "No direct Eclipse-power writes, forced casts, cooldown edits, blanket Starfall priority changes, or changes to the already accepted neutral-opener behavior.",
+    "Do not accept actor_30001, Balance performance, or Magmaw 10N from this dummy diagnosis or its exact-300 follow-up alone."
+  ],
+  "acceptance_conditions": [
+    "Focused tests prove the new tag is Balance-only, attached only to Starfall, idempotent, and evaluated after the neutral opener exception with the exact signed Eclipse threshold.",
+    "Independent reviewer approves the exact source, SQL, and test delta and retains the candidate-mask evidence limitation.",
+    "A clean host12 gate-bearing build is produced from the reviewed source.",
+    "One identical exact-300 Balance calibration keeps Moonfire as the neutral first action, limits Starfall to the native lunar-window predicate, and moves event cadence toward the pinned WoWSims reference without setup or geometry changes.",
+    "Assessment keeps repair acceptance, actor performance acceptance, and raid-clear acceptance separate."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "d05e954d1360c3338464ac6acc519848cb0565ba",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "plan_drift": {
+      "checkpoint": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_checkpoint_20260920.json",
+        "sha256": "dd74c87969999468751d8643cc05a1a79b787d998aa8f906ba76ed806608c7db"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_review_20260920.json/summary.json",
+        "sha256": "4731532003544f125955efa060c65152d1fcf3cf1375c87f49d7ae9ad41aa3d9"
+      },
+      "adjudication": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_plan_drift_adjudication_20260920.json",
+        "sha256": "1b9ec2f29b63dc002c901a0c9b482a40ece90a0c484c2053fc4374cdb2afeeb3"
+      },
+      "status": "aligned; deterministic review passed; hosted Jev supports scope and evidence direction but finds acceptance insufficient_evidence; local Laya was unavailable"
+    },
+    "native_mapping": {
+      "status": "reviewed",
+      "evidence": [
+        {
+          "path": "src/server/scripts/Spells/spell_druid.cpp",
+          "sha256": "839d8ee4a4099f5f518704fb3a48cfa4f90fd9e9848341e7286da86240d3c6a2"
+        },
+        {
+          "path": "src/server/game/Entities/Unit/Unit.h",
+          "sha256": "d9501dd811d81f6fd5b9bdd5e10115eb0445db6d7b2c99f0da08c5f69f9cbeec"
+        }
+      ],
+      "interpretation": "The native Eclipse bar is signed -100..100; Lunar aura is removed at nonnegative power and Solar aura at nonpositive power, so the lunar-side WoWSims energy condition is represented by negative native power."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_diagnosis_20260920.json",
+      "sha256": "818fcaa332e9e2dfa3dce08ef37f2fe0787e10988a55f5f95dc5441b4a9d038b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_diagnosis_review_20260920.json",
+      "sha256": "fc1b414114a7eea96eae5d5ac60db6f4f51df6ac38836ad2d4e2c5cf6e9e78dd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_actor_30001_review_20260920.json",
+      "sha256": "9033e57b06a042e496357c5213b3e71a60358dd1e62873827e206ee901e1ee0c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_calibration_20260920.tar.gz.dvc",
+      "sha256": "04ca5c08278f04f2b25693084688a579d5600184601238ea20682ede3ffffce1"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/source_assets/90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2.apl.json",
+      "sha256": "90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f.json",
+      "sha256": "7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_results/b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8.json",
+      "sha256": "b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8"
+    }
+  ],
+  "interpretation": "The accepted neutral-opener repair is partial. This plan admits one Balance-only Starfall lunar-window repair, with the exact native state mapping and the remaining candidate-mask evidence limitation explicit; no actor, performance, or raid requirement is accepted here."
+}
