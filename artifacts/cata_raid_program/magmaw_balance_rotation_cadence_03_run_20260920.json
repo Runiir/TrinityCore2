@@ -1,0 +1,128 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "70516fa3e29f6f239126fe0047a2af1dc56eb05cf1052832acd33e6fba412985",
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "411b53cc5ffc2d933d539eb9ebc377588f59f571",
+    "binary_sha256": "cb97bbebe251c916f22afafb642ecad678848c835ef3f684cde7a73cd031b3b3"
+  },
+  "source_commit": "b877752eecdc20c8419dac47b1a7dd4b871e13f2",
+  "attempt_id": 1,
+  "server_epoch": 702277858260638,
+  "cohort_id": "dummy-4c7a6ff3f48d-1",
+  "target_guid": 30540,
+  "target_spec": "balance_druid",
+  "calibration_mode": "single_target_300",
+  "duration_policy": "completion-watchdog",
+  "terminal_reason": "measurement_complete",
+  "native_terminal_reason": "complete",
+  "scoring_ms": 300000,
+  "scored_seconds": 300.0,
+  "closed": true,
+  "cleanup_verified": true,
+  "measurement_completed": true,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": true,
+  "calibration_acceptance_passed": true,
+  "comparison_rejections": [],
+  "performance_accepted": false,
+  "training_eligible": false,
+  "batch_accepted": true,
+  "dps": 31993.74,
+  "reference_dps": 35447.58892725215,
+  "reference_ratio": 0.9025646304367735,
+  "hard_floor_passed": true,
+  "optimization_target_met": false,
+  "native_observation": {
+    "target_guid": 30540,
+    "profile_generation": 1,
+    "profile_content_hash": "967284FA0725BB2451C368B40F75D5C757B2A240F6DA8AEBDA6323BE8F12B68E",
+    "fixture_contract_sha256": "95fb64340a0ad6e0b405cc8478adf4d9a0d49d70b16e9f6c337a7ed8e8d56224",
+    "phase_id": 32512,
+    "phase_match": true,
+    "own_target_visibility_observed": true,
+    "target_is_passive": true,
+    "target_distance_yards": 15.003,
+    "no_cross_window_contamination": true,
+    "first_successful_actions": [
+      {"elapsed_ms": 0, "spell_id": 48505, "spell_name": "Starfall"},
+      {"elapsed_ms": 1204, "spell_id": 8921, "spell_name": "Moonfire"},
+      {"elapsed_ms": 2404, "spell_id": 5570, "spell_name": "Insect Swarm"},
+      {"elapsed_ms": 3505, "spell_id": 33831, "spell_name": "Force of Nature"},
+      {"elapsed_ms": 4605, "spell_id": 5176, "spell_name": "Wrath"},
+      {"elapsed_ms": 6005, "spell_id": 78674, "spell_name": "Starsurge"}
+    ],
+    "action_attempts": [
+      {"spell_id": 2912, "spell_name": "Starfire", "count": 50},
+      {"spell_id": 5176, "spell_name": "Wrath", "count": 69},
+      {"spell_id": 5570, "spell_name": "Insect Swarm", "count": 19},
+      {"spell_id": 8921, "spell_name": "Moonfire", "count": 16},
+      {"spell_id": 33831, "spell_name": "Force of Nature", "count": 2},
+      {"spell_id": 48505, "spell_name": "Starfall", "count": 5},
+      {"spell_id": 78674, "spell_name": "Starsurge", "count": 31},
+      {"spell_id": 93402, "spell_name": "Sunfire", "count": 6}
+    ],
+    "starsurge_neutral_reject_reason_observed": false,
+    "candidate_mask_observed": false,
+    "acceptance_first_action_moonfire": false,
+    "repair_accepted": false
+  },
+  "report_summary": {
+    "batch_report_sha256": "8a2ad2f42fa8273f66290ced91c0fa7d2e983a3a25d715403e0635a453067eba",
+    "actor_report_sha256": "eaf57fe89046b7c104f02271e462326468e13f9f7d0de6e5f599cace5e4f585b",
+    "cleanup_sha256": "23f86c9c607ec168a642d14cd83f9d874213c209cb63e55b09cbe7ce1ed2b44c",
+    "worldserver_console_log_sha256": "24ec2b9599f8f0744bb3aeacc43417a99b722925ddf81d79f92ea9ea0bd06efa",
+    "config_sha256": "2241bc86db03b6cb6616d1611480b1892c5ae99a490fdd3c2fb59f619a8ca8f4",
+    "dps": 31993.74,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.9025646304367735,
+    "batch_accepted": true,
+    "all_measurements_completed": true,
+    "all_references_comparable": true,
+    "cleanup_witnesses": []
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_calibration_20260920.tar.gz.dvc",
+      "sha256": "f853e2702957ff9b944a25a2be88bbc7433bb61a9c4af1d123ffe25083fd9864"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_build_20260920.json",
+      "sha256": "472044cd1daa63a8df1af2399cdfa4598488bd4e87d32bdee52f518340746c57"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_implementation_20260920.json",
+      "sha256": "f2a3d1346696413a66b3d92cc095d809a41c5b3a8e4abb47049269ddb67fea53"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_review_20260920.json",
+      "sha256": "2548002b5d4e10128f7308ed4b490e515d8afe174cbc487f45c8663a260679fb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_db_migration_20260920.json",
+      "sha256": "2c6f4c642fbd58285bcd69820e5c6b61446db655bd36f7fe2afbf544a6e21056"
+    }
+  ],
+  "interpretation": "The exact-300 isolated Balance validation completed with intact phase, target attribution, reference comparability and cleanup, but the reviewed opener repair is not accepted: Starfall remained the first successful action at 0 ms, Moonfire followed at 1204 ms, and the required native candidate rejection reason was not exposed. Replan the remaining neutral-opener arbitration edge; do not claim actor or raid performance acceptance."
+}
