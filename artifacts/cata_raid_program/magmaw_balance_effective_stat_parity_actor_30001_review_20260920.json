@@ -1,0 +1,102 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "producer": "coordinator",
+  "reviewer_role": "coordinator closed-run evidence review",
+  "review_basis": "Exact WoWSims identity, native scoring-start stat receipt, native calibration aggregates, and cleanup receipt were compared without accepting DPS or raid performance.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+      "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_evidence_20260920.json",
+      "sha256": "4e75546f22af08e2d4d2fbd42dda9f13aafe69632da69df47ffa4188b17819fd"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_review_20260920.json",
+      "sha256": "2c69d5d30934e5437d82866f435b86f5e27fb80b4976b85c840f8dc77ba83069"
+    }
+  ],
+  "actor_id": "30001",
+  "spec": "balance_druid",
+  "status": "reviewed",
+  "accepted": false,
+  "reference_comparable": true,
+  "run_identity": {
+    "scenario_kind": "dummy",
+    "attempt_id": 1,
+    "cohort_id": "dummy-e5945604982d-1",
+    "server_epoch": 16273018413277551,
+    "target_guid": 30540,
+    "scoring_seconds": 300.0,
+    "terminal_reason": "measurement_complete"
+  },
+  "facts": {
+    "measured_dps": 33855.26666666667,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.95508,
+    "damage": 10156580,
+    "deaths": 0,
+    "comparison_rejections": [],
+    "capture_diagnostics_cleanup_passed": true,
+    "gear_and_profile_identity": "matched_and_comparable",
+    "raid_clear": false,
+    "performance_accepted": false
+  },
+  "effective_stat_comparison": {
+    "hit_rating": {
+      "native": 289.0,
+      "wowsims": 289.0,
+      "status": "matched"
+    },
+    "haste_rating": {
+      "native": 2668.0,
+      "wowsims": 2668.0,
+      "status": "matched"
+    },
+    "spell_haste_pct": {
+      "native": 26.9,
+      "wowsims": 26.87616842353837,
+      "status": "matched_with_native_rounding"
+    },
+    "spell_hit_pct": {
+      "native": 16.975,
+      "wowsims": 17.00412335349425,
+      "status": "native_rounding_delta"
+    },
+    "spell_cast_speed_multiplier": {
+      "wowsims": 1.05,
+      "status": "source_contract_covered_not_separately_serialized"
+    }
+  },
+  "verdict": {
+    "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+    "effective_stat_repair": "accepted_for_follow_up",
+    "performance_accepted": false,
+    "raid_clear_accepted": false,
+    "actor_30001_requirement_accepted": false
+  },
+  "open_scope_confirmation": {
+    "all_other_actors_open": true,
+    "balance_performance_open": true,
+    "encounter_clear_open": true,
+    "magmaw_10n_open": true,
+    "unexercised_actor_ids": [
+      "30002",
+      "30003",
+      "30004",
+      "30005",
+      "30006",
+      "30007",
+      "30008",
+      "30009",
+      "30010"
+    ]
+  }
+}

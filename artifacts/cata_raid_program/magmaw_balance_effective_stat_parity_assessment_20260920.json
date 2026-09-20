@@ -1,0 +1,98 @@
+{
+  "kind": "assessment",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+    "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+    "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+  },
+  "comparison_detail": {
+    "retained_native_baseline_pointer": {
+      "path": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc",
+      "sha256": "da50911a0103dafde5692e33c01eb4937a5a97e4a99c62bbe10bce4b834936ae"
+    },
+    "retained_balance_dps": 30205.07667,
+    "wowsims_reference_dps": 35447.58892725215,
+    "patched_balance_dps": 33855.26666666667,
+    "patched_reference_ratio": 0.95508,
+    "interpretation": "The native effective-stat edge is repaired for follow-up, but the dummy result does not accept actor performance or raid performance."
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_actor_30001_review_20260920.json",
+        "sha256": "19414436f35e65c14e5a8c65103eb5d55e23f88ac55a09559df3f13e3d879a00"
+      },
+      "accepted": false
+    },
+    "30002": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise the Blood tank actor."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise healer actor 30003."
+    },
+    "30004": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise healer actor 30004."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise healer actor 30005."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise Fire actor 30006."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise Fire actor 30007."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise the Affliction actor."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise the Survival actor."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "reason": "This isolated Balance dummy run did not exercise the Elemental actor."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": true,
+  "performance_accepted": false,
+  "accepted_requirements": [],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+      "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_evidence_20260920.json",
+      "sha256": "4e75546f22af08e2d4d2fbd42dda9f13aafe69632da69df47ffa4188b17819fd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_actor_30001_review_20260920.json",
+      "sha256": "19414436f35e65c14e5a8c65103eb5d55e23f88ac55a09559df3f13e3d879a00"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/dummy_50ec676cdb_calibration_20260919.tar.gz.dvc",
+      "sha256": "da50911a0103dafde5692e33c01eb4937a5a97e4a99c62bbe10bce4b834936ae"
+    }
+  ]
+}
