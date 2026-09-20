@@ -1,0 +1,66 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_rotation_cadence_02",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "94268f466fa561879e5cf96e834a512122f21774561011c0830298b49642a76c",
+  "source_commit": "103a1b88a5a9b980bc376e1eeed22487572ef189",
+  "hypothesis": "UNIT_MOD_CAST_SPEED is the native direct-cast timing factor; UNIT_MOD_CAST_HASTE is the separate periodic-haste factor and must not be multiplied into the direct-cast ledger field.",
+  "change_summary": "Serialize SpellSpeedMultiplier as the reciprocal of native UNIT_MOD_CAST_SPEED only and update the C++ fixture/source contract to prove that the periodic-haste value does not change direct-cast measurement.",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_native_effective_stat_parity.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_effective_stats_diagnosis.py tests/test_build_source_compatibility.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "16 specs validated"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationStatLedger.cpp": "03f46f72376d750eba3147c19ad7574f3718df0de2c8399a2ff16f9aac089844",
+    "tests/test_bot_effective_stats_diagnosis.py": "d5dba7f99523edf9b42fe24cb1f5b6fe9b53617f2a811b69b9bc2325954b58b4",
+    "tests/test_balance_native_effective_stat_parity.py": "7ac08337b4d7340a9df85ea9d8ac98a40ee6134d2d28ea734c538498c91884ce"
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_plan_checkpoint_20260920_review_v4/summary.json",
+        "sha256": "a0b2a8f24440bbec49f16fbd1e1f0abeab133264a74419acf4ec91fb7f27ffc7"
+      },
+      "adjudication": "The implementation is limited to native direct-cast speed measurement and its focused fixtures; the exact canary remains required."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Local Laya was unavailable; deterministic tests and native validation control this bounded change."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_plan_rework_20260920.json",
+      "sha256": "96acef752ea57c34a0a5ff309246b974ca62dfeea680cdca3bcac912c7c5e3f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_reconciliation_20260920.json",
+      "sha256": "65e9dbe68914e6fad84cb5867f950a3893450a3dee2e93c325c55880b9b69907"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_review_20260920.json",
+      "sha256": "b2594f207269c2c5ed8ff829e2508095f0f2efe3fd80741fd4ef449e0be66d7a"
+    }
+  ]
+}
