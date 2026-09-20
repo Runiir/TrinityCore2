@@ -1,0 +1,17 @@
+{
+  "revision": 177,
+  "unit_id": "magmaw:balance_rotation_cadence_03",
+  "action": "route",
+  "reason": "The exact post-change timeline proved the Starsurge gate was only partial: Starfall 48505 still won at 0 ms and Moonfire 8921 followed at 1204 ms. Preserve the open actor and raid requirements, and replan the same policy-arbitration edge with native Starfall/Moonfire candidate observation before any new patch.",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_drift_adjudication_20260920.json",
+    "sha256": "df99d8b3a3bfc5af988d2b5115976ae0496cb4f5c6b93f477238e71b541d416b"
+  },
+  "unit": {
+    "id": "magmaw:balance_rotation_cadence_04",
+    "edge": "owner_rotation_execution_after_effective_stat_parity",
+    "requirements": ["actor_30001"],
+    "owner_skill": "raid-rotation-review",
+    "next_action": "Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable."
+  }
+}
