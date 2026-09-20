@@ -1,0 +1,90 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_rework_20260920.json",
+      "sha256": "75c4fca80fd08046da000f5de3c6907005cdafedf6ec8212db5f27a40451adf3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_20260920.json",
+      "sha256": "6b3ab3c8324e2d82ebb7eb5583e48ac93bb194bbe27b0dd691f7183e980b56f2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_review_20260920.json",
+      "sha256": "b425755f54799c752cffbb1afede149dacfede6f4681e6e4c996f63c3ddfcb1f"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "b55075b92d811d77e17ca309f1e23feb318759cbfd6cd4faefbb46c0ff074e27"
+    }
+  ],
+  "hypothesis": "Balance's missing Mark of the Wild and Leather Specialization are setup materialization defects. Native self-setup lacks the Mark rows, and the canonical Druid spell catalogs need learned Mark and leather-specialization parent 87505; the existing native armor path expands the parent to child 86530.",
+  "owned_files": [
+    "src/server/game/Bots/BotPersistentSelfBuffContract.h",
+    "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h",
+    "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+    "experiments/configs/cata_434_action_profiles.json",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h",
+    "tests/test_calibration_self_provided_aura_sources.py",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py"
+  ],
+  "forbidden_changes": [
+    "No injected stats or auras, reference weakening, coefficient tuning, spell-radius/range changes, roster changes, encounter changes, route changes or hidden live controls.",
+    "Do not persist armor-specialization child aura 86530 directly; retain the learned parent 87505 -> 86530 spell_learn_spell path.",
+    "Do not repeat the completed 50ec Survival measurement; preserve all open Balance, Blood, healer, Fire, Affliction, Survival, Elemental and Magmaw 10N requirements."
+  ],
+  "acceptance_conditions": [
+    "Add native Druid Mark of the Wild self-setup with base spell 1126 and current alternate aura 79061, and observe its own source in the calibration self-provided aura validator.",
+    "Provision learned Druid parent 87505 for every Druid target whose native setup can use it, reconcile linked target/action catalogs, and keep child aura 86530 native.",
+    "Regenerated materialized Phase 8 contract/header passes its check.",
+    "The parent-commit failure in test_actual_reference_observer_attributes_every_wrath_air_application remains a separately recorded baseline issue; it is not used to weaken evidence or claim success.",
+    "Native build, matched 300-second validation, watchdog raid validation and DVC publication remain separate pending gates."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_reference_module.py tests/test_bot_world_population_mgr_calibration_reset_module.py tests/test_bot_world_population_mgr_persistent_setup_module.py",
+    "pixi run python -m tools.bot_ml.phase8_fixture_contract --check-materialized --check-header"
+  ],
+  "base_commit": "b9d5a706b34e12789e9cc6d37108bd48748d1fc0",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_fast4_v2.json",
+    "sha256": "d318264482ef50aa2f808915bb7eb47aea2e7947544b0058366f487e9a624521"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "801043d7d25cdcdf69921e3a478b0ee426d3de357c0584dbeeeb71ffba75cb5e"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_scope3_advice_20260920.json",
+        "sha256": "106d47a652c162d4cf26928e2f3d48714a1825f7c1a32d181ce9afd215c1383e"
+      },
+      "adjudication": "Reused the retained hosted Jev review because the source scope and hypothesis are unchanged; coordinator owns the rebuild bookkeeping and execution."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "URLError: <urlopen error [Errno 111] Connection refused>",
+      "adjudication": "Provider unavailable; coordinator review and the prior independent native-mechanics approval remain the controlling evidence."
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "rework_reconciliation",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator",
+  "reason": "The validation runner requires the queued build receipt source commit to equal the current clean HEAD. Recording the build adapter advanced HEAD with control data, so rebuild the unchanged reviewed source at the new committed HEAD before launching validation.",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": true,
+  "reusable_receipt_found": false,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_build_20260920.json",
+      "sha256": "fce4432b50b731d05e5f447ff19348db2ac42fe8346eb2d054ec6226186377fd"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "67ffca884bdf7b56faacbfb7d9eed206d5d2e4baad7e7be6870e5d63191bb2ac"
+    }
+  ]
+}

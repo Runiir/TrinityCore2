@@ -1,0 +1,10 @@
+{
+  "revision": 11,
+  "unit_id": "magmaw:balance_self_setup_01",
+  "action": "rework",
+  "reason": "Rebuild the unchanged reviewed source at the committed HEAD that records the build transition so the validation runner can bind the build receipt exactly.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_setup_validate_rework_20260920.json",
+    "sha256": "75c4fca80fd08046da000f5de3c6907005cdafedf6ec8212db5f27a40451adf3"
+  }
+}

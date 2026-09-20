@@ -1,0 +1,49 @@
+{
+  "authority": "coordinator_attestation",
+  "kind": "review",
+  "unit_id": "magmaw:balance_self_setup_01",
+  "producer": "coordinator-independent-native-mechanics-review",
+  "verdict": "approved",
+  "source_commit": "05895cc6094753f953995bfcd70cbcb97ed47036",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_plan_rebuild_20260920.json",
+      "sha256": "c48fe4093752bcfc60dd23fffa63f3683e6b8360a4c84fd064fdfbbee2acacfe"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_setup_result_rebuild_20260920.json",
+      "sha256": "9d426a7f936723896d29579374ae07208db6475a7961c05c9e0b66197912a230"
+    },
+    {
+      "path": "sql/old/4.3.4/world/20091_2021_07_06/2021_02_19_02_world.sql",
+      "sha256": "a6a6172db81213ffe28086d076f6349bb44c8a8b8475ebe6fadf9cea3f507af6"
+    },
+    {
+      "path": "experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "e25d8f6eb1fb933236351f74962332b32a1644a704b8476afb4a5e7cca1b4aa8"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotPersistentSelfBuffContract.h": "ef80b672443983155d01c697006e23d502270dc5f17b86593be0919553623e84",
+    "src/server/game/Bots/BotCalibrationSelfProvidedAuras.h": "968b20b3e4cf4d56a94b1d6760c90c3193feafe0814cb07ddce1c4361e987560",
+    "src/server/game/Bots/BotWorldPopulationMgrPersistentSetup.cpp": "2ef73b484177232805848a029378e0ed15d0ca088b29c6a160ab1722fd06710f",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "41b347cce99220ebfa0cbd57b6c993bcd09b6d1baf85869d7624ae2622915b46",
+    "experiments/configs/cata_434_action_profiles.json": "0459f9899d4c3c4e9727e296c67c105fa7ab1b322663989ee47dfae99ac9c247",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "1539479c478e401178c5be0754d626f2f686601502f144b6c30ea667ef2a6ce9",
+    "experiments/configs/phase8_calibration_fixture_contract_v1.materialized.json": "0fa95e520dfd05683fbda957406b2f781d3d85999f28743bc7362f3712b77444",
+    "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h": "16a356b8c6b595042c68e0b9c80e92f35718167098e6c0479999a75dc49ff999",
+    "tests/test_calibration_self_provided_aura_sources.py": "874b1c38f870da2aa6f22ffb9fd3ca9f794dcd3e1df2474f328b3f73a2278774",
+    "tests/test_bot_world_population_mgr_persistent_setup_module.py": "bfbc3d49e7b7ecccc0500c4876f6449005b06bb10db48b88cab9315afd6b65ca"
+  },
+  "review_findings": [
+    "The native contract row is class-wide and therefore covers Balance, Feral and Restoration Druid without class-policy branching.",
+    "The existing persistent setup executor still requires HasSpell and executes a normal bot-to-self resolved action; no injected aura or stats path was added.",
+    "Only learned parent 87505 is catalog-provisioned. SQL confirms native spell_learn_spell expansion to child 86530, and Player::UpdateArmorSpecialization already applies the learned specialization.",
+    "The target/action catalog reconciler rejects unlinked lists and updates exactly the four Druid targets; the materialized Phase 8 identity/header now match and check clean.",
+    "The known broad test failure is a parent-baseline fixture-identity issue and is retained separately; it does not invalidate this bounded source/catalog review."
+  ],
+  "limitations": [
+    "No native worldserver build at the current committed HEAD or live Balance dummy/raid run has been performed for this rebuild yet.",
+    "Druid setup and raid performance acceptance remain open in the parent graph."
+  ]
+}
