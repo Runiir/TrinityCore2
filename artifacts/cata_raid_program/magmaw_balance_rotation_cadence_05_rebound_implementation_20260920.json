@@ -1,0 +1,102 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "b3080bbf2b16de3e0f5f6863322510b93817428d45d2be18b197c2a1b4147efc",
+  "source_commit": "b3fbe648e06abd61db022fe8e7e4076645af69d9",
+  "implementation": {
+    "summary": "Added a Balance-only Starfall lunar-window tag and typed candidate rejection after the existing neutral opener gate, using the signed native Eclipse bar without mutating state.",
+    "predicate": "HasMechanicTag(balance_starfall_lunar_window) && !HasAura(48518) && GetPower(POWER_ECLIPSE) >= -70",
+    "reject_reason": "balance_starfall_lunar_window",
+    "native_state_mapping": "WoWSims currentLunarEnergy > 70 maps to native POWER_ECLIPSE < -70; active Lunar Eclipse remains legal.",
+    "candidate_observation_status": "pending_independent_native_review_and_exact_validation",
+    "frozen_support_status": "Three workflow deltas are hash-bound by supporting review or frozen owned-file snapshot; no gameplay/build/runtime-policy acceptance is inferred.",
+    "source_line_counts": {
+      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": 999,
+      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": 704,
+      "tests/test_balance_rotation_cadence.py": 69,
+      "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql": 21
+    }
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": "8351bafeb8dbcdd7e359b75c3afa9b36483988b338623ac3afa6965bba47582a",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "8df6026d696961e0c4e960d7fd20173ae0f29ae64a333ca1ad5a422a92d1db28",
+    "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql": "6422717197c576a42f8e4d3a13df060642e8075d9d5707ca2f3e2ea4ab5c835e",
+    "tests/test_balance_rotation_cadence.py": "a660c176007218d9addca5375c28686f2f4700ab1335994274d53eed45af974c",
+    "tools/bot_ml/jev_shadow.py": "af8ae9931220d74a229a53310287f3468f0c1b2ee245dbb0be939d7a0366a8fd",
+    "experiments/configs/local_laya/checkpoint_examples.json": "ba509a9460b9550b2eb9c664a0d4c3738d98b16986a54836d1fa44ef4d3dc192"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "summary": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "summary": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "summary": "fixture contract and 16 request entries validated"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_replacement_plan_20260920.json",
+      "sha256": "2b192c2ac641e930c1b6d4fd296b94bbc86ffac6045506f69826142e0224b90a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_supporting_workflow_review_20260920.json",
+      "sha256": "62a997ae2ea7555088607255fe728d06d2a762f0280c0b6cc35c8334bbbdc75a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_supporting_workflow_review_report_20260920.json",
+      "sha256": "0216824b58daa2179710ac91f149154e143711192a2f72ba00d38c3bd4332781"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_rebound_implementation_checkpoint_20260920.json",
+      "sha256": "2a9f8d4c6bd037c67b1c4fe6aa24791cbf158671b5561a88521a08b92fe09b18"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_rebound_implementation_checkpoint_review_20260920.json/summary.json",
+      "sha256": "540bb77f5b943a94356d0248bdd34a6587256a900b597471e8e9b3a9878d0d75"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_rebound_implementation_checkpoint_review_20260920.json/checkpoint.json",
+      "sha256": "7ca07ea82205fa90d6f675fde335daae23f98725fa6b542c85c848a63bdf7377"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_rebound_implementation_checkpoint_review_20260920.json/examples.jsonl.dvc",
+      "sha256": "4437ef2241c6f53508f6b1ef24fc33e6a2241f21b8347aba3576669a2139f7fc"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_source_isolation_reconciliation_20260920.json",
+      "sha256": "f4febd2545db421de7a59f40c91971f592d422eb42c462f8050aa9d3bf229d93"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_rebound_implementation_checkpoint_review_20260920.json/summary.json",
+        "sha256": "540bb77f5b943a94356d0248bdd34a6587256a900b597471e8e9b3a9878d0d75"
+      },
+      "adjudication": "Hosted Jev marked the corrected bounded checkpoint supported on scope, evidence direction, and its limited acceptance claim; advisory only, not independent native approval."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local provider returned HTTP 422 context_budget_exceeded for the checkpoint packet.",
+      "adjudication": "Provider unavailable for this checkpoint; independent native review remains required."
+    }
+  },
+  "acceptance_claim": "The bounded source/config/test implementation is complete and required deterministic checks passed under the corrected source binding. Native candidate-mask visibility, exact-300 post-change behavior, actor performance, raid clear, and parent-objective completion remain open."
+}
