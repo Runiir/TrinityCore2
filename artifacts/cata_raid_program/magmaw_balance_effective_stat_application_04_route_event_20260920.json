@@ -1,0 +1,26 @@
+{
+  "action": "route",
+  "revision": 126,
+  "unit_id": "magmaw:balance_effective_stat_parity_03",
+  "producer": "coordinator",
+  "reason": "The exact canary proves that Moonkin Aura 24907 is active on owner GUID 30540 with amount 5, effect mask 1, and zero inactive samples, but the scoring-start spell-speed multiplier remains 1.269 instead of 1.332199768447153. Route a new bounded native edge to trace HandleModCastingSpeed and UNIT_MOD_CAST_SPEED application/preservation; retain the owner-aura observer as the acceptance guard.",
+  "unit": {
+    "id": "magmaw:balance_effective_stat_application_04",
+    "edge": "owner_effective_stat_application_moonkin_aura_cast_speed_handler",
+    "owner_skill": "raid-class-mechanics-implementation",
+    "requirements": [
+      "actor_30001"
+    ],
+    "next_action": "Diagnose one native Moonkin Aura 24907 cast-speed handler application edge, instrument or repair only the effective UNIT_MOD_CAST_SPEED path, rebuild with exact provenance, and rerun the identical 300-second canary before any Balance rotation tuning."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validation_rework4_20260920.json",
+      "sha256": "97e21cd6dc52e1d1686b53b0f420198ee6b0b42e7748e5fd111b5ddfc83a4edc"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_assessment_rework4_20260920.json",
+      "sha256": "2c25d21c42f15de1a18c347a69d7e95013866efd4f75c92b330635fc582de539"
+    }
+  ]
+}
