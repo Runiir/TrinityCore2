@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Diagnose the downstream effective cast-speed transition after the proven 24907 owner handler apply. Preserve native arithmetic and the observed handler boundary; inspect stat recomputation/reset consumers before any gameplay change, then use an attributable native probe or exact 300-second canary only when the evidence warrants it. Keep all actor and Magmaw 10N performance requirements open.",
+  "next_action": "Select the next proven edge, or complete only when every requirement is accepted. Diagnose the downstream effective cast-speed transition after the proven 24907 owner handler apply. Preserve native arithmetic and the observed handler boundary; inspect stat recomputation/reset consumers before any gameplay change, then use an attributable native probe or exact 300-second canary only when the evidence warrants it. Keep all actor and Magmaw 10N performance requirements open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 149,
+    "revision": 153,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "route",
     "actor_ids": [
       "30001",
       "30002",
@@ -555,7 +555,8 @@
       "owner_effective_stat_application_before_rotation_execution": 3,
       "owner_rotation_execution_after_effective_stat_parity": 2,
       "owner_effective_stat_application_moonkin_aura_materialization": 5,
-      "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 2
+      "owner_effective_stat_application_moonkin_aura_cast_speed_handler": 2,
+      "owner_effective_stat_application_after_moonkin_aura_handler_application": 1
     },
     "history": [
       {
@@ -3098,6 +3099,73 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 149,
+        "unit_id": "magmaw:balance_effective_stat_application_05",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 149,
+          "unit_id": "magmaw:balance_effective_stat_application_05",
+          "action": "advance",
+          "claim_token": "d553dc95e663dd541f9efcb452117ccfd35f54056a0c0a3264c61571da151b22",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+            "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 150,
+        "unit_id": "magmaw:balance_effective_stat_application_05",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 150,
+          "unit_id": "magmaw:balance_effective_stat_application_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_assessment_20260920.json",
+            "sha256": "83643adb049a9810cde7620456d44c129ef6533b615516c1b185d163ed86076d"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 151,
+        "unit_id": "magmaw:balance_effective_stat_application_05",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "revision": 151,
+          "unit_id": "magmaw:balance_effective_stat_application_05",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n-publication-paired"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 152,
+        "unit_id": "magmaw:balance_effective_stat_application_05",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "revision": 152,
+          "unit_id": "magmaw:balance_effective_stat_application_05",
+          "action": "advance",
+          "claim_token": "cb47bc7acd59c6e695f676600a876020070ef4ab5de878a4300751ed9753b832",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_publication_20260920.json",
+            "sha256": "d8b544e7600ff6b7079b02290aaf74d4f0787faef69ab2afb92aa8563162f1d8"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3182,6 +3250,18 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_build_20260920.json",
         "sha256": "7966314365bd0780631badf7691e9f9e6a2f8913b9e0086c299448d8ab03b7e5"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+        "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_assessment_20260920.json",
+        "sha256": "83643adb049a9810cde7620456d44c129ef6533b615516c1b185d163ed86076d"
+      },
+      "publication": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_publication_20260920.json",
+        "sha256": "d8b544e7600ff6b7079b02290aaf74d4f0787faef69ab2afb92aa8563162f1d8"
       }
     },
     "tested_files": {
@@ -3194,11 +3274,17 @@
       "source_commit": "6af938734273e4928f9916c4afab378e4e9ece8c",
       "binary_sha256": "a80527ea418532f125c039b480a15ba73a950ff45f758fffeb4157886205e9da"
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n-probe-paired",
-      "token": "d553dc95e663dd541f9efcb452117ccfd35f54056a0c0a3264c61571da151b22",
-      "operation_id": "d553dc95e663dd541f9efcb452117ccfd35f54056a0c0a3264c61571da151b22",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 1524793911001234,
+      "scenario_kind": "dummy",
+      "terminal_reason": "interruption"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {

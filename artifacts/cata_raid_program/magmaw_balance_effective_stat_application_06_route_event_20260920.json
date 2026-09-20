@@ -1,0 +1,34 @@
+{
+  "revision": 153,
+  "unit_id": "magmaw:balance_effective_stat_application_05",
+  "action": "route",
+  "producer": "coordinator",
+  "reason": "The paired native probe proves the 24907 owner handler applies and removes with the expected direct cast-speed transition, but no 24905 handler record appears on the same owner target. Route one bounded native unit for the missing Moonkin companion materialization or handler registration; preserve the 24907 arithmetic and keep every actor and Magmaw 10N requirement open.",
+  "unit": {
+    "id": "magmaw:balance_effective_stat_application_06",
+    "edge": "owner_effective_stat_application_moonkin_form_companion_24905",
+    "owner_skill": "raid-class-mechanics-implementation",
+    "requirements": [
+      "actor_30001"
+    ],
+    "next_action": "Diagnose the native 24905 Moonkin Form companion path from materialization through effect registration. Inspect only the aura lifecycle/effective-stat boundary, preserve 24907 arithmetic and ownership, obtain separate review, rebuild with exact provenance, and rerun an attributable probe before any performance claim. Keep all actor and Magmaw 10N requirements open."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_06_plan_drift_review_20260920.json",
+      "sha256": "ab399d0f71eac01f3fb997f56795184e0ce77d4968e6adf536bed2113e9ae3ff"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+      "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_assessment_20260920.json",
+      "sha256": "83643adb049a9810cde7620456d44c129ef6533b615516c1b185d163ed86076d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_publication_20260920.json",
+      "sha256": "d8b544e7600ff6b7079b02290aaf74d4f0787faef69ab2afb92aa8563162f1d8"
+    }
+  ]
+}

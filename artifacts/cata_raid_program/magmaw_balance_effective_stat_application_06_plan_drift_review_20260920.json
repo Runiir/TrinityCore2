@@ -1,0 +1,48 @@
+{
+  "kind": "plan_drift_review",
+  "task_id": "magmaw-10n-plan-drift-post-paired-probe-20260920",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "checkpoint_sha256": "2a6132e8644a3ff8286a926cf48d6bba4782240c7fa5eaa6979f97c4ce40f21d",
+  "deterministic": {
+    "status": "pass",
+    "findings": []
+  },
+  "model_review": {
+    "jev": {
+      "status": "reviewed",
+      "model": "jev-1.13.0",
+      "scope_fit": "supported",
+      "scope_fit_confidence": 0.99,
+      "evidence_supports_proposed_change": "supported",
+      "evidence_supports_proposed_change_confidence": 0.95,
+      "acceptance_claim_supported": "supported",
+      "acceptance_claim_supported_confidence": 0.88,
+      "response_sha256": "dcf0055909e90fcc0c4e81d6728fcd98c52ec685d249035cf52f30fd773c19ed"
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from the local service.",
+      "endpoint": "http://127.0.0.1:8000/v1/systemone"
+    }
+  },
+  "coordinator_adjudication": {
+    "verdict": "aligned",
+    "next_action": "Route one bounded native unit for missing 24905 companion materialization or handler registration. Keep 24907 arithmetic, actor requirements and Magmaw 10N acceptance open.",
+    "execution_authority": false
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_run_20260920.json",
+      "sha256": "7ca6cbf4ef239436651390f33eed4afd415d8c9cc6b9ac110feb0e0cc9b72d8e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_assessment_20260920.json",
+      "sha256": "83643adb049a9810cde7620456d44c129ef6533b615516c1b185d163ed86076d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_05_publication_20260920.json",
+      "sha256": "d8b544e7600ff6b7079b02290aaf74d4f0787faef69ab2afb92aa8563162f1d8"
+    }
+  ]
+}
