@@ -1,0 +1,51 @@
+{
+  "kind": "assessment",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+    "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+    "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "reviewed",
+      "accepted": false,
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_actor_30001_review_20260920.json",
+        "sha256": "377fc817c971415e8900b43fcb6cb242f7425624c99cb37bc03221683f6657e2"
+      }
+    },
+    "30002": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30003": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30004": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30005": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30006": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30007": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30008": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30009": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."},
+    "30010": {"status": "not_exercised", "reason": "This exact-300 run exercised Balance actor 30001 only."}
+  },
+  "encounter_clear": false,
+  "repair_accepted": true,
+  "performance_accepted": false,
+  "baseline_matched": true,
+  "unexplained_material_decline": true,
+  "accepted_requirements": [],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_actor_30001_review_20260920.json",
+      "sha256": "377fc817c971415e8900b43fcb6cb242f7425624c99cb37bc03221683f6657e2"
+    }
+  ],
+  "interpretation": "The exact-300 run is valid, reference-comparable, and cleanup-complete. Moonfire remains the first successful action and the bounded Starfall window behavior is accepted separately. DPS declined from 32585.30 to 31544.06, so performance is not accepted; the one-run comparison lacks enough variance and Eclipse-candidate telemetry to close the causal cadence edge. No encounter clear or other actor requirement was exercised."
+}

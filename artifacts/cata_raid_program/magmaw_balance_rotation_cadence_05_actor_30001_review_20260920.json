@@ -1,0 +1,49 @@
+{
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_rotation_cadence_05",
+  "actor_id": "30001",
+  "reviewer": "Rawls",
+  "reviewer_session_id": "01a0bf43-2208-7821-a4ae-bf13d995c3d8",
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+    "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+    "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+  },
+  "exact_capture_valid": true,
+  "repair_accepted": true,
+  "performance_accepted": false,
+  "baseline_matched": true,
+  "baseline_dps": 32585.296666666665,
+  "comparison_dps": 31544.056666666667,
+  "reference_dps": 35447.58892725215,
+  "comparison_delta_dps": -1041.24,
+  "comparison_delta_pct": -3.195,
+  "baseline_starfall_count": 5,
+  "comparison_starfall_count": 4,
+  "comparison_first_successful_action": {
+    "spell_id": 8921,
+    "spell_name": "Moonfire",
+    "elapsed_ms": 0
+  },
+  "candidate_mask_observed": false,
+  "typed_rejection_reason_observed": false,
+  "causality": "The decline is material and directionally consistent with one fewer Starfall, but one run per condition lacks per-spell variance and Eclipse-power timeline evidence; performance remains unaccepted.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_build_20260920.json",
+      "sha256": "cfb1e5e8e8dfd28b84e7c662271b02c49712149351f82a142879e82ff781c43d"
+    }
+  ],
+  "verdict": "exact-300 capture valid; bounded repair accepted separately; actor performance and raid acceptance remain open"
+}
