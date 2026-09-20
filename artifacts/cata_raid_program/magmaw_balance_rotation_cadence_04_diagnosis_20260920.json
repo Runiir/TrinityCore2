@@ -1,0 +1,140 @@
+{
+  "kind": "diagnosis",
+  "unit_id": "magmaw:balance_rotation_cadence_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {"raid": "blackwing_descent", "boss": "magmaw", "mode": "10N"},
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "first_broken_edge": {
+    "edge": "policy_candidate_arbitration_after_starsurge_gate",
+    "status": "focused_policy_lead_pending_candidate_mask",
+    "confidence": "high_for_remaining_opener_counterexample",
+    "decisive_counterexample": {
+      "fixture": "balance_druid single_target_300 seed-1",
+      "initial_state": {
+        "eclipse_power": 0,
+        "active_eclipse_auras": [],
+        "target_distance_yards": 15.003,
+        "movement_or_range_recovery": false
+      },
+      "post_starsurge_gate_timeline": [
+        {"elapsed_ms": 0, "spell_id": 48505, "spell_name": "Starfall", "result": "ok"},
+        {"elapsed_ms": 1204, "spell_id": 8921, "spell_name": "Moonfire", "result": "ok"},
+        {"elapsed_ms": 6005, "spell_id": 78674, "spell_name": "Starsurge", "result": "ok"}
+      ],
+      "required_pinned_apl_first_action": {"spell_id": 8921, "predicate": "NeutralPhase and not aura 61345 and current_time < 2s"}
+    },
+    "policy_evidence": {
+      "starfall_profile": {
+        "spell_id": 48505,
+        "sort_order": 35,
+        "priority_bucket": 1,
+        "damage_weight": 0.94,
+        "target_selector": "self",
+        "mechanic_tags": "starfall,cooldown,pinned_apl",
+        "missing_native_predicate": "the row has no neutral-opener gate"
+      },
+      "moonfire_profile": {
+        "spell_id": 8921,
+        "sort_order": 10,
+        "priority_bucket": 1,
+        "damage_weight": 0.92,
+        "target_selector": "enemy",
+        "mechanic_tags": "moonfire,dot"
+      },
+      "starsurge_profile": {
+        "spell_id": 78674,
+        "mechanic_tags": "starsurge,primary,balance_starsurge_neutral_gate"
+      },
+      "resolver_order": "lower priority bucket, then higher candidate score, then lower sort order"
+    },
+    "evidence_limit": "The exact native timeline proves Starfall remains the first successful action after the Starsurge gate, but the retained calibration does not expose the per-decision candidate mask or a Starfall reject reason. This is a policy lead and focused replay target, not an overclaimed candidate observation."
+  },
+  "hypothesis": "The remaining neutral opener mismatch is an ungated Balance Starfall candidate: the pinned APL allows Starfall only under its known-aura and lunar-energy conditions, while the native profile row is legal at the fresh neutral state and wins bucketed arbitration once Starsurge is gated. A Balance-only Starfall neutral gate using the same no-Eclipse-aura and zero-POWER_ECLIPSE predicate should leave Moonfire as the first native action while preserving Starfall outside that state.",
+  "smallest_lawful_repair_shape": {
+    "profile_contract": "Add a Balance-only mechanic tag to Starfall in a new idempotent SQL migration and evaluate it in the typed candidate builder.",
+    "predicate": "Reject Starfall only while the Druid has neither Eclipse aura active and POWER_ECLIPSE is zero.",
+    "reject_reason": "balance_neutral_opener",
+    "preserved_behavior": "Do not alter Starsurge outside its existing predicate, Starfall outside the exact neutral state, native spell coefficients, effective stats, gear, consumables, target geometry, encounter route, or WoWSims denominator."
+  },
+  "owned_files": [
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "sql/custom/world/2026_09_20_01_balance_starfall_neutral_opener.sql",
+    "tests/test_balance_rotation_cadence.py"
+  ],
+  "forbidden_changes": [
+    "No effective-stat, gear, coefficient, damage, haste, roster, consumable, WoWSims request/result, or denominator changes.",
+    "No encounter script, Magmaw route, movement envelope, target fixture, direct state manufacture, forced casts, or hidden live controls.",
+    "Do not change Starsurge outside its existing exact gate or alter Starfall's behavior after Eclipse state/power makes it legal.",
+    "Do not touch other classes, specs, actors, healer/tank policy, or the open raid acceptance requirements."
+  ],
+  "acceptance_conditions": [
+    "Focused source and SQL tests prove the new Balance tag is attached only to Starfall and the typed predicate is exact and idempotent.",
+    "A focused native replay records the remaining opener state and the first successful post-change timeline action is Moonfire; any missing candidate-mask field remains explicitly recorded as an evidence limitation.",
+    "Independent review approves the exact tested files and confirms the repair is policy-only, player-like, and preserves both spell paths outside the exact neutral state.",
+    "A clean gate-bearing native build is produced from the reviewed source, then one exact-300 Balance validation is run with the frozen actor, roster, runtime profile, WoWSims reference, and host12 build policy.",
+    "Assessment keeps repair acceptance, actor performance acceptance, and Magmaw raid-clear acceptance separate; a dummy cannot close actor performance or raid requirements."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "base_commit": "561deba65612b6a00e8c6c151545282443423a87",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_drift_review_retry_20260920.json/summary.json",
+        "sha256": "565a1ae572e49260a22b9cd436a42766228aa4854a6d500dc05c27f36c2a6a2b"
+      },
+      "adjudication": "Hosted Jev supported the scope and evidence direction for a new bounded diagnosis; its acceptance judgment was insufficient_evidence, so it does not authorize native acceptance."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Connection refused from http://127.0.0.1:8000/v1/systemone",
+      "adjudication": "Provider unavailable; coordinator retains the explicit candidate-mask evidence limitation and requires independent code review before build."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_run_20260920.json",
+      "sha256": "0245799d242a4929a9a134ccc0b1bdbdd2f3d5d1f1a77732e63ea8c8c5761b71"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_assessment_20260920.json",
+      "sha256": "edf30d664c4944dd4d11ee750616930eda6eb4b51762a41aa435279f32c73887"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f.json",
+      "sha256": "7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_03_plan_drift_adjudication_20260920.json",
+      "sha256": "df99d8b3a3bfc5af988d2b5115976ae0496cb4f5c6b93f477238e71b541d416b"
+    }
+  ],
+  "interpretation": "The Starsurge-only repair is durably shown to be partial. The remaining first action is a narrowly attributable Starfall profile arbitration lead, but native candidate-mask visibility is still incomplete; this diagnosis therefore routes to a bounded Starfall gate task without accepting the actor or raid."
+}
