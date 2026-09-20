@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose native Starfall 48505 versus Moonfire 8921 candidate eligibility in the exact neutral Balance fixture; do not change source or SQL until the remaining arbitration predicate is attributable.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 181,
+    "revision": 182,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -3680,6 +3680,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 181,
+        "unit_id": "magmaw:balance_rotation_cadence_04",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "action": "advance",
+          "unit_id": "magmaw:balance_rotation_cadence_04",
+          "revision": 181,
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_review_20260920.json",
+            "sha256": "f82136a6cdedae37cd1d507717a085bd2f588ba86b36666f0b2a2281a18599c5"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -3688,7 +3705,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "17e8cdfdf6e84d3844b253e8d4db443885bc0ae4",
+    "source_base_commit": "8a6b377fd95ca56a1e6217ae3965baf86e831e50",
     "assignment": {
       "hypothesis": "The remaining neutral opener mismatch is an ungated Balance Starfall candidate: the pinned APL allows Starfall only under its known-aura and lunar-energy conditions, while the native profile row is legal at the fresh neutral state and wins bucketed arbitration once Starsurge is gated. A Balance-only Starfall neutral gate using the same no-Eclipse-aura and zero-POWER_ECLIPSE predicate should leave Moonfire as the first native action while preserving Starfall outside that state.",
       "owned_files": [
@@ -3746,6 +3763,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_implementation_20260920.json",
         "sha256": "3bcc0e799ea21b00bc5dc2e1403dcf6698ba4e3be2c7e2dd72f2fd2962689eeb"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_review_20260920.json",
+        "sha256": "f82136a6cdedae37cd1d507717a085bd2f588ba86b36666f0b2a2281a18599c5"
       }
     },
     "tested_files": {
