@@ -1,0 +1,71 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "b6699621e713bb681fbd89315b0160aa9bd40417237f9a451b50dfb9406bce0d",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_status_scope": {
+    "target": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_validation_20260920.tar.gz.dvc",
+    "local_status_exit": 0,
+    "cloud_status_exit": 0,
+    "full_workspace_status": "preexisting unrelated DVC drift was reported and left untouched"
+  },
+  "dvc_artifact": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_validation_20260920.tar.gz.dvc",
+      "sha256": "9306f8a19a0bb69fc6619b99f99276f00f8a513a4c3b0d6c1978d72dfbe967ad"
+    },
+    "output_md5": "f539bd79911a0057335b26fdaaff52f3",
+    "output_size": 2911733,
+    "output_sha256": "dc16f7b6f8206b3069e0b46dd0dfff7a118aa3f9e77e477aeb2608da44a90833",
+    "remote": "s3://artifacts/trinity-cata",
+    "push_result": "1 file pushed"
+  },
+  "remote_reconstruction": {
+    "method": "fresh dvc init --no-scm, copied repository remote credentials into ephemeral directory, dvc pull --force --no-run-cache",
+    "md5": "f539bd79911a0057335b26fdaaff52f3",
+    "sha256": "dc16f7b6f8206b3069e0b46dd0dfff7a118aa3f9e77e477aeb2608da44a90833",
+    "matched_local_output": true,
+    "credentials_printed": false
+  },
+  "eviction": {
+    "path": "/tmp/magmaw-balance-effective-stat-parity-20260920-r1",
+    "verified_absent": true,
+    "owned_server_stopped": true,
+    "owned_processes_remaining": false
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_assessment_20260920.json",
+      "sha256": "d811804628ec2b21b052685049afe99a62b1c16a1ac634ffbe571ad3357dce08"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_20260920.json",
+      "sha256": "db015adfbf52eac0baf38e8571ee5588de83aaa549a62671e7f971f7b194db2c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_run_evidence_20260920.json",
+      "sha256": "4e75546f22af08e2d4d2fbd42dda9f13aafe69632da69df47ffa4188b17819fd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_actor_30001_review_20260920.json",
+      "sha256": "19414436f35e65c14e5a8c65103eb5d55e23f88ac55a09559df3f13e3d879a00"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_validation_20260920.tar.gz.dvc",
+      "sha256": "9306f8a19a0bb69fc6619b99f99276f00f8a513a4c3b0d6c1978d72dfbe967ad"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_build_20260920.json",
+      "sha256": "4ae54420dcbad1404cf3a7ebb0d23e39164bd865ca701a1bb980337e58fa2cd1"
+    },
+    {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    }
+  ]
+}

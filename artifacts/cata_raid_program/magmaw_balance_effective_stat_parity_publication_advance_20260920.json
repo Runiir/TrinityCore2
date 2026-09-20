@@ -1,0 +1,10 @@
+{
+  "revision": 71,
+  "unit_id": "magmaw:balance_effective_stat_parity_01",
+  "action": "advance",
+  "claim_token": "b6699621e713bb681fbd89315b0160aa9bd40417237f9a451b50dfb9406bce0d",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_publication_20260920.json",
+    "sha256": "226fcdda54178afa7149c4f4bd5959aada070057303e51bba2ef020bb3f08167"
+  }
+}
