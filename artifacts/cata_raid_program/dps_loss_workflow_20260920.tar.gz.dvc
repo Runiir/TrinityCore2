@@ -1,0 +1,5 @@
+outs:
+- md5: 2ec383c2150a1b49344d91995314dca8
+  size: 42565
+  hash: md5
+  path: dps_loss_workflow_20260920.tar.gz

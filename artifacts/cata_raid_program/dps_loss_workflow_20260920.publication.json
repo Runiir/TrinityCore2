@@ -1,0 +1,20 @@
+{
+  "status": "remote_verified",
+  "verified_at": "2026-09-20T18:49:15.577399+00:00",
+  "source_commit": "9c2d22d685",
+  "workflow_commit": "3d18438dbe",
+  "pointer": "artifacts/cata_raid_program/dps_loss_workflow_20260920.tar.gz.dvc",
+  "md5": "2ec383c2150a1b49344d91995314dca8",
+  "size": 42565,
+  "verification": "Remote payload read and hash/size matched DVC pointer",
+  "dvc_push": "1 file pushed",
+  "dvc_status_before_eviction": "Data and pipelines are up to date",
+  "independent_review": "gpt-5.6-luna max approved after two documentation corrections",
+  "scope": "Workflow and saved resume route only; no gameplay build or live run",
+  "local_payload_evicted": true,
+  "local_cache_evicted": true,
+  "limits": [
+    "No performance recovery claimed",
+    "Post-eviction local DVC status can report not in cache; remote verified"
+  ]
+}
