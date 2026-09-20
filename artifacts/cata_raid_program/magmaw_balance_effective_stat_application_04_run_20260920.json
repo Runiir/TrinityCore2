@@ -1,0 +1,116 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "eee9f8c60370a53d4062b8906da67b7cf16a0c228cb3260c4ff025384f66248f",
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "b36ce7abb94849354b022c7560c8a784b45a86cc",
+    "binary_sha256": "74fa50b18004ba069fafc308f2b0b906fe25f52c6fb86dddeb3a893b9f3bcce4"
+  },
+  "source_commit": "b36ce7abb94849354b022c7560c8a784b45a86cc",
+  "attempt_id": 1,
+  "server_epoch": 1274734759496539,
+  "cohort_id": "default",
+  "target_guid": 1310,
+  "target_spec": "balance_druid",
+  "calibration_mode": "single_target_300",
+  "duration_policy": "fixed-window",
+  "observation_seconds": 30.008,
+  "terminal_reason": "interruption",
+  "native_terminal_reason": "combat_calibration_role_gate_failed",
+  "scenario_kind_runtime": "dummy",
+  "scoring_ms": 0,
+  "closed": true,
+  "cleanup_verified": true,
+  "cleanup_observation": {
+    "server_started": true,
+    "server_exited": true,
+    "server_exit_code": 0,
+    "cleanup_active": false,
+    "fixture_cleanup_submitted_or_absent": true,
+    "worldserver_shutdown_command": "server shutdown force 0"
+  },
+  "measurement_completed": false,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": false,
+  "comparison_rejections": [
+    "calibration_phase_incomplete",
+    "missing_scored_start",
+    "missing_scored_end",
+    "missing_target_window_metrics",
+    "scored_window_outside_tolerance",
+    "role_calibration:normalization_error:calibration_window_incomplete"
+  ],
+  "performance_accepted": false,
+  "training_eligible": false,
+  "runtime_asset_closure": {
+    "complete": true,
+    "scenario_map_id": 0,
+    "snapshot_sha256": "f7c77614f3019db1b8c490a14a7b25d4374c76e2135f8bcc3ab68c665a94fc56",
+    "manifest_sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c",
+    "source_checkout": "/home/runiir/Games/trinity-magmaw-parity",
+    "configured_data_dir": "/home/runiir/Games/trinity-cata/data",
+    "sealed_bundle": "/tmp/cata-magmaw-moonkin-probe.y4rfPA"
+  },
+  "native_observation": {
+    "spell_id": 24907,
+    "target_guid": 1310,
+    "owner_guid": 1310,
+    "handler_events": [
+      "apply=1 mode=1 spell_group=0 outcome=applied cast_speed_before=0.827578366 cast_speed_after=0.788169861",
+      "apply=1 mode=1 spell_group=5 outcome=exclusive_skip cast_speed_before=0.788169861 cast_speed_after=0.788169861",
+      "apply=0 mode=1 spell_group=5 outcome=exclusive_skip cast_speed_before=0.788169861 cast_speed_after=0.788169861",
+      "apply=0 mode=1 spell_group=0 outcome=applied cast_speed_before=0.788169861 cast_speed_after=0.827578306"
+    ],
+    "conclusion": "The owner handler executes on both application and removal, and the direct cast-speed value changes on the owner path. The short probe did not enter the scored window, so it cannot classify a later scoring-start reset or establish performance parity."
+  },
+  "report_summary": {
+    "report_sha256": "9d84d7a3b23c7d8e96fcbdd65cf5e9e8b3dd3fc49a2af8856af670dd5e944263",
+    "worldserver_output_sha256": "8ea6b4db82634476a24591c36f7c28470fca0a3cc3a9a2465e7eabdb7238a05b",
+    "config_sha256": "719d6107a8530bfbe0a3ef85912dd9de5cf5523e35b3296f61a7f1f58d08b027",
+    "runtime_assets_sha256": "54f30a6505c50f4ab65667f4bb1cabe2538e10d618e7dcc4d7e282a6d00ecfbd",
+    "generated_at_unix": 1789916116,
+    "controller_returncode": 0,
+    "timed_out": false,
+    "calibration_acceptance_passed": false,
+    "scored_window_seconds": 0.0
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_short_probe_20260920.tar.gz.dvc",
+      "sha256": "2bdbf217d06b1aaa999dac27b20205d0632212ee23c3cd73c6fa82dd9d308255"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_queued_build_20260920.json",
+      "sha256": "70c06f9cdd09eb7ed0bf67b04bc86f49ca6d689e2b2929cad411157bc752d858"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_implementation_20260920.json",
+      "sha256": "20d73d4b79e7f3bb6b61229d2fd7298df0d7b9d7c7542e96162481b15eeeb28f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_review_20260920.json",
+      "sha256": "61fe6841962d2151b1434bd2b25983a92aac897d14697eaad5d45ce2eb25935d"
+    }
+  ]
+}

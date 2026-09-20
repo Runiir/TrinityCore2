@@ -1,0 +1,10 @@
+{
+  "revision": 137,
+  "unit_id": "magmaw:balance_effective_stat_application_04",
+  "action": "advance",
+  "claim_token": "eee9f8c60370a53d4062b8906da67b7cf16a0c228cb3260c4ff025384f66248f",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_effective_stat_application_04_run_20260920.json",
+    "sha256": "62ab4de3c590a0282269beb13353b6f08b9453dac2dcfa2bdc9168cc130f69f5"
+  }
+}
