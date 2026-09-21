@@ -1,0 +1,15 @@
+{
+  "schema": "magmaw_blood_tank_threat_floor_03_baseline_v1",
+  "kind": "baseline",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "historical_run": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+    "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+  },
+  "matched_to_current_build": false,
+  "matched_to_current_reference_conditions": false,
+  "eligible_for_performance_acceptance": false,
+  "reason": "The retained clean Blood window is an earlier build and used a six-target tank fixture against a single-target reference; it is diagnostic context only and cannot be a matched performance denominator."
+}
