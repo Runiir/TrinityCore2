@@ -81,6 +81,10 @@ def task_view(root):
         benchmark = build_spec_work_unit(spec, root)['benchmark']
         refs = benchmark.get('rotation_review_reference_artifacts') or {}
         policy = benchmark.get('accepted_dps_reference_class')
+        result['reference_catalog'] = {'root': str(root), 'state': benchmark.get('state'),
+            'accepted_dps': benchmark.get('accepted_dps'), 'reference_class': policy,
+            'generation_receipt': refs.get('generation_receipt'),
+            'authority': 'Current promoted catalog projection in the requested root, not embedded run DPS.'}
         if benchmark.get('state') != 'ready' or policy is None:
             raise ValueError('promoted reference is not ready: ' + str(benchmark.get('state')))
         paths = {k: str(root / refs[k]) for k in ('raid_sim_request', 'raid_sim_result', 'compute_stats') if refs.get(k)}

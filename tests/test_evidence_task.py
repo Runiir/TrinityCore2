@@ -62,6 +62,8 @@ def test_saved_task_binds_actual_actor_promoted_reference_and_preserves_parent(t
     result = task_view(tmp_path)
     assert 'missing' not in result
     assert result['retained_run']['actor'] == '42'
+    assert result['reference_catalog']['root'] == str(tmp_path)
+    assert result['reference_catalog']['state'] == 'ready'
     assert '--actor 42' in result['commands'][0]['command']
     assert 'admission ' in result['commands'][0]['command']
     assert result['claim'] == graph['claim'] and result['unit'] == graph['unit']
