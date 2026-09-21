@@ -1,0 +1,26 @@
+{
+  "schema": "bot_advice_publication_v1",
+  "pointer": "artifacts/cata_raid_program/bot_improvement_advice_validation_20260921.tar.gz.dvc",
+  "md5": "c462162238ae91b0c816029836a35e30",
+  "sha256": "9c31775a846624614ad21900b2c7f8048a5e26662e1b469cb0c343bceffc1338",
+  "bytes": 20755,
+  "remote_verified": true,
+  "verification": "direct remote object read bypassing local cache",
+  "payload_evicted": true,
+  "tests_passed": 104,
+  "model_results": "Synthetic exact-choice agreement4/7 each; hosted Blood suggestion useful for setup inspection, local priority suggestion discarded. No acceptance or training promotion.",
+  "local_cache_evicted": true,
+  "final_code_commit": "fff8730f10",
+  "final_tests_passed": 105,
+  "independent_review": {
+    "reviewer": "gpt-5.6-luna max /root/bot_advice_review",
+    "reviewed_commit": "f486f3a20c330c16678d7703d63a7fdde51fdc54",
+    "verdict": "Optionality and gate semantics sound; two projection findings reported.",
+    "resolution": [
+      "Absent activity now null with regression assertion.",
+      "Other-component count was correct per individual packet; renamed components_outside_this_packet and added top=2 regression assertion."
+    ],
+    "final_edits_verification": "105 focused tests pass; no second independent model review claimed."
+  },
+  "historical_evaluation_note": "Archive retains initial fixtures and corrected v2. Use v2 digest e61a648cfb36cb8c401f0d5bee0f210b4d7dbbfaa391dd13318cc335741f8be9 for current labels."
+}
