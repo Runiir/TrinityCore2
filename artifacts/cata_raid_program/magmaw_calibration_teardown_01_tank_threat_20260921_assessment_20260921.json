@@ -8,7 +8,7 @@
   "attempt_id": 1,
   "baseline": {
     "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
-    "sha256": "92b7983cb55b25f4ae73815a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
+    "sha256": "92b7983cb55b25f4ae738a15a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
   },
   "comparison": {
     "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
