@@ -1,0 +1,91 @@
+{
+  "schema": "raid_development_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_plan_20260921/checkpoint.json",
+      "sha256": "b5ce893ed7698f468c79cc2293d4af34e828ffec7be065f1eb68d418d4fafe8f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_plan_20260921_review/summary.json",
+      "sha256": "bc1ae51297f127ae1d1da9d2d344a14c5d5762a8499715f69af969f6ed334e8f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_route_to_blood_tank_priority_20260921.json",
+      "sha256": "ce78276ec80b3ce5dd09ec36a5c9fbd4a77c6b05b26f5b0fe136559b2e57d006"
+    },
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "5d6bb7d03303e9b6edf1765844909cce6f2d4a7c1ca72ea952ed0896de978417"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "supported_scope_and_evidence_insufficient_for_acceptance",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_plan_20260921_review/summary.json",
+        "sha256": "bc1ae51297f127ae1d1da9d2d344a14c5d5762a8499715f69af969f6ed334e8f"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "not_reviewed_due_to_local_context_budget",
+      "reason": "The local advisory backend rejected the packet with context_budget_exceeded; its deterministic review still passed and no local model claim is used."
+    }
+  },
+  "hypothesis": "The first broken Blood tank edge is the loaded profile ordering: valid Death Strike 49998 is discarded by priority_bucket 2 before its higher native score is compared with Heart Strike 55050 in bucket 1. The existing forward migration should repair ordering only; native rune gates must continue to suppress Death Strike when fewer than two compatible runes are ready.",
+  "owned_files": [
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+    "tests/test_blood_death_strike_priority.py"
+  ],
+  "forbidden_changes": [
+    "No second Blood priority change or edits to Death Strike/Heart Strike scores, legality gates, costs, coefficients, targets, geometry, presence, or encounter routing.",
+    "No IBF trash-readiness repair, movement repair, or encounter-script change in this unit.",
+    "No actor, performance, raid-clear, or parent-objective acceptance from the retained d495 clear or a role harness alone.",
+    "Keep Balance accounting and every other actor, comparison, potion, survival-reference, and Magmaw 10N requirement open."
+  ],
+  "acceptance_conditions": [
+    "The focused SQL replay is idempotent and changes only the Blood tank Death Strike bucket, profile version and provenance fields; Heart Strike and unrelated profiles remain unchanged.",
+    "The native comparator fixture selects the higher-scored valid Death Strike after both actions share bucket 1 and selects Heart Strike when Death Strike is omitted by the native ready-rune gate.",
+    "One tank_threat_300 role-harness run is closed and cleaned with exact roster/profile/reference/reset identity and role metrics for threat retention, mitigation, healer exposure, interrupts and survival; any result remains diagnostic until separately assessed.",
+    "Independent review, serialized build and one matched validation run are required before a repair outcome can be considered, and no actor_30002 or raid requirement is accepted unless its complete acceptance contract is met."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py"
+  ],
+  "base_commit": "2f2f9e5cc38d7727b6f64b190dc17c559b8f2104",
+  "policy": {
+    "path": "experiments/configs/all_spec_role_calibration_policy_v2.json",
+    "sha256": "8c2c037b1ce007ddcc79790eb19517ff9f7b599c469a1477c4cd0682de7db446"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  }
+}

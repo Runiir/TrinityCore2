@@ -1,0 +1,58 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "7d6534921994c6953a3468e7ae96fa57aa28809482bc0bbc13e333e418aa705e",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_checks": {
+    "pointer": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_calibration_20260921.tar.gz.dvc",
+      "sha256": "c5202cc38c96bdd2211dadd74d60f9e42ee9d278e6affb84e4297096a2e6ecf8"
+    },
+    "remote_status": "target pointer pushed; unrelated pre-existing workspace DVC changes preserved",
+    "archive_sha256": "0e337846fc29e734029fb481fcef54691be14bc854c330ece674b44c3bb6749a",
+    "reconstructed_tar_sha256": "0e337846fc29e734029fb481fcef54691be14bc854c330ece674b44c3bb6749a",
+    "reconstructed_size_bytes": 2386058,
+    "reconstructed_payload_verified": true,
+    "raw_tar_local_present": false,
+    "exact_duplicate_payloads_evicted": true,
+    "cleanup_note": "The active-tree raw archive was moved to recoverable trash after DVC remote verification; the isolated remote-verification copy was moved to /tmp/magmaw-evidence-trash-20260921-remote-verify."
+  },
+  "outcomes": {
+    "repair_accepted": true,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "actor_30001_requirement_accepted": false
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_run_v3_20260921.json",
+      "sha256": "3de24b686c0571eb810c96c1a5435eca1eec34e1b30c16f1b75ba0d79962dc3a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_assessment_v3_20260921.json",
+      "sha256": "2ebde8a9891cbe1803d0035f0c8cb0200afd4412f79a8abd4fa3e14ebe3def90"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_actor_30001_review_v3_20260921.json",
+      "sha256": "e1fda728d447f08bbd70edf9db5a4aaddb2be1f09411c13417cc948f80f9044a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_calibration_20260921.tar.gz.dvc",
+      "sha256": "c5202cc38c96bdd2211dadd74d60f9e42ee9d278e6affb84e4297096a2e6ecf8"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_build_v3_result_20260921.json",
+      "sha256": "0957b804aca7eeac6f46169aaca3205e95de021b5c94e64a0ed9e3f3cf58c0c7"
+    },
+    {
+      "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+      "sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf"
+    }
+  ],
+  "interpretation": "The exact-300 Balance observer evidence is closed, DVC-pushed, remotely reconstructed byte-for-byte, and cleaned from the active tree. It supports the observation-only Dragonwrath accounting repair, not actor performance, a raid clear, or parent-objective completion."
+}

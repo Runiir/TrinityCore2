@@ -1,0 +1,10 @@
+{
+  "action": "advance",
+  "revision": 234,
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "claim_token": "e9990e634421613aa1c8e55f7bc626528b205a34dfc94e4666c35171746e40bd",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_tests_20260921.json",
+    "sha256": "348554d757c5e3e6405f5178537c292a088467f97f2957a409c1a6b6a871bf1e"
+  }
+}

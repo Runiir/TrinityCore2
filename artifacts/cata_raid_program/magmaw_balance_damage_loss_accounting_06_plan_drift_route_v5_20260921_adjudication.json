@@ -1,0 +1,43 @@
+{
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:balance_damage_loss_accounting_06_plan_drift_route_v5_20260921",
+  "verdict": "aligned",
+  "coordinator": "coordinator",
+  "model_review": {
+    "checkpoint_sha256": "000ad495a85393e49ec4e467b68992ca3069a1973db40c53b49926b0966686a9",
+    "review_summary": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_route_v5_20260921_review/summary.json",
+      "sha256": "c664f4aa05ac0bed0a541a4c65168f512ab58bf141de338695ec17a396bf8ec8"
+    },
+    "local_laya": {
+      "status": "advisory",
+      "scope_fit": "supported",
+      "evidence_support": "insufficient_evidence",
+      "acceptance_claim": "supported",
+      "note": "Low-confidence advisory; retained as non-authoritative."
+    },
+    "hosted_jev": {
+      "status": "advisory",
+      "scope_fit": "supported",
+      "evidence_support": "supported",
+      "acceptance_claim": "insufficient_evidence",
+      "note": "Supports the route and evidence; correctly treats the routing claim as non-acceptance."
+    }
+  },
+  "coordinator_basis": [
+    "TANK-001 is a retained production-backed open edge with event-local priority evidence.",
+    "The route advances actor_30002 without closing Balance, the Dragonwrath residual, or any comparison/raid requirement.",
+    "The proposed unit is bounded to Death Strike versus Heart Strike priority and preserves rune legality and the Heart Strike fallback.",
+    "No source change, live run, actor performance, raid clear, or parent completion is claimed by this route."
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_route_v5_20260921/checkpoint.json",
+      "sha256": "000ad495a85393e49ec4e467b68992ca3069a1973db40c53b49926b0966686a9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_route_v5_20260921_review/examples.jsonl",
+      "sha256": "9af217c5e20fb110109b4d6cfa5ce45c2deee42dab19a2781be3d0e72f893e0c"
+    }
+  ]
+}

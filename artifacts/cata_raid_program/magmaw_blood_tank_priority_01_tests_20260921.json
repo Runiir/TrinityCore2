@@ -1,0 +1,63 @@
+{
+  "schema": "raid_development_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e9990e634421613aa1c8e55f7bc626528b205a34dfc94e4666c35171746e40bd",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_result_20260921/checkpoint.json",
+      "sha256": "68a3a2c2be26211d21685e3e376ca0f0c4b58f552f4b64a6fa7dd8968da00cb3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_result_20260921_review/summary.json",
+      "sha256": "afbf2f4c3bdf1490ec3c56fca77bd27ed50de3b3adb023d176b12f3fecc0fe6f"
+    },
+    {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    },
+    {
+      "path": "tests/test_blood_death_strike_priority.py",
+      "sha256": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "bounded_test_result_supported_live_and_acceptance_pending",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_result_20260921_review/summary.json",
+        "sha256": "afbf2f4c3bdf1490ec3c56fca77bd27ed50de3b3adb023d176b12f3fecc0fe6f"
+      }
+    },
+    "laya": {
+      "status": "reviewed",
+      "adjudication": "bounded_test_result_supported_live_and_acceptance_pending",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_result_20260921_review/summary.json",
+        "sha256": "afbf2f4c3bdf1490ec3c56fca77bd27ed50de3b3adb023d176b12f3fecc0fe6f"
+      }
+    }
+  },
+  "producer_role": "coordinator_implementation_session",
+  "source_commit": "0b926147db269591a320f8c17d847741c6d88fc3",
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.55s"
+    }
+  ],
+  "implementation": {
+    "source_changed": false,
+    "existing_commit": "a283a51228",
+    "change_summary": "Existing scoped forward migration moves Blood Death Strike 49998 from priority bucket 2 to 1 and preserves native rune legality and Heart Strike fallback."
+  },
+  "claim_scope": "Deterministic SQL replay and native comparator fixture only. No native build, live runtime, actor acceptance, performance acceptance, raid clear, or parent completion is claimed."
+}

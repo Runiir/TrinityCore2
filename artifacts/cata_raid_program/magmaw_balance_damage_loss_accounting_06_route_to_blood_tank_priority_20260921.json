@@ -1,0 +1,30 @@
+{
+  "action": "route",
+  "revision": 231,
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "producer": "coordinator",
+  "reason": "The Balance Dragonwrath observer repair is published as observation-only. Actor performance and raid completion remain open. Plan-drift review confirms that the next lawful proven edge is TANK-001: diagnose the retained Blood Death Strike versus Heart Strike event-local priority inversion without reopening Balance arithmetic or dropping any requirement.",
+  "coordinator_verdict": "aligned",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_route_v5_20260921_adjudication.json",
+    "sha256": "69572d43f48749fa2d07be593a856007d90adf24740406deb1fcb8ae21687618"
+  },
+  "unit": {
+    "id": "magmaw:blood_tank_priority_01",
+    "edge": "owner_blood_priority_inversion",
+    "owner_skill": "raid-role-implementation",
+    "requirements": ["actor_30002"],
+    "next_action": "Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+    "objective": "Close the actor_30002 Blood tank behavior gap lawfully while preserving tank survival, threat, rune legality, the Balance accounting residual, all other actor requirements and the Magmaw 10N raid gate."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_publication_v3_20260921.json",
+      "sha256": "7aac5641b64112374a679092fc88afd741eb121389ed8831e985af5d01cbb365"
+    },
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "5d6bb7d03303e9b6edf1765844909cce6f2d4a7c1ca72ea952ed0896de978417"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "task_id": "magmaw:blood_tank_priority_01_plan_20260921",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "changed_files_source": "coordinator_observed",
+  "changed_files": [],
+  "objective": "Verify the committed Blood Death Strike priority repair against the actor_30002 tank-role contract without changing native legality, rune behavior, or other Magmaw requirements.",
+  "first_broken_edge": "owner_blood_priority_inversion",
+  "allowed_files": [
+    "../../../sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+    "../../../tests/test_blood_death_strike_priority.py"
+  ],
+  "forbidden_changes": [
+    "Do not add a second Blood priority change or alter Death Strike/Heart Strike scores, gates, costs, coefficients, targets, geometry, presence, or encounter routing.",
+    "Do not spend the separate IBF trash-readiness edge in this unit.",
+    "Do not accept actor_30002, any other actor, performance, or Magmaw 10N from the retained d495 clear or a role harness alone.",
+    "Do not close Balance accounting, Dragonwrath attribution, comparison, potion, survival-reference, or raid requirements."
+  ],
+  "acceptance_conditions": [
+    "Focused SQL replay remains idempotent and changes only Blood tank Death Strike priority_bucket from 2 to 1 while preserving Heart Strike and all unrelated profiles.",
+    "Native comparator evidence shows valid higher-scored Death Strike wins in the shared bucket, while Heart Strike remains the selected legal fallback when Death Strike fails its rune gate.",
+    "One exact tank_threat_300 role-harness window binds the committed profile, roster, reference, reset, threat retention, mitigation, healer exposure, interrupts, and survival evidence; no raid-clear or actor-performance acceptance is inferred.",
+    "If the committed repair is still the first broken edge, obtain separate review, build and validation receipts. If the edge is disproved, quarantine the repair and route the next causal edge instead of tuning another field."
+  ],
+  "observations": [
+    "Graph revision 232 is at diagnose for magmaw:blood_tank_priority_01; parent_objective_complete is false and every actor and encounter requirement remains open.",
+    "The retained d495 review proves 15 accepted Heart Strike selections while Death Strike was valid and higher-scored, including valid-valid selections at 70.84%, 75.85% and 63.33% health. Loaded Blood profile rows had Death Strike 49998 in bucket 2 and Heart Strike 55050 in bucket 1.",
+    "The same retained evidence proves the one-rune control keeps Death Strike invalid with ready_rune_gate and selects Heart Strike, so the repair must preserve native rune legality.",
+    "The committed migration 2026_09_19_04_bot_blood_death_strike_priority.sql already implements only the bucket change and profile provenance update. Its focused test is committed from a283a51228 and has not yet been live-verified for this saved graph unit.",
+    "The retained raid clear kept the Blood tank alive, but it cannot quantify the counterfactual Death Strike heal, threat, rune flow, or performance effect."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "active_graph",
+      "path": "../../../experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "3138a043aa3c946251d77c33372528f19633b5a46c79fa342b83cd75bd62f35d",
+      "excerpt": "Revision 232 is at diagnose for the bounded Blood tank priority unit; all requirements remain open."
+    },
+    {
+      "id": "tank_ledger",
+      "path": "../../../docs/bot_raids/error_ledger.md",
+      "sha256": "5d6bb7d03303e9b6edf1765844909cce6f2d4a7c1ca72ea952ed0896de978417",
+      "excerpt": "TANK-001 records the Death Strike bucket2 versus Heart Strike bucket1 inversion and requires preserving the Heart Strike fallback."
+    },
+    {
+      "id": "migration",
+      "path": "../../../sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+      "excerpt": "The forward migration changes only Blood tank Death Strike 49998 from bucket2 to bucket1 and updates profile provenance."
+    },
+    {
+      "id": "focused_test",
+      "path": "../../../tests/test_blood_death_strike_priority.py",
+      "sha256": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434",
+      "excerpt": "The focused test checks idempotent scoped SQL replay, native float comparator ordering, and the one-rune Heart Strike fallback."
+    },
+    {
+      "id": "role_reference",
+      "path": "../../../experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0",
+      "excerpt": "Blood tank reference metrics are DPS 32489.03862, TPS 176564.60085 and HPS 19418.12351; they are simulator comparators, not raid acceptance."
+    }
+  ],
+  "proposed_change": "Bind the existing Blood priority migration and focused test to a tank_threat_300 role-harness work unit, then continue through the separate review, native build, and one matched validation window.",
+  "acceptance_claim": "This checkpoint claims only that the bounded verification plan is aligned. It claims no new source change, actor acceptance, performance acceptance, raid clear, or parent completion.",
+  "tests": [],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py"
+  ],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL with exact WoWSims diagnosis.",
+    "latest_user_direction": "Implement magmaw 10n bots through the saved implementation, review, build, validation and publication gates.",
+    "current_plan": "Verify the already committed Blood priority repair, then continue the saved scenario through remaining actor and raid requirements without relabeling diagnostic evidence as acceptance.",
+    "remaining_requirements": "actor_30001,actor_30002,actor_30003,actor_30004,actor_30005,actor_30006,actor_30007,actor_30008,actor_30009,actor_30010,affliction_comparison,elemental_comparison,potion_ownership,survival_reference,magmaw_10n"
+  }
+}
