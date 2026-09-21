@@ -1,0 +1,24 @@
+{
+  "revision": 275,
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "action": "route",
+  "reason": "The exact Blood run is contaminated by six post-window callbacks and does not prove final active=false with zero leases. The independent runtime review identifies shared calibration teardown as the smallest dependency. Route it before recapturing Blood with the SQL unchanged.",
+  "causal_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_rotation_review_20260921.json",
+    "sha256": "6294601fe1bb5441ea2754d279ca71d28cc1b114d10b8ef2c26463481eb2d257"
+  },
+  "unit": {
+    "id": "magmaw:calibration_teardown_contamination_01",
+    "edge": "owner_calibration_post_window_contamination",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "requirements": [
+      "actor_30002"
+    ],
+    "objective": "Close the shared calibration teardown and closure-proof gap so Blood tank validation has no post-window owner callbacks and proves controller quiescence.",
+    "next_action": "Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
+    "continuation": {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
+      "sha256": "92b7983cb55b25f4ae738a15a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:calibration_teardown_contamination_01_plan_drift_20260921",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "verdict": "aligned",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_checkpoint_20260921.json",
+    "sha256": "8354fed44006ed9beccaf29a026594f346a62635de85470ed9aae9ddfa31b715"
+  },
+  "model_reviews": {
+    "hosted_jev": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_review_20260921_v2/summary.json",
+        "sha256": "638f4f5b22b97e090b70502c89b4af5668e61e6216ac3bf1019ee1ed3fc3a863"
+      },
+      "scope_fit": "supported",
+      "evidence_support": "supported",
+      "acceptance_claim": "insufficient_evidence",
+      "status": "advisory"
+    },
+    "local_laya": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_review_20260921_v3/summary.json",
+        "sha256": "21a7fa33bb9b74a23746cfd0290c5838303dc768649c35cc0f0f72c645c9071b"
+      },
+      "status": "not_reviewed",
+      "reason": "The original packet and one compact correction both received local HTTP 422 context_budget_exceeded; deterministic checks passed and the rejected receipts are retained."
+    }
+  },
+  "deterministic_review": {
+    "status": "pass",
+    "summary_path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_review_20260921_v2/summary.json",
+    "summary_sha256": "638f4f5b22b97e090b70502c89b4af5668e61e6216ac3bf1019ee1ed3fc3a863"
+  },
+  "coordinator_reasoning": "The route is aligned with the parent objective. The contaminated Blood run identifies shared calibration teardown and closure proof as the smallest dependency for an attributable recapture. The runtime unit preserves the Blood SQL, leaves every other actor and comparison requirement open, and claims no native, live, actor, performance, raid-clear, or parent acceptance.",
+  "next_correction": "Route the shared runtime unit, inspect the native stop and callback ordering, add focused teardown coverage, and recapture Blood tank_threat_300 only after closure is observable."
+}
