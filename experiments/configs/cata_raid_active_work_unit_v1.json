@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 280,
+    "revision": 281,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -5467,6 +5467,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 280,
+        "unit_id": "magmaw:calibration_teardown_contamination_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 280,
+          "unit_id": "magmaw:calibration_teardown_contamination_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_plan_20260921.json",
+            "sha256": "56c67ded7f4f2d54eff970d3fd3d3c4936bc0bce47ffb6a3a05472d7aff50b36"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5485,7 +5502,77 @@
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_support_refresh_20260921.json",
         "sha256": "deaf2d967700a238d6b7bbdffada07fb71bf5a91c4f81bd63a597b574bd1e5ef"
       }
-    ]
+    ],
+    "assignment": {
+      "hypothesis": "The first repair used cohort flags alone at shared boundaries. Calibration clone identity is already carried by WorldBotState::SpawnSource, and stop can retain the clone GUIDs before clearing Party().CalibrationBots. Gate terminal melee suppression on the explicit combat_calibration spawn source, retain stopping clone GUIDs through removal, and fail closed only for those clone-owned damage callbacks. Keep player AttackStop and the completed-window contamination guard. Compile a small lifecycle predicate fixture with positive clone and negative ordinary cases so the ordinary resolver path is exercised at the same identity boundary.",
+      "owned_files": [
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp",
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+        "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+        "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+        "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+        "src/server/game/Bots/BotWorldPopulationMgrCalibrationLifecycle.h",
+        "tests/test_bot_world_population_mgr_calibration_bot_module.py",
+        "tests/test_bot_world_population_mgr_calibration_control_module.py",
+        "tests/test_bot_world_population_mgr_calibration_damage_module.py",
+        "tests/test_bot_world_population_mgr_combat_notifications_module.py",
+        "tests/test_bot_world_population_mgr_combat_movement_module.py",
+        "tests/test_bot_world_population_mgr_runtime_contracts_header.py"
+      ],
+      "forbidden_changes": [
+        "Do not change Blood SQL or policy, class coefficients, rotations, simulator references, encounter scripts, route mechanics, or calibration thresholds.",
+        "Do not remove completed-window contamination counters or logs, and do not make ordinary callers consume calibration flags.",
+        "Do not change leases, pool ownership, server shutdown, or live shard control beyond retaining clone identity through existing native teardown.",
+        "Do not claim actor, performance, raid-clear, or parent completion."
+      ],
+      "acceptance_conditions": [
+        "Only a state with explicit combat_calibration identity is terminally suppressed by the shared melee resolver; an ordinary state remains eligible even when calibration flags are stale or mixed.",
+        "StopCombatCalibration records clone GUID identity before clearing the party and retains it until clone removal and callback quiescence complete; damage filtering uses that identity, not a global stopping flag.",
+        "Player AttackStop remains in the completed-window drain and the existing completed-window contamination branch remains observable.",
+        "Required focused tests, independent re-review, native build, exact tank_threat_300 recapture, cleanup closure, and DVC publication remain mandatory."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_control_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_bot_world_population_mgr_runtime_contracts_header.py"
+      ],
+      "base_commit": "ab51b3ecf5f84492f089915eb95a77da96fad47b",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+      },
+      "validation_identity": {
+        "scenario_kind": "dummy",
+        "mode": "tank_threat_300",
+        "actor_id": "30002",
+        "spec": "blood_death_knight",
+        "reference": {
+          "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+          "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_roster_25_v1.json",
+          "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+        },
+        "runtime_profile": {
+          "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+          "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+        },
+        "target_catalog": {
+          "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+          "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+        },
+        "profile_migration": {
+          "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+          "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+        }
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_plan_20260921.json",
+        "sha256": "56c67ded7f4f2d54eff970d3fd3d3c4936bc0bce47ffb6a3a05472d7aff50b36"
+      }
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
