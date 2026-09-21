@@ -69,13 +69,14 @@ def run_build(root: Path) -> dict:
 
 def preflight(root: Path, assignment: dict) -> dict:
     """Run before a build claim; launch repeats checks against the final inputs."""
-    file_ref(root, assignment.get("policy"))
+    # Reject role/evidence policies here, before tests, review or a build claim.
+    commands = build_commands(read(file_ref(root, assignment.get("policy"))))
     identity = assignment["validation_identity"]
     for name in ("roster", "runtime_profile"):
         file_ref(root, identity.get(name))
     kind = identity.get("scenario_kind")
     result = {"schema": "raid_workflow_build_preflight_v1", "scenario_kind": kind,
-              "validation_identity": identity}
+              "validation_identity": identity, "commands": commands}
     if kind == "dummy":
         file_ref(root, identity.get("reference"))
         if root.resolve() != ROOT:

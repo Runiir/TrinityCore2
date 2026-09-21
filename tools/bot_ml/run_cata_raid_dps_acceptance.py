@@ -1276,8 +1276,8 @@ def write_campaign_state(
             )
             or ""
         ).lower(),
-        "hard_reference_ratio": 0.75,
-        "optimization_reference_ratio": 0.85,
+        "hard_reference_ratio": float(_load(policy_path)["hard_reference_ratio"]),
+        "optimization_reference_ratio": float(_load(policy_path)["optimization_reference_ratio"]),
         **fixture_provenance(),
         "reference_condition_preflight_compatible": (
             plan.get("reference_condition_preflight_compatible") is True
@@ -1635,7 +1635,7 @@ def verify_campaign_state(
                 and evaluation.get("passed") is True
                 and evaluation.get("hard_floor_passed") is True
                 and evaluation.get("optimization_target_met") is True
-                and float(evaluation.get("reference_ratio") or 0.0) >= 0.85
+                and float(evaluation.get("reference_ratio") or 0.0) >= max(0.95, float(_load(policy_path)["optimization_reference_ratio"]))
                 and compatibility.get("conditions_compatible") is True
                 and not compatibility.get("reasons")
                 and canonical_sha256(compatibility)
@@ -1698,8 +1698,8 @@ def verify_campaign_state(
         "verified_physical_try_count": verified_physical_tries,
         "expected_attempt_count": 16,
         "target_count": 16,
-        "hard_reference_ratio": 0.75,
-        "optimization_reference_ratio": 0.85,
+        "hard_reference_ratio": float(_load(policy_path)["hard_reference_ratio"]),
+        "optimization_reference_ratio": float(_load(policy_path)["optimization_reference_ratio"]),
         **fixture_provenance(),
         "git_head": expected_git_head,
         "profile_generation": expected_profile_generation,
@@ -1854,8 +1854,8 @@ def run_campaign(args: argparse.Namespace) -> int:
         "git_head": git_head(REPO_ROOT),
         "target_count": len(targets),
         "attempt_count": len(attempts),
-        "hard_reference_ratio": 0.75,
-        "optimization_reference_ratio": 0.85,
+        "hard_reference_ratio": float(_load(policy_path)["hard_reference_ratio"]),
+        "optimization_reference_ratio": float(_load(policy_path)["optimization_reference_ratio"]),
         "qualification_mode": qualification_mode,
         "qualification_seed": qualification_seed,
         "max_tries_per_dps_spec": max_tries,

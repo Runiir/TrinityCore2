@@ -1,0 +1,23 @@
+{
+  "schema": "raid_workflow_support_refresh_v1",
+  "reason": "User stopped the native agent for reviewed workflow repair and requires 95% DPS. No native change or performance acceptance.",
+  "prior_commit": "440fa512d70b3ac3f01f74de252e09d73f8d2a18",
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/workflow_gate_review_20260921.receipt.json",
+    "sha256": "8a2e6932b4512cc7c24531fa85af359666b2badffd097afa22ca0025ac6d0d8d"
+  },
+  "owned_file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "prior_operation": {
+    "ownership_checked": true,
+    "active_operation": false,
+    "operation_id": "8d268a38b6f6a9a42520ca436c247458c48706a59efa1f277aa9e10bfac31ded",
+    "completed_operation": true,
+    "completed_work": "Required Blood SQL tests completed: 2 passed in 0.56s. No graph tests receipt was recorded before the user paused the agent.",
+    "source_session": "01a0c2d0-a6e2-7732-8859-286e78fb5ad0",
+    "user_authority": "User stated the agent was stopped before authorizing this workflow repair.",
+    "reuse_disposition": "Native files preserved; tests must be re-executed on the reviewed workflow source before advancing."
+  }
+}

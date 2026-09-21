@@ -1,0 +1,44 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/workflow_gate_review_20260921.json",
+      "sha256": "604c802c93c7ad8166b9cb7e205ab3f8465569e677ea317aa540eb8eb603ceb0"
+    }
+  ],
+  "file_hashes": {
+    "experiments/configs/all_spec_role_calibration_policy_v3.json": "8732262ae5bc249656138071fe1d9f76af347df5e6738d01fec21d866e04b1ff",
+    "experiments/configs/cata_raid_dps_acceptance_v1.json": "48f42caf5c7c819feb5578e2e30e4a68582dce112a6e27716d94deb7b999a02d",
+    "tests/test_calibration_completion.py": "cff2a2a3331bd64cd0c77e4be948c5171a23ef63536a17c13985238757791b3c",
+    "tests/test_cata_raid_dps_acceptance.py": "fd87ddbe61dba707a3e253123a62020f5423d88615797688b5bc9417d6a62407",
+    "tests/test_development_graph.py": "37c4fc916b715aeacb20c7674a885a96216a3150b2bea3b3a22e97860630f93a",
+    "tests/test_dps_gate.py": "103d2a60f91685a74a9d0695e0f5da026ea902eae72947d12c721085777dad81",
+    "tests/test_raw_evidence_binding.py": "42912898659a3d5971b1c142c354ccd3092e79db51ff8c0a2d126bff5a92f4ff",
+    "tests/test_review_execution.py": "420c5ec74d37fa41eb7146af37cf6c5d7e920455edde40615a338034f19ed59c",
+    "tests/test_workflow_build_role_preflight.py": "fa763e17df6232104070167f43932ced3eea090897d2469f66daab00e1553239",
+    "tests/test_workflow_step.py": "f1d70b32c39979751613c0e6063e6513fcf1af1da29bde2439f3ed08b1b14514",
+    "tools/bot_ml/calibration_completion.py": "64345d334e9c006164c6a1979c8ad0b7202352af2ba8e6a7026a94d3ecce4b99",
+    "tools/bot_ml/phase8_calibration_adapter.py": "c83b35b2bc67784f2a60e39725b14a2f146ed736aa27c78225fa32a0bcde1f45",
+    "tools/bot_ml/raw_evidence_binding.py": "ecd687b06da1a6ed095fa65435b285e1a9bdbccd142c2dbe9d271386ae58d28c",
+    "tools/bot_ml/role_calibration_harness.py": "c0ab697688cc7abc96669fccbbe13cbb75f37a0c506804000e1f3cf42963a61f",
+    "tools/bot_ml/run_cata_raid_dps_acceptance.py": "f756c9afe4da5789d09c26e2f7256a6a7ddeec89534d546c794a71b0988ed4a9",
+    "tools/bot_ml/run_live_bot_validation.py": "9178b987938f72c743a607510867aa48dc2098a273dfa0a85faa482cc468627f",
+    "tools/bot_ml/verify_cata_raid_dps_acceptance.py": "09bd0b469aa1adf6abbb34618ffe022731aeeae979447c0d01e197079855b5e6",
+    "tools/raid_program/development_graph.py": "aec4f3f00fa736cbb7c9de3d2ac54c4594ebaf5d62483f9d47088a914f08e7c7",
+    "tools/raid_program/dps_gate.py": "3734344dbb7431ac8aba70b6d3779cb9709cbe6bd32bb93645359b373502d1bc",
+    "tools/raid_program/review_execution.py": "8aa0001c13b72e8366e2fd271269139d0b2bd23af5bc22721ed40090b17d4172",
+    "tools/raid_program/run_dummy_calibrations.py": "6a1e96a14d79e3aa33287c0103fcceb26bed54599964a545db5496e31eea4868",
+    "tools/raid_program/scenario_bootstrap.py": "5901a69fcfb3c2e80bcef442ea82c2f0ba3a82494b7bc19014e10c010702985e",
+    "tools/raid_program/workflow_build.py": "f0a6e2aac5c8e78681c3001b8710ab846192e28b963386d3d991c9a80dddfe90",
+    "tools/raid_program/workflow_step.py": "958a2e81e3372106c5869f0d5867dcbb6ac44768f478735f12ef9370f0438a66"
+  },
+  "kind": "review",
+  "producer": "01a0c351-2010-72f1-ae41-4ebb336ad1c6",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/workflow_gate_review_20260921.json",
+    "sha256": "604c802c93c7ad8166b9cb7e205ab3f8465569e677ea317aa540eb8eb603ceb0"
+  },
+  "reviewer_session_id": "01a0c351-2010-72f1-ae41-4ebb336ad1c6",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "verdict": "approved"
+}

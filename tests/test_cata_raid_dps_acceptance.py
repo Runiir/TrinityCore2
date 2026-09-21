@@ -265,7 +265,7 @@ def _qualification_failure(physical: dict[str, object]) -> dict[str, object]:
     return row
 
 
-def test_current_25h_dps_contract_has_exact_75_85_gates(
+def test_current_25h_dps_contract_has_exact_95_percent_gate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_verified_generated_references(monkeypatch)
@@ -278,12 +278,12 @@ def test_current_25h_dps_contract_has_exact_75_85_gates(
     assert report["qualification_mode"] == "single_target_300"
     assert report["qualification_seed"] == 1
     assert report["max_tries_per_dps_spec"] == 2
-    assert report["hard_reference_ratio"] == 0.75
-    assert report["optimization_reference_ratio"] == 0.85
+    assert report["hard_reference_ratio"] == 0.95
+    assert report["optimization_reference_ratio"] == 0.95
     assert len(report["targets"]) == 16
     assert all(row["hard_floor_dps"] > 0 for row in report["targets"])
     assert all(
-        row["optimization_target_dps"] > row["hard_floor_dps"]
+        row["optimization_target_dps"] == row["hard_floor_dps"]
         for row in report["targets"]
     )
     assert all(row["gear_profile_binding_verified"] for row in report["targets"])

@@ -133,6 +133,11 @@ def evaluate_calibration(
     reference_value = float(metrics.get("reference_value") or 0.0)
     measured_value = float(metrics.get("measured_value") or 0.0)
     reference_ratio = _ratio(measured_value, reference_value)
+    # DPS has the program's numerical gate. Tank/healer reference metrics keep
+    # their role policy; a role result never substitutes for DPS qualification.
+    role_ratios = ((policy.get("non_dps_reference_ratios") or {}).get(role) or {}) if role in {"tank", "healer"} else {}
+    hard_ratio = float(role_ratios.get("hard_reference_ratio", policy["hard_reference_ratio"]))
+    optimization_ratio = float(role_ratios.get("optimization_reference_ratio", policy["optimization_reference_ratio"]))
 
     _check(checks, reasons, "role_allowed_for_mode", role in set(mode_policy.get("roles") or []))
     _check(
@@ -168,7 +173,7 @@ def evaluate_calibration(
             == str(record.get("target_spec") or "")
             and not compatibility.get("reasons"),
         )
-    _check(checks, reasons, "reference_hard_floor", reference_ratio >= float(policy["hard_reference_ratio"]))
+    _check(checks, reasons, "reference_hard_floor", reference_ratio >= hard_ratio)
     _check(checks, reasons, "no_illegal_actions", int(metrics.get("illegal_action_count") or 0) == 0)
 
     if mode in {"single_target_300", "aoe_300"}:
@@ -265,8 +270,8 @@ def evaluate_calibration(
         "mode": mode,
         "role": role,
         "reference_ratio": round(reference_ratio, 6),
-        "hard_floor_passed": reference_ratio >= float(policy["hard_reference_ratio"]),
-        "optimization_target_met": reference_ratio >= float(policy["optimization_reference_ratio"]),
+        "hard_floor_passed": reference_ratio >= hard_ratio,
+        "optimization_target_met": reference_ratio >= optimization_ratio,
         "checks": checks,
         "failure_reasons": reasons,
         "passed": all(checks.values()),
@@ -312,7 +317,7 @@ def load_policy(path: Path) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--policy", type=Path, default=Path("experiments/configs/all_spec_role_calibration_policy_v1.json"))
+    parser.add_argument("--policy", type=Path, default=Path("experiments/configs/all_spec_role_calibration_policy_v3.json"))
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     record = json.loads(args.input.read_text(encoding="utf-8"))

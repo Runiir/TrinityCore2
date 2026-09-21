@@ -100,6 +100,7 @@ def check_graph(g: dict) -> None:
         target = row.get('to')
         legal = (
             (action in ('claim', 'release') and target == previous and previous != 'complete')
+            or (action == 'refresh_support' and previous == target == 'implement')
             or (action == 'advance' and previous in RECEIPTS and target == NEXT[previous])
             or (action == 'route' and previous == 'route' and target == 'diagnose')
             or (action == 'rework' and previous in ('diagnose','implement','review','build','validate') and target in ('diagnose','route'))
@@ -171,6 +172,7 @@ def resume(root: Path) -> dict:
     return {
         'state_sha256': digest(data), 'revision': g['revision'],
         'diagnostic_entrypoint': shlex.join(['pixi', 'run', 'python', '-m', 'tools.raid_program.evidence_view', 'task', '--root', str(root.resolve())]),
+        'transition_entrypoint': 'pixi run python -m tools.raid_program.workflow_step advance --receipt <receipt.json> --dry-run; repeat without --dry-run after validation, adding --owner for an existing claim',
         'encounter': g['encounter'],
         'parked_scenarios': sorted(state.get('parked_scenarios', {})),
         'bootstrap_inputs': inputs, 'changed_bootstrap_sources': input_changes,
@@ -185,6 +187,8 @@ def resume(root: Path) -> dict:
         'latest_assessment': next((h['event']['receipt'] for h in reversed(g['history'])
                                    if h['from'] == 'assess' and h['event']['action'] == 'advance'), None),
         'same_edge_failures': g.get('failures', {}).get(unit['edge'], 0),
+        'dps_acceptance': {'minimum_reference_ratio': 0.95, 'scoring_seconds': 300,
+                           'reference': 'current_promoted_self_provided', 'dtr_extra_allowance': False},
         'failure_counts_by_edge': g.get('failures', {}),
         'recent_attempts': recent_attempts(g),
         'retry_limit': 10,
@@ -282,6 +286,29 @@ def source_binding(root: Path, assignment: dict, expected_commit: str | None = N
     return head
 
 
+def supporting_files(root: Path, review: dict, assignment: dict) -> dict:
+    """A workflow repair cannot silently add gameplay edits or change inputs."""
+    required(review, 'reviewer_session_id', 'review_report', 'file_hashes')
+    file_ref(root, review['review_report'])
+    if review.get('verdict') != 'approved':
+        raise GraphError('separate approving review required for supporting changes')
+    from tools.raid_program.review_execution import verify_review
+    try:
+        verify_review(root, review)
+    except ValueError as exc:
+        raise GraphError('independent supporting review execution: ' + str(exc)) from exc
+    support = {p: sha for p, sha in review['file_hashes'].items() if p not in assignment['owned_files']}
+    protected = input_paths(assignment['validation_identity']) | input_paths(assignment['policy'])
+    def allowed(path):
+        return (path.endswith('.py') and path.startswith(('tools/raid_program/', 'tools/bot_ml/', 'tests/'))
+                or path.endswith('.json') and path.startswith('experiments/configs/'))
+    if any(p in protected or not allowed(p) or (root/p).is_symlink() for p in support):
+        raise GraphError('supporting changes are limited to workflow Python/tests/configs, excluding selected inputs')
+    if not support or snapshot(root, list(support)) != support:
+        raise GraphError('supporting review does not bind current files')
+    return support
+
+
 def _receipt(root: Path, event: dict, kind: str, g: dict) -> dict:
     r = read(file_ref(root, event.get('receipt')))
     if r.get('kind') != kind or r.get('unit_id') != g['unit']['id']:
@@ -348,6 +375,29 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         if reconciliation.get('operation_id') != claim['operation_id'] or reconciliation.get('active_operation') is not False or reconciliation.get('ownership_checked') is not True or reconciliation.get('completed_operation') is not False or reconciliation.get('reusable_receipt_found') is not False:
             raise GraphError('release requires reconciliation; record completed operations instead of repeating them')
         g.pop('claim')
+    elif action == 'refresh_support' and stage == 'implement':
+        # Paused workflow maintenance must not restart the native hypothesis or
+        # hide its source delta. Completed tests of the old support are retained
+        # as evidence, but tests/review must run again on the refreshed source.
+        r = read(file_ref(root, event.get('receipt')))
+        required(r, 'reason', 'supporting_review', 'owned_file_hashes', 'prior_operation', 'prior_commit')
+        prior = r['prior_operation']
+        if prior.get('ownership_checked') is not True or prior.get('active_operation') is not False:
+            raise GraphError('support refresh requires a stopped, reconciled operation')
+        if claim and prior.get('operation_id') != claim['operation_id']:
+            raise GraphError('support refresh operation mismatch')
+        if r['owned_file_hashes'] != snapshot(root, g['assignment']['owned_files']):
+            raise GraphError('support refresh cannot change native owned files')
+        git(root, 'merge-base', '--is-ancestor', r['prior_commit'], 'HEAD')
+        for path, sha in r['owned_file_hashes'].items():
+            previous = subprocess.check_output(['git', 'show', r['prior_commit'] + ':' + path], cwd=root)
+            if digest(previous) != sha:
+                raise GraphError('native files changed since the paused operation')
+        review = read(file_ref(root, r['supporting_review']))
+        support = supporting_files(root, review, g['assignment'])
+        g['assignment']['supporting_review'] = r['supporting_review']
+        g['assignment']['supporting_files'] = support
+        g.setdefault('support_refreshes', []).append(event['receipt'])
     elif action == 'advance' and stage in RECEIPTS:
         kind = RECEIPTS[stage]
         r = _receipt(root, event, kind, g)
@@ -357,6 +407,11 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             advice(root, r)
             required(r, 'hypothesis', 'forbidden_changes', 'acceptance_conditions', 'required_test_commands', 'base_commit', 'policy', 'validation_identity')
             file_ref(root, r['policy'])
+            from tools.raid_program.workflow_build import build_commands
+            try:
+                build_commands(read(file_ref(root, r['policy'])))
+            except (ValueError, KeyError, TypeError) as exc:
+                raise GraphError('plan requires a frozen build/resource policy: ' + str(exc)) from exc
             validation = r['validation_identity']
             for key in ('roster', 'runtime_profile'):
                 file_ref(root, validation.get(key))
@@ -386,13 +441,7 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 file_ref(root, review['review_report'])
                 if review.get('verdict') != 'approved' or review['reviewer_session_id'] == r['producer']:
                     raise GraphError('separate approving review required for supporting changes')
-                support = {p: sha for p, sha in review['file_hashes'].items() if p not in paths}
-                protected = input_paths(validation) | input_paths(r['policy'])
-                if any(p in protected or not p.endswith('.py') or not p.startswith(('tools/raid_program/', 'tests/'))
-                       or (root / p).is_symlink() for p in support):
-                    raise GraphError('supporting changes are limited to workflow Python/tests, excluding selected inputs')
-                if not support or snapshot(root, list(support)) != support:
-                    raise GraphError('supporting review does not bind current files')
+                support = supporting_files(root, review, g['assignment'])
                 g['assignment']['supporting_review'] = r['supporting_review']
                 g['assignment']['supporting_files'] = support
         elif stage in ('implement', 'review', 'build'):
@@ -420,6 +469,11 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 report = file_ref(root, r['review_report'])
                 if not report.read_text().strip() or r['review_report'] in (g.get('receipts', {}).get('tests'), event['receipt']):
                     raise GraphError('retain the separate reviewer response, not the implementation or adapter')
+                from tools.raid_program.review_execution import verify_review
+                try:
+                    verify_review(root, r, implementer_session_id=g['implementer'])
+                except ValueError as exc:
+                    raise GraphError('independent review execution: ' + str(exc)) from exc
                 g['source_base_commit'] = g['tested_commit']
             else:
                 required(r, 'source_commit', 'binary_sha256', 'build_receipt')
@@ -501,6 +555,11 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                     raise GraphError('actor acceptance needs an exercised review')
                 if requirement.get('needs_all_actors') and not all(v.get('accepted') is True for v in r['actor_reviews'].values()):
                     raise GraphError('encounter performance needs every actor accepted')
+            from tools.raid_program.dps_gate import verify_assessment
+            try:
+                verify_assessment(root, g, r)
+            except (ValueError, KeyError, OSError) as exc:
+                raise GraphError('DPS performance acceptance: ' + str(exc)) from exc
             g['pending_acceptance'] = accepted
             g['outcomes'] = {k: r[k] for k in ('encounter_clear', 'repair_accepted', 'performance_accepted')}
             if not accepted:

@@ -57,6 +57,15 @@ lifecycle events before declaring an optional recovery gate exercised.
 
 ## Gates and routing
 
+Every DPS actor must reach at least 95% of its current promoted self-provided
+WoWSims reference in an attributable, setup-admitted 300-second dummy window.
+Use policy v3 and `tools.raid_program.dps_gate` to bind the retained run/report to
+the actor review's `dps_calibration` packet. Historical 75/85% flags, a tank/healer
+role check, an observation repair or a raid clear cannot close this requirement.
+A roughly 1,000 DPS Dragonwrath difference explains part of the total gap; it is
+not an extra allowance, denominator reduction or permission to round up to 95%.
+Keep raid mechanics, WCL comparison and per-actor encounter acceptance separate.
+
 Do not tune native class coefficients, priorities, or damage from a raw delta. Before
 any stat-sensitive cadence, event-damage, or DPS repair, join the exact promoted
 WoWSims request/result/debug inputs to the native scoring-window observation and

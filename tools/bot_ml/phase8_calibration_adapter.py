@@ -35,7 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TARGETS = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
 DEFAULT_REFERENCES = REPO_ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json"
 DEFAULT_SCENARIOS = REPO_ROOT / "experiments/configs/all_spec_calibration_scenarios_v1.json"
-DEFAULT_POLICY = REPO_ROOT / "experiments/configs/all_spec_role_calibration_policy_v1.json"
+DEFAULT_POLICY = REPO_ROOT / "experiments/configs/all_spec_role_calibration_policy_v3.json"
 DEFAULT_GEAR_PROFILES = REPO_ROOT / "dataset/validation_gear_profiles/profiles.json"
 DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 

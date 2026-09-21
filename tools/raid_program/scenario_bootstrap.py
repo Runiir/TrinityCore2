@@ -21,6 +21,7 @@ def make_state(root: Path, encounter: dict, inputs: dict) -> dict:
     for actor in inputs['roster']['actors']:
         actor_id = actor['actor_id']
         requirements['actor_' + actor_id] = {'status': 'open', 'actor_id': actor_id,
+            'role': actor['role'], 'spec': actor['class_spec'],
             'description': f"{actor['slot']}: {actor['class_spec'] or 'roster selection required'} behavior and duty-adjusted performance",
             'needs_raid': True, 'needs_performance': True}
     requirements['encounter_performance'] = {'status': 'open', 'description': 'Matched encounter clear, every actor reviewed, performance accepted and evidence published',

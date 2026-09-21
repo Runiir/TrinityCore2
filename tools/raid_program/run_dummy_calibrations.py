@@ -138,7 +138,7 @@ def main() -> int:
                 epoch=rows[0]["server_epoch"], run_id="dummy-" + uuid.uuid4().hex[:12],
                 seed=args.seed, concurrency=args.concurrency, heartbeat=args.heartbeat,
                 timeout=args.attempt_timeout,
-                policy_path=ROOT / "experiments/configs/all_spec_role_calibration_policy_v2.json")
+                policy_path=ROOT / "experiments/configs/all_spec_role_calibration_policy_v3.json")
     except BaseException as exc:
         report["error"] = f"{type(exc).__name__}: {exc}"
         raise

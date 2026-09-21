@@ -34,6 +34,10 @@ try:
     )
     from .audit_role_efficiency import build_audit
     from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
+    from .calibration_completion import (
+        CalibrationCompletionClock,
+        native_calibration_requested,
+    )
     from .build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, bot_known_spell_ids, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from .calibration_consumable_provisioning import (
         prepare_calibration_consumables as _prepare_calibration_consumables,
@@ -57,6 +61,10 @@ except ImportError:
     )
     from audit_role_efficiency import build_audit
     from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
+    from calibration_completion import (
+        CalibrationCompletionClock,
+        native_calibration_requested,
+    )
     from build_validation_provisioning import DEFAULT_BWD_DIAGNOSTIC_SHARD_FIXTURE, VALIDATION_FULL_STAT_SEED, VALIDATION_GHOST_AURA_ID, VALIDATION_GHOST_CHARACTER_FLAG, VALIDATION_RESURRECT_AT_LOGIN_FLAG, apply_gear_profiles, bot_known_spell_ids, build_account_insert_sql, build_character_insert_sql, load_config_with_bwd_diagnostic_shards, load_gear_profiles
     from calibration_consumable_provisioning import (
         prepare_calibration_consumables as _prepare_calibration_consumables,
@@ -81,6 +89,7 @@ from tools.raid_program.runtime_asset_closure_binding import (
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
 DEFAULT_BOSS_ROUTE_TIMEOUT_SEC = 900
+DEFAULT_CALIBRATION_TIMEOUT_SEC = 900
 DEFAULT_COMPLETION_HEARTBEAT_SEC = 30
 DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
 DEFAULT_MAX_REPEATED_DECISIONS = 20
@@ -753,6 +762,7 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "decision_receipts",
         "validation_route_manifest",
         "requested_calibration",
+        "calibration_observation_mode",
         "calibration_acceptance",
         "role_calibration_record",
         "role_calibration_identity",
@@ -2254,6 +2264,8 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     requested = report.get("requested_calibration") or {}
     rejections: list[str] = []
 
+    if report.get("calibration_observation_mode") == "explicit_probe":
+        rejections.append("calibration_explicit_probe_not_qualifying")
     if report.get("timed_out"):
         rejections.append("calibration_timed_out")
     if int(report.get("returncode") or 0) != 0:
@@ -2285,12 +2297,15 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     if int(calibration.get("cross_window_event_count") or 0) != 0:
         rejections.append("cross_window_contamination")
     scored_seconds = float(calibration.get("scored_seconds") or 0.0)
-    if not 295.0 <= scored_seconds <= 305.0:
+    if scored_seconds != 300.0:
         rejections.append("scored_window_outside_tolerance")
     if int(calibration.get("scored_started_at_ms") or 0) <= 0:
         rejections.append("missing_scored_start")
     if int(calibration.get("scored_ended_at_ms") or 0) <= 0:
         rejections.append("missing_scored_end")
+    if (int(calibration.get("scored_ended_at_ms") or 0)
+            - int(calibration.get("scored_started_at_ms") or 0)) != 300000:
+        rejections.append("scored_timestamp_window_not_exact")
     if int(calibration.get("profile_generation") or 0) <= 0:
         rejections.append("missing_profile_generation")
     if not re.fullmatch(r"[0-9A-Fa-f]{64}", str(calibration.get("profile_content_hash") or "")):
@@ -2319,7 +2334,7 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
         "diagnostics_passed": diagnostics_passed,
         "requested": requested,
         "scored_window_seconds": scored_seconds,
-        "window_tolerance_seconds": 5,
+        "window_tolerance_seconds": 0,
         "target_guid": target_guid,
         "rejections": rejections,
     }
@@ -2340,7 +2355,7 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
 def attach_phase8_role_calibration(
     report: dict[str, Any],
     *,
-    policy_path: Path = Path("experiments/configs/all_spec_role_calibration_policy_v1.json"),
+    policy_path: Path = Path("experiments/configs/all_spec_role_calibration_policy_v3.json"),
 ) -> dict[str, Any]:
     """Attach canonical target normalization and independent role acceptance."""
     native_transport = report.get("combat_calibration_transport") or {}
@@ -5686,6 +5701,28 @@ def finalize_calibration_pre_scoring_blocker(
     write_json(output_dir / "report.json", report)
 
 
+def finalize_calibration_completion_watchdog(
+    output_dir: Path,
+    report: dict[str, Any],
+    reason: str,
+) -> None:
+    """Persist a bounded calibration-clock failure; it never certifies data."""
+    label = reason
+    report["completion_reason"] = reason
+    labels = report.setdefault("failure_labels", [])
+    if label not in labels:
+        labels.insert(0, label)
+    report["failure_reason"] = label
+    report["failed"] = max(int(report.get("failed") or 0), 1)
+    report["all_passed"] = False
+    report["acceptable_final_evidence"] = False
+    rejections = report.setdefault("final_evidence_rejections", [])
+    if "watchdog_failure_is_not_final_evidence" not in rejections:
+        rejections.append("watchdog_failure_is_not_final_evidence")
+    finalize_heartbeat(output_dir, report)
+    write_json(output_dir / "report.json", report)
+
+
 def resolved_manifest_failure_labels(
     failure_labels: list[str], evidence: dict[str, Any], manifest: dict[str, Any] | None
 ) -> list[str]:
@@ -6482,6 +6519,7 @@ def run_transport_completion_watchdog(
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
     status_command: str = ".botauto status",
+    calibration_native_completion: bool = False,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
@@ -6511,6 +6549,15 @@ def run_transport_completion_watchdog(
     }
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
+    calibration_clock = (
+        CalibrationCompletionClock(
+            warmup_timeout_sec=no_progress_window_sec,
+            heartbeat_sec=heartbeat_sec,
+            started_monotonic=time.monotonic(),
+        )
+        if calibration_native_completion
+        else None
+    )
 
     def send(command_text: str) -> tuple[int, bool]:
         remaining = (
@@ -6589,6 +6636,10 @@ def run_transport_completion_watchdog(
         returncode, timed_out = send(command_text)
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
+    if calibration_clock is not None:
+        # Native warmup begins after the addressed calibration start has
+        # returned; transport/setup latency must not be counted as scored time.
+        calibration_clock.started_monotonic = time.monotonic()
     calibration_startup = any(
         is_calibration_start_command(command_text)
         for command_text in startup_commands
@@ -6647,6 +6698,14 @@ def run_transport_completion_watchdog(
         last_progress_total = int(liveness_clock["last_progress_total"])
         last_progress_at = float(liveness_clock["last_progress_monotonic"])
         progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+        calibration_clock_reason = None
+        if calibration_clock is not None:
+            calibration_clock_reason = calibration_clock.observe(
+                report.get("combat_calibration") or {}, observed_monotonic
+            )
+            report.setdefault("watchdog_state", {})[
+                "calibration_completion"
+            ] = calibration_clock.receipt(observed_monotonic)
         persist_rolling_heartbeat(output_dir, report)
         raid_terminal = raid_terminal_watchdog_failure(report)
         if raid_terminal:
@@ -6659,7 +6718,13 @@ def run_transport_completion_watchdog(
             and no_progress_expired
         )
         calibration = report.get("combat_calibration") or {}
-        if bool(calibration.get("window_complete")):
+        if (
+            calibration_clock is not None
+            and calibration_clock.complete
+        ) or (
+            calibration_clock is None
+            and bool(calibration.get("window_complete"))
+        ):
             return finish(0, False)
         blocker = calibration_pre_scoring_blocker(report)
         blocker_key = canonical_sha256(blocker) if blocker else ""
@@ -6670,6 +6735,17 @@ def run_transport_completion_watchdog(
             calibration_blocker_repeats = 1 if blocker_key else 0
         if blocker and calibration_blocker_repeats >= 3:
             finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
+            return finish(0, False)
+        if calibration_clock_reason in {
+            "calibration_pre_scoring_timeout",
+            "calibration_scoring_timeout",
+        } and not (
+            calibration_clock_reason == "calibration_pre_scoring_timeout"
+            and blocker
+        ):
+            finalize_calibration_completion_watchdog(
+                output_dir, report, calibration_clock_reason
+            )
             return finish(0, False)
         if report["acceptable_final_evidence"] or (
             report["completion_reason"] in {
@@ -6719,6 +6795,7 @@ def run_worldserver_completion_watchdog(
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
     validation_route: dict[str, Any] | None = None,
     validation_route_manifest: dict[str, Any] | None = None,
+    calibration_native_completion: bool = False,
 ) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
@@ -6742,6 +6819,15 @@ def run_worldserver_completion_watchdog(
     }
     last_calibration_blocker = ""
     calibration_blocker_repeats = 0
+    calibration_clock = (
+        CalibrationCompletionClock(
+            warmup_timeout_sec=no_progress_window_sec,
+            heartbeat_sec=heartbeat_sec,
+            started_monotonic=time.monotonic(),
+        )
+        if calibration_native_completion
+        else None
+    )
     process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
@@ -6837,6 +6923,10 @@ def run_worldserver_completion_watchdog(
             # Its deliberately empty ordinary population cannot become ready.
             if not calibration_startup:
                 output_parts.append(wait_for_bot_status_ready(process, deadline))
+        if calibration_clock is not None:
+            # Native warmup begins after the addressed calibration start has
+            # returned; transport/setup latency must not be counted as scored time.
+            calibration_clock.started_monotonic = time.monotonic()
 
         while time.monotonic() < deadline:
             if process.poll() is not None:
@@ -6926,6 +7016,14 @@ def run_worldserver_completion_watchdog(
             last_progress_total = int(liveness_clock["last_progress_total"])
             last_progress_at = float(liveness_clock["last_progress_monotonic"])
             progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+            calibration_clock_reason = None
+            if calibration_clock is not None:
+                calibration_clock_reason = calibration_clock.observe(
+                    report.get("combat_calibration") or {}, observed_monotonic
+                )
+                report.setdefault("watchdog_state", {})[
+                    "calibration_completion"
+                ] = calibration_clock.receipt(observed_monotonic)
             persist_rolling_heartbeat(output_dir, report)
             raid_terminal = raid_terminal_watchdog_failure(report)
             if raid_terminal:
@@ -6950,7 +7048,13 @@ def run_worldserver_completion_watchdog(
                 write_json(output_dir / "report.json", report)
                 break
             calibration = report.get("combat_calibration") or {}
-            if bool(calibration.get("window_complete")):
+            if (
+                calibration_clock is not None
+                and calibration_clock.complete
+            ) or (
+                calibration_clock is None
+                and bool(calibration.get("window_complete"))
+            ):
                 break
             if report["acceptable_final_evidence"]:
                 break
@@ -6971,6 +7075,17 @@ def run_worldserver_completion_watchdog(
                 calibration_blocker_repeats = 1 if blocker_key else 0
             if blocker and calibration_blocker_repeats >= 3:
                 finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
+                break
+            if calibration_clock_reason in {
+                "calibration_pre_scoring_timeout",
+                "calibration_scoring_timeout",
+            } and not (
+                calibration_clock_reason == "calibration_pre_scoring_timeout"
+                and blocker
+            ):
+                finalize_calibration_completion_watchdog(
+                    output_dir, report, calibration_clock_reason
+                )
                 break
             if validation_route_manifest and semantic_progress_plateau:
                 report["completion_reason"] = "semantic_progress_plateau_watchdog"
@@ -7600,6 +7715,11 @@ def run_reusable_validation_session(
     bot_pool_tags: list[str],
 ) -> tuple[str, int, bool, list[str], dict[str, Any]]:
     del script
+    calibration_native_completion = getattr(
+        args,
+        "calibration_native_completion",
+        bool(args.calibration_only and int(args.observe_sec or 0) == 0),
+    )
     if not args.soap_user or not args.soap_password:
         raise SystemExit("--soap-user and --soap-password are required with --transport session")
     profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
@@ -7958,6 +8078,7 @@ def run_reusable_validation_session(
                 max_repeated_decisions=args.max_repeated_decision_count,
                 max_death_loops=args.max_death_loop_count,
                 status_command=executor.status_command,
+                calibration_native_completion=calibration_native_completion,
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
@@ -8159,7 +8280,7 @@ def main() -> int:
     parser.add_argument("--calibration-mode", choices=["single_target_300", "aoe_300", "tank_threat_300", "healer_controlled_damage_300"], default="single_target_300")
     parser.add_argument("--calibration-target-spec", default="protection_paladin", help="Canonical all-spec target selected from the calibration candidate pool.")
     parser.add_argument("--calibration-seed", type=int, default=1, help="Deterministic calibration target/support selection seed.")
-    parser.add_argument("--role-calibration-policy", type=Path, default=Path("experiments/configs/all_spec_role_calibration_policy_v1.json"), help="Versioned role/DPS threshold policy used for independent calibration acceptance.")
+    parser.add_argument("--role-calibration-policy", type=Path, default=Path("experiments/configs/all_spec_role_calibration_policy_v3.json"), help="Versioned role/DPS threshold policy used for independent calibration acceptance.")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
@@ -8204,6 +8325,7 @@ def main() -> int:
     parser.add_argument("--input-log", type=Path)
     add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
+    observe_sec_was_explicit = args.observe_sec is not None
 
     if args.input_log:
         offline_conflicts = [flag for enabled, flag in (
@@ -8226,6 +8348,22 @@ def main() -> int:
             raise SystemExit("--calibration-only cannot be combined with a validation route manifest or sequence")
         if args.transport == "soap" and not args.input_log:
             raise SystemExit("--calibration-only cannot use SOAP because an empty controller config cannot be established")
+    args.calibration_native_completion = native_calibration_requested(
+        calibration_only=args.calibration_only,
+        observe_sec_was_explicit=observe_sec_was_explicit,
+    )
+    args.calibration_observation_mode = (
+        "native_completion"
+        if args.calibration_native_completion
+        else "explicit_probe"
+        if args.calibration_only
+        else ""
+    )
+    if args.calibration_native_completion and args.duration_policy == "fixed-window":
+        # An omitted observation duration selects native calibration
+        # completion even when a generic caller supplied a fixed-window
+        # default. An explicit observation remains a diagnostic probe.
+        args.duration_policy = "completion-watchdog"
     if args.calibration_reference_conditions and not args.calibration_only:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
     if args.calibration_self_provided_baseline and not args.calibration_only:
@@ -8329,7 +8467,17 @@ def main() -> int:
         enabled=route_validation_requested and not args.input_log,
     )
 
-    if args.run_to_completion:
+    if args.calibration_native_completion:
+        args.timeout_sec = (
+            args.timeout_sec
+            if args.timeout_sec is not None
+            else DEFAULT_CALIBRATION_TIMEOUT_SEC
+        )
+        # Zero has no fixed-window meaning in native calibration mode. The
+        # completion watchdog owns the wait and stops only on native complete
+        # or an attributable bounded failure.
+        args.observe_sec = 0
+    elif args.run_to_completion:
         args.timeout_sec = None
         args.observe_sec = args.observe_sec if args.observe_sec is not None else args.heartbeat_sec
     elif args.duration_policy == "completion-watchdog":
@@ -8573,6 +8721,7 @@ def main() -> int:
             "config_autostart": config_autostart,
             "start_command": send_start_command,
             "calibration_only": args.calibration_only,
+            "calibration_observation_mode": args.calibration_observation_mode,
             "calibration_reference_conditions": args.calibration_reference_conditions,
             "calibration_self_provided_baseline": args.calibration_self_provided_baseline,
             "calibration_reference_preflight": calibration_reference_preflight,
@@ -8615,6 +8764,7 @@ def main() -> int:
                     no_progress_window_sec=args.no_progress_window_sec,
                     max_repeated_decisions=args.max_repeated_decision_count,
                     max_death_loops=args.max_death_loop_count,
+                    calibration_native_completion=args.calibration_native_completion,
                 )
                 existing_report = args.output_dir / "report.json"
                 if existing_report.exists():
@@ -8660,6 +8810,7 @@ def main() -> int:
                 max_death_loops=args.max_death_loop_count,
                 validation_route=validation_route,
                 validation_route_manifest=validation_route_manifest,
+                calibration_native_completion=args.calibration_native_completion,
             )
             existing_report = args.output_dir / "report.json"
             if existing_report.exists():
@@ -8752,6 +8903,9 @@ def main() -> int:
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
     report["calibration_only"] = args.calibration_only
+    report["calibration_observation_mode"] = getattr(
+        args, "calibration_observation_mode", ""
+    )
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
     report["calibration_self_provided_baseline"] = args.calibration_self_provided_baseline
     report["calibration_reference_preflight"] = calibration_reference_preflight

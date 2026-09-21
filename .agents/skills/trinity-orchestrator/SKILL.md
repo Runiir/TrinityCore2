@@ -43,6 +43,14 @@ Follow [development_graph.md](../../../docs/bot_raids/development_graph.md) and
 reconcile controller/build ownership before launch. These commands do not start a
 background worker or replace native admission checks.
 
+Use `workflow_step advance --receipt <path> --dry-run`, then the same command
+without `--dry-run`, under `pixi run python -m tools.raid_program`. For a claimed
+step include its explicit `--owner`. The helper derives revision, unit, hashes
+and token and calls the real reducer atomically. Do not hand-copy those fields
+or retry a rejected transition unchanged. Build plans need a frozen build/resource
+policy; a role-calibration policy is a different input and is rejected at planning.
+Use `workflow_build refs` and `snapshot` for receipt inputs and owned files.
+
 ## Evidence and objective discipline
 
 Use existing commands first. For admission and saved-task questions, use the
@@ -70,6 +78,11 @@ runtime/encounter changes. A worker freezes its owned files until a new edit
 assignment; the reviewer hashes them and records the separate session ID and report
 as `reviewer_session_id` and `review_report`. A worker cannot claim approval
 before that verdict.
+Import the actual separate session's final JSON with `review_execution`; changing
+a reviewer label in a coordinator-written receipt is not independent review.
+The report must contain its verdict and exact file hashes. Reuse unchanged
+approval explicitly; changed files need another review. Provider advice cannot
+substitute for this execution proof.
 
 Use `gpt-5.6-luna` with `reasoning_effort: max` for implementation, causal
 diagnosis, architecture, and independent review, following the current user

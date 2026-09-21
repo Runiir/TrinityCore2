@@ -1,0 +1,23 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/workflow_gate_clock_review_20260921.json",
+      "sha256": "a8bfff70fedb30b5c5bdee1b12568d61376fbe2be0198473f5c3550d90b1bb7a"
+    }
+  ],
+  "file_hashes": {
+    "tests/test_calibration_completion.py": "cff2a2a3331bd64cd0c77e4be948c5171a23ef63536a17c13985238757791b3c",
+    "tools/bot_ml/calibration_completion.py": "64345d334e9c006164c6a1979c8ad0b7202352af2ba8e6a7026a94d3ecce4b99",
+    "tools/bot_ml/run_live_bot_validation.py": "9178b987938f72c743a607510867aa48dc2098a273dfa0a85faa482cc468627f"
+  },
+  "kind": "review",
+  "producer": "01a0c34c-ca6c-71d2-be02-035faa5d5d7c",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/workflow_gate_clock_review_20260921.json",
+    "sha256": "a8bfff70fedb30b5c5bdee1b12568d61376fbe2be0198473f5c3550d90b1bb7a"
+  },
+  "reviewer_session_id": "01a0c34c-ca6c-71d2-be02-035faa5d5d7c",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "verdict": "approved"
+}

@@ -52,7 +52,10 @@ the promoted `wowsims_cata_dps_reference_requests_v1.json` cohort. Embedded DPS
 in `all_spec_references_cata_p4_v1.json` is not promotion authority; hydrate the
 existing cohort through `raid-wowsims-reference` when needed. Historical
 `optimization_target_met` can mean only 85% of a compatible reference and stays
-separate from unresolved parity.
+separate from unresolved parity. Current acceptance requires 95% per DPS actor,
+using policy v3 and a run-bound `dps_calibration` packet verified by
+`tools.raid_program.dps_gate`. Account for DTR within the total 5% gap, never as
+an additional 1,000 DPS waiver. Review remaining losses even when the ratio passes.
 
 Record simulator revision/binary, APL bytes, exported `RaidSimRequest`, gear,
 talents, glyphs, options, encounter/target, Trinity commit/binary, profile

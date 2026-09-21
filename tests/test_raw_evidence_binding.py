@@ -46,6 +46,11 @@ def _test_generated_reference_authority(
 
 @pytest.fixture(autouse=True)
 def _pin_generated_reference_authority(monkeypatch: pytest.MonkeyPatch) -> None:
+    # This file retains historical v1 receipts, including exact 80% boundaries.
+    # Pin that policy explicitly; test_current_v3_raw_projection checks today's
+    # default policy separately through this same production capture path.
+    monkeypatch.setattr(raw_binding, "DEFAULT_ROLE_CALIBRATION_POLICY",
+        Path(__file__).parents[1] / "experiments/configs/all_spec_role_calibration_policy_v1.json")
     monkeypatch.setattr(
         raw_binding,
         "_generated_reference_scoring_authority",
@@ -897,6 +902,23 @@ def test_failed_dps_normalization_still_retains_the_raw_measurement(tmp_path: Pa
     assert scoring["hard_floor_passed"] is True
     assert scoring["optimization_target_met"] is True
     assert manifest["semantic_binding"]["evidence_kind"] == "dps_calibration"
+
+
+def test_current_v3_raw_projection(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    policy_path = Path(__file__).parents[1] / 'experiments/configs/all_spec_role_calibration_policy_v3.json'
+    monkeypatch.setattr(raw_binding, 'DEFAULT_ROLE_CALIBRATION_POLICY', policy_path)
+    policy = json.loads(policy_path.read_text())
+    calibration = _calibration_payload()  # Exact 45000/50000 = 90%, below today's gate.
+    report = _calibration_report(calibration)
+    report['role_calibration_evaluation'].update(
+        policy_sha256=lifecycle.canonical_sha256(policy), hard_floor_passed=False,
+        optimization_target_met=False, passed=False)
+    _capture_calibration(tmp_path, report, [calibration, *_cleanup_payloads()])
+    projection = json.loads((tmp_path/'batch/raw/decisive_projection.json').read_text())
+    scoring = projection['decisive']['selected_target_scoring']
+    assert scoring['hard_reference_ratio'] == scoring['optimization_reference_ratio'] == .95
+    assert scoring['reference_ratio'] == .9
+    assert not scoring['hard_floor_passed'] and not scoring['optimization_target_met']
 
 
 def test_compact_publication_input_retains_exact_generated_reference_binding(

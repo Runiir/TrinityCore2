@@ -1,0 +1,30 @@
+{
+  "file_hashes": {
+    "tests/test_calibration_completion.py": "cff2a2a3331bd64cd0c77e4be948c5171a23ef63536a17c13985238757791b3c",
+    "tools/bot_ml/calibration_completion.py": "64345d334e9c006164c6a1979c8ad0b7202352af2ba8e6a7026a94d3ecce4b99",
+    "tools/bot_ml/run_live_bot_validation.py": "9178b987938f72c743a607510867aa48dc2098a273dfa0a85faa482cc468627f"
+  },
+  "findings": [],
+  "limits": [
+    "Read-only review; no edits, commits, server runs, or builds.",
+    "Reviewed the requested three files only.",
+    "Hashes remained unchanged after testing."
+  ],
+  "proof": {
+    "final_message_bytes": 805,
+    "final_message_sha256": "c06d53441a899ad58e03e9b4b169409a3fd95a9c3c37c9887d2efe1d24691526",
+    "prefix_bytes": 1813943,
+    "prefix_sha256": "ea8c66993b97f216d9b43909d566a63bb908eb2fd5d129138e836fde1772b3d6",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T12-29-44-01a0c34c-ca6c-71d2-be02-035faa5d5d7c.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c34c-ca6c-71d2-be02-035faa5d5d7c"
+  },
+  "reviewer_session_id": "01a0c34c-ca6c-71d2-be02-035faa5d5d7c",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -q -p no:cacheprovider tests/test_calibration_completion.py: 13 passed.",
+    "Explicit-probe acceptance and final recomputation tests pass.",
+    "Exact 300-second and exact 300000-millisecond timestamp rejection tests pass."
+  ],
+  "verdict": "approved"
+}

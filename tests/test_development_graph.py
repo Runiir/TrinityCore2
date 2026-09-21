@@ -22,6 +22,10 @@ def case(tmp_path,monkeypatch):
     # exercised by test_real_queued_build_verifier_rejects_fabricated_receipt.
     from tools.raid_program import queued_build
     monkeypatch.setattr(queued_build,'verify_receipt',lambda path,policy,allow_test_mode: {'classification':'success','gate_bearing':True})
+    # Execution provenance is exercised against actual-format session records
+    # in test_review_execution; these fixtures exercise the graph's transitions.
+    from tools.raid_program import review_execution
+    monkeypatch.setattr(review_execution, 'verify_review', lambda root, review, **kwargs: review['file_hashes'])
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
     (tmp_path/'code.cpp').write_text('original')
     (tmp_path/'.gitignore').write_text('*.json\n')
@@ -31,8 +35,8 @@ def case(tmp_path,monkeypatch):
     state = {'development_graph': {'version': 1, 'coordinator_worktree': str(tmp_path), 'revision': 0, 'objective': 'all actors', 'stage': 'diagnose',
         'unit': {'id': 'u1', 'edge': 'edge1', 'requirements': ['setup'], 'next_action': 'fix setup'},
         'encounter':{'raid':'fixture','boss':'fixture','mode':'10N'},'actor_ids': ['1', '2'], 'requirements': {'setup': {'status': 'open'},
-            'actor_1': {'status': 'open', 'actor_id': '1', 'needs_raid': True, 'needs_performance': True},
-            'actor_2': {'status': 'open', 'actor_id': '2', 'needs_raid': True, 'needs_performance': True}},
+            'actor_1': {'status': 'open', 'actor_id': '1', 'role': 'tank', 'spec': 'blood_death_knight', 'needs_raid': True, 'needs_performance': True},
+            'actor_2': {'status': 'open', 'actor_id': '2', 'role': 'healer', 'spec': 'holy_paladin', 'needs_raid': True, 'needs_performance': True}},
         'history': [], 'failures': {}, 'completed_measurements': [{'spec':'Survival','scoring_ms':300000}]}}
     put(tmp_path/graph.STATE_PATH, state)
     return tmp_path, state, evidence
@@ -42,11 +46,11 @@ def receipt(root, state, evidence, **changes):
     g=state['development_graph']; stage=g['stage']
     r={'authority':'coordinator_attestation', 'kind':graph.RECEIPTS[stage], 'unit_id':g['unit']['id'], 'producer':'reviewer' if stage=='review' else 'coordinator', 'evidence':[evidence]}
     r.update({
-        'diagnose': {'policy':evidence,'validation_identity':{'scenario_kind':'raid','encounter':g['encounter'],'roster':evidence,'runtime_profile':evidence,'route':evidence},'base_commit':graph.git(root,'rev-parse','HEAD'),'hypothesis':'native setup missing','owned_files':['code.cpp'],'forbidden_changes':['no coefficient tuning'],'acceptance_conditions':['observe setup'],'required_test_commands':['pytest focused']},
+        'diagnose': {'policy':put(root/'policy.json',json.loads((Path(__file__).resolve().parents[1]/'experiments/configs/cata_raid_build_resource_policy_host12_v1.json').read_text())),'validation_identity':{'scenario_kind':'raid','encounter':g['encounter'],'roster':evidence,'runtime_profile':evidence,'route':evidence},'base_commit':graph.git(root,'rev-parse','HEAD'),'hypothesis':'native setup missing','owned_files':['code.cpp'],'forbidden_changes':['no coefficient tuning'],'acceptance_conditions':['observe setup'],'required_test_commands':['pytest focused']},
         'implement': {'file_hashes':graph.snapshot(root,['code.cpp']), 'tests':[{'command':'pytest focused','exit_status':0}]},
         'review': {'file_hashes':graph.snapshot(root,['code.cpp']), 'verdict':'approved',
                    'reviewer_session_id':'fixture-independent-session', 'review_report': evidence},
-        'build': {'policy':evidence,'file_hashes':graph.snapshot(root,['code.cpp']), 'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64,'build_receipt':put(root/'build-native.json',{'commit':graph.git(root,'rev-parse','HEAD'),'exit_code':0,'source_identity_stable':True,'test_mode':False,'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True}]})},
+        'build': {'policy':put(root/'policy.json',json.loads((Path(__file__).resolve().parents[1]/'experiments/configs/cata_raid_build_resource_policy_host12_v1.json').read_text())),'file_hashes':graph.snapshot(root,['code.cpp']), 'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64,'build_receipt':put(root/'build-native.json',{'commit':graph.git(root,'rev-parse','HEAD'),'exit_code':0,'source_identity_stable':True,'test_mode':False,'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True}]})},
         'validate': {'validation_identity':g.get('assignment',{}).get('validation_identity'),'build_identity':{'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64},'attempt_id':'attempt1','server_epoch':'epoch1','closed':True,'cleanup_verified':True,'terminal_reason':'clear','scenario_kind':'raid','clock':'completion_watchdog'},
         'assess': {'attempt_id':'attempt1','baseline':evidence,'comparison':evidence,'actor_reviews':{'1':{'status':'reviewed','receipt':evidence},'2':{'status':'not_exercised','reason':'not in this fixture'}},'encounter_clear':True,'repair_accepted':True,'performance_accepted':False,'accepted_requirements':['setup']},
         'publish': {'dvc_status_checked':True,'dvc_push_completed':True,'remote_verified':True,'cleanup_verified':True},
@@ -102,6 +106,54 @@ def test_stale_writer_does_not_overwrite_new_progress(case):
     assert (root/graph.STATE_PATH).read_bytes()==before
 
 
+def test_role_policy_rejected_at_plan_before_claim_tests_or_build(case):
+    root, state, evidence = case
+    role_policy = put(root/'role-policy.json', {'hard_reference_ratio': .95, 'scored_window_seconds': 300})
+    before = json.dumps(state)
+    with pytest.raises(graph.GraphError, match='frozen build/resource policy'):
+        graph.reduce(root, state, receipt(root, state, evidence, policy=role_policy))
+    assert json.dumps(state) == before
+
+
+def test_performance_flag_and_review_cannot_skip_dps_gate(case):
+    root, state, evidence = reach(case, 'assess')
+    state['development_graph']['requirements']['actor_1'].update(role='dps', spec='balance_druid')
+    event = receipt(root, state, evidence, performance_accepted=True,
+        baseline_matched=True, unexplained_material_decline=False,
+        actor_reviews={'1': {'status': 'reviewed', 'receipt': evidence, 'accepted': True},
+                      '2': {'status': 'not_exercised', 'reason': 'separate role'}})
+    with pytest.raises(graph.GraphError, match='95% DPS gate'):
+        graph.reduce(root, state, event)
+
+
+def test_paused_support_refresh_preserves_native_unit_and_requires_new_tests(case):
+    root, state, evidence = reach(case, 'implement')
+    g = state['development_graph']
+    prior = graph.git(root, 'rev-parse', 'HEAD')
+    path = 'tools/raid_program/repair.py'
+    (root/path).parent.mkdir(parents=True)
+    (root/path).write_text('fixed workflow')
+    review = put(root/'support-review.json', {'verdict': 'approved', 'reviewer_session_id': 'separate',
+        'review_report': evidence, 'file_hashes': graph.snapshot(root, [path])})
+    rec = put(root/'refresh.json', {'reason': 'user paused for reviewed workflow repair',
+        'prior_commit': prior, 'supporting_review': review,
+        'owned_file_hashes': graph.snapshot(root, ['code.cpp']),
+        'prior_operation': {'ownership_checked': True, 'active_operation': False,
+                            'operation_id': g['claim']['operation_id']}})
+    event = {'action': 'refresh_support', 'revision': g['revision'], 'unit_id': g['unit']['id'],
+             'claim_token': g['claim']['token'], 'receipt': rec}
+    refreshed = graph.reduce(root, state, event)['development_graph']
+    assert refreshed['stage'] == 'implement' and 'claim' not in refreshed
+    assert refreshed['unit'] == g['unit']
+    assert refreshed['assignment']['base_commit'] == g['assignment']['base_commit']
+    assert refreshed['requirements'] == g['requirements']
+    assert refreshed['assignment']['supporting_files'] == graph.snapshot(root, [path])
+    assert not refreshed.get('tested_commit')
+    (root/'code.cpp').write_text('different native code')
+    with pytest.raises(graph.GraphError, match='cannot change native'):
+        graph.reduce(root, state, event)
+
+
 @pytest.mark.parametrize('stage,changes,match',[
     ('diagnose',{'producer':'jev'},'model advice'),
     ('diagnose',{'advice':{}},'adjudication'),
@@ -136,6 +188,14 @@ def test_renaming_producer_does_not_supply_a_separate_review(case):
         graph.reduce(root, state, receipt(root, state, evidence, producer='independent-sounding-name', reviewer_session_id=None))
     with pytest.raises(graph.GraphError, match='separate reviewer response'):
         graph.reduce(root, state, receipt(root, state, evidence, review_report=state['development_graph']['receipts']['tests']))
+
+
+def test_real_review_verifier_rejects_invented_session_label(case, monkeypatch):
+    root, state, evidence = reach(case, 'review')
+    monkeypatch.undo()  # Use real session verifier at this graph boundary.
+    with pytest.raises(graph.GraphError, match='independent review execution'):
+        graph.reduce(root, state, receipt(root, state, evidence,
+            producer='looks-independent', reviewer_session_id='looks-independent'))
 
 
 @pytest.mark.parametrize('mutation', ['content', 'symlink', 'executable'])

@@ -51,7 +51,7 @@ _DECISIVE_EVENT_ACTIONS = {
 
 DEFAULT_ROLE_CALIBRATION_POLICY = (
     Path(__file__).resolve().parents[2]
-    / "experiments/configs/all_spec_role_calibration_policy_v1.json"
+    / "experiments/configs/all_spec_role_calibration_policy_v3.json"
 )
 
 
@@ -197,10 +197,10 @@ def calibration_reference_thresholds(
         field="optimization_reference_ratio",
     )
     if not (
-        Fraction(0) < hard_fraction < optimization_fraction <= Fraction(1)
+        Fraction(0) < hard_fraction <= optimization_fraction <= Fraction(1)
     ):
         raise RawEvidenceBindingError(
-            "calibration scoring policy thresholds are not strictly ordered"
+            "calibration scoring policy thresholds must satisfy 0 < hard <= optimization <= 1"
         )
     return (
         float(hard_fraction),

@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 243,
+    "revision": 245,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -431,70 +431,130 @@
         "description": "Balance encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30001"
+        "actor_id": "30001",
+        "role": "dps",
+        "spec": "balance_druid",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30002": {
         "status": "open",
         "description": "Blood tank encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30002"
+        "actor_id": "30002",
+        "role": "tank",
+        "spec": "blood_death_knight",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30003": {
         "status": "open",
         "description": "Healer 30003 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30003"
+        "actor_id": "30003",
+        "role": "healer",
+        "spec": "restoration_druid",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30004": {
         "status": "open",
         "description": "Healer 30004 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30004"
+        "actor_id": "30004",
+        "role": "healer",
+        "spec": "holy_paladin",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30005": {
         "status": "open",
         "description": "Healer 30005 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30005"
+        "actor_id": "30005",
+        "role": "healer",
+        "spec": "discipline_priest",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30006": {
         "status": "open",
         "description": "Fire 30006 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30006"
+        "actor_id": "30006",
+        "role": "dps",
+        "spec": "fire_mage",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30007": {
         "status": "open",
         "description": "Fire 30007 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30007"
+        "actor_id": "30007",
+        "role": "dps",
+        "spec": "fire_mage",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30008": {
         "status": "open",
         "description": "Affliction encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30008"
+        "actor_id": "30008",
+        "role": "dps",
+        "spec": "affliction_warlock",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30009": {
         "status": "open",
         "description": "Survival encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30009"
+        "actor_id": "30009",
+        "role": "dps",
+        "spec": "survival_hunter",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "actor_30010": {
         "status": "open",
         "description": "Elemental encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
-        "actor_id": "30010"
+        "actor_id": "30010",
+        "role": "dps",
+        "spec": "elemental_shaman",
+        "roster_source": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        }
       },
       "magmaw_10n": {
         "status": "open",
@@ -4746,6 +4806,38 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 243,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 243,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-10n"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 244,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 244,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "action": "refresh_support",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/workflow_gate_support_refresh_20260921.json",
+            "sha256": "c0e1f91991f464903ecc0da85f3f1900d55d6d24f5db087bd2cc470ff068d426"
+          },
+          "claim_token": "8d268a38b6f6a9a42520ca436c247458c48706a59efa1f277aa9e10bfac31ded"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4809,12 +4901,34 @@
         }
       },
       "supporting_review": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_20260921.json",
-        "sha256": "b3b0cf3592cac16836b0178e9f2f71e5372e28590f2ef324a7ff59edd43aa79c"
+        "path": "artifacts/cata_raid_program/workflow_gate_review_20260921.receipt.json",
+        "sha256": "8a2e6932b4512cc7c24531fa85af359666b2badffd097afa22ca0025ac6d0d8d"
       },
       "supporting_files": {
-        "tools/raid_program/workflow_build.py": "ccf41a10bcecb8c7a0a327c87bc85fd6965aed98dc93c24e8e9bc9aa7d945e62",
-        "tests/test_workflow_build_role_preflight.py": "5fd84ff0d45c3a82ca274143a7007cd1b7e9eaf20ca923789263b066d44da1c0"
+        "experiments/configs/all_spec_role_calibration_policy_v3.json": "8732262ae5bc249656138071fe1d9f76af347df5e6738d01fec21d866e04b1ff",
+        "experiments/configs/cata_raid_dps_acceptance_v1.json": "48f42caf5c7c819feb5578e2e30e4a68582dce112a6e27716d94deb7b999a02d",
+        "tests/test_calibration_completion.py": "cff2a2a3331bd64cd0c77e4be948c5171a23ef63536a17c13985238757791b3c",
+        "tests/test_cata_raid_dps_acceptance.py": "fd87ddbe61dba707a3e253123a62020f5423d88615797688b5bc9417d6a62407",
+        "tests/test_development_graph.py": "37c4fc916b715aeacb20c7674a885a96216a3150b2bea3b3a22e97860630f93a",
+        "tests/test_dps_gate.py": "103d2a60f91685a74a9d0695e0f5da026ea902eae72947d12c721085777dad81",
+        "tests/test_raw_evidence_binding.py": "42912898659a3d5971b1c142c354ccd3092e79db51ff8c0a2d126bff5a92f4ff",
+        "tests/test_review_execution.py": "420c5ec74d37fa41eb7146af37cf6c5d7e920455edde40615a338034f19ed59c",
+        "tests/test_workflow_build_role_preflight.py": "fa763e17df6232104070167f43932ced3eea090897d2469f66daab00e1553239",
+        "tests/test_workflow_step.py": "f1d70b32c39979751613c0e6063e6513fcf1af1da29bde2439f3ed08b1b14514",
+        "tools/bot_ml/calibration_completion.py": "64345d334e9c006164c6a1979c8ad0b7202352af2ba8e6a7026a94d3ecce4b99",
+        "tools/bot_ml/phase8_calibration_adapter.py": "c83b35b2bc67784f2a60e39725b14a2f146ed736aa27c78225fa32a0bcde1f45",
+        "tools/bot_ml/raw_evidence_binding.py": "ecd687b06da1a6ed095fa65435b285e1a9bdbccd142c2dbe9d271386ae58d28c",
+        "tools/bot_ml/role_calibration_harness.py": "c0ab697688cc7abc96669fccbbe13cbb75f37a0c506804000e1f3cf42963a61f",
+        "tools/bot_ml/run_cata_raid_dps_acceptance.py": "f756c9afe4da5789d09c26e2f7256a6a7ddeec89534d546c794a71b0988ed4a9",
+        "tools/bot_ml/run_live_bot_validation.py": "9178b987938f72c743a607510867aa48dc2098a273dfa0a85faa482cc468627f",
+        "tools/bot_ml/verify_cata_raid_dps_acceptance.py": "09bd0b469aa1adf6abbb34618ffe022731aeeae979447c0d01e197079855b5e6",
+        "tools/raid_program/development_graph.py": "aec4f3f00fa736cbb7c9de3d2ac54c4594ebaf5d62483f9d47088a914f08e7c7",
+        "tools/raid_program/dps_gate.py": "3734344dbb7431ac8aba70b6d3779cb9709cbe6bd32bb93645359b373502d1bc",
+        "tools/raid_program/review_execution.py": "8aa0001c13b72e8366e2fd271269139d0b2bd23af5bc22721ed40090b17d4172",
+        "tools/raid_program/run_dummy_calibrations.py": "6a1e96a14d79e3aa33287c0103fcceb26bed54599964a545db5496e31eea4868",
+        "tools/raid_program/scenario_bootstrap.py": "5901a69fcfb3c2e80bcef442ea82c2f0ba3a82494b7bc19014e10c010702985e",
+        "tools/raid_program/workflow_build.py": "f0a6e2aac5c8e78681c3001b8710ab846192e28b963386d3d991c9a80dddfe90",
+        "tools/raid_program/workflow_step.py": "958a2e81e3372106c5869f0d5867dcbb6ac44768f478735f12ef9370f0438a66"
       }
     },
     "receipts": {
@@ -4822,7 +4936,13 @@
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_v2_20260921.json",
         "sha256": "36392d5c7562d0fa0a63b108d4974b11792cd65539a247b53c622b05b175d12b"
       }
-    }
+    },
+    "support_refreshes": [
+      {
+        "path": "artifacts/cata_raid_program/workflow_gate_support_refresh_20260921.json",
+        "sha256": "c0e1f91991f464903ecc0da85f3f1900d55d6d24f5db087bd2cc470ff068d426"
+      }
+    ]
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
@@ -4911,175 +5031,325 @@
             "actor_id": "tank_1",
             "description": "tank_1: blood_death_knight behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "tank",
+            "spec": "blood_death_knight",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_tank_2": {
             "status": "open",
             "actor_id": "tank_2",
             "description": "tank_2: protection_paladin behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "tank",
+            "spec": "protection_paladin",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_healer_1": {
             "status": "open",
             "actor_id": "healer_1",
             "description": "healer_1: holy_paladin behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "healer",
+            "spec": "holy_paladin",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_healer_2": {
             "status": "open",
             "actor_id": "healer_2",
             "description": "healer_2: holy_paladin behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "healer",
+            "spec": "holy_paladin",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_healer_3": {
             "status": "open",
             "actor_id": "healer_3",
             "description": "healer_3: discipline_priest behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "healer",
+            "spec": "discipline_priest",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_healer_4": {
             "status": "open",
             "actor_id": "healer_4",
             "description": "healer_4: restoration_shaman behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "healer",
+            "spec": "restoration_shaman",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_healer_5": {
             "status": "open",
             "actor_id": "healer_5",
             "description": "healer_5: restoration_druid behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "healer",
+            "spec": "restoration_druid",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_healer_6": {
             "status": "open",
             "actor_id": "healer_6",
             "description": "healer_6: holy_priest behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "healer",
+            "spec": "holy_priest",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_1": {
             "status": "open",
             "actor_id": "ranged_1",
             "description": "ranged_1: fire_mage behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "fire_mage",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_2": {
             "status": "open",
             "actor_id": "ranged_2",
             "description": "ranged_2: fire_mage behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "fire_mage",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_3": {
             "status": "open",
             "actor_id": "ranged_3",
             "description": "ranged_3: fire_mage behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "fire_mage",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_4": {
             "status": "open",
             "actor_id": "ranged_4",
             "description": "ranged_4: demonology_warlock behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "demonology_warlock",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_5": {
             "status": "open",
             "actor_id": "ranged_5",
             "description": "ranged_5: affliction_warlock behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "affliction_warlock",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_6": {
             "status": "open",
             "actor_id": "ranged_6",
             "description": "ranged_6: survival_hunter behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "survival_hunter",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_7": {
             "status": "open",
             "actor_id": "ranged_7",
             "description": "ranged_7: marksmanship_hunter behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "marksmanship_hunter",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_8": {
             "status": "open",
             "actor_id": "ranged_8",
             "description": "ranged_8: shadow_priest behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "shadow_priest",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_9": {
             "status": "open",
             "actor_id": "ranged_9",
             "description": "ranged_9: shadow_priest behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "shadow_priest",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_10": {
             "status": "open",
             "actor_id": "ranged_10",
             "description": "ranged_10: balance_druid behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "balance_druid",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_11": {
             "status": "open",
             "actor_id": "ranged_11",
             "description": "ranged_11: balance_druid behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "balance_druid",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_ranged_12": {
             "status": "open",
             "actor_id": "ranged_12",
             "description": "ranged_12: elemental_shaman behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "ranged_dps",
+            "spec": "elemental_shaman",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_melee_1": {
             "status": "open",
             "actor_id": "melee_1",
             "description": "melee_1: combat_rogue behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "melee_dps",
+            "spec": "combat_rogue",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_melee_2": {
             "status": "open",
             "actor_id": "melee_2",
             "description": "melee_2: arms_warrior behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "melee_dps",
+            "spec": "arms_warrior",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_melee_3": {
             "status": "open",
             "actor_id": "melee_3",
             "description": "melee_3: retribution_paladin behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "melee_dps",
+            "spec": "retribution_paladin",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_melee_4": {
             "status": "open",
             "actor_id": "melee_4",
             "description": "melee_4: unholy_death_knight behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "melee_dps",
+            "spec": "unholy_death_knight",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "actor_melee_5": {
             "status": "open",
             "actor_id": "melee_5",
             "description": "melee_5: feral_druid_dps behavior and duty-adjusted performance",
             "needs_raid": true,
-            "needs_performance": true
+            "needs_performance": true,
+            "role": "melee_dps",
+            "spec": "feral_druid_dps",
+            "roster_source": {
+              "path": "experiments/configs/cata_raid_roster_25_v1.json",
+              "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+            }
           },
           "encounter_performance": {
             "status": "open",

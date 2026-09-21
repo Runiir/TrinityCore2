@@ -35,7 +35,7 @@ def test_preflight_passes_declared_tank_mode_to_reference_gate(tmp_path, monkeyp
         fake_reference_preflight,
     )
     assignment = {
-        "policy": _ref(tmp_path, "policy.json", {"schema": "policy"}),
+        "policy": _ref(tmp_path, "policy.json", json.loads((Path(__file__).resolve().parents[1] / "experiments/configs/cata_raid_build_resource_policy_host12_v1.json").read_text())),
         "validation_identity": {
             "scenario_kind": "dummy",
             "mode": "tank_threat_300",

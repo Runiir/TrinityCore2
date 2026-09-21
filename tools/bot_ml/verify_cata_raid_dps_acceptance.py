@@ -288,12 +288,12 @@ def verify(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
         "all_numeric_target_gear_is_locally_player_legal": all(
             row["local_player_gear_legality_verified"] for row in rows
         ),
-        "hard_floor_is_75_percent": hard_ratio
+        "hard_floor_is_95_percent": hard_ratio
         == float(acceptance.get("hard_reference_ratio") or 0.0)
-        == 0.75,
-        "optimization_target_is_85_percent": optimization_ratio
+        == 0.95,
+        "optimization_target_is_95_percent": optimization_ratio
         == float(acceptance.get("optimization_reference_ratio") or 0.0)
-        == 0.85,
+        == 0.95,
         "default_dps_slots_match_roster": int(default_shape.get("dps") or 0)
         == int(config.get("default_dps_slot_count") or 0),
         "encounter_dps_slots_match_roster": sorted(

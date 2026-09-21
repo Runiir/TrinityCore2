@@ -22,6 +22,11 @@ understand it; do not substitute a dump of the program charter or old handoffs.
    prove, especially native terrain, actual encounter fidelity, or live success.
 6. **Return.** Changed files, cause/fix, executed tests, remaining uncertainty,
    and whether review/build/live validation is still needed.
+   State the stopping condition: once the owned production path and required
+   checks pass, freeze the files and return. Further searches or broader tests
+   need a concrete new failure or unresolved concern. Report a scope blocker
+   promptly instead of silently expanding the investigation. Independent review
+   starts from the frozen result; do not keep editing during that review.
 
 Before dispatch, the coordinator checks that the packet includes the relevant
 callers, lifecycle boundary and duplicate/legacy test expectations. Include the
