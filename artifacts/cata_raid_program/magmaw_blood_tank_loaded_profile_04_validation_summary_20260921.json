@@ -1,0 +1,167 @@
+{
+  "schema": "magmaw_blood_tank_loaded_profile_04_validation_summary_v1",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "scenario_kind": "dummy",
+  "mode": "tank_threat_300",
+  "target_spec": "blood_death_knight",
+  "actor_id": "30002",
+  "attempt_id": 1,
+  "server_epoch": 6108469491769333,
+  "terminal_reason": "measurement_complete",
+  "terminal_detail": "combat_calibration_role_gate_failed",
+  "scoring_ms": 300000,
+  "closed": true,
+  "controller_returncode": 0,
+  "wrapper_exit_code": 1,
+  "build_identity": {
+    "source_commit": "94194e427796ed45c014ce68caa62f3a1ff84994",
+    "binary_sha256": "ec2fa3790ab3d055c12fdc292ca840898f3ce43faab439be838a2f5ee4a96651"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30002",
+    "mode": "tank_threat_300",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "result": {
+    "acceptable_final_evidence": false,
+    "completion_reason": "combat_calibration_role_gate_failed",
+    "calibration_acceptance": {
+      "diagnostics_passed": true,
+      "passed": false,
+      "rejections": ["role_calibration:reference_conditions_not_comparable"],
+      "requested": {
+        "mode": "tank_threat_300",
+        "seed": 1,
+        "target_spec": "blood_death_knight"
+      },
+      "role_calibration_passed": false,
+      "scored_window_seconds": 300.0,
+      "target_guid": 1283,
+      "transport_passed": true
+    },
+    "role_evaluation": {
+      "passed": false,
+      "failure_reasons": ["reference_conditions_not_comparable"],
+      "hard_floor_applicable": false,
+      "optimization_target_applicable": false,
+      "reference_comparison_eligible": false,
+      "reference_ratio": 0.584601
+    },
+    "metrics": {
+      "active_dps": 18993.12,
+      "measured_value": 18993.12,
+      "reference_value": 32489.03862,
+      "target_count": 5,
+      "threat_per_second": 10.27,
+      "death_count": 0,
+      "illegal_action_count": 0,
+      "add_threat_success_ratio": 1.0,
+      "all_hostile_retention_ratio": 1.0,
+      "snap_threat_success_ratio": 1.0,
+      "threat_aura_uptime_ratio": 1.0,
+      "mitigation_uptime_ratio": 1.0,
+      "interrupt_success_ratio": 1.0,
+      "healer_exposure_ratio": 0.0,
+      "health_floor_ratio": 0.53,
+      "defensive_action_count": 2,
+      "tank_stance_form_presence_active": true
+    },
+    "bot_window": {
+      "elapsed_seconds": 300.0,
+      "damage": 5697937,
+      "dps": 18993.12,
+      "attempts": 1200
+    },
+    "runtime_identity": {
+      "profile_generation": 1,
+      "profile_content_hash": "BF97FB2DAFCE3535A74B726C661F40BCB8B3B64144027ECA9082ED9F46A1F907",
+      "runtime_authority": "explicit_sql_rule_profiles",
+      "runtime_mode": "calibration_fixture",
+      "target_guid": 1283,
+      "target_sha256": "583cdcff5d71d1665e8e92cdc94dc22cf64e2e65a004bf62fa056882870c6c93",
+      "conditions_sha256": "5cd0750939368c80aa60a156304201d49622875226b9c5ec19a917482ed125ad",
+      "gear_manifest_sha256": "1369b92f047e7b16b54c742a55fa80a6d3c407290fe619dfabad26902ca3fd89",
+      "reset_id": "blood_death_knight:tank_threat_300:seed-1"
+    }
+  },
+  "watchdog": {
+    "policy": "completion-watchdog",
+    "phase": "complete",
+    "scored_seconds": 300.0,
+    "window_complete": true,
+    "scoring_elapsed_seconds": 303.345,
+    "warmup_elapsed_seconds": 20.115,
+    "no_progress": false,
+    "death_loop": false,
+    "repeated_decision_loop": false,
+    "semantic_progress_plateau": false
+  },
+  "runtime_asset_closure": {
+    "complete": true,
+    "status": "runtime_asset_closure_complete",
+    "manifest_path": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+    "manifest_sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c",
+    "snapshot_sha256": "f7c77614f3019db1b8c490a14a7b25d4374c76e2135f8bcc3ab68c665a94fc56",
+    "verification_scope": "runtime_closure_consumption"
+  },
+  "cleanup": {
+    "verified": true,
+    "server_exit_code": 0,
+    "shutdown_requested": true,
+    "calibrate_stop": {
+      "action": "botauto_calibrate_stop",
+      "attempt_id": 1,
+      "server_epoch": 6108469491769333,
+      "removed": 2,
+      "fixture_target_found": false,
+      "fixture_cleanup_submitted_or_absent": true,
+      "failure_reason": null
+    },
+    "cleanup_complete_lines": [
+      "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000503 Type: Player Low: 1283 sessions=1 world_bots=1",
+      "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000508 Type: Player Low: 1288 sessions=0 world_bots=0"
+    ]
+  },
+  "controller_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921/report.json",
+    "sha256": "b3aabce481915057e7dc3893576d91cc9c3a0ad5c34e5297a5461dd29e517395"
+  },
+  "dvclive": {
+    "metrics_path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_dvclive_20260921/metrics.json",
+    "metrics_sha256": "fced88117bb968e9efff5c1fc966c6e2ba2414bebc8198e9d60037c40f9d1f54"
+  },
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz.dvc",
+    "sha256": "f72897e6a1c56f6843b8187d2183e55585a89e17dec00a97c690f1f6ebed43ca",
+    "payload_sha256": "c2d3d3de6303b98fe101dafdac10c766976d9909537b1c194c149e0b9785c2e3",
+    "payload_size_bytes": 2053886
+  },
+  "raw_files": {
+    "combat_analysis.json": "a03514489ee9550e0c6c490d3132fff8e283b0d6425ae3f1f7a36cbd8326aad0",
+    "combat_log.json": "f43e9283e3545409c5a6325b833315fadb8f136468decea64a6a26b630dd25e2",
+    "commands.txt": "1cd0e1084a451e91b5cd3ceaa65e3a321ed47435e2511d57bee5aeded961f533",
+    "heartbeat_events.jsonl": "d0a7f402ea2516c1e4a912d42be69c731bbd03448190bd9ef7c66625c22ad40a",
+    "heartbeat_manifest.json": "6f31db8543d8d87d6d530302c1440ed3fde71bf50473f9b6789c0d8eb4634068",
+    "latest.json": "9ffc699541e84de92717d731c21c5b955b80fa3563e5d72a1806ec517b5a6e75",
+    "report.json": "b3aabce481915057e7dc3893576d91cc9c3a0ad5c34e5297a5461dd29e517395",
+    "worldserver.validation.conf": "0c91118f17b6f9043232b0e1f5c113249f679cdf63e6bd1e25fe55bdb47d785d",
+    "worldserver_output.log": "4a5115fd8e4b9d3077adf657c1f84549b2349a674a6cec34a8f694b25ee8a4e6"
+  }
+}

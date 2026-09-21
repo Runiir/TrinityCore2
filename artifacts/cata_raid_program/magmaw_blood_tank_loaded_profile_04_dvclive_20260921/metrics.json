@@ -1,0 +1,11 @@
+{
+    "scored_seconds": 300.0,
+    "active_dps": 18993.12,
+    "threat_per_second": 10.27,
+    "death_count": 0.0,
+    "illegal_action_count": 0.0,
+    "all_hostile_retention_ratio": 1.0,
+    "mitigation_uptime_ratio": 1.0,
+    "interrupt_success_ratio": 1.0,
+    "role_passed": 0.0
+}

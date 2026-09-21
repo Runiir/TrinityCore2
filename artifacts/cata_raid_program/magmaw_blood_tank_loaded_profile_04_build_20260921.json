@@ -1,0 +1,36 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "ec2fa3790ab3d055c12fdc292ca840898f3ce43faab439be838a2f5ee4a96651",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_queued_build_20260921.json",
+    "sha256": "de7548738163d50543bf166db411ddbaabeb6c27dd9867f4276917ae94443cfe"
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
+    "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_tests_20260921.json",
+      "sha256": "734faeaf769a1bb1f1f520fd20ff3210dcfbedd1e16b333a70642fc97045fff3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_independent_review_20260921.json",
+      "sha256": "055468be248bdfb313e61761fb72e161c2f54d6cfc421ec749fc814d142b8864"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_queued_build_20260921.json",
+      "sha256": "de7548738163d50543bf166db411ddbaabeb6c27dd9867f4276917ae94443cfe"
+    }
+  ],
+  "kind": "build",
+  "notes": "Host-12 queued configure and worldserver build succeeded under the reviewed source identity; the gate-bearing receipt produced the worldserver binary.",
+  "operation_id": "23c1f949a1bd91b9c2973782a675d182333d9639610f0d8269866a9789a8ea79",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator",
+  "source_commit": "94194e427796ed45c014ce68caa62f3a1ff84994",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04"
+}
