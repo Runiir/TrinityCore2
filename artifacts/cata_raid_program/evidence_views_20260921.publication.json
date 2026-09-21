@@ -1,0 +1,23 @@
+{
+  "status": "remote_verified",
+  "verified_at": "2026-09-21T05:38:08.756828+00:00",
+  "source_commit": "1da7cf7fa647561e357a8107239a05cbe1bf5156",
+  "pointer": "artifacts/cata_raid_program/evidence_views_20260921.tar.gz.dvc",
+  "md5": "60c5034c9e92e587233400415e46de1a",
+  "size": 9529,
+  "remote_verification": "Read back full object; MD5 and size match",
+  "validation": "55 tests passed; six retained input replays passed; three skills validated",
+  "independent_review": "gpt-5.6-luna max approved following two correctness fixes; focused recheck 2 passed",
+  "dvc_status_before_eviction": "Data and pipelines are up to date",
+  "local_payload_evicted": true,
+  "local_cache_evicted": true,
+  "scope": "Compact comparison/query tools and workflow instructions; no live DPS or encounter acceptance",
+  "output_sizes_bytes": {
+    "native": 9787,
+    "wowsims": 12718,
+    "wcl": 10082,
+    "wcl_casts": 10144,
+    "events": 3622,
+    "wowsims_raw_v4": 12455
+  }
+}
