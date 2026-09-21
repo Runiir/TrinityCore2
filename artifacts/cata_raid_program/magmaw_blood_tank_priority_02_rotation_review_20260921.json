@@ -1,0 +1,56 @@
+{
+  "schema": "cata_raid_program_rotation_review_v1",
+  "kind": "rotation_review",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "producer": "raid-rotation-review",
+  "authority": "independent_read_only_review",
+  "reviewer_session_id": "01a0c3c4-791e-7be1-9bbb-2fcebda77690",
+  "verdict": "non_publishable",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_validation_evidence_20260921.json",
+      "sha256": "345fb64dfc799a4d4e0512b75ea870280f4905495885ef84f078b6e15a217571"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_tank_threat_v2_20260921.tar.gz.dvc",
+      "sha256": "3ce13e38593dbb8dfd5291265f5a6121bdd05876fee9b8a922069ca15e6136ba"
+    }
+  ],
+  "findings": {
+    "scoring_window": {
+      "scored_started_at_ms": 1789990323905,
+      "scored_ended_at_ms": 1789990623905,
+      "scored_seconds": 300.0,
+      "exact": true
+    },
+    "cleanup": {
+      "clone_cleanup_logged": true,
+      "controller_final_active_false_and_lease_zero_proven": false,
+      "force_shutdown_observed": true
+    },
+    "contamination": {
+      "cross_window_event_count": 6,
+      "owner_guid": 1283,
+      "victim_entry": 44548,
+      "spell_ids": [0, 50463],
+      "damage_values_all_zero": true,
+      "raw_damage_values": [8140, 1918, 7412, 7601, 8234, 7529],
+      "queued_effect_provenance": "missing"
+    },
+    "action_cadence": {
+      "death_strike_49998": 16,
+      "heart_strike_55050": 0,
+      "total_decision_attempts": 1200,
+      "candidate_rune_health_arbitration_observed": false
+    },
+    "role_gate": {
+      "reference_ratio": 0.444849,
+      "measured_value": 14452.71,
+      "reference_value": 32489.03862,
+      "failed": ["no_cross_window_contamination", "reference_hard_floor"],
+      "survival_threat_and_legality_checks_passed": true
+    },
+    "sql_implication": "The SQL migration plausibly changes loaded ordering, but the trace does not prove a priority inversion because Heart Strike eligibility and resource arbitration were not observed."
+  },
+  "next_bounded_repair": "Fix shared calibration teardown so the Blood owner is quiesced before stop and closure requires active=false and lease_count=0, then recapture with the Blood SQL unchanged."
+}
