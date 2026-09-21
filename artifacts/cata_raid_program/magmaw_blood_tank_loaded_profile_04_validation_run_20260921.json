@@ -80,7 +80,7 @@
   "evidence": [
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_summary_20260921.json",
-      "sha256": "ad69a7eaf50ff1f9b0f59f9fbcd9c6526d498dc4d42afc9fae33a0db5cced516"
+      "sha256": "c300ad2a224bc51eb263aaf4882f38448110859df32152c3fc6f696ca7015ce5"
     },
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz.dvc",
