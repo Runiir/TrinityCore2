@@ -1,0 +1,43 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "d102e25a28f2d99da3a824dc0a5a29a1f97cc60e7addd58734bbd47b1536a3f4",
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-7def0ff7d85f42d6a6d4131ce09b57f1.json",
+    "sha256": "e75318586d67fe0ae4bd7f7c3ab3a7044b2dca502bab5c558e19814df833fd12"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_20260921.json",
+      "sha256": "5372a0ca8153e10a92088ab3c56c300df6c35f17e075bd7ce708627b795cf25b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_implementation_20260921.json",
+      "sha256": "faa97142d1d91fa40d670f854a0e2b8fec29b007f4e83cfa5a6bfffe6aabc7d5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_independent_review_20260921.receipt.json",
+      "sha256": "96727d3ca9c0507b9120436ec35da201a9b3d26c11738b22a5a6b88b72820a7e"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-e1cc35c190e841868e813646263c3a47.json",
+      "sha256": "5944028009588e681aae691125d7c41c9c6a243d2362bf4ca074a6c943de24dc"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-7def0ff7d85f42d6a6d4131ce09b57f1.json",
+      "sha256": "e75318586d67fe0ae4bd7f7c3ab3a7044b2dca502bab5c558e19814df833fd12"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "kind": "build",
+  "operation_id": "a927dcf7d079f76c44ad505ecd181ac6394d25697f1d9bbdb8243e2e34236151",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator",
+  "source_commit": "2ff141f76d627a8d06179b926e1de93bd9d7fb28",
+  "unit_id": "magmaw:blood_tank_priority_02"
+}
