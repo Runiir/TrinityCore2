@@ -10,10 +10,11 @@ DataDir and run output. Explicit custom roots remain supported and verified.
 
 Runtime navigation readers open files read-only. Their asset check requires
 readable regular files with the expected bytes, sizes and membership, rather than
-requiring an offline copy at mode0444 and a native copy at mode0664. Observed modes
-remain in the receipt; `mode_policy=readable_navigation_data` identifies this
-comparison. Other asset classes retain exact mode requirements. No chmod or
-copy is performed. Historical extraction/archive manifests are unchanged.
+requiring an offline copy at mode 0444 and a native copy at mode 0664. Observed modes
+remain in the receipt; `mode_policy=readable_runtime_input` identifies this
+comparison. The generated route, gear and runtime-profile inputs use the same
+read-access policy, avoiding irrelevant 0644/0664 differences. Other asset classes
+retain exact mode requirements. No chmod or copy is performed. Historical extraction/archive manifests are unchanged.
 The standalone closure verifier remains strict for sealed replay; the live CLI
 also supports `--runtime-asset-strict-modes` when exact archived modes are needed.
 

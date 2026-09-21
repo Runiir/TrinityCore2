@@ -304,12 +304,16 @@ def test_complete_fixture_binds_all_roots_dvc_and_native_provenance(tmp_path: Pa
     }
 
 
-def test_runtime_navigation_alias_uses_content_and_retains_actual_modes(tmp_path):
+@pytest.mark.parametrize("class_ids", [
+    ("selected_map_navmesh_offline", "selected_map_navmesh_native"),
+    ("validation_routes", "validation_gear_profiles"),
+    ("runtime_profile_source", "selected_map_navmesh_native"),
+])
+def test_runtime_navigation_alias_uses_content_and_retains_actual_modes(tmp_path, class_ids):
     paths = _fixture(tmp_path)
     manifest = json.loads(paths["manifest"].read_text())
     original = next(c for c in manifest["asset_classes"] if c["id"] == "bounded")
-    for class_id, mode in [("selected_map_navmesh_offline", "0444"),
-                           ("selected_map_navmesh_native", "0664")]:
+    for class_id, mode in zip(class_ids, ("0444", "0664")):
         duplicate = json.loads(json.dumps(original))
         duplicate.pop("map_contracts", None)
         duplicate.update(json.loads(json.dumps(original.get("map_contracts", {}).get("100", {}))))
@@ -325,7 +329,7 @@ def test_runtime_navigation_alias_uses_content_and_retains_actual_modes(tmp_path
     assert not _verify(paths)["complete"]  # Historical sealed replay remains exact.
     runtime = _verify(paths, runtime_read_access=True)
     assert runtime["complete"], runtime["issues"]
-    rows = [v for k, v in runtime["snapshot"].items() if k.startswith("selected_map_navmesh")]
+    rows = [v for k, v in runtime["snapshot"].items() if k.split(":", 1)[0] in class_ids]
     assert rows and all(r["mode"] == "0644" for r in rows)
     (paths["source"] / "map-assets/100.base").write_bytes(b"BAD!")
     assert not _verify(paths, runtime_read_access=True)["complete"]

@@ -423,6 +423,12 @@ def _expected_map_values(
     return merged
 
 
+READ_ACCESS_CLASSES = frozenset({
+    "selected_map_navmesh_offline", "selected_map_navmesh_native",
+    "validation_routes", "validation_gear_profiles", "runtime_profile_source",
+})
+
+
 def _compare_expected_record(
     expected: Mapping[str, Any], observed: Mapping[str, Any], class_id: str,
 ) -> list[dict[str, Any]]:
@@ -455,8 +461,7 @@ def _verify_class(
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, dict[str, Any]]]:
     values = _expected_map_values(asset_class, map_id, inventory_authority)
     class_id = str(values.get("id") or "")
-    readable_navigation = runtime_read_access and class_id in {
-        "selected_map_navmesh_offline", "selected_map_navmesh_native"}
+    readable_input = runtime_read_access and class_id in READ_ACCESS_CLASSES
     root_key = values.get("root")
     if not class_id or root_key not in roots:
         raise ManifestError(f"asset_class_invalid:{class_id or 'unnamed'}")
@@ -568,11 +573,11 @@ def _verify_class(
         records.append(record)
         expected = expected_by_path.get(relative)
         if expected is not None:
-            compared = {**record, "mode": expected.get("mode", record["mode"])} if readable_navigation else record
+            compared = {**record, "mode": expected.get("mode", record["mode"])} if readable_input else record
             issues.extend(_compare_expected_record(expected, compared, class_id))
     records.sort(key=lambda row: row["path"])
     expected_mode = values.get("expected_mode")
-    if expected_mode is not None and not readable_navigation:
+    if expected_mode is not None and not readable_input:
         for record in records:
             if record["mode"] != expected_mode:
                 issues.append({
@@ -586,7 +591,7 @@ def _verify_class(
     # while retaining actual modes in observed_inventory and snapshot below.
     compared_inventory = _inventory([
         {**row, "mode": expected_by_path.get(row["path"], {}).get("mode", expected_mode or row["mode"])}
-        for row in records]) if readable_navigation else observed_inventory
+        for row in records]) if readable_input else observed_inventory
     expected_inventory = values.get("expected_inventory")
     if isinstance(expected_inventory, dict):
         for field, kind in (
@@ -632,7 +637,7 @@ def _verify_class(
         "rule": rule,
         "passed": not issues,
         "observed_inventory": observed_inventory,
-        "mode_policy": "readable_navigation_data" if readable_navigation else "exact_manifest_modes",
+        "mode_policy": "readable_runtime_input" if readable_input else "exact_manifest_modes",
         "audit_inventory_sha256": values.get("audit_inventory_sha256"),
         "issue_count": len(issues),
     }
@@ -1183,7 +1188,7 @@ def verify_runtime_asset_closure(
         if runtime_read_access:
             alias_classes = []
             for selected in selected_classes:
-                if selected.get("id") in {"selected_map_navmesh_offline", "selected_map_navmesh_native"}:
+                if selected.get("id") in READ_ACCESS_CLASSES:
                     selected = {k: v for k, v in selected.items() if k != "expected_mode"}
                     selected["expected_files"] = [{k: v for k, v in row.items() if k != "mode"}
                                                   for row in selected.get("expected_files", [])]
@@ -1289,7 +1294,11 @@ def require_runtime_asset_closure(**kwargs: Any) -> dict[str, Any]:
     receipt = verify_runtime_asset_closure(**kwargs)
     if not receipt["complete"]:
         kinds = ",".join(sorted(receipt.get("issue_counts", {})))
-        raise SystemExit(f"runtime_asset_closure_incomplete:{kinds}")
+        details = [{key: issue[key] for key in ("kind", "class_id", "path", "field", "detail") if key in issue}
+                   for issue in receipt.get("issues", [])[:4]]
+        raise SystemExit(f"runtime_asset_closure_incomplete:{kinds}; map={kwargs.get('scenario_map_id')}; "
+                         + json.dumps(details, separators=(",", ":"))
+                         + "; repair the named asset inputs, do not switch maps or rewrite expected hashes")
     return receipt
 
 
