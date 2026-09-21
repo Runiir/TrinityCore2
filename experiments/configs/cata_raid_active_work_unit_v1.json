@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Review every actor; compare matched baseline, native outcome, and performance separately. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike 55050 bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike 55050 bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 272,
+    "revision": 273,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "assess",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -629,7 +629,7 @@
       "owner_effective_stat_application_moonkin_form_companion_24905": 1,
       "owner_balance_post_opener_event_cadence_gap": 2,
       "owner_damage_attribution_before_policy_tuning": 6,
-      "owner_blood_priority_inversion": 2,
+      "owner_blood_priority_inversion": 3,
       "owner_balance_post_starfall_throughput_regression": 2
     },
     "history": [
@@ -5317,6 +5317,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 272,
+        "unit_id": "magmaw:blood_tank_priority_02",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 272,
+          "unit_id": "magmaw:blood_tank_priority_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_assessment_20260921.json",
+            "sha256": "41a9ed4bc7ed04dd54b61544ea18091f13f12206cccce174016f1c4dd1003dae"
+          },
+          "claim_token": "26371bd1a2e6ecce99e07414f73d1caff0048c329a309418676d7f0ab5495e93"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5411,6 +5429,10 @@
       "run": {
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
         "sha256": "92b7983cb55b25f4ae738a15a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_assessment_20260921.json",
+        "sha256": "41a9ed4bc7ed04dd54b61544ea18091f13f12206cccce174016f1c4dd1003dae"
       }
     },
     "support_refreshes": [
@@ -5435,11 +5457,11 @@
       "scenario_kind": "dummy",
       "terminal_reason": "contamination"
     },
-    "claim": {
-      "owner": "coordinator-magmaw-blood-tank-priority-02-assess-20260921",
-      "token": "26371bd1a2e6ecce99e07414f73d1caff0048c329a309418676d7f0ab5495e93",
-      "operation_id": "26371bd1a2e6ecce99e07414f73d1caff0048c329a309418676d7f0ab5495e93",
-      "stage": "assess"
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {
