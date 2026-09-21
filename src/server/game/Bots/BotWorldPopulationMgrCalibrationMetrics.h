@@ -603,9 +603,10 @@
         // unauditable aggregate collateral counter.
         std::vector<OffTargetDamageEvent> OffTargetDamageEvents;
         // Dragonwrath direct copies keep the original triggering spell id;
-        // periodic copies use synthetic spell 101085. Record only the bounded
-        // proc submission outcome here. Landed copied damage remains
-        // unavailable without carrying spell context through Unit::DealDamage.
+        // periodic copies use synthetic spell 101085. A synchronous copy-cast
+        // scope can attribute matching landed events; delayed or unmatched
+        // copied damage remains unavailable without context through
+        // Unit::DealDamage.
         std::map<uint32, DragonwrathCopyProcObservation> DragonwrathCopyProcs;
         // Will of Unbinding is recorded as a bounded native aura observation.
         // Proc attempts are intentionally reported unavailable until a native
