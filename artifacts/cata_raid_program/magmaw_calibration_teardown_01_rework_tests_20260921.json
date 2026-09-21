@@ -1,0 +1,58 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "codex-magmaw-calibration-teardown-02-implement",
+  "authority": "coordinator_attestation",
+  "operation_id": "0eab34d5f550d17b2dc728b188c5e3aea0d0265252691afafe19b8cdf42bc6be",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_plan_20260921.json",
+      "sha256": "56c67ded7f4f2d54eff970d3fd3d3c4936bc0bce47ffb6a3a05472d7aff50b36"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_result_checkpoint_20260921.json",
+      "sha256": "74066135ce6b6c2b515fd10f65e1b0f1b53f74126aa9fb839fa4b56c4e33a281"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_result_review_20260921.json/summary.json",
+      "sha256": "0538cb526e73def4c080fb7794a9b18527352a91987fdab98409ab3790b9bed5"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp": "f0f2becd736527a3d90ee22bb4a128e0d5dd0425821bc4659aafb86789cd2693",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp": "69000a4b90283c6711f55244de982d6c174b3a4b4adbf465fba267a02c97ae56",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp": "35ae00a278b26133024f3efe07a6a322c821970f5eccf03154b2a6ed2b49e183",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "3f7f494c0005816cf09d2ad8392ff6fb405b2260c9ce85a44d918e474cb91d7d",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp": "426d47cbab16a17db759eec402b173c2cb271e2c8a6484a1e13aaa1b5f578394",
+    "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h": "a78581725c7150743616d0ab0676012f875e365686d9cbdbe7f8249b3c7b999b",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationLifecycle.h": "a1c7675cef43242b030711bf4e910a61052ef24feca2e9a95e29d31ded082cb1",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py": "031a47a8b438f3c1c75ca39b6848f680ad0e904a70b2d793607947734452cf57",
+    "tests/test_bot_world_population_mgr_calibration_control_module.py": "ba1d6d1e1b8044351aa6cfce0d84e0ce7f3b02de2a3a1dd3130c53983d391f42",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py": "023e4b43ad1dccd543af180000e5e350c417bff4f70ec15a3aeabcae18c95935",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py": "e7880395d91efd23f5166ecaad7c1df9ff0093133900d2ff7766a65e67882e97",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py": "f6cef7002d309e8e59ec910c9e8681b0f08714b105f6fb9d13a0f0489e1d8636",
+    "tests/test_bot_world_population_mgr_runtime_contracts_header.py": "e58f4d1edf7142f5f9490710e8b480602c5e7593ff130fb31af36fb93a5bccad"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_control_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_bot_world_population_mgr_runtime_contracts_header.py",
+      "exit_status": 0,
+      "result": "29 passed in 1.93s; git diff --check clean"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_result_review_20260921.json/summary.json",
+        "sha256": "0538cb526e73def4c080fb7794a9b18527352a91987fdab98409ab3790b9bed5"
+      },
+      "adjudication": "Hosted Jev supports the rework scope, evidence, and bounded compiled-test claim; native and live gates remain open."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local Laya returned HTTP 422 context_budget_exceeded; retained response records state_tokens=1069 above the per-question budgets.",
+      "adjudication": "No local model acceptance is inferred; the separate independent reviewer remains the acceptance authority."
+    }
+  }
+}

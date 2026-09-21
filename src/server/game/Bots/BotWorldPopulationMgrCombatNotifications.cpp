@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatDamageAttribution.h"
+#include "Bots/BotWorldPopulationMgrCalibrationLifecycle.h"
 
 #include "Creature.h"
 #include "GameTime.h"
@@ -291,7 +292,12 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
 
     if (!Cohort().Active || (!damage && !unmitigatedDamage))
         return;
-    if (Cohort().CalibrationStopping)
+    Player* owner = CombatOwnerPlayer(attacker);
+    bool const stoppingCalibrationClone = Cohort().CalibrationStopping && owner
+        && BotWorldPopulationMgrCalibrationLifecycle::IsIdentifiedCalibrationClone(
+            owner->GetGUID(), Cohort().CalibrationStoppingGuids,
+            Party().CalibrationBots);
+    if (stoppingCalibrationClone)
         return;
 
     bool const sharedDamage = IsSharedDamageCallback(spellId, damageType);
@@ -304,7 +310,6 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             < CalibrationSingleTargetDurationMs)
         ++Cohort().CalibrationFixtureTargetOriginatedDamageEventCount;
 
-    Player* owner = CombatOwnerPlayer(attacker);
     if (owner)
     {
         auto calibration = Cohort().CalibrationMetricsByGuid.find(owner->GetGUID().GetCounter());

@@ -514,6 +514,7 @@
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;
         bool CalibrationStopping = false;
+        GuidSet CalibrationStoppingGuids;
         // A calibration attempt owns one private native phase for its entire
         // warmup and scored window.  The lease is per cohort; no global phase
         // reset is allowed while a witness cohort remains active.

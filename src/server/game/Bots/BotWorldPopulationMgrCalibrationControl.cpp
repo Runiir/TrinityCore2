@@ -101,6 +101,7 @@ std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mod
         Cohort().CalibrationPhaseId = phaseAllocation.PhaseId;
     }
 
+    Cohort().CalibrationStoppingGuids.clear();
     Cohort().RuntimeMode = BotWorldRuntimeMode::CalibrationFixture;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::CalibrationFixture;
     Cohort().NonCertifyingAssistance = true;
@@ -213,6 +214,7 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     }
 
     Cohort().CalibrationStopping = true;
+    Cohort().CalibrationStoppingGuids.clear();
     uint16 const calibrationPhaseId = Cohort().CalibrationPhaseId;
     std::vector<ObjectGuid> calibrationBotGuids;
     calibrationBotGuids.reserve(Party().CalibrationBots.size());
@@ -222,7 +224,10 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
             if (Player* bot = GetLoadedBot(state))
                 PhasingHandler::RemovePhase(bot, calibrationPhaseId, true);
         if (!state.Guid.IsEmpty())
+        {
             calibrationBotGuids.push_back(state.Guid);
+            Cohort().CalibrationStoppingGuids.insert(state.Guid);
+        }
     }
 
     bool fixtureTargetFound = false;
@@ -336,6 +341,7 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
         if (ReleaseBotGuid(guid.GetCounter()))
             CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
     }
+    Cohort().CalibrationStoppingGuids.clear();
     Cohort().CalibrationStopping = false;
     Cohort().NonCertifyingAssistance = false;
     if (Cohort().Active)

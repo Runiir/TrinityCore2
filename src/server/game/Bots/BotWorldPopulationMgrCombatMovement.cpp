@@ -3,6 +3,7 @@
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotProfileCombatRangeCandidate.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldPopulationMgrCalibrationLifecycle.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "ChaseMovementGenerator.h"
 #include "Creature.h"
@@ -79,8 +80,9 @@ void BotWorldPopulationMgr::ResolveAndReconcileMeleeAutoAttack(
         SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
             ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
             BotActionArbitration::Priority::Terminal, "player_unavailable");
-    else if (Cohort().CalibrationStopping
-        || (Cohort().CalibrationActive && Cohort().CalibrationWindowComplete))
+    else if (BotWorldPopulationMgrCalibrationLifecycle::ShouldSuppressMeleeAutoAttack(
+        state.SpawnSource, Cohort().CalibrationStopping,
+        Cohort().CalibrationActive, Cohort().CalibrationWindowComplete))
         SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
             ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
             BotActionArbitration::Priority::Terminal, "calibration_teardown");

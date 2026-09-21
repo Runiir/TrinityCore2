@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp"
+LIFECYCLE_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCalibrationLifecycle.h"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 
 
@@ -51,7 +53,65 @@ def test_calibration_terminal_state_suppresses_the_retained_melee_toggle() -> No
     assert reconcile.index("calibration_teardown") < reconcile.index(
         "all_offense_suppressed"
     )
+    assert "state.SpawnSource" in reconcile
+    assert "ShouldSuppressMeleeAutoAttack" in reconcile
     assert "bot->Attack(target, true)" in reconcile
+
+
+def test_calibration_lifecycle_header_executes_clone_identity_boundaries(tmp_path):
+    source = r'''
+#include "Bots/BotWorldPopulationMgrCalibrationLifecycle.h"
+
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <set>
+#include <string>
+
+struct State
+{
+    std::uint32_t Guid;
+    std::string SpawnSource;
+};
+
+int main()
+{
+    using namespace BotWorldPopulationMgrCalibrationLifecycle;
+    std::array<State, 2> live = {{
+        {41u, "combat_calibration"},
+        {73u, "ordinary"},
+    }};
+    std::set<std::uint32_t> retained{41u};
+
+    assert(ShouldSuppressMeleeAutoAttack(
+        "combat_calibration", false, true, true));
+    assert(!ShouldSuppressMeleeAutoAttack("ordinary", false, true, true));
+    assert(IsRetainedStoppingCalibrationClone(41u, retained));
+    assert(!IsRetainedStoppingCalibrationClone(99u, retained));
+    assert(IsIdentifiedCalibrationClone(41u, retained, live));
+    assert(!IsIdentifiedCalibrationClone(99u, retained, live));
+    assert(!IsLiveCalibrationClone(73u, live));
+    return 0;
+}
+'''
+    source_path = tmp_path / "calibration_lifecycle.cpp"
+    binary_path = tmp_path / "calibration_lifecycle"
+    source_path.write_text(source, encoding="utf-8")
+    compile_result = subprocess.run(
+        [
+            "c++", "-std=c++11", "-Wall", "-Wextra", "-Werror",
+            "-I", str(LIFECYCLE_HEADER.parent.parent), str(source_path),
+            "-o", str(binary_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert compile_result.returncode == 0, compile_result.stderr
+    run_result = subprocess.run(
+        [str(binary_path)], capture_output=True, text=True, check=False,
+    )
+    assert run_result.returncode == 0, run_result.stderr
 
 
 def test_combat_movement_preserves_profile_range_and_path_guards() -> None:

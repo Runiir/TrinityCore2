@@ -51,3 +51,19 @@ def test_calibration_control_preserves_native_cleanup_contract() -> None:
         "BotWorldRuntimeMode::CalibrationFixture",
     ):
         assert marker in module
+
+
+def test_calibration_control_retains_stopping_clone_identity_until_removal() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    stop = module[module.index("std::string BotWorldPopulationMgr::StopCombatCalibration"):]
+
+    capture = stop.index("CalibrationStoppingGuids.insert(state.Guid)")
+    party_clear = stop.index("Party().CalibrationBots.clear()")
+    remove = stop.index("sBotMgr->RemoveWorldBot")
+    release = stop.index("ReleaseBotGuid")
+    final_clear = stop.rindex("CalibrationStoppingGuids.clear()")
+
+    assert capture < party_clear < remove < release < final_clear
+    assert "CalibrationStoppingGuids.clear();" in module[:module.index(
+        "Cohort().RuntimeMode = BotWorldRuntimeMode::CalibrationFixture"
+    )]

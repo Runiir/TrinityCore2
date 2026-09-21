@@ -65,7 +65,9 @@ def test_calibration_stopping_fails_closed_without_removing_completed_guard():
 
     stopping = notify.index("Cohort().CalibrationStopping")
     owner_lookup = notify.index("Player* owner = CombatOwnerPlayer(attacker);")
-    assert stopping < owner_lookup
+    assert owner_lookup < stopping
+    assert "CalibrationStoppingGuids" in notify
+    assert "IsIdentifiedCalibrationClone" in notify
     assert "CalibrationCrossWindowEventCount" in notify
     assert "BotWorld calibration post-window damage" in notify
 

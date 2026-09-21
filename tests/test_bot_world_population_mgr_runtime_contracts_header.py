@@ -23,3 +23,9 @@ def test_runtime_contracts_are_not_duplicated_in_the_primary_header():
     for marker in ("struct PartyRuntime", "struct RaidRuntime", "struct CohortRuntime", "struct BotGuidLease"):
         assert source.count(marker) == 0
     assert '#include "BotWorldPopulationMgr.cpp"' not in source
+
+
+def test_runtime_contracts_retain_calibration_stopping_clone_guids():
+    module = MODULE.read_text()
+    cohort = module[module.index("struct CohortRuntime"):]
+    assert "GuidSet CalibrationStoppingGuids;" in cohort
