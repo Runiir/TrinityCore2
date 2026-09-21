@@ -1,0 +1,22 @@
+{
+  "schema": "raid_development_rework_receipt_v1",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_20260921.json",
+      "sha256": "70f3e3152c1a265342ddead6624e24a975af8b7f70638ffcfb6cd4f58a517c80"
+    },
+    {
+      "path": "tools/raid_program/workflow_build.py",
+      "sha256": "ccf41a10bcecb8c7a0a327c87bc85fd6965aed98dc93c24e8e9bc9aa7d945e62"
+    },
+    {
+      "path": "docs/bot_raids/development_graph.md",
+      "sha256": "101a3a4c74af9e90275d3741c3610a59e734c0e18a806735b9564aac0c07d1cc"
+    }
+  ],
+  "reason": "The reviewed Blood plan binds the role-calibration policy as its build policy, but workflow_build requires the frozen CMake/resource policy and the graph requires the same policy reference at build admission. Replan the unchanged Blood policy unit with cata_raid_build_resource_policy_host12_v1.json, keeping the separately reviewed workflow support files and the tank_threat_300 validation identity.",
+  "source_change_claim": "No Blood policy, native resolver, encounter, actor, performance, or raid acceptance change is claimed by this rework."
+}

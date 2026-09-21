@@ -1,0 +1,10 @@
+{
+  "revision": 241,
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "action": "rework",
+  "reason": "The reviewed Blood plan binds the role-calibration policy as its build policy, but workflow_build requires the frozen CMake/resource policy and the graph requires the same policy reference at build admission. Replan the unchanged Blood policy unit with cata_raid_build_resource_policy_host12_v1.json, keeping the separately reviewed workflow support files and the tank_threat_300 validation identity.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_build_policy_rework_20260921.json",
+    "sha256": "e2b6cd9ea59e6225ffb04c7d69ae0e63bf7179126823d5b6abd958c9b8ec49c3"
+  }
+}

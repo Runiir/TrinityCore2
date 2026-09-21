@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 240,
+    "revision": 243,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -561,7 +561,7 @@
       "owner_effective_stat_application_moonkin_form_companion_24905": 1,
       "owner_balance_post_opener_event_cadence_gap": 2,
       "owner_damage_attribution_before_policy_tuning": 6,
-      "owner_blood_priority_inversion": 1
+      "owner_blood_priority_inversion": 2
     },
     "history": [
       {
@@ -4694,6 +4694,58 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 240,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "action": "advance",
+          "revision": 240,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_review_20260921.json",
+            "sha256": "0386d3a30c0d572366827639011d4632b403f310294dbb1fe48d8ec66540ce5d"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 241,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "build",
+        "to": "diagnose",
+        "event": {
+          "revision": 241,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "action": "rework",
+          "reason": "The reviewed Blood plan binds the role-calibration policy as its build policy, but workflow_build requires the frozen CMake/resource policy and the graph requires the same policy reference at build admission. Replan the unchanged Blood policy unit with cata_raid_build_resource_policy_host12_v1.json, keeping the separately reviewed workflow support files and the tank_threat_300 validation identity.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_build_policy_rework_20260921.json",
+            "sha256": "e2b6cd9ea59e6225ffb04c7d69ae0e63bf7179126823d5b6abd958c9b8ec49c3"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 242,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 242,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_v2_20260921.json",
+            "sha256": "36392d5c7562d0fa0a63b108d4974b11792cd65539a247b53c622b05b175d12b"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4702,9 +4754,9 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "28268b1e12cfd864993a073683ccb7d9ed48f326",
+    "source_base_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
     "assignment": {
-      "hypothesis": "The Blood policy edge remains the loaded profile ordering: valid Death Strike 49998 loses to Heart Strike 55050 because bucket 2 is compared before score. The only new change is workflow support that forwards the declared tank_threat_300 mode to build preflight, preventing an unrelated DPS-reference gate from blocking the role unit.",
+      "hypothesis": "The Blood policy edge remains the loaded profile ordering: valid Death Strike 49998 loses to Heart Strike 55050 because bucket 2 is compared before score. The prior build blocker was plan metadata binding the role-calibration policy instead of the frozen CMake/resource policy; this replacement changes only that workflow binding.",
       "owned_files": [
         "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
         "tests/test_blood_death_strike_priority.py"
@@ -4718,16 +4770,17 @@
       "acceptance_conditions": [
         "The existing Blood migration and focused test remain unchanged and continue to pass.",
         "The separately reviewed workflow support files are hash-bound and only forward validation_identity.mode to preflight.",
+        "The build assignment uses cata_raid_build_resource_policy_host12_v1.json and its frozen CMake/resource contract.",
         "The next role-harness run uses tank_threat_300 identity and reports threat retention, mitigation, healer exposure, interrupts, rune flow and survival without implying raid acceptance.",
         "Independent review, native build, one matched role-harness window, assessment and publication remain required."
       ],
       "required_test_commands": [
         "pixi run pytest -q tests/test_blood_death_strike_priority.py"
       ],
-      "base_commit": "28268b1e12cfd864993a073683ccb7d9ed48f326",
+      "base_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
       "policy": {
-        "path": "experiments/configs/all_spec_role_calibration_policy_v2.json",
-        "sha256": "8c2c037b1ce007ddcc79790eb19517ff9f7b599c469a1477c4cd0682de7db446"
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
       },
       "validation_identity": {
         "scenario_kind": "dummy",
@@ -4766,20 +4819,10 @@
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_20260921.json",
-        "sha256": "70f3e3152c1a265342ddead6624e24a975af8b7f70638ffcfb6cd4f58a517c80"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_tests_20260921.json",
-        "sha256": "32728cb4c2fc912c9125b4e5e4a5977d1b5a90659f84cd815a9c23780ca16430"
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_v2_20260921.json",
+        "sha256": "36392d5c7562d0fa0a63b108d4974b11792cd65539a247b53c622b05b175d12b"
       }
-    },
-    "tested_files": {
-      "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
-      "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
-    },
-    "tested_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
-    "implementer": "coordinator"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

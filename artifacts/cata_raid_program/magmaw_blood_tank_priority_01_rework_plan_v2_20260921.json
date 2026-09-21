@@ -1,0 +1,100 @@
+{
+  "schema": "raid_development_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_v2_20260921/checkpoint.json",
+      "sha256": "1efc76afccd825fbb38a2233c1fd5476024de63321abedb89b2554689b35df62"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_v2_20260921_review/summary.json",
+      "sha256": "05ff06072de1482aacf055a0f84b236cd6c750deaf0833dff29ebd35375476aa"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_build_policy_rework_20260921.json",
+      "sha256": "e2b6cd9ea59e6225ffb04c7d69ae0e63bf7179126823d5b6abd958c9b8ec49c3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_20260921.json",
+      "sha256": "b3b0cf3592cac16836b0178e9f2f71e5372e28590f2ef324a7ff59edd43aa79c"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+      "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "supported_replan_scope_and_policy_binding; acceptance remains pending native test, build and role evidence",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_v2_20260921_review/summary.json",
+        "sha256": "05ff06072de1482aacf055a0f84b236cd6c750deaf0833dff29ebd35375476aa"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "not_reviewed_due_to_local_context_budget",
+      "reason": "The local advisory backend rejected the compact plan packet with context_budget_exceeded; deterministic checks passed and the hosted advisory remains non-authoritative."
+    }
+  },
+  "hypothesis": "The Blood policy edge remains the loaded profile ordering: valid Death Strike 49998 loses to Heart Strike 55050 because bucket 2 is compared before score. The prior build blocker was plan metadata binding the role-calibration policy instead of the frozen CMake/resource policy; this replacement changes only that workflow binding.",
+  "owned_files": [
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+    "tests/test_blood_death_strike_priority.py"
+  ],
+  "forbidden_changes": [
+    "No second Blood policy edit or changes to Death Strike/Heart Strike scores, legality gates, costs, coefficients, targets, geometry, presence, or encounter routing.",
+    "No changes to simulator reference data, encounter scripts, or live validation semantics beyond passing the declared role mode to the existing preflight gate.",
+    "No IBF trash-readiness repair, movement repair, or actor/performance/raid acceptance.",
+    "Keep every parent actor, comparison, potion, survival-reference, Balance and Magmaw 10N requirement open."
+  ],
+  "acceptance_conditions": [
+    "The existing Blood migration and focused test remain unchanged and continue to pass.",
+    "The separately reviewed workflow support files are hash-bound and only forward validation_identity.mode to preflight.",
+    "The build assignment uses cata_raid_build_resource_policy_host12_v1.json and its frozen CMake/resource contract.",
+    "The next role-harness run uses tank_threat_300 identity and reports threat retention, mitigation, healer exposure, interrupts, rune flow and survival without implying raid acceptance.",
+    "Independent review, native build, one matched role-harness window, assessment and publication remain required."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py"
+  ],
+  "base_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_20260921.json",
+    "sha256": "b3b0cf3592cac16836b0178e9f2f71e5372e28590f2ef324a7ff59edd43aa79c"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  }
+}
