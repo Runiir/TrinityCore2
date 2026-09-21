@@ -304,6 +304,33 @@ def test_complete_fixture_binds_all_roots_dvc_and_native_provenance(tmp_path: Pa
     }
 
 
+def test_runtime_navigation_alias_uses_content_and_retains_actual_modes(tmp_path):
+    paths = _fixture(tmp_path)
+    manifest = json.loads(paths["manifest"].read_text())
+    original = next(c for c in manifest["asset_classes"] if c["id"] == "bounded")
+    for class_id, mode in [("selected_map_navmesh_offline", "0444"),
+                           ("selected_map_navmesh_native", "0664")]:
+        duplicate = json.loads(json.dumps(original))
+        duplicate.pop("map_contracts", None)
+        duplicate.update(json.loads(json.dumps(original.get("map_contracts", {}).get("100", {}))))
+        duplicate["id"] = class_id
+        duplicate["expected_mode"] = mode
+        duplicate["audit_inventory_sha256"] = hashlib.sha256(class_id.encode()).hexdigest()
+        for row in duplicate["expected_files"]:
+            row["mode"] = mode
+        duplicate["expected_inventory"] = _inventory(duplicate["expected_files"])
+        manifest["asset_classes"].append(duplicate)
+    _seal_authorities(paths, manifest)
+    _write_json(paths["manifest"], manifest)
+    assert not _verify(paths)["complete"]  # Historical sealed replay remains exact.
+    runtime = _verify(paths, runtime_read_access=True)
+    assert runtime["complete"], runtime["issues"]
+    rows = [v for k, v in runtime["snapshot"].items() if k.startswith("selected_map_navmesh")]
+    assert rows and all(r["mode"] == "0644" for r in rows)
+    (paths["source"] / "map-assets/100.base").write_bytes(b"BAD!")
+    assert not _verify(paths, runtime_read_access=True)["complete"]
+
+
 @pytest.mark.parametrize(
     ("mutation", "issue_kind"),
     [

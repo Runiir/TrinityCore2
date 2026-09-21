@@ -8337,6 +8337,12 @@ def main() -> int:
         ) if enabled]
         if offline_conflicts:
             raise SystemExit("--input-log is read-only; incompatible with " + ", ".join(offline_conflicts))
+    from tools.raid_program.runtime_asset_launch import prepare_asset_arguments
+    asset_route = load_validation_route(args.validation_scenario_dir, validation_context_from_args(args))
+    if not asset_route and (args.validation_route_manifest or args.validation_route_sequence):
+        asset_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        asset_route = asset_routes[0] if asset_routes else {}
+    prepare_asset_arguments(args, REPO_ROOT, asset_route)
     runtime_asset_closure = enforce_runtime_asset_closure_from_args(
         args,
         worldserver_config=args.config,

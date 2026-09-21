@@ -7,6 +7,12 @@ description: Design and coordinate isolated TrinityCore raid-boss experiments an
 
 Build every boss shard as an isolated, executable slice of the canonical raid. Treat identity mismatches as failures, not recoverable defaults.
 
+Use the live runner's [runtime asset preflight](../../../docs/bot_raids/runtime_asset_preflight.md).
+Let it derive the selected map; never substitute another boss's map to make a
+check pass. Reuse unchanged local asset hashes instead of building temporary
+source views for each calibration. Strict archived permission checks belong to
+sealed replay, not ordinary navigation readers.
+
 For ordinary development, use the current `raid-performance-loop` launch path;
 the sealed replay/qualification procedures below apply only to those work units.
 

@@ -129,9 +129,9 @@ def _record(path: Path, root: Path, relative: str) -> tuple[dict[str, Any] | Non
     }, None
 
 
-def _walk_files(root: Path, relative: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _walk_files(root: Path, relative: str, pattern=None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     try:
-        return walk_inventory_no_follow(root, relative, include_directories=True), []
+        return walk_inventory_no_follow(root, relative, include_directories=True, file_name_pattern=pattern), []
     except SafePathError as error:
         try:
             issue_path = error.path.relative_to(_normal_path(root)).as_posix()
@@ -451,10 +451,12 @@ def _compare_expected_record(
 
 def _verify_class(
     asset_class: Mapping[str, Any], roots: Mapping[str, Path], map_id: int,
-    inventory_authority: Mapping[str, Any],
+    inventory_authority: Mapping[str, Any], runtime_read_access: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, dict[str, Any]]]:
     values = _expected_map_values(asset_class, map_id, inventory_authority)
     class_id = str(values.get("id") or "")
+    readable_navigation = runtime_read_access and class_id in {
+        "selected_map_navmesh_offline", "selected_map_navmesh_native"}
     root_key = values.get("root")
     if not class_id or root_key not in roots:
         raise ManifestError(f"asset_class_invalid:{class_id or 'unnamed'}")
@@ -510,7 +512,13 @@ def _verify_class(
         candidates = sorted(expected_by_path)
     elif rule in {"bounded-pattern", "complete-directory"}:
         base = _safe_relative(values.get("path"))
-        all_records, walk_issues = _walk_files(root, base)
+        pattern = None
+        if rule == "bounded-pattern":
+            try:
+                pattern = re.compile(values["pattern"])
+            except (KeyError, TypeError, re.error) as error:
+                raise ManifestError(f"pattern_invalid:{class_id}") from error
+        all_records, walk_issues = _walk_files(root, base, pattern)
         if expected_by_path:
             walk_issues = [
                 issue for issue in walk_issues
@@ -560,10 +568,11 @@ def _verify_class(
         records.append(record)
         expected = expected_by_path.get(relative)
         if expected is not None:
-            issues.extend(_compare_expected_record(expected, record, class_id))
+            compared = {**record, "mode": expected.get("mode", record["mode"])} if readable_navigation else record
+            issues.extend(_compare_expected_record(expected, compared, class_id))
     records.sort(key=lambda row: row["path"])
     expected_mode = values.get("expected_mode")
-    if expected_mode is not None:
+    if expected_mode is not None and not readable_navigation:
         for record in records:
             if record["mode"] != expected_mode:
                 issues.append({
@@ -572,6 +581,12 @@ def _verify_class(
                     "observed": record["mode"],
                 })
     observed_inventory = _inventory(records)
+    # Archive modes remain part of the historical identity. Runtime consumers
+    # only read navigation data; compare content under that explicit policy,
+    # while retaining actual modes in observed_inventory and snapshot below.
+    compared_inventory = _inventory([
+        {**row, "mode": expected_by_path.get(row["path"], {}).get("mode", expected_mode or row["mode"])}
+        for row in records]) if readable_navigation else observed_inventory
     expected_inventory = values.get("expected_inventory")
     if isinstance(expected_inventory, dict):
         for field, kind in (
@@ -579,12 +594,12 @@ def _verify_class(
             ("path_set_sha256", "hash_mismatch"),
             ("inventory_sha256", "hash_mismatch"),
         ):
-            if field in expected_inventory and observed_inventory[field] != expected_inventory[field]:
+            if field in expected_inventory and compared_inventory[field] != expected_inventory[field]:
                 issues.append({
                     "kind": kind, "class_id": class_id,
                     "path": values.get("path", class_id), "field": field,
                     "expected": expected_inventory[field],
-                    "observed": observed_inventory[field],
+                    "observed": compared_inventory[field],
                 })
         if "file_count" in expected_inventory:
             expected_count = int(expected_inventory["file_count"])
@@ -617,6 +632,7 @@ def _verify_class(
         "rule": rule,
         "passed": not issues,
         "observed_inventory": observed_inventory,
+        "mode_policy": "readable_navigation_data" if readable_navigation else "exact_manifest_modes",
         "audit_inventory_sha256": values.get("audit_inventory_sha256"),
         "issue_count": len(issues),
     }
@@ -1059,7 +1075,7 @@ def verify_runtime_asset_closure(
     *, manifest_path: Path, source_checkout: Path, configured_data_dir: Path | None,
     dvc_workspace: Path, sealed_bundle: Path, worldserver_config: Path,
     scenario_map_id: int, previous_snapshot: Mapping[str, Any] | None = None,
-    defer_sealed_bundle: bool = False,
+    defer_sealed_bundle: bool = False, runtime_read_access: bool = False,
 ) -> dict[str, Any]:
     manifest_path = _normal_path(manifest_path)
     manifest_sha256: str | None = None
@@ -1163,13 +1179,22 @@ def verify_runtime_asset_closure(
         from tools.raid_program.runtime_asset_root_aliases import (
             find_root_contract_conflicts,
         )
-        alias_issues = find_root_contract_conflicts(selected_classes, roots)
+        alias_classes = selected_classes
+        if runtime_read_access:
+            alias_classes = []
+            for selected in selected_classes:
+                if selected.get("id") in {"selected_map_navmesh_offline", "selected_map_navmesh_native"}:
+                    selected = {k: v for k, v in selected.items() if k != "expected_mode"}
+                    selected["expected_files"] = [{k: v for k, v in row.items() if k != "mode"}
+                                                  for row in selected.get("expected_files", [])]
+                alias_classes.append(selected)
+        alias_issues = find_root_contract_conflicts(alias_classes, roots)
         issues.extend(alias_issues)
         provenance = None
         if not alias_issues:
             for asset_class in classes:
                 result, class_issues, class_snapshot = _verify_class(
-                    asset_class, roots, scenario_map_id, inventory_authority,
+                    asset_class, roots, scenario_map_id, inventory_authority, runtime_read_access,
                 )
                 class_results.append(result)
                 issues.extend(class_issues)
@@ -1275,6 +1300,8 @@ def add_runtime_asset_closure_arguments(parser: argparse.ArgumentParser) -> None
     parser.add_argument("--runtime-asset-bundle", type=Path)
     parser.add_argument("--runtime-asset-data-dir", type=Path)
     parser.add_argument("--runtime-asset-map-id", type=int)
+    parser.add_argument("--runtime-asset-full-hash", action="store_true", help="Bypass local hash reuse for an audit")
+    parser.add_argument("--runtime-asset-strict-modes", action="store_true", help="Reproduce historical archive modes for sealed replay")
 
 
 def enforce_runtime_asset_closure_from_args(
@@ -1293,15 +1320,19 @@ def enforce_runtime_asset_closure_from_args(
             "status": "runtime_asset_closure_exempt",
             "exemption": exemption,
         }
-    receipt = require_runtime_asset_closure(
-        manifest_path=values["runtime_asset_closure_manifest"],
-        source_checkout=values["runtime_asset_source_checkout"],
-        configured_data_dir=values["runtime_asset_data_dir"],
-        dvc_workspace=values["runtime_asset_dvc_workspace"],
-        sealed_bundle=values["runtime_asset_bundle"],
-        worldserver_config=worldserver_config,
-        scenario_map_id=values["runtime_asset_map_id"],
-    )
+    from tools.raid_program.runtime_asset_hash_cache import cached_hashes, default_cache_path
+    with cached_hashes(None if getattr(args, "runtime_asset_full_hash", False) else default_cache_path()) as cache:
+        receipt = require_runtime_asset_closure(
+            manifest_path=values["runtime_asset_closure_manifest"],
+            source_checkout=values["runtime_asset_source_checkout"],
+            configured_data_dir=values["runtime_asset_data_dir"],
+            dvc_workspace=values["runtime_asset_dvc_workspace"],
+            sealed_bundle=values["runtime_asset_bundle"],
+            worldserver_config=worldserver_config,
+            scenario_map_id=values["runtime_asset_map_id"],
+            runtime_read_access=not getattr(args, "runtime_asset_strict_modes", False),
+        )
+    receipt["hash_reuse"] = {k: cache[k] for k in ("hits", "misses", "bytes_hashed")}
     receipt["argument_binding"] = build_binding(
         manifest_path=values["runtime_asset_closure_manifest"],
         source_checkout=values["runtime_asset_source_checkout"],

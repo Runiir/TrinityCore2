@@ -6,6 +6,7 @@ import os
 from pathlib import Path, PurePosixPath
 import stat
 from typing import Any, Iterable
+from tools.raid_program.runtime_asset_hash_cache import hash_descriptor
 
 
 class SafePathError(OSError):
@@ -43,12 +44,21 @@ def _identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
     )
 
 
+def _path_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    # An unrelated sibling changes ancestor directory timestamps, not this path.
+    # The inventory walker separately checks membership changes in directories
+    # actually scanned. Still detect replacement and permission/type changes.
+    if stat.S_ISDIR(value.st_mode):
+        return (value.st_dev, value.st_ino, value.st_mode, 0, 0, 0)
+    return _identity(value)
+
+
 def _open_absolute(path: Path, *, directory: bool) -> tuple[int, tuple[tuple[int, int, int, int, int, int], ...]]:
     path = absolute_path(path)
     parts = path.parts[1:]
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     current = os.open("/", os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_DIRECTORY)
-    identities = [_identity(os.fstat(current))]
+    identities = [_path_identity(os.fstat(current))]
     if not parts:
         if not directory:
             os.close(current)
@@ -73,7 +83,7 @@ def _open_absolute(path: Path, *, directory: bool) -> tuple[int, tuple[tuple[int
             if is_last and not directory and not stat.S_ISREG(value.st_mode):
                 os.close(following)
                 raise SafePathError("type_mismatch", component_path, "expected_regular_file")
-            identities.append(_identity(value))
+            identities.append(_path_identity(value))
             os.close(current)
             current = following
         return current, tuple(identities)
@@ -144,12 +154,7 @@ def _file_record(parent_fd: int, name: str, relative: str, absolute: Path) -> di
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             raise SafePathError("type_mismatch", absolute, "expected_regular_file")
-        digest = hashlib.sha256()
-        while True:
-            chunk = os.read(descriptor, 1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
+        digest = hash_descriptor(descriptor, before)
         after = os.fstat(descriptor)
         if _identity(before) != _identity(after):
             raise SafePathError("path_drift", absolute, "file_changed_while_reading")
@@ -161,7 +166,7 @@ def _file_record(parent_fd: int, name: str, relative: str, absolute: Path) -> di
             "type": "file",
             "mode": f"{stat.S_IMODE(after.st_mode):04o}",
             "size_bytes": after.st_size,
-            "sha256": digest.hexdigest(),
+            "sha256": digest,
         }
     finally:
         os.close(descriptor)
@@ -169,7 +174,7 @@ def _file_record(parent_fd: int, name: str, relative: str, absolute: Path) -> di
 
 def walk_inventory_no_follow(
     root: Path, relative: str = ".", *, include_directories: bool = True,
-    excluded_paths: Iterable[str] = (),
+    excluded_paths: Iterable[str] = (), file_name_pattern=None,
 ) -> list[dict[str, Any]]:
     root = absolute_path(root)
     root_fd, root_identities = _open_absolute(root, directory=True)
@@ -197,7 +202,8 @@ def walk_inventory_no_follow(
                 if stat.S_ISLNK(value.st_mode):
                     raise SafePathError("symlink", absolute)
                 if stat.S_ISREG(value.st_mode):
-                    records.append(_file_record(directory_fd, name, member, absolute))
+                    if file_name_pattern is None or file_name_pattern.fullmatch(name):
+                        records.append(_file_record(directory_fd, name, member, absolute))
                     continue
                 if not stat.S_ISDIR(value.st_mode):
                     raise SafePathError("type_mismatch", absolute, "unsupported_member_type")

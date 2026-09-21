@@ -16,6 +16,7 @@ from tools.raid_program.dummy_calibration_batch import run_batch, write
 from tools.raid_program.queued_build import DEFAULT_POLICY, verify_receipt
 from tools.raid_program.build_control_compatibility import require_coordination_build
 from tools.raid_program.runtime_asset_closure import verify_runtime_asset_closure
+from tools.raid_program.runtime_asset_hash_cache import cached_hashes, default_cache_path
 from tools.raid_program.shared_instance_console import owned_console, verify_process_binary
 from tools.raid_program.shared_instance_fixture import BASE_CONFIG, sha256, validate_shared_config
 from tools.raid_program.shared_instance_preparation import git
@@ -95,11 +96,14 @@ def main() -> int:
 
     def prepare() -> None:
         data_dir = Path(json.loads((ROOT / BASE_CONFIG).read_text())["typed_inputs"]["data_dir"])
-        assets = verify_runtime_asset_closure(
-            manifest_path=ROOT / "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
-            source_checkout=runtime_asset_source_checkout,
-            configured_data_dir=data_dir, dvc_workspace=ROOT,
-            sealed_bundle=output, worldserver_config=config, scenario_map_id=0)
+        with cached_hashes(default_cache_path()) as cache:
+            assets = verify_runtime_asset_closure(
+                manifest_path=ROOT / "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+                source_checkout=runtime_asset_source_checkout,
+                configured_data_dir=data_dir, dvc_workspace=ROOT,
+                sealed_bundle=output, worldserver_config=config, scenario_map_id=0,
+                runtime_read_access=True)
+        assets["hash_reuse"] = {k: cache[k] for k in ("hits", "misses", "bytes_hashed")}
         write(output / "runtime-assets.json", assets)
         if not assets["complete"]:
             raise RuntimeError("runtime_asset_closure_incomplete:" + ",".join(sorted(assets["issue_counts"])))
