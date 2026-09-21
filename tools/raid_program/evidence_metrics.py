@@ -164,14 +164,14 @@ def simulator_actor(document, player_index=0):
         m = metric.get("per_iteration_target_metric_sums", {})
         row = a["components"].setdefault(key, {"spell_id": identity.get("id"), "damage": 0,
             "ordinary_casts": 0, "triggered_copies": 0, "other_tagged_casts": 0,
-            "pet_casts": 0, "ticks": 0, "hits": 0, "crits": 0, "pet_damage": 0, "copy_damage": 0})
+            "pet_casts": 0, "ticks": 0, "crit_ticks": 0, "hits": 0, "crits": 0, "pet_damage": 0, "copy_damage": 0})
         damage = number(m.get("damage")) or 0
         row["damage"] += damage
         tag = identity.get("tag", 0)
         pet = metric.get("source", {}).get("kind") == "pet"
         category = "pet_casts" if pet else "triggered_copies" if tag == 71086 else "other_tagged_casts" if tag else "ordinary_casts"
         row[category] += number(m.get("casts")) or 0
-        for k in ("ticks", "hits", "crits"):
+        for k in ("ticks", "crit_ticks", "hits", "crits"):
             row[k] += number(m.get(k)) or 0
         if pet:
             row["pet_damage"] += damage

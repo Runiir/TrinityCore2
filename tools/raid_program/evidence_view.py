@@ -180,7 +180,7 @@ def compact_comparison(report, top=8, actor=None, offset=0, limit=10):
             continue
         item = {k: p[k] for k in ("status", "delta_dps_current_minus_reference", "delta_hps_current_minus_reference", "reconciliation", "limitations")}
         for key in ("current", "reference"):
-            item[key] = {k: p[key].get(k) for k in ("actor", "spec", "window", "identity", "gates", "gate_binding", "iterations", "dps_distribution", "limitations") if k in p[key]}
+            item[key] = {k: p[key].get(k) for k in ("actor", "spec", "dps", "hps", "damage", "window", "identity", "gates", "gate_binding", "iterations", "dps_distribution", "limitations") if k in p[key]}
             item[key]["activity"] = brief_activity(p[key].get("activity", {}))
             item[key]["setup_observations"] = {"stats_present": bool(p[key].get("setup", {}).get("stats")),
                                                "gear_present": bool(p[key].get("setup", {}).get("gear_sha256"))}
