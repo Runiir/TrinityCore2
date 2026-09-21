@@ -1,0 +1,150 @@
+{
+  "schema": "cata_raid_program_validation_evidence_v1",
+  "kind": "failed_validation_evidence",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "7f5f3b8fc5558f69898a3a44ac07ed6a6ff08534fc98b4bd33b65ca653e8a37c",
+  "attempt_id": 1,
+  "server_epoch": 6304172735692935,
+  "build_identity": {
+    "source_commit": "2ff141f76d627a8d06179b926e1de93bd9d7fb28",
+    "binary_sha256": "d102e25a28f2d99da3a824dc0a5a29a1f97cc60e7addd58734bbd47b1536a3f4"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ec06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  },
+  "terminal": {
+    "scenario_kind": "dummy",
+    "terminal_reason": "contamination",
+    "scoring_ms": 300000,
+    "scored_seconds": 300.0,
+    "window_complete": true,
+    "closed": true,
+    "cleanup_verified": true,
+    "cleanup_verification": {
+      "process_absent_after_run": true,
+      "calibration_clone_cleanup_guids": [1283, 1288],
+      "calibration_stop_removed": 2,
+      "server_shutdown_force_observed": true,
+      "controller_report_session_closed": false,
+      "controller_report_session_required": false,
+      "note": "The controller report retained session_closed=false, but the raw log recorded both clone cleanup completions and forced server shutdown, and no worldserver process remained after capture."
+    }
+  },
+  "calibration": {
+    "mode": "tank_threat_300",
+    "target_spec": "blood_death_knight",
+    "target_guid": 1283,
+    "scored_started_at_ms": 1789990323905,
+    "scored_ended_at_ms": 1789990623905,
+    "cross_window_event_count": 6,
+    "excluded_boundary_damage_event_count": 0,
+    "reset_applied": true,
+    "reset_id": "blood_death_knight:tank_threat_300:seed-1",
+    "contamination": {
+      "owner_guid": 1283,
+      "victim_entry": 44548,
+      "spell_ids": [0, 50463],
+      "damage_values_all_zero": true,
+      "raw_damage_values": [8140, 1918, 7412, 7601, 8234, 7529],
+      "log_lines": [739, 740, 741, 742, 743, 744],
+      "interpretation": "Post-window callbacks occurred beyond the native drain allowance and invalidate this scored attempt."
+    }
+  },
+  "role_result": {
+    "active_dps": 14452.71,
+    "measured_value": 14452.71,
+    "reference_value": 32489.03862,
+    "reference_ratio": 0.444849,
+    "threat_per_second": 9.9,
+    "target_count": 5,
+    "action_attempts": {
+      "43265": 10,
+      "45462": 5,
+      "45477": 8,
+      "47528": 5,
+      "48721": 70,
+      "48792": 1,
+      "49028": 1,
+      "49998": 16,
+      "55233": 1,
+      "56815": 37,
+      "55050": 0
+    },
+    "tank_metrics": {
+      "snap_threat_success_ratio": 1.0,
+      "add_threat_success_ratio": 1.0,
+      "all_hostile_retention_ratio": 1.0,
+      "threat_aura_uptime_ratio": 1.0,
+      "healer_exposure_ratio": 0.0,
+      "mitigation_uptime_ratio": 1.0,
+      "maximum_damage_spike_ratio": 0.45,
+      "health_floor_ratio": 0.5,
+      "interrupt_success_ratio": 1.0,
+      "death_count": 0,
+      "stance_form_presence_active": true
+    }
+  },
+  "acceptance": {
+    "passed": false,
+    "diagnostics_passed": true,
+    "transport_passed": false,
+    "role_calibration_passed": false,
+    "rejections": [
+      "cross_window_contamination",
+      "role_calibration:no_cross_window_contamination",
+      "role_calibration:reference_hard_floor"
+    ],
+    "actor_30002_accepted": false,
+    "performance_accepted": false,
+    "raid_clear_claimed": false
+  },
+  "source_evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_tank_threat_v2_20260921.tar.gz.dvc",
+      "sha256": "3ce13e38593dbb8dfd5291265f5a6121bdd05876fee9b8a922069ca15e6136ba",
+      "raw_bundle_md5": "3c01e742b64fa6a140f2667535110161"
+    },
+    {
+      "raw_path": "report.json",
+      "sha256": "c5916220d434cd3ebee4db463ff690cb6ac8b2848b4fef9a707618b61370d2d7"
+    },
+    {
+      "raw_path": "worldserver_output.log",
+      "sha256": "37638d1860ace505d6154f5927686058f320c8be9df29a0ba247da6f8bbba29b"
+    },
+    {
+      "raw_path": "combat_log.json",
+      "sha256": "2575d7a94ed69cb84f60d8dec831e9d528e6b43a387d17f30946162f17b22a90"
+    },
+    {
+      "raw_path": "heartbeat_manifest.json",
+      "sha256": "5653977e63482a198ed3c1b1b61b8059d2210673995516f28c36bb0c3adc593b"
+    }
+  ],
+  "disposition": "Non-publishable performance evidence. Preserve the exact window as contamination evidence, do not accept Blood actor performance, and route the shared post-window cleanup edge before another role gate."
+}

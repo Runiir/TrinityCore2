@@ -1,0 +1,69 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "8de707eb50aa3bd4e07293ee1c5cca04607d2226c283dbe0129984805c780505",
+  "attempt_id": 1,
+  "server_epoch": 6304172735692935,
+  "scenario_kind": "dummy",
+  "terminal_reason": "contamination",
+  "scoring_ms": 300000,
+  "closed": true,
+  "cleanup_verified": true,
+  "build_identity": {
+    "source_commit": "2ff141f76d627a8d06179b926e1de93bd9d7fb28",
+    "binary_sha256": "d102e25a28f2d99da3a824dc0a5a29a1f97cc60e7addd58734bbd47b1536a3f4"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ec06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_validation_evidence_20260921.json",
+      "sha256": "1e3178988c2948a0329da038cf8dc8b3a1a90f5694fd5e17a50acaf4a0e616e5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_tank_threat_v2_20260921.tar.gz.dvc",
+      "sha256": "3ce13e38593dbb8dfd5291265f5a6121bdd05876fee9b8a922069ca15e6136ba"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_build_20260921.json",
+      "sha256": "6773b05f531d788f17bf3b4188dabdc25f45dd293f15670a8eb3d357caf005df"
+    },
+    {
+      "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+      "sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf"
+    }
+  ],
+  "acceptance_boundary": {
+    "performance_accepted": false,
+    "actor_accepted": false,
+    "raid_clear_claimed": false,
+    "cause_claimed": "shared calibration teardown contamination; Blood policy remains unaccepted"
+  }
+}
