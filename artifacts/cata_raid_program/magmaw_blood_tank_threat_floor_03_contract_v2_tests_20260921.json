@@ -1,0 +1,65 @@
+{
+  "schema": "raid_development_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "21f9f0bb1d384e0ac897bfea6d60b76c9ca70eef5a73ceb08e96ec33e645d01a",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_result_checkpoint_20260921.json",
+      "sha256": "58d7c02a438678b240b8fc90d41fe29f3e4ca356541de578271d312c0ceeeb84"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_result_review_20260921/summary.json",
+      "sha256": "d2e478d1b10978697c2ecdabbd491de688ec706cadab989b9cde4dd36f1c99c1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_plan_adjudication_20260921.json",
+      "sha256": "db039ad097c2c556facb096473b47236ab12b5854de6a9fadd96deeed9c424db"
+    }
+  ],
+  "file_hashes": {
+    "tools/bot_ml/role_calibration_harness.py": "36096a42a0285acb3182d1e9be9c42b17a2d715f994131a8165adf45f1e7185c",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py": "027462da6f06b1fb264f1afc383203ba1ee9cab68c5125f23d551c2b6e72c1fe",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py": "bad4b36c6d902b1853bcf381f28a2ac6cf1baf48259400b2f4c3bc9b8044a7de",
+    "tests/test_tank_calibration_reference_contract.py": "10138836e5c37d2e825a19322148f69b317d8053a7c4abb12139a313142bad81"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_tank_calibration_reference_contract.py",
+      "exit_status": 0,
+      "summary": "4 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_dps_gate.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_ml_pipeline.py -k phase7_role_calibration_harness",
+      "exit_status": 0,
+      "summary": "1 passed, 416 deselected"
+    },
+    {
+      "command": "pixi run python -m py_compile tools/bot_ml/role_calibration_harness.py tools/bot_ml/run_phase8_all_spec_calibration.py tools/bot_ml/build_phase8_all_spec_calibration_contract.py",
+      "exit_status": 0,
+      "summary": "compiled"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supports the bounded implementation and the stated test claim; it does not support live actor or raid acceptance.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_result_review_20260921/summary.json",
+        "sha256": "d2e478d1b10978697c2ecdabbd491de688ec706cadab989b9cde4dd36f1c99c1"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed because the result packet exceeded its context budget; no local model decision is used.",
+      "reason": "Local HTTP 422 context_budget_exceeded; retained as provider non-review."
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "833b5ac11879431716f2f16fd97beea654bc618e6bf36f4ad87cf2f6cbe1df2d",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_plan_checkpoint_20260921.json",
+      "sha256": "3cb285729ed47df6196c88f16a08855fccc003f5a757a2c1ab7cc1032140466d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_plan_adjudication_20260921.json",
+      "sha256": "db039ad097c2c556facb096473b47236ab12b5854de6a9fadd96deeed9c424db"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_review_findings_20260921.json",
+      "sha256": "2eee422d250a21cb14c3f067b4950c3679f14005dbe98dcc3c924ef9219cf819"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+      "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+    }
+  ],
+  "hypothesis": "The clean Blood tank window does not prove a Blood priority or eligibility edge. The first broken edge is the role-calibration aggregate contract: an explicitly non-comparable tank/healer reference remains a role failure but must not be counted as a numerical hard-floor failure or optimization backlog item.",
+  "owned_files": [
+    "tools/bot_ml/role_calibration_harness.py",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py",
+    "tests/test_tank_calibration_reference_contract.py"
+  ],
+  "forbidden_changes": [
+    "Do not change WoWSims or reference catalog data.",
+    "Do not change the Blood SQL migration, native candidate comparator, spell coefficients, gear, stats, encounter behavior, route, target geometry or safety policy.",
+    "Do not make incompatible reference evidence pass actor or raid performance acceptance.",
+    "Do not remove Heart Strike fallback or multi-target Blood Boil behavior.",
+    "Do not close actor_30002 or any other open parent requirement from this contract change."
+  ],
+  "acceptance_conditions": [
+    "An incompatible tank/healer record reports reference_conditions_not_comparable and does not report reference_hard_floor as its cause.",
+    "The role result remains non-passing, while hard-floor aggregation and optimization backlog logic treat the reference floor as not applicable.",
+    "A comparable tank record still applies the configured numerical floor and a below-floor comparable record fails it.",
+    "Threat aura, healer exposure, damage smoothing, defensive coverage and all other tank-specific checks remain enforced.",
+    "Independent review, gate-bearing build and one exact cleaned role run remain required; actor and raid acceptance remain separate."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_tank_calibration_reference_contract.py",
+    "pixi run pytest -q tests/test_dps_gate.py",
+    "pixi run pytest -q tests/test_ml_pipeline.py -k phase7_role_calibration_harness"
+  ],
+  "base_commit": "db635d5ba31e16dc2ea686f5e7e51d2c12acf782",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supported the refreshed scope and evidence direction, but found the plan-stage acceptance claim insufficient evidence.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_plan_review_20260921/summary.json",
+        "sha256": "26b50c517b5900ed2ee5c26b14fa2d0f26e87150c7ee1b7e34bda5f1058304b4"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed because the corrected packet exceeded its context budget; no local model decision is used.",
+      "reason": "Local HTTP 422 context_budget_exceeded; retained as provider non-review."
+    }
+  }
+}

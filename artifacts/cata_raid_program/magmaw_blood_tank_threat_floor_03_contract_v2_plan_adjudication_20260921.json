@@ -1,0 +1,17 @@
+{
+  "schema": "raid_plan_drift_adjudication_v1",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_plan_checkpoint_20260921.json",
+    "sha256": "3cb285729ed47df6196c88f16a08855fccc003f5a757a2c1ab7cc1032140466d"
+  },
+  "review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_plan_review_20260921/summary.json",
+    "sha256": "26b50c517b5900ed2ee5c26b14fa2d0f26e87150c7ee1b7e34bda5f1058304b4"
+  },
+  "status": "aligned",
+  "jev": "supported_scope_and_evidence_insufficient_acceptance",
+  "laya": "not_reviewed_context_budget_exceeded",
+  "adjudication": "The refreshed plan remains on the same role-calibration edge, incorporates the independent aggregate-accounting finding, keeps Blood SQL/native behavior and all parent requirements out of scope, and makes non-comparable references non-failing only for aggregate numerical-floor accounting. The bounded tests, independent review, build, exact role run, assessment and publication remain required.",
+  "coordinator_decision": "advance_plan"
+}

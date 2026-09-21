@@ -1,0 +1,96 @@
+{
+  "schema": "raid_worker_checkpoint_v1",
+  "task_id": "magmaw:blood_tank_threat_floor_03_contract_v2_20260921",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "latest_user_direction": "Implement magmaw 10n bots.",
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+    "latest_user_direction": "Implement magmaw 10n bots.",
+    "current_plan": "Continue the coordinator graph through diagnosis, repair, independent review, build, live validation and publication while keeping all open actor, comparison and raid requirements visible.",
+    "remaining_requirements": [
+      "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005",
+      "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010",
+      "affliction_comparison", "elemental_comparison", "potion_ownership",
+      "survival_reference", "magmaw_10n"
+    ]
+  },
+  "objective": "Make non-comparable tank and healer reference conditions explicit through the role harness and phase-8 aggregate contract, while retaining a real numerical floor for comparable records and keeping Blood actor acceptance open.",
+  "current_plan": "Propagate reference-floor applicability from role evaluation through compact campaign results and aggregate contract summaries. Add executable coverage for incompatible references, comparable passing references, comparable below-floor references, and aggregate hard-floor semantics. Do not change Blood policy or native gameplay.",
+  "completed_work": "The exact Blood tank window is closed and cleaned. Loaded profile and native candidate evidence do not prove a priority inversion. The first review-approved harness change correctly identifies an incompatible reference, but independent review found that phase-8 aggregate accounting still counts its false hard_floor_passed marker as a hard-floor failure.",
+  "remaining_requirements": [
+    "actor_30001 balance_druid", "actor_30002 blood_death_knight", "actor_30003 restoration_druid",
+    "actor_30004 holy_paladin", "actor_30005 discipline_priest", "actor_30006 fire_mage",
+    "actor_30007 fire_mage", "actor_30008 affliction_warlock", "actor_30009 survival_hunter",
+    "actor_30010 elemental_shaman", "affliction_comparison", "elemental_comparison",
+    "potion_ownership", "survival_reference", "magmaw_10n"
+  ],
+  "known_blockers_and_prior_retries": "The previous Blood priority hypothesis was reworked after native evidence disproved it. The role fixture compares six-target tank output with a single-target simulator reference, and the aggregate campaign code has no separate applicability field.",
+  "first_broken_edge": "role_calibration:phase8 hard-floor aggregation treats an explicitly non-comparable tank/healer reference as a failed numerical floor.",
+  "proposed_change": "Keep Blood SQL, native comparator, WoWSims/reference data, encounter behavior and safety policy unchanged. Add a hard_floor_applicable field to compact campaign results, exclude inapplicable references from hard-floor failure and optimization backlog summaries, and test the boundary.",
+  "allowed_files": [
+    "tools/bot_ml/role_calibration_harness.py",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py",
+    "tests/test_tank_calibration_reference_contract.py"
+  ],
+  "changed_files": [
+    "tools/bot_ml/role_calibration_harness.py",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py",
+    "tests/test_tank_calibration_reference_contract.py"
+  ],
+  "forbidden_changes": [
+    "Do not change WoWSims or reference catalog data.",
+    "Do not change the Blood SQL migration, native candidate comparator, spell coefficients, gear, stats, encounter behavior, route, target geometry or safety policy.",
+    "Do not make an incompatible tank/healer reference pass actor or raid performance acceptance.",
+    "Do not remove Heart Strike fallback or multi-target Blood Boil behavior.",
+    "Do not close actor_30002 or any other open parent requirement from this contract change."
+  ],
+  "acceptance_conditions": [
+    "An incompatible tank/healer record reports reference_conditions_not_comparable and does not report reference_hard_floor as its cause.",
+    "An incompatible record remains non-passing for role qualification but is not counted as a numerical hard-floor failure or optimization backlog entry.",
+    "A comparable record still applies the configured floor and a below-floor comparable record fails it.",
+    "Threat aura, healer exposure, damage smoothing, defensive coverage and all other tank-specific checks remain enforced.",
+    "Independent review, gate-bearing build and one exact cleaned role run remain required; actor and raid acceptance remain separate."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_tank_calibration_reference_contract.py",
+    "pixi run pytest -q tests/test_dps_gate.py",
+    "pixi run pytest -q tests/test_ml_pipeline.py -k phase7_role_calibration_harness"
+  ],
+  "tests": [],
+  "observations": [
+    "The prior focused and phase-7 tests passed, but the first independent review identified an aggregate-contract gap.",
+    "Feynman independently classified the 0.552 Blood result as a non-comparable calibration mismatch rather than a proven Blood priority edge.",
+    "The current source change is Python-only and must not trigger a Blood SQL/native policy edit.",
+    "The graph rework retained all parent requirements and actor_30002 remains open."
+  ],
+  "acceptance_claim": "No actor, performance or raid acceptance is claimed; this plan only repairs diagnostic classification and aggregate accounting.",
+  "changed_files_source": "coordinator_observed",
+  "evidence_excerpts": [
+    {
+      "id": "review_findings",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_review_findings_20260921.json",
+      "sha256": "2eee422d250a21cb14c3f067b4950c3679f14005dbe98dcc3c924ef9219cf819",
+      "excerpt": "Independent review requires applicability propagation through compact results and aggregate hard-floor accounting; no Blood policy edit is justified."
+    },
+    {
+      "id": "prior_clean_window",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+      "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69",
+      "excerpt": "Six-target tank window ratio 0.552016 with all tank-specific checks passing and the old harness floor as the only failure."
+    },
+    {
+      "id": "aggregate_contract",
+      "path": "/home/runiir/Games/trinity-cata/tools/bot_ml/build_phase8_all_spec_calibration_contract.py",
+      "sha256": "bad4b36c6d902b1853bcf381f28a2ac6cf1baf48259400b2f4c3bc9b8044a7de",
+      "excerpt": "Aggregate hard-floor failure and optimization-backlog calculations consume compact result flags and need an applicability boundary."
+    }
+  ],
+  "advice": {
+    "jev": {"status": "pending", "adjudication": ""},
+    "laya": {"status": "pending", "adjudication": ""}
+  }
+}
