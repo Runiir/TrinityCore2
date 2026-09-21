@@ -1,0 +1,62 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e631cbd63104f5511c8581e1043a4e735eef5ff7b1c871dfb2e89f8bce1e912f",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "dvc_status": {
+    "command": "pixi run dvc status -c --no-updates --json",
+    "exit_code": 0,
+    "target_pointer_absent_from_changes": true,
+    "unrelated_warnings": [
+      "pre-existing missing version information for unrelated DVC stages",
+      "pre-existing unrelated missing cache object"
+    ]
+  },
+  "published_bundle": {
+    "pointer": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz.dvc",
+    "pointer_sha256": "5f74da0dbbb89563a521c478660416a4699a2b58da2146f86f9e6bff092d1f72",
+    "push_command": "pixi run dvc push artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz.dvc",
+    "push_result": "1 file pushed",
+    "raw_archive_sha256": "cf548fb4a15c4b40e14e6306f418c429d19d4eab7c3f53587d37ca2562770d55"
+  },
+  "remote_verification": {
+    "method": "dvc status -c --no-updates",
+    "pointer_reported_changed": false,
+    "raw_bundle_reconstructible": true
+  },
+  "local_cleanup": {
+    "raw_run_directory_evicted": true,
+    "temporary_probe_logs_evicted": true,
+    "retained_local_artifacts": [
+      "compact receipts and assessment",
+      "DVC pointer"
+    ]
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+      "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
+      "sha256": "c07b2b0040b0d44ffc13885285e350215fc0fb9aeaa78999e21d571767b4f673"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz.dvc",
+      "sha256": "5f74da0dbbb89563a521c478660416a4699a2b58da2146f86f9e6bff092d1f72"
+    }
+  ],
+  "acceptance_boundary": {
+    "published_as": "closed diagnostic evidence",
+    "actor_acceptance": false,
+    "performance_acceptance": false,
+    "raid_clear_claimed": false,
+    "parent_objective_complete": false
+  }
+}

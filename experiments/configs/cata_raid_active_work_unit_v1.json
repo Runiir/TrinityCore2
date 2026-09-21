@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 287,
+    "revision": 289,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -631,7 +631,7 @@
       "owner_damage_attribution_before_policy_tuning": 6,
       "owner_blood_priority_inversion": 3,
       "owner_balance_post_starfall_throughput_regression": 2,
-      "owner_calibration_post_window_contamination": 1
+      "owner_calibration_post_window_contamination": 2
     },
     "history": [
       {
@@ -5579,6 +5579,41 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 287,
+        "unit_id": "magmaw:calibration_teardown_contamination_01",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 287,
+          "unit_id": "magmaw:calibration_teardown_contamination_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+            "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+          },
+          "claim_token": "e631cbd63104f5511c8581e1043a4e735eef5ff7b1c871dfb2e89f8bce1e912f"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 288,
+        "unit_id": "magmaw:calibration_teardown_contamination_01",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 288,
+          "unit_id": "magmaw:calibration_teardown_contamination_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_assessment_20260921.json",
+            "sha256": "e17d0c0676fcde08c5c34aae42c0d606622ce0637eaf35d58a6a80a1dadd1351"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5678,6 +5713,14 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_build_20260921.json",
         "sha256": "56b77dbc557ab8d0243cc15e25e0267f4e1a06f6de3534c65105aef10f032306"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+        "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_assessment_20260921.json",
+        "sha256": "e17d0c0676fcde08c5c34aae42c0d606622ce0637eaf35d58a6a80a1dadd1351"
       }
     },
     "tested_files": {
@@ -5701,11 +5744,17 @@
       "source_commit": "f4e11240137b265f3a9d3f3220e341e970e146bd",
       "binary_sha256": "8446fe639c3f19eb702f39c6bd42e41c40b8f9aab05af087f42347c2aecd8807"
     },
-    "claim": {
-      "owner": "codex-magmaw-calibration-teardown-02-validate",
-      "token": "e631cbd63104f5511c8581e1043a4e735eef5ff7b1c871dfb2e89f8bce1e912f",
-      "operation_id": "e631cbd63104f5511c8581e1043a4e735eef5ff7b1c871dfb2e89f8bce1e912f",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 6503072922788437,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {
