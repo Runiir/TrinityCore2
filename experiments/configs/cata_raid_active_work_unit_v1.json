@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 250,
+    "revision": 252,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -4950,6 +4950,41 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 250,
+        "unit_id": "magmaw:balance_regression_91pct_07",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 250,
+          "unit_id": "magmaw:balance_regression_91pct_07",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_support_rework_20260921.json",
+            "sha256": "23d6787a53923beb126a51d2d716f5873c952f5874eb3b7fd8fbd5608ca10871"
+          },
+          "claim_token": "24cebe617be92422bbebc8c629f17730bebbfe2aa6b802c169627e213b6275cc"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 251,
+        "unit_id": "magmaw:balance_regression_91pct_07",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 251,
+          "unit_id": "magmaw:balance_regression_91pct_07",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_20260921.receipt.json",
+            "sha256": "f653a89dea104d0b55d96d3a255ae5f78c82e4dd3f74f634e28460e019efc3a9"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4958,7 +4993,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
+    "source_base_commit": "6e3419d0603ed62cad3329720abc2bb27f285807",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
@@ -5046,14 +5081,22 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_support_rework_20260921.json",
         "sha256": "41d1086b06c5aed33bbfa3fb1e0827e7907fee0c2e2621057df42f83df9c226c"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_support_rework_20260921.json",
+        "sha256": "23d6787a53923beb126a51d2d716f5873c952f5874eb3b7fd8fbd5608ca10871"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_20260921.receipt.json",
+        "sha256": "f653a89dea104d0b55d96d3a255ae5f78c82e4dd3f74f634e28460e019efc3a9"
       }
     },
-    "claim": {
-      "owner": "coordinator-magmaw-balance-regression-20260921",
-      "token": "24cebe617be92422bbebc8c629f17730bebbfe2aa6b802c169627e213b6275cc",
-      "operation_id": "24cebe617be92422bbebc8c629f17730bebbfe2aa6b802c169627e213b6275cc",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e",
+      "tests/test_balance_starfall_profile_variant.py": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
+    },
+    "tested_commit": "6e3419d0603ed62cad3329720abc2bb27f285807",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

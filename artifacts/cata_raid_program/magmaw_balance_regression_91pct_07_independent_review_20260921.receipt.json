@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_report_20260921.json",
+      "sha256": "c824f99bbf6ccccdcd540a4c492fc7aeb8a5e9496dbc6a37646f2e4b5134cdb6"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e",
+    "tests/test_balance_starfall_profile_variant.py": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
+  },
+  "kind": "review",
+  "producer": "01a0c389-093f-7c91-ab39-0c4860f3add6",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_report_20260921.json",
+    "sha256": "c824f99bbf6ccccdcd540a4c492fc7aeb8a5e9496dbc6a37646f2e4b5134cdb6"
+  },
+  "reviewer_session_id": "01a0c389-093f-7c91-ab39-0c4860f3add6",
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "verdict": "approved"
+}

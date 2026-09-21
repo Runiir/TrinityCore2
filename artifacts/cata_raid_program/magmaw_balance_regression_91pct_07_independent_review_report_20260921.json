@@ -1,0 +1,19 @@
+{
+  "file_hashes": {
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e",
+    "tests/test_balance_starfall_profile_variant.py": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
+  },
+  "findings": [],
+  "proof": {
+    "final_message_bytes": 319,
+    "final_message_sha256": "9bfe614a94825210c8ce329dd3342def5a65730900b3236d1d2b275a37f6d5d6",
+    "prefix_bytes": 500875,
+    "prefix_sha256": "881c67bd45a4105900565688352b812a016e5c208089071ac14d44a0d73df84c",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T13-35-33-01a0c389-093f-7c91-ab39-0c4860f3add6.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c389-093f-7c91-ab39-0c4860f3add6"
+  },
+  "reviewer_session_id": "01a0c389-093f-7c91-ab39-0c4860f3add6",
+  "schema": "cata_raid_review_report_v1",
+  "verdict": "approved"
+}
