@@ -5076,7 +5076,9 @@ def _jev_key(env_file: Path) -> str:
     return value
 
 
-def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str, Any]], *, attempts: int = 3) -> dict[str, Any]:
+    if attempts < 1 or attempts > 3:
+        raise ValueError("attempts must be between one and three")
     body = json.dumps(
         {"state": state, "model": JEV_MODEL, "questions": questions},
         separators=(",", ":"),
@@ -5093,7 +5095,7 @@ def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str
         },
     )
     last_error: Exception | None = None
-    for attempt in range(3):
+    for attempt in range(attempts):
         try:
             with urlopen(request, timeout=45) as response:
                 result = json.loads(response.read().decode("utf-8"))
@@ -5106,7 +5108,7 @@ def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str
             return result
         except HTTPError as exc:
             last_error = exc
-            if exc.code not in {429, 529} or attempt == 2:
+            if exc.code not in {429, 529} or attempt == attempts - 1:
                 detail = ""
                 try:
                     detail = exc.read().decode("utf-8", errors="replace").strip()
@@ -5118,9 +5120,9 @@ def _call_jev(state: dict[str, Any], api_key: str, questions: dict[str, dict[str
                 raise JevError(f"JEV request failed with HTTP {exc.code}{suffix}") from exc
         except (URLError, TimeoutError, json.JSONDecodeError) as exc:
             last_error = exc
-            if attempt == 2:
+            if attempt == attempts - 1:
                 raise JevError("JEV request failed before producing typed answers") from exc
-        if attempt < 2:
+        if attempt < attempts - 1:
             time.sleep(2 ** attempt)
     raise JevError("JEV request failed before producing typed answers") from last_error
 

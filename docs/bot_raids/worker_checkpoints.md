@@ -4,10 +4,11 @@ Use the existing worker assignment as the authority. Jev/Laya check a proposed
 change against that assignment and its evidence. They do not create a new plan,
 approve native behavior, or replace the independent reviewer.
 
-Check twice: after the worker identifies its proposed repair, and after it
-returns the diff and test receipts. Read-only investigation can continue while
-a checkpoint is evaluated. Do not poll the models on every tool call or ask
-them repeatedly until they agree.
+These legacy scope/claim checks are optional. Do not require plan/result model
+checkpoints or run model calls automatically from pre-commit. For gameplay
+improvements use [per-bot comparison advice](bot_improvement_advice.md), which
+suggests a bounded investigation without authorizing or blocking work.
+Do not poll the models on every tool call or ask repeatedly until they agree.
 
 The coordinator supplies the objective, first broken edge, owned files,
 forbidden changes and acceptance conditions. The worker supplies its proposed

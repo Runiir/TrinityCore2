@@ -39,7 +39,11 @@ for a decision-chain, route-mechanics, or reporting question. Read
 in scope, and only a matching class note. Parallel reviewers use the coordinator's
 actor subset and shared context; the overall reviewer joins all actors.
 
-For local Laya or hosted Jev, use the existing shadow procedure and check the pinned
+For optional improvement suggestions, send actor-scoped `evidence_view compare`
+output to `tools.raid_program.bot_improvement_advice`; see
+[`bot_improvement_advice.md`](../../../docs/bot_raids/bot_improvement_advice.md).
+Do not ask a broad boss-goal approval question or wait for model agreement.
+For legacy local Laya or hosted Jev shadow analysis, check the pinned
 model/revision. Packets must fit both question/options and total context budgets;
 token saturation, confidence, or prediction agreement does not prove retention or
 repair. Keep missing external access explicit. One accepted repair does not certify

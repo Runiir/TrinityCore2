@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from tools.raid_program.worker_checkpoint import review_checkpoint
+from tools.raid_program.worker_checkpoint import review_checkpoint, deterministic_findings, validate_checkpoint
 
 
 def git(root: Path, *args: str) -> bytes:
@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--backend", choices=("local", "hosted", "both"), default="both")
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--model-advice", action="store_true", help="Opt in to a non-blocking legacy model review; no network by default")
     args = parser.parse_args(argv)
     root = Path(git(Path.cwd(), "rev-parse", "--show-toplevel").decode().strip())
     task_path = args.task or Path(git(root, "rev-parse", "--git-path", "worker-task.json").decode().strip())
@@ -77,10 +78,17 @@ def main(argv: list[str] | None = None) -> int:
                     source_task_sha256=hashlib.sha256(task_bytes).hexdigest(),
                     test_receipts="reported; execution against this index is not independently verified")
     manifest_path.write_text(json.dumps(captured, indent=2) + "\n")
-    review = review_checkpoint(checkpoint, output / "review", backend=args.backend,
-                              env_file=args.env_file, prepare_only=args.prepare_only, base_dir=root)
-    print(f"Worker checkpoint: advisory results at {output / 'review'}")
-    for line in (output / "review" / "examples.jsonl").read_text().splitlines():
+    if args.model_advice or args.prepare_only:
+        review = review_checkpoint(checkpoint, output / "review", backend=args.backend,
+                                  env_file=args.env_file, prepare_only=args.prepare_only, base_dir=root)
+        lines = (output / "review" / "examples.jsonl").read_text().splitlines()
+        print(f"Worker checkpoint: optional advice at {output / 'review'}")
+    else:
+        review = {"deterministic": deterministic_findings(validate_checkpoint(checkpoint), root)}
+        (output / "deterministic.json").write_text(json.dumps(review) + "\n")
+        lines = []
+        print("Worker checkpoint: deterministic checks only; model advice is optional and was not requested.")
+    for line in lines:
         row = json.loads(line)
         if row["model_status"] != "advisory":
             print(f"{row['provider']}: NOT REVIEWED ({row.get('error') or row['model_status']})")

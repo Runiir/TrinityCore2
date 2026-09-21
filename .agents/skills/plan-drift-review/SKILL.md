@@ -38,7 +38,11 @@ do not invent a test requirement. Bind cited source excerpts to real files.
 The main agent supplies the plan because a tool cannot reconstruct unstored
 conversation intent from Git alone. Preserve unknown state explicitly.
 
-Call local Laya and hosted Jev once for the same facts. They provide separate
+Model calls are optional, not a required stage. Prefer the coordinator's direct
+check for broad plan drift. Use per-bot comparison advice for gameplay improvement
+questions (see `docs/bot_raids/bot_improvement_advice.md`). Only when a specific
+unresolved claim benefits from a model, call local Laya and hosted Jev once for
+the same facts. They provide separate
 scope, evidence and claim judgments. Keep probabilities and confidence; never
 average them into automatic approval. Inspect current receipts and source to
 adjudicate. Local context rejection or provider failure means not reviewed;

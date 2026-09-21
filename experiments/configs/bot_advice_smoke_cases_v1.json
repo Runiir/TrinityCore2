@@ -1,0 +1,513 @@
+[
+  {
+    "id": "healthy",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "no_supported_change"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {}
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {
+              "gear": {
+                "status": "match"
+              },
+              "effective_stats": {
+                "status": "match"
+              },
+              "mode": {
+                "status": "match"
+              },
+              "buffs": {
+                "status": "match"
+              },
+              "duty": {
+                "status": "match"
+              },
+              "phase_coverage": {
+                "status": "match"
+              }
+            }
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "apparent_gap_dps": 0
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "target_outage",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "inspect_target_execution"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {
+              "target_binding_failures": 40,
+              "body_targetable": true,
+              "cast_gap_seconds": 20,
+              "los": true,
+              "range_legal": true
+            }
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {
+              "gear": {
+                "status": "match"
+              },
+              "effective_stats": {
+                "status": "match"
+              },
+              "mode": {
+                "status": "match"
+              },
+              "buffs": {
+                "status": "match"
+              },
+              "duty": {
+                "status": "match"
+              },
+              "phase_coverage": {
+                "status": "match"
+              }
+            }
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "apparent_gap_dps": 0
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "priority_conflict",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "inspect_priority"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {
+              "candidate_observation": {
+                "A": {
+                  "eligible": true,
+                  "priority": 1
+                },
+                "B": {
+                  "eligible": true,
+                  "priority": 2
+                },
+                "selected": "B",
+                "comparator": "lower number first",
+                "native_result": "B landed"
+              }
+            }
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {
+              "gear": {
+                "status": "match"
+              },
+              "effective_stats": {
+                "status": "match"
+              },
+              "mode": {
+                "status": "match"
+              },
+              "buffs": {
+                "status": "match"
+              },
+              "duty": {
+                "status": "match"
+              },
+              "phase_coverage": {
+                "status": "match"
+              }
+            }
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "apparent_gap_dps": 0
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "required_duty",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "account_for_duty"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 18000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {},
+            "duties": [
+              {
+                "provenance": "observed",
+                "required_movement_interval_ms": [
+                  10000,
+                  30000
+                ],
+                "cast_gap_interval_ms": [
+                  10000,
+                  30000
+                ],
+                "casting_while_moving_legal": false
+              }
+            ]
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {
+              "gear": {
+                "status": "match"
+              },
+              "effective_stats": {
+                "status": "match"
+              },
+              "mode": {
+                "status": "match"
+              },
+              "buffs": {
+                "status": "match"
+              },
+              "duty": {
+                "status": "match"
+              },
+              "phase_coverage": {
+                "status": "match"
+              }
+            }
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "apparent_gap_dps": 0
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "unmatched_targets",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "compare_setup"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {}
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {
+              "target_count": {
+                "status": "mismatch",
+                "current": 6,
+                "reference": 1
+              }
+            }
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "apparent_gap_dps": 0
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 0
+          },
+          "status": "incompatible_context"
+        }
+      ]
+    }
+  },
+  {
+    "id": "unknown_casts",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "insufficient_evidence"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {}
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {}
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": null,
+                "damage": 3000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "damage": 6000000
+              }
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 10000
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "damage_per_event",
+    "basis": "synthetic smoke fixture; not observed gameplay or training evidence",
+    "expected": [
+      "inspect_damage"
+    ],
+    "comparison": {
+      "schema": "evidence_comparison_v1",
+      "kind": "native",
+      "pairs": [
+        {
+          "current": {
+            "actor": "12",
+            "spec": "example",
+            "role": "dps",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            },
+            "activity": {}
+          },
+          "reference": {
+            "actor": "12",
+            "dps": 20000,
+            "window": {
+              "seconds": 300
+            }
+          },
+          "context_comparison": {
+            "checks": {
+              "gear": {
+                "status": "match"
+              },
+              "effective_stats": {
+                "status": "match"
+              },
+              "mode": {
+                "status": "match"
+              },
+              "buffs": {
+                "status": "match"
+              },
+              "duty": {
+                "status": "match"
+              },
+              "phase_coverage": {
+                "status": "match"
+              }
+            }
+          },
+          "components": [
+            {
+              "key": "100",
+              "current": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 3000000
+              },
+              "reference": {
+                "ordinary_casts": 100,
+                "landed_events": 100,
+                "damage": 6000000
+              },
+              "apparent_gap_dps": 10000
+            }
+          ],
+          "reconciliation": {
+            "unattributed_residual_dps": 0
+          }
+        }
+      ]
+    }
+  }
+]

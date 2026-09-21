@@ -152,7 +152,7 @@ establishes regression; preserve unrelated repairs. Matching cast totals or a
 passing behavior fixture does not establish a performance improvement.
 
 The reviewer checks joined inputs, event classification, reconciled totals and
-the repair estimate before approving a DPS optimization patch. Send Jev/Laya the
+the repair estimate before approving a DPS optimization patch. Optionally send Jev/Laya the
 largest signed gaps, unknown residual, selected estimate and acceptance limits;
 agreement with a prose hypothesis does not explain the loss.
 

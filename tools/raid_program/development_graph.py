@@ -193,7 +193,7 @@ def resume(root: Path) -> dict:
         'recent_attempts': recent_attempts(g),
         'retry_limit': 10,
         'claim': g.get('claim'), 'coordinator_worktree': g['coordinator_worktree'],
-        'model_advice': 'Use worker_checkpoint at plan/result and plan-drift-review at work-unit changes; never auto-accept scores.',
+        'model_advice': 'Optional: use bot_improvement_advice on an actor-scoped evidence_view comparison to suggest a next investigation. No model checkpoint is required to advance; retain deterministic gates and independent review.',
         'execution': ('Parent objective accepted; report its evidence.' if g['stage'] == 'complete' else
                       'For implementation/resume requests, remain the coordinator and execute this stage, then the next returned stage. '
                       'An assessment, publication, route or specialist handoff does not finish the parent objective. '

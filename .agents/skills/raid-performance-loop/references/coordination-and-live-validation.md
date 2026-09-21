@@ -99,10 +99,13 @@ workaround.
 
 ## Specialist and model packets
 
-For every closed optimization run, review every admitted actor with local Laya and
-hosted Jev using the same attributable evidence projection. Retain provider/model
+For every closed optimization run, review every admitted actor using the compact
+comparison and role evidence. Jev/Laya are optional tools to suggest a specific
+next investigation, never a prerequisite to implementation, commit or validation.
+Use `tools.raid_program.bot_improvement_advice` on the existing actor comparison;
+see `docs/bot_raids/bot_improvement_advice.md`. Retain provider/model
 identity, actual requests/responses, and explicit missing fields. Use the commands in
-`docs/bot_raids/local_jev_shadow.md). Agreement or confidence never accepts a
+`docs/bot_raids/local_jev_shadow.md`. Agreement or confidence never accepts a
 repair; predictions remain quarantined until human adjudication. Keep each model
 fact once, bind hashes and source receipts outside context, and preserve native
 outcomes, duty, reference comparisons, and unknowns. Use the per-actor baseline

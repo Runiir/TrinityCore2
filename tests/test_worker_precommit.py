@@ -70,5 +70,27 @@ def test_changed_review_identity_is_rejected(tmp_path, monkeypatch, capsys, muta
         return {"deterministic": {"status": "pass"}}
     monkeypatch.chdir(root)
     monkeypatch.setattr(worker_precommit, "review_checkpoint", review)
-    assert main(["--task", str(task), "--output", str(tmp_path / "review")]) == 1
+    assert main(["--task", str(task), "--output", str(tmp_path / "review"), "--model-advice"]) == 1
     assert "BLOCKED" in capsys.readouterr().out
+
+
+def test_default_commit_does_not_call_a_model(tmp_path, monkeypatch):
+    root = tmp_path / "repo"
+    root.mkdir()
+    def git(*args):
+        return subprocess.check_output(["git", "-C", str(root), *args])
+    git("init", "-q")
+    git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "--allow-empty", "-qm", "base")
+    (root / "repair.cpp").write_text("int staged;\n")
+    git("add", "repair.cpp")
+    task = tmp_path / "task.json"
+    task.write_text(json.dumps({
+        "task_id": "fixture", "objective": "fixture", "first_broken_edge": "fixture",
+        "allowed_files": ["repair.cpp"], "forbidden_changes": [], "acceptance_conditions": [],
+        "observations": [], "evidence_excerpts": [], "proposed_change": "fixture",
+        "acceptance_claim": "none", "stage": "result", "changed_files": [],
+        "tests": [], "required_test_commands": [],
+    }))
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(worker_precommit, "review_checkpoint", lambda *a, **k: pytest.fail("network review must be opt-in"))
+    assert main(["--task", str(task), "--output", str(tmp_path / "review")]) == 0
