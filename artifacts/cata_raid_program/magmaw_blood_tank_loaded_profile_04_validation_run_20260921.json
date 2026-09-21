@@ -95,6 +95,10 @@
       "sha256": "de7548738163d50543bf166db411ddbaabeb6c27dd9867f4276917ae94443cfe"
     },
     {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_identity_reconciliation_20260921.json",
+      "sha256": "70077e4108ea1722758a3087eed36777c1390a645738faa605223201938bc315"
+    },
+    {
       "path": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
       "sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c"
     }

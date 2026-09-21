@@ -6277,7 +6277,19 @@
         },
         "target_catalog": {
           "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
-          "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3702b099"
+          "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+        },
+        "profile_generation": 1,
+        "profile_content_hash": "BF97FB2DAFCE3535A74B726C661F40BCB8B3B64144027ECA9082ED9F46A1F907",
+        "target_guid": 1283,
+        "target_sha256": "583cdcff5d71d1665e8e92cdc94dc22cf64e2e65a004bf62fa056882870c6c93",
+        "conditions_sha256": "5cd0750939368c80aa60a156304201d49622875226b9c5ec19a917482ed125ad",
+        "gear_manifest_sha256": "1369b92f047e7b16b54c742a55fa80a6d3c407290fe619dfabad26902ca3fd89",
+        "runtime_authority": "explicit_sql_rule_profiles",
+        "runtime_mode": "calibration_fixture",
+        "observability_files": {
+          "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
+          "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
         }
       },
       "supporting_review": {
