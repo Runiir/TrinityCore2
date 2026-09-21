@@ -1,0 +1,10 @@
+{
+  "revision": 282,
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "action": "advance",
+  "claim_token": "0eab34d5f550d17b2dc728b188c5e3aea0d0265252691afafe19b8cdf42bc6be",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_tests_20260921.json",
+    "sha256": "91dcd8663662d8936ec426838a5edecee611ef46797e046a978028ab32ce916e"
+  }
+}
