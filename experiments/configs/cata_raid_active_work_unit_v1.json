@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Review every actor; compare matched baseline, native outcome, and performance separately. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 256,
+    "revision": 257,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "assess",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -632,7 +632,7 @@
       "owner_balance_post_opener_event_cadence_gap": 2,
       "owner_damage_attribution_before_policy_tuning": 6,
       "owner_blood_priority_inversion": 2,
-      "owner_balance_post_starfall_throughput_regression": 1
+      "owner_balance_post_starfall_throughput_regression": 2
     },
     "history": [
       {
@@ -5049,6 +5049,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 256,
+        "unit_id": "magmaw:balance_regression_91pct_07",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 256,
+          "unit_id": "magmaw:balance_regression_91pct_07",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_assessment_20260921.json",
+            "sha256": "c84c69c66d177cefd727e8075414be5857fa2c2bfb022e9842a64502232a436f"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5161,6 +5178,10 @@
       "run": {
         "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_run_20260921.json",
         "sha256": "01c183b8a8e06156798835652bfe960aa7dd72dd3e22eb8b8e8479b8489b5436"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_assessment_20260921.json",
+        "sha256": "c84c69c66d177cefd727e8075414be5857fa2c2bfb022e9842a64502232a436f"
       }
     },
     "tested_files": {
@@ -5178,6 +5199,12 @@
       "server_epoch": 2750489228287001,
       "scenario_kind": "dummy",
       "terminal_reason": "measurement_complete"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": false,
+      "repair_accepted": false,
+      "performance_accepted": false
     }
   },
   "parked_scenarios": {

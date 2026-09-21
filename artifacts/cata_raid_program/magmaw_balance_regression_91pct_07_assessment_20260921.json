@@ -1,0 +1,54 @@
+{
+  "schema": "cata_raid_program_assessment_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e5f43e08c2ecfc47fef3c27091d9722ab77f1f6d59e45293c4d3bf1c3e740adb",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+    "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json",
+    "sha256": "ae7626393d0727bebc7ea6d881e286936943314a797188640ccf915560571a8c"
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "reviewed",
+      "accepted": false,
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json",
+        "sha256": "ae7626393d0727bebc7ea6d881e286936943314a797188640ccf915560571a8c"
+      },
+      "finding": "The control/treatment pair is closed and attributable, but both conditions remain below the 95% WoWSims floor; the treatment is 1067.4167 DPS below control. This is causal diagnosis only."
+    },
+    "30002": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise the Blood tank actor."},
+    "30003": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise healer actor 30003."},
+    "30004": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise healer actor 30004."},
+    "30005": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise healer actor 30005."},
+    "30006": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise Fire actor 30006."},
+    "30007": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise Fire actor 30007."},
+    "30008": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise Affliction actor 30008."},
+    "30009": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise Survival actor 30009."},
+    "30010": {"status": "not_exercised", "reason": "This Balance dummy unit does not exercise Elemental actor 30010."}
+  },
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "baseline_matched": true,
+  "unexplained_material_decline": true,
+  "accepted_requirements": [],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_run_20260921.json",
+      "sha256": "01c183b8a8e06156798835652bfe960aa7dd72dd3e22eb8b8e8479b8489b5436"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json",
+      "sha256": "ae7626393d0727bebc7ea6d881e286936943314a797188640ccf915560571a8c"
+    }
+  ],
+  "disposition": "The pair isolates the reviewed profile tag and shows a negative treatment delta. No source repair or actor acceptance is justified because the measured behavior remains below the unchanged performance gate and Dragonwrath landed-copy attribution remains unknown. Keep actor_30001 and all other actor, comparison, potion, survival-reference, and raid requirements open."
+}
