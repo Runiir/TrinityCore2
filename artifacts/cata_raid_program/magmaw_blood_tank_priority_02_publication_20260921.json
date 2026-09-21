@@ -1,0 +1,37 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "15d325757d15940908d41291db0481bb7638d95d4c671ab5397773fda4ef5672",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "remote_status": {},
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
+      "sha256": "92b7983cb55b25f4ae738a15a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_assessment_20260921.json",
+      "sha256": "41a9ed4bc7ed04dd54b61544ea18091f13f12206cccce174016f1c4dd1003dae"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_rotation_review_20260921.json",
+      "sha256": "6294601fe1bb5441ea2754d279ca71d28cc1b114d10b8ef2c26463481eb2d257"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_validation_evidence_20260921.json",
+      "sha256": "345fb64dfc799a4d4e0512b75ea870280f4905495885ef84f078b6e15a217571"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_tank_threat_v2_20260921.tar.gz.dvc",
+      "sha256": "3ce13e38593dbb8dfd5291265f5a6121bdd05876fee9b8a922069ca15e6136ba"
+    }
+  ],
+  "disposition": "Published as closed diagnostic evidence only. Actor 30002, Blood performance, repair acceptance, and Magmaw 10N completion remain open. The next route is shared calibration teardown followed by a clean Blood recapture."
+}
