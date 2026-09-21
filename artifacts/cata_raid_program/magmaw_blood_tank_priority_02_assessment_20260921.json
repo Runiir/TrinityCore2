@@ -4,7 +4,7 @@
   "unit_id": "magmaw:blood_tank_priority_02",
   "producer": "coordinator",
   "authority": "coordinator_attestation",
-  "operation_id": "8de707eb50aa3bd4e07293ee1c5cca04607d2226c283dbe0129984805c780505",
+  "operation_id": "26371bd1a2e6ecce99e07414f73d1caff0048c329a309418676d7f0ab5495e93",
   "attempt_id": 1,
   "baseline": {
     "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
