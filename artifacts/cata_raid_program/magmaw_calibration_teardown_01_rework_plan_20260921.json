@@ -1,0 +1,98 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "hypothesis": "The first repair used cohort flags alone at shared boundaries. Calibration clone identity is already carried by WorldBotState::SpawnSource, and stop can retain the clone GUIDs before clearing Party().CalibrationBots. Gate terminal melee suppression on the explicit combat_calibration spawn source, retain stopping clone GUIDs through removal, and fail closed only for those clone-owned damage callbacks. Keep player AttackStop and the completed-window contamination guard. Compile a small lifecycle predicate fixture with positive clone and negative ordinary cases so the ordinary resolver path is exercised at the same identity boundary.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationLifecycle.h",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py",
+    "tests/test_bot_world_population_mgr_calibration_control_module.py",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py",
+    "tests/test_bot_world_population_mgr_runtime_contracts_header.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Blood SQL or policy, class coefficients, rotations, simulator references, encounter scripts, route mechanics, or calibration thresholds.",
+    "Do not remove completed-window contamination counters or logs, and do not make ordinary callers consume calibration flags.",
+    "Do not change leases, pool ownership, server shutdown, or live shard control beyond retaining clone identity through existing native teardown.",
+    "Do not claim actor, performance, raid-clear, or parent completion."
+  ],
+  "acceptance_conditions": [
+    "Only a state with explicit combat_calibration identity is terminally suppressed by the shared melee resolver; an ordinary state remains eligible even when calibration flags are stale or mixed.",
+    "StopCombatCalibration records clone GUID identity before clearing the party and retains it until clone removal and callback quiescence complete; damage filtering uses that identity, not a global stopping flag.",
+    "Player AttackStop remains in the completed-window drain and the existing completed-window contamination branch remains observable.",
+    "Required focused tests, independent re-review, native build, exact tank_threat_300 recapture, cleanup closure, and DVC publication remain mandatory."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_control_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py tests/test_bot_world_population_mgr_runtime_contracts_header.py"
+  ],
+  "base_commit": "ab51b3ecf5f84492f089915eb95a77da96fad47b",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_independent_review_20260921.json",
+      "sha256": "d0abb4586c8d6dd29fa454fc471207ffaf741c4f2e768d63572c3c6c16ea3576"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_rework_review_20260921.json/summary.json",
+      "sha256": "1e84717aa82c4ee6a3e049bc031eb401b49ec4f5810172d2934fe6fca339b346"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_validation_evidence_20260921.json",
+      "sha256": "345fb64dfc799a4d4e0512b75ea870280f4905495885ef84f078b6e15a217571"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_rework_review_20260921.json/summary.json",
+        "sha256": "1e84717aa82c4ee6a3e049bc031eb401b49ec4f5810172d2934fe6fca339b346"
+      },
+      "adjudication": "Hosted Jev marked the rework scope and evidence supported; its acceptance question remained insufficient because no native behavior is claimed."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local Laya returned HTTP 422 context_budget_exceeded for the compact plan packet; the retained request is evidence of provider size rejection.",
+      "adjudication": "Continue with coordinator adjudication and separate independent review; no local model acceptance is inferred."
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "revision": 280,
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "action": "advance",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_plan_20260921.json",
+    "sha256": "56c67ded7f4f2d54eff970d3fd3d3c4936bc0bce47ffb6a3a05472d7aff50b36"
+  }
+}
