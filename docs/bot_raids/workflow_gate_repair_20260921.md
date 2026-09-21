@@ -77,3 +77,19 @@ suite; it was checked again rather than dropped from the selection.
 Hosted Jev supported the scope but found the plan-only evidence insufficient for
 acceptance. Local Laya returned weak support with no truncation. Actual test and
 independent-review receipts govern this workflow change, not either model score.
+
+## Publication and resume
+
+Implementation commit: `21db7a2cd6bab5d49890c7a1a09136f9d2155632`.
+The saved graph is revision 245, stage `implement`, without an active claim.
+Its original Blood unit and native source base remain intact; the committed
+source passes the assignment's source binding with the independently reviewed
+workflow support files. No server or live experiment was launched.
+
+Validation data is retained in
+`artifacts/cata_raid_program/workflow_gate_repair_20260921.tar.gz.dvc`.
+DVC push completed; the 15,749-byte remote object was read back and matched
+byte-for-byte before its exact local payload and cache object were evicted.
+`workflow_gate_publication_20260921.json` records the hashes. Repository-wide
+DVC status still reports historical missing-cache and stale-output entries;
+this publication does not claim to repair them.

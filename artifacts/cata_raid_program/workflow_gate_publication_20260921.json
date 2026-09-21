@@ -1,0 +1,10 @@
+{
+  "payload": "artifacts/cata_raid_program/workflow_gate_repair_20260921.tar.gz",
+  "size": 15749,
+  "md5": "000965bb9db9a9e6ba4a03b0d4c053ea",
+  "sha256": "33afc208d78a1507a4711600a405f5bcbd06cf377512a90618ecf88a8a63e52a",
+  "remote_verified": true,
+  "dvc_push": "1 file pushed",
+  "dvc_status": "Completed; repository-wide historical stale/missing-cache entries remain; this payload pushed and byte-verified",
+  "exact_local_payload_and_cache_evicted": true
+}
