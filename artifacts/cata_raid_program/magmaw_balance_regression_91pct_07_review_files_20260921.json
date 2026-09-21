@@ -1,0 +1,4 @@
+[
+  "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
+  "tests/test_balance_starfall_profile_variant.py"
+]
