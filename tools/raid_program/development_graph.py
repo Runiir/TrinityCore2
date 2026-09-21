@@ -10,6 +10,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shlex
 import subprocess
 import tempfile
 from pathlib import Path
@@ -169,6 +170,7 @@ def resume(root: Path) -> dict:
             input_changes.append(path)
     return {
         'state_sha256': digest(data), 'revision': g['revision'],
+        'diagnostic_entrypoint': shlex.join(['pixi', 'run', 'python', '-m', 'tools.raid_program.evidence_view', 'task', '--root', str(root.resolve())]),
         'encounter': g['encounter'],
         'parked_scenarios': sorted(state.get('parked_scenarios', {})),
         'bootstrap_inputs': inputs, 'changed_bootstrap_sources': input_changes,

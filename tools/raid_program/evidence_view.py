@@ -9,10 +9,12 @@ import argparse
 import json
 from pathlib import Path
 import tarfile
+import sys
 
 from tools.raid_program.evidence_inputs import inventory, load_input, select_path
 from tools.raid_program.evidence_metrics import native_actors, simulator_actor, wcl_actor
 from tools.raid_program.evidence_events import query_events
+from tools.raid_program.evidence_paging import bounded_select, command_with, encoded, outline
 
 
 def select_actor(actors, selected):
@@ -218,16 +220,61 @@ def compact_comparison(report, top=8, actor=None, offset=0, limit=10):
     return out
 
 
+def fit_comparison(full, args, argv):
+    top, limit = args.top, args.limit
+    while True:
+        result = compact_comparison(full, top, args.actor, args.offset, limit)
+        result["sources"] = full["sources"]
+        result["full_comparison"] = str(args.output) if args.output else None
+        result["requested_top"] = args.top
+        result["displayed_top_limit"] = top
+        result["detail_command"] = command_with(argv, view_path=f"/pairs/{args.offset}/components" if "pairs" in full else f"/actors/{args.offset}/components", offset=0, limit=5)
+        if result.get("next_offset") is not None:
+            result["next_command"] = command_with(argv, offset=result["next_offset"], limit=limit, top=max(1, top))
+        if len(encoded(result)) <= args.max_chars:
+            return result
+        if top > 0:
+            top //= 2
+        elif limit > 1:
+            limit = max(1, limit//2)
+        else:
+            rows = full.get('pairs', full.get('actors', []))
+            row = rows[args.offset] if args.offset < len(rows) else {}
+            return {"view": "minimal_comparison", "pairs": [{
+                        "actor": row.get('current', {}).get('actor', row.get('actor_guid')),
+                        "reconciliation": row.get('reconciliation'), "status": row.get('status'),
+                        "delta_dps_current_minus_reference": row.get('delta_dps_current_minus_reference')}],
+                    "detail_command": result['detail_command'],
+                    "setup_command": command_with(argv, view_path=f"/pairs/{args.offset}/setup_differences", offset=0, limit=3) if 'pairs' in full else None,
+                    "next_offset": result.get('next_offset'), "next_command": result.get('next_command'),
+                    "source_hashes": {k:v["payload_sha256"] for k,v in full["sources"].items()},
+                    "limits": "Diagnostic only; use details for context and omitted observations. No performance acceptance."}
+
+
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+    task = sub.add_parser("task", help="Resolve exact comparison commands from saved receipts and promoted references")
+    task.add_argument("--root", type=Path, default=Path.cwd())
     inspect = sub.add_parser("inspect", help="JSON shape/actors, or regular JSON archive members")
     inspect.add_argument("input")
+    inspect.add_argument("--offset", type=int, default=0)
+    inspect.add_argument("--limit", type=int, default=20)
     select = sub.add_parser("select", help="Read an explicit JSON Pointer; arrays/dicts are paginated")
     select.add_argument("input")
     select.add_argument("--path", required=True)
     select.add_argument("--offset", type=int, default=0)
     select.add_argument("--limit", type=int, default=10)
+    admit = sub.add_parser("admission", help="Run existing joined gear/stat/consume gates before routing a setup repair")
+    admit.add_argument("--current", required=True)
+    admit.add_argument("--wowsims-request", required=True)
+    admit.add_argument("--wowsims-result", required=True)
+    admit.add_argument("--compute-stats", required=True)
+    admit.add_argument("--debug-result")
+    admit.add_argument("--reference-class", required=True, choices=("self_provided_baseline", "controlled_live_parity"))
+    admit.add_argument("--actor")
+    admit.add_argument("--player-index", type=int, default=0)
     compare = sub.add_parser("compare", help="Rank signed differences without dumping source logs")
     compare.add_argument("--current", required=True)
     rhs = compare.add_mutually_exclusive_group(required=True)
@@ -243,6 +290,7 @@ def main(argv=None):
     compare.add_argument("--offset", type=int, default=0)
     compare.add_argument("--limit", type=int, default=10, help="Maximum actor pairs in overview")
     compare.add_argument("--output", type=Path, help="Optional full comparison file; stdout remains compact")
+    compare.add_argument("--view-path", help="JSON Pointer into the full computed comparison, with --offset/--limit")
     events = sub.add_parser("events", help="Filter existing timeline/decision records; defaults to 20 rows")
     events.add_argument("input")
     for key in ("actor", "spell", "target", "phase", "kind"):
@@ -252,14 +300,32 @@ def main(argv=None):
     events.add_argument("--clock", choices=("relative", "absolute"), default="relative")
     events.add_argument("--offset", type=int, default=0)
     events.add_argument("--limit", type=int, default=20)
+    for command in (inspect, select, events, admit, task):
+        command.add_argument("--output", type=Path, help="Export requested result; stdout remains bounded")
+    for command in (inspect, select, compare, events, admit, task):
+        command.add_argument("--max-chars", type=int, default=12000, help="Stdout budget, 2000..16000 characters")
     args = parser.parse_args(argv)
     try:
-        if args.command == "inspect" and "::" not in args.input and tarfile.is_tarfile(args.input):
+        if not 2000 <= args.max_chars <= 16000:
+            raise ValueError("--max-chars must be 2000..16000")
+        if args.command == "task":
+            from tools.raid_program.evidence_task import task_view
+            result = task_view(args.root)
+        elif args.command == "admission":
+            from tools.raid_program.evidence_admission import admission
+            result, full = admission(args.current, args.wowsims_request, args.wowsims_result,
+                                     args.compute_stats, args.reference_class, args.actor, args.debug_result, args.player_index)
+            if args.output:
+                args.output.write_text(json.dumps(full, allow_nan=False) + "\n")
+        elif args.command == "inspect" and "::" not in args.input and tarfile.is_tarfile(args.input):
             with tarfile.open(args.input) as archive:
                 members = [{"member": m.name, "bytes": m.size} for m in archive
                            if m.isfile() and m.name.endswith((".json", ".jsonl"))]
-            result = {"archive": args.input, "members": members[:50], "omitted": max(0, len(members)-50),
-                      "usage": "Use archive::exact/member.json; no extraction needed"}
+            result = bounded_select({'members': members}, '/members', args.offset, args.limit, argv, args.max_chars-500)
+            # inspect owns the members pointer internally; its continuation takes only offsets.
+            if result.get('next_offset') is not None:
+                result['next_command'] = command_with(argv, offset=result['next_offset'], limit=result['page_limit'])
+            result.update(archive=args.input, usage='Use archive::exact/member.json; no extraction needed')
         elif args.command == "compare":
             if not 1 <= args.top <= 30 or not 1 <= args.limit <= 25 or args.offset < 0:
                 raise ValueError("--top must be 1..30, --limit 1..25, --offset nonnegative")
@@ -272,9 +338,10 @@ def main(argv=None):
             full["sources"] = {"current": left, "reference": right}
             if args.output:
                 args.output.write_text(json.dumps(full, indent=2, allow_nan=False) + "\n")
-            result = compact_comparison(full, args.top, args.actor, args.offset, args.limit)
-            result["sources"] = full["sources"]
-            result["full_comparison"] = str(args.output) if args.output else None
+            result = (bounded_select(full, args.view_path, args.offset, args.limit, argv, args.max_chars-1500, view_path=True)
+                      if args.view_path else fit_comparison(full, args, argv))
+            if args.view_path:
+                result['sources'] = full['sources']
         else:
             document, receipt = load_input(args.input)
             if args.command == "inspect":
@@ -282,14 +349,35 @@ def main(argv=None):
             elif args.command == "select":
                 result = select_path(document, args.path, args.offset, args.limit)
                 result["source"] = receipt
+                if args.output:
+                    args.output.write_text(json.dumps(result, allow_nan=False) + "\n")
+                result = bounded_select(document, args.path, args.offset, args.limit, argv, args.max_chars-1000)
+                result["source"] = receipt
             else:
                 result = query_events(document, **{k: getattr(args, k) for k in
                     ("actor", "spell", "target", "phase", "kind", "start_ms", "end_ms", "clock", "offset", "limit")})
                 result["source"] = receipt
-        rendered = json.dumps(result, separators=(",", ":"), allow_nan=False)
-        if len(rendered) > 16000:
-            raise ValueError("view exceeds 16000-character stdout budget; narrow --actor/--top/--limit. "
-                             "Full comparison is available at --output if supplied; no data was truncated.")
+        if args.command not in ("compare", "select", "admission") and args.output:
+            args.output.write_text(json.dumps(result, allow_nan=False) + "\n")
+        if args.command == "events":
+            requested = args.limit
+            while len(encoded(result)) > args.max_chars and len(result["records"]) > 1:
+                result["records"] = result["records"][:max(1,len(result["records"])//2)]
+                result["returned_records"] = len(result["records"])
+                result["next_offset"] = args.offset+len(result["records"])
+            if len(encoded(result)) > args.max_chars and result["records"]:
+                row = result["records"][0]
+                result["records"] = [{"locator": row["locator"], "view": "oversized_record_structure",
+                    "value": outline(select_path(document, row['locator'], 0, 100)['value'], row["locator"], 1),
+                    "detail_command": command_with(["select", args.input], path=row["locator"], limit=5)}]
+            if result["next_offset"] is not None:
+                result["next_command"] = command_with(argv, offset=result["next_offset"], limit=len(result["records"]))
+            result["requested_limit"] = requested
+        if len(encoded(result)) > args.max_chars:
+            result = {"view": "oversized_result_structure", "value": outline(result, "", 2),
+                      "output": str(args.output) if args.output else None,
+                      "instruction": "Use explicit pointers and smaller pages; no raw-log fallback is needed."}
+        rendered = encoded(result)
         print(rendered)
     except (ValueError, KeyError, IndexError, OSError, tarfile.TarError) as exc:
         parser.exit(2, f"evidence_view: {exc}\n")

@@ -5,6 +5,16 @@ read retained inputs; they do not start servers, regenerate references, fetch
 WCL or grant acceptance. Run them from the mainline checkout. Do not load the
 Python implementation merely to use the CLI.
 
+For a saved task, start with `pixi run python -m tools.raid_program.evidence_view task`.
+It resolves the latest assessed run and baseline by receipt hashes, identifies the
+actual calibration actor, and supplies commands using the current promoted simulator
+request/result/ComputeStats. It does not change the saved stage. Read the displayed
+retained unit and current unit before applying that evidence to a different task.
+Missing hydration or identity stays explicit; never substitute the newest file.
+Execute its admission command before interpreting raw stat deltas as defects.
+The joined existing gates distinguish favorable self-provided baseline stats from
+controlled parity. Passing setup admission does not prove spell tuning or cadence.
+
 ## Comparisons
 
 ```sh
@@ -79,9 +89,13 @@ pointer when necessary. Arrays and objects paginate. Read the interval before a
 failure as well as after it. Absence in a filtered or incomplete capture is not
 proof that an action never occurred.
 
-Stdout is limited to 16,000 characters. Oversized views fail with a narrowing
-instruction instead of emitting truncated JSON. Use smaller pages or a deeper
-path. Do not respond by dumping the entire report, graph history, tool catalog,
+Stdout defaults to 12,000 characters (`--max-chars`, 2,000..16,000). Large results
+automatically shrink their page and return a `next_command`. A single oversized
+item becomes an explicit structural view with detail pointers. Comparisons support
+`--view-path /pairs/0/components` (or other full-result pointers) for omitted fields.
+Every command accepts `--output`: compare/admission export the full computed review;
+select/events export the requested page, not an unbounded raw report. Follow the
+returned command or pointer; do not respond by dumping the entire report, graph history, tool catalog,
 or generated dataset. Search source paths separately from generated artifacts.
 Retain full evidence for verification; send the compact comparison and the few
 decisive event pages to reviewers and advisory Jev/Laya packets.

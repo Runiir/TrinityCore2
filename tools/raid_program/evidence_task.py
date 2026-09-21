@@ -1,0 +1,110 @@
+"""Read-only diagnostic commands bound to saved assessments, never file recency."""
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import shlex
+import tarfile
+
+from tools.raid_program.evidence_inputs import load_input
+from tools.raid_program.evidence_metrics import native_actors
+from tools.raid_program.evidence_paging import command_with
+
+
+def checked(root, descriptor):
+    path = (root / descriptor['path']).resolve()
+    if not path.is_relative_to(root.resolve()):
+        raise ValueError('receipt path escapes repository')
+    payload = path.read_bytes()
+    if hashlib.sha256(payload).hexdigest() != descriptor['sha256']:
+        raise ValueError('receipt hash mismatch: ' + str(path))
+    return json.loads(payload)
+
+
+def report_input(root, run):
+    """Find the report by its recorded content hash, not directory naming."""
+    expected = run.get('report_summary', {}).get('actor_report_sha256')
+    if not expected:
+        raise ValueError('run has no actor_report_sha256; supply explicit reviewed inputs')
+    pointers = [d for d in run.get('evidence', []) if d['path'].endswith('.tar.gz.dvc')]
+    matches = []
+    for descriptor in pointers:
+        pointer = root / descriptor['path']
+        if hashlib.sha256(pointer.read_bytes()).hexdigest() != descriptor['sha256']:
+            raise ValueError('DVC pointer hash mismatch: ' + str(pointer))
+        archive_path = Path(str(pointer)[:-4])
+        if not archive_path.is_file():
+            raise ValueError('hydrate exact input: ' + shlex.join(['pixi', 'run', 'dvc', 'pull', str(pointer)]))
+        with tarfile.open(archive_path) as archive:
+            for member in archive:
+                if member.isfile() and member.name.endswith('/report.json'):
+                    payload = archive.extractfile(member).read()
+                    if hashlib.sha256(payload).hexdigest() == expected:
+                        matches.append(str(archive_path) + '::' + member.name)
+    if len(matches) != 1:
+        raise ValueError('run report hash must resolve to exactly one archive member')
+    return matches[0]
+
+
+def task_view(root):
+    from tools.raid_program.development_graph import STATE_PATH
+    from tools.raid_program.raid_workloop import build_spec_work_unit
+    root = root.resolve()
+    state_bytes = (root / STATE_PATH).read_bytes()
+    graph = json.loads(state_bytes)['development_graph']
+    result = {k: graph.get(k) for k in ('objective', 'stage', 'unit', 'claim', 'coordinator_worktree')}
+    result.update(schema='evidence_task_v1', state_sha256=hashlib.sha256(state_bytes).hexdigest(),
+                  open_requirements={k: v for k, v in graph['requirements'].items() if v['status'] != 'accepted'},
+                  commands=[], limitations=['Read-only retained diagnosis. Does not change the active stage or authorize duplicate live work.'])
+    assessment_ref = next((h['event']['receipt'] for h in reversed(graph['history'])
+                           if h['from'] == 'assess' and h['event']['action'] == 'advance'), None)
+    result['assessment'] = assessment_ref
+    if assessment_ref is None:
+        result['missing'] = 'No retained assessment; bind explicit inputs for compare/admission.'
+        return result
+    try:
+        assessment = checked(root, assessment_ref)
+        runs = [(d, checked(root, d)) for d in assessment.get('evidence', [])]
+        runs = [(d, r) for d, r in runs if r.get('kind') == 'run' and r.get('unit_id') == assessment.get('unit_id')]
+        if len(runs) != 1:
+            raise ValueError('assessment must identify exactly one run receipt')
+        descriptor, run = runs[0]
+        current = report_input(root, run)
+        actors = native_actors(load_input(current)[0])
+        if len(actors) != 1:
+            raise ValueError('multi-actor run needs explicit actor selection; use compare overview')
+        actor = next(iter(actors))
+        spec = run['target_spec']
+        result['retained_run'] = dict(descriptor, unit_id=run['unit_id'], spec=spec, actor=actor)
+        result['limitations'].append('The latest assessment belongs to the displayed retained unit. Check its relevance to the current task; it is not a new run.')
+        benchmark = build_spec_work_unit(spec, root)['benchmark']
+        refs = benchmark.get('rotation_review_reference_artifacts') or {}
+        policy = benchmark.get('accepted_dps_reference_class')
+        if benchmark.get('state') != 'ready' or policy is None:
+            raise ValueError('promoted reference is not ready: ' + str(benchmark.get('state')))
+        paths = {k: str(root / refs[k]) for k in ('raid_sim_request', 'raid_sim_result', 'compute_stats') if refs.get(k)}
+        if len(paths) != 3:
+            raise ValueError('promoted reference lacks request/result/ComputeStats binding')
+        for path in paths.values():
+            payload = Path(path).read_bytes()
+            if hashlib.sha256(payload).hexdigest() != Path(path).stem:
+                raise ValueError('content-addressed reference hash mismatch: ' + path)
+        result['reference_class'] = policy
+        result['commands'].append({'purpose': 'Check joined setup gates before routing a setup/stat defect',
+            'command': command_with(['admission'], current=current, actor=actor, reference_class=policy,
+                wowsims_request=paths['raid_sim_request'], wowsims_result=paths['raid_sim_result'], compute_stats=paths['compute_stats'])})
+        result['commands'].append({'purpose': 'Rank current versus promoted simulator signed damage gaps',
+            'command': command_with(['compare'], current=current, actor=actor, wowsims=paths['raid_sim_result'], top=5)})
+        if assessment.get('baseline'):
+            baseline = checked(root, assessment['baseline'])
+            prior = report_input(root, baseline)
+            prior_actors = native_actors(load_input(prior)[0])
+            if len(prior_actors) != 1 or baseline.get('target_spec') != spec:
+                raise ValueError('baseline actor/spec requires explicit reviewed mapping')
+            result['commands'].append({'purpose': 'Compare retained baseline, including setup confounders',
+                'command': command_with(['compare'], current=current, baseline=prior, actor=actor,
+                                        baseline_actor=next(iter(prior_actors)), top=5)})
+    except (ValueError, OSError, KeyError, tarfile.TarError) as exc:
+        result['missing'] = str(exc)
+    return result

@@ -234,15 +234,18 @@ def test_event_target_filter_retains_binding_distinction():
     assert "target_guid" not in page["records"][0]
 
 
-def test_output_budget_errors_instead_of_truncating_json(tmp_path, capsys):
+def test_oversized_event_is_inspectable_without_losing_next_record(tmp_path, capsys):
     p = tmp_path / "t.json"
     t = timeline();t["events"][0]["reason"] = "x" * 20000
     p.write_text(json.dumps(t))
-    with pytest.raises(SystemExit) as exc:
-        main(["events", str(p)])
+    main(["events", str(p)])
     captured = capsys.readouterr()
-    assert exc.value.code == 2 and not captured.out
-    assert "stdout budget" in captured.err
+    result = json.loads(captured.out)
+    assert len(captured.out) < 12000
+    assert result['records'][0]['locator'] == '/events/0'
+    assert '--path /events/0' in result['records'][0]['detail_command']
+    assert result['next_offset'] == 1
+    assert '--offset 1' in result['next_command']
 
 
 def test_event_locator_resolves_original_record_and_select_paginates():
