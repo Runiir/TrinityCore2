@@ -45,7 +45,7 @@
   "evidence": [
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_validation_evidence_20260921.json",
-      "sha256": "1e3178988c2948a0329da038cf8dc8b3a1a90f5694fd5e17a50acaf4a0e616e5"
+      "sha256": "345fb64dfc799a4d4e0512b75ea870280f4905495885ef84f078b6e15a217571"
     },
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_tank_threat_v2_20260921.tar.gz.dvc",
