@@ -20,6 +20,13 @@ source. If command syntax or output fields are needed, read only
 narrow queries. Never dump full histories, nested reports, or raw JSON into
 context. Load this skill once.
 
+For an unanswered schema question, use `inspect --path` once to list nested field
+names/types, then select only the relevant observation. Never enumerate every key
+with separate queries or concatenate many full pages into one tool response.
+For diagnosis, inspect the highest-ranked unresolved gap first. Stop retrieval
+when the evidence supports the conclusion or identifies a specific missing
+observation; another page without a new question is not progress.
+
 Load a deep reference only for the unanswered question named by that compact
 output: [post-run-dps-review.md](references/post-run-dps-review.md)'s damage-loss
 accounting section only before recommending an implementation; it requires signed

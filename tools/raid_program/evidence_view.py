@@ -11,7 +11,7 @@ from pathlib import Path
 import tarfile
 import sys
 
-from tools.raid_program.evidence_inputs import inventory, load_input, select_path
+from tools.raid_program.evidence_inputs import inventory, load_input, select_path, node_inventory
 from tools.raid_program.evidence_metrics import native_actors, simulator_actor, wcl_actor
 from tools.raid_program.evidence_events import query_events
 from tools.raid_program.evidence_paging import bounded_select, command_with, encoded, outline
@@ -259,6 +259,7 @@ def main(argv=None):
     task.add_argument("--root", type=Path, default=Path.cwd())
     inspect = sub.add_parser("inspect", help="JSON shape/actors, or regular JSON archive members")
     inspect.add_argument("input")
+    inspect.add_argument("--path", help="Inspect nested field names/types/locators without values")
     inspect.add_argument("--offset", type=int, default=0)
     inspect.add_argument("--limit", type=int, default=20)
     select = sub.add_parser("select", help="Read an explicit JSON Pointer; arrays/dicts are paginated")
@@ -345,7 +346,10 @@ def main(argv=None):
         else:
             document, receipt = load_input(args.input)
             if args.command == "inspect":
-                result = inventory(document, receipt)
+                result = node_inventory(document, args.path, args.offset, args.limit) if args.path else inventory(document, receipt)
+                result['source'] = receipt
+                if result.get('next_offset') is not None:
+                    result['next_command'] = command_with(argv, offset=result['next_offset'], limit=args.limit)
             elif args.command == "select":
                 result = select_path(document, args.path, args.offset, args.limit)
                 result["source"] = receipt
@@ -359,6 +363,11 @@ def main(argv=None):
                 result["source"] = receipt
         if args.command not in ("compare", "select", "admission") and args.output:
             args.output.write_text(json.dumps(result, allow_nan=False) + "\n")
+        if args.command == 'inspect' and args.path and 'value' in result:
+            while len(encoded(result)) > args.max_chars and len(result['value']) > 1:
+                result['value'] = result['value'][:max(1, len(result['value'])//2)]
+                result['next_offset'] = args.offset + len(result['value'])
+                result['next_command'] = command_with(argv, offset=result['next_offset'], limit=len(result['value']))
         if args.command == "events":
             requested = args.limit
             while len(encoded(result)) > args.max_chars and len(result["records"]) > 1:

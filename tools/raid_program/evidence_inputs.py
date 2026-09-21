@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from itertools import islice
 import json
 import tarfile
 from pathlib import Path
@@ -44,12 +45,9 @@ def inventory(value, receipt):
             "note": "Use compare for metrics; events for filtered records. No raw payload printed."}
 
 
-def select_path(document, pointer, offset=0, limit=10):
-    """Explicit JSON Pointer selection for details omitted from event projections."""
+def resolve_pointer(document, pointer):
     if not pointer.startswith("/") or pointer == "/":
         raise ValueError("--path must be an explicit JSON Pointer, e.g. /events/12")
-    if offset < 0 or not 1 <= limit <= 100:
-        raise ValueError("offset must be nonnegative and limit 1..100")
     value = document
     for part in pointer[1:].split("/"):
         key = part.replace("~1", "/").replace("~0", "~")
@@ -61,6 +59,14 @@ def select_path(document, pointer, offset=0, limit=10):
             value = value[key]
         else:
             raise ValueError("path continues past a scalar")
+    return value
+
+
+def select_path(document, pointer, offset=0, limit=10):
+    """Explicit JSON Pointer selection for details omitted from event projections."""
+    if offset < 0 or not 1 <= limit <= 100:
+        raise ValueError("offset must be nonnegative and limit 1..100")
+    value = resolve_pointer(document, pointer)
     count = len(value) if isinstance(value, (list, dict)) else 1
     if isinstance(value, list):
         page = value[offset:offset+limit]
@@ -70,3 +76,20 @@ def select_path(document, pointer, offset=0, limit=10):
         page = value if offset == 0 else None
     return {"path": pointer, "total_items": count, "offset": offset,
             "next_offset": offset+limit if offset+limit < count else None, "value": page}
+
+
+def node_inventory(document, pointer, offset=0, limit=20):
+    """List nested field names/types/locators without rendering their payloads."""
+    from tools.raid_program.evidence_paging import pointer_child
+    if offset < 0 or not 1 <= limit <= 100:
+        raise ValueError('offset must be nonnegative and limit 1..100')
+    value = resolve_pointer(document, pointer)
+    fields = value.items() if isinstance(value, dict) else enumerate(value) if isinstance(value, list) else []
+    count = len(value) if isinstance(value, (dict, list)) else 0
+    rows = [{'name': key, 'path': pointer_child(pointer, key), 'type': type(item).__name__,
+             'items': len(item) if isinstance(item, (dict, list)) else None,
+             'characters': len(item) if isinstance(item, str) else None}
+            for key, item in islice(fields, offset, offset+limit)]
+    return {'schema': 'evidence_node_inventory_v1', 'path': pointer, 'node_type': type(value).__name__,
+            'total_items': count, 'offset': offset, 'value': rows,
+            'next_offset': offset+limit if offset+limit < count else None}

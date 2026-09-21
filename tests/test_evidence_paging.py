@@ -86,3 +86,18 @@ def test_archive_inventory_continuations_reach_members_after_first_fifty(tmp_pat
             break
         args = shlex.split(result['next_command'])[5:]
     assert names == [f'run/{i}/report.json' for i in range(57)]
+
+
+def test_nested_inspect_lists_all_fields_without_values(tmp_path, capsys):
+    path = tmp_path/'raw.json'
+    doc = {'bot': {f'field_{i}': {'payload': 'large-private-value'*10000} for i in range(65)}}
+    doc['bot']['a/b~c'] = [1, 2]
+    path.write_text(json.dumps(doc))
+    main(['inspect', str(path), '--path', '/bot', '--limit', '100'])
+    output = capsys.readouterr().out
+    page = json.loads(output)
+    assert len(output) < 12000 and 'large-private-value' not in output
+    assert page['total_items'] == 66 and page['next_offset'] is None
+    assert page['value'][-1]['path'] == '/bot/a~1b~0c'
+    assert page['value'][-1]['items'] == 2
+    assert page['source']['payload_sha256']

@@ -67,6 +67,8 @@ stdout compact. Omitted component counts and signed sums remain explicit.
 ```sh
 pixi run python -m tools.raid_program.evidence_view inspect capture.tar.gz
 pixi run python -m tools.raid_program.evidence_view inspect 'capture.tar.gz::run/spec/report.json'
+pixi run python -m tools.raid_program.evidence_view inspect report.json \
+  --path /combat_calibration/bots/0 --limit 100
 pixi run python -m tools.raid_program.evidence_view events report.timeline.json \
   --actor 30001 --spell 2912 --start-ms 40000 --end-ms 60000 --limit 20
 pixi run python -m tools.raid_program.evidence_view select report.timeline.json \
@@ -75,7 +77,11 @@ pixi run python -m tools.raid_program.evidence_view select report.timeline.json 
 
 All JSON inputs accept `archive.tar.gz::exact/member.json`; no extraction or
 duplicate payload is needed. Hydrate only the named DVC object if absent.
-`inspect` returns shape/actors or archive members. `events` supports actor, spell,
+`inspect` returns shape/actors or archive members.
+Use `inspect --path` to discover a nested object's field names, types, sizes and
+locators. Do not enumerate its keys by running `select` once per offset, or read
+all nested payloads just to find which observation fields exist.
+`events` supports actor, spell,
 target, kind, phase and time filters on existing timeline/decision records.
 The default clock is relative to the native scoring/pull edge, or simulator
 iteration time; use `--clock absolute` explicitly when needed.
