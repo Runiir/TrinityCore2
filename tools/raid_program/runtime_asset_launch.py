@@ -2,6 +2,20 @@
 from pathlib import Path
 
 
+def route_input_digest(args):
+    if getattr(args, "input_log", None) or not getattr(args, "validation_scenario_id", None):
+        return None
+    import hashlib
+    from tools.raid_program.runtime_asset_safe_io import read_regular_no_follow
+    path = Path(args.validation_scenario_dir) / "validation_routes.jsonl"
+    return hashlib.sha256(read_regular_no_follow(path)[0]).hexdigest() if path.exists() else None
+
+
+def require_unchanged_route_input(args, digest):
+    if route_input_digest(args) != digest:
+        raise SystemExit("runtime_asset_route_input_changed: route changed during asset verification; retry with stable inputs")
+
+
 def prepare_asset_arguments(args, root, route=None):
     if getattr(args, "input_log", None):
         return

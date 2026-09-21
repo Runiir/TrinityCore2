@@ -119,8 +119,32 @@ def test_production_cli_resolves_calibration_before_asset_or_server_work(tmp_pat
         assert map_id is None, "wrong map must fail before asset verification"
         assert args.runtime_asset_map_id == 0
         assert args.runtime_asset_data_dir == tmp_path / "data"
+        assert args.runtime_asset_bundle.is_dir()
         raise SystemExit("fixture stops at real asset boundary")
     monkeypatch.setattr(live, "enforce_runtime_asset_closure_from_args", verify)
     with pytest.raises(SystemExit, match="scenario_map_mismatch" if map_id else "real asset boundary"):
         live.main()
-    assert not output.exists()
+    assert output.exists() is (map_id is None)
+
+
+def test_production_cli_rejects_route_change_during_asset_verification(tmp_path, monkeypatch):
+    import json
+    import sys
+    from tools.bot_ml import run_live_bot_validation as live
+    config = tmp_path / "world.conf"
+    config.write_text('DataDir = "data"\n')
+    path = tmp_path / "validation_routes.jsonl"
+    row = {"scenario_id": "fixture", "route_node_id": "boss", "map_id": 669}
+    path.write_text(json.dumps(row) + "\n")
+    monkeypatch.setattr(sys, "argv", ["run_live_bot_validation", "--config", str(config),
+        "--output-dir", str(tmp_path / "out"), "--validation-scenario-dir", str(tmp_path),
+        "--validation-scenario-id", "fixture", "--validation-route-node-id", "boss",
+        "--duration-policy", "completion-watchdog"])
+    def verify(args, **kwargs):
+        assert args.runtime_asset_map_id == 669
+        row["map_id"] = 967
+        path.write_text(json.dumps(row) + "\n")
+        return {}
+    monkeypatch.setattr(live, "enforce_runtime_asset_closure_from_args", verify)
+    with pytest.raises(SystemExit, match="route_input_changed"):
+        live.main()

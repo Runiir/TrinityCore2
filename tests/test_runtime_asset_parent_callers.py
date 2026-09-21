@@ -47,6 +47,13 @@ def expected_closure_values(namespace: argparse.Namespace) -> dict[str, str]:
     return closure_values(argv)
 
 
+def test_child_arguments_preserve_strict_mode_and_full_hash_flags(tmp_path: Path) -> None:
+    args = closure_namespace(tmp_path, runtime_asset_full_hash=True, runtime_asset_strict_modes=True)
+    argv = argument_argv_from_namespace(args)
+    assert "--runtime-asset-full-hash" in argv
+    assert "--runtime-asset-strict-modes" in argv
+
+
 def with_closure(namespace: argparse.Namespace, closure: argparse.Namespace) -> argparse.Namespace:
     for name, _flag in ARGUMENTS:
         setattr(namespace, name, getattr(closure, name))

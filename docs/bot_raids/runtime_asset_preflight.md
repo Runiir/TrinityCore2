@@ -7,6 +7,9 @@ map from its selected route, or map 0 for the existing calibration fixture. A
 conflicting explicit map is rejected before verification or provisioning.
 Missing closure arguments are filled from the selected checkout, configuration
 DataDir and run output. Explicit custom roots remain supported and verified.
+The derived bundle directory is created before verification. Route input changes
+during verification are rejected; the runner then uses the retained route objects.
+Child runs preserve explicit full-hash and strict-mode options.
 
 Runtime navigation readers open files read-only. Their asset check requires
 readable regular files with the expected bytes, sizes and membership, rather than

@@ -251,7 +251,12 @@ def argument_argv(values: Mapping[str, object]) -> list[str]:
 def argument_argv_from_namespace(args: argparse.Namespace) -> list[str]:
     values = argument_values_from_namespace(args, required=True)
     assert values is not None
-    return argument_argv(values)
+    argv = argument_argv(values)
+    for name, flag in (("runtime_asset_full_hash", "--runtime-asset-full-hash"),
+                       ("runtime_asset_strict_modes", "--runtime-asset-strict-modes")):
+        if getattr(args, name, False):
+            argv.append(flag)
+    return argv
 
 
 def build_binding(

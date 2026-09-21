@@ -8337,17 +8337,25 @@ def main() -> int:
         ) if enabled]
         if offline_conflicts:
             raise SystemExit("--input-log is read-only; incompatible with " + ", ".join(offline_conflicts))
-    from tools.raid_program.runtime_asset_launch import prepare_asset_arguments
+    from tools.raid_program.runtime_asset_launch import prepare_asset_arguments, route_input_digest, require_unchanged_route_input
+    asset_route_digest = route_input_digest(args)
     asset_route = load_validation_route(args.validation_scenario_dir, validation_context_from_args(args))
-    if not asset_route and (args.validation_route_manifest or args.validation_route_sequence):
+    asset_routes = []
+    if args.validation_route_manifest or args.validation_route_sequence:
         asset_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
-        asset_route = asset_routes[0] if asset_routes else {}
+        if not asset_route:
+            asset_route = asset_routes[0] if asset_routes else {}
     prepare_asset_arguments(args, REPO_ROOT, asset_route)
+    for route in asset_routes:
+        prepare_asset_arguments(args, REPO_ROOT, route)
+    if not args.input_log and getattr(args, "runtime_asset_bundle", None) == args.output_dir.absolute():
+        args.output_dir.mkdir(parents=True, exist_ok=True)
     runtime_asset_closure = enforce_runtime_asset_closure_from_args(
         args,
         worldserver_config=args.config,
         exemption="input_log_reparse" if args.input_log else None,
     )
+    require_unchanged_route_input(args, asset_route_digest)
     if args.calibration_only:
         args.combat_calibration = True
         if args.validation_route_manifest or args.validation_route_sequence:
@@ -8504,7 +8512,7 @@ def main() -> int:
             raise SystemExit("--validation-route-sequence requires --validation-scenario-id")
         if args.input_log:
             raise SystemExit("--validation-route-sequence cannot be combined with --input-log")
-        sequence_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        sequence_routes = asset_routes
         validate_route_runtime_profile_contract(args.config, args.validation_scenario_dir, args.validation_scenario_id, sequence_routes)
         commands = [
             route_sequence_child_command(args, route, args.output_dir / route_segment_output_name(route), first_route=index == 0)
@@ -8537,7 +8545,7 @@ def main() -> int:
         else args.output_dir
     )
     validation_context = validation_context_from_args(args)
-    validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
+    validation_route = asset_route
     if validation_route:
         validation_context = route_validation_context(args.validation_scenario_id, validation_route, include_segment=bool(args.validation_segment_id))
     validation_route_manifest: dict[str, Any] = {}
@@ -8545,7 +8553,7 @@ def main() -> int:
     if args.validation_route_manifest:
         if not args.validation_scenario_id:
             raise SystemExit("--validation-route-manifest requires --validation-scenario-id")
-        manifest_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        manifest_routes = asset_routes
         validate_route_runtime_profile_contract(args.config, args.validation_scenario_dir, args.validation_scenario_id, manifest_routes)
         validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(
             session_runtime_dir,
