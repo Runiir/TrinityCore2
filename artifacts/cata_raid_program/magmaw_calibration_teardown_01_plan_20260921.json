@@ -1,0 +1,92 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "hypothesis": "At the exact scoring boundary, CompleteCalibrationScoredWindow marks the window complete and drains effects, but UpdateCalibrationBot still crosses the shared melee auto-attack decision and final reconciliation. A retained or rebound native player attack can therefore emit owner callbacks after the window. Stop the player attack at the completed-window drain, make the final reconciliation submit terminal suppression for calibration clones while the window is complete or stopping, and fail closed in damage attribution during stopping while retaining the post-window contamination guard for a completed window.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Blood SQL, Death Strike/Heart Strike policy, class rotations, spell coefficients, simulator references, encounter scripts, route mechanics, or calibration thresholds.",
+    "Do not hide completed-window contamination by removing the existing post-window counter/log guard; stopping is the only lifecycle suppression path.",
+    "Do not change roster leases, pool ownership, server shutdown, or live shard control outside the existing native teardown path.",
+    "Do not claim actor, performance, raid-clear, or parent completion; keep every remaining requirement open."
+  ],
+  "acceptance_conditions": [
+    "The completed-window and stopping paths suppress a calibration clone's native player auto-attack before the next callback tick, while ordinary runtime reconciliation remains unchanged.",
+    "The post-window damage guard still records a callback after the completed boundary, but callbacks during CalibrationStopping are fail-closed and cannot mutate calibration evidence.",
+    "The focused calibration/runtime tests pass, the native build and separate review are still required, and the next live run must prove active=false, zero calibration bots, zero leases, empty calibration party state, stable server epoch, and zero cross-window callbacks."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py"
+  ],
+  "base_commit": "ab51b3ecf5f84492f089915eb95a77da96fad47b",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
+      "sha256": "92b7983cb55b25f4ae738a15a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_rotation_review_20260921.json",
+      "sha256": "6294601fe1bb5441ea2754d279ca71d28cc1b114d10b8ef2c26463481eb2d257"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_adjudication_20260921.json",
+      "sha256": "03793b4370908d0b13ba7e98864e4f76ce2ac3a6668be3f14976f08bc58c5abf"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supported the shared teardown route and its evidence, while treating native/live acceptance as insufficient evidence.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_review_20260921_v2/summary.json",
+        "sha256": "638f4f5b22b97e090b70502c89b4af5668e61e6216ac3bf1019ee1ed3fc3a863"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed after two context-budget rejections; deterministic checks and hosted advice remain separate.",
+      "reason": "Local HTTP 422 context_budget_exceeded; the rejected receipts are retained and the coordinator adjudicated the route aligned."
+    }
+  }
+}
