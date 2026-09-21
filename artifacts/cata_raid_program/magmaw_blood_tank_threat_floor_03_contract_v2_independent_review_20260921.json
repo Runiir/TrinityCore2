@@ -1,0 +1,24 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_independent_review_report_20260921.json",
+      "sha256": "ff499d685dd7e1ac652f9f847ac55b86fbf3866e223d116e7f97836e0bdef8ca"
+    }
+  ],
+  "file_hashes": {
+    "tests/test_tank_calibration_reference_contract.py": "10138836e5c37d2e825a19322148f69b317d8053a7c4abb12139a313142bad81",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py": "bad4b36c6d902b1853bcf381f28a2ac6cf1baf48259400b2f4c3bc9b8044a7de",
+    "tools/bot_ml/role_calibration_harness.py": "36096a42a0285acb3182d1e9be9c42b17a2d715f994131a8165adf45f1e7185c",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py": "027462da6f06b1fb264f1afc383203ba1ee9cab68c5125f23d551c2b6e72c1fe"
+  },
+  "kind": "review",
+  "producer": "01a0c43a-0830-7760-8f8d-ecbbfe80e540",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_independent_review_report_20260921.json",
+    "sha256": "ff499d685dd7e1ac652f9f847ac55b86fbf3866e223d116e7f97836e0bdef8ca"
+  },
+  "reviewer_session_id": "01a0c43a-0830-7760-8f8d-ecbbfe80e540",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "verdict": "approved"
+}

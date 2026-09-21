@@ -1,0 +1,41 @@
+{
+  "file_hashes": {
+    "tests/test_tank_calibration_reference_contract.py": "10138836e5c37d2e825a19322148f69b317d8053a7c4abb12139a313142bad81",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py": "bad4b36c6d902b1853bcf381f28a2ac6cf1baf48259400b2f4c3bc9b8044a7de",
+    "tools/bot_ml/role_calibration_harness.py": "36096a42a0285acb3182d1e9be9c42b17a2d715f994131a8165adf45f1e7185c",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py": "027462da6f06b1fb264f1afc383203ba1ee9cab68c5125f23d551c2b6e72c1fe"
+  },
+  "findings": [],
+  "limits": [
+    "Native build, exact cleaned role run, actor acceptance, and raid acceptance remain separate graph requirements."
+  ],
+  "proof": {
+    "final_message_bytes": 1022,
+    "final_message_sha256": "ad7aec6786a7382adbeb9ec370046c61e9d68f174c23d5efd9db72a7bbfaee33",
+    "prefix_bytes": 6562542,
+    "prefix_sha256": "f1a0b228a8a19a9ed7bd46f4a5080a41a0fb1157a6c8e5dd1d8d0296c38e17a5",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T16-48-52-01a0c43a-0830-7760-8f8d-ecbbfe80e540.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c43a-0830-7760-8f8d-ecbbfe80e540"
+  },
+  "reviewer_session_id": "01a0c43a-0830-7760-8f8d-ecbbfe80e540",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_tank_calibration_reference_contract.py",
+      "exit_status": 0,
+      "summary": "4 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_dps_gate.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_ml_pipeline.py -k phase7_role_calibration_harness",
+      "exit_status": 0,
+      "summary": "1 passed, 416 deselected"
+    }
+  ],
+  "verdict": "approved"
+}

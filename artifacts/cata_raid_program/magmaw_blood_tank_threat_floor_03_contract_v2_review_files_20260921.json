@@ -1,0 +1,8 @@
+{
+  "files": [
+    "tools/bot_ml/role_calibration_harness.py",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py",
+    "tests/test_tank_calibration_reference_contract.py"
+  ]
+}
