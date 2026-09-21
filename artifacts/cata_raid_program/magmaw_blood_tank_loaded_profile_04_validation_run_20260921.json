@@ -97,10 +97,6 @@
     {
       "path": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
       "sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c"
-    },
-    {
-      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921/report.json",
-      "sha256": "b3aabce481915057e7dc3893576d91cc9c3a0ad5c34e5297a5461dd29e517395"
     }
   ]
 }
