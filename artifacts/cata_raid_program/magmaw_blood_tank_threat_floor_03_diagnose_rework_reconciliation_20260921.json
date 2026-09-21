@@ -1,0 +1,26 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "reconciliation",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "codex-magmaw-blood-tank-threat-floor-03-diagnose",
+  "operation_id": "ab46e8670de46afc11143e41ab5a9da2166b532876acff2693c4256086f9340b",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The loaded Blood profile and native dump disprove the retained priority-inversion hypothesis for this window. Death Strike 49998 and Heart Strike 55050 share bucket 1, and the six-target tank lane validly selects bucket-0 Death and Decay/Blood Boil. The sole failed check is the harness reference_hard_floor on a non-comparable tank fixture, so no Blood policy edit is justified.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+      "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+    },
+    {
+      "path": "tools/bot_ml/role_calibration_harness.py",
+      "sha256": "c0ab697688cc7abc96669fccbbe13cbb75f37a0c506804000e1f3cf42963a61f"
+    },
+    {
+      "path": "tools/bot_ml/phase8_calibration_adapter.py",
+      "sha256": "c83b35b2bc67784f2a60e39725b14a2f146ed736aa27c78225fa32a0bcde1f45"
+    }
+  ]
+}

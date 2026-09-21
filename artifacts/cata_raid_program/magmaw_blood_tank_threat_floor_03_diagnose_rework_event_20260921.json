@@ -1,0 +1,11 @@
+{
+  "action": "rework",
+  "revision": 293,
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "claim_token": "ab46e8670de46afc11143e41ab5a9da2166b532876acff2693c4256086f9340b",
+  "reason": "The retained Blood priority-inversion hypothesis is disproven by the loaded profile and native candidate evidence. Reconcile the diagnosis and replan the same actor edge around the non-comparable tank calibration reference contract before any class-policy edit.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_diagnose_rework_reconciliation_20260921.json",
+    "sha256": "9accd7b7763ed5718711986a28984994f22a026a3608ee9d55a345033fe3327c"
+  }
+}
