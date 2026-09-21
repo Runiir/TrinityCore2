@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose native calibration stop and callback ordering; repair one shared lifecycle edge without changing Blood SQL, then add focused tests and recapture tank_threat_300.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 283,
+    "revision": 284,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -5516,6 +5516,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 283,
+        "unit_id": "magmaw:calibration_teardown_contamination_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 283,
+          "unit_id": "magmaw:calibration_teardown_contamination_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_review_receipt_20260921.json",
+            "sha256": "96679d16a1192a95fa4d04f7aa80e40b0ff1e1af77a30ca058992735d06e66ff"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5524,7 +5541,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "ab51b3ecf5f84492f089915eb95a77da96fad47b",
+    "source_base_commit": "db635d5ba31e16dc2ea686f5e7e51d2c12acf782",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
@@ -5607,6 +5624,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_tests_20260921.json",
         "sha256": "91dcd8663662d8936ec426838a5edecee611ef46797e046a978028ab32ce916e"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_review_receipt_20260921.json",
+        "sha256": "96679d16a1192a95fa4d04f7aa80e40b0ff1e1af77a30ca058992735d06e66ff"
       }
     },
     "tested_files": {
