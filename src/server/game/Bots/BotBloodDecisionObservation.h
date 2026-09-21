@@ -81,13 +81,18 @@ inline void AppendCandidate(std::ostringstream& json, char const* name,
          << ",\"final_score\":" << candidate->Score << '}';
 }
 
+inline bool IsRelevantSelection(uint32 spellId)
+{
+    return spellId == 49998 || spellId == 55050 || spellId == 48721 || spellId == 43265;
+}
+
 inline bool Attach(Player const* actor, std::vector<BotActionCandidate>& candidates,
     BotActionCandidate* selected, std::string const& specTag,
     uint64 evaluationStartedAtMs, char const* selectedMode, std::string& actionObservationJson)
 {
     if (!actor || actor->getClass() != CLASS_DEATH_KNIGHT
         || (specTag != "blood_death_knight" && specTag != "blood") || !selected
-        || (selected->SpellId != 49998 && selected->SpellId != 55050))
+        || !IsRelevantSelection(selected->SpellId))
         return false;
 
     BotActionCandidate const* deathStrike = nullptr;
@@ -99,6 +104,8 @@ inline bool Attach(Player const* actor, std::vector<BotActionCandidate>& candida
         else if (candidate.SpellId == 55050)
             heartStrike = &candidate;
     }
+    if (!deathStrike && !heartStrike)
+        return false;
     ReadyRunes const runes = ObserveReadyRunes(actor);
     std::ostringstream json;
     json << std::setprecision(std::numeric_limits<float>::max_digits10)

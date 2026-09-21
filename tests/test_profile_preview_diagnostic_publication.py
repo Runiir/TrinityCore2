@@ -162,6 +162,13 @@ int main(){
  BotClassSpecActionProfile profile;
  std::cout<<attached<<'\n'<<maskObservation<<'\n'<<actionObservation<<'\n'
           <<BotClassSpecActionProfileStore::ChosenActionJson(&candidates[2],profile,"tank","threat_first",1)<<'\n';
+ std::vector<BotActionCandidate> areaSelected(3);
+ areaSelected[0].SpellId=48721;areaSelected[0].Score=8.25f;areaSelected[0].Profile.PriorityBucket=0;
+ areaSelected[1].SpellId=49998;areaSelected[1].Score=4.25f;areaSelected[1].Profile.PriorityBucket=1;areaSelected[1].RejectReason="missing_runes";
+ areaSelected[2].SpellId=55050;areaSelected[2].Score=3.25f;areaSelected[2].Profile.PriorityBucket=1;
+ std::string areaObservation="{}";
+ std::cout<<BotBloodDecisionObservation::Attach(&actor,areaSelected,&areaSelected[0],"blood_death_knight",1234,"threat_first",areaObservation)<<'\n'
+          <<areaObservation<<'\n';
  std::vector<BotActionCandidate> unrelated(1);unrelated[0].SpellId=48721;unrelated[0].ObservationJson="{\"unchanged\":true}";
  std::cout<<BotBloodDecisionObservation::Attach(&actor,unrelated,&unrelated[0],"blood_death_knight",1235,"role_first",actionObservation)<<'\n'
           <<unrelated[0].ObservationJson<<'\n';
@@ -185,13 +192,18 @@ int main(){
         "-I", str(tmp_path), "-I", str(ROOT / "src/server/game"),
         str(cpp), "-o", str(binary)
     ], check=True)
-    (attached, mask_json, action_json, chosen_json, unrelated, unchanged_json,
-     attempt_json, death_json, frost_json) = subprocess.check_output(
+    (attached, mask_json, action_json, chosen_json, area_attached, area_json,
+     unrelated, unchanged_json, attempt_json, death_json, frost_json) = subprocess.check_output(
         [str(binary)], text=True).splitlines()
     mask = json.loads(mask_json)
     action = json.loads(action_json)
     chosen = json.loads(chosen_json)
     assert attached == "1" and unrelated == "0"
+    assert area_attached == "1"
+    area = json.loads(area_json)
+    assert area["selected_spell_id"] == 48721
+    assert area["candidates"]["death_strike"]["reject_reason"] == "missing_runes"
+    assert area["candidates"]["heart_strike"]["valid"] is True
     assert json.loads(unchanged_json) == {"unchanged": True}
     assert chosen["observation"] == mask == action
     assert json.loads(attempt_json)["detail"] == action
