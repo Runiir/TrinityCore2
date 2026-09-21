@@ -48,3 +48,14 @@ cases the provider could not review. Synthetic smoke cases test the interface;
 they are not real-run validation or training data. Only independently adjudicated,
 attributable real cases can establish diagnostic value. Remove advice from paths
 where it does not improve decisions or reviewer time.
+
+Reproduce the small interface evaluation with:
+
+```sh
+pixi run python -m tools.raid_program.evaluate_bot_advice --cases experiments/configs/bot_advice_smoke_cases_v1.json --output advice-evaluation --backend both
+```
+
+Its exact-choice counts measure agreement with the declared test labels, not
+domain accuracy or reviewer usefulness. An alternative investigation may be
+reasonable; adjudicate that separately rather than relabeling cases to improve
+the score. Preserve unsuccessful requests and earlier fixture revisions.
