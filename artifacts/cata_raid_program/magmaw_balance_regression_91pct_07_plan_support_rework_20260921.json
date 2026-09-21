@@ -1,0 +1,142 @@
+{
+  "acceptance_conditions": [
+    "The control SQL is scoped to Balance DPS Starfall 48505, removes only balance_starfall_lunar_window, preserves balance_starfall_neutral_gate, and is reversible by the reviewed treatment migration.",
+    "Focused tests prove the control SQL cannot touch another spec, spell, or neutral tag and that its tag removal is bounded.",
+    "One current host12 binary and one exact validation identity run the control and treatment conditions with identical gear, roster, runtime profile, target, seed, warmup, and 300-second scoring window.",
+    "Each condition records database/profile readback, natural 75170 coverage, ordinary/periodic/pet damage, and landed Dragonwrath attribution or explicit unknowns.",
+    "Assessment treats the pair as causal diagnosis only. Any source or SQL repair requires a new hypothesis, independent review, build, and separate validation."
+  ],
+  "advice": {
+    "jev": {
+      "adjudication": "Hosted Jev supports the bounded scope and evidence direction. Its acceptance disposition is insufficient_evidence because this is a plan, not native acceptance.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v2_20260921.json/summary.json",
+        "sha256": "b32925f31537a8d81a9253b49211d136db8e5d04232dc5816b4588e5950d7494"
+      },
+      "status": "reviewed"
+    },
+    "laya": {
+      "adjudication": "Local Laya returned low-confidence insufficient-evidence scope and evidence choices after a token-budget-safe retry. The coordinator retains deterministic identity and receipt evidence as authority.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v4_20260921.json/summary.json",
+        "sha256": "894c87da9fa37d012ddf3a6bf24e9351fa7d774d90fb56c09bb862ccac110bae"
+      },
+      "status": "reviewed"
+    },
+    "plan_drift": {
+      "adjudication": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_adjudication_20260921.json",
+        "sha256": "24e218b553a7822790326ae7dbe8767f8505e599a6c30094adf4d371cf336c9e"
+      },
+      "checkpoint": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_20260921.json",
+        "sha256": "741d4791525cf82f72de0d7b0de6b8b3bc42da3a5c844aabd9ea861f177662e9"
+      },
+      "status": "aligned; deterministic review passed; advisory judgments retained; no acceptance claimed"
+    }
+  },
+  "authority": "coordinator_attestation",
+  "base_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
+  "encounter": {
+    "boss": "magmaw",
+    "mode": "10N",
+    "raid": "blackwing_descent"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
+      "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_run_v3_20260921.json",
+      "sha256": "3de24b686c0571eb810c96c1a5435eca1eec34e1b30c16f1b75ba0d79962dc3a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json",
+      "sha256": "41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_adjudication_20260921.json",
+      "sha256": "24e218b553a7822790326ae7dbe8767f8505e599a6c30094adf4d371cf336c9e"
+    }
+  ],
+  "first_broken_edge": {
+    "confidence": "high_for_observation_gap; causal effect remains unproven",
+    "decisive_counterexample": {
+      "fixture": "balance_druid single_target_300",
+      "reference_dps": 35447.5889273,
+      "unit04_dps": 32585.2966667,
+      "unit04_starfall_successes": 5,
+      "unit05_profile_content_hash": "BF97FB2DAFCE3535A74B726C661F40BCB8B3B64144027ECA9082ED9F46A1F907",
+      "unit05_starfall_successes": 4,
+      "unit05_startup_modifier_difference": "unit04 records observed 75170 +580 intellect; unit05 does not",
+      "unit06_attribution": "candidate masks, typed rejects, and landed Dragonwrath copies are unavailable",
+      "unit06_dps": 30881.98
+    },
+    "edge": "owner_balance_post_starfall_throughput_regression",
+    "evidence_limit": "The receipts show a real decline and a Starfall-count difference, but unit05 also differs in natural 75170 startup coverage and unit06 lacks complete attribution. A matched current-code profile pair is required before a revert or policy claim.",
+    "status": "matched_profile_diagnosis_ready"
+  },
+  "forbidden_changes": [
+    "No C++ gameplay, candidate predicate, neutral-opener, stat, coefficient, gear, consumable, reference, denominator, encounter-script, route, or other-spec changes.",
+    "No direct Eclipse-power or 75170 state manufacture, forced casts, cooldown edits, target changes, or Dragonwrath attribution inference.",
+    "No actor, DPS, raid, or WCL acceptance from this matched dummy pair. Keep actor_30001 through actor_30010 and every comparison, potion, survival-reference, and raid requirement open.",
+    "Do not apply the control SQL outside the isolated validation database or leave the loaded profile in the control state after the pair."
+  ],
+  "hypothesis": "The Balance post-opener balance_starfall_lunar_window profile tag may reduce throughput, but the retained runs do not isolate it. A reversible control variant that removes only this tag from the Balance Starfall row, followed by reapplying the reviewed treatment tag, will test the condition while preserving the neutral opener, native candidate predicate, shared code, setup, reference, and other specs.",
+  "interpretation": "This plan isolates the remaining Balance profile-condition hypothesis. It does not revert gameplay, accept the actor, or close the Magmaw 10N objective.",
+  "kind": "plan",
+  "owned_files": [
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
+    "tests/test_balance_starfall_profile_variant.py"
+  ],
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator",
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_starfall_profile_variant.py",
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "smallest_lawful_repair_shape": {
+    "control_variant": "Remove only balance_starfall_lunar_window from the enabled Balance Starfall 48505 row with a scoped rollback SQL statement.",
+    "preserved_behavior": "Keep the neutral opener tag and all C++ candidate logic unchanged. Do not manufacture Eclipse or 75170 state, assign Dragonwrath copies, or change scoring.",
+    "readback": "Record profile id, action id, spell id, full mechanic_tags, profile generation, and profile content hash before each exact-300 condition.",
+    "treatment_variant": "Reapply the reviewed 2026_09_20_02_balance_starfall_lunar_window migration and verify the tag occurs exactly once."
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/workflow_gate_review_20260921.receipt.json",
+    "sha256": "8a2e6932b4512cc7c24531fa85af359666b2badffd097afa22ca0025ac6d0d8d"
+  },
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "validation_identity": {
+    "actor_id": "30001",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "dummy",
+    "spec": "balance_druid"
+  }
+}

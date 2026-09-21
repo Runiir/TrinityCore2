@@ -1,0 +1,109 @@
+{
+  "task_id": "magmaw_balance_regression_91pct_07_plan_drift_20260921",
+  "stage": "plan",
+  "subject": "orchestrator",
+  "objective": "Check whether routing from the retained Balance regression evidence to one bounded matched Starfall profile comparison remains aligned with the full Magmaw 10N objective.",
+  "first_broken_edge": "owner_balance_post_starfall_throughput_regression",
+  "allowed_files": [
+    "../../experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "forbidden_changes": [
+    "Do not accept actor_30001, any other actor, or Magmaw 10N from the retained dummy receipts.",
+    "Do not close or delete any actor, comparison, potion, survival-reference, or raid requirement.",
+    "Do not blame or restore Starfall from aggregate DPS, assign missing Dragonwrath copies, or manufacture 75170 proc coverage.",
+    "Do not rewind shared C++ code, change the neutral opener, alter stats, coefficients, gear, consumables, encounter scripts, route, denominator, or another spec.",
+    "Do not launch more than one matched pair without a new named uncertainty and a new plan."
+  ],
+  "acceptance_conditions": [
+    "The active unit remains magmaw:balance_regression_91pct_07 with parent_objective_complete=false.",
+    "The next step is one current-code matched comparison of the Balance post-opener balance_starfall_lunar_window condition, preserving the neutral opener in both conditions, only if retained evidence cannot resolve causality.",
+    "The comparison must read back the loaded profile/database state, keep natural 75170 proc coverage explicit, and separate ordinary, periodic, pet, and landed Dragonwrath damage.",
+    "The checkpoint claims alignment only. Performance, raid clear, and every actor requirement remain open."
+  ],
+  "observations": [
+    "The saved graph is at revision 246, diagnose, unit magmaw:balance_regression_91pct_07, on the master coordinator checkout; parent_objective_complete is false.",
+    "Retained unit04, unit05, and unit06 Balance receipts measured 32585.30, 31544.06, and 30881.98 DPS against the same 35447.59 reference. Unit05 had four Starfall successes versus unit04's five, but also lacks unit04's observed 75170 startup modifier; unit06 lacks complete candidate and landed-copy attribution.",
+    "Unit05 and unit06 have complete 300-second cleanup receipts, but neither proves the causal source of the decline. The current continuation explicitly requires a matched profile comparison before any revert or replacement.",
+    "The suspended Blood assignment and all other actor, comparison, potion, survival-reference, and raid requirements remain open and must resume after Balance diagnosis."
+  ],
+  "proposed_change": "The route is aligned. Reuse the retained evidence, then prepare one reviewed reversible pair on current shared code that differs only by the Balance post-opener balance_starfall_lunar_window profile condition. After that bounded diagnosis, resume the suspended Blood assignment.",
+  "acceptance_claim": "This checkpoint claims only plan alignment. It claims no source repair, native performance, actor acceptance, raid clear, or parent-objective completion.",
+  "required_test_commands": [],
+  "tests": [],
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+    "latest_user_direction": "Implement Magmaw 10N bots and continue through implementation, review, build, validation, and publication gates.",
+    "current_plan": "Finish the retained Balance regression diagnosis, repair only a proven edge, independently review it, build on host12, run the required validation, publish evidence, then continue Blood and every remaining actor requirement.",
+    "completed_work": [
+      "Compared the retained unit04/unit05/unit06 run receipts and confirmed the causal decline is unresolved.",
+      "Preserved current shared code, other-spec fixes, and the suspended Blood assignment from the continuation contract."
+    ],
+    "remaining_requirements": [
+      "actor_30001 Balance",
+      "actor_30002 Blood tank",
+      "actor_30003 healer",
+      "actor_30004 healer",
+      "actor_30005 healer",
+      "actor_30006 Fire",
+      "actor_30007 Fire",
+      "actor_30008 Affliction",
+      "actor_30009 Survival",
+      "actor_30010 Elemental",
+      "affliction_comparison",
+      "elemental_comparison",
+      "potion_ownership",
+      "survival_reference",
+      "magmaw_10n"
+    ],
+    "known_blockers": [
+      "Candidate masks, typed rejection reasons, Eclipse timestamps, and complete landed Dragonwrath attribution are not present in the retained receipts.",
+      "The historical 75170 startup difference is a confounder, not a quantified cause."
+    ]
+  },
+  "evidence_excerpts": [
+    {
+      "id": "continuation",
+      "path": "magmaw_balance_regression_continuation_20260921.json",
+      "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23",
+      "excerpt": "The current contract requires retaining the neutral opener, comparing only the post-opener Balance lunar-window profile condition on common current code, and preserving the suspended Blood work."
+    },
+    {
+      "id": "unit04",
+      "path": "magmaw_balance_rotation_cadence_04_run_20260920.json",
+      "sha256": "82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00",
+      "excerpt": "The exact 300-second unit04 receipt measured 32585.2967 DPS and recorded five Starfall casts with Moonfire first."
+    },
+    {
+      "id": "unit05",
+      "path": "magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882",
+      "excerpt": "The exact unit05 receipt measured 31544.0567 DPS, four Starfall successes, and no candidate-mask or typed-rejection observation."
+    },
+    {
+      "id": "unit06",
+      "path": "magmaw_balance_damage_loss_accounting_06_run_v3_20260921.json",
+      "sha256": "3de24b686c0571eb810c96c1a5435eca1eec34e1b30c16f1b75ba0d79962dc3a",
+      "excerpt": "The exact unit06 observer receipt measured 30881.98 DPS with complete uptime and no action failures, but candidate masks, typed rejects, and landed-copy attribution remain absent."
+    },
+    {
+      "id": "assessment",
+      "path": "magmaw_balance_damage_loss_accounting_06_assessment_v3_20260921.json",
+      "sha256": "2ebde8a9891cbe1803d0035f0c8cb0200afd4412f79a8abd4fa3e14ebe3def90",
+      "excerpt": "The latest assessment leaves actor performance, raid clear, and the damage-accounting repair unaccepted."
+    },
+    {
+      "id": "workflow",
+      "path": "../../docs/bot_raids/shared_worldserver_workflow_20260907.md",
+      "sha256": "b37c38f93cfb6d3be96405ad905c2b65557edb3cc8e14a1c5c3f685fc4daa8c8",
+      "excerpt": "The current workflow section says to use retained unit04/unit05/unit06 evidence first, then one matched Starfall-window pair if causality remains unresolved."
+    },
+    {
+      "id": "error_ledger",
+      "path": "../../docs/bot_raids/error_ledger.md",
+      "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+      "excerpt": "FLOW-006 forbids assigning missing Dragonwrath damage or blaming Starfall from one aggregate total and requires a controlled causal comparison before another optimization patch."
+    }
+  ]
+}

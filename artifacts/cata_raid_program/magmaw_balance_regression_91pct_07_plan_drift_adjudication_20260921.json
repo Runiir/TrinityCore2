@@ -1,0 +1,40 @@
+{
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw_balance_regression_91pct_07_plan_drift_compact_20260921",
+  "verdict": "aligned",
+  "coordinator": "coordinator",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_20260921.json",
+    "sha256": "741d4791525cf82f72de0d7b0de6b8b3bc42da3a5c844aabd9ea861f177662e9"
+  },
+  "model_reviews": {
+    "hosted_jev": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v2_20260921.json/summary.json",
+        "sha256": "b32925f31537a8d81a9253b49211d136db8e5d04232dc5816b4588e5950d7494"
+      },
+      "scope_fit": "supported",
+      "evidence_support": "supported",
+      "acceptance_claim": "insufficient_evidence",
+      "status": "advisory"
+    },
+    "local_laya": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v4_20260921.json/summary.json",
+        "sha256": "894c87da9fa37d012ddf3a6bf24e9351fa7d774d90fb56c09bb862ccac110bae"
+      },
+      "scope_fit": "insufficient_evidence",
+      "evidence_support": "insufficient_evidence",
+      "acceptance_claim": "supported",
+      "status": "advisory",
+      "note": "The compact retry fit the token budget and returned an advisory result; its low-confidence uncertainty does not override deterministic evidence or coordinator review."
+    }
+  },
+  "deterministic_review": {
+    "status": "pass",
+    "summary_path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_drift_compact_review_v4_20260921.json/summary.json",
+    "summary_sha256": "894c87da9fa37d012ddf3a6bf24e9351fa7d774d90fb56c09bb862ccac110bae"
+  },
+  "coordinator_reasoning": "The route is aligned with the parent objective. Retained unit04, unit05, and unit06 receipts show a real Balance decline, but the missing candidate, proc, and landed-copy observations prevent a causal Starfall or Dragonwrath claim. The continuation contract authorizes one current-code matched comparison that preserves the neutral opener and all other actor requirements. It does not authorize a source revert or actor acceptance.",
+  "next_correction": "Prepare the one bounded matched profile comparison with explicit database/profile readback and natural 75170 stratification. Keep ordinary, periodic, pet, and landed Dragonwrath damage separate. After the diagnosis, resume the suspended Blood assignment and recheck the parent graph."
+}

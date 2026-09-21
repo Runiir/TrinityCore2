@@ -1,0 +1,54 @@
+{
+  "task_id": "magmaw_balance_regression_91pct_07_implementation_result_compact_20260921",
+  "stage": "result",
+  "subject": "orchestrator",
+  "objective": "Implement a reversible Balance Starfall profile control for one matched causal comparison.",
+  "first_broken_edge": "owner_balance_post_starfall_throughput_regression",
+  "allowed_files": [
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
+    "tests/test_balance_starfall_profile_variant.py"
+  ],
+  "forbidden_changes": [
+    "No gameplay, candidate, neutral-opener, stat, reference, route, denominator, other-spec, or acceptance changes.",
+    "No manufactured Eclipse or 75170 state, forced casts, or Dragonwrath attribution inference."
+  ],
+  "acceptance_conditions": [
+    "The control SQL targets only Balance DPS Starfall 48505, removes only balance_starfall_lunar_window, and preserves reversibility.",
+    "All five required deterministic checks pass; native readback, matched runs, DPS, actor, raid, and parent acceptance remain pending."
+  ],
+  "observations": [
+    "The plan was admitted at revision 247. Owned files are committed at 9e9c232203adddb6242dc535361affed0d0b438e.",
+    "Tests passed: 2 control, 5 Balance cadence, 50 rotation review, request-catalog check, and 16-entry exact-reference validation. No server or database ran."
+  ],
+  "proposed_change": "Add the scoped reversible control SQL and focused tests, then review before any build or live pair.",
+  "acceptance_claim": "The SQL/test implementation and deterministic checks are complete. No native, database, DPS, actor, raid, or parent acceptance is claimed.",
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_balance_starfall_profile_variant.py",
+    "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+    "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+    "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
+  ],
+  "tests": [
+    {"command":"pixi run pytest -q tests/test_balance_starfall_profile_variant.py","exit_status":0,"observation":"2 passed"},
+    {"command":"pixi run pytest -q tests/test_balance_rotation_cadence.py","exit_status":0,"observation":"5 passed"},
+    {"command":"pixi run pytest -q tests/test_rotation_mechanics_review.py","exit_status":0,"observation":"50 passed"},
+    {"command":"pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check","exit_status":0,"observation":"reference request catalog check passed"},
+    {"command":"pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog","exit_status":0,"observation":"fixture contract and 16 request entries validated"}
+  ],
+  "changed_files": [
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
+    "tests/test_balance_starfall_profile_variant.py"
+  ],
+  "changed_files_source": "coordinator_observed",
+  "goal_context": {
+    "parent_objective": "Optimize Magmaw 10N bots across all actors against matched WCL with exact WoWSims diagnosis.",
+    "latest_user_direction": "Implement Magmaw 10N through implementation, review, build, validation, and publication.",
+    "current_plan": "Review, host12 build, run the matched pair, assess as diagnosis, publish, then continue Blood and remaining actors.",
+    "remaining_requirements": ["actor_30001..actor_30010, affliction_comparison, elemental_comparison, potion_ownership, survival_reference, magmaw_10n all open"]
+  },
+  "evidence_excerpts": [
+    {"id":"plan","path":"magmaw_balance_regression_91pct_07_plan_20260921.json","sha256":"6b52df62ee0b14eaf7987cbc1137a24f4cc4ffa4ff23f6aac55287017e45e37a","excerpt":"The admitted plan scopes only a reversible Balance Starfall control and forbids acceptance."},
+    {"id":"control","path":"../../sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql","sha256":"854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e","excerpt":"The control removes only the post-opener lunar-window tag from enabled Balance Starfall 48505."}
+  ]
+}

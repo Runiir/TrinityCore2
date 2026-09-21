@@ -1,0 +1,75 @@
+{
+  "advice": {
+    "jev": {
+      "adjudication": "Hosted Jev supports the bounded file scope, evidence, and deterministic implementation claim. This does not replace independent source review or native validation.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_review_v2_20260921.json/summary.json",
+        "sha256": "3a50cee079be823decc4614023ffa398ccd3dd8eda29fe53e5f84f1f06bd4f69"
+      },
+      "status": "reviewed"
+    },
+    "laya": {
+      "adjudication": "No local Laya decision is treated as approval or rejection.",
+      "reason": "The full result packet and one compact retry exceeded the local Laya token budget; the rejected requests are retained. Independent review remains required.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_review_compact_v2_20260921.json/summary.json",
+        "sha256": "f03abba75ce9133f554cc251d355237188f41ef004b6f85b489f7301ce45f45d"
+      },
+      "status": "not_reviewed"
+    }
+  },
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_support_rework_20260921.json",
+      "sha256": "41d1086b06c5aed33bbfa3fb1e0827e7907fee0c2e2621057df42f83df9c226c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_checkpoint_20260921.json",
+      "sha256": "3777b5d02bae709945507639322c78455c122fe3f48b61d1b23f9cb66e3ab1ef"
+    },
+    {
+      "path": "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
+      "sha256": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e"
+    },
+    {
+      "path": "tests/test_balance_starfall_profile_variant.py",
+      "sha256": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e",
+    "tests/test_balance_starfall_profile_variant.py": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
+  },
+  "kind": "tests",
+  "operation_id": "24cebe617be92422bbebc8c629f17730bebbfe2aa6b802c169627e213b6275cc",
+  "producer": "coordinator",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_balance_starfall_profile_variant.py",
+      "exit_status": 0,
+      "observation": "2 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "observation": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_rotation_mechanics_review.py",
+      "exit_status": 0,
+      "observation": "50 passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
+      "exit_status": 0,
+      "observation": "reference request catalog check passed"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog",
+      "exit_status": 0,
+      "observation": "fixture contract and 16 request entries validated"
+    }
+  ],
+  "unit_id": "magmaw:balance_regression_91pct_07"
+}

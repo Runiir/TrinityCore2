@@ -1,0 +1,41 @@
+{
+  "task_id": "magmaw_balance_regression_91pct_07_plan_drift_compact_20260921",
+  "stage": "plan",
+  "subject": "orchestrator",
+  "objective": "Check whether one bounded matched Balance profile comparison advances Magmaw 10N.",
+  "first_broken_edge": "owner_balance_post_starfall_throughput_regression",
+  "allowed_files": ["../../experiments/configs/cata_raid_active_work_unit_v1.json"],
+  "forbidden_changes": [
+    "Do not accept actors or the raid from dummy receipts, close requirements, assign missing Dragonwrath damage, blame Starfall from totals, or manufacture 75170 coverage.",
+    "Do not change the neutral opener, shared C++, stats, coefficients, gear, consumables, encounter, route, denominator, or another spec.",
+    "Do not run a second pair without a new uncertainty and plan."
+  ],
+  "acceptance_conditions": [
+    "Keep magmaw:balance_regression_91pct_07 and parent_objective_complete=false.",
+    "If needed, compare current code with and without only balance_starfall_lunar_window, preserving the neutral opener in both.",
+    "Read profile/database state, preserve natural 75170 coverage, separate damage types, and claim plan alignment only."
+  ],
+  "observations": [
+    "Resume reports revision 246, diagnose, unit magmaw:balance_regression_91pct_07 on master; all requirements remain open.",
+    "Unit04/unit05/unit06 DPS is 32585.30/31544.06/30881.98 versus 35447.59. Unit05 has four Starfall casts versus five and lacks unit04's observed 75170 startup modifier; unit06 lacks attribution. The continuation requires one matched comparison before any revert, then Blood."
+  ],
+  "proposed_change": "Aligned. Use retained evidence, then prepare one reviewed reversible pair differing only by the post-opener lunar-window condition, and resume Blood.",
+  "acceptance_claim": "Plan alignment only. No source repair, native performance, actor acceptance, raid clear, or parent completion is claimed.",
+  "required_test_commands": [],
+  "tests": [],
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across all actors against matched WCL with exact WoWSims diagnosis.",
+    "latest_user_direction": "Implement Magmaw 10N through implementation, review, build, validation, and publication.",
+    "current_plan": "Resolve Balance regression, review/build/validate/publish only a proven repair, then continue Blood and all remaining requirements.",
+    "completed_work": ["Retained Balance receipts compared; cause unresolved; shared code and Blood work preserved."],
+    "remaining_requirements": ["actor_30001..actor_30010, affliction_comparison, elemental_comparison, potion_ownership, survival_reference, and magmaw_10n all remain open"]
+  },
+  "evidence_excerpts": [
+    {"id":"continuation","path":"magmaw_balance_regression_continuation_20260921.json","sha256":"44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23","excerpt":"Requires a neutral-opener-preserving matched comparison of only the post-opener lunar-window condition, then Blood continuation."},
+    {"id":"unit04","path":"magmaw_balance_rotation_cadence_04_run_20260920.json","sha256":"82a8079c9a23d03f1e691a458488baafec4bbd8ca28aa211dc4db657adec2d00","excerpt":"Exact 300-second receipt: 32585.2967 DPS, five Starfall casts, Moonfire first."},
+    {"id":"unit05","path":"magmaw_balance_rotation_cadence_05_run_20260920.json","sha256":"38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882","excerpt":"Exact receipt: 31544.0567 DPS, four Starfall successes, no candidate-mask or typed-rejection observation."},
+    {"id":"unit06","path":"magmaw_balance_damage_loss_accounting_06_run_v3_20260921.json","sha256":"3de24b686c0571eb810c96c1a5435eca1eec34e1b30c16f1b75ba0d79962dc3a","excerpt":"Exact receipt: 30881.98 DPS, full uptime and no action failures, attribution incomplete."}
+  ]
+}

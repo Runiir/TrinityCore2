@@ -1,0 +1,10 @@
+{
+  "revision": 247,
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "action": "rework",
+  "reason": "The admitted plan omitted the continuation's separately reviewed workflow-support binding, so source admission from the pinned 8742 base would reject unchanged coordination-only files. Replan the same Balance control unit with the hash-bound support review before recording tests.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_support_rework_20260921.json",
+    "sha256": "8e59c68a74b9059cf16798d9553b9cfac88338b0bd05c7cff401042ea29bc136"
+  }
+}
