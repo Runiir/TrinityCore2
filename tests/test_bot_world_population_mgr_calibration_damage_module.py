@@ -37,3 +37,14 @@ def test_calibration_damage_module_keeps_control_contract():
         "IsTrainingDummy",
     ):
         assert marker in text
+
+
+def test_completed_window_drain_stops_the_player_toggle_before_combat_teardown():
+    text = MODULE.read_text()
+    drain = text[text.index("void BotWorldPopulationMgr::DrainCalibrationPostWindowEffects"):
+        text.index("void BotWorldPopulationMgr::UpdateCalibrationControlledDamage")]
+
+    assert "bot->AttackStop();" in drain
+    assert drain.index("bot->AttackStop();") < drain.index(
+        "bot->CombatStopWithPets(true);"
+    )

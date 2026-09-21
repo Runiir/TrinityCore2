@@ -59,6 +59,17 @@ def test_combat_notifications_keep_calibration_and_party_log_contract():
         assert marker in text
 
 
+def test_calibration_stopping_fails_closed_without_removing_completed_guard():
+    text = MODULE.read_text()
+    notify = text[text.index("void BotWorldPopulationMgr::NotifyCombatDamage"):]
+
+    stopping = notify.index("Cohort().CalibrationStopping")
+    owner_lookup = notify.index("Player* owner = CombatOwnerPlayer(attacker);")
+    assert stopping < owner_lookup
+    assert "CalibrationCrossWindowEventCount" in notify
+    assert "BotWorld calibration post-window damage" in notify
+
+
 def test_combat_damage_perspective_schema_keeps_legacy_values_and_adds_friendly_split():
     planning = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrPlanningContracts.h").read_text()
     status = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrStatus.cpp").read_text()

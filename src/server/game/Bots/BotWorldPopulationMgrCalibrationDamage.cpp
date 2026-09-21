@@ -63,6 +63,7 @@ void BotWorldPopulationMgr::DrainCalibrationPostWindowEffects()
         bot->RemoveAurasDueToSpell(49194, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
         bot->RemoveAurasDueToSpell(50536, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
         bot->RemoveAurasDueToSpell(50589, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
+        bot->AttackStop();
         bot->CombatStopWithPets(true);
         // Freeze the completed window without stripping persistent class setup.
         // The clone is destroyed by StopCombatCalibration immediately after the

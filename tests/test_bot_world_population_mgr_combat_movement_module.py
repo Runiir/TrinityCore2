@@ -38,6 +38,22 @@ def test_combat_movement_keeps_single_native_attack_authority() -> None:
     assert "BotRaidAreaAuthority::IsProtectedEncounterTarget" in module
 
 
+def test_calibration_terminal_state_suppresses_the_retained_melee_toggle() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    reconcile = module[module.index(
+        "void BotWorldPopulationMgr::ResolveAndReconcileMeleeAutoAttack"
+    ):module.index("bool BotWorldPopulationMgr::MoveBotToProfileRange")]
+
+    assert "Cohort().CalibrationWindowComplete" in reconcile
+    assert "Cohort().CalibrationStopping" in reconcile
+    assert "BotMeleeAutoAttack::Kind::Suppress" in reconcile
+    assert '"calibration_teardown"' in reconcile
+    assert reconcile.index("calibration_teardown") < reconcile.index(
+        "all_offense_suppressed"
+    )
+    assert "bot->Attack(target, true)" in reconcile
+
+
 def test_combat_movement_preserves_profile_range_and_path_guards() -> None:
     module = MODULE.read_text(encoding="utf-8")
     for directive in ("melee_behind", "melee"):

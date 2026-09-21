@@ -1,0 +1,52 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "codex-magmaw-calibration-teardown-01-implement",
+  "authority": "coordinator_attestation",
+  "operation_id": "919a12c78eee14291ddcdcb460f3562f7783dc4696d590a76fbc6389534665d5",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_20260921.json",
+      "sha256": "55b6b970177ba62d51967afbc50ecb9d0eed0c2c9c3c507d056bed4839e53554"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_result_checkpoint_20260921.json",
+      "sha256": "dd24bc786c60f15be1459c5670d1ec01b6074b2020f207d8f08a9df33b76bf0a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_result_review_20260921_v2.json/summary.json",
+      "sha256": "193fb8cdd3bdf8222d1c7823c30c13c3d0953618dec9af33ca6271ce6692e79d"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp": "f0f2becd736527a3d90ee22bb4a128e0d5dd0425821bc4659aafb86789cd2693",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp": "35ae00a278b26133024f3efe07a6a322c821970f5eccf03154b2a6ed2b49e183",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "1f78275cd1d65be89f32d11ec31cc9000ca93a21cda8613d88cbb1ce33d3ef61",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp": "28602a84367fe10aa1d98a7e83c62b56ae520679bbe797dd3496ac96c9e87380",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py": "031a47a8b438f3c1c75ca39b6848f680ad0e904a70b2d793607947734452cf57",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py": "023e4b43ad1dccd543af180000e5e350c417bff4f70ec15a3aeabcae18c95935",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py": "2b19a7d35a7f50b6e41c4a64fab1a926bec338700543544a5b3d8e14d337ff23",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py": "a263db50040f6b510923b3da91ef2fd0ae5dce07206d117f7a61fa32a884fe89"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "exit_status": 0,
+      "result": "21 passed in 1.67s"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_result_review_20260921_v2.json/summary.json",
+        "sha256": "193fb8cdd3bdf8222d1c7823c30c13c3d0953618dec9af33ca6271ce6692e79d"
+      },
+      "adjudication": "Jev supports scope, proposed-change evidence, and the bounded source-test claim; native and live gates remain open."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local Laya returned HTTP 422 context_budget_exceeded after the compact packet; the retained packet recorded state_tokens=1031 above each question budget."
+    }
+  }
+}

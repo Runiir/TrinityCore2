@@ -38,3 +38,17 @@ def test_calibration_bot_keeps_fixture_and_timeline_contract():
         "SubmitMeleeAutoAttackIntent",
     ):
         assert marker in text
+
+
+def test_completed_window_update_still_crosses_the_melee_reconcile_boundary():
+    text = MODULE.read_text()
+    update = text[text.index("void BotWorldPopulationMgr::UpdateCalibrationBot"):]
+
+    begin = update.index("BeginMeleeAutoAttackDecision(state, bot);")
+    scope = update.index("ReconcileOnScopeExit meleeAutoAttackReconcile")
+    complete_return = update.index(
+        "if (!bot || Cohort().CalibrationWindowComplete)"
+    )
+
+    assert begin < scope < complete_return
+    assert "ResolveAndReconcileMeleeAutoAttack(state, bot);" in update[scope:]

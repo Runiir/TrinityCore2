@@ -1,0 +1,92 @@
+{
+  "task_id": "magmaw:calibration_teardown_contamination_01:result",
+  "objective": "Repair the shared calibration teardown edge that permits post-window player autoattack callbacks.",
+  "first_broken_edge": "Completed calibration sets its terminal state before UpdateCalibrationBot returns, but melee reconciliation can still re-arm native player autoattack; stopping also needs a fail-closed combat callback path.",
+  "allowed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Blood policy or SQL, class coefficients, rotations, simulator references, encounter scripts, route thresholds, leases, pool ownership, or live controls.",
+    "Do not hide or remove the completed-window contamination counter or logs.",
+    "Do not claim native build, live cleanup, or actor acceptance from focused source tests."
+  ],
+  "acceptance_conditions": [
+    "Completed or stopping calibration submits terminal melee suppression before another native player autoattack callback.",
+    "Calibration post-window drain explicitly stops the player attack and stopping combat callbacks fail closed while the existing completed-window guard remains visible.",
+    "The four required focused module tests pass and native/live verification remains explicitly pending."
+  ],
+  "observations": [
+    "The matched Blood 10N run reached 300000 ms but recorded six post-window callbacks, with cleanup closure not proven.",
+    "UpdateCalibrationBot begins and reconciles melee intent before its completed-window early return; the prior drain stopped pets and combat but not the player attack.",
+    "The patch adds terminal calibration suppression in shared melee reconciliation, player AttackStop in the drain, and an early CalibrationStopping return in combat notification."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "assigned-plan",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_20260921.json",
+      "sha256": "55b6b970177ba62d51967afbc50ecb9d0eed0c2c9c3c507d056bed4839e53554",
+      "excerpt": "Runtime plan assigns the shared calibration teardown edge and requires focused tests followed by native build and live closure proof."
+    },
+    {
+      "id": "failing-run",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_priority_02_validation_evidence_20260921.json",
+      "sha256": "345fb64dfc799a4d4e0512b75ea870280f4905495885ef84f078b6e15a217571",
+      "excerpt": "Prior exact-window run recorded six cross-window events and did not prove final cleanup closure."
+    },
+    {
+      "id": "drift-adjudication",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_adjudication_20260921.json",
+      "sha256": "03793b4370908d0b13ba7e98864e4f76ce2ac3a6668be3f14976f08bc58c5abf",
+      "excerpt": "Coordinator adjudication keeps the repair within shared runtime teardown and preserves the parent objective."
+    },
+    {
+      "id": "changed-drain",
+      "path": "/home/runiir/Games/trinity-cata/src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+      "sha256": "35ae00a278b26133024f3efe07a6a322c821970f5eccf03154b2a6ed2b49e183",
+      "excerpt": "DrainCalibrationPostWindowEffects now calls bot->AttackStop() before CombatStopWithPets."
+    },
+    {
+      "id": "changed-reconcile",
+      "path": "/home/runiir/Games/trinity-cata/src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+      "sha256": "28602a84367fe10aa1d98a7e83c62b56ae520679bbe797dd3496ac96c9e87380",
+      "excerpt": "ResolveAndReconcileMeleeAutoAttack submits terminal suppression for CalibrationStopping or a completed active calibration."
+    },
+    {
+      "id": "changed-notify",
+      "path": "/home/runiir/Games/trinity-cata/src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+      "sha256": "1f78275cd1d65be89f32d11ec31cc9000ca93a21cda8613d88cbb1ce33d3ef61",
+      "excerpt": "NotifyCombatDamage returns during CalibrationStopping without deleting the completed-window contamination branch."
+    }
+  ],
+  "proposed_change": "Keep the bounded three-file runtime repair and its four regression-test additions, then verify it with the required focused suite before native build and matched live recapture.",
+  "acceptance_claim": "At the bounded source-test scope only, the required four calibration modules pass after exercising the new teardown suppression and stopping guards; native and live acceptance are not claimed.",
+  "stage": "result",
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py"
+  ],
+  "changed_files_source": "coordinator_observed",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+      "exit_status": 0,
+      "result": "21 passed in 1.67s"
+    }
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py"
+  ],
+  "subject": "worker"
+}

@@ -291,6 +291,8 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
 
     if (!Cohort().Active || (!damage && !unmitigatedDamage))
         return;
+    if (Cohort().CalibrationStopping)
+        return;
 
     bool const sharedDamage = IsSharedDamageCallback(spellId, damageType);
     if (!sharedDamage && Cohort().CalibrationScoredStartedMs

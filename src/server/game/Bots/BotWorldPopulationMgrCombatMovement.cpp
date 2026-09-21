@@ -79,6 +79,11 @@ void BotWorldPopulationMgr::ResolveAndReconcileMeleeAutoAttack(
         SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
             ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
             BotActionArbitration::Priority::Terminal, "player_unavailable");
+    else if (Cohort().CalibrationStopping
+        || (Cohort().CalibrationActive && Cohort().CalibrationWindowComplete))
+        SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
+            ObjectGuid::Empty, BotMeleeAutoAttack::Owner::Safety,
+            BotActionArbitration::Priority::Terminal, "calibration_teardown");
     else if (BotRaidAreaAuthority::IsAllOffenseSuppressed(
         bot->GetGUID().GetRawValue()))
         SubmitMeleeAutoAttackIntent(state, BotMeleeAutoAttack::Kind::Suppress,
