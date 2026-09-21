@@ -70,7 +70,7 @@
   "evidence": [
     {
       "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
-      "sha256": "e294da46e8a13a73c5fd3838e27aa4601307900b53f9045e4d8daba1603f8b13"
+      "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
     },
     {
       "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
