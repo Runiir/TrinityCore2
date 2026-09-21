@@ -1,0 +1,51 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "577f1f754797a4d194082e148db02d4c8c6f951e888653592ad3a5d333a05b64",
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-076030930c234358addaadc4f38f6499.json",
+    "sha256": "881972dbcdd0f13964936c5c2e373f358939f91807e123bb3a11fc2f83a824ee"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_support_rework_20260921.json",
+      "sha256": "41d1086b06c5aed33bbfa3fb1e0827e7907fee0c2e2621057df42f83df9c226c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_support_rework_20260921.json",
+      "sha256": "23d6787a53923beb126a51d2d716f5873c952f5874eb3b7fd8fbd5608ca10871"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_20260921.receipt.json",
+      "sha256": "f653a89dea104d0b55d96d3a255ae5f78c82e4dd3f74f634e28460e019efc3a9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_build_claim_20260921.json",
+      "sha256": "ad09a10c8aef43ef93e25f213bf54c5478cbdc9262757852c78f41222379178f"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+      "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-3c4abae7c36347c5b8e092810375dca9.json",
+      "sha256": "a83a914c1e12e14b17eaffc6178f36b724f331e9af618c50e44b158d419ccdb8"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-076030930c234358addaadc4f38f6499.json",
+      "sha256": "881972dbcdd0f13964936c5c2e373f358939f91807e123bb3a11fc2f83a824ee"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e",
+    "tests/test_balance_starfall_profile_variant.py": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
+  },
+  "kind": "build",
+  "operation_id": "435fc2614e984470ce954dcab404a85fc2befd85487081a99e2ce6cf0cd5ff0a",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator",
+  "source_commit": "64855019cdb86429ae647c437028385a4b04fdc5",
+  "unit_id": "magmaw:balance_regression_91pct_07"
+}

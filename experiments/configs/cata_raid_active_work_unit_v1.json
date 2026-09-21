@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 253,
+    "revision": 254,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -4999,6 +4999,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 253,
+        "unit_id": "magmaw:balance_regression_91pct_07",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "revision": 253,
+          "unit_id": "magmaw:balance_regression_91pct_07",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_build_20260921.json",
+            "sha256": "bfac756a36e3f1c884ce2a7697e971882c99f93c3b3ea4b3250f35021c402f28"
+          },
+          "claim_token": "435fc2614e984470ce954dcab404a85fc2befd85487081a99e2ce6cf0cd5ff0a"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5103,6 +5121,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_20260921.receipt.json",
         "sha256": "f653a89dea104d0b55d96d3a255ae5f78c82e4dd3f74f634e28460e019efc3a9"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_build_20260921.json",
+        "sha256": "bfac756a36e3f1c884ce2a7697e971882c99f93c3b3ea4b3250f35021c402f28"
       }
     },
     "tested_files": {
@@ -5111,11 +5133,9 @@
     },
     "tested_commit": "6e3419d0603ed62cad3329720abc2bb27f285807",
     "implementer": "coordinator",
-    "claim": {
-      "owner": "coordinator-magmaw-balance-regression-20260921-build",
-      "token": "435fc2614e984470ce954dcab404a85fc2befd85487081a99e2ce6cf0cd5ff0a",
-      "operation_id": "435fc2614e984470ce954dcab404a85fc2befd85487081a99e2ce6cf0cd5ff0a",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "64855019cdb86429ae647c437028385a4b04fdc5",
+      "binary_sha256": "577f1f754797a4d194082e148db02d4c8c6f951e888653592ad3a5d333a05b64"
     }
   },
   "parked_scenarios": {
