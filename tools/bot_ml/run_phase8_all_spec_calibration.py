@@ -250,6 +250,7 @@ def compact_result(attempt: Mapping[str, Any], attempt_dir: Path, returncode: in
         "published": valid_publication(attempt_dir, attempt),
         "passed": bool(evaluation.get("passed")),
         "hard_floor_passed": bool(evaluation.get("hard_floor_passed")),
+        "hard_floor_applicable": bool(evaluation.get("hard_floor_applicable", True)),
         "optimization_target_met": bool(evaluation.get("optimization_target_met")),
         "reference_ratio": float(evaluation.get("reference_ratio") or 0.0),
         "failure_reasons": list(evaluation.get("failure_reasons") or report.get("failure_labels") or []),
@@ -277,7 +278,11 @@ def write_campaign_state(
     backlog = [
         dict(row)
         for row in results
-        if row.get("hard_floor_passed") and not row.get("optimization_target_met")
+        if (
+            bool(row.get("hard_floor_applicable", True))
+            and row.get("hard_floor_passed")
+            and not row.get("optimization_target_met")
+        )
     ]
     state = {
         "schema": "all_spec_phase8_live_campaign_state_v2",
@@ -291,7 +296,11 @@ def write_campaign_state(
         "active_attempt": dict(active_attempt) if active_attempt else None,
         "published_attempt_count": sum(bool(row.get("published")) for row in results),
         "passing_attempt_count": sum(bool(row.get("passed")) for row in results),
-        "hard_floor_failure_count": sum(not bool(row.get("hard_floor_passed")) for row in results),
+        "hard_floor_failure_count": sum(
+            bool(row.get("hard_floor_applicable", True))
+            and not bool(row.get("hard_floor_passed"))
+            for row in results
+        ),
         "optimization_backlog_count": len(backlog),
         "qualification_failures": qualification_failures,
         "infrastructure_failures": infrastructure_failures,

@@ -1,0 +1,42 @@
+{
+  "schema": "raid_independent_review_findings_v1",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "stage": "review",
+  "verdict": "changes_requested",
+  "reviewers": [
+    {
+      "session_id": "01a0c389-093f-7c91-ab39-0c4860f3add6",
+      "finding": "The phase-8 aggregate contract still counted hard_floor_passed=false for an explicitly non-comparable tank reference as a hard-floor failure.",
+      "required_change": "Propagate reference-floor applicability into compact campaign results and exclude inapplicable references from hard-floor failure and optimization-backlog aggregates."
+    },
+    {
+      "session_id": "01a0c3ee-c7db-78b2-8183-a189bca1839a",
+      "finding": "The 0.552 Blood result is a calibration contract mismatch, not a proven priority edge; the native observation did not establish an eligible Heart Strike or Death Strike displacement.",
+      "required_change": "Keep actor_30002 open, avoid Blood SQL/native policy changes, and require a tank-specific comparable reference contract before throughput acceptance."
+    }
+  ],
+  "tests_observed_before_rework": [
+    {
+      "command": "pixi run pytest -q tests/test_tank_calibration_reference_contract.py",
+      "exit_status": 0,
+      "summary": "2 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_dps_gate.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_ml_pipeline.py -k phase7_role_calibration_harness",
+      "exit_status": 0,
+      "summary": "1 passed, 416 deselected"
+    }
+  ],
+  "reviewed_files": {
+    "tools/bot_ml/role_calibration_harness.py": "36096a42a0285acb3182d1e9be9c42b17a2d715f994131a8165adf45f1e7185c",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py": "027462da6f06b1fb264f1afc383203ba1ee9cab68c5125f23d551c2b6e72c1fe",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py": "bad4b36c6d902b1853bcf381f28a2ac6cf1baf48259400b2f4c3bc9b8044a7de",
+    "tests/test_tank_calibration_reference_contract.py": "10138836e5c37d2e825a19322148f69b317d8053a7c4abb12139a313142bad81"
+  },
+  "native_or_live_acceptance": false
+}

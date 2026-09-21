@@ -45,6 +45,14 @@ def _float(value: Any) -> float:
         return 0.0
 
 
+def hard_floor_qualifies(row: Mapping[str, Any]) -> bool:
+    """Treat an explicitly inapplicable role reference as non-failing."""
+    return (
+        not bool(row.get("hard_floor_applicable", True))
+        or bool(row.get("hard_floor_passed"))
+    )
+
+
 def serial_execution_verified(session: Mapping[str, Any]) -> bool:
     capacity = session.get("max_active_cohorts")
     if type(capacity) is not int or capacity < 1:
@@ -218,6 +226,8 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
             and _int(result.get("returncode")) == 0
             and bool(result.get("passed")) == (evaluation.get("passed") is True)
             and bool(result.get("hard_floor_passed")) == (evaluation.get("hard_floor_passed") is True)
+            and bool(result.get("hard_floor_applicable", True))
+            == (evaluation.get("hard_floor_applicable", True) is True)
             and bool(result.get("optimization_target_met")) == (evaluation.get("optimization_target_met") is True)
             and abs(_float(result.get("reference_ratio")) - _float(evaluation.get("reference_ratio"))) < 1e-9
             and list(result.get("failure_reasons") or []) == evaluation_failures
@@ -275,6 +285,7 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
                 "receipt_valid": receipt_valid,
                 "passed": evaluation.get("passed") is True,
                 "hard_floor_passed": evaluation.get("hard_floor_passed") is True,
+                "hard_floor_applicable": evaluation.get("hard_floor_applicable", True) is True,
                 "optimization_target_met": evaluation.get("optimization_target_met") is True,
                 "reference_ratio": _float(evaluation.get("reference_ratio")),
                 "failure_reasons": evaluation_failures,
@@ -293,7 +304,8 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
                 "dps_class_representative": target.get("role") == "dps",
                 "attempt_count": len(rows),
                 "all_modes_and_seeds_passed": bool(rows) and all(row["passed"] for row in rows),
-                "hard_floor_passed": bool(rows) and all(row["hard_floor_passed"] for row in rows),
+                "hard_floor_applicable": bool(rows) and any(row["hard_floor_applicable"] for row in rows),
+                "hard_floor_passed": bool(rows) and all(hard_floor_qualifies(row) for row in rows),
                 "minimum_reference_ratio": min((row["reference_ratio"] for row in rows), default=0.0),
                 "optimization_target_met": bool(rows) and all(row["optimization_target_met"] for row in rows),
                 "failed_attempt_ids": [row["attempt_id"] for row in rows if not row["passed"]],
@@ -309,7 +321,11 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
             "reference_ratio": row["reference_ratio"],
         }
         for row in attempt_rows
-        if row["hard_floor_passed"] and not row["optimization_target_met"]
+        if (
+            row["hard_floor_applicable"]
+            and row["hard_floor_passed"]
+            and not row["optimization_target_met"]
+        )
     ]
     state_optimization_backlog = [
         {
@@ -336,7 +352,11 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
         and _int(state.get("published_attempt_count")) == sum(bool(row.get("published")) for row in state_results)
         and _int(state.get("passing_attempt_count")) == sum(bool(row.get("passed")) for row in state_results)
         and _int(state.get("hard_floor_failure_count"))
-        == sum(not bool(row.get("hard_floor_passed")) for row in state_results)
+        == sum(
+            bool(row.get("hard_floor_applicable", True))
+            and not bool(row.get("hard_floor_passed"))
+            for row in state_results
+        )
         and _int(state.get("optimization_backlog_count")) == len(state_optimization_backlog)
     )
     dps_target_rows = [row for row in target_rows if row["role"] == "dps"]
@@ -362,7 +382,7 @@ def build_contract(campaign_root: Path) -> dict[str, Any]:
         == len(set(batch_identity_hashes))
         == expected_attempt_count,
         "all_attempts_pass_role_gates": all(row["passed"] for row in attempt_rows),
-        "all_attempts_meet_hard_floor": all(row["hard_floor_passed"] for row in attempt_rows),
+        "all_attempts_meet_hard_floor": all(hard_floor_qualifies(row) for row in attempt_rows),
         "all_10_dps_classes_qualified": len(dps_target_rows) == len(DPS_CLASSES)
         and {row["class_name"] for row in dps_target_rows} == DPS_CLASSES
         and all(row["all_modes_and_seeds_passed"] for row in dps_target_rows),

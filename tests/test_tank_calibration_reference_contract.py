@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tools.bot_ml.build_phase8_all_spec_calibration_contract import hard_floor_qualifies
 from tools.bot_ml.role_calibration_harness import evaluate_calibration, load_policy
 
 
-def _record(*, compatible: bool) -> dict:
+def _record(*, compatible: bool, measured_value: float = 50_000) -> dict:
     return {
         "schema": "all_spec_role_calibration_record_v1",
         "mode": "tank_threat_300",
@@ -31,7 +32,7 @@ def _record(*, compatible: bool) -> dict:
         },
         "metrics": {
             "reference_value": 50_000,
-            "measured_value": 50_000,
+            "measured_value": measured_value,
             "active_dps": 50_000,
             "threat_per_second": 100,
             "target_count": 6,
@@ -78,9 +79,13 @@ def test_incompatible_tank_reference_is_not_classified_as_throughput_failure():
             "snap_threat",
             "add_threat",
             "all_hostile_retention",
+            "threat_aura_uptime",
+            "healer_exposure",
             "mitigation_coverage",
+            "damage_smoothing",
             "survival",
             "interrupt_coverage",
+            "defensive_coverage_declared",
         )
     )
 
@@ -94,3 +99,19 @@ def test_comparable_tank_reference_keeps_the_numerical_floor():
     assert result["hard_floor_applicable"] is True
     assert result["hard_floor_passed"] is True
     assert result["checks"]["reference_comparison_eligible"] is True
+
+
+def test_comparable_tank_reference_below_floor_is_a_real_floor_failure():
+    policy = load_policy(Path("experiments/configs/all_spec_role_calibration_policy_v3.json"))
+
+    result = evaluate_calibration(_record(compatible=True, measured_value=30_000), policy)
+
+    assert result["passed"] is False
+    assert result["hard_floor_applicable"] is True
+    assert result["hard_floor_passed"] is False
+    assert "reference_hard_floor" in result["failure_reasons"]
+
+
+def test_phase8_hard_floor_summary_excludes_inapplicable_role_references():
+    assert hard_floor_qualifies({"hard_floor_applicable": False, "hard_floor_passed": False}) is True
+    assert hard_floor_qualifies({"hard_floor_applicable": True, "hard_floor_passed": False}) is False

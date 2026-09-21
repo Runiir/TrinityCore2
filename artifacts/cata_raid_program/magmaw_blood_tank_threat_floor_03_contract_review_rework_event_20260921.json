@@ -1,0 +1,11 @@
+{
+  "revision": 299,
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "action": "rework",
+  "claim_token": "34961924f219eeaabb26d3f2a40f8c34b6c3b12e8478db2a8f50eba349155257",
+  "reason": "Independent review found that the role harness fix did not propagate reference-floor applicability through the phase-8 aggregate contract, and the native observation does not prove a Blood priority edge. Add explicit applicability accounting and regression coverage, while keeping actor_30002 and all parent requirements open.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_review_rework_20260921.json",
+    "sha256": "4da7990ed828703f2f8845825be84962aab5823535350e8fafb4338e1382ce8c"
+  }
+}

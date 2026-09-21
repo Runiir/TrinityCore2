@@ -188,7 +188,6 @@ def evaluate_calibration(
     if non_dps_reference_incompatible:
         checks["reference_comparison_eligible"] = False
         reasons.append("reference_conditions_not_comparable")
-        checks["reference_hard_floor"] = True
     else:
         if role in {"tank", "healer"} and isinstance(compatibility, Mapping):
             checks["reference_comparison_eligible"] = True
