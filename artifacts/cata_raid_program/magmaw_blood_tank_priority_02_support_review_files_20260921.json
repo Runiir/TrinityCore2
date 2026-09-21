@@ -1,0 +1,6 @@
+{
+  "files": [
+    "tools/raid_program/build_control_compatibility.py",
+    "tests/test_artifact_coordination_boundary.py"
+  ]
+}

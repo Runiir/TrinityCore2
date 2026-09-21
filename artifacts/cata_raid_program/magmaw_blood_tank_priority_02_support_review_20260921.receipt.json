@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_support_review_report_20260921.json",
+      "sha256": "fb8eacff35e5629c84b3d5edf0ff754c6f68ec9c92f1914703d3e929f70ba209"
+    }
+  ],
+  "file_hashes": {
+    "tests/test_artifact_coordination_boundary.py": "f49c2c2e6fdb8058b9c3b4e7d12bed83a53cc95b359d55d2fd3c196582dcecc6",
+    "tools/raid_program/build_control_compatibility.py": "4b4e3e963a06a5481f6e2c1f5b07bb01c6f570a05a913c62fe2e003a696327f8"
+  },
+  "kind": "review",
+  "producer": "01a0c3b2-0d54-7f83-9c8c-06b092c1252d",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_support_review_report_20260921.json",
+    "sha256": "fb8eacff35e5629c84b3d5edf0ff754c6f68ec9c92f1914703d3e929f70ba209"
+  },
+  "reviewer_session_id": "01a0c3b2-0d54-7f83-9c8c-06b092c1252d",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "verdict": "approved"
+}

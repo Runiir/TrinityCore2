@@ -1,0 +1,9 @@
+{
+  "schema": "cata_raid_operation_reconciliation_v1",
+  "operation_id": "8eb518e037c796fbbfd8cfef5ad640acbe5ec71740e7a74185494dd2d626dd7c",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "Refresh separately reviewed workflow support for the coordination-artifact source boundary; the Blood native operation has not completed."
+}

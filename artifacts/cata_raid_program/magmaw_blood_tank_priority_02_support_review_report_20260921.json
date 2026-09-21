@@ -1,0 +1,32 @@
+{
+  "file_hashes": {
+    "tests/test_artifact_coordination_boundary.py": "f49c2c2e6fdb8058b9c3b4e7d12bed83a53cc95b359d55d2fd3c196582dcecc6",
+    "tools/raid_program/build_control_compatibility.py": "4b4e3e963a06a5481f6e2c1f5b07bb01c6f570a05a913c62fe2e003a696327f8"
+  },
+  "findings": [],
+  "limits": [
+    "Read-only review; no files edited, commits made, or live servers run."
+  ],
+  "proof": {
+    "final_message_bytes": 672,
+    "final_message_sha256": "36c1eb986c51906b8a2e807c73de58c36770e4a4c3e4d8efb31b603599acfc1c",
+    "prefix_bytes": 550576,
+    "prefix_sha256": "be209e803ea85429711559cd453783aed04410886b692ec32ce16ca73983810c",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T14-20-21-01a0c3b2-0d54-7f83-9c8c-06b092c1252d.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c3b2-0d54-7f83-9c8c-06b092c1252d"
+  },
+  "reviewer_session_id": "01a0c3b2-0d54-7f83-9c8c-06b092c1252d",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_artifact_coordination_boundary.py",
+      "exit_status": 0
+    },
+    {
+      "command": "pixi run pytest -q tests/test_build_control_compatibility.py tests/test_development_graph.py tests/test_publication_delta.py tests/test_artifact_coordination_boundary.py",
+      "exit_status": 0
+    }
+  ],
+  "verdict": "approved"
+}

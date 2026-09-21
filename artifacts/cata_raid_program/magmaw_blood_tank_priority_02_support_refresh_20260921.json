@@ -1,0 +1,20 @@
+{
+  "schema": "cata_raid_support_refresh_v1",
+  "reason": "Repair stale source isolation for retained worker-checkpoint JSONL coordination outputs without changing the Blood native hypothesis or owned files.",
+  "prior_operation": {
+    "operation_id": "8eb518e037c796fbbfd8cfef5ad640acbe5ec71740e7a74185494dd2d626dd7c",
+    "ownership_checked": true,
+    "active_operation": false,
+    "completed_operation": false,
+    "reusable_receipt_found": false
+  },
+  "prior_commit": "a6dbf6f78b88be91ede52591ac101ebe0d5ebf2e",
+  "owned_file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_support_review_20260921.receipt.json",
+    "sha256": "31b8186c7da07dcff7ea950dcdb00538bff3b07b4d5e8ecd78b8536d04867a1e"
+  }
+}

@@ -45,7 +45,7 @@ def coordination_path(name: str) -> bool:
     return (
         name in (GRAPH, "AGENTS.md")
         or path.suffix == ".md" and name.startswith(("docs/", ".agents/skills/"))
-        or path.suffix == ".json" and name.startswith("artifacts/cata_raid_program/")
+        or path.suffix in {".json", ".jsonl"} and name.startswith("artifacts/cata_raid_program/")
     )
 
 
