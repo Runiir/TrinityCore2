@@ -1,0 +1,15 @@
+[
+  "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp",
+  "src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp",
+  "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp",
+  "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+  "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp",
+  "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h",
+  "src/server/game/Bots/BotWorldPopulationMgrCalibrationLifecycle.h",
+  "tests/test_bot_world_population_mgr_calibration_bot_module.py",
+  "tests/test_bot_world_population_mgr_calibration_control_module.py",
+  "tests/test_bot_world_population_mgr_calibration_damage_module.py",
+  "tests/test_bot_world_population_mgr_combat_notifications_module.py",
+  "tests/test_bot_world_population_mgr_combat_movement_module.py",
+  "tests/test_bot_world_population_mgr_runtime_contracts_header.py"
+]
