@@ -1,0 +1,129 @@
+{
+  "schema": "cata_raid_program_assessment_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_assessment_baseline_20260921.json",
+    "sha256": "887c8667401c880dca29fd66a111b4823e553052f14575f4cd6f5a013b1f3b25"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_summary_20260921.json",
+    "sha256": "c300ad2a224bc51eb263aaf4882f38448110859df32152c3fc6f696ca7015ce5"
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30002": {
+      "status": "reviewed",
+      "accepted": false,
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_run_20260921.json",
+        "sha256": "4b76621ff891de73325932673285986b49c1697ecb1f7722a558606f319e5f56"
+      },
+      "reason": "The current-build tank_threat_300 window completed exactly 300 scored seconds with clean watchdog and cleanup, but the role gate reports reference_conditions_not_comparable. Safety, threat-retention, mitigation, interrupt, and no-death diagnostics passed; no Blood priority edge or actor performance acceptance is proven."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30004": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This bounded Blood tank calibration unit did not exercise this roster actor; parent actor and raid requirements remain open."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "baseline_matched": false,
+  "unexplained_material_decline": false,
+  "accepted_requirements": [],
+  "outcome": {
+    "classification": "reference_conditions_not_comparable",
+    "reference_hard_floor_applicable": false,
+    "optimization_target_applicable": false,
+    "native_policy_edge_proven": false,
+    "actor_30002_acceptance": false,
+    "watchdog_window_complete": true,
+    "cleanup_verified": true
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_assessment_baseline_20260921.json",
+      "sha256": "887c8667401c880dca29fd66a111b4823e553052f14575f4cd6f5a013b1f3b25"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_summary_20260921.json",
+      "sha256": "c300ad2a224bc51eb263aaf4882f38448110859df32152c3fc6f696ca7015ce5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_run_20260921.json",
+      "sha256": "4b76621ff891de73325932673285986b49c1697ecb1f7722a558606f319e5f56"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_identity_reconciliation_20260921.json",
+      "sha256": "70077e4108ea1722758a3087eed36777c1390a645738faa605223201938bc315"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz.dvc",
+      "sha256": "f72897e6a1c56f6843b8187d2183e55585a89e17dec00a97c690f1f6ebed43ca"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_dvclive_20260921/metrics.json",
+      "sha256": "fced88117bb968e9efff5c1fc966c6e2ba2414bebc8198e9d60037c40f9d1f54"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_build_20260921.json",
+      "sha256": "dc28ee6fbb50dae9f5b921790c8a9b4a3b561432eb2843e84e10d8e23d83ceb4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_queued_build_20260921.json",
+      "sha256": "de7548738163d50543bf166db411ddbaabeb6c27dd9867f4276917ae94443cfe"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_independent_review_20260921.json",
+      "sha256": "055468be248bdfb313e61761fb72e161c2f54d6cfc421ec749fc814d142b8864"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_tests_20260921.json",
+      "sha256": "734faeaf769a1bb1f1f520fd20ff3210dcfbedd1e16b333a70642fc97045fff3"
+    }
+  ]
+}
