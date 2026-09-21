@@ -1,0 +1,37 @@
+{
+  "schema": "cata_raid_program_build_receipt_v1",
+  "kind": "build",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "39579e62b30e6acd5eac38d83e605897afa170c0fe131dc4db03fe36fbf5c013",
+  "source_commit": "d7664e5c3b430c5c6d0dc4f707a9e249e68ab940",
+  "binary_sha256": "5a17a35a183a953222d7ff154e61e5303ede27fe6ae46c0dc50fef09d180f577",
+  "file_hashes": {
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
+    "tests/test_holy_paladin_capability_profile.py": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_queued_build_20260921.json",
+    "sha256": "7c3008ddacee5df9ee83e278a6b9be6af20e8ba6ad32e05412bdaea943fa940f"
+  },
+  "notes": "Host-12 queued configure and worldserver build succeeded under the reviewed source identity; the gate-bearing receipt produced the worldserver binary.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_refresh_full2_20260921.json",
+      "sha256": "4672fa9dd7703a805c3c77130fea5cf56177218a4daa3d290820b36154163197"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_20260921.json",
+      "sha256": "3e0eb38e6a7491bd13630c77e30a30b1587a1204e7787a14bb63b98728614d87"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_queued_build_20260921.json",
+      "sha256": "7c3008ddacee5df9ee83e278a6b9be6af20e8ba6ad32e05412bdaea943fa940f"
+    }
+  ]
+}
