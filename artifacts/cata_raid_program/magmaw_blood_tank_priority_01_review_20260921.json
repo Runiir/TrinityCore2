@@ -1,0 +1,32 @@
+{
+  "schema": "raid_development_review_receipt_v1",
+  "kind": "review",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "independent-reviewer-blood-priority-01",
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_review_report_20260921.json",
+      "sha256": "dea29377e1a1dc8165260c1c3e748b0f1d234364959316350cf4e7ba32fdf01c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_review_request_20260921_review/summary.json",
+      "sha256": "1ce624ef3babcd1d885aff96bae0a1d97df437e6474b2cae5a926c6496d7282e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_tests_20260921.json",
+      "sha256": "348554d757c5e3e6405f5178537c292a088467f97f2957a409c1a6b6a871bf1e"
+    }
+  ],
+  "reviewer_session_id": "reviewer-magmaw-blood-priority-01-20260921",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_review_report_20260921.json",
+    "sha256": "dea29377e1a1dc8165260c1c3e748b0f1d234364959316350cf4e7ba32fdf01c"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "approval_limit": "Exact tested files only. Native build, loaded-profile readback, role-harness behavior, actor acceptance, performance and raid clear remain pending."
+}
