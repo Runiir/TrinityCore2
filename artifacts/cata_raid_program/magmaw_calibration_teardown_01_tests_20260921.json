@@ -46,7 +46,8 @@
     },
     "laya": {
       "status": "not_reviewed",
-      "reason": "Local Laya returned HTTP 422 context_budget_exceeded after the compact packet; the retained packet recorded state_tokens=1031 above each question budget."
+      "reason": "Local Laya returned HTTP 422 context_budget_exceeded after the compact packet; the retained packet recorded state_tokens=1031 above each question budget.",
+      "adjudication": "Laya was not reviewed because the local checkpoint service rejected the packet for context size; continue through independent code review."
     }
   }
 }
