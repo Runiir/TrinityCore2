@@ -1,0 +1,5 @@
+outs:
+- md5: 41dd4370fa8d55efc7befb9bf593b810
+  size: 2929263
+  hash: md5
+  path: magmaw_balance_regression_91pct_07_control_20260921.tar.gz

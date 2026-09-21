@@ -1,0 +1,105 @@
+{
+  "schema": "magmaw_balance_starfall_lunar_window_paired_evidence_v1",
+  "actor_id": "30001",
+  "spec": "balance_druid",
+  "profile": {
+    "profile_id": 290,
+    "action_id": 2544,
+    "class_id": 11,
+    "role": "dps",
+    "spell_id": 48505,
+    "version": 3,
+    "enabled": 1
+  },
+  "database_readback": {
+    "control": {
+      "migration": "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
+      "mechanic_tags": "starfall,cooldown,pinned_apl,balance_starfall_neutral_gate",
+      "lunar_window_occurrences": 0,
+      "neutral_gate_preserved": true
+    },
+    "treatment": {
+      "migration": "sql/custom/world/2026_09_20_02_balance_starfall_lunar_window.sql",
+      "mechanic_tags": "starfall,cooldown,pinned_apl,balance_starfall_neutral_gate,balance_starfall_lunar_window",
+      "lunar_window_occurrences": 1,
+      "neutral_gate_preserved": true
+    }
+  },
+  "build_identity": {
+    "source_commit": "64855019cdb86429ae647c437028385a4b04fdc5",
+    "binary_sha256": "577f1f754797a4d194082e148db02d4c8c6f951e888653592ad3a5d333a05b64",
+    "policy": {
+      "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+      "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+    }
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "seed": 1,
+    "scoring_seconds": 300,
+    "target_guid": 30540,
+    "gear_manifest_sha256": "67bc86c55fc10ee87228dd5aa6a4076b45fbd1009a82650712cee686fb4ea55a",
+    "reference_id": "cata_p4:balance_druid",
+    "reference_value": 35447.58892725215
+  },
+  "conditions": {
+    "control": {
+      "run_directory": "/tmp/magmaw_balance_regression_91pct_07_control_v2_20260921",
+      "run_archive": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_control_20260921.tar.gz.dvc",
+        "sha256": "51fc0bd888aeffe71e61fb645d8ce585b2d6c9762d00dd685ab82ff95887676f"
+      },
+      "server_epoch": 2777151948907320,
+      "cohort_id": "dummy-3fa882cd32e8-1",
+      "profile_content_hash": "37896BC3D8E430637CCEEBC9CB1DE0DC4B4A6B9EB8E168BC2BBB296418768801",
+      "conditions_sha256": "9e9ded824b54947548ca2fe2a315bed48e6114b3dc4f07bea7f5807f229a34e2",
+      "dps": 32719.18,
+      "damage": 9815754,
+      "reference_ratio": 0.9230297741025046,
+      "starfall_successes": 5,
+      "active_uptime_ratio": 1.0,
+      "cast_failure_ratio": 0.0,
+      "measurement_status": "complete",
+      "terminal_reason": "complete",
+      "cleanup_verified": true,
+      "batch_sha256": "f8329ed426c806b4f1d93b67ff905afabd087c56527bda5dcfdfc5137e37bce7",
+      "results_sha256": "fc89994a1f9988e1b8632922bd23af395c115db61740d572773564458afac0e7",
+      "report_sha256": "11d737c5afa1faddf5a08ba1f69873374c07d479ec475f1caa4c72ba2e6229e2",
+      "runtime_assets_sha256": "bfe3191ebffcd7e99153043898066ff01c12c6c1f7e54c70bcb88f8fc96a29b5"
+    },
+    "treatment": {
+      "run_directory": "/tmp/magmaw_balance_regression_91pct_07_treatment_v2_20260921",
+      "run_archive": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_treatment_20260921.tar.gz.dvc",
+        "sha256": "e9f9b34d38249738466365760b7f15965d2346d907b9dd16e075d94d564e0a39"
+      },
+      "server_epoch": 2750489228287001,
+      "cohort_id": "dummy-62496883301d-1",
+      "profile_content_hash": "BF97FB2DAFCE3535A74B726C661F40BCB8B3B64144027ECA9082ED9F46A1F907",
+      "conditions_sha256": "b8a89ebf73e21cd2eb28cb49a08ebba6194100b02d139411dc665daf4fe2b354",
+      "dps": 31651.763333333332,
+      "damage": 9495529,
+      "reference_ratio": 0.8929172417986211,
+      "starfall_successes": 4,
+      "active_uptime_ratio": 1.0,
+      "cast_failure_ratio": 0.0,
+      "measurement_status": "complete",
+      "terminal_reason": "complete",
+      "cleanup_verified": true,
+      "batch_sha256": "003c2e4d79bc99aaecaf756940eb4bb2938c76e8df280802a3aa0ea8d19e8fd4",
+      "results_sha256": "16948aa19e9906aefbff41b3d25a619e846c31671755c9ab2c6738241a2c668b",
+      "report_sha256": "e20cbe362a68f5e6ec4f881af1fc8f6479bf7cd0f6d83c7eefc9408a9fa2d7e4",
+      "runtime_assets_sha256": "2237582753f92070b79cf292fdd7464d8a34d296f7bdaf0dc55cf83ef76b1316"
+    }
+  },
+  "paired_delta": {
+    "treatment_minus_control_dps": -1067.4166666666679,
+    "treatment_minus_control_pct": -3.2623576344721017,
+    "interpretation": "The reviewed lunar-window tag is associated with a lower paired result in this control/treatment comparison; this is causal diagnosis only and does not accept the actor or Magmaw 10N."
+  },
+  "unknowns_preserved": [
+    "Native landed Dragonwrath copy attribution remains unavailable.",
+    "No direct Eclipse-power or aura 75170 state was manufactured or inferred as a cause.",
+    "Ordinary, periodic, and pet damage are retained in the raw DVC archives; no aggregate attribution is assigned here."
+  ]
+}

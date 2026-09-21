@@ -1,0 +1,76 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e5f43e08c2ecfc47fef3c27091d9722ab77f1f6d59e45293c4d3bf1c3e740adb",
+  "attempt_id": 1,
+  "server_epoch": 2750489228287001,
+  "scenario_kind": "dummy",
+  "terminal_reason": "measurement_complete",
+  "scoring_ms": 300000,
+  "closed": true,
+  "cleanup_verified": true,
+  "build_identity": {
+    "source_commit": "64855019cdb86429ae647c437028385a4b04fdc5",
+    "binary_sha256": "577f1f754797a4d194082e148db02d4c8c6f951e888653592ad3a5d333a05b64"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "paired_conditions": {
+    "control_server_epoch": 2777151948907320,
+    "treatment_server_epoch": 2750489228287001,
+    "same_seed": 1,
+    "same_target_guid": 30540,
+    "same_scoring_ms": 300000,
+    "control_dps": 32719.18,
+    "treatment_dps": 31651.763333333332,
+    "treatment_minus_control_dps": -1067.4166666666679,
+    "control_profile_lunar_window_occurrences": 0,
+    "treatment_profile_lunar_window_occurrences": 1
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json",
+      "sha256": "ae7626393d0727bebc7ea6d881e286936943314a797188640ccf915560571a8c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_control_20260921.tar.gz.dvc",
+      "sha256": "51fc0bd888aeffe71e61fb645d8ce585b2d6c9762d00dd685ab82ff95887676f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_treatment_20260921.tar.gz.dvc",
+      "sha256": "e9f9b34d38249738466365760b7f15965d2346d907b9dd16e075d94d564e0a39"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_build_20260921.json",
+      "sha256": "bfac756a36e3f1c884ce2a7697e971882c99f93c3b3ea4b3250f35021c402f28"
+    },
+    {
+      "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+      "sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf"
+    }
+  ],
+  "acceptance_boundary": {
+    "performance_accepted": false,
+    "actor_accepted": false,
+    "raid_clear_claimed": false,
+    "cause_claimed": "bounded paired diagnosis only"
+  }
+}
