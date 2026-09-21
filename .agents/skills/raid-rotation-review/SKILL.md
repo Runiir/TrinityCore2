@@ -48,6 +48,11 @@ references, runtime evidence or encounter ownership.
 
 ## Load the review model
 
+Start evidence retrieval with the compact comparison and paginated query commands
+in [references/evidence-views.md](references/evidence-views.md). Read full logs only
+through a selected actor/spell/time interval or explicit JSON Pointer. Load this
+skill once; do not repeatedly dump nested reviews to recover truncated output.
+
 For the dedicated DPS review of a closed raid, dungeon, or calibration run,
 start with [references/post-run-dps-review.md](references/post-run-dps-review.md).
 For DPS optimization, complete its damage-loss accounting before recommending

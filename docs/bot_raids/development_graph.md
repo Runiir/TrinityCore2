@@ -50,6 +50,11 @@ and specialist skill before implementing. The saved state is
 Its state owns task progress; historical handoffs provide context. The legacy
 fields outside it are historical compatibility data, not separate acceptance.
 
+For diagnosis, use the [compact evidence CLI](../../.agents/skills/raid-rotation-review/references/evidence-views.md).
+Compare retained runs against native/WoWSims/WCL inputs, then retrieve only relevant
+event pages or JSON Pointers. Keep full evidence on disk/DVC; do not print the
+complete saved graph, normalized review or raw trace into model context.
+
 The graph is:
 
 `diagnose -> implement -> review -> build -> validate -> assess -> publish -> route`

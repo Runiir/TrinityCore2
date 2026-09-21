@@ -5,6 +5,10 @@ aggregates first; request only missing trace/reference payloads from the
 coordinator. Work directly, without nested workers. Do not change gameplay,
 launch a server, generate new simulator references, or publish/evict evidence.
 
+Read those inputs through [evidence-views.md](evidence-views.md): compare retained
+runs/references first, then query the selected actor/spell/interval. The commands
+compute differences locally and keep raw logs out of routine model context.
+
 Bind the review to the report hash, source/binary, server epoch, attempt, cohort,
 instance, route node/generation, roster, and promoted reference catalog. State
 which comparisons are admitted and which lack setup/stat parity. A valid boss
@@ -166,8 +170,8 @@ signal merely because its implementation is ready.
 
 For a compact first comparison, normalize visible WCL component DPS into reviewed
 actor/selector records, retain the source tables, then join the existing timeline:
-`pixi run python -m tools.bot_ml.rank_raid_damage_gaps --timeline report.timeline.json
---references references.json --output ranked.json`. The output ranks apparent
+`pixi run python -m tools.raid_program.evidence_view compare --current report.timeline.json
+--wcl references.json --actor ACTOR`. This reuses `rank_raid_damage_gaps` and ranks apparent
 differences, not recoverable gains. Bind duty annotations to the exact timeline
 identity; record missing phase/stat/duty parity and the next discriminating check.
 

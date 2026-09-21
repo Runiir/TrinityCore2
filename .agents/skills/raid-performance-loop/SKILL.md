@@ -5,6 +5,12 @@ description: Coordinate bounded raid and class repairs, join specialist results,
 
 # Raid performance loop
 
+For run/reference diagnosis, use the existing
+[compact evidence views](../raid-rotation-review/references/evidence-views.md)
+before opening raw reports. Pass comparison summaries and selected event pages
+to workers/Jev/Laya. Read only the matching ledger entry and current status;
+do not print whole graph histories or generated datasets into context.
+
 "Implement <boss> <mode> bots" starts or resumes the saved encounter-wide objective;
 it needs no special continuation wording. Specialist stop/handoff rules bound
 that specialist, not the primary coordinator. Continue after its result through
