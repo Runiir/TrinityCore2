@@ -1,0 +1,12 @@
+{
+  "validation_pointer": "artifacts/cata_raid_program/class_calibration_scope_validation_20260921.tar.gz.dvc",
+  "md5": "8ddccbf21575b8f7ccb04e86c147c635",
+  "bytes": 2160,
+  "remote_verified": true,
+  "exact_payload_and_cache_evicted": true,
+  "dvc_status_checked": true,
+  "dvc_status_output_lines": 2484,
+  "dvc_status_note": "Repository-wide older stale/missing-cache entries remain; this validation object was pushed and read back exactly.",
+  "dvc_push": "1 file pushed",
+  "native_experiment": false
+}
