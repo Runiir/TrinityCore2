@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:balance_regression_91pct_07",
-  "owner_skill": "raid-rotation-review",
+  "work_unit": "magmaw:blood_tank_priority_02",
+  "owner_skill": "raid-role-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "430a1691a2b971f211d5c9603990a12cd16eddce",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Select the next proven edge, or complete only when every requirement is accepted. Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open.",
+  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike 55050 bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 259,
+    "revision": 260,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "route",
+    "stage": "diagnose",
     "actor_ids": [
       "30001",
       "30002",
@@ -569,20 +569,18 @@
       }
     },
     "unit": {
-      "id": "magmaw:balance_regression_91pct_07",
-      "edge": "owner_balance_post_starfall_throughput_regression",
-      "owner_skill": "raid-rotation-review",
+      "id": "magmaw:blood_tank_priority_02",
+      "edge": "owner_blood_priority_inversion",
+      "owner_skill": "raid-role-implementation",
       "requirements": [
-        "actor_30001"
+        "actor_30002"
       ],
-      "objective": "Recover the measured Balance decline relative to the 91.93% run, establish cause with controlled evidence, then reach the unchanged 95% WoWSims gate while preserving every other actor.",
+      "objective": "Close the actor_30002 Blood tank behavior gap lawfully while preserving tank survival, threat, rune legality, the Balance accounting residual, all other actor requirements and the Magmaw 10N raid gate.",
+      "next_action": "Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike 55050 bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
       "continuation": {
         "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
         "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
-      },
-      "baseline_build_commit": "618b20a2d2793e3f26b3b9d45ed2728f3b97d881",
-      "current_source_anchor": "19dd29a844561ab46e64bbcb83ab66ce90d107c2",
-      "next_action": "Read artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json. Compare retained unit04/unit05/unit06 first. Pin Balance behavior to the unit04 build 618b20a2d2793e3f26b3b9d45ed2728f3b97d881, preserve current shared code/other specs, and prepare the bounded matched Starfall-window comparison if retained evidence cannot resolve causality. Do not treat DTR randomness or the 75170 startup difference as quantified causes without observed contribution. After Balance diagnosis/recovery resume the suspended Blood assignment from the continuation receipt; all actors remain open."
+      }
     },
     "completed_measurements": [
       {
@@ -5098,6 +5096,34 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 259,
+        "unit_id": "magmaw:balance_regression_91pct_07",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "revision": 259,
+          "unit_id": "magmaw:balance_regression_91pct_07",
+          "action": "route",
+          "reason": "Balance paired diagnosis is published without acceptance; resume the suspended Blood tank priority edge with a unique continuation unit while preserving every open actor and raid requirement.",
+          "unit": {
+            "id": "magmaw:blood_tank_priority_02",
+            "edge": "owner_blood_priority_inversion",
+            "owner_skill": "raid-role-implementation",
+            "requirements": [
+              "actor_30002"
+            ],
+            "objective": "Close the actor_30002 Blood tank behavior gap lawfully while preserving tank survival, threat, rune legality, the Balance accounting residual, all other actor requirements and the Magmaw 10N raid gate.",
+            "next_action": "Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike 55050 bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+            "continuation": {
+              "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
+              "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
+            }
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5110,137 +5136,6 @@
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
-    },
-    "assignment": {
-      "hypothesis": "The Balance post-opener balance_starfall_lunar_window profile tag may reduce throughput, but the retained runs do not isolate it. A reversible control variant that removes only this tag from the Balance Starfall row, followed by reapplying the reviewed treatment tag, will test the condition while preserving the neutral opener, native candidate predicate, shared code, setup, reference, and other specs.",
-      "owned_files": [
-        "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql",
-        "tests/test_balance_starfall_profile_variant.py"
-      ],
-      "forbidden_changes": [
-        "No C++ gameplay, candidate predicate, neutral-opener, stat, coefficient, gear, consumable, reference, denominator, encounter-script, route, or other-spec changes.",
-        "No direct Eclipse-power or 75170 state manufacture, forced casts, cooldown edits, target changes, or Dragonwrath attribution inference.",
-        "No actor, DPS, raid, or WCL acceptance from this matched dummy pair. Keep actor_30001 through actor_30010 and every comparison, potion, survival-reference, and raid requirement open.",
-        "Do not apply the control SQL outside the isolated validation database or leave the loaded profile in the control state after the pair."
-      ],
-      "acceptance_conditions": [
-        "The control SQL is scoped to Balance DPS Starfall 48505, removes only balance_starfall_lunar_window, preserves balance_starfall_neutral_gate, and is reversible by the reviewed treatment migration.",
-        "Focused tests prove the control SQL cannot touch another spec, spell, or neutral tag and that its tag removal is bounded.",
-        "One current host12 binary and one exact validation identity run the control and treatment conditions with identical gear, roster, runtime profile, target, seed, warmup, and 300-second scoring window.",
-        "Each condition records database/profile readback, natural 75170 coverage, ordinary/periodic/pet damage, and landed Dragonwrath attribution or explicit unknowns.",
-        "Assessment treats the pair as causal diagnosis only. Any source or SQL repair requires a new hypothesis, independent review, build, and separate validation."
-      ],
-      "required_test_commands": [
-        "pixi run pytest -q tests/test_balance_starfall_profile_variant.py",
-        "pixi run pytest -q tests/test_balance_rotation_cadence.py",
-        "pixi run pytest -q tests/test_rotation_mechanics_review.py",
-        "pixi run python -m tools.bot_ml.build_wowsims_reference_requests --check",
-        "pixi run python -m tools.bot_ml.run_wowsims_exact_references validate-catalog"
-      ],
-      "base_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
-      "policy": {
-        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
-        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
-      },
-      "validation_identity": {
-        "actor_id": "30001",
-        "reference": {
-          "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
-          "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
-        },
-        "roster": {
-          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
-        },
-        "runtime_profile": {
-          "path": "experiments/configs/validation_scenarios_cata_001.json",
-          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
-        },
-        "scenario_kind": "dummy",
-        "spec": "balance_druid"
-      },
-      "supporting_review": {
-        "path": "artifacts/cata_raid_program/workflow_gate_review_20260921.receipt.json",
-        "sha256": "8a2e6932b4512cc7c24531fa85af359666b2badffd097afa22ca0025ac6d0d8d"
-      },
-      "supporting_files": {
-        "experiments/configs/all_spec_role_calibration_policy_v3.json": "8732262ae5bc249656138071fe1d9f76af347df5e6738d01fec21d866e04b1ff",
-        "experiments/configs/cata_raid_dps_acceptance_v1.json": "48f42caf5c7c819feb5578e2e30e4a68582dce112a6e27716d94deb7b999a02d",
-        "tests/test_calibration_completion.py": "cff2a2a3331bd64cd0c77e4be948c5171a23ef63536a17c13985238757791b3c",
-        "tests/test_cata_raid_dps_acceptance.py": "fd87ddbe61dba707a3e253123a62020f5423d88615797688b5bc9417d6a62407",
-        "tests/test_development_graph.py": "37c4fc916b715aeacb20c7674a885a96216a3150b2bea3b3a22e97860630f93a",
-        "tests/test_dps_gate.py": "103d2a60f91685a74a9d0695e0f5da026ea902eae72947d12c721085777dad81",
-        "tests/test_raw_evidence_binding.py": "42912898659a3d5971b1c142c354ccd3092e79db51ff8c0a2d126bff5a92f4ff",
-        "tests/test_review_execution.py": "420c5ec74d37fa41eb7146af37cf6c5d7e920455edde40615a338034f19ed59c",
-        "tests/test_workflow_build_role_preflight.py": "fa763e17df6232104070167f43932ced3eea090897d2469f66daab00e1553239",
-        "tests/test_workflow_step.py": "f1d70b32c39979751613c0e6063e6513fcf1af1da29bde2439f3ed08b1b14514",
-        "tools/bot_ml/calibration_completion.py": "64345d334e9c006164c6a1979c8ad0b7202352af2ba8e6a7026a94d3ecce4b99",
-        "tools/bot_ml/phase8_calibration_adapter.py": "c83b35b2bc67784f2a60e39725b14a2f146ed736aa27c78225fa32a0bcde1f45",
-        "tools/bot_ml/raw_evidence_binding.py": "ecd687b06da1a6ed095fa65435b285e1a9bdbccd142c2dbe9d271386ae58d28c",
-        "tools/bot_ml/role_calibration_harness.py": "c0ab697688cc7abc96669fccbbe13cbb75f37a0c506804000e1f3cf42963a61f",
-        "tools/bot_ml/run_cata_raid_dps_acceptance.py": "f756c9afe4da5789d09c26e2f7256a6a7ddeec89534d546c794a71b0988ed4a9",
-        "tools/bot_ml/run_live_bot_validation.py": "9178b987938f72c743a607510867aa48dc2098a273dfa0a85faa482cc468627f",
-        "tools/bot_ml/verify_cata_raid_dps_acceptance.py": "09bd0b469aa1adf6abbb34618ffe022731aeeae979447c0d01e197079855b5e6",
-        "tools/raid_program/development_graph.py": "aec4f3f00fa736cbb7c9de3d2ac54c4594ebaf5d62483f9d47088a914f08e7c7",
-        "tools/raid_program/dps_gate.py": "3734344dbb7431ac8aba70b6d3779cb9709cbe6bd32bb93645359b373502d1bc",
-        "tools/raid_program/review_execution.py": "8aa0001c13b72e8366e2fd271269139d0b2bd23af5bc22721ed40090b17d4172",
-        "tools/raid_program/run_dummy_calibrations.py": "6a1e96a14d79e3aa33287c0103fcceb26bed54599964a545db5496e31eea4868",
-        "tools/raid_program/scenario_bootstrap.py": "5901a69fcfb3c2e80bcef442ea82c2f0ba3a82494b7bc19014e10c010702985e",
-        "tools/raid_program/workflow_build.py": "f0a6e2aac5c8e78681c3001b8710ab846192e28b963386d3d991c9a80dddfe90",
-        "tools/raid_program/workflow_step.py": "958a2e81e3372106c5869f0d5867dcbb6ac44768f478735f12ef9370f0438a66"
-      }
-    },
-    "receipts": {
-      "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_plan_support_rework_20260921.json",
-        "sha256": "41d1086b06c5aed33bbfa3fb1e0827e7907fee0c2e2621057df42f83df9c226c"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_implementation_support_rework_20260921.json",
-        "sha256": "23d6787a53923beb126a51d2d716f5873c952f5874eb3b7fd8fbd5608ca10871"
-      },
-      "review": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_independent_review_20260921.receipt.json",
-        "sha256": "f653a89dea104d0b55d96d3a255ae5f78c82e4dd3f74f634e28460e019efc3a9"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_build_20260921.json",
-        "sha256": "bfac756a36e3f1c884ce2a7697e971882c99f93c3b3ea4b3250f35021c402f28"
-      },
-      "run": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_run_20260921.json",
-        "sha256": "01c183b8a8e06156798835652bfe960aa7dd72dd3e22eb8b8e8479b8489b5436"
-      },
-      "assessment": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_assessment_20260921.json",
-        "sha256": "c84c69c66d177cefd727e8075414be5857fa2c2bfb022e9842a64502232a436f"
-      },
-      "publication": {
-        "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_publication_20260921.json",
-        "sha256": "fd6e1a4c3b751be4ddab2a711511a377528567d80a71de15ad1738ff6336bc6a"
-      }
-    },
-    "tested_files": {
-      "sql/custom/rollback/world/2026_09_21_00_balance_starfall_lunar_window_control.sql": "854c5c67ec65fab4650ff96da0da65058969263454e63a123672deb29e16889e",
-      "tests/test_balance_starfall_profile_variant.py": "0eba672350767ef58ccdcacec8afde4faa6da2e6ddd93e0ca74e2076b5f12f09"
-    },
-    "tested_commit": "6e3419d0603ed62cad3329720abc2bb27f285807",
-    "implementer": "coordinator",
-    "build_identity": {
-      "source_commit": "64855019cdb86429ae647c437028385a4b04fdc5",
-      "binary_sha256": "577f1f754797a4d194082e148db02d4c8c6f951e888653592ad3a5d333a05b64"
-    },
-    "run": {
-      "attempt_id": 1,
-      "server_epoch": 2750489228287001,
-      "scenario_kind": "dummy",
-      "terminal_reason": "measurement_complete"
-    },
-    "pending_acceptance": [],
-    "outcomes": {
-      "encounter_clear": false,
-      "repair_accepted": false,
-      "performance_accepted": false
     }
   },
   "parked_scenarios": {

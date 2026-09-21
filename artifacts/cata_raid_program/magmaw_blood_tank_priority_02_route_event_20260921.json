@@ -1,0 +1,18 @@
+{
+  "revision": 259,
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "action": "route",
+  "reason": "Balance paired diagnosis is published without acceptance; resume the suspended Blood tank priority edge with a unique continuation unit while preserving every open actor and raid requirement.",
+  "unit": {
+    "id": "magmaw:blood_tank_priority_02",
+    "edge": "owner_blood_priority_inversion",
+    "owner_skill": "raid-role-implementation",
+    "requirements": ["actor_30002"],
+    "objective": "Close the actor_30002 Blood tank behavior gap lawfully while preserving tank survival, threat, rune legality, the Balance accounting residual, all other actor requirements and the Magmaw 10N raid gate.",
+    "next_action": "Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike 55050 bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+    "continuation": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
+      "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
+    }
+  }
+}
