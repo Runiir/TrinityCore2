@@ -1,0 +1,113 @@
+{
+  "archive": "artifacts/cata_raid_program/runtime_asset_preflight_20260921.tar.gz",
+  "size_bytes": 947622,
+  "sha256": "22bd56f097e41b77e1c81661a6bdb0c241d741552f818647168f98be9c7ba251",
+  "summary": {
+    "source": "e92e5108482eb7788e20558de597d474339c7d81",
+    "operation": "read-only asset closure; no server or DB mutations",
+    "runs": [
+      {
+        "name": "final-cold",
+        "elapsed_seconds": 4.691,
+        "hash_reuse": {
+          "hits": 19692,
+          "misses": 40976,
+          "bytes_hashed": 5226040591
+        },
+        "complete": false,
+        "issue_counts": {
+          "hash_mismatch": 3,
+          "size_mismatch": 2
+        }
+      },
+      {
+        "name": "final-warm",
+        "elapsed_seconds": 1.959,
+        "hash_reuse": {
+          "hits": 60668,
+          "misses": 0,
+          "bytes_hashed": 0
+        },
+        "complete": false,
+        "issue_counts": {
+          "hash_mismatch": 3,
+          "size_mismatch": 2
+        }
+      }
+    ],
+    "remaining_issues": [
+      {
+        "kind": "hash_mismatch",
+        "class_id": "validation_routes",
+        "path": "dataset/validation_scenarios",
+        "field": "inventory_sha256"
+      },
+      {
+        "kind": "hash_mismatch",
+        "class_id": "validation_routes",
+        "path": "dataset/validation_scenarios/manifest.json"
+      },
+      {
+        "kind": "hash_mismatch",
+        "class_id": "validation_routes",
+        "path": "dataset/validation_scenarios/validation_routes.jsonl"
+      },
+      {
+        "kind": "size_mismatch",
+        "class_id": "validation_routes",
+        "path": "dataset/validation_scenarios",
+        "field": "size_bytes"
+      },
+      {
+        "kind": "size_mismatch",
+        "class_id": "validation_routes",
+        "path": "dataset/validation_scenarios/validation_routes.jsonl"
+      }
+    ],
+    "tests": {
+      "passed": 144,
+      "skipped": 1,
+      "earlier_failures": "Ancestor timestamp false-positive fixed and covered; new fixture shallow copy fixed. Final suite passes. Review follow-up initially created output for explicit-bundle rejection paths; constrained creation to derived output bundle. Final 144 tests pass, one retained-fixture skip."
+    },
+    "data_drift": "Two local generated route records omit spell 55050; DVC HEAD bytes match closure authority. Preserved local data; no manifest edits or runtime acceptance claimed.",
+    "final_code_source": "ce9d440d69301b53f913e1f05c6aa81b966183a1",
+    "warm_equivalence": {
+      "snapshot": {
+        "equal": true,
+        "cold_sha256": "3ca04157c3f3bdb017c47185d275f14d3e7ce837391cb45ac12e0592c8504b39",
+        "warm_sha256": "3ca04157c3f3bdb017c47185d275f14d3e7ce837391cb45ac12e0592c8504b39"
+      },
+      "issues": {
+        "equal": true,
+        "cold_sha256": "e4808ab035c6d49ec2101a78fac986e20c161f66f690d40a1cbc2a0afb012f88",
+        "warm_sha256": "e4808ab035c6d49ec2101a78fac986e20c161f66f690d40a1cbc2a0afb012f88"
+      }
+    },
+    "review_fixes": [
+      "Create derived bundle root before verification; explicit bundle rejection paths do not create outputs.",
+      "Forward explicit full-hash and strict-mode flags to child commands.",
+      "Reject route file mutation during verification and reuse retained route objects for launch."
+    ],
+    "test_command": "pixi run --frozen python -m pytest -q tests/test_runtime_asset_preflight.py tests/test_runtime_asset_closure.py tests/test_runtime_asset_root_aliases.py tests/test_runtime_asset_materialization.py tests/test_runtime_asset_parent_callers.py",
+    "acceptance": {
+      "workflow_unit": "independent Luna max review approved; fixtures pass",
+      "live_server_started": false,
+      "asset_closure_passed": false,
+      "performance_acceptance": false,
+      "reason": "Real local route byte drift intentionally preserved, workflow repair does not accept runtime data or gameplay."
+    },
+    "independent_review": {
+      "agent": "asset_preflight_review",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "verdict": "approved",
+      "scope": "Initial code review and focused follow-up of three identified corrections",
+      "limitations": "No live server launched; local route byte drift remains rejected."
+    }
+  },
+  "remote_verified": true,
+  "local_payload_evicted": true,
+  "remote_verification": "Direct remote object read, bypassing local cache; exact size and SHA256 match.",
+  "dvc_md5": "0cbad99b4b095b1ff8070d40f02c8e5c",
+  "local_cache_evicted": true
+}
