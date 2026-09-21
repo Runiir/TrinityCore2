@@ -1,0 +1,37 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:blood_tank_threat_floor_03_plan_drift_20260921",
+  "stage": "plan",
+  "checkpoint": {
+    "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_plan_drift_checkpoint_20260921.json",
+    "sha256": "65cffc8ae2b67ea969209838ec0f755fb7696a8584c6c101de1c94a2d015af2e"
+  },
+  "review": {
+    "summary_path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_plan_drift_review_20260921/summary.json",
+    "summary_sha256": "a3b5bc16c8ea70716e8c51c36fb687a2e4a66ea0b8f4919ac180e7a6cde35f95",
+    "examples_path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_plan_drift_review_20260921/examples.jsonl",
+    "examples_sha256": "cddc641ff49eaf6c0ad7d4264cd1aeed2fa653b3506737df2383eb870e63033e"
+  },
+  "deterministic": {
+    "status": "pass",
+    "findings": []
+  },
+  "model_advice": {
+    "hosted_jev": {
+      "status": "advisory",
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "supported",
+      "note": "Jev supports routing and the plan-limited claim; it does not authorize execution or acceptance."
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "reason": "HTTP 422 context_budget_exceeded; state_tokens 1222 exceeded the per-question budgets. The request was retained and not retried unchanged."
+    }
+  },
+  "coordinator_verdict": "aligned",
+  "reason": "The proposed unit advances the open actor_30002 requirement after a closed, failed-throughput Blood window, preserves all parent requirements, and requires loaded-profile evidence before a policy edit. The zero Heart Strike trace makes diagnosis necessary and does not support blind acceptance of the retained inversion.",
+  "next_action": "Route magmaw:blood_tank_threat_floor_03 to raid-role-implementation, inspect loaded Blood profile and candidate eligibility, then continue only through the declared role gates.",
+  "acceptance_claim": "Routing and plan alignment only; no source repair, native behavior, actor performance, raid clear, or parent completion is accepted."
+}

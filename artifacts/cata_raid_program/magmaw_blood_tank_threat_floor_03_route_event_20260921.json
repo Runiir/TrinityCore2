@@ -1,0 +1,30 @@
+{
+  "revision": 291,
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "action": "route",
+  "producer": "coordinator",
+  "reason": "The teardown dependency is closed and the exact Blood tank window is clean but fails only the hard throughput floor. Route actor_30002 to a unique role-policy unit that diagnoses the loaded Blood action profile before changing the retained priority hypothesis, while preserving every open parent requirement.",
+  "coordinator_verdict": "aligned",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_plan_drift_adjudication_20260921.json",
+    "sha256": "d9e2fff5cf65fe57ec228eeed99dd24e7fb070aae99511ad37fac2b942058fe8"
+  },
+  "causal_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+    "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+  },
+  "unit": {
+    "id": "magmaw:blood_tank_threat_floor_03",
+    "edge": "owner_blood_priority_inversion",
+    "owner_skill": "raid-role-implementation",
+    "requirements": [
+      "actor_30002"
+    ],
+    "objective": "Raise Blood tank lawful threat and role throughput from the clean exact tank_threat_300 baseline by repairing one proven loaded-profile priority or eligibility edge without changing reference data, encounter behavior, or safety policy.",
+    "next_action": "Inspect the SQL-loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265; repair only the first proven policy edge, add an executable focused test, and preserve Heart Strike fallback and multi-target Blood Boil behavior.",
+    "continuation": {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+      "sha256": "018fd513004bb4539585031c354a27276b0de79a19f873c489c374e874b65d69"
+    }
+  }
+}
