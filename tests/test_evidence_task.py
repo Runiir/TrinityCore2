@@ -44,6 +44,40 @@ def test_changed_receipt_rejected(tmp_path):
         checked(tmp_path, ref)
 
 
+def test_persisted_receipts_reject_parent_and_symlink_escapes(tmp_path):
+    outside = tmp_path.parent / 'outside-receipt.json'
+    outside.write_text('{}')
+    parent = {
+        'path': '../outside-receipt.json',
+        'sha256': hashlib.sha256(outside.read_bytes()).hexdigest(),
+    }
+    with pytest.raises(ValueError, match='escapes repository'):
+        checked(tmp_path, parent)
+
+    link = tmp_path / 'receipt-link.json'
+    link.symlink_to(outside)
+    symlink = {
+        'path': 'receipt-link.json',
+        'sha256': hashlib.sha256(outside.read_bytes()).hexdigest(),
+    }
+    with pytest.raises(ValueError, match='escapes repository'):
+        checked(tmp_path, symlink)
+
+
+def test_report_input_rejects_escaped_dvc_pointer(tmp_path):
+    outside = tmp_path.parent / 'outside-capture.tar.gz.dvc'
+    outside.write_text('{}')
+    run = {
+        'report_summary': {'actor_report_sha256': '0' * 64},
+        'evidence': [{
+            'path': '../outside-capture.tar.gz.dvc',
+            'sha256': hashlib.sha256(outside.read_bytes()).hexdigest(),
+        }],
+    }
+    with pytest.raises(ValueError, match='escapes repository'):
+        report_input(tmp_path, run)
+
+
 def test_saved_task_binds_actual_actor_promoted_reference_and_preserves_parent(tmp_path, monkeypatch):
     from tools.raid_program import raid_workloop
     run = run_fixture(tmp_path)
@@ -69,3 +103,41 @@ def test_saved_task_binds_actual_actor_promoted_reference_and_preserves_parent(t
     assert result['claim'] == graph['claim'] and result['unit'] == graph['unit']
     assert result['open_requirements'] == graph['requirements']
     assert checked(tmp_path, state)['development_graph'] == graph
+
+
+def test_task_view_rejects_reference_path_escape(tmp_path, monkeypatch):
+    run = run_fixture(tmp_path)
+    ref = descriptor(tmp_path, 'run.json', run)
+    assessment = descriptor(tmp_path, 'assessment.json', {
+        'unit_id': run['unit_id'], 'evidence': [ref], 'baseline': ref,
+    })
+    graph = {
+        'objective': 'all actors',
+        'unit': {'id': 'boss:unit2', 'requirements': ['actor_999']},
+        'stage': 'review',
+        'requirements': {'actor_999': {'status': 'open'}, 'raid': {'status': 'open'}},
+        'history': [{'from': 'assess', 'event': {'action': 'advance', 'receipt': assessment}}],
+    }
+    descriptor(
+        tmp_path,
+        'experiments/configs/cata_raid_active_work_unit_v1.json',
+        {'development_graph': graph},
+    )
+    outside = tmp_path.parent / 'reference.json'
+    payload = b'{}'
+    outside.write_bytes(payload)
+    reference = hashlib.sha256(payload).hexdigest() + '.json'
+    outside.rename(tmp_path.parent / reference)
+    monkeypatch.setattr(
+        'tools.raid_program.raid_workloop.build_spec_work_unit',
+        lambda spec, root: {'benchmark': {
+            'state': 'ready',
+            'accepted_dps_reference_class': 'self_provided_baseline',
+            'rotation_review_reference_artifacts': {
+                key: '../' + reference
+                for key in ('raid_sim_request', 'raid_sim_result', 'compute_stats')
+            },
+        }},
+    )
+    result = task_view(tmp_path)
+    assert result['missing'] == 'receipt path escapes repository'

@@ -12,10 +12,21 @@ from tools.raid_program.evidence_metrics import native_actors
 from tools.raid_program.evidence_paging import command_with
 
 
-def checked(root, descriptor):
-    path = (root / descriptor['path']).resolve()
-    if not path.is_relative_to(root.resolve()):
+def confined(root, value):
+    """Resolve a persisted path and reject traversal or symlink escapes."""
+    root = root.resolve()
+    try:
+        candidate = Path(value)
+    except TypeError as exc:
+        raise ValueError('receipt path is not a path') from exc
+    path = candidate.resolve() if candidate.is_absolute() else (root / candidate).resolve()
+    if not path.is_relative_to(root):
         raise ValueError('receipt path escapes repository')
+    return path
+
+
+def checked(root, descriptor):
+    path = confined(root, descriptor['path'])
     payload = path.read_bytes()
     if hashlib.sha256(payload).hexdigest() != descriptor['sha256']:
         raise ValueError('receipt hash mismatch: ' + str(path))
@@ -30,10 +41,10 @@ def report_input(root, run):
     pointers = [d for d in run.get('evidence', []) if d['path'].endswith('.tar.gz.dvc')]
     matches = []
     for descriptor in pointers:
-        pointer = root / descriptor['path']
+        pointer = confined(root, descriptor['path'])
         if hashlib.sha256(pointer.read_bytes()).hexdigest() != descriptor['sha256']:
             raise ValueError('DVC pointer hash mismatch: ' + str(pointer))
-        archive_path = Path(str(pointer)[:-4])
+        archive_path = confined(root, pointer.with_suffix(''))
         if not archive_path.is_file():
             raise ValueError('hydrate exact input: ' + shlex.join(['pixi', 'run', 'dvc', 'pull', str(pointer)]))
         with tarfile.open(archive_path) as archive:
@@ -87,7 +98,11 @@ def task_view(root):
             'authority': 'Current promoted catalog projection in the requested root, not embedded run DPS.'}
         if benchmark.get('state') != 'ready' or policy is None:
             raise ValueError('promoted reference is not ready: ' + str(benchmark.get('state')))
-        paths = {k: str(root / refs[k]) for k in ('raid_sim_request', 'raid_sim_result', 'compute_stats') if refs.get(k)}
+        paths = {
+            k: str(confined(root, refs[k]))
+            for k in ('raid_sim_request', 'raid_sim_result', 'compute_stats')
+            if refs.get(k)
+        }
         if len(paths) != 3:
             raise ValueError('promoted reference lacks request/result/ComputeStats binding')
         for path in paths.values():

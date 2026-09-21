@@ -29,6 +29,14 @@ def test_nested_item_outline_uses_escaped_pointer():
     assert 'JSON_POINTER_FROM_VIEW' in result['detail_command_template']
 
 
+def test_structure_only_fallback_respects_budget_for_large_objects():
+    doc = {'rows': [{f'field_{i}': 'x' * 700 for i in range(16)}]}
+    result = bounded_select(doc, '/rows', 0, 10, ['select', 'input.json'], 2000)
+    assert len(encoded(result)) <= 2000
+    assert result['view'] == 'structure_only_for_oversized_item'
+    assert result['value']
+
+
 def test_continuation_does_not_overwrite_export_and_quotes_input():
     command = command_with(['select', 'file with spaces.json', '--output', '/tmp/save.json', '--offset', '4'], offset=8)
     args = shlex.split(command)

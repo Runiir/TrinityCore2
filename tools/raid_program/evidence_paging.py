@@ -69,13 +69,54 @@ def bounded_select(document, pointer, offset, limit, argv, budget=12000, *, view
         if size > 1:
             size = max(1, size//2)
             continue
-        value = result["value"]
-        if isinstance(value, list):
-            result["value"] = [outline(value[0], pointer_child(pointer, offset))] if value else []
-        elif isinstance(value, dict):
-            result["value"] = {k: outline(v, pointer_child(pointer, k)) for k, v in value.items()}
-        else:
-            result["value"] = outline(value, pointer)
         result["view"] = "structure_only_for_oversized_item"
         result["detail_command_template"] = command_with(argv, **{flag: "JSON_POINTER_FROM_VIEW"}, offset=0, limit=5)
-        return result
+        value = result["value"]
+
+        def fits(candidate):
+            result["value"] = candidate
+            return len(encoded(result)) <= budget
+
+        if isinstance(value, list):
+            candidate = [outline(value[0], pointer_child(pointer, offset))] if value else []
+            if fits(candidate):
+                return result
+            candidate = [{"view": "item_not_expanded", "path": pointer_child(pointer, offset)}] if value else []
+            if fits(candidate):
+                return result
+        elif isinstance(value, dict):
+            keys = list(value)
+            take = len(keys)
+            while take:
+                candidate = {
+                    key: outline(value[key], pointer_child(pointer, key))
+                    for key in keys[:take]
+                }
+                if take < len(keys):
+                    candidate["_view"] = {
+                        "path": pointer,
+                        "omitted_keys": len(keys) - take,
+                    }
+                if fits(candidate):
+                    return result
+                if take == 1:
+                    break
+                take = max(1, take // 2)
+            candidate = {
+                "view": "object_not_expanded",
+                "path": pointer,
+                "key_count": len(keys),
+            }
+            if fits(candidate):
+                return result
+        else:
+            candidate = outline(value, pointer)
+            if fits(candidate):
+                return result
+
+        # Keep the locator even if the command and envelope consume nearly all
+        # of the caller's budget.
+        return {
+            "view": "structure_only_for_oversized_item",
+            "path": pointer,
+        }
