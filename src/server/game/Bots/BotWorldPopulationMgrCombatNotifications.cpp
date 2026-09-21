@@ -361,6 +361,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                 observation.LandedDamage += measuredDamage;
                 ++observation.LandedEventCount;
                 observation.CopyLandedDuringActiveCast = true;
+                observation.CopyCastScopeActive = false;
                 break;
             }
             bool const exactPetDamage = owner->GetPet() == attacker;

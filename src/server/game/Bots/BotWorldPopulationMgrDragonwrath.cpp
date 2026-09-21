@@ -89,11 +89,9 @@ void BotWorldPopulationMgr::NotifyDragonwrathCopyProcAttempt(
     else
         ++observation.RejectedCount;
     observation.LastCastResult = castResult;
-    if (observation.CopyCastScopeActive)
-    {
-        if (accepted && !observation.CopyLandedDuringActiveCast)
-            ++observation.AcceptedWithoutLandedDamageCount;
-        observation.CopyCastScopeActive = false;
-        observation.CopyLandedDuringActiveCast = false;
-    }
+    if (observation.CopyCastScopeActive && accepted
+        && !observation.CopyLandedDuringActiveCast)
+        ++observation.AcceptedWithoutLandedDamageCount;
+    observation.CopyCastScopeActive = false;
+    observation.CopyLandedDuringActiveCast = false;
 }
