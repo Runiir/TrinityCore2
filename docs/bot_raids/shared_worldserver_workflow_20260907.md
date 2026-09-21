@@ -1,38 +1,51 @@
 # Shared-worldserver workflow status
 
-Updated 2026-09-20. Work continues on master. The separate ongoing JEV branch
+Updated 2026-09-21. Work continues on master. The separate ongoing JEV branch
 is preserved.
 
 ## Current work and latest native run
 
-The user paused the implementation agent to add damage-loss accounting before
-another DPS repair. Resume the saved `magmaw:balance_damage_loss_accounting_06`
-diagnosis through `raid_workloop resume`; this workflow edit launches no canary.
-Read FLOW-006 and the
-[accounting requirement](../../.agents/skills/raid-rotation-review/references/post-run-dps-review.md#account-for-the-dps-loss-before-selecting-a-repair).
-All 15 previously open requirements remain open; accepted setup work is preserved.
+The user has reprioritized Balance regression diagnosis. Resume
+`magmaw:balance_regression_91pct_07` through `raid_workloop resume`.
+The graph pins the earlier 91.93% Balance run to its actual binary source
+`618b20a2d2793e3f26b3b9d45ed2728f3b97d881`; the historical run adapter was
+written at `6253c9766f1af4e09b10e62db0bec1940d8ccf9`. Do not confuse those identities.
+The continuation contract is
+`artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json`.
+It retains the full suspended Blood assignment, including its source base and
+independently reviewed workflow support. Reuse that unchanged support review in
+the next native plan; do not rebase over or drop those source requirements.
 
-The latest published Balance run, unit05, completed exactly 300 seconds at
-**31,544.057 DPS** against **35,447.589 WoWSims** (88.99%). Its build source is
-`92dbee8863`; the run adapter records source `7ad6da74d9`. Capture, isolation and
-cleanup passed. The preceding unit04 produced **32,585.297 DPS** (91.93%). Unit05
-therefore lost **1,041.24 DPS** against that baseline, with **3,903.532 DPS** still
-below the reference. Starfall submissions changed from five to four. The existing
-assessment accepts the bounded behavior separately, rejects performance, and
-leaves the decline's cause unresolved; one run per condition is not a causal proof.
+| Retained Balance run | DPS | Current reference ratio |
+| --- | ---: | ---: |
+| Unit04, neutral opener | 32,585.297 | 91.93% |
+| Unit05, lunar-window gate | 31,544.057 | 88.99% |
+| Unit06, attribution observer | 30,881.980 | 87.12% |
 
-Reuse the unit04/unit05 run, assessment and `.tar.gz.dvc` capture pointers under
-`artifacts/cata_raid_program/magmaw_balance_rotation_cadence_*_20260920*`.
-Join those native reports to the exact simulator inputs and reconcile signed
-spell/effect losses and gains, including pets, copies and an unknown residual.
-The prior diagnosis counted Dragonwrath copies as player casts; this exaggerates
-cadence differences but does not prove missing native DTR damage. Its normalized
-review also lacked the runtime/ComputeStats join. Do not select another DPS optimization
-patch until the retained-data comparison supports its expected net gain, or route
-a specific missing observation when it does not. Review the latest decline before
-stacking a change; preserve unrelated accepted repairs and all other actors.
-An urgent correctness repair may proceed with separate behavior acceptance;
-the unexplained DPS gap and overall performance requirement remain open.
+All used a 35,447.589 DPS reference and an exact 300-second scored window.
+The total decline is 1,703.317 DPS. The historical 91.93% result is a measured
+comparator, not current 95% qualification or a perfectly matched experiment.
+Unit04 recorded startup aura 75170 (+580 intellect) absent in unit05. Its full
+uptime/contribution and the older runs' landed direct DTR copies remain unresolved.
+Neither this aura nor DTR randomness is a quantified explanation of the decline.
+The latest observer run also retains incomplete evidence identity; it is not accepted.
+
+Use retained unit04/unit05/unit06 evidence first. If it cannot settle causality,
+prepare one bounded matched pair on common current shared code, comparing only
+the Balance post-opener `balance_starfall_lunar_window` profile condition. The
+historical neutral-opener behavior stays in both. Record actual database/profile
+readback; deleting an old SQL file does not undo an applied migration. Match or
+explicitly account for natural proc coverage rather than manufacturing a buff.
+Keep ordinary casts, periodic damage, pets and landed DTR copies separate, and
+leave unattributed damage unknown. Revert or replace only a proven harmful change.
+
+Current master retains other-spec fixes. Blood's Death Strike priority change
+`a283a51228` was already in the historical baseline, so it does not need to be
+cherry-picked back. Preserve current DTR observation and workflow fixes in both
+comparison conditions. After the Balance regression work, resume the suspended
+Blood task and the remaining actor requirements. Every DPS still needs >=95% of
+its current promoted self-provided WoWSims reference; DTR gives no extra waiver.
+This graph update changes no combat code, database, live run, or acceptance.
 
 The earlier Moonkin haste expectation of 1.332199768 was a comparator error:
 WoWSims already included the 5% form multiplier. Native speed 1.269 matches the
