@@ -22,6 +22,9 @@ do not substitute active time for elapsed time. Different actor GUIDs require
 `--baseline-actor`; multi-actor overviews match only exact GUIDs and list unmatched
 actors. Select `--actor` for spell/setup detail. Overview pages default to ten
 actors, with `next_offset`; use `--offset` to continue.
+Known native spec, role or mode mismatches are marked `incompatible_context`.
+Missing identity checks stay explicit; equal GUIDs do not establish matching setup.
+Different epochs/cohorts are recorded as run differences, as expected for separate runs.
 
 WoWSims inputs accept the exact aggregate result, normalized result, or existing
 rotation review. Select `--player-index` for a raw multi-player simulator result.

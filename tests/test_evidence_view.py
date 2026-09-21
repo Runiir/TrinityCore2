@@ -74,6 +74,31 @@ def test_sim_copies_pets_other_tags_separate_from_ordinary_casts():
     assert d["status"] == "diagnostic_only"
 
 
+def test_missing_simulator_fields_propagate_unknown_not_zero():
+    result = sim()
+    result["action_metrics"][0]["per_iteration_target_metric_sums"].pop("damage")
+    result["action_metrics"][0]["per_iteration_target_metric_sums"].pop("casts")
+    row = simulator_actor(result)["components"]["10"]
+    assert row["damage"] is None and row["ordinary_casts"] is None
+    assert row["hits"] is None and row["ticks"] is None and row["crit_ticks"] is None
+    assert row["triggered_copies"] == 1
+    p = comparison(calibration(), result, "wowsims")["pairs"][0]
+    assert p["components"][0]["apparent_gap_dps"] is None
+
+
+def test_same_guid_different_spec_or_mode_is_explicitly_incompatible():
+    ref = calibration()
+    ref["combat_calibration"].update(target_spec="other_spec", mode="aoe", cohort_id="other")
+    p = comparison(calibration(), ref, "native")["pairs"][0]
+    assert p["status"] == "incompatible_context"
+    assert p["context_comparison"]["checks"]["spec"]["status"] == "mismatch"
+    assert p["context_comparison"]["checks"]["mode"]["status"] == "missing"
+    assert p["context_comparison"]["identity_differences"]
+    current = calibration();current["combat_calibration"]["mode"] = "single_target_300"
+    ref["combat_calibration"]["target_spec"] = "test_spec"
+    assert comparison(current, ref, "native")["pairs"][0]["status"] == "incompatible_context"
+
+
 def test_missing_component_is_unknown_not_zero():
     ref = calibration(1000)
     ref["combat_calibration"]["bots"][0]["spell_damage"][0]["spell_id"] = 11

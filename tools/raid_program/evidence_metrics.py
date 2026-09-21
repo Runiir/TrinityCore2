@@ -23,6 +23,11 @@ def positive(value):
     return value
 
 
+def accumulate_metric(row, key, value):
+    value = number(value)
+    row[key] = None if row[key] is None or value is None else row[key] + value
+
+
 def compact_stats(stats):
     return {k: v for k, v in stats.items()
             if isinstance(v, (int, float, bool)) and k not in
@@ -165,18 +170,18 @@ def simulator_actor(document, player_index=0):
         row = a["components"].setdefault(key, {"spell_id": identity.get("id"), "damage": 0,
             "ordinary_casts": 0, "triggered_copies": 0, "other_tagged_casts": 0,
             "pet_casts": 0, "ticks": 0, "crit_ticks": 0, "hits": 0, "crits": 0, "pet_damage": 0, "copy_damage": 0})
-        damage = number(m.get("damage")) or 0
-        row["damage"] += damage
+        damage = number(m.get("damage"))
+        accumulate_metric(row, "damage", damage)
         tag = identity.get("tag", 0)
         pet = metric.get("source", {}).get("kind") == "pet"
         category = "pet_casts" if pet else "triggered_copies" if tag == 71086 else "other_tagged_casts" if tag else "ordinary_casts"
-        row[category] += number(m.get("casts")) or 0
+        accumulate_metric(row, category, m.get("casts"))
         for k in ("ticks", "crit_ticks", "hits", "crits"):
-            row[k] += number(m.get(k)) or 0
+            accumulate_metric(row, k, m.get(k))
         if pet:
-            row["pet_damage"] += damage
+            accumulate_metric(row, "pet_damage", damage)
         if tag == 71086:
-            row["copy_damage"] += damage
+            accumulate_metric(row, "copy_damage", damage)
     a["gates"] = {k: {f: v for f, v in (document.get(k) or {}).items()
                        if f in ("status", "reason", "comparison_admitted", "tuning_admitted")}
                   for k in ("gear_parity", "effective_stat_parity", "consumable_parity", "dps_tuning_gate", "total_dps_comparison_gate")}

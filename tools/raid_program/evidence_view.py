@@ -67,11 +67,29 @@ def paired_components(current, reference):
     return sorted(rows, key=lambda r: (r["apparent_gap_dps"] is None, -abs(r["apparent_gap_dps"] or 0), r["key"]))
 
 
-def compare_pair(current, reference):
+def pair_context(current, reference, kind):
+    fields = {"spec": (current.get("spec"), reference.get("spec")),
+              "role": (current.get("role"), reference.get("role")),
+              "mode": (current.get("identity", {}).get("mode"), reference.get("identity", {}).get("mode"))}
+    checks = {key: {"current": a, "reference": b,
+                    "status": "missing" if a is None or b is None else "match" if a == b else "mismatch"}
+              for key, (a, b) in fields.items()}
+    mismatch = kind == "native" and any(c["status"] == "mismatch" for c in checks.values())
+    changes = [{"field": key, "current": current.get("identity", {}).get(key),
+                "reference": reference.get("identity", {}).get(key)}
+               for key in ("server_epoch", "attempt_id", "cohort_id", "scenario_id", "capture_id", "source")
+               if current.get("identity", {}).get(key) != reference.get("identity", {}).get(key)]
+    return {"status": "incompatible_context" if mismatch else "diagnostic_only",
+            "checks": checks, "identity_differences": changes,
+            "interpretation": "Run identities normally differ between experiments. Same GUID does not prove same spec, role, setup or scenario. Missing checks do not establish comparability."}
+
+
+def compare_pair(current, reference, kind="native"):
     rows = paired_components(current, reference)
     gap = scalar_delta(reference["dps"], current["dps"])
     known = [r["apparent_gap_dps"] for r in rows if r["apparent_gap_dps"] is not None]
     signed = sum(known)
+    context = pair_context(current, reference, kind)
     return {"current": {k: v for k, v in current.items() if k != "components"},
             "reference": {k: v for k, v in reference.items() if k != "components"},
             "delta_dps_current_minus_reference": scalar_delta(current["dps"], reference["dps"]),
@@ -81,7 +99,7 @@ def compare_pair(current, reference):
                 "component_gains_dps": -sum(x for x in known if x < 0), "signed_component_gap_dps": signed,
                 "unattributed_residual_dps": scalar_delta(gap, signed),
                 "basis": "reference minus current; missing components and denominator differences remain residual"},
-            "components": rows, "status": "diagnostic_only",
+            "components": rows, "status": context["status"], "context_comparison": context,
             "limitations": ["Apparent gaps do not estimate recoverable DPS or establish patch causality.",
                 "Different fight lengths, setup, duties and phase coverage require review before performance acceptance.",
                 "Literal spell IDs are aligned; unmapped aliases remain explicit."]}
@@ -117,7 +135,7 @@ def comparison(current_doc, reference_doc, kind, actor=None, reference_actor=Non
             if b is None:
                 report["unmatched_current_actors"].append(key)
             else:
-                report["pairs"].append(compare_pair(a, b))
+                report["pairs"].append(compare_pair(a, b, kind))
         return report
     if actor is not None or len(current) == 1:
         a = select_actor(current, actor)
@@ -128,11 +146,11 @@ def comparison(current_doc, reference_doc, kind, actor=None, reference_actor=Non
             b = select_actor(reference, mapped_actor)
         else:
             b = simulator_actor(reference_doc, player_index)
-        report["pairs"].append(compare_pair(a, b))
+        report["pairs"].append(compare_pair(a, b, kind))
     elif reference is not None:
         for key in current:
             if key in reference:
-                report["pairs"].append(compare_pair(current[key], reference[key]))
+                report["pairs"].append(compare_pair(current[key], reference[key], kind))
         report["unmatched_current_actors"] = sorted(set(current) - set(reference))
         report["unmatched_reference_actors"] = sorted(set(reference) - set(current))
     else:
@@ -176,9 +194,10 @@ def compact_comparison(report, top=8, actor=None, offset=0, limit=10):
                 "delta_dps_current_minus_reference": p["delta_dps_current_minus_reference"],
                 "delta_hps_current_minus_reference": p["delta_hps_current_minus_reference"],
                 "reconciliation": p["reconciliation"], "setup_difference_count": len(p["setup_differences"]),
-                "detail": "Select --actor for component and setup differences", "status": "diagnostic_only"})
+                "detail": "Select --actor for component and setup differences", "status": p["status"],
+                "context_checks": p["context_comparison"]["checks"]})
             continue
-        item = {k: p[k] for k in ("status", "delta_dps_current_minus_reference", "delta_hps_current_minus_reference", "reconciliation", "limitations")}
+        item = {k: p[k] for k in ("status", "context_comparison", "delta_dps_current_minus_reference", "delta_hps_current_minus_reference", "reconciliation", "limitations")}
         for key in ("current", "reference"):
             item[key] = {k: p[key].get(k) for k in ("actor", "spec", "dps", "hps", "damage", "window", "identity", "gates", "gate_binding", "iterations", "dps_distribution", "limitations") if k in p[key]}
             item[key]["activity"] = brief_activity(p[key].get("activity", {}))
