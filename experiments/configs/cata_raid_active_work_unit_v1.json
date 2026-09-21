@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 331,
+    "revision": 341,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -632,7 +632,8 @@
       "owner_damage_attribution_before_policy_tuning": 6,
       "owner_blood_priority_inversion": 7,
       "owner_balance_post_starfall_throughput_regression": 2,
-      "owner_calibration_post_window_contamination": 2
+      "owner_calibration_post_window_contamination": 2,
+      "owner_holy_paladin_profile_incomplete": 1
     },
     "history": [
       {
@@ -6364,6 +6365,168 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 331,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "review",
+        "to": "diagnose",
+        "event": {
+          "revision": 331,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "rework",
+          "reason": "The Holy Paladin patch has an independent approval, but the saved supporting workflow review is stale for the current master checkout. Replan the same native unit with a fresh hash-bound support review before retaining the review transition.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_rework_20260921.json",
+            "sha256": "e18aac082169852418a0fb284cb72f6490d473e5c5b8531cd009a022ef396c62"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 332,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 332,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_rework_20260921.json",
+            "sha256": "a9d3419fbde4d0e9a80e516d807ab1f5ae90d2ef06e1f340a9aa959ace1bd923"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 333,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 333,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-01-retest-20260921"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 334,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 334,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "refresh_support",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_refresh_20260921.json",
+            "sha256": "5d1572d2cb89276e424c2df5b54bfa90fde84d13dbdd6691e60d2392d4d475d4"
+          },
+          "claim_token": "06c7d6aba83a9edf2d75381fa8a4698dae223b858a2428eb89ccbdc093d04f18"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 335,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 335,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-01-retest-20260921"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 336,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 336,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "refresh_support",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_refresh_full2_20260921.json",
+            "sha256": "f2ec90b265dc13f40bf3242f5a73282d42b244772c117d256a241812d16038db"
+          },
+          "claim_token": "d8fbc7f66fad9c9dbfb738d9b237bcedd1044aae743d5b33b09ef33e4b453f61"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 337,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 337,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-01-retest-20260921"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 338,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 338,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_refresh_full2_20260921.json",
+            "sha256": "4672fa9dd7703a805c3c77130fea5cf56177218a4daa3d290820b36154163197"
+          },
+          "claim_token": "824124773b10bafb3e26cfe1da8fc0902894cc0e6cf10c6d23f6c72675c6a278"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 339,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 339,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_20260921.json",
+            "sha256": "3e0eb38e6a7491bd13630c77e30a30b1587a1204e7787a14bb63b98728614d87"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 340,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "revision": 340,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-01-build-20260921"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -6372,7 +6535,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "12cf09bbf3642e569c48ba1a35c228b49e951178",
+    "source_base_commit": "b4971aefba98e860d3e081cbce7ce9aa771fda84",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
@@ -6385,6 +6548,14 @@
       {
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_support_refresh_20260921.json",
         "sha256": "1f5ce8f72c9aa047a6784a6e5b38fe1b77675a1b6d58fd7a1084c4209c02949f"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_refresh_20260921.json",
+        "sha256": "5d1572d2cb89276e424c2df5b54bfa90fde84d13dbdd6691e60d2392d4d475d4"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_refresh_full2_20260921.json",
+        "sha256": "f2ec90b265dc13f40bf3242f5a73282d42b244772c117d256a241812d16038db"
       }
     ],
     "assignment": {
@@ -6437,38 +6608,55 @@
         }
       },
       "supporting_review": {
-        "path": "artifacts/cata_raid_program/class_calibration_scope_review_20260921.receipt.json",
-        "sha256": "25560bf6f8f7d72d85942b0313766e6d00abfdfb3bf52bd3b59252f66fdd43d6"
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_full2_receipt_20260921.json",
+        "sha256": "805c65f5d86ddc9d07b54b907ad9e21eb8a1fe7acb00e257455b699002ecd1af"
       },
       "supporting_files": {
         ".githooks/pre-commit": "f8ba1908c7e1db00d29ec2c85eb447ed57467ce071ba9e195166c66d99b7c341",
+        "experiments/configs/bot_advice_smoke_cases_v1.json": "fe1b02f0951834bdd7d60cc9fef90f0746c0a35493e1ff6d74b91fe6b361b967",
         "experiments/configs/class_calibration_catalog_v1.json": "0cb90b7d2ac967c45fc8e3875ffa9bd89c674c94da31b4c23ffa42e3c83ae7cf",
+        "tests/test_bot_improvement_advice.py": "1b8aa67e20e1b1013f2db222709ffe78bb04213eb1521b420e56076dd3a778e2",
         "tests/test_calibration_reuse.py": "70e04719082281c3124a23952e7f6ed59b55d86be2047684be01f3f80fbb4c89",
-        "tests/test_development_graph.py": "ba7655e4645cb2f744c92b46c9b50fef85529d0ee7af2109ccdaa85b183a4b3d",
+        "tests/test_development_graph.py": "99f190b6923191a033c338b8d255ab54c983001f26cd90e329c92abae5c814e7",
         "tests/test_dps_gate.py": "88650ddf949523ced68a0132ba9432055e241f2c2eb316a8795d5a3eb21c4cf3",
         "tests/test_module_size.py": "76daa60589198591e49210b1eea119d38829f2319ad0f0dbbb8abfad1b6a1d1b",
+        "tests/test_worker_precommit.py": "f00e1b0c3013e7552256c4943ae88847067e4c117f2795316b6fc097b815f5f7",
+        "tools/bot_ml/analyze_magmaw_trace.py": "e498b3920c79f5dbc7bdf4406a1435bed0460b591f6e5200dc644be5d70af12c",
+        "tools/raid_program/bot_improvement_advice.py": "58cdd02fb47a254fbc16fa3e5b620d85e6953f6432a2728a648279270c5d6e78",
         "tools/raid_program/calibration_reuse.py": "ca2761f23519042a93cbe7dff1692cdb8b736fb3c2f0c006dd69627a0af74b39",
-        "tools/raid_program/development_graph.py": "3d62ef943a43b785ed71a8c0b2e741eba84ab993d288499db591bd5799022298",
+        "tools/raid_program/development_graph.py": "5c9ef92ab35a6f1db59925d4157d93dee495b2373e9901b2879b24380c1bfa8c",
         "tools/raid_program/dps_gate.py": "32bf48894c846798686f8e7b94d8f94951e1d040ebfa17037cb1a399677c7edb",
-        "tools/raid_program/module_size.py": "f869a2e497fc93e689e0e3aa9b23f373bcab27eea3d0084aad3aec25c03addbf"
+        "tools/raid_program/evaluate_bot_advice.py": "d2709ba0900bd6332df5034f81ade964397b0cc3e57a6dd0f42f257444176698",
+        "tools/raid_program/module_size.py": "f869a2e497fc93e689e0e3aa9b23f373bcab27eea3d0084aad3aec25c03addbf",
+        "tools/raid_program/worker_precommit.py": "16d7208c4dbf68ee2dd486b322718cdf8bc978eeb2091e892825638fad8e2d06"
       }
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_20260921.json",
-        "sha256": "7a6de77a63a6ef820b63ab055a99960eac4b3db9e23d2681c5c92db380076168"
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_rework_20260921.json",
+        "sha256": "a9d3419fbde4d0e9a80e516d807ab1f5ae90d2ef06e1f340a9aa959ace1bd923"
       },
       "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_result_checkpoint_20260921.json",
-        "sha256": "447443c7091e4953789c9278417bceaa767af93cfbb9884c9d99d4f2b62078fc"
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_refresh_full2_20260921.json",
+        "sha256": "4672fa9dd7703a805c3c77130fea5cf56177218a4daa3d290820b36154163197"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_20260921.json",
+        "sha256": "3e0eb38e6a7491bd13630c77e30a30b1587a1204e7787a14bb63b98728614d87"
       }
     },
     "tested_files": {
       "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
       "tests/test_holy_paladin_capability_profile.py": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
     },
-    "tested_commit": "cef6fae26313851d468a527665ff019f6919eccb",
-    "implementer": "codex-magmaw-holy-paladin-capability-profile-01-implement"
+    "tested_commit": "b4971aefba98e860d3e081cbce7ce9aa771fda84",
+    "implementer": "coordinator-magmaw-holy-paladin-capability-profile-01-retest-20260921",
+    "claim": {
+      "owner": "coordinator-magmaw-holy-paladin-capability-profile-01-build-20260921",
+      "token": "39579e62b30e6acd5eac38d83e605897afa170c0fe131dc4db03fe36fbf5c013",
+      "operation_id": "39579e62b30e6acd5eac38d83e605897afa170c0fe131dc4db03fe36fbf5c013",
+      "stage": "build"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

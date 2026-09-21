@@ -1,0 +1,28 @@
+{
+  "file_hashes": {
+    "tests/test_development_graph.py": "99f190b6923191a033c338b8d255ab54c983001f26cd90e329c92abae5c814e7",
+    "tools/raid_program/development_graph.py": "5c9ef92ab35a6f1db59925d4157d93dee495b2373e9901b2879b24380c1bfa8c"
+  },
+  "findings": [
+    {
+      "finding": "Safe advisory-only drift: deterministic transitions, unchanged requirements, receipt producer rejection, independent review, build, validation, publication, and model-advice acceptance gates remain authoritative.",
+      "rank": 1,
+      "severity": "informational"
+    }
+  ],
+  "limits": [
+    "No native gameplay or live acceptance claim."
+  ],
+  "proof": {
+    "final_message_bytes": 582,
+    "final_message_sha256": "5ca2de4af39155244b9a50d3e3fb110d9f15c9784375c0463cd661c11c24adb4",
+    "prefix_bytes": 92455,
+    "prefix_sha256": "735ec6d7476c07476a71920e57bdfeb74ac89d953273f43df27bf76873eac099",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T19-51-57-01a0c4e1-a61e-76a0-acb4-a7f9b9f5e170.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c4e1-a61e-76a0-acb4-a7f9b9f5e170"
+  },
+  "reviewer_session_id": "01a0c4e1-a61e-76a0-acb4-a7f9b9f5e170",
+  "schema": "cata_raid_review_report_v1",
+  "verdict": "approved"
+}

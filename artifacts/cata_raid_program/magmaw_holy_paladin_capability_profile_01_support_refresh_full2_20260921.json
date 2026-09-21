@@ -1,0 +1,24 @@
+{
+  "schema": "cata_raid_program_support_refresh_receipt_v1",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "stage": "implement",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "reason": "Bind the complete 17-path coordination source delta to the corrected independent review, preserving the native owned files and requiring tests and review to be rerun.",
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_full2_receipt_20260921.json",
+    "sha256": "805c65f5d86ddc9d07b54b907ad9e21eb8a1fe7acb00e257455b699002ecd1af"
+  },
+  "owned_file_hashes": {
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
+    "tests/test_holy_paladin_capability_profile.py": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
+  },
+  "prior_commit": "b4971aefba98e860d3e081cbce7ce9aa771fda84",
+  "prior_operation": {
+    "operation_id": "d8fbc7f66fad9c9dbfb738d9b237bcedd1044aae743d5b33b09ef33e4b453f61",
+    "ownership_checked": true,
+    "active_operation": false,
+    "completed_operation": false,
+    "reusable_receipt_found": false
+  }
+}

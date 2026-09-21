@@ -1,0 +1,39 @@
+{
+  "file_hashes": {
+    ".githooks/pre-commit": "f8ba1908c7e1db00d29ec2c85eb447ed57467ce071ba9e195166c66d99b7c341",
+    "experiments/configs/bot_advice_smoke_cases_v1.json": "fe1b02f0951834bdd7d60cc9fef90f0746c0a35493e1ff6d74b91fe6b361b967",
+    "experiments/configs/class_calibration_catalog_v1.json": "0cb90b7d2ac967c45fc8e3875ffa9bd89c674c94da31b4c23ffa42e3c83ae7cf",
+    "tests/test_bot_improvement_advice.py": "1b8aa67e20e1b1013f2db222709ffe78bb04213eb1521b420e56076dd3a778e2",
+    "tests/test_calibration_reuse.py": "70e04719082281c3124a23952e7f6ed59b55d86be2047684be01f3f80fbb4c89",
+    "tests/test_development_graph.py": "99f190b6923191a033c338b8d255ab54c983001f26cd90e329c92abae5c814e7",
+    "tests/test_dps_gate.py": "88650ddf949523ced68a0132ba9432055e241f2c2eb316a8795d5a3eb21c4cf3",
+    "tests/test_module_size.py": "76daa60589198591e49210b1eea119d38829f2319ad0f0dbbb8abfad1b6a1d1b",
+    "tests/test_worker_precommit.py": "f00e1b0c3013e7552256c4943ae88847067e4c117f2795316b6fc097b815f5f7",
+    "tools/bot_ml/analyze_magmaw_trace.py": "e498b3920c79f5dbc7bdf4406a1435bed0460b591f6e5200dc644be5d70af12c",
+    "tools/raid_program/bot_improvement_advice.py": "58cdd02fb47a254fbc16fa3e5b620d85e6953f6432a2728a648279270c5d6e78",
+    "tools/raid_program/calibration_reuse.py": "ca2761f23519042a93cbe7dff1692cdb8b736fb3c2f0c006dd69627a0af74b39",
+    "tools/raid_program/development_graph.py": "5c9ef92ab35a6f1db59925d4157d93dee495b2373e9901b2879b24380c1bfa8c",
+    "tools/raid_program/dps_gate.py": "32bf48894c846798686f8e7b94d8f94951e1d040ebfa17037cb1a399677c7edb",
+    "tools/raid_program/evaluate_bot_advice.py": "d2709ba0900bd6332df5034f81ade964397b0cc3e57a6dd0f42f257444176698",
+    "tools/raid_program/module_size.py": "f869a2e497fc93e689e0e3aa9b23f373bcab27eea3d0084aad3aec25c03addbf",
+    "tools/raid_program/worker_precommit.py": "16d7208c4dbf68ee2dd486b322718cdf8bc978eeb2091e892825638fad8e2d06"
+  },
+  "findings": [],
+  "limits": [
+    "Review was read-only and limited to the 17 supplied paths; all supplied hashes matched.",
+    "126 support tests passed; compilation and diff checks passed.",
+    "No live encounter validation, provider correctness, native Holy Paladin SQL/tests, or unrelated dirty worktree artifacts were assessed."
+  ],
+  "proof": {
+    "final_message_bytes": 2143,
+    "final_message_sha256": "7919b783369e35c0b4f473b734d86b766705811f9842bfb9e4361056cdee2d2b",
+    "prefix_bytes": 2100849,
+    "prefix_sha256": "24d90fdddd10188950813facaf2641edf7c94e221f51c12715af1107ee2c6940",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T20-11-15-01a0c4f3-5123-7022-b33f-6eca6fe079f9.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c4f3-5123-7022-b33f-6eca6fe079f9"
+  },
+  "reviewer_session_id": "01a0c4f3-5123-7022-b33f-6eca6fe079f9",
+  "schema": "cata_raid_review_report_v1",
+  "verdict": "approved"
+}

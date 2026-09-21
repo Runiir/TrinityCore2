@@ -1,0 +1,84 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw:holy_paladin_capability_profile_01_replan_20260921",
+  "stage": "plan",
+  "hypothesis": "The first broken Holy Paladin edge is missing profile coverage, not native eligibility: the existing resolver can emit Word of Glory 85673, but the loaded healer profile has no Holy Power spender. Add only that profile action with the existing holy_power_3 and healer triage gates.",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "objective": "Repair one proven Holy Paladin action-profile capability edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+  "first_broken_edge": "owner_holy_paladin_profile_incomplete",
+  "owned_files": [
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql",
+    "tests/test_holy_paladin_capability_profile.py"
+  ],
+  "forbidden_changes": [
+    "Do not change HolyPaladinResolver.cpp, shared candidate predicates, encounter scripts, movement authority or tank assignments.",
+    "Do not add Beacon, Aura Mastery, Divine Plea or Light of Dawn in this bounded first repair; route a later proven edge separately.",
+    "Do not alter Holy Power, mana, healer triage, target selection or spell legality semantics outside the new profile row.",
+    "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership or raid composition.",
+    "Do not claim actor_30004, another actor, performance, raid clear or parent completion from the plan or focused test."
+  ],
+  "acceptance_conditions": [
+    "The migration is idempotent and adds exactly one Word of Glory 85673 action to the Holy Paladin healer profile without deleting or rewriting the existing three rows.",
+    "The new row is a lowest-ally heal_fast action with the holy_power_3 mechanic tag and the existing healer triage threshold; no unrelated profile key changes.",
+    "The focused fixture executes the migration against native-shaped profile tables and proves row identity, resource tag, triage gate, target selector and preservation of the baseline profile rows.",
+    "The change is independently reviewed, built with the frozen host12 policy and exercised in the declared healer role validation before any actor or raid acceptance is considered."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
+  ],
+  "base_commit": "12cf09bbf3642e569c48ba1a35c228b49e951178",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "healer_controlled_damage_300",
+    "actor_id": "30004",
+    "spec": "holy_paladin",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_receipt_20260921.json",
+    "sha256": "723b7d569fa115a1e9203fa5f77d583b388559ea090f3830d9bbd79eb116d5a1"
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_20260921.json",
+      "sha256": "fe820ec368d0e29a5304573693f92667fc19c884996dad6cf3b399179544e593"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_receipt_20260921.json",
+      "sha256": "723b7d569fa115a1e9203fa5f77d583b388559ea090f3830d9bbd79eb116d5a1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_adjudication_20260921.json",
+      "sha256": "9d1bd8fba65f5f3870fcb86fd43235fd0e0bc7220f8546217ec44a1eec8afcd9"
+    }
+  ],
+  "acceptance_claim": "Plan only. This receipt claims a bounded Word of Glory profile hypothesis and no native, live, actor, performance, raid-clear or parent acceptance.",
+  "advice": {}
+}

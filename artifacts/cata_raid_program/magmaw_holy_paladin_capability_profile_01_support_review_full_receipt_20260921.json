@@ -1,0 +1,30 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_full_20260921.json",
+      "sha256": "9c8a0ecb2c8a605eb6f9e664d8820296ae41f09d1158163b26b8df2c4e788271"
+    }
+  ],
+  "file_hashes": {
+    ".githooks/pre-commit": "f8ba1908c7e1db00d29ec2c85eb447ed57467ce071ba9e195166c66d99b7c341",
+    "experiments/configs/class_calibration_catalog_v1.json": "0cb90b7d2ac967c45fc8e3875ffa9bd89c674c94da31b4c23ffa42e3c83ae7cf",
+    "tests/test_calibration_reuse.py": "70e04719082281c3124a23952e7f6ed59b55d86be2047684be01f3f80fbb4c89",
+    "tests/test_development_graph.py": "99f190b6923191a033c338b8d255ab54c983001f26cd90e329c92abae5c814e7",
+    "tests/test_dps_gate.py": "88650ddf949523ced68a0132ba9432055e241f2c2eb316a8795d5a3eb21c4cf3",
+    "tests/test_module_size.py": "76daa60589198591e49210b1eea119d38829f2319ad0f0dbbb8abfad1b6a1d1b",
+    "tools/raid_program/calibration_reuse.py": "ca2761f23519042a93cbe7dff1692cdb8b736fb3c2f0c006dd69627a0af74b39",
+    "tools/raid_program/development_graph.py": "5c9ef92ab35a6f1db59925d4157d93dee495b2373e9901b2879b24380c1bfa8c",
+    "tools/raid_program/dps_gate.py": "32bf48894c846798686f8e7b94d8f94951e1d040ebfa17037cb1a399677c7edb",
+    "tools/raid_program/module_size.py": "f869a2e497fc93e689e0e3aa9b23f373bcab27eea3d0084aad3aec25c03addbf"
+  },
+  "kind": "review",
+  "producer": "01a0c4eb-aff7-79f3-ab0c-8703932e6193",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_full_20260921.json",
+    "sha256": "9c8a0ecb2c8a605eb6f9e664d8820296ae41f09d1158163b26b8df2c4e788271"
+  },
+  "reviewer_session_id": "01a0c4eb-aff7-79f3-ab0c-8703932e6193",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "verdict": "approved"
+}

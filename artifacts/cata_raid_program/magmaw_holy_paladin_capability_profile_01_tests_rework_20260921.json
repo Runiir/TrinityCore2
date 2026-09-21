@@ -1,0 +1,32 @@
+{
+  "schema": "cata_raid_program_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator-magmaw-holy-paladin-capability-profile-01-retest-20260921",
+  "authority": "coordinator_attestation",
+  "operation_id": "06c7d6aba83a9edf2d75381fa8a4698dae223b858a2428eb89ccbdc093d04f18",
+  "task_id": "magmaw:holy_paladin_capability_profile_01_replan_20260921",
+  "stage": "implement",
+  "file_hashes": {
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
+    "tests/test_holy_paladin_capability_profile.py": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_holy_paladin_capability_profile.py",
+      "exit_status": 0,
+      "summary": "3 passed in 0.05s"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_rework_20260921.json",
+      "sha256": "a9d3419fbde4d0e9a80e516d807ab1f5ae90d2ef06e1f340a9aa959ace1bd923"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_receipt_20260921.json",
+      "sha256": "723b7d569fa115a1e9203fa5f77d583b388559ea090f3830d9bbd79eb116d5a1"
+    }
+  ],
+  "advice": {}
+}

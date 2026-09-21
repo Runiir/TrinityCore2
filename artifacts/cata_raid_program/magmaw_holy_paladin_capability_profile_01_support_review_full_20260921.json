@@ -1,0 +1,35 @@
+{
+  "file_hashes": {
+    ".githooks/pre-commit": "f8ba1908c7e1db00d29ec2c85eb447ed57467ce071ba9e195166c66d99b7c341",
+    "experiments/configs/class_calibration_catalog_v1.json": "0cb90b7d2ac967c45fc8e3875ffa9bd89c674c94da31b4c23ffa42e3c83ae7cf",
+    "tests/test_calibration_reuse.py": "70e04719082281c3124a23952e7f6ed59b55d86be2047684be01f3f80fbb4c89",
+    "tests/test_development_graph.py": "99f190b6923191a033c338b8d255ab54c983001f26cd90e329c92abae5c814e7",
+    "tests/test_dps_gate.py": "88650ddf949523ced68a0132ba9432055e241f2c2eb316a8795d5a3eb21c4cf3",
+    "tests/test_module_size.py": "76daa60589198591e49210b1eea119d38829f2319ad0f0dbbb8abfad1b6a1d1b",
+    "tools/raid_program/calibration_reuse.py": "ca2761f23519042a93cbe7dff1692cdb8b736fb3c2f0c006dd69627a0af74b39",
+    "tools/raid_program/development_graph.py": "5c9ef92ab35a6f1db59925d4157d93dee495b2373e9901b2879b24380c1bfa8c",
+    "tools/raid_program/dps_gate.py": "32bf48894c846798686f8e7b94d8f94951e1d040ebfa17037cb1a399677c7edb",
+    "tools/raid_program/module_size.py": "f869a2e497fc93e689e0e3aa9b23f373bcab27eea3d0084aad3aec25c03addbf"
+  },
+  "findings": [
+    "The in-scope code drift is advisory/control-flow-only: optional advice validation, an informational model-advice message, and stricter rejection of bot_improvement_advice as an acceptance producer.",
+    "Deterministic transition, independent review, build, validation, DPS, publication, and source-binding gates remain enforced.",
+    "All supplied hashes match. The four listed test modules pass with 105 tests, and module-size validation passes."
+  ],
+  "limits": [
+    "Review is limited to the ten supplied paths and their stated diff from commit 5cf757d8ab1a; other repository changes were not evaluated.",
+    "Native owned files, native gameplay correctness, and live Magmaw acceptance were excluded."
+  ],
+  "proof": {
+    "final_message_bytes": 1758,
+    "final_message_sha256": "e66d834c672efb8d44aec5299d7c9d56d91ae8fde8bf7e8109ff141851475ed9",
+    "prefix_bytes": 744620,
+    "prefix_sha256": "0263cba2d0c1dfea356ca8b4d7be0fb2bb186eca829e81b4c662c3faff59174d",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T20-02-55-01a0c4eb-aff7-79f3-ab0c-8703932e6193.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c4eb-aff7-79f3-ab0c-8703932e6193"
+  },
+  "reviewer_session_id": "01a0c4eb-aff7-79f3-ab0c-8703932e6193",
+  "schema": "cata_raid_review_report_v1",
+  "verdict": "approved"
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "raid_workloop_rework_receipt_v1",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "stage": "review",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "reason": "The Holy Paladin patch has an independent approval, but the saved supporting workflow review is stale for the current master checkout. Replan the same native unit with a fresh hash-bound support review before retaining the review transition.",
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_review_receipt_20260921.json",
+    "sha256": "723b7d569fa115a1e9203fa5f77d583b388559ea090f3830d9bbd79eb116d5a1"
+  },
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false
+}

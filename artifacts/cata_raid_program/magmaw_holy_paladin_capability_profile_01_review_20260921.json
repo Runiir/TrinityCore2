@@ -1,0 +1,27 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
+    "tests/test_holy_paladin_capability_profile.py": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
+  },
+  "findings": [
+    "SQL is valid, idempotent, correctly ordered, resource-gated, triage-scoped, and limited to enabled Holy Paladin healer profiles; native healer validation remains required."
+  ],
+  "limits": [
+    "No native or live acceptance established."
+  ],
+  "proof": {
+    "final_message_bytes": 576,
+    "final_message_sha256": "22a6be971a3d0bf57663bb0b19c100764603068894c214900aacf79beee472d2",
+    "prefix_bytes": 104607,
+    "prefix_sha256": "956b121657aef51e523975a996b7e47c9ee5080d21a16ed37e48da3fd8c2caf5",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T19-46-27-01a0c4dc-9d7f-78e1-82f9-475d66b135ee.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c4dc-9d7f-78e1-82f9-475d66b135ee"
+  },
+  "reviewer_session_id": "01a0c4dc-9d7f-78e1-82f9-475d66b135ee",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "Targeted pytest passed: 3 tests."
+  ],
+  "verdict": "approved"
+}
