@@ -1,0 +1,105 @@
+{
+  "schema": "trinity_wowsims_rotation_mechanics_joined_review_v1",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "reference_class": "self_provided_baseline",
+  "sources": {
+    "native_capture": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_calibration_20260920.tar.gz",
+      "sha256": "8d476d33d1f662dc0490417c622a5d0c7f5ff2932fb5a69f93e684976c6fd1bd",
+      "runtime_member": "magmaw-balance-lunar-window-validation-20260920/balance_druid/report.json"
+    },
+    "wowsims_apl": {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/source_assets/90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2.apl.json",
+      "sha256": "90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2"
+    },
+    "wowsims_request": {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f.json",
+      "sha256": "7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f"
+    },
+    "wowsims_result": {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_results/b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8.json",
+      "sha256": "b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8"
+    },
+    "wowsims_compute_stats": {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/compute_stats/f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867.json",
+      "sha256": "f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867"
+    }
+  },
+  "identity": {
+    "actor_id": "30001",
+    "native_guid": 30540,
+    "spec": "balance_druid",
+    "gear_manifest_sha256": "67bc86c55fc10ee87228dd5aa6a4076b45fbd1009a82650712cee686fb4ea55a",
+    "native_profile_hash": "BF97FB2DAFCE3535A74B726C661F40BCB8B3B64144027ECA9082ED9F46A1F907"
+  },
+  "gates": {
+    "gear_parity": "match",
+    "effective_stat_parity": {
+      "status": "match",
+      "comparison_mode": "one_sided_minimum_for_monotonic_throughput_stats",
+      "expected_compute_stats": {
+        "intellect": 8998.605,
+        "spell_power": 11774.605,
+        "hit_rating": 289,
+        "crit_rating": 231,
+        "haste_rating": 2668,
+        "mastery_rating": 2257,
+        "spell_hit_pct": 17.0041233535,
+        "spell_crit_pct": 20.637894495,
+        "spell_speed_multiplier": 1.2687616842
+      },
+      "observed_scoring_start": {
+        "intellect": 10400,
+        "spell_power": 13176,
+        "hit_rating": 289,
+        "crit_rating": 231,
+        "haste_rating": 2668,
+        "mastery_rating": 2257,
+        "spell_hit_pct": 16.975,
+        "spell_crit_pct": 23.167,
+        "spell_speed_multiplier": 1.269
+      },
+      "interpretation": "Native startup intellect, spell power and spell crit are favorable under the self-provided baseline; ratings match and corrected spell speed differs by 0.0002383. No stat repair is justified."
+    },
+    "consumable_parity": "match",
+    "dps_tuning_gate": "admitted",
+    "total_dps_comparison_gate": "admitted"
+  },
+  "accounting": {
+    "reference_dps": 35447.58892725215,
+    "native_dps": 31544.056666666667,
+    "reference_gap_dps": 3903.5322605854853,
+    "unit04_to_unit05_delta_dps": -1041.24,
+    "unit05_vs_reference_component_losses_dps": 5557.5478333,
+    "unit05_vs_reference_component_gains_dps": 1027.8549152,
+    "unattributed_residual_dps": -626.1606576,
+    "largest_apparent_losses": [
+      {"spell_id": 5176, "name": "Wrath", "dps": 1893.6576723, "basis": "event_count_and_damage; copies remain combined natively"},
+      {"spell_id": 5570, "name": "Insect Swarm", "dps": 1311.8393822, "basis": "periodic_event_count_and_damage"},
+      {"spell_id": 93402, "name": "Sunfire", "dps": 1066.167104, "basis": "direct_and_periodic_event_count"},
+      {"spell_id": 2912, "name": "Starfire", "dps": 1028.609237, "basis": "event_count_and_damage"},
+      {"spell_id": 101085, "name": "Wrath_of_Tarecgosa", "dps": 257.2744379, "basis": "periodic_copy_row; native direct copies unresolved"}
+    ],
+    "apparent_gains_not_proven_causal": [
+      {"spell_id": 78674, "name": "Starsurge", "dps": 447.3938668},
+      {"spell_id": 50288, "name": "Starfall", "dps": 313.9069025},
+      {"spell_id": 8921, "name": "Moonfire", "dps": 266.5541459}
+    ],
+    "unknowns": [
+      "Native direct Dragonwrath copies keep the triggering spell ID and landed-copy attribution is unavailable.",
+      "Native pet/melee damage has no one-to-one WoWSims OtherActionAttack mapping in the retained report.",
+      "Candidate masks, typed rejects, Eclipse timestamps, and phase-specific action ownership are unavailable."
+    ]
+  },
+  "decision": {
+    "first_broken_edge": "owner_damage_attribution_before_policy_tuning",
+    "status": "retain_flow_006_accounting",
+    "next_action": "Rank signed event-count, per-event damage, time/phase, periodic, pet, and unresolved Dragonwrath losses before any Balance policy patch.",
+    "forbidden_inference": "Do not assign missing Dragonwrath damage or blame/revert Starfall from one aggregate total.",
+    "live_run_needed_now": false,
+    "performance_accepted": false,
+    "raid_clear": false
+  }
+}

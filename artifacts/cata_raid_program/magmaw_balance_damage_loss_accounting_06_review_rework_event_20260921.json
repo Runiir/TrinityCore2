@@ -1,0 +1,10 @@
+{
+  "revision": 211,
+  "action": "rework",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "reason": "Correct the stale owned-file comment, then rerun the required bounded tests and obtain review against the exact tested files.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_review_rework_reconciliation_20260921.json",
+    "sha256": "4c94c0b73eeec9c3944959f78ee2272e822f3f3bd49f163eda0fc19765e6c340"
+  }
+}

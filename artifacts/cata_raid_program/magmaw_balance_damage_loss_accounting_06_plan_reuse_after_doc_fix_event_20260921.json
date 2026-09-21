@@ -1,0 +1,9 @@
+{
+  "revision": 212,
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "action": "advance",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_rebind_20260921.json",
+    "sha256": "3e7a7b360a634c77e4252d52e32a76d86cca953ec0dd5a34e8de7cc35cf67c70"
+  }
+}

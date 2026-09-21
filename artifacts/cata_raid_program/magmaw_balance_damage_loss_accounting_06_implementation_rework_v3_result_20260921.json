@@ -1,0 +1,89 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "f83504d60079169a93d4cef8fcf7919e468851df3fa444874358d3e2359d0cb0",
+  "source_commit": "2f2f9e5cc38d7727b6f64b190dc17c559b8f2104",
+  "implementation": {
+    "status": "complete",
+    "summary": "The matching landed-damage callback consumes the synchronous copy marker. The later attempt callback classifies only accepted unresolved copies as accepted-without-landed and clears lifecycle flags. Native tests cover current-schema landed fields, accepted-without-landed fields, delayed/unmatched limitations, and the function-scoped aura guard; the frozen evidence workflow also enforces bounded output and repository-confined receipt paths.",
+    "gameplay_mutation": false,
+    "scoring_mutation": false,
+    "delayed_copy_policy": "delayed_or_unmatched_copy_damage_is_not_attributed"
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgr.h": "45b4bd87e7d0aadabc299c918af38c9bd616272c71b39c2b78aef83310b382d1",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp": "04e3e15f810105eef36190168268c18078609d6f56b04a35ccd67b6640d7dc66",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "897349f10ea311ffc2fdde7e34825bbd6ff264a7eb1708a3e52c9dbc301bed13",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "8a78a203b82cdf43a3c29d6dfebeecde70b21b5fee96baad64a1be2968c69e7f",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp": "5c7f1c8caddf0dafd6f53c65b7c23b00c2127077e171b2f62424a5a5c97bf9d4",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "5477e5659a119fcbcdafad8e06d96c8944ac7b2fd95cb47222476ce6ef4d75c3",
+    "tools/bot_ml/review_rotation_mechanics.py": "b643e7dfa19cfd0e032d2145d352fa78760f7b42b30d387d7fda923443f9ded7",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py": "ff0d286773eac7de0081b9a8791d94c69ed03b3a999408a45f30044db76afcd9"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+      "exit_status": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+      "exit_status": 0,
+      "summary": "6 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_evidence_*.py",
+      "exit_status": 0,
+      "summary": "36 passed"
+    }
+  ],
+  "historical_failures": [
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_json_module.py",
+      "exit_status": 1,
+      "classification": "pre_existing_unrelated_stale_refactor_assertion",
+      "detail": "The test expects AppendCalibrationBotActionJson in BotWorldPopulationMgr.cpp, while the current production call is in BotWorldPopulationMgrCalibrationRows.cpp. Observed result: 1 failed, 2 passed. This rework did not modify the stale test."
+    }
+  ],
+  "test_boundary": "Focused source, normalization, and evidence-workflow tests prove marker placement, report serialization, output budgeting, and path confinement only. They do not prove native compilation, actual callback ordering, terrain, encounter fidelity, DPS recovery, or raid success.",
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_rework_checkpoint_compact_20260921.json",
+        "sha256": "5d2c095049deb75c69c76d11bb297befc50600929d77cd2e73653efccd259599"
+      },
+      "adjudication": "Supports bounded scope, evidence, and non-acceptance claim. Advisory only."
+    },
+    "laya": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_rework_checkpoint_compact_20260921.json",
+        "sha256": "5d2c095049deb75c69c76d11bb297befc50600929d77cd2e73653efccd259599"
+      },
+      "adjudication": "Supports bounded scope, evidence, and non-acceptance claim at low confidence. Advisory only."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_rework_v3_20260921.json",
+      "sha256": "f1e010b6bd7ced75c5a2ae7a5278a0143bd7c5f4832f3b0276c5462ed38f798d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_rework_checkpoint_compact_20260921.json",
+      "sha256": "5d2c095049deb75c69c76d11bb297befc50600929d77cd2e73653efccd259599"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_report_v3_20260921.json",
+      "sha256": "b6736a89bf39453e5cc981d7c9f06b75a4f360f314b2cb43ed0b556a902a742d"
+    }
+  ],
+  "next_dependency": "Fresh independent review of the committed exact native files, then a gate-bearing queued build before any matched verification."
+}

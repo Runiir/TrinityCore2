@@ -1,0 +1,30 @@
+{
+  "task_id": "magmaw:balance_damage_loss_accounting_06_plan_drift_corrected_laya_20260921",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "objective": "Align the next Magmaw 10N action after the exact Balance join.",
+  "first_broken_edge": "owner_damage_attribution_before_policy_tuning",
+  "allowed_files": ["../../experiments/configs/cata_raid_active_work_unit_v1.json"],
+  "forbidden_changes": ["Do not accept actors or raid.", "Do not close requirements or switch to 25H.", "Do not patch policy, coefficients, DTR attribution, or denominators from totals."],
+  "acceptance_conditions": ["Keep signed loss attribution before policy tuning.", "Treat the self-provided-baseline gear, stats, and consumable gates as matched.", "Keep all requirements open."],
+  "observations": [
+    "Graph revision 205 is diagnose; parent completion is false.",
+    "Exact joined unit-05 gates are admitted: native higher int/SP are favorable, ratings match, and speed 1.269 matches corrected 1.26876.",
+    "Native 31544.057 versus reference 35447.589 leaves signed losses 5557.548, gains 1027.855, residual -626.161; direct DTR copies and pet mapping are unresolved."
+  ],
+  "evidence_excerpts": [
+    {"id":"join","path":"magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json","sha256":"41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08","excerpt":"Joined gates match; retain FLOW-006 attribution and unresolved DTR/pet residual."}
+  ],
+  "proposed_change": "Keep the accounting diagnosis; prepare one bounded event-count, per-event, timing, periodic, pet, and DTR attribution task before any policy patch.",
+  "acceptance_claim": "Plan alignment only; no repair, runtime, actor, raid, or parent completion is claimed.",
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "tests": [],
+  "required_test_commands": [],
+  "goal_context": {
+    "parent_objective": "Optimize all lawful Magmaw 10N bots against matched WCL and WoWSims.",
+    "latest_user_direction": "Implement Magmaw 10N bots through all gates.",
+    "current_plan": "Finish signed accounting, then implement, review, build, validate, publish, and continue all actors.",
+    "remaining_requirements": ["actor_30001..actor_30010", "comparisons", "potion_ownership", "survival_reference", "magmaw_10n"]
+  }
+}

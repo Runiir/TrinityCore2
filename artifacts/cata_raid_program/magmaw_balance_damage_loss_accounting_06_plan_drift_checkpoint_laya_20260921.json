@@ -1,0 +1,40 @@
+{
+  "task_id": "magmaw:balance_damage_loss_accounting_06_plan_drift_laya_20260921",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "objective": "Align the next Magmaw 10N work unit.",
+  "first_broken_edge": "owner_effective_stat_application_before_rotation_execution",
+  "allowed_files": ["../../experiments/configs/cata_raid_active_work_unit_v1.json"],
+  "forbidden_changes": [
+    "Do not accept actors or the raid.",
+    "Do not close requirements or switch to 25H.",
+    "Do not tune policy, coefficients, Dragonwrath attribution, or denominators before parity."
+  ],
+  "acceptance_conditions": [
+    "Route one bounded Balance native stat/setup parity diagnosis against ComputeStats.",
+    "Trace 75170 provenance and retain Dragonwrath copy damage as unknown.",
+    "Keep all actor, comparison, potion, survival, and raid requirements open."
+  ],
+  "observations": [
+    "Graph revision 205 is diagnose; parent completion is false and requirements remain open.",
+    "Unit-05 is 31544.057 DPS versus 35447.589 reference. Native int/SP/crit are 10400/13176/23.167%; ComputeStats is 8998.605/11774.605/20.6379%. Haste matches and speed 1.269 matches corrected 1.26876.",
+    "Unit-05 lacks unit-04's +580-intellect 75170 startup modifier. Native Dragonwrath landed-copy attribution is unavailable, so the gap cannot justify a spell repair."
+  ],
+  "evidence_excerpts": [
+    {"id":"graph","path":"../../experiments/configs/cata_raid_active_work_unit_v1.json","sha256":"dbf003f22046c3a088717dea77ce0d173df4480e5455b1da1ac1462f7c911c36","excerpt":"Revision 205; diagnose; open requirements."},
+    {"id":"review","path":"magmaw_balance_rotation_cadence_05_diagnosis_review_20260920.json","sha256":"fc1b414114a7eea96eae5d5ac60db6f4f51df6ac38836ad2d4e2c5cf6e9e78dd","excerpt":"Native runtime and ComputeStats parity are not joined; Dragonwrath copies are unresolved."},
+    {"id":"stats","path":"../../artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/compute_stats/f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867.json","sha256":"f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867","excerpt":"Exact Balance final stats are int 8998.605, SP 11774.605, crit 20.6379%, haste 2668, speed 1.26876 corrected."}
+  ],
+  "proposed_change": "Route to native scoring-start stat assembly and 75170 provenance, repair only the proven owner, then require focused tests and exact-300 validation before policy tuning.",
+  "acceptance_claim": "Plan alignment only; no repair, runtime, actor, raid, or parent completion is claimed.",
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "tests": [],
+  "required_test_commands": [],
+  "goal_context": {
+    "parent_objective": "Optimize all lawful Magmaw 10N bots against matched WCL and exact WoWSims evidence.",
+    "latest_user_direction": "Implement Magmaw 10N bots through all gates.",
+    "current_plan": "Repair proven Balance setup parity, then review, build, validate, publish, and continue all actors and raid work.",
+    "remaining_requirements": ["actor_30001..actor_30010", "affliction_comparison", "elemental_comparison", "potion_ownership", "survival_reference", "magmaw_10n"]
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "first_broken_edge": {
+    "edge": "owner_damage_attribution_before_policy_tuning",
+    "status": "observation_only_rework_after_independent_review",
+    "confidence": "high_for_marker_and_test_gaps_low_for_recoverable_dps_cause",
+    "counterexample": {
+      "native_dps": 31544.0566667,
+      "reference_dps": 35447.5889273,
+      "reference_gap_dps": 3903.5322606,
+      "native_dragonwrath_landed_attribution_available_before_patch": false
+    },
+    "evidence_limit": "Only synchronous matching copy damage is in scope; delayed or unmatched copied damage remains unknown and is not a DPS recovery claim."
+  },
+  "hypothesis": "The prior observer left CopyCastScopeActive set until the later proc-attempt callback, so the landed callback did not consume the marker. The tests also exercised only the legacy unavailable JSON shape. Consuming the marker at the first matching scored landed callback, keeping accepted-without-landed classification for an unresolved scope, and testing the current schema will make the observation contract auditable without changing gameplay, policy, or scoring.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tools/bot_ml/review_rotation_mechanics.py",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py"
+  ],
+  "forbidden_changes": [
+    "No gameplay, spell coefficient, stat, gear, consumable, proc-chance, target, priority, candidate-arbitration, encounter-script, route, WoWSims request/result, denominator, or scoring changes.",
+    "No live server launch, shard provisioning, raid validation, or new 300-second capture solely to redo the existing accounting.",
+    "Do not infer Dragonwrath damage from aggregate totals, assign delayed damage to a copy, or convert attribution resolution into actor or raid acceptance.",
+    "Do not change the frozen supporting workflow files or the unrelated stale calibration-bot JSON test."
+  ],
+  "acceptance_conditions": [
+    "Focused tests prove registration before the copy cast, consumption at the first matching landed callback, and no participation in the damage accumulator or action selection.",
+    "Current-schema fixtures cover nonzero landed copy fields, accepted-without-landed classification, and delayed/unmatched limitation while preserving per-bot binding.",
+    "Independent review approves the exact source and test delta as observation-only.",
+    "A clean gate-bearing native build is produced from the reviewed source before any matched verification is considered.",
+    "One matched exact-300 Balance calibration may verify the observation surface only; it cannot accept actor performance or Magmaw raid performance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py"
+  ],
+  "base_commit": "fe048a22b0f9dbd61e7e277bd9bfb36bfed2826b",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_rework_review_compact_20260921/summary.json",
+        "sha256": "eb17190b7951e396c11be5b6fed0efabc1087900fb631f7c187f544555d45455"
+      },
+      "adjudication": "Supports the same bounded correction; its insufficient-evidence claim judgment is retained because this plan claims no runtime acceptance."
+    },
+    "laya": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_rework_review_compact_20260921/summary.json",
+        "sha256": "eb17190b7951e396c11be5b6fed0efabc1087900fb631f7c187f544555d45455"
+      },
+      "adjudication": "Supports the same bounded correction at low confidence."
+    }
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_v2_20260921.json",
+    "sha256": "0424af273fc808acf4eabbd8ded1128da57c58264d507bca86ce76368338e270"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_native_review_report_v2_20260921.json",
+      "sha256": "dc88504cdeaac34444d0761b02a50993f0a0419da0509fd7a0fd8d93db2f04d8"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_rework_adjudication_20260921.json",
+      "sha256": "6b55069bc88097bcdf09add8fa2685d546ae3dc0da3657853f3b12fe8fd00f8c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json",
+      "sha256": "41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+    }
+  ],
+  "interpretation": "This replacement addresses only the independent review findings, preserves every parent actor and raid requirement, and forbids converting improved attribution into performance acceptance."
+}

@@ -1,0 +1,10 @@
+{
+  "action": "rework",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "revision": 215,
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_review_rework_reconciliation_v2_20260921.json",
+    "sha256": "06058d81cad2ee78be1c943b1b4e0fc919673b998ccaa5fe6c0a597bcb98edc7"
+  },
+  "reason": "Independent review requested a bounded rework of marker consumption, current-schema positive/negative tests, and the stale reconciliation receipt before another review."
+}

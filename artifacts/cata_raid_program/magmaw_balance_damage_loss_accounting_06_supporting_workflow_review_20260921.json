@@ -1,0 +1,16 @@
+{
+  "schema": "trinity_supporting_workflow_review_adapter_v1",
+  "reviewer_session_id": "gpt-5.6-luna-independent-review-evidence-views-20260921",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_report_20260921.json",
+    "sha256": "5960145f1a8eb3d7471c8f05e25987228bba29eaee7f3a43431ce296db245f34"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "tools/raid_program/evidence_events.py": "8921ce066896b8330995f2b822a3bbe60935554aa378618ea65a40fab926e37f",
+    "tools/raid_program/evidence_inputs.py": "3e33d45b1209baa96461a88fc44e7d229b1bcb93ec4d599f7fa57de86d585fda",
+    "tools/raid_program/evidence_metrics.py": "c17f029e05e0020f5c383370b506d212f8d6b824ed6b6b229b30908b79960bb5",
+    "tools/raid_program/evidence_view.py": "8457550c14819e4fcb42a56e0d7b77e3d27cb48c98509e7a3c6f61937c765323",
+    "tests/test_evidence_view.py": "f972b716248459d737fadec8d0479ca52923e7ad842071929338c62292697e8c"
+  }
+}

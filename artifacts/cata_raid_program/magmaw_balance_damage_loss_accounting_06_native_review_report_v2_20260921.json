@@ -1,0 +1,41 @@
+{
+  "kind": "native_review_report",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "independent_reviewer",
+  "reviewer_session_id": "codex-independent-review-magmaw-10n-dtr-20260921-72f144c0",
+  "verdict": "changes_requested",
+  "reviewed_commit": "72f144c05b61e996485e7a3eb598bd15c3622e76",
+  "scope": "observation-only Dragonwrath copy attribution",
+  "findings": [
+    {
+      "severity": "medium",
+      "file": "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+      "lines": "356-364",
+      "finding": "The matching landed callback records damage but does not consume the active marker; the later proc-attempt callback clears it regardless of whether damage landed.",
+      "required_fix": "Consume the active synchronous-copy marker in the matching landed callback and retain a separate accepted-without-landed path."
+    },
+    {
+      "severity": "medium",
+      "file": "tests/test_dragonwrath_copy_proc_diagnostic.py",
+      "lines": "89-178",
+      "finding": "The guard assertion can match the wrong function, and the normalization fixture only exercises the legacy unavailable schema with zero landed values.",
+      "required_fix": "Add scoped positive and negative lifecycle assertions plus current-schema landed, accepted-without-landed, and delayed/unmatched limitation fixtures."
+    },
+    {
+      "severity": "low",
+      "file": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_reconciliation_20260921.json",
+      "lines": "11-23",
+      "finding": "The receipt describes stale uncommitted source state even though the reviewed source is committed.",
+      "required_fix": "Refresh the reconciliation receipt for the reworked operation."
+    }
+  ],
+  "hash_verification": "All eight owned-file hashes matched the implementation checkpoint; no owned-file delta exists from the reviewed commit to coordinator HEAD.",
+  "tests_observed": [
+    "Dragonwrath diagnostic: 4 passed",
+    "Combat notifications module: 6 passed",
+    "Calibration rows module: 3 passed",
+    "Known stale calibration-bot JSON assertion remains unrelated and excluded"
+  ],
+  "approval_boundary": "This review does not approve native compilation, runtime ordering, DPS recovery, actor acceptance, raid success, or publication.",
+  "next_action": "Bounded implementation rework, retest, and a fresh independent review before queued_build."
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "raid_workloop_rework_reconciliation_v1",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "stage": "review",
+  "reason": "Independent review found that the landed-damage callback did not consume the active synchronous copy marker, the focused tests only exercised the legacy unavailable schema, and the prior reconciliation receipt described stale uncommitted source state. Rework only the observation lifecycle, current-schema tests, and reconciliation receipt before repeating review.",
+  "ownership_checked": true,
+  "active_operation": false,
+  "operation_id": null,
+  "completed_operation": false,
+  "reusable_receipt_found": false
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "implement_test_scope_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "stage": "implement",
+  "operation_id": "648aa2777a31ea043fcbadb3bbfbbc7e5ab183f4e6f2498495e276e61b2d55a8",
+  "owner": "coordinator-magmaw-10n-accounting-06",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The attribution source changes and two focused tests passed. The planned calibration-bot JSON test fails on an unrelated stale assertion that expects AppendCalibrationBotActionJson in the pre-refactor BotWorldPopulationMgr.cpp, while the current production call is in BotWorldPopulationMgrCalibrationRows.cpp. Rebind the same attribution task to the current calibration-rows test; do not edit the unrelated historical test or claim the failed command as success.",
+  "historical_test_failure": {
+    "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_json_module.py",
+    "exit_status": 1,
+    "classification": "pre_existing_unrelated_stale_refactor_assertion",
+    "replacement_command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py"
+  },
+  "preserved_source_changes": [
+    "The native Dragonwrath attribution edits remain uncommitted and are retained for the replacement plan.",
+    "No build, worldserver, live validation, or DVC mutation was started."
+  ]
+}

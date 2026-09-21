@@ -1,0 +1,32 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "producer": "coordinator",
+  "verdict": "aligned_after_bounded_correction",
+  "reason": "The rework remains the authorized FLOW-006 observation prerequisite. It addresses the independent review's marker lifecycle and current-schema test findings without dropping any actor or raid requirement or claiming native/DPS acceptance.",
+  "model_advice": {
+    "laya": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_rework_review_compact_20260921/summary.json",
+        "sha256": "eb17190b7951e396c11be5b6fed0efabc1087900fb631f7c187f544555d45455"
+      },
+      "judgment": "Supported scope, evidence direction, and bounded acceptance claim at low confidence."
+    },
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_rework_review_compact_20260921/summary.json",
+        "sha256": "eb17190b7951e396c11be5b6fed0efabc1087900fb631f7c187f544555d45455"
+      },
+      "judgment": "Supported scope and proposed correction; its insufficient-evidence claim judgment is retained because no runtime acceptance is claimed."
+    }
+  },
+  "remaining_requirements": [
+    "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005",
+    "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010",
+    "affliction_comparison", "elemental_comparison", "potion_ownership",
+    "survival_reference", "magmaw_10n"
+  ],
+  "next_action": "Record the corrected FLOW-006 plan, implement the bounded observer/test repair, retest, and obtain a fresh independent review."
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "trinity_supporting_workflow_review_adapter_v1",
+  "reviewer_session_id": "codex-supporting-review-flow006-20260921-fb0c8c50",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_report_v2_20260921.json",
+    "sha256": "892fd664c5fa4ac3f2a341152e36cc9676c55ed65f7b4a1b891fa326a1b26dfc"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "tools/raid_program/evidence_events.py": "8921ce066896b8330995f2b822a3bbe60935554aa378618ea65a40fab926e37f",
+    "tools/raid_program/evidence_inputs.py": "47f8d714d6b5fac94de516cf477cb4b97240a88f5bdd8ba4f38e4e4395b8cf29",
+    "tools/raid_program/evidence_metrics.py": "c17f029e05e0020f5c383370b506d212f8d6b824ed6b6b229b30908b79960bb5",
+    "tools/raid_program/evidence_view.py": "f6469e259e9109ec0fbeb5ee3278d7536d46f9b08a3a1b5c1400b081f9f3f7f0",
+    "tests/test_evidence_view.py": "ccc5c577f72794f9df718b3c283e21520c48a57b108ad79f32d8265bde8595de"
+  }
+}

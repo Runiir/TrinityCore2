@@ -1,0 +1,84 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "bbaa5f6163d2a07d4e117b41835de0a94bbca58119ad5b907a019f8955b8feb4",
+  "source_commit": "72f144c05b61e996485e7a3eb598bd15c3622e76",
+  "implementation": {
+    "status": "complete",
+    "summary": "Added an observation-only Dragonwrath copy scope before the native copy cast, matched it in the scored landed-damage callback, and exposed copy spell identity, landed damage/event counts, and accepted-without-landed counts in the existing calibration JSON.",
+    "gameplay_mutation": false,
+    "scoring_mutation": false,
+    "delayed_copy_policy": "delayed_or_unmatched_copy_damage_is_not_attributed"
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgr.h": "45b4bd87e7d0aadabc299c918af38c9bd616272c71b39c2b78aef83310b382d1",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp": "87d06f5ffaf508a34c233adc4d53fe4b4d21f9b2d15ce6975f110b20d91019a2",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "897349f10ea311ffc2fdde7e34825bbd6ff264a7eb1708a3e52c9dbc301bed13",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "255d5d7a368fe863e9f6b9a0c6ed45b099293cd011ef2d8b1ebea7fb6d11ef6e",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp": "5c7f1c8caddf0dafd6f53c65b7c23b00c2127077e171b2f62424a5a5c97bf9d4",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "5477e5659a119fcbcdafad8e06d96c8944ac7b2fd95cb47222476ce6ef4d75c3",
+    "tools/bot_ml/review_rotation_mechanics.py": "b643e7dfa19cfd0e032d2145d352fa78760f7b42b30d387d7fda923443f9ded7",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py": "79778a309d8ccb96f1c72b3ba792d9374893ea96e649aa7adc49b6a1765b37a4"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+      "exit_status": 0,
+      "summary": "4 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+      "exit_status": 0,
+      "summary": "6 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    }
+  ],
+  "historical_failures": [
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_json_module.py",
+      "exit_status": 1,
+      "classification": "pre_existing_unrelated_stale_refactor_assertion",
+      "detail": "The test expects AppendCalibrationBotActionJson in BotWorldPopulationMgr.cpp, while the current production call is already in BotWorldPopulationMgrCalibrationRows.cpp. The current calibration-rows test passes; this task did not modify the stale test."
+    }
+  ],
+  "test_boundary": "These focused source/normalization tests prove marker placement and accounting serialization only. They do not prove native compilation, actual Dragonwrath runtime ordering, terrain, encounter fidelity, DPS recovery, or raid success.",
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_review_20260921/summary.json",
+        "sha256": "e5a5058278b30a3131f757ffdc8c526c7546c1f0d9322c85538b5b300e4576b8"
+      },
+      "adjudication": "Advisory scope support only; independent native review and a gate-bearing build remain required."
+    },
+    "laya": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_laya_review_20260921/summary.json",
+        "sha256": "af359377c45bcc0b89b85c4c9fd42e1087282ffd7604cad60cd6ee34474f21c8"
+      },
+      "adjudication": "Advisory low-confidence scope support only; no acceptance authority."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_rebind_20260921.json",
+      "sha256": "3e7a7b360a634c77e4252d52e32a76d86cca953ec0dd5a34e8de7cc35cf67c70"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_reconciliation_20260921.json",
+      "sha256": "f384e73187de7808a85b73c6630a793703fe3fa844cd44b605138549e740f87b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json",
+      "sha256": "41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08"
+    }
+  ],
+  "next_dependency": "independent native review of the committed files, then queued_build before any matched calibration verification"
+}

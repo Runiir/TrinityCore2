@@ -1,0 +1,21 @@
+{
+  "schema": "trinity_supporting_workflow_review_report_v1",
+  "reviewer_session_id": "codex-supporting-review-flow006-20260921-fb0c8c50",
+  "verdict": "approved",
+  "scope": "frozen supporting workflow Python/test files for FLOW-006",
+  "finding": "The prior support receipt had stale hashes for evidence_inputs.py, evidence_view.py, and test_evidence_view.py. The current files are bounded to diagnostic inspection, pagination, retained-input comparison, and matching tests.",
+  "observations": [
+    "git diff --check is clean.",
+    "Focused evidence tests passed: 27 tests.",
+    "The full evidence-test subset passed: 31 tests."
+  ],
+  "file_hashes": {
+    "tools/raid_program/evidence_events.py": "8921ce066896b8330995f2b822a3bbe60935554aa378618ea65a40fab926e37f",
+    "tools/raid_program/evidence_inputs.py": "47f8d714d6b5fac94de516cf477cb4b97240a88f5bdd8ba4f38e4e4395b8cf29",
+    "tools/raid_program/evidence_metrics.py": "c17f029e05e0020f5c383370b506d212f8d6b824ed6b6b229b30908b79960bb5",
+    "tools/raid_program/evidence_view.py": "f6469e259e9109ec0fbeb5ee3278d7536d46f9b08a3a1b5c1400b081f9f3f7f0",
+    "tests/test_evidence_view.py": "ccc5c577f72794f9df718b3c283e21520c48a57b108ad79f32d8265bde8595de"
+  },
+  "approval_boundary": "This supporting review does not approve the native Dragonwrath observer, native build, DPS outcome or recovery, actor acceptance, raid validation, live execution, or publication.",
+  "recommendation": "Bind only these five exact current hashes and retain the older support receipt as historical."
+}

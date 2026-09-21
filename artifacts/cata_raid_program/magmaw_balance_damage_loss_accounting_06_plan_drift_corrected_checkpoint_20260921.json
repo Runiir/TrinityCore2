@@ -1,0 +1,42 @@
+{
+  "task_id": "magmaw:balance_damage_loss_accounting_06_plan_drift_corrected_20260921",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "objective": "Check the corrected next Magmaw 10N action after joining Balance runtime and WoWSims evidence.",
+  "first_broken_edge": "owner_damage_attribution_before_policy_tuning",
+  "allowed_files": ["../../experiments/configs/cata_raid_active_work_unit_v1.json"],
+  "forbidden_changes": [
+    "Do not accept actor_30001 or Magmaw 10N.",
+    "Do not close actor, comparison, potion, survival, or raid requirements.",
+    "Do not patch Balance policy, coefficients, Dragonwrath attribution, or denominators from aggregate totals.",
+    "Do not switch to 25H or repeat a live run solely to redo retained accounting."
+  ],
+  "acceptance_conditions": [
+    "Keep FLOW-006 on signed loss attribution until event-count, per-event, time/phase, periodic, pet, and unresolved Dragonwrath components are ranked.",
+    "Treat the full joined self-provided-baseline gate as admitted: gear, effective stats, and consumables match under the declared comparison policy.",
+    "Keep all remaining actor and encounter requirements open."
+  ],
+  "observations": [
+    "Graph revision 205 is diagnose for magmaw:balance_damage_loss_accounting_06; parent completion is false.",
+    "The joined unit-05 report has gear, effective-stat, and consumable gates admitted. Native higher intellect/spell power are favorable under self-provided-baseline; ratings match and speed is 1.269 versus corrected 1.26876.",
+    "Native unit-05 is 31544.057 DPS versus 35447.589 reference. Signed accounting finds 5557.548 apparent component losses, 1027.855 gains, and -626.161 residual; direct Dragonwrath copies and pet mapping remain unresolved.",
+    "Candidate masks, typed rejects, Eclipse timestamps, and phase-specific ownership are unavailable; no policy causality is established by the totals."
+  ],
+  "evidence_excerpts": [
+    {"id":"joined_review","path":"magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json","sha256":"41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08","excerpt":"Full exact join admits gear, effective-stat and consumable gates under self_provided_baseline; preserves signed losses and unresolved DTR/pet residual."},
+    {"id":"active_graph","path":"../../experiments/configs/cata_raid_active_work_unit_v1.json","sha256":"dbf003f22046c3a088717dea77ce0d173df4480e5455b1da1ac1462f7c911c36","excerpt":"Revision 205; diagnose; all actor and raid requirements open."},
+    {"id":"native_review","path":"magmaw_balance_rotation_cadence_05_diagnosis_review_20260920.json","sha256":"fc1b414114a7eea96eae5d5ac60db6f4f51df6ac38836ad2d4e2c5cf6e9e78dd","excerpt":"Prior normalized review is trace-only because it omitted the runtime and ComputeStats join; it does not override the corrected joined gate."}
+  ],
+  "proposed_change": "Keep the active accounting diagnosis aligned with the parent objective, record the corrected exact join, and prepare one bounded attribution task before any policy change. The prior setup-parity suggestion is rejected because it was based on an incomplete join.",
+  "acceptance_claim": "Corrected plan alignment only; no source repair, native behavior, actor performance, raid clear, or parent completion is claimed.",
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "tests": [],
+  "required_test_commands": [],
+  "goal_context": {
+    "parent_objective": "Optimize all lawful Magmaw 10N bots against matched WCL and exact WoWSims evidence.",
+    "latest_user_direction": "Implement Magmaw 10N bots through all gates.",
+    "current_plan": "Complete signed Balance loss attribution, then implement only the first evidence-backed edge, independently review it, build, exact-300 validate, publish, and continue every actor and raid requirement.",
+    "remaining_requirements": ["actor_30001..actor_30010", "affliction_comparison", "elemental_comparison", "potion_ownership", "survival_reference", "magmaw_10n"]
+  }
+}

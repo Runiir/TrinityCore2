@@ -1,0 +1,23 @@
+{
+  "schema": "trinity_supporting_workflow_review_adapter_v1",
+  "reviewer_session_id": "4d28c657-7e97-4eab-ab67-3d9ddd06eb03",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_report_v3_20260921.json",
+    "sha256": "b6736a89bf39453e5cc981d7c9f06b75a4f360f314b2cb43ed0b556a902a742d"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "tools/raid_program/evidence_events.py": "8921ce066896b8330995f2b822a3bbe60935554aa378618ea65a40fab926e37f",
+    "tools/raid_program/evidence_inputs.py": "47f8d714d6b5fac94de516cf477cb4b97240a88f5bdd8ba4f38e4e4395b8cf29",
+    "tools/raid_program/evidence_metrics.py": "c17f029e05e0020f5c383370b506d212f8d6b824ed6b6b229b30908b79960bb5",
+    "tools/raid_program/evidence_view.py": "f6469e259e9109ec0fbeb5ee3278d7536d46f9b08a3a1b5c1400b081f9f3f7f0",
+    "tools/raid_program/development_graph.py": "508a744d0b9a72d67db9898c73395b1848852c76f1899c7f348644152be3121e",
+    "tools/raid_program/evidence_admission.py": "216ee681e0175d3cc45f147c8071e7df121f5ab322b7085242b448cf06efbdcd",
+    "tools/raid_program/evidence_paging.py": "56d0a99fb9c498f45673901ed2b6341e9361cd0e15f51d9ef574f34645810572",
+    "tools/raid_program/evidence_task.py": "0651d728936f6d3a008a2c9a2776657f6ed4b6eac6b20c9b7481cc8bdd55b582",
+    "tests/test_evidence_view.py": "ccc5c577f72794f9df718b3c283e21520c48a57b108ad79f32d8265bde8595de",
+    "tests/test_evidence_admission.py": "cd306bc40d22951a1a4fc54a9c8633afe623fa831a5b883f5e80152dbdfa2218",
+    "tests/test_evidence_paging.py": "dc44a25f25f7afd10ec0e2ece5d5ad7efddefa6a595d693e135710496cbdb4a9",
+    "tests/test_evidence_task.py": "1353e346c5f616b248225101890c5a3d7fa14c3f82c6332100d7e4b910de8bfb"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "action": "rework",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "revision": 218,
+  "claim_token": "6196c62d72ff6160f9781eca657424f36e7b50d495efbb15bf6ac578f286e7c6",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_support_rework_reconciliation_20260921.json",
+    "sha256": "c29f1ef6a7d5f6ebfd40d86d833905236e536a1bdf05f76395dfa1aeeb8b6038"
+  },
+  "reason": "Replan the same native observer with the two narrowly bounded workflow support fixes required for current source-isolation binding."
+}

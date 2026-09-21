@@ -1,0 +1,11 @@
+{
+  "schema": "raid_workloop_rework_reconciliation_v1",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "stage": "diagnose",
+  "reason": "The independent supporting-file review found one remaining bounded paging defect: an oversized JSON pointer could bypass the output budget. Reconcile the unclaimed diagnostic state before rebinding the support review to the fail-closed fix.",
+  "ownership_checked": true,
+  "active_operation": false,
+  "operation_id": "none",
+  "completed_operation": false,
+  "reusable_receipt_found": false
+}

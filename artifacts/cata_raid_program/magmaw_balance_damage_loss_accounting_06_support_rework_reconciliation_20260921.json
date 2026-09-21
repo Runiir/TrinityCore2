@@ -1,0 +1,11 @@
+{
+  "schema": "raid_workloop_rework_reconciliation_v1",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "stage": "implement",
+  "reason": "The supporting-file review found two bounded workflow defects in evidence_paging.py and evidence_task.py. Reconcile the native rework operation before expanding the assignment to permit and review those supporting fixes.",
+  "ownership_checked": true,
+  "active_operation": false,
+  "operation_id": "6196c62d72ff6160f9781eca657424f36e7b50d495efbb15bf6ac578f286e7c6",
+  "completed_operation": false,
+  "reusable_receipt_found": false
+}

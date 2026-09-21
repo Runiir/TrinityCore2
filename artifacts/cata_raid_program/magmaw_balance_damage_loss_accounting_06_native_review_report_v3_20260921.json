@@ -1,0 +1,34 @@
+{
+  "kind": "native_review_report",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "independent_reviewer",
+  "reviewer_session_id": "codex-independent-review-magmaw-10n-flow006-native-20260921-2f2f9e5c",
+  "verdict": "approved",
+  "reviewed_commit": "2f2f9e5cc38d7727b6f64b190dc17c559b8f2104",
+  "scope": "observation-only Dragonwrath copy attribution",
+  "findings": [],
+  "observations": [
+    "The marker lifecycle starts before the native copy cast, consumes on matching landed damage, classifies accepted-without-landed outcomes, and clears both markers.",
+    "The hooks remain observation-only with no retry, arbitration, scoring, or gameplay mutation.",
+    "Current-schema tests cover landed and accepted-without-landed rows while preserving per-bot identity.",
+    "The three native focused suites passed: 14 tests total.",
+    "All eight requested file hashes match the reviewed snapshot."
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgr.h": "45b4bd87e7d0aadabc299c918af38c9bd616272c71b39c2b78aef83310b382d1",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp": "04e3e15f810105eef36190168268c18078609d6f56b04a35ccd67b6640d7dc66",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "897349f10ea311ffc2fdde7e34825bbd6ff264a7eb1708a3e52c9dbc301bed13",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "8a78a203b82cdf43a3c29d6dfebeecde70b21b5fee96baad64a1be2968c69e7f",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp": "5c7f1c8caddf0dafd6f53c65b7c23b00c2127077e171b2f62424a5a5c97bf9d4",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "5477e5659a119fcbcdafad8e06d96c8944ac7b2fd95cb47222476ce6ef4d75c3",
+    "tools/bot_ml/review_rotation_mechanics.py": "b643e7dfa19cfd0e032d2145d352fa78760f7b42b30d387d7fda923443f9ded7",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py": "ff0d286773eac7de0081b9a8791d94c69ed03b3a999408a45f30044db76afcd9"
+  },
+  "tests_observed": [
+    "Dragonwrath diagnostic: 5 passed",
+    "Combat notifications module: 6 passed",
+    "Calibration rows module: 3 passed"
+  ],
+  "approval_boundary": "This review does not approve native compilation, runtime ordering, DPS recovery, actor acceptance, raid success, live validation, or publication/DVC evidence.",
+  "next_action": "Run workflow_build preflight and produce a gate-bearing queued native build before matched verification."
+}

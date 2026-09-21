@@ -1,0 +1,128 @@
+{
+  "kind": "plan",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "review_tool": "tools.bot_ml.review_rotation_mechanics",
+  "first_broken_edge": {
+    "edge": "owner_damage_attribution_before_policy_tuning",
+    "status": "observation_only_rebind_after_historical_test_scope_failure",
+    "confidence": "high_for_observation_gap_low_for_recoverable_dps_cause",
+    "counterexample": {
+      "native_dps": 31544.0566667,
+      "reference_dps": 35447.5889273,
+      "reference_gap_dps": 3903.5322606,
+      "native_dragonwrath_landed_attribution_available_before_patch": false
+    },
+    "evidence_limit": "The new surface scopes synchronous copy casts only. Delayed or unmatched copied damage remains explicit and is not assigned to an original spell or converted into a DPS recovery claim."
+  },
+  "hypothesis": "The exact joined review admits gear, effective-stat, consumable, total-DPS, and tuning gates. The remaining Dragonwrath uncertainty is an observation contract defect: the aura handler submits the copy, but NotifyCombatDamage receives no copy scope. Starting a scoped marker before the native copy cast and consuming it at matching landed damage will separate direct-copy damage from original spell totals and synthetic 101085 periodic-copy damage without changing combat, policy, or scoring.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tools/bot_ml/review_rotation_mechanics.py",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py"
+  ],
+  "forbidden_changes": [
+    "No gameplay, spell coefficient, stat, gear, consumable, proc-chance, target, priority, candidate-arbitration, encounter-script, route, WoWSims request/result, denominator, or scoring changes.",
+    "No live server launch, shard provisioning, raid validation, or new 300-second capture solely to redo the existing accounting.",
+    "Do not infer Dragonwrath damage from aggregate totals, assign delayed damage to a copy, or convert attribution resolution into actor or raid acceptance.",
+    "Do not change the frozen supporting workflow files or the unrelated stale calibration-bot JSON test."
+  ],
+  "acceptance_conditions": [
+    "Focused tests prove the marker is registered before the copy cast, consumed only for the matching copy spell in the scored callback, and never participates in the damage accumulator or action selection.",
+    "The JSON row reports copy spell identity, landed damage/event counts, and accepted-without-landed counts while preserving per-bot binding and the explicit delayed/unmatched limitation.",
+    "Independent review approves the exact source and test delta and confirms the repair is observation-only with no native outcome or scoring mutation.",
+    "A clean gate-bearing native build is produced from the reviewed source before any matched verification is considered.",
+    "One matched exact-300 Balance calibration may verify the new observation surface only; it cannot accept actor performance or Magmaw raid performance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py"
+  ],
+  "base_commit": "fe048a22b0f9dbd61e7e277bd9bfb36bfed2826b",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_review_20260921/summary.json",
+        "sha256": "e5a5058278b30a3131f757ffdc8c526c7546c1f0d9322c85538b5b300e4576b8"
+      },
+      "adjudication": "Hosted Jev supports the corrected accounting scope and evidence direction; advisory only."
+    },
+    "laya": {
+      "status": "reviewed",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_laya_review_20260921/summary.json",
+        "sha256": "af359377c45bcc0b89b85c4c9fd42e1087282ffd7604cad60cd6ee34474f21c8"
+      },
+      "adjudication": "Local Laya supports the corrected scope, evidence, and plan claim at low confidence; advisory only."
+    }
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_20260921.json",
+    "sha256": "6924be098ec8cf4227d5cfaf54f41134621b62e814944630dd46c3b5e301dbd4"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json",
+      "sha256": "41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_adjudication_20260921.json",
+      "sha256": "4dd7f3abe1bf882d7856f04b3d108e66c1a280d66f20deafaa86d6e0a5d1f38e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_reconciliation_20260921.json",
+      "sha256": "f384e73187de7808a85b73c6630a793703fe3fa844cd44b605138549e740f87b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_05_run_20260920.json",
+      "sha256": "38a67a3949969c6a8de67204fbd8af8310ae0ecf427cbc8195c290b47ae29882"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_requests/7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f.json",
+      "sha256": "7a616a9d1495c0cc5a5a6a753acee2bc8dbead8c51e9f1b5e740b097f4b6c92f"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/native_results/b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8.json",
+      "sha256": "b06af666308087bd9039afb78b4c4b2b57689a52e47b9e6743fedef406e78fc8"
+    },
+    {
+      "path": "artifacts/all_spec_program/wowsims_exact_reference_bundle_v1/compute_stats/f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867.json",
+      "sha256": "f0cd1f32a251ef1c1fece6048c4be48a1c57df35982958acdd898db379e67867"
+    }
+  ],
+  "interpretation": "This replacement keeps the observation-only Dragonwrath attribution scope and corrects only the required test command to the current production split. It preserves all actor and raid acceptance requirements and does not treat the historical unrelated test failure as a native regression."
+}

@@ -1,0 +1,36 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "independent-native-reviewer",
+  "reviewer_session_id": "codex-independent-review-magmaw-10n-flow006-native-20260921-2f2f9e5c",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_native_review_report_v3_20260921.json",
+    "sha256": "0449e4b132e4586ff53f58fd9687dd7fef54804512866296d3f0467d3ebc768e"
+  },
+  "verdict": "approved",
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgr.h": "45b4bd87e7d0aadabc299c918af38c9bd616272c71b39c2b78aef83310b382d1",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp": "04e3e15f810105eef36190168268c18078609d6f56b04a35ccd67b6640d7dc66",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "897349f10ea311ffc2fdde7e34825bbd6ff264a7eb1708a3e52c9dbc301bed13",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "8a78a203b82cdf43a3c29d6dfebeecde70b21b5fee96baad64a1be2968c69e7f",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp": "5c7f1c8caddf0dafd6f53c65b7c23b00c2127077e171b2f62424a5a5c97bf9d4",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "5477e5659a119fcbcdafad8e06d96c8944ac7b2fd95cb47222476ce6ef4d75c3",
+    "tools/bot_ml/review_rotation_mechanics.py": "b643e7dfa19cfd0e032d2145d352fa78760f7b42b30d387d7fda923443f9ded7",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py": "ff0d286773eac7de0081b9a8791d94c69ed03b3a999408a45f30044db76afcd9"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_native_review_report_v3_20260921.json",
+      "sha256": "0449e4b132e4586ff53f58fd9687dd7fef54804512866296d3f0467d3ebc768e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_rework_v3_result_20260921.json",
+      "sha256": "2afa0addc2001f985f7d3a23e38f3290899dee3fa44b16222c60c583d09e5087"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_supporting_workflow_review_report_v3_20260921.json",
+      "sha256": "b6736a89bf39453e5cc981d7c9f06b75a4f360f314b2cb43ed0b556a902a742d"
+    }
+  ]
+}

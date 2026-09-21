@@ -1,0 +1,10 @@
+{
+  "revision": 210,
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "action": "advance",
+  "claim_token": "b6ca4159dff311ca50e6996aa5b5973921412d6ab746f3fb289219d9154c52d1",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_checkpoint_20260921.json",
+    "sha256": "546bca07f1e2e4a279e676eb1e0de5d0c1de678e4f808168d58f63582727a729"
+  }
+}

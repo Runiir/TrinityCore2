@@ -1,0 +1,67 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "source_base_commit": "10efcdccc573e2d337a17b5e353d39e6aa7a52a0",
+  "verdict": "drift_found_then_corrected_current_plan_aligned",
+  "initial_drift": {
+    "checkpoint": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_checkpoint_20260921.json",
+      "sha256": "8ecde107c16e5100388971a73f9d0096e6663677dbcd05c65045b3f6ed9937fc"
+    },
+    "provider_receipts": [
+      {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_review_20260921/summary.json",
+        "sha256": "b3518e2000c0cc555841d9c04f5da2601db09389760eaf7ab1913a57088eea17"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_review_compact_20260921/summary.json",
+        "sha256": "4bb1c8db72cb0b11e1604cfc55e91da41d20ce9af5d3ee81de639061f7ce86e8"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_review_laya_20260921/summary.json",
+        "sha256": "01a0f8b0412fb91861897d0b9c5116ebb26be5eec7ee12b0a0ff561e24d6470d"
+      }
+    ],
+    "finding": "The first checkpoint proposed effective-stat parity as the next repair from an incomplete normalized join. That route was not accepted as causal once the exact native report, WoWSims request/result, and ComputeStats were joined."
+  },
+  "corrected_review": {
+    "joined_review": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_joined_review_20260921.json",
+      "sha256": "41edc14c063b7c54049cc09fb465e4f24eaa0e624f46da625e499c18be6bbc08"
+    },
+    "checkpoint": {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_checkpoint_20260921.json",
+      "sha256": "4b4e6c608805d437b12cd842fafc7f8f0048f80a0fdd5447108fab6531bfcbe8"
+    },
+    "provider_receipts": [
+      {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_review_20260921/summary.json",
+        "sha256": "e5a5058278b30a3131f757ffdc8c526c7546c1f0d9322c85538b5b300e4576b8"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_laya_review_20260921/summary.json",
+        "sha256": "af359377c45bcc0b89b85c4c9fd42e1087282ffd7604cad60cd6ee34474f21c8"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_plan_drift_corrected_laya_20260921.json",
+        "sha256": "e1b987807d53211efcc4c612e59d9c01fbbdd886a98fa700714726848452e13b"
+      }
+    ],
+    "finding": "The exact joined review admits gear, effective-stat, consumable, total-DPS, and tuning gates. The remaining gap is signed event-count, per-event, timing, periodic, pet, and Dragonwrath attribution accounting."
+  },
+  "coordinator_adjudication": {
+    "initial_route_rejected": true,
+    "current_route": "retain_FLOW_006_damage_loss_accounting",
+    "implementation_constraint": "Do not patch stats, Starfall, coefficients, or policy from aggregate totals. Admit one attributable observation or native outcome edge only after the joined accounting identifies it.",
+    "next_bounded_edge": "Dragonwrath landed-copy attribution before policy tuning",
+    "reason": "The retained reports explicitly expose accepted Dragonwrath copy attempts but cannot separate landed copies from original spell damage. A bounded observation-only correlation is the smallest repair that can reduce the unknown residual without changing combat behavior.",
+    "open_requirements_preserved": true
+  },
+  "status": "advisory_only_until_coordinator_plan_receipt"
+}

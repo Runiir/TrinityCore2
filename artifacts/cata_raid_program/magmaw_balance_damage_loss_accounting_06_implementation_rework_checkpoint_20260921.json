@@ -1,0 +1,92 @@
+{
+  "task_id": "magmaw:balance_damage_loss_accounting_06:implementation-rework-v2",
+  "objective": "Repair only the FLOW-006 Dragonwrath observation lifecycle and its current-schema tests.",
+  "first_broken_edge": "owner_damage_attribution_before_policy_tuning",
+  "allowed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tools/bot_ml/review_rotation_mechanics.py",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py"
+  ],
+  "forbidden_changes": [
+    "No gameplay, scoring, policy, encounter, route, WoWSims, denominator, or raid acceptance changes.",
+    "No live run or new calibration capture. Do not edit the unrelated stale JSON test."
+  ],
+  "acceptance_conditions": [
+    "The landed callback consumes only the matching synchronous copy marker.",
+    "Current-schema tests cover landed and accepted-without-landed observations plus delayed/unmatched unknowns.",
+    "All three required focused suites pass; native build and runtime remain unproved."
+  ],
+  "observations": [
+    "The landed callback now clears CopyCastScopeActive after recording the matching event.",
+    "The attempt callback classifies accepted-without-landed only while the scope remains unresolved, then clears both lifecycle flags.",
+    "The normalization fixture now covers current-schema nonzero landed data and a zero-landed accepted copy.",
+    "The historical calibration-bot JSON test remains a known unrelated pre-refactor failure."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "plan",
+      "path": "magmaw_balance_damage_loss_accounting_06_plan_rework_v2_20260921.json",
+      "sha256": "0f5e4f3e601987ce8a6f526accf7d80d7854736c7d7746ebcd3f39790e283960",
+      "excerpt": "The assigned unit is observation-only and forbids gameplay, scoring, live-run, and acceptance changes."
+    },
+    {
+      "id": "prior-review",
+      "path": "magmaw_balance_damage_loss_accounting_06_native_review_report_v2_20260921.json",
+      "sha256": "dc88504cdeaac34444d0761b02a50993f0a0419da0509fd7a0fd8d93db2f04d8",
+      "excerpt": "The independent reviewer requested landed-marker consumption and current-schema tests before build."
+    },
+    {
+      "id": "source",
+      "path": "../../src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+      "sha256": "8a78a203b82cdf43a3c29d6dfebeecde70b21b5fee96baad64a1be2968c69e7f",
+      "excerpt": "The matching landed path records damage/event count and clears the active marker before continuing."
+    }
+  ],
+  "proposed_change": "Use the landed callback as the one-shot synchronous-copy consumer and strengthen the normalization/static lifecycle tests without changing native outcomes.",
+  "acceptance_claim": "The focused observer and normalization behavior is covered by the three passing suites; no native compilation, runtime ordering, DPS recovery, actor acceptance, raid success, or publication is claimed.",
+  "stage": "result",
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py"
+  ],
+  "changed_files_source": "coordinator_observed",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+      "exit_status": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+      "exit_status": 0,
+      "summary": "6 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_json_module.py",
+      "exit_status": 1,
+      "summary": "Known unrelated stale assertion expects the pre-refactor production file."
+    }
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py"
+  ],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank, and healer against matched WCL.",
+    "latest_user_direction": "Implement magmaw 10n bots.",
+    "current_plan": "Finish this bounded observer unit, then build and route the next open requirement.",
+    "remaining_requirements": "All ten actors, comparison requirements, potion/reference requirements, and magmaw_10n remain open."
+  }
+}

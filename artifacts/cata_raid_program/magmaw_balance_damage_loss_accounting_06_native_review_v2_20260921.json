@@ -1,0 +1,22 @@
+{
+  "kind": "review",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "reviewer_session_id": "codex-independent-review-magmaw-10n-dtr-20260921-72f144c0",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_native_review_report_v2_20260921.json",
+    "sha256": "dc88504cdeaac34444d0761b02a50993f0a0419da0509fd7a0fd8d93db2f04d8"
+  },
+  "verdict": "changes_requested",
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgr.h": "45b4bd87e7d0aadabc299c918af38c9bd616272c71b39c2b78aef83310b382d1",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp": "87d06f5ffaf508a34c233adc4d53fe4b4d21f9b2d15ce6975f110b20d91019a2",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "897349f10ea311ffc2fdde7e34825bbd6ff264a7eb1708a3e52c9dbc301bed13",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "255d5d7a368fe863e9f6b9a0c6ed45b099293cd011ef2d8b1ebea7fb6d11ef6e",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp": "5c7f1c8caddf0dafd6f53c65b7c23b00c2127077e171b2f62424a5a5c97bf9d4",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "5477e5659a119fcbcdafad8e06d96c8944ac7b2fd95cb47222476ce6ef4d75c3",
+    "tools/bot_ml/review_rotation_mechanics.py": "b643e7dfa19cfd0e032d2145d352fa78760f7b42b30d387d7fda923443f9ded7",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py": "79778a309d8ccb96f1c72b3ba792d9374893ea96e649aa7adc49b6a1765b37a4"
+  }
+}

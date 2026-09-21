@@ -1,0 +1,10 @@
+{
+  "action": "rework",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "revision": 219,
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_support_rework_reconciliation_v2_20260921.json",
+    "sha256": "d44e3dc19597b5d5dd0c5de122ae0c6adc6add71d94c63c445133dc3cff8ff06"
+  },
+  "reason": "Rebind the same native observer after the independent support review found one remaining bounded paging defect; the support fix fails closed when a JSON locator cannot fit the caller budget."
+}

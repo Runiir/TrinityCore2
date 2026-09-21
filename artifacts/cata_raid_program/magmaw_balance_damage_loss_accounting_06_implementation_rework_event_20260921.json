@@ -1,0 +1,11 @@
+{
+  "revision": 207,
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "action": "rework",
+  "claim_token": "648aa2777a31ea043fcbadb3bbfbbc7e5ab183f4e6f2498495e276e61b2d55a8",
+  "reason": "Rebind the same observation-only Dragonwrath attribution task to the current calibration-rows regression test after recording the unrelated stale monolith assertion failure.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_implementation_reconciliation_20260921.json",
+    "sha256": "f384e73187de7808a85b73c6630a793703fe3fa844cd44b605138549e740f87b"
+  }
+}

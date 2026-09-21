@@ -1,0 +1,67 @@
+{
+  "task_id": "magmaw:balance_damage_loss_accounting_06:implementation-rework-v2-compact",
+  "objective": "Repair only the FLOW-006 Dragonwrath observer and current-schema tests.",
+  "first_broken_edge": "owner_damage_attribution_before_policy_tuning",
+  "allowed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgr.h",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp",
+    "tools/bot_ml/review_rotation_mechanics.py",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py"
+  ],
+  "forbidden_changes": [
+    "No gameplay, scoring, policy, encounter, route, WoWSims, denominator, or raid acceptance changes.",
+    "No live run or new capture; do not edit the unrelated stale JSON test."
+  ],
+  "acceptance_conditions": [
+    "Landed callback consumes the matching marker; no-landed and delayed/unmatched remain distinct.",
+    "Current-schema positive/negative tests pass; native build/runtime remain unproved."
+  ],
+  "observations": [
+    "Three required suites pass, 14 tests total.",
+    "The landed callback clears the marker; the attempt callback classifies only unresolved accepted copies.",
+    "The known stale calibration-bot JSON test remains unrelated."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "plan",
+      "path": "magmaw_balance_damage_loss_accounting_06_plan_rework_v2_20260921.json",
+      "sha256": "0f5e4f3e601987ce8a6f526accf7d80d7854736c7d7746ebcd3f39790e283960",
+      "excerpt": "Observation-only FLOW-006 assignment; native, live, DPS, and raid acceptance are forbidden."
+    }
+  ],
+  "proposed_change": "Use the landed callback as the one-shot synchronous-copy consumer and strengthen current-schema tests.",
+  "acceptance_claim": "Only the three focused test suites and bounded observer/test behavior are claimed; native compilation, runtime ordering, DPS, actors, raid, and publication remain unproved.",
+  "stage": "result",
+  "changed_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py"
+  ],
+  "changed_files_source": "coordinator_observed",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+      "exit_status": 0,
+      "summary": "5 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+      "exit_status": 0,
+      "summary": "6 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py",
+      "exit_status": 0,
+      "summary": "3 passed"
+    }
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_dragonwrath_copy_proc_diagnostic.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_combat_notifications_module.py",
+    "pixi run pytest -q tests/test_bot_world_population_mgr_calibration_rows_module.py"
+  ]
+}

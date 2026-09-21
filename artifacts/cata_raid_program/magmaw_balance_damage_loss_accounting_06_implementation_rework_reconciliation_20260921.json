@@ -1,0 +1,16 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "implement_rework_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "stage": "implement",
+  "operation_id": "6196c62d72ff6160f9781eca657424f36e7b50d495efbb15bf6ac578f286e7c6",
+  "owner": "coordinator-magmaw-10n-accounting-06-review-rework",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "source_commit": "6514fa2f8a4caa44d6c77f5a0591a9d9eab95d7d",
+  "reason": "The bounded marker-lifecycle and current-schema test rework is committed at 6514fa2f8a4caa44d6c77f5a0591a9d9eab95d7d. Required focused tests pass; the unrelated stale calibration-bot JSON assertion remains recorded as a historical failure. No build, server, live run, DPS, actor, raid, or publication acceptance occurred."
+}
