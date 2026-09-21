@@ -1,0 +1,54 @@
+{
+  "kind": "actor_review",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "actor_id": "30001",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "reviewer_role": "coordinator closed-run evidence review",
+  "status": "reviewed",
+  "accepted": false,
+  "scenario_kind": "dummy",
+  "exact_capture_valid": true,
+  "reference_comparable": true,
+  "run_identity": {
+    "attempt_id": 1,
+    "server_epoch": 2882253559799153,
+    "cohort_id": "default",
+    "target_guid": 30540,
+    "scoring_seconds": 300.0,
+    "terminal_reason": "measurement_complete",
+    "cleanup_verified": true
+  },
+  "facts": {
+    "measured_dps": 30881.98,
+    "reference_dps": 35447.58892725215,
+    "reference_ratio": 0.8712011432816491,
+    "damage": 9264594,
+    "attempts": 198,
+    "successful_submissions": 198,
+    "active_uptime_ratio": 1.0,
+    "cast_failure_ratio": 0.0,
+    "rotation_group_coverage": 1.0,
+    "evidence_identity_complete": false,
+    "performance_accepted": false,
+    "raid_clear": false
+  },
+  "observation_verdict": {
+    "copy_attribution_observer": "measurement completed; no gameplay or scoring change was accepted",
+    "candidate_mask_observed": false,
+    "typed_rejection_reason_observed": false,
+    "ordinary_periodic_pet_copy_split": "unresolved",
+    "performance_disposition": "not accepted because the evidence identity is incomplete and the DPS gap remains material"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_run_v3_20260921.json",
+      "sha256": "3de24b686c0571eb810c96c1a5435eca1eec34e1b30c16f1b75ba0d79962dc3a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_calibration_20260921.tar.gz.dvc",
+      "sha256": "c5202cc38c96bdd2211dadd74d60f9e42ee9d278e6affb84e4297096a2e6ecf8"
+    }
+  ],
+  "disposition": "The exact-300 Balance observation is closed and cleanup-complete. It does not accept actor performance, the Dragonwrath accounting repair, or Magmaw raid performance; all other actor and raid requirements remain open."
+}

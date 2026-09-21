@@ -1,0 +1,50 @@
+{
+  "kind": "build",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "8698ee2084927a1574fca8fb01213f4095406121544495a21242718f38b1ac12",
+  "source_commit": "4871a7ae31cff55076184b538a12025ced0ce7ac",
+  "binary_sha256": "7eccbd282a8dbd7614e8a77ab19483a5c1ffc37a159aa6490fe99442531dda04",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-c66d692033884824aa5e9daf42b1e7eb.json",
+    "sha256": "3355d6604a823a90c65a805b47bcd7f8293a5dc4dfd666b7cb0a11baf4318890"
+  },
+  "build_summary": {
+    "classification": "success",
+    "gate_bearing": true,
+    "exit_code": 0,
+    "test_mode": false,
+    "source_identity_stable": true,
+    "configure_generator": "Unix Makefiles",
+    "compiler_jobs": 12,
+    "linker_jobs": 1,
+    "worldserver_artifact": "build/src/server/worldserver/worldserver",
+    "worldserver_artifact_sha256": "7eccbd282a8dbd7614e8a77ab19483a5c1ffc37a159aa6490fe99442531dda04"
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgr.h": "45b4bd87e7d0aadabc299c918af38c9bd616272c71b39c2b78aef83310b382d1",
+    "src/server/game/Bots/BotWorldPopulationMgrDragonwrath.cpp": "04e3e15f810105eef36190168268c18078609d6f56b04a35ccd67b6640d7dc66",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationMetrics.h": "897349f10ea311ffc2fdde7e34825bbd6ff264a7eb1708a3e52c9dbc301bed13",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "8a78a203b82cdf43a3c29d6dfebeecde70b21b5fee96baad64a1be2968c69e7f",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBotJson.cpp": "5c7f1c8caddf0dafd6f53c65b7c23b00c2127077e171b2f62424a5a5c97bf9d4",
+    "src/server/game/Spells/Auras/SpellAuraEffects.cpp": "5477e5659a119fcbcdafad8e06d96c8944ac7b2fd95cb47222476ce6ef4d75c3",
+    "tools/bot_ml/review_rotation_mechanics.py": "b643e7dfa19cfd0e032d2145d352fa78760f7b42b30d387d7fda923443f9ded7",
+    "tests/test_dragonwrath_copy_proc_diagnostic.py": "ff0d286773eac7de0081b9a8791d94c69ed03b3a999408a45f30044db76afcd9"
+  },
+  "evidence": [
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-c66d692033884824aa5e9daf42b1e7eb.json",
+      "sha256": "3355d6604a823a90c65a805b47bcd7f8293a5dc4dfd666b7cb0a11baf4318890"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_native_review_v3_20260921.json",
+      "sha256": "d631c7cb1723bdfcf7e5ed219815a8db67930b6dc83aab707012a14fc3814f2d"
+    }
+  ],
+  "boundary": "This is a gate-bearing native build only. It proves compilation and build identity, not runtime callback ordering, DPS recovery, actor acceptance, raid success, live validation, or publication/DVC evidence."
+}

@@ -1,0 +1,136 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:balance_damage_loss_accounting_06",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "0d7e2f8adddb20128acf985797a4228f5a0a75ca19fd9fc2384437602b26f3a1",
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30001",
+    "spec": "balance_druid",
+    "reference": {
+      "path": "experiments/configs/wowsims_cata_dps_reference_requests_v1.json",
+      "sha256": "0a81121c4f674f3c5dd449e373e04222f645e5d6346f31574e63ab9219b3a9e6"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    }
+  },
+  "scenario_kind": "dummy",
+  "build_identity": {
+    "source_commit": "4871a7ae31cff55076184b538a12025ced0ce7ac",
+    "binary_sha256": "7eccbd282a8dbd7614e8a77ab19483a5c1ffc37a159aa6490fe99442531dda04"
+  },
+  "source_commit": "4871a7ae31cff55076184b538a12025ced0ce7ac",
+  "attempt_id": 1,
+  "server_epoch": 2882253559799153,
+  "cohort_id": "default",
+  "target_guid": 30540,
+  "target_spec": "balance_druid",
+  "calibration_mode": "single_target_300",
+  "duration_policy": "fixed-window",
+  "terminal_reason": "measurement_complete",
+  "native_terminal_reason": "complete",
+  "scoring_ms": 300000,
+  "scored_seconds": 300.0,
+  "closed": true,
+  "cleanup_verified": true,
+  "measurement_completed": true,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": true,
+  "calibration_acceptance_passed": true,
+  "performance_accepted": false,
+  "training_eligible": false,
+  "batch_accepted": false,
+  "dps": 30881.98,
+  "damage": 9264594,
+  "reference_dps": 35447.58892725215,
+  "reference_ratio": 0.8712011432816491,
+  "evidence_identity_complete": false,
+  "evidence_identity_rejections": [
+    "missing_external_database_snapshot_sha256",
+    "missing_external_database_schema_sha256",
+    "missing_external_server_epoch_sha256",
+    "missing_external_profile_generation_sha256"
+  ],
+  "native_observation": {
+    "target_guid": 239,
+    "isolated_single_target": true,
+    "target_count": 1,
+    "primary_target_damage": 9264594,
+    "attempts": 198,
+    "successes": 198,
+    "action_group_count": 4,
+    "expected_action_group_count": 4,
+    "active_uptime_ratio": 1.0,
+    "cast_failure_ratio": 0.0,
+    "illegal_action_count": 0,
+    "movement_range_loss_ratio": 0.0,
+    "resource_capped_ratio": 0.0,
+    "resource_starved_ratio": 0.0,
+    "rotation_group_coverage": 1.0,
+    "pet_damage": 292763,
+    "pet_damage_ratio": 0.03,
+    "decision_observations": 2996,
+    "decision_result_counts": {
+      "casting": 2196,
+      "global_cooldown": 602,
+      "ok": 198
+    },
+    "scoring_start_stats": {
+      "hit_rating": 289,
+      "haste_rating": 2668,
+      "spell_hit_pct": 16.975,
+      "spell_speed_multiplier": 1.269
+    },
+    "first_successful_actions": [
+      {"elapsed_ms": 0, "spell_id": 8921, "spell_name": "Moonfire"},
+      {"elapsed_ms": 1200, "spell_id": 5570, "spell_name": "Insect Swarm"},
+      {"elapsed_ms": 2300, "spell_id": 33831, "spell_name": "Force of Nature"},
+      {"elapsed_ms": 3399, "spell_id": 5176, "spell_name": "Wrath"},
+      {"elapsed_ms": 4800, "spell_id": 78674, "spell_name": "Starsurge"},
+      {"elapsed_ms": 6199, "spell_id": 5176, "spell_name": "Wrath"},
+      {"elapsed_ms": 7601, "spell_id": 5176, "spell_name": "Wrath"}
+    ],
+    "starfall_successes_ms": [9802, 71132, 157046, 219647],
+    "candidate_mask_observed": false,
+    "typed_rejection_reason_observed": false
+  },
+  "evidence_envelope": {
+    "raw_report_sha256": "6ff5ec1497445c3e5ccb626cba6547939a0176feb1ef1e59e56fa21468b2676d",
+    "raw_report_bytes": 70539360,
+    "worldserver_log_sha256": "e488db73afc981c86b66a92eb2f1d0b3d1eb00e4dcf11c548fe91b6d1733cb4d",
+    "worldserver_log_bytes": 21935089,
+    "validation_config_sha256": "90a34382278bfa71faa94a07ad98aa8b89c4d8debad0101d451b25756cfa30dd",
+    "command_sha256": "d899fc578cd0a8e11171f458db7d91418dbdfff73bfb17964f9ef84629f15277",
+    "route_manifest_sha256": "44136fa355b3678b1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "measurement_window_id": "observe:315:timeout:600",
+    "runtime_asset_manifest_sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_calibration_20260921.tar.gz.dvc",
+      "sha256": "c5202cc38c96bdd2211dadd74d60f9e42ee9d278e6affb84e4297096a2e6ecf8"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_build_v3_result_20260921.json",
+      "sha256": "0957b804aca7eeac6f46169aaca3205e95de021b5c94e64a0ed9e3f3cf58c0c7"
+    },
+    {
+      "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+      "sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf"
+    }
+  ],
+  "limitations": [
+    "The run is a calibration fixture, not a Magmaw encounter clear.",
+    "Evidence identity is incomplete, so actor performance and repair acceptance remain false.",
+    "Native spell buckets do not resolve ordinary casts from periodic effects, pets, or delayed Dragonwrath copies.",
+    "This measurement does not accept any actor or raid requirement."
+  ]
+}
