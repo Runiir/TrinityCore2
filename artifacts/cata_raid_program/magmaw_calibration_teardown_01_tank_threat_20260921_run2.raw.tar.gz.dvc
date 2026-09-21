@@ -1,0 +1,5 @@
+outs:
+- md5: 26fcb46b7897a4c027c0069661faf56b
+  size: 3874344
+  hash: md5
+  path: magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz

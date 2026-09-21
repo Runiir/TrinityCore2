@@ -1,0 +1,85 @@
+{
+  "schema": "cata_raid_program_assessment_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e631cbd63104f5511c8581e1043a4e735eef5ff7b1c871dfb2e89f8bce1e912f",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_run_20260921.json",
+    "sha256": "92b7983cb55b25f4ae73815a758004f076600cc7f19d3eb1c4a5fd1c107bd88"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
+    "sha256": "c07b2b0040b0d44ffc13885285e350215fc0fb9aeaa78999e21d571767b4f673"
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise Balance actor 30001."
+    },
+    "30002": {
+      "status": "reviewed",
+      "accepted": false,
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
+        "sha256": "c07b2b0040b0d44ffc13885285e350215fc0fb9aeaa78999e21d571767b4f673"
+      },
+      "finding": "The exact 300-second Blood tank window has zero cross-window events and native teardown closes cleanly, but active DPS is 17,934.46 against the 32,489.03862 reference, ratio 0.552016, failing only the reference hard floor. Threat, retention, mitigation, survival, and illegal-action checks passed."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise healer actor 30003."
+    },
+    "30004": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise healer actor 30004."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise healer actor 30005."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise Fire actor 30006."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise Fire actor 30007."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise Affliction actor 30008."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise Survival actor 30009."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "reason": "This Blood tank calibration does not exercise Elemental actor 30010."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "baseline_matched": false,
+  "unexplained_material_decline": true,
+  "accepted_requirements": [],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json",
+      "sha256": "e294da46e8a13a73c5fd3838e27aa4601307900b53f9045e4d8daba1603f8b13"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
+      "sha256": "c07b2b0040b0d44ffc13885285e350215fc0fb9aeaa78999e21d571767b4f673"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz.dvc",
+      "sha256": "5f74da0dbbb89563a521c478660416a4699a2b58da2146f86f9e6bff092d1f72"
+    }
+  ],
+  "disposition": "Native calibration teardown is accepted as closed diagnosis only. No Blood actor, performance, raid-clear, or parent acceptance is claimed. Route the remaining reference-hard-floor failure to a bounded Blood role repair with the SQL and simulator reference unchanged."
+}

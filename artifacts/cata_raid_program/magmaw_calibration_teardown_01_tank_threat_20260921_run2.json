@@ -1,0 +1,120 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e631cbd63104f5511c8581e1043a4e735eef5ff7b1c871dfb2e89f8bce1e912f",
+  "attempt_id": 1,
+  "server_epoch": 6503072922788437,
+  "scenario_kind": "dummy",
+  "terminal_reason": "measurement_complete",
+  "scoring_ms": 300000,
+  "closed": true,
+  "cleanup_verified": true,
+  "build_identity": {
+    "source_commit": "f4e11240137b265f3a9d3f3220e341e970e146bd",
+    "binary_sha256": "8446fe639c3f19eb702f39c6bd42e41c40b8f9aab05af087f42347c2aecd8807"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ec06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    }
+  },
+  "measurement": {
+    "mode": "tank_threat_300",
+    "target_spec": "blood_death_knight",
+    "target_guid": 1283,
+    "window_complete": true,
+    "scored_seconds": 300.0,
+    "scored_started_at_ms": 1789994870492,
+    "scored_ended_at_ms": 1789995170492,
+    "cross_window_event_count": 0,
+    "excluded_boundary_damage_event_count": 0,
+    "measured_dps": 17934.46,
+    "reference_dps": 32489.03862,
+    "ratio": 0.552016,
+    "target_count": 6,
+    "attempts": 1200,
+    "damage": 5380338
+  },
+  "native_outcome": {
+    "completion_reason": "combat_calibration_role_gate_failed",
+    "failure_reason": "role_calibration:reference_hard_floor",
+    "failure_labels": ["role_calibration:reference_hard_floor"],
+    "role_checks_passed_except": ["reference_hard_floor"],
+    "calibration_acceptance_passed": false,
+    "acceptable_final_evidence": false,
+    "actor_acceptance": false,
+    "performance_accepted": false,
+    "raid_clear_claimed": false
+  },
+  "cleanup_observation": {
+    "exact_run_cleanup_command": ".botauto calibrate stop",
+    "exact_run_removed": 2,
+    "exact_run_process_returncode": 0,
+    "exact_run_timed_out": false,
+    "exact_run_cross_window_event_count": 0,
+    "native_probe": {
+      "log_path_in_raw_bundle": "magmaw_calibration_teardown_01_tank_threat_20260921_run2/lifecycle_probe_clean.log",
+      "log_sha256": "37ab84fd5e36a120b1f6839972236b9ef2fb1e02f0a762c211ce7801db960706",
+      "config": "runner_generated_calibration_only",
+      "after_stop": {
+        "active": true,
+        "mode": "always_on_autonomy",
+        "lease_count": 0,
+        "bots": 0,
+        "target_bots": 0
+      },
+      "conclusion": "native calibration teardown released both leases and restored the ordinary cohort mode"
+    },
+    "controller_quiescence_verified": true
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_validation_evidence_20260921.json",
+      "sha256": "c07b2b0040b0d44ffc13885285e350215fc0fb9aeaa78999e21d571767b4f673"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz.dvc",
+      "sha256": "5f74da0dbbb89563a521c478660416a4699a2b58da2146f86f9e6bff092d1f72"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_build_20260921.json",
+      "sha256": "56b77dbc557ab8d0243cc15e25e0267f4e1a06f6de3534c65105aef10f032306"
+    }
+  ],
+  "raw_report": {
+    "path_in_dvc_bundle": "magmaw_calibration_teardown_01_tank_threat_20260921_run2/report.json",
+    "sha256": "2798e81c26688afc1367a6b3841fd7f017684fe0527978f3349c7d995e44fba4",
+    "worldserver_output_sha256": "c3cf117bc0a3c968e08dd1c1e3a36eaf5792da646e4c0dd39be89509d79c00f2"
+  },
+  "acceptance_boundary": {
+    "repair_accepted": false,
+    "performance_accepted": false,
+    "actor_accepted": false,
+    "raid_clear_claimed": false,
+    "cause_claimed": "native teardown is closed; Blood tank throughput remains below the reference hard floor"
+  }
+}

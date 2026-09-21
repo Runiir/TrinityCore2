@@ -1,0 +1,52 @@
+{
+  "schema": "cata_raid_program_validation_evidence_v1",
+  "kind": "validation_evidence",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "run": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.json"
+  },
+  "native_report": {
+    "path_in_dvc_bundle": "magmaw_calibration_teardown_01_tank_threat_20260921_run2/report.json",
+    "sha256": "2798e81c26688afc1367a6b3841fd7f017684fe0527978f3349c7d995e44fba4"
+  },
+  "calibration": {
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "scoring_seconds": 300.0,
+    "window_complete": true,
+    "cross_window_event_count": 0,
+    "measured_dps": 17934.46,
+    "reference_dps": 32489.03862,
+    "ratio": 0.552016,
+    "hard_floor_passed": false,
+    "threat_per_second": 9.79,
+    "target_count": 6,
+    "attempts": 1200,
+    "damage": 5380338
+  },
+  "teardown": {
+    "exact_run_removed": 2,
+    "native_probe_after_stop_lease_count": 0,
+    "native_probe_after_stop_mode": "always_on_autonomy",
+    "native_probe_after_stop_bots": 0,
+    "native_probe_log_sha256": "37ab84fd5e36a120b1f6839972236b9ef2fb1e02f0a762c211ce7801db960706",
+    "controller_quiescence_verified": true
+  },
+  "verdict": {
+    "no_post_window_callbacks_observed": true,
+    "cleanup_verified": true,
+    "repair_accepted": false,
+    "performance_accepted": false,
+    "actor_accepted": false,
+    "raid_clear_claimed": false,
+    "rejection": "role_calibration:reference_hard_floor"
+  },
+  "raw_bundle": {
+    "pointer": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tank_threat_20260921_run2.raw.tar.gz.dvc",
+    "pointer_sha256": "5f74da0dbbb89563a521c478660416a4699a2b58da2146f86f9e6bff092d1f72",
+    "remote_pushed": true
+  }
+}
