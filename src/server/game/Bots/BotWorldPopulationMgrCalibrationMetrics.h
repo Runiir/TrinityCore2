@@ -252,10 +252,16 @@
         struct DragonwrathCopyProcObservation
         {
             uint32 OriginalSpellId = 0;
+            uint32 CopySpellId = 0;
             uint32 AttemptCount = 0;
             uint32 AcceptedCount = 0;
             uint32 RejectedCount = 0;
             uint32 LastCastResult = 0;
+            uint64 LandedDamage = 0;
+            uint32 LandedEventCount = 0;
+            uint32 AcceptedWithoutLandedDamageCount = 0;
+            bool CopyCastScopeActive = false;
+            bool CopyLandedDuringActiveCast = false;
         };
         struct WillOfUnbindingStackTransition
         {

@@ -6390,6 +6390,9 @@ void AuraEffect::HandleProcTriggerSpellCopyAuraProc(AuraApplication* aurApp, Pro
         }
     }
 
+    if (GetId() == DragonwrathAuraSpellId)
+        sBotWorldPopulationMgr->NotifyDragonwrathCopyProcStart(
+            triggerCaster, triggeredSpellInfo->Id, copySpellId);
     TC_LOG_DEBUG("spells", "AuraEffect::HandleProcTriggerSpellCopyAuraProc: Triggering spell %u from aura %u proc", copySpellId, GetId());
     SpellCastResult const castResult = triggerCaster->CastSpell(triggerTarget, copySpellId, args);
     if (GetId() == DragonwrathAuraSpellId)

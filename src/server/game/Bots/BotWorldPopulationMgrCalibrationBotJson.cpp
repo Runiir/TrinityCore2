@@ -132,9 +132,10 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
             json << "],\"dragonwrath_copy_proc\":{\"aura_spell_id\":101056"
                  << ",\"copy_spell_id_semantics\":\"direct_original_periodic_101085\""
                  << ",\"periodic_copy_spell_id\":101085"
-                 << ",\"landed_damage_attribution_available\":false"
+                 << ",\"landed_damage_attribution_available\":true"
+                 << ",\"landed_damage_attribution_mode\":\"scoped_copy_cast\""
                  << ",\"landed_damage_attribution_limitation\":"
-                    "\"spell_context_not_carried_into_notify_combat_damage\""
+                    "\"delayed_or_unmatched_copy_damage_is_not_attributed\""
                  << ",\"attempts\":[";
             bool firstDragonwrath = true;
             if (metrics)
@@ -145,9 +146,14 @@ void BotWorldPopulationMgr::AppendCalibrationBotActionJson(
                         json << ',';
                     firstDragonwrath = false;
                     json << "{\"original_spell_id\":" << originalSpellId
+                         << ",\"copy_spell_id\":" << observation.CopySpellId
                          << ",\"attempt_count\":" << observation.AttemptCount
                          << ",\"accepted_count\":" << observation.AcceptedCount
                          << ",\"rejected_count\":" << observation.RejectedCount
+                         << ",\"landed_damage\":" << observation.LandedDamage
+                         << ",\"landed_event_count\":" << observation.LandedEventCount
+                         << ",\"accepted_without_landed_damage_count\":"
+                         << observation.AcceptedWithoutLandedDamageCount
                          << ",\"last_cast_result\":" << observation.LastCastResult
                          << '}';
                 }

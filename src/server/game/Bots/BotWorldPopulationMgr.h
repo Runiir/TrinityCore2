@@ -193,6 +193,8 @@ public:
     uint64 NotifyCombatMeleeResolution(CalcDamageInfo const& damageInfo);
     void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
         uint32 damageType, uint32 schoolMask, uint64 relatedEventSequence = 0);
+    void NotifyDragonwrathCopyProcStart(Unit* caster, uint32 originalSpellId,
+        uint32 copySpellId);
     void NotifyDragonwrathCopyProcAttempt(Unit* caster, uint32 originalSpellId,
         uint32 castResult, bool accepted);
     uint64 NotifyNativeCreatureSpellStarted(Creature* caster, Unit* target, uint32 spellId);

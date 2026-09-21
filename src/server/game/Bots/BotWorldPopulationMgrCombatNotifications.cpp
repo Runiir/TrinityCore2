@@ -353,6 +353,16 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
                 return;
             }
             uint32 measuredDamage = damage ? damage : unmitigatedDamage;
+            for (auto& [_, observation] : calibration->second.DragonwrathCopyProcs)
+            {
+                if (!observation.CopyCastScopeActive
+                    || observation.CopySpellId != spellId)
+                    continue;
+                observation.LandedDamage += measuredDamage;
+                ++observation.LandedEventCount;
+                observation.CopyLandedDuringActiveCast = true;
+                break;
+            }
             bool const exactPetDamage = owner->GetPet() == attacker;
             if (exactPetDamage && spellId == ShadowBiteSpellId
                 && calibration->second.PrimaryPetShadowBiteEvents.size() < 128)
