@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 235,
+    "revision": 236,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "review",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -4609,6 +4609,23 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 235,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "action": "advance",
+          "revision": 235,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_review_20260921.json",
+            "sha256": "a2953ca4450503500012dd35f43cb3578e78284afa95cc6c6879fd6426a63b14"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4617,7 +4634,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "2f2f9e5cc38d7727b6f64b190dc17c559b8f2104",
+    "source_base_commit": "28268b1e12cfd864993a073683ccb7d9ed48f326",
     "assignment": {
       "hypothesis": "The first broken Blood tank edge is the loaded profile ordering: valid Death Strike 49998 is discarded by priority_bucket 2 before its higher native score is compared with Heart Strike 55050 in bucket 1. The existing forward migration should repair ordering only; native rune gates must continue to suppress Death Strike when fewer than two compatible runes are ready.",
       "owned_files": [
@@ -4679,6 +4696,10 @@
       "tests": {
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_tests_20260921.json",
         "sha256": "348554d757c5e3e6405f5178537c292a088467f97f2957a409c1a6b6a871bf1e"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_review_20260921.json",
+        "sha256": "a2953ca4450503500012dd35f43cb3578e78284afa95cc6c6879fd6426a63b14"
       }
     },
     "tested_files": {
