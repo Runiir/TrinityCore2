@@ -34,7 +34,7 @@
     },
     "profile_migration": {
       "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
-      "sha256": "c1190a6fc29ac585ec06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
     }
   },
   "terminal": {
