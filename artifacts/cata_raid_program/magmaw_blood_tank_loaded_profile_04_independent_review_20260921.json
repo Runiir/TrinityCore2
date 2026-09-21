@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_independent_review_report_20260921.json",
+      "sha256": "c23470ee2abc3a487c5a55c5d1f072eaf70327336e58c6c8ec5c39996ef23512"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
+    "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
+  },
+  "kind": "review",
+  "producer": "01a0c488-9404-7301-bddb-35a684095538",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_independent_review_report_20260921.json",
+    "sha256": "c23470ee2abc3a487c5a55c5d1f072eaf70327336e58c6c8ec5c39996ef23512"
+  },
+  "reviewer_session_id": "01a0c488-9404-7301-bddb-35a684095538",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "verdict": "approved"
+}

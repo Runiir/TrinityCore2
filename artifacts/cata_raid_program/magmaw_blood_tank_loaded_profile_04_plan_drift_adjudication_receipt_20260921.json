@@ -1,0 +1,37 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:blood_tank_loaded_profile_04_plan_drift_20260921",
+  "stage": "plan",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_drift_checkpoint_20260921.json",
+    "sha256": "50fe0c30b564354f95f882832a066d3e901f437201771338dc5c8ea7ea35ea9c"
+  },
+  "review": {
+    "summary_path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_drift_adjudication_20260921.json/summary.json",
+    "summary_sha256": "3d4faf1b2b43be5f7847b91e057cfbfeaf87b5a3d54ebd745bbe532ed475c02d",
+    "examples_path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_drift_adjudication_20260921.json/examples.jsonl",
+    "examples_sha256": "cd7cc6d7a5fc58a3376577af821eda1a06f0ddafc9a306906bb272416ac846a3"
+  },
+  "deterministic": {
+    "status": "pass",
+    "findings": []
+  },
+  "model_advice": {
+    "hosted_jev": {
+      "status": "advisory",
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "supported",
+      "note": "Jev supports the route and the plan-limited claim; it does not authorize execution or acceptance."
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "reason": "HTTP 422 context_budget_exceeded; the retained request exceeded the per-question state budget and was not retried unchanged."
+    }
+  },
+  "coordinator_verdict": "aligned",
+  "reason": "The next Blood unit addresses the remaining actor_30002 requirement after a closed non-certifying window, preserves every parent requirement, and requires loaded-profile evidence before a policy edit.",
+  "next_action": "Route a unique Blood loaded-profile unit, inspect SQL-loaded rows and native candidate predicates, and continue only through the declared role gates.",
+  "acceptance_claim": "Routing and plan alignment only; no source repair, native behavior, actor performance, raid clear, or parent completion is accepted."
+}

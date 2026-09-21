@@ -1,0 +1,85 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "hypothesis": "The loaded Blood profile and native comparator no longer support the retained Death Strike-versus-Heart Strike priority inversion. The remaining first missing edge is observability: BotBloodDecisionObservation::Attach emits only when DS 49998 or HS 55050 is selected, so Blood Boil 48721 and Death and Decay 43265 decisions do not retain whether DS/HS were absent, rejected, or valid. Extend that existing diagnostic path to selected Blood area actions without changing gameplay.",
+  "owned_files": [
+    "src/server/game/Bots/BotBloodDecisionObservation.h",
+    "tests/test_profile_preview_diagnostic_publication.py"
+  ],
+  "forbidden_changes": [
+    "Do not change the Blood SQL profile rows, priority buckets, scores, spell costs, rune legality or target selectors.",
+    "Do not add Heart Strike to a profile, relax encounter area-damage safety, or change Magmaw route/target authority.",
+    "Do not change WoWSims/reference data, role thresholds, coefficients, gear, stats or calibration semantics.",
+    "Do not claim actor_30002, any other actor, performance, raid clear or parent completion from the observation change.",
+    "Do not remove the existing one-rune Heart Strike fallback or multi-target Blood Boil behavior."
+  ],
+  "acceptance_conditions": [
+    "A Blood candidate set containing DS/HS still serializes the same candidate validity, rejection reason, bucket and score fields when DS or HS is selected.",
+    "A selected Blood Boil or Death and Decay action serializes the same DS/HS candidate state when those candidates are present; a set without DS/HS remains unchanged.",
+    "The focused production-text C++ fixture passes with warning-as-error compilation and the existing Blood SQL/comparator test remains green.",
+    "The change is independently reviewed, built with the frozen host12 policy, and exercised in one exact cleaned tank role window before any actor or raid acceptance is considered."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py"
+  ],
+  "base_commit": "bfa9452eae8afcdcbbbf7b9f8d40cc1fb1bc34a9",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3702b099"
+    }
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supported the scope and evidence direction; it treated full acceptance as insufficient at plan stage.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_review_v2_20260921/summary.json",
+        "sha256": "261f6bbc33ff2ed3e6e70e8ad4515064afd01060dc564c034cab189f4b5da2cc"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed because its fixed context budget rejected the compact packet; the request and provider error are retained.",
+      "reason": "Local HTTP 422 context_budget_exceeded; no unchanged retry was attempted."
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_checkpoint_20260921.json",
+      "sha256": "fd1721ce86e1319e39bb462109b389bf856775327ba4e2f59fe15ee639405696"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_review_v2_20260921/summary.json",
+      "sha256": "261f6bbc33ff2ed3e6e70e8ad4515064afd01060dc564c034cab189f4b5da2cc"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
+      "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171"
+    }
+  ]
+}

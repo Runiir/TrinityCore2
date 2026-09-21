@@ -1,0 +1,30 @@
+{
+  "revision": 312,
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "action": "route",
+  "producer": "coordinator",
+  "reason": "The latest Blood window is closed and clean but non-certifying because its reference conditions are not comparable. Route actor_30002 to a unique loaded-profile diagnosis so the SQL rows and native candidate predicates are inspected before repeating or changing the retained priority hypothesis; all other parent requirements remain open.",
+  "coordinator_verdict": "aligned",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_drift_adjudication_receipt_20260921.json",
+    "sha256": "e36e00fc0f10cdd81782486cbf731a1ded500743d4ad7314fc721990de334da8"
+  },
+  "causal_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_assessment_20260921.json",
+    "sha256": "543c0bd1e255867aacf43029add1e868a704475d6190117eecc2f81991f71e2b"
+  },
+  "unit": {
+    "id": "magmaw:blood_tank_loaded_profile_04",
+    "edge": "owner_blood_priority_inversion",
+    "owner_skill": "raid-role-implementation",
+    "requirements": [
+      "actor_30002"
+    ],
+    "objective": "Inspect the loaded Blood action profile and native candidate predicates, then repair one proven lawful priority or eligibility edge without changing reference data, encounter behavior, or safety policy.",
+    "next_action": "Inspect the SQL-loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265; repair only the first proven policy edge, add an executable focused test, and preserve Heart Strike fallback and multi-target Blood Boil behavior.",
+    "continuation": {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
+      "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171"
+    }
+  }
+}

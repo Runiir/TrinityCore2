@@ -1,0 +1,75 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "45229cd0b158c63678fd205a5ec71cfc0f254871ff11c8d1483f6a5b1ed4d030",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "remote_status": {
+    "status_command": "pixi run dvc status -c --no-updates --json artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz.dvc",
+    "status_exit_code": 0,
+    "status_result": {},
+    "push_command": "pixi run dvc push artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz.dvc",
+    "push_exit_code": 0,
+    "push_result": "Everything is up to date.",
+    "raw_bundle_reconstructible": true
+  },
+  "local_cleanup": {
+    "raw_archive": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz",
+    "raw_archive_present": false,
+    "cache_object": ".dvc/cache/files/md5/a9/d386214bc19b5e639ca49374586699",
+    "cache_object_present": false
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_diagnosis_20260921.json",
+      "sha256": "31b56da27a7e00621bda420f774ebf98d355cac4145dc079c0d86d6a3bdfb32d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_tests_20260921.json",
+      "sha256": "f839399207457cc4179ce8dad3cb6f179628136c31e91552f864ef39152f12ef"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_independent_review_20260921.json",
+      "sha256": "74437fb379158cdb733bf539ac4865cd7f084bfd216f6c315770890497457ba7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_independent_review_report_20260921.json",
+      "sha256": "ff499d685dd7e1ac652f9f847ac55b86fbf3866e223d116e7f97836e0bdef8ca"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_build_20260921.json",
+      "sha256": "92ab02c264e98466971672702a388459e0b38b55e4229d0f256e0a15ace30d01"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_queued_build_20260921.json",
+      "sha256": "80f3c86fb137104b5da0d1065cae6b3c17111c8380a65f02e58c84ae2bd71ce9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_run_20260921.json",
+      "sha256": "ba62772f8a1d980c3a1aea57b9bd988d27ea79839d6484e9ace663032a2fe75f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
+      "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_assessment_baseline_20260921.json",
+      "sha256": "887c8667401c880dca29fd66a111b4823e553052f14575f4cd6f5a013b1f3b25"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_assessment_20260921.json",
+      "sha256": "543c0bd1e255867aacf43029add1e868a704475d6190117eecc2f81991f71e2b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz.dvc",
+      "sha256": "ded2f525fb415c0816efc7ce33d52152ffa8c2e3c198b603b313c8eebc5102a4"
+    }
+  ],
+  "disposition": "Published as closed diagnostic evidence only. The 300-second Blood window completed with cleanup, but reference_conditions_not_comparable means it cannot accept actor_30002, Blood performance, repair acceptance, or Magmaw 10N completion. Route the next bounded unit to inspect the loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265."
+}

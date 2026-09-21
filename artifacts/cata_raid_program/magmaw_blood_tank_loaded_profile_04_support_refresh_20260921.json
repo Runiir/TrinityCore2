@@ -1,0 +1,20 @@
+{
+  "schema": "cata_raid_support_refresh_v1",
+  "reason": "Repair stale source isolation for retained coordination files without changing the Blood native observability hypothesis or owned files.",
+  "prior_operation": {
+    "operation_id": "77fe8ab3e57856870134a7afa08d60355e88ee5e9c088f34f15289c8eebf3313",
+    "ownership_checked": true,
+    "active_operation": false,
+    "completed_operation": false,
+    "reusable_receipt_found": false
+  },
+  "prior_commit": "12cf09bbf3642e569c48ba1a35c228b49e951178",
+  "owned_file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
+    "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/class_calibration_scope_review_20260921.receipt.json",
+    "sha256": "25560bf6f8f7d72d85942b0313766e6d00abfdfb3bf52bd3b59252f66fdd43d6"
+  }
+}

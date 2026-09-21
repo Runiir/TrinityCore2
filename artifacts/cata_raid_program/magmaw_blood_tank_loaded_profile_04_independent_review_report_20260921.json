@@ -1,0 +1,26 @@
+{
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
+    "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
+  },
+  "findings": [],
+  "limits": "No independent execution limitations. No build, host12/dummy validation, server, or live validation was run.",
+  "proof": {
+    "final_message_bytes": 566,
+    "final_message_sha256": "9098e93248028baa44a7b06ad927ca9d1d2d2ccbb15df12a5fa69589b33f5cf2",
+    "prefix_bytes": 3424175,
+    "prefix_sha256": "56afb6e6f2f6f3482a2538e7110ca5bd0508983c7d3b00a1c737b342858e124f",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T18-14-40-01a0c488-9404-7301-bddb-35a684095538.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c488-9404-7301-bddb-35a684095538"
+  },
+  "reviewer_session_id": "01a0c488-9404-7301-bddb-35a684095538",
+  "schema": "cata_raid_review_report_v1",
+  "tests": {
+    "blood_death_strike_priority": "2 passed",
+    "git_diff_check": "passed",
+    "module_size": "passed",
+    "profile_preview_diagnostic_publication": "2 passed"
+  },
+  "verdict": "approved"
+}

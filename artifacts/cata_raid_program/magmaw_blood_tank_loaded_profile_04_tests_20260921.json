@@ -1,0 +1,53 @@
+{
+  "schema": "raid_development_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "producer": "codex-magmaw-blood-tank-loaded-profile-04-implement",
+  "authority": "coordinator_attestation",
+  "operation_id": "ea8ce7e9a1b7e2d65b9103567da1837bdd594f545e466fcc4a214ab6163813da",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_result_checkpoint_20260921.json",
+      "sha256": "8072c570388969d9ba3cf88653609b972f8793b28dff2e99cebf620cfa8b0b67"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_result_review_20260921/summary.json",
+      "sha256": "e35abe7eae486994adc842f7c0c5d9c1a181a23c970e36e07b5ad6e9d8cba488"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_20260921.json",
+      "sha256": "d1b1893d060695188db7a8b036e3e1fedcf6d8c37d68d8c925ed72b99d77edd5"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
+    "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.88s"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.55s"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supports the bounded observability implementation and focused test claim; it does not support live actor, performance, or raid acceptance.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_result_review_20260921/summary.json",
+        "sha256": "e35abe7eae486994adc842f7c0c5d9c1a181a23c970e36e07b5ad6e9d8cba488"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed because the result packet exceeded its context budget; no local model decision is used.",
+      "reason": "Local HTTP 422 context_budget_exceeded; retained as provider non-review."
+    }
+  }
+}

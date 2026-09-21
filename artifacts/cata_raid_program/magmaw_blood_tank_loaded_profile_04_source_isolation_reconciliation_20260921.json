@@ -1,0 +1,15 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "implement_source_isolation_reconciliation",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "stage": "implement",
+  "operation_id": "77fe8ab3e57856870134a7afa08d60355e88ee5e9c088f34f15289c8eebf3313",
+  "owner": "codex-magmaw-blood-tank-loaded-profile-04-implement",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The implementation gate correctly found committed workflow/test deltas after the saved Blood source baseline. No native build, server, controller, validation, or acceptance operation was launched. Rebind the same observability task to the existing independent review of those unchanged coordination files; keep the Blood observation header and focused publication test as the only native-owned files."
+}

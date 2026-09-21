@@ -1,0 +1,91 @@
+{
+  "task_id": "magmaw:blood_tank_loaded_profile_04_plan_drift_20260921",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "objective": "Check that routing the remaining Blood tank throughput failure advances the complete Magmaw 10N bot objective.",
+  "first_broken_edge": "owner_blood_priority_inversion",
+  "allowed_files": [
+    "/home/runiir/Games/trinity-cata/sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+    "/home/runiir/Games/trinity-cata/src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "/home/runiir/Games/trinity-cata/src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+    "/home/runiir/Games/trinity-cata/tests/test_blood_death_strike_priority.py"
+  ],
+  "forbidden_changes": [
+    "Do not change WoWSims or reference catalog data, spell coefficients, gear, stats, encounter scripts, route geometry, or safety policy.",
+    "Do not change native candidate behavior unless the loaded-profile trace proves that candidate predicate is the first broken owner edge.",
+    "Do not remove Heart Strike fallback or multi-target Blood Boil behavior.",
+    "Do not claim actor_30002, any other actor, performance, raid clear, or parent completion from diagnosis or a focused test.",
+    "Keep every other actor, comparison, potion, survival-reference, and Magmaw 10N requirement open."
+  ],
+  "acceptance_conditions": [
+    "Inspect the SQL-loaded rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265 before editing.",
+    "If one policy or eligibility edge is proven, make one bounded repair and add an executable focused regression test.",
+    "Require independent review, frozen host12 build, exact tank_threat_300 validation, assessment, and publication before any actor claim."
+  ],
+  "observations": [
+    "The current graph is revision 312 at route; publication closed the latest Blood calibration as diagnostic evidence only and parent completion is false.",
+    "The exact Blood window completed 300 seconds with cleanup and no safety or action-quality failures, but reference_conditions_not_comparable made it non-certifying; active DPS was 19550.71 against 32489.03862.",
+    "The latest summary recorded 1199 successful actions, zero action failures, 9 action groups, zero resource starvation or capping, and no proven Blood priority edge. The loaded SQL rows and native predicates must be inspected before repeating the prior hypothesis.",
+    "All parent actor, comparison, potion, survival-reference, and Magmaw 10N requirements remain open."
+  ],
+  "proposed_change": "Route a unique actor_30002 Blood role unit to inspect the loaded action profile and native candidate eligibility, then repair only the first proven edge and carry it through focused test, independent review, frozen build, exact role validation, assessment, and publication.",
+  "acceptance_claim": "Plan alignment only. No policy repair, native behavior, actor performance, raid clear, or parent-objective completion is claimed.",
+  "required_test_commands": [],
+  "tests": [],
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "evidence_excerpts": [
+    {
+      "id": "active_graph",
+      "path": "/home/runiir/Games/trinity-cata/experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "34ecbf3f755312525d5cdee6ee86493953b1a4aacb1f9aeb0c5ca2de477784f3",
+      "excerpt": "Revision 312 is at route; every actor and comparison requirement remains open."
+    },
+    {
+      "id": "assessment",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_assessment_20260921.json",
+      "sha256": "543c0bd1e255867aacf43029add1e868a704475d6190117eecc2f81991f71e2b",
+      "excerpt": "The Blood actor was reviewed but not accepted because the exact window was not comparable to the reference."
+    },
+    {
+      "id": "validation_summary",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
+      "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171",
+      "excerpt": "The 300-second native window completed cleanly with 19550.71 active DPS, 1199 successes, no action failures, and reference_conditions_not_comparable."
+    },
+    {
+      "id": "publication",
+      "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_publication_20260921.json",
+      "sha256": "cca1d1865dfa97e37ac48b3c9c7554be1ce4541c37dc2aa59a9022b2753c934c",
+      "excerpt": "The closed diagnostic evidence was DVC-pushed, remotely verified, locally cleaned, and promoted no requirement."
+    },
+    {
+      "id": "ledger",
+      "path": "/home/runiir/Games/trinity-cata/docs/bot_raids/error_ledger.md",
+      "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+      "excerpt": "TANK-001 records a prior event-local Death Strike versus Heart Strike inversion but requires current loaded-profile and native-candidate proof before reuse."
+    },
+    {
+      "id": "policy_source",
+      "path": "/home/runiir/Games/trinity-cata/sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+      "excerpt": "The existing migration changes only the Blood tank Death Strike bucket and must be checked against the rows actually loaded by the runtime."
+    }
+  ],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL with exact WoWSims diagnosis.",
+    "latest_user_direction": "Implement magmaw 10n bots through implementation, review, build, validation, and publication gates.",
+    "current_plan": "Advance one proven open actor edge through role diagnosis and all evidence gates, then continue every remaining actor and the raid watchdog.",
+    "completed_work": [
+      "The latest Blood calibration completed 300 seconds, closed cleanly, was assessed as non-comparable, and was DVC-published without acceptance.",
+      "The parent workflow still retains every actor, comparison, and Magmaw 10N requirement."
+    ],
+    "remaining_requirements": [
+      "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005", "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010", "affliction_comparison", "elemental_comparison", "potion_ownership", "survival_reference", "magmaw_10n"
+    ],
+    "known_blockers": [
+      "The current Blood evidence does not prove whether the loaded profile or native candidate eligibility owns the throughput gap.",
+      "Balance, Affliction, Elemental, Survival, potion ownership, all healers, and the final raid watchdog remain open and must not be dropped by this route."
+    ]
+  }
+}
