@@ -22,9 +22,10 @@ including any small offline-tooling subset; do not require declared inputs to
 be absent or add undeclared native data dependencies to identity-only readers.
 cache:false DVC outputs need exact locked-byte reproduction/copy, not dvc pull.
 For live launches, use the runner's derived asset arguments and read-access policy;
-do not create temporary mmap copies to resolve historical0444/0664 mode aliases.
+do not create temporary mmap copies to resolve historical 0444/0664 mode aliases.
 See [runtime asset preflight](../../../docs/bot_raids/runtime_asset_preflight.md).
-Exact archived modes remain required only by the strict sealed-replay verifier.
+For navigation and generated read-only inputs, exact archived modes remain
+required by the strict sealed-replay verifier.
 Never flip shared file modes to satisfy conflicting consumers.
 
 Before manually applying a tracked migration, inspect the server's ordinary
