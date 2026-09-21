@@ -1,0 +1,10 @@
+{
+  "revision": 308,
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "action": "advance",
+  "claim_token": "4a433d3ea695cd4d413061a12d63af58af1edc045157e0ee366b13be8d961bbc",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_run_20260921.json",
+    "sha256": "ba62772f8a1d980c3a1aea57b9bd988d27ea79839d6484e9ace663032a2fe75f"
+  }
+}

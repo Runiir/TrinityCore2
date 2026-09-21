@@ -1,0 +1,82 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "4a433d3ea695cd4d413061a12d63af58af1edc045157e0ee366b13be8d961bbc",
+  "attempt_id": 1,
+  "server_epoch": 5688210830527835,
+  "scenario_kind": "dummy",
+  "terminal_reason": "measurement_complete",
+  "scoring_ms": 300000,
+  "closed": true,
+  "cleanup_verified": true,
+  "evidence_identity_complete": true,
+  "build_identity": {
+    "source_commit": "a835a69d45db0e3a57e803a6f4d543e0dbbf4b29",
+    "binary_sha256": "6be44eb41fe067b21f00dc4a1871e483e247896697f086c564512d5b08b1f492"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30002",
+    "mode": "tank_threat_300",
+    "spec": "blood_death_knight",
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    },
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3702b099"
+    }
+  },
+  "reference_condition_result": {
+    "comparable": false,
+    "reason": "reference_conditions_not_comparable",
+    "hard_floor_applicable": false,
+    "optimization_target_applicable": false
+  },
+  "report_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
+    "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171"
+  },
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz.dvc",
+    "sha256": "ded2f525fb415c0816efc7ce33d52152ffa8c2e3c198b603b313c8eebc5102a4"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
+      "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921.raw.tar.gz.dvc",
+      "sha256": "ded2f525fb415c0816efc7ce33d52152ffa8c2e3c198b603b313c8eebc5102a4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_build_20260921.json",
+      "sha256": "92ab02c264e98466971672702a388459e0b38b55e4229d0f256e0a15ace30d01"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_queued_build_20260921.json",
+      "sha256": "80f3c86fb137104b5da0d1065cae6b3c17111c8380a65f02e58c84ae2bd71ce9"
+    },
+    {
+      "path": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+      "sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c"
+    }
+  ]
+}

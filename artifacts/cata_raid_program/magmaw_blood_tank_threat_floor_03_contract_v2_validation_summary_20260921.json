@@ -1,0 +1,231 @@
+{
+  "schema": "magmaw_blood_tank_threat_floor_03_validation_summary_v1",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "scenario_kind": "dummy",
+  "mode": "tank_threat_300",
+  "target_spec": "blood_death_knight",
+  "attempt_id": 1,
+  "server_epoch": 5688210830527835,
+  "terminal_reason": "measurement_complete",
+  "scoring_ms": 300000,
+  "closed": true,
+  "controller_returncode": 0,
+  "wrapper_exit_code": 1,
+  "build_identity": {
+    "source_commit": "a835a69d45db0e3a57e803a6f4d543e0dbbf4b29",
+    "binary_sha256": "6be44eb41fe067b21f00dc4a1871e483e247896697f086c564512d5b08b1f492"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "actor_id": "30002",
+    "mode": "tank_threat_300",
+    "spec": "blood_death_knight",
+    "profile_migration": {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    },
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3702b099"
+    }
+  },
+  "result": {
+    "acceptable_final_evidence": false,
+    "all_passed": false,
+    "completion_reason": "combat_calibration_role_gate_failed",
+    "calibration_acceptance": {
+      "diagnostics_passed": true,
+      "passed": false,
+      "rejections": [
+        "role_calibration:reference_conditions_not_comparable"
+      ],
+      "requested": {
+        "mode": "tank_threat_300",
+        "seed": 1,
+        "target_spec": "blood_death_knight"
+      },
+      "role_calibration_passed": false,
+      "schema": "bot_combat_calibration_acceptance_v2",
+      "scored_window_seconds": 300.0,
+      "target_guid": 1283,
+      "transport_passed": true,
+      "window_tolerance_seconds": 0
+    },
+    "role_evaluation": {
+      "passed": false,
+      "failure_reasons": [
+        "reference_conditions_not_comparable"
+      ],
+      "hard_floor_applicable": false,
+      "optimization_target_applicable": false,
+      "reference_comparison_eligible": false,
+      "reference_ratio": 0.601763
+    },
+    "metrics": {
+      "active_dps": 19550.71,
+      "reference_value": 32489.03862,
+      "measured_value": 19550.71,
+      "target_count": 5,
+      "threat_per_second": 11.01,
+      "tank_metrics": {
+        "add_threat_success_ratio": 1.0,
+        "all_hostile_retention_ratio": 1.0,
+        "death_count": 0,
+        "defensive_action_count": null,
+        "healer_exposure_ratio": 0.0,
+        "health_floor_ratio": 0.54,
+        "interrupt_success_ratio": 1.0,
+        "mitigation_uptime_ratio": 1.0,
+        "snap_threat_success_ratio": 1.0,
+        "threat_aura_uptime_ratio": 1.0
+      }
+    },
+    "bot_window": {
+      "elapsed_seconds": 300.0,
+      "damage": 5865212,
+      "dps": 19550.71,
+      "attempts": 1200,
+      "successes": 1199,
+      "quality_metrics": {
+        "action_group_count": 9,
+        "active_uptime_ratio": 1.0,
+        "cast_failure_ratio": 0.0,
+        "expected_action_group_count": 9,
+        "illegal_action_count": 0,
+        "movement_range_loss_ratio": 0.0,
+        "pet_damage_ratio": 0.09,
+        "resource_capped_ratio": 0.0,
+        "resource_starved_ratio": 0.0,
+        "rotation_group_coverage": 1.0
+      }
+    },
+    "reference_condition_observation": {
+      "sample_count": 0,
+      "fixture_target_guid": 0,
+      "window_started_at_ms": 1789999743430,
+      "window_ended_at_ms": 1790000043430,
+      "unexpected_external_bleed_active_samples": 0
+    }
+  },
+  "watchdog": {
+    "phase": "complete",
+    "scored_seconds": 300.0,
+    "window_complete": true,
+    "scoring_elapsed_seconds": 301.223,
+    "warmup_elapsed_seconds": 30.057,
+    "no_progress": null,
+    "death_loop": null,
+    "repeated": null
+  },
+  "runtime_asset_closure": {
+    "complete": true,
+    "status": "runtime_asset_closure_complete",
+    "manifest_sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c",
+    "snapshot_sha256": "f7c77614f3019db1b8c490a14a7b25d4374c76e2135f8bcc3ab68c665a94fc56",
+    "verification_scope": "runtime_closure_consumption"
+  },
+  "cleanup": {
+    "verified": true,
+    "lifecycle_statuses": [
+      {
+        "action": "botauto_status",
+        "server_epoch": 5859215417897120,
+        "attempt_id": 1,
+        "lease_count": 0,
+        "mode": "always_on_autonomy",
+        "active": true,
+        "bots": 0,
+        "target_bots": 0
+      },
+      {
+        "action": "botauto_status",
+        "server_epoch": 5859215417897120,
+        "attempt_id": 1,
+        "lease_count": 2,
+        "mode": "calibration_fixture",
+        "active": true,
+        "bots": 0,
+        "target_bots": 0
+      },
+      {
+        "action": "botauto_status",
+        "server_epoch": 5859215417897120,
+        "attempt_id": 1,
+        "lease_count": 0,
+        "mode": "always_on_autonomy",
+        "active": true,
+        "bots": 0,
+        "target_bots": 0
+      }
+    ],
+    "calibrate_stop": {
+      "action": "botauto_calibrate_stop",
+      "server_epoch": 5859215417897120,
+      "attempt_id": 1,
+      "removed": 2,
+      "fixture_target_found": false,
+      "fixture_cleanup_submitted_or_absent": true,
+      "failure_reason": null
+    },
+    "cleanup_complete_lines": [
+      "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000503 Type: Player Low: 1283 sessions=1 world_bots=1",
+      "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000508 Type: Player Low: 1288 sessions=0 world_bots=0"
+    ],
+    "shutdown_requested": true,
+    "server_exit_code": 0
+  },
+  "raw_files": {
+    "combat_analysis.json": {
+      "sha256": "a03514489ee9550e0c6c490d3132fff8e283b0d6425ae3f1f7a36cbd8326aad0",
+      "size_bytes": 358
+    },
+    "combat_log.json": {
+      "sha256": "3a59861ae59499cb5e144331fd0a8b315610f3391cff3f660d9dfbae9ef9fb40",
+      "size_bytes": 731
+    },
+    "commands.txt": {
+      "sha256": "1cd0e1084a451e91b5cd3ceaa65e3a321ed47435e2511d57bee5aeded961f533",
+      "size_bytes": 186
+    },
+    "heartbeat_events.jsonl": {
+      "sha256": "214ed4ddfd98b675f0d8073676d3538385c8eaddf8e5f0ffb951e87d3e30191e",
+      "size_bytes": 19204
+    },
+    "heartbeat_manifest.json": {
+      "sha256": "00638ef34699c29e0cc8d382cfaa9a756f3b1c924ad4d8ac72543aaee2143ead",
+      "size_bytes": 375
+    },
+    "latest.json": {
+      "sha256": "a707ad4af615ba4eb37cae3ccdcad756ecb7207aa67a11d1ffc3c817c2bec271",
+      "size_bytes": 13451562
+    },
+    "lifecycle_probe.log": {
+      "sha256": "d66c92ec804ef6c0ecbe874e1513068b636d22923a7b233cfa1552637aa7fa19",
+      "size_bytes": 264438
+    },
+    "report.json": {
+      "sha256": "f214f56e85f259ba8e685b193329e4f3f0f34e132183aeece81f2cb69209ab32",
+      "size_bytes": 33967300
+    },
+    "worldserver.validation.conf": {
+      "sha256": "53f48442474e90770c32d3731e87d791f32bed701965902e53c65da0bd43a399",
+      "size_bytes": 157131
+    },
+    "worldserver_output.log": {
+      "sha256": "45bf27bb90120b41fcb2e07f166164000301c522159057364676426a730bbc3e",
+      "size_bytes": 9423446
+    }
+  }
+}
