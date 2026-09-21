@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_independent_review_report_20260921.json",
+      "sha256": "52ef20e1a0e09bd53d60c9db08fd3dfb74ab5e3dacb32d0c6d17d816e56aaa5e"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "kind": "review",
+  "producer": "01a0c3b5-4ebb-7872-9e80-4fc74d368b38",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_independent_review_report_20260921.json",
+    "sha256": "52ef20e1a0e09bd53d60c9db08fd3dfb74ab5e3dacb32d0c6d17d816e56aaa5e"
+  },
+  "reviewer_session_id": "01a0c3b5-4ebb-7872-9e80-4fc74d368b38",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "verdict": "approved"
+}

@@ -1,0 +1,29 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "findings": [],
+  "limits": [
+    "No native build, live server, role-harness, performance, or raid validation was performed.",
+    "The fallback uses a production-comparator fixture with Death Strike omitted; it does not execute native rune legality or score generation."
+  ],
+  "proof": {
+    "final_message_bytes": 723,
+    "final_message_sha256": "ec32d5ab88cc830966d0ad55dd6a2c511fa90c91e8bacf6aeb818c2d2ec75e54",
+    "prefix_bytes": 497323,
+    "prefix_sha256": "25c78dfdd4a154d2a2d06863f7b76582cfaa33f3d2c13e8a253d783bbf7c0ae0",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/21/rollout-2026-09-21T14-23-54-01a0c3b5-4ebb-7872-9e80-4fc74d368b38.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c3b5-4ebb-7872-9e80-4fc74d368b38"
+  },
+  "reviewer_session_id": "01a0c3b5-4ebb-7872-9e80-4fc74d368b38",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0
+    }
+  ],
+  "verdict": "approved"
+}

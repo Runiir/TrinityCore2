@@ -1,0 +1,57 @@
+{
+  "schema": "cata_raid_program_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "7b75a9156ed7d056e6f6d1f7d6c9a8a58e77c202caea311d3504f3a2424c6145",
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "observation": "2 passed in 0.56s"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supports the bounded Blood continuation scope and evidence; this does not replace independent source review or native validation.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_review_20260921_v2/summary.json",
+        "sha256": "0d2562ac944ea37cf98b290b562a5fad959f019dfe2c68b3a490fcefa96660fc"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "No local Laya decision is treated as approval or rejection; independent review remains required.",
+      "reason": "Local HTTP 422 context_budget_exceeded after one compact correction; rejected requests are retained.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_review_20260921_compact/summary.json",
+        "sha256": "f873e5022ddc881b1c057a01940a0eb73869fd95843b06172051140c571e6edb"
+      }
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_20260921.json",
+      "sha256": "5372a0ca8153e10a92088ab3c56c300df6c35f17e075bd7ce708627b795cf25b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_adjudication_20260921.json",
+      "sha256": "ac741c981589fc55ea6f778f4c633b7fb6fc1ab3c7631c6208b1621184f6518f"
+    },
+    {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    },
+    {
+      "path": "tests/test_blood_death_strike_priority.py",
+      "sha256": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+    }
+  ],
+  "acceptance_claim": "The unchanged reviewed Blood SQL/test pass. This claims no native priority result, actor performance, raid clear, or parent completion."
+}

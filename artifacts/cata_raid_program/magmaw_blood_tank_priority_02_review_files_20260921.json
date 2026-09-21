@@ -1,0 +1,6 @@
+{
+  "files": [
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+    "tests/test_blood_death_strike_priority.py"
+  ]
+}
