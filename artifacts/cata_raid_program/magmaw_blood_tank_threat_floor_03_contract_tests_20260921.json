@@ -1,0 +1,62 @@
+{
+  "schema": "raid_development_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_threat_floor_03",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "d535f5871eeee584d76faeec29cd4c7d0cbb7fb1c5ae2ac6ab8c16c28c457e70",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_result_checkpoint_20260921.json",
+      "sha256": "2219aa8e37fd5f3c4930b61f29f53839e18104da28f35345aecb1c68bcdbaf74"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_result_review_20260921/summary.json",
+      "sha256": "1d08e044a6a158479cd05f4a1e5766adbdc6f079f0998dd7cdd338d59ca4c95c"
+    },
+    {
+      "path": "tools/bot_ml/role_calibration_harness.py",
+      "sha256": "46f81552437856445caefea9d51994a0a16898bb7f68a4b6c5e279c45874440d"
+    },
+    {
+      "path": "tests/test_tank_calibration_reference_contract.py",
+      "sha256": "60a02f08faa50b3b1572818cb9712839f519203596b02b8ded9cbf9ca67ff3b8"
+    }
+  ],
+  "file_hashes": {
+    "tools/bot_ml/role_calibration_harness.py": "46f81552437856445caefea9d51994a0a16898bb7f68a4b6c5e279c45874440d",
+    "tests/test_tank_calibration_reference_contract.py": "60a02f08faa50b3b1572818cb9712839f519203596b02b8ded9cbf9ca67ff3b8"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_tank_calibration_reference_contract.py",
+      "exit_status": 0,
+      "summary": "2 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_dps_gate.py",
+      "exit_status": 0,
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_ml_pipeline.py -k phase7_role_calibration_harness",
+      "exit_status": 0,
+      "summary": "1 passed, 416 deselected"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supports the exact two-file contract repair and the bounded test claim; it does not support live actor or raid acceptance.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_result_review_20260921/summary.json",
+        "sha256": "1d08e044a6a158479cd05f4a1e5766adbdc6f079f0998dd7cdd338d59ca4c95c"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed because the result packet exceeded its context budget; no local model decision is used.",
+      "reason": "Local HTTP 422 context_budget_exceeded; retained as provider non-review."
+    }
+  }
+}
