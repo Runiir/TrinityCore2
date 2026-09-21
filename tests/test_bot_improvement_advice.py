@@ -99,6 +99,17 @@ def test_wcl_actor_with_duties_and_no_components_stays_inspectable():
     assert state["dps"] == [20000, 25000]
     assert state["context"]["reference_limitations"] == ["reference has different phase coverage"]
     assert state["context"]["duty_coverage"] == "partial"
+    assert state["activity"] is None
+
+
+def test_each_request_discloses_components_it_does_not_contain():
+    doc = comparison()
+    doc["pairs"][0]["components"] = [{"key": str(i)} for i in range(4)]
+    packets = advice.projections(doc, top=2)
+    assert len(packets) == 2
+    for packet in packets:
+        assert packet["state"]["component"] is not None
+        assert packet["state"]["components_outside_this_packet"] == 3
 
 
 def test_output_never_overwrites_a_prior_receipt(tmp_path):

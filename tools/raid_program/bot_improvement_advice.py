@@ -100,10 +100,10 @@ def projections(report, actor=None, top=2):
                 "dps": [current.get("dps", current.get("native_dps")), reference.get("dps", pair.get("reference_dps"))],
                 "window": [current.get("window", report.get("window")), reference.get("window")],
                 "component": compact_component(component),
-                "activity": current.get("activity", {}),
+                "activity": current.get("activity"),
                 "duties": current.get("duties"),
                 "residual_dps": pair.get("reconciliation", {}).get("unattributed_residual_dps"),
-                "other_components": max(0, len(rows) - (1 if component else 0)) + pair.get("components_omitted", 0),
+                "components_outside_this_packet": max(0, len(rows) - (1 if component else 0)) + pair.get("components_omitted", 0),
             }
             result.append({"actor": str(aid), "pair_index": index,
                            "component_key": (component or {}).get("key", (component or {}).get("name")),
