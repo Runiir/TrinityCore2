@@ -1,0 +1,134 @@
+{
+  "schema": "raid_worker_checkpoint_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "codex-magmaw-holy-paladin-capability-profile-01-implement",
+  "authority": "coordinator_attestation",
+  "operation_id": "ac75340769959a548f84d9ef0028b0eea0f71690ab7e33108e61ce69f92b7c7c",
+  "stage": "result",
+  "task_id": "magmaw:holy_paladin_capability_profile_01_result_20260921",
+  "subject": "orchestrator",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "latest_user_direction": "Implement magmaw 10n bots.",
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+    "latest_user_direction": "Implement magmaw 10n bots.",
+    "current_plan": "Continue the saved coordinator scenario through independent review, native build, healer validation and publication while keeping every other parent requirement open.",
+    "remaining_requirements": [
+      "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005",
+      "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010",
+      "affliction_comparison", "elemental_comparison", "potion_ownership",
+      "survival_reference", "magmaw_10n"
+    ]
+  },
+  "objective": "Repair one proven Holy Paladin action-profile capability edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+  "first_broken_edge": "owner_holy_paladin_profile_incomplete",
+  "current_plan": "Add Word of Glory 85673 as one idempotent Holy Paladin healer-profile action with the existing holy_power_3 and healer triage gates.",
+  "completed_work": "Added the scoped world migration and focused SQLite fixture. The fixture applies the migration twice, confirms one Word of Glory row with the intended gates, preserves the three baseline actions, and leaves another class profile unchanged.",
+  "observations": [
+    "The migration adds Word of Glory 85673 at sort order 15 with heal_fast category, lowest_ally targeting, one injured ally at 94 percent health and the holy_power_3 mechanic tag.",
+    "Applying the migration twice leaves exactly one Word of Glory row and preserves Blessing of Kings, Flash of Light, Holy Light and an unrelated profile.",
+    "The production candidate builder still contains the holy_power_3 rejection path; no C++ or shared runtime file changed.",
+    "Independent review, frozen-policy build and healer role validation remain pending."
+  ],
+  "remaining_requirements": [
+    "actor_30001", "actor_30002", "actor_30003", "actor_30004", "actor_30005",
+    "actor_30006", "actor_30007", "actor_30008", "actor_30009", "actor_30010",
+    "affliction_comparison", "elemental_comparison", "potion_ownership",
+    "survival_reference", "magmaw_10n"
+  ],
+  "proposed_change": "Keep the new SQL-only profile capability bounded to Word of Glory 85673. Do not modify the resolver, shared candidate predicates, encounter scripts, movement, references, resources or other class profiles.",
+  "allowed_files": [
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql",
+    "tests/test_holy_paladin_capability_profile.py"
+  ],
+  "changed_files": [
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql",
+    "tests/test_holy_paladin_capability_profile.py"
+  ],
+  "changed_files_source": "coordinator_observed",
+  "forbidden_changes": [
+    "Do not change HolyPaladinResolver.cpp, shared candidate predicates, encounter scripts, movement authority or tank assignments.",
+    "Do not add the remaining learned capabilities in this bounded unit or alter Holy Power, mana, healer triage, target selection or spell legality semantics.",
+    "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership or raid composition.",
+    "Do not claim actor_30004, another actor, performance, raid clear or parent completion from this result."
+  ],
+  "acceptance_conditions": [
+    "The migration is idempotent and adds exactly one Word of Glory 85673 action to the Holy Paladin healer profile without changing the three baseline rows.",
+    "The fixture proves the holy_power_3 tag, lowest_ally selector, 94 percent triage threshold and one-injured-ally gate, while the production candidate source still owns the resource rejection.",
+    "Independent review, frozen-policy build and healer role validation remain required before any actor or raid acceptance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
+  ],
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_holy_paladin_capability_profile.py",
+      "exit_status": 0,
+      "summary": "3 passed in 0.05s"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
+    "tests/test_holy_paladin_capability_profile.py": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
+  },
+  "source_commit": "42c6e8e260fc60a0792dbc8c080ae236b00aff3c",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_20260921.json",
+      "sha256": "7a6de77a63a6ef820b63ab055a99960eac4b3db9e23d2681c5c92db380076168"
+    },
+    {
+      "path": "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql",
+      "sha256": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9"
+    },
+    {
+      "path": "tests/test_holy_paladin_capability_profile.py",
+      "sha256": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_result_review_20260921/summary.json",
+      "sha256": "07ff7acfe8f715abc6026a7108bacd8960dcc37a2fd5a43888caaa11ee18a313"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_result_review_20260921/checkpoint.json",
+      "sha256": "b4ad898c5553dd1c61dbafea139c79767ccea13b4b6594d63db101d4ba00cc19"
+    }
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "migration",
+      "path": "../../sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql",
+      "sha256": "1197095e8f32f5a15419d85a8be44a23c88ea2ec1d702ad4bddf5fbda762eec9",
+      "excerpt": "The migration inserts one idempotent Word of Glory 85673 healer action with heal_fast, holy_power_3, lowest_ally and 94 percent triage gates."
+    },
+    {
+      "id": "focused_fixture",
+      "path": "../../tests/test_holy_paladin_capability_profile.py",
+      "sha256": "1e7480114d8bd0c3e145356d4fb070afe0cb5789ccdd5dc188dd8cbb685d2287",
+      "excerpt": "The fixture executes the migration twice, verifies exactly one new row, preserves all baseline rows and checks the native holy_power_3 predicate."
+    },
+    {
+      "id": "candidate_builder",
+      "path": "../../src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "sha256": "8df6026d696961e0c4e960d7fd20173ae0f29ae64a333ca1ad5a422a92d1db28",
+      "excerpt": "The shared candidate builder returns insufficient_holy_power when a holy_power_3 action has fewer than three Holy Power."
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "Hosted Jev supported the bounded implementation, evidence and focused-test claim; it did not review or authorize live actor, performance or raid acceptance.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_result_review_20260921/summary.json",
+        "sha256": "07ff7acfe8f715abc6026a7108bacd8960dcc37a2fd5a43888caaa11ee18a313"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "Local Laya was not reviewed because its fixed context budget rejected the result packet; the request and provider error remain retained.",
+      "reason": "Local HTTP 422 context_budget_exceeded; no unchanged retry was attempted."
+    }
+  },
+  "acceptance_claim": "Bounded implementation and focused fixture only. No native live healer outcome, actor acceptance, performance acceptance, raid clear or parent completion is claimed."
+}
