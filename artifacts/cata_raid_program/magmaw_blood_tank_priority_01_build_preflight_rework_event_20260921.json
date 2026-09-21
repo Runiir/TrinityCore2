@@ -1,0 +1,10 @@
+{
+  "action": "rework",
+  "revision": 236,
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "reason": "workflow_build preflight hard-codes single_target_300 for every dummy unit; route a bounded support fix that passes the declared tank_threat_300 mode and adds a regression test before rebuilding.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_build_preflight_rework_20260921.json",
+    "sha256": "add813277071ef1f9213644af0451007744332ff482614b9d7de7e1ac14bea23"
+  }
+}

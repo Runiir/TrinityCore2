@@ -1,0 +1,28 @@
+{
+  "schema": "raid_support_review_receipt_v1",
+  "kind": "supporting_review",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "independent-reviewer-magmaw-workflow-preflight",
+  "authority": "coordinator_attestation",
+  "reviewer_session_id": "reviewer-magmaw-workflow-preflight-20260921",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_report_20260921.json",
+    "sha256": "0269e4eedc0553105da44f967b7130446e1f7da16a9fb5414ba5e232798d679e"
+  },
+  "file_hashes": {
+    "tools/raid_program/workflow_build.py": "ccf41a10bcecb8c7a0a327c87bc85fd6965aed98dc93c24e8e9bc9aa7d945e62",
+    "tests/test_workflow_build_role_preflight.py": "5fd84ff0d45c3a82ca274143a7007cd1b7e9eaf20ca923789263b066d44da1c0"
+  },
+  "verdict": "approved",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_result_20260921/checkpoint.json",
+      "sha256": "a0217c801ccba3cfea036228e5292462bbcaef3ddb3fd04634f6e059a139002e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_result_20260921_review/summary.json",
+      "sha256": "02b31c59025d863582ef26fc6f54667e76f9e828bc7bfeaef470d55febae0381"
+    }
+  ],
+  "approval_limit": "Supporting workflow files only."
+}

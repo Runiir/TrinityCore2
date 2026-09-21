@@ -81,8 +81,9 @@ def preflight(root: Path, assignment: dict) -> dict:
         if root.resolve() != ROOT:
             raise ValueError("run calibration build preflight from the coordinator checkout's module")
         from tools.bot_ml.run_live_bot_validation import preflight_calibration_reference_binding
+        calibration_mode = str(identity.get("mode") or "single_target_300")
         result["reference"] = preflight_calibration_reference_binding(
-            calibration_only=True, calibration_mode="single_target_300",
+            calibration_only=True, calibration_mode=calibration_mode,
             target_spec=identity["spec"])
     elif kind == "raid":
         file_ref(root, identity.get("route"))

@@ -1,0 +1,9 @@
+{
+  "action": "advance",
+  "revision": 237,
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_20260921.json",
+    "sha256": "70f3e3152c1a265342ddead6624e24a975af8b7f70638ffcfb6cd4f58a517c80"
+  }
+}

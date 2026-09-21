@@ -1,0 +1,18 @@
+{
+  "schema": "raid_development_rework_receipt_v1",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "5d6bb7d03303e9b6edf1765844909cce6f2d4a7c1ca72ea952ed0896de978417"
+    },
+    {
+      "path": "tests/test_ml_pipeline.py",
+      "sha256": "75d0367336664b8ec62910a354729b23f1290ad11de0565782a86d8cf81acae9"
+    }
+  ],
+  "reason": "workflow_build preflight hard-codes single_target_300 for every dummy unit. The Blood unit declares tank_threat_300, and the existing live-validation contract explicitly skips the DPS WoWSims binding for tank and healer modes. Add the smallest workflow-only mode pass-through and regression test, then rebind the same Blood policy unit with separately reviewed supporting files.",
+  "source_change_claim": "No Blood policy, native resolver, encounter, actor, performance, or raid acceptance change is claimed by this rework."
+}

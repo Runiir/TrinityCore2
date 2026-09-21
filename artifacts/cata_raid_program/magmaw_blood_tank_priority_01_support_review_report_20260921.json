@@ -1,0 +1,45 @@
+{
+  "schema": "raid_support_review_report_v1",
+  "reviewer_session_id": "reviewer-magmaw-workflow-preflight-20260921",
+  "producer": "independent-reviewer-magmaw-workflow-preflight",
+  "reviewed_base_commit": "28268b1e12cfd864993a073683ccb7d9ed48f326",
+  "files": {
+    "tools/raid_program/workflow_build.py": "ccf41a10bcecb8c7a0a327c87bc85fd6965aed98dc93c24e8e9bc9aa7d945e62",
+    "tests/test_workflow_build_role_preflight.py": "5fd84ff0d45c3a82ca274143a7007cd1b7e9eaf20ca923789263b066d44da1c0"
+  },
+  "checks": [
+    {
+      "id": "declared_mode_forwarding",
+      "result": "pass",
+      "evidence": "workflow_build.preflight now forwards validation_identity.mode and retains single_target_300 only as the absent-mode default."
+    },
+    {
+      "id": "tank_regression",
+      "result": "pass",
+      "evidence": "The focused regression captures tank_threat_300 and blood_death_knight and asserts the exact arguments passed to the reference gate."
+    },
+    {
+      "id": "scope",
+      "result": "pass",
+      "evidence": "No runtime policy, simulator catalog, native resolver, encounter script, or live-validation behavior was changed."
+    },
+    {
+      "id": "focused_tests",
+      "result": "pass",
+      "evidence": "The focused command completed with 2 passed and 416 deselected."
+    },
+    {
+      "id": "hygiene",
+      "result": "pass",
+      "evidence": "The workflow source change is two lines and the focused test is isolated to a new test file."
+    }
+  ],
+  "advisory_context": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_result_20260921_review/summary.json",
+    "sha256": "02b31c59025d863582ef26fc6f54667e76f9e828bc7bfeaef470d55febae0381",
+    "note": "Local Laya and hosted Jev both returned advisory responses; deterministic checks passed."
+  },
+  "findings": [],
+  "verdict": "approved",
+  "approval_limit": "Approve these workflow-only supporting files for the Blood role-harness build plan. This does not approve the Blood policy, native build, live validation, actor, performance or raid outcome."
+}
