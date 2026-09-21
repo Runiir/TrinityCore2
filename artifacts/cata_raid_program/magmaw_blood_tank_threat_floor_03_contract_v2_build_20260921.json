@@ -1,0 +1,46 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "6be44eb41fe067b21f00dc4a1871e483e247896697f086c564512d5b08b1f492",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_queued_build_20260921.json",
+    "sha256": "80f3c86fb137104b5da0d1065cae6b3c17111c8380a65f02e58c84ae2bd71ce9"
+  },
+  "file_hashes": {
+    "tools/bot_ml/role_calibration_harness.py": "36096a42a0285acb3182d1e9be9c42b17a2d715f994131a8165adf45f1e7185c",
+    "tools/bot_ml/run_phase8_all_spec_calibration.py": "027462da6f06b1fb264f1afc383203ba1ee9cab68c5125f23d551c2b6e72c1fe",
+    "tools/bot_ml/build_phase8_all_spec_calibration_contract.py": "bad4b36c6d902b1853bcf381f28a2ac6cf1baf48259400b2f4c3bc9b8044a7de",
+    "tests/test_tank_calibration_reference_contract.py": "10138836e5c37d2e825a19322148f69b317d8053a7c4abb12139a313142bad81"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_diagnosis_20260921.json",
+      "sha256": "31b56da27a7e00621bda420f774ebf98d355cac4145dc079c0d86d6a3bdfb32d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_tests_20260921.json",
+      "sha256": "f839399207457cc4179ce8dad3cb6f179628136c31e91552f864ef39152f12ef"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_independent_review_20260921.json",
+      "sha256": "74437fb379158cdb733bf539ac4865cd7f084bfd216f6c315770890497457ba7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_build_claim_event_20260921.json",
+      "sha256": "824a173a3ec81e897668886d1864e6cc8f70bbd54c7777303856446b98c5218a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_queued_build_20260921.json",
+      "sha256": "80f3c86fb137104b5da0d1065cae6b3c17111c8380a65f02e58c84ae2bd71ce9"
+    }
+  ],
+  "kind": "build",
+  "notes": "Host-12 queued configure and worldserver build succeeded; source and binary identity are gate-bearing.",
+  "operation_id": "c93d13a4acf40b254be8e33af740e70381d063baa58515d0dcf4bbce9a4b73b0",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator",
+  "source_commit": "a835a69d45db0e3a57e803a6f4d543e0dbbf4b29",
+  "unit_id": "magmaw:blood_tank_threat_floor_03"
+}

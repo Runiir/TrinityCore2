@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Inspect the SQL-loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265; repair only the first proven policy edge, add an executable focused test, and preserve Heart Strike fallback and multi-target Blood Boil behavior.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Inspect the SQL-loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265; repair only the first proven policy edge, add an executable focused test, and preserve Heart Strike fallback and multi-target Blood Boil behavior.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 306,
+    "revision": 307,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -5909,6 +5909,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 306,
+        "unit_id": "magmaw:blood_tank_threat_floor_03",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "action": "advance",
+          "claim_token": "c93d13a4acf40b254be8e33af740e70381d063baa58515d0dcf4bbce9a4b73b0",
+          "revision": 306,
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_build_20260921.json",
+            "sha256": "92ab02c264e98466971672702a388459e0b38b55e4229d0f256e0a15ace30d01"
+          },
+          "unit_id": "magmaw:blood_tank_threat_floor_03"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -5999,6 +6017,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_independent_review_20260921.json",
         "sha256": "74437fb379158cdb733bf539ac4865cd7f084bfd216f6c315770890497457ba7"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_build_20260921.json",
+        "sha256": "92ab02c264e98466971672702a388459e0b38b55e4229d0f256e0a15ace30d01"
       }
     },
     "tested_files": {
@@ -6009,11 +6031,9 @@
     },
     "tested_commit": "bfa9452eae8afcdcbbbf7b9f8d40cc1fb1bc34a9",
     "implementer": "coordinator",
-    "claim": {
-      "owner": "codex-magmaw-blood-tank-threat-floor-03-contract-v2-build",
-      "token": "c93d13a4acf40b254be8e33af740e70381d063baa58515d0dcf4bbce9a4b73b0",
-      "operation_id": "c93d13a4acf40b254be8e33af740e70381d063baa58515d0dcf4bbce9a4b73b0",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "a835a69d45db0e3a57e803a6f4d543e0dbbf4b29",
+      "binary_sha256": "6be44eb41fe067b21f00dc4a1871e483e247896697f086c564512d5b08b1f492"
     }
   },
   "parked_scenarios": {
