@@ -298,9 +298,10 @@ checks remain mandatory; a compatibility proof alone cannot admit a run.
 
 ## Jev/Laya and retries
 
-At plan and result, use the existing
-[worker checkpoints](worker_checkpoints.md). `advice` records both `jev` and
-`laya`. Each entry has `status=reviewed`, a receipt reference and coordinator
+Model calls and `advice` are optional. Prefer [per-bot improvement suggestions](bot_improvement_advice.md)
+over broad plan/result approvals. An omitted or empty `advice` object does not
+block a transition. When supplied, `advice` records `jev` and/or `laya`.
+Each entry has `status=reviewed`, a receipt reference and coordinator
 `adjudication`; service/context failures use `status=not_reviewed`, `reason`
 and the coordinator's alternative review. A model failure is visible without
 blocking unrelated work. Model outputs cannot replace the independent approving

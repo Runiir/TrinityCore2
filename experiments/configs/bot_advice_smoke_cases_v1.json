@@ -87,7 +87,7 @@
             "actor": "12",
             "spec": "example",
             "role": "dps",
-            "dps": 20000,
+            "dps": 18000,
             "window": {
               "seconds": 300
             },
@@ -132,16 +132,16 @@
             {
               "key": "100",
               "current": {
-                "ordinary_casts": 100,
-                "landed_events": 100,
-                "damage": 6000000
+                "ordinary_casts": 90,
+                "landed_events": 90,
+                "damage": 5400000
               },
               "reference": {
                 "ordinary_casts": 100,
                 "landed_events": 100,
                 "damage": 6000000
               },
-              "apparent_gap_dps": 0
+              "apparent_gap_dps": 2000
             }
           ],
           "reconciliation": {
@@ -306,16 +306,16 @@
             {
               "key": "100",
               "current": {
-                "ordinary_casts": 100,
-                "landed_events": 100,
-                "damage": 6000000
+                "ordinary_casts": 90,
+                "landed_events": 90,
+                "damage": 5400000
               },
               "reference": {
                 "ordinary_casts": 100,
                 "landed_events": 100,
                 "damage": 6000000
               },
-              "apparent_gap_dps": 0
+              "apparent_gap_dps": 2000
             }
           ],
           "reconciliation": {
@@ -401,7 +401,7 @@
             "actor": "12",
             "spec": "example",
             "role": "dps",
-            "dps": 20000,
+            "dps": 10000,
             "window": {
               "seconds": 300
             },
@@ -431,7 +431,7 @@
             }
           ],
           "reconciliation": {
-            "unattributed_residual_dps": 10000
+            "unattributed_residual_dps": 0
           }
         }
       ]
@@ -452,7 +452,7 @@
             "actor": "12",
             "spec": "example",
             "role": "dps",
-            "dps": 20000,
+            "dps": 10000,
             "window": {
               "seconds": 300
             },

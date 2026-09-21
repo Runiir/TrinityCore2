@@ -156,7 +156,7 @@ def test_paused_support_refresh_preserves_native_unit_and_requires_new_tests(cas
 
 @pytest.mark.parametrize('stage,changes,match',[
     ('diagnose',{'producer':'jev'},'model advice'),
-    ('diagnose',{'advice':{}},'adjudication'),
+    ('diagnose',{'advice':{'jev':{}}},'adjudication'),
     ('implement',{'tests':[]},'required test'),
     ('review',{'producer':'coordinator'},'independent'),
     ('review',{'verdict':'changes_required'},'independent'),
@@ -173,6 +173,13 @@ def test_bad_transitions_fail_without_mutation(case,stage,changes,match):
     root,state,evidence=reach(case,stage);before=json.dumps(state)
     with pytest.raises(graph.GraphError,match=match):graph.reduce(root,state,receipt(root,state,evidence,**changes))
     assert json.dumps(state)==before
+
+
+def test_diagnosis_can_advance_without_model_advice(case):
+    root, state, evidence = case
+    result = graph.reduce(root, state, receipt(root, state, evidence, advice={}))
+    assert result['development_graph']['stage'] == 'implement'
+    assert result['development_graph']['requirements'] == state['development_graph']['requirements']
 
 
 def test_changed_code_invalidates_review(case):

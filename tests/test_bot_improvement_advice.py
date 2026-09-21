@@ -90,11 +90,15 @@ def test_provider_facts_identical_and_hosted_has_one_attempt(tmp_path, monkeypat
 
 def test_wcl_actor_with_duties_and_no_components_stays_inspectable():
     doc = {"schema": "raid_damage_gap_comparison_v1", "window": {"seconds": 140},
-           "actors": [{"actor_guid": 12, "elapsed_dps": 20000, "reference_dps": 25000,
+           "actors": [{"actor_guid": 12, "native_dps": 20000, "reference_dps": 25000,
+                       "limitations": ["reference has different phase coverage"], "duty_coverage": "partial",
                        "duties": [{"provenance": "observed", "interval_ms": [1000, 2000]}], "components": []}]}
     state = advice.projections(doc)[0]["state"]
     assert state["duties"][0]["provenance"] == "observed"
     assert state["component"] is None
+    assert state["dps"] == [20000, 25000]
+    assert state["context"]["reference_limitations"] == ["reference has different phase coverage"]
+    assert state["context"]["duty_coverage"] == "partial"
 
 
 def test_output_never_overwrites_a_prior_receipt(tmp_path):

@@ -134,8 +134,9 @@ The repository hook at `.githooks/pre-commit` runs
 current coordinator-authored task from `git rev-parse --git-path worker-task.json`,
 captures the actual staged diff and file list, and retains the index tree,
 source HEAD and task/diff hashes. Unstaged work is excluded. An index change
-during review invalidates the result. The hook prints each model's choice,
-probability and confidence separately, with a path to the complete receipts.
+during review invalidates the result. The default hook makes no model calls.
+With explicit `--model-advice`, it prints each model's choice, probability and
+confidence separately, with a path to the complete receipts.
 HEAD and the original task bytes are also rechecked before returning.
 
 Use it for one commit without changing hooks in the other ongoing worktrees:
@@ -149,7 +150,7 @@ For an explicit checkpoint or an API key stored outside this worktree:
 ```sh
 pixi run python -m tools.raid_program.worker_precommit \
   --task /absolute/path/to/current-task.json \
-  --env-file /absolute/path/to/jev.env --backend both
+  --env-file /absolute/path/to/jev.env --backend both --model-advice
 ```
 
 The task contains `task_id`, `objective`, `first_broken_edge`, `allowed_files`,

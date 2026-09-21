@@ -46,6 +46,25 @@ def digest(value):
     return hashlib.sha256(encoded(value)).hexdigest()
 
 
+def compact_checks(checks):
+    return {key: ({"status": row["status"], "value": row["current"]}
+                  if row.get("status") == "match" and "current" in row
+                  and row.get("current") == row.get("reference") else row)
+            for key, row in checks.items()}
+
+
+def compact_component(component):
+    if component is None:
+        return None
+    result = dict(component)
+    for side in ("current", "reference"):
+        if isinstance(result.get(side), dict):
+            result[side] = {k: v for k, v in result[side].items()
+                            if not (k == "name" and v == component.get("name"))
+                            and not (k == "spell_id" and str(v) == str(component.get("key")))}
+    return result
+
+
 def projections(report, actor=None, top=2):
     """Consume full comparison output, never raw logs or agent-written goals."""
     if report.get("schema") not in {"evidence_comparison_v1", "raid_damage_gap_comparison_v1"}:
@@ -64,22 +83,25 @@ def projections(report, actor=None, top=2):
         context = {
             "kind": report.get("kind", "wcl"),
             "status": pair.get("status", "diagnostic_only"),
-            "checks": pair.get("context_comparison", {}).get("checks", {}),
-            "setup_differences": pair.get("setup_differences", []),
+            "checks": compact_checks(pair.get("context_comparison", {}).get("checks", {})),
+            "setup_differences": pair.get("setup_differences"),
             "setup_differences_omitted": pair.get("setup_differences_omitted", 0),
-            "missing": current.get("completeness", {}).get("missing_observations", []),
+            "missing": current.get("completeness", {}).get("missing_observations"),
         }
+        if report.get("schema") == "raid_damage_gap_comparison_v1":
+            context["reference_limitations"] = pair.get("limitations")
+            context["duty_coverage"] = pair.get("duty_coverage")
         # A missing check is unknown, never an inferred pass. Keep whole checks.
         rows = pair.get("components", [])
         for component in rows[:top] or [None]:
             state = {
                 "actor": str(aid), "spec": current.get("spec"), "role": current.get("role"),
                 "context": context,
-                "dps": [current.get("dps", current.get("elapsed_dps")), reference.get("dps", pair.get("reference_dps"))],
+                "dps": [current.get("dps", current.get("native_dps")), reference.get("dps", pair.get("reference_dps"))],
                 "window": [current.get("window", report.get("window")), reference.get("window")],
-                "component": component,
+                "component": compact_component(component),
                 "activity": current.get("activity", {}),
-                "duties": current.get("duties", []),
+                "duties": current.get("duties"),
                 "residual_dps": pair.get("reconciliation", {}).get("unattributed_residual_dps"),
                 "other_components": max(0, len(rows) - (1 if component else 0)) + pair.get("components_omitted", 0),
             }
@@ -118,6 +140,7 @@ def review(report, output, *, actor=None, top=2, backend="both", env_file=Path("
             request = packet(part["state"], laya_packets.MODEL if provider == "local" else analyzer.JEV_MODEL)
             row = {k: v for k, v in part.items() if k != "state"}
             row.update(provider=provider, request=request, request_sha256=digest(request),
+                       endpoint=endpoint if provider == "local" else analyzer.JEV_URL,
                        status="prepared", response=None, error=None, suggestion=None,
                        state_bytes=len(encoded(part["state"])))
             started = time.monotonic()

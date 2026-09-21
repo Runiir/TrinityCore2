@@ -323,16 +323,19 @@ def _receipt(root: Path, event: dict, kind: str, g: dict) -> dict:
     # Actual existing producer outputs remain intact; the adapter only links them.
     for ref in r['evidence']:
         file_ref(root, ref)
-    if r.get('producer') in ('jev', 'laya', 'worker_checkpoint'):
+    if r.get('producer') in ('jev', 'laya', 'worker_checkpoint', 'bot_improvement_advice'):
         raise GraphError('model advice is not an acceptance receipt')
     return r
 
 
 def advice(root: Path, r: dict) -> None:
-    """Require visible disposition, including legitimate provider unavailability."""
+    """Validate advice if supplied; no provider call or disposition is required."""
     reviews = r.get('advice', {})
-    for provider in ('jev', 'laya'):
-        review = reviews.get(provider, {})
+    if not isinstance(reviews, dict):
+        raise GraphError('advice must be an optional object')
+    for provider, review in reviews.items():
+        if provider not in ('jev', 'laya'):
+            raise GraphError('unknown advisory provider ' + provider)
         required(review, 'adjudication')
         if review.get('status') == 'reviewed':
             file_ref(root, review.get('receipt'))
