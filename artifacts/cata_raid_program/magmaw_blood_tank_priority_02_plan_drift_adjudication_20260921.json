@@ -1,0 +1,43 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:blood_tank_priority_02_plan_drift_20260921",
+  "unit_id": "magmaw:blood_tank_priority_02",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N"
+  },
+  "verdict": "aligned",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_checkpoint_20260921.json",
+    "sha256": "b429d35d7a615cff041c94fd109d0cad1cd1aa3bdd4ba19f49b7691fe1d6447c"
+  },
+  "model_reviews": {
+    "hosted_jev": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_review_20260921_v2/summary.json",
+        "sha256": "0d2562ac944ea37cf98b290b562a5fad959f019dfe2c68b3a490fcefa96660fc"
+      },
+      "scope_fit": "supported",
+      "evidence_support": "supported",
+      "acceptance_claim": "insufficient_evidence",
+      "status": "advisory"
+    },
+    "local_laya": {
+      "summary": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_review_20260921_compact/summary.json",
+        "sha256": "f873e5022ddc881b1c057a01940a0eb73869fd95843b06172051140c571e6edb"
+      },
+      "status": "not_reviewed",
+      "reason": "Local HTTP 422 context_budget_exceeded on the original packet and one compact correction; deterministic checks passed, and the rejected receipts are retained."
+    }
+  },
+  "deterministic_review": {
+    "status": "pass",
+    "summary_path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_02_plan_drift_review_20260921_v2/summary.json",
+    "summary_sha256": "0d2562ac944ea37cf98b290b562a5fad959f019dfe2c68b3a490fcefa96660fc"
+  },
+  "coordinator_reasoning": "The route is aligned with the parent objective. TANK-001 is a retained production-backed Blood edge, the new unit preserves the saved role scope and support binding, and the next sequence exercises focused evidence before any claim. The route does not close Balance, any other actor, comparisons, potion ownership, survival reference, or Magmaw 10N. Jev is advisory; Laya was not reviewed because both packets exceeded its deployed context budget.",
+  "next_correction": "Prepare the Blood diagnose/implementation receipt with the preserved host12 policy and tank_threat_300 identity, then run the required focused test before independent review."
+}
