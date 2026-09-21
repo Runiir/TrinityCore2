@@ -114,9 +114,15 @@ def bounded_select(document, pointer, offset, limit, argv, budget=12000, *, view
             if fits(candidate):
                 return result
 
-        # Keep the locator even if the command and envelope consume nearly all
-        # of the caller's budget.
-        return {
+        # A locator that cannot fit is not useful to the caller. Fail closed
+        # with a bounded marker instead of violating the output contract.
+        minimal = {
             "view": "structure_only_for_oversized_item",
             "path": pointer,
         }
+        if len(encoded(minimal)) <= budget:
+            return minimal
+        failure = {"view": "budget_exceeded"}
+        if len(encoded(failure)) > budget:
+            raise ValueError("budget too small for bounded evidence result")
+        return failure

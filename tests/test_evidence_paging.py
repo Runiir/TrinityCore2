@@ -37,6 +37,14 @@ def test_structure_only_fallback_respects_budget_for_large_objects():
     assert result['value']
 
 
+def test_structure_only_fallback_fails_closed_for_locator_over_budget():
+    key = 'segment_' + ('x' * 700)
+    doc = {key: ['x' * 700]}
+    result = bounded_select(doc, '/' + key, 0, 1, ['select', 'input.json'], 500)
+    assert len(encoded(result)) <= 500
+    assert result == {'view': 'budget_exceeded'}
+
+
 def test_continuation_does_not_overwrite_export_and_quotes_input():
     command = command_with(['select', 'file with spaces.json', '--output', '/tmp/save.json', '--offset', '4'], offset=8)
     args = shlex.split(command)
