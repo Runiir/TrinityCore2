@@ -1,0 +1,26 @@
+{
+  "kind": "review_rework",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "reason": "Independent review rejected the first patch because global calibration flags can suppress ordinary callers, source tests do not execute the behavior, and StopCombatCalibration clears identity before the stopping callback lifecycle is proven.",
+  "reviewer_report": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_independent_review_20260921.json",
+    "sha256": "d0abb4586c8d6dd29fa454fc471207ffaf741c4f2e768d63572c3c6c16ea3576"
+  },
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_rework_review_20260921.json/summary.json",
+    "sha256": "1e84717aa82c4ee6a3e049bc031eb401b49ec4f5810172d2934fe6fca339b346"
+  },
+  "plan_drift_adjudication": {
+    "verdict": "aligned",
+    "jev": "supported",
+    "laya": "not_reviewed_context_budget_exceeded",
+    "adjudication": "The rework stays on the same first-broken shared lifecycle edge, preserves the Magmaw 10N parent and all open actor requirements, and adds the smallest missing ordinary-runtime and stopping-identity boundaries before build."
+  },
+  "prior_tests": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_tests_20260921.json",
+    "sha256": "f1e69f4114043568dc10a7a88676fb07718552e564b102f0747473edac0cb771"
+  },
+  "native_or_live_acceptance": false
+}

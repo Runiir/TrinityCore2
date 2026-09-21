@@ -1,0 +1,10 @@
+{
+  "revision": 279,
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "action": "rework",
+  "reason": "Independent review found global ordinary-runtime suppression, non-executing source tests, and an unproven stopping lifecycle; rework the same shared teardown edge with explicit calibration identity and negative-path coverage.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_review_rework_20260921.json",
+    "sha256": "01c58cc4511ddcd897ee600da35e852b3adc467a9086f5e53eb40b863ede0229"
+  }
+}

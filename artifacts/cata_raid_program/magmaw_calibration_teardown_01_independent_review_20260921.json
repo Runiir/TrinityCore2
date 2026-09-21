@@ -1,0 +1,50 @@
+{
+  "schema": "raid_runtime_independent_review_v1",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "reviewer_session_id": "01a0c3db-94f8-7ba1-b1c5-baa98ab7da1b",
+  "reviewer": "Popper",
+  "reviewed_commit": "d9ee481d6f",
+  "current_coordinator_commit": "6244ac5e6b",
+  "verdict": "changes_requested",
+  "scope": "Independent review of the exact tested files for the shared calibration teardown repair before native build.",
+  "findings": [
+    {
+      "severity": "blocking",
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp:82-86",
+      "finding": "Terminal suppression checks global calibration flags for every state passed to the shared resolver, while ordinary UpdateBot callers also reach that resolver. The patch does not verify calibration-clone identity or prove ordinary combat continuity under stale or mixed flags."
+    },
+    {
+      "severity": "blocking",
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp:292-295",
+      "finding": "The CalibrationStopping early return is likewise global and is not bound to an explicit calibration clone or attempt identity."
+    },
+    {
+      "severity": "major",
+      "path": "tests/test_bot_world_population_mgr_calibration_bot_module.py:43-54",
+      "finding": "The new focused tests inspect source text and ordering only. They do not execute the resolver, native AttackStop, or callback path."
+    },
+    {
+      "severity": "major",
+      "path": "src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp:215",
+      "finding": "StopCombatCalibration clears CalibrationBots and calibration state before resetting CalibrationStopping, so the stopping branch is not shown to run through the production lifecycle."
+    }
+  ],
+  "focused_tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 pixi run pytest -q tests/test_bot_world_population_mgr_calibration_bot_module.py tests/test_bot_world_population_mgr_calibration_damage_module.py tests/test_bot_world_population_mgr_combat_notifications_module.py tests/test_bot_world_population_mgr_combat_movement_module.py",
+    "exit_status": 0,
+    "result": "21 passed in 1.66s",
+    "limit": "Source-contract checks only; not native or live behavior."
+  },
+  "required_repair": "Bind terminal suppression and the stopping callback guard to an explicit calibration-clone or attempt identity, preserve that identity through teardown before CalibrationBots and metrics are cleared, exercise clone suppression and ordinary autoattack continuity through both real callers, and prove stopping callbacks leave calibration metrics unchanged while the completed-window guard still records delayed contamination.",
+  "native_or_live_acceptance": false,
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp": "f0f2becd736527a3d90ee22bb4a128e0d5dd0425821bc4659aafb86789cd2693",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp": "35ae00a278b26133024f3efe07a6a322c821970f5eccf03154b2a6ed2b49e183",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "1f78275cd1d65be89f32d11ec31cc9000ca93a21cda8613d88cbb1ce33d3ef61",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp": "28602a84367fe10aa1d98a7e83c62b56ae520679bbe797dd3496ac96c9e87380",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py": "031a47a8b438f3c1c75ca39b6848f680ad0e904a70b2d793607947734452cf57",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py": "023e4b43ad1dccd543af180000e5e350c417bff4f70ec15a3aeabcae18c95935",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py": "2b19a7d35a7f50b6e41c4a64fab1a926bec338700543544a5b3d8e14d337ff23",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py": "a263db50040f6b510923b3da91ef2fd0ae5dce07206d117f7a61fa32a884fe89"
+  }
+}
