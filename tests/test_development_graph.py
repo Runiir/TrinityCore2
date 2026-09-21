@@ -230,6 +230,31 @@ def test_separately_reviewed_support_preserves_native_delta_and_remains_frozen(c
         graph.source_binding(root,assignment)
 
 
+def test_reviewed_executable_precommit_hook_is_bounded_support(case):
+    root, state, evidence = case
+    base = graph.git(root, 'rev-parse', 'HEAD')
+    path = '.githooks/pre-commit'
+    (root/path).parent.mkdir()
+    (root/path).write_text('#!/bin/sh\nexit 0\n')
+    (root/path).chmod(0o755)
+    graph.git(root, 'add', path)
+    graph.git(root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+              'commit', '-qm', 'reviewed hook')
+    state['development_graph']['source_base_commit'] = base
+    review = put(root/'support-review.json', {'verdict': 'approved',
+        'reviewer_session_id': 'separate-reviewer', 'review_report': evidence,
+        'file_hashes': graph.snapshot(root, [path])})
+    state = graph.reduce(root, state, receipt(root, state, evidence,
+        base_commit=base, supporting_review=review))
+    graph.source_binding(root, state['development_graph']['assignment'])
+    (root/path).write_text('#!/bin/sh\nexit 1\n')
+    graph.git(root, 'add', path)
+    graph.git(root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+              'commit', '-qm', 'unreviewed hook')
+    with pytest.raises(graph.GraphError, match='supporting files changed'):
+        graph.source_binding(root, state['development_graph']['assignment'])
+
+
 @pytest.mark.parametrize('path,selected', [('src/unowned.cpp',False), ('runtime.conf',False),
                                         ('tools/raid_program/input.py',True)])
 def test_supporting_review_cannot_admit_native_or_selected_inputs(case,path,selected):

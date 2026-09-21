@@ -53,6 +53,12 @@ Use `workflow_build refs` and `snapshot` for receipt inputs and owned files.
 
 ## Evidence and objective discipline
 
+Keep class calibration shared across bosses and encounter validation specific to
+each boss/difficulty. Consult
+[class and encounter validation](../raid-performance-loop/references/class-and-encounter-validation.md)
+before another dummy run or tank DPS work unit. New encounter work alone does not
+invalidate class qualification. Require explicit compatibility for changed builds.
+
 Use existing commands first. For admission and saved-task questions, use the
 focused `evidence_view admission` and `evidence_view task` views; read their
 command/output details in [evidence-views.md](../raid-rotation-review/references/evidence-views.md).

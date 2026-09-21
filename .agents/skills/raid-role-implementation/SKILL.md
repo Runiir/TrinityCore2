@@ -8,6 +8,13 @@ description: Implement and tune one Trinity-Cata DPS, tank, or healer behavior w
 Own one class family or one exact role failure. Do not own the simulator,
 encounter source, live server, or evidence publisher.
 
+A tank damage assignment needs a damage/cadence comparison against matched WCL
+or a compatible class reference, not only threat or survival qualification.
+Use the coordinator's ranked loss review and preserve mitigation while repairing
+damage delivery. Class calibration carries across bosses when inputs/behavior
+remain equivalent; see
+[class and encounter validation](../raid-performance-loop/references/class-and-encounter-validation.md).
+
 For an assigned read-only tank or healer review, use the supplied run context
 and relevant `references/tank-review-notes.md` or `healer-review-notes.md` when
 present. Return a causal repair packet before implementation. Shared encounter

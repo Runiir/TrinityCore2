@@ -29,7 +29,8 @@ def evaluate(measured, reference, *, scoring_seconds, attributable, setup_admitt
             'dtr_is_extra_allowance': False, 'checks': checks, 'passed': all(checks.values())}
 
 
-def verify_packet(root: Path, packet_ref: dict, *, actor_id: str, spec: str, expected_build: dict | None = None):
+def verify_packet(root: Path, packet_ref: dict, *, actor_id: str, spec: str, expected_build: dict | None = None,
+                  compatibility_ref: dict | None = None, validation_identity: dict | None = None):
     """Recompute from run-bound raw damage and current promoted reference, not a verdict."""
     from tools.raid_program.development_graph import file_ref, read
     from tools.raid_program.evidence_inputs import load_input
@@ -45,10 +46,19 @@ def verify_packet(root: Path, packet_ref: dict, *, actor_id: str, spec: str, exp
     if (not re.fullmatch('[0-9a-f]{64}', str(build.get('binary_sha256', '')))
             or not re.fullmatch('[0-9a-f]{40}', str(build.get('source_commit', '')))):
         raise ValueError('DPS calibration lacks source/binary identity')
-    if expected_build is not None and build != expected_build:
-        raise ValueError('DPS calibration is not from the current validated build')
+    calibrated_actor = str(packet.get('actor_id'))
+    reuse_required = calibrated_actor != actor_id or (expected_build is not None and build != expected_build)
+    if reuse_required:
+        if compatibility_ref is None:
+            raise ValueError('DPS calibration is not from the current validated build/actor; reviewed compatibility required')
+        if not expected_build:
+            raise ValueError('calibration reuse needs the current validated build')
+        from tools.raid_program.calibration_reuse import verify_compatibility
+        verify_compatibility(root, compatibility_ref, packet_ref=packet_ref,
+            source_build=build, target_build=expected_build, validation_identity=validation_identity,
+            actor_id=actor_id, spec=spec)
     identity = run.get('validation_identity', {})
-    if str(packet.get('actor_id')) != actor_id or identity.get('actor_id') != actor_id or identity.get('spec') != spec:
+    if identity.get('actor_id') != calibrated_actor or identity.get('spec') != spec:
         raise ValueError('DPS calibration actor/spec binding mismatch')
     if run.get('scenario_kind') != 'dummy' or identity.get('mode') != 'single_target_300':
         raise ValueError('role/raid validation cannot substitute for isolated DPS calibration')
@@ -115,7 +125,9 @@ def verify_assessment(root: Path, graph: dict, assessment: dict):
             if not review.get('dps_calibration'):
                 raise ValueError('95% DPS gate needs a run-bound calibration packet: ' + actor)
             results[actor] = verify_packet(root, review['dps_calibration'], actor_id=actor,
-                spec=next(iter(specs)), expected_build=graph.get('build_identity', {}))
+                spec=next(iter(specs)), expected_build=graph.get('build_identity', {}),
+                compatibility_ref=review.get('calibration_compatibility'),
+                validation_identity=graph.get('assignment', {}).get('validation_identity'))
     return results
 
 

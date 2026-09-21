@@ -5,8 +5,36 @@ is preserved.
 
 ## Current work and latest native run
 
-The user has reprioritized Balance regression diagnosis. Resume
-`magmaw:balance_regression_91pct_07` through `raid_workloop resume`.
+Latest user direction: tank DPS is an explicit objective. Close the already
+claimed Blood publication using its existing receipts, then investigate Blood's
+boss damage/cadence against the retained WCL references. Do not launch another
+threat calibration unless it answers a demonstrated threat-specific failure.
+Keep the unresolved Balance gate-off/gate-on comparison and rollback decision
+visible; below 95% alone does not reject a proven partial recovery.
+
+Class qualification is shared across bosses; per-boss mechanic/duty/performance
+validation remains separate. Consult the shared calibration catalog and
+[validation scopes](../../.agents/skills/raid-performance-loop/references/class-and-encounter-validation.md)
+before scheduling another dummy run. Reuse requires verified unchanged inputs,
+and a changed build requires independent compatibility review. The empty initial
+catalog makes no acceptance claim about historical sub-95% measurements.
+
+The C/C++ staged-file guard is installed through `.githooks/pre-commit` and
+`tools.raid_program.module_size`. Changed files must stay below 1,000 lines.
+All current bot modules meet the limit; the wider legacy native tree has 157
+files at or above 1,000 lines. Unchanged legacy files are not silently certified.
+The hook requires `git config core.hooksPath .githooks` in a new clone.
+
+The independently approved workflow support receipt is
+`artifacts/cata_raid_program/class_calibration_scope_review_20260921.receipt.json`.
+It covers the changed acceptance/reuse tools and staged-file hook. Preserve the
+current publication claim; use this support review when reconciling the next
+native plan's source delta, rather than treating these tooling changes as a
+new class-mechanics experiment. Verification passed 146 focused tests and an
+isolated Git hook execution check; no native build or live run was performed.
+
+The retained Balance regression work unit is
+`magmaw:balance_regression_91pct_07`; current continuation is owned by the saved graph.
 The graph pins the earlier 91.93% Balance run to its actual binary source
 `618b20a2d2793e3f26b3b9d45ed2728f3b97d881`; the historical run adapter was
 written at `6253c9766f1af4e09b10e62db0bec1940d8ccf9`. Do not confuse those identities.

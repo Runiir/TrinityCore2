@@ -1,3 +1,4 @@
 #!/bin/sh
 set -eu
+pixi run --frozen python -m tools.raid_program.module_size
 exec pixi run --frozen python -m tools.raid_program.worker_precommit

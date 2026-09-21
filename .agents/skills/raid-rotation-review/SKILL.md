@@ -47,6 +47,14 @@ the roster or require simulator regeneration.
 
 ## Exact inputs and gates
 
+Class dummy qualification is shared across encounters; consult the calibration
+catalog before requesting a new measurement. For tank damage gaps, compare boss
+WCL damage/casts with matched incoming-damage, tank-duty and phase context;
+retain survival/threat as separate safety checks. Follow
+[class and encounter validation](../raid-performance-loop/references/class-and-encounter-validation.md).
+Do not turn an incompatible threat-fixture denominator into another class tuning
+task, or refuse a proven partial recovery solely because it remains below 95%.
+
 Resolve the denominator with `tools.raid_program.raid_workloop spec <spec>` and
 the promoted `wowsims_cata_dps_reference_requests_v1.json` cohort. Embedded DPS
 in `all_spec_references_cata_p4_v1.json` is not promotion authority; hydrate the

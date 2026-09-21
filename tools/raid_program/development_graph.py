@@ -271,7 +271,8 @@ def source_binding(root: Path, assignment: dict, expected_commit: str | None = N
     # A selected input never becomes bookkeeping by being stored with outputs.
     published -= protected
     support = assignment.get('supporting_files', {})
-    if support and (any((root / p).is_symlink() or not git(root, 'ls-tree', head, '--', p).startswith('100644 blob ')
+    if support and (any((root / p).is_symlink() or not git(root, 'ls-tree', head, '--', p).startswith(
+                        ('100644 blob ', '100755 blob ') if p == '.githooks/pre-commit' else '100644 blob ')
                         for p in support) or snapshot(root, list(support)) != support):
         raise GraphError('separately reviewed supporting files changed; obtain a new review')
     if any(p and (p in protected or (code_path(p) and p not in published
@@ -301,7 +302,8 @@ def supporting_files(root: Path, review: dict, assignment: dict) -> dict:
     protected = input_paths(assignment['validation_identity']) | input_paths(assignment['policy'])
     def allowed(path):
         return (path.endswith('.py') and path.startswith(('tools/raid_program/', 'tools/bot_ml/', 'tests/'))
-                or path.endswith('.json') and path.startswith('experiments/configs/'))
+                or path.endswith('.json') and path.startswith('experiments/configs/')
+                or path == '.githooks/pre-commit')
     if any(p in protected or not allowed(p) or (root/p).is_symlink() for p in support):
         raise GraphError('supporting changes are limited to workflow Python/tests/configs, excluding selected inputs')
     if not support or snapshot(root, list(support)) != support:

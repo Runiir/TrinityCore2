@@ -8,6 +8,10 @@ Bot diagnostics: Codex agents can run `make host-world` or `make host-world-bote
 Try to keep as little data as possible on the disk. offload to dvc as much as possible
 
 Keep C and C++ source and header files below 1,000 lines. Split by concern so small changes invalidate as little of the build cache as practical.
+The pre-commit hook checks staged C/C++ sources/headers and rejects 1,000 or more
+lines. Enable it with `git config core.hooksPath .githooks`; direct check:
+`pixi run python -m tools.raid_program.module_size`. Unchanged oversized legacy
+files are not checked by this incremental guard; changing one requires splitting it.
 
 Current user model preference: use `gpt-5.6-luna` with `reasoning_effort: max`
 for all delegated roles, including implementation, causal diagnosis, architecture,

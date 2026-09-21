@@ -57,6 +57,14 @@ lifecycle events before declaring an optional recovery gate exercised.
 
 ## Gates and routing
 
+Separate reusable class qualification from per-boss validation. Before scheduling
+a dummy run, check the shared calibration catalog and retained evidence using
+[class and encounter validation](references/class-and-encounter-validation.md).
+For low tank DPS, require the matched WCL damage/cadence review described there;
+a threat test is not a substitute. A proven partial recovery may be accepted below
+95% while final qualification stays open. Every comparison must end in a repair,
+revert, supported keep decision, or one explicit missing observation.
+
 Every DPS actor must reach at least 95% of its current promoted self-provided
 WoWSims reference in an attributable, setup-admitted 300-second dummy window.
 Use policy v3 and `tools.raid_program.dps_gate` to bind the retained run/report to

@@ -106,6 +106,42 @@ def test_previous_build_cannot_qualify_current_performance(packet):
             expected_build={'source_commit': 'c'*40, 'binary_sha256': 'd'*64})
 
 
+def test_reviewed_reuse_still_recomputes_the_95_percent_gate(packet, monkeypatch):
+    from tools.raid_program import calibration_reuse
+    root, make, raw = packet
+    calls = []
+    monkeypatch.setattr(calibration_reuse, 'verify_compatibility',
+        lambda *args, **kwargs: calls.append(kwargs))
+    options = dict(actor_id='1', spec='balance_druid',
+        expected_build={'source_commit': 'c'*40, 'binary_sha256': 'd'*64},
+        compatibility_ref={'path': 'proof.json', 'sha256': 'e'*64},
+        validation_identity={'scenario_kind': 'raid', 'boss': 'new_boss'})
+    assert dps_gate.verify_packet(root, make(), **options)['ratio'] == .95
+    assert calls[0]['validation_identity'] == options['validation_identity']
+    raw['combat_calibration']['bots'][0]['damage'] -= 1
+    native = put(root, 'native.json', raw)
+    with pytest.raises(ValueError, match='95% DPS gate failed'):
+        dps_gate.verify_packet(root,
+            make(report_summary={'actor_report_sha256': native['sha256']}), **options)
+
+
+def test_another_roster_actor_needs_reviewed_setup_mapping(packet, monkeypatch):
+    from tools.raid_program import calibration_reuse
+    root, make, _ = packet
+    options = dict(actor_id='another-roster-slot', spec='balance_druid',
+        expected_build={'source_commit': 'a'*40, 'binary_sha256': 'b'*64})
+    with pytest.raises(ValueError, match='reviewed compatibility required'):
+        dps_gate.verify_packet(root, make(), **options)
+    calls = []
+    monkeypatch.setattr(calibration_reuse, 'verify_compatibility',
+        lambda *args, **kwargs: calls.append(kwargs))
+    options.update(compatibility_ref={'path': 'proof.json', 'sha256': 'e'*64},
+                   validation_identity={'scenario_kind': 'raid', 'boss': 'another_boss'})
+    assert dps_gate.verify_packet(root, make(), **options)['ratio'] == .95
+    assert calls[0]['actor_id'] == 'another-roster-slot'
+    assert json.loads((root/'packet.json').read_text())['actor_id'] == '1'
+
+
 def test_each_accepted_dps_needs_own_calibration(packet):
     root, make, _ = packet
     graph = {'build_identity': {'source_commit': 'a'*40, 'binary_sha256': 'b'*64},
