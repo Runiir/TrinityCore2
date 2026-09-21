@@ -1,0 +1,41 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:balance_regression_91pct_07",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "05e6a8cb4587c0edc833b9f42c89084083d5d4185d1a1ce2999fe8c5e6304303",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "remote": "s3://artifacts/trinity-cata",
+  "local_duplicate_policy": "raw control and treatment archives are DVC-addressed; pointer files remain tracked",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_run_20260921.json",
+      "sha256": "01c183b8a8e06156798835652bfe960aa7dd72dd3e22eb8b8e8479b8489b5436"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_assessment_20260921.json",
+      "sha256": "c84c69c66d177cefd727e8075414be5857fa2c2bfb022e9842a64502232a436f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json",
+      "sha256": "ae7626393d0727bebc7ea6d881e286936943314a797188640ccf915560571a8c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_control_20260921.tar.gz.dvc",
+      "sha256": "51fc0bd888aeffe71e61fb645d8ce585b2d6c9762d00dd685ab82ff95887676f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_treatment_20260921.tar.gz.dvc",
+      "sha256": "e9f9b34d38249738466365760b7f15965d2346d907b9dd16e075d94d564e0a39"
+    },
+    {
+      "path": "dataset/runtime_assets/native_inputs_03cb01db0b.materialization.json",
+      "sha256": "d1a1bfd6cc62bc0f54ab77104c0e6071cc7dddc8907f8033b675e47eef8fdaaf"
+    }
+  ],
+  "outcome": "Paired Balance control/treatment evidence is published as causal diagnosis only. No actor, performance, or raid requirement was accepted."
+}
