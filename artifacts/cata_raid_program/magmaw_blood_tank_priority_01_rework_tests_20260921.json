@@ -1,0 +1,66 @@
+{
+  "schema": "raid_development_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_priority_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_result_20260921/checkpoint.json",
+      "sha256": "c7ad798a37f535011d8433bdb6a8dd21fd30cf81c701e5565a9c3c57a986a5f1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_result_20260921_review/summary.json",
+      "sha256": "6a0767c09013ff7412dccdbffd71f9760c61f946a7b8fc97643276bf94f8b883"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_20260921.json",
+      "sha256": "b3b0cf3592cac16836b0178e9f2f71e5372e28590f2ef324a7ff59edd43aa79c"
+    },
+    {
+      "path": "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535"
+    },
+    {
+      "path": "tests/test_blood_death_strike_priority.py",
+      "sha256": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "adjudication": "bounded_rework_test_supported_live_and_acceptance_pending",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_result_20260921_review/summary.json",
+        "sha256": "6a0767c09013ff7412dccdbffd71f9760c61f946a7b8fc97643276bf94f8b883"
+      }
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "adjudication": "not_reviewed_due_to_local_context_budget",
+      "reason": "The local advisory backend rejected the result packet with context_budget_exceeded; deterministic checks passed and no local model claim is used."
+    }
+  },
+  "file_hashes": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.54s"
+    }
+  ],
+  "implementation": {
+    "source_changed": false,
+    "supporting_source_changed": true,
+    "supporting_files": [
+      "tools/raid_program/workflow_build.py",
+      "tests/test_workflow_build_role_preflight.py"
+    ],
+    "support_summary": "Forward validation_identity.mode to the existing calibration preflight gate; no gameplay or simulator inputs changed."
+  },
+  "claim_scope": "Blood focused deterministic test after separately reviewed role-mode preflight support. Native build, live behavior, actor acceptance, performance acceptance, raid clear, and parent completion remain unclaimed."
+}

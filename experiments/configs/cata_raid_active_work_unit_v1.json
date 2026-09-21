@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 238,
+    "revision": 239,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -4662,6 +4662,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 238,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "action": "claim",
+          "revision": 238,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "owner": "coordinator-magmaw-10n-blood-priority-01-support-rework"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4737,6 +4751,12 @@
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_20260921.json",
         "sha256": "70f3e3152c1a265342ddead6624e24a975af8b7f70638ffcfb6cd4f58a517c80"
       }
+    },
+    "claim": {
+      "owner": "coordinator-magmaw-10n-blood-priority-01-support-rework",
+      "token": "85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2",
+      "operation_id": "85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2",
+      "stage": "implement"
     }
   },
   "parked_scenarios": {

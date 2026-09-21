@@ -1,0 +1,71 @@
+{
+  "task_id": "magmaw:blood_tank_priority_01_rework_result_20260921",
+  "subject": "worker",
+  "stage": "result",
+  "changed_files_source": "coordinator_observed",
+  "changed_files": [
+    "../../../tools/raid_program/workflow_build.py",
+    "../../../tests/test_workflow_build_role_preflight.py"
+  ],
+  "objective": "Record the re-planned Blood implementation result after the role-aware build-preflight support fix.",
+  "first_broken_edge": "owner_blood_priority_inversion",
+  "allowed_files": [
+    "../../../sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+    "../../../tests/test_blood_death_strike_priority.py",
+    "../../../tools/raid_program/workflow_build.py",
+    "../../../tests/test_workflow_build_role_preflight.py"
+  ],
+  "forbidden_changes": [
+    "Do not add another Blood policy edit or change native rune legality, scores, costs, coefficients, targets, geometry, presence, encounter logic, or simulator inputs.",
+    "Do not claim actor, performance, raid-clear, or parent completion from focused tests."
+  ],
+  "acceptance_conditions": [
+    "The required Blood focused test passes after the reviewed support change.",
+    "The support files remain the separately approved two-line mode-forwarding fix and its isolated regression test.",
+    "Build, loaded-profile readback, role-harness behavior, assessment and publication remain pending."
+  ],
+  "observations": [
+    "The graph claim is operation 85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2.",
+    "The re-planned Blood focused command pixi run pytest -q tests/test_blood_death_strike_priority.py completed with 2 passed in 0.54 seconds.",
+    "The workflow support regression was independently reviewed and passed with 2 tests passed.",
+    "The Blood SQL and focused test hashes remain c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535 and 86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "blood_migration",
+      "path": "../../../sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql",
+      "sha256": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+      "excerpt": "Existing scoped Blood tank priority migration."
+    },
+    {
+      "id": "blood_test",
+      "path": "../../../tests/test_blood_death_strike_priority.py",
+      "sha256": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434",
+      "excerpt": "Existing Blood SQL/native comparator/fallback test passed."
+    },
+    {
+      "id": "support_review",
+      "path": "../../../artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_20260921.json",
+      "sha256": "b3b0cf3592cac16836b0178e9f2f71e5372e28590f2ef324a7ff59edd43aa79c",
+      "excerpt": "Workflow support files have separate approval and remain outside the owned gameplay files."
+    }
+  ],
+  "proposed_change": "Carry the unchanged Blood policy and reviewed support files into a new exact-file review, then build with the declared tank_threat_300 mode.",
+  "acceptance_claim": "The required Blood test passed after the support replan. No native build, live behavior, actor acceptance, performance acceptance, raid clear, or parent completion is claimed.",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.54s"
+    }
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py"
+  ],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL with exact WoWSims diagnosis.",
+    "latest_user_direction": "Implement magmaw 10n bots through the saved implementation, review, build, validation and publication gates.",
+    "current_plan": "Use the reviewed role-mode preflight fix to continue the existing Blood priority unit through review, build, role harness and assessment while preserving all open requirements.",
+    "remaining_requirements": "actor_30001,actor_30002,actor_30003,actor_30004,actor_30005,actor_30006,actor_30007,actor_30008,actor_30009,actor_30010,affliction_comparison,elemental_comparison,potion_ownership,survival_reference,magmaw_10n"
+  }
+}
