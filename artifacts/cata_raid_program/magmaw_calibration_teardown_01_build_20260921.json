@@ -1,0 +1,63 @@
+{
+  "kind": "build",
+  "unit_id": "magmaw:calibration_teardown_contamination_01",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "b42103178cd4f098e926034c568b1876b2a17dc369fcd508ee00d4bcc54df87c",
+  "source_commit": "f4e11240137b265f3a9d3f3220e341e970e146bd",
+  "binary_sha256": "8446fe639c3f19eb702f39c6bd42e41c40b8f9aab05af087f42347c2aecd8807",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-4673a2cca7cb42c296e5d4b0127ea6dd.json",
+    "sha256": "d855b9148ebf65dd27e28aabf255e78393d3b985861229eeb62c66f9d9850802"
+  },
+  "build_summary": {
+    "classification": "success",
+    "gate_bearing": true,
+    "exit_code": 0,
+    "test_mode": false,
+    "source_identity_stable": true,
+    "configure_generator": "Unix Makefiles",
+    "compiler_jobs": 12,
+    "linker_jobs": 1,
+    "worldserver_artifact": "build/src/server/worldserver/worldserver",
+    "worldserver_artifact_sha256": "8446fe639c3f19eb702f39c6bd42e41c40b8f9aab05af087f42347c2aecd8807"
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationBot.cpp": "f0f2becd736527a3d90ee22bb4a128e0d5dd0425821bc4659aafb86789cd2693",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationControl.cpp": "69000a4b90283c6711f55244de982d6c174b3a4b4adbf465fba267a02c97ae56",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationDamage.cpp": "35ae00a278b26133024f3efe07a6a322c821970f5eccf03154b2a6ed2b49e183",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatNotifications.cpp": "3f7f494c0005816cf09d2ad8392ff6fb405b2260c9ce85a44d918e474cb91d7d",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatMovement.cpp": "426d47cbab16a17db759eec402b173c2cb271e2c8a6484a1e13aaa1b5f578394",
+    "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h": "a78581725c7150743616d0ab0676012f875e365686d9cbdbe7f8249b3c7b999b",
+    "src/server/game/Bots/BotWorldPopulationMgrCalibrationLifecycle.h": "a1c7675cef43242b030711bf4e910a61052ef24feca2e9a95e29d31ded082cb1",
+    "tests/test_bot_world_population_mgr_calibration_bot_module.py": "031a47a8b438f3c1c75ca39b6848f680ad0e904a70b2d793607947734452cf57",
+    "tests/test_bot_world_population_mgr_calibration_control_module.py": "ba1d6d1e1b8044351aa6cfce0d84e0ce7f3b02de2a3a1dd3130c53983d391f42",
+    "tests/test_bot_world_population_mgr_calibration_damage_module.py": "023e4b43ad1dccd543af180000e5e350c417bff4f70ec15a3aeabcae18c95935",
+    "tests/test_bot_world_population_mgr_combat_notifications_module.py": "e7880395d91efd23f5166ecaad7c1df9ff0093133900d2ff7766a65e67882e97",
+    "tests/test_bot_world_population_mgr_combat_movement_module.py": "f6cef7002d309e8e59ec910c9e8681b0f08714b105f6fb9d13a0f0489e1d8636",
+    "tests/test_bot_world_population_mgr_runtime_contracts_header.py": "e58f4d1edf7142f5f9490710e8b480602c5e7593ff130fb31af36fb93a5bccad"
+  },
+  "evidence": [
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-4673a2cca7cb42c296e5d4b0127ea6dd.json",
+      "sha256": "d855b9148ebf65dd27e28aabf255e78393d3b985861229eeb62c66f9d9850802"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_plan_20260921.json",
+      "sha256": "56c67ded7f4f2d54eff970d3fd3d3c4936bc0bce47ffb6a3a05472d7aff50b36"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_review_receipt_20260921.json",
+      "sha256": "96679d16a1192a95fa4d04f7aa80e40b0ff1e1af77a30ca058992735d06e66ff"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_calibration_teardown_01_rework_tests_20260921.json",
+      "sha256": "91dcd8663662d8936ec426838a5edecee611ef46797e046a978028ab32ce916e"
+    }
+  ],
+  "boundary": "This gate-bearing native build proves compilation, source identity, and binary provenance for the repaired calibration teardown. It does not prove runtime callback ordering, cleanup closure, tank performance, raid success, or DVC publication."
+}
