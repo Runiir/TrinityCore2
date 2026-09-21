@@ -139,6 +139,18 @@ def evaluate_calibration(
     hard_ratio = float(role_ratios.get("hard_reference_ratio", policy["hard_reference_ratio"]))
     optimization_ratio = float(role_ratios.get("optimization_reference_ratio", policy["optimization_reference_ratio"]))
 
+    # Tank/healer windows carry role obligations that can be evaluated without
+    # a simulator-DPS comparison.  If the adapter explicitly says that the
+    # live setup is not comparable, do not misclassify that setup mismatch as
+    # a class throughput failure.  A comparable role record still receives
+    # the configured numerical floor below.
+    compatibility = record.get("reference_condition_compatibility")
+    non_dps_reference_incompatible = (
+        role in {"tank", "healer"}
+        and isinstance(compatibility, Mapping)
+        and compatibility.get("conditions_compatible") is False
+    )
+
     _check(checks, reasons, "role_allowed_for_mode", role in set(mode_policy.get("roles") or []))
     _check(
         checks,
@@ -173,7 +185,14 @@ def evaluate_calibration(
             == str(record.get("target_spec") or "")
             and not compatibility.get("reasons"),
         )
-    _check(checks, reasons, "reference_hard_floor", reference_ratio >= hard_ratio)
+    if non_dps_reference_incompatible:
+        checks["reference_comparison_eligible"] = False
+        reasons.append("reference_conditions_not_comparable")
+        checks["reference_hard_floor"] = True
+    else:
+        if role in {"tank", "healer"} and isinstance(compatibility, Mapping):
+            checks["reference_comparison_eligible"] = True
+        _check(checks, reasons, "reference_hard_floor", reference_ratio >= hard_ratio)
     _check(checks, reasons, "no_illegal_actions", int(metrics.get("illegal_action_count") or 0) == 0)
 
     if mode in {"single_target_300", "aoe_300"}:
@@ -270,8 +289,15 @@ def evaluate_calibration(
         "mode": mode,
         "role": role,
         "reference_ratio": round(reference_ratio, 6),
-        "hard_floor_passed": reference_ratio >= hard_ratio,
-        "optimization_target_met": reference_ratio >= optimization_ratio,
+        "hard_floor_applicable": not non_dps_reference_incompatible,
+        "hard_floor_passed": (
+            not non_dps_reference_incompatible and reference_ratio >= hard_ratio
+        ),
+        "optimization_target_applicable": not non_dps_reference_incompatible,
+        "optimization_target_met": (
+            not non_dps_reference_incompatible
+            and reference_ratio >= optimization_ratio
+        ),
         "checks": checks,
         "failure_reasons": reasons,
         "passed": all(checks.values()),

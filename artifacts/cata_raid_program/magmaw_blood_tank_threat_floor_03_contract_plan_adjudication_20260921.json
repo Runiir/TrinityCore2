@@ -1,0 +1,46 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:blood_tank_threat_floor_03_contract_20260921",
+  "stage": "plan",
+  "status": "aligned",
+  "coordinator_verdict": "aligned",
+  "coordinator_basis": [
+    "The parent objective and every open actor, comparison and raid requirement remain visible.",
+    "The clean Blood window proves a tank-lane reference-contract failure candidate, not a missing Blood action row or a priority inversion.",
+    "No actor, repair, performance or raid acceptance is claimed; the smallest correction is to verify the harness contract before any policy edit."
+  ],
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_plan_checkpoint_20260921.json",
+    "sha256": "60431fcd4d51017315cd8ba67c588abb830afee7223ba955e518365d3f554339"
+  },
+  "review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_plan_review_20260921_v2/summary.json",
+    "sha256": "3b53458c3084cab060e5875d9672595de3eba1af02d8775fb0585a91210bc45c",
+    "examples_sha256": "39653e423a64fb6cfedb035cf4c28662a1fe862524bafac856b240026520a8df"
+  },
+  "advice": {
+    "jev": {
+      "status": "reviewed",
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "insufficient_evidence",
+      "adjudication": "Hosted Jev supports the contract-diagnosis scope and evidence direction; it does not support any live or actor acceptance claim."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Local HTTP 422 context_budget_exceeded after the corrected packet; retained as provider non-review, not a judgment.",
+      "adjudication": "No local Laya decision is used."
+    }
+  },
+  "retained_failed_observation": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_plan_review_20260921/summary.json",
+    "reason": "Relative evidence paths were resolved from the checkpoint directory and failed deterministic existence checks."
+  },
+  "remaining_unknowns": [
+    "Whether the numerical tank floor is intentionally applicable despite incompatible reference conditions.",
+    "Whether a contract repair should suppress only the invalid floor or replace it with an exact tank-role metric.",
+    "Whether any Blood native throughput issue remains after a contract-valid role run."
+  ],
+  "acceptance_claim": "None. The next worker task must retain the open actor and raid requirements and require an executable regression test before a contract change."
+}
