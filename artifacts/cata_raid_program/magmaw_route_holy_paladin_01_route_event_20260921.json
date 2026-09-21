@@ -1,0 +1,32 @@
+{
+  "action": "route",
+  "revision": 327,
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "producer": "coordinator",
+  "reason": "The Blood loaded-profile observation is closed and published as diagnostic-only because its role reference conditions were not comparable. Do not repeat that edge without new evidence. Route the next retained production-backed class-policy defect for actor_30004: the learned Holy Paladin capability set is absent from the loaded action profile, including any Holy Power spender. Preserve every other open actor, comparison, potion, survival-reference and Magmaw requirement.",
+  "coordinator_verdict": "aligned",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_adjudication_20260921.json",
+    "sha256": "9d1bd8fba65f5f3870fcb86fd43235fd0e0bc7220f8546217ec44a1eec8afcd9"
+  },
+  "causal_summary": {
+    "path": "docs/bot_raids/error_ledger.md",
+    "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+    "entry": "HEAL-001"
+  },
+  "unit": {
+    "id": "magmaw:holy_paladin_capability_profile_01",
+    "edge": "owner_holy_paladin_profile_incomplete",
+    "owner_skill": "raid-role-implementation",
+    "requirements": [
+      "actor_30004"
+    ],
+    "objective": "Repair one proven Holy Paladin action-profile capability edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+    "next_action": "Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
+    "continuation": {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+      "entry": "HEAL-001"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:blood_tank_loaded_profile_04",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "b17a02e44c938abad2ef8ee70f18dcad5afc612b5b0825c37e3e036855baf4bd",
+  "attempt_id": 1,
+  "disposition": {
+    "classification": "closed_diagnostic_only",
+    "actor_30002_accepted": false,
+    "blood_priority_edge_proven": false,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "parent_objective_complete": false
+  },
+  "dvc_status_checked": true,
+  "dvc_status_before_eviction": {},
+  "dvc_status_after_eviction": {
+    "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz": "deleted"
+  },
+  "dvc_push_completed": true,
+  "dvc_push_result": "Everything is up to date.",
+  "remote_verified": true,
+  "remote_reconstruction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz.dvc",
+    "pointer_sha256": "f72897e6a1c56f6843b8187d2183e55585a89e17dec00a97c690f1f6ebed43ca",
+    "payload_sha256": "c2d3d3de6303b98fe101dafdac10c766976d9909537b1c194c149e0b9785c2e3",
+    "payload_size_bytes": 2053886,
+    "members_verified": [
+      "report.json",
+      "worldserver_output.log"
+    ]
+  },
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "exact_local_duplicates_evicted": true,
+  "cleanup_scope": {
+    "raw_directory": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921",
+    "raw_archive": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz",
+    "dvc_cache_object": ".dvc/cache/files/md5/fc/14b02766f7bf0365962e4e83c12630",
+    "dvclive_params_and_plots": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_dvclive_20260921/params.yaml and plots/"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_assessment_20260921.json",
+      "sha256": "97d88d077f411d1a5f25347bbd75b05243f6dd2dc1c7bdd0664e0ea0d0391235"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_summary_20260921.json",
+      "sha256": "c300ad2a224bc51eb263aaf4882f38448110859df32152c3fc6f696ca7015ce5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_run_20260921.json",
+      "sha256": "4b76621ff891de73325932673285986b49c1697ecb1f7722a558606f319e5f56"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_identity_reconciliation_20260921.json",
+      "sha256": "70077e4108ea1722758a3087eed36777c1390a645738faa605223201938bc315"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_20260921.raw.tar.gz.dvc",
+      "sha256": "f72897e6a1c56f6843b8187d2183e55585a89e17dec00a97c690f1f6ebed43ca"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_dvclive_20260921/metrics.json",
+      "sha256": "fced88117bb968e9efff5c1fc966c6e2ba2414bebc8198e9d60037c40f9d1f54"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_build_20260921.json",
+      "sha256": "dc28ee6fbb50dae9f5b921790c8a9b4a3b561432eb2843e84e10d8e23d83ceb4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_queued_build_20260921.json",
+      "sha256": "de7548738163d50543bf166db411ddbaabeb6c27dd9867f4276917ae94443cfe"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_independent_review_20260921.json",
+      "sha256": "055468be248bdfb313e61761fb72e161c2f54d6cfc421ec749fc814d142b8864"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_tests_20260921.json",
+      "sha256": "734faeaf769a1bb1f1f520fd20ff3210dcfbedd1e16b333a70642fc97045fff3"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "plan_drift_adjudication_v1",
+  "kind": "plan_drift_review",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "stage": "route",
+  "coordinator_verdict": "aligned",
+  "divergence": null,
+  "smallest_correction": "Route the retained HEAL-001 action-profile edge for actor_30004; keep the Blood diagnostic and every other parent requirement open.",
+  "model_disposition": {
+    "hosted_jev": {
+      "status": "reviewed",
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "supported",
+      "acceptance_claim_supported": "insufficient_evidence",
+      "response_path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_review_20260921_v2.json/examples.jsonl"
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "reason": "context_budget_exceeded; the compact retry retained all required facts but still exceeded the deployed 1,024-token state budget.",
+      "response_path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_review_20260921_v2.json/examples.jsonl"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_checkpoint_20260921.json",
+      "sha256": "938058716469c7574ab947b6a29963c68eb40606ca8ff90b9f348a99cfb394d3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_review_20260921.json/summary.json",
+      "sha256": "913b3c6a678b7295885d7973b807794e2db1a856f9e914c21e17d5a6c072fb7b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_review_20260921_v2.json/summary.json",
+      "sha256": "f2b0f97d331820a7e4cda44068e2ff9cd907e7b1bbd938f8af64ea0f5838c87b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_review_20260921_v2.json/examples.jsonl",
+      "sha256": "f0133d5c27ee08c5365aca2c28351c7cf608e6a44d493920b80d49aeeed7a69d"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:blood_tank_loaded_profile_04",
+  "work_unit": "magmaw:holy_paladin_capability_profile_01",
   "owner_skill": "raid-role-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Inspect the SQL-loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265; repair only the first proven policy edge, add an executable focused test, and preserve Heart Strike fallback and multi-target Blood Boil behavior.",
+  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 325,
+    "revision": 328,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "publish",
+    "stage": "diagnose",
     "actor_ids": [
       "30001",
       "30002",
@@ -569,17 +569,18 @@
       }
     },
     "unit": {
-      "id": "magmaw:blood_tank_loaded_profile_04",
-      "edge": "owner_blood_priority_inversion",
+      "id": "magmaw:holy_paladin_capability_profile_01",
+      "edge": "owner_holy_paladin_profile_incomplete",
       "owner_skill": "raid-role-implementation",
       "requirements": [
-        "actor_30002"
+        "actor_30004"
       ],
-      "objective": "Inspect the loaded Blood action profile and native candidate predicates, then repair one proven lawful priority or eligibility edge without changing reference data, encounter behavior, or safety policy.",
-      "next_action": "Inspect the SQL-loaded Blood action rows and native candidate predicates for Death Strike 49998, Heart Strike 55050, Blood Boil 48721, and Death and Decay 43265; repair only the first proven policy edge, add an executable focused test, and preserve Heart Strike fallback and multi-target Blood Boil behavior.",
+      "objective": "Repair one proven Holy Paladin action-profile capability edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+      "next_action": "Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
       "continuation": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_threat_floor_03_contract_v2_validation_summary_20260921.json",
-        "sha256": "b130775938bc049f733c61bd5f1e6f07af78132d2c7eb2976daca3b6206bf171"
+        "path": "docs/bot_raids/error_ledger.md",
+        "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+        "entry": "HEAL-001"
       }
     },
     "completed_measurements": [
@@ -6242,6 +6243,78 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 325,
+        "unit_id": "magmaw:blood_tank_loaded_profile_04",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "action": "claim",
+          "revision": 325,
+          "unit_id": "magmaw:blood_tank_loaded_profile_04",
+          "owner": "codex-magmaw-blood-tank-loaded-profile-04-publish"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 326,
+        "unit_id": "magmaw:blood_tank_loaded_profile_04",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "revision": 326,
+          "unit_id": "magmaw:blood_tank_loaded_profile_04",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_publication_20260921.json",
+            "sha256": "a710c9f301910704f1d8f2165ac344ec11968ee6a4d5f7037ebae0d1711f7587"
+          },
+          "claim_token": "b17a02e44c938abad2ef8ee70f18dcad5afc612b5b0825c37e3e036855baf4bd"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 327,
+        "unit_id": "magmaw:blood_tank_loaded_profile_04",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "action": "route",
+          "revision": 327,
+          "unit_id": "magmaw:blood_tank_loaded_profile_04",
+          "producer": "coordinator",
+          "reason": "The Blood loaded-profile observation is closed and published as diagnostic-only because its role reference conditions were not comparable. Do not repeat that edge without new evidence. Route the next retained production-backed class-policy defect for actor_30004: the learned Holy Paladin capability set is absent from the loaded action profile, including any Holy Power spender. Preserve every other open actor, comparison, potion, survival-reference and Magmaw requirement.",
+          "coordinator_verdict": "aligned",
+          "plan_drift_review": {
+            "path": "artifacts/cata_raid_program/magmaw_route_holy_paladin_01_plan_drift_adjudication_20260921.json",
+            "sha256": "9d1bd8fba65f5f3870fcb86fd43235fd0e0bc7220f8546217ec44a1eec8afcd9"
+          },
+          "causal_summary": {
+            "path": "docs/bot_raids/error_ledger.md",
+            "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+            "entry": "HEAL-001"
+          },
+          "unit": {
+            "id": "magmaw:holy_paladin_capability_profile_01",
+            "edge": "owner_holy_paladin_profile_incomplete",
+            "owner_skill": "raid-role-implementation",
+            "requirements": [
+              "actor_30004"
+            ],
+            "objective": "Repair one proven Holy Paladin action-profile capability edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+            "next_action": "Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
+            "continuation": {
+              "path": "docs/bot_raids/error_ledger.md",
+              "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+              "entry": "HEAL-001"
+            }
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -6264,134 +6337,7 @@
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_support_refresh_20260921.json",
         "sha256": "1f5ce8f72c9aa047a6784a6e5b38fe1b77675a1b6d58fd7a1084c4209c02949f"
       }
-    ],
-    "assignment": {
-      "hypothesis": "The loaded Blood profile and native comparator no longer support the retained Death Strike-versus-Heart Strike priority inversion. The remaining first missing edge is observability: BotBloodDecisionObservation::Attach emits only when DS 49998 or HS 55050 is selected, so Blood Boil 48721 and Death and Decay 43265 decisions do not retain whether DS/HS were absent, rejected, or valid. Extend that existing diagnostic path to selected Blood area actions without changing gameplay.",
-      "owned_files": [
-        "src/server/game/Bots/BotBloodDecisionObservation.h",
-        "tests/test_profile_preview_diagnostic_publication.py"
-      ],
-      "forbidden_changes": [
-        "Do not change the Blood SQL profile rows, priority buckets, scores, spell costs, rune legality or target selectors.",
-        "Do not add Heart Strike to a profile, relax encounter area-damage safety, or change Magmaw route/target authority.",
-        "Do not change WoWSims/reference data, role thresholds, coefficients, gear, stats or calibration semantics.",
-        "Do not claim actor_30002, any other actor, performance, raid clear or parent completion from the observation change.",
-        "Do not remove the existing one-rune Heart Strike fallback or multi-target Blood Boil behavior."
-      ],
-      "acceptance_conditions": [
-        "A Blood candidate set containing DS/HS still serializes the same candidate validity, rejection reason, bucket and score fields when DS or HS is selected.",
-        "A selected Blood Boil or Death and Decay action serializes the same DS/HS candidate state when those candidates are present; a set without DS/HS remains unchanged.",
-        "The focused production-text C++ fixture passes with warning-as-error compilation and the existing Blood SQL/comparator test remains green.",
-        "The change is independently reviewed, built with the frozen host12 policy, and exercised in one exact cleaned tank role window before any actor or raid acceptance is considered."
-      ],
-      "required_test_commands": [
-        "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
-        "pixi run pytest -q tests/test_blood_death_strike_priority.py"
-      ],
-      "base_commit": "bfa9452eae8afcdcbbbf7b9f8d40cc1fb1bc34a9",
-      "policy": {
-        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
-        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
-      },
-      "validation_identity": {
-        "scenario_kind": "dummy",
-        "mode": "tank_threat_300",
-        "actor_id": "30002",
-        "spec": "blood_death_knight",
-        "reference": {
-          "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
-          "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
-        },
-        "roster": {
-          "path": "experiments/configs/cata_raid_roster_25_v1.json",
-          "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
-        },
-        "runtime_profile": {
-          "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
-          "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
-        },
-        "target_catalog": {
-          "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
-          "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
-        },
-        "profile_generation": 1,
-        "profile_content_hash": "BF97FB2DAFCE3535A74B726C661F40BCB8B3B64144027ECA9082ED9F46A1F907",
-        "target_guid": 1283,
-        "target_sha256": "583cdcff5d71d1665e8e92cdc94dc22cf64e2e65a004bf62fa056882870c6c93",
-        "conditions_sha256": "5cd0750939368c80aa60a156304201d49622875226b9c5ec19a917482ed125ad",
-        "gear_manifest_sha256": "1369b92f047e7b16b54c742a55fa80a6d3c407290fe619dfabad26902ca3fd89",
-        "runtime_authority": "explicit_sql_rule_profiles",
-        "runtime_mode": "calibration_fixture",
-        "observability_files": {
-          "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
-          "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
-        }
-      },
-      "supporting_review": {
-        "path": "artifacts/cata_raid_program/class_calibration_scope_review_20260921.receipt.json",
-        "sha256": "25560bf6f8f7d72d85942b0313766e6d00abfdfb3bf52bd3b59252f66fdd43d6"
-      },
-      "supporting_files": {
-        ".githooks/pre-commit": "f8ba1908c7e1db00d29ec2c85eb447ed57467ce071ba9e195166c66d99b7c341",
-        "experiments/configs/class_calibration_catalog_v1.json": "0cb90b7d2ac967c45fc8e3875ffa9bd89c674c94da31b4c23ffa42e3c83ae7cf",
-        "tests/test_calibration_reuse.py": "70e04719082281c3124a23952e7f6ed59b55d86be2047684be01f3f80fbb4c89",
-        "tests/test_development_graph.py": "ba7655e4645cb2f744c92b46c9b50fef85529d0ee7af2109ccdaa85b183a4b3d",
-        "tests/test_dps_gate.py": "88650ddf949523ced68a0132ba9432055e241f2c2eb316a8795d5a3eb21c4cf3",
-        "tests/test_module_size.py": "76daa60589198591e49210b1eea119d38829f2319ad0f0dbbb8abfad1b6a1d1b",
-        "tools/raid_program/calibration_reuse.py": "ca2761f23519042a93cbe7dff1692cdb8b736fb3c2f0c006dd69627a0af74b39",
-        "tools/raid_program/development_graph.py": "3d62ef943a43b785ed71a8c0b2e741eba84ab993d288499db591bd5799022298",
-        "tools/raid_program/dps_gate.py": "32bf48894c846798686f8e7b94d8f94951e1d040ebfa17037cb1a399677c7edb",
-        "tools/raid_program/module_size.py": "f869a2e497fc93e689e0e3aa9b23f373bcab27eea3d0084aad3aec25c03addbf"
-      }
-    },
-    "receipts": {
-      "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_plan_20260921.json",
-        "sha256": "d1b1893d060695188db7a8b036e3e1fedcf6d8c37d68d8c925ed72b99d77edd5"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_tests_20260921.json",
-        "sha256": "734faeaf769a1bb1f1f520fd20ff3210dcfbedd1e16b333a70642fc97045fff3"
-      },
-      "review": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_independent_review_20260921.json",
-        "sha256": "055468be248bdfb313e61761fb72e161c2f54d6cfc421ec749fc814d142b8864"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_build_20260921.json",
-        "sha256": "dc28ee6fbb50dae9f5b921790c8a9b4a3b561432eb2843e84e10d8e23d83ceb4"
-      },
-      "run": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_validation_run_20260921.json",
-        "sha256": "4b76621ff891de73325932673285986b49c1697ecb1f7722a558606f319e5f56"
-      },
-      "assessment": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_loaded_profile_04_assessment_20260921.json",
-        "sha256": "97d88d077f411d1a5f25347bbd75b05243f6dd2dc1c7bdd0664e0ea0d0391235"
-      }
-    },
-    "tested_files": {
-      "src/server/game/Bots/BotBloodDecisionObservation.h": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4",
-      "tests/test_profile_preview_diagnostic_publication.py": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
-    },
-    "tested_commit": "12cf09bbf3642e569c48ba1a35c228b49e951178",
-    "implementer": "codex-magmaw-blood-tank-loaded-profile-04-implement",
-    "build_identity": {
-      "source_commit": "94194e427796ed45c014ce68caa62f3a1ff84994",
-      "binary_sha256": "ec2fa3790ab3d055c12fdc292ca840898f3ce43faab439be838a2f5ee4a96651"
-    },
-    "run": {
-      "attempt_id": 1,
-      "server_epoch": 6108469491769333,
-      "scenario_kind": "dummy",
-      "terminal_reason": "measurement_complete"
-    },
-    "pending_acceptance": [],
-    "outcomes": {
-      "encounter_clear": false,
-      "repair_accepted": false,
-      "performance_accepted": false
-    }
+    ]
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
