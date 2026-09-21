@@ -1,0 +1,45 @@
+{
+  "schema": "raid_independent_review_report_v1",
+  "reviewer_session_id": "reviewer-magmaw-blood-priority-01-rework-20260921",
+  "producer": "independent-reviewer-blood-priority-01-rework",
+  "reviewed_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
+  "source_base_commit": "28268b1e12cfd864993a073683ccb7d9ed48f326",
+  "files": {
+    "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+    "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_support_review_20260921.json",
+    "sha256": "b3b0cf3592cac16836b0178e9f2f71e5372e28590f2ef324a7ff59edd43aa79c"
+  },
+  "checks": [
+    {
+      "id": "owned_file_identity",
+      "result": "pass",
+      "evidence": "The owned SQL and focused test hashes are unchanged from the prior independent approval and match the current tested files."
+    },
+    {
+      "id": "migration_scope",
+      "result": "pass",
+      "evidence": "The migration remains limited to Blood tank Death Strike 49998 old bucket 2 to bucket 1 plus the scoped profile provenance fields."
+    },
+    {
+      "id": "native_comparator_and_fallback",
+      "result": "pass",
+      "evidence": "The focused test still compiles the production comparator and checks higher-scored valid Death Strike selection and Heart Strike fallback when the Death Strike rune gate fails."
+    },
+    {
+      "id": "support_boundary",
+      "result": "pass",
+      "evidence": "The role-mode preflight support is separately approved and does not modify the Blood policy, native resolver, simulator inputs, encounter script, or live validation semantics."
+    },
+    {
+      "id": "tests_and_hygiene",
+      "result": "pass",
+      "evidence": "The required Blood command passed 2 tests, git diff --check is clean, and all reviewed C++-adjacent files are below the 1,000-line limit."
+    }
+  ],
+  "findings": [],
+  "verdict": "approved",
+  "approval_limit": "Approve exact owned SQL/test files for native build. Require loaded profile readback, one tank_threat_300 role harness, assessment and publication before any actor, performance or raid acceptance."
+}

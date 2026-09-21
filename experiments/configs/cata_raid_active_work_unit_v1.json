@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
+  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Diagnose one native Blood priority edge from TANK-001: compare Death Strike 49998 bucket2 against Heart Strike bucket1 at valid rune/health states; preserve Heart Strike when Death Strike lacks runes, then use focused evidence and independent review before any policy edit.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 239,
+    "revision": 240,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "review",
     "actor_ids": [
       "30001",
       "30002",
@@ -4676,6 +4676,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 239,
+        "unit_id": "magmaw:blood_tank_priority_01",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "action": "advance",
+          "revision": 239,
+          "unit_id": "magmaw:blood_tank_priority_01",
+          "claim_token": "85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_tests_20260921.json",
+            "sha256": "32728cb4c2fc912c9125b4e5e4a5977d1b5a90659f84cd815a9c23780ca16430"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -4750,14 +4768,18 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_plan_20260921.json",
         "sha256": "70f3e3152c1a265342ddead6624e24a975af8b7f70638ffcfb6cd4f58a517c80"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_priority_01_rework_tests_20260921.json",
+        "sha256": "32728cb4c2fc912c9125b4e5e4a5977d1b5a90659f84cd815a9c23780ca16430"
       }
     },
-    "claim": {
-      "owner": "coordinator-magmaw-10n-blood-priority-01-support-rework",
-      "token": "85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2",
-      "operation_id": "85210ee15b95b30ec4ef8acdd1cf91295ff590509c540a4b0f6261d25e348bb2",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "sql/custom/world/2026_09_19_04_bot_blood_death_strike_priority.sql": "c1190a6fc29ac585ecf06eb69bc33365b2f2831cce06fd8f76a3115c03ab3535",
+      "tests/test_blood_death_strike_priority.py": "86927b28b04e8537121607596de2bc6432570d8eed7a709e73e8b15bb9614434"
+    },
+    "tested_commit": "8742f2fa41f1bb2a24a4fc8e03dc090d7afaff3d",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
