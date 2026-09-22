@@ -1,0 +1,10 @@
+{
+  "pointer": "artifacts/cata_raid_program/workflow_behavior_evidence_20260922.tar.gz.dvc",
+  "md5": "2a0801d275da0ced459f4b826717b0f9",
+  "sha256": "733454a5dc47213589259b4d5977ace2a686c6b77e94ba097b4ac4064b8aa5a3",
+  "bytes": 4121,
+  "remote_readback_verified": true,
+  "exact_archive_and_cache_evicted": true,
+  "scope": "Workflow tests and review; no native experiment",
+  "publication_note": "First push lacked worktree-local credentials; retried successfully using existing coordinator remote configuration."
+}

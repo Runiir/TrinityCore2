@@ -1,0 +1,39 @@
+{
+  "base_commit": "b0d122f7a1cb66e3279841281728e91a9d73df96",
+  "scope": [
+    "additive tests-only assignment amendment without rebasing or dropping requirements",
+    "execute declared tests and generate exact receipt/advance command",
+    "bounded coordinator test-plan view and behavioral-review guidance",
+    "interrupted subprocess capture retained outside source with explicit recovery locator"
+  ],
+  "tests": "131 passed",
+  "earlier_failures": [
+    {
+      "count": 2,
+      "cause": "New amendment not recognized by saved-history validator; empty file additions rejected by nonempty snapshot helper",
+      "resolution": "Recognize legal history transition; skip file snapshot when only adding commands",
+      "later_result": "99 passed, then 122 passed"
+    }
+  ],
+  "historical_counterexample": {
+    "source": "26cecc5b7c",
+    "result": "expected existing compiled-fixture failure reproduced",
+    "cause": "required UnitHealthPct and RecordRouteProgress fixture definitions removed"
+  },
+  "native_builds": 0,
+  "live_experiments": 0,
+  "limits": [
+    "No native or DPS acceptance changed",
+    "A selected behavioral command is a review pointer, not automatic proof of semantic coverage",
+    "Workflow tests execute real subprocesses in synthetic Git fixtures, not a game server"
+  ],
+  "code_commit": "b737a96fe030f7a2b9625d5baadc6546d26fa9dd",
+  "independent_review": {
+    "verdict": "approved",
+    "reviewer_session_id": "01a0c947-aef5-76d2-a3b7-45358197b4b3",
+    "path": "artifacts/cata_raid_program/workflow_behavior_review_20260922.json",
+    "sha256": "b74e4e969d1b558b40fa189d1ae47efb50a2a6c3f199cfb08872f4e5f5636163"
+  },
+  "review_correction": "CACHE-001: cached receipts content-addressed and validated; tampering/malformed cache tests pass",
+  "integration": "Prepared separately; merge awaits user confirmation that the other coordinator is paused"
+}
