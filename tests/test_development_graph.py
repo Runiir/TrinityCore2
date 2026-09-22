@@ -523,10 +523,11 @@ def test_workflow_build_uses_one_source_and_queue_owned_receipts(case, monkeypat
         queue.validate_command(command, policy['parallelism']['maximum_compiler_jobs'], resource_class=kind, policy=policy)
         if outcome == 'source_changed': (root/'code.cpp').write_text('changed after configure')
         failed=outcome == 'configure_failure'
-        ticket = {'ticket_id':kind, 'resource_class':kind, 'classification':'failed' if failed else 'success',
+        ticket = {'ticket_id':kind, 'resource_class':kind, 'worktree':str(root), 'classification':'failed' if failed else 'success',
                   'commit':graph.git(root,'rev-parse','HEAD'), 'exit_code':int(failed),
                   'source_identity_stable':True, 'test_mode':False,
-                  'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True}]}
+                  'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True,
+                                       'path':str(root/'build/src/server/worldserver/worldserver')}]}
         put(queue.Paths.for_worktree(root).receipts / (kind+'.json'),ticket)
         return int(failed), ticket
     monkeypatch.setattr(queue,'run_ticket',run)

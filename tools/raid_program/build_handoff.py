@@ -24,6 +24,7 @@ def result_path(root, operation_id):
 def finish_build(root: Path, queue_receipt: Path | None = None) -> dict:
     from tools.raid_program.queued_build import verify_receipt
     from tools.raid_program.workflow_step import apply_step
+    root = root.resolve()
     state = graph.read(root / graph.STATE_PATH)
     graph.check_state(root, state)
     g = state['development_graph']
@@ -43,6 +44,9 @@ def finish_build(root: Path, queue_receipt: Path | None = None) -> dict:
     verified = verify_receipt(queue_receipt, graph.read(graph.file_ref(root, assignment['policy'])), allow_test_mode=False)
     if verified.get('gate_bearing') is not True or verified.get('classification') != 'success':
         raise ValueError('build ticket is not a verified gate-bearing success')
+    recorded_worktree = Path(queued.get('worktree', ''))
+    if not recorded_worktree.is_absolute() or recorded_worktree.resolve() != root:
+        raise ValueError('queue ticket belongs to another coordinator worktree')
     if queued.get('resource_class') != 'worldserver_build':
         raise ValueError('finish requires a worldserver_build ticket, not configure')
     source = queued['commit']
@@ -56,6 +60,11 @@ def finish_build(root: Path, queue_receipt: Path | None = None) -> dict:
                 if a.get('kind') == 'worldserver_elf' and a.get('produced_by_ticket') is True]
     if len(binaries) != 1:
         raise ValueError('expected exactly one produced worldserver binary')
+    binary_path = Path(binaries[0].get('path', ''))
+    expected_binary = (root / 'build/src/server/worldserver/worldserver').resolve()
+    if (not binary_path.is_absolute() or binary_path.resolve() != expected_binary
+            or not expected_binary.is_relative_to(root)):
+        raise ValueError('produced binary is outside the canonical coordinator build path')
     folder = root / 'artifacts/cata_raid_program'
     nested = folder / ('queued-build-' + claim['operation_id'] + '.json')
     write_once(nested, raw)

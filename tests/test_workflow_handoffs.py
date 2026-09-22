@@ -20,9 +20,10 @@ def build_case(case):
     root, state, evidence = reach(case, 'build')
     put(root / graph.STATE_PATH, state)
     commit(root, str(graph.STATE_PATH))
-    queued = {'resource_class': 'worldserver_build', 'commit': graph.git(root, 'rev-parse', 'HEAD'),
+    queued = {'resource_class': 'worldserver_build', 'worktree': str(root), 'commit': graph.git(root, 'rev-parse', 'HEAD'),
               'exit_code': 0, 'source_identity_stable': True, 'test_mode': False,
-              'output_artifacts': [{'kind': 'worldserver_elf', 'sha256': 'b'*64, 'produced_by_ticket': True}]}
+              'output_artifacts': [{'kind': 'worldserver_elf', 'sha256': 'b'*64, 'produced_by_ticket': True,
+                                    'path': str(root/'build/src/server/worldserver/worldserver')}]}
     path = root / '.git/queue-result.json'
     put(path, queued)
     return root, state, path, queued
@@ -42,11 +43,14 @@ def test_finish_generates_complete_receipt_and_advances_without_build(case):
     assert transition['stage'] == 'validate'
 
 
-@pytest.mark.parametrize('mutation', ['configure', 'not_produced', 'wrong_claim', 'changed_source', 'failed_verifier'])
+@pytest.mark.parametrize('mutation', ['configure', 'not_produced', 'wrong_claim', 'changed_source',
+                                    'failed_verifier', 'foreign_worktree', 'foreign_binary'])
 def test_finish_rejects_unusable_queue_evidence(case, monkeypatch, mutation):
     root, state, path, queued = build_case(case)
     if mutation == 'configure': queued['resource_class'] = 'configure'
     if mutation == 'not_produced': queued['output_artifacts'][0]['produced_by_ticket'] = False
+    if mutation == 'foreign_worktree': queued['worktree'] = str(root.parent/'another-worktree')
+    if mutation == 'foreign_binary': queued['output_artifacts'][0]['path'] = str(root.parent/'another-worktree/worldserver')
     if mutation == 'wrong_claim':
         state['development_graph']['claim']['owner'] = 'different-owner'
         put(root / graph.STATE_PATH, state)
