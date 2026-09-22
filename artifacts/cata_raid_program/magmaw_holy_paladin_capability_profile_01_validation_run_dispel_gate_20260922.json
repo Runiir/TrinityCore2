@@ -1,0 +1,120 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "5b3d70351430a991927971a91e5aed46daf2635c88a9291bd5e2d90d54233533",
+  "attempt_id": 1,
+  "server_epoch": 8079852842797661,
+  "closed": true,
+  "cleanup_verified": true,
+  "terminal_reason": "measurement_complete",
+  "scenario_kind": "dummy",
+  "clock": null,
+  "scoring_ms": 300000,
+  "build_identity": {
+    "source_commit": "6d82974817638659710d9905d0a48c5830a3ab79",
+    "binary_sha256": "f213521b8c77824a6050887cff3b354e337c97a1f38ccaa1ec1b58ff70d09778"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "healer_controlled_damage_300",
+    "actor_id": "30004",
+    "spec": "holy_paladin",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "calibration_observation_mode": "native_completion",
+  "calibration_acceptance_passed": false,
+  "role_calibration_rejections": [
+    "reference_conditions_not_comparable"
+  ],
+  "evidence_identity_complete": false,
+  "measurement_completed": true,
+  "diagnostics_complete": true,
+  "capture_accepted": true,
+  "reference_comparable": false,
+  "performance_accepted": false,
+  "training_eligible": false,
+  "native_observation": {
+    "target_guid": 1285,
+    "target_spec": "holy_paladin",
+    "profile_generation": 1,
+    "profile_content_hash": "0F0408B0559CFE2C8FEDEF3F44E63EBC65CA6412E1DB1D3144DC1412F33A1CA4",
+    "scored_seconds": 300.0,
+    "dispel_attempts": 1,
+    "dispel_successes": 1,
+    "effective_hps": 5654.02,
+    "idle_ratio_under_demand": 0.0,
+    "controlled_damage": 1831058,
+    "effective_healing": 1696206,
+    "remaining_mana_ratio": 0.28,
+    "health_floor_ratio": 0.23,
+    "overheal_ratio": 0.25,
+    "target_selection_accuracy": 1.0,
+    "cooldown_attempts": 1,
+    "cooldown_successes": 1,
+    "delivered_event_count": 40,
+    "scheduled_event_count": 40,
+    "result_counts": {
+      "cooldown_cast": 1,
+      "dispel_cast": 1,
+      "heal_cast": 110
+    }
+  },
+  "report_summary": {
+    "actor_report_sha256": "bdcbc301d45e5f1620952d3e7a2662fe97b33b1eb459a1c7c7a29d9fca83f5c3",
+    "report_path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922_v2/report.json",
+    "completion_reason": "combat_calibration_role_gate_failed",
+    "role_calibration_passed": false,
+    "reference_comparison_eligible": false,
+    "role_failure_reasons": [
+      "reference_conditions_not_comparable"
+    ],
+    "evidence_identity_complete": false,
+    "evidence_identity_incomplete_reasons": [
+      "missing_external_database_snapshot_sha256",
+      "missing_external_database_schema_sha256",
+      "missing_external_server_epoch_sha256",
+      "missing_external_profile_generation_sha256"
+    ]
+  },
+  "evidence": [
+    {
+      "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922_v2/report.json",
+      "sha256": "bdcbc301d45e5f1620952d3e7a2662fe97b33b1eb459a1c7c7a29d9fca83f5c3"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_dispel_gate_20260922_v2.raw.tar.gz.dvc",
+      "sha256": "958e0a707ab897198046e8668b3996e2ee5a6b49aeebe953b21f4588cadec523"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_build_dispel_gate_20260922.json",
+      "sha256": "ff78a99ab6dd8af6235335b522c2750fdee7b988383d53e782ce37d99dc9e47d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_dispel_gate_20260922.json",
+      "sha256": "38e20577984354277fd4b228907326d0069d41674615ba40b07fe9f6c063cef6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_dispel_gate_20260922.json",
+      "sha256": "11dce6f2aadfe6a0bf0c67e67015323d614b74ea62e49c6f4645033dd3993dcb"
+    }
+  ],
+  "interpretation": "The repaired binary completed the exact 300-second native healer calibration and submitted one successful Cleanse dispel while preserving heal, cooldown, target-selection, idle-under-demand and resource outcomes. The run remains diagnostic repair evidence only: the reference contract is not comparable and external evidence identity is incomplete, so actor, performance, raid and parent acceptance remain open."
+}
