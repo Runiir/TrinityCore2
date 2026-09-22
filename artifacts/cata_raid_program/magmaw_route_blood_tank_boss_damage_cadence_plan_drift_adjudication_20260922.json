@@ -1,0 +1,52 @@
+{
+  "schema": "trinity_plan_drift_adjudication_v1",
+  "kind": "plan_drift_adjudication",
+  "task_id": "magmaw:blood_tank_boss_damage_cadence_05_plan_drift_20260922",
+  "stage": "plan",
+  "checkpoint": {
+    "path": "artifacts/cata_raid_program/magmaw_route_blood_tank_boss_damage_cadence_plan_20260922.json",
+    "sha256": "a31d996ff11f857fe460b35aeccee79bfa78bbf4491fa87b5364fe4a6b5a0dd5"
+  },
+  "review": {
+    "path": "artifacts/cata_raid_program/magmaw_route_blood_tank_boss_damage_cadence_plan_drift_review_20260922.json/summary.json",
+    "sha256": "e1d77f57de718e3037dfacf504e72227677a0fb73d8201aebb98db1b8a06f04d"
+  },
+  "deterministic": {
+    "status": "pass",
+    "findings": []
+  },
+  "model_advice": {
+    "hosted_jev": {
+      "status": "advisory",
+      "scope_fit": "supported",
+      "evidence_supports_proposed_change": "contradicted",
+      "acceptance_claim_supported": "insufficient_evidence",
+      "note": "The route is in scope, but the new boss-cadence edge is not directly established by the cited facts."
+    },
+    "local_laya": {
+      "status": "not_reviewed",
+      "reason": "HTTP 422 context_budget_exceeded; retained in the review directory and not retried unchanged."
+    }
+  },
+  "coordinator_verdict": "drift found",
+  "reason": "The parent objective remains aligned, but the proposed new owner_blood_boss_damage_cadence edge was too broad to route as proven. The smallest correction is to route the retained production-backed Blood permanent-enchant setup gap, then revisit boss damage/cadence with setup identity reconciled.",
+  "next_action": "Route magmaw:blood_permanent_enchant_profile_05 for actor_30002; inspect the frozen profession-equipment source and native admission before any enchant-only overlay, preserving all other actor and raid requirements.",
+  "acceptance_claim": "Plan correction and routing only; no source repair, native behavior, actor acceptance, performance, raid clear, or parent completion is accepted.",
+  "preserved_requirements": [
+    "actor_30001",
+    "actor_30002",
+    "actor_30003",
+    "actor_30004",
+    "actor_30005",
+    "actor_30006",
+    "actor_30007",
+    "actor_30008",
+    "actor_30009",
+    "actor_30010",
+    "affliction_comparison",
+    "elemental_comparison",
+    "potion_ownership",
+    "survival_reference",
+    "magmaw_10n"
+  ]
+}

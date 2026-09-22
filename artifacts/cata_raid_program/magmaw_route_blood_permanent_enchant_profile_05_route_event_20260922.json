@@ -1,0 +1,27 @@
+{
+  "revision": 373,
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "action": "route",
+  "reason": "Plan-drift correction: the proposed new Blood boss-cadence edge was too broad to call proven from retained receipts. Route the directly evidenced Blood permanent-enchant admission gap first, then revisit boss damage/cadence with setup identity reconciled; preserve every open actor, comparison, potion, survival-reference and Magmaw requirement.",
+  "unit": {
+    "id": "magmaw:blood_permanent_enchant_profile_05",
+    "edge": "owner_blood_permanent_enchant_profile",
+    "owner_skill": "raid-role-implementation",
+    "requirements": [
+      "actor_30002"
+    ],
+    "objective": "Repair the established Blood tank permanent-enchant admission gap while preserving item identity, gems, reforges, DK runeforge semantics, tank safety, threat and all separate parent gates.",
+    "acceptance_conditions": [
+      "The first native-legal zero-permanent-enchant source-to-admission mismatch is identified from the frozen Blood profession-equipment authority and current native readback before implementation.",
+      "The bounded change is enchant-only: preserve item, gem, reforge, temporary enchant, runeforge, resource, safety, target and encounter behavior.",
+      "Focused executable coverage, independent review, current-policy build, and a completion-watchdog validation with setup readback are completed; actor, performance, raid clear and parent acceptance remain separately gated."
+    ],
+    "forbidden_changes": [
+      "Do not change Death Strike, Heart Strike, rune legality, mitigation, coefficients, target selection, encounter scripts, movement, route, WCL denominators, simulator references, roster, gear items, gems, reforges or consumables.",
+      "Do not manufacture a DK runeforge aura or treat permanent-enchant repair as proof of actor parity.",
+      "Do not repeat a non-comparable tank threat calibration unless the changed setup requires a narrowly identified identity check.",
+      "Do not accept actor_30002, any other actor, performance, Magmaw clear or parent completion from source tests or setup readback alone."
+    ],
+    "next_action": "Read DPS-055 and the frozen Blood profession-equipment/readback sources; identify the first attributable permanent-enchant admission edge, then implement only that enchant-only repair with focused coverage, separate review, current-policy build and completion-watchdog validation. Keep the unresolved Blood boss damage/cadence comparison and every other parent requirement open."
+  }
+}
