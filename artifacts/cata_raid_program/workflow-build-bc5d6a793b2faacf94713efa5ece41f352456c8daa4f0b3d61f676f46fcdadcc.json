@@ -1,0 +1,27 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "4a3c9ccde168f94b11c7a5c271384b792359419720cae6e09fd8ef4ef77af040",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/queued-build-bc5d6a793b2faacf94713efa5ece41f352456c8daa4f0b3d61f676f46fcdadcc.json",
+    "sha256": "3556b06333d23345b7d6ae394178507f136f06571c920ee3505ff2f93ce23c5f"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/queued-build-bc5d6a793b2faacf94713efa5ece41f352456c8daa4f0b3d61f676f46fcdadcc.json",
+      "sha256": "3556b06333d23345b7d6ae394178507f136f06571c920ee3505ff2f93ce23c5f"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp": "ccff6e371f545a7d466477422f90e16dc184b0b7679c6b36394f6cd250a01695",
+    "tests/test_autonomy_pipeline_smoke.py": "154aa8b8750e53d5e0b983f65b3bcde2b6060978f062c43a96557ada4b883e38"
+  },
+  "kind": "build",
+  "operation_id": "bc5d6a793b2faacf94713efa5ece41f352456c8daa4f0b3d61f676f46fcdadcc",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator-magmaw-route-progress-01-build",
+  "source_commit": "017cc321a3e1751a45cc0406763c6325ba391917",
+  "unit_id": "magmaw:shared_route_progress_identity_01"
+}
