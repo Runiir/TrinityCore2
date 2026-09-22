@@ -1,0 +1,101 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "9d38c3132fd27b612b2344c41a89e6c208e2b70f776739cb125cbf2ed71f03b5",
+  "attempt_id": 1,
+  "server_epoch": 8367615932474562,
+  "closed": true,
+  "cleanup_verified": true,
+  "terminal_reason": "measurement_complete",
+  "terminal_detail": "combat_calibration_role_gate_failed:reference_conditions_not_comparable",
+  "scenario_kind": "dummy",
+  "clock": null,
+  "scoring_ms": 300000,
+  "build_identity": {
+    "source_commit": "9746c9b6f593641b4aaa87cb3afeaba1d6153770",
+    "binary_sha256": "5fb8f5effc0eac4c131b355cc87ebf6f087310963bf3c5f4e49f6f86959db069"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "healer_controlled_damage_300",
+    "actor_id": "30004",
+    "spec": "holy_paladin",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "calibration_observation_mode": "native_completion",
+  "calibration_acceptance_passed": false,
+  "role_calibration_rejections": ["reference_conditions_not_comparable"],
+  "evidence_identity_complete": false,
+  "review": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_rotation_review_20260922.json",
+    "sha256": "3613e1bc88750ed9bf5677075a56b613bee96b39b63cde4d21d26ba371437e85",
+    "reviewer_session_id": "01a0c7ce-902a-7fa1-b01d-fed6269eac97",
+    "verdict": "approved_with_limits"
+  },
+  "cleanup_reconciliation": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_cleanup_reconciliation_20260922.json",
+    "sha256": "b9193eddad2011479976b7fa497a088629d44169bf0b66b2f5f572111a72a1f1"
+  },
+  "report_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_evidence_20260922.json",
+    "sha256": "6971c3146f6d98f552feaa97b2f4b4e02cf3fd1a8d4e83200325617630b621dd"
+  },
+  "profile_readback": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_profile_readback_20260922.json",
+    "sha256": "7ecd250216694556271e3d91442072045d0b11556c4ca66d518c40b30f9e9f27"
+  },
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_20260922.raw.tar.gz.dvc",
+    "sha256": "352118727bd1ad926f726d87497b83750b81d22a6905334735ad0c83cb640110",
+    "payload_sha256": "82f7c556a8765ccab810fe9e1e5b4a75aa91f3bdfbdcf1073075845b3fbabb56",
+    "payload_size_bytes": 1622970
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_evidence_20260922.json",
+      "sha256": "6971c3146f6d98f552feaa97b2f4b4e02cf3fd1a8d4e83200325617630b621dd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_profile_readback_20260922.json",
+      "sha256": "7ecd250216694556271e3d91442072045d0b11556c4ca66d518c40b30f9e9f27"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_rotation_review_20260922.json",
+      "sha256": "3613e1bc88750ed9bf5677075a56b613bee96b39b63cde4d21d26ba371437e85"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_cleanup_reconciliation_20260922.json",
+      "sha256": "b9193eddad2011479976b7fa497a088629d44169bf0b66b2f5f572111a72a1f1"
+    },
+    {
+      "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/report.json",
+      "sha256": "779d46f9e5771830d90fc743109b4eee0a96d30e3cc85ad321c02f9df688a4d5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_build_20260922.json",
+      "sha256": "2d4f4f7977c7e4d830b33a9955cebaabf514758e58e62223ca66f6fbde1f9298"
+    },
+    {
+      "path": "experiments/configs/runtime_asset_input_closure_manifest_v1.json",
+      "sha256": "756005374f7ffd180140f84cb13086a9ff6e6efce82bf87a8bc1648d89d2f02c"
+    }
+  ]
+}

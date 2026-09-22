@@ -1,0 +1,118 @@
+{
+  "schema": "cata_raid_program_live_rotation_review_v1",
+  "kind": "rotation_review",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "01a0c7ce-902a-7fa1-b01d-fed6269eac97",
+  "authority": "independent_read_only_review",
+  "verdict": "approved_with_limits",
+  "verdict_basis": "The isolated healer calibration completed an exact 300-second native window and exercised Light of Dawn without illegal-action or loop evidence. It does not provide actor, build, raid, reference-parity, or fully verified cleanup acceptance.",
+  "scope": {
+    "read_only": true,
+    "workflow_state_changed": false,
+    "tests_executed": false,
+    "actor_acceptance_scope": "excluded",
+    "raid_acceptance_scope": "excluded",
+    "build_acceptance_scope": "excluded"
+  },
+  "reviewed_files": {
+    "report": {
+      "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/report.json",
+      "sha256": "779d46f9e5771830d90fc743109b4eee0a96d30e3cc85ad321c02f9df688a4d5"
+    },
+    "commands": {
+      "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/commands.txt",
+      "sha256": "994cf0f26c0a938e0dd664b00fb0a3a377c3c11cd4179414a4c23163f33ba4ab"
+    },
+    "heartbeat_events": {
+      "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/heartbeat_events.jsonl",
+      "sha256": "148be42a4654ee7e7bc4e112267f7ab7b466d240e5ceef12f166bab76b26735b"
+    },
+    "sql": {
+      "path": "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
+      "sha256": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d"
+    },
+    "test": {
+      "path": "tests/test_holy_paladin_capability_profile.py",
+      "sha256": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+    }
+  },
+  "evidence_excerpts": [
+    {
+      "source": "report.json",
+      "locator": "/watchdog_state/calibration_completion",
+      "finding": "Exact 300-second native scoring completed: required 300.0 seconds, scored 300.0 seconds, window_complete true."
+    },
+    {
+      "source": "report.json",
+      "locator": "/combat_calibration_transport",
+      "finding": "Calibration transport completed with complete marker, 49 expected chunks and 49 received chunks."
+    },
+    {
+      "source": "report.json",
+      "locator": "/combat_calibration/bots/0",
+      "finding": "Holy Paladin actor guid 1285 had active spell 85222 and two Light of Dawn action attempts from world_db_bot_rotation_profile_269_v2."
+    },
+    {
+      "source": "report.json",
+      "locator": "/combat_calibration/bots/0/last_action_rejections",
+      "finding": "Native triage rejection for 85222 was observed as injured_player_count_too_low; no runtime insufficient-Holy-Power rejection was exposed."
+    },
+    {
+      "source": "report.json",
+      "locator": "/role_calibration_record/metrics",
+      "finding": "40 scheduled and delivered events, effective HPS 6001.57, no illegal actions, no deaths, target-selection accuracy 1.0, remaining mana ratio 0.36."
+    },
+    {
+      "source": "report.json",
+      "locator": "/acceptance_facts and /native_gameplay_outcome",
+      "finding": "This is an isolated healer calibration; actor_30004 acceptance and Magmaw 10N clear are not exercised."
+    }
+  ],
+  "key_metrics": {
+    "calibration_mode": "healer_controlled_damage_300",
+    "target_spec": "holy_paladin",
+    "calibration_actor_guid": 1285,
+    "scheduled_events": 40,
+    "delivered_events": 40,
+    "effective_hps": 6001.57,
+    "calibration_reference_hps": 6103.526666666667,
+    "reference_ratio": 0.983295,
+    "reference_comparison_eligible": false,
+    "action_attempts": {
+      "holy_light_635": 47,
+      "flash_of_light_19750": 17,
+      "holy_shock_20473": 39,
+      "light_of_dawn_85222": 2
+    },
+    "remaining_mana_ratio": 0.36,
+    "target_selection_accuracy": 1.0,
+    "overheal_ratio": 0.22,
+    "heartbeat_count": 11,
+    "heartbeat_decisions": 0,
+    "heartbeat_repeated_decisions": 0
+  },
+  "limits": [
+    "The report does not expose per-attempt Holy Power state or a spell-specific Light of Dawn result ledger.",
+    "Reference conditions are not comparable; the HPS ratio is informational only.",
+    "The report retains status.active=true and session_closed=false from a pre-stop snapshot; cleanup is separately reconciled from the stop result, cleanup log, shutdown command, and process check.",
+    "Actor_30004 acceptance, build acceptance, raid performance, Magmaw 10N clear, and parent scenario completion are unproved."
+  ],
+  "material_discrepancies": [
+    {
+      "severity": "medium",
+      "type": "cleanup_evidence",
+      "details": "The scoring window is complete and the runner exited cleanly, but the final report's controller fields still say active=true/session_closed=false."
+    },
+    {
+      "severity": "medium",
+      "type": "telemetry_scope",
+      "details": "Heartbeat evidence is isolated from calibration telemetry and reports zero expected bots/decisions; it cannot by itself validate healer action execution."
+    },
+    {
+      "severity": "low",
+      "type": "profile_status_consistency",
+      "details": "Per-bot evidence reports missing_profile=false and a world database profile source while the global retained status reports loaded_profile_count=0."
+    }
+  ],
+  "reviewer_session_id": "01a0c7ce-902a-7fa1-b01d-fed6269eac97"
+}

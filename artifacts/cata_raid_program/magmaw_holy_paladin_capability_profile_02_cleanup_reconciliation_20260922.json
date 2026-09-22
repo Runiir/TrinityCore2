@@ -1,0 +1,46 @@
+{
+  "schema": "cata_raid_program_validation_cleanup_reconciliation_v1",
+  "kind": "cleanup_reconciliation",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "run_report": {
+    "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/report.json",
+    "sha256": "779d46f9e5771830d90fc743109b4eee0a96d30e3cc85ad321c02f9df688a4d5"
+  },
+  "controller_snapshot_limit": {
+    "status_active": true,
+    "session_closed": false,
+    "lease_count_in_pre_stop_status": 5,
+    "interpretation": "The report retained a pre-stop status snapshot; these fields are not treated as post-stop closure evidence."
+  },
+  "shutdown_evidence": {
+    "commands_path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/commands.txt",
+    "commands_sha256": "994cf0f26c0a938e0dd664b00fb0a3a377c3c11cd4179414a4c23163f33ba4ab",
+    "log_path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/worldserver_output.log",
+    "log_sha256": "678a4d1d6918d7c81d70990f9bcd2a85dddcbe06a1582ff135b43ce133183fc9",
+    "stop_result": {
+      "action": "botauto_calibrate_stop",
+      "server_epoch": 8367615932474562,
+      "attempt_id": 1,
+      "removed": 5,
+      "fixture_cleanup_submitted_or_absent": true,
+      "failure_reason": null
+    },
+    "log_cleanup_lines": [
+      "PlayerBot cleanup complete ... Low: 1285 ... world_bots=4",
+      "PlayerBot cleanup complete ... Low: 1283 ... world_bots=3",
+      "PlayerBot cleanup complete ... Low: 1302 ... world_bots=2",
+      "PlayerBot cleanup complete ... Low: 1300 ... world_bots=1",
+      "PlayerBot cleanup complete ... Low: 1305 ... world_bots=0"
+    ],
+    "shutdown_command": "server shutdown force 0",
+    "worldserver_process_remaining": false,
+    "authserver_preexisting_process_untouched": true
+  },
+  "classification": {
+    "cleanup_verified": true,
+    "confidence": "controller_stop_result_and_worldserver_log_plus_process_check",
+    "remaining_limit": "The report's retained status/session fields remain stale and are preserved as a discrepancy; no claim is made that the report itself independently acknowledged closure."
+  }
+}

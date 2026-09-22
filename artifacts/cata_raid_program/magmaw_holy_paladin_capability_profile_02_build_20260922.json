@@ -1,0 +1,45 @@
+{
+  "schema": "cata_raid_program_build_receipt_v1",
+  "kind": "build",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "0c3adf6860ef6f574222603c1e7655aefad9386759268771bad2975cc45f627a",
+  "source_commit": "9746c9b6f593641b4aaa87cb3afeaba1d6153770",
+  "binary_sha256": "5fb8f5effc0eac4c131b355cc87ebf6f087310963bf3c5f4e49f6f86959db069",
+  "file_hashes": {
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d",
+    "tests/test_holy_paladin_capability_profile.py": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_queued_build_20260922.json",
+    "sha256": "779c188326a0dbc26cdcc798a3dd261bd7b4b526b3b11f3a78f8aabb92d8d864"
+  },
+  "notes": "Host-12 queued configure and worldserver build succeeded under the independently reviewed source identity; the gate-bearing receipt produced the worldserver binary.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_v2_20260922.json",
+      "sha256": "7fcb36ae6d23e37a22e4a57206bc02e0264c828398da3eb35ca67d47185ad8ed"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_tests_light_of_dawn_20260922.json",
+      "sha256": "59387fae7284ca9b5ef099752d50417451b2d4727acac5dfa569dc25f61bf010"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_receipt_light_of_dawn_v2_20260922.json",
+      "sha256": "70a573243c872fa35f0981e875ea7c9802ac7b08224ac78426be5cc4b3165cfb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_build_claim_event_20260922.json",
+      "sha256": "d563628dba9be6f69bf3428082f5bb2c06eb0b33e498d7c6d4cada87809bcceb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_queued_build_20260922.json",
+      "sha256": "779c188326a0dbc26cdcc798a3dd261bd7b4b526b3b11f3a78f8aabb92d8d864"
+    }
+  ]
+}
