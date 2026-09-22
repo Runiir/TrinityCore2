@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 406,
+    "revision": 407,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "build",
     "actor_ids": [
@@ -7690,6 +7690,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 406,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "revision": 406,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-blood-cadence-05-build"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7792,7 +7806,13 @@
       "tests/test_profile_preview_diagnostic_publication.py": "e917437b1c80f72de0bca2ce9150bce40b6c261893f2d60b047cc274171c53e5"
     },
     "tested_commit": "932ad94f594680e98a45cb9f00d098c36a2c1170",
-    "implementer": "coordinator-blood-cadence-05-correction"
+    "implementer": "coordinator-blood-cadence-05-correction",
+    "claim": {
+      "owner": "coordinator-blood-cadence-05-build",
+      "token": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569",
+      "operation_id": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569",
+      "stage": "build"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
