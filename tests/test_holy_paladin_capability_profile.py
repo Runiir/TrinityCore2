@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sqlite3
 from pathlib import Path
 
@@ -121,3 +122,24 @@ def test_native_candidate_builder_owns_the_holy_power_gate() -> None:
     source = CANDIDATE_SOURCE.read_text(encoding="utf-8")
     assert 'HasMechanicTag(spell.MechanicTags, "holy_power_3")' in source
     assert 'return "insufficient_holy_power";' in source
+
+
+def test_healer_dispels_bypass_only_the_injury_count_gate() -> None:
+    source = CANDIDATE_SOURCE.read_text(encoding="utf-8")
+    injury_gate = re.search(
+        r'else if \(profile\.Role == "healer" && spell\.MinInjuredPlayers.*?'
+        r'candidate\.RejectReason = "injured_player_count_too_low";',
+        source,
+        flags=re.DOTALL,
+    )
+    assert injury_gate is not None
+    assert 'spell.Category != BotCombatActionCategory::DispelCleanse' in injury_gate.group(0)
+
+    triage_gate = re.search(
+        r'profile\.Role == "healer".*?candidate\.RejectReason = "healer_triage_required";',
+        source,
+        flags=re.DOTALL,
+    )
+    assert triage_gate is not None
+    assert 'spell.Category != BotCombatActionCategory::HealFast' in triage_gate.group(0)
+    assert 'spell.Category != BotCombatActionCategory::DispelCleanse' in triage_gate.group(0)

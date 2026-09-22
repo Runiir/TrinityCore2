@@ -550,6 +550,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             && spell.Category != BotCombatActionCategory::Mitigation)
             candidate.RejectReason = "healer_triage_required";
         else if (profile.Role == "healer" && spell.MinInjuredPlayers
+            && spell.Category != BotCombatActionCategory::DispelCleanse
             && healerTriageInjuredPlayers < spell.MinInjuredPlayers)
             candidate.RejectReason = "injured_player_count_too_low";
         else if (profile.Role == "healer" && spell.MaxInjuredPlayers
