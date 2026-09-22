@@ -1,8 +1,5 @@
 """Compact per-actor packets for the local Laya typed-decision backend.
 
-The normal Qwen shadow packet is intentionally verbose because it is also used
-for the older local experiment.  Laya has a smaller prompt budget, so this
-module projects the same deterministic actor evidence into one bounded packet.
 The projection is diagnostic only: absent source fields stay absent and no
 action authority is added by this adapter.
 """

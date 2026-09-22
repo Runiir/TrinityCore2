@@ -36,7 +36,8 @@ REQUIRED_IDENTITY = (
 
 
 def encoded(value: Any) -> bytes:
-    # SimpleJev candidate order is semantic. Never sort criteria or request keys.
+    # Laya criteria order is part of the request contract. Never sort criteria
+    # or request keys.
     return json.dumps(value, separators=(",", ":"), ensure_ascii=False,
                       allow_nan=False).encode("utf-8")
 
@@ -71,42 +72,14 @@ def execution_source() -> dict[str, dict[str, str | None]]:
     return result
 
 
-def _qwen_actor_packets(review: dict[str, Any], model: str) -> list[dict[str, Any]]:
-    state = review["jev_input"]["state"]
-    boss = state.get("boss_dps_review") or {}
-    packets = []
-    for actor in boss.get("actor_loss_signals", []):
-        guid = actor.get("bot_guid")
-        if not guid:
-            continue
-        # Reuse the deterministic screen, duty context and corrected timeline.
-        # Do not duplicate the whole group's timelines in every actor request.
-        actor_state = {
-            "task": "Review one raid actor's diagnostic evidence",
-            "authority": "advisory only; native evidence and human review decide repairs",
-            "run_id": state["run_id"], "segment_id": state.get("segment_id"),
-            "native_gameplay_outcome": state.get("native_gameplay_outcome"),
-            "actor_review": actor,
-            "limitations": [
-                "Landed effects, including procs, are not completed casts.",
-                "Owner damage gaps exclude pets but unknown effects may remain.",
-                "Aggregate interval overlap alone cannot locate failures inside a gap.",
-                "WCL whole-fight DPS is context, not a matched acceptance threshold.",
-                "Required duties and phase coverage may explain apparent losses.",
-            ],
-        }
-        questions = analyzer._jev_questions(False, include_next_fix=False,
-            actor_specs=[actor], include_timeline=False, include_assignment=False)
-        questions = {k: v for k, v in questions.items() if k.startswith("actor_action_")}
-        packets.append({"model": model, "state": actor_state, "questions": questions})
-    return packets
-
-
 def actor_packets(review: dict[str, Any], model: str = MODEL) -> list[dict[str, Any]]:
-    """Build Laya packets by default, retaining the explicit Qwen path."""
-    if model == laya_packets.MODEL:
-        return laya_packets.actor_packets(review, model)
-    return _qwen_actor_packets(review, model)
+    """Build compact packets for the pinned local Laya checkpoint only."""
+    if model != laya_packets.MODEL:
+        raise ValueError(
+            "the local diagnostic shadow only supports "
+            f"{laya_packets.MODEL}"
+        )
+    return laya_packets.actor_packets(review, model)
 
 
 class NoRedirect(HTTPRedirectHandler):

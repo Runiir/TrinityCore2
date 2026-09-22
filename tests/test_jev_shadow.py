@@ -363,27 +363,9 @@ def test_default_model_is_compact_laya_and_preserves_unknown_limits():
     assert "Owner gaps exclude pets; unknown stays unknown." in packet["state"]["limitations"]
 
 
-def test_explicit_qwen_model_keeps_legacy_actor_packet():
-    review = laya_review()
-    model = "Qwen/Qwen3.5-0.8B"
-    packet = shadow.actor_packets(review, model)[0]
-    actor = review["jev_input"]["state"]["boss_dps_review"]["actor_loss_signals"][0]
-    expected_questions = shadow.analyzer._jev_questions(
-        False,
-        include_next_fix=False,
-        actor_specs=[actor],
-        include_timeline=False,
-        include_assignment=False,
-    )
-    expected_questions = {
-        key: value
-        for key, value in expected_questions.items()
-        if key.startswith("actor_action_")
-    }
-    assert packet["model"] == model
-    assert packet["state"]["actor_review"] == actor
-    assert packet["questions"] == expected_questions
-    assert len(packet["questions"]["actor_action_7"]["instructions"]) > 200
+def test_decommissioned_model_is_rejected():
+    with pytest.raises(ValueError, match="only supports"):
+        shadow.actor_packets(laya_review(), "Qwen/Qwen3.5-0.8B")
 
 
 def test_laya_packet_keeps_duty_and_counterfactual_review_restrictions():

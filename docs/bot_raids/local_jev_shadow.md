@@ -26,8 +26,8 @@ pixi run --manifest-path "$HOME/.local/share/trinity-laya/pixi.toml" --frozen se
 For an existing deployment run only the last command, after checking that no
 service already owns port 8000. Readiness: `curl http://127.0.0.1:8000/health`.
 Health records the actual model, revision, device, dtype and context limits.
-The current deployment uses CUDA/float16. Local Qwen SimpleJev was stopped;
-its checkout/config remains available for explicit rollback, not automatic fallback.
+The current deployment uses CUDA/float16. The former local Qwen/SimpleJev
+endpoint has been decommissioned. There is no automatic fallback to it.
 
 The pinned checkpoint accepts 1,024 tokens per question and a 256-token question/options
 head. The adapter rejects any truncated instructions, criteria or state with
