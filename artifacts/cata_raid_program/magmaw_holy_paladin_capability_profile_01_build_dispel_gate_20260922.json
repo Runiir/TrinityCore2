@@ -1,0 +1,53 @@
+{
+  "schema": "cata_raid_program_build_receipt_v1",
+  "kind": "build",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "15e2bd623f0ae0587c45c5fefc6196e44af9f0fb8a8ff0825bc12506aba439fd",
+  "source_commit": "6d82974817638659710d9905d0a48c5830a3ab79",
+  "binary_sha256": "f213521b8c77824a6050887cff3b354e337c97a1f38ccaa1ec1b58ff70d09778",
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "3fd4de999e9613d267e8979520f81dcfa666ad3ad03f06c776db985de8b34635",
+    "tests/test_holy_paladin_capability_profile.py": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-f72fbc5eaa4441abab9c9e7ccfc7b737.json",
+    "sha256": "5b340fe7f209ad1c4e6f044014dd0342486ba7212ae2fb6a385b85267863bfb3"
+  },
+  "build_summary": {
+    "classification": "success",
+    "gate_bearing": true,
+    "exit_code": 0,
+    "test_mode": false,
+    "source_identity_stable": true,
+    "configure_generator": "Unix Makefiles",
+    "compiler_jobs": 12,
+    "linker_jobs": 1,
+    "worldserver_artifact": "build/src/server/worldserver/worldserver",
+    "worldserver_artifact_sha256": "f213521b8c77824a6050887cff3b354e337c97a1f38ccaa1ec1b58ff70d09778"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_dispel_gate_20260922.json",
+      "sha256": "77b91cdafc8871a1869c5e0ea33eedd9f99ac4fb09991e49b5c88912fb7d9cb2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_dispel_gate_20260922.json",
+      "sha256": "11dce6f2aadfe6a0bf0c67e67015323d614b74ea62e49c6f4645033dd3993dcb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_dispel_gate_20260922.json",
+      "sha256": "38e20577984354277fd4b228907326d0069d41674615ba40b07fe9f6c063cef6"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-f72fbc5eaa4441abab9c9e7ccfc7b737.json",
+      "sha256": "5b340fe7f209ad1c4e6f044014dd0342486ba7212ae2fb6a385b85267863bfb3"
+    }
+  ],
+  "boundary": "This gate-bearing native build proves compilation, source identity and binary provenance for the repaired healer candidate predicate. It does not prove runtime dispel execution, actor acceptance, raid performance, raid clear or parent completion."
+}
