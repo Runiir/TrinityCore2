@@ -1,0 +1,85 @@
+{
+  "attempt_id": 1,
+  "authority": "coordinator_attestation",
+  "build_identity": {
+    "binary_sha256": "249902d4c761651a6e43298e505c87f02ba98eefce19bf44b1c65ccf33447eec",
+    "source_commit": "12ea6232e1ced87a95a54a0f1db7e5ad9cc93b84"
+  },
+  "calibration_acceptance": {
+    "diagnostics_passed": true,
+    "passed": false,
+    "rejections": [
+      "role_calibration:reference_conditions_not_comparable"
+    ],
+    "scored_window_seconds": 300.0,
+    "transport_passed": true
+  },
+  "cleanup_verified": true,
+  "closed": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_evidence_20260922.json",
+      "sha256": "d9a9e094703e06e3088337a9e7273db956d9e3ecff41fe4cdbcafec11d7c8427"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_report_20260922.json",
+      "sha256": "c69d361ac389326cc57035eaee43a9a38e643cb699086ed5ae2f4d7b7fade5f5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
+      "sha256": "ad4a8f684d287072a0a018813f4f617a56d6eebbf5f5f3619bb1896795759aa2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_reconciled_20260922.json",
+      "sha256": "eeaf86586700775f9647cdf1b55e5112bbee9bc6ed68efe15140632455a9441d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validate_reconciled_claim_event_20260922.json",
+      "sha256": "2421ee5301978abf439d3f1caccafef0a67dcdadf224165e627223a51699d425"
+    }
+  ],
+  "interpretation": "Closed diagnostic setup evidence only. The exact readback matches the pinned Blood permanent-enchant overlay; actor, performance, boss clear and parent acceptance remain open.",
+  "kind": "run",
+  "operation_id": "c9894c94c992a64b30068b3edaf88539864d343b5f22bad4f407eb168c21d6d6",
+  "producer": "coordinator",
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
+    "payload_sha256": "2594729fb7b740c88b277a27347c9f65895a1ce422046a8dd4fdcbb2260ea4f0",
+    "payload_size_bytes": 1733997,
+    "sha256": "ad4a8f684d287072a0a018813f4f617a56d6eebbf5f5f3619bb1896795759aa2"
+  },
+  "report_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_report_20260922.json",
+    "sha256": "c69d361ac389326cc57035eaee43a9a38e643cb699086ed5ae2f4d7b7fade5f5"
+  },
+  "scenario_kind": "dummy",
+  "schema": "cata_raid_program_run_receipt_v1",
+  "scoring_ms": 300000,
+  "server_epoch": 6833243471544576,
+  "target_spec": "blood_death_knight",
+  "terminal_detail": "native 300-second Blood setup readback completed; role reference conditions were not comparable",
+  "terminal_reason": "measurement_complete",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "validation_identity": {
+    "actor_id": "30002",
+    "mode": "tank_threat_300",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "scenario_kind": "dummy",
+    "spec": "blood_death_knight",
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  }
+}

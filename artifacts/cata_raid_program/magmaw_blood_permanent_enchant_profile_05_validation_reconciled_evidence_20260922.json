@@ -1,0 +1,461 @@
+{
+  "actor_summary": {
+    "action_attempts": [
+      {
+        "count": 10,
+        "spell_id": 43265,
+        "spell_name": "Death and Decay"
+      },
+      {
+        "count": 5,
+        "spell_id": 45462,
+        "spell_name": "Plague Strike"
+      },
+      {
+        "count": 9,
+        "spell_id": 45477,
+        "spell_name": "Icy Touch"
+      },
+      {
+        "count": 5,
+        "spell_id": 47528,
+        "spell_name": "Mind Freeze"
+      },
+      {
+        "count": 70,
+        "spell_id": 48721,
+        "spell_name": "Blood Boil"
+      },
+      {
+        "count": 1,
+        "spell_id": 48792,
+        "spell_name": "Icebound Fortitude"
+      },
+      {
+        "count": 1,
+        "spell_id": 49028,
+        "spell_name": "Dancing Rune Weapon"
+      },
+      {
+        "count": 15,
+        "spell_id": 49998,
+        "spell_name": "Death Strike"
+      },
+      {
+        "count": 1,
+        "spell_id": 55233,
+        "spell_name": "Vampiric Blood"
+      },
+      {
+        "count": 35,
+        "spell_id": 56815,
+        "spell_name": "Rune Strike"
+      }
+    ],
+    "attempts": 1200,
+    "class_id": 6,
+    "damage": 4605781,
+    "dps": 15352.6,
+    "elapsed_seconds": 300.0,
+    "guid": 1283,
+    "name": "Blooddk",
+    "pet_damage": 515587,
+    "quality_metrics": {
+      "action_group_count": 9,
+      "active_uptime_ratio": 1.0,
+      "cast_failure_ratio": 0.0,
+      "expected_action_group_count": 9,
+      "illegal_action_count": 0,
+      "movement_range_loss_ratio": 0.0,
+      "pet_damage_ratio": 0.11,
+      "resource_capped_ratio": 0.0,
+      "resource_starved_ratio": 0.0,
+      "rotation_group_coverage": 1.0
+    },
+    "role": "tank",
+    "successes": 1200,
+    "tank_metrics": {
+      "add_threat_success_ratio": 1.0,
+      "all_hostile_retention_ratio": 1.0,
+      "death_count": 0,
+      "defensive_action_count": 2,
+      "healer_exposure_ratio": 0.0,
+      "health_floor_ratio": 0.51,
+      "interrupt_success_ratio": 1.0,
+      "maximum_controlled_damage": 92864,
+      "maximum_controlled_damage_ratio": 0.45,
+      "mitigation_uptime_ratio": 1.0,
+      "snap_threat_success_ratio": 1.0,
+      "stance_form_uptime_ratio": 1.0,
+      "threat_aura_uptime_ratio": 1.0
+    },
+    "target_count": 5,
+    "threat_per_second": 9.89
+  },
+  "attempt_id": 1,
+  "authority": "coordinator_attestation",
+  "calibration_acceptance": {
+    "diagnostics_passed": true,
+    "passed": false,
+    "rejections": [
+      "role_calibration:reference_conditions_not_comparable"
+    ],
+    "requested": {
+      "mode": "tank_threat_300",
+      "seed": 1,
+      "target_spec": "blood_death_knight"
+    },
+    "role_calibration_passed": false,
+    "schema": "bot_combat_calibration_acceptance_v2",
+    "scored_window_seconds": 300.0,
+    "target_guid": 1283,
+    "transport_passed": true,
+    "window_tolerance_seconds": 0
+  },
+  "cleanup_attestation": {
+    "controller_snapshot": {
+      "active": true,
+      "bots": 0,
+      "lease_count": 2
+    },
+    "controller_snapshot_is_pre_shutdown": true,
+    "interpretation": "The pre-shutdown controller snapshot retains active=true and lease_count=2; cleanup lines show both bots removed and the stop receipt is ok. No process remained after the runner exited. The stale snapshot is not used as a live lease-leak claim.",
+    "runner_returncode": 0,
+    "validation_runner_process_after_run": false,
+    "worldserver_process_after_run": false
+  },
+  "cleanup_observations": [
+    {
+      "line": 729,
+      "text": "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000503 Type: Player Low: 1283 sessions=1 world_bots=1"
+    },
+    {
+      "line": 731,
+      "text": "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000508 Type: Player Low: 1288 sessions=0 world_bots=0"
+    },
+    {
+      "line": 732,
+      "stop_result": {
+        "action": "botauto_calibrate_stop",
+        "attempt_id": 1,
+        "cohort_id": "default",
+        "failure_reason": null,
+        "fixture_cleanup_submitted_or_absent": true,
+        "fixture_target_found": false,
+        "ok": true,
+        "removed": 2,
+        "server_epoch": 6833243471544576
+      },
+      "text": "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"cohort_id\":\"default\",\"server_epoch\":6833243471544576,\"attempt_id\":1,\"removed\":2,\"fixture_target_found\":false,\"fixture_cleanup_submitted_or_absent\":true,\"failure_reason\":null}"
+    }
+  ],
+  "compact_report_sha256": "c69d361ac389326cc57035eaee43a9a38e643cb699086ed5ae2f4d7b7fade5f5",
+  "completion_reason": "combat_calibration_role_gate_failed",
+  "empty_socket_normalization": "Native canonical_gear_manifest readback preserves three gem slots with zero padding.",
+  "enchants_by_slot": {
+    "0": 4208,
+    "14": 4100,
+    "2": 4198,
+    "4": 4103,
+    "6": 4127,
+    "7": 4062,
+    "8": 4191,
+    "9": 4106
+  },
+  "equipment": [
+    {
+      "enchant_id": 4208,
+      "gem_item_ids": [
+        44088,
+        77141,
+        0
+      ],
+      "item_id": 78687,
+      "reforge_id": 0,
+      "slot": 0
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        0,
+        0,
+        0
+      ],
+      "item_id": 73492,
+      "reforge_id": 0,
+      "slot": 1
+    },
+    {
+      "enchant_id": 4198,
+      "gem_item_ids": [
+        77130,
+        77130,
+        0
+      ],
+      "item_id": 78751,
+      "reforge_id": 0,
+      "slot": 2
+    },
+    {
+      "enchant_id": 4103,
+      "gem_item_ids": [
+        77141,
+        77141,
+        77130
+      ],
+      "item_id": 78659,
+      "reforge_id": 0,
+      "slot": 4
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        77130,
+        0,
+        0
+      ],
+      "item_id": 78889,
+      "reforge_id": 0,
+      "slot": 5
+    },
+    {
+      "enchant_id": 4127,
+      "gem_item_ids": [
+        77141,
+        77130,
+        77130
+      ],
+      "item_id": 78716,
+      "reforge_id": 0,
+      "slot": 6
+    },
+    {
+      "enchant_id": 4062,
+      "gem_item_ids": [
+        77141,
+        77130,
+        0
+      ],
+      "item_id": 78431,
+      "reforge_id": 0,
+      "slot": 7
+    },
+    {
+      "enchant_id": 4191,
+      "gem_item_ids": [
+        0,
+        0,
+        0
+      ],
+      "item_id": 73551,
+      "reforge_id": 0,
+      "slot": 8
+    },
+    {
+      "enchant_id": 4106,
+      "gem_item_ids": [
+        77130,
+        0,
+        0
+      ],
+      "item_id": 78678,
+      "reforge_id": 0,
+      "slot": 9
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        77141,
+        0,
+        0
+      ],
+      "item_id": 78432,
+      "reforge_id": 0,
+      "slot": 10
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        0,
+        0,
+        0
+      ],
+      "item_id": 73488,
+      "reforge_id": 0,
+      "slot": 11
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        0,
+        0,
+        0
+      ],
+      "item_id": 78002,
+      "reforge_id": 0,
+      "slot": 12
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        0,
+        0,
+        0
+      ],
+      "item_id": 77992,
+      "reforge_id": 0,
+      "slot": 13
+    },
+    {
+      "enchant_id": 4100,
+      "gem_item_ids": [
+        77141,
+        0,
+        0
+      ],
+      "item_id": 77097,
+      "reforge_id": 0,
+      "slot": 14
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        0,
+        0,
+        0
+      ],
+      "item_id": 78478,
+      "reforge_id": 0,
+      "slot": 15
+    },
+    {
+      "enchant_id": 0,
+      "gem_item_ids": [
+        77130,
+        0,
+        0
+      ],
+      "item_id": 74783,
+      "reforge_id": 0,
+      "slot": 17
+    }
+  ],
+  "exact_gear_readback_matches": true,
+  "failure_labels": [
+    "role_calibration:reference_conditions_not_comparable"
+  ],
+  "kind": "setup_diagnostic",
+  "limits": [
+    "This is setup-only evidence for the Blood permanent-enchant admission repair.",
+    "The tank_threat_300 role reference was not comparable, so the run does not establish actor, performance, or raid acceptance.",
+    "The run completed a native 300-second window and did not time out, stall, death-loop, or lose the target.",
+    "The weapon remains enchant 0 and no DK runeforge was manufactured by the overlay."
+  ],
+  "native_returncode": 0,
+  "producer": "coordinator",
+  "report_path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_report_20260922.json",
+  "report_sha256": "cb362d62b01ca8ed24b807dd9176242b4b65a809e26360ea0615eb0d02240122",
+  "role_evaluation": {
+    "checks": {
+      "add_threat": true,
+      "all_hostile_retention": true,
+      "damage_smoothing": true,
+      "declared_buff_debuff_consumable_hash": true,
+      "declared_profile_snapshot": true,
+      "declared_target_hash": true,
+      "defensive_coverage_declared": true,
+      "deterministic_reset_applied": true,
+      "explicit_rule_runtime_authority": true,
+      "generic_ml_shadow_only": true,
+      "healer_exposure": true,
+      "interrupt_coverage": true,
+      "mitigation_coverage": true,
+      "no_cross_window_contamination": true,
+      "no_illegal_actions": true,
+      "reference_comparison_eligible": false,
+      "reference_value_positive": true,
+      "role_allowed_for_mode": true,
+      "scored_duration_within_tolerance": true,
+      "separate_warmup_complete": true,
+      "snap_threat": true,
+      "survival": true,
+      "tank_dps_recorded": true,
+      "tank_stance_form_presence": true,
+      "tank_tps_recorded": true,
+      "threat_aura_uptime": true
+    },
+    "failure_reasons": [
+      "reference_conditions_not_comparable"
+    ],
+    "hard_floor_applicable": false,
+    "hard_floor_passed": false,
+    "mode": "tank_threat_300",
+    "optimization_target_applicable": false,
+    "optimization_target_met": false,
+    "passed": false,
+    "policy_sha256": "0f5e3efc0ff8cd4e44b201e1a0a47e45785935bbe480de6c5405b59fcc5f60b9",
+    "record_sha256": "9260271b6013c4084f5440544d63ea61c22399c16205a8d50faf2b21e4ad505f",
+    "reference_ratio": 0.472547,
+    "role": "tank",
+    "schema": "all_spec_role_calibration_evaluation_v1"
+  },
+  "schema": "cata_raid_program_validation_evidence_v1",
+  "scored_seconds": 300.0,
+  "server_epoch": 6833243471544576,
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "watchdog": {
+    "all_dead_wiped": false,
+    "calibration_completion": {
+      "mode": "native_completion",
+      "native_scoring_started": true,
+      "native_scoring_started_at_ms": 1790067117777,
+      "phase": "complete",
+      "required_scoring_seconds": 300.0,
+      "schema": "bot_calibration_completion_clock_v1",
+      "scored_seconds": 300.0,
+      "scoring_elapsed_seconds": 301.2,
+      "warmup_elapsed_seconds": 30.058,
+      "window_complete": true
+    },
+    "death_loop": false,
+    "heartbeat_sec": 30,
+    "live_combat_progress": {
+      "damage": [],
+      "health": []
+    },
+    "max_death_loops": 3,
+    "max_repeated_decisions": 20,
+    "no_progress": false,
+    "no_progress_window_sec": 180,
+    "policy": "completion-watchdog",
+    "progress_counters": {
+      "boss_engagement_actions": 0,
+      "boss_kill_evidence": 0,
+      "death_loop_events": 0,
+      "decisions": 0,
+      "gear_upgrades": 0,
+      "kills": 0,
+      "moved_diagnoses": 0,
+      "non_spawn_trace_entries": 0,
+      "quest_objective_progress": 0,
+      "quests_accepted": 0,
+      "quests_completed": 0,
+      "repath_events": 0,
+      "repeated_decisions": 0,
+      "stuck_events": 0,
+      "teacher_assisted_kills": 0,
+      "trash_pulls": 0,
+      "validation_route_actions": 0,
+      "validation_route_combat_progress_diagnoses": 0,
+      "validation_route_contamination_evidence": 0,
+      "validation_route_manifest_complete": 0,
+      "validation_route_no_progress_diagnoses": 0,
+      "validation_route_terminal_evidence": 0
+    },
+    "progress_total": 0,
+    "repeated_decision_loop": false,
+    "semantic_progress_plateau": false
+  },
+  "weapon_slot_15_enchant": 0,
+  "window_complete": true
+}
