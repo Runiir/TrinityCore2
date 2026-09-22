@@ -1,0 +1,35 @@
+{
+  "file_hashes": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "bcaacf4c838ee6118c7ca63a93d2081068e73947727222aa32643af3e071a92e",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+    "tests/test_magmaw_support_target_admission.py": "46ffc1276abf97dc860f688ddea567dfca2c27655483625bc6e5ff7512870293"
+  },
+  "findings": [],
+  "limits": [
+    "No server or live shard was launched; native/live acceptance is not claimed."
+  ],
+  "proof": {
+    "final_message_bytes": 1231,
+    "final_message_sha256": "e96258bf445904756bc7a8cd2624ef4122de9acb6e2535e6e05f81ed3d058b8b",
+    "prefix_bytes": 2195722,
+    "prefix_sha256": "478c0ab237d13af67d5efdfbadeae6a594d133d8cbed2d05d613b8f4403e3512",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T20-35-34-01a0ca2f-ef03-7b82-8573-b6b23b66395e.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0ca2f-ef03-7b82-8573-b6b23b66395e"
+  },
+  "reviewer_session_id": "01a0ca2f-ef03-7b82-8573-b6b23b66395e",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_support_target_admission.py",
+      "detail": "4 passed in 7.48s, including current cases, historical control, and production-caller assertions.",
+      "result": "passed"
+    },
+    {
+      "receipt": "artifacts/cata_raid_program/tests-244ac31c7c718e56057c2899d9eb953b97dc20272bcf70e40e1d849d2fdac675-df66bad5d233-379ef1b33312/receipt-47db9666078d7684e74ac30a34ee87cf4696f5a72ac96088875a4bf6d1d7b058.json",
+      "result": "verified",
+      "source_commit": "df66bad5d2339ec97097bf7ced7389073c5c15fb"
+    }
+  ],
+  "verdict": "approved"
+}

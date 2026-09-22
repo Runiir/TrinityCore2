@@ -1,0 +1,23 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_review_20260922.json",
+      "sha256": "9a406d9ba05c10bd6144cdc4f0bf7d9756a2a33449082dae2490924bf6d90860"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "bcaacf4c838ee6118c7ca63a93d2081068e73947727222aa32643af3e071a92e",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+    "tests/test_magmaw_support_target_admission.py": "46ffc1276abf97dc860f688ddea567dfca2c27655483625bc6e5ff7512870293"
+  },
+  "kind": "review",
+  "producer": "01a0ca2f-ef03-7b82-8573-b6b23b66395e",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_review_20260922.json",
+    "sha256": "9a406d9ba05c10bd6144cdc4f0bf7d9756a2a33449082dae2490924bf6d90860"
+  },
+  "reviewer_session_id": "01a0ca2f-ef03-7b82-8573-b6b23b66395e",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "verdict": "approved"
+}
