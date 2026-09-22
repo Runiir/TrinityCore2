@@ -37,13 +37,17 @@ GLOB_CHARACTERS = frozenset("*?[]{}")
 
 
 GRAPH = "experiments/configs/cata_raid_active_work_unit_v1.json"
+RETIRED_LOCAL_JEV_CONTROL_FILES = {
+    "experiments/configs/local_jev/pixi.lock",
+    "experiments/configs/local_jev/pixi.toml",
+}
 
 
 def coordination_path(name: str) -> bool:
     """An explicit boundary, not a general exemption for ignored/generated files."""
     path = PurePosixPath(name)
     return (
-        name in (GRAPH, "AGENTS.md")
+        name in (GRAPH, "AGENTS.md") or name in RETIRED_LOCAL_JEV_CONTROL_FILES
         or path.suffix == ".md" and name.startswith(("docs/", ".agents/skills/"))
         or path.suffix in {".json", ".jsonl"} and name.startswith("artifacts/cata_raid_program/")
     )

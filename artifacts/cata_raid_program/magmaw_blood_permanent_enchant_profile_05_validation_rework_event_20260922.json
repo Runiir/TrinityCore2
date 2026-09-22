@@ -1,0 +1,11 @@
+{
+  "revision": 381,
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "action": "rework",
+  "claim_token": "03b626832a573412e853e59f0c07e329ad75e4d61482ef69370c52d464eea3a7",
+  "reason": "The retained validation is diagnostic-only: the reviewer found non-comparable Blood reference conditions and a stale controller lease/session snapshot. The graph also rejects reuse because the build predates committed workflow changes outside this native unit. Reconcile the closed controller operation, bind the retained supporting review to current master, and replan the same enchant-only repair before another validation.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciliation_20260922.json",
+    "sha256": "7a147c21aaeb365330b0b13f387b0361168f3971bb434b742655ebabfc3d0187"
+  }
+}

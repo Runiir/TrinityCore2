@@ -1,0 +1,33 @@
+{
+  "schema": "cata_raid_validation_reconciliation_v1",
+  "authority": "coordinator_attestation",
+  "kind": "reconciliation",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "producer": "coordinator",
+  "operation_id": "03b626832a573412e853e59f0c07e329ad75e4d61482ef69370c52d464eea3a7",
+  "claim_token": "03b626832a573412e853e59f0c07e329ad75e4d61482ef69370c52d464eea3a7",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_review_20260922.json",
+      "sha256": "4d1ac2f51c107b4a7a956fdbabdbca2e5f6d61aca4a7a07683b2d18e1bb7a6bd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_run_20260922.json",
+      "sha256": "aa300d6a2eb68613b713cf63b95009133acda05c75e90eae7119fb5c496fa755"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_20260922.json",
+      "sha256": "e081d4b4d65b8cf333e166222d8ded6102737835b546d6035c3d593eea6cf127"
+    }
+  ],
+  "observations": {
+    "controller": "The retained validation review reports active=true, bots=0, lease_count=2, identity_complete=false and session_closed=false. No worldserver or validation process is running now, and the queued-build state has no active ticket or queued ticket.",
+    "run_reuse": "The retained packet has exact 300-second readback and permanent-enchant setup evidence, but its role gate is reference_conditions_not_comparable and its run adapter is missing the exact scoring_ms field required by the graph. It cannot be reused as a successful validation or performance result.",
+    "source_identity": "The binary was built at a69eec8151da2bf55e7f2036626a2257efb3416e. Current master contains committed workflow changes after that build which are outside this native unit unless bound by the retained independent supporting review."
+  },
+  "next_action": "Replan the same enchant-only unit from current master. Bind the retained hash-bound workflow supporting review, preserve the reviewed native files and overlay, rebuild only if current policy requires it, clear controller state before launch, and rerun setup validation with comparable Blood reference conditions."
+}

@@ -62,3 +62,9 @@ def test_worker_checkpoint_jsonl_is_coordination_and_not_source(tmp_path: Path) 
     }
     with pytest.raises(GraphError, match="source delta"):
         source_binding(tmp_path, selected_assignment, selected_base)
+
+
+def test_retired_local_jev_manifests_are_coordination_metadata() -> None:
+    assert coordination_path("experiments/configs/local_jev/pixi.lock")
+    assert coordination_path("experiments/configs/local_jev/pixi.toml")
+    assert not coordination_path("experiments/configs/local_jev/runtime.py")
