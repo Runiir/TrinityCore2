@@ -1,0 +1,97 @@
+{
+  "schema": "raid_workflow_tool_check_v1",
+  "code_commit": "d8bffaf45c55eb9a440a78e056e28a631efa1666",
+  "merged_commit": "319eff84d950948aa973fb8cd559b6b0fbe1f50d",
+  "tests": "40 passed in 0.60s",
+  "queries": [
+    {
+      "case": "task",
+      "argv": [
+        "task",
+        "--root",
+        "/home/runiir/Games/trinity-cata",
+        "--max-chars",
+        "6000"
+      ],
+      "returncode": 0,
+      "elapsed_seconds": 0.104,
+      "stdout_bytes": 3095,
+      "stderr_bytes": 0
+    },
+    {
+      "case": "result",
+      "argv": [
+        "result",
+        "/home/runiir/Games/trinity-cata/dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_20260922/report.json",
+        "--max-chars",
+        "6000"
+      ],
+      "returncode": 0,
+      "elapsed_seconds": 0.305,
+      "stdout_bytes": 2565,
+      "stderr_bytes": 0
+    },
+    {
+      "case": "reference",
+      "argv": [
+        "result",
+        "/home/runiir/Games/trinity-cata/dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_20260922/report.json",
+        "--section",
+        "reference",
+        "--max-chars",
+        "6000"
+      ],
+      "returncode": 0,
+      "elapsed_seconds": 0.304,
+      "stdout_bytes": 3118,
+      "stderr_bytes": 0
+    },
+    {
+      "case": "oversized_task",
+      "argv": [
+        "task",
+        "--root",
+        "/home/runiir/Games/trinity-cata",
+        "--max-chars",
+        "2000"
+      ],
+      "returncode": 2,
+      "elapsed_seconds": 0.102,
+      "stdout_bytes": 0,
+      "stderr_bytes": 244
+    }
+  ],
+  "report_bytes": 36668772,
+  "review": {
+    "report": {
+      "path": "artifacts/cata_raid_program/diagnostic_contracts_review_20260922.json",
+      "sha256": "c1e8c64801fa2a39a318aa6be68266189c253b7009e5cc74442db8e337f89922"
+    },
+    "receipt": {
+      "path": "artifacts/cata_raid_program/diagnostic_contracts_review_20260922.receipt.json",
+      "sha256": "77559e6a530f052deeb048eed0ab34a87a256cca944854fe9c1cfcfa112d14f6"
+    },
+    "reviewer_session_id": "01a0c81b-7a80-7362-8fbb-3dce85ed5b0c",
+    "verdict": "approved"
+  },
+  "review_format_corrections": 1,
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "remote_verification_method": "Read remote object directly, without local cache; SHA256 and length match.",
+  "pointer": "artifacts/cata_raid_program/diagnostic_contracts_canary_20260922.tar.gz.dvc",
+  "pointer_sha256": "84f99373f5e015f48f8e5b8b8fa1fd7571445574445a6772c74ea72a60a146a2",
+  "payload_md5": "525b2ebcb2b680b831b32b906f935ec0",
+  "payload_sha256": "0c887251a11bd52d8b554a5b10fb13a0655776f1d20aebc6db4e4fc84fd4455d",
+  "payload_size_bytes": 6573,
+  "raw_gameplay_changes": false,
+  "new_live_run": false,
+  "parent_objective_accepted": false,
+  "limits": [
+    "Single retained-run tool check, not a whole-agent speed benchmark.",
+    "No new gameplay experiment or performance acceptance.",
+    "Initial reviewer handshake preflight failed on trailing usage records; fixed and covered by test.",
+    "Historical Blood run cannot advance in graph after separate mainline source changes. Its completed-run receipt, independent setup review and remote raw archive are retained."
+  ],
+  "exact_local_archive_and_cache_evicted": true
+}

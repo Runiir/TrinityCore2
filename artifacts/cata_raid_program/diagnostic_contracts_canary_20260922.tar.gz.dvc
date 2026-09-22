@@ -1,0 +1,5 @@
+outs:
+- md5: 525b2ebcb2b680b831b32b906f935ec0
+  size: 6573
+  hash: md5
+  path: diagnostic_contracts_canary_20260922.tar.gz

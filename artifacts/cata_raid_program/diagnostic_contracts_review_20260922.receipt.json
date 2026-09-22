@@ -1,0 +1,29 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/diagnostic_contracts_review_20260922.json",
+      "sha256": "c1e8c64801fa2a39a318aa6be68266189c253b7009e5cc74442db8e337f89922"
+    }
+  ],
+  "file_hashes": {
+    ".agents/skills/raid-rotation-review/SKILL.md": "2d2df842c35f89e9765912a891566d48829bfc28f489ec3b177d3411a6f3ec09",
+    ".agents/skills/raid-rotation-review/references/evidence-views.md": "5b60536c1e729129df916341ca16737434d69504009421162e2ac7f2f25545d0",
+    ".agents/skills/trinity-orchestrator/SKILL.md": "47147c4257c3086bf28411b21467c9685e712af5927e6fed36364a2c074c0669",
+    "tests/test_evidence_diagnostic_contracts.py": "3bfdefa2e1323ddb7c3b06a3420453dc428c0d30e8d76edebf62da5bceb3facf",
+    "tests/test_review_execution.py": "4f1a3621e11ff7792c7c8fd504784724196155322ce4f8479762937635ea9bfe",
+    "tools/raid_program/evidence_result.py": "d84442d44677dfc0e3e8cdc9545d916c5fc821569e991bba43eff64b6a384bc3",
+    "tools/raid_program/evidence_task.py": "89f3da6eab66080a8fa37850dc2fe24a7f44d7b17923f3e2521813df3a55943b",
+    "tools/raid_program/evidence_view.py": "02ccf459df29cf8bd35035a42a03b67b411b84d7bd7ed61b7010bbcdaf4c84eb",
+    "tools/raid_program/review_execution.py": "ce81d18673c24013ef2eebff7d36b062d0dc1ff32027c14302e2716a67b2e5b0"
+  },
+  "kind": "review",
+  "producer": "01a0c81b-7a80-7362-8fbb-3dce85ed5b0c",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/diagnostic_contracts_review_20260922.json",
+    "sha256": "c1e8c64801fa2a39a318aa6be68266189c253b7009e5cc74442db8e337f89922"
+  },
+  "reviewer_session_id": "01a0c81b-7a80-7362-8fbb-3dce85ed5b0c",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "verdict": "approved"
+}

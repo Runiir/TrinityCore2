@@ -1,0 +1,30 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "attempt_id": 1,
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "remote_verification": {
+    "pointer": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_20260922.raw.tar.gz.dvc",
+    "pointer_sha256": "e2cc9157868138e76d299090cec3eb3525d68d95a654d6d3ddc65c894fe88391",
+    "payload_md5": "a160717dc0851fa4e9636b31f86be500",
+    "payload_sha256": "aa2e4b35345e2c59f40162b31c4a0777b4fcb7534b045119bdd2c84c4f125676",
+    "payload_size_bytes": 3796210,
+    "remote_verified": true,
+    "method": "Direct remote object stream, bypassing local cache; SHA256 and length match.",
+    "cache_path": "/home/runiir/Games/trinity-cata/.dvc/cache/files/md5/a1/60717dc0851fa4e9636b31f86be500"
+  },
+  "exact_local_duplicates_evicted": true,
+  "raw_workspace_evicted": true,
+  "raw_workspace_bytes_removed": 102202079,
+  "graph_advanced": false,
+  "graph_blocker": "Source delta outside bounded assignment; completed run receipt retained without bypass or repeat.",
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "encounter_clear": false,
+  "training_eligible": false,
+  "review_scope": "Permanent-enchant setup evidence approved; no throughput or parent acceptance."
+}

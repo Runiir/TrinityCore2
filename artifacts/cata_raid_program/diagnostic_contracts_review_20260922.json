@@ -1,0 +1,44 @@
+{
+  "file_hashes": {
+    ".agents/skills/raid-rotation-review/SKILL.md": "2d2df842c35f89e9765912a891566d48829bfc28f489ec3b177d3411a6f3ec09",
+    ".agents/skills/raid-rotation-review/references/evidence-views.md": "5b60536c1e729129df916341ca16737434d69504009421162e2ac7f2f25545d0",
+    ".agents/skills/trinity-orchestrator/SKILL.md": "47147c4257c3086bf28411b21467c9685e712af5927e6fed36364a2c074c0669",
+    "tests/test_evidence_diagnostic_contracts.py": "3bfdefa2e1323ddb7c3b06a3420453dc428c0d30e8d76edebf62da5bceb3facf",
+    "tests/test_review_execution.py": "4f1a3621e11ff7792c7c8fd504784724196155322ce4f8479762937635ea9bfe",
+    "tools/raid_program/evidence_result.py": "d84442d44677dfc0e3e8cdc9545d916c5fc821569e991bba43eff64b6a384bc3",
+    "tools/raid_program/evidence_task.py": "89f3da6eab66080a8fa37850dc2fe24a7f44d7b17923f3e2521813df3a55943b",
+    "tools/raid_program/evidence_view.py": "02ccf459df29cf8bd35035a42a03b67b411b84d7bd7ed61b7010bbcdaf4c84eb",
+    "tools/raid_program/review_execution.py": "ce81d18673c24013ef2eebff7d36b062d0dc1ff32027c14302e2716a67b2e5b0"
+  },
+  "findings": [],
+  "limits": [
+    "reviewed_commit=d8bffaf45c55eb9a440a78e056e28a631efa1666; base=9ea844c17af423459733c615340c5587a68912ee",
+    "Read-only review; no servers, live runs, or source modifications."
+  ],
+  "proof": {
+    "final_message_bytes": 1735,
+    "final_message_sha256": "591b27d046fb37a809c0e5765eb2fda1ad6069261c115852a928329f66a95207",
+    "prefix_bytes": 2065917,
+    "prefix_sha256": "3ad74aa5f157c1cb97fa2b85f01a88f0085712be93fbfec4699f50506364c0ff",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T10-53-59-01a0c81b-7a80-7362-8fbb-3dce85ed5b0c.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c81b-7a80-7362-8fbb-3dce85ed5b0c"
+  },
+  "reviewer_session_id": "01a0c81b-7a80-7362-8fbb-3dce85ed5b0c",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    {
+      "command": "pixi run python -m pytest -q tests/test_review_execution.py tests/test_evidence_task.py tests/test_evidence_view.py tests/test_evidence_diagnostic_contracts.py",
+      "result": "40 passed in 0.60s"
+    },
+    {
+      "command": "git diff --check 9ea844c17af423459733c615340c5587a68912ee..d8bffaf45c55eb9a440a78e056e28a631efa1666",
+      "result": "passed"
+    },
+    {
+      "command": "focused retained-output checks",
+      "result": "task/result/reference outputs stayed bounded; oversized task exited 2; no raw snapshots emitted"
+    }
+  ],
+  "verdict": "approved"
+}
