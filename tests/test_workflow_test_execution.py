@@ -188,3 +188,37 @@ def test_duplicate_pass_cannot_hide_failure_and_unstable_receipt_rejected(case):
                     {'tests': [{'command': cmd, 'exit_status': 0}], 'source_and_state_stable': False}):
         with pytest.raises(graph.GraphError):
             graph.reduce(root, state, receipt(root, state, {'path': 'native.json', 'sha256': graph.digest((root/'native.json').read_bytes())}, **changes))
+
+
+def test_cached_failed_receipt_cannot_be_edited_into_a_pass(case):
+    cmd = command("raise AssertionError('real failure')")
+    root, _ = ready(case, [cmd])
+    result = run(root, cmd)
+    path = root/result['receipt']
+    retained = graph.read(path)
+    retained['tests'][0]['exit_status'] = 0
+    retained['source_and_state_stable'] = True
+    path.write_text(json.dumps(retained))
+    with pytest.raises(graph.GraphError, match='content hash mismatch'):
+        run(root, cmd)
+
+
+@pytest.mark.parametrize('problem', ['missing_tests', 'missing_evidence', 'wrong_command', 'wrong_unit', 'bad_status', 'bad_stability', 'missing_log'])
+def test_even_content_addressed_cache_requires_complete_result_schema(case, problem):
+    cmd = command('pass')
+    root, _ = ready(case, [cmd])
+    result = run(root, cmd)
+    path = root/result['receipt']
+    retained = graph.read(path)
+    if problem == 'missing_tests': retained.pop('tests')
+    if problem == 'missing_evidence': retained.pop('evidence')
+    if problem == 'wrong_command': retained['tests'][0]['command'] = 'not the declared test'
+    if problem == 'wrong_unit': retained['unit_id'] = 'another unit'
+    if problem == 'bad_status': retained['tests'][0]['exit_status'] = False
+    if problem == 'bad_stability': retained['source_and_state_stable'] = 'true'
+    if problem == 'missing_log': retained['tests'][0].pop('log')
+    data = json.dumps(retained).encode()
+    path.unlink()
+    (path.parent/('receipt-' + graph.digest(data) + '.json')).write_bytes(data)
+    with pytest.raises(graph.GraphError):
+        run(root, cmd)

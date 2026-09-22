@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import os
 from pathlib import Path
 import shlex
@@ -78,21 +79,22 @@ def run_tests(root: Path, *, owner: str, producer: str, behavior_command: str,
     commands = assignment['required_test_commands']
     if not commands or behavior_command not in commands:
         raise graph.GraphError('select the declared command that exercises the claimed behavior')
-    if not isinstance(producer, str) or not producer.strip() or timeout <= 0:
+    if not isinstance(producer, str) or not producer.strip() or not math.isfinite(timeout) or timeout <= 0:
         raise graph.GraphError('implementer session identity and positive command timeout required')
     source = graph.source_binding(root, assignment)
     before = graph.snapshot(root, assignment['owned_files'])
     folder = root / 'artifacts/cata_raid_program' / ('tests-' + g['claim']['operation_id'] + '-' + source[:12] + '-' + sha[:12])
-    target = folder / 'receipt.json'
     if folder.exists():
-        if not target.is_file():
+        retained = list(folder.glob('receipt-*.json'))
+        if not retained:
             raise graph.GraphError('test capture interrupted; inspect ' + str(folder) + ' before another execution')
+        if len(retained) != 1:
+            raise graph.GraphError('ambiguous cached test receipts; reconcile instead of selecting one')
+        target = retained[0]
+        if target.name != 'receipt-' + graph.digest(target.read_bytes()) + '.json':
+            raise graph.GraphError('cached test receipt content hash mismatch')
         receipt = graph.read(target)
-        if (receipt.get('producer') != producer or receipt.get('behavior_command') != behavior_command
-                or receipt.get('source_commit') != source or receipt.get('file_hashes') != before):
-            raise graph.GraphError('retained test identity differs; do not overwrite it')
-        for ref in receipt['evidence']:
-            graph.file_ref(root, ref)
+        validate_cached_receipt(root, receipt, g, source, before, producer, behavior_command)
         return _result(root, target, receipt, sha, owner)
     folder.mkdir(parents=True, exist_ok=False)
     raw_folder = Path(graph.git(root, 'rev-parse', '--git-path', 'raid_program/test-logs'))
@@ -150,8 +152,34 @@ def run_tests(root: Path, *, owner: str, producer: str, behavior_command: str,
                'file_hashes': before, 'tests': results, 'evidence': evidence,
                'source_and_state_stable': stable, 'behavior_command': behavior_command,
                'limits': 'Command execution is observed. Reviewer must verify behavior coverage; no native performance acceptance.'}
-    target.write_text(json.dumps(receipt, indent=2) + '\n')
+    payload = (json.dumps(receipt, indent=2) + '\n').encode()
+    target = folder / ('receipt-' + graph.digest(payload) + '.json')
+    target.write_bytes(payload)
     return _result(root, target, receipt, sha, owner)
+
+
+def validate_cached_receipt(root, receipt, g, source, files, producer, behavior_command):
+    expected = {'kind': 'tests', 'authority': 'coordinator_attestation', 'unit_id': g['unit']['id'],
+                'operation_id': g['claim']['operation_id'], 'source_commit': source,
+                'file_hashes': files, 'producer': producer, 'behavior_command': behavior_command}
+    if any(receipt.get(k) != v for k, v in expected.items()):
+        raise graph.GraphError('retained test identity differs; do not overwrite it')
+    results, evidence = receipt.get('tests'), receipt.get('evidence')
+    if (type(receipt.get('source_and_state_stable')) is not bool
+            or not isinstance(results, list) or not isinstance(evidence, list)
+            or len(results) != len(g['assignment']['required_test_commands'])):
+        raise graph.GraphError('invalid cached test result schema')
+    for row, command in zip(results, g['assignment']['required_test_commands']):
+        if (not isinstance(row, dict) or row.get('command') != command
+                or type(row.get('exit_status')) is not int or type(row.get('timed_out')) is not bool
+                or (row['timed_out'] and row['exit_status'] != 124)
+                or type(row.get('elapsed_seconds')) not in (int, float)
+                or not math.isfinite(row['elapsed_seconds']) or row['elapsed_seconds'] < 0
+                or not isinstance(row.get('log'), dict)):
+            raise graph.GraphError('invalid cached command result')
+        graph.file_ref(root, row['log'])
+    if evidence != [row['log'] for row in results]:
+        raise graph.GraphError('cached test evidence does not match command logs')
 
 
 def _result(root, target, receipt, sha, owner):
