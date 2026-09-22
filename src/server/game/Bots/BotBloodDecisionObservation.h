@@ -12,6 +12,15 @@
 
 namespace BotBloodDecisionObservation
 {
+inline bool IsRuneReady(float cooldownFraction)
+{
+    if (cooldownFraction == 0.0f || !std::isfinite(cooldownFraction))
+        return cooldownFraction == 0.0f;
+
+    float const absoluteCooldown = std::abs(cooldownFraction);
+    return absoluteCooldown <= 0.00001f * (absoluteCooldown + 1.0f);
+}
+
 struct ReadyRunes
 {
     uint8 Total = 0;
@@ -27,7 +36,7 @@ inline ReadyRunes ObserveReadyRunes(Player const* actor)
     if (!actor || actor->getClass() != CLASS_DEATH_KNIGHT)
         return observation;
     for (uint8 rune = 0; rune < MAX_RUNES; ++rune)
-        if (std::abs(actor->GetRuneCooldown(rune)) <= 0.0001f)
+        if (IsRuneReady(actor->GetRuneCooldown(rune)))
         {
             ++observation.Total;
             switch (actor->GetCurrentRune(rune))
@@ -56,11 +65,45 @@ inline char const* RuneTypeName(RuneType rune)
 
 inline uint64 EstimateRuneReadyInMs(float cooldownFraction, float regenerationRate)
 {
-    if (cooldownFraction <= 0.0001f || regenerationRate <= 0.0f)
+    if (IsRuneReady(cooldownFraction) || regenerationRate <= 0.0f)
         return 0;
 
     double const remainingSeconds = double(cooldownFraction) / double(regenerationRate);
     return static_cast<uint64>(std::ceil(remainingSeconds * 1000.0));
+}
+
+inline uint64 EstimatePairedRuneReadyInMs(Player const* actor, uint8 rune)
+{
+    if (!actor || rune >= MAX_RUNES)
+        return 0;
+
+    uint8 const pairStart = rune - rune % 2;
+    uint8 const pairEnd = pairStart + 1;
+    float const firstCooldown = actor->GetRuneCooldown(pairStart);
+    float const secondCooldown = actor->GetRuneCooldown(pairEnd);
+    if (IsRuneReady(actor->GetRuneCooldown(rune)))
+        return 0;
+
+    uint8 activeRune = pairStart;
+    float activeCooldown = firstCooldown;
+    if (!IsRuneReady(secondCooldown)
+        && (firstCooldown > secondCooldown || IsRuneReady(firstCooldown)))
+    {
+        activeRune = pairEnd;
+        activeCooldown = secondCooldown;
+    }
+
+    float const activeRegenerationRate = actor->GetFloatValue(
+        PLAYER_RUNE_REGEN_1 + static_cast<uint8>(actor->GetCurrentRune(activeRune)));
+    uint64 const activeReadyInMs = EstimateRuneReadyInMs(activeCooldown, activeRegenerationRate);
+    if (rune == activeRune)
+        return activeReadyInMs;
+
+    uint8 const waitingRune = activeRune == pairStart ? pairEnd : pairStart;
+    float const waitingCooldown = actor->GetRuneCooldown(waitingRune);
+    float const waitingRegenerationRate = actor->GetFloatValue(
+        PLAYER_RUNE_REGEN_1 + static_cast<uint8>(actor->GetCurrentRune(waitingRune)));
+    return activeReadyInMs + EstimateRuneReadyInMs(waitingCooldown, waitingRegenerationRate);
 }
 
 inline void AppendRuneSlots(std::ostringstream& json, Player const* actor, uint64 evaluationStartedAtMs)
@@ -73,7 +116,7 @@ inline void AppendRuneSlots(std::ostringstream& json, Player const* actor, uint6
         float const cooldownFraction = actor->GetRuneCooldown(rune);
         float const regenerationRate = actor->GetFloatValue(
             PLAYER_RUNE_REGEN_1 + static_cast<uint8>(currentRune));
-        uint64 const readyInMs = EstimateRuneReadyInMs(cooldownFraction, regenerationRate);
+        uint64 const readyInMs = EstimatePairedRuneReadyInMs(actor, rune);
 
         if (rune != 0)
             json << ',';

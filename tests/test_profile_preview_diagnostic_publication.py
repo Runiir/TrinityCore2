@@ -157,6 +157,8 @@ struct BotWorldPopulationMgr {static std::string JsonEscape(std::string const& v
 ''' + attempt_serializer + r'''
 int main(){
  Player actor;std::vector<BotActionCandidate> candidates(3);
+ Player fuzzyActor=actor;fuzzyActor.Cooldowns[0]=0.00005f;
+ if(BotBloodDecisionObservation::ObserveReadyRunes(&fuzzyActor).Total!=1)return 1;
  candidates[0].SpellId=48721;candidates[0].ObservationJson="{\"prior\":true}";
  candidates[1].SpellId=49998;candidates[1].Score=1.25f;candidates[1].Profile.PriorityBucket=1;candidates[1].RejectReason="missing_runes";
  candidates[2].SpellId=55050;candidates[2].Score=7.75f;candidates[2].Profile.PriorityBucket=2;candidates[2].Reason="selected";
@@ -233,7 +235,7 @@ int main(){
         {
             "slot_index": 2, "base_rune_type": "unholy", "current_rune_type": "unholy",
             "cooldown_fraction": 1, "regeneration_rate": 0.5,
-            "estimated_ready_in_ms": 2000, "estimated_ready_at_ms": 3234,
+            "estimated_ready_in_ms": 2500, "estimated_ready_at_ms": 3734,
         },
         {
             "slot_index": 3, "base_rune_type": "unholy", "current_rune_type": "death",
