@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read DPS-055 and the frozen Blood profession-equipment/readback sources; identify the first attributable permanent-enchant admission edge, then implement only that enchant-only repair with focused coverage, separate review, current-policy build and completion-watchdog validation. Keep the unresolved Blood boss damage/cadence comparison and every other parent requirement open.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Read DPS-055 and the frozen Blood profession-equipment/readback sources; identify the first attributable permanent-enchant admission edge, then implement only that enchant-only repair with focused coverage, separate review, current-policy build and completion-watchdog validation. Keep the unresolved Blood boss damage/cadence comparison and every other parent requirement open.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 387,
+    "revision": 388,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -7332,6 +7332,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 387,
+        "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "revision": 387,
+          "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_reconciled_20260922.json",
+            "sha256": "eeaf86586700775f9647cdf1b55e5112bbee9bc6ed68efe15140632455a9441d"
+          },
+          "claim_token": "e70edba7a429480feddbdb8243187675cc20590f2eb2a72094d53ddb96071377"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7451,6 +7469,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_review_receipt_v2_20260922.json",
         "sha256": "3883298f981b6dbf26cc70883cc846b58d237c37ba8b9ca7d2a923024f0ea331"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_reconciled_20260922.json",
+        "sha256": "eeaf86586700775f9647cdf1b55e5112bbee9bc6ed68efe15140632455a9441d"
       }
     },
     "tested_files": {
@@ -7465,11 +7487,9 @@
     },
     "tested_commit": "6e4ffe74b5a462ec8a3c8aa4c7ec802b5ac65302",
     "implementer": "coordinator-magmaw-blood-permanent-enchant-profile-05-implement-20260922",
-    "claim": {
-      "owner": "coordinator-magmaw-blood-permanent-enchant-profile-05-build-20260922",
-      "token": "e70edba7a429480feddbdb8243187675cc20590f2eb2a72094d53ddb96071377",
-      "operation_id": "e70edba7a429480feddbdb8243187675cc20590f2eb2a72094d53ddb96071377",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "12ea6232e1ced87a95a54a0f1db7e5ad9cc93b84",
+      "binary_sha256": "249902d4c761651a6e43298e505c87f02ba98eefce19bf44b1c65ccf33447eec"
     }
   },
   "parked_scenarios": {

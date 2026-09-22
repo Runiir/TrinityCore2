@@ -1,0 +1,57 @@
+{
+  "schema": "cata_raid_program_build_receipt_v1",
+  "kind": "build",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "e70edba7a429480feddbdb8243187675cc20590f2eb2a72094d53ddb96071377",
+  "source_commit": "12ea6232e1ced87a95a54a0f1db7e5ad9cc93b84",
+  "binary_sha256": "249902d4c761651a6e43298e505c87f02ba98eefce19bf44b1c65ccf33447eec",
+  "file_hashes": {
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json": "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254",
+    "tools/bot_ml/permanent_enchant_overlays.py": "62d607c5ef6246499283fe417666ed32648fc8a406a9f840dc352b74ae6f33c4",
+    "tools/bot_ml/build_validation_provisioning.py": "3307ae7d0554da9942f1f473ed97fbc03d776bc81c57e9d916dd1cc37184d02c",
+    "tools/bot_ml/generate_bot_admission_identities.py": "ec76b616d6181cc5c372aff8bd6017595005978d4ca183b2d527b09e0b9abcd4",
+    "tools/bot_ml/phase8_calibration_adapter.py": "7b199b915f4c2a83e43992f3a917e807f2c1da52af6ee9cfb7dacea185005e3f",
+    "tests/test_blood_permanent_enchant_profile.py": "5138f2e32a37a28b38ae20c2a1941a1436bc55a0f99a3053c5a71ed6cdd74905",
+    "tests/test_generated_bot_admission_identities.py": "602eaa06c994f7ef7696d478a86eb6eba5794f768e13063afc13043a6eec37e8",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "84a6f5432b5d36782a7cc742a54ca9fbb69186f1b7e77c57104a46e1d0361ace"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-ba136c9913884265bfe408b2f6b398d8.json",
+    "sha256": "21fa104020d136b724d92924b9cc46a08e96bef0dd506f195396f404e1daa4bf"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_plan_reconciled_20260922.json",
+      "sha256": "79e622828a0e2cdd5f4a197956dc2cff20bddc76405fc3ea6de256a6c782bc8e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_result_checkpoint_reconciled_20260922.json",
+      "sha256": "496e2167f2772e7d2f4dbdef530d9eb0ca7b515c4e3af9f680e58c7302a77eb0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_review_receipt_v2_20260922.json",
+      "sha256": "3883298f981b6dbf26cc70883cc846b58d237c37ba8b9ca7d2a923024f0ea331"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_claim_event_20260922.json",
+      "sha256": "37d113beda4b8f2b009ad7655847d97caca7713a3177726217a3a4ea64d972e9"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+      "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-ba136c9913884265bfe408b2f6b398d8.json",
+      "sha256": "21fa104020d136b724d92924b9cc46a08e96bef0dd506f195396f404e1daa4bf"
+    }
+  ],
+  "source_identity_stable": true,
+  "build_configuration_stable": true,
+  "acceptance_claim": "Current-policy configure and worldserver build succeeded through the serialized queue for the exact reviewed source identity. No live, actor, performance, raid-clear or parent acceptance is claimed."
+}
