@@ -1,0 +1,28 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/queued-build-3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7.json",
+    "sha256": "d9c3871467a0b01c62577ae2d0a16528640951e2b5cd3be2ba960dd791beef2e"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/queued-build-3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7.json",
+      "sha256": "d9c3871467a0b01c62577ae2d0a16528640951e2b5cd3be2ba960dd791beef2e"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "bcaacf4c838ee6118c7ca63a93d2081068e73947727222aa32643af3e071a92e",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+    "tests/test_magmaw_support_target_admission.py": "46ffc1276abf97dc860f688ddea567dfca2c27655483625bc6e5ff7512870293"
+  },
+  "kind": "build",
+  "operation_id": "3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "codex-magmaw-10n-20260922",
+  "source_commit": "f57f3eba37ea295ba8e07d4d2035c7d7a908a4e3",
+  "unit_id": "magmaw:shared_native_engagement_authority_01"
+}

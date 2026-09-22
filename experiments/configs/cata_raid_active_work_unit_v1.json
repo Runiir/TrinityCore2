@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Use the published no-target/no-native-path trace and route manifest to identify the first broken activation, target binding, or native movement handoff before any class-specific change or new live run.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Use the published no-target/no-native-path trace and route manifest to identify the first broken activation, target binding, or native movement handoff before any class-specific change or new live run.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 443,
+    "revision": 444,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -8314,6 +8314,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 443,
+        "unit_id": "magmaw:shared_native_engagement_authority_01",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "revision": 443,
+          "unit_id": "magmaw:shared_native_engagement_authority_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/workflow-build-3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7.json",
+            "sha256": "eb605e39950e4a482574b62118fd0ae61ff9b7f93668784a36de2c3f41115f77"
+          },
+          "claim_token": "3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8455,6 +8473,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_review_20260922.receipt.json",
         "sha256": "4005914c0918f523ba4227130a882d3ef466bc6217fd2b66a505e21567c3a514"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/workflow-build-3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7.json",
+        "sha256": "eb605e39950e4a482574b62118fd0ae61ff9b7f93668784a36de2c3f41115f77"
       }
     },
     "tested_files": {
@@ -8464,11 +8486,9 @@
     },
     "tested_commit": "df66bad5d2339ec97097bf7ced7389073c5c15fb",
     "implementer": "codex-magmaw-10n-20260922",
-    "claim": {
-      "owner": "codex-magmaw-10n-20260922",
-      "token": "3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7",
-      "operation_id": "3a28609ab3517143b0c73ff10886d3ce21d4334b0699e0359a505ba34fa23ef7",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "f57f3eba37ea295ba8e07d4d2035c7d7a908a4e3",
+      "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca"
     }
   },
   "parked_scenarios": {
