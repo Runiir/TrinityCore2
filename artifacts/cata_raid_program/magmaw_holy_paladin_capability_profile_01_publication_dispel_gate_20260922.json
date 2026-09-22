@@ -1,0 +1,73 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "b9e6a53d45dfdc67fc1831a1c7cd33de84013fb4a8377ec7023b5b94abf3438e",
+  "attempt_id": 1,
+  "disposition": {
+    "classification": "closed_diagnostic_repair_only",
+    "repair_edge_proven": true,
+    "actor_30004_accepted": false,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "parent_objective_complete": false,
+    "unresolved": [
+      "reference_conditions_not_comparable",
+      "incomplete_evidence_identity"
+    ]
+  },
+  "dvc_status_checked": true,
+  "dvc_status_scope": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_dispel_gate_20260922_v2.raw.tar.gz.dvc",
+  "dvc_status_before_eviction": {},
+  "dvc_push_completed": true,
+  "dvc_push_result": "Everything is up to date.",
+  "remote_verified": true,
+  "remote_verification_method": "scoped dvc status -c returned clean after push",
+  "remote_reconstruction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_dispel_gate_20260922_v2.raw.tar.gz.dvc",
+    "pointer_sha256": "958e0a707ab897198046e8668b3996e2ee5a6b49aeebe953b21f4588cadec523",
+    "payload_md5": "1b1eddaf1d709d8d12a0da2b8d7e6d93",
+    "payload_size_bytes": 1622487,
+    "members_verified": [
+      "report.json",
+      "worldserver_output.log"
+    ]
+  },
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "exact_local_duplicates_evicted": true,
+  "cleanup_scope": {
+    "raw_directory": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922_v2",
+    "raw_archive": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_dispel_gate_20260922_v2.raw.tar.gz",
+    "eviction_method": "gio trash; recoverable locally and reconstructable through DVC"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_assessment_dispel_gate_20260922.json",
+      "sha256": "df4c063ce110193676eee8f1ab8446badcc4947ef22d1fac1f7836648644afea"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_comparison_dispel_gate_20260922.json",
+      "sha256": "fb44318fb9dc768a9fb031a62244eddf4d25597069af87d5234ef666b774986f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_run_dispel_gate_20260922.json",
+      "sha256": "38ee0af1fd8ddbbbca0946714403b3c40ae5856a393eb1ad0d12d6120d190a99"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_dispel_gate_20260922_v2.raw.tar.gz.dvc",
+      "sha256": "958e0a707ab897198046e8668b3996e2ee5a6b49aeebe953b21f4588cadec523"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_build_dispel_gate_20260922.json",
+      "sha256": "ff78a99ab6dd8af6235335b522c2750fdee7b988383d53e782ce37d99dc9e47d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_dispel_gate_20260922.json",
+      "sha256": "38e20577984354277fd4b228907326d0069d41674615ba40b07fe9f6c063cef6"
+    }
+  ],
+  "interpretation": "Publication closes the attributable diagnostic bundle for the healer candidate-gate repair. It does not accept actor_30004, performance, raid completion, or the Magmaw 10N parent objective."
+}
