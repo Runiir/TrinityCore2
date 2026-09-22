@@ -14,6 +14,7 @@ from tools.bot_ml.generate_bot_admission_identities import (
     render_header,
     source_content_sha256,
 )
+from tools.bot_ml.permanent_enchant_overlays import DEFAULT_OVERLAYS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +45,9 @@ def test_generated_admission_identity_header_is_byte_identical_and_source_bound(
         ).hexdigest(),
         "wowsims_cata_p4_gear_profiles.json": hashlib.sha256(
             DEFAULT_WOWSIMS_GEAR_PROFILES.read_bytes()
+        ).hexdigest(),
+        "cata_blood_permanent_enchant_overlays_v1.json": hashlib.sha256(
+            DEFAULT_OVERLAYS.read_bytes()
         ).hexdigest(),
     }
     assert catalog["source"]["sources"] == expected_file_hashes

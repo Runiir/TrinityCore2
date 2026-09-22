@@ -11,6 +11,7 @@ from typing import Any, Sequence
 
 try:
     from .common import stable_hash, write_json
+    from .permanent_enchant_overlays import apply_permanent_enchant_overlays
     from .validation_profile_manifests import DEFAULT_ACTION_PROFILE_MANIFEST, load_action_profile_manifest
     from tools.raid_program.bwd_shard_fixtures import (
         build_diagnostic_provisioning_config,
@@ -19,6 +20,7 @@ try:
     )
 except ImportError:
     from common import stable_hash, write_json
+    from permanent_enchant_overlays import apply_permanent_enchant_overlays
     from validation_profile_manifests import DEFAULT_ACTION_PROFILE_MANIFEST, load_action_profile_manifest
     from tools.raid_program.bwd_shard_fixtures import (
         build_diagnostic_provisioning_config,
@@ -708,7 +710,7 @@ def load_gear_profiles(path: Path | None, *, socket_authority=None, profile_ids=
                     dbc_dir=dbc_dir, socket_authority=socket_authority)
                 equipment.append(item)
             profiles[name] = {"equipment": equipment, "source": source_profile.get("source", {}), **({"profession_setup": source_profile["profession_setup"]} if "profession_setup" in source_profile else {})}
-    return profiles
+    return apply_permanent_enchant_overlays(profiles)
 
 
 def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dict[str, Any]:

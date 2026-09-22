@@ -1,0 +1,9 @@
+{
+  "revision": 374,
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "action": "advance",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_plan_20260922.json",
+    "sha256": "8410e188830909a90aebb858b2e8b2ad06606380a074165ea92431b606f543a7"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "bot_permanent_enchant_overlays_v1",
+  "authority": {
+    "provider": "WoWSims",
+    "repository": "https://github.com/wowsims/cata",
+    "revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+    "path": "ui/death_knight/blood/gear_sets/p3-balanced.gear.json",
+    "source_url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/blood/gear_sets/p3-balanced.gear.json",
+    "source_sha256": "ec2b36e67764e829057f87c8d479cd5eba363ce057b9dc82022d9a983cb6e469",
+    "applicability": "pinned_wowsims_preset_exact",
+    "scope": "permanent_enchant_applicability_only"
+  },
+  "profiles": {
+    "blood_death_knight": {
+      "base_profile_id": "blood_death_knight",
+      "permanent_enchants_by_slot": {
+        "0": 4208,
+        "2": 4198,
+        "4": 4103,
+        "6": 4127,
+        "7": 4062,
+        "8": 4191,
+        "9": 4106,
+        "14": 4100
+      },
+      "excluded_source_enchants": [
+        {
+          "slot": 15,
+          "enchant_id": 3368,
+          "kind": "dk_runeforge",
+          "reason": "Runeforge presence is a separate native observation and is not created by this permanent-enchant overlay."
+        }
+      ]
+    }
+  }
+}

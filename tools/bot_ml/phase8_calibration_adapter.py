@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 try:
+    from .permanent_enchant_overlays import apply_permanent_enchant_overlays
     from .wowsims_gear_binding import canonical_wowsims_manifest
     from .live_validation_session import canonical_sha256
     from .phase8_reference_conditions import (
@@ -19,6 +20,7 @@ try:
     )
     from .role_calibration_harness import evaluate_calibration, load_policy
 except ImportError:
+    from permanent_enchant_overlays import apply_permanent_enchant_overlays
     from wowsims_gear_binding import canonical_wowsims_manifest
     from live_validation_session import canonical_sha256
     from phase8_reference_conditions import (
@@ -203,6 +205,7 @@ def _expected_gear_manifest_json(gear_profile_id: str) -> str:
         except (ValueError, TypeError, KeyError, IndexError) as exc:
             raise Phase8CalibrationNormalizationError(
                 f"invalid_field:gear_profile:{gear_profile_id}.items") from exc
+    profile = apply_permanent_enchant_overlays({gear_profile_id: profile})[gear_profile_id]
     if not isinstance(profile, Mapping):
         raise Phase8CalibrationNormalizationError(
             f"unknown_gear_profile_id:{gear_profile_id}"

@@ -30,10 +30,11 @@ struct Identity
     char const* PetSpellbookSha256;
 };
 
-inline constexpr char SourceContentSha256[] = "e332375879f6aef9b14d26db5237f66fc0d4cb272d32c9222bedd748352c6d1b";
-inline constexpr char TargetsSourceSha256[] = "0d40dda89bebac1c97f643a09813fb0cae423294a0996b3292ea27a9f016a562";
+inline constexpr char SourceContentSha256[] = "519b99c47ead34d38d637f6f27bd3e90afe0aead027b4f4d5dc3cff8461a8ebc";
+inline constexpr char TargetsSourceSha256[] = "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099";
 inline constexpr char GearProfilesSourceSha256[] = "8a2efd464a0e4c20a453c46beacffc0803468941a37c270c6e1e892e2b7bdfa4";
 inline constexpr char WowsimsGearProfilesSourceSha256[] = "698aedd547eed9000eaa67d9fab2c1781e369c4d528897088ca0b38b02e58b9b";
+inline constexpr char PermanentEnchantOverlaysSourceSha256[] = "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254";
 
 inline constexpr std::array<std::uint32_t, 618> TalentSpellIds =
 {{
@@ -106,7 +107,7 @@ inline constexpr std::array<Identity, 31> Identities =
 {{
         { "protection_warrior", 1, 845, 0, 21, "protection_warrior", "eec19ce454fa445a45273ce10a41b91ee030fb981caf98bfe7fac2e428d20ca7", 0, 0, 0, 0, "" },
         { "protection_paladin", 2, 839, 21, 21, "protection_paladin", "43cc832b674a3b84ca7718f5d5d90e87332e849711526f20c1672fe1bf56e082", 0, 0, 0, 0, "" },
-        { "blood_death_knight", 6, 398, 42, 20, "blood_death_knight", "1369b92f047e7b16b54c742a55fa80a6d3c407290fe619dfabad26902ca3fd89", 0, 0, 0, 0, "" },
+        { "blood_death_knight", 6, 398, 42, 20, "blood_death_knight", "82c203d3fab88e542d50cabeb59727634b6e3b8e513ac815828ac05d7af19396", 0, 0, 0, 0, "" },
         { "feral_druid_tank", 11, 750, 62, 20, "feral_druid_tank", "2680e2919b8fe2c2ce33333ccd7dadb9dd0c8d395915f735e8691a2be08f135b", 0, 0, 0, 0, "" },
         { "holy_paladin", 2, 831, 82, 20, "holy_paladin", "d03e102b8ca17cd1e72566cd3af83ae67c699993ac2ebc024c9c9b85aa01ecd0", 0, 0, 0, 0, "" },
         { "discipline_priest", 5, 760, 102, 20, "discipline_priest", "7d3c673759684109cc3fca753263f56cfff5fc1edeac56b9fc8cfb6629caf153", 0, 0, 0, 0, "" },
