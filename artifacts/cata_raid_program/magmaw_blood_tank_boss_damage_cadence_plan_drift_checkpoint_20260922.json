@@ -1,0 +1,85 @@
+{
+  "task_id": "magmaw:blood_tank_boss_damage_cadence_05_plan_20260922",
+  "subject": "orchestrator",
+  "stage": "plan",
+  "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL, using exact WoWSims dummy evidence for class diagnosis.",
+  "first_broken_edge": "owner_blood_boss_damage_cadence",
+  "allowed_files": [
+    "../../experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "forbidden_changes": [
+    "Do not accept actor_30002, another actor, Magmaw performance, or parent completion from diagnosis or route state.",
+    "Do not repeat tank threat calibration without a demonstrated threat-specific failure.",
+    "Do not change Death Strike, Heart Strike, rune legality, mitigation, coefficients, encounter scripts, WCL denominators, simulator references, roster, gear, or consumables during routing.",
+    "Keep every actor, comparison, potion, survival-reference, and raid requirement open."
+  ],
+  "acceptance_conditions": [
+    "Retained native and WCL evidence identifies one attributable Blood boss damage or cadence edge before implementation.",
+    "Safety, threat, mitigation, and duty-adjusted damage stay separate from the non-comparable dummy reference gate.",
+    "This checkpoint and the next route claim routing only; repair, review, build, watchdog validation, actor acceptance, and raid acceptance remain later gates."
+  ],
+  "observations": [
+    "Current graph revision 393 is route after a closed diagnostic-only Blood permanent-enchant publication; parent_objective_complete is false.",
+    "The exact 300-second Blood window completed natively, but reference conditions were not comparable and the independent review found no proven rotation edge.",
+    "The retained actor table reports Blood 30002 at 12,090.125 native DPS versus a 26,152 WCL example and calls optimal rune, mitigation, and cadence unresolved.",
+    "TANK-001 records a historical Death Strike versus Heart Strike priority inversion, but it is not proof that the current boss damage loss is caused by that edge.",
+    "The current workflow direction is to investigate Blood boss damage/cadence against retained WCL evidence, not launch another threat calibration by default."
+  ],
+  "evidence_excerpts": [
+    {
+      "id": "active_graph",
+      "path": "../../experiments/configs/cata_raid_active_work_unit_v1.json",
+      "sha256": "e04f93cecfa24627688adb74672e64b8983d539df572d93272a06ba3bb3d837d",
+      "excerpt": "Revision 393; route; Blood permanent-enchant publication is closed diagnostic-only; all actor, comparison, potion, survival, and raid requirements remain open."
+    },
+    {
+      "id": "workflow_direction",
+      "path": "../../docs/bot_raids/shared_worldserver_workflow_20260907.md",
+      "sha256": "11ab09897560767a437d590ce596401d02e24b8b09b338ff668b82894054a3f1",
+      "excerpt": "Tank DPS is explicit; investigate Blood boss damage/cadence against retained WCL references; do not launch another threat calibration without a demonstrated threat-specific failure."
+    },
+    {
+      "id": "blood_baseline",
+      "path": "../../docs/bot_raids/magmaw_dps_baseline_20260913.md",
+      "sha256": "cd5bac0b94d444c9dfffb9c1e4886599217c69dac59e7beb28d200cd599e2a48",
+      "excerpt": "Actor 30002 is 12,090.125 native DPS versus 26,152 WCL; DS ordering executes end to end, while optimal rune/mitigation policy and cadence remain unresolved."
+    },
+    {
+      "id": "error_ledger",
+      "path": "../../docs/bot_raids/error_ledger.md",
+      "sha256": "823fdd9069d122ad3f227729187b9875a70beb9531ac41a7ad8c8fcaf49cad91",
+      "excerpt": "TANK-001 requires measuring Blood healing, DPS, and rune flow after the historical priority inversion; it does not authorize a new threat calibration or actor acceptance."
+    },
+    {
+      "id": "blood_publication",
+      "path": "magmaw_blood_permanent_enchant_profile_05_publication_reconciled_20260922.json",
+      "sha256": "3a4ab4fc809a1a1061c4f7a8921791a4f3fb81e3ef462ffe479de8776d9b1b8b",
+      "excerpt": "The permanent-enchant unit is closed diagnostic-only; DVC publication and cleanup are verified, with no actor, performance, raid, or parent acceptance."
+    }
+  ],
+  "proposed_change": "Route one actor_30002 Blood boss damage/cadence diagnosis using retained native and WCL evidence. Do not launch a run or change source until one first-broken edge is identified.",
+  "acceptance_claim": "Aligned route only. No source repair, native behavior, actor performance, raid clear, or parent completion is accepted.",
+  "changed_files": [],
+  "changed_files_source": "coordinator_observed",
+  "tests": [],
+  "required_test_commands": [],
+  "goal_context": {
+    "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL, using exact WoWSims dummy evidence for class diagnosis.",
+    "latest_user_direction": "Implement magmaw 10n bots and continue until the saved scenario is genuinely handled.",
+    "current_plan": "Select one proven actor edge, diagnose retained evidence, implement only an evidence-backed bounded repair, independently review, build, validate, assess, publish, then continue every remaining actor and raid requirement.",
+    "completed_work": "Blood permanent-enchant setup work was built and published as diagnostic-only after a clean but non-comparable exact tank window; the current graph preserves that limitation.",
+    "remaining_requirements": [
+      "actor_30001..actor_30010",
+      "affliction_comparison",
+      "elemental_comparison",
+      "potion_ownership",
+      "survival_reference",
+      "magmaw_10n matched WCL, every actor reviewed and published"
+    ],
+    "known_blockers": [
+      "Blood actor and performance acceptance remain open because dummy reference conditions were non-comparable.",
+      "No new source change is authorized until retained Blood boss damage/cadence evidence identifies a first broken edge.",
+      "Prior Blood priority attempts and the setup publication remain diagnostic history, not accepted parity."
+    ]
+  }
+}

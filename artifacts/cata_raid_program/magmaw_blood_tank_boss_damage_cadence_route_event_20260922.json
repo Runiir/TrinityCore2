@@ -1,0 +1,42 @@
+{
+  "schema": "cata_raid_program_route_event_v1",
+  "revision": 393,
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "action": "route",
+  "reason": "The Blood permanent-enchant publication is closed diagnostic-only: its exact native window was clean, but the reference conditions were not comparable and no rotation edge was proven. The current workflow direction and plan-drift checkpoint therefore route the next bounded unit to retained Blood boss damage/cadence diagnosis against WCL, without repeating a non-comparable threat calibration. Every actor, comparison, potion, survival-reference, and raid requirement remains open.",
+  "plan_drift_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_plan_drift_review_20260922.json/summary.json",
+    "sha256": "403d3e2a60ec9b353432105ca68facf9ff1b376bb18d5afa5259071bb92fdce1"
+  },
+  "unit": {
+    "id": "magmaw:blood_tank_boss_damage_cadence_05",
+    "edge": "owner_blood_boss_damage_cadence",
+    "owner_skill": "raid-role-implementation",
+    "requirements": [
+      "actor_30002"
+    ],
+    "objective": "Diagnose one attributable Blood tank boss damage/cadence loss against retained matched WCL evidence while keeping threat, safety, mitigation, and the non-comparable dummy reference separate.",
+    "next_action": "Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
+    "acceptance_conditions": [
+      "Retained native and WCL evidence identifies one concrete first-broken Blood boss damage/cadence edge with identity and phase context.",
+      "The diagnosis compares damage and cadence while retaining separate safety, threat, mitigation, mandatory-duty, and reference-comparability fields.",
+      "Only after diagnosis may a bounded repair be implemented, independently reviewed, built, completion-watchdog validated, assessed, and published; route and diagnosis alone cannot accept actor_30002 or Magmaw 10N."
+    ],
+    "forbidden_changes": [
+      "Do not repeat tank threat calibration without a demonstrated threat-specific failure.",
+      "Do not change Death Strike, Heart Strike, rune legality, mitigation, coefficients, encounter scripts, movement, WCL denominators, simulator references, roster, gear, gems, reforges, or consumables before the first-broken edge is proven.",
+      "Do not accept actor_30002, another actor, performance, raid clear, or parent completion from retained diagnosis alone.",
+      "Preserve all open actor, comparison, potion, survival-reference, and raid requirements."
+    ],
+    "evidence": [
+      {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_plan_drift_checkpoint_20260922.json",
+        "sha256": "bb4e7dfc47a277a612602f9db41634e3caf0660476bb5ecac107b4e099838098"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_publication_reconciled_20260922.json",
+        "sha256": "3a4ab4fc809a1a1061c4f7a8921791a4f3fb81e3ef462ffe479de8776d9b1b8b"
+      }
+    ]
+  }
+}
