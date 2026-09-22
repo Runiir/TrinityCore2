@@ -1,0 +1,71 @@
+{
+  "schema": "cata_raid_program_healer_validation_comparison_v1",
+  "kind": "validation_comparison",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "attempt_id": 1,
+  "actor_id": "30004",
+  "spec": "holy_paladin",
+  "build_identity": {
+    "source_commit": "9746c9b6f593641b4aaa87cb3afeaba1d6153770",
+    "binary_sha256": "5fb8f5effc0eac4c131b355cc87ebf6f087310963bf3c5f4e49f6f86959db069"
+  },
+  "run": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_run_20260922.json",
+    "sha256": "768fda112caecaebac24492a0c39b2709c1364360c7292ef717d3ed76f3fc1f7"
+  },
+  "report": {
+    "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922/report.json",
+    "sha256": "779d46f9e5771830d90fc743109b4eee0a96d30e3cc85ad321c02f9df688a4d5"
+  },
+  "native_outcome": {
+    "scored_seconds": 300.0,
+    "target_guid": 1285,
+    "profile_generation": 1,
+    "profile_content_hash": "9EC8772F664D224F944074C12C8A178895EF68CFA9711C8EBCDF909D7C7118AC",
+    "action_attempts": {
+      "holy_light_635": 47,
+      "flash_of_light_19750": 17,
+      "holy_shock_20473": 39,
+      "light_of_dawn_85222": 2
+    },
+    "light_of_dawn_rejection_observed": "injured_player_count_too_low",
+    "delivered_event_count": 40,
+    "effective_hps": 6001.57,
+    "reference_hps": 6103.526666666667,
+    "reference_ratio": 0.983295,
+    "dispel_attempts": 1,
+    "dispel_successes": 1,
+    "idle_ratio_under_demand": 0.0,
+    "remaining_mana_ratio": 0.36,
+    "no_party_deaths": true,
+    "illegal_action_count": 0,
+    "target_selection_accuracy": 1.0
+  },
+  "prior_profile_edge_comparison": {
+    "prior_profile_readback": {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_profile_readback_20260922.json",
+      "sha256": "efc4401451ff0e65d2a127fed3a4c23e4d2bea250324451bad4ef1f3b42d"
+    },
+    "prior_profile_content_hash": "0F0408B0559CFE2C8FEDEF3F44E63EBC65CA6412E1DB1D3144DC1412F33A1CA4",
+    "prior_light_of_dawn_row_present": false,
+    "current_light_of_dawn_row_present": true,
+    "current_light_of_dawn_action_attempts": 2,
+    "interpretation": "The new enabled profile row is loaded and natively exercised; this comparison is capability evidence, not actor throughput acceptance."
+  },
+  "gate_outcome": {
+    "native_policy_edge_proven": true,
+    "repair_accepted": true,
+    "reference_comparison_eligible": false,
+    "role_calibration_passed": false,
+    "actor_acceptance": false,
+    "performance_acceptance": false,
+    "raid_clear": false,
+    "parent_objective_complete": false,
+    "blocking_reasons": [
+      "reference_conditions_not_comparable",
+      "incomplete_evidence_identity",
+      "controller_report_retains_stale_active_session_fields"
+    ]
+  },
+  "interpretation": "The repaired Light of Dawn capability row is exercised natively: the loaded profile contains 85222, the healer attempts it twice, and the native triage gate rejects it when fewer than three players are injured. The exact 300-second window is closed and cleanup is separately reconciled. The calibration reference contract and external identity envelope remain incomplete, so no actor, performance, raid or parent requirement is accepted."
+}

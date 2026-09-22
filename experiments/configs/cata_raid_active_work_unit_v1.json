@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
+  "next_action": "Review every actor; compare matched baseline, native outcome, and performance separately. Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 369,
+    "revision": 370,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "assess",
     "actor_ids": [
       "30001",
       "30002",
@@ -7025,6 +7025,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 369,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 369,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_run_20260922.json",
+            "sha256": "768fda112caecaebac24492a0c39b2709c1364360c7292ef717d3ed76f3fc1f7"
+          },
+          "claim_token": "9d38c3132fd27b612b2344c41a89e6c208e2b70f776739cb125cbf2ed71f03b5"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7123,6 +7141,10 @@
       "build": {
         "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_build_20260922.json",
         "sha256": "2d4f4f7977c7e4d830b33a9955cebaabf514758e58e62223ca66f6fbde1f9298"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_run_20260922.json",
+        "sha256": "768fda112caecaebac24492a0c39b2709c1364360c7292ef717d3ed76f3fc1f7"
       }
     },
     "tested_files": {
@@ -7135,11 +7157,11 @@
       "source_commit": "9746c9b6f593641b4aaa87cb3afeaba1d6153770",
       "binary_sha256": "5fb8f5effc0eac4c131b355cc87ebf6f087310963bf3c5f4e49f6f86959db069"
     },
-    "claim": {
-      "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-validate-20260922",
-      "token": "9d38c3132fd27b612b2344c41a89e6c208e2b70f776739cb125cbf2ed71f03b5",
-      "operation_id": "9d38c3132fd27b612b2344c41a89e6c208e2b70f776739cb125cbf2ed71f03b5",
-      "stage": "validate"
+    "run": {
+      "attempt_id": 1,
+      "server_epoch": 8367615932474562,
+      "scenario_kind": "dummy",
+      "terminal_reason": "measurement_complete"
     }
   },
   "parked_scenarios": {

@@ -1,0 +1,22 @@
+{
+  "schema": "cata_raid_program_assessment_baseline_v1",
+  "kind": "assessment_baseline",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "baseline_status": "no_accepted_native_baseline_for_actor_30004",
+  "actor_id": "30004",
+  "spec": "holy_paladin",
+  "scope": "isolated healer calibration only; no raid or performance acceptance",
+  "prior_static_evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_evidence_20260922.json",
+      "sha256": "3fedcded7fc2f44e60c9396a8bb5e37a720ae71338164f79c96a70bea5331c77"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_build_dispel_gate_20260922.json",
+      "sha256": "5a17a35a183a953222d7ff154e61e5303ede27fe6ae46c0dc50fef09d180f577"
+    }
+  ],
+  "interpretation": "The current closed run is diagnostic evidence for the bounded Light of Dawn profile edge, not a matched accepted baseline. The actor, all other actors and the Magmaw 10N requirement remain open."
+}
