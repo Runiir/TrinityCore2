@@ -1,0 +1,19 @@
+{
+  "schema": "cata_raid_program_source_binding_reconciliation_v1",
+  "kind": "source_binding_reconciliation",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "operation_id": "70fe63edeec39026f98ebb3efd195f205fd4de836e0cb35acc1dc89e291de581",
+  "source_binding_repaired": true,
+  "previous_source_base_commit": "b4971aefba98e860d3e081cbce7ce9aa771fda84",
+  "rebound_source_commit": "800f3b3182c08074f4604a9d121663fb6105f9d9",
+  "reason": "The saved graph boundary predates the reviewed runtime-support and asset-closure changes now present on mainline. The clean pre-repair mainline parent is 800f3b3182c08074f4604a9d121663fb6105f9d9; the only later committed delta is the published diagnostic DVC pointer and its artifact ignore entry. Rebind before preparing the new bounded healer candidate-gate repair.",
+  "coordination_only_paths_after_rebound": [
+    "artifacts/cata_raid_program/.gitignore",
+    "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_20260922.raw.tar.gz.dvc",
+    "experiments/configs/cata_raid_active_work_unit_v1.json"
+  ],
+  "owned_native_file_hashes_unchanged_since_repair_diagnosis": true,
+  "reconciliation_scope": "coordination_only",
+  "rebuild_required": true,
+  "gameplay_repair_reopened": true
+}
