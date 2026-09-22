@@ -623,6 +623,36 @@ def test_unengaged_boss_prerequisite_cannot_latch_trash_failure_terminal():
     assert "markValidationRouteTrashFailed" not in no_progress
 
 
+def test_magmaw_route_progress_receipt_is_observation_only_and_deduplicated():
+    fallback = read(
+        BOT_DIR / "BotWorldPopulationMgrUpdateBotKernelFallback.cpp"
+    )
+    observation = lambda_body(
+        fallback, "auto observeAdaptiveMagmawRoute = [this, &context]()"
+    )
+
+    assert "using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;" in fallback
+    assert_ordered(
+        observation,
+        "RememberValidationRouteBossEngagement(creature);",
+        "bool const targetChanged = context.State.LastDecisionTargetGuid",
+        'return BotActionArbitration::Outcome::NotApplicable(\n'
+        '                    "magmaw_route_observation_already_recorded");',
+        "float const targetHealthPct = UnitHealthPct(target);",
+        'RecordRouteProgress(context.State, context.Bot, target,\n'
+        '                "route_target_combat_progress", targetHealthPct, targetHealthPct,\n'
+        '                0, 20);',
+        "Party().ValidationRouteObservedEngagement = true;",
+        'RecordEvent(context.State, context.Bot, "validation_target_priority",',
+        'return BotActionArbitration::Outcome::NotApplicable(\n'
+        '                "adaptive_magmaw_route_observation_recorded");',
+    )
+    assert observation.count("RecordRouteProgress(") == 1
+    assert "ExecuteProfileCombatAction" not in observation
+    assert "SubmitMeleeAutoAttackIntent" not in observation
+    assert "MoveBotToProfileRange" not in observation
+
+
 def test_boss_prerequisites_use_trash_swarm_threat_security_without_intercepting_boss_adds():
     threat_security = read(TRASH_THREAT_FAMILY)
 

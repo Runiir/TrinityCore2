@@ -23,6 +23,7 @@
 #include <vector>
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
+using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 using BotRaidDrudgeEntranceMovement::IsExactDrudgePositionHold;
 
 void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
@@ -175,6 +176,11 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             if (!targetChanged && !firstEngagement)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "magmaw_route_observation_already_recorded");
+
+            float const targetHealthPct = UnitHealthPct(target);
+            RecordRouteProgress(context.State, context.Bot, target,
+                "route_target_combat_progress", targetHealthPct, targetHealthPct,
+                0, 20);
 
             // This candidate is observation-only. The adaptive encounter
             // owner already selected the target and owns movement/action
