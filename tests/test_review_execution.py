@@ -146,6 +146,20 @@ def test_preflight_accepts_fresh_reviewer_transcript_without_final(workflow_case
     assert result["prefix_bytes"] == rollout.stat().st_size
     assert len(result["prefix_sha256"]) == 64
 
+
+def test_identity_preflight_accepts_handshake_followed_by_usage_records(workflow_case, tmp_path: Path, capsys):
+    root, _ = workflow_case
+    sessions = tmp_path / 'sessions'
+    rollout = _rollout(root, sessions, graph.snapshot(root, ['code.py']))
+    with rollout.open('a') as stream:
+        stream.write(json.dumps({'type': 'event_msg', 'payload': {'type': 'token_count'}}) + '\n')
+    result = review_execution.preflight_review(root, rollout, reviewer_session_id='reviewer-id',
+        implementer_session_id='coordinator-parent', sessions_root=sessions)
+    assert result['ok'] is True and result['final_present'] is True
+    # Final proof verification still requires the exact final-message boundary.
+    with pytest.raises(review_execution.ReviewExecutionError, match='proven final prefix'):
+        review_execution._read_rollout(rollout, root, result['prefix_bytes'])
+
     assert review_execution.main([
         "preflight",
         "--root",

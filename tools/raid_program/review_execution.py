@@ -163,7 +163,7 @@ def _read_rollout(
         _require(finals, "review rollout must contain a final response", code="final_response_missing")
     final: dict[str, Any] | None = None
     if finals:
-        if selected_prefix_bytes is None:
+        if selected_prefix_bytes is None or not require_final:
             final = finals[-1]
         else:
             matches = [row for row in finals if row["end_offset"] == selected_prefix_bytes]
