@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "sql/custom/world/2026_09_21_00_holy_paladin_capability_profile.sql"
+AOE_MIGRATION = ROOT / "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql"
 CANDIDATE_SOURCE = ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 
 
@@ -73,6 +74,10 @@ def _run_migration(db: sqlite3.Connection) -> None:
     db.executescript(MIGRATION.read_text(encoding="utf-8"))
 
 
+def _run_aoe_migration(db: sqlite3.Connection) -> None:
+    db.executescript(AOE_MIGRATION.read_text(encoding="utf-8"))
+
+
 def test_word_of_glory_is_added_once_with_existing_healer_gates() -> None:
     db = _database()
     try:
@@ -94,6 +99,56 @@ def test_word_of_glory_is_added_once_with_existing_healer_gates() -> None:
         assert word_of_glory["movement_directive"] == "healer_support"
         assert word_of_glory["min_injured_players"] == 1
         assert word_of_glory["injured_health_pct"] == 0.94
+    finally:
+        db.close()
+
+
+def test_light_of_dawn_is_added_once_with_aoe_and_holy_power_gates() -> None:
+    db = _database()
+    try:
+        _run_migration(db)
+        _run_aoe_migration(db)
+        _run_aoe_migration(db)
+
+        rows = db.execute(
+            "SELECT * FROM bot_rotation_action WHERE profile_id = 1 ORDER BY sort_order, id"
+        ).fetchall()
+        assert [row["spell_id"] for row in rows] == [20217, 85222, 85673, 19750, 635]
+        light_of_dawn = rows[1]
+        assert light_of_dawn["category"] == "heal_aoe"
+        assert light_of_dawn["mechanic_tags"] == "light_of_dawn,aoe,heal,holy_power_3"
+        assert light_of_dawn["healing_weight"] == 1.0
+        assert light_of_dawn["survival_weight"] == 0.85
+        assert light_of_dawn["priority_bucket"] == 1
+        assert light_of_dawn["min_enemies"] == 1
+        assert light_of_dawn["max_target_health_pct"] == 0.70
+        assert light_of_dawn["target_selector"] == "lowest_ally"
+        assert light_of_dawn["movement_directive"] == "healer_support"
+        assert light_of_dawn["min_injured_players"] == 3
+        assert light_of_dawn["injured_health_pct"] == 0.70
+
+        word_of_glory = rows[2]
+        assert word_of_glory["spell_id"] == 85673
+        assert word_of_glory["mechanic_tags"] == "word_of_glory,holy_power_3,triage,heal"
+    finally:
+        db.close()
+
+
+def test_aoe_migration_does_not_touch_other_profiles() -> None:
+    db = _database()
+    try:
+        db.execute(
+            "INSERT INTO bot_rotation_action(profile_id, spell_id, category) VALUES (2, 999, 'builder')"
+        )
+        before = db.execute(
+            "SELECT profile_id, sort_order, spell_id, category, mechanic_tags FROM bot_rotation_action ORDER BY id"
+        ).fetchall()
+        _run_aoe_migration(db)
+
+        after = db.execute(
+            "SELECT profile_id, sort_order, spell_id, category, mechanic_tags FROM bot_rotation_action ORDER BY id"
+        ).fetchall()
+        assert [tuple(row) for row in after if row[0] != 1] == [tuple(row) for row in before if row[0] != 1]
     finally:
         db.close()
 

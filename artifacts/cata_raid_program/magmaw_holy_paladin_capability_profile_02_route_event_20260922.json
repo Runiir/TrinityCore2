@@ -1,0 +1,35 @@
+{
+  "schema": "cata_raid_program_route_event_v1",
+  "revision": 357,
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "action": "route",
+  "reason": "The shared healer injury-count edge is repaired and published as bounded native diagnostic evidence. HEAL-001 still records a separate loaded Holy Paladin profile gap: learned Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender are absent from the loaded action rows. Route that remaining proven actor edge without conflating it with the unresolved reference-condition contract.",
+  "unit": {
+    "id": "magmaw:holy_paladin_capability_profile_02",
+    "edge": "owner_holy_paladin_remaining_capability_profile",
+    "owner_skill": "raid-role-implementation",
+    "requirements": [
+      "actor_30004"
+    ],
+    "objective": "Repair the next proven missing Holy Paladin capability row or eligibility edge for actor_30004 while preserving native healer safety, resource gates, encounter behavior, and the separate role-reference contract.",
+    "next_action": "Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
+    "continuation": {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+      "entry": "HEAL-001"
+    },
+    "forbidden_changes": [
+      "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
+      "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
+      "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership, raid composition or boss mechanics.",
+      "Do not reuse the already repaired DispelCleanse injury-count exemption as a new causal hypothesis.",
+      "Do not claim actor_30004, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
+    ],
+    "acceptance_conditions": [
+      "One missing Holy Paladin capability row or eligibility edge is identified from the loaded profile and native evidence before implementation.",
+      "The bounded repair preserves unrelated resource, safety and target gates and has executable focused coverage.",
+      "The change is independently reviewed and built from the current source boundary.",
+      "The repaired binary exercises the named capability in the exact 300-second healer-controlled calibration; actor, performance and raid acceptance remain separately gated."
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "objective": "Repair the next proven missing Holy Paladin capability row or eligibility edge for actor_30004 while preserving native healer safety, resource gates, encounter behavior, and the separate role-reference contract.",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "first_broken_edge": "owner_holy_paladin_remaining_capability_profile",
+  "hypothesis": "The first directly proven remaining Holy Paladin profile gap is Light of Dawn 85222: the native Holy Paladin resolver and healer policy already expose the AoeHeal path, while the loaded healer profile has no heal_aoe action. Add only a profile row with the existing three-injured-player and holy_power_3 candidate gates; preserve the existing single-target, Cleanse, cooldown, target, mana and safety gates.",
+  "owned_files": [
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
+    "tests/test_holy_paladin_capability_profile.py"
+  ],
+  "forbidden_changes": [
+    "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
+    "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
+    "Do not change Beacon 53563, Aura Mastery 31821, Divine Plea 54428, WoWSims/reference data, gear, stats, role thresholds, potion ownership, raid composition or boss mechanics.",
+    "Do not change BotClassSpecActionProfileCandidates.cpp: the existing holy_power_3 gate is already present and is not the proven edge.",
+    "Do not broaden the migration to unrelated Holy Paladin cooldowns, buffs or single-target actions.",
+    "Do not claim actor_30004, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
+  ],
+  "acceptance_conditions": [
+    "The Light of Dawn profile omission is covered by an idempotent SQL migration scoped to the enabled Holy Paladin healer profile.",
+    "The row is heal_aoe, targets the lowest ally, requires at least three injured players at the policy's 70% threshold, and carries the existing native holy_power_3 gate without changing unrelated rows.",
+    "Focused executable coverage verifies the new row, repeat application, isolation from other profiles, and preservation of the existing Word of Glory Holy Power gate.",
+    "The exact 300-second healer-controlled calibration is run with the reviewed binary; native action exercise, role calibration, actor acceptance and raid acceptance remain separately gated."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
+  ],
+  "base_commit": "8560b017088f4c121c2d48ff3b3be43673b1ee46",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "healer_controlled_damage_300",
+    "actor_id": "30004",
+    "spec": "holy_paladin",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_profile_readback_20260922.json",
+      "sha256": "efc4401451ff0e65d2a127fed39ce6a3c23e4d2bea250324451bad4ef1f3b42d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_rotation_review_20260922.json",
+      "sha256": "fba82c9c8857884907094a0aa9825de510cb2cc78d040bef2bd157534e0c3451"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_evidence_20260922.json",
+      "sha256": "3fedcded7fc2f44e60c9396a8bb5e37a720ae71338164f79c96a70bea5331c77"
+    }
+  ],
+  "advice": {
+    "jev": {
+      "status": "not_reviewed",
+      "reason": "Deterministic native/profile evidence is sufficient for this bounded migration; no model checkpoint is required.",
+      "adjudication": "No advisory model result used for causal authority."
+    },
+    "laya": {
+      "status": "not_reviewed",
+      "reason": "Deterministic native/profile evidence is sufficient for this bounded migration; no model checkpoint is required.",
+      "adjudication": "No advisory model result used for causal authority."
+    }
+  },
+  "acceptance_claim": "Plan only. This receipt claims a scoped Light of Dawn profile omission and no native, live, actor, performance, raid-clear or parent acceptance."
+}

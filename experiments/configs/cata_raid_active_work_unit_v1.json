@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:holy_paladin_capability_profile_01",
+  "work_unit": "magmaw:holy_paladin_capability_profile_02",
   "owner_skill": "raid-role-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Select the next proven edge, or complete only when every requirement is accepted. Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 357,
+    "revision": 360,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "route",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -569,19 +569,32 @@
       }
     },
     "unit": {
-      "id": "magmaw:holy_paladin_capability_profile_01",
-      "edge": "owner_holy_paladin_profile_incomplete",
+      "id": "magmaw:holy_paladin_capability_profile_02",
+      "edge": "owner_holy_paladin_remaining_capability_profile",
       "owner_skill": "raid-role-implementation",
       "requirements": [
         "actor_30004"
       ],
-      "objective": "Repair one proven Holy Paladin action-profile capability edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
-      "next_action": "Inspect the loaded Holy Paladin action rows and native candidate predicates for Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222, and a Holy Power spender; implement only the first proven profile or eligibility edge, add executable focused coverage, preserve tank assignments and ordinary resource gates, then independently review, build and validate the healer role.",
+      "objective": "Repair the next proven missing Holy Paladin capability row or eligibility edge for actor_30004 while preserving native healer safety, resource gates, encounter behavior, and the separate role-reference contract.",
+      "next_action": "Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
       "continuation": {
         "path": "docs/bot_raids/error_ledger.md",
         "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
         "entry": "HEAL-001"
-      }
+      },
+      "forbidden_changes": [
+        "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
+        "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
+        "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership, raid composition or boss mechanics.",
+        "Do not reuse the already repaired DispelCleanse injury-count exemption as a new causal hypothesis.",
+        "Do not claim actor_30004, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
+      ],
+      "acceptance_conditions": [
+        "One missing Holy Paladin capability row or eligibility edge is identified from the loaded profile and native evidence before implementation.",
+        "The bounded repair preserves unrelated resource, safety and target gates and has executable focused coverage.",
+        "The change is independently reviewed and built from the current source boundary.",
+        "The repaired binary exercises the named capability in the exact 300-second healer-controlled calibration; actor, performance and raid acceptance remain separately gated."
+      ]
     },
     "completed_measurements": [
       {
@@ -6789,6 +6802,80 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 357,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "schema": "cata_raid_program_route_event_v1",
+          "revision": 357,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "route",
+          "reason": "The shared healer injury-count edge is repaired and published as bounded native diagnostic evidence. HEAL-001 still records a separate loaded Holy Paladin profile gap: learned Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender are absent from the loaded action rows. Route that remaining proven actor edge without conflating it with the unresolved reference-condition contract.",
+          "unit": {
+            "id": "magmaw:holy_paladin_capability_profile_02",
+            "edge": "owner_holy_paladin_remaining_capability_profile",
+            "owner_skill": "raid-role-implementation",
+            "requirements": [
+              "actor_30004"
+            ],
+            "objective": "Repair the next proven missing Holy Paladin capability row or eligibility edge for actor_30004 while preserving native healer safety, resource gates, encounter behavior, and the separate role-reference contract.",
+            "next_action": "Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
+            "continuation": {
+              "path": "docs/bot_raids/error_ledger.md",
+              "sha256": "1106bc380c7f9d2996cb195f5042a648fde003a0690e4454ac6610be1a75b185",
+              "entry": "HEAL-001"
+            },
+            "forbidden_changes": [
+              "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
+              "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
+              "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership, raid composition or boss mechanics.",
+              "Do not reuse the already repaired DispelCleanse injury-count exemption as a new causal hypothesis.",
+              "Do not claim actor_30004, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
+            ],
+            "acceptance_conditions": [
+              "One missing Holy Paladin capability row or eligibility edge is identified from the loaded profile and native evidence before implementation.",
+              "The bounded repair preserves unrelated resource, safety and target gates and has executable focused coverage.",
+              "The change is independently reviewed and built from the current source boundary.",
+              "The repaired binary exercises the named capability in the exact 300-second healer-controlled calibration; actor, performance and raid acceptance remain separately gated."
+            ]
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 358,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 358,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_20260922.json",
+            "sha256": "0d5126dc6a37b1982e87ec4b8326245d6ad1e1300320d975dc369e42c82507a3"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 359,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 359,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-implement-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -6821,29 +6908,29 @@
       }
     ],
     "assignment": {
-      "hypothesis": "The first proven native edge is the shared healer candidate eligibility gate, not the Holy Paladin profile row. The controlled healer dispel phase applies a dispellable aura without reducing player health, so healerTriageInjuredPlayers is zero and the existing Cleanse 4987 row is rejected by the generic min_injured_players predicate before native action submission. Exempt only DispelCleanse from that injury-count predicate while retaining all heal triage and resource gates.",
+      "hypothesis": "The first directly proven remaining Holy Paladin profile gap is Light of Dawn 85222: the native Holy Paladin resolver and healer policy already expose the AoeHeal path, while the loaded healer profile has no heal_aoe action. Add only a profile row with the existing three-injured-player and holy_power_3 candidate gates; preserve the existing single-target, Cleanse, cooldown, target, mana and safety gates.",
       "owned_files": [
-        "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+        "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
         "tests/test_holy_paladin_capability_profile.py"
       ],
       "forbidden_changes": [
-        "Do not change the Holy Paladin SQL profile, HolyPaladinResolver.cpp, encounter scripts, movement authority, tank assignments or shared action submission.",
-        "Do not remove or weaken Holy Power, mana, cooldown, spellbook, target-selection or healer triage gates for heal actions.",
-        "Do not make a global candidate bypass; the only allowed predicate change is the DispelCleanse exception on the min-injured-player gate.",
-        "Do not change Word of Glory behavior, Beacon, Aura Mastery, Divine Plea or Light of Dawn in this bounded repair.",
-        "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership, encounter mechanics or raid composition.",
-        "Do not claim actor_30004, another actor, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
+        "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
+        "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
+        "Do not change Beacon 53563, Aura Mastery 31821, Divine Plea 54428, WoWSims/reference data, gear, stats, role thresholds, potion ownership, raid composition or boss mechanics.",
+        "Do not change BotClassSpecActionProfileCandidates.cpp: the existing holy_power_3 gate is already present and is not the proven edge.",
+        "Do not broaden the migration to unrelated Holy Paladin cooldowns, buffs or single-target actions.",
+        "Do not claim actor_30004, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
       ],
       "acceptance_conditions": [
-        "The native candidate builder exempts only DispelCleanse from the min_injured_players rejection while preserving the existing gate for heal categories.",
-        "Focused executable coverage binds the source predicate and verifies that the prior Holy Paladin profile migration still installs Cleanse and Word of Glory without changing unrelated rows.",
-        "The change is independently reviewed and built from the current source boundary with the frozen host12 policy.",
-        "The exact 300-second healer-controlled calibration shows native Cleanse candidate attempts and successful dispels with the repaired binary; role, actor and raid acceptance remain separately gated by the run contract."
+        "The Light of Dawn profile omission is covered by an idempotent SQL migration scoped to the enabled Holy Paladin healer profile.",
+        "The row is heal_aoe, targets the lowest ally, requires at least three injured players at the policy's 70% threshold, and carries the existing native holy_power_3 gate without changing unrelated rows.",
+        "Focused executable coverage verifies the new row, repeat application, isolation from other profiles, and preservation of the existing Word of Glory Holy Power gate.",
+        "The exact 300-second healer-controlled calibration is run with the reviewed binary; native action exercise, role calibration, actor acceptance and raid acceptance remain separately gated."
       ],
       "required_test_commands": [
         "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
       ],
-      "base_commit": "800f3b3182c08074f4604a9d121663fb6105f9d9",
+      "base_commit": "8560b017088f4c121c2d48ff3b3be43673b1ee46",
       "policy": {
         "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
         "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
@@ -6873,55 +6960,15 @@
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_dispel_gate_20260922.json",
-        "sha256": "77b91cdafc8871a1869c5e0ea33eedd9f99ac4fb09991e49b5c88912fb7d9cb2"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_dispel_gate_20260922.json",
-        "sha256": "11dce6f2aadfe6a0bf0c67e67015323d614b74ea62e49c6f4645033dd3993dcb"
-      },
-      "review": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_receipt_dispel_gate_20260922.json",
-        "sha256": "38e20577984354277fd4b228907326d0069d41674615ba40b07fe9f6c063cef6"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_build_dispel_gate_20260922.json",
-        "sha256": "ff78a99ab6dd8af6235335b522c2750fdee7b988383d53e782ce37d99dc9e47d"
-      },
-      "run": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_run_dispel_gate_20260922.json",
-        "sha256": "38ee0af1fd8ddbbbca0946714403b3c40ae5856a393eb1ad0d12d6120d190a99"
-      },
-      "assessment": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_assessment_dispel_gate_20260922.json",
-        "sha256": "df4c063ce110193676eee8f1ab8446badcc4947ef22d1fac1f7836648644afea"
-      },
-      "publication": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_publication_dispel_gate_20260922.json",
-        "sha256": "66b7bfabfaf46a197f7ff22080648df1412bca4412a8db9f3c8e04d18d94b03a"
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_20260922.json",
+        "sha256": "0d5126dc6a37b1982e87ec4b8326245d6ad1e1300320d975dc369e42c82507a3"
       }
     },
-    "tested_files": {
-      "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "3fd4de999e9613d267e8979520f81dcfa666ad3ad03f06c776db985de8b34635",
-      "tests/test_holy_paladin_capability_profile.py": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
-    },
-    "tested_commit": "8560b017088f4c121c2d48ff3b3be43673b1ee46",
-    "implementer": "coordinator-magmaw-holy-paladin-dispel-gate-implement-20260922",
-    "build_identity": {
-      "source_commit": "6d82974817638659710d9905d0a48c5830a3ab79",
-      "binary_sha256": "f213521b8c77824a6050887cff3b354e337c97a1f38ccaa1ec1b58ff70d09778"
-    },
-    "run": {
-      "attempt_id": 1,
-      "server_epoch": 8079852842797661,
-      "scenario_kind": "dummy",
-      "terminal_reason": "measurement_complete"
-    },
-    "pending_acceptance": [],
-    "outcomes": {
-      "encounter_clear": false,
-      "repair_accepted": true,
-      "performance_accepted": false
+    "claim": {
+      "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-implement-20260922",
+      "token": "ca38533c3d0498b61e1e384dce064d90f9337ebd7c326380df2f306f7b236725",
+      "operation_id": "ca38533c3d0498b61e1e384dce064d90f9337ebd7c326380df2f306f7b236725",
+      "stage": "implement"
     }
   },
   "parked_scenarios": {
