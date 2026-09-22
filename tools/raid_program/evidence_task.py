@@ -127,3 +127,45 @@ def task_view(root):
     except (ValueError, OSError, KeyError, tarfile.TarError) as exc:
         result['missing'] = str(exc)
     return result
+
+
+def task_summary(root, section='summary'):
+    """Project the validated active graph, not its unbounded requirement history."""
+    from tools.raid_program.development_graph import resume
+    progress = resume(root)
+    base = {'schema': 'evidence_task_summary_v1', 'state_sha256': progress['state_sha256'],
+            'revision': progress['revision'], 'stage': progress['stage'],
+            'coordinator_worktree': progress['coordinator_worktree']}
+    if section == 'unit':
+        return base | {'unit': progress['unit']}
+    if section == 'requirements':
+        return base | {'open_requirements': progress['open_requirements']}
+    if section == 'receipts':
+        return base | {'claim': progress['claim'], 'receipts': progress['receipts'],
+                       'latest_assessment': progress['latest_assessment']}
+    if section == 'references':
+        retained = task_view(root)
+        if retained.get('missing'):
+            raise ValueError('task_reference_inputs_invalid: ' + retained['missing'])
+        return base | {key: value for key, value in retained.items() if key not in {
+            'objective', 'unit', 'claim', 'open_requirements', 'schema', 'stage', 'state_sha256'}}
+    unit = progress['unit']
+    claim = progress['claim']
+    return base | {
+        'objective': progress['objective'],
+        'unit': {key: unit.get(key) for key in ('id', 'edge', 'owner_skill', 'objective', 'requirements', 'next_action')},
+        'claim': claim,
+        'blockers': {'claimed_operation_owner': claim.get('owner') if claim else None,
+                     'changed_bootstrap_sources': progress['changed_bootstrap_sources'],
+                     'same_edge_failures': progress['same_edge_failures']},
+        'open_requirement_ids': list(progress['open_requirements']),
+        'evidence': {'latest_assessment': progress['latest_assessment'],
+                     'bound_receipt_kinds': list(progress['receipts'])},
+        'next_action': progress['next_action'],
+        'next_command': command_with(['task'], root=root, section='receipts' if claim else 'unit', max_chars=6000),
+        'next_command_purpose': 'Inspect the claimed operation receipts before reconciling ownership.' if claim else
+                                'Read the exact work-unit constraints before executing the stage action.',
+        'detail_commands': {name: command_with(['task'], root=root, section=name, max_chars=6000)
+                            for name in ('unit', 'requirements', 'references')},
+        'parent_objective_complete': progress['parent_objective_complete'],
+    }

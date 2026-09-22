@@ -25,15 +25,20 @@ SESSIONS_ROOT = Path.home() / ".codex" / "sessions"
 ROOT = Path(__file__).resolve().parents[2]
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 MAX_FINDINGS_BYTES = 256 * 1024
+SUPPORTED_REVIEW_VERDICTS = frozenset({"approved", "changes_requested"})
 
 
 class ReviewExecutionError(ValueError):
     """Raised when a review cannot be proven from a Codex rollout."""
 
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
 
-def _require(condition: bool, message: str) -> None:
+
+def _require(condition: bool, message: str, *, code: str | None = None) -> None:
     if not condition:
-        raise ReviewExecutionError(message)
+        raise ReviewExecutionError(message, code=code)
 
 
 def _canonical(value: Any) -> bytes:
@@ -73,7 +78,13 @@ def _has_subagent_source(metadata: Mapping[str, Any]) -> bool:
     return bool(subagent) and (not isinstance(subagent, Mapping) or bool(subagent.get("thread_spawn") or subagent.get("agent_path") or subagent.get("agent_nickname")))
 
 
-def _read_rollout(path: Path, root: Path, selected_prefix_bytes: int | None = None) -> dict[str, Any]:
+def _read_rollout(
+    path: Path,
+    root: Path,
+    selected_prefix_bytes: int | None = None,
+    *,
+    require_final: bool = True,
+) -> dict[str, Any]:
     """Read a stable rollout and return only identity/final-message metadata."""
 
     before = path.stat()
@@ -92,14 +103,14 @@ def _read_rollout(path: Path, root: Path, selected_prefix_bytes: int | None = No
                 try:
                     value = json.loads(line)
                 except json.JSONDecodeError as exc:
-                    raise ReviewExecutionError("review rollout contains invalid JSON") from exc
-                _require(isinstance(value, Mapping), "review rollout records must be JSON objects")
+                    raise ReviewExecutionError("review rollout contains invalid JSON", code="rollout_invalid_json") from exc
+                _require(isinstance(value, Mapping), "review rollout records must be JSON objects", code="rollout_record_invalid")
                 kind = value.get("type")
                 payload = value.get("payload")
                 if kind == "session_meta":
-                    _require(isinstance(payload, Mapping), "review rollout session metadata missing")
+                    _require(isinstance(payload, Mapping), "review rollout session metadata missing", code="session_metadata_invalid")
                     if metadata is not None:
-                        raise ReviewExecutionError("review rollout contains duplicate session metadata")
+                        raise ReviewExecutionError("review rollout contains duplicate session metadata", code="duplicate_session_metadata")
                     metadata = dict(payload)
                 elif kind == "response_item" and isinstance(payload, Mapping):
                     if payload.get("type") == "message" and payload.get("role") == "assistant" and payload.get("phase") == "final_answer":
@@ -123,27 +134,141 @@ def _read_rollout(path: Path, root: Path, selected_prefix_bytes: int | None = No
             "review rollout changed while it was being read",
         )
     else:
-        _require(reached_selected_prefix and after.st_size >= selected_prefix_bytes and before.st_ino == after.st_ino, "review rollout prefix was truncated or replaced")
+        _require(
+            reached_selected_prefix and after.st_size >= selected_prefix_bytes and before.st_ino == after.st_ino,
+            "review rollout prefix was truncated or replaced",
+            code="rollout_prefix_unstable",
+        )
         try:
             with path.open("rb") as stream:
                 prefix = stream.read(selected_prefix_bytes)
         except OSError as exc:
-            raise ReviewExecutionError("cannot reread proven rollout prefix") from exc
-        _require(len(prefix) == selected_prefix_bytes and _sha256(prefix) == prefix_hasher.hexdigest(), "review rollout prefix changed while it was being read")
-    _require(metadata is not None, "review rollout session metadata missing")
-    _require(isinstance(metadata.get("id"), str) and metadata["id"], "review rollout identity missing")
-    _require(_has_subagent_source(metadata), "review rollout is not an independent Codex subagent session")
+            raise ReviewExecutionError("cannot reread proven rollout prefix", code="rollout_prefix_unreadable") from exc
+        _require(
+            len(prefix) == selected_prefix_bytes and _sha256(prefix) == prefix_hasher.hexdigest(),
+            "review rollout prefix changed while it was being read",
+            code="rollout_prefix_changed",
+        )
+    _require(metadata is not None, "review rollout session metadata missing", code="session_metadata_missing")
+    _require(isinstance(metadata.get("id"), str) and metadata["id"], "review rollout identity missing", code="rollout_identity_missing")
+    _require(_has_subagent_source(metadata), "review rollout is not an independent Codex subagent session", code="independent_subagent_required")
     cwd = metadata.get("cwd")
     if cwd is not None:
-        _require(Path(str(cwd)).resolve() == root.resolve(), "review rollout checkout differs from coordinator worktree")
-    _require(finals, "review rollout must contain a final response")
-    if selected_prefix_bytes is None:
-        final = finals[-1]
+        _require(
+            Path(str(cwd)).resolve() == root.resolve(),
+            "review rollout checkout differs from coordinator worktree",
+            code="checkout_mismatch",
+        )
+    if require_final:
+        _require(finals, "review rollout must contain a final response", code="final_response_missing")
+    final: dict[str, Any] | None = None
+    if finals:
+        if selected_prefix_bytes is None:
+            final = finals[-1]
+        else:
+            matches = [row for row in finals if row["end_offset"] == selected_prefix_bytes]
+            _require(len(matches) == 1, "review rollout does not contain the proven final prefix", code="final_prefix_missing")
+            final = matches[0]
+    return {
+        "metadata": metadata,
+        "final": final,
+        "finals": finals,
+        "prefix_bytes": offset,
+        "prefix_sha256": prefix_hasher.hexdigest(),
+    }
+
+
+def preflight_review(
+    root: Path,
+    rollout_path: str | Path,
+    *,
+    reviewer_session_id: str,
+    implementer_session_id: str,
+    sessions_root: Path | None = None,
+    prefix_bytes: int | None = None,
+    prefix_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Validate a fresh reviewer transcript before waiting for its final JSON.
+
+    The current complete line boundary is captured when ``prefix_bytes`` is
+    omitted.  Callers can pass a previous ``prefix_bytes``/``prefix_sha256``
+    pair to prove that the captured prefix remained unchanged while the
+    reviewer continued writing its transcript.  This function is read-only;
+    it never emits a report or receipt.
+    """
+
+    root = root.resolve()
+    _require(
+        isinstance(reviewer_session_id, str) and reviewer_session_id,
+        "reviewer session identity required",
+        code="reviewer_identity_required",
+    )
+    _require(
+        isinstance(implementer_session_id, str) and implementer_session_id,
+        "implementer session identity required for reviewer preflight",
+        code="implementer_identity_required",
+    )
+    _require(
+        reviewer_session_id != implementer_session_id,
+        "reviewer session must differ from implementer",
+        code="self_review",
+    )
+    if prefix_bytes is None:
+        _require(prefix_sha256 is None, "rollout prefix hash requires a prefix length", code="prefix_binding_incomplete")
     else:
-        matches = [row for row in finals if row["end_offset"] == selected_prefix_bytes]
-        _require(len(matches) == 1, "review rollout does not contain the proven final prefix")
-        final = matches[0]
-    return {"metadata": metadata, "final": final}
+        _require(type(prefix_bytes) is int and prefix_bytes > 0, "rollout prefix length must be positive", code="prefix_length_invalid")
+        _require(
+            isinstance(prefix_sha256, str) and SHA256_RE.fullmatch(prefix_sha256) is not None,
+            "rollout prefix hash is invalid",
+            code="prefix_hash_invalid",
+        )
+
+    rollout = _sessions_path(rollout_path, sessions_root)
+    if prefix_bytes is None:
+        try:
+            prefix_bytes = rollout.stat().st_size
+        except OSError as exc:
+            raise ReviewExecutionError("cannot stat review rollout", code="rollout_unreadable") from exc
+        _require(prefix_bytes > 0, "review rollout prefix is empty", code="prefix_empty")
+    observed = _read_rollout(rollout, root, prefix_bytes, require_final=False)
+    captured_hash = observed["prefix_sha256"]
+    if prefix_sha256 is not None:
+        _require(
+            captured_hash == prefix_sha256,
+            "review rollout prefix changed since preflight capture",
+            code="rollout_prefix_changed",
+        )
+    metadata = observed["metadata"]
+    _require(
+        metadata.get("id") == reviewer_session_id,
+        "explicit reviewer identity does not match rollout metadata",
+        code="reviewer_identity_mismatch",
+    )
+    cwd = metadata.get("cwd")
+    _require(
+        isinstance(cwd, str) and cwd,
+        "review rollout checkout metadata missing",
+        code="checkout_metadata_missing",
+    )
+    _require(
+        Path(cwd).resolve() == root,
+        "review rollout checkout differs from coordinator worktree",
+        code="checkout_mismatch",
+    )
+    return {
+        "schema": "codex_rollout_review_preflight_v1",
+        "ok": True,
+        "status": "ready",
+        "reviewer_session_id": reviewer_session_id,
+        "implementer_session_id": implementer_session_id,
+        "rollout_path": str(rollout),
+        "checkout": str(root),
+        "metadata_count": 1,
+        "independent_subagent": True,
+        "prefix_bytes": observed["prefix_bytes"],
+        "prefix_sha256": captured_hash,
+        "final_present": bool(observed["finals"]),
+    }
 
 
 def _repo_ref(root: Path, path: str | Path) -> tuple[dict[str, str], Path]:
@@ -173,6 +298,12 @@ def _validated_file_hashes(root: Path, value: Any, tested_files: Iterable[str] |
     return normalized
 
 
+def _validated_verdict(value: Any) -> str:
+    _require(isinstance(value, str) and value, "review verdict required", code="verdict_missing")
+    _require(value in SUPPORTED_REVIEW_VERDICTS, "unsupported review verdict", code="verdict_unsupported")
+    return value
+
+
 def verify_review(
     root: Path,
     review: Mapping[str, Any],
@@ -189,8 +320,7 @@ def verify_review(
     _require(isinstance(reviewer, str) and reviewer, "reviewer session identity required")
     _require(isinstance(review.get("unit_id"), str) and review["unit_id"], "review unit identity required")
     _require(review.get("producer") == reviewer, "review producer must be the proven reviewer session")
-    verdict = review.get("verdict")
-    _require(isinstance(verdict, str) and verdict, "review verdict required")
+    verdict = _validated_verdict(review.get("verdict"))
     if implementer_session_id is not None:
         _require(reviewer != implementer_session_id, "reviewer session must differ from implementer")
 
@@ -288,8 +418,8 @@ def build_review(
     _require(isinstance(final_document, Mapping), "review final response must be a JSON object")
     allowed = {"verdict", "file_hashes", "findings", "tests", "limits"}
     _require(set(final_document) <= allowed and {"verdict", "file_hashes", "findings"} <= set(final_document), "review final response has unexpected fields")
+    _validated_verdict(final_document.get("verdict"))
     hashes = _validated_file_hashes(root, final_document.get("file_hashes"), tested_files)
-    _require(isinstance(final_document.get("verdict"), str) and final_document["verdict"], "review verdict required")
     _require(len(_canonical(final_document.get("findings"))) <= MAX_FINDINGS_BYTES, "review findings are too large")
     state, _ = _state_for_unit(root)
     unit_id = state["development_graph"]["unit"]["id"]
@@ -352,7 +482,38 @@ def _state_for_unit(root: Path) -> tuple[dict[str, Any], str]:
     return state, _sha256(data)
 
 
+def _preflight_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Validate reviewer rollout identity before its final response")
+    parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument("--rollout", type=Path, required=True)
+    parser.add_argument("--reviewer-session-id", "--reviewer-id", dest="reviewer_session_id", required=True)
+    parser.add_argument("--implementer-session-id", "--implementer-id", dest="implementer_session_id", required=True)
+    parser.add_argument("--sessions-root", type=Path)
+    parser.add_argument("--prefix-bytes", type=int)
+    parser.add_argument("--prefix-sha256")
+    args = parser.parse_args(argv)
+    try:
+        result = preflight_review(
+            args.root.resolve(),
+            args.rollout,
+            reviewer_session_id=args.reviewer_session_id,
+            implementer_session_id=args.implementer_session_id,
+            sessions_root=args.sessions_root,
+            prefix_bytes=args.prefix_bytes,
+            prefix_sha256=args.prefix_sha256,
+        )
+    except (ReviewExecutionError, OSError, ValueError) as exc:
+        payload = {"ok": False, "code": getattr(exc, "code", None) or "review_preflight_failed", "error": str(exc)}
+        print(json.dumps(payload, separators=(",", ":"), sort_keys=True), file=sys.stderr)
+        return 2
+    print(json.dumps(result, separators=(",", ":"), sort_keys=True))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    if raw_argv and raw_argv[0] == "preflight":
+        return _preflight_main(raw_argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--rollout", type=Path, required=True)

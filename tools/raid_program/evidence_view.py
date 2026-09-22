@@ -257,6 +257,11 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
     task = sub.add_parser("task", help="Resolve exact comparison commands from saved receipts and promoted references")
     task.add_argument("--root", type=Path, default=Path.cwd())
+    task.add_argument("--section", choices=('summary', 'unit', 'requirements', 'receipts', 'references'), default='summary')
+    outcome = sub.add_parser("result", help="Show a closed run's outcomes, failed gates and scalar role metrics")
+    outcome.add_argument("input")
+    outcome.add_argument("--section", choices=('outcome', 'reference'), default='outcome')
+    outcome.add_argument("--metric", action='append', default=[], help="Exact JSON Pointer to one additional scalar observation")
     inspect = sub.add_parser("inspect", help="JSON shape/actors, or regular JSON archive members")
     inspect.add_argument("input")
     inspect.add_argument("--path", help="Inspect nested field names/types/locators without values")
@@ -301,17 +306,24 @@ def main(argv=None):
     events.add_argument("--clock", choices=("relative", "absolute"), default="relative")
     events.add_argument("--offset", type=int, default=0)
     events.add_argument("--limit", type=int, default=20)
-    for command in (inspect, select, events, admit, task):
+    for command in (inspect, select, events, admit, task, outcome):
         command.add_argument("--output", type=Path, help="Export requested result; stdout remains bounded")
-    for command in (inspect, select, compare, events, admit, task):
+    for command in (inspect, select, compare, events, admit, task, outcome):
         command.add_argument("--max-chars", type=int, default=12000, help="Stdout budget, 2000..16000 characters")
     args = parser.parse_args(argv)
     try:
         if not 2000 <= args.max_chars <= 16000:
             raise ValueError("--max-chars must be 2000..16000")
         if args.command == "task":
-            from tools.raid_program.evidence_task import task_view
-            result = task_view(args.root)
+            from tools.raid_program.evidence_task import task_summary
+            result = task_summary(args.root, args.section)
+        elif args.command == "result":
+            from tools.raid_program.evidence_result import result_view
+            document, receipt = load_input(args.input)
+            result = result_view(document, args.metric, args.section)
+            result['source'] = receipt
+            if args.section == 'outcome':
+                result['reference_detail_command'] = command_with(['result', args.input], section='reference', max_chars=args.max_chars)
         elif args.command == "admission":
             from tools.raid_program.evidence_admission import admission
             result, full = admission(args.current, args.wowsims_request, args.wowsims_result,
@@ -383,9 +395,14 @@ def main(argv=None):
                 result["next_command"] = command_with(argv, offset=result["next_offset"], limit=len(result["records"]))
             result["requested_limit"] = requested
         if len(encoded(result)) > args.max_chars:
-            result = {"view": "oversized_result_structure", "value": outline(result, "", 2),
-                      "output": str(args.output) if args.output else None,
-                      "instruction": "Use explicit pointers and smaller pages; no raw-log fallback is needed."}
+            selectors = {'task': '--section unit|receipts|references; for requirements use select on the state with an exact requirement pointer',
+                         'result': 'select INPUT --path /role_calibration_evaluation/failure_reasons or one exact metric pointer',
+                         'compare': '--actor and --view-path with --limit',
+                         'inspect': '--path and --limit', 'select': 'a deeper --path and --limit',
+                         'events': '--actor, --spell, --start-ms/--end-ms and --limit',
+                         'admission': '--actor; retain the full review with --output and select one failed gate'}
+            raise ValueError(f"query_exceeds_output_budget: {args.command} produced {len(encoded(result))} characters; "
+                             f"required selectors: {selectors[args.command]}. No result was truncated or accepted.")
         rendered = encoded(result)
         print(rendered)
     except (ValueError, KeyError, IndexError, OSError, tarfile.TarError) as exc:
