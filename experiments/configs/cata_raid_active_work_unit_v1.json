@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 366,
+    "revision": 367,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "build",
     "actor_ids": [
@@ -6979,6 +6979,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 366,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "revision": 366,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-build-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7080,7 +7094,13 @@
       "tests/test_holy_paladin_capability_profile.py": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
     },
     "tested_commit": "be68b0d4c1ced1bb4c170888d0660efe18ac4c6d",
-    "implementer": "coordinator-magmaw-holy-paladin-capability-profile-02-rework-20260922"
+    "implementer": "coordinator-magmaw-holy-paladin-capability-profile-02-rework-20260922",
+    "claim": {
+      "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-build-20260922",
+      "token": "0c3adf6860ef6f574222603c1e7655aefad9386759268771bad2975cc45f627a",
+      "operation_id": "0c3adf6860ef6f574222603c1e7655aefad9386759268771bad2975cc45f627a",
+      "stage": "build"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
