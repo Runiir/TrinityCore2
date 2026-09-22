@@ -1,0 +1,53 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "a02cb4e2c9179070969f6ccbcebead2b9badd393730c9e1f5a2460c0a26fb87a",
+  "attempt_id": 1,
+  "disposition": {
+    "classification": "closed_diagnostic_shared_route_repair_only",
+    "repair_edge_exercised": true,
+    "repair_accepted": false,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "parent_objective_complete": false,
+    "accepted_requirements": [],
+    "unresolved": [
+      "diagnostic_shard_no_native_boss_engagement",
+      "no_health_progress_samples",
+      "runner_live_validation_raw_semantic_binding_rejected"
+    ]
+  },
+  "dvc_status_checked": true,
+  "dvc_status_scope": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz.dvc",
+  "dvc_status_before_push": "targeted DVC cache/remote object present",
+  "dvc_push_completed": true,
+  "dvc_push_result": "1 file pushed",
+  "remote_verified": true,
+  "remote_verification_method": "Evicted the exact local archive and cache object, ran targeted dvc pull -f, matched the restored SHA-256 and byte length, then evicted both exact local copies again.",
+  "remote_reconstruction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz.dvc",
+    "pointer_sha256": "04e1c0eea8696d459c40361424c9f1a156a47817d11aef4de347b60c33c3962f",
+    "payload_sha256": "69a6511dab925fb12b796400f0d065a45f3833e3b34ff8323e038c0f68942713",
+    "payload_size_bytes": 1127459,
+    "members_verified": ["report.json", "worldserver_output.log", "combat_log.json", "heartbeat_events.jsonl", "session.json"]
+  },
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "exact_local_duplicates_evicted": true,
+  "cleanup_scope": {
+    "raw_workspace": "/tmp/cata-magmaw-route-progress-final-20260922",
+    "raw_archive": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz",
+    "eviction_method": "gio trash for the exact archive and DVC cache object; the archive is recoverable locally and reconstructable through DVC"
+  },
+  "evidence": [
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_assessment_20260922.json", "sha256": "b9509924cad98bfba15cc5ead22a604c47b33d38f1b1476159a8531704ccd6c9"},
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"},
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_summary_20260922.json", "sha256": "38174a23c6dc2b4da80834474ebd7e0e730812affb4cbcf7cf20ddc6e13f49d9"},
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz.dvc", "sha256": "04e1c0eea8696d459c40361424c9f1a156a47817d11aef4de347b60c33c3962f"},
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_evidence_identity_20260922.json", "sha256": "0c5b36257d996a45a9228331b1f589751d8cabb51001401c4f95504928a1768f"}
+  ],
+  "interpretation": "Publication closes the attributable diagnostic bundle for the adaptive Magmaw route-progress observer. It does not accept actor_30002, any actor, performance, raid completion or the Magmaw 10N parent objective."
+}

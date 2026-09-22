@@ -1,0 +1,42 @@
+{
+  "schema": "cata_raid_program_assessment_v1",
+  "kind": "assessment",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "operation_id": "da07d92bb4b90452eb40e5e020c40df729ee25d9608f28fefde0a206f604400d",
+  "claim_token": "da07d92bb4b90452eb40e5e020c40df729ee25d9608f28fefde0a206f604400d",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json",
+    "sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_summary_20260922.json",
+    "sha256": "38174a23c6dc2b4da80834474ebd7e0e730812affb4cbcf7cf20ddc6e13f49d9"
+  },
+  "baseline_matched": false,
+  "unexplained_material_decline": false,
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "accepted_requirements": [],
+  "actor_reviews": {
+    "30001": {"status": "reviewed", "accepted": false, "reason": "Balance actor was present in the diagnostic cohort, but no native Magmaw engagement or health-progress window was observed; no actor conclusion is admissible.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30002": {"status": "reviewed", "accepted": false, "reason": "Blood tank actor was present, but the shared route stalled before boss engagement; do not accept a Blood policy or performance conclusion.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30003": {"status": "reviewed", "accepted": false, "reason": "Restoration Druid actor was present, but no stable healer assignment or boss window was exercised.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30004": {"status": "reviewed", "accepted": false, "reason": "Holy Paladin actor was present, but no stable healer assignment or boss window was exercised.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30005": {"status": "reviewed", "accepted": false, "reason": "Discipline Priest actor was present, but no stable healer assignment or boss window was exercised.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30006": {"status": "reviewed", "accepted": false, "reason": "Fire Mage actor was present, but the diagnostic shard produced no authoritative Magmaw engagement window.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30007": {"status": "reviewed", "accepted": false, "reason": "Fire Mage actor was present, but the diagnostic shard produced no authoritative Magmaw engagement window.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30008": {"status": "reviewed", "accepted": false, "reason": "Affliction Warlock actor was present, but the diagnostic shard produced no authoritative Magmaw engagement window.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30009": {"status": "reviewed", "accepted": false, "reason": "Survival Hunter actor was present, but the diagnostic shard produced no authoritative Magmaw engagement window.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}},
+    "30010": {"status": "reviewed", "accepted": false, "reason": "Elemental Shaman actor was present, but the diagnostic shard produced no authoritative Magmaw engagement window.", "receipt": {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"}}
+  },
+  "evidence": [
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_run_20260922.json", "sha256": "5fb068952a247994099717c56281933ecf01de008b9b166d94666c4f7fb12efc"},
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_summary_20260922.json", "sha256": "38174a23c6dc2b4da80834474ebd7e0e730812affb4cbcf7cf20ddc6e13f49d9"},
+    {"path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_evidence_identity_20260922.json", "sha256": "0c5b36257d996a45a9228331b1f589751d8cabb51001401c4f95504928a1768f"}
+  ],
+  "interpretation": "Closed diagnostic-only watchdog evidence. All ten roster actors were reviewed separately, but the shared route failed before native Magmaw engagement and health-progress sampling. No actor, repair, performance, encounter or parent requirement is accepted; route the next shared engagement edge."
+}
