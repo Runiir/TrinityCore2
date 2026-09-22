@@ -1,0 +1,104 @@
+{
+  "accepted_requirements": [],
+  "actor_reviews": {
+    "30001": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30002": {
+      "accepted": false,
+      "reason": "The exact 300-second tank_threat_300 window completed without watchdog stall, death loop or illegal action, and the merged Blood equipment readback matches the pinned overlay. Independent review found the native pre-score setup, fixture identity, runeforge-specific readback, comparable reference binding and final controller cleanup identity incomplete, so this remains diagnostic-only and does not accept the actor or repair.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_rotation_review_20260922.json",
+        "sha256": "d8cc07166332f71e29f432a8477aa5068820a4654f9b66ba1dd6118bec18f982"
+      },
+      "status": "reviewed"
+    },
+    "30003": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30004": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30005": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30006": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30007": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30008": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30009": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    },
+    "30010": {
+      "accepted": false,
+      "reason": "This bounded Blood setup calibration did not exercise this roster actor; parent actor, comparison and raid requirements remain open.",
+      "status": "not_exercised"
+    }
+  },
+  "attempt_id": 1,
+  "authority": "coordinator_attestation",
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_plan_reconciled_20260922.json",
+    "sha256": "79e622828a0e2cdd5f4a197956dc2cff20bddc76405fc3ea6de256a6c782bc8e"
+  },
+  "baseline_matched": false,
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_evidence_20260922.json",
+    "sha256": "17916e6090d8d6632c115360ff6c54123679be50b698f7cbf1496506405dc2f4"
+  },
+  "encounter_clear": false,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_run_20260922.json",
+      "sha256": "30090414406cc7b460decd7ef5f859a86a1f525b16401beff236b6c3a936497d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_evidence_20260922.json",
+      "sha256": "17916e6090d8d6632c115360ff6c54123679be50b698f7cbf1496506405dc2f4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_rotation_review_20260922.json",
+      "sha256": "d8cc07166332f71e29f432a8477aa5068820a4654f9b66ba1dd6118bec18f982"
+    }
+  ],
+  "interpretation": "The current Blood setup repair is retained as exact gear/readback diagnosis only. No actor, performance, encounter-clear or parent requirement is accepted.",
+  "kind": "assessment",
+  "outcome": {
+    "actor_30002_acceptance": false,
+    "classification": "diagnostic_only_setup_readback",
+    "controller_identity_complete": false,
+    "native_pre_score_setup_proven": false,
+    "performance_accepted": false,
+    "process_cleanup_observed": true,
+    "raid_clear": false,
+    "reference_conditions_comparable": false,
+    "watchdog_window_complete": true
+  },
+  "performance_accepted": false,
+  "producer": "coordinator",
+  "repair_accepted": false,
+  "schema": "cata_raid_program_assessment_v1",
+  "unexplained_material_decline": false,
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05"
+}

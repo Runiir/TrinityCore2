@@ -1,0 +1,495 @@
+{
+  "authority": "read_only_independent_review",
+  "kind": "supporting_diagnostic_review",
+  "producer": "independent_rotation_reviewer",
+  "review": {
+    "findings": [
+      {
+        "actor": {
+          "guid": 1283,
+          "name": "Blooddk",
+          "node": "calibration:blood_death_knight:primary",
+          "role": "tank",
+          "spec": "blood_death_knight"
+        },
+        "conclusion": "The report records the Blood gear and enchant profile, but does not prove end-to-end native permanent-enchant admission.",
+        "id": "bounded_repair_proof",
+        "observations": {
+          "gear_manifest_sha256": "82c203d3fab88e542d50cabeb59727634b6e3b8e513ac815828ac05d7af19396",
+          "gear_rows": 16,
+          "item_swap_observation_enabled": false,
+          "item_swap_sample_count": 0,
+          "native_pre_score_observed": false,
+          "native_pre_score_persistent_setup_ready": false,
+          "persistent_setup_ready": true,
+          "profile_content_hash": "9EC8772F664D224F944074C12C8A178895EF68CFA9711C8EBCDF909D7C7118AC",
+          "runeforge_specific_readback": "not explicitly present in the reviewed report"
+        },
+        "severity": "incomplete",
+        "type": "evidence"
+      },
+      {
+        "counterexample": {
+          "elapsed_ms": 0,
+          "fixture_observed_before_scoring": false,
+          "fixture_observed_entry": 0,
+          "fixture_runtime_guid": 0,
+          "fixture_target_path": "/combat_calibration/fixture_target",
+          "offensive_target_guid": 17379582294225846339,
+          "offensive_target_valid": true,
+          "result": "ok",
+          "spell_id": 43265,
+          "timeline_path": "/combat_calibration/bots/0/decision_timeline/0"
+        },
+        "edge": "setup/readback -> reference admission",
+        "expected": "A complete native pre-score setup, fixture, item/enchant/runeforge readback, and exact reference-condition binding.",
+        "first_named_failed_predicate": "reference_setup_enabled",
+        "id": "first_mismatched_edge",
+        "impact": "A native action sample exists, but it is not joined to the declared fixture or complete setup admission. No first-broken Blood rotation edge is established.",
+        "observed": {
+          "fixture_target_observation_valid": false,
+          "initial_resources_matches_contract": false,
+          "item_swap_observation_valid": false,
+          "reference_request_binding_valid": false,
+          "reference_result_status_acceptable": false,
+          "reference_setup_enabled": false,
+          "required_reference_buff_auras_present": 0
+        },
+        "severity": "blocking_for_reference_comparison",
+        "type": "evidence"
+      },
+      {
+        "actor": "1283 Blooddk",
+        "id": "native_action_and_role_signals",
+        "interpretation": "These are native calibration diagnostics. Action-attempt counts are selection evidence, not complete submitted, finished, or landed-cast proof.",
+        "severity": "observed_only",
+        "signals": {
+          "action_groups": 9,
+          "active_uptime_ratio": 1.0,
+          "add_threat_success_ratio": 1.0,
+          "all_hostile_retention_ratio": 1.0,
+          "cast_failure_ratio": 0.0,
+          "death_count": 0,
+          "decision_timeline_rows": 1200,
+          "healer_exposure_ratio": 0.0,
+          "health_floor_ratio": 0.51,
+          "illegal_action_count": 0,
+          "interrupt_success_ratio": 1.0,
+          "maximum_damage_spike_ratio": 0.45,
+          "mitigation_uptime_ratio": 1.0,
+          "movement_range_loss_ratio": 0.0,
+          "reported_result_ok_count": 1200,
+          "resource_capped_ratio": 0.0,
+          "resource_starved_ratio": 0.0,
+          "rotation_group_coverage": 1.0,
+          "snap_threat_success_ratio": 1.0,
+          "stance_form_uptime_ratio": 1.0,
+          "threat_aura_uptime_ratio": 1.0
+        },
+        "type": "runtime"
+      },
+      {
+        "failed_reason_count": 38,
+        "fixture_observation": {
+          "expected_entry": 44548,
+          "geometry_validated": false,
+          "isolated_single_target": false,
+          "native_line_of_sight": false,
+          "native_melee_reachable": false,
+          "observed_entry": 0,
+          "runtime_guid": 0,
+          "scored_passive_sample_count": 0
+        },
+        "id": "reference_conditions_not_comparable",
+        "reference_comparison_eligible": false,
+        "representative_failures": [
+          "reference_setup_enabled",
+          "required_buff_auras",
+          "runtime_initial_resources_observation_valid",
+          "runtime_item_swap_observation_valid",
+          "runtime_fixture_target_observation_valid",
+          "runtime_execute_threshold_windows_valid",
+          "runtime_external_windows_observation_valid",
+          "reference_gear_source_pinned",
+          "runtime_gear_manifest_matches_reference",
+          "reference_request_binding_valid",
+          "exact_settings_reference_value_matches",
+          "comparison_manifest_present"
+        ],
+        "role_gate_passed": false,
+        "severity": "diagnostic_only",
+        "type": "comparison_gate",
+        "why_diagnostic_only": "The fixture lacks the exact simulator conditions and native identity joins required for comparison. The reported Blood DPS and pinned reference value therefore cannot establish DPS acceptance or reject the rotation."
+      }
+    ],
+    "limits": [
+      "The exact 300-second interval is isolated tank_threat_300 calibration, not raid completion.",
+      "The reported DPS and reference value are non-comparable and provide no DPS acceptance result.",
+      "The report contains no explicit runeforge-specific readback, so DK runeforge preservation is unverified.",
+      "Aggregate action attempts and one sampled result-ok timeline row do not establish a complete submission-to-landed-effect chain.",
+      "Cleanup is not verified, the session is not marked closed, and evidence identity is incomplete.",
+      "No Magmaw route, boss-clear, or raid-completion evidence exists in this artifact."
+    ],
+    "metrics": {
+      "action_role": {
+        "action_attempts": [
+          {
+            "count": 10,
+            "spell_id": 43265,
+            "spell_name": "Death and Decay"
+          },
+          {
+            "count": 5,
+            "spell_id": 45462,
+            "spell_name": "Plague Strike"
+          },
+          {
+            "count": 9,
+            "spell_id": 45477,
+            "spell_name": "Icy Touch"
+          },
+          {
+            "count": 5,
+            "spell_id": 47528,
+            "spell_name": "Mind Freeze"
+          },
+          {
+            "count": 70,
+            "spell_id": 48721,
+            "spell_name": "Blood Boil"
+          },
+          {
+            "count": 1,
+            "spell_id": 48792,
+            "spell_name": "Icebound Fortitude"
+          },
+          {
+            "count": 1,
+            "spell_id": 49028,
+            "spell_name": "Dancing Rune Weapon"
+          },
+          {
+            "count": 15,
+            "spell_id": 49998,
+            "spell_name": "Death Strike"
+          },
+          {
+            "count": 1,
+            "spell_id": 55233,
+            "spell_name": "Vampiric Blood"
+          },
+          {
+            "count": 35,
+            "spell_id": 56815,
+            "spell_name": "Rune Strike"
+          }
+        ],
+        "observed_distinct_damage_targets": 5,
+        "primary_target_guid": 0,
+        "reported_active_dps": 15352.6,
+        "reported_damage": 4605781,
+        "result_counts": {
+          "ok": 1200
+        },
+        "target_count": 5,
+        "threat_observable": true,
+        "threat_per_second": 9.89
+      },
+      "cleanup_attribution": {
+        "bots": 0,
+        "cleanup_verified": null,
+        "combat_analysis_action_outcome_count": 0,
+        "combat_calibration_chunks": "523/523",
+        "combat_calibration_transport_reassembled": true,
+        "combat_log_chunks": "1/1",
+        "combat_log_event_count": 0,
+        "combat_log_transport_reassembled": true,
+        "controller_active": true,
+        "diagnosis_count": 0,
+        "evidence_identity_complete": false,
+        "identity_incomplete_reasons": [
+          "missing_external_database_snapshot_sha256",
+          "missing_external_database_schema_sha256",
+          "missing_external_server_epoch_sha256",
+          "missing_external_profile_generation_sha256"
+        ],
+        "lease_count": 2,
+        "route_enabled": false,
+        "route_manifest_complete": false,
+        "runtime_asset_closure_complete": true,
+        "session_closed": false,
+        "trace_entries": 0
+      },
+      "gear_readback": {
+        "all_reforge_ids_zero": true,
+        "gear_profile_id": "blood_death_knight",
+        "mainhand_item_entry": 78478,
+        "mainhand_temp_enchant": 0,
+        "offhand_temp_enchant": 0,
+        "runeforge_readback": "not explicitly observed; weapon identity and temporary-enchant fields alone are insufficient",
+        "slots": [
+          {
+            "enchant_id": 4208,
+            "gem_item_ids": [
+              44088,
+              77141,
+              0
+            ],
+            "item_id": 78687,
+            "reforge_id": 0,
+            "slot": 0
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 73492,
+            "reforge_id": 0,
+            "slot": 1
+          },
+          {
+            "enchant_id": 4198,
+            "gem_item_ids": [
+              77130,
+              77130,
+              0
+            ],
+            "item_id": 78751,
+            "reforge_id": 0,
+            "slot": 2
+          },
+          {
+            "enchant_id": 4103,
+            "gem_item_ids": [
+              77141,
+              77141,
+              77130
+            ],
+            "item_id": 78659,
+            "reforge_id": 0,
+            "slot": 4
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              77130,
+              0,
+              0
+            ],
+            "item_id": 78889,
+            "reforge_id": 0,
+            "slot": 5
+          },
+          {
+            "enchant_id": 4127,
+            "gem_item_ids": [
+              77141,
+              77130,
+              77130
+            ],
+            "item_id": 78716,
+            "reforge_id": 0,
+            "slot": 6
+          },
+          {
+            "enchant_id": 4062,
+            "gem_item_ids": [
+              77141,
+              77130,
+              0
+            ],
+            "item_id": 78431,
+            "reforge_id": 0,
+            "slot": 7
+          },
+          {
+            "enchant_id": 4191,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 73551,
+            "reforge_id": 0,
+            "slot": 8
+          },
+          {
+            "enchant_id": 4106,
+            "gem_item_ids": [
+              77130,
+              0,
+              0
+            ],
+            "item_id": 78678,
+            "reforge_id": 0,
+            "slot": 9
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              77141,
+              0,
+              0
+            ],
+            "item_id": 78432,
+            "reforge_id": 0,
+            "slot": 10
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 73488,
+            "reforge_id": 0,
+            "slot": 11
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 78002,
+            "reforge_id": 0,
+            "slot": 12
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 77992,
+            "reforge_id": 0,
+            "slot": 13
+          },
+          {
+            "enchant_id": 4100,
+            "gem_item_ids": [
+              77141,
+              0,
+              0
+            ],
+            "item_id": 77097,
+            "reforge_id": 0,
+            "slot": 14
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              0,
+              0,
+              0
+            ],
+            "item_id": 78478,
+            "reforge_id": 0,
+            "slot": 15
+          },
+          {
+            "enchant_id": 0,
+            "gem_item_ids": [
+              77130,
+              0,
+              0
+            ],
+            "item_id": 74783,
+            "reforge_id": 0,
+            "slot": 17
+          }
+        ]
+      },
+      "identifiers": {
+        "calibration_reset_id": "blood_death_knight:tank_threat_300:seed-1",
+        "evidence_scope_attempt_id": "/home/runiir/Games/trinity-cata/dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_reconciled_20260922:1790067434",
+        "measurement_window_id": "observe:0:timeout:900",
+        "role_identity_target_guid": 1283,
+        "status_attempt_id": 1,
+        "status_run": 248,
+        "target_spec": "blood_death_knight"
+      },
+      "native_outcome": {
+        "certification_status": "rejected",
+        "completion_reason": "combat_calibration_role_gate_failed",
+        "native_clear": false,
+        "real_boss_kill_evidence_count": 0,
+        "timed_out": false
+      },
+      "native_window": {
+        "cross_window_event_count": 0,
+        "requested_mode": "tank_threat_300",
+        "scored_ended_at_ms": 1790067417777,
+        "scored_seconds": 300.0,
+        "scored_started_at_ms": 1790067117777,
+        "seed": 1,
+        "timed_out": false,
+        "warmup_seconds": 15.0,
+        "watchdog_death_loop": false,
+        "watchdog_no_progress": false,
+        "watchdog_repeated_decision_loop": false,
+        "watchdog_required_seconds": 300.0,
+        "watchdog_scoring_elapsed_seconds": 301.2,
+        "window_complete": true
+      },
+      "reference_admission": {
+        "comparison_valid": false,
+        "diagnostics_passed": true,
+        "evidence_class": "non_certifying_calibration_fixture",
+        "excluded_from_training_corpus": true,
+        "non_certifying_assistance": true,
+        "reference_basis": "pinned_cata_phase4_simulator_dps",
+        "reference_comparison_eligible": false,
+        "reported_reference_value": 32489.03862,
+        "role_calibration_passed": false,
+        "transport_passed": true
+      }
+    },
+    "next_action": {
+      "decision": "Retain this artifact as diagnostic-only. Do not accept the permanent-enchant repair, infer DPS acceptance, or tune the rotation from this fixture.",
+      "required_recapure_evidence": [
+        "Native pre-score observation with observed_before_scoring=true and persistent_setup_ready=true.",
+        "Expected-versus-observed gear manifest covering item, permanent enchant, gem, reforge, temporary enchant, and explicit DK runeforge semantics with no-drift samples.",
+        "Fixture target entry, GUID, geometry, passive state, and primary-target join recorded before and during scoring.",
+        "Exact reference request, result, settings, comparison manifest, buffs, consumables, prepull, execute, external-window, and initial-resource receipts.",
+        "Verified shutdown cleanup and complete external identity before independent review."
+      ]
+    },
+    "reviewed_report": {
+      "build_identity": {
+        "binary_sha256": "249902d4c761651a6e43298e505c87f02ba98eefce19bf44b1c65ccf33447eec",
+        "build_configuration_stable": true,
+        "operation_id": "e70edba7a429480feddbdb8243187675cc20590f2eb2a72094d53ddb96071377",
+        "path": "/home/runiir/Games/trinity-cata/artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_reconciled_20260922.json",
+        "policy_sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d",
+        "report_binary_hash_matches": true,
+        "source_commit": "12ea6232e1ced87a95a54a0f1db7e5ad9cc93b84",
+        "source_identity_stable": true,
+        "unit_id": "magmaw:blood_permanent_enchant_profile_05"
+      },
+      "commands_sha256": "1cd0e1084a451e91b5cd3ceaa65e3a321ed47435e2511d57bee5aeded961f533",
+      "commands_txt": "/home/runiir/Games/trinity-cata/dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_reconciled_20260922/commands.txt",
+      "report_json": "/home/runiir/Games/trinity-cata/dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_reconciled_20260922/report.json",
+      "report_payload_sha256": "cb362d62b01ca8ed24b807dd9176242b4b65a809e26360ea0615eb0d02240122",
+      "review_mode": "read_only"
+    },
+    "run_id": "magmaw_blood_permanent_enchant_profile_05_reconciled_20260922",
+    "verdict": "diagnostic_only"
+  },
+  "reviewed_commands_sha256": "1cd0e1084a451e91b5cd3ceaa65e3a321ed47435e2511d57bee5aeded961f533",
+  "reviewed_report_sha256": "cb362d62b01ca8ed24b807dd9176242b4b65a809e26360ea0615eb0d02240122",
+  "reviewer_session_id": "01a0c856-15f2-7c03-8210-6dda382c2ece",
+  "rollout_proof": {
+    "final_message_sha256": "fc7c7bc4122c86f367892a24040bbdd1fea9110ce078a2005d631ce97a5558e1",
+    "path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T11-58-00-01a0c856-15f2-7c03-8210-6dda382c2ece.jsonl",
+    "sha256": "3c6dcd16901d6dda500776ba53e119364217f475e04975578cd47389faf8f0f0"
+  },
+  "schema": "cata_raid_program_rotation_review_v1",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05"
+}
