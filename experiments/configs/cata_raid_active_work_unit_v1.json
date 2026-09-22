@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 350,
+    "revision": 351,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "build",
     "actor_ids": [
@@ -6676,6 +6676,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 350,
+        "unit_id": "magmaw:holy_paladin_capability_profile_01",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "revision": 350,
+          "unit_id": "magmaw:holy_paladin_capability_profile_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-dispel-gate-build-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -6777,7 +6791,13 @@
       "tests/test_holy_paladin_capability_profile.py": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
     },
     "tested_commit": "8560b017088f4c121c2d48ff3b3be43673b1ee46",
-    "implementer": "coordinator-magmaw-holy-paladin-dispel-gate-implement-20260922"
+    "implementer": "coordinator-magmaw-holy-paladin-dispel-gate-implement-20260922",
+    "claim": {
+      "owner": "coordinator-magmaw-holy-paladin-dispel-gate-build-20260922",
+      "token": "15e2bd623f0ae0587c45c5fefc6196e44af9f0fb8a8ff0825bc12506aba439fd",
+      "operation_id": "15e2bd623f0ae0587c45c5fefc6196e44af9f0fb8a8ff0825bc12506aba439fd",
+      "stage": "build"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
