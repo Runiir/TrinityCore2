@@ -6,13 +6,13 @@
   "component_hashes": {
     "database_snapshot_sha256": "a69a43cf4f6b1fc3e269cf2be2fe660634eda3555e131535e1a68092ae5dac98",
     "database_schema_sha256": "6b7bfe814120247c553d6bfbb6976982883b4e3a3f7585cd62a1e0e0cbfa7729",
-    "server_epoch_sha256": "34aeb1349364c633be02704e38d1dc65f65ca7e1068aebe523e6187357d5d516",
+    "server_epoch_sha256": "21f84cac2f89613c8c669a70184f0e52fd427addae9ab1111c69576494b6c18a",
     "profile_generation_sha256": "632ddf77eea3dd51c8733893e73dac9e71b39b09c8ce4840c1dd8fa0f876cd82"
   },
   "runtime_identity": {
-    "server_epoch": 10356341014947116,
-    "server_process_id": 2266904,
-    "session_fingerprint": "1d816e6603092f0e411c57c8f12e606bcb5f141cb595752890323b9dee9929ca",
+    "server_epoch": 10302040381895018,
+    "server_process_id": 2278839,
+    "session_fingerprint": "02417dc49c6edeaf80c8d99b0c12bb79b4a418d9d702f39b84c8f3f6ed4adfe7",
     "max_active_cohorts": 2,
     "profile_generation": 1,
     "profile_content_hash": "9ec8772f664d224f944074c12c8a178895ef68cfa9711c8ebcdf909d7c7118ac"

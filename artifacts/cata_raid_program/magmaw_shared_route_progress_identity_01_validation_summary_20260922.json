@@ -1,0 +1,56 @@
+{
+  "schema": "cata_raid_magmaw_10n_validation_summary_v1",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "operation_id": "6bb072ed4a8536a93570223a5496a5c9282310f4ad77a226b6c5e22558b39cbb",
+  "scenario": {
+    "scenario_kind": "raid",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "segment_id": "04_magmaw",
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 4,
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "roster_guids": [30001, 30002, 30003, 30004, 30005, 30006, 30007, 30008, 30009, 30010]
+  },
+  "build_identity": {
+    "source_commit": "017cc321a3e1751a45cc0406763c6325ba391917",
+    "binary_sha256": "4a3c9ccde168f94b11c7a5c271384b792359419720cae6e09fd8ef4ef77af040"
+  },
+  "runtime_identity": {
+    "attempt_id": 1,
+    "cohort_id": "magmaw-route-progress-final",
+    "server_epoch": 10302040381895018,
+    "server_process_id": 2278839,
+    "session_fingerprint": "02417dc49c6edeaf80c8d99b0c12bb79b4a418d9d702f39b84c8f3f6ed4adfe7",
+    "profile_generation": 1,
+    "profile_content_hash": "9ec8772f664d224f944074c12c8a178895ef68cfa9711c8ebcdf909d7c7118ac"
+  },
+  "watchdog": {
+    "clock": "completion_watchdog",
+    "terminal_reason": "semantic_stall",
+    "completion_reason": "semantic_progress_plateau_watchdog",
+    "failure_reason": "validation_route_no_engagement",
+    "failure_labels": ["validation_route_no_engagement", "no_progress_observed", "semantic_progress_plateau"],
+    "duration_seconds": 213,
+    "decisions": 2546,
+    "party_damage": 128543,
+    "boss_engagement_actions": 0,
+    "boss_kill_evidence": 0,
+    "health_progress_samples": 0,
+    "deaths": 3,
+    "route_actions": 174,
+    "cleanup_verified": true
+  },
+  "capture": {
+    "runner_publish_batch": "rejected",
+    "runner_rejection": "raw semantic binding: raw calibration/admission, cleanup, and event envelope identities differ",
+    "manual_archive": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz.dvc",
+    "manual_archive_purpose": "DVC checkpoint of the closed watchdog report, telemetry, combat log and owned-session cleanup evidence"
+  },
+  "evidence_identity_manifest": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_evidence_identity_20260922.json",
+  "interpretation": "The repaired native observer did not manufacture progress; this diagnostic shard still failed to produce native boss engagement or health samples. The run is attributable and non-accepting, and remains diagnostic evidence for the next route/engagement edge."
+}

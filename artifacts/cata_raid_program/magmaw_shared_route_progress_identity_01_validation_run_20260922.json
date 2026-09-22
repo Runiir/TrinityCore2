@@ -1,0 +1,74 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "6bb072ed4a8536a93570223a5496a5c9282310f4ad77a226b6c5e22558b39cbb",
+  "claim_token": "6bb072ed4a8536a93570223a5496a5c9282310f4ad77a226b6c5e22558b39cbb",
+  "attempt_id": 1,
+  "server_epoch": 10302040381895018,
+  "scenario_kind": "raid",
+  "clock": "completion_watchdog",
+  "terminal_reason": "semantic_stall",
+  "terminal_detail": "The Magmaw 10N diagnostic shard reached a semantic progress plateau after 213 seconds. The managed server and cohort cleanup were verified, but native boss engagement and health-progress evidence were absent.",
+  "closed": true,
+  "cleanup_verified": true,
+  "evidence_identity_complete": false,
+  "build_identity": {
+    "source_commit": "017cc321a3e1751a45cc0406763c6325ba391917",
+    "binary_sha256": "4a3c9ccde168f94b11c7a5c271384b792359419720cae6e09fd8ef4ef77af040"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "report_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_summary_20260922.json",
+    "sha256": "38174a23c6dc2b4da80834474ebd7e0e730812affb4cbcf7cf20ddc6e13f49d9"
+  },
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz.dvc",
+    "sha256": "04e1c0eea8696d459c40361424c9f1a156a47817d11aef4de347b60c33c3962f",
+    "payload_sha256": "69a6511dab925fb12b796400f0d065a45f3833e3b34ff8323e038c0f68942713",
+    "payload_size_bytes": 1127459
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_summary_20260922.json",
+      "sha256": "38174a23c6dc2b4da80834474ebd7e0e730812affb4cbcf7cf20ddc6e13f49d9"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_validation_20260922.tar.gz.dvc",
+      "sha256": "04e1c0eea8696d459c40361424c9f1a156a47817d11aef4de347b60c33c3962f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_evidence_identity_20260922.json",
+      "sha256": "0c5b36257d996a45a9228331b1f589751d8cabb51001401c4f95504928a1768f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_route_event_20260922.json",
+      "sha256": "f66292c9a28fd722c89f6b59c8b24ea82266aee571907ba98c0eef41d21b606f"
+    }
+  ],
+  "native_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "interpretation": "Closed diagnostic evidence only. The shared observer repair was exercised in a lawful Magmaw 10N watchdog attempt, but this diagnostic shard still failed before native boss engagement. No actor, repair, performance, encounter or parent requirement is accepted."
+}
