@@ -1,0 +1,91 @@
+{
+  "build_identity": {
+    "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca",
+    "source_commit": "f57f3eba37ea295ba8e07d4d2035c7d7a908a4e3"
+  },
+  "capture": {
+    "evidence_identity_manifest": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_evidence_identity_20260922.json",
+    "manual_archive": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_20260922.tar.gz.dvc",
+    "manual_archive_payload_sha256": "753aac1bc703162fbc59aae2a379b7e9004822c3748690f9e9ccd76f61d1aaea",
+    "manual_archive_payload_size_bytes": 2073308
+  },
+  "causal_observation": {
+    "class_tuning_admitted": false,
+    "damage_interpretation": "party_damage_is_not_boss_health_evidence",
+    "first_broken_edge": "shared_native_pull_owner_to_route_target_handoff",
+    "next_repair_scope": "shared route predecessor/add clearance and native pull-owner focus admission; inspect before any actor rotation change",
+    "observed": "The exact 10N cohort reached the Magmaw route area and generated route/boss-adjacent decisions, but the designated tank produced no boss_started or tank_boss_position evidence. A fire-mage actor was exposed to Drakonid Drudge/Chainwielder combat, and the shared route adapter rejected that non-authoritative focus four times as boss_route_target_not_declared."
+  },
+  "identity": {
+    "evidence_identity_complete": false,
+    "incomplete_reasons": [
+      "missing_external_database_snapshot_sha256",
+      "missing_external_database_schema_sha256",
+      "missing_external_server_epoch_sha256",
+      "missing_external_profile_generation_sha256"
+    ]
+  },
+  "interpretation": "Closed diagnostic evidence only. The pre-pull authority repair was built and exercised, but this watchdog attempt stalled before a native Magmaw pull and produced no boss-health or kill evidence. No actor, repair, performance, encounter, or parent requirement is accepted.",
+  "operation_id": "6a81e5c4bfb281966305635b3c1c3feea590c93f78b725e375b4038e9ecfb920",
+  "runtime_identity": {
+    "attempt_id": 1,
+    "cohort_id": "default",
+    "profile_content_hash": "9EC8772F664D224F944074C12C8A178895EF68CFA9711C8EBCDF909D7C7118AC",
+    "profile_generation": 1,
+    "route_manifest_sha256": "696cdef5497c9840a8f06a13531356c401d9e0cadaa7e6f216ddce6fa0f7d258",
+    "server_epoch": 9067586484437165
+  },
+  "scenario": {
+    "encounter": {
+      "boss": "magmaw",
+      "mode": "10N",
+      "raid": "blackwing_descent"
+    },
+    "instance_id": 2,
+    "map_id": 669,
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "roster_guids": [
+      30001,
+      30002,
+      30003,
+      30004,
+      30005,
+      30006,
+      30007,
+      30008,
+      30009,
+      30010
+    ],
+    "route_generation_declared": 4,
+    "route_generation_observed": 1,
+    "route_node_id": "bwd.magmaw.encounter",
+    "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    "scenario_kind": "raid",
+    "segment_id": "04_magmaw"
+  },
+  "schema": "cata_raid_program_raid_validation_summary_v1",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "watchdog": {
+    "blocked_no_fallback_diagnoses": 2,
+    "boss_engagement_actions": 22,
+    "boss_kill_evidence": 0,
+    "boss_route_target_not_declared": 4,
+    "cleanup_verified": true,
+    "clock": "completion_watchdog",
+    "completion_reason": "semantic_progress_plateau_watchdog",
+    "deaths": 14,
+    "decisions": 1941,
+    "duration_seconds": 217,
+    "failure_labels": [
+      "boss_attempt_no_kill",
+      "no_progress_observed",
+      "semantic_progress_plateau"
+    ],
+    "failure_reason": "boss_attempt_no_kill",
+    "health_progress_samples": 0,
+    "no_progress_window_seconds": 180,
+    "party_damage": 96307,
+    "route_actions": 85,
+    "terminal_reason": "semantic_stall"
+  }
+}

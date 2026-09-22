@@ -1,0 +1,52 @@
+{
+  "kind": "run",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "producer": "coordinator-route-prerequisites-repair",
+  "authority": "coordinator_attestation",
+  "operation_id": "6a81e5c4bfb281966305635b3c1c3feea590c93f78b725e375b4038e9ecfb920",
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "scenario_kind": "raid",
+  "build_identity": {
+    "source_commit": "f57f3eba37ea295ba8e07d4d2035c7d7a908a4e3",
+    "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca"
+  },
+  "attempt_id": 1,
+  "server_epoch": 9067586484437165,
+  "terminal_reason": "semantic_stall",
+  "clock": "completion_watchdog",
+  "closed": true,
+  "cleanup_verified": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_summary_20260922.json",
+      "sha256": "05f340947ece6ccf0fabded5c912c379eb75d9ed6f3afc8be5c415b7639ad29d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_20260922.tar.gz.dvc",
+      "sha256": "28f3f005e43685229ff705ba9df5502627d582714e758eca5e8e4da29b8ee381"
+    }
+  ],
+  "limitations": [
+    "Diagnostic closure only; runtime identity has missing external bindings.",
+    "Single boss node selected while prerequisite trash remained alive."
+  ]
+}

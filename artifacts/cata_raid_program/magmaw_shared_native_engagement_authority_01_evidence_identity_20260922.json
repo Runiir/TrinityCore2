@@ -1,0 +1,75 @@
+{
+  "cleanup": {
+    "bot_pool_in_use_sum": 0,
+    "bot_pool_row_count": 10,
+    "leases": 0,
+    "verified_by": "post-run process check and read-only character_bot_pool query",
+    "worldserver_process_absent": true
+  },
+  "component_hashes": {
+    "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca",
+    "config_sha256": "a065aed7c7fff1370f9355f6a5cf6dbbe84c139f513e9fe883a01e544cccde80",
+    "database_schema_sha256": "eec0069ae22ffb3d81ec5830baf0ea04c096085d621c3cff2fe7be4ab50919f7",
+    "database_snapshot_sha256": "817989ba028303e03959a2e0e3e7987419b4c28d7121a4fbde423f52ffa0c7c5",
+    "gear_sha256": "8a2efd464a0e4c20a453c46beacffc0803468941a37c270c6e1e892e2b7bdfa4",
+    "git_commit_sha256": "856cc7fe3dcac2d1aef07ae92355cbe937c8f6c73eda730ecfee9709cb09c2fc",
+    "git_dirty_state_sha256": "34b9c2aff6302202c22afe40888fb9b7526eda09f5ffd3e30efb14cb5e3f3acc",
+    "policy_sha256": "21174d5a63f5cbc68258773dce0e7a908a9ecc07c4dd390d1f873c7b2b883e44",
+    "process_session_sha256": "2c1946f86c9f198537bd0ba0136ad2454249c1307dbfad4d8011b93d0f38a2f0",
+    "profile_generation_sha256": "86fa1469b32b53d06e6c1b04d53d4ada4ae4b39aeccbe4f98f235c1b0ade4703",
+    "provisioning_sha256": "365ac02f20332d15b46ad212efe260d7ecb0f09dd402a1cb11179075b9f58c2b",
+    "reference_sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0",
+    "route_sha256": "16cc9bf899a999a8fce597b061af7eb49e337c063dab0e4e4ba79be41cfa982c",
+    "scenario_sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae",
+    "server_epoch_sha256": "a648fea6187b8a2e03423c4d51fba119044bfa372fc0dd9ae79b64d99c46afb3",
+    "spec_catalog_sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+  },
+  "database_identity": {
+    "pool_guids": [
+      30001,
+      30002,
+      30003,
+      30004,
+      30005,
+      30006,
+      30007,
+      30008,
+      30009,
+      30010
+    ],
+    "pool_in_use_sum": 0,
+    "pool_row_count": 10,
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "readback": "mysql read-only character_bot_pool query after controller shutdown"
+  },
+  "identity_complete": false,
+  "identity_incomplete_reasons": [
+    "missing_external_database_snapshot_sha256",
+    "missing_external_database_schema_sha256",
+    "missing_external_server_epoch_sha256",
+    "missing_external_profile_generation_sha256"
+  ],
+  "note": "Development evidence is attributable to the build and runtime attempt, but the runner still reports incomplete external identity fields; it is not qualification or training evidence.",
+  "phase": "development_watchdog_identity",
+  "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+  "raw_capture": {
+    "archive_sha256": "753aac1bc703162fbc59aae2a379b7e9004822c3748690f9e9ccd76f61d1aaea",
+    "latest_sha256": "4dc559c12879c46a1ea00a44a46349e6a3330441f1058e1f2d66161c1265be70",
+    "report_sha256": "efb7f3b3bf2969bc87d8459a77abf445b8b93632e79d6f55af120d228cd0d0b1",
+    "route_manifest_sha256": "696cdef5497c9840a8f06a13531356c401d9e0cadaa7e6f216ddce6fa0f7d258",
+    "worldserver_output_sha256": "32cb07123b821a467c9cd50d4fda4972b920aaff9bd5012e6bfd16d4441859b0"
+  },
+  "runtime_identity": {
+    "attempt_id": 1,
+    "cohort_id": "default",
+    "profile_content_hash": "9EC8772F664D224F944074C12C8A178895EF68CFA9711C8EBCDF909D7C7118AC",
+    "profile_generation": 1,
+    "route_generation_declared": 4,
+    "route_generation_observed": 1,
+    "route_manifest_sha256": "696cdef5497c9840a8f06a13531356c401d9e0cadaa7e6f216ddce6fa0f7d258",
+    "server_epoch": 9067586484437165
+  },
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "schema": "cata_raid_magmaw_10n_evidence_identity_manifest_v1",
+  "unit_id": "magmaw:shared_native_engagement_authority_01"
+}
