@@ -1,0 +1,69 @@
+{
+  "schema": "cata_route_prerequisites_validation_v1",
+  "purpose": "Measure Magmaw 10N kill DPS after the bot spell queue / native-lock-aligned decision cadence change against the unchanged baseline binary on the same full route and harness",
+  "native_build_source": "585abda09c",
+  "binary_sha256": "b8a897c139c8be3d7b72b1e952da124312a4b85dc40b67e862a11e16dbaeef2b",
+  "baseline": {
+    "native_build_source": "f57f3eba37ea295ba8e07d4d2035c7d7a908a4e3",
+    "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca",
+    "pinned_binary": "/tmp/worldserver-baseline-529ebc",
+    "prior_result": "artifacts/cata_raid_program/magmaw_route_prerequisites_first_result_20260922.json"
+  },
+  "wcl_reference": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_v1.json",
+  "expected_nodes": [
+    "bwd.entry.regroup",
+    "bwd.magmaw.chainwielder",
+    "bwd.magmaw.drudges",
+    "bwd.magmaw.encounter"
+  ],
+  "run_order": ["sq1", "base1", "sq2"],
+  "runs": {
+    "sq1": {
+      "worldserver": "/home/runiir/Games/trinity-cata/build/src/server/worldserver/worldserver",
+      "output_dir": "/tmp/cata-magmaw-spellqueue-sq1-20260922"
+    },
+    "base1": {
+      "worldserver": "/tmp/worldserver-baseline-529ebc",
+      "output_dir": "/tmp/cata-magmaw-spellqueue-base1-20260922"
+    },
+    "sq2": {
+      "worldserver": "/home/runiir/Games/trinity-cata/build/src/server/worldserver/worldserver",
+      "output_dir": "/tmp/cata-magmaw-spellqueue-sq2-20260922"
+    }
+  },
+  "argv_template": [
+    "pixi",
+    "run",
+    "bot-live-validate",
+    "--worldserver",
+    "{worldserver}",
+    "--config",
+    "trinity-worldserver-test.conf",
+    "--duration-policy",
+    "completion-watchdog",
+    "--apply-validation-provisioning",
+    "--reset-bot-pool",
+    "--bot-pool-tag",
+    "blackwing_descent_10n_magmaw_diagnostic",
+    "--keep-bot-pool-position",
+    "--heartbeat-sec",
+    "30",
+    "--no-progress-window-sec",
+    "180",
+    "--max-repeated-decision-count",
+    "20",
+    "--max-death-loop-count",
+    "3",
+    "--validation-scenario-id",
+    "blackwing_descent_10n_magmaw_diagnostic",
+    "--validation-route-manifest",
+    "--output-dir",
+    "{output_dir}"
+  ],
+  "acceptance": {
+    "setup": "Full manifest executes in one worldserver; no skipped predecessor or manual killing.",
+    "clear": "Native Magmaw death required, watchdog timeout is failure.",
+    "performance": "Compare timestamped encounter-window per-actor DPS against the same-harness baseline and the WCL common window; report spell queue release latency.",
+    "cleanup": "After analysis, archive each run through DVC, verify the remote and evict the local copy."
+  }
+}

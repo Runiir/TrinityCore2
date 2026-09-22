@@ -1,0 +1,371 @@
+{
+ "actors": [
+  {
+   "bot_guid": 30001,
+   "bot_name": "Mgwtanka",
+   "class_spec": "balance_druid",
+   "damage": 3317411,
+   "damage_uptime": 0.877,
+   "encounter_window_dps": 28221.516,
+   "hps": 0.0,
+   "moving_fraction": 0.088,
+   "pet_damage_share": 0.028,
+   "ratio_to_wcl": 0.688,
+   "role": "dps",
+   "wcl_observed_dps": 41029.1
+  },
+  {
+   "bot_guid": 30002,
+   "bot_name": "Mgwtankb",
+   "class_spec": "blood_death_knight",
+   "damage": 1879902,
+   "damage_uptime": 0.745,
+   "encounter_window_dps": 15992.497,
+   "hps": 3625.274,
+   "moving_fraction": 0.054,
+   "pet_damage_share": 0.044,
+   "ratio_to_wcl": 0.612,
+   "role": "tank",
+   "wcl_observed_dps": 26152.0
+  },
+  {
+   "bot_guid": 30003,
+   "bot_name": "Mgwheala",
+   "class_spec": "restoration_druid",
+   "damage": 300536,
+   "damage_uptime": 0.123,
+   "encounter_window_dps": 2556.687,
+   "hps": 4180.311,
+   "moving_fraction": 0.0,
+   "pet_damage_share": 0.0,
+   "ratio_to_wcl": null,
+   "role": "healer",
+   "wcl_observed_dps": null
+  },
+  {
+   "bot_guid": 30004,
+   "bot_name": "Mgwhealb",
+   "class_spec": "holy_paladin",
+   "damage": 0,
+   "damage_uptime": 0.0,
+   "encounter_window_dps": 0.0,
+   "hps": 5712.698,
+   "moving_fraction": 0.0,
+   "pet_damage_share": 0.0,
+   "ratio_to_wcl": null,
+   "role": "healer",
+   "wcl_observed_dps": null
+  },
+  {
+   "bot_guid": 30005,
+   "bot_name": "Mgwhealc",
+   "class_spec": "discipline_priest",
+   "damage": 525450,
+   "damage_uptime": 0.302,
+   "encounter_window_dps": 4470.051,
+   "hps": 708.292,
+   "moving_fraction": 0.084,
+   "pet_damage_share": 0.0,
+   "ratio_to_wcl": null,
+   "role": "healer",
+   "wcl_observed_dps": null
+  },
+  {
+   "bot_guid": 30006,
+   "bot_name": "Mgwdpsa",
+   "class_spec": "fire_mage",
+   "damage": 3298586,
+   "damage_uptime": 0.755,
+   "encounter_window_dps": 28061.37,
+   "hps": 0.0,
+   "moving_fraction": 0.159,
+   "pet_damage_share": 0.022,
+   "ratio_to_wcl": 0.698,
+   "role": "dps",
+   "wcl_observed_dps": 40189.9
+  },
+  {
+   "bot_guid": 30007,
+   "bot_name": "Mgwdpsb",
+   "class_spec": "fire_mage",
+   "damage": 5520218,
+   "damage_uptime": 0.821,
+   "encounter_window_dps": 46960.995,
+   "hps": 0.0,
+   "moving_fraction": 0.079,
+   "pet_damage_share": 0.013,
+   "ratio_to_wcl": 1.168,
+   "role": "dps",
+   "wcl_observed_dps": 40189.9
+  },
+  {
+   "bot_guid": 30008,
+   "bot_name": "Mgwdpsc",
+   "class_spec": "affliction_warlock",
+   "damage": 4629281,
+   "damage_uptime": 0.83,
+   "encounter_window_dps": 39381.713,
+   "hps": 711.396,
+   "moving_fraction": 0.095,
+   "pet_damage_share": 0.202,
+   "ratio_to_wcl": 0.978,
+   "role": "dps",
+   "wcl_observed_dps": 40281.0
+  },
+  {
+   "bot_guid": 30009,
+   "bot_name": "Mgwdpsd",
+   "class_spec": "survival_hunter",
+   "damage": 3918012,
+   "damage_uptime": 0.84,
+   "encounter_window_dps": 33330.883,
+   "hps": 68.972,
+   "moving_fraction": 0.128,
+   "pet_damage_share": 0.099,
+   "ratio_to_wcl": null,
+   "role": "dps",
+   "wcl_observed_dps": null
+  },
+  {
+   "bot_guid": 30010,
+   "bot_name": "Mgwdpse",
+   "class_spec": "elemental_shaman",
+   "damage": 4803727,
+   "damage_uptime": 0.811,
+   "encounter_window_dps": 40865.741,
+   "hps": 0.0,
+   "moving_fraction": 0.05,
+   "pet_damage_share": 0.118,
+   "ratio_to_wcl": 0.976,
+   "role": "dps",
+   "wcl_observed_dps": 41866.0
+  }
+ ],
+ "completion_reason": "validation_route_manifest_complete",
+ "encounter": {
+  "boundary_basis": "first_to_last_positive_originated_damage_done",
+  "duration_sec": 117.549,
+  "encounter_window_party_dps": 239841.453,
+  "party_damage": 28193123,
+  "party_hps": 15006.943,
+  "pets_included_in_owner": true
+ },
+ "heartbeat_route_wipe_states": [
+  [
+   "bwd.magmaw.chainwielder",
+   "ready"
+  ],
+  [
+   "bwd.magmaw.chainwielder",
+   "ready"
+  ],
+  [
+   "bwd.magmaw.chainwielder",
+   "ready"
+  ],
+  [
+   "bwd.magmaw.drudges",
+   "ready"
+  ],
+  [
+   "bwd.magmaw.chainwielder",
+   "partial_deaths"
+  ],
+  [
+   "bwd.magmaw.chainwielder",
+   "ready"
+  ],
+  [
+   "bwd.magmaw.chainwielder",
+   "engaged"
+  ],
+  [
+   "bwd.magmaw.encounter",
+   "engaged"
+  ],
+  [
+   "bwd.magmaw.encounter",
+   "engaged"
+  ],
+  [
+   "bwd.magmaw.encounter",
+   "engaged"
+  ],
+  [
+   "bwd.magmaw.encounter",
+   "ready"
+  ]
+ ],
+ "label": "sq1",
+ "native_clear": true,
+ "native_reason": "native_route_manifest_and_boss_death",
+ "route_deaths": 2,
+ "route_duration_seconds": 364,
+ "run_dir": "/tmp/cata-magmaw-spellqueue-sq1-20260922",
+ "schema": "magmaw_spell_queue_run_summary_v1",
+ "spell_queue": {
+  "bots": [
+   {
+    "bot_guid": 30001,
+    "bot_name": "Mgwtanka",
+    "gcd_probe_spell_id": 2912,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "cast",
+    "max_release_latency_ms": 3397,
+    "mean_release_latency_ms": 73.6806,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 144,
+    "scheduled": 1264
+   },
+   {
+    "bot_guid": 30002,
+    "bot_name": "Mgwtankb",
+    "gcd_probe_spell_id": 55050,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "global_cooldown",
+    "max_release_latency_ms": 2963,
+    "mean_release_latency_ms": 92.0256,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 78,
+    "scheduled": 1113
+   },
+   {
+    "bot_guid": 30003,
+    "bot_name": "Mgwheala",
+    "gcd_probe_spell_id": 5176,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "cast",
+    "max_release_latency_ms": 42359,
+    "mean_release_latency_ms": 825.352,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 71,
+    "scheduled": 589
+   },
+   {
+    "bot_guid": 30004,
+    "bot_name": "Mgwhealb",
+    "gcd_probe_spell_id": 20473,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "global_cooldown",
+    "max_release_latency_ms": 3211,
+    "mean_release_latency_ms": 182.302,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 53,
+    "scheduled": 562
+   },
+   {
+    "bot_guid": 30005,
+    "bot_name": "Mgwhealc",
+    "gcd_probe_spell_id": 585,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "cast",
+    "max_release_latency_ms": 3268,
+    "mean_release_latency_ms": 157.081,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 86,
+    "scheduled": 759
+   },
+   {
+    "bot_guid": 30006,
+    "bot_name": "Mgwdpsa",
+    "gcd_probe_spell_id": 133,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "cast",
+    "max_release_latency_ms": 3168,
+    "mean_release_latency_ms": 102.536,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 183,
+    "scheduled": 1443
+   },
+   {
+    "bot_guid": 30007,
+    "bot_name": "Mgwdpsb",
+    "gcd_probe_spell_id": 133,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "cast",
+    "max_release_latency_ms": 3501,
+    "mean_release_latency_ms": 86.1543,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 175,
+    "scheduled": 1478
+   },
+   {
+    "bot_guid": 30008,
+    "bot_name": "Mgwdpsc",
+    "gcd_probe_spell_id": 1120,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "channel",
+    "max_release_latency_ms": 3311,
+    "mean_release_latency_ms": 124.392,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 153,
+    "scheduled": 1586
+   },
+   {
+    "bot_guid": 30009,
+    "bot_name": "Mgwdpsd",
+    "gcd_probe_spell_id": 77767,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "global_cooldown",
+    "max_release_latency_ms": 3047,
+    "mean_release_latency_ms": 149.69,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 126,
+    "scheduled": 1205
+   },
+   {
+    "bot_guid": 30010,
+    "bot_name": "Mgwdpse",
+    "gcd_probe_spell_id": 403,
+    "last_released_key": "native.lock_release",
+    "last_released_reason": "cast",
+    "max_release_latency_ms": 3410,
+    "mean_release_latency_ms": 106.527,
+    "next_key": "",
+    "next_ready_in_ms": 0,
+    "pending": 0,
+    "released": 150,
+    "scheduled": 1541
+   }
+  ],
+  "max_release_latency_ms": 42359,
+  "median_bot_mean_release_latency_ms": 115.459
+ },
+ "watchdog": {
+  "all_dead_wiped": false,
+  "death_loop": false,
+  "no_progress": false,
+  "repeated_decision_loop": false
+ },
+ "wcl_reference": {
+  "common_window": {
+   "basis": "normalized_first_encounter_event_to_first_event",
+   "bot_clipped_to_common_window": true,
+   "bot_encounter_duration_sec": 117.549,
+   "common_window_sec": 111.3,
+   "wcl_casts_clipped_to_common_window": false,
+   "wcl_duration_sec": 111.3,
+   "wcl_observed_dps_window_matches_common_window": true
+  },
+  "reference_id": null
+ },
+ "worldserver_sha256": "b8a897c139c8be3d7b72b1e952da124312a4b85dc40b67e862a11e16dbaeef2b"
+}
