@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.runtime_asset_closure_binding import ARGUMENTS
+from tools.bot_ml.route_prerequisites import preceding_routes
 
 try:
     from .common import read_jsonl, stable_hash, write_json
@@ -282,7 +283,9 @@ def build_plan(
                 max_repeated_decisions=max_repeated_decisions,
                 max_death_loops=max_death_loops,
             )
-            executable = route_coordinates_valid(route)
+            coordinates_valid = route_coordinates_valid(route)
+            prerequisites = preceding_routes(route, routes)
+            executable = coordinates_valid and not prerequisites
             segments.append(
                 {
                     "segment_id": segment_output_name(route),
@@ -296,10 +299,13 @@ def build_plan(
                     "x": float(route.get("x") or 0.0),
                     "y": float(route.get("y") or 0.0),
                     "z": float(route.get("z") or 0.0),
-                    "coordinates_valid": executable,
+                    "coordinates_valid": coordinates_valid,
                     "coordinate_missing_reason": route.get("coordinate_missing_reason") or "",
                     "executable": executable,
-                    "skip_reason": "" if executable else "missing_route_coordinates",
+                    "skip_reason": ("missing_route_coordinates" if not coordinates_valid
+                                    else "route_prerequisites_not_established" if prerequisites else ""),
+                    "prerequisite_route_node_ids": [row.get("route_node_id") for row in prerequisites],
+                    "prerequisite_run_command": live_command if prerequisites else [],
                     "live_output_dir": str(output_root / scenario_output_name(scenario_id) / segment_output_name(route)),
                     "live_validate_command": segment_command,
                     "live_validate_shell": render_command(segment_command),

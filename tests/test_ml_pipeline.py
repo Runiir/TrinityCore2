@@ -119,6 +119,7 @@ def verified_runtime_assets_for_runner_contract(tmp_path, monkeypatch):
     """
     from tools.bot_ml import run_live_bot_validation as runner
     from tools.raid_program.runtime_asset_closure_binding import argument_values_from_namespace
+    from tools.raid_program import runtime_asset_launch
 
     original_main = live_validation_main
     flags = {
@@ -143,6 +144,7 @@ def verified_runtime_assets_for_runner_contract(tmp_path, monkeypatch):
         return original_main()
 
     monkeypatch.setattr(runner, "enforce_runtime_asset_closure_from_args", passed_upstream_gate)
+    monkeypatch.setattr(runtime_asset_launch, "prepare_asset_arguments", lambda *args: None)
     monkeypatch.setattr(sys.modules[__name__], "live_validation_main", main_with_upstream_inputs)
 
 
@@ -8435,7 +8437,7 @@ def test_watchdog_state_treats_boss_engagement_without_kill_as_no_progress():
 
 
 @pytest.mark.usefixtures("verified_runtime_assets_for_runner_contract")
-def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_commands(tmp_path, monkeypatch, capsys):
+def test_live_bot_validation_rejects_separate_process_route_sequence(tmp_path, monkeypatch, capsys):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()
     write_jsonl(
@@ -8508,17 +8510,9 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
         ],
     )
 
-    assert live_validation_main() == 0
-    capsys.readouterr()
-    report = json.loads((tmp_path / "live" / "report.json").read_text(encoding="utf-8"))
-    commands = (tmp_path / "live" / "commands.txt").read_text(encoding="utf-8")
-
-    assert report["route_sequence"]["route_count"] == 2
-    assert report["route_sequence"]["expected_segments"] == ["01_entrance_packs", "02_corborus"]
-    assert "--validation-segment-id' '01_entrance_packs" in commands
-    assert "--validation-route-node-id' 'stonecore_corborus" in commands
-    assert "--observe-sec" not in commands
-    assert "stonecore_missing" not in commands
+    with pytest.raises(SystemExit, match="one persistent worldserver"):
+        live_validation_main()
+    assert not (tmp_path / "live").exists()
 
 
 def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
@@ -8763,7 +8757,11 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
     report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
     generated_config = (output_dir / "worldserver.validation.conf").read_text(encoding="utf-8")
 
-    assert report["validation_context"] == {"scenario_id": "stonecore_5n"}
+    assert report["validation_context"] == {
+        "scenario_id": "stonecore_5n", "route_node_id": "stonecore_entry",
+        "route_kind": "trash", "route_label": "entrance packs",
+        "route_step": 1, "route_generation": 1,
+    }
     assert report["validation_route"]["route_node_id"] == "stonecore_entry"
     assert report["validation_route_manifest"]["route_count"] == 4
     assert report["validation_route_manifest"]["expected_segments"] == ["01_entrance_packs", "02_corborus", "03_post_slabhide_regroup", "04_lower_stonecore_approach_regroup"]

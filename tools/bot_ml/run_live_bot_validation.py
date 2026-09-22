@@ -8340,9 +8340,23 @@ def _main() -> int:
     from tools.raid_program.runtime_asset_launch import prepare_asset_arguments, route_input_digest, require_unchanged_route_input
     asset_route_digest = route_input_digest(args)
     asset_route = load_validation_route(args.validation_scenario_dir, validation_context_from_args(args))
+    from tools.bot_ml.route_prerequisites import require_route_prerequisites
+    scenario_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+    try:
+        require_route_prerequisites(
+            scenario_id=args.validation_scenario_id, selected=asset_route,
+            routes=scenario_routes,
+            explicit_selection=bool(args.validation_segment_id or args.validation_route_node_id
+                                    or args.validation_route_step or args.validation_route_kind
+                                    or args.validation_route_label or args.validation_mechanic_profile),
+            full_manifest=args.validation_route_manifest,
+            separate_sequence=args.validation_route_sequence, offline=bool(args.input_log),
+        )
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     asset_routes = []
     if args.validation_route_manifest or args.validation_route_sequence:
-        asset_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        asset_routes = scenario_routes
         if not asset_route:
             asset_route = asset_routes[0] if asset_routes else {}
     prepare_asset_arguments(args, REPO_ROOT, asset_route)

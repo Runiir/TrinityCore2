@@ -1,0 +1,19 @@
+{
+  "kind": "publication",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "producer": "coordinator-route-prerequisites-repair",
+  "authority": "coordinator_attestation",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_20260922.tar.gz.dvc",
+      "sha256": "28f3f005e43685229ff705ba9df5502627d582714e758eca5e8e4da29b8ee381"
+    }
+  ],
+  "remote_sha256": "753aac1bc703162fbc59aae2a379b7e9004822c3748690f9e9ccd76f61d1aaea",
+  "remote_bytes": 2073308,
+  "operation_id": "47080d4df76a8d54b00d76af12502476b11f08c2753e658f4ea16cdff54d0cdd"
+}

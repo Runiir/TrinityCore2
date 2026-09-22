@@ -1,0 +1,37 @@
+{
+  "file_hashes": {
+    ".agents/skills/raid-performance-loop/references/coordination-and-live-validation.md": "06689d9ccf3e7ca646a7afebf8cb25da2f87bbe456ff82ec38ce3f7ca62fd729",
+    "experiments/configs/cata_magmaw_route_prerequisites_validation_20260922.json": "17fba3943c263255f41c6d2b0098f92ee84239d27cfd282e700e623c09008b0c",
+    "tests/test_ml_pipeline.py": "65c8effec04571558ed8119f5b78f5175ddbcd5d3f396a17882f99a4abfef0a3",
+    "tests/test_route_prerequisites.py": "a01d3240509d27e3fb404dc25e0352b7014bf34a8bb375bcaa52b2aa2b610293",
+    "tools/bot_ml/build_validation_run_plan.py": "4d66e460adca966173efdb0e9eff35bc09db15bc3a2290718185a6bff2864ecd",
+    "tools/bot_ml/route_prerequisites.py": "48e353f1cd18c1ce5504289baeda413a6642631706abf0efb1c5dce8ac82019c",
+    "tools/bot_ml/run_live_bot_validation.py": "5cf1bed5735e63787818f004ea9e5e7a78bbcfea424dd53a8382eaa3e974d73f"
+  },
+  "findings": [],
+  "limits": [
+    "No live worldserver or native clear was run",
+    "Aggregate/report tooling and unrelated dirty artifacts were outside this bounded launch-safety review",
+    "No native source files are changed"
+  ],
+  "proof": {
+    "final_message_bytes": 1588,
+    "final_message_sha256": "a824e0cea2ec74270364ad5e3c156df4bde6431751bc674a55f03189290b3fdc",
+    "prefix_bytes": 2353841,
+    "prefix_sha256": "757bf067a116069d5b62b4da97dd640432d77fbe947c628f3bb3e322ee14c89b",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T21-17-29-01a0ca56-5283-7a82-b094-50ee532ceb43.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0ca56-5283-7a82-b094-50ee532ceb43"
+  },
+  "reviewer_session_id": "01a0ca56-5283-7a82-b094-50ee532ceb43",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "32 passed, 408 deselected via focused pixi pytest command",
+    "pixi py_compile passed",
+    "git diff --check passed",
+    "Production later-node dry-run rejected before asset admission and output creation",
+    "Full-manifest dry-run inspected with four ordered nodes",
+    "Recipe binary hash matches build/src/server/worldserver/worldserver: 529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca"
+  ],
+  "verdict": "approved"
+}

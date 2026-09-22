@@ -1,0 +1,27 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/route_prerequisites_review_20260922.json",
+      "sha256": "58fc6b40ecd43b8c2573efc54f81abc5a4de450396af16ce78e9b98f20b1a9b6"
+    }
+  ],
+  "file_hashes": {
+    ".agents/skills/raid-performance-loop/references/coordination-and-live-validation.md": "06689d9ccf3e7ca646a7afebf8cb25da2f87bbe456ff82ec38ce3f7ca62fd729",
+    "experiments/configs/cata_magmaw_route_prerequisites_validation_20260922.json": "17fba3943c263255f41c6d2b0098f92ee84239d27cfd282e700e623c09008b0c",
+    "tests/test_ml_pipeline.py": "65c8effec04571558ed8119f5b78f5175ddbcd5d3f396a17882f99a4abfef0a3",
+    "tests/test_route_prerequisites.py": "a01d3240509d27e3fb404dc25e0352b7014bf34a8bb375bcaa52b2aa2b610293",
+    "tools/bot_ml/build_validation_run_plan.py": "4d66e460adca966173efdb0e9eff35bc09db15bc3a2290718185a6bff2864ecd",
+    "tools/bot_ml/route_prerequisites.py": "48e353f1cd18c1ce5504289baeda413a6642631706abf0efb1c5dce8ac82019c",
+    "tools/bot_ml/run_live_bot_validation.py": "5cf1bed5735e63787818f004ea9e5e7a78bbcfea424dd53a8382eaa3e974d73f"
+  },
+  "kind": "review",
+  "producer": "01a0ca56-5283-7a82-b094-50ee532ceb43",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/route_prerequisites_review_20260922.json",
+    "sha256": "58fc6b40ecd43b8c2573efc54f81abc5a4de450396af16ce78e9b98f20b1a9b6"
+  },
+  "reviewer_session_id": "01a0ca56-5283-7a82-b094-50ee532ceb43",
+  "unit_id": "magmaw:route_prerequisites_restoration_01",
+  "verdict": "approved"
+}

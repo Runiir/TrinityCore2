@@ -1,0 +1,69 @@
+{
+  "kind": "assessment",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "producer": "coordinator-route-prerequisites-repair",
+  "authority": "coordinator_attestation",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "docs/bot_raids/shared_worldserver_workflow_20260907.md",
+    "sha256": "11ab09897560767a437d590ce596401d02e24b8b09b338ff668b82894054a3f1"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_summary_20260922.json",
+    "sha256": "05f340947ece6ccf0fabded5c912c379eb75d9ed6f3afc8be5c415b7639ad29d"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_validation_summary_20260922.json",
+      "sha256": "05f340947ece6ccf0fabded5c912c379eb75d9ed6f3afc8be5c415b7639ad29d"
+    }
+  ],
+  "actor_reviews": {
+    "30001": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30002": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30004": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "reason": "No Magmaw pull; fresh instance was given only the boss node while preceding trash remained alive. No class/role throughput comparison is admissible."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "accepted_requirements": [],
+  "first_broken_edge": "route_prerequisites_omitted_from_fresh_launch",
+  "next_action": "Run unchanged native binary with complete entrance/trash/boss manifest before proposing further native targeting repairs."
+}

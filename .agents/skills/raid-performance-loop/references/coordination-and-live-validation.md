@@ -23,6 +23,16 @@ edge together, including failures before the boss. Preserve failures in trash or
 pre-boss route nodes. An isolated boss experiment can answer a research question,
 but skipping failed trash does not resolve or validate the route regression.
 
+For a fresh instance, use the generated scenario-level command with
+`--validation-route-manifest`, without segment/node selectors. It executes the
+declared entrance, trash and boss nodes on one worldserver. Selecting a later
+segment does not clear its predecessors; retained bot positions and descriptive
+prerequisite metadata are not proof of a prepared instance. The launch tool
+rejects these slices before asset checks/provisioning. A boss-only experiment
+requires a separately admitted scenario with verified instance prerequisites.
+If a previously working pull fails, compare the actual generated manifest and
+start state with the successful run before changing native target policy.
+
 For route-wide survival, count retained death events in the same attempt and route
 window; final watchdog counters may reset at a node change. A trash wipe is not
 automatic rejection when native recovery regroups the cohort and route progress
