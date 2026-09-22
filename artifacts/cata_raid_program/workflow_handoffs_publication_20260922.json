@@ -1,0 +1,9 @@
+{
+  "pointer": "artifacts/cata_raid_program/workflow_handoffs_evidence_20260922.tar.gz.dvc",
+  "md5": "76368a6cdc35b8da5ecb69b8b5b62684",
+  "sha256": "27ad683009dc219ac8e3b085022a54677871d95e78f5a56554415ad0165ebb5a",
+  "bytes": 5055,
+  "remote_readback_verified": true,
+  "exact_archive_and_cache_evicted": true,
+  "scope": "workflow fixtures and independent review; no new native experiment"
+}

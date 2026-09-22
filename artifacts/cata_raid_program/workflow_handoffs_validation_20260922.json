@@ -1,0 +1,34 @@
+{
+  "code_commit": "d5709cca78d98f9b7b32c81217732927bf5661d6",
+  "base_commit": "446a0f1e3444c209714f77638018ea9b8745a5db",
+  "tests": "105 passed",
+  "counterexample_replay": "3 new source-boundary regressions fail against original graph implementation and pass with fix",
+  "native_builds": 0,
+  "live_experiments": 0,
+  "scope": [
+    "automatic queue-to-graph build receipt with exact CAS advance command",
+    "completed-build finish without compilation",
+    "source boundary checked at plan admission and implementation claim",
+    "new routed unit baseline distinct from rework",
+    "bounded hash-verified worker context with observation decision outcomes"
+  ],
+  "limits": [
+    "Queue provenance checks are retained; mocked queue/reviewer execution in graph transition fixtures is not native validation.",
+    "No actor, DPS or encounter requirement accepted.",
+    "Merged only after user confirmed the other coordinator paused; its closed run remains attributable to its original source."
+  ],
+  "review_correction": "Rejected foreign-worktree attribution gap fixed; both new negative cases fail on pre-correction handoff and pass now.",
+  "independent_review": {
+    "report": {
+      "path": "artifacts/cata_raid_program/workflow_handoffs_review_20260922.json",
+      "sha256": "df932b9b53b13f882013428ef25d2f58667ae94b9828a7df000c4ebf9f8860c7"
+    },
+    "receipt": {
+      "path": "artifacts/cata_raid_program/workflow_handoffs_review_20260922.receipt.json",
+      "sha256": "afc9360f124591413d35ee519c0b7d7710fc42c9dece6de5881a8901633d6b91"
+    },
+    "reviewer_session_id": "01a0c8d4-c737-77a2-8fd1-df7c4f6e8ef6",
+    "verdict": "approved"
+  },
+  "preserved_foreign_dirty_files": 6
+}

@@ -1,0 +1,38 @@
+{
+  "file_hashes": {
+    ".agents/skills/trinity-orchestrator/SKILL.md": "00d9e77a391bd29b2524e4245d8271ac48a35c8dea0f57771a0836ebd3928832",
+    "docs/bot_raids/development_graph.md": "89dcb17384847c8fd3730ed8329afa60754e1649da093ca57762ba04dad27880",
+    "tests/test_development_graph.py": "fc6cde8fd2fcabb1078d21f46ff0c46ed81b0c470abe606f6db824001711f588",
+    "tests/test_workflow_handoffs.py": "4cfc0a5d3413923703ba931a8d61a260e98db6ee1bfe2530ab2ad71b05698671",
+    "tools/raid_program/build_handoff.py": "26b924f92509aad2e06a33e216886c548d5311c5317f3235245c823bb41499ae",
+    "tools/raid_program/development_graph.py": "b15439e79b7c4ba542127c2595d7bb3b3fe56b87b289751e876ed1b778a3fc1b",
+    "tools/raid_program/evidence_task.py": "265381f1b1dea9fb0dd234085c38ef3eab15ecf44e3cbe84cbf2da948d8bbd34",
+    "tools/raid_program/worker_packet.py": "908c7d46c3afd20310e0df68f5d289580406a33156c8031b5e71d289745851b4",
+    "tools/raid_program/workflow_build.py": "7969b6f1465fba9cf69e04b9d1fbb07437f0a3dc7261540415fc5f6e5870374e",
+    "tools/raid_program/workflow_step.py": "c6f65d2bbe0023cd9ab8023433438469f912c0ace8ac4f1951bcde783a531d92"
+  },
+  "findings": [],
+  "limits": {
+    "files_reviewed": 10,
+    "native_builds_or_servers": false,
+    "reviewed_commit": "d5709cca78",
+    "reviewed_range": "446a0f1e34..d5709cca78",
+    "reviewed_worktree": "/tmp/trinity-workflow-handoffs-20260922"
+  },
+  "proof": {
+    "final_message_bytes": 1543,
+    "final_message_sha256": "23b981d553e8527dc91089b8725e55fa919710f161b4a30c500ddd6ff9248e45",
+    "prefix_bytes": 1958457,
+    "prefix_sha256": "0080719fd7581dc4dfe878b2f41cf6e1cc9ffbce257b96350e01e4089b6e1617",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T14-16-22-01a0c8d4-c737-77a2-8fd1-df7c4f6e8ef6.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c8d4-c737-77a2-8fd1-df7c4f6e8ef6"
+  },
+  "reviewer_session_id": "01a0c8d4-c737-77a2-8fd1-df7c4f6e8ef6",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "Coordinator supplied all 105 focused tests passed in 11.17s; no blanket rerun performed.",
+    "Correction specifically adds foreign-worktree and foreign-binary rejection coverage; no native build or server launched by reviewer."
+  ],
+  "verdict": "approved"
+}

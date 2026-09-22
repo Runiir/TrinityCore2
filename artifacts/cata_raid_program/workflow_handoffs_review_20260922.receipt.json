@@ -1,0 +1,30 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/workflow_handoffs_review_20260922.json",
+      "sha256": "df932b9b53b13f882013428ef25d2f58667ae94b9828a7df000c4ebf9f8860c7"
+    }
+  ],
+  "file_hashes": {
+    ".agents/skills/trinity-orchestrator/SKILL.md": "00d9e77a391bd29b2524e4245d8271ac48a35c8dea0f57771a0836ebd3928832",
+    "docs/bot_raids/development_graph.md": "89dcb17384847c8fd3730ed8329afa60754e1649da093ca57762ba04dad27880",
+    "tests/test_development_graph.py": "fc6cde8fd2fcabb1078d21f46ff0c46ed81b0c470abe606f6db824001711f588",
+    "tests/test_workflow_handoffs.py": "4cfc0a5d3413923703ba931a8d61a260e98db6ee1bfe2530ab2ad71b05698671",
+    "tools/raid_program/build_handoff.py": "26b924f92509aad2e06a33e216886c548d5311c5317f3235245c823bb41499ae",
+    "tools/raid_program/development_graph.py": "b15439e79b7c4ba542127c2595d7bb3b3fe56b87b289751e876ed1b778a3fc1b",
+    "tools/raid_program/evidence_task.py": "265381f1b1dea9fb0dd234085c38ef3eab15ecf44e3cbe84cbf2da948d8bbd34",
+    "tools/raid_program/worker_packet.py": "908c7d46c3afd20310e0df68f5d289580406a33156c8031b5e71d289745851b4",
+    "tools/raid_program/workflow_build.py": "7969b6f1465fba9cf69e04b9d1fbb07437f0a3dc7261540415fc5f6e5870374e",
+    "tools/raid_program/workflow_step.py": "c6f65d2bbe0023cd9ab8023433438469f912c0ace8ac4f1951bcde783a531d92"
+  },
+  "kind": "review",
+  "producer": "01a0c8d4-c737-77a2-8fd1-df7c4f6e8ef6",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/workflow_handoffs_review_20260922.json",
+    "sha256": "df932b9b53b13f882013428ef25d2f58667ae94b9828a7df000c4ebf9f8860c7"
+  },
+  "reviewer_session_id": "01a0c8d4-c737-77a2-8fd1-df7c4f6e8ef6",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "verdict": "approved"
+}
