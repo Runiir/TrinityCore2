@@ -1,0 +1,39 @@
+{
+  "file_hashes": {
+    "tests/test_workflow_handoffs.py": "7482c17874f189d3e4423ebbbb12498c0aaa0fa1c0d68b446abc8610964f9e54",
+    "tests/test_workflow_test_execution.py": "0d0418e5041cb8bfd63ebe7d4e3ae3817367c92069bf85e7beefe2dc57b861a7",
+    "tools/raid_program/development_graph.py": "4c7545dc3b8d91814a61b58a3be00bff0aabb8ed5a6f358a630073dcb001bd83",
+    "tools/raid_program/evidence_task.py": "a1e44c2110ad8d1abf1fb463d4e5a707193e43956723bed8386630afb4c3870d",
+    "tools/raid_program/worker_packet.py": "d06d025e674bbbb0fa4026b46bfd5e5b2865adc08489c259a53ae2551a24438d",
+    "tools/raid_program/workflow_step.py": "6136785e6306126730aaa52e094ec1af950b04d5de7d1e2fb023a5c3092cb065",
+    "tools/raid_program/workflow_tests.py": "5846b81e9e331c1a609c54b83d079f27381d1bd0a5d098fb8270737066158bd2"
+  },
+  "findings": [],
+  "limits": [
+    "This covers the previously approved Python workflow subset plus the formatting-only worker-packet update and handoff regression.",
+    "Markdown files are excluded.",
+    "No gameplay acceptance is inferred or accepted."
+  ],
+  "proof": {
+    "final_message_bytes": 1509,
+    "final_message_sha256": "b11ffd7f496a6855caae39d26c4694daf9f7668d7430fc0f04e069dcf1d2fcfd",
+    "prefix_bytes": 1555219,
+    "prefix_sha256": "761adfefefd51eddc4c9cb4ea101e709303e90d77c3a75bca6973fa73fce7662",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T16-21-53-01a0c947-aef5-76d2-a3b7-45358197b4b3.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c947-aef5-76d2-a3b7-45358197b4b3"
+  },
+  "reviewer_session_id": "01a0c947-aef5-76d2-a3b7-45358197b4b3",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_workflow_handoffs.py tests/test_workflow_test_execution.py",
+      "result": "45 passed in 4.11s"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_workflow_test_execution.py -k 'cached_failed_receipt or content_addressed_cache or large_output_stays_in_hash_bound_artifact'",
+      "result": "9 passed, 17 deselected in 0.97s"
+    }
+  ],
+  "verdict": "approved"
+}

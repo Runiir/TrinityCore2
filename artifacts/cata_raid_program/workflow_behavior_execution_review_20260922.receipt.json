@@ -1,0 +1,29 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/workflow_behavior_execution_review_20260922.json",
+      "sha256": "68ca90f3a426b897875e8f249a97a906b0a5c33408b451f7ba8bb8b6168ab897"
+    }
+  ],
+  "file_hashes": {
+    ".agents/skills/raid-performance-loop/references/bounded-work-unit-contract.md": "f2a29a13cd97f59b38e388bd73e9b7c069dc3fd107ca5ebd55cc9bf10bc50b6f",
+    ".agents/skills/trinity-orchestrator/SKILL.md": "ec767081fb8e2658650f9eb8562d84c8c1b740ae8a3c2c759efb6117417cebc4",
+    "docs/bot_raids/development_graph.md": "e24ff7cbc3366b3021d17554592172f9bd26b8d8d98ca5db7cf383afc8142c9b",
+    "tests/test_workflow_test_execution.py": "0d0418e5041cb8bfd63ebe7d4e3ae3817367c92069bf85e7beefe2dc57b861a7",
+    "tools/raid_program/development_graph.py": "4c7545dc3b8d91814a61b58a3be00bff0aabb8ed5a6f358a630073dcb001bd83",
+    "tools/raid_program/evidence_task.py": "a1e44c2110ad8d1abf1fb463d4e5a707193e43956723bed8386630afb4c3870d",
+    "tools/raid_program/worker_packet.py": "16ae27e64f5aeef5c2692ce3e6518a37853b80629ba1ded32f4fec549d0d0c86",
+    "tools/raid_program/workflow_step.py": "6136785e6306126730aaa52e094ec1af950b04d5de7d1e2fb023a5c3092cb065",
+    "tools/raid_program/workflow_tests.py": "5846b81e9e331c1a609c54b83d079f27381d1bd0a5d098fb8270737066158bd2"
+  },
+  "kind": "review",
+  "producer": "01a0c947-aef5-76d2-a3b7-45358197b4b3",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/workflow_behavior_execution_review_20260922.json",
+    "sha256": "68ca90f3a426b897875e8f249a97a906b0a5c33408b451f7ba8bb8b6168ab897"
+  },
+  "reviewer_session_id": "01a0c947-aef5-76d2-a3b7-45358197b4b3",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "verdict": "approved"
+}

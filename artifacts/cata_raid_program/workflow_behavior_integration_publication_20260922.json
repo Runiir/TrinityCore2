@@ -1,0 +1,9 @@
+{
+  "pointer": "artifacts/cata_raid_program/workflow_behavior_integration_evidence_20260922.tar.gz.dvc",
+  "md5": "ca36dbd03f1515e0c56dbaedd8e72d46",
+  "sha256": "18e8c9738b612318a686fbd76867a3e70ffd48e1c26bd451304e01e19364bac4",
+  "bytes": 3712,
+  "remote_readback_verified": true,
+  "exact_archive_and_cache_evicted": true,
+  "scope": "Workflow integration checks; no native raid experiment"
+}

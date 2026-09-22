@@ -1,0 +1,29 @@
+{
+  "workflow_code_commit": "684164d7b450f26931710758593d917e84569a95",
+  "tests": "132 passed",
+  "review": {
+    "report": {
+      "path": "artifacts/cata_raid_program/workflow_behavior_integrated_review_20260922.json",
+      "sha256": "8e04624c1349cfdddfa593ae315bc4625cfc4405dd01815c65a4796148122ee2"
+    },
+    "receipt": {
+      "path": "artifacts/cata_raid_program/workflow_behavior_integrated_review_20260922.receipt.json",
+      "sha256": "52e5c2b62ae84213820ea99ea2669f85f9ffcb4c393222de43293954a9c9d0b0"
+    },
+    "reviewer_session_id": "01a0c947-aef5-76d2-a3b7-45358197b4b3",
+    "verdict": "approved"
+  },
+  "unit": "magmaw:shared_native_engagement_authority_01",
+  "graph_revision": 432,
+  "source_boundary_valid": true,
+  "packet_bytes": 9933,
+  "original_native_base": "6b4b98dd71d0a91ef4be0ebcbc86eab00c55ce12",
+  "native_files_unchanged": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+    "tests/test_magmaw_support_target_admission.py": "2da4c967fa8349a08038b0090240bd356f65fe21e7b00a489eff06390527bc24"
+  },
+  "requirements_preserved": true,
+  "paused_claim_reconciled": true,
+  "native_experiments": 0,
+  "next_command": "pixi run python -m tools.raid_program.raid_workloop resume"
+}

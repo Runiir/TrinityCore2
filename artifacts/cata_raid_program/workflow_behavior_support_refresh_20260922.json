@@ -1,0 +1,18 @@
+{
+  "reason": "User confirmed Magmaw coordinator paused before merging reviewed workflow helpers. Preserve the native unit and original source baseline.",
+  "prior_commit": "b0d122f7a1cb66e3279841281728e91a9d73df96",
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/workflow_behavior_support_review_20260922.receipt.json",
+    "sha256": "ea871a7fccccf5da5eca43227bf13d8ebf720f7485f7349d1ad4103e8d14a630"
+  },
+  "owned_file_hashes": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+    "tests/test_magmaw_support_target_admission.py": "2da4c967fa8349a08038b0090240bd356f65fe21e7b00a489eff06390527bc24"
+  },
+  "prior_operation": {
+    "ownership_checked": true,
+    "active_operation": false,
+    "operation_id": "0efbb6eff6f96956e44a6f4b6d42293a760c917263868a3a7314c8caf60a8821",
+    "basis": "Explicit user pause confirmation; implementation stage; clean checkout at merge."
+  }
+}
