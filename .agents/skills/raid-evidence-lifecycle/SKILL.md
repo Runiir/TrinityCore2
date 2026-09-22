@@ -95,6 +95,11 @@ repair failed, then publish. New adjacent DVC output pointers under
 recognized as publication metadata by the graph. Existing/input pointers remain
 protected. Never delete, temporarily hide or revert evidence pointers to pass
 a source check; inspect the reported delta. Native launch admission remains stricter.
+If later commits prevent recording an already completed run, use the explicit
+`workflow_step advance --recorded-source` path with its original claim. It verifies
+the committed launch snapshot and preserves the old build identity; historical
+closure cannot accept the current source. Reference rejection does not turn a
+completed operation into an abandoned one.
 Publish immutable raw/report/log/receipt data through DVC, run targeted dvc status and
 dvc push, and verify the remote bytes with an empty-cache reconstruction. Preserve
 pointer visibility and enough space for transport; never print private credentials.
@@ -103,6 +108,10 @@ and the remote reconstruction path. No broad DVC GC or unrelated worktree deleti
 Resolve an exact cache object with `repo.cache.local.oid_to_path(pointer_hash)`;
 the cache object's root may already include `files/md5`. Do not append that
 layout again and mistake a nonexistent path for successful cache eviction.
+Filesystem eviction does not clean `characters.experiment_bot_*` SQL telemetry.
+Include those table sizes in storage accounting. Preserve attributable needed
+rows through verified export before selective cleanup; never truncate live
+writers or accepted evidence merely to reduce disk use.
 
 Do not admit development, stale, contaminated, unclassified, synthetic-only or incomplete
 runs to training. Full qualification retains complete attribution and independent outcome

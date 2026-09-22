@@ -133,16 +133,31 @@ def task_summary(root, section='summary'):
     """Project the validated active graph, not its unbounded requirement history."""
     from tools.raid_program.development_graph import resume
     progress = resume(root)
+    return progress_view(progress, root, section)
+
+
+def progress_view(progress, root, section='summary'):
+    """Shared CLI projection; complete graph data stays available explicitly."""
     base = {'schema': 'evidence_task_summary_v1', 'state_sha256': progress['state_sha256'],
             'revision': progress['revision'], 'stage': progress['stage'],
-            'coordinator_worktree': progress['coordinator_worktree']}
+            'coordinator_worktree': progress['coordinator_worktree'],
+            'encounter': progress.get('encounter'), 'coordinator_skill': progress.get('coordinator_skill'),
+            'dps_acceptance': progress.get('dps_acceptance'),
+            'completed_measurement_count': len(progress.get('completed_measurements', []))}
     if section == 'unit':
         return base | {'unit': progress['unit']}
     if section == 'requirements':
         return base | {'open_requirements': progress['open_requirements']}
     if section == 'receipts':
+        from tools.raid_program.completed_operation import completed_runs
+        completed = completed_runs(root, progress)
         return base | {'claim': progress['claim'], 'receipts': progress['receipts'],
-                       'latest_assessment': progress['latest_assessment']}
+                       'latest_assessment': progress['latest_assessment'],
+                       'completed_run_receipts': completed,
+                       'record_completed_commands': [shlex.join(['pixi', 'run', 'python', '-m',
+                           'tools.raid_program.workflow_step', 'advance', '--receipt', r['path'],
+                           '--owner', progress['claim']['owner'], '--recorded-source', '--dry-run'])
+                           for r in completed]}
     if section == 'references':
         retained = task_view(root)
         if retained.get('missing'):

@@ -1208,16 +1208,19 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", type=Path, default=ROOT)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("status")
-    subparsers.add_parser("resume", help="Read saved task, remaining actors and next step without launching anything")
+    resume = subparsers.add_parser("resume", help="Read saved task, remaining actors and next step without launching anything")
+    resume.add_argument('--full', action='store_true', help='Explicit full graph projection for machine consumers')
     start = subparsers.add_parser("start", help="Select or initialize a boss/difficulty; preserve existing progress")
     start.add_argument("request", help="For example: implement magmaw 25hc bots")
     start.add_argument("--mode", help="Explicit mode when request contains only the boss name")
     start.add_argument("--raid", help="Canonical raid slug to disambiguate a boss")
     start.add_argument("--preview", action="store_true", help="Resolve catalogs without changing active progress")
     start.add_argument("--expect", help="Optional state SHA256 to reject a stale scenario switch")
+    start.add_argument('--full', action='store_true', help='Explicit full graph projection for machine consumers')
     transition = subparsers.add_parser("advance", help="Apply one evidence-backed development transition")
     transition.add_argument("--event", type=Path, required=True)
     transition.add_argument("--expect", required=True, help="state_sha256 from resume; rejects stale writers")
+    transition.add_argument('--full', action='store_true', help='Explicit full graph projection for machine consumers')
     spec = subparsers.add_parser("spec")
     spec.add_argument("spec")
     boss = subparsers.add_parser("boss")
@@ -1246,6 +1249,9 @@ def main() -> int:
     except (ValueError, KeyError, OSError) as exc:
         print(json.dumps({"schema": "raid_performance_workloop_error_v1", "error": str(exc)}))
         return 2
+    if args.command in {'start', 'resume', 'advance'} and not args.full and not output.get('read_only'):
+        from tools.raid_program.evidence_task import progress_view
+        output = progress_view(output, root)
     print(json.dumps(output, indent=2, sort_keys=True))
     return 0
 

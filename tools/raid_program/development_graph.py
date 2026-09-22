@@ -111,6 +111,14 @@ def check_graph(g: dict) -> None:
         previous = row.get('to')
     if previous != g['stage']:
         raise GraphError('stage does not match saved history')
+    if g.get('run'):
+        validation = next((h['event'] for h in reversed(history) if h['unit_id'] == g['unit']['id']
+                           and h['from'] == 'validate' and h['event']['action'] == 'advance'), {})
+        recorded = validation.get('recorded_source_commit')
+        if recorded is not None and (g['run'].get('source_scope') != 'recorded_source_only'
+                or g['run'].get('launch_commit') != recorded
+                or g['run'].get('build_identity') != g.get('build_identity')):
+            raise GraphError('historical run source scope differs from recorded transition')
     for key, requirement in requirements.items():
         if key.startswith('actor_') and requirement.get('actor_id') != key.removeprefix('actor_'):
             raise GraphError('actor requirement identity missing')
@@ -353,6 +361,8 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         raise GraphError('stale event revision/unit')
     stage = g['stage']
     action = event.get('action')
+    if event.get('recorded_source_commit') is not None and (action != 'advance' or stage != 'validate'):
+        raise GraphError('recorded source is only valid when recording a completed validation')
     accepted_now = []
     claim = g.get('claim')
     if action != 'claim' and claim and event.get('claim_token') != claim['token']:
@@ -377,6 +387,8 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         if not claim:
             raise GraphError('no claimed operation')
         reconciliation = read(file_ref(root, event.get('receipt')))
+        from tools.raid_program.completed_operation import reject_completed_rework
+        reject_completed_rework(root, g, reconciliation)
         if reconciliation.get('operation_id') != claim['operation_id'] or reconciliation.get('active_operation') is not False or reconciliation.get('ownership_checked') is not True or reconciliation.get('completed_operation') is not False or reconciliation.get('reusable_receipt_found') is not False:
             raise GraphError('release requires reconciliation; record completed operations instead of repeating them')
         g.pop('claim')
@@ -499,12 +511,17 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 source_binding(root, g['assignment'], r['source_commit'])
                 g['build_identity'] = {k: r[k] for k in ('source_commit', 'binary_sha256')}
         elif stage == 'validate':
-            source_binding(root, g['assignment'], g['build_identity']['source_commit'])
+            recorded = event.get('recorded_source_commit')
+            if recorded is not None:
+                from tools.raid_program.completed_operation import verify_recorded_source
+                verify_recorded_source(root, g, recorded)
+            else:
+                source_binding(root, g['assignment'], g['build_identity']['source_commit'])
             if r.get('validation_identity') != g['assignment']['validation_identity'] or r.get('scenario_kind') != g['assignment']['validation_identity']['scenario_kind']:
                 raise GraphError('run scenario/roster/profile/route differs from assignment')
             if r.get('build_identity') != g['build_identity']:
                 raise GraphError('run/build mismatch')
-            if snapshot(root, g['assignment']['owned_files']) != g['tested_files']:
+            if recorded is None and snapshot(root, g['assignment']['owned_files']) != g['tested_files']:
                 raise GraphError('files changed since tested build')
             required(r, 'attempt_id', 'server_epoch', 'terminal_reason')
             if r.get('closed') is not True or r.get('cleanup_verified') is not True:
@@ -520,6 +537,9 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             elif r.get('scenario_kind') != 'raid' or r.get('clock') != 'completion_watchdog' or r['terminal_reason'] == 'measurement_complete':
                 raise GraphError('raid requires completion watchdog')
             g['run'] = {k: r.get(k) for k in ('attempt_id', 'server_epoch', 'scenario_kind', 'terminal_reason')}
+            if recorded is not None:
+                g['run'].update(source_scope='recorded_source_only', launch_commit=recorded,
+                                build_identity=g['build_identity'])
         elif stage == 'assess':
             if r.get('attempt_id') != g['run']['attempt_id']:
                 raise GraphError('assessment attempt mismatch')
@@ -541,6 +561,9 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             if r['encounter_clear'] and (g['run']['scenario_kind'] != 'raid' or g['run']['terminal_reason'] != 'clear'):
                 raise GraphError('no observed raid clear')
             accepted = r.get('accepted_requirements', [])
+            if g['run'].get('source_scope') == 'recorded_source_only' and (
+                    accepted or r['repair_accepted'] or r['performance_accepted']):
+                raise GraphError('historical run closure cannot accept the current source; preserve evidence and route the next edge')
             if g['run']['terminal_reason'] in ('infrastructure_loss', 'contamination', 'interruption') and (r['repair_accepted'] or r['performance_accepted']):
                 raise GraphError('unattributable/incomplete run cannot accept a repair or performance')
             if r['performance_accepted'] and (r.get('baseline_matched') is not True or r.get('unexplained_material_decline') is not False):
@@ -601,6 +624,8 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         rework = file_ref(root, event.get('receipt'))
         if claim and stage in ('implement', 'build', 'validate'):
             reconciliation = read(rework)
+            from tools.raid_program.completed_operation import reject_completed_rework
+            reject_completed_rework(root, g, reconciliation)
             if reconciliation.get('ownership_checked') is not True or reconciliation.get('active_operation') is not False or reconciliation.get('operation_id') != claim['operation_id'] or reconciliation.get('completed_operation') is not False or reconciliation.get('reusable_receipt_found') is not False:
                 raise GraphError('reconcile controller/worker/build before abandoning claimed operation')
         edge = g['unit']['edge']

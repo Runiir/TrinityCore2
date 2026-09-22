@@ -43,6 +43,11 @@ Follow [development_graph.md](../../../docs/bot_raids/development_graph.md) and
 reconcile controller/build ownership before launch. These commands do not start a
 background worker or replace native admission checks.
 
+Start/resume/advance return a compact task by default. Use the returned detail
+command for one missing field; `--full` is for explicit machine consumers, not
+routine context loading. After compaction, resume once rather than rereading all
+skills, help pages and prior receipts.
+
 Use `workflow_step advance --receipt <path> --dry-run`, then the same command
 without `--dry-run`, under `pixi run python -m tools.raid_program`. For a claimed
 step include its explicit `--owner`. The helper derives revision, unit, hashes
@@ -50,6 +55,16 @@ and token and calls the real reducer atomically. Do not hand-copy those fields
 or retry a rejected transition unchanged. Build plans need a frozen build/resource
 policy; a role-calibration policy is a different input and is rejected at planning.
 Use `workflow_build refs` and `snapshot` for receipt inputs and owned files.
+
+A completed run stays completed when its performance gate fails or newer commits
+prevent source admission. Inspect `evidence_view task --section receipts` first;
+it finds closed receipts for the exact claimed operation and gives the recovery
+command. Use `workflow_step advance --receipt <run> --owner <owner>
+--recorded-source --dry-run`, then repeat without `--dry-run`. This binds the
+original committed launch state and only permits diagnostic closure/publication,
+not current-source repair or performance acceptance. Do not rewrite completion
+flags or rerun an unchanged setup to solve receipt/source bookkeeping. Missing
+cleanup requires reconciling that operation's cleanup, not replaying its combat.
 
 ## Evidence and objective discipline
 
@@ -71,6 +86,9 @@ for healer/tank reports, launch output and source searches. Read only the matchi
 ledger entry and current status. After two equivalent queries return no new fact,
 name the missing observation and change the query/tool or route that missing input.
 Keep full evidence on disk/DVC; missing observations remain unknown.
+For a completed native calibration, start with `evidence_view result <report>
+--max-chars 6000`; inspect its reference section only if the reference gate failed.
+Do not copy whole calibration/timeline objects into a so-called compact report.
 
 Keep the user's objective and every actor requirement visible. Correct stale status
 in place, retain unresolved actor rows after an accepted repair or improved raid

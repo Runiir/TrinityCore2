@@ -12,7 +12,7 @@ def progress():
         unit={'id': 'boss:setup', 'edge': 'missing_enchant', 'owner_skill': 'raid-role-implementation',
               'objective': 'Repair exact setup', 'requirements': ['tank'], 'next_action': 'Validate setup readback',
               'forbidden_changes': ['No damage tuning']},
-        claim={'owner': 'worker', 'operation_id': 'op'}, changed_bootstrap_sources=[], same_edge_failures=0,
+        claim={'owner': 'worker', 'operation_id': 'op', 'stage': 'validate'}, changed_bootstrap_sources=[], same_edge_failures=0,
         open_requirements={f'actor_{i}': {'status': 'open', 'history': 'x' * 10000} for i in range(25)},
         latest_assessment={'path': 'assessment.json', 'sha256': 'b' * 64},
         receipts={'build': {'path': 'build.json', 'sha256': 'c' * 64}},

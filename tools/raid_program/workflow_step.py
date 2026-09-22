@@ -89,6 +89,7 @@ def prepare_event(
     *,
     owner: str | None = None,
     action: str = "advance",
+    recorded_source: bool = False,
 ) -> tuple[dict[str, Any], str, dict[str, Any]]:
     """Build an advance event from one validated state snapshot.
 
@@ -116,6 +117,11 @@ def prepare_event(
     token = _claimed_token(development, owner)
     if token is not None:
         event["claim_token"] = token
+    if recorded_source:
+        if action != 'advance':
+            raise graph.GraphError('--recorded-source is only for validation advance')
+        from tools.raid_program.completed_operation import find_launch_commit
+        event['recorded_source_commit'] = find_launch_commit(root, development)
     return event, state_sha256, state
 
 
@@ -151,11 +157,11 @@ def _resume_projection(result: dict[str, Any]) -> dict[str, Any]:
         "revision": result["revision"],
         "stage": result["stage"],
         "claim": result.get("claim"),
-        "unit": result["unit"],
+        "unit": {key: result["unit"].get(key) for key in ('id', 'edge', 'owner_skill', 'requirements', 'next_action')},
         "next_action": result["next_action"],
         "open_requirements": sorted(result.get("open_requirements", {})),
         "receipts": result.get("receipts", {}),
-        "next_command_hint": "pixi run python -m tools.raid_program.raid_workloop resume",
+        "next_command_hint": "pixi run python -m tools.raid_program.evidence_view task --max-chars 6000",
     }
 
 
@@ -167,10 +173,12 @@ def apply_step(
     expected_sha256: str | None = None,
     dry_run: bool = False,
     action: str = "advance",
+    recorded_source: bool = False,
 ) -> dict[str, Any]:
     """Validate and optionally commit one advance through the graph API."""
 
-    event, state_sha256, state = prepare_event(root, receipt, owner=owner, action=action)
+    event, state_sha256, state = prepare_event(root, receipt, owner=owner, action=action,
+                                             recorded_source=recorded_source)
     if expected_sha256 is not None and expected_sha256 != state_sha256:
         raise graph.GraphError("state changed; resume before applying this event")
     preview = _dry_run_result(root, event, state_sha256, state)
@@ -196,6 +204,8 @@ def _parser() -> argparse.ArgumentParser:
     advance.add_argument("--action", choices=("advance", "refresh_support"), default="advance")
     advance.add_argument("--expect", "--expected-state-sha256", dest="expected_sha256")
     advance.add_argument("--dry-run", action="store_true", help="validate through the reducer without writing")
+    advance.add_argument("--recorded-source", action="store_true",
+                         help="close an already completed run against its committed launch snapshot; no current-source acceptance")
     advance.add_argument("--root", dest="subcommand_root", type=Path)
     return parser
 
@@ -217,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             expected_sha256=args.expected_sha256,
             dry_run=args.dry_run,
             action=args.action,
+            recorded_source=args.recorded_source,
         )
     except (graph.GraphError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(json.dumps({"error": str(exc)}), file=sys.stderr)

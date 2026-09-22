@@ -204,6 +204,31 @@ active_operation=false, completed_operation=false and reusable_receipt_found=fal
 If a completed operation has a receipt, record it with advance; do not release
 the claim and repeat it. Release does not imply failure or completion. It does
 not expire by elapsed time. Claimed rework also requires reconciliation.
+For validation, release/rework checks attached evidence and the existing compact
+receipt directory for a closed run matching the exact unit and operation. An
+agent's `completed_operation=false` cannot override that receipt, even when its
+reference or performance gate failed.
+
+An already completed run may be recorded after unrelated source changes with:
+
+```sh
+pixi run python -m tools.raid_program.workflow_step advance \
+  --receipt <original-run.json> --owner <original-owner> --recorded-source --dry-run
+```
+
+Repeat without `--dry-run` after inspecting the result. The tool locates the
+committed validation claim, verifies its assignment, tested files, build and
+operation identities, and rejects source changes between build and launch. It
+retains that historical source through assessment/publication without rebuilding
+or relabeling it as current-source validation. Current-source repair/performance
+acceptance and requirement closure are forbidden on this path. All ordinary run
+identity, cleanup, scoring-window and watchdog checks still apply. If the frozen
+snapshot is missing or conflicts, retain the evidence and repair its attribution;
+do not manufacture a snapshot or repeat combat to erase the failure.
+
+Start/resume/advance CLI output is compact by default. Use `evidence_view task`
+detail selectors, `result` for native outcomes, or explicit `--full` for a machine
+consumer needing the complete projection. The saved state is never truncated.
 The canonical coordinator worktree is bound in saved state; another worktree
 must use that checkout rather than fork progress. Moving it is an explicit
 coordinator migration in Git after reconciling outstanding ownership.

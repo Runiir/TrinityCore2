@@ -89,7 +89,7 @@ def test_resume_from_separate_process_preserves_completed_work_and_all_actors(ca
         graph.advance(root,event,graph.resume(root)['state_sha256'])
         state=json.loads((root/graph.STATE_PATH).read_text())
     repo=Path(__file__).resolve().parents[1]
-    output=subprocess.check_output([sys.executable,'-m','tools.raid_program.raid_workloop','--root',str(root),'resume'],cwd=repo,text=True)
+    output=subprocess.check_output([sys.executable,'-m','tools.raid_program.raid_workloop','--root',str(root),'resume','--full'],cwd=repo,text=True)
     resumed=json.loads(output)
     assert resumed['stage']=='validate'
     assert resumed['completed_measurements'][0]['spec']=='Survival'
@@ -557,7 +557,7 @@ def test_published_unit_routes_to_next_task_without_losing_parent_or_assessment(
                  'owner_skill': 'raid-class-mechanics-implementation', 'next_action': 'Inspect retained stat producer'}})
     put(root/graph.STATE_PATH, state)
     output = subprocess.check_output([sys.executable, '-m', 'tools.raid_program.raid_workloop',
-        '--root', str(root), 'resume'], cwd=Path(__file__).resolve().parents[1], text=True)
+        '--root', str(root), 'resume', '--full'], cwd=Path(__file__).resolve().parents[1], text=True)
     status = json.loads(output)
     assert status['coordinator_skill'] == 'trinity-orchestrator'
     assert status['owner_skill'] == 'raid-class-mechanics-implementation'

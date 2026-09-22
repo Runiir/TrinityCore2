@@ -242,5 +242,7 @@ def test_plain_implementation_request_preserves_saved_task_and_coordinator_role(
     assert result['unit']['id'] == 'saved-stat-repair'
     assert result['coordinator_skill'] == 'trinity-orchestrator'
     assert not result['parent_objective_complete']
-    assert result['completed_measurements'] == saved['development_graph']['completed_measurements']
+    assert result['completed_measurement_count'] == len(saved['development_graph']['completed_measurements'])
+    full = json.loads(subprocess.check_output(cmd + ['--full'], cwd=ROOT, text=True))
+    assert full['completed_measurements'] == saved['development_graph']['completed_measurements']
     assert (repo/graph.STATE_PATH).read_bytes() == before
