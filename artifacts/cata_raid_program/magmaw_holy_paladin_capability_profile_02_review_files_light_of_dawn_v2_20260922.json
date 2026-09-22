@@ -1,0 +1,10 @@
+{
+  "schema": "raid_review_file_set_v1",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "files": [
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
+    "tests/test_holy_paladin_capability_profile.py"
+  ],
+  "source_commit": "be68b0d4c1ced1bb4c170888d0660efe18ac4c6d",
+  "scope": "Independent review of the Light of Dawn profile rework and its focused executable coverage; no build, live calibration, actor or raid acceptance."
+}

@@ -1,0 +1,10 @@
+{
+  "revision": 361,
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "action": "rework",
+  "reason": "Independent review returned rework: add executable disabled-scope and native gate negative coverage before building.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_rework_20260922.json",
+    "sha256": "a479e5081cc1a07f4219d57ea02dab20b2c5b48031879806cd18078f7dee51e6"
+  }
+}

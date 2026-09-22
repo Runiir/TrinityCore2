@@ -1,0 +1,67 @@
+{
+  "schema": "raid_worker_checkpoint_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator-magmaw-holy-paladin-capability-profile-02-rework-20260922",
+  "authority": "coordinator_attestation",
+  "operation_id": "dfe5742513a0e83c811d4f240e462fe05a733aad09f1d1727bf8f85f8bcbe27f",
+  "stage": "result",
+  "task_id": "magmaw_holy_paladin_capability_profile_02_result_light_of_dawn_v2_20260922",
+  "subject": "orchestrator",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "objective": "Repair the next proven missing Holy Paladin capability row or eligibility edge for actor_30004 while preserving native healer safety, resource gates, encounter behavior, and the separate role-reference contract.",
+  "first_broken_edge": "owner_holy_paladin_remaining_capability_profile",
+  "current_plan": "Add only the missing Light of Dawn 85222 heal_aoe profile row with the existing three-injured-player and holy_power_3 gates, including inactive-row and native rejection coverage.",
+  "completed_work": "Hardened the idempotent, Holy Paladin-scoped Light of Dawn migration to write an active row and ignore only active duplicates; added disabled-profile/action isolation coverage and compiled the production Holy Power and healer triage gate bodies through rejection and admission cases.",
+  "observations": [
+    "The loaded native profile readback contains Holy Shock, Word of Glory, Flash of Light, Holy Light and Cleanse but no Light of Dawn heal_aoe row.",
+    "The native Holy Paladin resolver already maps AoeHeal to Light of Dawn and the shared healer policy selects AoeHeal when at least three party members are at or below the group-damage threshold.",
+    "The migration repeats without duplicating an active action, preserves an inactive legacy action, leaves a disabled Holy Paladin profile unchanged, and preserves Word of Glory's holy_power_3 mechanic tag.",
+    "The required focused suite passes at the committed source identity: 8 tests passed."
+  ],
+  "forbidden_changes": [
+    "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
+    "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
+    "Do not change Beacon 53563, Aura Mastery 31821, Divine Plea 54428, WoWSims/reference data, gear, stats, role thresholds, potion ownership, encounter mechanics or raid composition.",
+    "Do not claim native live healer, actor, performance, raid clear or parent acceptance from this checkpoint."
+  ],
+  "acceptance_conditions": [
+    "The focused executable test passes on the committed migration and test source, including native gate rejection/admission coverage.",
+    "Independent review, frozen-policy build and exact healer validation remain required before any actor or raid acceptance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
+  ],
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_holy_paladin_capability_profile.py",
+      "exit_status": 0,
+      "summary": "8 passed in 0.25s"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d",
+    "tests/test_holy_paladin_capability_profile.py": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+  },
+  "source_commit": "be68b0d4c1ced1bb4c170888d0660efe18ac4c6d",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_v2_20260922.json",
+      "sha256": "7fcb36ae6d23e37a22e4a57206bc02e0264c828398da3eb35ca67d47185ad8ed"
+    },
+    {
+      "path": "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
+      "sha256": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d"
+    },
+    {
+      "path": "tests/test_holy_paladin_capability_profile.py",
+      "sha256": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_rework_20260922.json",
+      "sha256": "a479e5081cc1a07f4219d57ea02dab20b2c5b48031879806cd18078f7dee51e6"
+    }
+  ],
+  "advice": {},
+  "acceptance_claim": "Bounded implementation and focused test only. No native live healer outcome, actor acceptance, performance acceptance, raid clear or parent completion is claimed."
+}

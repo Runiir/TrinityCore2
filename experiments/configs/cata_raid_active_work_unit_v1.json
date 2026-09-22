@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
+  "next_action": "Obtain independent review of the exact tested files. Resolve findings before building. Read HEAL-001 and the loaded Holy Paladin SQL/profile snapshot; compare Beacon 53563, Aura Mastery 31821, Divine Plea 54428, Light of Dawn 85222 and a Holy Power spender against native candidate and action outcomes. Select only the first directly proven missing row or eligibility edge, add focused executable coverage, independently review, build and run the exact 300-second healer calibration. Do not claim actor or raid acceptance while reference conditions remain non-comparable.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 360,
+    "revision": 365,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "review",
     "actor_ids": [
       "30001",
       "30002",
@@ -646,7 +646,8 @@
       "owner_blood_priority_inversion": 7,
       "owner_balance_post_starfall_throughput_regression": 2,
       "owner_calibration_post_window_contamination": 2,
-      "owner_holy_paladin_profile_incomplete": 3
+      "owner_holy_paladin_profile_incomplete": 3,
+      "owner_holy_paladin_remaining_capability_profile": 1
     },
     "history": [
       {
@@ -6876,6 +6877,91 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 360,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 360,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_tests_light_of_dawn_20260922.json",
+            "sha256": "9a7cd50cfbeba0dcc393d3086a5ed5c1c2727dd0de0f311f83b34e1103f53546"
+          },
+          "claim_token": "ca38533c3d0498b61e1e384dce064d90f9337ebd7c326380df2f306f7b236725"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 361,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "review",
+        "to": "diagnose",
+        "event": {
+          "revision": 361,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "rework",
+          "reason": "Independent review returned rework: add executable disabled-scope and native gate negative coverage before building.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_rework_20260922.json",
+            "sha256": "a479e5081cc1a07f4219d57ea02dab20b2c5b48031879806cd18078f7dee51e6"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 362,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 362,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_v2_20260922.json",
+            "sha256": "7fcb36ae6d23e37a22e4a57206bc02e0264c828398da3eb35ca67d47185ad8ed"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 363,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 363,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "claim",
+          "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-rework-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 364,
+        "unit_id": "magmaw:holy_paladin_capability_profile_02",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 364,
+          "unit_id": "magmaw:holy_paladin_capability_profile_02",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_tests_light_of_dawn_20260922.json",
+            "sha256": "59387fae7284ca9b5ef099752d50417451b2d4727acac5dfa569dc25f61bf010"
+          },
+          "claim_token": "dfe5742513a0e83c811d4f240e462fe05a733aad09f1d1727bf8f85f8bcbe27f"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -6908,7 +6994,7 @@
       }
     ],
     "assignment": {
-      "hypothesis": "The first directly proven remaining Holy Paladin profile gap is Light of Dawn 85222: the native Holy Paladin resolver and healer policy already expose the AoeHeal path, while the loaded healer profile has no heal_aoe action. Add only a profile row with the existing three-injured-player and holy_power_3 candidate gates; preserve the existing single-target, Cleanse, cooldown, target, mana and safety gates.",
+      "hypothesis": "The first directly proven remaining Holy Paladin profile gap is Light of Dawn 85222: the native Holy Paladin resolver and healer policy already expose the AoeHeal path, while the loaded healer profile has no heal_aoe action. Keep the row scoped to enabled profiles, make an inactive existing row non-blocking for an active row, and execute the native holy_power_3 and three-injured-player rejection paths in focused coverage.",
       "owned_files": [
         "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
         "tests/test_holy_paladin_capability_profile.py"
@@ -6917,14 +7003,14 @@
         "Do not change encounter scripts, movement authority, tank assignments or healer safety semantics.",
         "Do not weaken Holy Power, mana, cooldown, spellbook, target-selection or ordinary healer triage gates.",
         "Do not change Beacon 53563, Aura Mastery 31821, Divine Plea 54428, WoWSims/reference data, gear, stats, role thresholds, potion ownership, raid composition or boss mechanics.",
-        "Do not change BotClassSpecActionProfileCandidates.cpp: the existing holy_power_3 gate is already present and is not the proven edge.",
         "Do not broaden the migration to unrelated Holy Paladin cooldowns, buffs or single-target actions.",
         "Do not claim actor_30004, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
       ],
       "acceptance_conditions": [
         "The Light of Dawn profile omission is covered by an idempotent SQL migration scoped to the enabled Holy Paladin healer profile.",
-        "The row is heal_aoe, targets the lowest ally, requires at least three injured players at the policy's 70% threshold, and carries the existing native holy_power_3 gate without changing unrelated rows.",
-        "Focused executable coverage verifies the new row, repeat application, isolation from other profiles, and preservation of the existing Word of Glory Holy Power gate.",
+        "The active row is heal_aoe, targets the lowest ally, requires at least three injured players at the policy's 70% threshold, and carries the existing native holy_power_3 gate without changing unrelated rows.",
+        "Focused executable coverage verifies repeat application, disabled-profile isolation, preservation of a disabled existing action, and creation of exactly one active action for the enabled profile.",
+        "Focused native-shaped C++ coverage executes the production Holy Power and healer injured-player gate bodies for rejection and admission cases.",
         "The exact 300-second healer-controlled calibration is run with the reviewed binary; native action exercise, role calibration, actor acceptance and raid acceptance remain separately gated."
       ],
       "required_test_commands": [
@@ -6960,16 +7046,20 @@
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_20260922.json",
-        "sha256": "0d5126dc6a37b1982e87ec4b8326245d6ad1e1300320d975dc369e42c82507a3"
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_plan_light_of_dawn_v2_20260922.json",
+        "sha256": "7fcb36ae6d23e37a22e4a57206bc02e0264c828398da3eb35ca67d47185ad8ed"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_tests_light_of_dawn_20260922.json",
+        "sha256": "59387fae7284ca9b5ef099752d50417451b2d4727acac5dfa569dc25f61bf010"
       }
     },
-    "claim": {
-      "owner": "coordinator-magmaw-holy-paladin-capability-profile-02-implement-20260922",
-      "token": "ca38533c3d0498b61e1e384dce064d90f9337ebd7c326380df2f306f7b236725",
-      "operation_id": "ca38533c3d0498b61e1e384dce064d90f9337ebd7c326380df2f306f7b236725",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d",
+      "tests/test_holy_paladin_capability_profile.py": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+    },
+    "tested_commit": "be68b0d4c1ced1bb4c170888d0660efe18ac4c6d",
+    "implementer": "coordinator-magmaw-holy-paladin-capability-profile-02-rework-20260922"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
