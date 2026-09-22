@@ -1,0 +1,275 @@
+{
+ "actors": {
+  "Mgwdpsa": {
+   "base1": {
+    "casts_per_minute": 27.56,
+    "dps": 24223,
+    "hps": 0,
+    "ratio_to_wcl": 0.603
+   },
+   "class_spec": "fire_mage",
+   "role": "dps",
+   "sq1": {
+    "casts_per_minute": 34.2,
+    "dps": 28061,
+    "hps": 0,
+    "ratio_to_wcl": 0.698
+   },
+   "sq2": {
+    "casts_per_minute": 32.05,
+    "dps": 34119,
+    "hps": 0,
+    "ratio_to_wcl": 0.849
+   },
+   "wcl_observed_dps": 40189.9
+  },
+  "Mgwdpsb": {
+   "base1": {
+    "casts_per_minute": 25.81,
+    "dps": 29485,
+    "hps": 0,
+    "ratio_to_wcl": 0.734
+   },
+   "class_spec": "fire_mage",
+   "role": "dps",
+   "sq1": {
+    "casts_per_minute": 33.69,
+    "dps": 46961,
+    "hps": 0,
+    "ratio_to_wcl": 1.168
+   },
+   "sq2": {
+    "casts_per_minute": 27.2,
+    "dps": 41141,
+    "hps": 0,
+    "ratio_to_wcl": 1.024
+   },
+   "wcl_observed_dps": 40189.9
+  },
+  "Mgwdpsc": {
+   "base1": {
+    "casts_per_minute": 31.5,
+    "dps": 41313,
+    "hps": 398,
+    "ratio_to_wcl": 1.026
+   },
+   "class_spec": "affliction_warlock",
+   "role": "dps",
+   "sq1": {
+    "casts_per_minute": 38.28,
+    "dps": 39382,
+    "hps": 711,
+    "ratio_to_wcl": 0.978
+   },
+   "sq2": {
+    "casts_per_minute": 33.02,
+    "dps": 32580,
+    "hps": 723,
+    "ratio_to_wcl": 0.809
+   },
+   "wcl_observed_dps": 40281.0
+  },
+  "Mgwdpsd": {
+   "base1": {
+    "casts_per_minute": 37.62,
+    "dps": 34229,
+    "hps": 95,
+    "ratio_to_wcl": null
+   },
+   "class_spec": "survival_hunter",
+   "role": "dps",
+   "sq1": {
+    "casts_per_minute": 40.32,
+    "dps": 33331,
+    "hps": 69,
+    "ratio_to_wcl": null
+   },
+   "sq2": {
+    "casts_per_minute": 38.37,
+    "dps": 32380,
+    "hps": 0,
+    "ratio_to_wcl": null
+   },
+   "wcl_observed_dps": null
+  },
+  "Mgwdpse": {
+   "base1": {
+    "casts_per_minute": 36.31,
+    "dps": 37266,
+    "hps": 0,
+    "ratio_to_wcl": 0.89
+   },
+   "class_spec": "elemental_shaman",
+   "role": "dps",
+   "sq1": {
+    "casts_per_minute": 42.37,
+    "dps": 40866,
+    "hps": 0,
+    "ratio_to_wcl": 0.976
+   },
+   "sq2": {
+    "casts_per_minute": 37.39,
+    "dps": 35171,
+    "hps": 0,
+    "ratio_to_wcl": 0.84
+   },
+   "wcl_observed_dps": 41866.0
+  },
+  "Mgwheala": {
+   "base1": {
+    "casts_per_minute": 4.81,
+    "dps": 2601,
+    "hps": 8688,
+    "ratio_to_wcl": null
+   },
+   "class_spec": "restoration_druid",
+   "role": "healer",
+   "sq1": {
+    "casts_per_minute": 8.17,
+    "dps": 2557,
+    "hps": 4180,
+    "ratio_to_wcl": null
+   },
+   "sq2": {
+    "casts_per_minute": 7.28,
+    "dps": 3661,
+    "hps": 6844,
+    "ratio_to_wcl": null
+   },
+   "wcl_observed_dps": null
+  },
+  "Mgwhealb": {
+   "base1": {
+    "casts_per_minute": 0.0,
+    "dps": 0,
+    "hps": 5564,
+    "ratio_to_wcl": null
+   },
+   "class_spec": "holy_paladin",
+   "role": "healer",
+   "sq1": {
+    "casts_per_minute": 0.51,
+    "dps": 0,
+    "hps": 5713,
+    "ratio_to_wcl": null
+   },
+   "sq2": {
+    "casts_per_minute": 0.49,
+    "dps": 0,
+    "hps": 6475,
+    "ratio_to_wcl": null
+   },
+   "wcl_observed_dps": null
+  },
+  "Mgwhealc": {
+   "base1": {
+    "casts_per_minute": 5.69,
+    "dps": 3658,
+    "hps": 2330,
+    "ratio_to_wcl": null
+   },
+   "class_spec": "discipline_priest",
+   "role": "healer",
+   "sq1": {
+    "casts_per_minute": 10.21,
+    "dps": 4470,
+    "hps": 708,
+    "ratio_to_wcl": null
+   },
+   "sq2": {
+    "casts_per_minute": 9.23,
+    "dps": 4046,
+    "hps": 1387,
+    "ratio_to_wcl": null
+   },
+   "wcl_observed_dps": null
+  },
+  "Mgwtanka": {
+   "base1": {
+    "casts_per_minute": 22.75,
+    "dps": 23765,
+    "hps": 0,
+    "ratio_to_wcl": 0.579
+   },
+   "class_spec": "balance_druid",
+   "role": "dps",
+   "sq1": {
+    "casts_per_minute": 34.71,
+    "dps": 28222,
+    "hps": 0,
+    "ratio_to_wcl": 0.688
+   },
+   "sq2": {
+    "casts_per_minute": 33.02,
+    "dps": 33269,
+    "hps": 0,
+    "ratio_to_wcl": 0.811
+   },
+   "wcl_observed_dps": 41029.1
+  },
+  "Mgwtankb": {
+   "base1": {
+    "casts_per_minute": 21.0,
+    "dps": 11544,
+    "hps": 1623,
+    "ratio_to_wcl": 0.441
+   },
+   "class_spec": "blood_death_knight",
+   "role": "tank",
+   "sq1": {
+    "casts_per_minute": 27.56,
+    "dps": 15992,
+    "hps": 3625,
+    "ratio_to_wcl": 0.612
+   },
+   "sq2": {
+    "casts_per_minute": 26.71,
+    "dps": 11821,
+    "hps": 3836,
+    "ratio_to_wcl": 0.452
+   },
+   "wcl_observed_dps": 26152.0
+  }
+ },
+ "config": "experiments/configs/cata_magmaw_spell_queue_validation_20260922.json",
+ "notes": [
+  "Casts/min excludes auto_attack; party DPS is encounter-window (first to last originated damage, pets in owner).",
+  "Both spell-queue runs had trash deaths (sq1: 2, sq2: 1); base1 and the prior baseline had none. Cause not isolated.",
+  "Single baseline run in this batch; the earlier same-binary baseline result is in magmaw_route_prerequisites_first_result_20260922.json."
+ ],
+ "runs": {
+  "base1": {
+   "encounter_window_party_dps": 208085,
+   "magmaw_duration_sec": 137.145,
+   "native_clear": true,
+   "party_damage_taken": 2230355,
+   "party_hps": 18699,
+   "route_deaths": 0,
+   "spell_queue_median_release_latency_ms": null,
+   "worldserver_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca"
+  },
+  "sq1": {
+   "encounter_window_party_dps": 239841,
+   "magmaw_duration_sec": 117.549,
+   "native_clear": true,
+   "party_damage_taken": 1725680,
+   "party_hps": 15007,
+   "route_deaths": 2,
+   "spell_queue_median_release_latency_ms": 115.459,
+   "worldserver_sha256": "b8a897c139c8be3d7b72b1e952da124312a4b85dc40b67e862a11e16dbaeef2b"
+  },
+  "sq2": {
+   "encounter_window_party_dps": 228187,
+   "magmaw_duration_sec": 123.55,
+   "native_clear": true,
+   "party_damage_taken": 2317551,
+   "party_hps": 19265,
+   "route_deaths": 1,
+   "spell_queue_median_release_latency_ms": 224.036,
+   "worldserver_sha256": "b8a897c139c8be3d7b72b1e952da124312a4b85dc40b67e862a11e16dbaeef2b"
+  }
+ },
+ "schema": "magmaw_spell_queue_comparison_v1",
+ "spell_queue_mean_party_dps": 234014,
+ "spell_queue_vs_base1_party_dps_ratio": 1.1246
+}
