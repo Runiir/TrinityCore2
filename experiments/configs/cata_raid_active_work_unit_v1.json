@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
+  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 407,
+    "revision": 408,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -7704,6 +7704,24 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 407,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "build",
+        "to": "validate",
+        "event": {
+          "revision": 407,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_build_correction_20260922.json",
+            "sha256": "4ba2647c3e2ece8209219d4f4a6c129e48432a2bd8f484c061e1de2db35a2534"
+          },
+          "claim_token": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7799,6 +7817,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_correction_20260922.json",
         "sha256": "7cc13f03d96157ba9fabf3794a3752bcaf9c4e27234b5651b40b68dbc816f462"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_build_correction_20260922.json",
+        "sha256": "4ba2647c3e2ece8209219d4f4a6c129e48432a2bd8f484c061e1de2db35a2534"
       }
     },
     "tested_files": {
@@ -7807,11 +7829,9 @@
     },
     "tested_commit": "932ad94f594680e98a45cb9f00d098c36a2c1170",
     "implementer": "coordinator-blood-cadence-05-correction",
-    "claim": {
-      "owner": "coordinator-blood-cadence-05-build",
-      "token": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569",
-      "operation_id": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569",
-      "stage": "build"
+    "build_identity": {
+      "source_commit": "3fb84cdfc632bebaf6b4aeccdaa7cc83c19da00f",
+      "binary_sha256": "f0869bd47c5d8b6d1923d134656c47aa6a075704dac15e50d3c2cbe0ccf957d4"
     }
   },
   "parked_scenarios": {

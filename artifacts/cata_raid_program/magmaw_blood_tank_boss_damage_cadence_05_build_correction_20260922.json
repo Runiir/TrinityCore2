@@ -1,0 +1,46 @@
+{
+  "schema": "cata_raid_program_build_receipt_v1",
+  "kind": "build",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "coordinator-blood-cadence-05-build",
+  "authority": "coordinator_attestation",
+  "operation_id": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569",
+  "claim_token": "09049330744042843e35fac8934175c2e904320b8972101996b70b68ab6ab569",
+  "source_commit": "3fb84cdfc632bebaf6b4aeccdaa7cc83c19da00f",
+  "binary_sha256": "f0869bd47c5d8b6d1923d134656c47aa6a075704dac15e50d3c2cbe0ccf957d4",
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "cbfdca9543b017d34652cc0d5ee949f3cb2dfd7211752b2604d04cfb232ffdb8",
+    "tests/test_profile_preview_diagnostic_publication.py": "e917437b1c80f72de0bca2ce9150bce40b6c261893f2d60b047cc274171c53e5"
+  },
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_queued_build_correction_20260922.json",
+    "sha256": "8251c60cd9c2255b0518391f9f1ed330d046c9ec32bbf63e9c32fbe40541f220"
+  },
+  "notes": "Host-12 queued configure and worldserver build succeeded under the independently reviewed Blood telemetry correction source identity; the gate-bearing receipt produced the worldserver binary.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_correction_20260922.json",
+      "sha256": "6aa1f0e25bb25571dbc4bb94deb1dcb5b2b9ec4f7393888603649cbeb2d13e54"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_tests_correction_20260922.json",
+      "sha256": "a977e1265656c66bb8ef4e3f57d805d9526d579bcb643c424c50d384039a5d9d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_correction_20260922.json",
+      "sha256": "7cc13f03d96157ba9fabf3794a3752bcaf9c4e27234b5651b40b68dbc816f462"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_build_claim_correction_20260922.json",
+      "sha256": "485ccbcef89232c324f5f019c22635a457973165b01fc90e42f31086ee0f07d1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_queued_build_correction_20260922.json",
+      "sha256": "8251c60cd9c2255b0518391f9f1ed330d046c9ec32bbf63e9c32fbe40541f220"
+    }
+  ]
+}
