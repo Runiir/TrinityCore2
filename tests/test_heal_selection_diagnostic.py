@@ -235,7 +235,10 @@ def test_adaptive_heal_resolve_records_typed_selection_detail() -> None:
     assert '"heal_cast_retryable"' in cast_failure
     assert "failure.RetryReason.c_str(), nullptr" in cast_failure
     assert "failure.DetailJson.c_str()" in cast_failure
-    assert "Outcome::Retryable(\n                            failure.RetryReason)" in cast_failure
+    # GCD and in-progress-cast failures wait in the spell queue for the
+    # native release; every other failure keeps the ordinary retry outcome.
+    assert "return ScheduleNativeLockWait(context.State," in cast_failure
+    assert "Outcome::Retryable(\n                                failure.RetryReason)" in cast_failure
 
     assert 'std::string DetailJson = "{}";' in state
     assert "std::string DiagnosticReason;" in state

@@ -1,18 +1,25 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 bool BotWorldPopulationMgr::RunBotDecisionKernel(BotUpdateContext& context)
 {
     if (!context.ValidationKernelOwnsTick)
         return RunLegacyBotDecision(context);
 
+    context.State.SpellQueue.ReleaseDue(
+        BotWorldPopulationMgrSpellSemantics::NowMs());
     PrepareValidationKernel(context);
     SubmitAdaptiveKernelCandidates(context);
     SubmitValidationKernelFallbackCandidates(context);
 
     BotActionArbitration::Resolution const& resolution =
         context.State.DecisionKernel.Resolve();
-    context.State.LastDecisionKernelJson =
-        context.State.DecisionKernel.LastResolutionJson();
+    AlignDecisionTimerToSpellQueue(context);
+    std::string kernelJson = context.State.DecisionKernel.LastResolutionJson();
+    kernelJson.pop_back();
+    context.State.LastDecisionKernelJson = kernelJson + ",\"spell_queue\":"
+        + context.State.SpellQueue.ToJson(
+            BotWorldPopulationMgrSpellSemantics::NowMs()) + "}";
     ObserveProfileCombatRangeCheckpoint(context);
     if (!resolution.AnyCommitted)
     {

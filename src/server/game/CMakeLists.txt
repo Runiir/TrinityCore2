@@ -40,6 +40,8 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgrLoading.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotProgressionGoalPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotRoleSaturationPolicy.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotSpellQueue.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotSpellQueueNativeLock.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTelemetryBuffer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTelemetryPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTypes.cpp
@@ -85,6 +87,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrEncounterJson.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrPersistentSetup.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrCombatExecution.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrSpellQueue.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrCombatResolver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrCombatRes.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrConfig.cpp

@@ -366,6 +366,13 @@ private:
     void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
     bool RunLegacyBotDecision(BotUpdateContext& context);
     bool RunBotDecisionKernel(BotUpdateContext& context);
+    void AlignDecisionTimerToSpellQueue(BotUpdateContext& context);
+    BotActionArbitration::Outcome ScheduleProfileCombatWait(WorldBotState& state,
+        Player* bot, ResolvedCombatAction const& action, BotActionResult result,
+        BotActionArbitration::Outcome outcome);
+    BotActionArbitration::Outcome ScheduleNativeLockWait(WorldBotState& state,
+        Player* bot, std::string const& key, BotActionArbitration::Priority priority,
+        std::string const& reason, BotActionArbitration::Outcome outcome);
     void FinalizeBotUpdate(BotUpdateContext& context);
     void HandleBotDeath(WorldBotState& state, Player* bot, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);

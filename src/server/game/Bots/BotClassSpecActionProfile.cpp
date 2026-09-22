@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <map>
@@ -27,6 +28,7 @@
 #include <mutex>
 #include <set>
 #include <sstream>
+#include <unordered_map>
 
 #include "Bots/BotClassSpecActionProfileInternal.h"
 
@@ -66,17 +68,44 @@ bool HasAny(Player const* bot, std::vector<uint32> const& ids)
     return false;
 }
 
+// Profile builds run several times per bot decision.  The pool spec is only
+// written by provisioning tools, so keep a short-lived copy instead of issuing
+// a synchronous character database query from the world thread every time.
+std::string PoolClassSpec(uint32 guidLow)
+{
+    constexpr std::chrono::milliseconds CacheLifetime(5000);
+    struct CachedSpec
+    {
+        std::string ClassSpec;
+        std::chrono::steady_clock::time_point ExpiresAt;
+    };
+    static std::mutex cacheMutex;
+    static std::unordered_map<uint32, CachedSpec> cache;
+
+    std::chrono::steady_clock::time_point const now = std::chrono::steady_clock::now();
+    {
+        std::lock_guard<std::mutex> guard(cacheMutex);
+        auto const itr = cache.find(guidLow);
+        if (itr != cache.end() && itr->second.ExpiresAt > now)
+            return itr->second.ClassSpec;
+    }
+
+    std::string classSpec;
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT class_spec FROM character_bot_pool WHERE guid = %u LIMIT 1", guidLow))
+        classSpec = BotClassSpecActionProfileDetail::CanonicalSpecTag(result->Fetch()[0].GetString());
+    std::lock_guard<std::mutex> guard(cacheMutex);
+    cache[guidLow] = CachedSpec{ classSpec, now + CacheLifetime };
+    return classSpec;
+}
+
 std::string InferSpecTag(Player const* bot, std::string const& role)
 {
     if (!bot)
         return "generic";
 
-    if (QueryResult result = CharacterDatabase.PQuery("SELECT class_spec FROM character_bot_pool WHERE guid = %u LIMIT 1", bot->GetGUID().GetCounter()))
-    {
-        std::string classSpec = BotClassSpecActionProfileDetail::CanonicalSpecTag(result->Fetch()[0].GetString());
-        if (!classSpec.empty())
-            return classSpec;
-    }
+    std::string classSpec = PoolClassSpec(bot->GetGUID().GetCounter());
+    if (!classSpec.empty())
+        return classSpec;
 
     switch (bot->getClass())
     {

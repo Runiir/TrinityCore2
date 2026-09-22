@@ -863,12 +863,13 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
                     context.State.LastCombatAttempt.Reason);
             BotActionArbitration::Outcome outcome =
                 BotActionArbitration::FromBotActionResult(result);
-            return outcome.Result == BotActionArbitration::Disposition::NotApplicable
-                ? BotActionArbitration::Outcome::Retryable(
+            if (outcome.Result == BotActionArbitration::Disposition::NotApplicable)
+                outcome = BotActionArbitration::Outcome::Retryable(
                     profileAction.DebugName.empty()
                         ? std::string_view("profile_combat_retryable")
-                        : std::string_view(profileAction.DebugName))
-                : outcome;
+                        : std::string_view(profileAction.DebugName));
+            return ScheduleProfileCombatWait(context.State, context.Bot,
+                profileAction, result, std::move(outcome));
         };
         context.State.DecisionKernel.Submit(std::move(combat));
 

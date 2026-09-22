@@ -21,7 +21,10 @@ def test_production_reaction_policy_and_both_timer_callers(tmp_path):
     internal = (BOT_DIR / "BotClassSpecActionProfileInternal.h").read_text()
     calibration = (BOT_DIR / "BotWorldPopulationMgrCalibrationBot.cpp").read_text()
     preparation = (BOT_DIR / "BotWorldPopulationMgrUpdateBotPreparation.cpp").read_text()
+    spell_queue = (BOT_DIR / "BotSpellQueue.h").read_text()
     canonical = function(internal, "inline std::string CanonicalSpecTag")
+    combat_interval = next(line.strip() for line in spell_queue.splitlines()
+                           if "CombatDecisionIntervalMs =" in line)
     policy = function(profile, "uint32 BotClassSpecActionProfileStore::ReactionTimeMsForSpec")
     scheduler = function(profile, "uint32 BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec")
     # Compile the actual caller statements; stubs supply observations only.
@@ -49,6 +52,7 @@ struct BotClassSpecActionProfileStore {
  static uint32 ReferenceDecisionIntervalMsForSpec(char const*);
  static BotClassSpecActionProfile Build(Bot* b, char const*) { return {b->spec}; }
 };
+namespace BotSpellQueue { ''' + combat_interval + ''' }
 ''' + policy + scheduler + '''
 struct State { uint32 DecisionTimer = 0; };
 struct CohortState { std::string CalibrationTargetSpec; std::string CalibrationMode;
@@ -82,8 +86,15 @@ int main() {
  for (auto spec : {"unknown", ""}) {
   assert(BotClassSpecActionProfileStore::ReactionTimeMsForSpec(spec) == 500);
   assert(Calibration(spec) == 500);
-  assert(Ordinary(spec,true,3000) == 1000);
-  assert(Ordinary(spec,true,1) == 500);
+  // Specs without a calibration reference (tanks, healers) still decide at
+  // the native combat floor; the spell queue aligns them to GCD releases.
+  assert(Ordinary(spec,true,3000) == 100);
+  assert(Ordinary(spec,true,1) == 100);
+  assert(Ordinary(spec,false,3000) == 3000);
+  assert(Ordinary(spec,false,1) == 500);
+ }
+ for (auto spec : {"blood_death_knight", "restoration_shaman", "holy_paladin"}) {
+  assert(Ordinary(spec,true,3000) == 100);
   assert(Ordinary(spec,false,3000) == 3000);
  }
  assert(BotClassSpecActionProfileStore::ReactionTimeMsForSpec(nullptr) == 500);

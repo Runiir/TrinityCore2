@@ -61,50 +61,62 @@ struct Outcome
     // the callback returns to Resolve().
     std::string Reason = "not_applicable";
     Phase LifecyclePhase = Phase::Deferred;
+    // Absolute release time of a native timed lock (GCD, cast, channel,
+    // resource regeneration). Zero for every ordinary outcome.
+    uint64 RetryAtMs = 0;
 
     static Outcome NotApplicable(std::string_view reason = "not_applicable")
     {
-        return { Disposition::NotApplicable, std::string(reason), Phase::Deferred };
+        return { Disposition::NotApplicable, std::string(reason), Phase::Deferred, 0 };
     }
 
     static Outcome Retryable(std::string_view reason)
     {
-        return { Disposition::Retryable, std::string(reason), Phase::Failed };
+        return { Disposition::Retryable, std::string(reason), Phase::Failed, 0 };
+    }
+
+    // The action is legal but blocked by a native lock with a known release
+    // time. Waiting for the GCD is not a failed attempt: it must neither grow
+    // exponential backoff nor count toward escalation, and the candidate has
+    // to become eligible again exactly when the lock clears.
+    static Outcome WaitUntil(std::string_view reason, uint64 readyAtMs)
+    {
+        return { Disposition::Retryable, std::string(reason), Phase::Deferred, readyAtMs };
     }
 
     static Outcome Unsafe(std::string_view reason)
     {
-        return { Disposition::Unsafe, std::string(reason), Phase::Failed };
+        return { Disposition::Unsafe, std::string(reason), Phase::Failed, 0 };
     }
 
     static Outcome Committed(std::string_view reason)
     {
-        return { Disposition::Committed, std::string(reason), Phase::Completed };
+        return { Disposition::Committed, std::string(reason), Phase::Completed, 0 };
     }
 
     static Outcome Submitted(std::string_view reason)
     {
-        return { Disposition::Committed, std::string(reason), Phase::Submitted };
+        return { Disposition::Committed, std::string(reason), Phase::Submitted, 0 };
     }
 
     static Outcome Selected(std::string_view reason)
     {
-        return { Disposition::NotApplicable, std::string(reason), Phase::Selected };
+        return { Disposition::NotApplicable, std::string(reason), Phase::Selected, 0 };
     }
 
     static Outcome Started(std::string_view reason)
     {
-        return { Disposition::Committed, std::string(reason), Phase::Started };
+        return { Disposition::Committed, std::string(reason), Phase::Started, 0 };
     }
 
     static Outcome Progressed(std::string_view reason)
     {
-        return { Disposition::Committed, std::string(reason), Phase::Progressed };
+        return { Disposition::Committed, std::string(reason), Phase::Progressed, 0 };
     }
 
     static Outcome Terminal(std::string_view reason)
     {
-        return { Disposition::Terminal, std::string(reason), Phase::Terminal };
+        return { Disposition::Terminal, std::string(reason), Phase::Terminal, 0 };
     }
 };
 
@@ -466,6 +478,14 @@ public:
             lifecycle.ConsecutiveFailures = 0;
             lifecycle.FirstFailureAtMs = 0;
             lifecycle.RetryAfterMs = 0;
+            return;
+        }
+        if (outcome.Result == Disposition::Retryable && outcome.RetryAtMs)
+        {
+            lifecycle.ConsecutiveFailures = 0;
+            lifecycle.FirstFailureAtMs = 0;
+            lifecycle.RetryAfterMs = std::min<uint64>(
+                std::max<uint64>(outcome.RetryAtMs, nowMs), nowMs + retryMaxMs);
             return;
         }
 

@@ -773,7 +773,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                         Cohort().Raid.ValidationPrepullCheckpoint
                             .CurrentScope().Key());
                 support.Attempt = [this, &context, healTargetGuid,
-                    activeNativeMovementPath]()
+                    activeNativeMovementPath, supportKey = support.Key,
+                    supportPriority = support.ActionPriority]()
                 {
                     Unit* healTarget = ObjectAccessor::GetUnit(*context.Bot, healTargetGuid);
                     if (!healTarget || !healTarget->IsAlive()
@@ -821,8 +822,11 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                             BotActionResult::CastFailed,
                             failure.RetryReason.c_str(), nullptr,
                             failure.DetailJson.c_str());
-                        return BotActionArbitration::Outcome::Retryable(
-                            failure.RetryReason);
+                        return ScheduleNativeLockWait(context.State,
+                            context.Bot, supportKey, supportPriority,
+                            failure.RetryReason,
+                            BotActionArbitration::Outcome::Retryable(
+                                failure.RetryReason));
                     }
                     RecordCombatAttempt(
                         context.State, context.Bot, healTarget,

@@ -4,6 +4,7 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotServerVehicleExitLanding.h"
+#include "Bots/BotSpellQueue.h"
 #include "Bots/BotWorldPopulationMgrMovementProgressDiagnostics.h"
 
 #include "Config.h"
@@ -622,7 +623,13 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
     uint32 const referenceDecisionMs = context.Bot->IsInCombat()
         ? BotClassSpecActionProfileStore::ReferenceDecisionIntervalMsForSpec(
             cadenceProfile.SpecTag.c_str()) : 0;
-    context.State.DecisionTimer = referenceDecisionMs ? referenceDecisionMs
+    // Tanks and healers have no calibration reference interval, but they
+    // spend every GCD too. A one-second poll idled through most of their
+    // GCDs, so every in-combat role uses the native combat floor.
+    uint32 const combatDecisionMs = context.Bot->IsInCombat()
+        ? (referenceDecisionMs ? referenceDecisionMs
+            : BotSpellQueue::CombatDecisionIntervalMs) : 0;
+    context.State.DecisionTimer = combatDecisionMs ? combatDecisionMs
         : std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);
 
     context.EnsureProgressionScored();

@@ -9,6 +9,7 @@
 #include "Bots/BotWorldPopulationMgrMovement.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotRoleSaturationPolicy.h"
+#include "Bots/BotSpellQueue.h"
 #include "Bots/BotTypes.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeTauntConfirmation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawEventMovementTransition.h"
@@ -475,6 +476,8 @@ namespace BotWorldPopulationMgrBotState
         std::string LastDecisionReason;
         std::string LastDecisionHandler = "none";
         BotActionArbitration::Kernel DecisionKernel;
+        // Pending intents waiting for a native GCD/cast/channel release.
+        BotSpellQueue::Queue SpellQueue;
         BotMovementArbitration::Lease MovementLease;
         // Latest typed result written directly by the native movement path.
         // Encounter tasks may correlate this value to their selected intent;
