@@ -1,6 +1,6 @@
 # Raid program error ledger
 
-Updated 2026-09-21. This is the canonical index of known blockers and rejected
+Updated 2026-09-22. This is the canonical index of known blockers and rejected
 assumptions. The current workflow summary chooses work; this ledger explains
 what has already failed. Do not create a new handoff document merely to copy it.
 
@@ -8,6 +8,7 @@ what has already failed. Do not create a new handoff document merely to copy it.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
+| FLOW-008 | Bounded diagnostic and review-identity tools repaired; parent performance remains open | Oversized task output could become a successful field-name outline, losing the decision data. Reviewer identity was checked after substantive work, and mixed-session transcripts could then fail receipt import. | Use `evidence_view task --section summary`, explicit detail sections, and `result` for native gate outcomes. Oversized queries fail with narrowing instructions. Preflight a fresh review session before sending its work. See the measured check below. |
 | FLOW-007 | Workflow gate repair; native DPS remains open | Late build-policy validation, manual transition hashes, unproven reviewer labels and wall-time calibration caused repeated rework. Legacy 75/85% thresholds did not meet the user's 95% requirement. | Use checked workflow transitions, session-backed review and native 300-second completion; require 95% per DPS actor with no additional DTR waiver. See [workflow repair](workflow_gate_repair_20260921.md). |
 | FLOW-006 | DPS loss accounting required before another optimization patch | Unit-05 diagnosis compared player casts with WoWSims totals containing Dragonwrath copies (Wrath 87.561 ordinary + 6.944 copies, not 94.505 player casts). Its normalized review has no native runtime/ComputeStats join. Starfall 5 to 4 casts accompanied 32,585.30 to 31,544.06 DPS; causality and the 3,903.53 DPS reference gap remain unresolved. | Join retained inputs; reconcile signed per-effect damage, ordinary casts/procs/pets and time; rank unknown losses and bound the selected repair's net gain. Missing DTR damage is not proved. Diagnose latest-patch decline before stacking a fix; preserve all other actors. User-directed continuation is `magmaw:balance_regression_91pct_07`: pin historical build `618b20a2d2` (91.93%), compare against 88.99% and 87.12% on matched setup, retain current shared code and other-spec fixes. Full contract and suspended Blood assignment: `artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json`. The 1,703.32 DPS decline is not attributed to DTR; 75170 startup coverage is a confound, not a quantified cause. Evidence: `magmaw_balance_rotation_cadence_05_diagnosis_20260920.json`, `magmaw_balance_rotation_cadence_05_diagnosis_review_20260920.json`, and unit-04/unit-05 run/assessment receipts in `artifacts/cata_raid_program/`. |
 | FLOW-005 | Logger repair live-observed; original missing-haste hypothesis superseded by comparator correction | Agent bundled stat reporting and aura hypotheses, double-counted shared haste, used source-shape tests as native proof, and authored its own independent-review adapters. Build attempts repeated wrong argv, dirty claims and stale configure lineage; DVC publication prompted revert/hide churn. The reviewed server-logger repair exposed handler execution. Later comparison established native speed 1.269 matches the corrected 1.26876 expectation; the old 1.3322 expectation counted form haste twice. | Preserve logger and comparator repairs. Use policy-derived builds, a separate reviewer session and cross-unit attempt history; do not reopen native aura arithmetic from the superseded expectation. Remaining DPS diagnosis is FLOW-006. Evidence: `magmaw_balance_effective_stat_application_04_run_20260920.json`, `magmaw_balance_effective_stat_application_04_assessment_20260920.json`, `magmaw_balance_effective_stat_application_04_short_probe_20260920.tar.gz.dvc`, and `magmaw_balance_rotation_cadence_04_run_20260920.json` under `artifacts/cata_raid_program/`. |
@@ -556,3 +557,39 @@ WoWSims result also reports only one item58091 use per iteration (2,000 uses ove
 fires. The declared one-pre-pot/one-combat contract remains authoritative; repair
 that reference inconsistency before attributing a missed simulator action to the
 bot. Provisioned inventory is present. Keep this separate from OBS-008.
+
+## FLOW-008 measured workflow check, 2026-09-22
+
+`evidence_view task --root <coordinator> --max-chars 6000` returns the saved
+objective, bounded unit, claim, blockers and next inspection command. Details
+have explicit selectors; reference resolution still checks hashes and fails on
+missing inputs. `result <report> --max-chars 6000` separates completion, role
+rejection, reference eligibility and absent closure observations. Its reference
+section and exact scalar metric pointers support further inspection. Neither
+command promotes acceptance. Oversized required data returns an error and
+narrowing instructions, never a successful field-name substitute.
+
+On the retained Blood run, the task returned 3,095 bytes in 0.104s; the native
+36,668,772-byte report returned a 2,565-byte outcome in 0.305s. These measure
+individual tool calls, not complete-agent speed or model context savings.
+Forty focused tests passed. The live reviewer handshake exposed a preflight bug
+with usage records after its final message; the corrected identity preflight
+accepts that stable prefix. Final-verdict proof still requires its exact message
+boundary. A retained mixed-session transcript fails before substantive review.
+
+The existing Blood permanent-enchant run completed its native 300-second window
+before the previous agent was stopped. Do not launch it again merely because
+its graph claim remains open. Its report records a noncomparable reference, so
+it cannot close tank DPS, the 95% gate, or raid performance. The controller's
+active/lease snapshot is stale; later native cleanup records both bots removed
+and zero world bots. Both observations are retained.
+
+Graph recording currently fails `source delta contains files outside bounded
+assignment`: the run used build source `a69eec8151`, while another thread's
+`9ea844c17a` Jev retirement subsequently changed mainline tool/config source.
+The completed run and original claim are preserved, with no acceptance or
+source-check bypass. Reconcile historical run admission before another launch;
+do not misclassify this as a failed native experiment or repeat its build.
+The compact evidence and raw DVC pointer use prefix
+`artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_20260922`;
+the compact evidence filename instead ends `_validation_evidence_20260922.json`.

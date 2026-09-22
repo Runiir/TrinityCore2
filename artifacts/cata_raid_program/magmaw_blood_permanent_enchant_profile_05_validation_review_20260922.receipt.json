@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_review_20260922.json",
+      "sha256": "4d1ac2f51c107b4a7a956fdbabdbca2e5f6d61aca4a7a07683b2d18e1bb7a6bd"
+    }
+  ],
+  "file_hashes": {
+    "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_evidence_20260922.json": "0e44af5ddb0a917f47981a811b77675b9ab3204594f800a636147fc0d952dc4f",
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json": "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254"
+  },
+  "kind": "review",
+  "producer": "01a0c815-4e03-7fb3-9e92-67ec16edb048",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_review_20260922.json",
+    "sha256": "4d1ac2f51c107b4a7a956fdbabdbca2e5f6d61aca4a7a07683b2d18e1bb7a6bd"
+  },
+  "reviewer_session_id": "01a0c815-4e03-7fb3-9e92-67ec16edb048",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "verdict": "approved"
+}

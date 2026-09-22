@@ -1,0 +1,40 @@
+{
+  "file_hashes": {
+    "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_evidence_20260922.json": "0e44af5ddb0a917f47981a811b77675b9ab3204594f800a636147fc0d952dc4f",
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json": "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254"
+  },
+  "findings": [
+    "Approved for permanent-enchant setup evidence only. Packet report_sha256 matches the raw report hash 5b107016b2dc5cf309bbe59c4c948abc7f4b1f4e503f24dd8e41484783e532b5.",
+    "The config enchant mapping exactly matches packet slots 0, 2, 4, 6, 7, 8, 9, and 14. Weapon slot 15 remains enchant 0; DK runeforge 3368 is explicitly excluded.",
+    "All 16 packet gear entries match raw readback for item IDs, gems after zero-padding normalization, enchant IDs, and reforge_id 0.",
+    "Both actor metric records read back exactly: Blooddk GUID 1283 and Restosham GUID 1288. This confirms attribution of reported metrics only.",
+    "Role acceptance is not established: role_evaluation.passed=false, reference_comparison_eligible=false, and failure is role_calibration:reference_conditions_not_comparable. Measured 15156.95 versus reference 32489.03862 is therefore not a valid performance conclusion.",
+    "Actor, native performance, and raid acceptance are not established. Native certification is rejected, native_clear=false, and boss-kill evidence is empty.",
+    "Cleanup lines 730 and 731 report sessions=0/world_bots=0 and an ok stop removing 2 bots. The compact readback still reports cleanup_verified=null, controller active=true with lease_count=2, identity_complete=false, and session_closed=false.",
+    "Remaining blocker and next action: clear the stale controller lease/session and rerun a matched Blood calibration with comparable reference conditions. Preserve the approved enchant overlay."
+  ],
+  "limits": [
+    "This is setup-only approval; it does not approve performance, actor behavior, native role completion, or raid completion.",
+    "The raw report was not dumped; only bounded evidence_view output and targeted fields were inspected.",
+    "No gameplay changes, new experiments, builds, WCL/WoWSims research, or graph/source-admission checks were performed.",
+    "The current mainline graph may reject historical run closure after commit 9ea844c17a; that source-admission question is separate from this evidence verdict."
+  ],
+  "proof": {
+    "final_message_bytes": 2969,
+    "final_message_sha256": "054beff8ab83a7144832b1742336e46fba7f904341f78d950c39532de309589b",
+    "prefix_bytes": 849903,
+    "prefix_sha256": "55efe8a9fedf211ae6133227bf3e32237e8a636bf648419f7b851aeb282cd4e6",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T10-47-14-01a0c815-4e03-7fb3-9e92-67ec16edb048.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c815-4e03-7fb3-9e92-67ec16edb048"
+  },
+  "reviewer_session_id": "01a0c815-4e03-7fb3-9e92-67ec16edb048",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "sha256sum verified the packet and enchant config hashes listed above.",
+    "sha256sum verified the raw report hash against packet.report_sha256; raw report size is 36668772 bytes.",
+    "evidence_view result with --max-chars 6000 confirmed the closed run outcome, failed role gate, both role metrics, and source hash.",
+    "Targeted evidence_view inspect/select and jq comparisons verified role records, native outcome, acceptance facts, both actor metrics, enchant mapping, and 16/16 gear readbacks."
+  ],
+  "verdict": "approved"
+}

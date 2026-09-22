@@ -1,0 +1,287 @@
+{
+  "schema": "cata_raid_program_validation_evidence_v1",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "report_path": "dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_20260922/report.json",
+  "report_sha256": "5b107016b2dc5cf309bbe59c4c948abc7f4b1f4e503f24dd8e41484783e532b5",
+  "server_epoch": 7570692649136308,
+  "attempt_id": 1,
+  "scored_seconds": 300.0,
+  "window_complete": true,
+  "native_returncode": 0,
+  "completion_reason": "combat_calibration_role_gate_failed",
+  "failure_labels": [
+    "role_calibration:reference_conditions_not_comparable"
+  ],
+  "exact_gear_readback_matches": true,
+  "equipment": [
+    {
+      "slot": 0,
+      "item_id": 78687,
+      "enchant_id": 4208,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        44088,
+        77141
+      ]
+    },
+    {
+      "slot": 1,
+      "item_id": 73492,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": []
+    },
+    {
+      "slot": 2,
+      "item_id": 78751,
+      "enchant_id": 4198,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77130,
+        77130
+      ]
+    },
+    {
+      "slot": 4,
+      "item_id": 78659,
+      "enchant_id": 4103,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77141,
+        77141,
+        77130
+      ]
+    },
+    {
+      "slot": 5,
+      "item_id": 78889,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77130
+      ]
+    },
+    {
+      "slot": 6,
+      "item_id": 78716,
+      "enchant_id": 4127,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77141,
+        77130,
+        77130
+      ]
+    },
+    {
+      "slot": 7,
+      "item_id": 78431,
+      "enchant_id": 4062,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77141,
+        77130
+      ]
+    },
+    {
+      "slot": 8,
+      "item_id": 73551,
+      "enchant_id": 4191,
+      "reforge_id": 0,
+      "gem_item_ids": []
+    },
+    {
+      "slot": 9,
+      "item_id": 78678,
+      "enchant_id": 4106,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77130
+      ]
+    },
+    {
+      "slot": 10,
+      "item_id": 78432,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77141
+      ]
+    },
+    {
+      "slot": 11,
+      "item_id": 73488,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": []
+    },
+    {
+      "slot": 12,
+      "item_id": 78002,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": []
+    },
+    {
+      "slot": 13,
+      "item_id": 77992,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": []
+    },
+    {
+      "slot": 14,
+      "item_id": 77097,
+      "enchant_id": 4100,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77141
+      ]
+    },
+    {
+      "slot": 15,
+      "item_id": 78478,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": []
+    },
+    {
+      "slot": 17,
+      "item_id": 74783,
+      "enchant_id": 0,
+      "reforge_id": 0,
+      "gem_item_ids": [
+        77130
+      ]
+    }
+  ],
+  "empty_socket_normalization": "Both inputs use canonical_gear_manifest; native zero padding is preserved in raw report.",
+  "enchants_by_slot": {
+    "0": 4208,
+    "2": 4198,
+    "4": 4103,
+    "6": 4127,
+    "7": 4062,
+    "8": 4191,
+    "9": 4106,
+    "14": 4100
+  },
+  "weapon_slot_15_enchant": 0,
+  "role_evaluation": {
+    "passed": false,
+    "failure_reasons": [
+      "reference_conditions_not_comparable"
+    ],
+    "checks": {
+      "add_threat": true,
+      "all_hostile_retention": true,
+      "damage_smoothing": true,
+      "declared_buff_debuff_consumable_hash": true,
+      "declared_profile_snapshot": true,
+      "declared_target_hash": true,
+      "defensive_coverage_declared": true,
+      "deterministic_reset_applied": true,
+      "explicit_rule_runtime_authority": true,
+      "generic_ml_shadow_only": true,
+      "healer_exposure": true,
+      "interrupt_coverage": true,
+      "mitigation_coverage": true,
+      "no_cross_window_contamination": true,
+      "no_illegal_actions": true,
+      "reference_comparison_eligible": false,
+      "reference_value_positive": true,
+      "role_allowed_for_mode": true,
+      "scored_duration_within_tolerance": true,
+      "separate_warmup_complete": true,
+      "snap_threat": true,
+      "survival": true,
+      "tank_dps_recorded": true,
+      "tank_stance_form_presence": true,
+      "tank_tps_recorded": true,
+      "threat_aura_uptime": true
+    }
+  },
+  "cleanup_observations": [
+    {
+      "line": 730,
+      "text": "PlayerBot cleanup complete bot=GUID Full: 0x0000000000000508 Type: Player Low: 1288 sessions=0 world_bots=0"
+    },
+    {
+      "line": 731,
+      "stop_result": {
+        "ok": true,
+        "action": "botauto_calibrate_stop",
+        "cohort_id": "default",
+        "server_epoch": 7570692649136308,
+        "attempt_id": 1,
+        "removed": 2,
+        "fixture_target_found": false,
+        "fixture_cleanup_submitted_or_absent": true,
+        "failure_reason": null
+      }
+    }
+  ],
+  "stale_controller_snapshot": {
+    "active": true,
+    "bots": 0,
+    "lease_count": 2
+  },
+  "all_bot_metrics": [
+    {
+      "guid": 1283,
+      "name": "Blooddk",
+      "damage": 4547085,
+      "pet_damage": 562688,
+      "healer_metrics": {
+        "absorbed_healing": 0,
+        "attempted_healing": 834396,
+        "controlled_damage": 1281685,
+        "cooldown_attempts": 0,
+        "cooldown_successes": 0,
+        "delivered_event_count": 47,
+        "dispel_attempts": 0,
+        "dispel_successes": 0,
+        "effective_healing": 347437,
+        "effective_hps": 1158.12,
+        "health_floor_ratio": 0.5,
+        "idle_ratio_under_demand": 0.0,
+        "overheal_ratio": 0.58,
+        "remaining_mana_ratio": 0.0,
+        "response_latency_p95_ms": 11799,
+        "scheduled_event_count": 47,
+        "target_selection_accuracy": 0.0,
+        "time_to_oom_seconds": 0.0
+      }
+    },
+    {
+      "guid": 1288,
+      "name": "Restosham",
+      "damage": 0,
+      "pet_damage": 0,
+      "healer_metrics": {
+        "absorbed_healing": 0,
+        "attempted_healing": 1811136,
+        "controlled_damage": 0,
+        "cooldown_attempts": 0,
+        "cooldown_successes": 0,
+        "delivered_event_count": 0,
+        "dispel_attempts": 0,
+        "dispel_successes": 0,
+        "effective_healing": 1042777,
+        "effective_hps": 3475.92,
+        "health_floor_ratio": 1.0,
+        "idle_ratio_under_demand": 0.0,
+        "overheal_ratio": 0.42,
+        "remaining_mana_ratio": 0.64,
+        "response_latency_p95_ms": 0,
+        "scheduled_event_count": 0,
+        "target_selection_accuracy": 1.0,
+        "time_to_oom_seconds": 300.0
+      }
+    }
+  ],
+  "limits": [
+    "Tank threat fixture only; no matched WCL cadence or comparable WoWSims DPS acceptance.",
+    "Report status snapshot precedes explicit native cleanup. Stop removed both bots; native cleanup records zero world bots; no worldserver process remains.",
+    "No proof of DK runeforge behavior; weapon enchant unchanged."
+  ]
+}

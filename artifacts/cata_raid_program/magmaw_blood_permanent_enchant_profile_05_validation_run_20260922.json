@@ -1,0 +1,89 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "03b626832a573412e853e59f0c07e329ad75e4d61482ef69370c52d464eea3a7",
+  "attempt_id": 1,
+  "server_epoch": 7570692649136308,
+  "closed": true,
+  "cleanup_verified": true,
+  "terminal_reason": "measurement_complete",
+  "terminal_detail": "combat_calibration_role_gate_failed:reference_conditions_not_comparable",
+  "scenario_kind": "dummy",
+  "scoring_ms": 300000,
+  "build_identity": {
+    "source_commit": "a69eec8151da2bf55e7f2036626a2257efb3416e",
+    "binary_sha256": "1b7ccc8eea1c57d5bd38a9c41792457273a1a237307696fb12eabf027d06a4db"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "target_spec": "blood_death_knight",
+  "calibration_acceptance_passed": false,
+  "evidence_identity_complete": false,
+  "report_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_evidence_20260922.json",
+    "sha256": "0e44af5ddb0a917f47981a811b77675b9ab3204594f800a636147fc0d952dc4f",
+    "actor_report_sha256": "5b107016b2dc5cf309bbe59c4c948abc7f4b1f4e503f24dd8e41484783e532b5"
+  },
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_20260922.raw.tar.gz.dvc",
+    "sha256": "e2cc9157868138e76d299090cec3eb3525d68d95a654d6d3ddc65c894fe88391",
+    "payload_sha256": "aa2e4b35345e2c59f40162b31c4a0777b4fcb7534b045119bdd2c84c4f125676",
+    "payload_size_bytes": 3796210
+  },
+  "review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_review_20260922.json",
+    "sha256": "4d1ac2f51c107b4a7a956fdbabdbca2e5f6d61aca4a7a07683b2d18e1bb7a6bd"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_evidence_20260922.json",
+      "sha256": "0e44af5ddb0a917f47981a811b77675b9ab3204594f800a636147fc0d952dc4f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_20260922.raw.tar.gz.dvc",
+      "sha256": "e2cc9157868138e76d299090cec3eb3525d68d95a654d6d3ddc65c894fe88391"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_review_20260922.json",
+      "sha256": "4d1ac2f51c107b4a7a956fdbabdbca2e5f6d61aca4a7a07683b2d18e1bb7a6bd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_20260922.json",
+      "sha256": "e081d4b4d65b8cf333e166222d8ded6102737835b546d6035c3d593eea6cf127"
+    }
+  ],
+  "graph_recording_blocker": {
+    "source_binding_ok": false,
+    "error": "source delta contains files outside bounded assignment",
+    "source_commit": "a69eec8151da2bf55e7f2036626a2257efb3416e",
+    "current_commit": "9ea844c17af423459733c615340c5587a68912ee",
+    "stage": "validate",
+    "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+    "disposition": "Preserve completed run and claim; no retry or acceptance. A later unrelated source change prevents graph closure under current source rule."
+  },
+  "interpretation": "Prepared closure adapter for the already completed native run. Not advanced in graph because current source differs. No new experiment, repair acceptance, actor acceptance, performance acceptance or raid clear.",
+  "review_disposition": "Accept the reviewer setup-readback verification. Do not interpret stale report leases as a live lease leak: later native stop/zero-bot cleanup and normal server exit are retained. Do not repeat this setup run. Any future throughput test first needs an explicitly comparable reference and separate work unit."
+}
