@@ -1,0 +1,27 @@
+{
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "cbfdca9543b017d34652cc0d5ee949f3cb2dfd7211752b2604d04cfb232ffdb8",
+    "tests/test_profile_preview_diagnostic_publication.py": "e917437b1c80f72de0bca2ce9150bce40b6c261893f2d60b047cc274171c53e5"
+  },
+  "findings": [],
+  "limits": [
+    "No server or live validation was performed.",
+    "Post-spend behavior remains outside this bounded telemetry review."
+  ],
+  "proof": {
+    "final_message_bytes": 556,
+    "final_message_sha256": "5b3c519788e67cebe75eb4250202daa33d50807c6d23f984089bb1a8b6ae479d",
+    "prefix_bytes": 990694,
+    "prefix_sha256": "b19162ba5c80414bcf7fc31372a00596984eecacbecdbcabf682b8c9a7573f95",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T13-49-13-01a0c8bb-e82c-7f90-87f9-d225f28300a6.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c8bb-e82c-7f90-87f9-d225f28300a6"
+  },
+  "reviewer_session_id": "01a0c8bb-e82c-7f90-87f9-d225f28300a6",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "Focused pytest fixture: 2 passed.",
+    "git diff --check: passed."
+  ],
+  "verdict": "approved"
+}

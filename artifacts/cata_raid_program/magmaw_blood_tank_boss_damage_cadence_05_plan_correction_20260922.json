@@ -1,0 +1,98 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_blood_tank_boss_damage_cadence_05_plan_correction_20260922",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "latest_user_direction": "Implement magmaw 10n bots.",
+  "objective": "Correct the bounded Blood decision observation so rune-ready timestamps match Trinity's native paired regeneration and fuzzy zero-cooldown semantics without changing gameplay.",
+  "hypothesis": "The first observation-only patch exposed the required slot-level fields but estimated every rune independently and used a wider zero-cooldown threshold than native G3D::fuzzyEq. Modeling each native rune pair's active and waiting slot, including the partner's remaining cooldown, will make the next matched Magmaw run's cadence joins truthful while preserving aggregate counts and action behavior.",
+  "first_broken_edge": "blood_valid_valid_rune_cadence_observation_native_pairing",
+  "observations": [
+    "The retained Blood data still identifies an observation gap: valid-valid Death Strike and Heart Strike selections lack post-spend slot and next-legal-strike joins.",
+    "The independent review found the first patch's slot-2 estimate was 2000 ms while native paired regeneration makes it 2500 ms in the focused fixture.",
+    "The independent review also found the 0.0001 cooldown threshold broader than native G3D::fuzzyEq, so near-zero cooldowns could be misclassified as ready.",
+    "The correction is limited to the existing observation helper and focused fixture; candidate validity, scores, selection, native submission, movement, mitigation, encounter behavior, and reference values remain out of scope.",
+    "The source base remains the reconciled clean coordinator commit immediately before the original observation patch; no gameplay scope changed."
+  ],
+  "owned_files": [
+    "src/server/game/Bots/BotBloodDecisionObservation.h",
+    "tests/test_profile_preview_diagnostic_publication.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Death Strike or Heart Strike priority buckets, scores, validity, rune costs, spell coefficients, mitigation, target selection, or native submission behavior.",
+    "Do not change parasite-contact movement, encounter scripts, route manifests, runtime profiles, roster, WCL denominators, simulator references, gear, stats, gems, reforges, or consumables.",
+    "Do not add a health threshold, revert profile v25, infer a DPS loss from the 26,152 WCL context value, or close an actor/performance/raid requirement from observation output.",
+    "Do not add spell, aura, shield-absorption, damage, or healing calculations to the decision helper; downstream native outcome telemetry remains a separate evidence edge.",
+    "Do not modify files outside the bounded owned set."
+  ],
+  "acceptance_conditions": [
+    "The existing blood_survival_candidate_observation_v1 JSON preserves aggregate ready_runes counts and emits deterministic per-slot base/current type, cooldown fraction, regeneration rate, paired-regeneration ready-in estimate, and estimated ready timestamp fields.",
+    "Readiness uses a native-equivalent fuzzy zero-cooldown test and native paired-rune gating: a waiting slot includes the active partner's remaining regeneration time.",
+    "The observation remains attached only to relevant Blood Death Knight selections and the additive fields do not affect candidate validity, scoring, selection, or action execution.",
+    "The focused fixture compiles with warnings-as-errors and asserts paired timing, slot identity, cooldown, regeneration, native fuzzy-threshold behavior, aggregate-count preservation, non-Blood rejection, and the existing candidate fields.",
+    "The source remains below the repository's 1,000-line C/C++ guard and the focused test plus existing Blood policy regression pass.",
+    "An independent reviewer approves the exact two-file observation-only correction before a clean policy-bound build and completion-watchdog Magmaw 10N run. This correction may inform the next diagnosis but cannot by itself accept actor_30002, performance, Magmaw 10N, or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "2aeaf99e3c321c6d9f46bb76f5f136fb588c97d8",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_reconciled_20260922.json",
+      "sha256": "d6773705b3217ffbc8e4d7a0b58eab95eaac12e82996b4dce5ca8b63245af0f6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_rework_20260922.json",
+      "sha256": "d868eeb5f4bd8699b02a657418afd9f49faa0239cb101a0b60eb19708c1d7f46"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_report_20260922.json",
+      "sha256": "7f767ec6714059bc6c51b335b47f7c83db900d5ec76c4a0b035eb4bb98c9addf"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_20260922.json",
+      "sha256": "65887fb68a8b71fe939675b4405d22bcccf8b368bc3b1b0029990d14c6ad7612"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_rework_event_20260922.json",
+      "sha256": "23c734c4596eca3d79f44b270e18067b85334893f0ff6d897237e1466e2079d6"
+    },
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "f4eb5583094024c249ca72fa2580fd87d938bfac01d449708abf795ba8114365"
+    }
+  ],
+  "acceptance_claim": "Correction plan only. This receipt authorizes a narrow observation fix and claims no native build, live behavior, actor, performance, raid-clear, publication, or parent acceptance.",
+  "advice": {}
+}

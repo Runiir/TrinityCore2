@@ -1,0 +1,28 @@
+{
+  "schema": "cata_raid_program_review_rework_v1",
+  "kind": "review_rework",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "reviewer_session_id": "01a0c8b3-6a93-7952-964f-edd7d33986aa",
+  "operation_id": "4b5195d2628aac58a385536c7edeedb6edd11c620d99feb7b4910031bfb6c6aa",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "Independent review requested a narrow correction: model native paired-rune regeneration gating in estimated ready timestamps and match Trinity's fuzzyEq zero-cooldown semantics. Preserve observation-only scope and do not begin build or live validation.",
+  "findings": [
+    "The current additive telemetry does not alter candidate arbitration, action submission, movement, or encounter behavior.",
+    "The estimated ready timestamp for a rune waiting behind its paired rune omits the partner cooldown, so the slot-2 fixture expectation is 2000 ms while native paired timing is 2500 ms.",
+    "The observation helper's 0.0001 cooldown threshold is broader than native G3D::fuzzyEq and needs an exact equivalent.",
+    "Post-spend rune state, shield absorption, live behavior, actor acceptance, raid acceptance and parent completion remain unreviewed."
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_report_20260922.json",
+      "sha256": "7f767ec6714059bc6c51b335b47f7c83db900d5ec76c4a0b035eb4bb98c9addf"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_20260922.json",
+      "sha256": "65887fb68a8b71fe939675b4405d22bcccf8b368bc3b1b0029990d14c6ad7612"
+    }
+  ]
+}

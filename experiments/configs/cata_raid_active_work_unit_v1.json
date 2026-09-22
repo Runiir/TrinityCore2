@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 396,
+    "revision": 406,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -651,7 +651,8 @@
       "owner_calibration_post_window_contamination": 2,
       "owner_holy_paladin_profile_incomplete": 3,
       "owner_holy_paladin_remaining_capability_profile": 2,
-      "owner_blood_permanent_enchant_profile": 2
+      "owner_blood_permanent_enchant_profile": 2,
+      "owner_blood_boss_damage_cadence": 2
     },
     "history": [
       {
@@ -7522,6 +7523,173 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 396,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "implement",
+        "to": "diagnose",
+        "event": {
+          "revision": 396,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "rework",
+          "claim_token": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
+          "reason": "Reconcile the stale source base left by the route transition before admitting the already-tested observation-only patch. The committed implementation remains intact and no completed operation is being repeated.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_source_drift_reconciliation_20260922.json",
+            "sha256": "63744ab1da2deb2aa32445a9f0fbe0477d8778632208f218b1b3f9f69ce81c59"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 397,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 397,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_reconciled_20260922.json",
+            "sha256": "d6773705b3217ffbc8e4d7a0b58eab95eaac12e82996b4dce5ca8b63245af0f6"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 398,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 398,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-blood-cadence-05"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 399,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 399,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_tests_reconciled_20260922.json",
+            "sha256": "fe3f5f1e636bc57887d6e2a0f0d5efa031bf754946051e3fb0ec23ffa473ce52"
+          },
+          "claim_token": "4b5195d2628aac58a385536c7edeedb6edd11c620d99feb7b4910031bfb6c6aa"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 400,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "review",
+        "to": "diagnose",
+        "event": {
+          "revision": 400,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "rework",
+          "reason": "Apply the independent review's bounded paired-rune timing and native fuzzyEq corrections before any build or live run.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_rework_20260922.json",
+            "sha256": "d868eeb5f4bd8699b02a657418afd9f49faa0239cb101a0b60eb19708c1d7f46"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 401,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 401,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_correction_20260922.json",
+            "sha256": "6aa1f0e25bb25571dbc4bb94deb1dcb5b2b9ec4f7393888603649cbeb2d13e54"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 402,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 402,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-blood-cadence-05-correction"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 403,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 403,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_tests_correction_20260922.json",
+            "sha256": "a977e1265656c66bb8ef4e3f57d805d9526d579bcb643c424c50d384039a5d9d"
+          },
+          "claim_token": "d739e7f78a7484e787b7f5fa39a5be0ad5737a495e164da767b3ba7405591c86"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 404,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "review",
+        "to": "review",
+        "event": {
+          "revision": 404,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-blood-cadence-05-review"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 405,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 405,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_correction_20260922.json",
+            "sha256": "7cc13f03d96157ba9fabf3794a3752bcaf9c4e27234b5651b40b68dbc816f462"
+          },
+          "claim_token": "37b07899d6641f4e75db5d6f47cae47f81b19026f9339322b3f4b6700d30330c"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7530,7 +7698,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "6e4ffe74b5a462ec8a3c8aa4c7ec802b5ac65302",
+    "source_base_commit": "932ad94f594680e98a45cb9f00d098c36a2c1170",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
@@ -7554,7 +7722,7 @@
       }
     ],
     "assignment": {
-      "hypothesis": "The v25 Blood profile correctly performs equal-bucket Death Strike and Heart Strike arbitration, but the retained run cannot prove or disprove downstream rune/cadence loss because the observation records only aggregate ready-rune counts. Recording each rune slot's base/current type, cooldown fraction, regeneration rate, and estimated ready timestamp at every relevant candidate evaluation will make the suspected edge auditable across successive native decisions. No Blood priority, spell, rune-legality, mitigation, movement, encounter, or reference repair is authorized by this plan.",
+      "hypothesis": "The first observation-only patch exposed the required slot-level fields but estimated every rune independently and used a wider zero-cooldown threshold than native G3D::fuzzyEq. Modeling each native rune pair's active and waiting slot, including the partner's remaining cooldown, will make the next matched Magmaw run's cadence joins truthful while preserving aggregate counts and action behavior.",
       "owned_files": [
         "src/server/game/Bots/BotBloodDecisionObservation.h",
         "tests/test_profile_preview_diagnostic_publication.py"
@@ -7567,18 +7735,19 @@
         "Do not modify files outside the bounded owned set."
       ],
       "acceptance_conditions": [
-        "The existing blood_survival_candidate_observation_v1 JSON keeps its aggregate ready_runes counts and adds deterministic per-slot base/current rune type, cooldown fraction, regeneration rate, ready-in estimate, and estimated ready timestamp fields.",
-        "The observation is attached only to relevant Blood Death Knight selections as before, and the additive fields do not affect candidate validity, scoring, selection, or action execution.",
-        "The focused fixture compiles with warnings-as-errors and asserts slot identity, cooldown, regeneration, estimated ready time, aggregate-count preservation, non-Blood rejection, and the existing candidate fields.",
+        "The existing blood_survival_candidate_observation_v1 JSON preserves aggregate ready_runes counts and emits deterministic per-slot base/current type, cooldown fraction, regeneration rate, paired-regeneration ready-in estimate, and estimated ready timestamp fields.",
+        "Readiness uses a native-equivalent fuzzy zero-cooldown test and native paired-rune gating: a waiting slot includes the active partner's remaining regeneration time.",
+        "The observation remains attached only to relevant Blood Death Knight selections and the additive fields do not affect candidate validity, scoring, selection, or action execution.",
+        "The focused fixture compiles with warnings-as-errors and asserts paired timing, slot identity, cooldown, regeneration, native fuzzy-threshold behavior, aggregate-count preservation, non-Blood rejection, and the existing candidate fields.",
         "The source remains below the repository's 1,000-line C/C++ guard and the focused test plus existing Blood policy regression pass.",
-        "An independent reviewer approves the exact two-file observation-only delta, then a clean policy-bound build and completion-watchdog Magmaw 10N run record the enriched Blood observations. This work may inform the next diagnosis but cannot by itself accept actor_30002, performance, Magmaw 10N, or the parent objective."
+        "An independent reviewer approves the exact two-file observation-only correction before a clean policy-bound build and completion-watchdog Magmaw 10N run. This correction may inform the next diagnosis but cannot by itself accept actor_30002, performance, Magmaw 10N, or the parent objective."
       ],
       "required_test_commands": [
         "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
         "pixi run pytest -q tests/test_blood_death_strike_priority.py",
         "pixi run python -m tools.raid_program.module_size"
       ],
-      "base_commit": "6e4ffe74b5a462ec8a3c8aa4c7ec802b5ac65302",
+      "base_commit": "2aeaf99e3c321c6d9f46bb76f5f136fb588c97d8",
       "policy": {
         "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
         "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
@@ -7606,16 +7775,24 @@
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_20260922.json",
-        "sha256": "58e246d7ae305692da49a748558bef8955ee3293b0009191c97a981412a89ab2"
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_correction_20260922.json",
+        "sha256": "6aa1f0e25bb25571dbc4bb94deb1dcb5b2b9ec4f7393888603649cbeb2d13e54"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_tests_correction_20260922.json",
+        "sha256": "a977e1265656c66bb8ef4e3f57d805d9526d579bcb643c424c50d384039a5d9d"
+      },
+      "review": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_correction_20260922.json",
+        "sha256": "7cc13f03d96157ba9fabf3794a3752bcaf9c4e27234b5651b40b68dbc816f462"
       }
     },
-    "claim": {
-      "owner": "coordinator-blood-cadence-05",
-      "token": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
-      "operation_id": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
-      "stage": "implement"
-    }
+    "tested_files": {
+      "src/server/game/Bots/BotBloodDecisionObservation.h": "cbfdca9543b017d34652cc0d5ee949f3cb2dfd7211752b2604d04cfb232ffdb8",
+      "tests/test_profile_preview_diagnostic_publication.py": "e917437b1c80f72de0bca2ce9150bce40b6c261893f2d60b047cc274171c53e5"
+    },
+    "tested_commit": "932ad94f594680e98a45cb9f00d098c36a2c1170",
+    "implementer": "coordinator-blood-cadence-05-correction"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

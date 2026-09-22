@@ -1,0 +1,25 @@
+{
+  "schema": "cata_raid_program_source_drift_reconciliation_v1",
+  "kind": "rework_reconciliation",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "operation_id": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The implementation tests completed, but the graph's saved source base predates already-reviewed source changes on master. Reconcile the source identity before admitting the tests; do not rerun or broaden the gameplay unit.",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_source_drift_checkpoint_20260922.json",
+      "sha256": "7ac7242de0aa0eea8e78096d81ba00c9ec0e12614aca3fb6a995351153c4942c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_source_drift_review_v2_20260922.json/summary.json",
+      "sha256": "3cd996c65fea4d2470d98e948c0d2048baf2b316564cf2cea6378633e0d94ece"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_tests_20260922.json",
+      "sha256": "96a75dba1f71ccc494499a608bcfc33c7db882d34ba158cd3a35bd718ec19322"
+    }
+  ]
+}

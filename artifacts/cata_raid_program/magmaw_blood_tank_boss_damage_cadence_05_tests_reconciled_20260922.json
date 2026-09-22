@@ -1,0 +1,63 @@
+{
+  "schema": "cata_raid_program_tests_receipt_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "01a0c8a8-5aad-7562-9c78-a0dd8b02caf3",
+  "authority": "coordinator_attestation",
+  "stage": "result",
+  "task_id": "magmaw_blood_tank_boss_damage_cadence_05_tests_reconciled_20260922",
+  "operation_id": "4b5195d2628aac58a385536c7edeedb6edd11c620d99feb7b4910031bfb6c6aa",
+  "claim_token": "4b5195d2628aac58a385536c7edeedb6edd11c620d99feb7b4910031bfb6c6aa",
+  "source_commit": "8472a2a72c268698da91256006ec876875f6b571",
+  "completed_work": "Replayed the bounded per-rune observation tests after source-base reconciliation. The implementation remains additive telemetry only and preserves aggregate ready-rune counts and candidate arbitration.",
+  "limitations": [
+    "The observation is pre-native-submission estimated state only.",
+    "It does not capture post-spend rune readiness, Blood Shield absorption, or live encounter behavior.",
+    "No actor, performance, raid-clear, or parent acceptance is claimed."
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "e58baf69dfa6074ea1f3f4699fa9408d6707ccbe19bc487990bf1bca1e0a8834",
+    "tests/test_profile_preview_diagnostic_publication.py": "0ae4fd4b7d9bef2e18e50f5c7ae411844d67e9aeba6a64b1691016a0ff5456a5"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.96s"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "summary": "2 passed in 0.60s"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "exit_status": 0,
+      "summary": "passed"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_reconciled_20260922.json",
+      "sha256": "d6773705b3217ffbc8e4d7a0b58eab95eaac12e82996b4dce5ca8b63245af0f6"
+    },
+    {
+      "path": "src/server/game/Bots/BotBloodDecisionObservation.h",
+      "sha256": "e58baf69dfa6074ea1f3f4699fa9408d6707ccbe19bc487990bf1bca1e0a8834"
+    },
+    {
+      "path": "tests/test_profile_preview_diagnostic_publication.py",
+      "sha256": "0ae4fd4b7d9bef2e18e50f5c7ae411844d67e9aeba6a64b1691016a0ff5456a5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_reconciled_claim_20260922.json",
+      "sha256": "dd544a951f1ffcf71dbab0a009449afb6bba692154fd3eeab584b58aa8f2a828"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_source_drift_reconciliation_20260922.json",
+      "sha256": "63744ab1da2deb2aa32445a9f0fbe0477d8778632208f218b1b3f9f69ce81c59"
+    }
+  ],
+  "advice": {},
+  "acceptance_claim": "Bounded observation implementation and focused tests only. No native build, live behavior, actor, performance, raid-clear, publication, or parent acceptance is claimed."
+}

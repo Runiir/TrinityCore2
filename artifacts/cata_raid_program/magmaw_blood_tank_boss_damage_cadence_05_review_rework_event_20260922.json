@@ -1,0 +1,10 @@
+{
+  "revision": 400,
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "action": "rework",
+  "reason": "Apply the independent review's bounded paired-rune timing and native fuzzyEq corrections before any build or live run.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_rework_20260922.json",
+    "sha256": "d868eeb5f4bd8699b02a657418afd9f49faa0239cb101a0b60eb19708c1d7f46"
+  }
+}

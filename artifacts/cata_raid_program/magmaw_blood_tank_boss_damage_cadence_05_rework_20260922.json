@@ -1,0 +1,11 @@
+{
+  "revision": 396,
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "action": "rework",
+  "claim_token": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
+  "reason": "Reconcile the stale source base left by the route transition before admitting the already-tested observation-only patch. The committed implementation remains intact and no completed operation is being repeated.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_source_drift_reconciliation_20260922.json",
+    "sha256": "63744ab1da2deb2aa32445a9f0fbe0477d8778632208f218b1b3f9f69ce81c59"
+  }
+}

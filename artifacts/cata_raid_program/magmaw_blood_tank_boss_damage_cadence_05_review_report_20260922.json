@@ -1,0 +1,40 @@
+{
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "e58baf69dfa6074ea1f3f4699fa9408d6707ccbe19bc487990bf1bca1e0a8834",
+    "tests/test_profile_preview_diagnostic_publication.py": "0ae4fd4b7d9bef2e18e50f5c7ae411844d67e9aeba6a64b1691016a0ff5456a5"
+  },
+  "findings": [
+    "The delta is observation-only and does not alter candidate arbitration, action submission, movement, or encounter behavior.",
+    "Ready-time estimation ignores native paired-rune regeneration gating. The fixture's slot 2/3 case reports 2000 ms for slot 2, while native timing is 2500 ms.",
+    "The 0.0001 cooldown threshold is broader than native G3D::fuzzyEq semantics and can report small positive cooldowns as ready.",
+    "Enum mapping and valid regeneration-field indexing are API-compatible with native code.",
+    "JSON changes are additive and preserve the existing v1 fields.",
+    "The focused test passes but encodes the incorrect ungated timestamp and lacks native paired-rune cadence coverage.",
+    "No Death Strike or Heart Strike arbitration, movement, or encounter behavior changes were found in the reviewed files."
+  ],
+  "limits": [
+    "Post-spend rune state is unreviewed.",
+    "Shield absorption is unreviewed.",
+    "Live behavior is unreviewed; no server was launched.",
+    "Actor acceptance is unreviewed.",
+    "Magmaw 10N raid, performance, and parent-objective acceptance are unreviewed.",
+    "Only the two requested files were reviewed."
+  ],
+  "proof": {
+    "final_message_bytes": 1675,
+    "final_message_sha256": "33615ef3124f88e11b34a45e99a57124a2146e16222fda9170df3c9d4fdafb39",
+    "prefix_bytes": 742654,
+    "prefix_sha256": "3e1706e201d7b11b22a0d753f039885edd9ba17e7c327e63724312fc470ed666",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T13-39-56-01a0c8b3-6a93-7952-964f-edd7d33986aa.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c8b3-6a93-7952-964f-edd7d33986aa"
+  },
+  "reviewer_session_id": "01a0c8b3-6a93-7952-964f-edd7d33986aa",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "Focused publication and Blood priority tests passed: 4 passed.",
+    "module_size passed.",
+    "The two review files remained unmodified."
+  ],
+  "verdict": "changes_requested"
+}

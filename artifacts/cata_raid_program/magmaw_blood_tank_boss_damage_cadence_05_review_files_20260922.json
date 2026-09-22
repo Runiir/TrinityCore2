@@ -1,0 +1,6 @@
+{
+  "files": [
+    "src/server/game/Bots/BotBloodDecisionObservation.h",
+    "tests/test_profile_preview_diagnostic_publication.py"
+  ]
+}

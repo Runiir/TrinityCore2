@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_report_20260922.json",
+      "sha256": "7f767ec6714059bc6c51b335b47f7c83db900d5ec76c4a0b035eb4bb98c9addf"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotBloodDecisionObservation.h": "e58baf69dfa6074ea1f3f4699fa9408d6707ccbe19bc487990bf1bca1e0a8834",
+    "tests/test_profile_preview_diagnostic_publication.py": "0ae4fd4b7d9bef2e18e50f5c7ae411844d67e9aeba6a64b1691016a0ff5456a5"
+  },
+  "kind": "review",
+  "producer": "01a0c8b3-6a93-7952-964f-edd7d33986aa",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_report_20260922.json",
+    "sha256": "7f767ec6714059bc6c51b335b47f7c83db900d5ec76c4a0b035eb4bb98c9addf"
+  },
+  "reviewer_session_id": "01a0c8b3-6a93-7952-964f-edd7d33986aa",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "verdict": "changes_requested"
+}
