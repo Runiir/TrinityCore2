@@ -1,0 +1,76 @@
+{
+  "kind": "tests",
+  "authority": "coordinator_attestation",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "producer": "codex-magmaw-10n-20260922",
+  "operation_id": "48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1",
+  "source_commit": "afc0aee84b1fe18749fbedf10cc9d4a2ddca290d",
+  "file_hashes": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "bcaacf4c838ee6118c7ca63a93d2081068e73947727222aa32643af3e071a92e",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+    "tests/test_magmaw_support_target_admission.py": "f92e1b57640b570275553c2e550f3208407bc8b4486ed03537f775c11f5de7a0"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_support_target_admission.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 7.876,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/00.json",
+        "sha256": "316fb18955b8e4352ebd57934669748024f465539e6a1e9003594ef2b6c7217c"
+      }
+    },
+    {
+      "command": "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py -k magmaw_route_progress",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.465,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/01.json",
+        "sha256": "c73f5ea07ab3949ebb904ccee535e445daa9786c9bbedf313912e0819f4926ad"
+      }
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.114,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/02.json",
+        "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.016,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/03.json",
+        "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/00.json",
+      "sha256": "316fb18955b8e4352ebd57934669748024f465539e6a1e9003594ef2b6c7217c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/01.json",
+      "sha256": "c73f5ea07ab3949ebb904ccee535e445daa9786c9bbedf313912e0819f4926ad"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/02.json",
+      "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1-afc0aee84b1f-165a3a7c5588/03.json",
+      "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+    }
+  ],
+  "source_and_state_stable": true,
+  "behavior_command": "pixi run pytest -q tests/test_magmaw_support_target_admission.py",
+  "limits": "Command execution is observed. Reviewer must verify behavior coverage; no native performance acceptance."
+}

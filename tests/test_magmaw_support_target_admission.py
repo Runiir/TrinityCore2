@@ -50,11 +50,15 @@ def test_native_opportunity_and_production_support_selector(
     tmp_path: Path, revision, hunter_spec,
 ) -> None:
     if revision:
-        relative = Path("Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h")
-        frozen = tmp_path / relative
-        frozen.parent.mkdir(parents=True)
-        frozen.write_text(subprocess.check_output(
-            ["git", "show", f"{revision}:src/server/game/{relative}"], cwd=ROOT, text=True))
+        for relative in (
+            Path("Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"),
+            Path("Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h"),
+        ):
+            frozen = tmp_path / relative
+            frozen.parent.mkdir(parents=True, exist_ok=True)
+            frozen.write_text(subprocess.check_output(
+                ["git", "show", f"{revision}:src/server/game/{relative}"],
+                cwd=ROOT, text=True))
     binary = compile_probe(
         tmp_path,
         r'''
@@ -271,6 +275,27 @@ int main()
     assert(healthPull.SuppressOffense);
     assert(healthPull.SuppressReason == "prepull_health_recovery");
     assert(healthPull.DamageTarget == prepullBoss.Guid);
+
+    // A healthy, staged non-pull actor still waits for the pull owner and
+    // never inherits the boss target from the encounter observation.
+    Blackboard pullOwnerWait = prepull;
+    pullOwnerWait.Route.NavigationHints.clear();
+    AdaptiveMagmawPlan ownerWait = Propose(
+        strategy, pullOwnerWait, pullOwnerWait.Players[1].Guid,
+        prepullOpportunities);
+    assert(ownerWait.SuppressOffense);
+    assert(ownerWait.SuppressReason == "prepull_pull_owner_wait");
+    assert(ownerWait.DamageTarget.IsEmpty());
+
+    // The early target seed also rejects an invalid boss admission while the
+    // formation gate is active, leaving the native binding path unrequested.
+    Blackboard invalidBoss = prepull;
+    invalidBoss.Hostiles.front().Attackable = false;
+    AdaptiveMagmawPlan invalidPull = ProposeTank(
+        strategy, invalidBoss, invalidBoss.Players.front().Guid,
+        prepullOpportunities);
+    assert(invalidPull.SuppressOffense);
+    assert(invalidPull.DamageTarget.IsEmpty());
 #endif
 
     ObjectGuid const supportActor = board.Players.back().Guid;

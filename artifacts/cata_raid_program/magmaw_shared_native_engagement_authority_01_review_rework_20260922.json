@@ -1,0 +1,11 @@
+{
+  "schema": "raid_review_rework_reconciliation_v1",
+  "kind": "reconciliation",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "review_verdict": "changes_required",
+  "reviewer_session_id": "01a0ca28-34b0-7781-a8ef-ebee2265bbaa",
+  "reason": "Rework the bounded test to compile the historical parent strategy as well as its support header and to cover the non-pull-owner wait plus invalid pre-pull admission boundary. The prior reviewer also classified graph/evidence control files as gameplay scope; those are coordination data excluded by source_binding.",
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false
+}
