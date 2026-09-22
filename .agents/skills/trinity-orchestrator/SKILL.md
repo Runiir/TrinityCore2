@@ -62,10 +62,15 @@ invalidate class qualification. Require explicit compatibility for changed build
 Use existing commands first. For admission and saved-task questions, use the
 focused `evidence_view admission` and `evidence_view task` views; read their
 command/output details in [evidence-views.md](../raid-rotation-review/references/evidence-views.md).
-Then use selected, narrow queries. Read only the matching error-ledger entry and
-current status; keep full payloads outside model context and never dump graph
-history or generated datasets. Missing evidence remains unknown and routes to a
-bounded capture task.
+Before an evidence call, identify the question and the decision its answer changes.
+Use `--max-chars 6000` and a tool output budget around 2,000 tokens for routine
+inspection; larger budgets require a specific omitted field. Truncation means
+narrow the query, not increase the budget or repeat the report dump. Do not combine
+many pages into one response. Use the tested [role-result and tool-call examples](../raid-rotation-review/references/evidence-views.md#tool-call-examples)
+for healer/tank reports, launch output and source searches. Read only the matching
+ledger entry and current status. After two equivalent queries return no new fact,
+name the missing observation and change the query/tool or route that missing input.
+Keep full evidence on disk/DVC; missing observations remain unknown.
 
 Keep the user's objective and every actor requirement visible. Correct stale status
 in place, retain unresolved actor rows after an accepted repair or improved raid

@@ -21,6 +21,11 @@ admission and saved-task queries, use `evidence_view admission` and
 Then issue selected narrow queries. Pass compact comparisons and decisive event pages
 to workers or advisory models; never dump graph history, raw reports, or generated
 datasets. Missing evidence is unknown and becomes a bounded capture task.
+For post-run triage, use the [tool-call examples](../raid-rotation-review/references/evidence-views.md#tool-call-examples):
+read failed checks and the requested repair's metric, then act. Keep repair outcome,
+reference eligibility and parent acceptance separate. A missing reference binding
+does not justify repeating the same gameplay run or discarding a measured repair;
+resolve that binding while leaving qualification open.
 
 Read the current result at the top of
 [shared_worldserver_workflow_20260907.md](../../../docs/bot_raids/shared_worldserver_workflow_20260907.md)

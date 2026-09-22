@@ -105,3 +105,82 @@ returned command or pointer; do not respond by dumping the entire report, graph 
 or generated dataset. Search source paths separately from generated artifacts.
 Retain full evidence for verification; send the compact comparison and the few
 decisive event pages to reviewers and advisory Jev/Laya packets.
+
+## Tool-call examples
+
+Choose the question before the command. These are alternatives, not a checklist
+to execute on every run. Replace example paths/IDs with the saved task's exact
+inputs. For routine inspection use `--max-chars 6000` and approximately 2,000 tool
+output tokens. Save full results with `--output` when needed. A truncated response
+is an incomplete observation: follow a detail pointer or narrow fields/time/actor,
+not a larger dump. Do not concatenate pages to evade the output budget.
+
+### Did a role repair work, and why did acceptance fail?
+
+For a local completed healer/tank report, this projection prints the role result
+without its repeated native snapshots. `REPORT` must name the exact bound report.
+
+```sh
+REPORT=/absolute/path/to/report.json
+jq -c '{completion_reason, returncode, timed_out, failure_labels,
+  role_result: (.role_calibration_evaluation | if . == null then null else
+    {passed, failure_reasons, failed_checks: (.checks | if type == "object" then
+      [to_entries[] | select(.value == false) | .key] else null end)} end),
+  scored_seconds: .role_calibration_record.window.scored_duration_seconds,
+  metrics: (.role_calibration_record.metrics |
+    {effective_hps, death_count, dispel_success_ratio, cast_failure_ratio})
+}' "$REPORT"
+```
+
+Those are example healer metrics, not a complete actor assessment. Choose the
+metric relevant to the assigned repair. Missing fields stay null, not zero or
+success. For retained archives, use the existing reader without extracting:
+
+```sh
+pixi run python -m tools.raid_program.evidence_view select \
+  'capture.tar.gz::run/report.json' \
+  --path /role_calibration_evaluation --limit 10 --max-chars 6000
+```
+
+If checks are omitted, follow the returned pointer. For example, inspect a failed
+dispel metric directly instead of recursively searching all native snapshots:
+
+```sh
+pixi run python -m tools.raid_program.evidence_view select "$REPORT" \
+  --path /role_calibration_record/metrics/dispel_success_ratio --max-chars 6000
+```
+
+If the schema is unknown, use `inspect --path /role_calibration_record/metrics`
+once, then select the relevant field. Do not page every field just to be thorough.
+A passing repair metric plus `reference_conditions_not_comparable` means the
+observed repair and reference eligibility need separate conclusions. Inspect the
+named reference failure; do not rerun unchanged gameplay hoping it clears. A ratio
+alone does not prove opportunities, sufficient coverage, attribution or acceptance.
+
+### Keep live output out of the prompt
+
+Preserve the exact generated launch command and append stdout/stderr redirection
+to an attempt-specific launcher log outside any run directory required to be new
+or empty. Do not pipe the controller through `head`, hide its exit code, or change
+the watchdog. Poll the existing process at the configured heartbeat with a small
+output budget. Inspect the final report using the projection above; a controller's
+large final JSON is an artifact, not a progress message. Keep launcher logs with
+the existing run publication, then evict them through the normal lifecycle.
+
+### Find one source condition or one log error
+
+```sh
+rg -n -C 3 'DispelCleanse|min_injured_players' \
+  src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp
+rg -n -m 10 --max-columns 240 --max-columns-preview \
+  'ERROR|Traceback|runtime_asset_closure_incomplete' /absolute/attempt.launcher.log
+```
+
+The source predicate is illustrative; use the assigned edge's file and symbol.
+Log excerpts locate an error, not complete causal evidence. Follow its exact file
+or JSON pointer when more context is needed. Search source under `src/`, `tools/`
+or `tests/`; search generated evidence only in the exact run/artifact. Avoid
+`rg ... artifacts/ | head`, `sed -n '1,80p' *.jsonl`, `jq '.'`, printing
+`raw_runtime_status`, and recursive JSON walkers that print every match. One JSONL
+line or nested object can contain an entire run. Batch independent small checks,
+but keep dependent diagnosis queries sequential so the first answer narrows the next.
