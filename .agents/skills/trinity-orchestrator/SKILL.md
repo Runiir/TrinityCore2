@@ -55,6 +55,9 @@ and token and calls the real reducer atomically. Do not hand-copy those fields
 or retry a rejected transition unchanged. Build plans need a frozen build/resource
 policy; a role-calibration policy is a different input and is rejected at planning.
 Use `workflow_build refs` and `snapshot` for receipt inputs and owned files.
+Plan admission and implementation claim now check the source boundary. Resolve
+reported paths there; do not spend worker/review time on a stale assignment.
+Each newly routed unit freezes its own baseline, without accepting prior changes.
 
 A completed run stays completed when its performance gate fails or newer commits
 prevent source admission. Inspect `evidence_view task --section receipts` first;
@@ -142,6 +145,13 @@ contradictory or missing evidence. For a DPS repair, require the existing
 before dispatch; raw deltas and model agreement do not authorize native tuning.
 Keep handoffs short: one proven edge, exact evidence/file locations, owned files,
 counterexample, focused command, and acceptance.
+Put that context in the plan's `worker_context`, then use
+`workflow_step packet --output /tmp/worker-packet.json` and send that file to the
+worker. It includes verified native excerpts, parent scope and exact commands.
+The packet names the question and decision that justify deeper evidence reads.
+Observation work must state the signal, next action if confirmed/refuted, and
+live check. Missing context is a plan defect, not permission for broad rediscovery.
+See [packet fields](../../../docs/bot_raids/development_graph.md#worker-packets).
 
 ## Execution and handoff
 
@@ -153,3 +163,9 @@ Use the existing [bounded work-unit contract](../raid-performance-loop/reference
 and [handoff contract](../raid-performance-loop/references/handoff-contract.md) when
 dispatching. Python runs through Pixi; code/configuration belongs in Git; generated
 evidence belongs in DVC.
+`workflow_build run` returns a verified graph receipt and exact `next_command`.
+Execute it instead of searching older build receipts or copying hashes. If the
+build completed but its handoff was interrupted, use `workflow_build finish`;
+for a pre-existing ticket pass `--queue-receipt <exact queue receipt>`. Neither
+finish nor recording the receipt requires another build. Full compiler logs stay
+in the existing queue log; inspect only the failure interval when compilation fails.

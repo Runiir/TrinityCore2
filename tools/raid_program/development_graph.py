@@ -283,9 +283,12 @@ def source_binding(root: Path, assignment: dict, expected_commit: str | None = N
                         ('100644 blob ', '100755 blob ') if p == '.githooks/pre-commit' else '100644 blob ')
                         for p in support) or snapshot(root, list(support)) != support):
         raise GraphError('separately reviewed supporting files changed; obtain a new review')
-    if any(p and (p in protected or (code_path(p) and p not in published
-                  and p not in assignment['owned_files'] and p not in support)) for p in changed):
-        raise GraphError('source delta contains files outside bounded assignment')
+    outside = [p for p in changed if p and (p in protected or (code_path(p) and p not in published
+                  and p not in assignment['owned_files'] and p not in support))]
+    if outside:
+        raise GraphError('source delta contains files outside bounded assignment: ' + ', '.join(outside[:8])
+                         + (f' (+{len(outside)-8} more)' if len(outside) > 8 else '')
+                         + '; reconcile the plan source before implementation; do not edit its base to hide changes')
     if expected_commit is not None:
         git(root, 'merge-base', '--is-ancestor', expected_commit, head)
         delta = git(root, 'diff', '--name-only', '--no-renames', '-z', expected_commit, head).split('\0')
@@ -375,6 +378,8 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         if claim:
             raise GraphError('operation already claimed')
         required(event, 'owner')
+        if stage == 'implement':
+            source_binding(root, g['assignment'])
         if stage == 'build':
             from tools.raid_program.workflow_build import preflight
             try:
@@ -461,6 +466,13 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 support = supporting_files(root, review, g['assignment'])
                 g['assignment']['supporting_review'] = r['supporting_review']
                 g['assignment']['supporting_files'] = support
+            # Reject stale/out-of-scope source before spending implementation,
+            # fixture and review time. Claim repeats this against later drift.
+            source_binding(root, g['assignment'])
+            if r.get('worker_context') is not None:
+                from tools.raid_program.worker_packet import validate_context
+                validate_context(root, r['worker_context'])
+                g['assignment']['worker_context'] = r['worker_context']
         elif stage in ('implement', 'review', 'build'):
             current_commit = source_binding(root, g['assignment'], g.get('tested_commit'))
             current = snapshot(root, g['assignment']['owned_files'])
@@ -617,6 +629,9 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 raise GraphError('ten failures: change the causal hypothesis')
         g['unit'] = unit
         g['stage'] = 'diagnose'
+        # A new unit starts from current source, not the previous unit's base.
+        # This establishes a diagnosis boundary; it accepts no code/performance.
+        g['source_base_commit'] = git(root, 'rev-parse', 'HEAD')
         for key in ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'run', 'pending_acceptance', 'outcomes', 'receipts'):
             g.pop(key, None)
     elif action == 'rework' and stage in ('diagnose', 'implement', 'review', 'build', 'validate'):

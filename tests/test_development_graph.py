@@ -523,7 +523,12 @@ def test_workflow_build_uses_one_source_and_queue_owned_receipts(case, monkeypat
         queue.validate_command(command, policy['parallelism']['maximum_compiler_jobs'], resource_class=kind, policy=policy)
         if outcome == 'source_changed': (root/'code.cpp').write_text('changed after configure')
         failed=outcome == 'configure_failure'
-        return int(failed), {'ticket_id':kind, 'classification':'failed' if failed else 'success'}
+        ticket = {'ticket_id':kind, 'resource_class':kind, 'classification':'failed' if failed else 'success',
+                  'commit':graph.git(root,'rev-parse','HEAD'), 'exit_code':int(failed),
+                  'source_identity_stable':True, 'test_mode':False,
+                  'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True}]}
+        put(queue.Paths.for_worktree(root).receipts / (kind+'.json'),ticket)
+        return int(failed), ticket
     monkeypatch.setattr(queue,'run_ticket',run)
     if outcome == 'dirty_claim':
         saved=json.loads((root/graph.STATE_PATH).read_text()); saved['pending_note']='new claim state'
@@ -542,6 +547,13 @@ def test_workflow_build_uses_one_source_and_queue_owned_receipts(case, monkeypat
         if outcome=='success':
             assert commands[-1][1][-2:]==['--parallel','12']
             assert all('.git' in row['receipt'] for row in result['steps'])
+            assert result['validated_transition'] == {'from':'build','to':'validate'}
+            assert '--expect' in result['next_command']
+            from tools.raid_program.build_handoff import finish_build
+            assert finish_build(root)['receipt'] == result['receipt']
+            with pytest.raises(ValueError, match='already has queue results'):
+                workflow_build.run_build(root)
+            assert len(commands) == 2
 
 
 def test_published_unit_routes_to_next_task_without_losing_parent_or_assessment(case):

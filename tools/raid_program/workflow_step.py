@@ -197,6 +197,8 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
     commands = parser.add_subparsers(dest="command", required=True)
+    worker = commands.add_parser('packet', help='Assemble bounded worker context from the admitted plan')
+    worker.add_argument('--output', type=Path, help='Write the packet; stdout contains only its path/hash')
     advance = commands.add_parser("advance", help="derive and apply one advance event")
     advance.add_argument("receipt_positional", nargs="?", type=Path)
     advance.add_argument("--receipt", dest="receipt_option", type=Path)
@@ -212,6 +214,20 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.command == 'packet':
+        from tools.raid_program.worker_packet import packet
+        try:
+            result = packet(args.root.resolve())
+            payload = (json.dumps(result, sort_keys=True) + '\n').encode()
+            if args.output:
+                args.output.write_bytes(payload)
+                result = {'packet': str(args.output), 'sha256': graph.digest(payload),
+                          'bytes': len(payload), 'unit_id': result['unit_id']}
+        except (graph.GraphError, OSError, ValueError) as exc:
+            print(json.dumps({'error': str(exc)}), file=sys.stderr)
+            return 2
+        print(json.dumps(result, sort_keys=True))
+        return 0
     if args.command != "advance":
         raise AssertionError("unhandled workflow command")
     receipt = args.receipt_option or args.receipt_positional

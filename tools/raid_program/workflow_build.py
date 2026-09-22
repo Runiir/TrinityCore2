@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 from pathlib import Path
 
 from tools.raid_program.development_graph import STATE_PATH, check_state, file_ref, read, snapshot, source_binding
@@ -46,25 +48,36 @@ def run_build(root: Path) -> dict:
     if snapshot(root, assignment["owned_files"]) != graph["tested_files"]:
         raise ValueError("owned files changed after review")
     identity = queue.worktree_state(root)
+    from tools.raid_program.build_handoff import result_path, finish_build
+    saved_result = result_path(root, graph['claim']['operation_id'])
+    if saved_result.exists():
+        raise ValueError('this build operation already has queue results; use workflow_build finish, not another build')
     if not identity["clean"]:
         raise ValueError("commit source, review and build claim before workflow_build run")
     policy = read(file_ref(root, assignment["policy"]))
     commands = build_commands(policy)
     results = {"source_commit": identity["commit"], "steps": [], "success": False}
+    saved_result.parent.mkdir(parents=True, exist_ok=True)
+    saved_result.write_text(json.dumps(results))
     for kind, command in commands.items():
         if queue.worktree_state(root) != identity:
             raise ValueError("source changed between configure and build; reconcile retained queue receipts")
         print(json.dumps({"step": kind, "command": command}), flush=True)
-        code, receipt = queue.run_ticket(root, policy, kind, command, None, None, None)
+        # queued_build already retains the full native log. Do not send a second
+        # unbounded copy into the coordinator's context.
+        with open(os.devnull, 'w') as quiet, contextlib.redirect_stdout(quiet):
+            code, receipt = queue.run_ticket(root, policy, kind, command, None, None, None)
         path = queue.Paths.for_worktree(root).receipts / (receipt["ticket_id"] + ".json")
         results["steps"].append({"step": kind, "receipt": str(path), "exit_status": code})
+        saved_result.write_text(json.dumps(results))
         if code or receipt.get("classification") != "success":
             return results
         verification = queue.verify_receipt(path, policy, allow_test_mode=False)
         if verification.get("gate_bearing") is not True:
             raise ValueError("queued receipt is not gate-bearing: " + str(path))
     results["success"] = True
-    return results
+    saved_result.write_text(json.dumps(results))
+    return results | finish_build(root)
 
 
 def preflight(root: Path, assignment: dict) -> dict:
@@ -99,6 +112,8 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("preflight")
     sub.add_parser("run", help="After committing a reviewed build claim, configure and build once through queued_build")
+    finish = sub.add_parser('finish', help='Create the graph receipt from the completed build; never compiles')
+    finish.add_argument('--queue-receipt', type=Path, help='Exact existing ticket for interrupted/older handoffs')
     sub.add_parser("commands", help="Print exact policy argv without configuring or compiling")
     sub.add_parser("snapshot", help="Hash current assignment owned_files; does not attest tests/review")
     refs = sub.add_parser("refs", help="Generate path/sha256 references; never type hashes manually")
@@ -106,6 +121,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "run":
         result = run_build(ROOT)
+    elif args.command == 'finish':
+        from tools.raid_program.build_handoff import finish_build
+        result = finish_build(ROOT, args.queue_receipt)
     elif args.command == "refs":
         paths = [Path(p).resolve().relative_to(ROOT).as_posix() for p in args.paths]
         result = [{"path": p, "sha256": sha} for p, sha in snapshot(ROOT, paths).items()]

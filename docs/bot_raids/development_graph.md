@@ -291,11 +291,62 @@ pixi run python -m tools.raid_program.workflow_build run
 
 This executes policy-derived configure/build argv through the existing queue,
 with no Git writes between them. Unique canonical receipts stay in the queue's
-Git-common directory. The command prints their paths, stops on failure and never
-retries automatically. Copy receipts into publication evidence after it returns.
+Git-common directory. The command stops on failure and never retries automatically.
+On success it copies the exact queue receipt into publication evidence, generates
+the graph build receipt, validates it through the real reducer, and returns the
+exact `next_command` including owner and state compare-and-swap hash. Execute it.
+Compiler output stays in the queue's existing log rather than flooding stdout.
+The tool retains the operation's queue results before creating the handoff;
+rerunning the same operation cannot silently rebuild.
+
+For a completed build whose handoff was interrupted:
+
+```sh
+pixi run python -m tools.raid_program.workflow_build finish
+# Older builds without the operation result index:
+pixi run python -m tools.raid_program.workflow_build finish --queue-receipt <exact-ticket.json>
+```
+
+Finish verifies the queue policy, frozen claim/unit, reviewed source and produced
+binary, and never compiles. It does not advance the graph until its returned
+command is executed. Wrong/stale tickets fail instead of being replaced by a
+search for an arbitrary recent build.
 `workflow_build commands` prints the same argv without running either step.
 Existing successful receipts should still be reused; this command is for a new
 reviewed build, not a reason to rebuild for progress metadata.
+
+### Worker packets
+
+Source binding is checked at plan admission and again at implementation claim,
+before a worker starts. A new `route` transition freezes current HEAD for the new
+unit; `rework` keeps the prior baseline so a rejected patch cannot disappear into
+a changed base. No acceptance requirement is closed by selecting a baseline.
+
+An implementation plan can retain `worker_context` with these fields:
+
+- `kind`: `implementation` or `observation`.
+- `question`, `decision`: the uncertainty and the choice its answer changes.
+- `counterexample`: concrete input/behavior the repair must handle.
+- `fixture`: a real `{path, sha256}` reference to the focused deterministic fixture.
+- `native_behavior`: source `{path, sha256, start_line, end_line}` references to
+  relevant native behavior, callers or lifecycle boundaries. Excerpts are loaded
+  from verified files, not rewritten from memory; each is at most 80 lines.
+- For observation work, `observation_decision` requires `signal`, `if_confirmed`,
+  `if_refuted`, and `live_check`. Merely adding fields is not a useful experiment.
+
+After admitting the plan, before claiming implementation:
+
+```sh
+pixi run python -m tools.raid_program.workflow_step packet --output /tmp/worker-packet.json
+```
+
+The packet combines that context with parent objective, open requirements, source,
+owned files, forbidden changes, acceptance conditions and required commands. Send
+it directly to the bounded worker. Missing context or stale source fails explicitly;
+the tool does not infer an implementation from raw logs. Context is capped at 6KB
+and the complete packet at 10KB, with no silent truncation. Narrow the work unit
+when it cannot fit. Existing plans without context remain readable and closable;
+prepare the context before dispatching another implementation worker.
 
 Commit reviewed source, claim/state and any preparation before queued compilation.
 After the build, commit the build adapter, graph advance and validation claim.

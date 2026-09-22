@@ -151,7 +151,14 @@ def progress_view(progress, root, section='summary'):
     if section == 'receipts':
         from tools.raid_program.completed_operation import completed_runs
         completed = completed_runs(root, progress)
+        from tools.raid_program.build_handoff import result_path
+        build_finish = None
+        if progress['stage'] == 'build' and progress.get('claim'):
+            saved = result_path(root, progress['claim']['operation_id'])
+            if saved.is_file():
+                build_finish = 'pixi run python -m tools.raid_program.workflow_build finish'
         return base | {'claim': progress['claim'], 'receipts': progress['receipts'],
+                       'build_handoff_command': build_finish,
                        'latest_assessment': progress['latest_assessment'],
                        'completed_run_receipts': completed,
                        'record_completed_commands': [shlex.join(['pixi', 'run', 'python', '-m',
@@ -166,6 +173,7 @@ def progress_view(progress, root, section='summary'):
             'objective', 'unit', 'claim', 'open_requirements', 'schema', 'stage', 'state_sha256'}}
     unit = progress['unit']
     claim = progress['claim']
+    worker_ready = progress['stage'] == 'implement' and not claim
     return base | {
         'objective': progress['objective'],
         'unit': {key: unit.get(key) for key in ('id', 'edge', 'owner_skill', 'objective', 'requirements', 'next_action')},
@@ -177,8 +185,11 @@ def progress_view(progress, root, section='summary'):
         'evidence': {'latest_assessment': progress['latest_assessment'],
                      'bound_receipt_kinds': list(progress['receipts'])},
         'next_action': progress['next_action'],
-        'next_command': command_with(['task'], root=root, section='receipts' if claim else 'unit', max_chars=6000),
-        'next_command_purpose': 'Inspect the claimed operation receipts before reconciling ownership.' if claim else
+        'next_command': shlex.join(['pixi', 'run', 'python', '-m', 'tools.raid_program.workflow_step',
+                                   '--root', str(root), 'packet']) if worker_ready else
+                        command_with(['task'], root=root, section='receipts' if claim else 'unit', max_chars=6000),
+        'next_command_purpose': 'Prepare the bounded worker packet before claiming implementation.' if worker_ready else
+                               'Inspect the claimed operation receipts before reconciling ownership.' if claim else
                                 'Read the exact work-unit constraints before executing the stage action.',
         'detail_commands': {name: command_with(['task'], root=root, section=name, max_chars=6000)
                             for name in ('unit', 'requirements', 'references')},
