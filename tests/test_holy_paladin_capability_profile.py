@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import subprocess
 from pathlib import Path
 
 
@@ -42,7 +43,8 @@ def _database() -> sqlite3.Connection:
             max_range REAL NOT NULL DEFAULT 0,
             maintain_aura_id INTEGER NOT NULL DEFAULT 0,
             min_injured_players INTEGER NOT NULL DEFAULT 0,
-            injured_health_pct REAL NOT NULL DEFAULT 1
+            injured_health_pct REAL NOT NULL DEFAULT 1,
+            enabled INTEGER NOT NULL DEFAULT 1
         );
         """
     )
@@ -51,6 +53,9 @@ def _database() -> sqlite3.Connection:
     )
     db.execute(
         "INSERT INTO bot_rotation_profile(id, class_id, spec_tag, role) VALUES (2, 2, 'protection', 'tank')"
+    )
+    db.execute(
+        "INSERT INTO bot_rotation_profile(id, class_id, spec_tag, role, enabled) VALUES (3, 2, 'holy_paladin', 'healer', 0)"
     )
     db.executemany(
         """
@@ -153,6 +158,52 @@ def test_aoe_migration_does_not_touch_other_profiles() -> None:
         db.close()
 
 
+def test_aoe_migration_scopes_enabled_profiles_and_ignores_disabled_action() -> None:
+    db = _database()
+    try:
+        db.execute(
+            """
+            INSERT INTO bot_rotation_action(
+                profile_id, sort_order, spell_id, category, mechanic_tags, enabled
+            ) VALUES (1, 11, 85222, 'heal_aoe', 'legacy_disabled', 0)
+            """
+        )
+        db.execute(
+            """
+            INSERT INTO bot_rotation_action(
+                profile_id, sort_order, spell_id, category, mechanic_tags, enabled
+            ) VALUES (3, 11, 85222, 'heal_aoe', 'disabled_profile', 0)
+            """
+        )
+
+        _run_aoe_migration(db)
+        _run_aoe_migration(db)
+
+        enabled_profile_rows = db.execute(
+            """
+            SELECT enabled, mechanic_tags, min_injured_players
+            FROM bot_rotation_action
+            WHERE profile_id = 1 AND spell_id = 85222 AND category = 'heal_aoe'
+            ORDER BY enabled
+            """
+        ).fetchall()
+        assert [tuple(row) for row in enabled_profile_rows] == [
+            (0, "legacy_disabled", 0),
+            (1, "light_of_dawn,aoe,heal,holy_power_3", 3),
+        ]
+
+        disabled_profile_rows = db.execute(
+            """
+            SELECT enabled, mechanic_tags
+            FROM bot_rotation_action
+            WHERE profile_id = 3 AND spell_id = 85222 AND category = 'heal_aoe'
+            """
+        ).fetchall()
+        assert [tuple(row) for row in disabled_profile_rows] == [(0, "disabled_profile")]
+    finally:
+        db.close()
+
+
 def test_migration_does_not_touch_other_profiles_or_baseline_rows() -> None:
     db = _database()
     try:
@@ -177,6 +228,147 @@ def test_native_candidate_builder_owns_the_holy_power_gate() -> None:
     source = CANDIDATE_SOURCE.read_text(encoding="utf-8")
     assert 'HasMechanicTag(spell.MechanicTags, "holy_power_3")' in source
     assert 'return "insufficient_holy_power";' in source
+
+
+def test_native_light_of_dawn_gates_reject_missing_power_and_triage(tmp_path: Path) -> None:
+    """Compile the production gate bodies with native-shaped healer doubles."""
+
+    source = CANDIDATE_SOURCE.read_text(encoding="utf-8")
+    tag_helper_start = source.index("bool HasMechanicTag(")
+    tag_helper = source[tag_helper_start : source.index(
+        "\n}\n\nbool IsPostPeriodicTickInterruptWindow", tag_helper_start
+    ) + 2]
+    holy_gate_start = source.index(
+        '    if (HasMechanicTag(spell.MechanicTags, "holy_power_3")'
+    )
+    holy_gate = source[holy_gate_start : source.index(
+        '    if (HasMechanicTag(spell.MechanicTags, "soul_shard")', holy_gate_start
+    )]
+    triage_setup_start = source.index("    uint8 healerTriageInjuredPlayers = 0;")
+    triage_setup = source[triage_setup_start : source.index(
+        "\n\n    std::map<std::string, bool> cooldownGroupsReady;", triage_setup_start
+    )]
+    triage_gate_start = source.index(
+        '        else if (profile.Role == "healer" && spell.MinInjuredPlayers'
+    )
+    triage_gate = source[triage_gate_start : source.index(
+        "        else if (bot->HasUnitState", triage_gate_start
+    )]
+
+    program = r'''
+#include <cassert>
+#include <cstdint>
+#include <string>
+using uint8 = std::uint8_t;
+using uint32 = std::uint32_t;
+constexpr int POWER_HOLY_POWER = 1;
+
+enum class BotCombatActionCategory : uint8 {
+    HealFast, HealEfficient, HealAoe, DispelCleanse, Defensive,
+    ExternalDefensive, Mitigation
+};
+
+struct Player;
+struct GroupReference {
+    Player const* source = nullptr;
+    GroupReference const* nextReference = nullptr;
+    GroupReference const* next() const { return nextReference; }
+    Player const* GetSource() const { return source; }
+};
+struct Group {
+    GroupReference const* first = nullptr;
+    GroupReference const* GetFirstMember() const { return first; }
+};
+
+struct Player {
+    uint32 health = 100;
+    uint32 maxHealth = 100;
+    uint32 holyPower = 3;
+    Group const* group = nullptr;
+    bool IsAlive() const { return true; }
+    uint32 GetMaxHealth() const { return maxHealth; }
+    uint32 GetHealth() const { return health; }
+    Group const* GetGroup() const { return group; }
+    uint32 GetPower(int powerType) const {
+        return powerType == POWER_HOLY_POWER ? holyPower : 0;
+    }
+};
+
+struct BotActionProfileSpell {
+    std::string MechanicTags;
+    BotCombatActionCategory Category = BotCombatActionCategory::HealAoe;
+    uint8 MinInjuredPlayers = 0;
+    uint8 MaxInjuredPlayers = 0;
+};
+struct BotClassSpecActionProfile { std::string Role = "healer"; };
+struct BotActionCandidate { std::string RejectReason; };
+
+TAG_HELPER
+
+std::string NativeHolyPowerGate(Player const* bot, BotActionProfileSpell const& spell)
+{
+HOLY_GATE
+    return "";
+}
+
+std::string NativeHealerTriageGate(Player const* bot,
+    BotClassSpecActionProfile const& profile, BotActionProfileSpell const& spell)
+{
+TRIAGE_SETUP
+    BotActionCandidate candidate;
+    if (false)
+        candidate.RejectReason = "prior_gate";
+TRIAGE_GATE
+    return candidate.RejectReason;
+}
+
+int main()
+{
+    BotActionProfileSpell lightOfDawn;
+    lightOfDawn.MechanicTags = "light_of_dawn,aoe,heal,holy_power_3";
+    lightOfDawn.Category = BotCombatActionCategory::HealAoe;
+    lightOfDawn.MinInjuredPlayers = 3;
+
+    Player healer;
+    healer.holyPower = 2;
+    assert(NativeHolyPowerGate(&healer, lightOfDawn) == "insufficient_holy_power");
+    healer.holyPower = 3;
+    assert(NativeHolyPowerGate(&healer, lightOfDawn).empty());
+
+    Player injuredOne; injuredOne.health = 50;
+    Player injuredTwo; injuredTwo.health = 50;
+    Player healthy; healthy.health = 100;
+    GroupReference first{&injuredOne, nullptr};
+    GroupReference second{&injuredTwo, nullptr};
+    GroupReference third{&healthy, nullptr};
+    first.nextReference = &second;
+    second.nextReference = &third;
+    Group group{&first};
+    healer.group = &group;
+    BotClassSpecActionProfile profile;
+    assert(NativeHealerTriageGate(&healer, profile, lightOfDawn)
+        == "injured_player_count_too_low");
+
+    healthy.health = 50;
+    assert(NativeHealerTriageGate(&healer, profile, lightOfDawn).empty());
+}
+'''
+    for marker, value in {
+        "TAG_HELPER": tag_helper,
+        "HOLY_GATE": holy_gate,
+        "TRIAGE_SETUP": triage_setup,
+        "TRIAGE_GATE": triage_gate,
+    }.items():
+        program = program.replace(marker, value)
+
+    source_path = tmp_path / "holy_paladin_native_gates.cpp"
+    binary_path = tmp_path / "holy_paladin_native_gates"
+    source_path.write_text(program, encoding="utf-8")
+    subprocess.run(
+        ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(source_path), "-o", str(binary_path)],
+        check=True,
+    )
+    subprocess.run([str(binary_path)], check=True)
 
 
 def test_healer_dispels_bypass_only_the_injury_count_gate() -> None:
