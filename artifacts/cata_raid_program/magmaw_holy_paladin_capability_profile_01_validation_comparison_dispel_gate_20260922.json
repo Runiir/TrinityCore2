@@ -1,0 +1,50 @@
+{
+  "schema": "cata_raid_program_healer_validation_comparison_v1",
+  "kind": "validation_comparison",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "attempt_id": 1,
+  "actor_id": "30004",
+  "spec": "holy_paladin",
+  "build_identity": {
+    "source_commit": "6d82974817638659710d9905d0a48c5830a3ab79",
+    "binary_sha256": "f213521b8c77824a6050887cff3b354e337c97a1f38ccaa1ec1b58ff70d09778"
+  },
+  "run": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_run_dispel_gate_20260922.json",
+    "sha256": "38ee0af1fd8ddbbbca0946714403b3c40ae5856a393eb1ad0d12d6120d190a99"
+  },
+  "report": {
+    "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922_v2/report.json",
+    "sha256": "bdcbc301d45e5f1620952d3e7a2662fe97b33b1eb459a1c7c7a29d9fca83f5c3"
+  },
+  "native_outcome": {
+    "scored_seconds": 300.0,
+    "target_guid": 1285,
+    "dispel_attempts": 1,
+    "dispel_successes": 1,
+    "result_counts": {
+      "cooldown_cast": 1,
+      "dispel_cast": 1,
+      "heal_cast": 110
+    },
+    "effective_hps": 5654.02,
+    "idle_ratio_under_demand": 0.0,
+    "remaining_mana_ratio": 0.28,
+    "no_party_deaths": true,
+    "target_selection_accuracy": 1.0
+  },
+  "gate_outcome": {
+    "native_policy_edge_proven": true,
+    "repair_accepted": true,
+    "reference_comparison_eligible": false,
+    "role_calibration_passed": false,
+    "actor_acceptance": false,
+    "performance_acceptance": false,
+    "raid_clear": false,
+    "blocking_reasons": [
+      "reference_conditions_not_comparable",
+      "incomplete_evidence_identity"
+    ]
+  },
+  "interpretation": "The repaired candidate predicate is exercised natively: the controlled dispel phase produced one Cleanse attempt and one successful dispel. This is a bounded repair acceptance signal only. The calibration reference contract and external identity envelope remain incomplete, so no actor, DPS, raid or parent requirement is accepted."
+}

@@ -1,0 +1,106 @@
+{
+  "schema": "cata_raid_program_assessment_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_assessment_baseline_20260922.json",
+    "sha256": "8805627ed622312a381597fc8400df0844d59422d9613781cf1b8566d8d111dc"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_comparison_dispel_gate_20260922.json",
+    "sha256": "fb44318fb9dc768a9fb031a62244eddf4d25597069af87d5234ef666b774986f"
+  },
+  "actor_reviews": {
+    "30001": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Balance actor 30001; parent actor and raid requirements remain open."
+    },
+    "30002": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Blood tank actor 30002; parent actor and raid requirements remain open."
+    },
+    "30003": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Restoration Druid actor 30003; parent actor and raid requirements remain open."
+    },
+    "30004": {
+      "status": "reviewed",
+      "accepted": false,
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_run_dispel_gate_20260922.json",
+        "sha256": "38ee0af1fd8ddbbbca0946714403b3c40ae5856a393eb1ad0d12d6120d190a99"
+      },
+      "reason": "The repaired binary completed the exact 300-second native healer window and produced one Cleanse attempt with one successful dispel. The role reference is not comparable and the external evidence identity is incomplete, so actor, performance and raid acceptance remain open."
+    },
+    "30005": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Discipline Priest actor 30005; parent actor and raid requirements remain open."
+    },
+    "30006": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Fire Mage actor 30006; parent actor and raid requirements remain open."
+    },
+    "30007": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Fire Mage actor 30007; parent actor and raid requirements remain open."
+    },
+    "30008": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Affliction Warlock actor 30008; parent actor and raid requirements remain open."
+    },
+    "30009": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Survival Hunter actor 30009; parent actor and raid requirements remain open."
+    },
+    "30010": {
+      "status": "not_exercised",
+      "accepted": false,
+      "reason": "This isolated Holy Paladin calibration did not exercise Elemental Shaman actor 30010; parent actor and raid requirements remain open."
+    }
+  },
+  "encounter_clear": false,
+  "repair_accepted": true,
+  "performance_accepted": false,
+  "baseline_matched": false,
+  "unexplained_material_decline": false,
+  "accepted_requirements": [],
+  "outcome": {
+    "classification": "bounded_native_repair_proven_reference_conditions_not_comparable",
+    "native_policy_edge_proven": true,
+    "repair_edge": "healer_dispel_bypasses_injury_count_gate",
+    "actor_30004_acceptance": false,
+    "performance_acceptance": false,
+    "raid_clear": false,
+    "parent_objective_complete": false
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_assessment_baseline_20260922.json",
+      "sha256": "8805627ed622312a381597fc8400df0844d59422d9613781cf1b8566d8d111dc"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_comparison_dispel_gate_20260922.json",
+      "sha256": "fb44318fb9dc768a9fb031a62244eddf4d25597069af87d5234ef666b774986f"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_run_dispel_gate_20260922.json",
+      "sha256": "38ee0af1fd8ddbbbca0946714403b3c40ae5856a393eb1ad0d12d6120d190a99"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_dispel_gate_20260922_v2.raw.tar.gz.dvc",
+      "sha256": "958e0a707ab897198046e8668b3996e2ee5a6b49aeebe953b21f4588cadec523"
+    }
+  ],
+  "interpretation": "The first broken shared candidate edge is repaired and natively exercised, but this bounded diagnostic run cannot accept actor_30004 or any parent requirement. The unresolved reference-condition contract is tracked separately from the repaired gameplay predicate."
+}
