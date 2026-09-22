@@ -31,7 +31,10 @@ fix is a new handoff, not part of this role patch.
 Use the coordinator's bounded packet when it already contains the exact trace,
 current reference identity, owned files, affected callers and verification
 commands. Do not repeat completed diagnosis or load a second specialist skill
-to reconstruct that packet. When current spec/reference status is missing, run:
+to reconstruct that packet. For a healer/tank result, use the compact gate/metric
+projection in [tool-call examples](../raid-rotation-review/references/evidence-views.md#tool-call-examples).
+Do not dump `raw_runtime_status` to find a metric already exposed by the evaluator.
+When current spec/reference status is missing, run:
 
 ```bash
 pixi run python -m tools.raid_program.raid_workloop spec <spec>

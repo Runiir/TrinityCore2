@@ -40,7 +40,9 @@ worldserver and database. One cohort's cleanup must preserve other active instan
 Use canonical selected-scenario provisioning before each fresh launch so the
 native full-stat seed is current. A prior run's provisioning is not a fresh seed.
 While capture is active, its server log is `.raid-phase1-worldserver-*.log.tmp`
-inside the output directory; parse bounded tails rather than printing full JSON.
+inside the output directory. Follow [tool-call examples](../raid-rotation-review/references/evidence-views.md#tool-call-examples)
+to keep launcher stdout and full reports outside model context. A line-count limit
+does not bound JSONL record size. Use selected fields/events and preserve raw files.
 
 ## Capture and classify
 
