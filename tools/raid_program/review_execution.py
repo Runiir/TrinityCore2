@@ -99,14 +99,6 @@ def _read_rollout(path: Path, root: Path, selected_prefix_bytes: int | None = No
                 if kind == "session_meta":
                     _require(isinstance(payload, Mapping), "review rollout session metadata missing")
                     if metadata is not None:
-                        # Forked rollouts can persist the coordinator metadata immediately
-                        # after the independent subagent metadata. Keep the proven subagent
-                        # identity, but reject any other ambiguous duplicate.
-                        if _has_subagent_source(metadata) and not _has_subagent_source(payload) and payload.get("cwd") == metadata.get("cwd"):
-                            continue
-                        if _has_subagent_source(payload) and not _has_subagent_source(metadata) and payload.get("cwd") == metadata.get("cwd"):
-                            metadata = dict(payload)
-                            continue
                         raise ReviewExecutionError("review rollout contains duplicate session metadata")
                     metadata = dict(payload)
                 elif kind == "response_item" and isinstance(payload, Mapping):
