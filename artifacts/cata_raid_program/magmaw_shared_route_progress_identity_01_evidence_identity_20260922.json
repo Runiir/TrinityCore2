@@ -1,0 +1,27 @@
+{
+  "schema": "cata_raid_magmaw_10n_evidence_identity_manifest_v1",
+  "phase": "certifying_watchdog_identity",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+  "component_hashes": {
+    "database_snapshot_sha256": "a69a43cf4f6b1fc3e269cf2be2fe660634eda3555e131535e1a68092ae5dac98",
+    "database_schema_sha256": "6b7bfe814120247c553d6bfbb6976982883b4e3a3f7585cd62a1e0e0cbfa7729",
+    "server_epoch_sha256": "34aeb1349364c633be02704e38d1dc65f65ca7e1068aebe523e6187357d5d516",
+    "profile_generation_sha256": "632ddf77eea3dd51c8733893e73dac9e71b39b09c8ce4840c1dd8fa0f876cd82"
+  },
+  "runtime_identity": {
+    "server_epoch": 10356341014947116,
+    "server_process_id": 2266904,
+    "session_fingerprint": "1d816e6603092f0e411c57c8f12e606bcb5f141cb595752890323b9dee9929ca",
+    "max_active_cohorts": 2,
+    "profile_generation": 1,
+    "profile_content_hash": "9ec8772f664d224f944074c12c8a178895ef68cfa9711c8ebcdf909d7c7118ac"
+  },
+  "database_identity": {
+    "pool_guids": [30001, 30002, 30003, 30004, 30005, 30006, 30007, 30008, 30009, 30010],
+    "pool_tag": "blackwing_descent_10n_magmaw_diagnostic",
+    "database_snapshot_sha256_method": "native_world_rotation_and_character_pool_projection_v1",
+    "database_schema_sha256_method": "native_world_and_character_schema_projection_v1"
+  },
+  "note": "Runtime and database identity were observed from the owned worldserver session before the certifying watchdog attempt."
+}
