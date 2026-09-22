@@ -1,0 +1,92 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_blood_permanent_enchant_profile_05_reconciled_20260922",
+  "stage": "plan",
+  "hypothesis": "The first attributable Blood setup mismatch is the admission overlay boundary: the frozen Phase-4 Blood profile preserves the correct current item, gem and reforge identity but intentionally has zero permanent enchants, and the WoWSims overlay catalog has no Blood profile, so provisioning and admission fall back to that zero-enchant equipment. Apply an explicit Blood-only permanent-enchant overlay using the pinned WoWSims Blood preset as slot-applicability authority, preserve the current Phase-4 equipment fields, and exclude the source's DK runeforge from this repair. The prior validation was non-comparable and had stale controller metadata, so current-policy build and setup readback must be refreshed without turning the tank fixture into a DPS acceptance claim.",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "objective": "Repair the established Blood tank permanent-enchant admission gap for actor_30002 without changing item identity, gems, reforges, temporary enchant fields, DK runeforge semantics, tank policy, encounter behavior or any separate acceptance gate.",
+  "first_broken_edge": "owner_blood_permanent_enchant_profile",
+  "owned_files": [
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json",
+    "tools/bot_ml/permanent_enchant_overlays.py",
+    "tools/bot_ml/build_validation_provisioning.py",
+    "tools/bot_ml/generate_bot_admission_identities.py",
+    "tools/bot_ml/phase8_calibration_adapter.py",
+    "tests/test_blood_permanent_enchant_profile.py",
+    "tests/test_generated_bot_admission_identities.py",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h"
+  ],
+  "forbidden_changes": [
+    "Do not change Death Strike, Heart Strike, rune legality, mitigation, coefficients, target selection, resource policy, tank safety or encounter scripts.",
+    "Do not change current Blood item IDs, gems, reforges, temporary enchant fields, consumables, roster, WCL denominators or simulator/reference values.",
+    "Do not apply the WoWSims 3368 DK runeforge as a permanent-enchant overlay, manufacture a runeforge aura, or infer runeforge presence from the repaired armor enchants.",
+    "Do not alter any non-Blood profile or broaden the overlay beyond the pinned per-slot armor/cloak enchant IDs.",
+    "Do not claim actor_30002, any other actor, performance, Magmaw clear or parent completion from provisioning/readback or focused tests alone."
+  ],
+  "acceptance_conditions": [
+    "The overlay schema pins the exact WoWSims Blood source revision, path and SHA-256 through the retained reference catalog, declares permanent-enchant applicability as the only authority, and records the excluded runeforge separately.",
+    "Merged Blood equipment has the eight pinned permanent enchant IDs on slots 0, 2, 14, 4, 8, 9, 6 and 7; item IDs, gem item/enchant IDs, reforges, temporary-enchant fields and the slot-15 runeforge field remain unchanged.",
+    "Provisioning, admission identity generation and phase-8 setup readback consume the same merged profile, and regeneration updates the compile-time Blood manifest/source hash without changing other target identities except the expected source-bound Blood hash.",
+    "Focused executable coverage proves native DBC existence, overlay idempotence, non-Blood isolation, field preservation, runeforge exclusion and generated/readback identity parity; current-policy build and a closed exact-300-second setup validation with refreshed admission/readback are completed.",
+    "The Blood boss damage/cadence comparison, actor acceptance, performance, raid clear and every other parent requirement remain separately open."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_permanent_enchant_profile.py tests/test_generated_bot_admission_identities.py",
+    "pixi run python -m tools.bot_ml.generate_bot_admission_identities --check",
+    "pixi run python -m tools.bot_ml.build_validation_provisioning --help"
+  ],
+  "base_commit": "3697fb434ce5048c63c92942003c2bb2944e596f",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "tank_threat_300",
+    "actor_id": "30002",
+    "spec": "blood_death_knight",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_supporting_workflow_review_20260922.receipt.json",
+    "sha256": "c1e446f33b11fde39e373a6cca877f51d3963c864aec9703ca549605102407f3"
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "823fdd9069d122ad3f227729187b9875a70beb9531ac41a7ad8c8fcaf49cad91"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_review_20260922.json",
+      "sha256": "4d1ac2f51c107b4a7a956fdbabdbca2e5f6d61aca4a7a07683b2d18e1bb7a6bd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciliation_20260922.json",
+      "sha256": "7a147c21aaeb365330b0b13f387b0361168f3971bb434b742655ebabfc3d0187"
+    },
+    {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    }
+  ],
+  "acceptance_claim": "Plan only. This receipt claims a bounded Blood admission-overlay hypothesis and no source repair, native behavior, live outcome, actor, performance, raid-clear or parent acceptance."
+}

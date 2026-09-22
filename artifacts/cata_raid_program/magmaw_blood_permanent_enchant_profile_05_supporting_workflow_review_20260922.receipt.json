@@ -1,0 +1,31 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_supporting_workflow_review_20260922.json",
+      "sha256": "5a18567b0da31fa5c4ec03ac52b5c0803cce2a420c9168e9d9b81391a8fc57c5"
+    }
+  ],
+  "file_hashes": {
+    "tests/test_artifact_coordination_boundary.py": "70f767d9305f1f556c0a9620d282b4836d734c4c8201a7156945ef108ed7c095",
+    "tests/test_evidence_diagnostic_contracts.py": "3bfdefa2e1323ddb7c3b06a3420453dc428c0d30e8d76edebf62da5bceb3facf",
+    "tests/test_jev_shadow.py": "aa7b36e43c753505637e719a546fe5f6c72349ff0475c09322e2936941087125",
+    "tests/test_review_execution.py": "4f1a3621e11ff7792c7c8fd504784724196155322ce4f8479762937635ea9bfe",
+    "tools/bot_ml/jev_shadow.py": "053cb7e4eaa101f04b2efacff857360416d0ffcd78c35a88d2d27ec73a30905b",
+    "tools/bot_ml/laya_packets.py": "58731c72b5376cdee2ebab721742cea77aa9620179a0c9c90c7838060d38217f",
+    "tools/raid_program/build_control_compatibility.py": "5bd69a3590542d3ec4de8247b92af8a5d18c77b75ad3ff205f3a2505a6dd31f3",
+    "tools/raid_program/evidence_result.py": "d84442d44677dfc0e3e8cdc9545d916c5fc821569e991bba43eff64b6a384bc3",
+    "tools/raid_program/evidence_task.py": "89f3da6eab66080a8fa37850dc2fe24a7f44d7b17923f3e2521813df3a55943b",
+    "tools/raid_program/evidence_view.py": "02ccf459df29cf8bd35035a42a03b67b411b84d7bd7ed61b7010bbcdaf4c84eb",
+    "tools/raid_program/review_execution.py": "ce81d18673c24013ef2eebff7d36b062d0dc1ff32027c14302e2716a67b2e5b0"
+  },
+  "kind": "supporting_review",
+  "producer": "01a0c840-7b1e-7a93-9432-ca7bf3a79b24",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_supporting_workflow_review_20260922.json",
+    "sha256": "5a18567b0da31fa5c4ec03ac52b5c0803cce2a420c9168e9d9b81391a8fc57c5"
+  },
+  "reviewer_session_id": "01a0c840-7b1e-7a93-9432-ca7bf3a79b24",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "verdict": "approved"
+}

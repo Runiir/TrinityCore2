@@ -1,0 +1,13 @@
+[
+  "tests/test_artifact_coordination_boundary.py",
+  "tests/test_evidence_diagnostic_contracts.py",
+  "tests/test_jev_shadow.py",
+  "tests/test_review_execution.py",
+  "tools/bot_ml/jev_shadow.py",
+  "tools/bot_ml/laya_packets.py",
+  "tools/raid_program/build_control_compatibility.py",
+  "tools/raid_program/evidence_result.py",
+  "tools/raid_program/evidence_task.py",
+  "tools/raid_program/evidence_view.py",
+  "tools/raid_program/review_execution.py"
+]
