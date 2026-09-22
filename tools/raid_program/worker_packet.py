@@ -1,5 +1,6 @@
 """Assemble one small implementation packet from the admitted plan and source."""
 import json
+import textwrap
 from pathlib import Path
 
 from tools.raid_program import development_graph as graph
@@ -23,7 +24,7 @@ def validate_context(root: Path, context: dict) -> dict:
         lines = path.read_text().splitlines()
         if end > len(lines) or end - start >= 80:
             raise graph.GraphError('native behavior excerpt is missing or too broad; select the relevant function')
-        excerpts.append(dict(ref, text='\n'.join(lines[start-1:end])))
+        excerpts.append(dict(ref, text=textwrap.dedent('\n'.join(lines[start-1:end]))))
     fixture = context.get('fixture')
     if not isinstance(fixture, dict):
         raise graph.GraphError('worker_context needs an existing deterministic fixture reference')
@@ -65,15 +66,12 @@ def packet(root: Path) -> dict:
               'required_test_commands': assignment['required_test_commands'],
               'acceptance_conditions': assignment['acceptance_conditions'],
               'context': context,
-              'return': 'Freeze owned files after focused tests. Return changed files, commands/results, '
-                        'remaining uncertainty and live verification needed. If the repair needs an existing '
-                        'fixture outside ownership, report the exact file and dependency to the coordinator '
-                        'for amend-tests; preserve the needed change. Do not launch nested workers.',
-              'behavioral_validation': 'Exercise the production behavior across the counterexample and a '
-                        'neighboring valid case. For persistent state, repeat updates with unchanged identity '
-                        'and changing observations. Source-text assertions alone do not prove the repair.',
-              'evidence_rule': 'Use compact comparisons first. Each deeper read answers the named question '
-                               'and changes the named decision. Missing evidence stays unknown.'}
+              'return': 'Freeze files; report changes, tests and unknowns. Ask the coordinator to amend-tests '
+                        'for needed fixture dependencies. Preserve those edits. No nested workers.',
+              'behavioral_validation': 'Execute the counterexample and valid neighbor. Repeat state updates '
+                        'without changing identity. Text assertions alone are insufficient.',
+              'evidence_rule': 'Use compact comparisons. Each deeper read must change a named decision. '
+                               'Excerpt indentation is normalized; file hashes bind original bytes.'}
     if len(json.dumps(result).encode()) > 10000:
         raise graph.GraphError('worker packet exceeds 10000 bytes; narrow the unit, do not truncate')
     return result

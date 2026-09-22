@@ -147,3 +147,18 @@ def test_observation_packet_requires_actionable_live_outcomes(case):
     state = graph.reduce(root, state, receipt(root, state, evidence, worker_context=ctx))
     put(root / graph.STATE_PATH, state)
     assert packet(root)['context']['observation_decision'] == ctx['observation_decision']
+
+
+def test_excerpt_display_dedents_without_changing_source_identity(case):
+    from tools.raid_program.worker_packet import validate_context
+    root, _, evidence = case
+    original = '        if (ready) {\n            Observe();\n        }\n'
+    (root/'code.cpp').write_text(original)
+    ctx = context(root, evidence)
+    ctx['native_behavior'][0]['end_line'] = 3
+    result = validate_context(root, ctx)
+    excerpt = result['native_behavior'][0]
+    assert excerpt['text'] == 'if (ready) {\n    Observe();\n}'
+    assert excerpt['sha256'] == graph.digest(original.encode())
+    assert {k:v for k,v in excerpt.items() if k != 'text'} == ctx['native_behavior'][0]
+    assert result['counterexample'] == ctx['counterexample']
