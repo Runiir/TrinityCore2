@@ -1,0 +1,32 @@
+{
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "3fd4de999e9613d267e8979520f81dcfa666ad3ad03f06c776db985de8b34635",
+    "tests/test_holy_paladin_capability_profile.py": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
+  },
+  "findings": [
+    "Only DispelCleanse bypasses the min_injured_players rejection.",
+    "Healer triage, holy_power_3, and generic resource gates remain unchanged.",
+    "The focused diff matches the bounded DispelCleanse plan."
+  ],
+  "limits": [
+    "Static review only; no rebuild or post-patch native run was performed.",
+    "Native role and actor acceptance remain unproven.",
+    "The regression test is source-text based."
+  ],
+  "proof": {
+    "final_message_bytes": 791,
+    "final_message_sha256": "004e1dabb520fc4f87b5ee662f57bdb06683681d18616852d04634bd11289326",
+    "prefix_bytes": 3305510,
+    "prefix_sha256": "4cc7439b0bd0b0bb02e34513438afc7ad3fba4093eface57bf5dcf203460cdf9",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T07-59-36-01a0c77b-d630-7fb2-a5fa-2d5ea91f22cc.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c77b-d630-7fb2-a5fa-2d5ea91f22cc"
+  },
+  "reviewer_session_id": "01a0c77b-d630-7fb2-a5fa-2d5ea91f22cc",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py: 4 passed.",
+    "git diff --check passed."
+  ],
+  "verdict": "approved"
+}

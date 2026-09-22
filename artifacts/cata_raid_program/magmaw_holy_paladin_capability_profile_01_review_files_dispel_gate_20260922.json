@@ -1,0 +1,4 @@
+[
+  "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+  "tests/test_holy_paladin_capability_profile.py"
+]

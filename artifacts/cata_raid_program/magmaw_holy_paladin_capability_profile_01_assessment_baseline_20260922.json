@@ -1,0 +1,22 @@
+{
+  "schema": "cata_raid_program_assessment_baseline_v1",
+  "kind": "assessment_baseline",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "baseline_status": "no_accepted_native_baseline_for_actor_30004",
+  "actor_id": "30004",
+  "spec": "holy_paladin",
+  "scope": "isolated healer calibration only; no raid or performance acceptance",
+  "prior_static_evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_tests_refresh_full2_20260921.json",
+      "sha256": "4672fa9dd7703a805c3c77130fea5cf56177218a4daa3d290820b36154163197"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_build_20260921.json",
+      "sha256": "f4071edfb1536baa83f7902a90cfd446e450c241bd910b1e46b905410f720bb8"
+    }
+  ],
+  "interpretation": "The current closed run is diagnostic evidence for the bounded profile edge, not a matched accepted baseline. The actor, all other actors and the Magmaw 10N requirement remain open."
+}

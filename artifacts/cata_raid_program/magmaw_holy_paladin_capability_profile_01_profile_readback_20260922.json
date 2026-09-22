@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_program_native_profile_readback_v1",
+  "kind": "profile_readback",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "observed_at": "2026-09-22",
+  "database_binding": {
+    "database": "world",
+    "host": "172.20.0.2",
+    "port": 3306,
+    "read_only": true,
+    "query_scope": "holy_paladin healer profile actions"
+  },
+  "profile": {
+    "id": 269,
+    "class_id": 2,
+    "spec_tag": "holy_paladin",
+    "role": "healer",
+    "enabled": true
+  },
+  "rows": [
+    {
+      "sort_order": 15,
+      "spell_id": 20473,
+      "category": "heal_fast",
+      "mechanic_tags": "holy_shock,triage,instant",
+      "min_injured_players": 1,
+      "injured_health_pct": 0.94
+    },
+    {
+      "sort_order": 15,
+      "spell_id": 85673,
+      "category": "heal_fast",
+      "mechanic_tags": "word_of_glory,holy_power_3,triage,heal",
+      "min_injured_players": 1,
+      "injured_health_pct": 0.94
+    },
+    {
+      "sort_order": 20,
+      "spell_id": 19750,
+      "category": "heal_fast",
+      "mechanic_tags": "flash_of_light,triage,heal",
+      "min_injured_players": 0,
+      "injured_health_pct": 1.0
+    },
+    {
+      "sort_order": 30,
+      "spell_id": 635,
+      "category": "heal_efficient",
+      "mechanic_tags": "holy_light,heal",
+      "min_injured_players": 0,
+      "injured_health_pct": 1.0
+    },
+    {
+      "sort_order": 40,
+      "spell_id": 4987,
+      "category": "dispel_cleanse",
+      "mechanic_tags": "cleanse,dispel",
+      "min_injured_players": 1,
+      "injured_health_pct": 1.0
+    }
+  ],
+  "observed_profile_generation": 1,
+  "observed_profile_content_hash": "0F0408B0559CFE2C8FEDEF3F44E63EBC65CA6412E1DB1D3144DC1412F33A1CA4",
+  "interpretation": {
+    "word_of_glory_row_present": true,
+    "cleanse_row_present": true,
+    "runtime_action_attempts_in_closed_window": {
+      "635": 49,
+      "19750": 18,
+      "20473": 39,
+      "85673": 0,
+      "4987": 0
+    },
+    "first_missing_observation": "native calibration candidate/phase path did not exercise either the newly loaded Holy Power spender or the existing Cleanse row"
+  }
+}

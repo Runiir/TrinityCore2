@@ -1,0 +1,22 @@
+{
+  "schema": "cata_raid_program_operation_reconciliation_v1",
+  "kind": "validation_reconciliation",
+  "authority": "coordinator_attestation",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "stage": "validate",
+  "operation_id": "e4d59ff1939a197b71f4ef91719136b41153aab91da411d6ba6b3aa3b253e164",
+  "owner_checked": "coordinator-magmaw-holy-paladin-capability-profile-01-validate-20260921",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "controller_checked": true,
+  "attempt_checked": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_build_20260921.json",
+      "sha256": "f4071edfb1536baa83f7902a90cfd446e450c241bd910b1e46b905410f720bb8"
+    }
+  ],
+  "advice": {}
+}

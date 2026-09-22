@@ -1,0 +1,42 @@
+{
+  "schema": "cata_raid_program_source_isolation_reconciliation_v1",
+  "kind": "source_isolation_reconciliation",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "stage": "validate",
+  "operation_id": "70fe63edeec39026f98ebb3efd195f205fd4de836e0cb35acc1dc89e291de581",
+  "claim_owner": "coordinator-magmaw-holy-paladin-capability-profile-01-validate-20260922",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "controller_checked": true,
+  "worldserver_checked": true,
+  "validation_attempt": {
+    "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922/report.json",
+    "native_window_completed": true,
+    "role_gate_passed": false,
+    "cleanup_observed": true
+  },
+  "stale_build_binding": {
+    "build_source_commit": "d7664e5c3b430c5c6d0dc4f707a9e249e68ab940",
+    "build_binary_sha256": "5a17a35a183a953222d7ff154e61e5303ede27fe6ae46c0dc50fef09d180f577",
+    "current_checkout_head": "4f7acfff8f64606db0962cc5fee2242286b0e75b",
+    "graph_result": "source delta contains files outside bounded assignment",
+    "decision": "do not record this live result against the stale build; rework through a current-source queued build"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_run_20260922.json",
+      "sha256": "22c2471f2449a9b572c532fd3e611b0016a8414d03f4ae82bf0564434ca6c48b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_evidence_20260922.json",
+      "sha256": "3fedcded7fc2f44e60c9396a8bb5e37a720ae71338164f79c96a70bea5331c77"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_20260922.raw.tar.gz.dvc",
+      "sha256": "089667491f9b428c5cf91e0f02ee2d704775c3f04f37b4132c3ea677b8d67d9b"
+    }
+  ],
+  "advice": {}
+}

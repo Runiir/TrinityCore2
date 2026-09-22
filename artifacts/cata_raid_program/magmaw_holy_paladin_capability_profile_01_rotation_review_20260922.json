@@ -1,0 +1,72 @@
+{
+  "schema": "cata_raid_program_rotation_review_v1",
+  "kind": "rotation_review",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "raid-rotation-review",
+  "authority": "independent_read_only_review",
+  "reviewer_session_id": "raid-rotation-review-magmaw-holy-paladin-20260922",
+  "verdict": "non_publishable",
+  "evidence": [
+    {
+      "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922/report.json",
+      "sha256": "889875c9d7701f0efb165621fe3912aba86ed524eeaf0237eef08f58622e821c"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_20260922.raw.tar.gz.dvc",
+      "sha256": "089667491f9b428c5cf91e0f02ee2d704775c3f04f37b4132c3ea677b8d67d9b"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_profile_readback_20260922.json",
+      "sha256": "efc4401451ff0e65d2a127fed39ce6a3c23e4d2bea250324451bad4ef1f3b42d"
+    }
+  ],
+  "findings": {
+    "scoring_window": {
+      "scored_seconds": 300.0,
+      "exact": true,
+      "native_completion": true
+    },
+    "profile_and_candidate": {
+      "word_of_glory_row_85673": "present_in_native_world_profile",
+      "cleanse_row_4987": "present_in_native_world_profile",
+      "holy_power_gate_owner": "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "observed_word_of_glory_attempts": 0,
+      "observed_cleanse_attempts": 0
+    },
+    "role_gate": {
+      "effective_hps": 6024.19,
+      "reference_hps": 6103.526666666667,
+      "reference_ratio": 0.987002,
+      "dispel_attempts": 0,
+      "dispel_successes": 0,
+      "idle_ratio_under_demand": 0.12,
+      "failed": [
+        "reference_conditions_not_comparable",
+        "dispels",
+        "idle_under_demand"
+      ],
+      "other_hard_checks_passed": [
+        "exact_scoring_window",
+        "all_damage_phases_delivered",
+        "no_party_deaths",
+        "no_illegal_actions",
+        "target_selection",
+        "mana_endurance",
+        "cooldown_required_periods"
+      ]
+    },
+    "causal_review": {
+      "first_missing_edge": "calibration phase/candidate path to Cleanse or Holy Power spender execution",
+      "static_profile_installation": "proved by native database readback",
+      "native_action_execution": "not proved for 85673 or 4987",
+      "smallest_next_repair": "instrument or repair the healer calibration dispel phase and resource-state candidate path, then rerun the exact role window",
+      "do_not_change": [
+        "WoWSims/reference inputs",
+        "encounter scripts",
+        "movement authority",
+        "healer safety/resource semantics outside the proven calibration edge"
+      ]
+    }
+  },
+  "next_bounded_repair": "Trace the native healer calibration dispel phase and Holy Power state through profile load, candidate eligibility and spell submission; repair only the first proven execution edge before repeating validation."
+}

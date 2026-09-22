@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_dispel_gate_20260922.json",
+      "sha256": "ea97bda713d951d00661392abbb95b0a28d66c4fc9175e05c25ef1ebf370c648"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "3fd4de999e9613d267e8979520f81dcfa666ad3ad03f06c776db985de8b34635",
+    "tests/test_holy_paladin_capability_profile.py": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
+  },
+  "kind": "review",
+  "producer": "01a0c77b-d630-7fb2-a5fa-2d5ea91f22cc",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_review_dispel_gate_20260922.json",
+    "sha256": "ea97bda713d951d00661392abbb95b0a28d66c4fc9175e05c25ef1ebf370c648"
+  },
+  "reviewer_session_id": "01a0c77b-d630-7fb2-a5fa-2d5ea91f22cc",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "verdict": "approved"
+}

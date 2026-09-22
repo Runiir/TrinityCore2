@@ -1,0 +1,62 @@
+{
+  "schema": "raid_worker_checkpoint_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator-magmaw-holy-paladin-dispel-gate-implement-20260922",
+  "authority": "coordinator_attestation",
+  "operation_id": "2ecf2bd35c857a00811b352a8c710e9d046a1cf8fcda5f7ed81117553ea06a65",
+  "stage": "result",
+  "task_id": "magmaw:holy_paladin_capability_profile_01_result_dispel_gate_20260922",
+  "subject": "orchestrator",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "objective": "Repair the proven healer dispel eligibility edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+  "first_broken_edge": "owner_holy_paladin_profile_incomplete",
+  "current_plan": "Exempt only DispelCleanse from the min_injured_players candidate rejection while preserving heal triage and resource gates.",
+  "completed_work": "Added the native DispelCleanse exception and a focused source-bound regression test; the 705-line candidate module remains below the repository 1,000-line limit.",
+  "observations": [
+    "The prior native healer run loaded Cleanse 4987 but made zero dispel attempts because the controlled dispel phase applies an aura without creating an injured player.",
+    "The candidate builder already exempts DispelCleanse from generic healer damage suppression; this patch extends the same category-specific treatment to the separate min-injured-player gate.",
+    "The focused suite applies the existing Holy Paladin migration twice, preserves profile rows, retains the Holy Power guard, and verifies the DispelCleanse exception in the candidate predicate."
+  ],
+  "forbidden_changes": [
+    "Do not change the Holy Paladin SQL profile, encounter scripts, movement authority, tank assignments or shared action submission.",
+    "Do not remove or weaken Holy Power, mana, cooldown, spellbook, target-selection or healer triage gates for heal actions.",
+    "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership, encounter mechanics or raid composition.",
+    "Do not claim native live healer, actor, performance, raid clear or parent acceptance from this checkpoint."
+  ],
+  "acceptance_conditions": [
+    "The focused executable test passes on the committed implementation.",
+    "Independent review, frozen-policy build and exact healer validation remain required before any actor or raid acceptance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
+  ],
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_holy_paladin_capability_profile.py",
+      "exit_status": 0,
+      "summary": "4 passed in 0.06s"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "3fd4de999e9613d267e8979520f81dcfa666ad3ad03f06c776db985de8b34635",
+    "tests/test_holy_paladin_capability_profile.py": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
+  },
+  "source_commit": "8560b017088f4c121c2d48ff3b3be43673b1ee46",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_plan_dispel_gate_20260922.json",
+      "sha256": "77b91cdafc8871a1869c5e0ea33eedd9f99ac4fb09991e49b5c88912fb7d9cb2"
+    },
+    {
+      "path": "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+      "sha256": "3fd4de999e9613d267e8979520f81dcfa666ad3ad03f06c776db985de8b34635"
+    },
+    {
+      "path": "tests/test_holy_paladin_capability_profile.py",
+      "sha256": "e5c7258f0b411032e9a442d43e99ee8949347f88e2cc51c7555de01e7b867492"
+    }
+  ],
+  "advice": {},
+  "acceptance_claim": "Bounded implementation and focused test only. No native live healer outcome, actor acceptance, performance acceptance, raid clear or parent completion is claimed."
+}

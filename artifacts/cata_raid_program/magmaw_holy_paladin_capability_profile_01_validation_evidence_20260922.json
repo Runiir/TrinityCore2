@@ -1,0 +1,87 @@
+{
+  "schema": "cata_raid_program_validation_evidence_v1",
+  "kind": "validation_evidence",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "run": {
+    "path": "dataset/live_validation/magmaw_holy_paladin_capability_profile_01_20260922/report.json",
+    "sha256": "889875c9d7701f0efb165621fe3912aba86ed524eeaf0237eef08f58622e821c"
+  },
+  "calibration": {
+    "mode": "healer_controlled_damage_300",
+    "actor_id": "30004",
+    "spec": "holy_paladin",
+    "attempt_id": 1,
+    "server_epoch": 7937790683965378,
+    "scoring_seconds": 300.0,
+    "window_complete": true,
+    "warmup_seconds": 15.0,
+    "profile_generation": 1,
+    "profile_content_hash": "0F0408B0559CFE2C8FEDEF3F44E63EBC65CA6412E1DB1D3144DC1412F33A1CA4",
+    "effective_hps": 6024.19,
+    "reference_hps": 6103.526666666667,
+    "reference_ratio": 0.987002,
+    "attempts": 107,
+    "successes": 107,
+    "action_attempts": {
+      "635": 49,
+      "19750": 18,
+      "20473": 39,
+      "85673": 0,
+      "4987": 0
+    },
+    "healer_metrics": {
+      "delivered_event_count": 40,
+      "dispel_attempts": 0,
+      "dispel_successes": 0,
+      "cooldown_attempts": 1,
+      "cooldown_successes": 1,
+      "idle_ratio_under_demand": 0.12,
+      "overheal_ratio": 0.23,
+      "remaining_mana_ratio": 0.33,
+      "health_floor_ratio": 0.33,
+      "target_selection_accuracy": 1.0,
+      "death_count": 0
+    }
+  },
+  "role_gate": {
+    "passed": false,
+    "rejections": [
+      "reference_conditions_not_comparable",
+      "dispels",
+      "idle_under_demand"
+    ],
+    "reference_conditions_enabled": false,
+    "reference_comparison_eligible": false,
+    "all_damage_phases_delivered": true,
+    "no_party_deaths": true,
+    "no_illegal_actions": true
+  },
+  "native_profile_observation": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_profile_readback_20260922.json",
+    "sha256": "efc4401451ff0e65d2a127fed39ce6a3c23e4d2bea250324451bad4ef1f3b42d"
+  },
+  "raw_bundle": {
+    "pointer": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_20260922.raw.tar.gz.dvc",
+    "pointer_sha256": "089667491f9b428c5cf91e0f02ee2d704775c3f04f37b4132c3ea677b8d67d9b",
+    "remote_pushed": true
+  },
+  "cleanup": {
+    "worldserver_returncode": 0,
+    "timed_out": false,
+    "worldserver_process_remaining": false,
+    "authserver_preexisting_process_untouched": true,
+    "runtime_asset_closure_complete": true,
+    "dvc_status_clean_for_validation_routes": true
+  },
+  "verdict": {
+    "native_window_closed": true,
+    "repair_accepted": false,
+    "performance_accepted": false,
+    "actor_accepted": false,
+    "raid_clear_claimed": false,
+    "rejection": "role_calibration:dispels_and_idle_under_demand",
+    "next_edge": "owner_holy_paladin_calibration_dispel_execution"
+  }
+}

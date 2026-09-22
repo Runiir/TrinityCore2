@@ -1,0 +1,81 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:holy_paladin_capability_profile_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw:holy_paladin_capability_profile_01_replan_dispel_gate_20260922",
+  "stage": "plan",
+  "hypothesis": "The first proven native edge is the shared healer candidate eligibility gate, not the Holy Paladin profile row. The controlled healer dispel phase applies a dispellable aura without reducing player health, so healerTriageInjuredPlayers is zero and the existing Cleanse 4987 row is rejected by the generic min_injured_players predicate before native action submission. Exempt only DispelCleanse from that injury-count predicate while retaining all heal triage and resource gates.",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "objective": "Repair the proven healer dispel eligibility edge for actor_30004 without changing encounter behavior, movement authority, simulator/reference data, or healer safety/resource semantics.",
+  "first_broken_edge": "owner_holy_paladin_profile_incomplete",
+  "owned_files": [
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "tests/test_holy_paladin_capability_profile.py"
+  ],
+  "forbidden_changes": [
+    "Do not change the Holy Paladin SQL profile, HolyPaladinResolver.cpp, encounter scripts, movement authority, tank assignments or shared action submission.",
+    "Do not remove or weaken Holy Power, mana, cooldown, spellbook, target-selection or healer triage gates for heal actions.",
+    "Do not make a global candidate bypass; the only allowed predicate change is the DispelCleanse exception on the min-injured-player gate.",
+    "Do not change Word of Glory behavior, Beacon, Aura Mastery, Divine Plea or Light of Dawn in this bounded repair.",
+    "Do not change WoWSims/reference data, gear, stats, role thresholds, potion ownership, encounter mechanics or raid composition.",
+    "Do not claim actor_30004, another actor, performance, raid clear or parent completion from focused tests or a non-comparable calibration reference."
+  ],
+  "acceptance_conditions": [
+    "The native candidate builder exempts only DispelCleanse from the min_injured_players rejection while preserving the existing gate for heal categories.",
+    "Focused executable coverage binds the source predicate and verifies that the prior Holy Paladin profile migration still installs Cleanse and Word of Glory without changing unrelated rows.",
+    "The change is independently reviewed and built from the current source boundary with the frozen host12 policy.",
+    "The exact 300-second healer-controlled calibration shows native Cleanse candidate attempts and successful dispels with the repaired binary; role, actor and raid acceptance remain separately gated by the run contract."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py"
+  ],
+  "base_commit": "800f3b3182c08074f4604a9d121663fb6105f9d9",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "dummy",
+    "mode": "healer_controlled_damage_300",
+    "actor_id": "30004",
+    "spec": "holy_paladin",
+    "reference": {
+      "path": "experiments/configs/all_spec_references_cata_p4_v1.json",
+      "sha256": "005bbcc790fe77df1d352e0f6913442afb8edd9589ef4f0bc866a8e6b14358d0"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_roster_25_v1.json",
+      "sha256": "4d614f940f24cbb99e48e1f124d73353b6e52edd656969242a750f8ca53fa5ae"
+    },
+    "runtime_profile": {
+      "path": "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+      "sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802"
+    },
+    "target_catalog": {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_profile_readback_20260922.json",
+      "sha256": "efc4401451ff0e65d2a127fed39ce6a3c23e4d2bea250324451bad4ef1f3b42d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validation_evidence_20260922.json",
+      "sha256": "3fedcded7fc2f44e60c9396a8bb5e37a720ae71338164f79c96a70bea5331c77"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_rotation_review_20260922.json",
+      "sha256": "fba82c9c8857884907094a0aa9825de510cb2cc78d040bef2bd157534e0c3451"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_validate_source_isolation_reconciliation_20260922.json",
+      "sha256": "2a43f9b9800d82e53af1cd554b9fc68ed2daa22207aa1da0bcb7c6a754d802f3"
+    }
+  ],
+  "acceptance_claim": "Plan only. This receipt claims a bounded DispelCleanse candidate-eligibility hypothesis and no native, live, actor, performance, raid-clear or parent acceptance.",
+  "advice": {}
+}
