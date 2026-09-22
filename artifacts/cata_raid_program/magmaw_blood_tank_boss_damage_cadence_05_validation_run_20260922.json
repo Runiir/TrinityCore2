@@ -1,0 +1,78 @@
+{
+  "schema": "cata_raid_program_run_receipt_v1",
+  "kind": "run",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
+  "claim_token": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
+  "attempt_id": 1,
+  "server_epoch": 10950840543533082,
+  "scenario_kind": "raid",
+  "clock": "completion_watchdog",
+  "terminal_reason": "semantic_stall",
+  "terminal_detail": "The completion watchdog reached a semantic progress plateau at the Magmaw route node after 759 seconds. Native process exit and cleanup succeeded, but no authoritative boss-clear acceptance was recorded.",
+  "closed": true,
+  "cleanup_verified": true,
+  "evidence_identity_complete": false,
+  "build_identity": {
+    "source_commit": "3fb84cdfc632bebaf6b4aeccdaa7cc83c19da00f",
+    "binary_sha256": "f0869bd47c5d8b6d1923d134656c47aa6a075704dac15e50d3c2cbe0ccf957d4"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "report_summary": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+    "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+  },
+  "raw_archive_pointer": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+    "sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897",
+    "payload_sha256": "76ccb3544f55fae663fc19102203d9dfcff9ef23255ebc534c7c013b99798577",
+    "payload_size_bytes": 2449843
+  },
+  "reconciliation": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_reconciliation_20260922.json",
+    "sha256": "411e8301dbe30fa2c56c99a72605658b276a021752b52c207315394ddddcfd37"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+      "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+      "sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_build_correction_20260922.json",
+      "sha256": "4ba2647c3e2ece8209219d4f4a6c129e48432a2bd8f484c061e1de2db35a2534"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_reconciliation_20260922.json",
+      "sha256": "411e8301dbe30fa2c56c99a72605658b276a021752b52c207315394ddddcfd37"
+    }
+  ],
+  "native_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "interpretation": "Closed diagnostic evidence only. The Blood observation correction was exercised in a lawful Magmaw 10N watchdog attempt, but the attempt semantically stalled before an accepted boss clear and lacks complete external identity. No actor, repair, performance, encounter, or parent requirement is accepted."
+}

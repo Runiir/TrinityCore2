@@ -1,0 +1,33 @@
+{
+  "schema": "cata_raid_validation_reconciliation_v1",
+  "authority": "coordinator_attestation",
+  "kind": "reconciliation",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "coordinator",
+  "operation_id": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
+  "claim_token": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+      "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+      "sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validate_claim_correction_20260922.json",
+      "sha256": "fe897d1f13ed8bf2d93796cad0716cfbb234122322517a099bd5a6a75bfdd25a"
+    }
+  ],
+  "observations": {
+    "controller": "The validation report is closed with returncode 0; no worldserver process remains and the bot pool has zero online/in-use rows. The attempt is not active.",
+    "terminal": "The completion watchdog ended with semantic_stall after 759 seconds and no deaths. The report has no accepted authoritative Magmaw clear and the acceptance verifier rejected failure labels, debug-only route context, and incomplete external identity.",
+    "reuse": "The failed raid attempt is attributable and retained for diagnosis, but it cannot accept actor_30002, repair, performance, encounter clear, or the parent objective. No completed run receipt for this claim existed before reconciliation."
+  },
+  "next_action": "Record the closed semantic-stall attempt as a run receipt, assess it with all ten actor dispositions, publish its DVC evidence, and route the first-broken Blood cadence or shared encounter-progress edge."
+}

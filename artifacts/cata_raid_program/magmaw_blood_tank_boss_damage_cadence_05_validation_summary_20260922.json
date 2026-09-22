@@ -1,0 +1,93 @@
+{
+  "schema": "cata_raid_program_raid_validation_summary_v1",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "scenario_kind": "raid",
+  "encounter": {
+    "raid": "blackwing_descent",
+    "boss": "magmaw",
+    "mode": "10N",
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_generation": 4,
+    "map_id": 669,
+    "instance_id": 2
+  },
+  "terminal": {
+    "terminal_reason": "semantic_stall",
+    "controller_completion_reason": "semantic_progress_plateau_watchdog",
+    "failure_labels": ["semantic_progress_plateau"],
+    "clock": "completion_watchdog",
+    "duration_seconds": 759,
+    "no_progress_window_seconds": 180,
+    "timed_out": false,
+    "returncode": 0,
+    "native_clear": false,
+    "boss_kill_evidence": 0,
+    "party_damage_at_plateau": 28402394,
+    "total_kills": 4,
+    "total_deaths": 0,
+    "deaths": 0,
+    "repeated_decision_loop": false,
+    "death_loop": false
+  },
+  "identity": {
+    "attempt_id": 1,
+    "server_epoch": 10950840543533082,
+    "cohort_id": "default",
+    "profile_generation": 1,
+    "profile_content_hash": "9EC8772F664D224F944074C12C8A178895EF68CFA9711C8EBCDF909D7C7118AC",
+    "source_commit": "3fb84cdfc632bebaf6b4aeccdaa7cc83c19da00f",
+    "binary_sha256": "f0869bd47c5d8b6d1923d134656c47aa6a075704dac15e50d3c2cbe0ccf957d4",
+    "route_manifest_sha256": "90e86079d90229dfc84c12ff36aafaf3faae85be0d0164d7bddbc4ebc752275e",
+    "validation_plan_manifest_sha256": "0cf3f44434b21cd04f97532945dbfb2cf9561fe85e116c1977122451ff003b3d",
+    "evidence_identity_complete": false,
+    "evidence_identity_incomplete_reasons": [
+      "missing_external_database_snapshot_sha256",
+      "missing_external_database_schema_sha256",
+      "missing_external_server_epoch_sha256",
+      "missing_external_profile_generation_sha256"
+    ]
+  },
+  "cleanup": {
+    "worldserver_process_absent": true,
+    "bot_pool_row_count": 10,
+    "bot_pool_in_use_sum": 0,
+    "bot_pool_online_sum": 0,
+    "leases": 0,
+    "verified_by": "post-run process check and read-only character_bot_pool query"
+  },
+  "actor_report_sha256": "567a64cd10b26670c20fa5a699dae7a0321b14c8e879f8a97fb0e393ad3bb1e8",
+  "combat_analysis_sha256": "a1e6d18ceef338dd2c01685755e07879fa0b5ab0c06d3f5ec11beee1d6b40f44",
+  "combat_log_sha256": "7c20b54bd7314e8516871efa828f0d4c8239bee94c7969afdb0d48710018d8c4",
+  "actor_metrics": [
+    {"actor_guid": 30001, "name": "Mgwtanka", "role": "dps", "damage": 4211772, "dps": 37943.892, "elapsed_dps": 34405.123, "healing": 0, "hps": 0.0, "damage_taken": 241002, "damage_uptime": 0.882883, "active_seconds": 98, "moving_fraction": 0.099003},
+    {"actor_guid": 30002, "name": "Mgwtankb", "role": "tank", "damage": 1574278, "dps": 14182.685, "elapsed_dps": 12859.962, "healing": 464452, "hps": 4184.252, "damage_taken": 928875, "damage_uptime": 0.666667, "active_seconds": 74, "moving_fraction": 0.08778},
+    {"actor_guid": 30003, "name": "Mgwheala", "role": "healer", "damage": 218402, "dps": 1967.586, "elapsed_dps": 1784.082, "healing": 569497, "hps": 5130.604, "damage_taken": 124476, "damage_uptime": 0.072072, "active_seconds": 8, "moving_fraction": 0.0},
+    {"actor_guid": 30004, "name": "Mgwhealb", "role": "healer", "damage": 0, "dps": 0.0, "elapsed_dps": 0.0, "healing": 646909, "hps": 5828.009, "damage_taken": 163445, "damage_uptime": 0.0, "active_seconds": 0, "moving_fraction": 0.0},
+    {"actor_guid": 30005, "name": "Mgwhealc", "role": "healer", "damage": 422322, "dps": 3804.703, "elapsed_dps": 3449.864, "healing": 76743, "hps": 691.378, "damage_taken": 99267, "damage_uptime": 0.324324, "active_seconds": 36, "moving_fraction": 0.03778},
+    {"actor_guid": 30006, "name": "Mgwdpsa", "role": "dps", "damage": 3130846, "dps": 28205.82, "elapsed_dps": 25575.255, "healing": 0, "hps": 0.0, "damage_taken": 112060, "damage_uptime": 0.684685, "active_seconds": 76, "moving_fraction": 0.190521},
+    {"actor_guid": 30007, "name": "Mgwdpsb", "role": "dps", "damage": 5192120, "dps": 46775.856, "elapsed_dps": 42413.39, "healing": 0, "hps": 0.0, "damage_taken": 93222, "damage_uptime": 0.810811, "active_seconds": 90, "moving_fraction": 0.070945},
+    {"actor_guid": 30008, "name": "Mgwdpsc", "role": "dps", "damage": 5035732, "dps": 45366.955, "elapsed_dps": 41135.888, "healing": 101908, "hps": 918.09, "damage_taken": 205576, "damage_uptime": 0.783784, "active_seconds": 87, "moving_fraction": 0.067901},
+    {"actor_guid": 30009, "name": "Mgwdpsd", "role": "dps", "damage": 4030427, "dps": 36310.153, "elapsed_dps": 32923.752, "healing": 10607, "hps": 95.559, "damage_taken": 109139, "damage_uptime": 0.837838, "active_seconds": 93, "moving_fraction": 0.22047},
+    {"actor_guid": 30010, "name": "Mgwdpse", "role": "dps", "damage": 4586495, "dps": 41319.775, "elapsed_dps": 37466.161, "healing": 0, "hps": 0.0, "damage_taken": 182189, "damage_uptime": 0.774775, "active_seconds": 86, "moving_fraction": 0.03321}
+  ],
+  "blood_cadence": {
+    "actor_guid": 30002,
+    "boss_damage": 1574278,
+    "death_strike_count": 14,
+    "heart_strike_count": 16,
+    "rune_strike_count": 16,
+    "melee_count": 41,
+    "damage_taken": 928875,
+    "known_avoidable_damage": 198175,
+    "first_observed_causal_edge": "semantic_progress_plateau_at_magmaw_with_route/movement_diagnoses_present; no policy cadence acceptance",
+    "next_observation": "capture paired rune slot cooldowns, native next-legal strike, Death Strike/Blood Shield outcome and phase movement ownership in a non-plateau Magmaw attempt"
+  },
+  "evidence": {
+    "archive_pointer": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+    "archive_sha256": "76ccb3544f55fae663fc19102203d9dfcff9ef23255ebc534c7c013b99798577",
+    "archive_pointer_sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897",
+    "report_member": "magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/report.json",
+    "remote_rehydration_verified": true
+  }
+}
