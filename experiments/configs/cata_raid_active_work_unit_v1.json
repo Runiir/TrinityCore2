@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 378,
+    "revision": 379,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "build",
     "actor_ids": [
@@ -7186,6 +7186,20 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 378,
+        "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "action": "claim",
+          "revision": 378,
+          "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+          "owner": "coordinator-magmaw-blood-permanent-enchant-profile-05-build-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7301,7 +7315,13 @@
       "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "84a6f5432b5d36782a7cc742a54ca9fbb69186f1b7e77c57104a46e1d0361ace"
     },
     "tested_commit": "3697fb434ce5048c63c92942003c2bb2944e596f",
-    "implementer": "coordinator-magmaw-blood-permanent-enchant-profile-05-implement-20260922"
+    "implementer": "coordinator-magmaw-blood-permanent-enchant-profile-05-implement-20260922",
+    "claim": {
+      "owner": "coordinator-magmaw-blood-permanent-enchant-profile-05-build-20260922",
+      "token": "b1e63ac153872ae828f8b691ca7e6619775006c6c95b6b65815fc35af4474541",
+      "operation_id": "b1e63ac153872ae828f8b691ca7e6619775006c6c95b6b65815fc35af4474541",
+      "stage": "build"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
