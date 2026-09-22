@@ -1,0 +1,28 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_review_report_v2_20260922.json",
+      "sha256": "26c8a55436c2436038fca3bf3ab52b68fdb0b91307788c6676098785102363c8"
+    }
+  ],
+  "file_hashes": {
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json": "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "84a6f5432b5d36782a7cc742a54ca9fbb69186f1b7e77c57104a46e1d0361ace",
+    "tests/test_blood_permanent_enchant_profile.py": "5138f2e32a37a28b38ae20c2a1941a1436bc55a0f99a3053c5a71ed6cdd74905",
+    "tests/test_generated_bot_admission_identities.py": "602eaa06c994f7ef7696d478a86eb6eba5794f768e13063afc13043a6eec37e8",
+    "tools/bot_ml/build_validation_provisioning.py": "3307ae7d0554da9942f1f473ed97fbc03d776bc81c57e9d916dd1cc37184d02c",
+    "tools/bot_ml/generate_bot_admission_identities.py": "ec76b616d6181cc5c372aff8bd6017595005978d4ca183b2d527b09e0b9abcd4",
+    "tools/bot_ml/permanent_enchant_overlays.py": "62d607c5ef6246499283fe417666ed32648fc8a406a9f840dc352b74ae6f33c4",
+    "tools/bot_ml/phase8_calibration_adapter.py": "7b199b915f4c2a83e43992f3a917e807f2c1da52af6ee9cfb7dacea185005e3f"
+  },
+  "kind": "review",
+  "producer": "01a0c7f4-ea15-7ae0-8eec-4a0c78b56b06",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_review_report_v2_20260922.json",
+    "sha256": "26c8a55436c2436038fca3bf3ab52b68fdb0b91307788c6676098785102363c8"
+  },
+  "reviewer_session_id": "01a0c7f4-ea15-7ae0-8eec-4a0c78b56b06",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "verdict": "approved"
+}
