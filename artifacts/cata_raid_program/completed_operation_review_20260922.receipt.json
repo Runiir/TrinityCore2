@@ -1,0 +1,33 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/completed_operation_review_20260922.json",
+      "sha256": "f37640f9dbedef03ed160d6e6d07ec9a61978321bc786e5b1fb6eff87d09d5fa"
+    }
+  ],
+  "file_hashes": {
+    ".agents/skills/raid-evidence-lifecycle/SKILL.md": "0e89c829bf025fa35b7502bf20b8e4d36295b283c36d261f9b374935b0417cec",
+    ".agents/skills/trinity-orchestrator/SKILL.md": "ec7cc1644da3ab93dde4f1682334527de33c802a6a554d1ae2a4ec2f07576a1c",
+    "docs/bot_raids/development_graph.md": "cf226d308466b8f3fa2a93606d81f61ee71a288617372cfb1d1806482d486d4f",
+    "docs/bot_raids/error_ledger.md": "f4eb5583094024c249ca72fa2580fd87d938bfac01d449708abf795ba8114365",
+    "tests/test_completed_operation.py": "acd3648512e4ba2e55c432fcc07e0689187657928c3f6c375ab7f6409abe5336",
+    "tests/test_development_graph.py": "97c7d0dba3d2f8811d80ac596a8996dd0729d08a913cb1084eda2be4db0ae40a",
+    "tests/test_evidence_diagnostic_contracts.py": "d510dafab7ebe0f6a83a5d4ec1563a412b9baebe3ab40a0fe4ab77ac5a780b12",
+    "tests/test_scenario_bootstrap.py": "39e1a8723626daa15c3b47df2352b5673f29120b098c832e4d4cb99a710354ee",
+    "tools/raid_program/completed_operation.py": "2c32428262a7017c613445d957138f0184c634f1d74e2a0b59e255681e821898",
+    "tools/raid_program/development_graph.py": "5c7a7539c6a45e7f2e99d258586a8f75975070a8fde792c819604d70ce5b696a",
+    "tools/raid_program/evidence_task.py": "cfcc0cf3c14b9482556e0e7727b6ba908f4340bee08610a38a3f28994820973f",
+    "tools/raid_program/raid_workloop.py": "973467c5c39d5cf9e1d5b807d2b3d589498f3a0852f4a69599e220552946ccd4",
+    "tools/raid_program/workflow_step.py": "c5089557e0755895c64040424385f3535bf8636dc2f3f6a874c6838fc0af713d"
+  },
+  "kind": "review",
+  "producer": "01a0c872-91d2-7141-9d6e-24a08070ca48",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/completed_operation_review_20260922.json",
+    "sha256": "f37640f9dbedef03ed160d6e6d07ec9a61978321bc786e5b1fb6eff87d09d5fa"
+  },
+  "reviewer_session_id": "01a0c872-91d2-7141-9d6e-24a08070ca48",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "verdict": "approved"
+}

@@ -1,0 +1,107 @@
+{
+  "code_commit": "e6dca8bf91eaf5d3c5c345ae90e2d0b9dc47d244",
+  "original_state_commit": "50038f5345",
+  "run_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_run_20260922.json",
+    "sha256": "aa300d6a2eb68613b713cf63b95009133acda05c75e90eae7119fb5c496fa755"
+  },
+  "launch_commit": "7e8a466dcfdfe95816f7eb5c023d6ca99345fd66",
+  "historical_replay_stage": "assess",
+  "source_scope": "recorded_source_only",
+  "false_reconciliation_rejected": "operation already completed: artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_run_20260922.json; record that run with workflow_step advance (use --recorded-source for a changed checkout). Performance rejection or missing cleanup is not permission to repeat the operation.",
+  "live_state_unchanged": true,
+  "new_native_runs": 0,
+  "views": [
+    {
+      "view": "previous_default",
+      "bytes": 18298,
+      "seconds": 0.053,
+      "state_sha256": "8b42e45647d95199cff9d987dd4a5f3282425f49215e157d0f9b8c605c0afbe7"
+    },
+    {
+      "view": "compact_default",
+      "bytes": 3057,
+      "seconds": 0.052,
+      "state_sha256": "8b42e45647d95199cff9d987dd4a5f3282425f49215e157d0f9b8c605c0afbe7"
+    },
+    {
+      "view": "explicit_full",
+      "bytes": 18298,
+      "seconds": 0.054,
+      "state_sha256": "8b42e45647d95199cff9d987dd4a5f3282425f49215e157d0f9b8c605c0afbe7"
+    }
+  ],
+  "tests": "139 passed",
+  "earlier_failures": [
+    "Five initial projection/fixture failures corrected, preserving full consumer access.",
+    "A JSON-suffixed directory was wrongly read as a receipt; corrected with file check."
+  ],
+  "limits": [
+    "Read-only replay of real historical graph/receipt; not a native gameplay experiment.",
+    "No DPS or raid requirement accepted."
+  ],
+  "additional_compatibility_checks": {
+    "isolated_worktree": "32 passed, 1 skipped, 2 failed",
+    "canonical_baseline": "Hagara passes; source-readiness fails identically at unchanged f059544f17",
+    "failures": [
+      "Hagara test binds real canonical coordinator path and cannot run against isolated worktree state.",
+      "Pre-existing script-readiness catalog fingerprint differs from current encounter source."
+    ],
+    "scope": "No encounter catalog or gameplay modification."
+  },
+  "database_cleanup": {
+    "operation": "user_authorized_invalid_experiment_telemetry_cleanup",
+    "tables": [
+      "experiment_bot_clip_frames",
+      "experiment_bot_replay_records",
+      "experiment_bot_decisions",
+      "experiment_bot_events",
+      "experiment_bot_clips",
+      "experiment_bot_segments",
+      "experiment_bot_activities",
+      "experiment_bot_runs"
+    ],
+    "estimated_table_bytes_before": 34515238912,
+    "rows_after": {
+      "experiment_bot_clip_frames": 0,
+      "experiment_bot_replay_records": 0,
+      "experiment_bot_decisions": 0,
+      "experiment_bot_events": 0,
+      "experiment_bot_clips": 0,
+      "experiment_bot_segments": 0,
+      "experiment_bot_activities": 0,
+      "experiment_bot_runs": 0
+    },
+    "next_auto_increment_preserved": {
+      "experiment_bot_clip_frames": 1405166,
+      "experiment_bot_runs": 249,
+      "experiment_bot_replay_records": 18881,
+      "experiment_bot_clips": 58012,
+      "experiment_bot_decisions": 164201,
+      "experiment_bot_segments": 1474,
+      "experiment_bot_activities": 1726,
+      "experiment_bot_events": 468087
+    },
+    "characters_and_accounts_counts_unchanged": true,
+    "raw_backup_retained": false,
+    "reason": "User explicitly discarded this experiment data.",
+    "datadir_before": "approximately 36 GiB",
+    "datadir_after": "904 MiB",
+    "filesystem_available_before": "114 GiB",
+    "filesystem_available_after": "148 GiB",
+    "automatic_sql_retention_implemented": false
+  },
+  "independent_review": {
+    "report": {
+      "path": "artifacts/cata_raid_program/completed_operation_review_20260922.json",
+      "sha256": "f37640f9dbedef03ed160d6e6d07ec9a61978321bc786e5b1fb6eff87d09d5fa"
+    },
+    "receipt": {
+      "path": "artifacts/cata_raid_program/completed_operation_review_20260922.receipt.json",
+      "sha256": "fb5104d1783c87e9cc6909334ba3f3d469d9be68fed634a4b9bda962ead9fe72"
+    },
+    "reviewer_session_id": "01a0c872-91d2-7141-9d6e-24a08070ca48",
+    "verdict": "approved"
+  },
+  "review_note": "Final JSON transcription errors were rejected and corrected; no substantive retest or verdict change."
+}

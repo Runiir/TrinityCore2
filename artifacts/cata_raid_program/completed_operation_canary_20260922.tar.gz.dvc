@@ -1,0 +1,5 @@
+outs:
+- md5: ab8df01aea1d2266a2d15ea7ee19a9fc
+  size: 15099
+  hash: md5
+  path: completed_operation_canary_20260922.tar.gz

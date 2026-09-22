@@ -1,0 +1,13 @@
+{
+  "schema": "remote_payload_verification_v1",
+  "pointer": "artifacts/cata_raid_program/completed_operation_canary_20260922.tar.gz.dvc",
+  "md5": "ab8df01aea1d2266a2d15ea7ee19a9fc",
+  "sha256": "07c68fec0b97d0db57a40c8134b855805cba8abd5eebdd8e8bcc6b0f57542aac",
+  "size_bytes": 15099,
+  "verification": "direct remote read without local cache",
+  "remote_verified": true,
+  "local_archive_evicted": true,
+  "exact_cache_object_evicted": true,
+  "dvc_status_before_push": "up_to_date",
+  "dvc_push": "1 file pushed"
+}
