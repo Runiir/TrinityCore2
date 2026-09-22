@@ -1,0 +1,96 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "f629c29a03f412ab4ec5518e9ea08602d5fcf6e86099c037cd7607e48542680c",
+  "attempt_id": 1,
+  "disposition": {
+    "classification": "closed_diagnostic_repair_only",
+    "repair_edge_proven": true,
+    "actor_30004_accepted": false,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "parent_objective_complete": false,
+    "unresolved": [
+      "reference_conditions_not_comparable",
+      "incomplete_evidence_identity",
+      "controller_report_retains_stale_active_session_fields"
+    ]
+  },
+  "dvc_status_checked": true,
+  "dvc_status_scope": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_20260922.raw.tar.gz.dvc",
+  "dvc_status_before_eviction": {},
+  "dvc_push_completed": true,
+  "dvc_push_result": "1 file pushed",
+  "remote_verified": true,
+  "remote_verification_method": "removed the exact local archive and cache object, ran targeted dvc pull -f, matched the restored SHA-256, and confirmed targeted dvc status clean",
+  "remote_reconstruction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_20260922.raw.tar.gz.dvc",
+    "pointer_sha256": "352118727bd1ad926f726d87497b83750b81d22a6905334735ad0c83cb640110",
+    "payload_md5": "262e9fd8cdd56fdce4b9acd548af0b4b",
+    "payload_sha256": "82f7c556a8765ccab810fe9e1e5b4a75aa91f3bdfbdcf1073075845b3fbabb56",
+    "payload_size_bytes": 1622970,
+    "members_verified": [
+      "report.json",
+      "worldserver_output.log",
+      "commands.txt",
+      "heartbeat_events.jsonl"
+    ]
+  },
+  "dvc_status_after_eviction": {
+    "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_20260922.raw.tar.gz": "deleted"
+  },
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "exact_local_duplicates_evicted": true,
+  "cleanup_scope": {
+    "raw_directory": "dataset/live_validation/magmaw_holy_paladin_capability_profile_02_20260922",
+    "raw_archive": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_20260922.raw.tar.gz",
+    "eviction_method": "gio trash; recoverable locally and reconstructable through DVC"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_assessment_20260922.json",
+      "sha256": "1976fca5c186f8de18876c329af897e062da7c82c83ede36ab7055616ae654b2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_comparison_20260922.json",
+      "sha256": "5a967c73159cfc3047f4300e3a54c939202f0b78f448291fe5f99ebcd1ad6dcb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_run_20260922.json",
+      "sha256": "768fda112caecaebac24492a0c39b2709c1364360c7292ef717d3ed76f3fc1f7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_evidence_20260922.json",
+      "sha256": "6971c3146f6d98f552feaa97b2f4b4e02cf3fd1a8d4e83200325617630b621dd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_profile_readback_20260922.json",
+      "sha256": "7ecd250216694556271e3d91442072045d0b11556c4ca66d518c40b30f9e9f27"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_cleanup_reconciliation_20260922.json",
+      "sha256": "b9193eddad2011479976b7fa497a088629d44169bf0b66b2f5f572111a72a1f1"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_rotation_review_20260922.json",
+      "sha256": "3613e1bc88750ed9bf5677075a56b613bee96b39b63cde4d21d26ba371437e85"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_validation_20260922.raw.tar.gz.dvc",
+      "sha256": "352118727bd1ad926f726d87497b83750b81d22a6905334735ad0c83cb640110"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_build_20260922.json",
+      "sha256": "2d4f4f7977c7e4d830b33a9955cebaabf514758e58e62223ca66f6fbde1f9298"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_queued_build_20260922.json",
+      "sha256": "779c188326a0dbc26cdcc798a3dd261bd7b4b526b3b11f3a78f8aabb92d8d864"
+    }
+  ],
+  "interpretation": "Publication closes the attributable diagnostic bundle for the Holy Paladin Light of Dawn profile-capability repair. It does not accept actor_30004, performance, raid completion, or the Magmaw 10N parent objective."
+}
