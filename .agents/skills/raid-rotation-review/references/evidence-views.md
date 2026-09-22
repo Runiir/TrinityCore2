@@ -5,13 +5,16 @@ read retained inputs; they do not start servers, regenerate references, fetch
 WCL or grant acceptance. Run them from the mainline checkout. Do not load the
 Python implementation merely to use the CLI.
 
-For a saved task, start with `pixi run python -m tools.raid_program.evidence_view task`.
-It resolves the latest assessed run and baseline by receipt hashes, identifies the
-actual calibration actor, and supplies commands using the current promoted simulator
-request/result/ComputeStats. It does not change the saved stage. Read the displayed
-retained unit and current unit before applying that evidence to a different task.
-Missing hydration or identity stays explicit; never substitute the newest file.
-Execute its admission command before interpreting raw stat deltas as defects.
+For a saved task, start with `pixi run python -m tools.raid_program.evidence_view task --max-chars 6000`.
+It returns the validated active objective, unit, claim/blocker, evidence references,
+open requirement IDs and exact next inspection command. It does not change the stage.
+Use `task --section unit` for the complete constraints, `--section receipts` for
+bound operation inputs, and `--section requirements` for actor requirements.
+For a retained DPS comparison, explicitly request `task --section references`.
+That resolves the latest assessed run/baseline by hash and supplies commands using
+the promoted request/result/ComputeStats. Check the retained unit against the
+current unit. Missing hydration or identity returns a specific error, never a
+replacement file. Execute the admission command before interpreting raw stat deltas.
 The joined existing gates distinguish favorable self-provided baseline stats from
 controlled parity. Passing setup admission does not prove spell tuning or cadence.
 
@@ -117,29 +120,23 @@ not a larger dump. Do not concatenate pages to evade the output budget.
 
 ### Did a role repair work, and why did acceptance fail?
 
-For a local completed healer/tank report, this projection prints the role result
-without its repeated native snapshots. `REPORT` must name the exact bound report.
+For a completed healer/tank report, use the result command. It reports native
+outcome, failed role checks, scalar metrics and reference eligibility separately.
+`REPORT` must name the exact bound report; archive-member inputs also work.
 
 ```sh
 REPORT=/absolute/path/to/report.json
-jq -c '{completion_reason, returncode, timed_out, failure_labels,
-  role_result: (.role_calibration_evaluation | if . == null then null else
-    {passed, failure_reasons, failed_checks: (.checks | if type == "object" then
-      [to_entries[] | select(.value == false) | .key] else null end)} end),
-  scored_seconds: .role_calibration_record.window.scored_duration_seconds,
-  metrics: (.role_calibration_record.metrics |
-    {effective_hps, death_count, dispel_success_ratio, cast_failure_ratio})
-}' "$REPORT"
+pixi run python -m tools.raid_program.evidence_view result "$REPORT" --max-chars 6000
 ```
 
-Those are example healer metrics, not a complete actor assessment. Choose the
-metric relevant to the assigned repair. Missing fields stay null, not zero or
-success. For retained archives, use the existing reader without extracting:
+This is not an actor assessment or automatic repair acceptance. Missing fields
+stay null, not zero or success. The output binds the source hash and gives a
+`reference_detail_command` for exact reference failures. To inspect that question:
 
 ```sh
-pixi run python -m tools.raid_program.evidence_view select \
+pixi run python -m tools.raid_program.evidence_view result \
   'capture.tar.gz::run/report.json' \
-  --path /role_calibration_evaluation --limit 10 --max-chars 6000
+  --section reference --max-chars 6000
 ```
 
 If checks are omitted, follow the returned pointer. For example, inspect a failed
@@ -156,6 +153,11 @@ A passing repair metric plus `reference_conditions_not_comparable` means the
 observed repair and reference eligibility need separate conclusions. Inspect the
 named reference failure; do not rerun unchanged gameplay hoping it clears. A ratio
 alone does not prove opportunities, sufficient coverage, attribution or acceptance.
+
+An over-budget result exits nonzero with `query_exceeds_output_budget` and the
+required selectors. A task never reports success by replacing required fields with
+their names. Fix the query or malformed input; do not bypass the failure with a
+raw dump. Existing event/selection pages identify every omitted item's locator.
 
 ### Keep live output out of the prompt
 

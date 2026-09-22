@@ -89,6 +89,23 @@ runtime/encounter changes. A worker freezes its owned files until a new edit
 assignment; the reviewer hashes them and records the separate session ID and report
 as `reviewer_session_id` and `review_report`. A worker cannot claim approval
 before that verdict.
+Create reviewers with `fork_turns="none"` and a bounded packet. First ask only for
+an identity handshake, with no code review yet. Locate that child's own rollout
+and run the read-only check below using its actual ID and the implementer's ID;
+after `ok=true`, send the frozen files, tests and review question as a follow-up.
+
+```sh
+pixi run python -m tools.raid_program.review_execution preflight \
+  --rollout /absolute/child-rollout.jsonl --reviewer-session-id CHILD_ID \
+  --implementer-session-id IMPLEMENTER_ID
+```
+
+Keep the compact preflight result with existing review evidence. Duplicate parent
+metadata, a wrong checkout or self-review must fail before substantive review.
+Do not loosen those checks. A later receipt-import failure is a tooling/attribution
+problem, not a code-review verdict: repair the binding to the original provable
+review. Repeat review only if attribution cannot be established or reviewed files
+changed. Keep receipt-tool changes separate from the gameplay source boundary.
 Import the actual separate session's final JSON with `review_execution`; changing
 a reviewer label in a coordinator-written receipt is not independent review.
 The report must contain its verdict and exact file hashes. Reuse unchanged

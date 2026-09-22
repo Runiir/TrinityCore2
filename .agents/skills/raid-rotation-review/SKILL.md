@@ -12,8 +12,10 @@ not turn a metric delta into a gameplay patch.
 
 ## Retrieval and stage routing
 
-Start with `evidence_view task` and execute its returned saved-task command, then
-run the returned `evidence_view admission` and comparison commands as applicable.
+Start with `evidence_view task` and execute its returned saved-task command. For
+retained DPS comparison commands use `task --section references`, then run the
+returned admission and comparison commands. For run outcome/role failures start
+with `evidence_view result <report>` and its exact metric/reference detail commands.
 Use the resulting compact admission/compare output before reading any reference or
 source. If command syntax or output fields are needed, read only
 [references/evidence-views.md](references/evidence-views.md); then issue selected
