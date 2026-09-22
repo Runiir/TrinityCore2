@@ -1,0 +1,30 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d",
+    "tests/test_holy_paladin_capability_profile.py": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+  },
+  "findings": [],
+  "limits": [
+    "Build, live calibration, actor acceptance, and raid acceptance were not reviewed.",
+    "The checkout advanced to workflow-only child commit 3ef045f during review. Both requested files remain byte-identical to be68b0d4, which is the pinned review basis.",
+    "Unrelated workflow artifacts were excluded."
+  ],
+  "proof": {
+    "final_message_bytes": 1119,
+    "final_message_sha256": "859e5cafdf25d41442ada5b06c64c5867fcf83de34024fe128d87734a78c282e",
+    "prefix_bytes": 1822404,
+    "prefix_sha256": "2033306c4f04f96ac9ac76065786c1cb7ee22cf52b3327752c410ef27f7e7676",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T09-14-57-01a0c7c0-d23f-73f3-a35b-2b74f1a1a9d9.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c7c0-d23f-73f3-a35b-2b74f1a1a9d9"
+  },
+  "reviewer_session_id": "01a0c7c0-d23f-73f3-a35b-2b74f1a1a9d9",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py: exit 0, 8 passed.",
+    "Coverage verifies SQL idempotence, enabled-profile scope, disabled-action preservation, and exact Light of Dawn fields.",
+    "The native-shaped fixture compiles and executes unchanged production gate excerpts with negative and positive Holy Power and three-injured-player cases.",
+    "Scoped diff is empty and git diff --check is clean."
+  ],
+  "verdict": "approved"
+}

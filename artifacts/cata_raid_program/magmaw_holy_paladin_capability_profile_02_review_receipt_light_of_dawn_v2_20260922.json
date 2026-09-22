@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_report_light_of_dawn_v2_20260922.json",
+      "sha256": "3c926bd15d85a30658876606a5d75dd8f09cd657df905ffbd3eda0aa6dca7a89"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "3862b6598054ddf624059b99ef067afcfe583296d0b4a03809a80db7841d4b6d",
+    "tests/test_holy_paladin_capability_profile.py": "0dbadc7c1aec3bd5b14ef85475cf2af4669f9a9b96462b401bc38782955b88fe"
+  },
+  "kind": "review",
+  "producer": "01a0c7c0-d23f-73f3-a35b-2b74f1a1a9d9",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_report_light_of_dawn_v2_20260922.json",
+    "sha256": "3c926bd15d85a30658876606a5d75dd8f09cd657df905ffbd3eda0aa6dca7a89"
+  },
+  "reviewer_session_id": "01a0c7c0-d23f-73f3-a35b-2b74f1a1a9d9",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "verdict": "approved"
+}
