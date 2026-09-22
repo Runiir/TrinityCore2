@@ -1,0 +1,53 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "1b7ccc8eea1c57d5bd38a9c41792457273a1a237307696fb12eabf027d06a4db",
+  "build_receipt": {
+    "path": ".git/raid_program/build_queue_v1/receipts/raid-build-15380df3a6c04e84afc79c1746dea3b8.json",
+    "sha256": "ce80fe2d64d32cc11c91bed6a896c8cd75f7fb3dd424484ebc6ffc592dcc66bf"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_plan_20260922.json",
+      "sha256": "8410e188830909a90aebb858b2e8b2ad06606380a074165ea92431b606f543a7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_result_checkpoint_20260922.json",
+      "sha256": "c66a579ac584545a2865391ff9f8442378379469cd2d5c8df44e851de4af3661"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_review_receipt_v2_20260922.json",
+      "sha256": "3883298f981b6dbf26cc70883cc846b58d237c37ba8b9ca7d2a923024f0ea331"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_build_claim_event_20260922.json",
+      "sha256": "cd2bf0d306f4a60a653c4420bdb77b33d677288b730bff3ed3fc48107be54c6a"
+    },
+    {
+      "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+      "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+    },
+    {
+      "path": ".git/raid_program/build_queue_v1/receipts/raid-build-15380df3a6c04e84afc79c1746dea3b8.json",
+      "sha256": "ce80fe2d64d32cc11c91bed6a896c8cd75f7fb3dd424484ebc6ffc592dcc66bf"
+    }
+  ],
+  "file_hashes": {
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json": "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254",
+    "tools/bot_ml/permanent_enchant_overlays.py": "62d607c5ef6246499283fe417666ed32648fc8a406a9f840dc352b74ae6f33c4",
+    "tools/bot_ml/build_validation_provisioning.py": "3307ae7d0554da9942f1f473ed97fbc03d776bc81c57e9d916dd1cc37184d02c",
+    "tools/bot_ml/generate_bot_admission_identities.py": "ec76b616d6181cc5c372aff8bd6017595005978d4ca183b2d527b09e0b9abcd4",
+    "tools/bot_ml/phase8_calibration_adapter.py": "7b199b915f4c2a83e43992f3a917e807f2c1da52af6ee9cfb7dacea185005e3f",
+    "tests/test_blood_permanent_enchant_profile.py": "5138f2e32a37a28b38ae20c2a1941a1436bc55a0f99a3053c5a71ed6cdd74905",
+    "tests/test_generated_bot_admission_identities.py": "602eaa06c994f7ef7696d478a86eb6eba5794f768e13063afc13043a6eec37e8",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "84a6f5432b5d36782a7cc742a54ca9fbb69186f1b7e77c57104a46e1d0361ace"
+  },
+  "kind": "build",
+  "operation_id": "b1e63ac153872ae828f8b691ca7e6619775006c6c95b6b65815fc35af4474541",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator",
+  "source_commit": "a69eec8151da2bf55e7f2036626a2257efb3416e",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05"
+}
