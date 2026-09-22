@@ -1,0 +1,31 @@
+{
+  "source_commit": "66d4da591c6fc01eda0473944f758e0e72bc8118",
+  "baseline_commit": "c886ef3a3b214d27602eb665c03c89f9f4e9e4fc",
+  "focused_tests": "19 passed; real MariaDB temporary tables and disposable DVC remote",
+  "broader_tests": "252 passed, 9 failed",
+  "baseline_reproduction": "All 9 failures reproduce with original affected modules loaded from c886ef3a3b into the same canonical checkout; no source files swapped.",
+  "native_build_or_raid_run": false,
+  "production_sql_rows_deleted_this_turn": 0,
+  "empty_database_smoke": {
+    "cleaned": [],
+    "unexported_preserved": true
+  },
+  "coverage": [
+    "exact remote archive verification",
+    "clip/frame and segment scoping",
+    "active and unexported runs preserved",
+    "changed rows preserve all data",
+    "partial deletion transaction rollback",
+    "remote failure preserves SQL",
+    "verified interrupted cleanup resumed by startup sweep",
+    "unverified upload resumes without duplicate archives",
+    "both production entrypoints wired",
+    "offline/dry/help/preparation modes skip cleanup"
+  ],
+  "skill_validation": "passed",
+  "limits": [
+    "Existing capture fixture/readiness failures remain; no gameplay acceptance claimed.",
+    "Uncaught controller errors leave SQL for explicit publication recovery.",
+    "Abandoned runs still marked running are not automatically expired."
+  ]
+}

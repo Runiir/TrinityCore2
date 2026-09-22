@@ -1,0 +1,11 @@
+{
+  "pointer": "artifacts/cata_raid_program/sql_telemetry_lifecycle_tests_20260922.tar.gz.dvc",
+  "md5": "6bfba95f2943f64902bb1ada0e1c6c4c",
+  "sha256": "3f6716609ef97e42d28a942936aa6bff8543b8fcc410a2f5f577df069ae3e14f",
+  "bytes": 19024,
+  "verification": "direct remote read without local cache",
+  "remote_verified": true,
+  "local_payload_and_exact_cache_evicted": true,
+  "dvc_status": "up_to_date",
+  "dvc_push": "1 file pushed"
+}
