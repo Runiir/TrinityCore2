@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 432,
+    "revision": 436,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -632,7 +632,8 @@
       "owner_holy_paladin_remaining_capability_profile": 2,
       "owner_blood_permanent_enchant_profile": 2,
       "owner_blood_boss_damage_cadence": 3,
-      "shared_route_progress_authority": 1
+      "shared_route_progress_authority": 1,
+      "shared_native_engagement_authority": 1
     },
     "history": [
       {
@@ -8133,6 +8134,70 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 432,
+        "unit_id": "magmaw:shared_native_engagement_authority_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 432,
+          "unit_id": "magmaw:shared_native_engagement_authority_01",
+          "action": "claim",
+          "owner": "codex-magmaw-10n-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 433,
+        "unit_id": "magmaw:shared_native_engagement_authority_01",
+        "from": "implement",
+        "to": "diagnose",
+        "event": {
+          "revision": 433,
+          "unit_id": "magmaw:shared_native_engagement_authority_01",
+          "action": "rework",
+          "reason": "Admitted packet omitted the direct strategy caller that owns the early return; replan the same edge with BotAdaptiveMagmawStrategy.h included.",
+          "claim_token": "da78d729b9211acde96214aec295f6cf890d1dfe0a2d336bb60ccbd11700e191",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_scope_reconciliation_20260922.json",
+            "sha256": "b8f2d775d3f616cca627b24676e986e59622276532395ec0afbafc9df5861ea3"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 434,
+        "unit_id": "magmaw:shared_native_engagement_authority_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 434,
+          "unit_id": "magmaw:shared_native_engagement_authority_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_plan_r2_20260922.json",
+            "sha256": "d3ddb25ac36cd345543b2f6871184fc25aa23e24879ac29a0c423d2557705e55"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 435,
+        "unit_id": "magmaw:shared_native_engagement_authority_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 435,
+          "unit_id": "magmaw:shared_native_engagement_authority_01",
+          "action": "claim",
+          "owner": "codex-magmaw-10n-20260922"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8173,8 +8238,9 @@
       }
     ],
     "assignment": {
-      "hypothesis": "When a live, attackable Magmaw body is observed during the exact bwd.magmaw.encounter pre-pull, the designated pull tank must receive the observed boss GUID before formation/health suppression returns. That target is then bound only through the existing native validity gate and the consumable pull gate; it does not attack, force combat, or bypass formation and health readiness. Giving only the lawful pull owner a native boss target prevents the fallback/native target lane from retaining or acquiring nearby trash while the encounter owner is still waiting for the pull contract.",
+      "hypothesis": "When a live, attackable Magmaw body is observed during the exact bwd.magmaw.encounter pre-pull, the designated pull tank must receive the observed boss GUID before formation/health suppression returns. That target is then bound only through the existing native validity gate and the consumable pull gate; it does not attack, force combat, or bypass formation and health readiness. Non-pull actors must retain an empty damage target while suppressed.",
       "owned_files": [
+        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
         "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
         "tests/test_magmaw_support_target_admission.py"
       ],
@@ -8223,30 +8289,6 @@
           "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
         }
       },
-      "worker_context": {
-        "kind": "implementation",
-        "question": "How can the adaptive Magmaw plan preserve pre-pull formation and health suppression while giving only the designated pull tank the observed native boss GUID early enough to prevent nearby trash target acquisition?",
-        "decision": "Assign the observed boss GUID to the designated pull tank before the pre-pull early returns, while leaving SuppressOffense and all existing movement/consumable gates intact. Non-pull actors must still return with an empty damage target during suppression.",
-        "counterexample": "Do not assign the boss to non-pull actors, do not set native Player target/focus state in the strategy, and do not use the boss target to bypass BindMagmawDamageTarget or the raid pre-pot gate.",
-        "native_behavior": [
-          {
-            "path": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
-            "sha256": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
-            "start_line": 140,
-            "end_line": 188
-          },
-          {
-            "path": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
-            "sha256": "64dd49fda1fc228302d080c044c12edc553bad921b63c69d9d431e7c4ddfd5ec",
-            "start_line": 140,
-            "end_line": 189
-          }
-        ],
-        "fixture": {
-          "path": "tests/test_magmaw_support_target_admission.py",
-          "sha256": "2da4c967fa8349a08038b0090240bd356f65fe21e7b00a489eff06390527bc24"
-        }
-      },
       "supporting_review": {
         "path": "artifacts/cata_raid_program/workflow_behavior_integrated_review_20260922.receipt.json",
         "sha256": "52e5c2b62ae84213820ea99ea2669f85f9ffcb4c393222de43293954a9c9d0b0"
@@ -8259,13 +8301,43 @@
         "tools/raid_program/worker_packet.py": "d06d025e674bbbb0fa4026b46bfd5e5b2865adc08489c259a53ae2551a24438d",
         "tools/raid_program/workflow_step.py": "6136785e6306126730aaa52e094ec1af950b04d5de7d1e2fb023a5c3092cb065",
         "tools/raid_program/workflow_tests.py": "5846b81e9e331c1a609c54b83d079f27381d1bd0a5d098fb8270737066158bd2"
+      },
+      "worker_context": {
+        "kind": "implementation",
+        "question": "How can the adaptive Magmaw plan preserve pre-pull formation and health suppression while giving only the designated pull tank the observed native boss GUID early enough to prevent nearby trash target acquisition?",
+        "decision": "Assign the observed boss GUID to the designated pull tank before the pre-pull early returns, while leaving SuppressOffense and all existing movement/consumable gates intact. Non-pull actors must still return with an empty damage target during suppression.",
+        "counterexample": "Do not assign the boss to non-pull actors, do not set native Player target/focus state in the strategy, and do not use the boss target to bypass BindMagmawDamageTarget or the raid pre-pot gate.",
+        "native_behavior": [
+          {
+            "path": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
+            "sha256": "64dd49fda1fc228302d080c044c12edc553bad921b63c69d9d431e7c4ddfd5ec",
+            "start_line": 140,
+            "end_line": 189
+          },
+          {
+            "path": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
+            "sha256": "b8a36015a43d50889a6fb0504e2c63a6ed44eb6f5feb92148d3517ed3fc5fe9c",
+            "start_line": 140,
+            "end_line": 188
+          }
+        ],
+        "fixture": {
+          "path": "tests/test_magmaw_support_target_admission.py",
+          "sha256": "2da4c967fa8349a08038b0090240bd356f65fe21e7b00a489eff06390527bc24"
+        }
       }
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_plan_20260922.json",
-        "sha256": "19caeddc647d3b55e33fa95b64e124d6ae0c2294bcdc2e80864245d54d85e47a"
+        "path": "artifacts/cata_raid_program/magmaw_shared_native_engagement_authority_01_plan_r2_20260922.json",
+        "sha256": "d3ddb25ac36cd345543b2f6871184fc25aa23e24879ac29a0c423d2557705e55"
       }
+    },
+    "claim": {
+      "owner": "codex-magmaw-10n-20260922",
+      "token": "48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1",
+      "operation_id": "48b2d6e0569f01c224ca78ff8e21ae7aaaa67ecd3f33ae94d17558101dcca7b1",
+      "stage": "implement"
     }
   },
   "parked_scenarios": {

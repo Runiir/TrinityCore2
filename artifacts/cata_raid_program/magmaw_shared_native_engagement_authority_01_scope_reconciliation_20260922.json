@@ -1,0 +1,12 @@
+{
+  "schema": "raid_operation_reconciliation_v1",
+  "kind": "reconciliation",
+  "unit_id": "magmaw:shared_native_engagement_authority_01",
+  "operation_id": "da78d729b9211acde96214aec295f6cf890d1dfe0a2d336bb60ccbd11700e191",
+  "owner": "codex-magmaw-10n-20260922",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The admitted packet omitted BotAdaptiveMagmawStrategy.h, the direct caller that returns before DamageTarget assignment. No implementation, test receipt, build, or live operation was started. Replan the same edge with the direct caller owned."
+}

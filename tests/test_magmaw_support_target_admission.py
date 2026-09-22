@@ -83,6 +83,15 @@ static ActorSnapshot Player(uint32 guid, char const* spec, Vector3 position)
     return actor;
 }
 
+#if MAGMAW_EXPECT_PREPULL
+static ActorSnapshot Tank(uint32 guid, Vector3 position)
+{
+    ActorSnapshot actor = Player(guid, "blood_death_knight", position);
+    actor.Role = "tank";
+    return actor;
+}
+#endif
+
 static ActorSnapshot Hostile(uint32 entry, uint32 guid, Vector3 position)
 {
     ActorSnapshot actor;
@@ -141,6 +150,18 @@ static AdaptiveMagmawPlan Propose(AdaptiveMagmawStrategy const& strategy,
         AdaptiveMagmawStrategy::DefaultMovementProducerOrder, nullptr,
         nullptr, nullptr, nullptr, &opportunities);
 }
+
+#if MAGMAW_EXPECT_PREPULL
+static AdaptiveMagmawPlan ProposeTank(AdaptiveMagmawStrategy const& strategy,
+    Blackboard const& board, ObjectGuid actor,
+    MagmawSupportTargetOpportunities const& opportunities)
+{
+    return strategy.Propose(board, actor, "tank", nullptr, false, false,
+        nullptr, nullptr, nullptr, std::nullopt,
+        AdaptiveMagmawStrategy::DefaultMovementProducerOrder, nullptr,
+        nullptr, nullptr, nullptr, &opportunities);
+}
+#endif
 
 int main()
 {
@@ -207,6 +228,51 @@ int main()
     board.Hostiles = { boss, blocked, legal };
 
     AdaptiveMagmawStrategy strategy;
+
+#if MAGMAW_EXPECT_PREPULL
+    // The pull owner must retain the observed native boss target even while
+    // the encounter still suppresses offense for formation staging.
+    ActorSnapshot prepullBoss = boss;
+    prepullBoss.InCombat = false;
+    prepullBoss.VictimGuid = ObjectGuid{};
+    Blackboard prepull = board;
+    prepull.NativeBossState = "not_started";
+    prepull.Route.NavigationHints = { { 50.0f, 0.0f, 210.0f } };
+    prepull.Players = {
+        Tank(30001, { 18.0f, 0.0f, 210.0f }),
+        Player(30006, "fire_mage", { 20.0f, -20.0f, 210.0f }),
+        Player(30009, "marksmanship_hunter", { 20.0f, 20.0f, 210.0f }) };
+    prepull.Hostiles = { prepullBoss };
+    AssignmentLease pullTank;
+    pullTank.Kind = AssignmentKind::Tank;
+    pullTank.Slot = "main_tank";
+    pullTank.AssigneeGuid = prepull.Players.front().Guid;
+    prepull.Assignments = { pullTank };
+    MagmawSupportTargetOpportunities prepullOpportunities;
+    AdaptiveMagmawPlan pullTankPlan = ProposeTank(
+        strategy, prepull, prepull.Players.front().Guid, prepullOpportunities);
+    assert(pullTankPlan.SuppressOffense);
+    assert(pullTankPlan.SuppressReason == "prepull_formation_staging");
+    assert(pullTankPlan.DamageTarget == prepullBoss.Guid);
+    assert(!pullTankPlan.ClearOptionalDamageTarget);
+    AdaptiveMagmawPlan nonPullPlan = Propose(
+        strategy, prepull, prepull.Players[1].Guid, prepullOpportunities);
+    assert(nonPullPlan.SuppressOffense);
+    assert(nonPullPlan.DamageTarget.IsEmpty());
+
+    // Health recovery is a separate suppression boundary and preserves the
+    // same lawful pull-tank target without opening offense early.
+    Blackboard healthSuppressed = prepull;
+    healthSuppressed.Route.NavigationHints.clear();
+    healthSuppressed.Players[1].HealthPct = 90.0f;
+    AdaptiveMagmawPlan healthPull = ProposeTank(
+        strategy, healthSuppressed, healthSuppressed.Players.front().Guid,
+        prepullOpportunities);
+    assert(healthPull.SuppressOffense);
+    assert(healthPull.SuppressReason == "prepull_health_recovery");
+    assert(healthPull.DamageTarget == prepullBoss.Guid);
+#endif
+
     ObjectGuid const supportActor = board.Players.back().Guid;
     MagmawSupportTargetOpportunities bodyOnly;
     bodyOnly.Admit(boss.Guid);
@@ -426,7 +492,8 @@ int main()
     assert(ordinaryBody.DamageTarget == boss.Guid);
     assert(!ordinaryBody.ClearOptionalDamageTarget);
 }
-    '''.replace("marksmanship_hunter", hunter_spec).replace(
+        '''.replace("#include <optional>", "#include <optional>\n#define MAGMAW_EXPECT_PREPULL " + ("0" if revision else "1")).replace(
+        "marksmanship_hunter", hunter_spec).replace(
         "#define MAGMAW_EXPECT_LEGACY 0",
         "#define MAGMAW_EXPECT_LEGACY " + ("1" if revision else "0")),
     )

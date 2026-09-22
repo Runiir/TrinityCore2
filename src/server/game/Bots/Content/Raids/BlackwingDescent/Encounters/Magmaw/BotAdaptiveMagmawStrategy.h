@@ -152,6 +152,11 @@ public:
         plan.ParasiteCombat.FireMageGuid = baiters.first;
         plan.ParasiteCombat.MarksmanshipHunterGuid = baiters.second;
         BindParasiteDamageTargets(*bot, role, observed, plan.ParasiteCombat);
+        if (IsPrepull(board, *observed.Boss)
+            && IsDesignatedPullTank(board, botGuid, role)
+            && observed.Boss->Alive && observed.Boss->Attackable
+            && observed.Boss->Selectable)
+            plan.DamageTarget = observed.Boss->Guid;
         PrepullDecision prepull = EvaluatePrepull(board, *observed.Boss);
         if (IsPrepull(board, *observed.Boss))
         {
@@ -184,9 +189,9 @@ public:
                 return plan;
             }
         }
-        plan.DamageTarget = SelectDamageTarget(observed, botGuid, role,
-            bot->ClassSpec,
-            plan.ParasiteCombat);
+        if (plan.DamageTarget.IsEmpty())
+            plan.DamageTarget = SelectDamageTarget(observed, botGuid, role,
+                bot->ClassSpec, plan.ParasiteCombat);
         plan.ClearOptionalDamageTarget = plan.DamageTarget.IsEmpty()
             && observed.SupportOpportunitiesObserved;
         MagmawHookAssignment const hookAssignment = ResolveHookAssignment(
