@@ -67,7 +67,7 @@ def amend(root: Path, *, files: list[str], commands: list[str], reason: str,
 def run_tests(root: Path, *, owner: str, producer: str, behavior_command: str,
               timeout: float = 300) -> dict:
     """Capture real command results with bounded stdout and immutable raw logs."""
-    from tools.raid_program.workflow_step import _state_snapshot, _claimed_token, apply_step
+    from tools.raid_program.workflow_step import _state_snapshot, _claimed_token
     root = root.resolve()
     state, sha = _state_snapshot(root)
     g = state['development_graph']
@@ -95,9 +95,17 @@ def run_tests(root: Path, *, owner: str, producer: str, behavior_command: str,
             graph.file_ref(root, ref)
         return _result(root, target, receipt, sha, owner)
     folder.mkdir(parents=True, exist_ok=False)
+    raw_folder = Path(graph.git(root, 'rev-parse', '--git-path', 'raid_program/test-logs'))
+    if not raw_folder.is_absolute():
+        raw_folder = root / raw_folder
+    raw_folder.mkdir(parents=True, exist_ok=True)
     evidence, results = [], []
     for index, command in enumerate(commands):
-        raw_log = folder / f'{index:02d}.tmp'
+        # An interruption keeps raw output out of the source boundary, with an
+        # explicit locator. It must not masquerade as an unrelated dirty file.
+        raw_log = raw_folder / f'{folder.name}-{index:02d}.log'
+        pending = folder / 'pending.json'
+        pending.write_text(json.dumps({'command': command, 'raw_output': str(raw_log.resolve())}) + '\n')
         log = folder / f'{index:02d}.json'
         started = time.monotonic()
         timed_out = False
@@ -127,6 +135,7 @@ def run_tests(root: Path, *, owner: str, producer: str, behavior_command: str,
                 first = False
             dst.write(']}\n')
         raw_log.unlink()
+        pending.unlink()
         ref = {'path': log.relative_to(root).as_posix(), 'sha256': graph.digest(log.read_bytes())}
         evidence.append(ref)
         results.append({'command': command, 'exit_status': code, 'timed_out': timed_out,

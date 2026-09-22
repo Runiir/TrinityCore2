@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import shlex
+import subprocess
 import sys
 
 import pytest
@@ -96,6 +97,8 @@ def test_amendment_preview_and_cli_preserve_original_tests(case, capsys):
     assert (root/graph.STATE_PATH).read_bytes() == before
     assert main(argv) == 0
     assert graph.read(root/graph.STATE_PATH)['development_graph']['assignment']['required_test_commands'] == [one, two]
+    from tools.raid_program.evidence_task import task_summary
+    assert task_summary(root, 'unit')['test_plan']['required_test_commands'] == [one, two]
     assert main(['--root', str(root), 'tests', '--owner', 'fixture-tab', '--producer', 'session', '--behavior-command', two]) == 0
     assert len(capsys.readouterr().out) < 6000
 
@@ -150,6 +153,32 @@ def test_unselected_behavior_command_never_executes(case):
     with pytest.raises(graph.GraphError, match='declared command'):
         run(root, 'undeclared command')
     assert not (root/'artifacts').exists()
+
+
+def test_interruption_preserves_raw_output_without_polluting_source(case, monkeypatch):
+    cmd = command('import time; time.sleep(10)')
+    root, state = ready(case, [cmd])
+    original = subprocess.Popen.wait
+    interrupted = False
+
+    def wait(process, *args, **kwargs):
+        nonlocal interrupted
+        if process.args[0] == 'bash' and not interrupted:
+            interrupted = True
+            raise KeyboardInterrupt
+        return original(process, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess.Popen, 'wait', wait)
+    before = (root/graph.STATE_PATH).read_bytes()
+    with pytest.raises(KeyboardInterrupt):
+        run(root, cmd)
+    assert (root/graph.STATE_PATH).read_bytes() == before
+    pending = next((root/'artifacts/cata_raid_program').glob('tests-*/pending.json'))
+    raw = Path(graph.read(pending)['raw_output'])
+    assert raw.is_file() and '.git' in raw.parts
+    graph.source_binding(root, state['development_graph']['assignment'])
+    with pytest.raises(graph.GraphError, match='capture interrupted'):
+        run(root, cmd)
 
 
 def test_duplicate_pass_cannot_hide_failure_and_unstable_receipt_rejected(case):
