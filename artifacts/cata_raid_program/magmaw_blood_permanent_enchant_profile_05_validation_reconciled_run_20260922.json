@@ -19,11 +19,11 @@
   "evidence": [
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_evidence_20260922.json",
-      "sha256": "d9a9e094703e06e3088337a9e7273db956d9e3ecff41fe4cdbcafec11d7c8427"
+      "sha256": "17916e6090d8d6632c115360ff6c54123679be50b698f7cbf1496506405dc2f4"
     },
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_report_20260922.json",
-      "sha256": "c69d361ac389326cc57035eaee43a9a38e643cb699086ed5ae2f4d7b7fade5f5"
+      "sha256": "1cb11c43723cb77ea97779d9295c94d86572ba8a62a028ad6f368eff28c7eb62"
     },
     {
       "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
@@ -50,7 +50,7 @@
   },
   "report_summary": {
     "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_report_20260922.json",
-    "sha256": "c69d361ac389326cc57035eaee43a9a38e643cb699086ed5ae2f4d7b7fade5f5"
+    "sha256": "1cb11c43723cb77ea97779d9295c94d86572ba8a62a028ad6f368eff28c7eb62"
   },
   "scenario_kind": "dummy",
   "schema": "cata_raid_program_run_receipt_v1",

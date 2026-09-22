@@ -149,7 +149,7 @@
       "text": "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"cohort_id\":\"default\",\"server_epoch\":6833243471544576,\"attempt_id\":1,\"removed\":2,\"fixture_target_found\":false,\"fixture_cleanup_submitted_or_absent\":true,\"failure_reason\":null}"
     }
   ],
-  "compact_report_sha256": "c69d361ac389326cc57035eaee43a9a38e643cb699086ed5ae2f4d7b7fade5f5",
+  "compact_report_sha256": "1cb11c43723cb77ea97779d9295c94d86572ba8a62a028ad6f368eff28c7eb62",
   "completion_reason": "combat_calibration_role_gate_failed",
   "empty_socket_normalization": "Native canonical_gear_manifest readback preserves three gem slots with zero padding.",
   "enchants_by_slot": {
