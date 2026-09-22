@@ -1,0 +1,227 @@
+{
+  "schema": "cata_route_prerequisites_result_v1",
+  "control_source": "6bad2af351",
+  "native_source": "f57f3eba37ea295ba8e07d4d2035c7d7a908a4e3",
+  "binary_sha256": "529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca",
+  "native_clear": true,
+  "deaths": 0,
+  "route_terminal_evidence": [
+    {
+      "route_generation": 1,
+      "route_node_id": "bwd.entry.regroup"
+    },
+    {
+      "route_generation": 2,
+      "route_node_id": "bwd.magmaw.chainwielder"
+    },
+    {
+      "route_generation": 3,
+      "route_node_id": "bwd.magmaw.drudges"
+    },
+    {
+      "route_generation": 4,
+      "route_node_id": "bwd.magmaw.encounter"
+    }
+  ],
+  "native_boss_death": [
+    {
+      "route_generation": 4,
+      "route_node_id": "bwd.magmaw.encounter"
+    }
+  ],
+  "native_aggregate_metrics": {
+    "party_damage": 28425594,
+    "party_dps": 229238.661,
+    "party_healing": 2397781,
+    "party_hps": 19336.944,
+    "combat_seconds": 124,
+    "actors": [
+      {
+        "bot_guid": 30001,
+        "bot_name": "Mgwtanka",
+        "damage": 3143962,
+        "dps": 25354.532,
+        "friendly_damage": 0,
+        "healing": 0,
+        "hps": 0.0,
+        "pet_damage": 86380,
+        "pet_damage_share": 0.027,
+        "raw_event_damage": 8865024,
+        "raw_event_dps": 71492.129,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 259140,
+        "raw_event_pet_damage_share": 0.029,
+        "role": "dps"
+      },
+      {
+        "bot_guid": 30002,
+        "bot_name": "Mgwtankb",
+        "damage": 1675807,
+        "dps": 13514.573,
+        "friendly_damage": 145404,
+        "healing": 235342,
+        "hps": 1897.919,
+        "pet_damage": 96693,
+        "pet_damage_share": 0.058,
+        "raw_event_damage": 5136685,
+        "raw_event_dps": 41424.879,
+        "raw_event_friendly_damage": 145404,
+        "raw_event_pet_damage": 435483,
+        "raw_event_pet_damage_share": 0.085,
+        "role": "tank"
+      },
+      {
+        "bot_guid": 30003,
+        "bot_name": "Mgwheala",
+        "damage": 144421,
+        "dps": 1164.685,
+        "friendly_damage": 0,
+        "healing": 1058659,
+        "hps": 8537.573,
+        "pet_damage": 0,
+        "pet_damage_share": 0.0,
+        "raw_event_damage": 433263,
+        "raw_event_dps": 3494.056,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 0,
+        "raw_event_pet_damage_share": 0.0,
+        "role": "healer"
+      },
+      {
+        "bot_guid": 30004,
+        "bot_name": "Mgwhealb",
+        "damage": 0,
+        "dps": 0.0,
+        "friendly_damage": 0,
+        "healing": 708366,
+        "hps": 5712.629,
+        "pet_damage": 0,
+        "pet_damage_share": 0.0,
+        "raw_event_damage": 0,
+        "raw_event_dps": 0.0,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 0,
+        "raw_event_pet_damage_share": 0.0,
+        "role": "healer"
+      },
+      {
+        "bot_guid": 30005,
+        "bot_name": "Mgwhealc",
+        "damage": 214821,
+        "dps": 1732.427,
+        "friendly_damage": 0,
+        "healing": 179567,
+        "hps": 1448.121,
+        "pet_damage": 0,
+        "pet_damage_share": 0.0,
+        "raw_event_damage": 644463,
+        "raw_event_dps": 5197.282,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 0,
+        "raw_event_pet_damage_share": 0.0,
+        "role": "healer"
+      },
+      {
+        "bot_guid": 30006,
+        "bot_name": "Mgwdpsa",
+        "damage": 3763206,
+        "dps": 30348.435,
+        "friendly_damage": 0,
+        "healing": 0,
+        "hps": 0.0,
+        "pet_damage": 75353,
+        "pet_damage_share": 0.02,
+        "raw_event_damage": 10884880,
+        "raw_event_dps": 87781.29,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 226059,
+        "raw_event_pet_damage_share": 0.021,
+        "role": "dps"
+      },
+      {
+        "bot_guid": 30007,
+        "bot_name": "Mgwdpsb",
+        "damage": 6070391,
+        "dps": 48954.766,
+        "friendly_damage": 0,
+        "healing": 0,
+        "hps": 0.0,
+        "pet_damage": 59583,
+        "pet_damage_share": 0.01,
+        "raw_event_damage": 18187101,
+        "raw_event_dps": 146670.169,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 178749,
+        "raw_event_pet_damage_share": 0.01,
+        "role": "dps"
+      },
+      {
+        "bot_guid": 30008,
+        "bot_name": "Mgwdpsc",
+        "damage": 4432232,
+        "dps": 35743.806,
+        "friendly_damage": 0,
+        "healing": 193960,
+        "hps": 1564.194,
+        "pet_damage": 997149,
+        "pet_damage_share": 0.225,
+        "raw_event_damage": 12983376,
+        "raw_event_dps": 104704.645,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 2797847,
+        "raw_event_pet_damage_share": 0.215,
+        "role": "dps"
+      },
+      {
+        "bot_guid": 30009,
+        "bot_name": "Mgwdpsd",
+        "damage": 4630055,
+        "dps": 37339.153,
+        "friendly_damage": 0,
+        "healing": 21887,
+        "hps": 176.508,
+        "pet_damage": 402567,
+        "pet_damage_share": 0.087,
+        "raw_event_damage": 12656661,
+        "raw_event_dps": 102069.847,
+        "raw_event_friendly_damage": 0,
+        "raw_event_pet_damage": 1052409,
+        "raw_event_pet_damage_share": 0.083,
+        "role": "dps"
+      },
+      {
+        "bot_guid": 30010,
+        "bot_name": "Mgwdpse",
+        "damage": 4350699,
+        "dps": 35086.282,
+        "friendly_damage": 17935,
+        "healing": 0,
+        "hps": 0.0,
+        "pet_damage": 653987,
+        "pet_damage_share": 0.15,
+        "raw_event_damage": 12394086,
+        "raw_event_dps": 99952.306,
+        "raw_event_friendly_damage": 17935,
+        "raw_event_pet_damage": 1931929,
+        "raw_event_pet_damage_share": 0.156,
+        "role": "dps"
+      }
+    ]
+  },
+  "exact_pull_to_death_dps_available": false,
+  "performance_accepted": false,
+  "cleanup": {
+    "operator_initiated_after_native_clear": true,
+    "reason": "Controller did not stop on an uncertified native clear; terminal combat export was bypassed by manual shutdown.",
+    "server_epoch": 9308639401982770,
+    "native_stop_status": {
+      "active": false,
+      "bots": 0,
+      "lease_count": 0
+    },
+    "server_process_exited": true,
+    "native_server_returncode": 0,
+    "automatic_capture_closure_accepted": false
+  },
+  "next_validation": "Verify automatic stop and terminal combat-log export on unchanged binary with same full route."
+}

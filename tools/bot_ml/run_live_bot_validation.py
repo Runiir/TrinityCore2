@@ -5424,12 +5424,12 @@ def watchdog_state(
     }
 
 
-def raid_terminal_watchdog_failure(
+def observed_native_manifest_clear(
     report: Mapping[str, Any],
-) -> dict[str, Any] | None:
-    """Return one exact identity-bound native action-gate terminal."""
+) -> bool:
+    """Observe ordered native completion without granting certification."""
     if int(report.get("returncode") or 0) != 0 or bool(report.get("timed_out")):
-        return None
+        return False
     evidence = report.get("evidence")
     manifest = report.get("validation_route_manifest")
     manifest = manifest if isinstance(manifest, Mapping) else {}
@@ -5467,6 +5467,17 @@ def raid_terminal_watchdog_failure(
             )
         except (TypeError, ValueError):
             strict_clear = False
+    return strict_clear
+
+
+def raid_terminal_watchdog_failure(
+    report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Return one exact identity-bound native action-gate terminal."""
+    if int(report.get("returncode") or 0) != 0 or bool(report.get("timed_out")):
+        return None
+    manifest = report.get("validation_route_manifest") or {}
+    strict_clear = observed_native_manifest_clear(report)
     independently_accepted_clear = (
         not manifest
         and bool(report.get("acceptable_final_evidence"))
@@ -6747,7 +6758,7 @@ def run_transport_completion_watchdog(
                 output_dir, report, calibration_clock_reason
             )
             return finish(0, False)
-        if report["acceptable_final_evidence"] or (
+        if observed_native_manifest_clear(report) or report["acceptable_final_evidence"] or (
             report["completion_reason"] in {
                 "repeated_decision_watchdog",
                 "death_loop_watchdog",
@@ -7056,7 +7067,7 @@ def run_worldserver_completion_watchdog(
                 and bool(calibration.get("window_complete"))
             ):
                 break
-            if report["acceptable_final_evidence"]:
+            if observed_native_manifest_clear(report) or report["acceptable_final_evidence"]:
                 break
             if report["completion_reason"] in {
                 "repeated_decision_watchdog",

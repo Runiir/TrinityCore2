@@ -1,0 +1,157 @@
+{
+  "verdict": "route_clear_observed; performance_unaccepted",
+  "run": {
+    "report": "/tmp/cata-magmaw-route-prerequisites-run-20260922/native_clear_before_cleanup.json",
+    "payload_sha256": "5650cf580395d060a29af9d764ac9fb886c56f484b290e04210303d3511a24f7",
+    "binary": "f57f3eba37 / 529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca",
+    "native_clear": true,
+    "deaths": 0,
+    "certification": "uncertified: debug-only route context",
+    "cleanup": "manual stop/shutdown after clear; snapshot is pre-cleanup"
+  },
+  "route_repair": {
+    "manifest": "complete, four ordered nodes",
+    "terminals": [
+      "bwd.entry.regroup: arrival",
+      "bwd.magmaw.chainwielder: trash_cluster_cleared",
+      "bwd.magmaw.drudges: trash_cluster_cleared",
+      "bwd.magmaw.encounter: boss_killed"
+    ],
+    "boss_engagement_actions": 3,
+    "boss_kill_evidence": 1,
+    "comparison_old_failed_run": {
+      "manifest": "one boss-only node, incomplete",
+      "boss_engagement_actions": 22,
+      "boss_kill_evidence": 0,
+      "prerequisite_blocks": 4,
+      "deaths": 14,
+      "result": "stalled before route prerequisites"
+    }
+  },
+  "actor_metrics": [
+    {
+      "guid": 30001,
+      "role": "dps",
+      "damage": 3143962,
+      "dps": 25354.532,
+      "healing": 0,
+      "hps": 0.0,
+      "pet_damage": 86380,
+      "trace": "128/8.79s; prep17 finish17; idle37"
+    },
+    {
+      "guid": 30002,
+      "role": "tank",
+      "damage": 1675807,
+      "dps": 13514.573,
+      "healing": 235342,
+      "hps": 1897.919,
+      "pet_damage": 96693,
+      "trace": "31/30.02s; prep0 finish0; idle31"
+    },
+    {
+      "guid": 30003,
+      "role": "healer",
+      "damage": 144421,
+      "dps": 1164.685,
+      "healing": 1058659,
+      "hps": 8537.573,
+      "pet_damage": 0,
+      "trace": "31/30.02s; prep0 finish0; idle31"
+    },
+    {
+      "guid": 30004,
+      "role": "healer",
+      "damage": 0,
+      "dps": 0.0,
+      "healing": 708366,
+      "hps": 5712.629,
+      "pet_damage": 0,
+      "trace": "31/30.02s; prep0 finish0; idle31"
+    },
+    {
+      "guid": 30005,
+      "role": "healer",
+      "damage": 214821,
+      "dps": 1732.427,
+      "healing": 179567,
+      "hps": 1448.121,
+      "pet_damage": 0,
+      "trace": "31/30.02s; prep0 finish0; idle31"
+    },
+    {
+      "guid": 30006,
+      "role": "dps",
+      "damage": 3763206,
+      "dps": 30348.435,
+      "healing": 0,
+      "hps": 0.0,
+      "pet_damage": 75353,
+      "trace": "128/7.15s; prep27 finish25; idle24"
+    },
+    {
+      "guid": 30007,
+      "role": "dps",
+      "damage": 6070391,
+      "dps": 48954.766,
+      "healing": 0,
+      "hps": 0.0,
+      "pet_damage": 59583,
+      "trace": "128/12.67s; prep15 finish15; idle46"
+    },
+    {
+      "guid": 30008,
+      "role": "dps",
+      "damage": 4432232,
+      "dps": 35743.806,
+      "healing": 193960,
+      "hps": 1564.194,
+      "pet_damage": 997149,
+      "trace": "128/20.75s; prep19 finish19; idle41"
+    },
+    {
+      "guid": 30009,
+      "role": "dps",
+      "damage": 4630055,
+      "dps": 37339.153,
+      "healing": 21887,
+      "hps": 176.508,
+      "pet_damage": 402567,
+      "trace": "128/4.65s; prep17 finish22; idle0"
+    },
+    {
+      "guid": 30010,
+      "role": "dps",
+      "damage": 4350699,
+      "dps": 35086.282,
+      "healing": 0,
+      "hps": 0.0,
+      "pet_damage": 653987,
+      "trace": "128/11.12s; prep24 finish22; idle16"
+    }
+  ],
+  "aggregate": {
+    "basis": "bot_combat_metrics_v3 hostile_originated_damage",
+    "combat_seconds": 124,
+    "party_damage": 28425594,
+    "party_dps": 229238.661,
+    "party_healing": 2397781,
+    "party_hps": 19336.944,
+    "pets_included_in_owner": true
+  },
+  "performance": {
+    "status": "not accepted or comparable",
+    "retained_lawful_references": {
+      "d495": {
+        "pull_to_death_seconds": 117.523,
+        "dps": 239894.514
+      },
+      "696a": {
+        "pull_to_death_seconds": 123.672,
+        "dps": 228230.95
+      }
+    },
+    "limitation": "Current run lacks role calibration identity/evaluation and a timestamped combat-event stream. bot_timeline returned missing_native_timestamp with no actors, so exact pull-to-death damage, pet attribution, and verified mirror79010 exclusion are unavailable. No regression inference is justified."
+  },
+  "next_action": "After the stop/export fix, rerun the same full manifest and verify combatlog export before shutdown; then perform timestamped pull-to-death accounting before any performance decision."
+}

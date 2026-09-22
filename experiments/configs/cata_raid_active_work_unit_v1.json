@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Use complete manifest on one worldserver, no segment selector. Reuse build f57f3eba37 with binary SHA256 529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca only after checking native source unchanged. Run one bounded watchdog validation and retain all-actor evidence; do not tune native targeting based on the invalid predecessor setup.",
+  "next_action": "User stopped for cleanup. Full-route engagement/kill is proven; do not repeat the boss-only launch or reopen trash target tuning. On explicit resume, read docs/bot_raids/magmaw_route_prerequisites_cleanup_20260922.md, independently review the saved diagnostic-clear stop/export patch, then run its frozen autostop recipe once to verify automatic capture/cleanup and exact combat accounting.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -577,7 +577,7 @@
         "magmaw_10n"
       ],
       "objective": "Restore full entrance/Chainwielder/Drudge/Magmaw route on unchanged current native binary; classify pull, recovery and clear separately from DPS acceptance.",
-      "next_action": "Use complete manifest on one worldserver, no segment selector. Reuse build f57f3eba37 with binary SHA256 529ebcc542a0cde1f399b6de4e5f3e23ba8f97b7bd12c5750ae2fea83f542bca only after checking native source unchanged. Run one bounded watchdog validation and retain all-actor evidence; do not tune native targeting based on the invalid predecessor setup."
+      "next_action": "User stopped for cleanup. Full-route engagement/kill is proven; do not repeat the boss-only launch or reopen trash target tuning. On explicit resume, read docs/bot_raids/magmaw_route_prerequisites_cleanup_20260922.md, independently review the saved diagnostic-clear stop/export patch, then run its frozen autostop recipe once to verify automatic capture/cleanup and exact combat accounting."
     },
     "completed_measurements": [
       {
@@ -8478,7 +8478,15 @@
         "path": "artifacts/cata_raid_program/workflow_behavior_integrated_refresh_20260922.json",
         "sha256": "990c2103eda109a8fd6f3a87eaf26df112b254ed1b4f34e319a057fdef0035b2"
       }
-    ]
+    ],
+    "cleanup_handoff": {
+      "user_requested_stop": true,
+      "handoff": "docs/bot_raids/magmaw_route_prerequisites_cleanup_20260922.md",
+      "result": "artifacts/cata_raid_program/magmaw_route_prerequisites_first_result_20260922.json",
+      "actor_review": "artifacts/cata_raid_program/magmaw_route_prerequisites_actor_review_20260922.json",
+      "evidence": "artifacts/cata_raid_program/magmaw_route_prerequisites_evidence_20260922.tar.gz.dvc",
+      "pending": "Independent review of diagnostic-clear stop/export patch interrupted; tests passed, no second live run launched. Exact pull-to-death DPS unavailable. No acceptance changed."
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
