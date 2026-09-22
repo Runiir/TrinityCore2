@@ -1,0 +1,79 @@
+{
+  "schema": "raid_worker_checkpoint_v1",
+  "kind": "tests",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05",
+  "producer": "coordinator-magmaw-blood-permanent-enchant-profile-05-implement-20260922",
+  "authority": "coordinator_attestation",
+  "operation_id": "ae26ae81a2d5da14a86fb21794bc1e3c13f789adae277b1f81b6570d87b94698",
+  "stage": "result",
+  "task_id": "magmaw_blood_permanent_enchant_profile_05_result_reconciled_20260922",
+  "subject": "orchestrator",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "objective": "Repair the established Blood tank permanent-enchant admission gap for actor_30002 without changing item identity, gems, reforges, temporary enchant fields, DK runeforge semantics, tank policy, encounter behavior or any separate acceptance gate.",
+  "first_broken_edge": "owner_blood_permanent_enchant_profile",
+  "completed_work": [
+    "The existing bounded Blood-only permanent-enchant overlay remains the sole native repair under test.",
+    "Focused executable coverage was rerun against the current mainline checkout.",
+    "Admission identity generation was checked for freshness and the provisioning CLI remained callable."
+  ],
+  "observations": [
+    "The focused Blood permanent-enchant and generated-admission suite passed 10 tests.",
+    "The admission identity generator reported that the generated header is current.",
+    "The provisioning CLI help smoke check completed successfully.",
+    "The eight pinned Blood armor/cloak enchant IDs and explicit excluded DK runeforge remain the bounded setup contract; no actor, performance, raid-clear or parent claim is made."
+  ],
+  "forbidden_changes": [
+    "Do not change Death Strike, Heart Strike, rune legality, mitigation, coefficients, target selection, resource policy, tank safety or encounter scripts.",
+    "Do not change current Blood item IDs, gems, reforges, temporary enchant fields, consumables, roster, WCL denominators or simulator/reference values.",
+    "Do not apply the 3368 DK runeforge as a permanent-enchant overlay or infer runeforge presence from armor enchant readback.",
+    "Do not claim actor_30002, any other actor, performance, Magmaw clear or parent completion from this checkpoint."
+  ],
+  "acceptance_conditions": [
+    "The focused executable suite passes against the current reviewed files and generated source hashes are current.",
+    "Independent review, frozen-policy build and the declared exact-300-second setup validation remain required before any actor or raid acceptance."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_permanent_enchant_profile.py tests/test_generated_bot_admission_identities.py",
+    "pixi run python -m tools.bot_ml.generate_bot_admission_identities --check",
+    "pixi run python -m tools.bot_ml.build_validation_provisioning --help"
+  ],
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_permanent_enchant_profile.py tests/test_generated_bot_admission_identities.py",
+      "exit_status": 0,
+      "summary": "10 passed in 6.24s"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.generate_bot_admission_identities --check",
+      "exit_status": 0,
+      "summary": "generated header is current"
+    },
+    {
+      "command": "pixi run python -m tools.bot_ml.build_validation_provisioning --help",
+      "exit_status": 0,
+      "summary": "CLI smoke check passed"
+    }
+  ],
+  "file_hashes": {
+    "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json": "4c17555054ea2689eddb77903cc7b70c294aa21d9369e22a1cfebd7da5d6d254",
+    "tools/bot_ml/permanent_enchant_overlays.py": "62d607c5ef6246499283fe417666ed32648fc8a406a9f840dc352b74ae6f33c4",
+    "tools/bot_ml/build_validation_provisioning.py": "3307ae7d0554da9942f1f473ed97fbc03d776bc81c57e9d916dd1cc37184d02c",
+    "tools/bot_ml/generate_bot_admission_identities.py": "ec76b616d6181cc5c372aff8bd6017595005978d4ca183b2d527b09e0b9abcd4",
+    "tools/bot_ml/phase8_calibration_adapter.py": "7b199b915f4c2a83e43992f3a917e807f2c1da52af6ee9cfb7dacea185005e3f",
+    "tests/test_blood_permanent_enchant_profile.py": "5138f2e32a37a28b38ae20c2a1941a1436bc55a0f99a3053c5a71ed6cdd74905",
+    "tests/test_generated_bot_admission_identities.py": "602eaa06c994f7ef7696d478a86eb6eba5794f768e13063afc13043a6eec37e8",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "84a6f5432b5d36782a7cc742a54ca9fbb69186f1b7e77c57104a46e1d0361ace"
+  },
+  "source_commit": "6e4ffe74b5a462ec8a3c8aa4c7ec802b5ac65302",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_plan_reconciled_20260922.json",
+      "sha256": "79e622828a0e2cdd5f4a197956dc2cff20bddc76405fc3ea6de256a6c782bc8e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_supporting_workflow_review_20260922.receipt.json",
+      "sha256": "c1e446f33b11fde39e373a6cca877f51d3963c864aec9703ca549605102407f3"
+    }
+  ],
+  "acceptance_claim": "Bounded implementation and focused tests only. No independent review, native build, live setup outcome, actor acceptance, performance acceptance, raid clear or parent completion is claimed."
+}
