@@ -109,9 +109,20 @@ Resolve an exact cache object with `repo.cache.local.oid_to_path(pointer_hash)`;
 the cache object's root may already include `files/md5`. Do not append that
 layout again and mistake a nonexistent path for successful cache eviction.
 Filesystem eviction does not clean `characters.experiment_bot_*` SQL telemetry.
-Include those table sizes in storage accounting. Preserve attributable needed
-rows through verified export before selective cleanup; never truncate live
-writers or accepted evidence merely to reduce disk use.
+Both experiment runners now sweep verified SQL leftovers before a live run and
+publish closed SQL runs after normal finalization, including failed-run results.
+For interrupted publication/recovery, run:
+`pixi run python -m tools.bot_ml.sql_telemetry_lifecycle publish --config <worldserver.conf>`.
+For cleanup of already-verified leftovers only, use `sweep` instead of `publish`.
+The command streams run-scoped SQL (frames join through clips; segments use
+parent_run_id), runs DVC status/push, reads the remote bytes, then transactionally
+compares and deletes only matching stopped runs. Active, changed, and unverified
+rows are preserved. Errors must be resolved; never bypass verification with TRUNCATE.
+Commit the generated pointers and compact receipts under
+`artifacts/cata_raid_program/sql_telemetry/`. SQL archives are unclassified raw
+evidence, not training admission. Reviewers needing SQL can restore the exact DVC
+archive; ordinary run reports/timelines retain their existing publication flow.
+InnoDB reuses deleted space; selective cleanup need not shrink its files immediately.
 
 Do not admit development, stale, contaminated, unclassified, synthetic-only or incomplete
 runs to training. Full qualification retains complete attribution and independent outcome

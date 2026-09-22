@@ -8256,7 +8256,7 @@ def run_reusable_validation_session(
     return "".join(output_parts), returncode, timed_out, command, lifecycle
 
 
-def main() -> int:
+def _main() -> int:
     parser = argparse.ArgumentParser(description="Run or prepare live BotWorld validation diagnostics.")
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
     parser.add_argument("--config", type=Path, default=Path("trinity-worldserver-test.conf"))
@@ -9022,6 +9022,11 @@ def main() -> int:
     segment_success = route_segment_complete(report, validation_route)
     full_success = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
     return 0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1
+
+
+def main() -> int:
+    from tools.bot_ml.sql_telemetry_lifecycle import run_with_telemetry
+    return run_with_telemetry(_main, REPO_ROOT)
 
 
 if __name__ == "__main__":

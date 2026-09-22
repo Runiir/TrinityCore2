@@ -402,8 +402,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def main() -> int:
     setup = prepare_capture_setup(root=ROOT)
-    run = execute_capture_run(setup)
-    return finalize_capture(setup, run)
+    from tools.bot_ml.sql_telemetry_lifecycle import experiment_telemetry
+    with experiment_telemetry(ROOT, setup.config):
+        run = execute_capture_run(setup)
+        return finalize_capture(setup, run)
 
 
 if __name__ == "__main__":

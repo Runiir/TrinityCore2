@@ -39,8 +39,13 @@ def export_table(conn, table: str, run_ids: list[int] | None) -> list[dict]:
     params: list[object] = []
     if run_ids:
         columns = table_columns(conn, table)
-        filter_column = "run_id" if "run_id" in columns else "id" if table == "experiment_bot_runs" else ""
-        if filter_column:
+        filter_column = ("run_id" if "run_id" in columns else
+                         "parent_run_id" if table == 'experiment_bot_segments' else
+                         "id" if table == "experiment_bot_runs" else "")
+        if table == 'experiment_bot_clip_frames':
+            where = ' WHERE clip_id IN (SELECT id FROM experiment_bot_clips WHERE run_id IN (' + ','.join(['%s'] * len(run_ids)) + '))'
+            params = list(run_ids)
+        elif filter_column:
             where = f" WHERE `{filter_column}` IN (" + ",".join(["%s"] * len(run_ids)) + ")"
             params = list(run_ids)
     with conn.cursor() as cursor:
