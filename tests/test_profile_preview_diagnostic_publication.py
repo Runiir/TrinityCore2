@@ -112,6 +112,7 @@ def test_blood_selected_action_retains_pre_submission_state(tmp_path):
 #include <cstdint>
 using uint8=uint8_t;using uint16=uint16_t;using uint32=uint32_t;using uint64=uint64_t;
 constexpr uint8 CLASS_DEATH_KNIGHT=6,MAX_RUNES=6;
+constexpr int PLAYER_RUNE_REGEN_1=100;
 enum class RuneType:uint8 {Blood,Unholy,Frost,Death};
 ''')
     (tmp_path / "Player.h").write_text(r'''
@@ -119,10 +120,14 @@ enum class RuneType:uint8 {Blood,Unholy,Frost,Death};
 #include "Define.h"
 struct Player {
  uint8 Class=CLASS_DEATH_KNIGHT;uint64 Health=27035,MaximumHealth=188765;
- float Cooldowns[MAX_RUNES]={0,0,0,1,1,1};
- RuneType Runes[MAX_RUNES]={RuneType::Blood,RuneType::Unholy,RuneType::Frost,RuneType::Death,RuneType::Blood,RuneType::Death};
+ float Cooldowns[MAX_RUNES]={0,0.5f,1,0.25f,1,0};
+ float Regeneration[4]={0.25f,0.5f,0.25f,0.5f};
+ RuneType BaseRunes[MAX_RUNES]={RuneType::Blood,RuneType::Blood,RuneType::Unholy,RuneType::Unholy,RuneType::Frost,RuneType::Frost};
+ RuneType Runes[MAX_RUNES]={RuneType::Blood,RuneType::Death,RuneType::Unholy,RuneType::Death,RuneType::Frost,RuneType::Death};
  uint8 getClass()const{return Class;}uint64 GetHealth()const{return Health;}uint64 GetMaxHealth()const{return MaximumHealth;}
- float GetRuneCooldown(uint8 i)const{return Cooldowns[i];}RuneType GetCurrentRune(uint8 i)const{return Runes[i];}
+ RuneType GetBaseRune(uint8 i)const{return BaseRunes[i];}RuneType GetCurrentRune(uint8 i)const{return Runes[i];}
+ float GetRuneCooldown(uint8 i)const{return Cooldowns[i];}
+ float GetFloatValue(int field)const{return Regeneration[field-PLAYER_RUNE_REGEN_1];}
 };
 ''')
     (tmp_path / "Bots/BotClassSpecActionProfile.h").write_text(r'''
@@ -213,7 +218,39 @@ int main(){
     assert mask["selected_spell_id"] == 55050
     assert mask["selected_mode"] == "threat_first"
     assert mask["health"] == {"current": 27035, "maximum": 188765}
-    assert mask["ready_runes"] == {"total": 3, "blood": 1, "unholy": 1, "frost": 1, "death": 0}
+    assert mask["ready_runes"] == {"total": 2, "blood": 1, "unholy": 0, "frost": 0, "death": 1}
+    assert mask["rune_slots"] == [
+        {
+            "slot_index": 0, "base_rune_type": "blood", "current_rune_type": "blood",
+            "cooldown_fraction": 0, "regeneration_rate": 0.25,
+            "estimated_ready_in_ms": 0, "estimated_ready_at_ms": 1234,
+        },
+        {
+            "slot_index": 1, "base_rune_type": "blood", "current_rune_type": "death",
+            "cooldown_fraction": 0.5, "regeneration_rate": 0.5,
+            "estimated_ready_in_ms": 1000, "estimated_ready_at_ms": 2234,
+        },
+        {
+            "slot_index": 2, "base_rune_type": "unholy", "current_rune_type": "unholy",
+            "cooldown_fraction": 1, "regeneration_rate": 0.5,
+            "estimated_ready_in_ms": 2000, "estimated_ready_at_ms": 3234,
+        },
+        {
+            "slot_index": 3, "base_rune_type": "unholy", "current_rune_type": "death",
+            "cooldown_fraction": 0.25, "regeneration_rate": 0.5,
+            "estimated_ready_in_ms": 500, "estimated_ready_at_ms": 1734,
+        },
+        {
+            "slot_index": 4, "base_rune_type": "frost", "current_rune_type": "frost",
+            "cooldown_fraction": 1, "regeneration_rate": 0.25,
+            "estimated_ready_in_ms": 4000, "estimated_ready_at_ms": 5234,
+        },
+        {
+            "slot_index": 5, "base_rune_type": "frost", "current_rune_type": "death",
+            "cooldown_fraction": 0, "regeneration_rate": 0.5,
+            "estimated_ready_in_ms": 0, "estimated_ready_at_ms": 1234,
+        },
+    ]
     assert mask["candidates"]["death_strike"] == {
         "present": True, "valid": False, "reject_reason": "missing_runes",
         "priority_bucket": 1, "final_score": 1.25,

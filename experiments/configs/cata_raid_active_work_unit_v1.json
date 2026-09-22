@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read retained evidence; identify one causal mismatch and prepare a bounded worker task. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
+  "next_action": "Implement the bounded task, run its required tests, and obtain a result checkpoint. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 394,
+    "revision": 396,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "diagnose",
+    "stage": "implement",
     "actor_ids": [
       "30001",
       "30002",
@@ -7491,6 +7491,37 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 394,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 394,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_20260922.json",
+            "sha256": "58e246d7ae305692da49a748558bef8955ee3293b0009191c97a981412a89ab2"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 395,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 395,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-blood-cadence-05"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7521,7 +7552,70 @@
         "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_01_support_refresh_full2_20260921.json",
         "sha256": "f2ec90b265dc13f40bf3242f5a73282d42b244772c117d256a241812d16038db"
       }
-    ]
+    ],
+    "assignment": {
+      "hypothesis": "The v25 Blood profile correctly performs equal-bucket Death Strike and Heart Strike arbitration, but the retained run cannot prove or disprove downstream rune/cadence loss because the observation records only aggregate ready-rune counts. Recording each rune slot's base/current type, cooldown fraction, regeneration rate, and estimated ready timestamp at every relevant candidate evaluation will make the suspected edge auditable across successive native decisions. No Blood priority, spell, rune-legality, mitigation, movement, encounter, or reference repair is authorized by this plan.",
+      "owned_files": [
+        "src/server/game/Bots/BotBloodDecisionObservation.h",
+        "tests/test_profile_preview_diagnostic_publication.py"
+      ],
+      "forbidden_changes": [
+        "Do not change Death Strike or Heart Strike priority buckets, scores, validity, rune costs, spell coefficients, mitigation, target selection, or native submission behavior.",
+        "Do not change parasite-contact movement, encounter scripts, route manifests, runtime profiles, roster, WCL denominators, simulator references, gear, stats, gems, reforges, or consumables.",
+        "Do not add a health threshold, revert profile v25, infer a DPS loss from the 26,152 WCL context value, or close an actor/performance/raid requirement from observation output.",
+        "Do not add spell, aura, shield-absorption, damage, or healing calculations to the decision helper; downstream native outcome telemetry remains a separate evidence edge.",
+        "Do not modify files outside the bounded owned set."
+      ],
+      "acceptance_conditions": [
+        "The existing blood_survival_candidate_observation_v1 JSON keeps its aggregate ready_runes counts and adds deterministic per-slot base/current rune type, cooldown fraction, regeneration rate, ready-in estimate, and estimated ready timestamp fields.",
+        "The observation is attached only to relevant Blood Death Knight selections as before, and the additive fields do not affect candidate validity, scoring, selection, or action execution.",
+        "The focused fixture compiles with warnings-as-errors and asserts slot identity, cooldown, regeneration, estimated ready time, aggregate-count preservation, non-Blood rejection, and the existing candidate fields.",
+        "The source remains below the repository's 1,000-line C/C++ guard and the focused test plus existing Blood policy regression pass.",
+        "An independent reviewer approves the exact two-file observation-only delta, then a clean policy-bound build and completion-watchdog Magmaw 10N run record the enriched Blood observations. This work may inform the next diagnosis but cannot by itself accept actor_30002, performance, Magmaw 10N, or the parent objective."
+      ],
+      "required_test_commands": [
+        "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
+        "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+        "pixi run python -m tools.raid_program.module_size"
+      ],
+      "base_commit": "6e4ffe74b5a462ec8a3c8aa4c7ec802b5ac65302",
+      "policy": {
+        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+      },
+      "validation_identity": {
+        "scenario_kind": "raid",
+        "encounter": {
+          "raid": "blackwing_descent",
+          "boss": "magmaw",
+          "mode": "10N"
+        },
+        "roster": {
+          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+          "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "runtime_profile": {
+          "path": "experiments/configs/validation_scenarios_cata_001.json",
+          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+        },
+        "route": {
+          "path": "dataset/validation_scenarios/validation_routes.jsonl",
+          "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+        }
+      }
+    },
+    "receipts": {
+      "plan": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_20260922.json",
+        "sha256": "58e246d7ae305692da49a748558bef8955ee3293b0009191c97a981412a89ab2"
+      }
+    },
+    "claim": {
+      "owner": "coordinator-blood-cadence-05",
+      "token": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
+      "operation_id": "322d69a14091bd44e939718e8a33ed5b481ca034650cda59e2f1fd412267c2a8",
+      "stage": "implement"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {

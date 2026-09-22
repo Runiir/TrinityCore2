@@ -42,6 +42,52 @@ inline ReadyRunes ObserveReadyRunes(Player const* actor)
     return observation;
 }
 
+inline char const* RuneTypeName(RuneType rune)
+{
+    switch (rune)
+    {
+        case RuneType::Blood: return "blood";
+        case RuneType::Unholy: return "unholy";
+        case RuneType::Frost: return "frost";
+        case RuneType::Death: return "death";
+        default: return "unknown";
+    }
+}
+
+inline uint64 EstimateRuneReadyInMs(float cooldownFraction, float regenerationRate)
+{
+    if (cooldownFraction <= 0.0001f || regenerationRate <= 0.0f)
+        return 0;
+
+    double const remainingSeconds = double(cooldownFraction) / double(regenerationRate);
+    return static_cast<uint64>(std::ceil(remainingSeconds * 1000.0));
+}
+
+inline void AppendRuneSlots(std::ostringstream& json, Player const* actor, uint64 evaluationStartedAtMs)
+{
+    json << "[";
+    for (uint8 rune = 0; rune < MAX_RUNES; ++rune)
+    {
+        RuneType const baseRune = actor->GetBaseRune(rune);
+        RuneType const currentRune = actor->GetCurrentRune(rune);
+        float const cooldownFraction = actor->GetRuneCooldown(rune);
+        float const regenerationRate = actor->GetFloatValue(
+            PLAYER_RUNE_REGEN_1 + static_cast<uint8>(currentRune));
+        uint64 const readyInMs = EstimateRuneReadyInMs(cooldownFraction, regenerationRate);
+
+        if (rune != 0)
+            json << ',';
+        json << "{\"slot_index\":" << uint32(rune)
+             << ",\"base_rune_type\":\"" << RuneTypeName(baseRune)
+             << "\",\"current_rune_type\":\"" << RuneTypeName(currentRune)
+             << "\",\"cooldown_fraction\":" << cooldownFraction
+             << ",\"regeneration_rate\":" << regenerationRate
+             << ",\"estimated_ready_in_ms\":" << readyInMs
+             << ",\"estimated_ready_at_ms\":" << evaluationStartedAtMs + readyInMs << '}';
+    }
+    json << "]";
+}
+
 inline std::string JsonEscape(std::string const& value)
 {
     std::ostringstream escaped;
@@ -120,7 +166,9 @@ inline bool Attach(Player const* actor, std::vector<BotActionCandidate>& candida
          << ",\"blood\":" << uint32(runes.Blood)
          << ",\"unholy\":" << uint32(runes.Unholy)
          << ",\"frost\":" << uint32(runes.Frost)
-         << ",\"death\":" << uint32(runes.Death) << "},\"candidates\":{";
+         << ",\"death\":" << uint32(runes.Death) << "},\"rune_slots\":";
+    AppendRuneSlots(json, actor, evaluationStartedAtMs);
+    json << ",\"candidates\":{";
     AppendCandidate(json, "death_strike", deathStrike);
     json << ',';
     AppendCandidate(json, "heart_strike", heartStrike);

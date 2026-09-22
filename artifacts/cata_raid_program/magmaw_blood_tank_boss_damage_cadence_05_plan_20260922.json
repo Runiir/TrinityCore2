@@ -1,0 +1,92 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_blood_tank_boss_damage_cadence_05_20260922",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "latest_user_direction": "Implement magmaw 10n bots.",
+  "objective": "Extend the existing Blood decision observation so the next matched Magmaw run can join valid-valid Death Strike selections to exact rune-slot cooldown state and the next legal strike without changing gameplay.",
+  "hypothesis": "The v25 Blood profile correctly performs equal-bucket Death Strike and Heart Strike arbitration, but the retained run cannot prove or disprove downstream rune/cadence loss because the observation records only aggregate ready-rune counts. Recording each rune slot's base/current type, cooldown fraction, regeneration rate, and estimated ready timestamp at every relevant candidate evaluation will make the suspected edge auditable across successive native decisions. No Blood priority, spell, rune-legality, mitigation, movement, encounter, or reference repair is authorized by this plan.",
+  "first_broken_edge": "blood_valid_valid_rune_cadence_observation_gap",
+  "observations": [
+    "Actor 30002 selected Death Strike over valid Heart Strike in seven retained rows at 87.807%-100% health, including one full-health zero-effective-heal row, but the retained data lacks slot-level rune spend and ready-time joins.",
+    "The retained direct-damage outage from t+36.501 to t+42.036 is attributed to hazard-owned parasite_contact_evade movement and remains separate from Blood action arbitration.",
+    "The independent read-only review found no authorized role-policy repair: a high-health Death Strike must first be joined to a delayed or missing later legal strike before any threshold or ordering change.",
+    "Existing BotBloodDecisionObservation data preserves aggregate counts and candidate scores, so the smallest safe change is additive per-slot telemetry in that helper plus its focused fixture."
+  ],
+  "owned_files": [
+    "src/server/game/Bots/BotBloodDecisionObservation.h",
+    "tests/test_profile_preview_diagnostic_publication.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Death Strike or Heart Strike priority buckets, scores, validity, rune costs, spell coefficients, mitigation, target selection, or native submission behavior.",
+    "Do not change parasite-contact movement, encounter scripts, route manifests, runtime profiles, roster, WCL denominators, simulator references, gear, stats, gems, reforges, or consumables.",
+    "Do not add a health threshold, revert profile v25, infer a DPS loss from the 26,152 WCL context value, or close an actor/performance/raid requirement from observation output.",
+    "Do not add spell, aura, shield-absorption, damage, or healing calculations to the decision helper; downstream native outcome telemetry remains a separate evidence edge.",
+    "Do not modify files outside the bounded owned set."
+  ],
+  "acceptance_conditions": [
+    "The existing blood_survival_candidate_observation_v1 JSON keeps its aggregate ready_runes counts and adds deterministic per-slot base/current rune type, cooldown fraction, regeneration rate, ready-in estimate, and estimated ready timestamp fields.",
+    "The observation is attached only to relevant Blood Death Knight selections as before, and the additive fields do not affect candidate validity, scoring, selection, or action execution.",
+    "The focused fixture compiles with warnings-as-errors and asserts slot identity, cooldown, regeneration, estimated ready time, aggregate-count preservation, non-Blood rejection, and the existing candidate fields.",
+    "The source remains below the repository's 1,000-line C/C++ guard and the focused test plus existing Blood policy regression pass.",
+    "An independent reviewer approves the exact two-file observation-only delta, then a clean policy-bound build and completion-watchdog Magmaw 10N run record the enriched Blood observations. This work may inform the next diagnosis but cannot by itself accept actor_30002, performance, Magmaw 10N, or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
+    "pixi run pytest -q tests/test_blood_death_strike_priority.py",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "6e4ffe74b5a462ec8a3c8aa4c7ec802b5ac65302",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_plan_drift_checkpoint_20260922.json",
+      "sha256": "bb4e7dfc47a277a612602f9db41634e3caf0660476bb5ecac107b4e099838098"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_publication_reconciled_20260922.json",
+      "sha256": "3a4ab4fc809a1a1061c4f7a8921791a4f3fb81e3ef462ffe479de8776d9b1b8b"
+    },
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "f4eb5583094024c249ca72fa2580fd87d938bfac01d449708abf795ba8114365"
+    },
+    {
+      "path": "src/server/game/Bots/BotBloodDecisionObservation.h",
+      "sha256": "d19ecf8c029d5ae125db14815f4b562acd5918dd78ee688d000883bd98d4d9c4"
+    },
+    {
+      "path": "tests/test_profile_preview_diagnostic_publication.py",
+      "sha256": "c5d9596834b8a58e3733c1924d30de2f3f9d3f7a442c2621a30ce83124610579"
+    }
+  ],
+  "acceptance_claim": "Plan only. This receipt claims an observation-gap repair path and no gameplay, build, live, actor, performance, raid-clear, publication, or parent acceptance.",
+  "advice": {}
+}
