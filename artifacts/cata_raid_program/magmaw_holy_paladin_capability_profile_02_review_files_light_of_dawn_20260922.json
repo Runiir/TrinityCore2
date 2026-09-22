@@ -1,0 +1,6 @@
+{
+  "files": [
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql",
+    "tests/test_holy_paladin_capability_profile.py"
+  ]
+}

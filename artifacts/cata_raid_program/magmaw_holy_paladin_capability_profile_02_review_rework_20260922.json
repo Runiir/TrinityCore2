@@ -1,0 +1,31 @@
+{
+  "schema": "raid_workloop_rework_receipt_v1",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "stage": "review",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "reason": "Independent review returned rework: the SQL semantics are bounded, but the fixture has no disabled-profile/disabled-action negative coverage and the Holy Power/three-injured-player gates remain source-text assertions rather than executable rejection checks. Add focused negative-path coverage, rerun the required suite, and obtain a fresh review before building.",
+  "review_receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_receipt_light_of_dawn_20260922.json",
+    "sha256": "b0a814402895b301c41c0201e5e5aca87aca3dee48e312a8ea025d1dba5093a3"
+  },
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_report_light_of_dawn_20260922.json",
+    "sha256": "a1887f10261f555f6a324042f9921fb564af112bb019e59d3c45f777016561f4"
+  },
+  "findings": [
+    "Add a disabled matching Holy Paladin profile fixture and prove the migration does not insert into it.",
+    "Add a disabled existing Light of Dawn action fixture and prove the migration does not alter or duplicate it.",
+    "Exercise the native candidate gate behavior for insufficient Holy Power and fewer than three injured players instead of relying only on source-text assertions."
+  ],
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_report_light_of_dawn_20260922.json",
+      "sha256": "a1887f10261f555f6a324042f9921fb564af112bb019e59d3c45f777016561f4"
+    }
+  ]
+}

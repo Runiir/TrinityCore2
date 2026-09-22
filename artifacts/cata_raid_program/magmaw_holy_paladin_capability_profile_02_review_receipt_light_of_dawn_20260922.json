@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_report_light_of_dawn_20260922.json",
+      "sha256": "a1887f10261f555f6a324042f9921fb564af112bb019e59d3c45f777016561f4"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "20f033cc3688334745946901bfe6e66fe4786313e095bf8092a5ac63dcd32c45",
+    "tests/test_holy_paladin_capability_profile.py": "619b64435197a0c1aa4b47154920424837c0d6aaf94b7c82c9ef900ccc25b9e0"
+  },
+  "kind": "review",
+  "producer": "01a0c7b5-cb18-7dc2-89f4-12dc04896d46",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_holy_paladin_capability_profile_02_review_report_light_of_dawn_20260922.json",
+    "sha256": "a1887f10261f555f6a324042f9921fb564af112bb019e59d3c45f777016561f4"
+  },
+  "reviewer_session_id": "01a0c7b5-cb18-7dc2-89f4-12dc04896d46",
+  "unit_id": "magmaw:holy_paladin_capability_profile_02",
+  "verdict": "rework"
+}

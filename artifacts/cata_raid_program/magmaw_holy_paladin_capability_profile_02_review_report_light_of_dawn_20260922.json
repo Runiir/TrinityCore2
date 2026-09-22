@@ -1,0 +1,33 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_22_00_holy_paladin_aoe_capability_profile.sql": "20f033cc3688334745946901bfe6e66fe4786313e095bf8092a5ac63dcd32c45",
+    "tests/test_holy_paladin_capability_profile.py": "619b64435197a0c1aa4b47154920424837c0d6aaf94b7c82c9ef900ccc25b9e0"
+  },
+  "findings": [
+    "SQL fields match native semantics: min_enemies=1 is not an injured-player gate; min_injured_players=3 and holy_power_3 are separate gates, and lowest_ally is correct.",
+    "Migration is insert-only, scoped to enabled holy_paladin/healer profiles, and idempotent on repeated application.",
+    "Test executes the SQL, checks repeat application, isolation, Light of Dawn fields, and Word of Glory's Holy Power tag.",
+    "Missing negative coverage: no disabled matching profile or disabled existing action fixture, and bot_rotation_action omits enabled, so enabled-scope and loaded-action behavior can be falsely accepted.",
+    "Native gate checks are source-text assertions only; no negative execution proves rejection below three Holy Power or three injured players."
+  ],
+  "limits": [
+    "No server launch, build, native runtime, calibration, actor acceptance, raid clear, or parent completion was performed.",
+    "Worktree contains unrelated modified configuration and an untracked artifact outside the two reviewed files."
+  ],
+  "proof": {
+    "final_message_bytes": 1520,
+    "final_message_sha256": "42be848f8f651e23637437b3141ad105041a7bd4fd1ffef4e038bcc07984ea57",
+    "prefix_bytes": 3800896,
+    "prefix_sha256": "f444e8e98976b0a15f37303fbdc93f3fceaf390c76e4769cabaa7df056c042a0",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T09-02-55-01a0c7b5-cb18-7dc2-89f4-12dc04896d46.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c7b5-cb18-7dc2-89f4-12dc04896d46"
+  },
+  "reviewer_session_id": "01a0c7b5-cb18-7dc2-89f4-12dc04896d46",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "pixi run pytest -q tests/test_holy_paladin_capability_profile.py: 6 passed in 0.05s.",
+    "Reviewed files match commit 44f824f6241b8a15286d41f39becb465edefb03c; selected-file diff and whitespace checks are clean."
+  ],
+  "verdict": "rework"
+}
