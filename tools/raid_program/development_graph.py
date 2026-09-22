@@ -100,7 +100,7 @@ def check_graph(g: dict) -> None:
         target = row.get('to')
         legal = (
             (action in ('claim', 'release') and target == previous and previous != 'complete')
-            or (action == 'refresh_support' and previous == target == 'implement')
+            or (action in ('refresh_support', 'amend_tests') and previous == target == 'implement')
             or (action == 'advance' and previous in RECEIPTS and target == NEXT[previous])
             or (action == 'route' and previous == 'route' and target == 'diagnose')
             or (action == 'rework' and previous in ('diagnose','implement','review','build','validate') and target in ('diagnose','route'))
@@ -192,6 +192,8 @@ def resume(root: Path) -> dict:
         'open_requirements': {k: v for k, v in g['requirements'].items() if v['status'] != 'accepted'},
         'completed_measurements': g.get('completed_measurements', []),
         'receipts': g.get('receipts', {}), 'outcomes': g.get('outcomes', {}),
+        'test_plan': {key: g.get('assignment', {}).get(key, [])
+                      for key in ('owned_files', 'required_test_commands', 'acceptance_conditions')},
         'latest_assessment': next((h['event']['receipt'] for h in reversed(g['history'])
                                    if h['from'] == 'assess' and h['event']['action'] == 'advance'), None),
         'same_edge_failures': g.get('failures', {}).get(unit['edge'], 0),
@@ -388,6 +390,11 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 raise GraphError('pre-build validation failed: ' + str(exc)) from exc
         token = digest(f"{g['unit']['id']}:{stage}:{g['revision']}:{event['owner']}".encode())
         g['claim'] = {'owner': event['owner'], 'token': token, 'operation_id': token, 'stage': stage}
+    elif action == 'amend_tests' and stage == 'implement':
+        from tools.raid_program.workflow_tests import amend_assignment
+        g['assignment'] = amend_assignment(root, g['assignment'], event)
+        # The same repair/claim continues. Scope only grows by test dependencies;
+        # the original base, production files, obligations and failures survive.
     elif action == 'release':
         if not claim:
             raise GraphError('no claimed operation')
@@ -482,9 +489,13 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 raise GraphError('files changed after tests; reroute and retest')
             if stage == 'implement':
                 advice(root, r)
+                if r.get('source_and_state_stable') is False:
+                    raise GraphError('source or state changed during test execution')
                 tests = r.get('tests', [])
                 for command in g['assignment']['required_test_commands']:
-                    if not any(t.get('command') == command and type(t.get('exit_status')) is int and t['exit_status'] == 0 for t in tests):
+                    matching = [t for t in tests if t.get('command') == command]
+                    if (len(matching) != 1 or type(matching[0].get('exit_status')) is not int
+                            or matching[0]['exit_status'] != 0):
                         raise GraphError('required test did not pass: ' + command)
                 g['tested_files'] = current
                 g['tested_commit'] = current_commit
@@ -655,7 +666,7 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
     else:
         raise GraphError('invalid action for stage: ' + str(action))
     g['history'].append({'revision': g['revision'], 'unit_id': event['unit_id'], 'from': stage, 'to': g['stage'], 'event': event, 'accepted_requirements': accepted_now, 'proposed_acceptance': g.get('pending_acceptance', []) if stage == 'assess' else []})
-    if action not in ('claim', 'release'):
+    if action not in ('claim', 'release', 'amend_tests'):
         g.pop('claim', None)
     g['revision'] += 1
     result['next_action'] = ACTIONS[g['stage']] + (' ' + g['unit']['next_action'] if g['stage'] != 'complete' else '')

@@ -66,7 +66,12 @@ def packet(root: Path) -> dict:
               'acceptance_conditions': assignment['acceptance_conditions'],
               'context': context,
               'return': 'Freeze owned files after focused tests. Return changed files, commands/results, '
-                        'remaining uncertainty and live verification needed. Do not launch nested workers.',
+                        'remaining uncertainty and live verification needed. If the repair needs an existing '
+                        'fixture outside ownership, report the exact file and dependency to the coordinator '
+                        'for amend-tests; preserve the needed change. Do not launch nested workers.',
+              'behavioral_validation': 'Exercise the production behavior across the counterexample and a '
+                        'neighboring valid case. For persistent state, repeat updates with unchanged identity '
+                        'and changing observations. Source-text assertions alone do not prove the repair.',
               'evidence_rule': 'Use compact comparisons first. Each deeper read answers the named question '
                                'and changes the named decision. Missing evidence stays unknown.'}
     if len(json.dumps(result).encode()) > 10000:

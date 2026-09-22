@@ -315,6 +315,56 @@ search for an arbitrary recent build.
 Existing successful receipts should still be reused; this command is for a new
 reviewed build, not a reason to rebuild for progress metadata.
 
+### Necessary test dependencies and execution
+
+During `implement`, an explicit additive amendment can include a necessary
+fixture without abandoning the repair:
+
+```sh
+pixi run python -m tools.raid_program.workflow_step amend-tests \
+  --file tests/test_affected_behavior.py \
+  --command 'pixi run python -m pytest -q tests/test_affected_behavior.py' \
+  --reason 'The production change adds a dependency to this extracted fixture' \
+  --owner <current-claim-owner> --dry-run
+# Repeat without --dry-run after inspecting the amendment.
+```
+
+Only existing regular files under `tests/` may be added; commands and files are
+additive. The history retains the reason and exact additions. Source base,
+production ownership, claim, old tests, requirements and failure counts stay
+unchanged. `--expect <state hash>` protects a reviewed preview. Coordinate with
+the worker before amending its scope. Production changes and amendments after
+implementation use the existing rework path and fresh review. Never remove a
+needed test dependency merely to fit the first file list.
+
+After committing the source, run the whole declared test set:
+
+```sh
+pixi run python -m tools.raid_program.workflow_step tests \
+  --owner <current-claim-owner> --producer <actual-implementer-session-id> \
+  --behavior-command 'pixi run python -m pytest -q tests/test_affected_behavior.py'
+```
+
+The behavior command must be one of the declared commands. Its name is a review
+pointer, not automatic certification: the reviewer verifies that it executes
+the production behavior, reproduces the counterexample, and covers the relevant
+neighboring case. For persistent progress, keep identity unchanged while observed
+state changes across updates. Text/order assertions alone cannot prove this.
+
+The helper executes all declared checks with per-command timeouts and pipefail,
+stores full output in JSON artifacts, and returns only statuses, artifact paths
+and an exact CAS-bound advance command. Failures, timeouts or source/state changes
+produce no advance command. The reducer rejects mixed failing/passing duplicate
+results for a required command. A successful narrow subset cannot replace the
+declared suite. Logs and receipts use the existing evidence publication lifecycle.
+Reinvoking an unchanged source/claim/state returns the recorded result without
+running tests again; incomplete capture requires explicit reconciliation.
+
+`evidence_view task --section unit` exposes current test ownership, commands and
+acceptance conditions. Use it instead of reading graph implementation and old
+receipts to reconstruct the next test handoff. Legacy receipts remain readable;
+no native/DPS acceptance is inferred from the new test runner.
+
 ### Worker packets
 
 Source binding is checked at plan admission and again at implementation claim,

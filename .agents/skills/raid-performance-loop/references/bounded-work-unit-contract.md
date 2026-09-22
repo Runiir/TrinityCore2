@@ -17,6 +17,10 @@ understand it; do not substitute a dump of the program charter or old handoffs.
    Read-only inspection is allowed. List concrete forbidden changes. Tell the
    coordinator if a necessary edit falls outside ownership; do not silently
    expand production scope.
+   Preserve needed fixture support. The coordinator can add test files/commands
+   with `workflow_step amend-tests` during implementation, without resetting the
+   repair or accepting it. Exact initial ownership is not a reason to remove a
+   dependency and leave an existing behavior test broken.
 5. **Proof.** A behavioral failure before the patch and expected result after it;
    one focused command covering affected tests. State what the test does not
    prove, especially native terrain, actual encounter fidelity, or live success.
@@ -65,6 +69,8 @@ For a regression test, verify that the original faulty behavior actually fails
 the test. A passing test after the patch is insufficient. Loop tests must cross
 the relevant iteration boundary; batching all successful observations together
 can skip the faulty branch entirely.
+Keep identity unchanged across successive updates when testing ongoing progress;
+changing the target on every observation can conceal an early-return defect.
 Run the historical counterexample once and retain its result in the handoff.
 The normal regression suite should exercise current production behavior without
 requiring an old Git commit or recompiling known-broken code on every run.

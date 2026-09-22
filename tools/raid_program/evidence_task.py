@@ -145,7 +145,10 @@ def progress_view(progress, root, section='summary'):
             'dps_acceptance': progress.get('dps_acceptance'),
             'completed_measurement_count': len(progress.get('completed_measurements', []))}
     if section == 'unit':
-        return base | {'unit': progress['unit']}
+        return base | {'unit': progress['unit'], 'test_plan': progress.get('test_plan', {}),
+                       'test_execution': 'Commit source, then workflow_step tests --owner <claim owner> '
+                           '--producer <implementer session ID> --behavior-command <exact declared command>. '
+                           'Use workflow_step amend-tests for necessary test dependencies; do not remove them to fit the initial file list.'}
     if section == 'requirements':
         return base | {'open_requirements': progress['open_requirements']}
     if section == 'receipts':

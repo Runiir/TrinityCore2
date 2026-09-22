@@ -55,6 +55,13 @@ and token and calls the real reducer atomically. Do not hand-copy those fields
 or retry a rejected transition unchanged. Build plans need a frozen build/resource
 policy; a role-calibration policy is a different input and is rejected at planning.
 Use `workflow_build refs` and `snapshot` for receipt inputs and owned files.
+For implementation tests, `evidence_view task --section unit` returns current
+owned files and required commands, including amendments. Run `workflow_step tests
+--owner <claim owner> --producer <actual implementer session ID>
+--behavior-command '<one declared command>'`. It executes every declared check,
+retains failures/full logs, and returns a receipt and exact advance command only
+when all checks pass on unchanged source/state. Repeating the same execution
+returns its retained result. Do not reconstruct test receipts from older examples.
 Plan admission and implementation claim now check the source boundary. Resolve
 reported paths there; do not spend worker/review time on a stale assignment.
 Each newly routed unit freezes its own baseline, without accepting prior changes.
@@ -88,6 +95,9 @@ many pages into one response. Use the tested [role-result and tool-call examples
 for healer/tank reports, launch output and source searches. Read only the matching
 ledger entry and current status. After two equivalent queries return no new fact,
 name the missing observation and change the query/tool or route that missing input.
+The coordinator follows these limits too. A transition/schema question starts
+with the current compact task and its named CLI, not repository-wide receipt
+searches. Inspect implementation only for a concrete tool error or missing field.
 Keep full evidence on disk/DVC; missing observations remain unknown.
 For a completed native calibration, start with `evidence_view result <report>
 --max-chars 6000`; inspect its reference section only if the reference gate failed.
@@ -145,6 +155,17 @@ contradictory or missing evidence. For a DPS repair, require the existing
 before dispatch; raw deltas and model agreement do not authorize native tuning.
 Keep handoffs short: one proven edge, exact evidence/file locations, owned files,
 counterexample, focused command, and acceptance.
+Necessary fixture support is part of a correct repair. During implementation use
+`workflow_step amend-tests --file tests/<fixture> --command '<test command>'
+--reason '<dependency>' --owner <claim owner>` to add test ownership/coverage.
+It preserves the original base, claim, tests and requirements. Coordinate the
+worker before changing its assignment. Never delete a needed fixture update to
+fit the first file list. Production scope changes or post-test changes use the
+existing rework/review path; this helper cannot widen production ownership.
+Reviewers must inspect what the selected behavioral test executes and asserts.
+For stateful repairs, exercise repeated updates with unchanged identity, changed
+observations and the relevant transition. A source-text assertion supplements
+that test; it does not prove runtime progress. Include affected existing fixtures.
 Put that context in the plan's `worker_context`, then use
 `workflow_step packet --output /tmp/worker-packet.json` and send that file to the
 worker. It includes verified native excerpts, parent scope and exact commands.

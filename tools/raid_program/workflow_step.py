@@ -199,6 +199,18 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     worker = commands.add_parser('packet', help='Assemble bounded worker context from the admitted plan')
     worker.add_argument('--output', type=Path, help='Write the packet; stdout contains only its path/hash')
+    amend = commands.add_parser('amend-tests', help='Add necessary test dependencies without rebasing the repair')
+    amend.add_argument('--file', action='append', default=[], dest='files')
+    amend.add_argument('--command', action='append', required=True, dest='test_commands')
+    amend.add_argument('--reason', required=True)
+    amend.add_argument('--owner')
+    amend.add_argument('--expect')
+    amend.add_argument('--dry-run', action='store_true')
+    tests = commands.add_parser('tests', help='Run declared tests and generate their hash-bound receipt')
+    tests.add_argument('--owner', required=True)
+    tests.add_argument('--producer', required=True, help='Actual implementer session ID for independent review')
+    tests.add_argument('--behavior-command', required=True, help='Declared command exercising the claimed behavior')
+    tests.add_argument('--timeout', type=float, default=300, help='Per-command timeout in seconds')
     advance = commands.add_parser("advance", help="derive and apply one advance event")
     advance.add_argument("receipt_positional", nargs="?", type=Path)
     advance.add_argument("--receipt", dest="receipt_option", type=Path)
@@ -214,6 +226,20 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.command in ('amend-tests', 'tests'):
+        from tools.raid_program.workflow_tests import amend, run_tests
+        try:
+            if args.command == 'amend-tests':
+                result = amend(args.root.resolve(), files=args.files, commands=args.test_commands,
+                               reason=args.reason, owner=args.owner, expected=args.expect, dry_run=args.dry_run)
+            else:
+                result = run_tests(args.root.resolve(), owner=args.owner, producer=args.producer,
+                                   behavior_command=args.behavior_command, timeout=args.timeout)
+        except (graph.GraphError, OSError, ValueError) as exc:
+            print(json.dumps({'error': str(exc)}), file=sys.stderr)
+            return 2
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result.get('success', True) else 1
     if args.command == 'packet':
         from tools.raid_program.worker_packet import packet
         try:
