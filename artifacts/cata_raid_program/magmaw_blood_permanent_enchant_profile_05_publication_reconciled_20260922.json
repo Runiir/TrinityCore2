@@ -1,0 +1,87 @@
+{
+  "attempt_id": 1,
+  "authority": "coordinator_attestation",
+  "cleanup_limitations": {
+    "controller_active_snapshot": true,
+    "controller_lease_count_snapshot": 2,
+    "controller_snapshot_pre_shutdown": true,
+    "interpretation": "The report snapshot was captured before shutdown. The runner cleanup lines and successful stop receipt removed both bots, and no worldserver or validation process remained; the stale controller snapshot is retained as a limitation, not a live lease assertion."
+  },
+  "cleanup_scope": {
+    "dataset_output_dir": "dataset/live_validation/magmaw_blood_permanent_enchant_profile_05_reconciled_20260922",
+    "raw_archive": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz",
+    "retained": "compact Git evidence, DVC pointer, review, run, assessment and publication receipts",
+    "runner_and_worldserver_processes": "none after runner exit"
+  },
+  "cleanup_verified": true,
+  "disposition": {
+    "accepted_requirements": [],
+    "actor_30002_accepted": false,
+    "classification": "closed_diagnostic_only",
+    "encounter_clear": false,
+    "parent_objective_complete": false,
+    "performance_accepted": false,
+    "permanent_enchant_repair_accepted": false
+  },
+  "dvc_push_completed": true,
+  "dvc_push_result": "1 file pushed",
+  "dvc_status_after_eviction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
+    "remote": "Cache and remote object were in sync after pull/reconstruction and exact local eviction."
+  },
+  "dvc_status_before_eviction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
+    "remote": "Cache and remote object were in sync before targeted eviction."
+  },
+  "dvc_status_checked": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_run_20260922.json",
+      "sha256": "30090414406cc7b460decd7ef5f859a86a1f525b16401beff236b6c3a936497d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_evidence_20260922.json",
+      "sha256": "17916e6090d8d6632c115360ff6c54123679be50b698f7cbf1496506405dc2f4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_rotation_review_20260922.json",
+      "sha256": "d8cc07166332f71e29f432a8477aa5068820a4654f9b66ba1dd6118bec18f982"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_assessment_reconciled_20260922.json",
+      "sha256": "d1d8b5dd61c80ddc8ce5cff52de55e41bf4a52f06acbe5777df893b5013d76c4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
+      "sha256": "ad4a8f684d287072a0a018813f4f617a56d6eebbf5f5f3619bb1896795759aa2"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_publish_reconciled_claim_event_20260922.json",
+      "sha256": "ef30fbfe3b89329fefbf2b2aa41fafd931e6408054fd377f3a054fdd127d6233"
+    }
+  ],
+  "exact_local_duplicates_evicted": true,
+  "interpretation": "Published as closed diagnostic evidence only. The setup overlay readback is exact, but independent review found native pre-score setup, comparable reference admission, explicit runeforge readback and final controller identity incomplete.",
+  "kind": "publication",
+  "operation_id": "a64d3ec02c70ebb3ac0afa4522f6a1ece0e93948e713b10821fd4da688eff414",
+  "producer": "coordinator",
+  "raw_workspace_evicted": true,
+  "remote_reconstruction": {
+    "members_verified": [
+      "report.json",
+      "worldserver_output.log",
+      "commands.txt",
+      "heartbeat_events.jsonl",
+      "heartbeat_manifest.json",
+      "combat_analysis.json"
+    ],
+    "payload_sha256": "2594729fb7b740c88b277a27347c9f65895a1ce422046a8dd4fdcbb2260ea4f0",
+    "payload_size_bytes": 1733997,
+    "pointer": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_validation_reconciled_20260922.raw.tar.gz.dvc",
+    "pointer_sha256": "ad4a8f684d287072a0a018813f4f617a56d6eebbf5f5f3619bb1896795759aa2",
+    "verification": "dvc pull reconstructed the payload and its SHA-256 matched the pre-eviction archive."
+  },
+  "remote_verified": true,
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "unit_id": "magmaw:blood_permanent_enchant_profile_05"
+}
