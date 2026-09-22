@@ -129,6 +129,9 @@ a reviewer label in a coordinator-written receipt is not independent review.
 The report must contain its verdict and exact file hashes. Reuse unchanged
 approval explicitly; changed files need another review. Provider advice cannot
 substitute for this execution proof.
+Generate the review's final JSON and SHA256 map directly in a script to avoid
+transcription errors. Use verdict `approved` or `changes_required`, exact relative
+path keys, and only `verdict`, `file_hashes`, `findings`, `tests`, `limits` fields.
 
 Use `gpt-5.6-luna` with `reasoning_effort: max` for implementation, causal
 diagnosis, architecture, and independent review, following the current user
