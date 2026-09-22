@@ -55,6 +55,17 @@ def summarize(run_dir: Path, timeline_path: Path, label: str, binary_sha256: str
     outcome = report.get("native_gameplay_outcome") or {}
 
     wcl_by_guid = {int(actor["bot_guid"]): actor for actor in timeline["actors"]}
+    # Executed native actions: the direct measure of GCD/cast throughput.
+    casts: dict[int, int] = {}
+    gcd_waits: dict[int, int] = {}
+    for action in encounter.get("action_outcomes", []):
+        guid = int(action["actor_guid"])
+        if (action["action_type"] in ("cast", "use_item") and action["result"] == "ok"
+                and action.get("action_name") != "auto_attack"):
+            casts[guid] = casts.get(guid, 0) + int(action["count"])
+        if action["action_type"] == "wait" and action["result"] == "global_cooldown":
+            gcd_waits[guid] = gcd_waits.get(guid, 0) + int(action["count"])
+    minutes = float(encounter["duration_sec"]) / 60.0
     actors = []
     for actor in sorted(encounter["actors"], key=lambda row: int(row["actor_guid"])):
         guid = int(actor["actor_guid"])
@@ -72,6 +83,9 @@ def summarize(run_dir: Path, timeline_path: Path, label: str, binary_sha256: str
             "damage_uptime": round(float(actor.get("damage_uptime") or 0.0), 3),
             "moving_fraction": round(float(actor.get("moving_fraction") or 0.0), 3),
             "hps": round(float(actor.get("hps") or 0.0), 3),
+            "casts_ok": casts.get(guid, 0),
+            "casts_per_minute": round(casts.get(guid, 0) / minutes, 2) if minutes else None,
+            "gcd_wait_outcomes": gcd_waits.get(guid, 0),
             "wcl_observed_dps": round(wcl_dps, 3) if wcl_dps else None,
             "ratio_to_wcl": round(dps / wcl_dps, 3) if wcl_dps else None,
         })
@@ -109,6 +123,8 @@ def summarize(run_dir: Path, timeline_path: Path, label: str, binary_sha256: str
             "party_damage": encounter["party_damage"],
             "encounter_window_party_dps": encounter["encounter_window_party_dps"],
             "party_hps": encounter.get("party_hps"),
+            "party_healing": encounter.get("party_healing"),
+            "party_damage_taken": encounter.get("party_damage_taken"),
             "pets_included_in_owner": True,
         },
         "wcl_reference": {
@@ -141,7 +157,8 @@ def main() -> int:
     for actor in summary["actors"]:
         print(f"  {actor['bot_name']:9} {str(actor['class_spec']):20} {actor['role']:6} "
               f"{actor['encounter_window_dps']:9.0f} wcl={actor['wcl_observed_dps'] or 0:7.0f} "
-              f"ratio={actor['ratio_to_wcl'] if actor['ratio_to_wcl'] is not None else '-'} hps={actor['hps']:.0f}")
+              f"ratio={actor['ratio_to_wcl'] if actor['ratio_to_wcl'] is not None else '-'} hps={actor['hps']:.0f} "
+              f"casts/min={actor['casts_per_minute']}")
     return 0
 
 
