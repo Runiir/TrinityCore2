@@ -1,0 +1,116 @@
+{
+  "schema": "cata_raid_program_bounded_plan_v1",
+  "authority": "coordinator_attestation",
+  "kind": "plan",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "producer": "coordinator",
+  "base_commit": "82892d1e64040936fef8180b81babc03d09040bc",
+  "hypothesis": "Adaptive Magmaw owns mechanics, movement, and target selection, then records native target-priority and boss-action observations without updating WorldBotState::LastRouteProgress. The retained route-4 trace therefore has valid target-return bindings and native combat observations but no route-scoped boss health samples, so the completion watchdog cannot join native damage to authoritative boss progress. The bounded repair will write the existing route-progress receipt from the observation-only adaptive Magmaw path using the already bound native target and its observed health, without changing target selection, movement admission, path tolerances, encounter mechanics, class policy, or watchdog semantics. The next run will also bind the external database/schema/server/profile identity components and the exact admitted party/setup in its evidence manifest; missing identity remains a certification rejection, never a reason to weaken admission.",
+  "owned_files": [
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+    "tests/test_autonomy_pipeline_smoke.py"
+  ],
+  "forbidden_changes": [
+    "Do not change Blood, Elemental, healer or any other class priorities, rune legality, coefficients, or spell selection.",
+    "Do not change Magmaw mechanics, route coordinates, path tolerances, Z handling, teleportation, boss health, watchdog thresholds, target forcing, or synthetic progress.",
+    "Do not relax native path/floor admission or infer movement launch from a later position.",
+    "Do not alter the target-return binding or native death attribution; the repair is observation/progress receipt only.",
+    "Do not tune WCL denominators, simulator references, gear, stats, roster, consumables, or the DPS acceptance gate.",
+    "Preserve all open actor, comparison, potion, survival-reference, and raid requirements."
+  ],
+  "acceptance_conditions": [
+    "The adaptive Magmaw observer records route kind boss, node bwd.magmaw.encounter, the current validation-route generation, the bound target GUID/entry, and the native target health without changing target or focus state.",
+    "A deterministic source test proves the adaptive observer writes the existing route-progress receipt and retains its observation-only/no-duplicate-action behavior.",
+    "The next validation identity binds database_snapshot_sha256, database_schema_sha256, server_epoch_sha256, profile_generation_sha256, exact party class-spec/setup identity, source commit, binary, route, and runtime profile; incomplete identity remains rejected.",
+    "Only the bounded shared-runtime repair is implemented, independently reviewed, built, completion-watchdog validated, assessed, and published before any actor requirement is proposed."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py -k magmaw_route_progress",
+    "pixi run python -m tools.raid_program.module_size",
+    "git diff --check"
+  ],
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "worker_context": {
+    "kind": "implementation",
+    "question": "Where does adaptive Magmaw native combat stop becoming route-owned progress, and can the shared receipt be restored without changing target or movement authority?",
+    "decision": "The first broken edge is the missing route-progress write in the observation-only adaptive Magmaw route candidate; valid target-return identity and fail-closed movement outcomes are retained as upstream evidence.",
+    "counterexample": "Run 249 route 4/node bwd.magmaw.encounter: actor 30010 sequences 2677/2751 has valid target-return binding and no movement launch; native_combat_observed boss_action entries carry zero-value route_progress. Watchdog health is empty, health-progress diagnoses are 0, party damage is 28402394.",
+    "native_behavior": [
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+        "sha256": "4f3b2c551a1bc837e0cb567d3bc24ca632d280252e7d4afc5b2ef0dae45f0570",
+        "start_line": 168,
+        "end_line": 202
+      },
+      {
+        "path": "src/server/game/Bots/BotWorldPopulationMgrValidationRouteActiveCombat.cpp",
+        "sha256": "4c09e767cc8a959b40b9f1ef5e08c3646d77432e7441b3cfe9821e1c422373f6",
+        "start_line": 390,
+        "end_line": 402
+      }
+    ],
+    "fixture": {
+      "path": "tests/test_autonomy_pipeline_smoke.py",
+      "sha256": "45f6dcc2f631156adc576510f22eb6ee00a96214c0a27c22ab476d43781601b5"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_publication_20260922.json",
+      "sha256": "b9b3eb6379154fdcf6bc5b9ec2a44996db51249e68be66b39cf72b82422757d0"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+      "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+      "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+      "sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_route_event_20260922.json",
+      "sha256": "f66292c9a28fd722c89f6b59c8b24ea82266aee571907ba98c0eef41d21b606f"
+    }
+  ],
+  "diagnosis": {
+    "first_broken_edge": "adaptive_observation_to_route_progress_receipt",
+    "established": [
+      "Target-return observations at sequences 2677 and 2751 are current, valid, and bound to the proposed/native target; no target-binding repair is justified.",
+      "Actor 30010 native planner outcomes are terminal endpoint-mismatch and partial-path rejections with no launch; path admission must remain strict.",
+      "The source observer records native combat but leaves LastRouteProgress at its zero-value route identity, which is why the watchdog cannot extract health progress."
+    ],
+    "suspected_or_deferred": [
+      "The movement failures may reduce participation, but they are not the selected repair because they do not explain the missing route health receipt and their native rejection is already fail-closed.",
+      "External evidence identity must be supplied by the validation lifecycle; do not make the gameplay observer fabricate database or server identity."
+    ],
+    "implementation_shape": "Reuse RecordRouteProgress with UnitHealthPct(target) immediately after the existing native-combat observation is admitted and before event publication; preserve the candidate's NotApplicable observation result and all existing target/focus/death logic.",
+    "verification": "Run the focused source test, module-size guard, independent review, policy-bound build, then one completion-watchdog route-4 validation with a complete evidence identity manifest and exact party/setup readback."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "kind": "tests",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "authority": "coordinator_attestation",
+  "producer": "coordinator",
+  "operation_id": "35dba84bdcddb35a4b5076a3e98b80f74cd72df044c480412f615ce36d7c1d3a",
+  "source_commit": "26cecc5b7ca80e841d04f340be8e6b1eb9807bb7",
+  "implementation": {
+    "summary": "Restored the existing route-progress observation at the adaptive Magmaw engagement boundary using the already validated native target health, without changing target, focus, movement, encounter, or action submission authority.",
+    "receipt_reason": "route_target_combat_progress",
+    "observation_only": true,
+    "duplicate_guard_preserved": true
+  },
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp": "ccff6e371f545a7d466477422f90e16dc184b0b7679c6b36394f6cd250a01695",
+    "tests/test_autonomy_pipeline_smoke.py": "154aa8b8750e53d5e0b983f65b3bcde2b6060978f062c43a96557ada4b883e38"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py -k magmaw_route_progress",
+      "exit_status": 0,
+      "summary": "1 passed, 171 deselected"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "exit_status": 0,
+      "summary": "module size policy passed"
+    },
+    {
+      "command": "git diff --check",
+      "exit_status": 0,
+      "summary": "no whitespace errors"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_plan_20260922.json",
+      "sha256": "7db647afbf2b0e90e76c6a0b97e9891d961ad7b7ee67db2d61ba901112185678"
+    }
+  ],
+  "acceptance_claim": "The bounded source and deterministic regression implementation is tested and committed. Independent review, native build, complete-identity watchdog validation, actor assessment, publication, and parent-objective completion remain open."
+}

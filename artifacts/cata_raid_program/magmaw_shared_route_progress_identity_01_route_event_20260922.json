@@ -1,0 +1,42 @@
+{
+  "revision": 414,
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "action": "route",
+  "reason": "The closed Blood watchdog attempt is published diagnostic-only. Independent all-actor review found the earliest actionable boundary at shared movement/target authority into route-owned Magmaw progress, with incomplete evidence identity as a separate blocker. No actor-level role repair is supported. Route the next bounded unit to shared runtime and evidence identity while preserving the Blood paired-rune observation gap for later review.",
+  "unit": {
+    "id": "magmaw:shared_route_progress_identity_01",
+    "edge": "shared_route_progress_authority",
+    "owner_skill": "raid-bot-runtime-implementation",
+    "requirements": [
+      "actor_30002"
+    ],
+    "objective": "Diagnose and repair one shared Magmaw 10N route/target authority and evidence-identity join that prevents authoritative boss progress, without changing class policy or manufacturing encounter outcomes.",
+    "next_action": "Read the published route-4 trace, target and movement outcomes, watchdog health-progress fields, and evidence identity rejection. Identify one first-broken shared runtime edge before any source change or new live run.",
+    "acceptance_conditions": [
+      "The retained route-4 counterexample identifies one shared movement, target, native path terminal, or progress-receipt edge with actor, route generation, target identity and source identity.",
+      "The evidence identity repair binds the external database/schema/server/profile fields and exact party/setup without weakening admission.",
+      "Only after diagnosis may one bounded shared-runtime repair be implemented, independently reviewed, built, completion-watchdog validated, assessed and published; no actor or parent requirement is accepted from diagnosis alone."
+    ],
+    "forbidden_changes": [
+      "Do not change Blood, Elemental, healer or any other class priorities, rune legality, coefficients, or spell selection to compensate for the shared edge.",
+      "Do not change Magmaw encounter mechanics, route coordinates, path tolerances, Z handling, teleportation, boss health, watchdog thresholds, target forcing or synthetic progress.",
+      "Do not tune WCL denominators, simulator references, gear, stats, roster, consumables or the DPS acceptance gate.",
+      "Do not treat paired-rune observation telemetry as a gameplay repair or accept actor_30002, encounter performance or the parent objective from the stalled attempt.",
+      "Preserve all open actor, comparison, potion, survival-reference and raid requirements."
+    ],
+    "evidence": [
+      {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_publication_20260922.json",
+        "sha256": "b9b3eb6379154fdcf6bc5b9ec2a44996db51249e68be66b39cf72b82422757d0"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      },
+      {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+        "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+      }
+    ]
+  }
+}

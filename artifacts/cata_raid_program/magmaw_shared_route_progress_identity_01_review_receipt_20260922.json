@@ -1,0 +1,22 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_review_report_20260922.json",
+      "sha256": "22ace3d067e50c80139cdf04f2514da0528a22e950084830e043310106fb3538"
+    }
+  ],
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp": "ccff6e371f545a7d466477422f90e16dc184b0b7679c6b36394f6cd250a01695",
+    "tests/test_autonomy_pipeline_smoke.py": "154aa8b8750e53d5e0b983f65b3bcde2b6060978f062c43a96557ada4b883e38"
+  },
+  "kind": "review",
+  "producer": "01a0c8ef-828c-7a72-9996-ae74d18b4008",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_review_report_20260922.json",
+    "sha256": "22ace3d067e50c80139cdf04f2514da0528a22e950084830e043310106fb3538"
+  },
+  "reviewer_session_id": "01a0c8ef-828c-7a72-9996-ae74d18b4008",
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "verdict": "approved"
+}

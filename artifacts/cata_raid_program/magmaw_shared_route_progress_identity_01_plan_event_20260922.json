@@ -1,0 +1,9 @@
+{
+  "revision": 415,
+  "unit_id": "magmaw:shared_route_progress_identity_01",
+  "action": "advance",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_plan_20260922.json",
+    "sha256": "7db647afbf2b0e90e76c6a0b97e9891d961ad7b7ee67db2d61ba901112185678"
+  }
+}

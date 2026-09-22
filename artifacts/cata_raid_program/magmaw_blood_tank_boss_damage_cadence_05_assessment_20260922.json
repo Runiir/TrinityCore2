@@ -1,0 +1,140 @@
+{
+  "schema": "cata_raid_program_assessment_v1",
+  "kind": "assessment",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "operation_id": "e99f3e6bd9145164f3b85587f89c75550a94373f87a3e59a5803ce25c640956e",
+  "claim_token": "e99f3e6bd9145164f3b85587f89c75550a94373f87a3e59a5803ce25c640956e",
+  "attempt_id": 1,
+  "baseline": {
+    "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json",
+    "sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd"
+  },
+  "comparison": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+    "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+  },
+  "baseline_matched": false,
+  "unexplained_material_decline": false,
+  "encounter_clear": false,
+  "repair_accepted": false,
+  "performance_accepted": false,
+  "accepted_requirements": [],
+  "actor_reviews": {
+    "30001": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Diagnostic-only run ended in shared route semantic stall; no actor-level repair supported.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30002": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Blood aggregate cadence is observed, but paired-rune readiness, native next-legal strike, Blood Shield outcome and shared movement ownership are missing.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30003": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Only eight active seconds and requires_ally_target observations; no stable healer window.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30004": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Zero active damage seconds and route path-control mismatch prevent role attribution.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30005": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Short exposure with ally-target no_action and route endpoint mismatch; no healer policy conclusion.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30006": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Fireball no-line-of-sight/native result is a geometry outcome, not a proven priority defect.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30007": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Native unsuccessful finishes exist, but no unique actor-level first-broken edge is established.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30008": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Too-close positioning, no-line-of-sight and friendly-event signals are local observations under a shared stall, not a proven policy repair.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30009": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "The low-uptime warning is on chainwielder trash, not the Magmaw node; no current boss rotation edge.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    },
+    "30010": {
+      "status": "reviewed",
+      "accepted": false,
+      "reason": "Route endpoint/partial-path recovery and no-line-of-sight outcomes point to shared movement/authority; do not tune Elemental priority.",
+      "receipt": {
+        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+        "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+      }
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_run_20260922.json",
+      "sha256": "55757f357ebbd365bccdec71bdfabc1e8d91b93996a3eff19a49cf150bd8a374"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+      "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+      "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+    },
+    {
+      "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json",
+      "sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd"
+    },
+    {
+      "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_v1.json",
+      "sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa"
+    }
+  ],
+  "interpretation": "Closed diagnostic-only watchdog evidence. The shared route/progress join and incomplete identity are the blockers. The Blood observation correction may inform a later role diagnosis but no actor, repair, performance, encounter or parent requirement is accepted.",
+  "next_action": "Route shared movement/target authority and evidence identity as one bounded diagnosis. Revisit Blood only after a complete non-plateau Magmaw attempt carries paired-rune, next-legal-action, native outcome, Blood Shield and phase movement joins."
+}

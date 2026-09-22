@@ -1,0 +1,6 @@
+{
+  "files": [
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+    "tests/test_autonomy_pipeline_smoke.py"
+  ]
+}

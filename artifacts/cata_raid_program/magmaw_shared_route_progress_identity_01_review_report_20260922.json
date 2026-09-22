@@ -1,0 +1,27 @@
+{
+  "file_hashes": {
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp": "ccff6e371f545a7d466477422f90e16dc184b0b7679c6b36394f6cd250a01695",
+    "tests/test_autonomy_pipeline_smoke.py": "154aa8b8750e53d5e0b983f65b3bcde2b6060978f062c43a96557ada4b883e38"
+  },
+  "findings": [],
+  "limits": [
+    "No native build or live validation performed."
+  ],
+  "proof": {
+    "final_message_bytes": 466,
+    "final_message_sha256": "0ec118aaadb552c5faaf561c2e1e66e84f2649caa16044d91bc15e7a212a6588",
+    "prefix_bytes": 10643286,
+    "prefix_sha256": "deb9a38ff3e46d7c075d6f75e8d4e285e8a82edf2c824c8ff77d374305ba23c2",
+    "rollout_path": "/home/runiir/.codex/sessions/2026/09/22/rollout-2026-09-22T14-45-34-01a0c8ef-828c-7a72-9996-ae74d18b4008.jsonl",
+    "schema": "codex_rollout_review_proof_v1",
+    "session_id": "01a0c8ef-828c-7a72-9996-ae74d18b4008"
+  },
+  "reviewer_session_id": "01a0c8ef-828c-7a72-9996-ae74d18b4008",
+  "schema": "cata_raid_review_report_v1",
+  "tests": [
+    "magmaw_route_progress: 1 passed, 171 deselected",
+    "module_size: passed",
+    "git diff --check: passed"
+  ],
+  "verdict": "approved"
+}

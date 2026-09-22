@@ -1,0 +1,83 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "operation_id": "1235bd369f156400403a6043ebd6f7fe69e383780f370835ce3e5336b031a34a",
+  "attempt_id": 1,
+  "disposition": {
+    "classification": "closed_diagnostic_only_shared_progress_stall",
+    "actor_30002_accepted": false,
+    "repair_accepted": false,
+    "performance_accepted": false,
+    "encounter_clear": false,
+    "parent_objective_complete": false,
+    "unresolved": [
+      "shared_route_movement_authority_and_progress_join",
+      "incomplete_evidence_identity",
+      "blood_paired_rune_and_native_outcome_observation_gap",
+      "all_actor_performance_requirements"
+    ]
+  },
+  "dvc_status_checked": true,
+  "dvc_status_scope": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+  "dvc_status_before_eviction": "Targeted dvc status returned clean.",
+  "dvc_push_completed": true,
+  "dvc_push_result": "Everything is up to date.",
+  "remote_verified": true,
+  "remote_verification_method": "Verified the pre-eviction archive SHA-256, trashed only the exact archive and DVC cache object, reconstructed them with targeted dvc pull, matched SHA-256 76ccb3544f55fae663fc19102203d9dfcff9ef23255ebc534c7c013b99798577, verified report/combat/route members, then trashed the exact duplicates again.",
+  "remote_reconstruction": {
+    "pointer": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+    "pointer_sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897",
+    "payload_md5": "a74f0af7d0991d4b0038d2b60324a956",
+    "payload_sha256": "76ccb3544f55fae663fc19102203d9dfcff9ef23255ebc534c7c013b99798577",
+    "payload_size_bytes": 2449843,
+    "members_verified": [
+      "report.json",
+      "combat_analysis.json",
+      "validation_route_manifest.json",
+      "heartbeat_events.jsonl"
+    ]
+  },
+  "cleanup_verified": true,
+  "raw_workspace_evicted": true,
+  "exact_local_duplicates_evicted": true,
+  "cleanup_scope": {
+    "raw_archive": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz",
+    "retained": "Git receipts, compact review/assessment, DVC pointer and remote reconstruction path",
+    "worldserver_and_validation_processes": "none after the closed attempt"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_run_20260922.json",
+      "sha256": "55757f357ebbd365bccdec71bdfabc1e8d91b93996a3eff19a49cf150bd8a374"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+      "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+      "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_assessment_20260922.json",
+      "sha256": "ee755341d5ce5fd0ede86022a648ced7c1288f302b6ff28c4e6045e4ea76e037"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_reconciliation_20260922.json",
+      "sha256": "411e8301dbe30fa2c56c99a72605658b276a021752b52c207315394ddddcfd37"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz.dvc",
+      "sha256": "0e12aab58daff5eaaee0197fb04a5d5722162f56f4bb6eee2600e3df2b28d897"
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_publish_claim_20260922.json",
+      "sha256": "9741ee61e84555eadbabf76778fd96cb02d804cb0b818a0e4899cf93832811d8"
+    }
+  ],
+  "interpretation": "Published closed diagnostic evidence only. The watchdog attempt is attributable and remotely reconstructable, but shared route/progress and evidence-identity gates failed. No actor, repair, performance, encounter or parent requirement is accepted.",
+  "next_action": "Route shared movement/target authority and evidence identity as one bounded diagnosis. Do not repeat the Blood role repair unchanged; revisit paired-rune/native outcome joins only after a complete non-plateau Magmaw attempt."
+}

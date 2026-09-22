@@ -1,0 +1,278 @@
+{
+  "schema": "cata_raid_rotation_review_v1",
+  "kind": "rotation_review",
+  "authority": "independent_read_only_reviewer",
+  "producer": "raid-rotation-review",
+  "reviewer_session_id": "01a0c8ef-828c-7a72-9996-ae74d18b4008",
+  "reviewer_model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+  "run": {
+    "attempt_id": 1,
+    "server_epoch": 10950840543533082,
+    "source_commit": "3fb84cdfc632bebaf6b4aeccdaa7cc83c19da00f",
+    "binary_sha256": "f0869bd47c5d8b6d1923d134656c47aa6a075704dac15e50d3c2cbe0ccf957d4",
+    "terminal_reason": "semantic_stall",
+    "controller_completion_reason": "semantic_progress_plateau_watchdog",
+    "duration_seconds": 759,
+    "route_generation": 4,
+    "route_node_id": "bwd.magmaw.encounter",
+    "route_diagnostic_only": true,
+    "route_completion_policy": "boss_kill",
+    "native_clear": false,
+    "summary_boss_kill_evidence": 0,
+    "party_damage_at_plateau": 28402394,
+    "health_progress_samples": 0,
+    "no_progress_window_seconds": 180,
+    "elapsed_no_progress_seconds": 195.118,
+    "all_actors_alive_at_close": 10,
+    "deaths": 0,
+    "cleanup_verified": true,
+    "evidence_identity_complete": false
+  },
+  "verdict": {
+    "classification": "shared_encounter_progress_identity",
+    "answer": "The attempt does not support an actor-level rotation repair. The first broken edge is shared movement/authority into route-owned Magmaw progress, with incomplete evidence identity independently blocking acceptance.",
+    "first_broken_edge": "movement/authority -> route-owned landed effect and encounter progress",
+    "actor_level_repair_supported": false,
+    "next_repair_owner": "shared_runtime_or_encounter",
+    "secondary_owner": "evidence_lifecycle"
+  },
+  "run_validity": {
+    "status": "diagnostic_only_identity_incomplete",
+    "native_outcome": {
+      "all_ten_actor_records_present": true,
+      "native_prepare_accepted": 112,
+      "native_finish_success": 108,
+      "native_finish_unsuccessful": 5,
+      "route4_action_outcome_count": 190,
+      "landed_damage_aggregates_present": true,
+      "interpretation": "Native actions and damage were observed, but they were not joined to completed Magmaw health progress or an authoritative clear receipt."
+    },
+    "reference_comparability": {
+      "status": "qualitative_only_unmatched",
+      "reference_id": "Y8ajQ7dbmKMG1RZy-fight22",
+      "reference_duration_seconds": 111.3,
+      "reference_scope": "Magmaw and parasites",
+      "limitations": [
+        "The retained 696a run is not an exact match to this 759-second attempt.",
+        "Assignments, buffs, gear, phase coverage, route identity, and current evidence identity are not fully joined.",
+        "WCL is context only, not an acceptance floor or current performance denominator."
+      ]
+    },
+    "performance_acceptance": {
+      "status": "not_admitted",
+      "actor_acceptance": false,
+      "overall_roster_acceptance": false,
+      "reason": "The watchdog and evidence-identity gates failed; no gear/stat/reference comparison gate is proven."
+    }
+  },
+  "actor_table": [
+    {
+      "guid": 30001,
+      "name": "Mgwtanka",
+      "role": "dps",
+      "spec": "balance_druid",
+      "current_dps": 37943.892,
+      "current_hps": 0.0,
+      "active_seconds": 98,
+      "damage_uptime": 0.882883,
+      "first_observed_limitation": "One Sunfire cast_result_49 and 106849 known avoidable damage; no unique rotation edge isolated.",
+      "status": "diagnostic_only_no_actor_repair"
+    },
+    {
+      "guid": 30002,
+      "name": "Mgwtankb",
+      "role": "tank",
+      "spec": "blood_death_knight",
+      "current_dps": 14182.685,
+      "current_hps": 4184.252,
+      "active_seconds": 74,
+      "damage_uptime": 0.666667,
+      "first_observed_limitation": "Melee out_of_range/native_out_of_range; 14 Death Strike, 16 Heart Strike, 16 Rune Strike and 41 melee events, but no paired-rune or next-legal-strike join.",
+      "status": "diagnostic_only_blood_observation_only"
+    },
+    {
+      "guid": 30003,
+      "name": "Mgwheala",
+      "role": "healer",
+      "spec": "restoration_druid",
+      "current_dps": 1967.586,
+      "current_hps": 5130.604,
+      "active_seconds": 8,
+      "damage_uptime": 0.072072,
+      "first_observed_limitation": "Requires_ally_target no_action observations and only eight active seconds; no stable healer window.",
+      "status": "diagnostic_only_short_exposure"
+    },
+    {
+      "guid": 30004,
+      "name": "Mgwhealb",
+      "role": "healer",
+      "spec": "holy_paladin",
+      "current_dps": 0.0,
+      "current_hps": 5828.009,
+      "active_seconds": 0,
+      "damage_uptime": 0.0,
+      "first_observed_limitation": "Zero active damage seconds, requires_ally_target no_action observations, and a route_destination_path_control_level_gap.",
+      "status": "diagnostic_only_zero_damage_window"
+    },
+    {
+      "guid": 30005,
+      "name": "Mgwhealc",
+      "role": "healer",
+      "spec": "discipline_priest",
+      "current_dps": 3804.703,
+      "current_hps": 691.378,
+      "active_seconds": 36,
+      "damage_uptime": 0.324324,
+      "first_observed_limitation": "Requires_ally_target no_action and route_destination_endpoint_mismatch; exposure is too short for role attribution.",
+      "status": "diagnostic_only_route_and_target_gap"
+    },
+    {
+      "guid": 30006,
+      "name": "Mgwdpsa",
+      "role": "dps",
+      "spec": "fire_mage",
+      "current_dps": 28205.82,
+      "current_hps": 0.0,
+      "active_seconds": 76,
+      "damage_uptime": 0.684685,
+      "first_observed_limitation": "Fireball spell 133 recorded cast_result_49/native_no_line_of_sight; geometry/native outcome, not a proven priority defect.",
+      "status": "diagnostic_only_geometry_outcome_gap"
+    },
+    {
+      "guid": 30007,
+      "name": "Mgwdpsb",
+      "role": "dps",
+      "spec": "fire_mage",
+      "current_dps": 46775.856,
+      "current_hps": 0.0,
+      "active_seconds": 90,
+      "damage_uptime": 0.810811,
+      "first_observed_limitation": "Two native_finish_unsuccessful observations, but no unique actor-level first-broken edge.",
+      "status": "diagnostic_only_no_unique_actor_edge"
+    },
+    {
+      "guid": 30008,
+      "name": "Mgwdpsc",
+      "role": "dps",
+      "spec": "affliction_warlock",
+      "current_dps": 45366.955,
+      "current_hps": 918.09,
+      "active_seconds": 87,
+      "damage_uptime": 0.783784,
+      "first_observed_limitation": "Ranged_damage_too_close at distance_avg 7.24, no-line-of-sight/cast_result_49, 110330 known avoidable damage, and friendly damage to Mgwheala.",
+      "status": "diagnostic_only_local_position_anomaly"
+    },
+    {
+      "guid": 30009,
+      "name": "Mgwdpsd",
+      "role": "dps",
+      "spec": "survival_hunter",
+      "current_dps": 36310.153,
+      "current_hps": 95.559,
+      "active_seconds": 93,
+      "damage_uptime": 0.837838,
+      "first_observed_limitation": "Low uptime warning occurred on route generation 2 chainwielder trash, not the Magmaw boss node.",
+      "status": "diagnostic_only_prior_trash_limitation"
+    },
+    {
+      "guid": 30010,
+      "name": "Mgwdpse",
+      "role": "dps",
+      "spec": "elemental_shaman",
+      "current_dps": 41319.775,
+      "current_hps": 0.0,
+      "active_seconds": 86,
+      "damage_uptime": 0.774775,
+      "first_observed_limitation": "Route recovery returned route_destination_endpoint_mismatch and route_destination_partial_path; Lightning Bolt and Flame Shock also had no-line-of-sight outcomes.",
+      "status": "diagnostic_only_shared_route_signal"
+    }
+  ],
+  "ranked_findings": [
+    {
+      "rank": 1,
+      "severity": "blocker",
+      "type": "liveness_and_route_authority",
+      "earliest_broken_edge": "movement/authority -> route-owned landed effect and encounter progress",
+      "counterexample": {
+        "guid": 30010,
+        "route_generation": 4,
+        "route_node_id": "bwd.magmaw.encounter",
+        "recovery_results": ["route_destination_endpoint_mismatch", "route_destination_partial_path"],
+        "trace_sequences": [2677, 2751],
+        "focus_target_entry": 41570
+      },
+      "expected": "Route and target authority should yield native movement, sustained boss health progress, and a boss-kill receipt.",
+      "observed": "Route recovery was rejected, health progress samples were empty, and the watchdog expired after 195.118 seconds without progress despite native actions and damage.",
+      "smallest_fix": "Repair or instrument shared route/target authority and the progress receipt. Do not change Elemental or Blood priorities from this packet.",
+      "owner": "shared_runtime_or_encounter"
+    },
+    {
+      "rank": 2,
+      "severity": "blocker",
+      "type": "evidence_identity",
+      "earliest_broken_edge": "attempt identity/admission -> matched comparison",
+      "observed": "Missing external database snapshot, database schema, server-epoch and profile-generation hashes; exact-party fields are not admitted at the top level.",
+      "smallest_fix": "Close the evidence identity envelope before any actor-to-reference or performance decision.",
+      "owner": "evidence_lifecycle"
+    },
+    {
+      "rank": 3,
+      "severity": "warning",
+      "type": "tank_cadence_observation_gap",
+      "earliest_broken_edge": "observed rune state -> candidate/resource claim -> native legal strike and Blood Shield outcome",
+      "observed": "Blood aggregate cadence and out-of-range outcomes exist, but paired-rune cooldowns, next-legal strike, resource claim and Blood Shield outcome are absent.",
+      "smallest_fix": "Capture paired-rune and next-legal-action telemetry in a complete non-plateau attempt. Keep the current observation change diagnostic-only.",
+      "owner": "raid-role-implementation_after_shared_gates"
+    }
+  ],
+  "acceptance_limits": [
+    "No actor, repair, performance, encounter clear or parent requirement is accepted.",
+    "The 759-second watchdog duration is not a raid success timer.",
+    "Raw DPS/HPS deltas and the retained WCL timeline are not repair authority.",
+    "The retained WCL reference is qualitative cadence context only.",
+    "Blood paired-rune telemetry is observation-only and cannot be treated as a gameplay repair.",
+    "Cleanup passed, but cleanup does not establish encounter or performance acceptance."
+  ],
+  "evidence_paths": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+      "fields": [".terminal", ".cleanup", ".identity", ".actor_metrics", ".blood_cadence"]
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz::magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/report.json",
+      "fields": [".native_gameplay_outcome", ".acceptance_verification", ".final_evidence_rejections", ".semantic_liveness", ".watchdog_state", ".trace.entries[]", ".decision_receipts[]"]
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz::magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+      "fields": [".encounters[]", ".encounters[].actors[]", ".encounters[].action_outcomes[]", ".encounters[].candidate_rejections[]"]
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz::magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/validation_route_manifest.json",
+      "fields": [".routes[3].route_generation", ".routes[3].route_node_id", ".routes[3].diagnostic_only", ".routes[3].completion_policy"]
+    },
+    {
+      "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json",
+      "use": "Qualitative WCL reference metadata only."
+    },
+    {
+      "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_v1.json",
+      "use": "Qualitative Blood cast cadence context only."
+    },
+    {
+      "path": "artifacts/cata_raid_program/magmaw_master_696a8f6f38_20260919.review.tar.gz",
+      "members": ["magmaw-master-696a8f6f38-review-20260919/timeline.json", "magmaw-master-696a8f6f38-review-20260919/identity.json"],
+      "use": "Retained clean baseline context, not current acceptance."
+    }
+  ],
+  "tests_or_commands": {
+    "commands": [
+      "pixi run python -m tools.raid_program.evidence_view result artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz::magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/report.json --max-chars 6000",
+      "tar -tzf artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922.tar.gz",
+      "jq projections over the retained summary, report, combat analysis, route manifest and WCL reference"
+    ],
+    "files_edited": false,
+    "servers_launched_or_stopped": false
+  }
+}

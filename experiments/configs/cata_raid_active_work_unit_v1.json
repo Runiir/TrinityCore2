@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:blood_tank_boss_damage_cadence_05",
-  "owner_skill": "raid-role-implementation",
+  "work_unit": "magmaw:shared_route_progress_identity_01",
+  "owner_skill": "raid-bot-runtime-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "430a1691a2b971f211d5c9603990a12cd16eddce",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks. Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
+  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Read the published route-4 trace, target and movement outcomes, watchdog health-progress fields, and evidence identity rejection. Identify one first-broken shared runtime edge before any source change or new live run.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 409,
+    "revision": 419,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "build",
     "actor_ids": [
       "30001",
       "30002",
@@ -569,33 +569,38 @@
       }
     },
     "unit": {
-      "id": "magmaw:blood_tank_boss_damage_cadence_05",
-      "edge": "owner_blood_boss_damage_cadence",
-      "owner_skill": "raid-role-implementation",
+      "id": "magmaw:shared_route_progress_identity_01",
+      "edge": "shared_route_progress_authority",
+      "owner_skill": "raid-bot-runtime-implementation",
       "requirements": [
         "actor_30002"
       ],
-      "objective": "Diagnose one attributable Blood tank boss damage/cadence loss against retained matched WCL evidence while keeping threat, safety, mitigation, and the non-comparable dummy reference separate.",
-      "next_action": "Read the retained Blood native/WCL actor timelines, spell and rune cadence, duty-adjusted damage, and TANK-001 evidence. Identify one first-broken damage or cadence edge before any source change or live run.",
+      "objective": "Diagnose and repair one shared Magmaw 10N route/target authority and evidence-identity join that prevents authoritative boss progress, without changing class policy or manufacturing encounter outcomes.",
+      "next_action": "Read the published route-4 trace, target and movement outcomes, watchdog health-progress fields, and evidence identity rejection. Identify one first-broken shared runtime edge before any source change or new live run.",
       "acceptance_conditions": [
-        "Retained native and WCL evidence identifies one concrete first-broken Blood boss damage/cadence edge with identity and phase context.",
-        "The diagnosis compares damage and cadence while retaining separate safety, threat, mitigation, mandatory-duty, and reference-comparability fields.",
-        "Only after diagnosis may a bounded repair be implemented, independently reviewed, built, completion-watchdog validated, assessed, and published; route and diagnosis alone cannot accept actor_30002 or Magmaw 10N."
+        "The retained route-4 counterexample identifies one shared movement, target, native path terminal, or progress-receipt edge with actor, route generation, target identity and source identity.",
+        "The evidence identity repair binds the external database/schema/server/profile fields and exact party/setup without weakening admission.",
+        "Only after diagnosis may one bounded shared-runtime repair be implemented, independently reviewed, built, completion-watchdog validated, assessed and published; no actor or parent requirement is accepted from diagnosis alone."
       ],
       "forbidden_changes": [
-        "Do not repeat tank threat calibration without a demonstrated threat-specific failure.",
-        "Do not change Death Strike, Heart Strike, rune legality, mitigation, coefficients, encounter scripts, movement, WCL denominators, simulator references, roster, gear, gems, reforges, or consumables before the first-broken edge is proven.",
-        "Do not accept actor_30002, another actor, performance, raid clear, or parent completion from retained diagnosis alone.",
-        "Preserve all open actor, comparison, potion, survival-reference, and raid requirements."
+        "Do not change Blood, Elemental, healer or any other class priorities, rune legality, coefficients, or spell selection to compensate for the shared edge.",
+        "Do not change Magmaw encounter mechanics, route coordinates, path tolerances, Z handling, teleportation, boss health, watchdog thresholds, target forcing or synthetic progress.",
+        "Do not tune WCL denominators, simulator references, gear, stats, roster, consumables or the DPS acceptance gate.",
+        "Do not treat paired-rune observation telemetry as a gameplay repair or accept actor_30002, encounter performance or the parent objective from the stalled attempt.",
+        "Preserve all open actor, comparison, potion, survival-reference and raid requirements."
       ],
       "evidence": [
         {
-          "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_plan_drift_checkpoint_20260922.json",
-          "sha256": "bb4e7dfc47a277a612602f9db41634e3caf0660476bb5ecac107b4e099838098"
+          "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_publication_20260922.json",
+          "sha256": "b9b3eb6379154fdcf6bc5b9ec2a44996db51249e68be66b39cf72b82422757d0"
         },
         {
-          "path": "artifacts/cata_raid_program/magmaw_blood_permanent_enchant_profile_05_publication_reconciled_20260922.json",
-          "sha256": "3a4ab4fc809a1a1061c4f7a8921791a4f3fb81e3ef462ffe479de8776d9b1b8b"
+          "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+          "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+        },
+        {
+          "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+          "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
         }
       ]
     },
@@ -652,7 +657,7 @@
       "owner_holy_paladin_profile_incomplete": 3,
       "owner_holy_paladin_remaining_capability_profile": 2,
       "owner_blood_permanent_enchant_profile": 2,
-      "owner_blood_boss_damage_cadence": 2
+      "owner_blood_boss_damage_cadence": 3
     },
     "history": [
       {
@@ -7736,6 +7741,205 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 409,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 409,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_run_20260922.json",
+            "sha256": "55757f357ebbd365bccdec71bdfabc1e8d91b93996a3eff19a49cf150bd8a374"
+          },
+          "claim_token": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
+          "recorded_source_commit": "446a0f1e3444c209714f77638018ea9b8745a5db"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 410,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "assess",
+        "to": "assess",
+        "event": {
+          "revision": 410,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-magmaw-blood-cadence-05-assess"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 411,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 411,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_assessment_20260922.json",
+            "sha256": "ee755341d5ce5fd0ede86022a648ced7c1288f302b6ff28c4e6045e4ea76e037"
+          },
+          "claim_token": "e99f3e6bd9145164f3b85587f89c75550a94373f87a3e59a5803ce25c640956e"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 412,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "publish",
+        "to": "publish",
+        "event": {
+          "revision": 412,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "claim",
+          "owner": "coordinator-magmaw-blood-cadence-05-publish"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 413,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "revision": 413,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_publication_20260922.json",
+            "sha256": "b9b3eb6379154fdcf6bc5b9ec2a44996db51249e68be66b39cf72b82422757d0"
+          },
+          "claim_token": "1235bd369f156400403a6043ebd6f7fe69e383780f370835ce3e5336b031a34a"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 414,
+        "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "revision": 414,
+          "unit_id": "magmaw:blood_tank_boss_damage_cadence_05",
+          "action": "route",
+          "reason": "The closed Blood watchdog attempt is published diagnostic-only. Independent all-actor review found the earliest actionable boundary at shared movement/target authority into route-owned Magmaw progress, with incomplete evidence identity as a separate blocker. No actor-level role repair is supported. Route the next bounded unit to shared runtime and evidence identity while preserving the Blood paired-rune observation gap for later review.",
+          "unit": {
+            "id": "magmaw:shared_route_progress_identity_01",
+            "edge": "shared_route_progress_authority",
+            "owner_skill": "raid-bot-runtime-implementation",
+            "requirements": [
+              "actor_30002"
+            ],
+            "objective": "Diagnose and repair one shared Magmaw 10N route/target authority and evidence-identity join that prevents authoritative boss progress, without changing class policy or manufacturing encounter outcomes.",
+            "next_action": "Read the published route-4 trace, target and movement outcomes, watchdog health-progress fields, and evidence identity rejection. Identify one first-broken shared runtime edge before any source change or new live run.",
+            "acceptance_conditions": [
+              "The retained route-4 counterexample identifies one shared movement, target, native path terminal, or progress-receipt edge with actor, route generation, target identity and source identity.",
+              "The evidence identity repair binds the external database/schema/server/profile fields and exact party/setup without weakening admission.",
+              "Only after diagnosis may one bounded shared-runtime repair be implemented, independently reviewed, built, completion-watchdog validated, assessed and published; no actor or parent requirement is accepted from diagnosis alone."
+            ],
+            "forbidden_changes": [
+              "Do not change Blood, Elemental, healer or any other class priorities, rune legality, coefficients, or spell selection to compensate for the shared edge.",
+              "Do not change Magmaw encounter mechanics, route coordinates, path tolerances, Z handling, teleportation, boss health, watchdog thresholds, target forcing or synthetic progress.",
+              "Do not tune WCL denominators, simulator references, gear, stats, roster, consumables or the DPS acceptance gate.",
+              "Do not treat paired-rune observation telemetry as a gameplay repair or accept actor_30002, encounter performance or the parent objective from the stalled attempt.",
+              "Preserve all open actor, comparison, potion, survival-reference and raid requirements."
+            ],
+            "evidence": [
+              {
+                "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_publication_20260922.json",
+                "sha256": "b9b3eb6379154fdcf6bc5b9ec2a44996db51249e68be66b39cf72b82422757d0"
+              },
+              {
+                "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_rotation_review_20260922.json",
+                "sha256": "e2bf6c2156a9c598f82ba20a8ff8edcfc6f8c36fb8b27feed088532ac03eb671"
+              },
+              {
+                "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_validation_summary_20260922.json",
+                "sha256": "1bbde9225620b62934dda1c6e0c8e7220c0f1ed898decf8c8d9cd032d8c1fdb5"
+              }
+            ]
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 415,
+        "unit_id": "magmaw:shared_route_progress_identity_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 415,
+          "unit_id": "magmaw:shared_route_progress_identity_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_plan_20260922.json",
+            "sha256": "7db647afbf2b0e90e76c6a0b97e9891d961ad7b7ee67db2d61ba901112185678"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 416,
+        "unit_id": "magmaw:shared_route_progress_identity_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "revision": 416,
+          "unit_id": "magmaw:shared_route_progress_identity_01",
+          "action": "claim",
+          "owner": "coordinator-magmaw-route-progress-01-implement"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 417,
+        "unit_id": "magmaw:shared_route_progress_identity_01",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 417,
+          "unit_id": "magmaw:shared_route_progress_identity_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_tests_20260922.json",
+            "sha256": "d4322cfb1da080abfe0214648be0102534170ba7dfd4839f3b1c29e7c47f5015"
+          },
+          "claim_token": "35dba84bdcddb35a4b5076a3e98b80f74cd72df044c480412f615ce36d7c1d3a"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
+      },
+      {
+        "revision": 418,
+        "unit_id": "magmaw:shared_route_progress_identity_01",
+        "from": "review",
+        "to": "build",
+        "event": {
+          "revision": 418,
+          "unit_id": "magmaw:shared_route_progress_identity_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_review_receipt_20260922.json",
+            "sha256": "70a47e39d5e3ee135f6b39315ff5e7632508ae14d119df1adb8b43a6066f209b"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": []
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -7744,7 +7948,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "932ad94f594680e98a45cb9f00d098c36a2c1170",
+    "source_base_commit": "26cecc5b7ca80e841d04f340be8e6b1eb9807bb7",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
@@ -7768,32 +7972,31 @@
       }
     ],
     "assignment": {
-      "hypothesis": "The first observation-only patch exposed the required slot-level fields but estimated every rune independently and used a wider zero-cooldown threshold than native G3D::fuzzyEq. Modeling each native rune pair's active and waiting slot, including the partner's remaining cooldown, will make the next matched Magmaw run's cadence joins truthful while preserving aggregate counts and action behavior.",
+      "hypothesis": "Adaptive Magmaw owns mechanics, movement, and target selection, then records native target-priority and boss-action observations without updating WorldBotState::LastRouteProgress. The retained route-4 trace therefore has valid target-return bindings and native combat observations but no route-scoped boss health samples, so the completion watchdog cannot join native damage to authoritative boss progress. The bounded repair will write the existing route-progress receipt from the observation-only adaptive Magmaw path using the already bound native target and its observed health, without changing target selection, movement admission, path tolerances, encounter mechanics, class policy, or watchdog semantics. The next run will also bind the external database/schema/server/profile identity components and the exact admitted party/setup in its evidence manifest; missing identity remains a certification rejection, never a reason to weaken admission.",
       "owned_files": [
-        "src/server/game/Bots/BotBloodDecisionObservation.h",
-        "tests/test_profile_preview_diagnostic_publication.py"
+        "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+        "tests/test_autonomy_pipeline_smoke.py"
       ],
       "forbidden_changes": [
-        "Do not change Death Strike or Heart Strike priority buckets, scores, validity, rune costs, spell coefficients, mitigation, target selection, or native submission behavior.",
-        "Do not change parasite-contact movement, encounter scripts, route manifests, runtime profiles, roster, WCL denominators, simulator references, gear, stats, gems, reforges, or consumables.",
-        "Do not add a health threshold, revert profile v25, infer a DPS loss from the 26,152 WCL context value, or close an actor/performance/raid requirement from observation output.",
-        "Do not add spell, aura, shield-absorption, damage, or healing calculations to the decision helper; downstream native outcome telemetry remains a separate evidence edge.",
-        "Do not modify files outside the bounded owned set."
+        "Do not change Blood, Elemental, healer or any other class priorities, rune legality, coefficients, or spell selection.",
+        "Do not change Magmaw mechanics, route coordinates, path tolerances, Z handling, teleportation, boss health, watchdog thresholds, target forcing, or synthetic progress.",
+        "Do not relax native path/floor admission or infer movement launch from a later position.",
+        "Do not alter the target-return binding or native death attribution; the repair is observation/progress receipt only.",
+        "Do not tune WCL denominators, simulator references, gear, stats, roster, consumables, or the DPS acceptance gate.",
+        "Preserve all open actor, comparison, potion, survival-reference, and raid requirements."
       ],
       "acceptance_conditions": [
-        "The existing blood_survival_candidate_observation_v1 JSON preserves aggregate ready_runes counts and emits deterministic per-slot base/current type, cooldown fraction, regeneration rate, paired-regeneration ready-in estimate, and estimated ready timestamp fields.",
-        "Readiness uses a native-equivalent fuzzy zero-cooldown test and native paired-rune gating: a waiting slot includes the active partner's remaining regeneration time.",
-        "The observation remains attached only to relevant Blood Death Knight selections and the additive fields do not affect candidate validity, scoring, selection, or action execution.",
-        "The focused fixture compiles with warnings-as-errors and asserts paired timing, slot identity, cooldown, regeneration, native fuzzy-threshold behavior, aggregate-count preservation, non-Blood rejection, and the existing candidate fields.",
-        "The source remains below the repository's 1,000-line C/C++ guard and the focused test plus existing Blood policy regression pass.",
-        "An independent reviewer approves the exact two-file observation-only correction before a clean policy-bound build and completion-watchdog Magmaw 10N run. This correction may inform the next diagnosis but cannot by itself accept actor_30002, performance, Magmaw 10N, or the parent objective."
+        "The adaptive Magmaw observer records route kind boss, node bwd.magmaw.encounter, the current validation-route generation, the bound target GUID/entry, and the native target health without changing target or focus state.",
+        "A deterministic source test proves the adaptive observer writes the existing route-progress receipt and retains its observation-only/no-duplicate-action behavior.",
+        "The next validation identity binds database_snapshot_sha256, database_schema_sha256, server_epoch_sha256, profile_generation_sha256, exact party class-spec/setup identity, source commit, binary, route, and runtime profile; incomplete identity remains rejected.",
+        "Only the bounded shared-runtime repair is implemented, independently reviewed, built, completion-watchdog validated, assessed, and published before any actor requirement is proposed."
       ],
       "required_test_commands": [
-        "pixi run pytest -q tests/test_profile_preview_diagnostic_publication.py",
-        "pixi run pytest -q tests/test_blood_death_strike_priority.py",
-        "pixi run python -m tools.raid_program.module_size"
+        "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py -k magmaw_route_progress",
+        "pixi run python -m tools.raid_program.module_size",
+        "git diff --check"
       ],
-      "base_commit": "2aeaf99e3c321c6d9f46bb76f5f136fb588c97d8",
+      "base_commit": "82892d1e64040936fef8180b81babc03d09040bc",
       "policy": {
         "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
         "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
@@ -7817,42 +8020,52 @@
           "path": "dataset/validation_scenarios/validation_routes.jsonl",
           "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
         }
+      },
+      "worker_context": {
+        "kind": "implementation",
+        "question": "Where does adaptive Magmaw native combat stop becoming route-owned progress, and can the shared receipt be restored without changing target or movement authority?",
+        "decision": "The first broken edge is the missing route-progress write in the observation-only adaptive Magmaw route candidate; valid target-return identity and fail-closed movement outcomes are retained as upstream evidence.",
+        "counterexample": "Run 249 route 4/node bwd.magmaw.encounter: actor 30010 sequences 2677/2751 has valid target-return binding and no movement launch; native_combat_observed boss_action entries carry zero-value route_progress. Watchdog health is empty, health-progress diagnoses are 0, party damage is 28402394.",
+        "native_behavior": [
+          {
+            "path": "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp",
+            "sha256": "4f3b2c551a1bc837e0cb567d3bc24ca632d280252e7d4afc5b2ef0dae45f0570",
+            "start_line": 168,
+            "end_line": 202
+          },
+          {
+            "path": "src/server/game/Bots/BotWorldPopulationMgrValidationRouteActiveCombat.cpp",
+            "sha256": "4c09e767cc8a959b40b9f1ef5e08c3646d77432e7441b3cfe9821e1c422373f6",
+            "start_line": 390,
+            "end_line": 402
+          }
+        ],
+        "fixture": {
+          "path": "tests/test_autonomy_pipeline_smoke.py",
+          "sha256": "45f6dcc2f631156adc576510f22eb6ee00a96214c0a27c22ab476d43781601b5"
+        }
       }
     },
     "receipts": {
       "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_plan_correction_20260922.json",
-        "sha256": "6aa1f0e25bb25571dbc4bb94deb1dcb5b2b9ec4f7393888603649cbeb2d13e54"
+        "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_plan_20260922.json",
+        "sha256": "7db647afbf2b0e90e76c6a0b97e9891d961ad7b7ee67db2d61ba901112185678"
       },
       "tests": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_tests_correction_20260922.json",
-        "sha256": "a977e1265656c66bb8ef4e3f57d805d9526d579bcb643c424c50d384039a5d9d"
+        "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_tests_20260922.json",
+        "sha256": "d4322cfb1da080abfe0214648be0102534170ba7dfd4839f3b1c29e7c47f5015"
       },
       "review": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_review_receipt_correction_20260922.json",
-        "sha256": "7cc13f03d96157ba9fabf3794a3752bcaf9c4e27234b5651b40b68dbc816f462"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/magmaw_blood_tank_boss_damage_cadence_05_build_correction_20260922.json",
-        "sha256": "4ba2647c3e2ece8209219d4f4a6c129e48432a2bd8f484c061e1de2db35a2534"
+        "path": "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_review_receipt_20260922.json",
+        "sha256": "70a47e39d5e3ee135f6b39315ff5e7632508ae14d119df1adb8b43a6066f209b"
       }
     },
     "tested_files": {
-      "src/server/game/Bots/BotBloodDecisionObservation.h": "cbfdca9543b017d34652cc0d5ee949f3cb2dfd7211752b2604d04cfb232ffdb8",
-      "tests/test_profile_preview_diagnostic_publication.py": "e917437b1c80f72de0bca2ce9150bce40b6c261893f2d60b047cc274171c53e5"
+      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp": "ccff6e371f545a7d466477422f90e16dc184b0b7679c6b36394f6cd250a01695",
+      "tests/test_autonomy_pipeline_smoke.py": "154aa8b8750e53d5e0b983f65b3bcde2b6060978f062c43a96557ada4b883e38"
     },
-    "tested_commit": "932ad94f594680e98a45cb9f00d098c36a2c1170",
-    "implementer": "coordinator-blood-cadence-05-correction",
-    "build_identity": {
-      "source_commit": "3fb84cdfc632bebaf6b4aeccdaa7cc83c19da00f",
-      "binary_sha256": "f0869bd47c5d8b6d1923d134656c47aa6a075704dac15e50d3c2cbe0ccf957d4"
-    },
-    "claim": {
-      "owner": "coordinator-blood-cadence-05-validate",
-      "token": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
-      "operation_id": "a6f19bcb8ec4fcf83c5a8bfb7d87dd857e75f5275393f6a6d54cb3073c2c2027",
-      "stage": "validate"
-    }
+    "tested_commit": "26cecc5b7ca80e841d04f340be8e6b1eb9807bb7",
+    "implementer": "coordinator"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
