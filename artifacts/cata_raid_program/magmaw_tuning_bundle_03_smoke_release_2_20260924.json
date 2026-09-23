@@ -1,0 +1,11 @@
+{
+  "schema": "cata_raid_program_operation_reconciliation_v1",
+  "operation_id": "4f9225e70dc40c059c9d40b3026237b8f982fc9468297d7ac78a0db15a05c1ed",
+  "unit_id": "magmaw:tuning_04",
+  "stage": "smoke",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "smoke-7d607495-k1 was an infrastructure failure: the runtime asset closure still pinned the pre-repro validation_gear_profiles payload. The closure manifest was rebound (2b45a4fa9c), a source change outside the unit; release, supersede and re-route on the new base."
+}
