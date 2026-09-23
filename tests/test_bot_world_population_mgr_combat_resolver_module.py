@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 MODULE = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
+OUTCOME = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolverOutcome.cpp"
 CMAKE = ROOT / "src/server/game/CMakeLists.txt"
 SUPPORT = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSupport.cpp"
 SPELL = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp"
@@ -15,13 +16,22 @@ SWAP = ROOT / "src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp"
 
 def test_combat_resolver_module_is_narrow_and_registered() -> None:
     module = MODULE.read_text(encoding="utf-8")
+    outcome = OUTCOME.read_text(encoding="utf-8")
     world = WORLD.read_text(encoding="utf-8")
+    cmake = CMAKE.read_text(encoding="utf-8")
     assert len(module.splitlines()) <= 1000
-    assert "Bots/BotWorldPopulationMgrCombatResolver.cpp" in CMAKE.read_text(
-        encoding="utf-8"
-    )
+    assert len(outcome.splitlines()) <= 1000
+    assert "Bots/BotWorldPopulationMgrCombatResolver.cpp" in cmake
+    assert "Bots/BotWorldPopulationMgrCombatResolverOutcome.cpp" in cmake
     assert "BotWorldPopulationMgr::ResolveProfileCombatAction" in module
     assert "BotWorldPopulationMgr::ResolveProfileCombatAction" not in world
+    # The no-valid-action outcome (rejection aggregates and the wait/melee
+    # fallback) is its own module; the resolver delegates to it.
+    for name in ("RecordNoProfileActionRejections", "ResolveNoProfileAction"):
+        assert f"BotWorldPopulationMgr::{name}(" in outcome
+        assert f"BotWorldPopulationMgr::{name}(" not in module
+    assert "RecordNoProfileActionRejections(bot, candidates);" in module
+    assert "return ResolveNoProfileAction(bot, target, profile, candidates," in module
 
 
 def test_combat_resolver_preserves_profile_and_safety_arbitration() -> None:
@@ -40,7 +50,7 @@ def test_combat_resolver_preserves_profile_and_safety_arbitration() -> None:
 
 
 def test_combat_resolver_preserves_density_and_range_fallbacks() -> None:
-    module = MODULE.read_text(encoding="utf-8")
+    module = MODULE.read_text(encoding="utf-8") + OUTCOME.read_text(encoding="utf-8")
     for marker in (
         "living_bomb_spread",
         "densityRecovery",

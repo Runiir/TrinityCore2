@@ -6,6 +6,7 @@
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
+#include "Bots/BotTauntVehicleSeat.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -164,6 +165,18 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
                 cooldownRoute, { candidate.Category, candidate.Profile.MechanicTags }))
         {
             candidate.RejectReason = reservationReason;
+            continue;
+        }
+        if (candidate.Category == BotCombatActionCategory::Defensive)
+            if (char const* bossReserve = BossDefensiveReservationReason(bot, candidate.SpellId))
+            {
+                candidate.RejectReason = bossReserve;
+                continue;
+            }
+        if (candidate.Category == BotCombatActionCategory::Taunt
+            && BotTauntVehicleSeat::TauntWouldOnlyPullHolderOntoSeat(bot, target))
+        {
+            candidate.RejectReason = BotTauntVehicleSeat::RejectReason;
             continue;
         }
         if (candidate.Category == BotCombatActionCategory::Taunt

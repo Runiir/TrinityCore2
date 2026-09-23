@@ -5943,9 +5943,13 @@ def test_rerun165_density_resolver_rejects_buff_without_removing_recovery_fallba
 
 def test_rerun169_melee_fallback_exposes_native_range_to_movement_callers():
     manager = read(BOT_MGR)
-    resolver = function_body(
+    assert "return ResolveNoProfileAction(bot, target, profile, candidates," in function_body(
         manager,
         "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
+    )
+    resolver = function_body(
+        manager,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveNoProfileAction",
     )
     marker = resolver.index(
         "Rerun169 canary 3 reached a remote healer-owned cluster"
@@ -6081,6 +6085,13 @@ def test_rerun157_preserves_global_cooldown_scheduling_identity():
     resolver = function_body(
         manager,
         "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
+    )
+    # The no-valid-action outcome lives in its own module; the resolver
+    # delegates to it whenever no candidate was selected.
+    assert "return ResolveNoProfileAction(bot, target, profile, candidates," in resolver
+    resolver += function_body(
+        manager,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveNoProfileAction",
     )
     executor = function_body(
         manager,

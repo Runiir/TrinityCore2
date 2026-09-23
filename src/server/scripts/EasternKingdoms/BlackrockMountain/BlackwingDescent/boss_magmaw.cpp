@@ -203,15 +203,25 @@ struct boss_magmaw : public BossAI
             if (apply)
             {
                 passenger->CastSpell(passenger, SPELL_MANGLE_2, true);
-                passenger->CastSpell(passenger, SPELL_SWELTERING_ARMOR, true);
+                // Mangle completely wipes the seized tank's threat, so Magmaw
+                // turns to the next target unless the tank taunts him back.
+                me->GetThreatManager().ResetThreat(passenger);
 
                 if (Player* player = passenger->ToPlayer())
                     player->Whisper(BROADCAST_TEXT_WHISPER_MANGLE, player, true);
             }
             else
             {
+                // Hotfix (2010-12-22): Sweltering Armor is applied to the Mangle
+                // target once Mangle fades, whether or not Magmaw was impaled.
+                // WCL 10N and 25H logs apply it within 1 ms of Mangle removal.
+                // Impale and the 30 s timeout release a living target in combat;
+                // death, evade and reset do not.
+                bool const released = passenger->IsAlive() && me->IsAlive() && me->IsInCombat();
                 passenger->RemoveAurasDueToSpell(SPELL_MANGLE_DAMAGE);
                 passenger->RemoveAurasDueToSpell(SPELL_MANGLE_2);
+                if (released)
+                    passenger->CastSpell(passenger, SPELL_SWELTERING_ARMOR, true);
             }
         }
     }

@@ -9,9 +9,10 @@
 namespace BotRaidCooldownReservation
 {
 // This is deliberately a small, value-only view of route state. The policy
-// does not inspect spell ids, class ids, or cooldown timers; those remain
-// native/profile concerns. A route contract may explicitly release the
-// reservation when it owns a special cooldown mechanic.
+// does not inspect spell ids, class ids, or live cooldown timers; those remain
+// native/profile concerns. The boss-defensive rule receives the spell's
+// native cooldown duration from its caller. A route contract may explicitly
+// release the reservation when it owns a special cooldown mechanic.
 struct RouteContext
 {
     bool ValidationRouteEnabled = false;
@@ -116,6 +117,83 @@ inline bool IsOffensiveGuardian(CandidateContext const& candidate)
     return HasAnyTag(candidate.MechanicTags, {
         "guardian", "fire_elemental_totem", "greater_fire_elemental",
         "summon_gargoyle", "summon_doomguard", "treants"});
+}
+
+// A boss's first scheduled major tank hit after the pull, and the spell id
+// under which the boss publishes its native timer to that hit.  The value is
+// the boss script's own first schedule, never an estimate from a log.
+struct BossOpeningHit
+{
+    std::string_view NodeId;
+    uint32 AfterPullMs = 0;
+    uint32 TimerSpellId = 0;
+};
+
+// boss_magmaw.cpp JustEngagedWith: EVENT_MANGLE, 1min + 30s; the Mangle ->
+// Massive Crash timer is published under Massive Crash 88253.
+constexpr BossOpeningHit BossOpeningHits[] = {
+    { "bwd.magmaw.encounter", 90000, 88253 },
+};
+
+inline BossOpeningHit const* FindBossOpeningHit(std::string_view nodeId)
+{
+    for (BossOpeningHit const& hit : BossOpeningHits)
+        if (hit.NodeId == nodeId)
+            return &hit;
+    return nullptr;
+}
+
+inline uint32 BossOpeningHitAfterPullMs(std::string_view nodeKind,
+    std::string_view nodeId)
+{
+    BossOpeningHit const* hit = nodeKind == "boss"
+        ? FindBossOpeningHit(nodeId) : nullptr;
+    return hit ? hit->AfterPullMs : 0;
+}
+
+// On the trash node right before a boss, keep a defensive whose own cooldown
+// would still be running at that boss's opening hit even if the pull came
+// immediately.  The raid accepts a recovered trash death; a death in the
+// boss window is the failure that matters.  Defensives that return in time
+// stay available to trash emergencies.
+inline char const* BossDefensiveReservationReason(RouteContext const& route,
+    uint32 nextBossOpeningHitMs, BotCombatActionCategory category,
+    uint32 cooldownMs)
+{
+    if (!route.ValidationRouteEnabled || !route.RaidInstance
+        || route.RouteKind != "trash" || !nextBossOpeningHitMs
+        || category != BotCombatActionCategory::Defensive
+        || cooldownMs <= nextBossOpeningHitMs)
+        return nullptr;
+    return "raid_boss_defensive_reserved";
+}
+
+// Below this health a reserved defensive is released: an immediate death is
+// worse than facing the next big hit without it.
+constexpr float BossHitEmergencyHealthPct = 0.35f;
+
+struct BossHitTimer
+{
+    bool Running = false;      // the boss publishes a native timer
+    bool HitInProgress = false; // timer at 0, or the tank is held by the boss
+};
+
+// On the boss node itself, a defensive whose cooldown is longer than the
+// boss's big-hit spacing cannot cover two big hits.  While the native timer
+// runs toward the next one, it is kept for that hit; the encounter helper
+// casts it.  Released while the hit is in progress and in an emergency.
+inline char const* BossHitDefensiveReservationReason(RouteContext const& route,
+    uint32 bigHitSpacingMs, BossHitTimer timer, float healthPct,
+    BotCombatActionCategory category, uint32 cooldownMs)
+{
+    if (!route.ValidationRouteEnabled || !route.RaidInstance
+        || route.RouteKind != "boss" || !route.EncounterInProgress
+        || !bigHitSpacingMs || !timer.Running || timer.HitInProgress
+        || healthPct <= BossHitEmergencyHealthPct
+        || category != BotCombatActionCategory::Defensive
+        || cooldownMs <= bigHitSpacingMs)
+        return nullptr;
+    return "raid_boss_big_hit_defensive_reserved";
 }
 
 inline char const* ReservationReason(RouteContext const& route,

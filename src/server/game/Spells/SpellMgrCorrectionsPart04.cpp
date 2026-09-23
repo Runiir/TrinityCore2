@@ -500,17 +500,9 @@ void SpellMgrCorrections::ApplyPart04()
         spellInfo->AttributesEx2 |= SPELL_ATTR2_NO_INITIAL_THREAT;
     });
 
-    // Mangle (Hotfix: 2011-03-16: Magmaw overall damage and health was a little too high on all difficulties and has been reduced slightly)
-    // For some reason this didn't seem to have found its way into the dbc as sniffs confirm 100% melee damage instead of 150%.
-    ApplySpellFix({
-        89773,
-        91912,
-        94616,
-        94617
-    }, [](SpellInfo* spellInfo)
-    {
-        spellInfo->Effects[EFFECT_2].BasePoints = 100;
-    });
+    // Mangle 89773/91912/94616/94617 keeps its 150% weapon hit (effect 2).
+    // The 4.3.4 client has 150, and the WCL 10N hit (U 240,338) is a roll of
+    // 10,014 at 150% but 15,021 at 100%, above Magmaw's 7,589-11,274 range.
 
     // Shadow Conductor
     ApplySpellFix({ 92053 }, [](SpellInfo* spellInfo)

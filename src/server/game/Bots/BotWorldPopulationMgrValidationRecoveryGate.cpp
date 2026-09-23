@@ -1,9 +1,13 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 
 #include "Creature.h"
 #include "GameTime.h"
 #include "Pet.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -39,6 +43,68 @@ bool BotWorldPopulationMgr::IsImmediateNextValidationRouteBossTarget(Creature co
         || std::find(nextNode.AlternateTargetEntries.begin(),
             nextNode.AlternateTargetEntries.end(), entry)
             != nextNode.AlternateTargetEntries.end();
+}
+
+// The opening hit of the boss that the current trash node leads into, or 0
+// when the next route node is not a boss with a declared opening hit.
+uint32 BotWorldPopulationMgr::NextValidationRouteBossOpeningHitMs() const
+{
+    if (!Cohort().Config.ValidationRouteEnable
+        || Cohort().Config.ValidationRouteKind != "trash")
+        return 0;
+    size_t const nextIndex = Party().ValidationRouteManifestIndex + 1;
+    if (nextIndex >= Party().ValidationRouteManifest.size())
+        return 0;
+    ValidationRouteManifestNode const& next =
+        Party().ValidationRouteManifest[nextIndex];
+    return BotRaidCooldownReservation::BossOpeningHitAfterPullMs(
+        next.Kind, next.NodeId);
+}
+
+// A defensive kept for a boss's big hit: on the trash node before the boss
+// and, on the boss node, between big hits (BotRaidCooldownReservation).  The
+// spell's own native cooldown decides whether it would be back in time; the
+// boss's own native timer decides whether a hit is running.
+char const* BotWorldPopulationMgr::BossDefensiveReservationReason(
+    Player const* bot, uint32 defensiveSpellId) const
+{
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(defensiveSpellId);
+    if (!bot || !spellInfo)
+        return nullptr;
+    uint32 const cooldownMs =
+        std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime);
+    BotRaidCooldownReservation::RouteContext const route{
+        Cohort().Config.ValidationRouteEnable,
+        Cohort().Raid.RaidInstance,
+        Cohort().Raid.EncounterInProgress,
+        false,
+        Cohort().Config.ValidationRouteKind,
+        Cohort().Config.ValidationRouteNodeKind,
+        Cohort().Raid.EncounterPhase};
+    if (char const* trash = BotRaidCooldownReservation::BossDefensiveReservationReason(
+            route, NextValidationRouteBossOpeningHitMs(),
+            BotCombatActionCategory::Defensive, cooldownMs))
+        return trash;
+
+    BotRaidCooldownReservation::BossOpeningHit const* hit =
+        BotRaidCooldownReservation::FindBossOpeningHit(
+            Cohort().Config.ValidationRouteNodeId);
+    if (!hit || !Cohort().EncounterSnapshot)
+        return nullptr;
+    BotRaidCooldownReservation::BossHitTimer timer;
+    for (BotEncounter::ActorSnapshot const& actor : Cohort().EncounterSnapshot->Hostiles)
+        if (BotEncounter::MechanicTimerSnapshot const* native =
+                actor.FindMechanicTimer(hit->TimerSpellId);
+            native && native->Source == BotEncounter::FactSource::NativeInstanceState)
+        {
+            timer.Running = true;
+            timer.HitInProgress = native->SequenceActive || !native->RemainingMs
+                || (bot->GetVehicleBase()
+                    && bot->GetVehicleBase()->GetGUID() == actor.Guid);
+        }
+    return BotRaidCooldownReservation::BossHitDefensiveReservationReason(route,
+        hit->AfterPullMs, timer, BotWorldPopulationMgrNativeHelpers::UnitHealthPct(bot),
+        BotCombatActionCategory::Defensive, cooldownMs);
 }
 
 bool BotWorldPopulationMgr::IsImmediateNextValidationRouteEncounterMember(Creature const* creature) const
