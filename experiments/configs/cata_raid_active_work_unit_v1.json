@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Implement the bounded task and run its required tests. Re-record the bundle-03 plan on base d891bcd1c0, re-run the declared tests, reuse the unchanged approved review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456.",
+  "next_action": "Obtain independent review (separate session) of the exact tested files. Resolve findings before building. Re-record the bundle-03 plan on base d891bcd1c0, re-run the declared tests, reuse the unchanged approved review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 491,
+    "revision": 492,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "implement",
+    "stage": "review",
     "actor_ids": [
       "30001",
       "30002",
@@ -9525,6 +9525,25 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 491,
+        "unit_id": "magmaw:tuning_04",
+        "from": "implement",
+        "to": "review",
+        "event": {
+          "revision": 491,
+          "unit_id": "magmaw:tuning_04",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/tests-e9da86a59e76c150b27006c8f40d42c52abf0e1fc936cb297867a18bf9299fe6-07d68bac14fb-ac5b71dfe171/receipt-31d10eac763442b6ea29a6005465272a05a42516735562b5308b115f1107c95d.json",
+            "sha256": "31d10eac763442b6ea29a6005465272a05a42516735562b5308b115f1107c95d"
+          },
+          "claim_token": "e9da86a59e76c150b27006c8f40d42c52abf0e1fc936cb297867a18bf9299fe6"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9639,15 +9658,30 @@
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_plan_v2_20260924.json",
         "sha256": "ba9c4e8ff800ec61c103ac1f29521b61026c8940bc30f7d746bc34c75ae7577c"
+      },
+      "tests": {
+        "path": "artifacts/cata_raid_program/tests-e9da86a59e76c150b27006c8f40d42c52abf0e1fc936cb297867a18bf9299fe6-07d68bac14fb-ac5b71dfe171/receipt-31d10eac763442b6ea29a6005465272a05a42516735562b5308b115f1107c95d.json",
+        "sha256": "31d10eac763442b6ea29a6005465272a05a42516735562b5308b115f1107c95d"
       }
     },
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "e9da86a59e76c150b27006c8f40d42c52abf0e1fc936cb297867a18bf9299fe6",
-      "operation_id": "e9da86a59e76c150b27006c8f40d42c52abf0e1fc936cb297867a18bf9299fe6",
-      "stage": "implement",
-      "claimed_at": "2026-09-23T23:13:27Z"
-    }
+    "tested_files": {
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "9e8086fe1d8eab41a3d2cea903a2ce1b4fce931d0376528a268356e86586bebf",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp": "8a7d1f2c7e68b9d9dc2963a536f4ee404d6558728607c023e902a2829596578d",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h": "5348b3b52d9f100d618b46bc17340efef3fefbd09b9af27f03006456142f49ef",
+      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawObservations.h": "a3f19f2664b447c62621c97a2a47bf316cae8d35fbff11a336f476ba9445b6e0",
+      "src/server/game/Entities/Pet/GuardianInitialization.cpp": "10c672b0bcfa55289a8b288c3751ebd1bb2cd907a7c8c6ece90c0d5db782548f",
+      "src/server/scripts/Spells/spell_script_loader.cpp": "300e9c07a4e80a2a2f92e7ed2b83928db5849c61435e7745c8679285f6d22e7f",
+      "src/server/scripts/Spells/spell_dk_glyphs.cpp": "c25ab65773fdb0ae0f83804d7c513bcf84be6baa1fc14579cbde98bfb6bd2534",
+      "sql/custom/world/2026_09_24_00_balance_moonfire_not_over_sunfire.sql": "67d005141679fb2236400e1cf0e7f4258b267f0e4275ea489de35b3802fb40be",
+      "sql/custom/world/2026_09_24_01_dk_glyph_of_death_strike_script.sql": "cc3559880df3e7b0c5d836a68d107c38e4c640dbd373a7befa9f53e94ee8f118",
+      "tests/test_magmaw_balance_mushroom_duty.py": "162b446b13c7ee342d8fbe149d81ea3965626d2cb4e4317b64443ae95804660b",
+      "tests/test_balance_moonfire_not_over_sunfire.py": "67e48a32530f2d7821f597dda5c6a21be32b9ae1d4d64ddc3ed374c8da7f41ac",
+      "tests/test_blood_native_fidelity.py": "e734d26d5ada7fb1a3e160299b171d470ef4283abaf4688107257683f2d6b7b2",
+      "tests/test_magmaw_parasite_los_gate.py": "c01ab6e11ee1a11355e6e68d43995bd04b4708a1012e503d6a079ef813976052",
+      "tests/test_magmaw_support_target_admission.py": "1800a816de9512c57c7b662e89b2a85cd6d6b687c87b683f6a85d466487684f8"
+    },
+    "tested_commit": "07d68bac14fb5b31a964d8eef1839e941d686934",
+    "implementer": "coordinator-bca90d3b"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
