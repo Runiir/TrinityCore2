@@ -136,7 +136,8 @@ std::string SnapshotPayload(DbRotationSnapshot const& snapshot)
                     << spell.CooldownGroup << '|' << spell.TargetCreatureTypeMask << '|'
                     << spell.RequiresGroundTarget << '|' << spell.MinHostileTargetHealthPct << '|'
                     << uint32(spell.RequiredSelfAuraCharges) << '|' << uint32(spell.MaxSelfAuraCharges) << '|'
-                    << spell.MinOwnedTargetAuraRemainingMs << '|' << spell.MaxHostileTargetHealthPct << '\n';
+                    << spell.MinOwnedTargetAuraRemainingMs << '|' << spell.MaxHostileTargetHealthPct << '|'
+                    << uint32(spell.MaxReadyRunes) << '\n';
     }
     return payload.str();
 }
@@ -171,7 +172,8 @@ std::shared_ptr<DbRotationSnapshot> LoadDbSnapshot(std::string& failureReason)
         "a.requires_pet, a.forbids_pet, a.required_main_hand_enchant, a.required_off_hand_enchant, "
         "a.cooldown_group, a.target_creature_type_mask, a.requires_ground_target, "
         "a.min_hostile_target_health_pct, a.required_self_aura_charges, "
-        "a.max_self_aura_charges, a.min_owned_target_aura_remaining_ms, a.max_hostile_target_health_pct "
+        "a.max_self_aura_charges, a.min_owned_target_aura_remaining_ms, a.max_hostile_target_health_pct, "
+        "a.max_ready_runes "
         "FROM bot_rotation_profile p "
         "JOIN bot_rotation_action a ON a.profile_id = p.id "
         "WHERE p.enabled = 1 AND a.enabled = 1 "
@@ -308,6 +310,7 @@ std::shared_ptr<DbRotationSnapshot> LoadDbSnapshot(std::string& failureReason)
         spell.MaxSelfAuraCharges = fields[78].GetUInt8();
         spell.MinOwnedTargetAuraRemainingMs = fields[79].GetUInt32();
         spell.MaxHostileTargetHealthPct = fields[80].GetFloat();
+        spell.MaxReadyRunes = fields[81].GetUInt8();
 
         static std::set<std::string> const targetSelectors = {
             "enemy", "self", "party", "lowest_ally", "tank", "ground_enemy"
@@ -322,6 +325,8 @@ std::shared_ptr<DbRotationSnapshot> LoadDbSnapshot(std::string& failureReason)
             invalidReasons.insert("invalid_hostile_target_health_floor_" + key + "_" + std::to_string(spell.SortOrder));
         if (spell.MinComboPoints > spell.MaxComboPoints && spell.MaxComboPoints)
             invalidReasons.insert("invalid_combo_range_" + key + "_" + std::to_string(spell.SortOrder));
+        if (spell.MinReadyRunes > spell.MaxReadyRunes && spell.MaxReadyRunes)
+            invalidReasons.insert("invalid_ready_rune_range_" + key + "_" + std::to_string(spell.SortOrder));
         if (spell.MinManaPct > spell.MaxManaPct || spell.MinPrimaryPowerPct > spell.MaxPrimaryPowerPct)
             invalidReasons.insert("invalid_power_range_" + key + "_" + std::to_string(spell.SortOrder));
         if (spell.MinSelfAuraRemainingMs > spell.MaxSelfAuraRemainingMs && spell.MaxSelfAuraRemainingMs)
@@ -697,6 +702,7 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"min_combo_points\":" << uint32(spell.MinComboPoints)
              << ",\"max_combo_points\":" << uint32(spell.MaxComboPoints)
              << ",\"min_ready_runes\":" << uint32(spell.MinReadyRunes)
+             << ",\"max_ready_runes\":" << uint32(spell.MaxReadyRunes)
              << ",\"required_shapeshift_form\":" << uint32(spell.RequiredShapeshiftForm)
              << ",\"requires_pet\":" << (spell.RequiresPet ? "true" : "false")
              << ",\"forbids_pet\":" << (spell.ForbidsPet ? "true" : "false")

@@ -5404,7 +5404,8 @@ def test_combat_keeps_high_priority_movement_and_selects_instant_dps():
     )
 
     assert "movementCompatibleOnly" in resolver
-    assert "candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0" in resolver
+    # DPS-065 (2026-09-23): the moving check uses the caster's effective cast time so proc-instant casts pass.
+    assert "BotCastWhileMoving::HasEffectiveCastTime(bot, candidateSpellInfo)" in resolver
     assert "candidateSpellInfo->IsChanneled()" in resolver
     assert 'candidate.RejectReason = "movement_requires_instant_action";' in resolver
     assert "state->MovementLease.ExpiresAtMs > nowMs" in execute_profile

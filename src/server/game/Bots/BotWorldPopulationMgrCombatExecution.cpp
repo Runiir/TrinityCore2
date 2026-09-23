@@ -352,7 +352,7 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         if (SpellInfo const* castInfo =
                 BotSpellResolution::Resolve(bot, action.SpellId).Effective)
             if (BotCastWhileMoving::YieldsToProtectedMovement(bot, castInfo,
-                    castInfo->CalcCastTime(bot->getLevel()) > 0,
+                    BotCastWhileMoving::HasEffectiveCastTime(bot, castInfo),
                     bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING),
                     HasProtectedMovementLease(state, bot, NowMs())))
             {

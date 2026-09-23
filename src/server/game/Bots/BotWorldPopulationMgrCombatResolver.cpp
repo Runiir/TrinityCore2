@@ -362,8 +362,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
 
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.ResolvedSpellId);
-        bool const candidateHasCastTime = candidateSpellInfo
-            && candidateSpellInfo->CalcCastTime(bot->getLevel()) > 0;
+        bool const candidateHasCastTime =
+            BotCastWhileMoving::HasEffectiveCastTime(bot, candidateSpellInfo);
         bool const candidateIsChanneled = candidateSpellInfo
             && candidateSpellInfo->IsChanneled();
         bool const rejectedByMovement = BotCastWhileMoving::RejectMovingCandidate(

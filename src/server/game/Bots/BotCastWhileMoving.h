@@ -18,6 +18,23 @@ bool HasNativeCapability(Caster const* caster, SpellInfo const* spellInfo)
             SPELL_AURA_CAST_WHILE_WALKING, spellInfo);
 }
 
+// Spell::prepare tests movement against CalcCastTime after the caster's
+// WorldObject::ModSpellCastTime (class spell mods and cast speed), so a
+// proc-instant cast such as a Shooting Stars Starsurge is instant there.
+// Preview that same value at decision time.  No Spell is passed, so no mod
+// charge is registered.  A base-instant spell stays instant, and a spell
+// reads as instant only when the client would also cast it instantly.
+template <typename Caster, typename Info>
+bool HasEffectiveCastTime(Caster const* caster, Info const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+    int32 castTime = int32(spellInfo->CalcCastTime(caster ? caster->getLevel() : uint8(0)));
+    if (castTime > 0 && caster)
+        const_cast<Caster*>(caster)->ModSpellCastTime(spellInfo, castTime, nullptr);
+    return castTime > 0;
+}
+
 template <typename Caster>
 bool RejectMovingCandidate(Caster const* caster, SpellInfo const* spellInfo,
     bool movementCompatibleOnly, bool castTime, bool channeled)
@@ -40,12 +57,14 @@ bool YieldsToProtectedMovement(Caster const* caster, SpellInfo const* spellInfo,
 
 // Return true only when an uncovered moving cast should yield before native
 // submission.  The callback is the executor's existing stop/clear/idle path;
-// it is deliberately never invoked for a spell covered by the native aura.
+// it is deliberately never invoked for a spell covered by the native aura or
+// one the caster's spell mods make instant.
 template <typename Caster, typename StopMovingCallback>
 bool StopUncoveredMovingCast(Caster const* caster, SpellInfo const* spellInfo,
     StopMovingCallback stopMoving)
 {
-    if (!caster || !spellInfo || HasNativeCapability(caster, spellInfo))
+    if (!caster || !spellInfo || HasNativeCapability(caster, spellInfo)
+        || !HasEffectiveCastTime(caster, spellInfo))
         return false;
 
     stopMoving();

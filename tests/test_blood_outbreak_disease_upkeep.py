@@ -1,14 +1,16 @@
 """Static checks for the Blood tank Outbreak disease-upkeep migration.
 
 The migration is replayed against an in-memory SQLite copy of the current
-Blood tank rows (read from the world DB on 2026-09-23, profile 267 v25), so the
-forward SQL, its idempotence and the documented reverse block are exercised
-without a MySQL server. Score arithmetic mirrors the production candidate
+Blood tank rows (read from the world DB on 2026-09-23, profile 267; v25 when
+first authored, v28 after 2026_09_23_40/41 and the hand-deleted Outbreak row),
+so the forward SQL, its idempotence and the documented reverse block are
+exercised without a MySQL server. Score arithmetic mirrors the production candidate
 builder and resolver formulas, whose source text is also pinned here.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 import struct
@@ -18,7 +20,12 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql"
+MIGRATION = ROOT / "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql"
+STAGED = ROOT / "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql"
+TARGETS = ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+# SHA-1 the world `updates` table recorded when the first revision was applied
+# (and whose row was later deleted by hand). An unchanged file is skipped.
+APPLIED_FIRST_REVISION_SHA1 = "7410d1a9981b2ce78fb3593f0aa0e5102e02b6b0"
 CANDIDATES = ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 RESOLVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
 ACTION_PROFILES = ROOT / "experiments/configs/cata_434_action_profiles.json"
@@ -27,9 +34,10 @@ DBC = ROOT / "data/dbc/enUS"
 OUTBREAK, BLOOD_PLAGUE, FROST_FEVER = 77575, 55078, 55095
 BLOOD, FROST, BLOOD_DPS = 267, 283, 900
 OLD_NOTES = (
-    25,
-    "phase9_blood_death_strike_priority_2026_09_19",
-    "Keep Death Strike and Heart Strike in the same bucket so the higher-scoring valid action wins",
+    28,
+    "phase9_blood_mangle_disease_runes_2026_09_23",
+    "Hold Heart Strike, Icy Touch and Plague Strike while the Magmaw Mangle seat aura 78412 is up "
+    "so Death Strike gets the runes",
 )
 TAGS = "outbreak,diseases,blood_plague,frost_fever,maintain_owned_aura,no_rune_cost"
 
@@ -176,7 +184,7 @@ def test_forward_adds_one_scoped_outbreak_row_and_replays_idempotently():
     assert [a for a in after_actions if a[0] != row["id"]] == before_actions
     assert _outbreak_rows(db, BLOOD_DPS) == []
     assert after_profiles[0][4:] == (
-        26,
+        29,
         "phase9_blood_outbreak_disease_upkeep_2026_09_23",
         "Maintain Blood Plague and Frost Fever with native Outbreak, "
         "keeping Icy Touch and Plague Strike as cooldown fallbacks",
@@ -204,9 +212,9 @@ def test_reverse_block_is_inert_on_autoapply_and_restores_exact_state():
 
     # A later profile migration's identity is not clobbered by the reverse.
     db.executescript(_sql())
-    db.execute("UPDATE bot_rotation_profile SET version = 27, source_note = 'later' WHERE id = ?", (BLOOD,))
+    db.execute("UPDATE bot_rotation_profile SET version = 30, source_note = 'later' WHERE id = ?", (BLOOD,))
     db.executescript("\n".join(line[3:] for line in reverse))
-    assert db.execute("SELECT version, source_note FROM bot_rotation_profile WHERE id = ?", (BLOOD,)).fetchone() == (27, "later")
+    assert db.execute("SELECT version, source_note FROM bot_rotation_profile WHERE id = ?", (BLOOD,)).fetchone() == (30, "later")
     assert _outbreak_rows(db, BLOOD) == []
 
 
@@ -249,13 +257,30 @@ def test_outbreak_priority_is_above_strikes_but_yields_to_survival():
         assert outbreak[mode] > max(it[mode], ps[mode])
 
 
-def test_provisioning_dependency_is_explicit():
+def test_provisioning_dependency_is_explicit_and_met():
     profiles = json.loads(ACTION_PROFILES.read_text(encoding="utf-8"))["action_profile_spells_by_spec"]
     assert OUTBREAK in profiles["frost_death_knight"] and OUTBREAK in profiles["unholy_death_knight"]
-    if OUTBREAK not in profiles["blood_death_knight"]:
-        header = _sql().split("INSERT INTO", 1)[0]
-        assert "cata_434_action_profiles.json" in header
-        assert "unknown_requested_spell" in header
+    header = _sql().split("INSERT INTO", 1)[0]
+    assert "cata_434_action_profiles.json" in header
+    assert "unknown_requested_spell" in header
+    # The Blood bot now knows the spell in every admission source.
+    assert OUTBREAK in profiles["blood_death_knight"]
+    targets = json.loads(TARGETS.read_text(encoding="utf-8"))["targets"]
+    blood = [t for t in targets if t["spec_target_id"] == "blood_death_knight"]
+    assert len(blood) == 1 and blood[0]["action_profile_spell_ids"] == profiles["blood_death_knight"]
+    from tools.bot_ml.build_all_spec_phase1_catalogs import QUALIFICATION_TUNED_ACTION_SPELL_IDS
+    assert OUTBREAK in QUALIFICATION_TUNED_ACTION_SPELL_IDS["blood_death_knight"]
+
+
+def test_promoted_revision_is_reapplied_by_the_auto_updater():
+    # sql/custom/world is the auto-applied include; staged is not.
+    assert MIGRATION.exists() and not STAGED.exists()
+    # UpdateFetcher skips a recorded name whose SHA-1 still matches. The first
+    # revision's row was deleted by hand, so this revision must hash differently
+    # for the updater to reapply it (NOT EXISTS keeps the replay idempotent).
+    assert hashlib.sha1(MIGRATION.read_bytes()).hexdigest() != APPLIED_FIRST_REVISION_SHA1
+    header = _sql().split("INSERT INTO", 1)[0]
+    assert "7410d1a" in header and "reapply" in header
 
 
 def _wdbc(name: str) -> tuple[list[tuple[int, ...]], bytes]:

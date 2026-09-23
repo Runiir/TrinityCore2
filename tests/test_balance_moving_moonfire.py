@@ -8,7 +8,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql"
+# Promoted from sql/custom/staged/world for DPS-065 (auto-applied by the
+# worldserver DB updater from sql/custom/world).
+MIGRATION = ROOT / "sql/custom/world/2026_09_23_20_balance_moving_moonfire.sql"
 # `sql/custom/world` is auto-applied by the worldserver DB updater, so the
 # reverse belongs outside it, in the repository's rollback directory.  Until
 # that file exists, the exact reverse below is the reviewed specification.

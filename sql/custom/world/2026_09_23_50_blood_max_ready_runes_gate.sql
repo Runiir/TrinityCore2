@@ -1,0 +1,45 @@
+-- Blood Death Knight tank: a ready-rune upper bound for rune-recovery actions.
+--
+-- bot_rotation_action has min_ready_runes, a lower bound that rejects a row
+-- as ready_rune_gate. Blood Tap 45529 and Empower Rune Weapon 47568 end the
+-- cooldown of runes that are recharging, so they only help while runes are
+-- short. No existing row condition could express that.
+--
+-- Evidence, r3-47cd175 kill 5, Magmaw 10N, actor 30002 (Mgwtankb): Death
+-- Strike failed its min_ready_runes 2 gate 1,715 times and Heart Strike
+-- failed its gate 1,021 times. Only 10 Death Strikes were cast, against 18
+-- for WCL Nexry (Y8ajQ7dbmKMG1RZy fight 22). Nexry casts Blood Tap at 7.1,
+-- 39.2 and 76.9 s and Empower Rune Weapon at 12.7 s. The bot has neither.
+--
+-- Change. Add max_ready_runes, an inclusive upper bound on the count
+-- that min_ready_runes already uses:
+-- BotBloodDecisionObservation::ObserveReadyRunes counts the runes of any type
+-- whose Player::GetRuneCooldown is zero. 0 disables the bound, so every
+-- existing row is unchanged.
+--   * BotClassSpecActionProfileCandidates.cpp rejects a row as ready_rune_cap
+--     when more runes are ready than the bound.
+--   * BotClassSpecActionProfileDb.cpp loads it as SELECT field 81. It adds
+--     the value to the snapshot hash payload and the profile dump, and rejects
+--     the snapshot when min_ready_runes is greater than a non-zero
+--     max_ready_runes.
+-- The column adds no aura, proc, damage multiplier, forced cast, resource,
+-- rune or cooldown change. It can only reject a row.
+--
+-- Order. A worldserver that selects a.max_ready_runes needs this column. The
+-- auto-updater adds it at startup, before rotation profiles load. Reverse
+-- only after 2026_09_23_52 and 2026_09_23_51 are reversed and the loader
+-- change is reverted. If the column is dropped first, the loader query fails
+-- and no profile loads.
+--
+-- The migration is idempotent (ADD COLUMN IF NOT EXISTS). The reverse
+-- migration is a commented block at the end of this file, not a separate
+-- file: the worldserver auto-updater applies every file in sql/custom/world
+-- at startup, so a separate revert file would undo this one immediately.
+
+ALTER TABLE `bot_rotation_action`
+  ADD COLUMN IF NOT EXISTS `max_ready_runes` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `min_ready_runes`;
+
+-- BEGIN REVERSE MIGRATION
+-- ALTER TABLE `bot_rotation_action`
+--   DROP COLUMN IF EXISTS `max_ready_runes`;
+-- END REVERSE MIGRATION

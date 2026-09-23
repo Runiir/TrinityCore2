@@ -78,6 +78,8 @@ struct BotActionProfileSpell
     uint8 MinComboPoints = 0;
     uint8 MaxComboPoints = 0;
     uint8 MinReadyRunes = 0;
+    // Inclusive upper bound on ready runes of any type; zero disables it.
+    uint8 MaxReadyRunes = 0;
     uint8 RequiredShapeshiftForm = 0;
     bool RequiresPet = false;
     bool ForbidsPet = false;

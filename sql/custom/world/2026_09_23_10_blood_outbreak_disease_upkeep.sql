@@ -40,11 +40,18 @@
 --
 -- Provisioning dependency. The bot knows only the spells provisioned from
 -- experiments/configs/cata_434_action_profiles.json, and
--- PlayerStart.AllSpells is 0. The Blood list there does not contain 77575,
--- while Frost and Unholy already list it. Until 77575 is added to
--- action_profile_spells_by_spec.blood_death_knight and provisioning is
--- rebuilt, this row is rejected as unknown_requested_spell and changes
--- nothing.
+-- PlayerStart.AllSpells is 0. 77575 is listed in
+-- action_profile_spells_by_spec.blood_death_knight (as for Frost and
+-- Unholy); without it this row is rejected as unknown_requested_spell and
+-- changes nothing.
+--
+-- Re-promotion. This file was applied once (updates hash 7410d1a), then
+-- un-promoted, and its row was deleted by hand. The auto-updater skips a
+-- file whose name and hash are both recorded, so the unchanged file would
+-- never re-insert the row. Since then 2026_09_23_40/41 took the profile to
+-- version 28. This revision bumps to 29 and its reverse block restores the
+-- 2026_09_23_41 identity; the changed hash makes the updater reapply the
+-- file, and the NOT EXISTS guard keeps that replay idempotent.
 --
 -- The migration is idempotent. The insert is guarded by NOT EXISTS and the
 -- version bump never lowers the version. The reverse migration is a
@@ -77,7 +84,7 @@ WHERE `profile`.`class_id` = 6
   );
 
 UPDATE `bot_rotation_profile`
-SET `version` = CASE WHEN `version` < 26 THEN 26 ELSE `version` END,
+SET `version` = CASE WHEN `version` < 29 THEN 29 ELSE `version` END,
     `source_note` = 'phase9_blood_outbreak_disease_upkeep_2026_09_23',
     `scope_note` = 'Maintain Blood Plague and Frost Fever with native Outbreak, keeping Icy Touch and Plague Strike as cooldown fallbacks'
 WHERE `class_id` = 6
@@ -96,9 +103,9 @@ WHERE `class_id` = 6
 --   AND `sort_order` = 38
 --   AND `mechanic_tags` = 'outbreak,diseases,blood_plague,frost_fever,maintain_owned_aura,no_rune_cost';
 -- UPDATE `bot_rotation_profile`
--- SET `version` = 25,
---     `source_note` = 'phase9_blood_death_strike_priority_2026_09_19',
---     `scope_note` = 'Keep Death Strike and Heart Strike in the same bucket so the higher-scoring valid action wins'
+-- SET `version` = 28,
+--     `source_note` = 'phase9_blood_mangle_disease_runes_2026_09_23',
+--     `scope_note` = 'Hold Heart Strike, Icy Touch and Plague Strike while the Magmaw Mangle seat aura 78412 is up so Death Strike gets the runes'
 -- WHERE `class_id` = 6
 --   AND `spec_tag` = 'blood_death_knight'
 --   AND `role` = 'tank'

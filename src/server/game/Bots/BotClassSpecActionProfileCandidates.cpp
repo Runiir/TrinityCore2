@@ -319,6 +319,11 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Un
         return "combo_point_gate";
     if (spell.MinReadyRunes && ReadyRuneCount(bot) < spell.MinReadyRunes)
         return "ready_rune_gate";
+    // Upper bound for rune-recovery actions (Blood Tap, Empower Rune Weapon):
+    // they are only useful while runes are on cooldown.  The count is the
+    // same native ready-rune observation as the lower bound above.
+    if (spell.MaxReadyRunes && ReadyRuneCount(bot) > spell.MaxReadyRunes)
+        return "ready_rune_cap";
     if (spell.RequiredShapeshiftForm && uint8(bot->GetShapeshiftForm()) != spell.RequiredShapeshiftForm)
         return "shapeshift_form_gate";
     if (spell.RequiresPet && (!bot->GetPet() || !bot->GetPet()->IsAlive()))
