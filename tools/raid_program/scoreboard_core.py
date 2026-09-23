@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 TARGET_SCHEMA = "raid_target_v1"
 KILL_SCHEMA = "raid_scoreboard_kill_v1"
 ATTACHMENT_SCHEMA = "raid_scoreboard_evidence_attachment_v1"
+# Informational encounter RNG (e.g. Massive Crash side) recomputed later from archived evidence.
+RNG_ATTACHMENT_SCHEMA = "raid_scoreboard_rng_attachment_v1"
 VOID_SCHEMA = "raid_scoreboard_void_v1"
 VERDICT_SCHEMA = "raid_target_verdict_v1"
 COMPARISON_SCHEMA = "raid_label_comparison_v1"
@@ -104,7 +106,11 @@ def load_lines(root: Path, scenario: str) -> list[dict[str, Any]]:
 
 
 def load_records(root: Path, scenario: str) -> list[dict[str, Any]]:
-    """Kill records in recording order, with evidence attachments and voids merged in."""
+    """Kill records in recording order, with evidence and RNG attachments and voids merged in.
+
+    An RNG attachment only fills a kill that has no encounter_rng yet (the first value wins), so
+    informational data can never make the file unreadable or change counting.
+    """
     kills: dict[str, dict[str, Any]] = {}
     path = scoreboard_path(root, scenario)
     for line in load_lines(root, scenario):
@@ -117,7 +123,7 @@ def load_records(root: Path, scenario: str) -> list[dict[str, Any]]:
                 raise ValueError(f"{path}: duplicate kill_id {record['kill_id']}")
             kills[record["kill_id"]] = record
             continue
-        if schema not in (ATTACHMENT_SCHEMA, VOID_SCHEMA):
+        if schema not in (ATTACHMENT_SCHEMA, RNG_ATTACHMENT_SCHEMA, VOID_SCHEMA):
             raise ValueError(f"{path}: unexpected record schema {schema!r}")
         record = kills.get(line.get("kill_id"))
         if record is None:
@@ -127,6 +133,10 @@ def load_records(root: Path, scenario: str) -> list[dict[str, Any]]:
                 raise ValueError(f"{path}: kill {record['kill_id']} already has evidence")
             record["evidence_dvc_pointer"] = line["evidence_dvc_pointer"]
             record["evidence_attached_at"] = line.get("recorded_at")
+        elif schema == RNG_ATTACHMENT_SCHEMA:
+            if not record.get("encounter_rng") and isinstance(line.get("encounter_rng"), dict):
+                record["encounter_rng"] = line["encounter_rng"]
+                record["encounter_rng_attached_at"] = line.get("recorded_at")
         else:
             record["voided"] = {key: line.get(key) for key in ("reason", "recorded_at", "recorded_by")}
     return list(kills.values())

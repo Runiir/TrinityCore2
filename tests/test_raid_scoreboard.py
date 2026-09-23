@@ -808,3 +808,113 @@ def test_run_refuses_an_existing_label_without_top_up(root):
     batch(root, "a")
     with pytest.raises(SystemExit, match="--top-up"):
         scoreboard_run.run_batch(root, _top_up_args("a", top_up=False, dry_run=True))
+
+
+# --- encounter RNG (informational) --------------------------------------------------------------
+
+def crash(*sides):
+    return {"basis": "harness", "massive_crash": [{"side": side, "side_basis": "source_position", "at_sec": 99.5,
+                                                   "players_hit": 9 if side == "raid_wide" else 0, "units_hit": 9}
+                                                  for side in sides]}
+
+
+def rng_batch(root, label, sides, **options):
+    record_all(root, *(kill(label, f"k{i}", encounter_rng=crash(side), **options) for i, side in enumerate(sides)))
+
+
+def rng_lines(text):
+    return [line for line in text.splitlines() if "RNG" in line]
+
+
+def test_show_prints_the_side_mix_and_warns_when_labels_differ(root):
+    rng_batch(root, "new", ["raid_wide"] * 4)
+    rng_batch(root, "old", ["raid_wide", "far", "raid_wide", "far", "far"])
+    record_all(root, kill("old", "stalled", validity=STALLED, encounter_rng=crash("raid_wide")))
+    assert rng_lines(render(root, SCENARIO, "new", "old")) == [
+        "encounter RNG (informational) new: massive_crash raid_wide 4/4 counted (all kills 4/4)",
+        "encounter RNG (informational) old: massive_crash raid_wide 2/5 counted (all kills 3/6)",
+        "RNG mix differs: massive_crash raid_wide 4/4 vs 2/5, interpret actor deltas with care"]
+    assert rng_lines(render(root, SCENARIO, "new")) == [
+        "encounter RNG (informational) new: massive_crash raid_wide 4/4 counted (all kills 4/4)"]
+
+
+def test_rng_mix_within_one_kill_is_not_a_warning(root):
+    rng_batch(root, "new", ["raid_wide", "raid_wide", "far"])
+    rng_batch(root, "old", ["raid_wide", "far", "far"])
+    record_all(root, kill("new", "legacy"), kill("new", "late", encounter_rng=crash()))
+    lines = rng_lines(render(root, SCENARIO, "new", "old"))
+    assert not any(line.startswith("RNG mix differs") for line in lines)
+    assert lines[0] == ("encounter RNG (informational) new: massive_crash raid_wide 2/3 counted (all kills 2/3), "
+                        "no event in 1 kill(s); not recorded for 1 of 5 kills (scoreboard rng-backfill)")
+
+
+def test_rng_never_changes_counting_the_verdict_or_the_comparison(root):
+    batch(root, "a")
+    batch(root, "b", scales=(0.9, 0.91, 0.92))
+    before = (evaluate_target(root, SCENARIO, "a"), compare_labels(root, SCENARIO, "a", "b"))
+    for label in ("a", "b"):
+        for record in label_kills_of(root, label):
+            append_record(root, SCENARIO, {"schema": "raid_scoreboard_rng_attachment_v1", "kill_id": record["kill_id"],
+                                           "encounter_rng": crash("raid_wide" if label == "a" else "far"),
+                                           "recorded_at": "2026-09-23T12:00:00Z"})
+    assert (evaluate_target(root, SCENARIO, "a"), compare_labels(root, SCENARIO, "a", "b")) == before
+    assert "RNG mix differs: massive_crash raid_wide 3/3 vs 0/3" in render(root, SCENARIO, "a", "b")
+
+
+def label_kills_of(root, label):
+    return [record for record in load_records(root, SCENARIO) if record["label"] == label]
+
+
+def test_rng_attachment_fills_only_kills_without_rng(root):
+    record_all(root, kill("a", "k0"), kill("a", "k1", encounter_rng=crash("far")))
+    for name in ("k0", "k1", "k0"):
+        append_record(root, SCENARIO, {"schema": "raid_scoreboard_rng_attachment_v1", "kill_id": f"a-{name}",
+                                       "encounter_rng": crash("raid_wide"), "recorded_at": f"T-{name}"})
+    k0, k1 = load_records(root, SCENARIO)
+    assert k0["encounter_rng"]["massive_crash"][0]["side"] == "raid_wide" and k0["encounter_rng_attached_at"] == "T-k0"
+    assert k1["encounter_rng"]["massive_crash"][0]["side"] == "far" and "encounter_rng_attached_at" not in k1
+
+
+def test_rng_backfill_appends_one_line_per_kill_and_is_rerunnable(root, tmp_path, capsys):
+    evidence = tmp_path / "evidence"
+    kills = [kill("old", f"k{i}") | {"run_dir": f"/tmp/scoreboard-old-k{i}"} for i in range(3)]
+    record_all(root, *kills)
+    for index, dummy in enumerate(([-288.59, -14.847], [-294.736, -11.431])):
+        run = evidence / f"old-k{index}" / f"scoreboard-old-k{index}"
+        run.mkdir(parents=True)
+        (run / "report.json").write_text(json.dumps({"validation_route_manifest": {"routes": [
+            {"route_node_id": "bwd.magmaw.encounter", "kind": "boss", "source_entry": 41570}]}}))
+        events = [{"kind": "damage", "spell_id": 88287, "timestamp_ms": 1000, "source_entry": 47330, "source_guid": 41,
+                   "source_x": dummy[0], "source_y": dummy[1], "target_guid": 30001, "target_entry": 0,
+                   "route_node_id": "bwd.magmaw.encounter", "amount": 1}]
+        (run / "combat_log.json").write_text(json.dumps({"recent_events": events, "recent_events_dropped": 0}))
+    before = len(load_lines(root, SCENARIO))
+    args = ["--root", str(root), "rng-backfill", "--scenario", SCENARIO, "--label", "old", "--evidence-root", str(evidence)]
+    assert main(args) == 1  # k2 has no extracted evidence
+    lines = load_lines(root, SCENARIO)
+    assert len(lines) == before + 2 and {line["schema"] for line in lines[before:]} == {"raid_scoreboard_rng_attachment_v1"}
+    assert lines[before]["source_run_dir"] == "scoreboard-old-k0" and len(lines[before]["combat_log_sha256"]) == 64
+    records = {record["kill_id"]: record for record in load_records(root, SCENARIO)}
+    assert [row["side"] for row in records["old-k0"]["encounter_rng"]["massive_crash"]] == ["raid_wide"]
+    assert [row["side"] for row in records["old-k1"]["encounter_rng"]["massive_crash"]] == ["far"]
+    assert "encounter_rng" not in records["old-k2"]
+    assert "old-k2: no run dir with combat_log.json" in capsys.readouterr().out
+    assert main(args) == 1 and len(load_lines(root, SCENARIO)) == before + 2  # reruns skip attached kills
+    with pytest.raises(SystemExit, match="no kills recorded under nope"):
+        main(args[:6] + ["nope"] + args[7:])
+
+
+def test_record_keeps_rng_from_the_harness_or_recomputes_it(tmp_path):
+    from tools.raid_program.scoreboard_record import outcome_summary
+    old = outcome_summary(magmaw_run_dir(tmp_path / "old"), None, "bwd.magmaw.encounter")
+    assert old["encounter_rng"] == {"basis": "combat_log_recomputed", "massive_crash": []}
+    harness = {"schema": "encounter_rng_v1", "massive_crash": [{"side": "far", "side_basis": "source_position",
+                                                                "at_sec": 99.7, "players_hit": 0, "units_hit": 1}]}
+    new = outcome_summary(magmaw_run_dir(tmp_path / "new", report_extra={"encounter_rng": harness}), None,
+                          "bwd.magmaw.encounter")
+    assert new["encounter_rng"] == {"basis": "harness", "massive_crash": harness["massive_crash"]}
+    target = load_target(ROOT, SCENARIO)
+    record = record_from_summary({"native_clear": True, "completion_reason": CLEAR, "actors": [],
+                                  "encounter_rng": new["encounter_rng"]}, root=ROOT, target=target, scenario=SCENARIO,
+                                 label="x", kill_id="x-1", deaths={"boss_window_deaths": 0, "deaths": []})
+    assert record["encounter_rng"] == new["encounter_rng"]

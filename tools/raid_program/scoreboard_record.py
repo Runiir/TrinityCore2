@@ -10,8 +10,11 @@ route runs exit 1 even on a clean native clear. measurement_validity (world
 stalls in the encounter window) and damage_reconciliation (killed-hostile damage
 vs max HP) are copied from report.json / combat_analysis.json when the harness
 wrote them. encounter_fidelity (creature DamageModifier calibration and boss melee
-vs WCL, tools/bot_ml/live_validation_fidelity.py) is informational: nothing in
-counting or the verdict reads it.
+vs WCL, tools/bot_ml/live_validation_fidelity.py) and encounter_rng (random
+encounter events such as Magmaw's Massive Crash side,
+tools/bot_ml/live_validation_encounter_rng.py) are informational: nothing in
+counting or the verdict reads them. rng_backfill attaches encounter_rng to kills
+recorded before the harness wrote it, as separate append-only lines.
 """
 from __future__ import annotations
 
@@ -21,8 +24,8 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_core import (
-    KILL_SCHEMA, append_record, healer_roles, legacy_kill_id, load_records, load_target, roster, spec_targets,
-    utc_now,
+    KILL_SCHEMA, RNG_ATTACHMENT_SCHEMA, append_record, file_sha256, healer_roles, label_kills, legacy_kill_id,
+    load_records, load_target, roster, spec_targets, utc_now,
 )
 
 SUMMARY_SCHEMA = "magmaw_spell_queue_run_summary_v1"
@@ -190,7 +193,7 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
 
 
 MEASUREMENT_KEYS = ("measurement_validity", "damage_reconciliation")
-INFO_KEYS = ("encounter_fidelity",)  # shown by scoreboard show; never read by counting or the verdict
+INFO_KEYS = ("encounter_fidelity", "encounter_rng")  # shown by scoreboard show; never read by counting or the verdict
 
 
 def fidelity_fields(run_dir: Path, report: dict[str, Any]) -> dict[str, Any]:
@@ -206,6 +209,19 @@ def fidelity_fields(run_dir: Path, report: dict[str, Any]) -> dict[str, Any]:
         summary = {"blizzlike": None, "reasons": [f"fidelity unavailable: {type(error).__name__}: {error}"],
                    "basis": "error", "bosses": {}}
     return {"encounter_fidelity": summary} if summary else {}
+
+
+def rng_fields(run_dir: Path, report: dict[str, Any]) -> dict[str, Any]:
+    """Random encounter events of one kill (e.g. each Massive Crash side, time and players hit).
+
+    Taken from report.json encounter_rng, or recomputed from combat_log.json for older runs.
+    """
+    from tools.bot_ml.live_validation_encounter_rng import rng_from_run_dir
+    try:
+        summary = rng_from_run_dir(run_dir, report=report)
+    except Exception as error:  # informational: never costs a kill its record
+        summary = {"basis": "error", "error": f"{type(error).__name__}: {error}"}
+    return {"encounter_rng": summary} if summary else {}
 
 
 def measurement_fields(report: dict[str, Any], analysis: dict[str, Any] | None, node: str) -> dict[str, Any]:
@@ -270,7 +286,7 @@ def outcome_summary(run_dir: Path, worldserver_sha256: str | None, encounter_nod
             "route_deaths": (report.get("status") or {}).get("deaths"),
             "worldserver_sha256": worldserver_sha256 or sha, "report_binary_sha256": sha,
             **measurement_fields(report, analysis, encounter_node), **fidelity_fields(run_dir, report),
-            "encounter": None, "actors": []}
+            **rng_fields(run_dir, report), "encounter": None, "actors": []}
 
 
 def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,
@@ -352,6 +368,47 @@ def _find_run_dir(evidence_root: Path | None, run_dir: str | None) -> Path | Non
         return None
     name = Path(run_dir).name
     return next((path for path in sorted(evidence_root.glob(f"**/{name}")) if path.is_dir()), None)
+
+
+def rng_backfill(root: Path, scenario: str, label: str, evidence_root: Path) -> int:
+    """Attach encounter_rng to a label's kills from extracted run dirs; one append-only line per kill.
+
+    Kills that already have encounter_rng are skipped, so the command can be rerun. Exit 1
+    when a kill's run dir or combat log is missing under evidence_root (read only).
+    """
+    from tools.bot_ml.live_validation_encounter_rng import rng_from_run_dir
+    kills = label_kills(load_records(root, scenario), label)
+    if not kills:
+        raise SystemExit(f"no kills recorded under {label} in {scenario}")
+    missing = attached = 0
+    for record in kills:
+        if record.get("encounter_rng"):
+            print(f"{record['kill_id']}: encounter_rng already recorded ({record['encounter_rng'].get('basis')}); skipped")
+            continue
+        run_dir = _find_run_dir(evidence_root, record.get("run_dir"))
+        summary = None
+        if run_dir is not None:
+            report_path = run_dir / "report.json"
+            try:
+                report = json.loads(report_path.read_text()) if report_path.exists() else {}
+                summary = rng_from_run_dir(run_dir, report=report)
+            except (OSError, ValueError) as error:
+                print(f"{record['kill_id']}: unreadable evidence in {run_dir}: {type(error).__name__}: {error}")
+        if summary is None:
+            print(f"{record['kill_id']}: no run dir with combat_log.json for {Path(str(record.get('run_dir'))).name} "
+                  f"under {evidence_root}")
+            missing += 1
+            continue
+        log = run_dir / "combat_log.json"
+        append_record(root, scenario, {
+            "schema": RNG_ATTACHMENT_SCHEMA, "kill_id": record["kill_id"], "encounter_rng": summary,
+            "recorded_at": utc_now(), "source_run_dir": run_dir.name,
+            "combat_log_sha256": file_sha256(log) if log.exists() else None})
+        attached += 1
+        sides = {name: [row.get("side") for row in rows] for name, rows in summary.items() if isinstance(rows, list)}
+        print(f"{record['kill_id']}: attached encounter_rng {sides}")
+    print(f"rng-backfill {label}: attached {attached}, missing {missing}, of {len(kills)} kill(s)")
+    return 1 if missing else 0
 
 
 def ingest(root: Path, args) -> int:

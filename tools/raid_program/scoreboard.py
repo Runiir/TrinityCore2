@@ -12,6 +12,7 @@ from a single run.
     pixi run python -m tools.raid_program.scoreboard verdict --scenario S --label L
     pixi run python -m tools.raid_program.scoreboard archive-pending --scenario S
     pixi run python -m tools.raid_program.scoreboard void --scenario S --kill-id K --reason TEXT
+    pixi run python -m tools.raid_program.scoreboard rng-backfill --scenario S --label L --evidence-root DIR
 
 Only the coordinator runs `run` without --dry-run: it launches live kills.
 
@@ -112,6 +113,13 @@ def main(argv: list[str] | None = None) -> int:
     void.add_argument("--kill-id", required=True)
     void.add_argument("--reason", required=True)
 
+    backfill = commands.add_parser(
+        "rng-backfill", help="attach informational encounter RNG (e.g. Massive Crash side) to older kills")
+    backfill.add_argument("--scenario", required=True)
+    backfill.add_argument("--label", required=True, type=_label)
+    backfill.add_argument("--evidence-root", required=True, type=Path,
+                          help="read-only folder holding the label's extracted run dirs")
+
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if args.command == "verdict":
@@ -125,6 +133,9 @@ def main(argv: list[str] | None = None) -> int:
         line = void_kill(root, args.scenario, args.kill_id, args.reason)
         print(f"voided {line['kill_id']}: {line['reason']}")
         return 0
+    if args.command == "rng-backfill":
+        from tools.raid_program.scoreboard_record import rng_backfill
+        return rng_backfill(root, args.scenario, args.label, args.evidence_root)
     if args.command == "ingest":
         from tools.raid_program.scoreboard_record import ingest as run_ingest
         return run_ingest(root, args)

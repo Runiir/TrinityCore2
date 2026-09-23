@@ -8,6 +8,8 @@ from tools.raid_program.scoreboard_compare import compare_labels
 from tools.raid_program.scoreboard_core import (
     actor_rows, clear_kills, exclusion_reason, label_kills, latest_label, load_records, load_target, mean_sd,
 )
+
+RNG_PRIMARY_SIDE = {"massive_crash": "raid_wide"}  # side whose share is compared between labels
 from tools.raid_program.scoreboard_verdict import evaluate_target
 
 
@@ -71,6 +73,64 @@ def _fidelity_line(kills: list[dict[str, Any]]) -> str:
     if reason:
         parts.append(reason)
     return "encounter fidelity (informational): " + "; ".join(parts)
+
+
+def rng_mix(kills: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Side counts per random event over the counted clears (the kills actor means use) and over all kills."""
+    mix: dict[str, dict[str, Any]] = {}
+    for scope, rows in (("counted", clear_kills(kills)), ("all", kills)):
+        for record in rows:
+            rng = record.get("encounter_rng")
+            if not isinstance(rng, dict):
+                continue
+            for name, events in rng.items():
+                if not isinstance(events, list):
+                    continue
+                entry = mix.setdefault(name, {"counted": {}, "all": {}, "no_event_kills": 0})
+                for event in events:
+                    side = str(event.get("side") or "unknown")
+                    entry[scope][side] = entry[scope].get(side, 0) + 1
+                if scope == "all" and not events:
+                    entry["no_event_kills"] += 1
+    return mix
+
+
+def _share(counts: dict[str, int], side: str) -> tuple[int, int]:
+    return counts.get(side, 0), sum(value for key, value in counts.items() if key != "unknown")
+
+
+def _rng_line(label: str | None, kills: list[dict[str, Any]], mix: dict[str, dict[str, Any]]) -> str:
+    """Informational: the side mix of each random event; counting and the verdict ignore it."""
+    missing = sum(1 for record in kills if not isinstance(record.get("encounter_rng"), dict))
+    parts = []
+    for name, entry in sorted(mix.items()):
+        side = RNG_PRIMARY_SIDE.get(name, "raid_wide")
+        hits, known = _share(entry["counted"], side)
+        all_hits, all_known = _share(entry["all"], side)
+        text = f"{name} {side} {hits}/{known} counted (all kills {all_hits}/{all_known})"
+        unknown = entry["all"].get("unknown", 0)
+        if unknown:
+            text += f", unknown side {unknown}"
+        if entry["no_event_kills"]:
+            text += f", no event in {entry['no_event_kills']} kill(s)"
+        parts.append(text)
+    if missing:
+        parts.append(f"not recorded for {missing} of {len(kills)} kills (scoreboard rng-backfill)")
+    return f"encounter RNG (informational) {label}: " + ("; ".join(parts) if parts else "none recorded")
+
+
+def rng_mix_warnings(new: dict[str, dict[str, Any]], old: dict[str, dict[str, Any]]) -> list[tuple[str, str]]:
+    """Events whose counted side shares differ by more than one kill between labels.
+
+    The gap is |share_new - share_old| x the smaller label's count: 4/4 vs 2/5 is 0.6 x 4 = 2.4 kills.
+    """
+    warnings = []
+    for name in sorted(set(new) & set(old)):
+        side = RNG_PRIMARY_SIDE.get(name, "raid_wide")
+        (a, n), (b, m) = _share(new[name]["counted"], side), _share(old[name]["counted"], side)
+        if n and m and abs(a / n - b / m) * min(n, m) > 1.0:
+            warnings.append((name, f"RNG mix differs: {name} {side} {a}/{n} vs {b}/{m}, interpret actor deltas with care"))
+    return warnings
 
 
 def _gap_line(rank: int, gap: dict[str, Any]) -> str:
@@ -141,6 +201,13 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     if vs:
         out += _kill_table(vs, label_kills(records, vs))
     out.append(_fidelity_line(kills))
+    mix = rng_mix(kills)
+    out.append(_rng_line(label, kills, mix))
+    if vs:
+        old_kills = label_kills(records, vs)
+        old_mix = rng_mix(old_kills)
+        out.append(_rng_line(vs, old_kills, old_mix))
+        out += [text for _, text in rng_mix_warnings(mix, old_mix)]
     out.append("")
     out.append(f"verdict: {verdict['status']}" + (f" - {verdict['reason']}" if verdict["reason"] else ""))
     if comparison:
