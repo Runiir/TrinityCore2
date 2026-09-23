@@ -18,7 +18,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql"
+MIGRATION = ROOT / "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql"
 CANDIDATES = ROOT / "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp"
 RESOLVER = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp"
 ACTION_PROFILES = ROOT / "experiments/configs/cata_434_action_profiles.json"
