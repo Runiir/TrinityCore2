@@ -197,6 +197,120 @@ def _compact_candidate_rejections(rows: list[dict[str, Any]]) -> list[dict[str, 
     )
 
 
+KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT = 1.0
+
+
+def _landed_health(row: dict[str, Any], field: str) -> int:
+    observation = row.get("landed_damage_observation")
+    if not isinstance(observation, dict):
+        return 0
+    try:
+        return int(observation.get(field) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def killed_hostile_damage_reconciliation(combat_log: dict[str, Any]) -> dict[str, Any]:
+    """Compare logged damage taken by every killed hostile with its max HP.
+
+    ``amount`` is the landed, overkill-free damage, so a hostile that died with
+    every damage event logged reconciles to its maximum health.  A shortfall
+    means damage that reached the hostile was not logged (for example periodic
+    ticks from a bot that already died); an excess means the hostile regained
+    health.  ``unlogged_health_loss`` sums health drops between consecutive
+    logged events that no logged event explains.
+    """
+    events = [
+        row for row in combat_log.get("recent_events") or []
+        if isinstance(row, dict) and str(row.get("kind") or "") == "damage"
+    ]
+    events.sort(key=lambda row: (int(row.get("timestamp_ms") or 0), int(row.get("event_sequence") or 0)))
+    friendly: set[tuple[int, int]] = set()
+    bot_guids: set[int] = set()
+    for row in events:
+        actor = int(row.get("actor_guid") or 0)
+        if actor:
+            bot_guids.add(actor)
+        if row.get("source_is_pet"):
+            friendly.add((int(row.get("source_guid") or 0), int(row.get("source_entry") or 0)))
+    hostile_keys: set[tuple[int, int]] = set()
+    for row in events:
+        source = int(row.get("source_guid") or 0)
+        if not (source in bot_guids or row.get("source_is_pet")):
+            continue
+        key = (int(row.get("target_guid") or 0), int(row.get("target_entry") or 0))
+        if key[0] and key[1] and key not in friendly and key[0] not in bot_guids:
+            hostile_keys.add(key)
+    by_target: dict[tuple[int, int], list[dict[str, Any]]] = defaultdict(list)
+    for row in events:
+        key = (int(row.get("target_guid") or 0), int(row.get("target_entry") or 0))
+        if key in hostile_keys:
+            by_target[key].append(row)
+
+    hostiles: list[dict[str, Any]] = []
+    for key, rows in by_target.items():
+        killing = next(
+            (
+                row for row in rows
+                if 0 < _landed_health(row, "target_health_before_damage") <= int(row.get("amount") or 0)
+            ),
+            None,
+        )
+        if killing is None:
+            continue
+        max_health = max(_landed_health(row, "target_max_health") for row in rows)
+        if max_health <= 0:
+            continue
+        recorded = sum(int(row.get("amount") or 0) for row in rows)
+        unlogged_loss = 0
+        health_gain = 0
+        for previous, current in zip(rows, rows[1:]):
+            expected = _landed_health(previous, "target_health_before_damage") - int(previous.get("amount") or 0)
+            observed = _landed_health(current, "target_health_before_damage")
+            if observed < expected:
+                unlogged_loss += expected - observed
+            elif observed > expected:
+                health_gain += observed - expected
+        first_health = _landed_health(rows[0], "target_health_before_damage")
+        delta = recorded - max_health
+        mismatch_pct = abs(delta) * 100.0 / max_health
+        hostiles.append({
+            "target_guid": key[0],
+            "target_entry": key[1],
+            "target_name": str(rows[0].get("target_name") or ""),
+            "route_node_id": str(killing.get("route_node_id") or ""),
+            "route_generation": int(killing.get("route_generation") or 0),
+            "max_health": max_health,
+            "recorded_damage_taken": recorded,
+            "delta": delta,
+            "mismatch_pct": round(mismatch_pct, 4),
+            "flagged": mismatch_pct > KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT,
+            "damage_before_first_logged_event": max(0, max_health - first_health),
+            "unlogged_health_loss": unlogged_loss,
+            "health_gain_between_events": health_gain,
+            "damage_events": len(rows),
+            "first_at_ms": int(rows[0].get("timestamp_ms") or 0),
+            "killed_at_ms": int(killing.get("timestamp_ms") or 0),
+            "killing_blow_source": str(killing.get("source_name") or ""),
+        })
+    hostiles.sort(key=lambda row: (row["killed_at_ms"], row["target_guid"]))
+    dropped = int(combat_log.get("recent_events_dropped") or 0)
+    mismatches = [row for row in hostiles if row["flagged"]]
+    return {
+        "schema": "bot_killed_hostile_damage_reconciliation_v1",
+        "tolerance_pct": KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT,
+        "basis": "sum_landed_overkill_free_damage_vs_max_health",
+        "source": "combat_log_recent_events",
+        "event_window_complete": dropped == 0,
+        "recent_events_dropped": dropped,
+        "killed_hostile_count": len(hostiles),
+        "mismatch_count": len(mismatches),
+        "reconciled": dropped == 0 and not mismatches,
+        "mismatches": mismatches,
+        "hostiles": hostiles,
+    }
+
+
 def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics."""
     schema_version = _combat_log_schema_version(combat_log)
@@ -519,6 +633,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         "all_events_preserved_in_aggregates": True,
         "encounters": encounters,
         "diagnostics": diagnostics,
+        "killed_hostile_damage_reconciliation": killed_hostile_damage_reconciliation(combat_log),
     }
 
 

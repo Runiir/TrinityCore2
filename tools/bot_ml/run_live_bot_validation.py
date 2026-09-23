@@ -46,6 +46,16 @@ try:
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
     from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_live_validation_standard_marker, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
+    from .live_validation_console import enlarge_pipe_buffer, read_until_console_prompt as linear_read_until_console_prompt
+    from .live_validation_heartbeat import (
+        CommandTimingRecorder,
+        HeartbeatPlanner,
+        TraceRouteRetention,
+        cleanup_step_receipt,
+        drain_trace_backlog,
+        now_ms,
+    )
+    from .live_validation_stalls import attach_measurement_validity
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -73,6 +83,16 @@ except ImportError:
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
     from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_live_validation_standard_marker, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
+    from live_validation_console import enlarge_pipe_buffer, read_until_console_prompt as linear_read_until_console_prompt
+    from live_validation_heartbeat import (
+        CommandTimingRecorder,
+        HeartbeatPlanner,
+        TraceRouteRetention,
+        cleanup_step_receipt,
+        drain_trace_backlog,
+        now_ms,
+    )
+    from live_validation_stalls import attach_measurement_validity
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -761,6 +781,8 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "semantic_liveness",
         "decision_receipts",
         "validation_route_manifest",
+        "measurement_validity",
+        "world_stalls",
         "requested_calibration",
         "calibration_observation_mode",
         "calibration_acceptance",
@@ -6113,75 +6135,19 @@ def read_until_console_prompt(
     required_text: str = "",
     terminal_marker: bool = False,
 ) -> str:
-    if process.stdout is None:
-        return ""
-    output: list[str] = []
-    fd = process.stdout.fileno()
-    pre_marker_prompt_at: float | None = None
-    response_started = False
-    terminal_frame_started = False
-    scan_tail = ""
-    chunk_marker = required_text.replace("_complete", "_chunk") if terminal_marker else ""
-    while process.poll() is None and time.monotonic() < deadline:
-        remaining = max(0.0, deadline - time.monotonic())
-        ready, _, _ = select.select([fd], [], [], min(1.0, remaining))
-        if not ready:
-            if (
-                required_text
-                and not response_started
-                and pre_marker_prompt_at is not None
-                and time.monotonic() - pre_marker_prompt_at >= PRE_MARKER_PROMPT_GRACE_SEC
-            ):
-                break
-            continue
-        chunk = os.read(fd, 4096)
-        if not chunk:
-            break
-        text = chunk.decode(errors="replace")
-        output.append(text)
-        # Chunked exports can exceed the prompt grace and megabytes of data.
-        # Scan a bounded overlap for their markers instead of repeatedly joining
-        # the growing response (quadratic work delays the reader itself).
-        joined = scan_tail + text if terminal_marker else "".join(output)
-        if terminal_marker:
-            scan_tail = joined[-max(64, len(required_text), len(chunk_marker)):]
-            response_started = response_started or bool(chunk_marker and chunk_marker in joined)
-        if required_text:
-            marker_index = joined.find(required_text)
-            if terminal_marker:
-                # The action marker may end one os.read block while the JSON
-                # envelope continues in the next. Native frames end at newline;
-                # a trailing console prompt is not required for these exports.
-                if terminal_frame_started:
-                    if "\n" in text:
-                        break
-                elif marker_index >= 0:
-                    terminal_frame_started = True
-                    response_started = True
-                    if "\n" in joined[marker_index + len(required_text):]:
-                        break
-            elif marker_index >= 0 and "TC>" in joined[marker_index + len(required_text):]:
-                break
-            # A prompt before the required marker can be the console echo for
-            # the command that is still streaming.  Ignore it and wait for a
-            # prompt after the marker so the next command cannot interleave
-            # with this response.  If the marker never arrives, the bounded
-            # read returns incomplete output and the parser fails closed.
-            if marker_index < 0 and not response_started:
-                prompt_positions = [match.start() for match in re.finditer("TC>", joined)]
-                if prompt_positions:
-                    if pre_marker_prompt_at is None:
-                        pre_marker_prompt_at = time.monotonic()
-                    elif len(prompt_positions) > 1:
-                        break
-                if (
-                    pre_marker_prompt_at is not None
-                    and time.monotonic() - pre_marker_prompt_at >= PRE_MARKER_PROMPT_GRACE_SEC
-                ):
-                    break
-        if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
-            break
-    return "".join(output)
+    """Read one console response in time linear in its size.
+
+    The world thread prints each CLI response with a blocking ``printf`` +
+    ``fflush``; the harness read rate therefore bounds the world stall.  The
+    framing rules are unchanged; see ``live_validation_console``.
+    """
+    return linear_read_until_console_prompt(
+        process,
+        deadline,
+        required_text,
+        terminal_marker,
+        grace_sec=PRE_MARKER_PROMPT_GRACE_SEC,
+    )
 
 
 def drain_available_process_output(
@@ -6532,6 +6498,8 @@ def run_transport_completion_watchdog(
     status_command: str = ".botauto status",
     calibration_native_completion: bool = False,
     sleep: Callable[[float], None] = time.sleep,
+    light_combat_heartbeats: bool = True,
+    retain_trace_route_nodes: Sequence[str] = (),
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
 
@@ -6544,6 +6512,15 @@ def run_transport_completion_watchdog(
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
     expected_cohort_id = expected_cohort_id_from_heartbeat_commands(heartbeat_commands)
     output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
+    timings = CommandTimingRecorder(output_dir)
+    planner = HeartbeatPlanner(
+        heartbeat_commands,
+        no_progress_window_sec,
+        parse_json_objects,
+        enabled=light_combat_heartbeats,
+    )
+    trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
+    previous_report: dict[str, Any] | None = None
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -6570,18 +6547,50 @@ def run_transport_completion_watchdog(
         else None
     )
 
-    def send(command_text: str) -> tuple[int, bool]:
-        remaining = (
-            max(30, int(no_progress_window_sec))
-            if deadline is None
-            else max(1, int(deadline - time.monotonic()))
-        )
+    last_output = {"text": ""}
+
+    def send(
+        command_text: str,
+        *,
+        record_as: str = "",
+        phase: str = "heartbeat",
+        cleanup: bool = False,
+    ) -> tuple[int, bool]:
+        if cleanup:
+            # Cleanup owns a bounded floor budget: an expired emergency cap
+            # must not skip the combat-log export or the cohort stop.
+            floor = max(120, int(heartbeat_sec), int(no_progress_window_sec))
+            remaining = (
+                floor
+                if deadline is None
+                else max(floor, int(deadline - time.monotonic()))
+            )
+        else:
+            remaining = (
+                max(30, int(no_progress_window_sec))
+                if deadline is None
+                else max(1, int(deadline - time.monotonic()))
+            )
+        key = record_as or command_text
         attempts = 2 if command_text.startswith(".botauto combatlog") else 1
         output = ""
         returncode = 0
         timed_out = False
         for attempt in range(1, attempts + 1):
+            sent_at_ms = now_ms()
             output, returncode, timed_out = execute_command(command_text, remaining)
+            timings.record(
+                phase=phase,
+                heartbeat_index=heartbeat_index,
+                command=command_text,
+                configured_command=key,
+                mode=planner.mode if phase == "heartbeat" else "",
+                sent_at_ms=sent_at_ms,
+                completed_at_ms=now_ms(),
+                response_bytes=len(output or ""),
+                returncode=returncode,
+                timed_out=timed_out,
+            )
             command_output = f"$ {command_text}\n"
             if (
                 returncode != 0
@@ -6591,16 +6600,17 @@ def run_transport_completion_watchdog(
                 or attempt == attempts
             ):
                 command_output += output
-                if command_text in cleanup_commands:
+                if key in cleanup_commands:
                     output_parts.append_cleanup(command_output)
-                elif command_text in heartbeat_commands:
-                    output_parts.append_heartbeat(command_text, command_output)
+                elif key in heartbeat_commands:
+                    output_parts.append_heartbeat(key, command_output)
                 else:
                     output_parts.append(command_output)
                 break
             output_parts.append_cleanup(
                 command_output + combat_log_retry_receipt(output, attempt)
             )
+        last_output["text"] = output or ""
         if returncode == 0 and is_calibration_start_command(command_text):
             rejected = any(
                 row.get("action") == "botauto_calibrate_start"
@@ -6610,6 +6620,40 @@ def run_transport_completion_watchdog(
             if rejected:
                 return 1, timed_out
         return returncode, timed_out
+
+    def heartbeat_pass() -> tuple[int, bool]:
+        planner.begin(previous_report)
+        for configured_command in heartbeat_commands:
+            if deadline is not None and time.monotonic() >= deadline:
+                break
+            effective_command = planner.effective_command(configured_command)
+            returncode, timed_out = send(effective_command, record_as=configured_command)
+            if returncode != 0 or timed_out:
+                return returncode, timed_out
+            planner.observe(configured_command, last_output["text"])
+            if trace_retention.enabled and effective_command.startswith(".botauto trace"):
+                trace_retention.observe(
+                    heartbeat_index=heartbeat_index,
+                    phase=planner.mode,
+                    command=effective_command,
+                    output=last_output["text"],
+                )
+        return 0, False
+
+    def drain_retained_trace() -> None:
+        def run(drain_command: str) -> tuple[str, bool]:
+            sent_at_ms = now_ms()
+            output, returncode, timed_out = execute_command(drain_command, max(120, int(heartbeat_sec)))
+            timings.record(
+                phase="trace_retention_drain", heartbeat_index=heartbeat_index,
+                command=drain_command, sent_at_ms=sent_at_ms, completed_at_ms=now_ms(),
+                response_bytes=len(output or ""), returncode=returncode, timed_out=timed_out,
+            )
+            return output or "", returncode == 0 and not timed_out
+
+        receipt = drain_trace_backlog(run, trace_retention, heartbeat_commands, heartbeat_index)
+        if receipt:
+            output_parts.append_cleanup(receipt)
 
     def finish(returncode: int, timed_out: bool) -> tuple[str, int, bool, list[str]]:
         def persist_timeout(code: int) -> None:
@@ -6633,18 +6677,37 @@ def run_transport_completion_watchdog(
 
         if timed_out:
             persist_timeout(returncode)
-            return output_parts.render(), returncode, timed_out, command
+        # Every cleanup step is attempted even after a failed or timed-out
+        # step (or an emergency-cap timeout): the combat-log export and the
+        # cohort stop are independent, and each result is recorded.
+        first_failure: tuple[int, bool] | None = None
+        for command_text in cleanup_commands:
+            cleanup_returncode, cleanup_timed_out = send(
+                command_text, phase="cleanup", cleanup=True
+            )
+            marker = expected_command_output_marker(command_text)
+            output_parts.append_cleanup(cleanup_step_receipt(
+                command_text,
+                returncode=cleanup_returncode,
+                timed_out=cleanup_timed_out,
+                completed=(
+                    cleanup_returncode == 0
+                    and not cleanup_timed_out
+                    and (not marker or marker in last_output["text"])
+                ),
+            ))
+            if (cleanup_returncode != 0 or cleanup_timed_out) and first_failure is None:
+                first_failure = (cleanup_returncode, cleanup_timed_out)
         if not timed_out:
-            for command_text in cleanup_commands:
-                cleanup_returncode, cleanup_timed_out = send(command_text)
-                if cleanup_returncode != 0 or cleanup_timed_out:
-                    if cleanup_timed_out:
-                        persist_timeout(cleanup_returncode)
-                    return output_parts.render(), cleanup_returncode, cleanup_timed_out, command
+            drain_retained_trace()
+        if first_failure is not None and not timed_out and returncode == 0:
+            if first_failure[1]:
+                persist_timeout(first_failure[0])
+            return output_parts.render(), first_failure[0], first_failure[1], command
         return output_parts.render(), returncode, timed_out, command
 
     for command_text in startup_commands:
-        returncode, timed_out = send(command_text)
+        returncode, timed_out = send(command_text, phase="startup")
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
     if calibration_clock is not None:
@@ -6681,12 +6744,9 @@ def run_transport_completion_watchdog(
             )
         )
         heartbeat_index += 1
-        for command_text in heartbeat_commands:
-            if deadline is not None and time.monotonic() >= deadline:
-                break
-            returncode, timed_out = send(command_text)
-            if returncode != 0 or timed_out:
-                return finish(returncode, timed_out)
+        returncode, timed_out = heartbeat_pass()
+        if returncode != 0 or timed_out:
+            return finish(returncode, timed_out)
         report = rolling_heartbeat_report(
             output_dir, heartbeat_index, output_parts.render(), 0, False, command,
             scenario_reports, validation_context, duration_policy, heartbeat_sec,
@@ -6705,6 +6765,8 @@ def run_transport_completion_watchdog(
             **liveness_clock,
         )
         report["semantic_liveness"] = advanced_liveness.pop("receipt")
+        report["heartbeat_plan"] = planner.receipt()
+        previous_report = report
         liveness_clock = advanced_liveness
         last_progress_total = int(liveness_clock["last_progress_total"])
         last_progress_at = float(liveness_clock["last_progress_monotonic"])
@@ -6807,6 +6869,8 @@ def run_worldserver_completion_watchdog(
     validation_route: dict[str, Any] | None = None,
     validation_route_manifest: dict[str, Any] | None = None,
     calibration_native_completion: bool = False,
+    light_combat_heartbeats: bool = True,
+    retain_trace_route_nodes: Sequence[str] = (),
 ) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
@@ -6814,6 +6878,15 @@ def run_worldserver_completion_watchdog(
     calibration_startup = any(is_calibration_start_command(value) for value in startup_commands)
     expected_cohort_id = expected_cohort_id_from_heartbeat_commands(heartbeat_commands)
     output_parts = WatchdogOutputBuffer(heartbeat_commands=heartbeat_commands)
+    timings = CommandTimingRecorder(output_dir)
+    planner = HeartbeatPlanner(
+        heartbeat_commands,
+        no_progress_window_sec,
+        parse_json_objects,
+        enabled=light_combat_heartbeats,
+    )
+    trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
+    previous_report: dict[str, Any] | None = None
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -6847,6 +6920,9 @@ def run_worldserver_completion_watchdog(
         text=True,
     )
     assert process.stdin is not None
+    # The world thread blocks in printf until the harness drains all but one
+    # pipe buffer of each response; a 1 MiB buffer absorbs status/diagnosis.
+    enlarge_pipe_buffer(process.stdout)
 
     def joined_output() -> str:
         return output_parts.render()
@@ -6864,14 +6940,24 @@ def run_worldserver_completion_watchdog(
         else:
             output_parts.append(value)
 
-    def send_command(command_text: str, *, cleanup: bool = False) -> None:
+    def send_command(
+        command_text: str,
+        *,
+        cleanup: bool = False,
+        record_as: str = "",
+        phase: str = "",
+        record: bool = True,
+    ) -> str:
+        """Send one command; ``record_as`` keys a light variant's output."""
         assert process.stdin is not None
         attempts = (
             2
             if cleanup and command_text.startswith(".botauto combatlog")
             else 1
         )
+        command_output = ""
         for attempt in range(1, attempts + 1):
+            sent_at_ms = now_ms()
             process.stdin.write(command_text + "\n")
             process.stdin.flush()
             command_output_prefix = f"$ {command_text}\n"
@@ -6886,24 +6972,81 @@ def run_worldserver_completion_watchdog(
                 expected_command_output_marker(command_text),
                 command_output_marker_is_terminal(command_text),
             )
+            timings.record(
+                phase=phase or ("cleanup" if cleanup else "heartbeat"),
+                heartbeat_index=heartbeat_index,
+                command=command_text,
+                configured_command=record_as or command_text,
+                mode=planner.mode if not cleanup else "",
+                sent_at_ms=sent_at_ms,
+                completed_at_ms=now_ms(),
+                response_bytes=len(command_output),
+            )
+            if not record:
+                break
             if (
                 attempts == 1
                 or combat_log_export_complete(command_output)
                 or attempt == attempts
             ):
                 record_command_output(
-                    command_text,
+                    record_as or command_text,
                     command_output_prefix + command_output,
                     cleanup=cleanup,
                 )
                 break
             record_command_output(
-                command_text,
+                record_as or command_text,
                 command_output_prefix + combat_log_retry_receipt(
                     command_output, attempt
                 ),
                 cleanup=cleanup,
             )
+        return command_output
+
+    def send_heartbeat_commands() -> None:
+        planner.begin(previous_report)
+        for configured_command in heartbeat_commands:
+            if process.poll() is not None or time.monotonic() >= deadline:
+                break
+            effective_command = planner.effective_command(configured_command)
+            command_output = send_command(effective_command, record_as=configured_command)
+            planner.observe(configured_command, command_output)
+            if trace_retention.enabled and effective_command.startswith(".botauto trace"):
+                trace_retention.observe(
+                    heartbeat_index=heartbeat_index,
+                    phase=planner.mode,
+                    command=effective_command,
+                    output=command_output,
+                )
+
+    def send_cleanup_commands() -> None:
+        for command_text in cleanup_commands:
+            if process.poll() is not None:
+                output_parts.append_cleanup(cleanup_step_receipt(
+                    command_text, returncode=1, timed_out=False, completed=False,
+                    extra={"skipped": "worldserver_process_exited"},
+                ))
+                continue
+            command_output = send_command(command_text, cleanup=True)
+            marker = expected_command_output_marker(command_text)
+            output_parts.append_cleanup(cleanup_step_receipt(
+                command_text,
+                returncode=0 if process.poll() is None else int(process.returncode or 0),
+                timed_out=False,
+                completed=not marker or marker in command_output,
+            ))
+        receipt = drain_trace_backlog(
+            lambda drain_command: (
+                send_command(drain_command, cleanup=True, phase="trace_retention_drain", record=False),
+                process.poll() is None,
+            ),
+            trace_retention,
+            heartbeat_commands,
+            heartbeat_index,
+        )
+        if receipt:
+            output_parts.append_cleanup(receipt)
 
     def persist_timeout(code: int) -> None:
         persist_final_timeout_liveness(
@@ -6929,7 +7072,7 @@ def run_worldserver_completion_watchdog(
         for command_text in startup_commands:
             if process.poll() is not None:
                 break
-            send_command(command_text)
+            send_command(command_text, phase="startup")
             # Calibration owns a separate population and native readiness gate.
             # Its deliberately empty ordinary population cannot become ready.
             if not calibration_startup:
@@ -6991,10 +7134,7 @@ def run_worldserver_completion_watchdog(
 
             heartbeat_index += 1
             if process.poll() is None:
-                for command_text in heartbeat_commands:
-                    if process.poll() is not None or time.monotonic() >= deadline:
-                        break
-                    send_command(command_text)
+                send_heartbeat_commands()
             report = rolling_heartbeat_report(
                 output_dir,
                 heartbeat_index,
@@ -7023,6 +7163,8 @@ def run_worldserver_completion_watchdog(
                 **liveness_clock,
             )
             report["semantic_liveness"] = advanced_liveness.pop("receipt")
+            report["heartbeat_plan"] = planner.receipt()
+            previous_report = report
             liveness_clock = advanced_liveness
             last_progress_total = int(liveness_clock["last_progress_total"])
             last_progress_at = float(liveness_clock["last_progress_monotonic"])
@@ -7118,9 +7260,7 @@ def run_worldserver_completion_watchdog(
                 write_json(output_dir / "report.json", report)
                 break
         timed_out = time.monotonic() >= deadline
-        if process.poll() is None:
-            for command_text in cleanup_commands:
-                send_command(command_text, cleanup=True)
+        send_cleanup_commands()
         if process.poll() is None and process.stdin and not process.stdin.closed:
             try:
                 send_command("server shutdown force 0", cleanup=True)
@@ -7204,6 +7344,42 @@ def execute_soap_command(soap_url: str, username: str, password: str, command_te
         return "", 124, True
     except OSError as exc:
         return str(exc), 1, False
+
+
+def run_soap_completion_watchdog(
+    args: argparse.Namespace,
+    script: str,
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    validation_route_manifest: dict[str, Any] | None,
+) -> tuple[str, int, bool, list[str]]:
+    """Run the completion watchdog over SOAP with the same manifest as process mode.
+
+    Without the manifest the SOAP report carried ``validation_route_manifest:
+    {}``: ``observed_native_manifest_clear`` could never be true and the
+    semantic-plateau watchdog never armed.
+    """
+    def execute_soap(command_text: str, remaining: int) -> tuple[str, int, bool]:
+        return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
+
+    return run_transport_completion_watchdog(
+        execute_soap,
+        ["SOAP", args.soap_url],
+        args.timeout_sec,
+        script,
+        args.output_dir,
+        scenario_reports,
+        validation_context,
+        validation_route_manifest=validation_route_manifest,
+        duration_policy=args.duration_policy,
+        heartbeat_sec=args.heartbeat_sec,
+        no_progress_window_sec=args.no_progress_window_sec,
+        max_repeated_decisions=args.max_repeated_decision_count,
+        max_death_loops=args.max_death_loop_count,
+        calibration_native_completion=args.calibration_native_completion,
+        light_combat_heartbeats=getattr(args, "light_combat_heartbeats", True),
+        retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
+    )
 
 
 def run_soap_commands(soap_url: str, username: str, password: str, script: str, timeout_sec: int, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
@@ -7306,6 +7482,10 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         command.append("--force-start-command")
     if args.stop:
         command.append("--stop")
+    if getattr(args, "light_combat_heartbeats", True) is False:
+        command.append("--no-light-combat-heartbeats")
+    for route_node in getattr(args, "retain_trace_route_node", None) or []:
+        command.extend(["--retain-trace-route-node", str(route_node)])
     if getattr(args, "preserve_worldserver", False):
         command.append("--preserve-worldserver")
     if getattr(args, "session_runtime_dir", None):
@@ -8090,6 +8270,8 @@ def run_reusable_validation_session(
                 max_death_loops=args.max_death_loop_count,
                 status_command=executor.status_command,
                 calibration_native_completion=calibration_native_completion,
+                light_combat_heartbeats=getattr(args, "light_combat_heartbeats", True),
+                retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
@@ -8279,6 +8461,18 @@ def _main() -> int:
     parser.add_argument("--no-progress-window-sec", type=int, default=DEFAULT_NO_PROGRESS_WINDOW_SEC)
     parser.add_argument("--max-repeated-decision-count", type=int, default=DEFAULT_MAX_REPEATED_DECISIONS)
     parser.add_argument("--max-death-loop-count", type=int, default=DEFAULT_MAX_DEATH_LOOPS)
+    parser.add_argument(
+        "--no-light-combat-heartbeats",
+        dest="light_combat_heartbeats",
+        action="store_false",
+        help="Send the full diagnose/trace heartbeat even while the cohort is in combat or a boss node is open (reintroduces multi-second world stalls).",
+    )
+    parser.add_argument(
+        "--retain-trace-route-node",
+        action="append",
+        default=[],
+        help="Append every trace row of this route node id to trace_history.jsonl.gz (repeatable); cleanup drains the remaining delta backlog for it.",
+    )
     parser.add_argument("--selector", default="all")
     parser.add_argument("--trace-limit", type=int, default=128)
     parser.add_argument("--no-start", action="store_true")
@@ -8787,23 +8981,12 @@ def _main() -> int:
             if not args.soap_user or not args.soap_password:
                 raise SystemExit("--soap-user and --soap-password are required with --transport soap")
             if args.duration_policy == "completion-watchdog":
-                def execute_soap(command_text: str, remaining: int) -> tuple[str, int, bool]:
-                    return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
-
-                output, returncode, timed_out, command = run_transport_completion_watchdog(
-                    execute_soap,
-                    ["SOAP", args.soap_url],
-                    args.timeout_sec,
+                output, returncode, timed_out, command = run_soap_completion_watchdog(
+                    args,
                     script,
-                    args.output_dir,
                     scenario_reports,
                     validation_context,
-                    duration_policy=args.duration_policy,
-                    heartbeat_sec=args.heartbeat_sec,
-                    no_progress_window_sec=args.no_progress_window_sec,
-                    max_repeated_decisions=args.max_repeated_decision_count,
-                    max_death_loops=args.max_death_loop_count,
-                    calibration_native_completion=args.calibration_native_completion,
+                    validation_route_manifest,
                 )
                 existing_report = args.output_dir / "report.json"
                 if existing_report.exists():
@@ -8850,6 +9033,8 @@ def _main() -> int:
                 validation_route=validation_route,
                 validation_route_manifest=validation_route_manifest,
                 calibration_native_completion=args.calibration_native_completion,
+                light_combat_heartbeats=args.light_combat_heartbeats,
+                retain_trace_route_nodes=tuple(args.retain_trace_route_node or ()),
             )
             existing_report = args.output_dir / "report.json"
             if existing_report.exists():
@@ -8972,6 +9157,14 @@ def _main() -> int:
     )
     if report.get("combat_log"):
         report["combat_analysis"] = analyze_combat_log(report["combat_log"])
+    attach_measurement_validity(
+        report,
+        args.output_dir,
+        parsed_output_payloads,
+        validation_route_manifest=validation_route_manifest,
+        validation_route=validation_route,
+    )
+    if report.get("combat_log"):
         write_json(args.output_dir / "combat_log.json", report["combat_log"])
         write_json(args.output_dir / "combat_analysis.json", report["combat_analysis"])
         report["combat_log_path"] = str(args.output_dir / "combat_log.json")
@@ -9037,6 +9230,7 @@ def _main() -> int:
         for name in (
             "combat_analysis.json",
             "combat_log.json",
+            "heartbeat_command_timings.jsonl",
             "heartbeat_events.jsonl",
             "latest.json",
             "worldserver_output.log",

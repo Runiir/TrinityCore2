@@ -1124,3 +1124,73 @@ def test_combat_event_finalization_binds_accepted_status_before_first_delta():
     assert result["event_count"] == 1
     assert result["event_stream_receipt"]["identity"]["server_epoch"] == 88
     assert combined_combat_log([foreign_full], expected_status=delta) == {}
+
+
+def _landed(ms, source, target, amount, before, *, max_health=1000, target_entry=42362, pet=False, source_entry=0, sequence=0):
+    return {
+        "kind": "damage",
+        "timestamp_ms": ms,
+        "event_sequence": sequence or ms,
+        "actor_guid": 30001 if source in (30001, 7) else 30002,
+        "source_guid": source,
+        "source_entry": source_entry,
+        "source_is_pet": pet,
+        "source_name": f"source-{source}",
+        "target_guid": target,
+        "target_entry": target_entry,
+        "target_name": f"target-{target}",
+        "amount": amount,
+        "route_node_id": "bwd.magmaw.drudges",
+        "route_generation": 3,
+        "landed_damage_observation": {
+            "target_health_before_damage": before,
+            "target_max_health": max_health,
+        },
+    }
+
+
+def test_killed_hostile_damage_reconciliation_flags_unlogged_damage():
+    events = [
+        # Hostile 60: 150 HP of periodic damage never reached the log.
+        _landed(1, 30001, 60, 400, 1000),
+        _landed(2, 30001, 60, 300, 450),
+        _landed(3, 30001, 60, 150, 150),
+        # Hostile 59: every hit logged, including the killing blow.
+        _landed(4, 30001, 59, 600, 1000),
+        _landed(5, 7, 59, 400, 400, pet=True, source_entry=417),
+        # Hostile 61 survived: not a reconciliation subject.
+        _landed(6, 30001, 61, 100, 1000),
+        # A friendly pet killed by a hostile is never a hostile.
+        _landed(7, 60, 7, 500, 500, max_health=500, target_entry=417),
+    ]
+    report = analyze_combat_log({"combat_log_schema_version": 8, "recent_events": events})
+    result = report["killed_hostile_damage_reconciliation"]
+    assert result["event_window_complete"] is True
+    assert result["killed_hostile_count"] == 2
+    assert result["mismatch_count"] == 1
+    assert result["reconciled"] is False
+    mismatch = result["mismatches"][0]
+    assert mismatch["target_guid"] == 60
+    assert mismatch["recorded_damage_taken"] == 850
+    assert mismatch["delta"] == -150
+    assert mismatch["mismatch_pct"] == 15.0
+    assert mismatch["unlogged_health_loss"] == 150
+    assert mismatch["route_node_id"] == "bwd.magmaw.drudges"
+    clean = next(row for row in result["hostiles"] if row["target_guid"] == 59)
+    assert clean["flagged"] is False and clean["delta"] == 0
+
+
+def test_killed_hostile_reconciliation_tolerates_one_percent_and_reports_dropped_events():
+    events = [
+        _landed(1, 30001, 60, 995, 1000, max_health=1000),
+        _landed(2, 30001, 60, 5, 5, max_health=1000),
+    ]
+    events[1]["landed_damage_observation"]["target_health_before_damage"] = 5
+    events[0]["amount"] = 990  # 0.5% short: inside tolerance
+    events[1]["amount"] = 5
+    result = analyze_combat_log({"recent_events": events, "recent_events_dropped": 3})[
+        "killed_hostile_damage_reconciliation"
+    ]
+    assert result["mismatch_count"] == 0
+    assert result["event_window_complete"] is False
+    assert result["reconciled"] is False
