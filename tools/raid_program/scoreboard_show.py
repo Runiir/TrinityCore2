@@ -6,11 +6,16 @@ from typing import Any
 
 from tools.raid_program.scoreboard_compare import compare_labels
 from tools.raid_program.scoreboard_core import (
-    actor_rows, clear_kills, exclusion_reason, label_kills, latest_label, load_records, load_target, mean_sd,
+    actor_rows, clear_kills, counted_kills, detectable_delta, exclusion_reason, kills_per_batch, label_kills,
+    latest_label, load_baseline, load_records, load_target, mean_sd,
 )
 
 RNG_PRIMARY_SIDE = {"massive_crash": "raid_wide"}  # side whose share is compared between labels
 BASIS_TAG = {"wcl": "WCL", "wowsims_fallback": "WoWS", "none": "-"}  # reference_basis next to the target
+MECHANISM_REMINDER = ("keep also requires the change's mechanism to be visible in the candidate kills "
+                      "(ranked gaps, evidence_view); this tool cannot check that")
+DETECT_LEGEND = ("det95 = detectable delta (95%, these n) = t95 x sqrt(sd1^2/n1 + sd2^2/n2): a smaller |delta| "
+                 "cannot be told from noise with these kill counts")
 from tools.raid_program.scoreboard_verdict import evaluate_target
 
 
@@ -26,9 +31,62 @@ def _mean_of(rows: list[dict[str, Any]], key: str) -> float | None:
     return mean_sd([float(row[key]) for row in rows if row.get(key) is not None])[0]
 
 
-def _change(change: dict[str, Any]) -> str:
+def _change(change: dict[str, Any], detect: float | None = None) -> str:
     return (f" | {change['old_n']:>2} {_num(change['old_mean'], 8)} {_signed(change['delta'])} "
-            f"{_num(change['t'], 6, 2)} {_num(change['df'], 5, 1)} {_num(change['critical_t'], 5, 2)} {change['verdict']}")
+            f"{_num(change['t'], 6, 2)} {_num(change['df'], 5, 1)} {_num(change['critical_t'], 5, 2)} "
+            f"{_num(detect)} {change['verdict']}")
+
+
+def keep_decision(comparison: dict[str, Any], new_kills: list[dict[str, Any]],
+                  targeted_actor: str | None = None) -> tuple[str, list[tuple[str, bool | None, str]]]:
+    """keep only when all hold: (a) every counted candidate kill is a native clear, (b) boss-window deaths
+    per counted kill did not increase, (c) no non-healer actor regressed (two-sided 95% Welch t, per row)
+    and (d) the point estimate is non-negative: the targeted actor's mean, else the party mean, is at
+    least the baseline mean.
+
+    Returns (decision, [(condition, ok, text)]). A failed condition means revert; a condition that cannot
+    be judged (fewer than min_kills_per_label counted native clears on a side) means insufficient_kills.
+    """
+    new_label, old_label = comparison["new_label"], comparison["old_label"]
+    counted = counted_kills(new_kills)
+    non_clears = [record["kill_id"] for record in counted if not record.get("native_clear")]
+    conditions = [("a", not non_clears, f"{len(counted) - len(non_clears)} of {len(counted)} counted kill(s) of "
+                   f"{new_label} are native clears" + (f"; not: {', '.join(non_clears)}" if non_clears else ""))]
+    deaths = comparison["boss_window_deaths_per_kill"]
+    conditions.append(("b", deaths["new"] <= deaths["old"], f"boss-window deaths per counted kill "
+                       f"{old_label} {deaths['old']:.2f} -> {new_label} {deaths['new']:.2f}"))
+    gating = {actor_id: row for actor_id, row in comparison["actors"].items() if row["gating"]}
+    regressed = [actor_id for actor_id, row in gating.items() if row["verdict"] == "regressed"]
+    unjudged = [actor_id for actor_id, row in gating.items() if row["verdict"] == "insufficient_kills"]
+    if regressed:
+        conditions.append(("c", False, f"regressed non-healer actors (two-sided 95% Welch t): {', '.join(regressed)}"))
+    elif unjudged:
+        conditions.append(("c", None, f"not judged: fewer than {comparison['min_kills_per_label']} counted "
+                           f"native-clear kills on a side for {', '.join(unjudged)}"))
+    else:
+        conditions.append(("c", True, "no non-healer actor regressed (two-sided 95% Welch t)"))
+    subject = f"actor {targeted_actor}" if targeted_actor else "party"
+    row = comparison["actors"].get(targeted_actor) if targeted_actor else comparison["party"]
+    if row is None:
+        conditions.append(("d", False, f"{subject} is in neither label"))
+    elif comparison["basis"] != "counted_native_clears" or row["new_mean"] is None or row["old_mean"] is None:
+        conditions.append(("d", None, f"{subject} has no counted native-clear mean on a side"))
+    else:
+        conditions.append(("d", row["new_mean"] >= row["old_mean"],
+                           f"{subject} mean {row['new_mean']:.0f} vs {old_label} {row['old_mean']:.0f} "
+                           f"({row['new_mean'] - row['old_mean']:+.0f})"))
+    states = [ok for _, ok, _ in conditions]
+    decision = "revert" if False in states else "insufficient_kills" if None in states else "keep"
+    return decision, conditions
+
+
+def _keep_lines(decision: str, conditions: list[tuple[str, bool | None, str]]) -> list[str]:
+    failed = [f"({name}) {text}" for name, ok, text in conditions if ok is False]
+    unjudged = [f"({name}) {text}" for name, ok, text in conditions if ok is None]
+    reasons = failed if decision == "revert" else unjudged
+    lines = [f"keep/revert: {decision}" + (f" - {'; '.join(reasons)}" if reasons else "")]
+    lines += [f"  ({name}) {'ok' if ok else 'FAIL' if ok is False else 'n/a':4} {text}" for name, ok, text in conditions]
+    return lines + [MECHANISM_REMINDER]
 
 
 def _kill_table(label: str | None, kills: list[dict[str, Any]]) -> list[str]:
@@ -153,22 +211,28 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     target = load_target(root, scenario)
     records = load_records(root, scenario)
     label = label or latest_label(records)
+    baseline = (load_baseline(root, scenario) or {}).get("label")
+    auto_vs = vs is None and baseline is not None and label != baseline
+    vs = baseline if auto_vs else vs
     verdict = evaluate_target(root, scenario, label)
     kills = label_kills(records, label)
     rows = actor_rows(clear_kills(kills))
     comparison = compare_labels(root, scenario, label, vs, targeted_actor) if vs else None
+    old_kills = label_kills(records, vs) if vs else []
+    old_rows = actor_rows(clear_kills(old_kills))
     encounter = verdict["encounter"]
 
     fallback = target.get("fallback_reference") or {}
-    out = [f"scoreboard {scenario} label={label} counted={verdict['kills']} of {len(kills)} clears={encounter['clears']}"
-           + (f"  vs {vs}" if vs else ""),
+    out = [f"scoreboard {scenario} label={label} baseline={baseline or 'unset'} counted={verdict['kills']} of "
+           f"{len(kills)} clears={encounter['clears']}" + (f"  vs {vs}" if vs else "")
+           + (" (the baseline; pass --vs to override)" if auto_vs else ""),
            f"target: actor DPS >= {target['actor_dps_ratio']} x median WCL of {', '.join(target['matched_reference_ids'])}"
            + (f" (no WCL: >= {fallback['ratio']} x WoWSims)" if fallback else "") + "; "
            f"{target['kills_per_measurement']} kills per measurement; max {target['max_boss_window_deaths']} boss-window deaths"]
     header = (f"{'actor':6} {'name':9} {'spec':19} {'role':6} {'n':>2} {'mean DPS':>8} {'± sd':>6} {'target':>7} {'ref':4} "
               f"{'ratio':>5} {'status':18} {'active':>6} {'casts/m':>7}")
     if vs:
-        header += f" | {'n':>2} {vs[:8]:>8} {'delta':>7} {'t':>6} {'df':>5} {'t95':>5} verdict"
+        header += f" | {'n':>2} {vs[:8]:>8} {'delta':>7} {'t':>6} {'df':>5} {'t95':>5} {'det95':>7} verdict"
     out += [header, "-" * len(header)]
     for actor_id, actor in verdict["actors"].items():
         series = rows.get(actor_id, [])
@@ -180,7 +244,9 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
                 f"{_num(uptime * 100 if uptime is not None else None, 5)}% {_num(_mean_of(series, 'casts_per_minute'), 7, 1)}")
         if comparison:
             change = comparison["actors"][actor_id]
-            line += _change(change) + ("" if change["gating"] else " (healer, not gating)")
+            detect = detectable_delta(change["critical_t"], [float(row["encounter_window_dps"]) for row in series],
+                                      [float(row["encounter_window_dps"]) for row in old_rows.get(actor_id, [])])
+            line += (_change(change, detect) if change["gating"] else _change(change) + " (healer, not gating)")
         out.append(line)
 
     party_values = [float(r["encounter"]["encounter_window_party_dps"]) for r in clear_kills(kills)]
@@ -189,8 +255,9 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
                   f"{_num(encounter['party_wcl_dps'])} {'WCL':4} {_num(encounter['party_ratio'], 5, 2)} "
                   f"{'encounter ' + encounter['status']:18} {'':>6}  {'':>7}")
     if comparison:
-        party_line += _change(comparison["party"])
-    out += ["-" * len(header), party_line, ""]
+        old_party = [float(r["encounter"]["encounter_window_party_dps"]) for r in clear_kills(old_kills)]
+        party_line += _change(comparison["party"], detectable_delta(comparison["party"]["critical_t"], party_values, old_party))
+    out += ["-" * len(header), party_line] + ([DETECT_LEGEND] if comparison else []) + [""]
 
     duration, duration_sd = mean_sd([float(r["encounter"]["duration_sec"]) for r in clear_kills(kills)])
     kill_time = f"kill time: {_num(duration, 1, 1)} ± {_num(duration_sd, 1, 1)} s"
@@ -203,12 +270,11 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     out += [kill_time, deaths, ""]
     out += _kill_table(label, kills)
     if vs:
-        out += _kill_table(vs, label_kills(records, vs))
+        out += _kill_table(vs, old_kills)
     out.append(_fidelity_line(kills))
     mix = rng_mix(kills)
     out.append(_rng_line(label, kills, mix))
     if vs:
-        old_kills = label_kills(records, vs)
         old_mix = rng_mix(old_kills)
         out.append(_rng_line(vs, old_kills, old_mix))
         out += [text for _, text in rng_mix_warnings(mix, old_mix)]
@@ -220,9 +286,12 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     out.append(f"verdict: {verdict['status']}" + (f" [references: {basis_text}]" if basis_text else "")
                + (f" - {verdict['reason']}" if verdict["reason"] else ""))
     if comparison:
-        keep = comparison["keep"]
-        out.append(f"keep/revert (two-sided 95% Welch t): {keep['decision']}"
-                   + (f" - {'; '.join(keep['reasons'])}" if keep["reasons"] else ""))
+        out += _keep_lines(*keep_decision(comparison, kills, targeted_actor))
+        batch = kills_per_batch(target)
+        for side, side_kills in ((label, kills), (vs, old_kills)):
+            if len(clear_kills(side_kills)) < batch:
+                out.append(f"warning: {side} has {len(clear_kills(side_kills))} counted native-clear kill(s), fewer "
+                           f"than kills_per_batch {batch}; see det95 for what these n can detect")
     if kills:
         latest = kills[-1]
         gaps = latest.get("ranked_gaps") or []

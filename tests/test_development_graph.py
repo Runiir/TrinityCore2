@@ -183,6 +183,14 @@ def test_diagnosis_can_advance_without_model_advice(case):
     assert result['development_graph']['requirements'] == state['development_graph']['requirements']
 
 
+def test_resume_does_not_route_to_model_advisors(case):
+    root, _, _ = case
+    resumed = graph.resume(root)
+    assert 'model_advice' not in resumed
+    assert not any(name in text for text in graph.ACTIONS.values() for name in ('Jev', 'Laya'))
+    assert resumed['next_action'].endswith(graph.ACTIONS['diagnose'])
+
+
 def test_changed_code_invalidates_review(case):
     root,state,evidence=reach(case,'review')
     (root/'code.cpp').write_text('unreviewed change')

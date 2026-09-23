@@ -1,3 +1,6 @@
+> Status 2026-09-23: removed from the tuning workflow. The tooling below stays
+> on disk for a later evaluation; no skill or graph step calls it.
+
 # Local diagnostic shadow
 
 Integration source: `68621071ccb3df1eb6927fbafa83a8c5dccdbb3a`.

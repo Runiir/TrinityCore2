@@ -20,7 +20,9 @@ the measuring harness, not the goal.
    (schema `raid_target_v1`), for example `blackwing_descent_10n_magmaw.json`.
    It lists each actor, its spec, its matched WCL reference and the finish line.
 3. Run `pixi run python -m tools.raid_program.scoreboard verdict --scenario <scenario>`
-   to see which actors pass, fail or have no reference.
+   to see which actors pass, fail or have no reference. It judges the baseline
+   label recorded by `scoreboard baseline`; `scoreboard show` prints that label
+   in its header.
 4. Missing research, native scripts, rosters or runtime scenarios are
    implementation work: route them with [raid-performance-loop](../raid-performance-loop/SKILL.md).
    Never borrow another difficulty's result.
@@ -57,7 +59,8 @@ Each threshold has one meaning:
 | --- | --- | --- |
 | 95% of WCL | The finish line above | `scoreboard verdict`, per non-healer actor |
 | 75% of the hard reference | Per-class dummy qualification floor: one best DPS spec per class must reach it (Phase 8); for Death Knight prefer and keep optimizing Unholy | Isolated dummy calibration only |
-| Two-sided 95% Welch t | Noise rule (step f) | Every keep/revert decision |
+| Two-sided 95% Welch t | Regression check of the keep rule (step f); a positive delta need not pass it | Every keep/revert decision |
+| 5 kills per label | Batch size of every keep/revert comparison (`kills_per_batch`) | `scoreboard run --kills 5`, baseline and candidate |
 | 300 s | Exact scoring window of isolated training-dummy calibration | Never a raid or dungeon timer |
 | 10 | Failures of one edge before the graph demands a changed hypothesis | Graph routing |
 | 95% of self-provided WoWSims (`dps_gate`) | Legacy gate, checked only when a graph assessment cites no scoreboard verdict; not the finish line or a tuning target | Legacy graph assessment |
@@ -76,8 +79,10 @@ natively and cleanup completes. Do this once per session and after every
 `shared_runtime` change. If it fails, repair the harness before any tuning;
 never switch to a boss-only slice.
 
-**b. Baseline batch.** `scoreboard run --scenario S --label base-<short-sha> --kills 3`
-on the unchanged build, then `scoreboard show --scenario S --label base-<short-sha>`.
+**b. Baseline batch.** `scoreboard run --scenario S --label base-<short-sha> --kills 5`
+on the unchanged build, then `scoreboard show --scenario S --label base-<short-sha>`,
+and record it with `scoreboard baseline --scenario S --label base-<short-sha> --reason TEXT`
+unless a recorded baseline on this build already exists.
 Reuse an existing label when the binary, database profiles and configuration are
 unchanged; `run` refuses to add kills to a label that already has some, and it
 runs a pinned copy of the binary (`/tmp/worldserver-<sha12>`, delete it once the
@@ -95,29 +100,40 @@ target/range/LOS loss, duty cost, deaths), using `events` for detail
 ([evidence views](../raid-rotation-review/references/evidence-views.md)).
 Stop reading when you can say "changing X should raise actor A's DPS because Y".
 
-**d. Make one change.** Make the smallest change that addresses that mechanism,
-using the specialist skill that owns it (routing table in raid-performance-loop).
+**d. Make one mechanism's change.** Make the smallest change that addresses that
+mechanism, using the specialist skill that owns it (routing table in
+raid-performance-loop). When the actor is below 0.85 of its target, bundle the
+diagnosed fixes for that actor from the error ledger into one batch: a single
+5% fix cannot be told from noise at these kill counts, and the batches kept so
+far were bundles.
 Classify its risk tier (section 4) and complete that tier's checks. Commit it,
 so each label maps to one commit.
 
-**e. Measure a batch.** `scoreboard run --scenario S --label <change-label> --kills 3`
+**e. Measure a batch.** `scoreboard run --scenario S --label <change-label> --kills 5`
 with the baseline's route, roster and configuration. Nothing else may differ
 between the two labels.
 
 **f. Keep or revert.** Run
-`scoreboard show --scenario S --label <change-label> --vs <baseline-label> --actor <target-actor-id>`.
-With at least 3 counted native-clear kills per label, `show` runs a two-sided
-95% Welch t-test per metric: **improved** or **regressed** when |t| exceeds the
-critical value it prints, otherwise **within noise**. With 3 kills only large
-effects (roughly 7% of party DPS) are detectable; use `--kills 5` for smaller
-expected gains. Keep the change only if party
-DPS or the target actor improved, no non-healer actor regressed, boss-window
-deaths per kill did not increase, and every kill of the new label is a native
-clear. Trash deaths the party recovers from are context only; a trash wipe that
-stops the route already fails the kill.
-Otherwise revert it: revert the commit, and for SQL profile rows apply the
-reverse migration and read the rows back. Within noise means revert. A kept
-change's label becomes the new baseline.
+`scoreboard show --scenario S --label <change-label> --actor <target-actor-id>`.
+It compares against the recorded baseline (`--vs L` overrides). With at least 3
+counted native-clear kills per label, `show` classifies each metric with a
+two-sided 95% Welch t-test as **improved**, **regressed** or **within noise**,
+prints the delta it could have detected at these kill counts, and prints
+**keep** or **revert**. Keep when every counted kill of the new label is a
+native clear, boss-window deaths per kill did not increase, no non-healer actor
+regressed, and the target actor's mean (party mean without `--actor`) is not
+below the baseline. A within-noise positive delta is kept only when the
+change's mechanism is visible in the candidate kills: the new ability was
+submitted and landed, the named gap shrank or the rejection count fell. Check
+that in the ranked gaps or with `evidence_view` before keeping. Otherwise
+revert it: revert the commit, and for SQL profile rows apply the reverse
+migration and read the rows back. A kept change's label becomes the new
+baseline: record it with
+`scoreboard baseline --scenario S --label <change-label> --reason TEXT`.
+Trash deaths the party recovers from are context only; a trash wipe that stops
+the route already fails the kill. The random Massive Crash side moves casters
+by several thousand DPS; read the RNG line and never credit a caster delta to a
+change that did not touch that caster.
 
 **g. Record and clean up.** The scoreboard appends each kill to
 `artifacts/cata_raid_program/scoreboard/<scenario>.jsonl` and publishes, verifies
@@ -135,9 +151,9 @@ because actor and encounter requirements close only on a passing scoreboard
 verdict. Run `scoreboard verdict`, then continue with the next gap of this
 actor, or the next actor once it passes.
 
-If two changes aimed at the same mechanism both land within noise, capture the
-missing observation (one diagnostic run or telemetry field) and state what it
-will decide before trying a third.
+If two batches aimed at the same mechanism both leave the target actor's mean
+flat, capture the missing observation (one diagnostic run or telemetry field)
+and state what it will decide before trying a third.
 
 ## 4. Risk tiers
 
@@ -158,33 +174,21 @@ are in `docs/bot_raids/development_graph.md`.
 
 ## 5. Magmaw 10N now
 
-Scenario `blackwing_descent_10n_magmaw`. **Baseline label: `r3-47cd175`**
-(build 47cd175c, Blizzlike boss damage): six native clears with 0 deaths,
-party 263.4k encounter-window DPS = 1.07 x WCL, Magmaw 107.0 s. Compare every
-change against it with `scoreboard show --vs r3-47cd175`; once a change is
-kept, its label is the new baseline. Kills vary by about +/-3-4% even on a
-clean harness, and the random Massive Crash side moves casters by several
-thousand DPS, so read the RNG line `show` prints before trusting an actor delta.
+Scenario `blackwing_descent_10n_magmaw`. The baseline label is recorded by
+`scoreboard baseline` and printed in the header of `scoreboard show`; compare
+every change against it and record a kept change as the new baseline. Kills
+vary by about +/-3-4% even on a clean harness, and the random Massive Crash
+side moves casters by several thousand DPS, so read the RNG line `show` prints
+before trusting an actor delta.
 
-Actor status on the baseline (ratio to target; `scoreboard verdict` is
-authoritative):
-
-| Actor | Ratio | Next diagnosed fix (error ledger ID) |
-| --- | --- | --- |
-| Blood DK tank 30002 | 0.68 | Rune supply: Outbreak, Blood Tap, Empower Rune Weapon (TANK-002); Bone Shield and Death Strike before the Mangle seize (TANK-003) |
-| Fire A 30006 (parasite baiter) | 0.87 | Separate unavoidable baiting cost from avoidable loss (DPS-064) |
-| Balance 30001 | 0.93 | Moving Starsurge with Shooting Stars; staged moving Moonfire filler (DPS-065) |
-| Survival 30009 | WoWSims fallback | No matched WCL hunter; judged against 0.90 x WoWSims 36.5k |
-| Fire B 30007, Affliction 30008, Elemental 30010 | 1.02-1.14 | Pass; watch for regressions |
-
-Also open and diagnosed: the Discipline Priest casts nothing for 3-16 s around
-each Mangle because Mangle staging keeps it moving (HEAL-002); it matters for
-tank survival. Encounter fidelity: only Magmaw 10N's melee is calibrated
-(ENC-007 lists the other difficulties, the adds and the route trash).
-
-Work the table top to bottom, one change per batch. Mangle is the fight's
-lethal moment for the sole Blood tank; any change that touches tank
-cooldowns, healer movement or pincer riders must keep boss-window deaths at 0.
+Actor status comes from `scoreboard verdict`. The next diagnosed fix for each
+failing actor is its open row in the error ledger (TANK-, DPS-, HEAL- IDs);
+work the failing actors from the largest gap down and bundle per actor (step
+d). Mangle is the fight's lethal moment for the sole Blood tank; any change
+that touches tank cooldowns, healer movement or pincer riders must keep
+boss-window deaths at 0. Encounter fidelity: only Magmaw 10N's melee is
+calibrated (ENC-007 lists the other difficulties, the adds and the route
+trash).
 
 ## 6. Constraints that always apply
 
@@ -206,14 +210,8 @@ cooldowns, healer movement or pincer riders must keep boss-window deaths at 0.
 - **Tests.** Report every earlier failing test, even when a narrower rerun
   passes, and classify its relevance.
 - **Models.** Use the model preference in AGENTS.md, with implementer and
-  reviewer in separate sessions. Jev (hosted) is optional and only chooses
-  between the top two ranked gaps; Laya (local) shadows Jev on the same packet so
-  their signal can be compared. The default backend runs both:
-  `pixi run python -m tools.raid_program.bot_improvement_advice --comparison <file> --top 2 --output <dir>`.
-  After the measurement batch, log both picks with
-  `pixi run python -m tools.raid_program.jev_outcomes append --unit U --candidate G1 --candidate G2 --jev-pick G --laya-pick G --chosen G --label-before B --label-after A --party-delta D --actor-delta D`
-  (omit a pick when that model was offline); `jev_outcomes summary` shows
-  whether either model's picks gain DPS.
+  reviewer in separate sessions. Model advisors (Jev, Laya) are not part of the
+  workflow.
 
 Stop only when `scoreboard verdict` passes every actor, the user limits or stops
 the task, or a demonstrated external blocker prevents all remaining work.

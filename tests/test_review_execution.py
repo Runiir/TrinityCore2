@@ -1,4 +1,4 @@
-"""Tests for rollout-backed independent review receipts."""
+"""Tests for rollout-backed and external JSON independent review receipts."""
 
 from __future__ import annotations
 
@@ -298,3 +298,135 @@ def test_preflight_cli_reports_specific_nonzero_error(workflow_case, tmp_path: P
     error = json.loads(capsys.readouterr().err)
     assert error["ok"] is False
     assert error["code"] == "reviewer_identity_mismatch"
+
+
+def _reviewer_json(root: Path, file_hashes: dict[str, str], *, verdict: str = "approved", name: str = "reviewer-final.json") -> Path:
+    path = root / name
+    path.write_text(json.dumps({
+        "verdict": verdict,
+        "file_hashes": file_hashes,
+        "findings": [],
+        "tests": [{"command": "pixi run pytest -q", "exit_status": 0}],
+        "limits": ["workflow review only"],
+    }, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def _import(root: Path, report: Path, **changes):
+    arguments = {
+        "reviewer_session_id": "claude-reviewer",
+        "implementer_session_id": "worker-tab",
+        "receipt_path": "artifacts/review.json",
+    } | changes
+    return review_execution.import_external_review(root, report, **arguments)
+
+
+def test_import_json_writes_hash_bound_report_and_rollout_shaped_adapter(workflow_case, tmp_path: Path, capsys):
+    root, _ = workflow_case
+    hashes = graph.snapshot(root, ["code.py"])
+    source = _reviewer_json(root, hashes)
+    assert review_execution.main([
+        "import-json", "--root", str(root), "--report", str(source),
+        "--reviewer-session-id", "claude-reviewer", "--implementer-session-id", "worker-tab",
+        "--receipt", "artifacts/review.json",
+    ]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["ok"] is True and result["review_transport"] == "external_json"
+    receipt = json.loads((root / "artifacts/review.json").read_text())
+    report = json.loads((root / "artifacts/review.report.json").read_text())
+    assert result["receipt"]["path"] == "artifacts/review.json"
+    assert result["report"] == receipt["review_report"] == {"path": "artifacts/review.report.json",
+                                                             "sha256": graph.digest((root / "artifacts/review.report.json").read_bytes())}
+    # The adapter mirrors the rollout path's adapter key for key.
+    assert set(receipt) == {"authority", "kind", "unit_id", "producer", "reviewer_session_id", "verdict",
+                            "file_hashes", "review_report", "evidence"}
+    assert receipt["kind"] == "review" and receipt["unit_id"] == "unit-1"
+    assert receipt["producer"] == receipt["reviewer_session_id"] == "claude-reviewer"
+    assert receipt["evidence"] == [receipt["review_report"]] and receipt["file_hashes"] == hashes
+    assert report["schema"] == "cata_raid_review_report_v1" and report["review_transport"] == "external_json"
+    assert report["reviewer_session_id"] == "claude-reviewer" and report["implementer_session_id"] == "worker-tab"
+    assert report["source_report_sha256"] == graph.digest(source.read_bytes())
+    assert report["tests"] == [{"command": "pixi run pytest -q", "exit_status": 0}]
+    assert report["limits"] == ["workflow review only"]
+    assert review_execution.verify_review(root, receipt, implementer_session_id="worker-tab") == hashes
+    with pytest.raises(ValueError, match="implementer identity mismatch"):
+        review_execution.verify_review(root, receipt, implementer_session_id="other-implementer")
+
+
+def test_import_json_rejects_self_review_without_writing(workflow_case, capsys):
+    root, _ = workflow_case
+    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]))
+    with pytest.raises(review_execution.ReviewExecutionError, match="differ from implementer") as failure:
+        _import(root, source, reviewer_session_id="worker-tab")
+    assert failure.value.code == "self_review"
+    assert review_execution.main([
+        "import-json", "--root", str(root), "--report", str(source), "--reviewer-session-id", "same",
+        "--implementer-session-id", "same", "--receipt", "artifacts/review.json",
+    ]) == 2
+    assert json.loads(capsys.readouterr().err)["code"] == "self_review"
+    assert not (root / "artifacts").exists()
+
+
+def test_import_json_rejects_stale_file_hashes(workflow_case):
+    root, _ = workflow_case
+    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]))
+    (root / "code.py").write_text("answer = 2\n", encoding="utf-8")
+    with pytest.raises(review_execution.ReviewExecutionError, match="do not match current files") as failure:
+        _import(root, source)
+    assert failure.value.code == "stale_file_hashes"
+    missing = _reviewer_json(root, {"gone.py": "0" * 64}, name="missing.json")
+    with pytest.raises(review_execution.ReviewExecutionError, match="new review") as failure:
+        _import(root, missing)
+    assert failure.value.code == "stale_file_hashes"
+    assert not (root / "artifacts").exists()
+
+
+@pytest.mark.parametrize("verdict", ["changes_requested", "rejected", "APPROVED", ""])
+def test_import_json_rejects_unsupported_verdicts(workflow_case, verdict):
+    root, _ = workflow_case
+    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]), verdict=verdict)
+    with pytest.raises(review_execution.ReviewExecutionError, match="verdict") as failure:
+        _import(root, source)
+    assert failure.value.code in {"verdict_unsupported", "verdict_missing"}
+    assert not (root / "artifacts").exists()
+
+
+def test_import_json_rejects_tampered_report_content(workflow_case):
+    root, _ = workflow_case
+    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]))
+    _import(root, source)
+    receipt = json.loads((root / "artifacts/review.json").read_text())
+    report = json.loads((root / "artifacts/review.report.json").read_text())
+    report["findings"] = [{"severity": "info", "text": "inserted after review"}]
+    forged = root / "artifacts/forged.report.json"
+    forged.write_text(json.dumps(report), encoding="utf-8")
+    ref = {"path": "artifacts/forged.report.json", "sha256": graph.digest(forged.read_bytes())}
+    with pytest.raises(ValueError, match="source hash"):
+        review_execution.verify_review(root, receipt | {"review_report": ref, "evidence": [ref]})
+
+
+def test_import_json_adapter_passes_graph_review_stage(workflow_case):
+    from tools.raid_program import workflow_step
+
+    root, tests_ref = workflow_case
+    workflow_step.apply_step(root, tests_ref["path"], owner="worker-tab")
+    state = json.loads((root / graph.STATE_PATH).read_text())["development_graph"]
+    assert state["stage"] == "review" and state["implementer"] == "worker-tab"
+    hashes = graph.snapshot(root, ["code.py"])
+
+    rejected = _import(root, _reviewer_json(root, hashes, verdict="changes_required", name="rejected.json"),
+                       receipt_path="artifacts/rejected-review.json")
+    assert rejected["verdict"] == "changes_required"
+    with pytest.raises(graph.GraphError, match="independent approving reviewer"):
+        workflow_step.apply_step(root, rejected["receipt"]["path"], dry_run=True)
+
+    wrong = _import(root, _reviewer_json(root, hashes, name="wrong.json"), implementer_session_id="someone-else",
+                    receipt_path="artifacts/wrong-implementer-review.json")
+    with pytest.raises(graph.GraphError, match="implementer identity mismatch"):
+        workflow_step.apply_step(root, wrong["receipt"]["path"], dry_run=True)
+
+    approved = _import(root, _reviewer_json(root, hashes))
+    preview = workflow_step.apply_step(root, approved["receipt"]["path"], dry_run=True)
+    assert preview["from_stage"] == "review" and preview["to_stage"] != "review"
+    result = workflow_step.apply_step(root, approved["receipt"]["path"])
+    assert result["stage"] == preview["to_stage"]

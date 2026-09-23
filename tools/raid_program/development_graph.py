@@ -22,7 +22,7 @@ STATE_PATH = Path('experiments/configs/cata_raid_active_work_unit_v1.json')
 STEPS = (*tiers.ORDER, 'complete')
 RECEIPTS = dict(zip(tiers.ORDER[:-1], ('plan', 'tests', 'review', 'build', 'smoke', 'run', 'assessment', 'publication')))
 ACTIONS = {
-    'diagnose': 'Read the latest scoreboard verdict and retained evidence; pick the largest actor gap (optional Jev, shadowed by Laya, may choose between the top two), then record a plan with its risk_tier.',
+    'diagnose': 'Read the scoreboard verdict (baseline label) and retained evidence; pick the largest actor gap, then record a plan with its risk_tier.',
     'implement': 'Implement the bounded task and run its required tests.',
     'review': 'Obtain independent review (separate session) of the exact tested files. Resolve findings before building.',
     'build': 'Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits.',
@@ -255,9 +255,6 @@ def project(root: Path, state: dict, data: bytes) -> dict:
         'recent_attempts': recent_attempts(g),
         'retry_limit': 10,
         'claim': g.get('claim'), 'coordinator_worktree': g['coordinator_worktree'],
-        'model_advice': ('Never required and never a gate. Optional: ask Jev to choose between the top two ranked damage gaps, '
-                         'with Laya shadowing Jev on the same packet (offline Laya is recorded as not reviewed); '
-                         'record both picks with tools.raid_program.jev_outcomes append.'),
         'execution': ('Parent objective accepted; report its evidence.' if g['stage'] == 'complete' else
                       'For implementation/resume requests, remain the coordinator and execute this stage, then the next returned stage. '
                       'An assessment, publication, route or specialist handoff does not finish the parent objective. '

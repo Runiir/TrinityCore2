@@ -1,3 +1,6 @@
+> Status 2026-09-23: removed from the tuning workflow. The tooling below stays
+> on disk for a later evaluation; no skill or graph step calls it.
+
 # Optional per-bot improvement advice
 
 Jev and Laya suggest where to investigate. They never gate a commit, build, experiment,

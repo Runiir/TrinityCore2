@@ -107,7 +107,7 @@ select/events export the requested page, not an unbounded raw report. Follow the
 returned command or pointer; do not respond by dumping the entire report, graph history, tool catalog,
 or generated dataset. Search source paths separately from generated artifacts.
 Retain full evidence for verification; send the compact comparison and the few
-decisive event pages to reviewers and optional Jev/Laya packets.
+decisive event pages to reviewers.
 
 ## Tool-call examples
 

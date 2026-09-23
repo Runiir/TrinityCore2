@@ -38,15 +38,8 @@ do not invent a test requirement. Bind cited source excerpts to real files.
 The main agent supplies the plan because a tool cannot reconstruct unstored
 conversation intent from Git alone. Preserve unknown state explicitly.
 
-Model calls are optional, not a required stage. Prefer the coordinator's direct
-check for broad plan drift. Use per-bot comparison advice for gameplay improvement
-questions (see `docs/bot_raids/bot_improvement_advice.md`). Only when a specific
-unresolved claim benefits from a model, call hosted Jev once, with local Laya
-shadowing it on the same facts. Laya context rejection or being offline means
-not reviewed.
-Keep probabilities and confidence; never treat them as approval. Inspect current
-receipts and source to adjudicate. Provider failure means not reviewed; continue
-the coordinator's own check rather than waiting indefinitely.
+Model advisors are not part of the workflow. Inspect current receipts and
+source to adjudicate with the coordinator's own check.
 
 Write short checkpoint fields: state each fact once, use actor IDs with concise
 open requirements, and keep hashes/paths in evidence metadata. Do not retry an

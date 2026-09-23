@@ -8,13 +8,18 @@ from a single run.
 
     pixi run python -m tools.raid_program.scoreboard run --scenario S --label L --dry-run
     pixi run python -m tools.raid_program.scoreboard ingest --scenario S --label L --summary FILE
-    pixi run python -m tools.raid_program.scoreboard show --scenario S --label L --vs L2
-    pixi run python -m tools.raid_program.scoreboard verdict --scenario S --label L
+    pixi run python -m tools.raid_program.scoreboard show --scenario S [--label L] [--vs L2] [--actor A]
+    pixi run python -m tools.raid_program.scoreboard verdict --scenario S [--label L]
+    pixi run python -m tools.raid_program.scoreboard baseline --scenario S [--label L --reason TEXT]
     pixi run python -m tools.raid_program.scoreboard archive-pending --scenario S
     pixi run python -m tools.raid_program.scoreboard void --scenario S --kill-id K --reason TEXT
     pixi run python -m tools.raid_program.scoreboard rng-backfill --scenario S --label L --evidence-root DIR
 
 Only the coordinator runs `run` without --dry-run: it launches live kills.
+
+The baseline pointer (<scenario>.baseline.json next to the scoreboard) names the kept label.
+`verdict` without --label judges the baseline (else the latest label); `show` without --vs
+compares the shown label against the baseline when they differ.
 
 Python API: evaluate_target(root, scenario, label=None) and
 compare_labels(root, scenario, new_label, old_label).
@@ -25,17 +30,19 @@ import argparse
 import getpass
 import json
 import re
+import sys
 from pathlib import Path
 
 from tools.raid_program.scoreboard_compare import compare_labels
 from tools.raid_program.scoreboard_core import (
-    KILL_SCHEMA, ROOT, VERDICT_SCHEMA, VOID_SCHEMA, append_record, git_head, load_records, load_target,
-    party_reference_dps, scoreboard_path, spec_targets, utc_now,
+    BASELINE_SCHEMA, KILL_SCHEMA, ROOT, VERDICT_SCHEMA, VOID_SCHEMA, append_record, baseline_path, clear_kills,
+    counted_kills, default_label, git_head, label_kills, load_baseline, load_records, load_target, party_reference_dps,
+    scoreboard_path, spec_targets, utc_now,
 )
 from tools.raid_program.scoreboard_verdict import evaluate_target
 
 __all__ = ["evaluate_target", "compare_labels", "load_records", "load_target", "spec_targets",
-           "party_reference_dps", "append_record", "scoreboard_path", "void_kill", "main",
+           "party_reference_dps", "append_record", "scoreboard_path", "void_kill", "set_baseline", "load_baseline", "main",
            "KILL_SCHEMA", "VERDICT_SCHEMA"]
 
 LABEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -54,6 +61,32 @@ def void_kill(root: Path, scenario: str, kill_id: str, reason: str) -> dict:
             "recorded_by": getpass.getuser(), "source_commit": git_head(root)}
     append_record(root, scenario, line)
     return line
+
+
+def set_baseline(root: Path, scenario: str, label: str, reason: str | None = None) -> dict:
+    """Point the scenario's baseline at a label with >= kills_per_measurement counted native clears on one build."""
+    required = int(load_target(root, scenario)["kills_per_measurement"])
+    kills = label_kills(load_records(root, scenario), label)
+    if not kills:
+        raise SystemExit(f"no kills recorded for label {label!r} in {scenario}")
+    builds = {(record.get("worldserver_sha256"), record.get("source_commit")) for record in counted_kills(kills)}
+    if len(builds) > 1:
+        raise SystemExit(f"label {label} mixes builds in its counted kills: "
+                         + ", ".join(sorted(f"{str(sha)[:12]}/{str(commit)[:12]}" for sha, commit in builds)))
+    clears = clear_kills(kills)
+    if len(clears) < required:
+        raise SystemExit(f"label {label} has {len(clears)} counted native-clear kill(s); a baseline needs "
+                         f">= {required} (kills_per_measurement)")
+    (sha, commit), = builds
+    if not sha or not commit:
+        raise SystemExit(f"label {label} lacks a worldserver_sha256 or source_commit on its counted kills")
+    baseline = {"schema": BASELINE_SCHEMA, "scenario": scenario, "label": label, "set_at": utc_now(),
+                "source_commit": commit, "worldserver_sha256": sha, "counted_kills": len(clears),
+                "reason": (reason or "").strip() or None}
+    path = baseline_path(root, scenario)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(baseline, indent=1, sort_keys=True) + "\n")
+    return baseline
 
 
 def _label(value: str) -> str:
@@ -98,12 +131,18 @@ def main(argv: list[str] | None = None) -> int:
     show = commands.add_parser("show", help="per-actor table, optional Welch comparison with another label")
     show.add_argument("--scenario", required=True)
     show.add_argument("--label", help="default: the most recently recorded label")
-    show.add_argument("--vs", help="baseline label to compare against")
+    show.add_argument("--vs", help="label to compare against (default: the baseline when it differs from --label)")
     show.add_argument("--actor", help="actor id the change targeted (for the keep/revert rule)")
 
     verdict = commands.add_parser("verdict", help="print the evaluate_target JSON")
     verdict.add_argument("--scenario", required=True)
-    verdict.add_argument("--label")
+    verdict.add_argument("--label", help="default: the baseline label, else the most recently recorded label")
+
+    base = commands.add_parser("baseline", help="print the scenario's baseline pointer, or set it with --label")
+    base.add_argument("--scenario", required=True)
+    base.add_argument("--label", type=_label,
+                      help="set the baseline (needs kills_per_measurement counted native clears on one binary/commit)")
+    base.add_argument("--reason", help="with --label: why this label is the kept state (recorded)")
 
     pending = commands.add_parser("archive-pending", help="archive kept /tmp evidence of kills without a pointer")
     pending.add_argument("--scenario", required=True)
@@ -123,7 +162,23 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if args.command == "verdict":
-        print(json.dumps(evaluate_target(root, args.scenario, args.label), indent=1, sort_keys=True))
+        label = args.label
+        if label is None:
+            label, source = default_label(root, args.scenario, load_records(root, args.scenario))
+            print(f"verdict label: {label} ({source})", file=sys.stderr)
+        print(json.dumps(evaluate_target(root, args.scenario, label), indent=1, sort_keys=True))
+        return 0
+    if args.command == "baseline":
+        if args.label is None:
+            if args.reason:
+                parser.error("--reason needs --label")
+            current = load_baseline(root, args.scenario)
+            print(json.dumps(current, indent=1, sort_keys=True) if current else
+                  f"no baseline set for {args.scenario} (scoreboard baseline --scenario {args.scenario} --label L)")
+            return 0
+        written = set_baseline(root, args.scenario, args.label, args.reason)
+        print(json.dumps(written, indent=1, sort_keys=True))
+        print(f"baseline for {args.scenario} is now {written['label']}: {baseline_path(root, args.scenario)}")
         return 0
     if args.command == "show":
         from tools.raid_program.scoreboard_show import render

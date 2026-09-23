@@ -11,6 +11,7 @@
     "xAhkN2y9YP3KRmnJ-fight10": "Short 70.9 s fight with eight DPS and no Balance Druid; throughput context only, never a target."
   },
   "kills_per_measurement": 3,
+  "kills_per_batch": 5,
   "actor_dps_ratio": 0.95,
   "actor_dps_metric": "Per actor: mean encounter_window_dps over the label's counted native-clear kills divided by the median actor_dps of the matched references for the same spec. target_dps is that WCL median; the actor passes when ratio >= actor_dps_ratio.",
   "party_dps_ratio": 0.95,
@@ -71,7 +72,8 @@
     "within_noise": "otherwise; with zero spread on both sides any nonzero delta is improved or regressed",
     "insufficient_kills": "either label has fewer than min_kills_per_label counted native-clear kills",
     "applies_to": "each actor's encounter_window_dps and the party encounter_window_party_dps",
-    "keep_rule": "Keep a change only if party DPS or the targeted actor improved, no non-healer actor regressed, boss-window deaths per counted kill did not increase, and every counted kill of the candidate label is a native clear. Recovered trash deaths are reported but never gate. Otherwise revert."
+    "keep_rule": "Keep a change (scoreboard show --vs, candidate vs baseline) only when all four conditions hold, otherwise revert and name the failing condition. (a) Every counted kill of the candidate label is a native clear. (b) Boss-window deaths per counted kill did not increase; recovered trash deaths are reported but never gate. (c) No non-healer actor is regressed under the per-row two-sided 95% Welch t above. (d) The point estimate is non-negative: with --actor A, actor A's mean DPS is at least the baseline mean; otherwise the party mean DPS is at least the baseline mean. When a condition cannot be judged because a side has fewer than min_kills_per_label counted native clears and none failed, the decision is insufficient_kills. Keep also requires the change's mechanism to be visible in the candidate kills (ranked gaps, evidence_view), which the tool cannot check.",
+    "batch_rule": "keep/revert batches use kills_per_batch counted native clears per label; kills_per_measurement stays the finish-line minimum"
   },
   "run_plan": {
     "default_worldserver": "build/src/server/worldserver/worldserver",

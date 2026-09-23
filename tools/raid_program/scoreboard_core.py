@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import statistics
 import subprocess
 import time
@@ -19,8 +20,10 @@ RNG_ATTACHMENT_SCHEMA = "raid_scoreboard_rng_attachment_v1"
 VOID_SCHEMA = "raid_scoreboard_void_v1"
 VERDICT_SCHEMA = "raid_target_verdict_v1"
 COMPARISON_SCHEMA = "raid_label_comparison_v1"
+BASELINE_SCHEMA = "raid_scoreboard_baseline_v1"
 TARGET_DIR = "experiments/configs/raid_targets"
 SCOREBOARD_DIR = "artifacts/cata_raid_program/scoreboard"
+PROMOTED_RECEIPT_MIRROR = "experiments/configs/wowsims_promoted_generation_receipts"
 EVIDENCE_DIR = "artifacts/cata_raid_program"
 HEALER_ROLES = ("healer",)
 
@@ -50,6 +53,29 @@ def scoreboard_path(root: Path, scenario: str) -> Path:
     return root / SCOREBOARD_DIR / f"{scenario}.jsonl"
 
 
+def baseline_path(root: Path, scenario: str) -> Path:
+    return root / SCOREBOARD_DIR / f"{scenario}.baseline.json"
+
+
+def load_baseline(root: Path, scenario: str) -> dict[str, Any] | None:
+    """The scenario's baseline pointer written by `scoreboard baseline --label`, or None when unset."""
+    path = baseline_path(Path(root), scenario)
+    if not path.exists():
+        return None
+    baseline = json.loads(path.read_text())
+    if baseline.get("schema") != BASELINE_SCHEMA or baseline.get("scenario") != scenario or not baseline.get("label"):
+        raise ValueError(f"{path} is not a {BASELINE_SCHEMA} pointer for {scenario}")
+    return baseline
+
+
+def default_label(root: Path, scenario: str, records: list[dict[str, Any]]) -> tuple[str | None, str]:
+    """(label, source) when no label is given: the baseline when set, else the most recently recorded label."""
+    baseline = load_baseline(root, scenario)
+    if baseline:
+        return baseline["label"], f"baseline set {baseline.get('set_at')}"
+    return latest_label(records), "latest recorded label; no baseline set"
+
+
 def load_target(root: Path, scenario: str) -> dict[str, Any]:
     path = target_path(root, scenario)
     if not path.exists():
@@ -58,6 +84,11 @@ def load_target(root: Path, scenario: str) -> dict[str, Any]:
     if target.get("schema") != TARGET_SCHEMA or target.get("scenario") != scenario:
         raise ValueError(f"{path} is not a {TARGET_SCHEMA} target for {scenario}")
     return target
+
+
+def kills_per_batch(target: dict[str, Any]) -> int:
+    """Counted native clears per label for a keep/revert batch (kills_per_measurement is the finish-line minimum)."""
+    return int(target.get("kills_per_batch", target["kills_per_measurement"]))
 
 
 def healer_roles(target: dict[str, Any]) -> set[str]:
@@ -108,7 +139,12 @@ def fallback_targets(root: Path, target: dict[str, Any]) -> dict[str, float]:
         receipt = (entry or {}).get("generation_receipt") or {}
         spec = entry.get("target_spec")
         try:
-            data = (root / receipt["path"]).read_bytes()
+            receipt_path = root / receipt["path"]
+            if not receipt_path.exists():
+                # The promoted bundle is DVC payload that is normally evicted; the finish line
+                # must not depend on it. Read the sha256-named git-tracked mirror instead.
+                receipt_path = root / PROMOTED_RECEIPT_MIRROR / f"{receipt.get('sha256')}.json"
+            data = receipt_path.read_bytes()
             if hashlib.sha256(data).hexdigest() != receipt.get("sha256"):
                 continue
             document = json.loads(data)
@@ -249,6 +285,14 @@ def mean_sd(values: list[float]) -> tuple[float | None, float | None]:
         return None, None
     mean = statistics.fmean(values)
     return mean, (statistics.stdev(values) if len(values) > 1 else None)
+
+
+def detectable_delta(critical: float | None, new: list[float], old: list[float]) -> float | None:
+    """Smallest |delta| the two-sided 95% Welch t calls a change at these n: t95 x sqrt(sd1^2/n1 + sd2^2/n2)."""
+    (_, new_sd), (_, old_sd) = mean_sd(new), mean_sd(old)
+    if critical is None or new_sd is None or old_sd is None:
+        return None
+    return critical * math.sqrt(new_sd ** 2 / len(new) + old_sd ** 2 / len(old))
 
 
 def _actor_key(actor_id: str):

@@ -107,12 +107,29 @@ graph checks hashes, identity and prerequisites, not native truth.
 | --- | --- | --- |
 | diagnose | plan | full `base_commit`, hypothesis, owned_files, forbidden_changes, acceptance_conditions, required_test_commands, policy, validation_identity; optional `risk_tier`, `reuse_build` (profile), `worker_context`, `supporting_review`, `advice` |
 | implement | tests | file_hashes for every owned file, tests with command/exit_status |
-| review | review | file_hashes, verdict=approved, reviewer_session_id and hash-bound review_report from a separate session |
+| review | review | file_hashes, verdict=approved, reviewer_session_id and hash-bound review_report from a separate session; written by `review_execution` (Codex rollout) or `review_execution import-json` (other sessions) |
 | build | build | file_hashes, source_commit, binary_sha256, build_receipt, policy |
 | smoke | smoke | build_identity, attempt_id, server_epoch, closed/cleanup_verified=true, scenario_kind=raid, clock=completion_watchdog, encounter, terminal_reason=clear |
 | validate | run | build_identity, attempt_id, server_epoch, closed/cleanup_verified=true, terminal_reason, scenario_kind, validation_identity; `scoreboard_label` for verdict acceptance |
 | assess | assessment | attempt_id, encounter_clear, accepted_requirements, and either `verdict` or the legacy baseline/comparison/actor_reviews/repair_accepted/performance_accepted |
 | publish | publication | dvc_status_checked, dvc_push_completed, remote_verified, cleanup_verified, all true |
+
+**Review from a non-Codex session.** The separate reviewer (for example a Claude
+subagent) returns only a final JSON object with `verdict` (`approved` or
+`changes_required`), `file_hashes` (repo-relative path to current SHA256),
+`findings` (list) and optional `tests`/`limits` lists. Save it, then run
+
+```sh
+pixi run python -m tools.raid_program.review_execution import-json \
+  --report /tmp/reviewer-final.json --reviewer-session-id <REVIEWER_ID> \
+  --implementer-session-id <IMPLEMENTER_ID> --receipt artifacts/cata_raid_program/<unit>_review.json
+```
+
+It refuses self-review, verdicts outside those two, and any hash that differs
+from the working tree (changed files need a new review). It writes
+`<unit>_review.report.json` (`review_transport=external_json`, source SHA256,
+both session ids) and the adapter for `workflow_step advance --receipt`. Pass the
+graph's implementer id; the graph rejects a mismatch.
 
 The plan's `validation_identity` binds scenario_kind, roster and runtime_profile;
 a raid adds route and the program encounter, a dummy adds actor_id, spec and
@@ -232,27 +249,7 @@ pixi run python -m tools.raid_program.workflow_step packet --output /tmp/worker-
 
 builds a packet (context <= 6KB, packet <= 10KB, never truncated) for the worker.
 
-## Jev/Laya and retries
-
-Jev (hosted) and Laya (local) are optional advisory tools; neither gates a
-transition or can be a producer or acceptance receipt. Their use here is choosing
-between the top two ranked damage gaps: ask Jev, with Laya shadowing Jev on the
-same packet so their signal can be compared. An offline or context-rejected Laya
-is recorded as not reviewed, never as a vote. After the measurement, log both
-picks against the scoreboard delta:
-
-```sh
-pixi run python -m tools.raid_program.jev_outcomes append --unit <id> \
-  --candidate <gap1> --candidate <gap2> --jev-pick <gap> --laya-pick <gap> --chosen <gap> \
-  --label-before <label> --label-after <label>
-pixi run python -m tools.raid_program.jev_outcomes summary
-```
-
-Records go to `artifacts/cata_raid_program/jev_pick_outcomes.jsonl`; omit a pick
-for a model that was not run. Party and per-actor deltas and their noise verdicts
-come from `scoreboard.compare_labels`, never typed in. An optional `advice` object in a plan/tests adapter
-may hold `jev` and/or `laya` entries, each with `status` (`reviewed` plus receipt,
-or `not_reviewed` plus reason) and the coordinator's `adjudication`.
+## Retries
 
 Rework (`action=rework`, reason, receipt) and every closed run that accepts no
 requirement increment the edge's failure counter. At ten, `route` needs a

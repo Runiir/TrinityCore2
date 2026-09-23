@@ -1,0 +1,10 @@
+{
+ "counted_kills": 4,
+ "label": "r3-47cd175",
+ "reason": "kept round 3 (Mangle survival, crash-side dodge); 4 counted native clears on binary 47cd175c2875",
+ "scenario": "blackwing_descent_10n_magmaw",
+ "schema": "raid_scoreboard_baseline_v1",
+ "set_at": "2026-09-23T19:16:24Z",
+ "source_commit": "a5c0f72b5d716ab06903fea1c30fcdb057dfbc48",
+ "worldserver_sha256": "47cd175c2875c2c17bacb34fdb78f7f30d7f56bc12a60a7f4ed5fcc06c77d902"
+}

@@ -17,7 +17,7 @@ Current user model preference: use `gpt-5.6-luna` with `reasoning_effort: max`
 for all delegated roles, including implementation, causal diagnosis, architecture,
 coordination and independent review. Keep implementer and reviewer in separate
 sessions. Do not silently escalate to Sol/Astra; narrow the task or improve its
-evidence when stuck. Jev/Laya remain advisory. Historical receipts retain their
+evidence when stuck. Jev and Laya are removed from the workflow (2026-09-23): no step calls them; their code stays on disk. Historical receipts retain their
 actual model identities; old Sol requirements do not override this preference.
 This controls model selection for new agents, not the model of an existing session.
 

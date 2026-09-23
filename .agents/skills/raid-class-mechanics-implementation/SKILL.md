@@ -19,7 +19,10 @@ observed cadence or target problem into another mechanics edit.
 
 Read [references/native-mechanics-contract.md](references/native-mechanics-contract.md).
 Require one immutable rotation review or spec-canary decision and admit exactly
-one of these modes.
+one of these modes. The parity gates below belong to WoWSims and dummy
+comparisons; a change to native damage or stat math still needs them, because
+a raid batch cannot tell a coefficient error from a rotation effect. A raid
+keep/revert batch (playbook step f) needs no parity gate.
 
 For `stat_application_or_pet_inheritance`:
 

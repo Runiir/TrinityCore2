@@ -48,12 +48,12 @@ def welch(new: list[float], old: list[float], min_kills: int = MIN_KILLS) -> dic
 def keep_recommendation(party: dict[str, Any], actors: dict[str, dict[str, Any]], *,
                         targeted_actor: str | None, new_deaths_per_kill: float, old_deaths_per_kill: float,
                         new_non_clears: int, min_kills: int = MIN_KILLS) -> tuple[str, list[str]]:
-    """keep only if party or the targeted actor improved, nothing regressed, boss deaths did not rise.
+    """Same rule as scoreboard_show.keep_decision: keep when every counted candidate kill is a native
+    clear, boss-window deaths per kill did not rise, no gating actor regressed (two-sided 95% Welch t)
+    and the point estimate (targeted actor's mean, else the party mean) is not below the baseline.
 
-    The death counts are boss-window deaths per kill: recovered trash deaths are context, not a
-    regression (a trash wipe the party does not recover from already fails the kill as a non-clear).
-
-    A candidate label with counted non-clear kills is reverted even before it has enough kills.
+    A positive delta need not pass the Welch test; the caller must still confirm the change's
+    mechanism is visible in the candidate kills. Recovered trash deaths are context, not a regression.
     """
     wipes = f"{new_non_clears} counted kill(s) of the candidate label did not clear natively"
     if party["verdict"] == "insufficient_kills":
@@ -61,12 +61,14 @@ def keep_recommendation(party: dict[str, Any], actors: dict[str, dict[str, Any]]
             return "revert", [wipes]
         return "insufficient_kills", [f"need >= {min_kills} counted native-clear kills per label"]
     reasons = []
-    improved = party["verdict"] == "improved"
-    if targeted_actor is not None:
-        improved = improved or (actors.get(targeted_actor) or {}).get("verdict") == "improved"
-    if not improved:
-        reasons.append("neither party DPS nor the targeted actor improved beyond noise"
-                       if targeted_actor else "party DPS did not improve beyond noise (pass --actor for a targeted change)")
+    row = actors.get(targeted_actor) if targeted_actor else party
+    subject = f"actor {targeted_actor}" if targeted_actor else "party"
+    if row is None:
+        reasons.append(f"{subject} is in neither label")
+    elif row.get("new_mean") is None or row.get("old_mean") is None:
+        reasons.append(f"{subject} has no counted native-clear mean on a side")
+    elif row["new_mean"] < row["old_mean"]:
+        reasons.append(f"{subject} mean fell {row['old_mean']:.0f} -> {row['new_mean']:.0f}")
     regressed = [actor_id for actor_id, row in actors.items() if row["gating"] and row["verdict"] == "regressed"]
     if regressed:
         reasons.append(f"regressed actors: {', '.join(regressed)}")

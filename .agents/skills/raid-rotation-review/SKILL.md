@@ -40,10 +40,8 @@ for a decision-chain, route-mechanics, or reporting question. Read
 in scope, and only a matching class note. Parallel reviewers use the coordinator's
 actor subset and shared context; the overall reviewer joins all actors.
 
-Jev advice is optional and only chooses between the top two ranked gaps; see
-the [raid tuning playbook](../raid-tuning-playbook/SKILL.md), which also defines
-every DPS metric and threshold. Laya shadows Jev on the same packet; both
-are optional and never gate anything.
+The [raid tuning playbook](../raid-tuning-playbook/SKILL.md) defines every DPS
+metric and threshold.
 
 ## Exact inputs and gates
 
@@ -72,6 +70,10 @@ for the active epoch/attempt and the final report after closure. Report parity p
 actor/field as proved match, measured mismatch, or missing observation; never
 inherit a roster mismatch.
 
+The joined gates in this paragraph apply to WoWSims and dummy comparisons. A
+raid keep/revert batch compares two labels on one build, roster and gear set
+(playbook step f) and needs no parity gate; the WoWSims value stays the
+fallback target for a spec without a matched WCL reference.
 Before interpreting total DPS, stat-sensitive cadence, or damage per event, join
 the full exported request/result/debug input to the immutable native scoring-window
 observation. Require exact gear/setup/consume parity,
