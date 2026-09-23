@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 500,
+    "revision": 501,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -9698,6 +9698,21 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 500,
+        "unit_id": "magmaw:tuning_05",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "action": "claim",
+          "revision": 500,
+          "unit_id": "magmaw:tuning_05",
+          "owner": "coordinator-bca90d3b"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9813,6 +9828,13 @@
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_plan_v3_20260924.json",
         "sha256": "0fd9670c3e86487d4bce8342beeb14afdefd342f857a9d09ee31a7e0761aa008"
       }
+    },
+    "claim": {
+      "owner": "coordinator-bca90d3b",
+      "token": "9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2",
+      "operation_id": "9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2",
+      "stage": "implement",
+      "claimed_at": "2026-09-23T23:21:19Z"
     }
   },
   "parked_scenarios": {
