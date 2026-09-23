@@ -418,11 +418,18 @@ int main()
 
     }
     // Ordinary DPS retains its separately owned personal-threat obligation.
+    // DPS-065: a ranged actor damages that threat only when it is in the
+    // native static opportunity set; a blocked threat leaves it on Magmaw.
     Blackboard threatened = board;
     threatened.Hostiles[1].VictimGuid = supportActor;
     AdaptiveMagmawPlan threat = Propose(
         strategy, threatened, supportActor, noneLegal);
-    assert(threat.DamageTarget == blocked.Guid);
+    assert(threat.DamageTarget == boss.Guid);
+    assert(threat.ParasiteCombat.PersonalThreatGuid == blocked.Guid);
+    MagmawSupportTargetOpportunities threatLegal = bodyOnly;
+    threatLegal.Admit(blocked.Guid);
+    assert(Propose(strategy, threatened, supportActor, threatLegal)
+        .DamageTarget == blocked.Guid);
 
     // Head priority survives the opportunity gate. When the head hides, the
     // same live observation returns to the eligible body.

@@ -17,6 +17,11 @@ struct MagmawActorObservation
     bool BossStaticDamageOpportunity = false;
     ActorSnapshot const* PersonalParasiteThreat = nullptr;
     float PersonalParasiteThreatDistance = 0.0f;
+    // The same native static damage observation as SupportParasite: the
+    // threat is a valid attack target in map line of sight and inside one of
+    // the actor's profile damage ranges. False when no opportunity view was
+    // supplied; SupportOpportunitiesObserved distinguishes that case.
+    bool PersonalParasiteThreatStaticDamageOpportunity = false;
 };
 
 struct MagmawHazardObservation

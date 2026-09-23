@@ -49,9 +49,14 @@ float NativeMagmawMushroomRadius(Player const* bot)
     return std::isfinite(radius) && radius > 0.0f ? radius : 0.0f;
 }
 
+// Collects live, attackable, engaged parasites. liveParasites, when given,
+// also counts live attackable parasites that are not engaged yet, so a fresh
+// spawn is never mistaken for the end of a wave.
 bool CollectMagmawBalanceMushroomParasites(Player const* bot,
-    std::vector<Creature const*>& parasites)
+    std::vector<Creature const*>& parasites, uint32* liveParasites = nullptr)
 {
+    if (liveParasites)
+        *liveParasites = 0;
     if (!bot || !bot->GetMap())
         return false;
 
@@ -62,13 +67,18 @@ bool CollectMagmawBalanceMushroomParasites(Player const* bot,
         bot->GetCreatureListWithEntryInGrid(
             nearby, entry, MagmawMushroomParasiteSearchRange);
         for (Creature const* parasite : nearby)
-            if (parasite && parasite->IsInWorld()
-                && parasite->GetMap() == map
-                && parasite->GetInstanceId() == bot->GetInstanceId()
-                && parasite->IsAlive()
-                && bot->IsValidAttackTarget(parasite)
-                && (parasite->IsInCombat() || parasite->GetVictim()))
+        {
+            if (!parasite || !parasite->IsInWorld()
+                || parasite->GetMap() != map
+                || parasite->GetInstanceId() != bot->GetInstanceId()
+                || !parasite->IsAlive()
+                || !bot->IsValidAttackTarget(parasite))
+                continue;
+            if (liveParasites)
+                ++*liveParasites;
+            if (parasite->IsInCombat() || parasite->GetVictim())
                 parasites.push_back(parasite);
+        }
     };
 
     appendEntry(BotEncounter::MagmawBalanceMushroomDuty::ParasiteEntry);
@@ -108,6 +118,9 @@ bool BuildMagmawBalanceMushroomGroundCandidates(Player const* bot,
     {
         BotEncounter::MagmawBalanceMushroomDuty::GroundCandidate candidate;
         candidate.ParasiteGuid = parasite->GetGUID().GetRawValue();
+        candidate.ParasiteX = parasite->GetPositionX();
+        candidate.ParasiteY = parasite->GetPositionY();
+        candidate.ParasiteZ = parasite->GetPositionZ();
         candidate.Live = true;
         candidate.Attackable = true;
         candidate.Engaged = true;
@@ -140,53 +153,62 @@ bool BuildMagmawBalanceMushroomGroundCandidates(Player const* bot,
 }
 
 bool SelectMagmawBalanceMushroomGroundPoint(Player const* bot,
-    BotEncounter::MagmawBalanceMushroomDuty::GroundPoint& point)
+    BotEncounter::MagmawBalanceMushroomDuty::GroundPoint& point,
+    uint32* bestLawfulHits = nullptr)
 {
+    if (bestLawfulHits)
+        *bestLawfulHits = 0;
     std::vector<BotEncounter::MagmawBalanceMushroomDuty::GroundCandidate> candidates;
     float nativeRadius = 0.0f;
     if (!BuildMagmawBalanceMushroomGroundCandidates(bot, candidates, nativeRadius))
         return false;
     return BotEncounter::MagmawBalanceMushroomDuty::SelectGroundPoint(
-        candidates, nativeRadius, point);
+        candidates, nativeRadius, point, bestLawfulHits);
 }
 
-bool HasMagmawBalanceMushroomGroundPoint(Player const* bot)
+struct MagmawBalanceMushroomDetonationObservation
 {
-    BotEncounter::MagmawBalanceMushroomDuty::GroundPoint point;
-    return SelectMagmawBalanceMushroomGroundPoint(bot, point);
-}
+    uint32 Hits = 0;
+    uint32 LiveParasites = 0;
+};
 
-bool HasMagmawBalanceMushroomNativeRangeCandidate(Player* bot,
-    uint32 ownedMushrooms)
+MagmawBalanceMushroomDetonationObservation ObserveMagmawBalanceMushroomDetonation(
+    Player* bot, uint32 ownedMushrooms)
 {
-    if (!bot || ownedMushrooms < BotEncounter::MagmawBalanceMushroomDuty::RequiredMushroomCount)
-        return false;
+    using Duty = BotEncounter::MagmawBalanceMushroomDuty;
+    MagmawBalanceMushroomDetonationObservation observed;
+    if (!bot || ownedMushrooms < Duty::RequiredMushroomCount)
+        return observed;
 
     SpellInfo const* mushroomSpell = sSpellMgr->GetSpellInfo(
-        BotEncounter::MagmawBalanceMushroomDuty::WildMushroomSpellId);
+        Duty::WildMushroomSpellId);
     float const nativeRadius = NativeMagmawMushroomRadius(bot);
     if (!mushroomSpell || nativeRadius <= 0.0f)
-        return false;
+        return observed;
+
+    std::vector<Creature const*> parasites;
+    if (!CollectMagmawBalanceMushroomParasites(bot, parasites,
+            &observed.LiveParasites))
+        return observed;
 
     std::list<Creature*> mushrooms;
     bot->GetAllMinionsByEntry(mushrooms,
         uint32(mushroomSpell->Effects[EFFECT_0].MiscValue));
-    std::vector<Creature const*> parasites;
-    if (!CollectMagmawBalanceMushroomParasites(bot, parasites))
-        return false;
-
     Map* map = bot->GetMap();
+    std::vector<Duty::Point3> mushroomPositions;
     for (Creature const* mushroom : mushrooms)
-    {
-        if (!mushroom || !mushroom->IsInWorld() || !mushroom->IsAlive()
-            || mushroom->GetMap() != map
-            || mushroom->GetInstanceId() != bot->GetInstanceId())
-            continue;
-        for (Creature const* parasite : parasites)
-            if (mushroom->GetExactDist(parasite) <= nativeRadius)
-                return true;
-    }
-    return false;
+        if (mushroom && mushroom->IsInWorld() && mushroom->IsAlive()
+            && mushroom->GetMap() == map
+            && mushroom->GetInstanceId() == bot->GetInstanceId())
+            mushroomPositions.push_back({ mushroom->GetPositionX(),
+                mushroom->GetPositionY(), mushroom->GetPositionZ() });
+    std::vector<Duty::Point3> parasitePositions;
+    for (Creature const* parasite : parasites)
+        parasitePositions.push_back({ parasite->GetPositionX(),
+            parasite->GetPositionY(), parasite->GetPositionZ() });
+    observed.Hits = Duty::CountDetonationHits(mushroomPositions,
+        parasitePositions, nativeRadius);
+    return observed;
 }
 }
 
@@ -205,11 +227,20 @@ MagmawBalanceMushroomState ObserveMagmawBalanceMushroomState(
         validationRouteEnabled, routeNodeId, specTag, targetEntry,
         livePillarVisible);
     state.SolarEclipse = solarEclipse;
-    state.OwnedMushrooms = state.Active ? OwnedWildMushroomCount(bot) : 0;
-    state.GroundTargetAvailable = state.Active
-        && HasMagmawBalanceMushroomGroundPoint(bot);
-    state.OwnedMushroomHasNativeRangeCandidate = state.Active
-        && HasMagmawBalanceMushroomNativeRangeCandidate(bot, state.OwnedMushrooms);
+    if (!state.Active)
+        return state;
+
+    state.OwnedMushrooms = OwnedWildMushroomCount(bot);
+    MagmawBalanceMushroomDuty::GroundPoint point;
+    state.GroundTargetAvailable = SelectMagmawBalanceMushroomGroundPoint(
+        bot, point, &state.GroundParasiteHits);
+    MagmawBalanceMushroomDetonationObservation const detonation =
+        ObserveMagmawBalanceMushroomDetonation(bot, state.OwnedMushrooms);
+    state.DetonationParasiteHits = detonation.Hits;
+    state.LiveParasites = detonation.LiveParasites;
+    state.OwnedMushroomHasNativeRangeCandidate = detonation.Hits > 0;
+    state.DetonationReady = MagmawBalanceMushroomDuty::DetonationWorthwhile(
+        state.OwnedMushrooms, detonation.Hits, detonation.LiveParasites);
     return state;
 }
 
@@ -227,7 +258,7 @@ bool IsMagmawBalanceMushroomDetonation(
     MagmawBalanceMushroomState const& state, BotActionCandidate const& candidate)
 {
     return state.Active
-        && state.OwnedMushroomHasNativeRangeCandidate
+        && state.DetonationReady
         && candidate.SpellId == MagmawBalanceMushroomDuty::WildMushroomDetonateSpellId
         && candidate.Profile.TargetSelector == "self";
 }
@@ -250,7 +281,9 @@ char const* MagmawBalanceMushroomRejection(
             return candidate.Profile.TargetSelector != "ground_enemy"
                 || !candidate.Profile.RequiresGroundTarget
                 ? "magmaw_mushroom_profile_not_ground_gated"
-                : "magmaw_mushroom_ground_target_unavailable";
+                : (state.GroundParasiteHits > 0
+                    ? "magmaw_mushroom_parasite_density_below_threshold"
+                    : "magmaw_mushroom_ground_target_unavailable");
         if (!MagmawBalanceMushroomDuty::NeedsPlacement(state.OwnedMushrooms))
             return "magmaw_mushrooms_already_placed";
     }
@@ -264,7 +297,9 @@ char const* MagmawBalanceMushroomRejection(
                     ? "magmaw_mushroom_profile_not_self_targeted"
                     : (!MagmawBalanceMushroomDuty::ReadyToDetonate(state.OwnedMushrooms)
                         ? "magmaw_mushrooms_not_ready"
-                        : "magmaw_mushroom_native_range_candidate_unavailable");
+                        : (!state.OwnedMushroomHasNativeRangeCandidate
+                            ? "magmaw_mushroom_native_range_candidate_unavailable"
+                            : "magmaw_mushroom_parasite_hits_below_threshold"));
             if (!MagmawBalanceMushroomDuty::ReadyToDetonate(state.OwnedMushrooms))
                 return "magmaw_mushrooms_not_ready";
         }

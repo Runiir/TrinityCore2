@@ -78,6 +78,9 @@
                 {
                     observed.PersonalParasiteThreat = &actor;
                     observed.PersonalParasiteThreatDistance = distance;
+                    observed.PersonalParasiteThreatStaticDamageOpportunity =
+                        supportOpportunities
+                        && supportOpportunities->Contains(actor.Guid);
                 }
             }
         };
@@ -168,9 +171,29 @@
         return decision;
     }
 
+    static bool PersonalThreatDamageAdmitted(
+        MagmawActorObservation const& observed, std::string_view classSpec)
+    {
+        // DPS-065: a ranged actor that selected a pursuing parasite it could
+        // not see failed Insect Swarm, Moonfire and Starfire on line of sight
+        // (Balance 30001: 8 failures in k4, 11 in k5; Elemental 30010 lost
+        // about 14 s in b2 k1). Each failure blocks the spell for 5 s and
+        // walks the actor toward the parasite. Ranged specs therefore take
+        // the threat only when it is in the same native static damage
+        // opportunity set that already gates baiter and support targets;
+        // otherwise they stay on Magmaw while the escape task, which still
+        // observes every threat, owns their movement. A hittable threat is
+        // selected exactly as before. Melee specs, whose opportunity ranges
+        // exclude melee-range actions, and callers without an opportunity
+        // view keep the prior contract.
+        return !observed.SupportOpportunitiesObserved
+            || !IsRangedParasiteSupportSpec(classSpec)
+            || observed.PersonalParasiteThreatStaticDamageOpportunity;
+    }
+
     static ObjectGuid SelectDamageTarget(MagmawActorObservation const& observed,
         ObjectGuid botGuid,
-        std::string_view role, std::string_view /*classSpec*/,
+        std::string_view role, std::string_view classSpec,
         MagmawParasiteCombatContract const& contract)
     {
         if (observed.Head)
@@ -198,6 +221,7 @@
             if (observed.PersonalParasiteThreat
                 && observed.PersonalParasiteThreatDistance
                     <= RangedParasiteTargetDistance
+                && PersonalThreatDamageAdmitted(observed, classSpec)
                 && contract.AllowsParasiteTarget(botGuid,
                     observed.PersonalParasiteThreat->Guid))
                 return observed.PersonalParasiteThreat->Guid;

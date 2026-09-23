@@ -27,6 +27,22 @@
 namespace
 {
 constexpr float GUARDIAN_INITIALIZATION_PET_XP_FACTOR = 0.05f;
+
+// Dancing Rune Weapon (49028) guardian scaling from the 4.3.4 client data.
+enum RuneWeaponScaling : uint32
+{
+    // Death Knight Rune Weapon Scaling 02. EFFECT_0 SPELL_AURA_MOD_DAMAGE_DONE
+    // (physical; spell_dk_rune_weapon_scaling_02 copies the owner's normalized
+    // main-hand damage, attack power included), EFFECT_1 SPELL_AURA_MELEE_SLOW
+    // (owner melee haste), EFFECT_2 SPELL_AURA_MOD_DAMAGE_PERCENT_DONE -50 on
+    // all schools. 81256 quotes it: "the same attacks as the Death Knight but
+    // for $51906s3% reduced damage", so the 0.5 is native and not restated here.
+    SPELL_DK_RUNE_WEAPON_SCALING_02 = 51906,
+    // Death Knight Pet Scaling 03 (owner melee/spell hit) and 05 (owner melee
+    // crit): the DK guardian carriers Army of the Dead ghouls also receive.
+    SPELL_DK_PET_SCALING_03         = 61697,
+    SPELL_DK_PET_SCALING_05         = 110474
+};
 }
 
 bool Guardian::InitStatsForLevel(uint8 petlevel)
@@ -292,6 +308,20 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
                     SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, maxDamage);
                     if (!HasAura(62137))        // Avoidance
                         CastSpell(this, 62137, true);
+                    break;
+                }
+                case ENTRY_RUNIC_WEAPON:
+                {
+                    // WoWSims Cata 70d87383 dancing_rune_weapon.go mirrors the
+                    // owner's weapon at a 3.5 s swing (creature_template 3500).
+                    SetBaseAttackTime(BASE_ATTACK, cinfo->BaseAttackTime);
+                    // Its weapon is the owner's copied weapon (51906 EFFECT_0),
+                    // so no creature base weapon damage is added on top.
+                    SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, 0.0f);
+                    SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, 0.0f);
+                    for (uint32 scaling : { SPELL_DK_RUNE_WEAPON_SCALING_02, SPELL_DK_PET_SCALING_03, SPELL_DK_PET_SCALING_05 })
+                        if (!HasAura(scaling))
+                            AddAura(scaling, this);
                     break;
                 }
                 case ENTRY_GHOUL:
