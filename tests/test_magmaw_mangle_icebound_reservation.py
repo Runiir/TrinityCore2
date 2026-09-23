@@ -6,7 +6,7 @@ In bundle1 kill 1 the tank fell to 27.6% on the Drudge pack 41 s before the
 pull, where the trash recovery lane casts Icebound at 55%; 180 s later it is
 still down at the 90 s Mangle. The generic rule: on the trash node right
 before a boss with a declared opening hit, a Defensive whose own cooldown
-exceeds that hit's time after pull is reserved above 35% health. On the boss node, a Defensive
+exceeds that hit's time after pull is reserved above 25% health. On the boss node, a Defensive
 whose cooldown exceeds the big-hit spacing is kept between big hits while the
 boss's native timer runs (the Mangle helper casts it), released while the hit
 is in progress (timer at 0 or the tank held in the boss's seat) and at 35%
@@ -88,10 +88,16 @@ int main()
     assert(!BossDefensiveReservationReason(dungeon, 90000, 0.60f, BotCombatActionCategory::Defensive, 180000));
     // Emergency release for everyone on trash: a dead lone tank can wipe the
     // pack instead of being a recovered death.
-    assert(!BossDefensiveReservationReason(trash, 90000, 0.35f, BotCombatActionCategory::Defensive, 180000));
+    // Trash release is 25%: fid16-8586fdd kills 1 and 5 fell to 33.1% and
+    // 29.0% on the Drudges, spent Icebound at the old 35% release, and kill
+    // 5's tank died to Mangle without it. Both lows now keep it.
+    assert(BossDefensiveReservationReason(trash, 90000, 0.331f, BotCombatActionCategory::Defensive, 180000));
+    assert(BossDefensiveReservationReason(trash, 90000, 0.290f, BotCombatActionCategory::Defensive, 180000));
+    assert(BossDefensiveReservationReason(trash, 90000, 0.26f, BotCombatActionCategory::Defensive, 180000));
+    assert(!BossDefensiveReservationReason(trash, 90000, 0.25f, BotCombatActionCategory::Defensive, 180000));
     assert(!BossDefensiveReservationReason(trash, 90000, 0.20f, BotCombatActionCategory::Defensive, 300000));
-    assert(BossDefensiveReservationReason(trash, 90000, 0.36f, BotCombatActionCategory::Defensive, 180000));
-    static_assert(BossHitEmergencyHealthPct == 0.35f, "one emergency floor for both rules");
+    static_assert(TrashBeforeBossEmergencyHealthPct == 0.25f, "trash release");
+    static_assert(BossHitEmergencyHealthPct == 0.35f, "boss-node release is unchanged");
     // The existing emergency exemption still leaves defensives alone.
     assert(!ReservationReason(trash, { BotCombatActionCategory::Defensive, "icebound_fortitude" }));
 

@@ -206,7 +206,7 @@ bool ObjectiveContext::RunTankTrashRecovery(
         // before the heal can land.  Icebound remains the bounded
         // fallback mitigation when Death Strike is unavailable or fails.
         // Before a boss whose opening hit needs it (3 min cooldown), the
-        // reservation holds it between 55% and 35% and releases it below.
+        // reservation holds it between 55% and 25% and releases it below.
         if (UnitHealthPct(bot) <= 0.55f && bot->HasSpell(48792)
             && !bot->HasAura(48792)
             && !Manager.BossDefensiveReservationReason(bot, 48792)
