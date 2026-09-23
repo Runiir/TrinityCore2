@@ -38,6 +38,8 @@ archive and update its index line.
 | DPS-026 | Still blocked in shard89, the 241k clear | Source4b24 DK is actual MT, 17,075.296 DPS, 19 DS and20 RS, but zero HS/DRW. Both actions are enabled and learned. | Shard89: Blood30002 12,567.827 elapsed DPS; no landed55050, 46 declarative-area-semantics and47 future-encounter-splash rejections. Same previously proven edge. Actual20/20 execution masks reject HS cleave with forbid_area=true; passive range previews overwrite the last mask with a false appearance of selection. Native cooldown and total-rune hypotheses rejected. Keep existing encounter protection until a safe replacement is reviewed; batch with multi-class findings. |
 | DPS-058 | Native AP same-effect grouping omits melee category | Group1126 infers one type from tied166/167 counts; historical53138+19506 melee AP multiplied twice. | Repair aura-type grouping with exact double20% counterexample and unrelated-group controls. Current single-source Blood needs no compensating Might. |
 | DPS-055 | Native permanent-enchant absence confirmed on d495; overlays were never implemented | All four role presets intentionally emit zero permanent enchants; native equipped-item readback agrees, including Blood78478. Earlier commits added generic plumbing and source research only, not role overlay application. | Apply native-legal enchant-only overlays from retained per-slot sources after the matched Blood/Orb canary. Preserve items/gems/reforges; validate professions and refreshed admission/readback. Runeforge remains separately unobserved. Research completion is not implementation acceptance. |
+| TANK-002 | Diagnosed on base-8ee1047/bundle1; not implemented | Blood is rune-limited (Heart Strike/Death Strike rune-check rejections ~900-1,800 per kill; ~25 runes/min spent). It spends ~3.3 runes/min on Icy Touch/Plague Strike where WCL uses Outbreak (1.6/min), and has no Blood Tap or Empower Rune Weapon. | Outbreak: staged sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql needs 77575 in cata_434_action_profiles.json, all_spec_targets_cata_p4_v1.json and QUALIFICATION_TUNED_ACTION_SPELL_IDS, then `dvc repro validation_provisioning_verify` and regenerated BotAdmissionIdentityGenerated.h (class_native). Blood Tap/ERW need a rune-state profile condition. Expected +1.5-2k. |
+| TANK-003 | Diagnosed on fid16-8586fdd; not implemented | The pre-Mangle Bone Shield (<=6 s) and a Death Strike before the seize often fail on rune shortage/GCD, so the seized tank starts without Blood Shield or Bone Shield (kill 5 took a 92k opening hit unabsorbed). | Hold rune spenders briefly in the Mangle lead so Bone Shield and one Death Strike land before the seize (combat resolver, shared_runtime). |
 
 ### Elemental Shaman (actor 30010)
 
@@ -60,8 +62,8 @@ archive and update its index line.
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
-| DPS-062 | Current scoped Magmaw code clears, but all-actor WCL parity remains open and single-run throughput is high variance | Corrected shards49/50/51/52b are native clears at 222.8k/218.0k/193.4k/211.6k encounter-window party DPS. Shard88b fell to179.4k with one death; zero-death shard89 recovered to241.2k group wall-clock DPS and222.8k across six local DPS actors. Its WCL-matched common-window DPS was201.8k, with Fire A at27.6k versus40.2k and a24.99s direct gap; Elemental was32.4k versus41.9k. JEV found no active stuck behavior, but high-confidence cadence/range actor signals remain. | Treat the native full-fight result and the denominator-matched timeline as separate signals. Collect one repeated Fire A range-gap counterfactual and one Elemental charge/cadence review before changing shared movement or rotation policy. Preserve the three-mushroom ground-duty contract; do not lower the pinned Earth Shock charge gate without native producer evidence. |
 | DPS-044 | Retained evidence; causal diagnosis pending | On ee0504, Mage30006 has a19.138s fresh-direct-attack gap and Hunter a14.910s gap. Their DPS is15.02%/4.68% below26 despite legal fixed-baiter native offense. | Join exact gap endpoints to submissions/finishes, movement and candidate eligibility. DoTs/pets are not fresh casts, but direct-effect gaps are not automatically idle time. No superior eligible AoE bypass or coefficient defect is proven. Use retained ee0504 evidence before another live run. |
+| DPS-064 | Mapped, diagnosis pending | Fire A (30006) is the fixed parasite baiter (lowest-GUID fire mage, BotAdaptiveMagmawParasitePolicy.h:64-86) at 0.87 of WCL on r3-47cd175 vs Fire B 1.14. Kiting within 10 yd claims the GCD and cast slot; while moving only Scorch and instants are castable (Firestarter). | Split duty cost from avoidable loss (idle between waves, instant usage while kiting, Combustion/Living Bomb/Hot Streak timing) against WCL; then the smallest lawful fix. |
 
 ### Several DPS actors and references
 
@@ -69,6 +71,7 @@ archive and update its index line.
 | --- | --- | --- | --- |
 | REF-003 | Current five-spec exact 300-second measurements captured; reference comparability is separate | Survival 35394, Fire 35324, Affliction 27821, Elemental 30763, Balance 30205 DPS on `50ec676cdb`. Survival reference omits Blood Fury. Fire/Balance actually used an extra ordinary-profile potion before fixture combat use. Affliction/Elemental setup checks passed. | Preserve legitimate racials, correct reference via separately attributable control, fix calibration potion ownership. Do not weaken counters or use the legacy 85% threshold as parity. See current dummy table in magmaw_dps_baseline_20260913.md. |
 | OBS-008 | Native terminal observation live exercised on9d29 | Finish-v2 retains exact cast ID/ordinal, prior state, original/terminal target, SpellCastResult and terminal source. It separates success, target death, LOS, interruption and four Fire Scorches ending UNIT_NOT_INFRONT. Cancellation owner remains unknown for interrupted Balance, Affliction and Survival casts. | Preserve the accepted observer. Route the proven Fire facing overwrite to DPS-063; obtain the native interrupt initiator before changing the other rotations. |
+| DPS-065 | Diagnosed; not implemented | Balance is 0.93 on r3-47cd175 after the crash-dodge fix. A Shooting Stars instant Starsurge is rejected while moving because the movement check uses the base cast time (BotWorldPopulationMgrCombatResolver.cpp ~352-356); moving Moonfire/Sunfire filler is staged (sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql, ~+0.4k). | Use the effective cast time in the moving check; promote the moving filler with a batch. |
 
 ### Healers
 
@@ -76,16 +79,17 @@ archive and update its index line.
 | --- | --- | --- | --- |
 | HEAL-001 | Holy Paladin profile incomplete; bounded repair pending | Actor30004 learned Beacon53563, Aura Mastery31821, Divine Plea54428 and Light of Dawn85222, but its loaded six-action profile contains none of them and no Holy Power spender. | Define one native capability repair using existing tank assignments and normal resource gates. Keep observed zero deaths separate from complete healer behavior. |
 | OBS-006 | Discipline shield outcome missing from healing totals | Actor30005 successfully casts Power Word: Shield26 times across ten players, but the full export has no spell17 healing rows and no recorded absorbed_amount. | Trace native absorbed damage into attributed healer outcomes before ranking Discipline by reported HPS; successful shield casts alone do not prove absorption amount. |
+| HEAL-002 | Diagnosed on fid16-8586fdd and bundle2; not implemented | The Discipline Priest (30005) casts nothing for 3-16 s around every Mangle: mangle_midpoint_stage (Survival priority, BotAdaptiveMagmawStrategyHazard.h) re-triggers whenever it is >4 yd from the stage point, and a moving healer may only cast instants (Prayer of Mending on cooldown, Power Word: Shield blocked by Weakened Soul). In fid16 kill 5 the seized tank got 0 priest healing and died. | Skip the stage move for a non-baiter already within 35 yd of the Mangled tank; optionally Pain Suppression (33206) on the seized tank if talented; add adaptive_heal_resolve/adaptive_heal_cast to the boss aggregates so failed heals are visible. |
 
 ### Encounter, route and recovery
 
 | ID | Status | Proven failure / limit | Next action |
 | --- | --- | --- | --- |
 | ENC-001 | Drudge survival recurred on 36f8 before boss research | Firehook30007 and Aff30008 die to overlapping Drudge79974/79604 on a152. The>=18yd safety check fails, movement requests the same reached anchor, then ContinuePackCombat permits combat despite tactical safety failure. | Retained 36f8 timeline shows fire mage 30007 escape unavailable, movement deferred by resource conflict, then 196,483 damage / 38,908 healing before death. This does not prove the melee observation patch caused it. Both a4b9 and 36f8 contain the same mage escape delay (~14.6s) and death. The paired route action itself claims movement. Baseline raw has four trash deaths then recovery; its final zero counters reset scope and cannot establish trash survival. Diagnose the later candidate-only full wipe. Boss-only staging is held; it cannot validate trash recovery. Preserve native pathing and tolerances. See magmaw_melee_resolution_20260912 DVC review. |
-| ENC-005 | Research-backed native discrepancy; target-era compatibility pending | Sweltering Armor is applied on Mangle boarding, while historical 10N and 25H WCL apply it at Mangle removal. | See [longer WCL evidence](magmaw_longer_wcl_20260912.md). Distinguish successful hooks, timeout release and reset/death before moving application. Second 25H removal follows Mangled Lifeless by 113ms; the tank survives. Aura removal alone does not prove hook success. No causal DPS attribution or combat fix claimed. |
-| ENC-006 | Native swing stages captured; exact tuning unresolved | Source 0f0a8c0382 reaches Magmaw with 485 native melee-resolution observations, 466 linked health callbacks, and 19 unmatched native misses. Magmaw ordinary callbacks retain raw 4,431-6,538 and total health damage 9,939. Native stages now permit roll/modifier/outcome/mitigation inspection; callback raw and WCL U are different boundaries. | Analyze retained stages in magmaw_native_wipe_recovery_20260912 DVC archive before another run or any guessed multiplier. Full fidelity remains unaccepted. Earlier 36f8 trash-only capture and a4b9 legacy raw remain historical evidence. |
 | REC-001 | Explicit entrance repaired; live full-wipe coverage pending | 36f8 physically recovered all ten bots but admission entrance 0/0/0 prevented runback/re-entry/resurrection receipt advancement. Source 0f0a8c0382 declares verified (6581,0,669) on all seven BWD scenarios. Production tracker fixture and independent review pass. Live admission matches; one trash casualty recovers in 122.493s and original route clears at 189,706.381 DPS, but no full wipe occurred. | Preserve actual progress checks. A recovered trash wipe is acceptable; native_recovery_accepted with required=false is not a recovery observation. Observe the next natural full wipe rather than claiming unexercised acceptance. Corrected prior evidence and new run: magmaw_native_wipe_recovery_20260912 DVC archive, prior-run-correction/recovery-stall.json. |
 | DPS-023 | User-observed head-return outage; causal diagnosis active | Manual spectator run on 21c survives beyond exposed head; user reports damage targets recover only after the next Pillar/add switch. Earlier accepted kill ended during head exposure and did not cover this return transition. | Retained evidence proves damage outage but not its internal cause. Fixed-size target/native-stat observation independently approved; one-second capture4b24 is valid but UNEXERCISED because kill ends during first head. The a152 head return passes with 195/195 valid post-return DPS targets and native body damage. This is run-specific acceptance; no targeted repair or universal claim. Preserve the prior intermittent occurrence; no unchanged retry. |
+| ENC-007 | Open fidelity work | Only Magmaw 10N (41570) is calibrated. 25N/10H/25H (51101-51103), Lava Parasites (41806/42321), the heroic Blazing Bone Construct (49416) and the route trash (Drudge 42362, Chainwielder 42649) still have DamageModifier 1 from the upstream reset. | Calibrate each from matched WCL damage stages (method in the 41570 migration header), stage the migration, record it in the fidelity registry. |
+| ENC-008 | Low; not implemented | The crash-side footprint adds the active crash dummy (47330) to its hull only when observed, but the encounter blackboard never publishes 47330, so the cone tip relies on Magmaw's position. | Publish 47330 with facing during bwd.magmaw.encounter in BotWorldPopulationMgrEncounterBlackboard.cpp. |
 
 ### Dummy calibration only (not on the raid tuning path)
 
@@ -155,7 +159,7 @@ Status is the row's own status text. "Open" rows are above; "archive" rows are i
 | DPS-041 | archive |  | Independent review and native ordering repair accepted on433; throughput unresolved |  |
 | DPS-042 | archive |  | Shared range repair independently reviewed and native accepted on26; exact Balance under5 native-success coverage absent |  |
 | DPS-043 | archive |  | Independently reviewed and native accepted on ee0504 |  |
-| DPS-044 | open | Fire Mages | Retained evidence; causal diagnosis pending | Fire 30006 gap continues under DPS-062. |
+| DPS-044 | open | Fire Mages | Retained evidence; causal diagnosis pending | Fire 30006 gap continues under DPS-064 (DPS-062 closed). |
 | DPS-045 | archive |  | Survival swap native accepted; broader role gaps remain |  |
 | DPS-046 | archive |  | Accepted native Survival shot/ST admission repair |  |
 | DPS-047 | archive |  | Accepted narrow native trap removal on05f |  |
@@ -173,14 +177,18 @@ Status is the row's own status text. "Open" rows are above; "archive" rows are i
 | DPS-059 | archive |  | Cross-roster comparison previously prioritized small defects without duty-adjusted impact |  |
 | DPS-060 | archive |  | Magmaw WCL denominator contract corrected; parity remains open |  |
 | DPS-061 | archive |  | Magmaw WCL denominator was still vulnerable to post-kill telemetry tails; measurement repair committed on `d49921c96f` |  |
-| DPS-062 | open | Fire Mages | Current scoped Magmaw code clears, but all-actor WCL parity remains open and single-run throughput is high variance | Also holds the Elemental cadence review. Fire A is the bait mage 30006. |
+| DPS-062 | archive |  | Closed 2026-09-23: superseded by the scoreboard |  |
 | DPS-063 | archive |  | Moving-cast facing accepted on d495 |  |
+| DPS-064 | open | Fire Mages | Mapped, diagnosis pending |  |
+| DPS-065 | open | Several DPS actors and references | Diagnosed; not implemented |  |
 | ENC-001 | open | Encounter, route and recovery | Drudge survival recurred on 36f8 before boss research |  |
 | ENC-002 | archive |  | Native two-way swap accepted on6882 |  |
 | ENC-003 | archive |  | Actor-specific optional support admission implemented; exercised live on b113 |  |
 | ENC-004 | archive |  | Native queue repair reviewed; fixture and 150.254s live clear passed; live collision attribution and overall performance remain unaccepted |  |
-| ENC-005 | open | Encounter, route and recovery | Research-backed native discrepancy; target-era compatibility pending |  |
-| ENC-006 | open | Encounter, route and recovery | Native swing stages captured; exact tuning unresolved |  |
+| ENC-005 | archive |  | Closed 2026-09-23: Sweltering Armor at Mangle release |  |
+| ENC-006 | archive |  | Closed 2026-09-23: DamageModifier 16 calibrated |  |
+| ENC-007 | open | Encounter, route and recovery | Open fidelity work |  |
+| ENC-008 | open | Encounter, route and recovery | Low; not implemented |  |
 | FLOW-001 | archive |  | Fresh-entry read-only trial passed; no new native acceptance |  |
 | FLOW-002 | archive |  | Workflow admission repaired; native performance unchanged/unmeasured |  |
 | FLOW-003 | archive |  | Earlier narrow closure retained; recurring defects superseded by FLOW-005 |  |
@@ -190,7 +198,10 @@ Status is the row's own status text. "Open" rows are above; "archive" rows are i
 | FLOW-007 | archive |  | Workflow gate repair; native DPS remains open |  |
 | FLOW-008 | archive |  | Bounded diagnostic and review-identity tools repaired; parent performance remains open |  |
 | FLOW-009 | archive |  | Completed-run reconciliation and compact entrypoints repaired |  |
+| HARN-001 | archive |  | Closed 2026-09-23: heartbeat world freeze fixed |  |
 | HEAL-001 | open | Healers | Holy Paladin profile incomplete; bounded repair pending |  |
+| HEAL-002 | open | Healers | Diagnosed; not implemented |  |
+| MEAS-001 | archive |  | Closed 2026-09-23: Massive Crash side recorded |  |
 | MOV-001 | archive |  | Native hazard traversal accepted on779 |  |
 | OBS-001 | archive |  | Observation gap; no repair admitted |  |
 | OBS-002 | archive |  | Full-window observation live accepted on Hunter3e |  |
@@ -218,4 +229,6 @@ Status is the row's own status text. "Open" rows are above; "archive" rows are i
 | REV-001 | archive |  | Corrected recent-event attribution on6882 |  |
 | SETUP-001 | open | Dummy calibration only | Independently approved; live pending |  |
 | TANK-001 | open | Blood Death Knight tank | Event-local Blood priority inversion proven on d495; survived current boss | The Death Strike priority change a283a51228 is already in the baseline (shared_worldserver_workflow_20260907.md). |
+| TANK-002 | open | Blood Death Knight tank | Diagnosed; not implemented |  |
+| TANK-003 | open | Blood Death Knight tank | Diagnosed; not implemented |  |
 | TEST-001 | archive |  | Test-only repair independently accepted |  |

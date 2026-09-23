@@ -158,23 +158,33 @@ are in `docs/bot_raids/development_graph.md`.
 
 ## 5. Magmaw 10N now
 
-Scenario `blackwing_descent_10n_magmaw`. The spell-queue build (label
-`spellqueue-b8a897`) averages 236k encounter-window party DPS over three kills
-against WCL about 246k. Those kills, and every earlier one, were measured while
-each in-combat heartbeat froze the world thread for 3.6–12.3 s (11–21% of the
-boss window), so they are not comparable with kills on the fixed harness:
-re-baseline (step b) once runs report no boss-window stalls. Single kills vary
-by about ±10%, which is why every decision uses batches. Order:
+Scenario `blackwing_descent_10n_magmaw`. **Baseline label: `r3-47cd175`**
+(build 47cd175c, Blizzlike boss damage): six native clears with 0 deaths,
+party 263.4k encounter-window DPS = 1.07 x WCL, Magmaw 107.0 s. Compare every
+change against it with `scoreboard show --vs r3-47cd175`; once a change is
+kept, its label is the new baseline. Kills vary by about +/-3-4% even on a
+clean harness, and the random Massive Crash side moves casters by several
+thousand DPS, so read the RNG line `show` prints before trusting an actor delta.
 
-1. **Blood DK tank**, about 45–60% of WCL. Compare with
-   `magmaw_wcl_dps_reference_v1.json` and `magmaw_wcl_cast_timelines_v1.json`
-   in `experiments/configs/cata_raid_encounters/blackwing_descent/`: rune
-   spending, Heart Strike, Death Strike, Rune Strike, Dancing Rune Weapon,
-   diseases, Vengeance, main-tank uptime and exposed-head coverage. Threat and
-   survival are safety checks, not substitutes for damage.
-2. **Balance**, about 70–80%; include Mushroom placement and duty cost.
-3. **Elemental**, then **Survival** (which first needs its WCL reference), then
-   **Affliction**, then any other actor still below the finish line.
+Actor status on the baseline (ratio to target; `scoreboard verdict` is
+authoritative):
+
+| Actor | Ratio | Next diagnosed fix (error ledger ID) |
+| --- | --- | --- |
+| Blood DK tank 30002 | 0.68 | Rune supply: Outbreak, Blood Tap, Empower Rune Weapon (TANK-002); Bone Shield and Death Strike before the Mangle seize (TANK-003) |
+| Fire A 30006 (parasite baiter) | 0.87 | Separate unavoidable baiting cost from avoidable loss (DPS-064) |
+| Balance 30001 | 0.93 | Moving Starsurge with Shooting Stars; staged moving Moonfire filler (DPS-065) |
+| Survival 30009 | WoWSims fallback | No matched WCL hunter; judged against 0.90 x WoWSims 36.5k |
+| Fire B 30007, Affliction 30008, Elemental 30010 | 1.02-1.14 | Pass; watch for regressions |
+
+Also open and diagnosed: the Discipline Priest casts nothing for 3-16 s around
+each Mangle because Mangle staging keeps it moving (HEAL-002); it matters for
+tank survival. Encounter fidelity: only Magmaw 10N's melee is calibrated
+(ENC-007 lists the other difficulties, the adds and the route trash).
+
+Work the table top to bottom, one change per batch. Mangle is the fight's
+lethal moment for the sole Blood tank; any change that touches tank
+cooldowns, healer movement or pincer riders must keep boss-window deaths at 0.
 
 ## 6. Constraints that always apply
 
