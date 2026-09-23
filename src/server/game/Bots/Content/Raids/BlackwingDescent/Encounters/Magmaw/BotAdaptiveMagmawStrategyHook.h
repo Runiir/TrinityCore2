@@ -287,6 +287,67 @@
         return std::nullopt;
     }
 
+    // Native reach inputs. The snapshot carries no per-unit combat reach, so
+    // these are the units' own values: Magmaw is world DB creature_model_info
+    // 32679 CombatReach 15 x creature_template scale 1; a player rider is
+    // DEFAULT_PLAYER_COMBAT_REACH 1.5 x scale 1. Tests pin both to the data
+    // and the engine constants.
+    static constexpr float MagmawCombatReach = 15.0f;
+    static constexpr float RiderCombatReach = 1.5f;
+    // Unit::GetMeleeRange: attacker reach + target reach + 4/3, at least
+    // NOMINAL_MELEE_RANGE, compared 3D centre to centre.
+    static float NativeMeleeReach(float attackerReach, float targetReach)
+    {
+        return std::max(attackerReach + targetReach + 1.3333334f, 5.0f);
+    }
+    // The bot SpellClick executor admits IsWithinDistInMap(clickable,
+    // INTERACTION_DISTANCE): 5 yd plus both combat reaches, 3D.
+    static float NativeClickReach(float clickerReach, float clickableReach)
+    {
+        return 5.0f + clickerReach + clickableReach;
+    }
+    // Riders wait this far beyond Magmaw's melee reach (17.83 yd for a
+    // player), 20.33 yd from his centre. A rider stops within the arrival
+    // tolerance, so it is always at least 1.5 yd outside the reach and still
+    // inside the 21.5 yd click reach: the click needs no walk when the window
+    // opens.
+    static constexpr float HookWaitMeleeMargin = 2.5f;
+    static constexpr float HookWaitArrivalTolerance = 1.0f;
+
+    static float HookWaitRadius()
+    {
+        return NativeMeleeReach(MagmawCombatReach, RiderCombatReach)
+            + HookWaitMeleeMargin;
+    }
+
+    // The wait point sits on the room-side ray that carries the support and
+    // ranged anchors and the pincer point, HookWaitRadius from Magmaw's centre
+    // in 3D at the declared floor height. Magmaw's LOS point is his hit
+    // sphere, 15 yd out on the same ray, so the sight line is ~5 yd of open
+    // floor; the 4 yd pincer point failed LOS because it stands under him.
+    static std::optional<Vector3> ResolveHookWaitDestination(
+        Blackboard const& board, ActorSnapshot const& boss)
+    {
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!anchors)
+            return std::nullopt;
+        float const dx = anchors->Support.X - boss.Position.X;
+        float const dy = anchors->Support.Y - boss.Position.Y;
+        float const length = std::sqrt(dx * dx + dy * dy);
+        float const dz = anchors->Support.Z - boss.Position.Z;
+        float const radius = HookWaitRadius();
+        if (length < 0.01f || !(radius > std::fabs(dz)))
+            return std::nullopt;
+        float const planar = std::sqrt(radius * radius - dz * dz);
+        return Vector3{ boss.Position.X + dx / length * planar,
+            boss.Position.Y + dy / length * planar, anchors->Support.Z };
+    }
+
+    // From the Mangle warning until the mount window opens, riders wait
+    // outside Magmaw's melee reach: the seize wipes the tank's threat and
+    // Magmaw stays aggressive until Prepare Massive Crash (3.5 s later).
+    // Only the open window (Massive Crash, Magmaw passive) sends them in.
     static std::optional<BotNativeAction::Candidate> ProposeHookPreposition(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, ObjectGuid botGuid)
@@ -294,14 +355,13 @@
         MagmawHookAssignment const assignment = ResolveHookAssignment(board,
             bot, botGuid);
         if (!assignment.Assigned || assignment.Vehicle || boss.Interactable
-            || !PincerWarningObserved(board)
-            || Distance2d(bot.Position, boss.Position)
-                <= HookInteractionDistance)
+            || !PincerWarningObserved(board))
             return std::nullopt;
 
         std::optional<Vector3> const destination =
-            ResolveHookApproachDestination(board, boss);
-        if (!destination)
+            ResolveHookWaitDestination(board, boss);
+        if (!destination || Distance2d(bot.Position, *destination)
+                <= HookWaitArrivalTolerance)
             return std::nullopt;
         return BuildPointMovement(board, *destination,
             "pincer_preposition", BotActionArbitration::Priority::Mechanic,

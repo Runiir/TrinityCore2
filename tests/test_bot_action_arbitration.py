@@ -1602,14 +1602,23 @@ int main()
     auto const* prepositionMove = std::get_if<Move>(
         &prepositionPlan.Movement->Action);
     assert(prepositionMove);
-    assert(std::hypot(prepositionMove->X - magmawBoss.Position.X,
-        prepositionMove->Y - magmawBoss.Position.Y)
-        <= BotEncounter::AdaptiveMagmawStrategy::HookInteractionDistance);
+    // The rider waits outside Magmaw's native melee reach (15 + 1.5 + 4/3)
+    // but inside the bot SpellClick reach (5 + 1.5 + 15), both 3D.
+    float const prepositionReach = std::sqrt(
+        std::pow(prepositionMove->X - magmawBoss.Position.X, 2.0f)
+        + std::pow(prepositionMove->Y - magmawBoss.Position.Y, 2.0f)
+        + std::pow(prepositionMove->Z - magmawBoss.Position.Z, 2.0f));
+    assert(prepositionReach > 15.0f + 1.5f + 4.0f / 3.0f + 2.0f);
+    assert(prepositionReach < 5.0f + 1.5f + 15.0f - 1.0f);
 
     // The alternate native Mangle aura is equivalent, and a non-assigned
     // ranged player keeps ordinary formation behavior instead of staging.
     BotEncounter::Blackboard alternateMangle = magmawPincerPreposition;
     alternateMangle.Players[2].Auras.front().SpellId = 78412u;
+    // At -20 yd this rider already stands at the wait point; from inside
+    // Magmaw's melee reach it must move out.
+    alternateMangle.Players[0].Position = {
+        magmawBoss.Position.X - 8.0f, magmawBoss.Position.Y, 211.815f };
     auto alternatePrepositionPlan = magmawStrategy.Propose(
         alternateMangle, secondHookBot.Guid, "dps");
     assert(alternatePrepositionPlan.Movement.has_value());

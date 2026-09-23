@@ -229,11 +229,25 @@ int main()
             {
                 auto const& move = std::get<BotNativeAction::Move>(candidate.Action);
                 assert(std::fabs(move.X + 305.688446f) < 0.001f);
+                assert(move.Z == 211.815002f);
+                if (warning)
+                {
+                    // The warning wait point stays on the room ray, 2.5 yd
+                    // beyond Magmaw's 3D melee reach (15 + 1.5 + 4/3).
+                    auto const& boss = airborne.Hostiles.front().Position;
+                    float const reach = std::sqrt(std::pow(move.X - boss.X, 2.0f)
+                        + std::pow(move.Y - boss.Y, 2.0f)
+                        + std::pow(move.Z - boss.Z, 2.0f));
+                    assert(std::fabs(reach - (15.0f + 1.5f + 4.0f / 3.0f + 2.5f))
+                        < 0.01f);
+                    assert(move.Y < boss.Y);
+                    found = true;
+                    continue;
+                }
                 assert(std::fabs(move.Y + 34.0812607f) < 0.001f);
                 // Behavioral red before producer correction: elevated declared
                 // endpoint fails the unchanged native admission envelope.
                 assert(admission(move));
-                assert(move.Z == 211.815002f);
                 auto elevated = move;
                 elevated.Z = airborne.Players[3].Position.Z;
                 assert(!admission(elevated));
