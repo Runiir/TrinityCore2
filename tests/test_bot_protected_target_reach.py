@@ -90,6 +90,8 @@ int main()
     assert(CollectRadius(shield, 1.5f) == 10.0f);
     assert(std::fabs(CollectRadius(wide, 1.5f) - 10.0f) < 1e-5f);
     assert(std::fabs(CollectRadius(wide, 4.5f) - (5.0f + 4.5f + 1.3333334f)) < 1e-5f);
+    assert(MaxCandidateCombatReach == 52.0f && VisitRadius(5.0f) == 57.0f);
+    int unpaddedMisses = 0;
 
     // Sweep geometry: any unit the native search can select is collected by
     // the combat-reach-inclusive searcher and passes the exact reach test.
@@ -97,15 +99,19 @@ int main()
     for (int treat = 0; treat <= 1; ++treat)
     for (float ownerReach : { 0.0f, 1.5f, 4.0f })
     for (float anchorReach : { 0.0f, 1.5f, 15.0f })
-    for (float candidateReach : { 0.0f, 1.5f, 6.0f })
-    for (float dist = 0.0f; dist <= 60.0f; dist += 0.25f)
+    for (float candidateReach : { 0.0f, 1.5f, 6.0f, 52.0f })
+    for (float dist = 0.0f; dist <= 120.0f; dist += 0.25f)
     {
         Reach target = Resolve({ true, uint32(chain), false, treat != 0 });
         float melee = std::max(candidateReach + ownerReach + MeleeRangeReachSlack, NominalMeleeRange);
         bool native = dist <= float(chain - 1) * 5.0f + (treat ? melee : 0.0f);
         bool collected = dist <= CollectRadius(target, ownerReach) + anchorReach + candidateReach;
+        // Cell::Visit covers the square of VisitRadius + anchor reach around
+        // the anchor; a centre within that distance is always visited.
+        float const targetSquare = VisitRadius(CollectRadius(target, ownerReach)) + anchorReach;
         if (native)
-            assert(collected && TargetAnchoredCandidateInReach(target, dist, melee));
+            assert(collected && dist <= targetSquare
+                && TargetAnchoredCandidateInReach(target, dist, melee));
         else
             assert(!TargetAnchoredCandidateInReach(target, dist, melee));
 
@@ -113,7 +119,14 @@ int main()
         bool nativeJump = dist <= 5.0f + ownerReach + candidateReach;
         bool casterCollected = dist <= CollectRadius(caster, ownerReach) + ownerReach + candidateReach;
         assert(nativeJump == casterCollected);
+        if (nativeJump)
+            assert(dist <= VisitRadius(CollectRadius(caster, ownerReach)) + ownerReach);
+        // Edge band: without the pad the visited square ends at the jump
+        // radius plus the caster's reach, short of the candidate's reach.
+        if (nativeJump && dist > CollectRadius(caster, ownerReach) + ownerReach)
+            ++unpaddedMisses;
     }
+    assert(unpaddedMisses > 0);
     return 0;
 }
 ''')
@@ -226,14 +239,15 @@ struct Player : Unit
 
 std::vector<WorldObject*> World;
 WorldObject const* LastAnchor = nullptr;
-float LastRadius = 0.0f;
+float LastRadius = 0.0f;      // exact distance filter (AllWorldObjectsInRange)
+float LastVisitRadius = 0.0f; // grid visit radius passed to Cell
 namespace Trinity
 {
 struct AllWorldObjectsInRange
 {
     WorldObject const* Center;
     float Range;
-    AllWorldObjectsInRange(WorldObject const* center, float range) : Center(center), Range(range) { }
+    AllWorldObjectsInRange(WorldObject const* center, float range) : Center(center), Range(range) { LastRadius = range; }
     bool operator()(WorldObject* object) const
     {
         return Center->GetExactDist2d(object) <= Range + Center->GetCombatReach() + object->GetCombatReach();
@@ -248,12 +262,16 @@ template <class Check> struct WorldObjectListSearcher
 }
 struct Cell
 {
+    // Cell::Visit adds only the anchor's combat reach and visits the cells
+    // overlapping that square; the worst case visits exactly the square.
     template <class Searcher> static void VisitAllObjects(WorldObject const* anchor, Searcher& searcher, float radius)
     {
         LastAnchor = anchor;
-        LastRadius = radius;
+        LastVisitRadius = radius;
+        float const half = radius + anchor->GetCombatReach();
         for (WorldObject* object : World)
-            if (searcher.Test(object))
+            if (std::fabs(object->X - anchor->X) <= half && std::fabs(object->Y - anchor->Y) <= half
+                && searcher.Test(object))
                 searcher.Out.push_back(object);
     }
 };
@@ -329,7 +347,7 @@ int main()
 
     // Areas and callers without a spell keep the unchanged 45-yard guard.
     assert(HasNearbyProtectedEncounterTarget(&dk, &magmaw));
-    assert(LastAnchor == &magmaw && LastRadius == 45.0f);
+    assert(LastAnchor == &magmaw && LastRadius == 45.0f && LastVisitRadius == 97.0f);
     for (SpellInfo const* spell : { bloodBoil, deathAndDecay, hammer, deathStrike })
     {
         assert(HasNearbyProtectedEncounterTarget(&dk, &magmaw, spell));
@@ -340,7 +358,7 @@ int main()
     for (SpellInfo const* spell : { heart, cleave })
     {
         assert(!HasNearbyProtectedEncounterTarget(&dk, &magmaw, spell));
-        assert(LastAnchor == &dk && LastRadius == 5.0f);
+        assert(LastAnchor == &dk && LastRadius == 5.0f && LastVisitRadius == 57.0f);
     }
     Creature near = Parasite(21.0f, 1.0f); // 3.6 yd edge distance from the tank
     World.push_back(&near);
@@ -355,12 +373,27 @@ int main()
     assert(!HasNearbyProtectedEncounterTarget(&dk, &magmaw, heart));
     World.pop_back();
 
+    // Edge band: a 6-yard-reach protected unit 11.5 yd from the tank's centre
+    // is a native jump target (4 yd edge gap) although its centre lies outside
+    // the square Cell::Visit would cover for 5 yd plus the tank's reach alone.
+    Creature band = Parasite(27.5f, 0.0f);
+    band.Reach = 6.0f;
+    World = { &magmaw, &dk, &band };
+    assert(band.X - dk.X > 5.0f + dk.Reach);
+    assert(HasNearbyProtectedEncounterTarget(&dk, &magmaw, heart));
+    band.X = 29.0f; // 7 yd edge gap: outside the native jump
+    assert(!HasNearbyProtectedEncounterTarget(&dk, &magmaw, heart));
+    band.Reach = 52.0f; // the largest instanced reach, just inside its band
+    band.X = dk.X + 5.0f + dk.Reach + 52.0f - 0.5f;
+    assert(HasNearbyProtectedEncounterTarget(&dk, &magmaw, heart));
+    World = { &magmaw, &dk, &far, &opposite };
+
     // Avenger's Shield chains 5 yd x 2 from the primary target's position;
     // Magmaw's own 15-yard combat reach does not widen it.
     Creature inside = Parasite(12.0f, 0.0f);
     World = { &magmaw, &dk, &inside, &opposite };
     assert(!HasNearbyProtectedEncounterTarget(&dk, &magmaw, shield));
-    assert(LastAnchor == &magmaw && LastRadius == 10.0f);
+    assert(LastAnchor == &magmaw && LastRadius == 10.0f && LastVisitRadius == 62.0f);
     inside.X = 9.5f;
     assert(HasNearbyProtectedEncounterTarget(&dk, &magmaw, shield));
     inside.X = 12.0f;

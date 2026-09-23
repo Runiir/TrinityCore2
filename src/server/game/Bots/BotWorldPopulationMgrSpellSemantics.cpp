@@ -325,7 +325,7 @@ bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target,
     Trinity::AllWorldObjectsInRange check(anchor, collectRadius);
     Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
         anchor, nearbyObjects, check);
-    Cell::VisitAllObjects(anchor, searcher, collectRadius);
+    Cell::VisitAllObjects(anchor, searcher, VisitRadius(collectRadius));
     for (WorldObject* object : nearbyObjects)
     {
         Creature* creature = object ? object->ToCreature() : nullptr;

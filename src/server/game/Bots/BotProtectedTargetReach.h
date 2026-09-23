@@ -72,6 +72,20 @@ inline float CollectRadius(Reach const& reach, float ownerCombatReach)
         + std::max(ownerCombatReach + MeleeRangeReachSlack, NominalMeleeRange);
 }
 
+// Cell::Visit widens the visited square by the anchor's combat reach only,
+// while the distance filters also add each candidate's combat reach. Pad the
+// grid visit (never the filter) by the largest creature combat reach in the
+// instanced world data: model CombatReach x template scale over every
+// creature spawned on a raid or dungeon map peaks at 52 yards (Ragnaros,
+// Firelands). A candidate up to that reach whose centre lies outside the
+// anchor-padded square is then still visited and filtered exactly.
+constexpr float MaxCandidateCombatReach = 52.0f;
+
+inline float VisitRadius(float collectRadius)
+{
+    return collectRadius + MaxCandidateCombatReach;
+}
+
 // Exact native test for a target-anchored chain: the area search measures
 // the candidate's centre against the primary target's position in 2D, so a
 // huge primary target's combat reach does not extend the chain. The height
