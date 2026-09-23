@@ -41,7 +41,9 @@ def test_riders_wait_outside_magmaw_melee_reach(tmp_path: Path) -> None:
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <iterator>
 #include <string>
+#include <vector>
 
 using namespace BotEncounter;
 
@@ -164,6 +166,14 @@ static void OpenWindow(Blackboard& board)
     board.Summons = { left, right, spike };
 }
 
+// Magmaw's native Mangle timer as the blackboard publishes it.
+static void MangleTimer(Blackboard& board, uint32 remainingMs,
+    bool sequenceActive = false)
+{
+    board.Hostiles.front().MechanicTimers = { MechanicTimerSnapshot{ 88253u,
+        remainingMs, sequenceActive, FactSource::NativeInstanceState } };
+}
+
 static AdaptiveMagmawPlan PlanFor(Blackboard const& board, uint32 guid)
 {
     AdaptiveMagmawStrategy strategy;
@@ -260,6 +270,9 @@ int main()
     Member(open, 30007).Position = wait;
     Member(open, 30008).Position = wait;
     OpenWindow(open);
+    // The native timer still reports the running sequence (0) in the window;
+    // the lead must not hold riders back from mounting.
+    MangleTimer(open, 0, true);
     for (uint32 guid : { 30007u, 30008u })
     {
         AdaptiveMagmawPlan const plan = PlanFor(open, guid);
@@ -279,6 +292,81 @@ int main()
     Member(seated, 30008).VehicleGuid = seated.Summons[1].Guid;
     for (uint32 guid : { 30007u, 30008u })
         assert(Find(PlanFor(seated, guid), "launch_native_hook"));
+
+    // Before the seize: riders leave on Magmaw's native Mangle timer, 6 s
+    // ahead, with no Mangle aura yet. One millisecond earlier nothing moves.
+    Blackboard early = LiveBoard();
+    MangleTimer(early, 6001);
+    for (uint32 guid : { 30007u, 30008u })
+        assert(!Find(PlanFor(early, guid), "pincer_preposition"));
+    Blackboard lead = LiveBoard();
+    MangleTimer(lead, 6000);
+    // fid16-8586fdd's riders at their last sample before each seize
+    // (kills 1-5, Fire B then Affliction): 7.7-20.8 yd from Magmaw.
+    Vector3 const fid16Spots[] = {
+        { -321.04f, -25.94f, 211.09f }, { -322.63f, -26.72f, 211.69f },
+        { -312.52f, -32.81f, 211.41f }, { -317.23f, -29.24f, 211.25f },
+        { -316.54f, -32.69f, 211.41f }, { -308.91f, -36.45f, 211.58f },
+        { -309.45f, -28.53f, 210.12f } };
+    for (Vector3 const& spot : fid16Spots)
+    {
+        Blackboard fid16 = lead;
+        Member(fid16, 30007).Position = spot;
+        AdaptiveMagmawPlan const plan = PlanFor(fid16, 30007);
+        BotNativeAction::Candidate const* move = Find(plan,
+            "pincer_preposition");
+        assert(move && SpatialDistance(MoveTarget(*move), wait) < 0.001f);
+    }
+    for (uint32 guid : { 30007u, 30008u })
+    {
+        AdaptiveMagmawPlan const plan = PlanFor(lead, guid);
+        BotNativeAction::Candidate const* move = Find(plan,
+            "pincer_preposition");
+        assert(move && SpatialDistance(MoveTarget(*move), wait) < 0.001f);
+    }
+    for (uint32 guid : { 30001u, 30003u, 30004u, 30005u, 30006u, 30009u,
+             30010u })
+        assert(!Find(PlanFor(lead, guid), "pincer_preposition"));
+    // The published sequence (0) and a wrapped overdue value both mean due
+    // now; no timer, or a boss out of combat, opens nothing.
+    Blackboard sequence = LiveBoard();
+    MangleTimer(sequence, 0, true);
+    assert(Find(PlanFor(sequence, 30007), "pincer_preposition"));
+    Blackboard overdue = LiveBoard();
+    MangleTimer(overdue, 4294000000u);
+    assert(Find(PlanFor(overdue, 30007), "pincer_preposition"));
+    assert(!Find(PlanFor(LiveBoard(), 30007), "pincer_preposition"));
+    Blackboard resetBoss = lead;
+    resetBoss.Hostiles.front().InCombat = false;
+    assert(!Find(PlanFor(resetBoss, 30007), "pincer_preposition"));
+    // A rider already at the wait point stays put through the lead.
+    Blackboard leadArrived = lead;
+    Member(leadArrived, 30007).Position = wait;
+    assert(!Find(PlanFor(leadArrived, 30007), "pincer_preposition"));
+
+    // The seize tick. From every recorded start spot the rider reaches the
+    // wait point inside the 6 s lead with at least 0.8 s to spare: fid16's
+    // longest start latency (seize to first moving sample, 2.4 s) plus the
+    // walk at run speed. So when Mangle lands it stands outside the reach.
+    float const longestStartLatency = 2.44f;
+    std::vector<Vector3> starts(std::begin(fid16Spots), std::end(fid16Spots));
+    starts.push_back(LiveBoard().Players[6].Position);
+    starts.push_back(LiveBoard().Players[7].Position);
+    for (Vector3 const& start : starts)
+    {
+        float const arrive = longestStartLatency
+            + PlanarDistance(start, wait) / RunSpeed;
+        assert(arrive + 0.8f <= 6.0f);
+    }
+    Blackboard seizeTick = seized;
+    MangleTimer(seizeTick, 0, true);
+    for (uint32 guid : { 30007u, 30008u })
+    {
+        Member(seizeTick, guid).Position = wait;
+        assert(SpatialDistance(Member(seizeTick, guid).Position, MagmawCentre)
+            >= MeleeReach + 2.0f);
+        assert(!Find(PlanFor(seizeTick, guid), "pincer_preposition"));
+    }
 
     // Timing: the seize-to-window gap is 3.5 s (Prepare Massive Crash) +
     // 5 s (Massive Crash) + 1 s cast; the longest walk out to the wait point

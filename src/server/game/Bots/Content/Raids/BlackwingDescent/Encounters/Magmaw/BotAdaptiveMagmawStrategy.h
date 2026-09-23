@@ -239,6 +239,7 @@ public:
                     board.CurrentScope.InstanceId });
         std::optional<BotNativeAction::Candidate> formationRestore;
         if (!holdHeadPosition && !crashSideHold && !pincerWindow && !pincerWarning
+            && !(hookAssignment.Assigned && HookWaitLeadActive(*observed.Boss))
             && !(IsPillarBaiter(board, botGuid) && HasActivePillar(board))
             && (!HasLivingParasite(board) || !IsPillarBaiter(board, botGuid))
             && !HasActiveHazardPath(board, movementLease, activePathValid,

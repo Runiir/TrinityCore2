@@ -344,10 +344,39 @@
             boss.Position.Y + dy / length * planar, anchors->Support.Z };
     }
 
-    // From the Mangle warning until the mount window opens, riders wait
-    // outside Magmaw's melee reach: the seize wipes the tank's threat and
-    // Magmaw stays aggressive until Prepare Massive Crash (3.5 s later).
-    // Only the open window (Massive Crash, Magmaw passive) sends them in.
+    // Native Magmaw publishes the time until its next Mangle under the Massive
+    // Crash spell id, and 0 while the Mangle -> Massive Crash sequence runs.
+    // Mangle repeats every 95 s, so a larger value is an overdue event whose
+    // uint32 subtraction wrapped: due now (as BotMagmawMangleDefensive.h).
+    static constexpr uint32 MangleTimerSpell = 88253;
+    static constexpr uint32 NativeMangleRepeatMs = 95000;
+    // Riders leave for the wait point this long before the seize, so they are
+    // outside the reach when it lands and the threat wipe hands Magmaw a new
+    // target. In fid16-8586fdd (5 kills, keyed to the Mangle aura) riders
+    // first moved 0.1-2.4 s after the seize (blackboard refresh, decision
+    // tick, a hard cast in flight: a Mechanic move waits it out) and walked
+    // at 7 yd/s; the longest walk to the wait point is 2.7 s (Fire B, 19.1 yd
+    // from its 13.8 yd spot). 2.4 + 2.7 = 5.1 s; 6 s leaves 0.9 s.
+    static constexpr uint32 HookWaitLeadMs = 6000;
+
+    static bool HookWaitLeadActive(ActorSnapshot const& boss)
+    {
+        MechanicTimerSnapshot const* timer =
+            boss.FindMechanicTimer(MangleTimerSpell);
+        if (!boss.InCombat || !timer
+            || timer->Source != FactSource::NativeInstanceState)
+            return false;
+        uint32 const dueInMs = timer->SequenceActive
+            || timer->RemainingMs > NativeMangleRepeatMs
+            ? 0 : timer->RemainingMs;
+        return dueInMs <= HookWaitLeadMs;
+    }
+
+    // From HookWaitLeadMs before the seize (native Mangle timer) or the Mangle
+    // warning, until the mount window opens, riders wait outside Magmaw's
+    // melee reach: the seize wipes the tank's threat and Magmaw stays
+    // aggressive until Prepare Massive Crash 3.5 s later. Only the open window
+    // (Massive Crash, Magmaw passive) sends them in.
     static std::optional<BotNativeAction::Candidate> ProposeHookPreposition(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, ObjectGuid botGuid)
@@ -355,7 +384,7 @@
         MagmawHookAssignment const assignment = ResolveHookAssignment(board,
             bot, botGuid);
         if (!assignment.Assigned || assignment.Vehicle || boss.Interactable
-            || !PincerWarningObserved(board))
+            || (!PincerWarningObserved(board) && !HookWaitLeadActive(boss)))
             return std::nullopt;
 
         std::optional<Vector3> const destination =
