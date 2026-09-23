@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/staged/world/2026_09_23_41_blood_mangle_disease_runes.sql"
+MIGRATION = ROOT / "sql/custom/world/2026_09_23_41_blood_mangle_disease_runes.sql"
 HEART_STRIKE_MIGRATION = ROOT / "sql/custom/world/2026_09_23_40_blood_mangle_death_strike_runes.sql"
 BOSS = ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp"
 SHARED = BOSS.parent / "boss_magmaw_shared.h"
