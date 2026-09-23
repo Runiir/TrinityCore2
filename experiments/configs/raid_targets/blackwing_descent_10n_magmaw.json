@@ -41,7 +41,9 @@
   "roster_policy": "Specs and roles come from this roster, never from the WCL timeline. A counted clear missing any expected actor fails the encounter with roster_incomplete.",
   "counting_rules": {
     "label": "A label is one build and one batch: run refuses a label that already has kills and runs a pinned copy /tmp/worldserver-<sha12>.",
-    "counted": "A kill counts unless it is voided, interrupted, an infrastructure_failure, has no evidence pointer (no_evidence), or is a clear whose post-processing failed (postprocess_error).",
+    "counted": "A kill counts unless it is voided, interrupted, an infrastructure_failure, has no evidence pointer (no_evidence), is a clear whose post-processing failed (postprocess_error), was recorded without report.json measurement_validity (no_measurement_validity), or has valid_for_dps false (stalled_boss_window).",
+    "measurement_validity": "Copied per kill from report.json measurement_validity for the encounter window (valid flag, reasons, stalled sec, stall fraction, max stall). Kills recorded before harness commit d2393eb5a1 have none: their boss windows lost 11-21% to heartbeat freezes and are never compared with new kills. A clear with valid_for_dps false is excluded; a wipe is excluded only when a stall overlapped the boss window, so trash wipes still fail the label.",
+    "damage_reconciliation": "Killed-hostile damage vs max HP from combat_analysis.json (mismatch_count, unlogged_health_loss). Shown, never excludes a kill.",
     "infrastructure_failure": "report.json missing or unreadable, or the run never reached the encounter route node and no bot died. Not counted and not a gameplay failure.",
     "mixed_builds": "Counted kills with different worldserver_sha256 (mixed_binaries) or source_commit (mixed_commits) fail the encounter."
   },

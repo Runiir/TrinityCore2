@@ -160,6 +160,17 @@ def exclusion_reason(record: dict[str, Any]) -> str | None:
         return "no_evidence"
     if record.get("postprocess_error") and record.get("outcome") != "gameplay_failure":
         return "postprocess_error"
+    validity = record.get("measurement_validity")
+    if not validity:
+        # Recorded before the harness measured world stalls (d2393eb5a1): those boss
+        # windows lost 11-21% to heartbeat freezes and are not comparable.
+        return "no_measurement_validity"
+    if validity.get("valid_for_dps") is not True:
+        # A clear with an invalid window is not a DPS measurement. A wipe still counts
+        # as a gameplay failure unless a stall actually hit the boss window (a trash
+        # wipe is invalid only because it has no boss window).
+        if record.get("native_clear") or "world_stall_overlaps_boss_window" in (validity.get("reasons") or []):
+            return "stalled_boss_window"
     return None
 
 

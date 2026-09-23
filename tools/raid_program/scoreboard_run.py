@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_core import (
-    ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, file_sha256, git_head, label_kills,
+    ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, exclusion_reason, file_sha256, git_head, label_kills,
     load_records, load_target, scoreboard_path, utc_now,
 )
 from tools.raid_program.scoreboard_record import (
@@ -224,6 +224,12 @@ def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, k
                         f"Retry with `scoreboard archive-pending --scenario {scenario}`.")
     for problem in problems:
         print(f"STOP: {problem}", flush=True)
+    reason = exclusion_reason(record)
+    if not problems and reason:
+        validity = record.get("measurement_validity") or {}
+        print(f"NOTE: kill {kill['kill_id']} is recorded but not counted ({reason}; stalled "
+              f"{validity.get('stalled_sec')}s, max stall {validity.get('max_stall_sec')}s). The batch continues; "
+              "this label will have fewer counted kills.", flush=True)
     return not problems
 
 

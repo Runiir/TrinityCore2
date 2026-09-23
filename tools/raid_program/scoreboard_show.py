@@ -6,7 +6,7 @@ from typing import Any
 
 from tools.raid_program.scoreboard_compare import compare_labels
 from tools.raid_program.scoreboard_core import (
-    actor_rows, clear_kills, label_kills, latest_label, load_records, load_target, mean_sd,
+    actor_rows, clear_kills, exclusion_reason, label_kills, latest_label, load_records, load_target, mean_sd,
 )
 from tools.raid_program.scoreboard_verdict import evaluate_target
 
@@ -26,6 +26,22 @@ def _mean_of(rows: list[dict[str, Any]], key: str) -> float | None:
 def _change(change: dict[str, Any]) -> str:
     return (f" | {change['old_n']:>2} {_num(change['old_mean'], 8)} {_signed(change['delta'])} "
             f"{_num(change['t'], 6, 2)} {_num(change['df'], 5, 1)} {_num(change['critical_t'], 5, 2)} {change['verdict']}")
+
+
+def _kill_table(label: str | None, kills: list[dict[str, Any]]) -> list[str]:
+    """One line per kill: counted or why not, boss-window stall share and damage reconciliation."""
+    lines = [f"kills of {label}:",
+             f"  {'kill_id':58} {'counted':27} {'stall%':>6} {'max stall':>9} {'recon mismatch':>14} {'unlogged HP':>11}"]
+    for record in kills:
+        reason = exclusion_reason(record)
+        validity = record.get("measurement_validity") or {}
+        recon = record.get("damage_reconciliation") or {}
+        fraction = validity.get("stall_fraction")
+        lines.append(f"  {record['kill_id']:58} {'yes' if reason is None else 'no: ' + reason:27} "
+                     f"{_num(fraction * 100 if fraction is not None else None, 6, 2)} "
+                     f"{_num(validity.get('max_stall_sec'), 8, 1)}{'s' if validity.get('max_stall_sec') is not None else ' '} "
+                     f"{_num(recon.get('mismatch_count'), 14)} {_num(recon.get('unlogged_health_loss'), 11)}")
+    return lines
 
 
 def _gap_line(rank: int, gap: dict[str, Any]) -> str:
@@ -91,10 +107,11 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     if comparison:
         kill_time += f" ({vs}: {_num(comparison['mean_duration_sec']['old'], 1, 1)} s)"
         deaths += f" ({vs}: route {comparison['route_deaths_per_kill']['old']:.2f})"
-    out += [kill_time, deaths]
-    excluded = [row for row in verdict["kills_detail"] if not row["counted"]]
-    if excluded:
-        out.append("not counted: " + ", ".join(f"{row['kill_id']} ({row['exclusion_reason']})" for row in excluded))
+    out += [kill_time, deaths, ""]
+    out += _kill_table(label, kills)
+    if vs:
+        out += _kill_table(vs, label_kills(records, vs))
+    out.append("")
     out.append(f"verdict: {verdict['status']}" + (f" - {verdict['reason']}" if verdict["reason"] else ""))
     if comparison:
         keep = comparison["keep"]

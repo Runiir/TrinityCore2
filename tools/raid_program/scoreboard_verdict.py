@@ -1,8 +1,9 @@
 """evaluate_target: judge one label's counted kills against the scenario target.
 
 Counted kills are the label's kills that are not voided, interrupted,
-infrastructure failures, missing evidence, or clears whose post-processing
-crashed. Every kill of the label is listed in kills_detail with its exclusion.
+infrastructure failures, missing evidence, clears whose post-processing
+crashed, recorded without measurement_validity, or measured over a stalled
+boss window. Every kill of the label is listed in kills_detail with its exclusion.
 `reasons` holds stable codes; `reason` is the readable explanation.
 """
 from __future__ import annotations
@@ -25,7 +26,7 @@ REASON_ORDER = (
     "no_kills", "non_clear_kill", "missing_encounter_data", "boss_window_deaths_unknown", "boss_window_deaths",
     "mixed_binaries", "mixed_commits", "roster_incomplete", "insufficient_kills", "below_target",
     "encounter_failed", "no_reference", "voided", "interrupted", "infrastructure_failure", "no_evidence",
-    "postprocess_error",
+    "postprocess_error", "no_measurement_validity", "stalled_boss_window",
 )
 
 

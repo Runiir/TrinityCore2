@@ -6,7 +6,10 @@ outcome is one of:
   infrastructure_failure  not counted: report.json missing, or the run never reached
                           the boss encounter and no bot died
 The harness exit code is recorded but never decides the outcome: diagnostic
-route runs exit 1 even on a clean native clear.
+route runs exit 1 even on a clean native clear. measurement_validity (world
+stalls in the encounter window) and damage_reconciliation (killed-hostile damage
+vs max HP) are copied from report.json / combat_analysis.json when the harness
+wrote them.
 """
 from __future__ import annotations
 
@@ -180,11 +183,53 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
         } if encounter else None,
         "actors": actors,
         "ranked_gaps": ranked_gaps(actors, spec_targets(root, target), timeline, healer_roles(target)),
+        **{key: summary[key] for key in MEASUREMENT_KEYS if summary.get(key) is not None},
     }
 
 
-def outcome_summary(run_dir: Path, worldserver_sha256: str | None) -> dict[str, Any]:
-    """Outcome fields only, read defensively; report_present False when report.json is missing or unreadable.
+MEASUREMENT_KEYS = ("measurement_validity", "damage_reconciliation")
+
+
+def measurement_fields(report: dict[str, Any], analysis: dict[str, Any] | None, node: str) -> dict[str, Any]:
+    """Compact measurement quality: stall validity of the encounter window and killed-hostile damage reconciliation.
+
+    Runs recorded before the harness wrote measurement_validity get neither key.
+    """
+    fields: dict[str, Any] = {}
+    validity = report.get("measurement_validity")
+    if isinstance(validity, dict):
+        window = next((row for row in validity.get("boss_windows") or []
+                       if isinstance(row, dict) and row.get("route_node_id") == node), None) or {}
+        fields["measurement_validity"] = {
+            "schema": validity.get("schema"),
+            "valid_for_dps": validity.get("valid_for_dps") is True,
+            "reasons": list(validity.get("reasons") or []),
+            "window_duration_sec": window.get("duration_sec"),
+            "stalled_sec": window.get("stalled_sec", validity.get("boss_window_stalled_sec")),
+            "stall_fraction": window.get("stall_fraction"),
+            "max_stall_sec": window.get("max_stall_sec", validity.get("max_boss_window_stall_sec")),
+            "stall_count": window.get("stall_count", validity.get("boss_window_stall_count")),
+            "unstalled_duration_sec": window.get("unstalled_duration_sec"),
+            "thresholds": dict(validity.get("thresholds") or {}),
+        }
+    reconciliation = (analysis or {}).get("killed_hostile_damage_reconciliation")
+    if not isinstance(reconciliation, dict):
+        reconciliation = (report.get("combat_analysis") or {}).get("killed_hostile_damage_reconciliation")
+    if isinstance(reconciliation, dict):
+        mismatches = [row for row in reconciliation.get("mismatches") or [] if isinstance(row, dict)]
+        fields["damage_reconciliation"] = {
+            "reconciled": reconciliation.get("reconciled"),
+            "mismatch_count": int(reconciliation.get("mismatch_count") or 0),
+            "encounter_mismatch_count": sum(row.get("route_node_id") == node for row in mismatches),
+            "killed_hostile_count": reconciliation.get("killed_hostile_count"),
+            "unlogged_health_loss": sum(int(row.get("unlogged_health_loss") or 0)
+                                        for row in reconciliation.get("hostiles") or [] if isinstance(row, dict)),
+        }
+    return fields
+
+
+def outcome_summary(run_dir: Path, worldserver_sha256: str | None, encounter_node: str) -> dict[str, Any]:
+    """Outcome and measurement fields, read defensively; report_present False when report.json is missing or unreadable.
 
     worldserver_sha256 is the hash of the launched binary file when known; the
     report's own binary hash is kept separately and used only as a fallback.
@@ -196,19 +241,23 @@ def outcome_summary(run_dir: Path, worldserver_sha256: str | None) -> dict[str, 
                 "native_reason": "missing_report_json", "completion_reason": "missing_report_json",
                 "route_deaths": None, "worldserver_sha256": worldserver_sha256, "report_binary_sha256": None,
                 "encounter": None, "actors": []}
+    try:
+        analysis = json.loads((run_dir / "combat_analysis.json").read_text())
+    except (OSError, ValueError):
+        analysis = None
     outcome = report.get("native_gameplay_outcome") or {}
     sha = ((report.get("evidence_envelope") or {}).get("component_hashes") or {}).get("binary_sha256")
     return {"run_dir": str(run_dir), "report_present": True, "native_clear": bool(outcome.get("native_clear")),
             "native_reason": outcome.get("native_reason"), "completion_reason": report.get("completion_reason"),
             "route_deaths": (report.get("status") or {}).get("deaths"),
             "worldserver_sha256": worldserver_sha256 or sha, "report_binary_sha256": sha,
-            "encounter": None, "actors": []}
+            **measurement_fields(report, analysis, encounter_node), "encounter": None, "actors": []}
 
 
 def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,
                       worldserver_sha256: str | None, encounter_node: str) -> dict[str, Any]:
     """Summary of a closed run; a run without the encounter keeps only its outcome."""
-    summary = outcome_summary(run_dir, worldserver_sha256)
+    summary = outcome_summary(run_dir, worldserver_sha256, encounter_node)
     analysis_path = run_dir / "combat_analysis.json"
     if not summary["report_present"] or not analysis_path.exists():
         return summary
@@ -220,7 +269,8 @@ def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,
             timeline_path = Path(temp) / "timeline.json"
             timeline_path.write_text('{"actors": []}')
         full = summarize(run_dir, timeline_path, label, summary["worldserver_sha256"] or "")
-    return full | {key: summary[key] for key in ("report_present", "worldserver_sha256", "report_binary_sha256")}
+    kept = ("report_present", "worldserver_sha256", "report_binary_sha256", *MEASUREMENT_KEYS)
+    return full | {key: summary[key] for key in kept if key in summary}
 
 
 def write_timeline(run_dir: Path, manifest: Path, output: Path) -> Path | None:
@@ -256,7 +306,7 @@ def fallback_record(root: Path, target: dict[str, Any], *, scenario: str, label:
                     run_dir: Path, source_commit: str | None, worldserver_sha256: str | None) -> dict[str, Any]:
     """Outcome-only record used when full post-processing crashed."""
     node = target["encounter_route_node_id"]
-    summary = outcome_summary(run_dir, worldserver_sha256)
+    summary = outcome_summary(run_dir, worldserver_sha256, node)
     try:
         reached = run_dir_reached_encounter(run_dir, node)
     except (OSError, ValueError):

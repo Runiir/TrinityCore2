@@ -61,16 +61,27 @@ def roster_actors(scale=1.0, skip=()):
     return actors
 
 
+VALID = {"valid_for_dps": True, "reasons": [], "stalled_sec": 0.0, "stall_fraction": 0.0, "max_stall_sec": 0.0,
+         "stall_count": 0, "window_duration_sec": 120.0, "unstalled_duration_sec": 120.0, "thresholds": {}}
+STALLED = VALID | {"valid_for_dps": False, "reasons": ["world_stall_overlaps_boss_window"], "stalled_sec": 18.0,
+                   "stall_fraction": 0.15, "max_stall_sec": 9.5, "stall_count": 2, "unstalled_duration_sec": 102.0}
+RECONCILED = {"reconciled": True, "mismatch_count": 0, "encounter_mismatch_count": 0, "killed_hostile_count": 5,
+              "unlogged_health_loss": 0}
+
+
 def kill(label, name, *, scale=1.0, clear=True, window_deaths=0, route_deaths=0, sha="1" * 64, commit="0" * 40,
-         pointer="artifacts/cata_raid_program/x.tar.gz.dvc", skip=(), **extra):
-    return {"schema": KILL_SCHEMA, "kill_id": f"{label}-{name}", "scenario": SCENARIO, "label": label,
-            "recorded_at": f"2026-09-23T00:00:0{len(name) % 10}Z", "source_commit": commit, "worldserver_sha256": sha,
-            "run_dir": f"/tmp/{name}", "evidence_dvc_pointer": pointer, "native_clear": clear,
-            "completion_reason": CLEAR if clear else "watchdog_no_progress",
-            "outcome": "clear" if clear else "gameplay_failure", "route_deaths": route_deaths,
-            "boss_window_deaths": window_deaths, "death_basis": "test", "deaths": [],
-            "encounter": {"duration_sec": 120.0, "encounter_window_party_dps": 240000.0 * scale, "party_hps": 2e4},
-            "actors": roster_actors(scale, skip), "ranked_gaps": [], **extra}
+         pointer="artifacts/cata_raid_program/x.tar.gz.dvc", skip=(), validity=VALID, **extra):
+    record = {"schema": KILL_SCHEMA, "kill_id": f"{label}-{name}", "scenario": SCENARIO, "label": label,
+              "recorded_at": f"2026-09-23T00:00:0{len(name) % 10}Z", "source_commit": commit, "worldserver_sha256": sha,
+              "run_dir": f"/tmp/{name}", "evidence_dvc_pointer": pointer, "native_clear": clear,
+              "completion_reason": CLEAR if clear else "watchdog_no_progress",
+              "outcome": "clear" if clear else "gameplay_failure", "route_deaths": route_deaths,
+              "boss_window_deaths": window_deaths, "death_basis": "test", "deaths": [],
+              "encounter": {"duration_sec": 120.0, "encounter_window_party_dps": 240000.0 * scale, "party_hps": 2e4},
+              "actors": roster_actors(scale, skip), "ranked_gaps": [], "damage_reconciliation": RECONCILED, **extra}
+    if validity is not None:
+        record["measurement_validity"] = validity
+    return record
 
 
 def record_all(root, *kills):
@@ -296,6 +307,20 @@ def test_compare_labels_and_show(root):
     assert "(healer, not gating)" in text and "kill time" in text
 
 
+def test_show_lists_each_kill_with_stall_share_and_reconciliation(root):
+    batch(root, "a")
+    record_all(root, kill("a", "stalled", validity=STALLED,
+                          damage_reconciliation=RECONCILED | {"mismatch_count": 2, "unlogged_health_loss": 51234}))
+    lines = render(root, SCENARIO, "a").splitlines()
+    header = next(line for line in lines if "stall%" in line)
+    assert "max stall" in header and "recon mismatch" in header and "unlogged HP" in header
+    stalled = next(line for line in lines if line.strip().startswith("a-stalled"))
+    assert "no: stalled_boss_window" in stalled and "15.00" in stalled and "9.5s" in stalled
+    assert stalled.split()[-2:] == ["2", "51234"]
+    counted = next(line for line in lines if line.strip().startswith("a-k0"))
+    assert " yes " in counted and "0.00" in counted
+
+
 def test_compare_keeps_a_numeric_delta_without_clears(root):
     batch(root, "old")
     record_all(root, *(kill("new", f"w{i}", clear=False, scale=0.5) for i in range(2)))
@@ -316,6 +341,7 @@ def test_record_from_committed_summary():
                                  kill_id="base-1", deaths=deaths)
     assert record["schema"] == KILL_SCHEMA and record["native_clear"] is True and record["outcome"] == "clear"
     assert record["boss_window_deaths"] == 0 and record["death_basis"] == "no_route_deaths"
+    assert "measurement_validity" not in record and "damage_reconciliation" not in record  # pre-d2393eb5a1 summary
     actor = next(row for row in record["actors"] if row["actor_id"] == "30001")
     assert actor["spec"] == "balance_druid" and actor["encounter_window_dps"] == 23764.92
     # base1 shortfalls: balance 17264, fire mage a 15967, blood DK 14608 DPS
@@ -372,23 +398,76 @@ def test_committed_scoreboard_is_valid():
     for record in records:
         assert {"kill_id", "label", "recorded_at", "source_commit", "worldserver_sha256", "run_dir", "outcome",
                 "evidence_dvc_pointer", "native_clear", "route_deaths", "boss_window_deaths", "encounter", "actors"} <= set(record)
-    verdict = evaluate_target(ROOT, SCENARIO, "spellqueue-b8a897")
-    assert verdict["kills"] == 3 and all(row["counted"] for row in verdict["kills_detail"])
-    assert verdict["roster"]["missing"] == {} and verdict["worldserver_sha256"].startswith("b8a897c1")
+    # Recorded before the harness measured stalls: kept in the file, never counted.
+    for label in ("base-529ebc", "spellqueue-b8a897"):
+        verdict = evaluate_target(ROOT, SCENARIO, label)
+        assert verdict["kills"] == 0 and verdict["status"] != "pass"
+        assert {row["exclusion_reason"] for row in verdict["kills_detail"]} == {"no_measurement_validity"}
+        assert "no_measurement_validity" in verdict["reasons"]
+
+
+# --- measurement quality ------------------------------------------------------------------------
+
+def test_measurement_validity_decides_counting(root):
+    batch(root, "a")
+    record_all(root, kill("a", "legacy", validity=None), kill("a", "stalled", validity=STALLED),
+               kill("a", "mismatch") | {"damage_reconciliation": RECONCILED | {"reconciled": False, "mismatch_count": 2}})
+    verdict = evaluate_target(root, SCENARIO, "a")
+    detail = {row["kill_id"]: row for row in verdict["kills_detail"]}
+    assert detail["a-legacy"]["counted"] is False and detail["a-legacy"]["exclusion_reason"] == "no_measurement_validity"
+    assert detail["a-stalled"]["counted"] is False and detail["a-stalled"]["exclusion_reason"] == "stalled_boss_window"
+    assert detail["a-mismatch"]["counted"] is True and detail["a-mismatch"]["exclusion_reason"] is None
+    assert verdict["kills"] == 4 and verdict["status"] == "pass" and verdict["reasons"] == []
+    batch(root, "old", validity=None)
+    verdict = evaluate_target(root, SCENARIO, "old")
+    assert verdict["kills"] == 0 and verdict["status"] == "insufficient_kills"
+    assert verdict["reasons"] == ["insufficient_kills", "no_measurement_validity"]
+
+
+def test_invalid_window_on_a_wipe(root):
+    no_window = VALID | {"valid_for_dps": False, "reasons": ["no_boss_window"]}
+    record_all(root, kill("trash", "k1", clear=False, route_deaths=3, validity=no_window))
+    trash, = evaluate_target(root, SCENARIO, "trash")["kills_detail"]
+    assert trash["counted"] is True  # a trash wipe still fails the label
+    record_all(root, kill("boss", "k1", clear=False, validity=STALLED))
+    boss, = evaluate_target(root, SCENARIO, "boss")["kills_detail"]
+    assert boss["exclusion_reason"] == "stalled_boss_window"  # the freeze may have caused the wipe
 
 
 # --- run path with fake subprocesses ------------------------------------------------------------
 
+def harness_validity(stalled_sec=0.0, max_stall=0.0):
+    """measurement_validity as tools/bot_ml/live_validation_stalls.py writes it."""
+    window = {"route_node_id": "bwd.magmaw.encounter", "route_generation": 4, "first_at_ms": 1000,
+              "last_at_ms": 121000, "duration_sec": 120.0, "stall_count": int(stalled_sec > 0),
+              "stalled_sec": stalled_sec, "unstalled_duration_sec": 120.0 - stalled_sec,
+              "stall_fraction": round(stalled_sec / 120.0, 6), "max_stall_sec": max_stall, "hitch_sec": 0.0}
+    reasons = ["world_stall_overlaps_boss_window"] if stalled_sec else []
+    return {"schema": "bot_measurement_validity_v1", "valid_for_dps": not reasons, "reasons": reasons,
+            "boss_window_stalled_sec": stalled_sec, "boss_window_stall_count": window["stall_count"],
+            "max_boss_window_stall_sec": max_stall, "boss_windows": [window],
+            "thresholds": {"stall_min_gap_sec": 1.0}}
+
+
+def harness_reconciliation(mismatches=0):
+    hostiles = [{"target_name": "Magmaw", "route_node_id": "bwd.magmaw.encounter", "flagged": i < mismatches,
+                 "unlogged_health_loss": 1000 * (i < mismatches)} for i in range(3)]
+    return {"schema": "bot_killed_hostile_damage_reconciliation_v1", "killed_hostile_count": 3,
+            "mismatch_count": mismatches, "reconciled": not mismatches,
+            "mismatches": [row for row in hostiles if row["flagged"]], "hostiles": hostiles}
+
+
 def write_run(out, *, clear=True, deaths=0, encounter=True, report=True, heartbeat_node="bwd.magmaw.encounter",
-              report_sha=None):
+              report_sha=None, stalled_sec=0.0, mismatches=0, validity=True):
     out.mkdir(parents=True)
     if not report:
         return
     completion = CLEAR if clear else "watchdog_no_progress"
     envelope = {"evidence_envelope": {"component_hashes": {"binary_sha256": report_sha}}} if report_sha else {}
+    quality = {"measurement_validity": harness_validity(stalled_sec, stalled_sec / 2)} if validity else {}
     (out / "report.json").write_text(json.dumps({
         "native_gameplay_outcome": {"native_clear": clear, "native_reason": "x"},
-        "completion_reason": completion, "status": {"deaths": deaths}, **envelope}))
+        "completion_reason": completion, "status": {"deaths": deaths}, **envelope, **quality}))
     heartbeat = {"semantic_liveness": {"route_node_id": heartbeat_node}}
     (out / "heartbeat_events.jsonl").write_text(json.dumps(heartbeat) + "\n")
     actors = [{"actor_guid": int(actor["actor_id"]), "actor_name": actor["name"], "actor_role": actor["role"],
@@ -397,7 +476,8 @@ def write_run(out, *, clear=True, deaths=0, encounter=True, report=True, heartbe
     rows = [{"route_node_id": "bwd.magmaw.encounter", "first_at_ms": 1000, "last_at_ms": 121000, "duration_sec": 120.0,
              "party_damage": 1, "encounter_window_party_dps": 240000.0, "party_hps": 1.0, "action_outcomes": [],
              "actors": actors}] if encounter else []
-    (out / "combat_analysis.json").write_text(json.dumps({"encounters": rows}))
+    reconciliation = {"killed_hostile_damage_reconciliation": harness_reconciliation(mismatches)} if validity else {}
+    (out / "combat_analysis.json").write_text(json.dumps({"encounters": rows, **reconciliation}))
     (out / "combat_log.json").write_text(json.dumps({"recent_events": [], "recent_events_dropped": 0}))
 
 
@@ -494,6 +574,26 @@ def test_run_clean_clears_count_despite_exit_1(root, fakes):
     assert not any((root / "runs").iterdir())  # archived evidence is deleted
     with pytest.raises(SystemExit, match="already has 3 kill"):
         run_cli(root, worldserver, "sq", 1)
+
+
+def test_run_records_measurement_quality(root, fakes, capsys):
+    install, worldserver = fakes
+    install([{"mismatches": 1}, {"stalled_sec": 6.0}, {"validity": False}])
+    assert run_cli(root, worldserver, "q", 3) == 0  # quality never stops a batch; it decides counting
+    clean, stalled, old_harness = load_records(root, SCENARIO)
+    assert clean["measurement_validity"] == {
+        "schema": "bot_measurement_validity_v1", "valid_for_dps": True, "reasons": [], "window_duration_sec": 120.0,
+        "stalled_sec": 0.0, "stall_fraction": 0.0, "max_stall_sec": 0.0, "stall_count": 0,
+        "unstalled_duration_sec": 120.0, "thresholds": {"stall_min_gap_sec": 1.0}}
+    assert clean["damage_reconciliation"] == {"reconciled": False, "mismatch_count": 1, "encounter_mismatch_count": 1,
+                                              "killed_hostile_count": 3, "unlogged_health_loss": 1000}
+    assert stalled["measurement_validity"]["valid_for_dps"] is False
+    assert stalled["measurement_validity"]["stall_fraction"] == 0.05 and stalled["measurement_validity"]["max_stall_sec"] == 3.0
+    assert "measurement_validity" not in old_harness and "damage_reconciliation" not in old_harness
+    detail = [row["exclusion_reason"] for row in evaluate_target(root, SCENARIO, "q")["kills_detail"]]
+    assert detail == [None, "stalled_boss_window", "no_measurement_validity"]
+    out = capsys.readouterr().out
+    assert "NOTE: kill q-k2-" in out and "not counted (stalled_boss_window" in out and "STOP" not in out
 
 
 def test_run_missing_report_is_infrastructure(root, fakes, capsys):
