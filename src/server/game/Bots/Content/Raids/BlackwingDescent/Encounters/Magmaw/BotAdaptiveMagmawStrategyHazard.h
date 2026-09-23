@@ -119,10 +119,50 @@
         return actor.Entry == RoomStalkerEntry && HasAura(actor, 87949);
     }
 
+    // Native lighting selects exactly the Room Stalkers inside the chosen
+    // dummy's HasInArc(pi/4) arc, i.e. within pi/8 of its facing
+    // (instance_blackwing_descent.cpp).  When a crash dummy is observed, the
+    // one whose arc holds the whole lit set is the tip of the damage cone.
+    static std::optional<Vector3> ObserveActiveCrashDummy(
+        Blackboard const& board, std::vector<ActorSnapshot const*> const& lit)
+    {
+        if (lit.empty())
+            return std::nullopt;
+        constexpr float HalfArc = 3.14159265f / 8.0f + 0.02f;
+        for (std::vector<ActorSnapshot> const* actors : {
+                 &board.Hostiles, &board.Summons, &board.Interactables })
+            for (ActorSnapshot const& dummy : *actors)
+            {
+                if (!dummy.Alive || dummy.Entry != PersistentCrashDummyEntry
+                    || !std::isfinite(dummy.Position.X)
+                    || !std::isfinite(dummy.Position.Y)
+                    || !std::isfinite(dummy.Facing))
+                    continue;
+                bool const holdsLitSet = std::all_of(lit.begin(), lit.end(),
+                    [&dummy](ActorSnapshot const* stalker)
+                    {
+                        float const angle = std::remainder(std::atan2(
+                            stalker->Position.Y - dummy.Position.Y,
+                            stalker->Position.X - dummy.Position.X)
+                                - dummy.Facing, 2.0f * 3.14159265f);
+                        return std::fabs(angle) <= HalfArc;
+                    });
+                if (holdsLitSet)
+                    return dummy.Position;
+            }
+        return std::nullopt;
+    }
+
     // One footprint per native Massive Crash, shared by every bot: all alive
     // lit Room Stalkers, never only the one nearest this bot, so the chosen
-    // side and the episode identity cannot flip while the bot moves.
-    static MagmawCrashFootprint ObserveCrashFootprint(Blackboard const& board)
+    // side and the episode identity cannot flip while the bot moves.  The
+    // covered hull also holds native points inside the same cone: Magmaw,
+    // who faces the chosen dummy from inside its arc (units at his position
+    // were hit by both crash sides in the retained kills), and the observed
+    // dummy at the cone tip.  Without them the tip between the dummy and the
+    // first lit stalkers would read as clear.
+    static MagmawCrashFootprint ObserveCrashFootprint(Blackboard const& board,
+        ActorSnapshot const& boss)
     {
         std::vector<ActorSnapshot const*> lit;
         for (std::vector<ActorSnapshot> const* actors : {
@@ -130,7 +170,13 @@
             for (ActorSnapshot const& actor : *actors)
                 if (actor.Alive && IsCrashHazard(actor))
                     lit.push_back(&actor);
-        return BuildMagmawCrashFootprint(lit);
+        std::vector<Vector3> knownInside;
+        if (boss.Alive)
+            knownInside.push_back(boss.Position);
+        if (std::optional<Vector3> const dummy =
+                ObserveActiveCrashDummy(board, lit))
+            knownInside.push_back(*dummy);
+        return BuildMagmawCrashFootprint(lit, knownInside);
     }
 
     static bool HasMangleAura(ActorSnapshot const& actor)
@@ -187,7 +233,7 @@
         bool* crashSideHold)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
-        MagmawCrashFootprint const crash = ObserveCrashFootprint(board);
+        MagmawCrashFootprint const crash = ObserveCrashFootprint(board, boss);
         bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
         bool const parasiteWave = HasLivingParasite(board);
         bool retainedCrashMayYieldToRoute = false;
@@ -210,21 +256,24 @@
             }
         MagmawCrashSideProposal crashSide;
         if (crash.Valid)
+        {
             if (std::optional<MagmawRangedAnchors> const anchors =
                     ResolveRangedAnchors(board, boss))
-            {
                 crashSide = ProposeMagmawCrashSideMovement(board, bot,
                     crash, anchors->Support, anchors->Left,
                     anchors->Right, pillarBaiter, SupportStackDistance,
                     eventMovement, 450.0f);
-                if (crashSide.Movement
-                    && (!pillarBaiter || !parasiteWave))
-                {
-                    if (laneTransition && pillarBaiter)
-                        laneTransition->MarkPreempted();
-                    return crashSide.Movement;
-                }
+            else
+                crashSide = ProposeMagmawCrashSideMovementWithoutAnchors(
+                    board, bot, crash, eventMovement, 450.0f);
+            if (crashSide.Movement
+                && (!pillarBaiter || !parasiteWave))
+            {
+                if (laneTransition && pillarBaiter)
+                    laneTransition->MarkPreempted();
+                return crashSide.Movement;
             }
+        }
         if (observed.Pillar
             && !(crash.Valid && pillarBaiter && parasiteWave))
         {

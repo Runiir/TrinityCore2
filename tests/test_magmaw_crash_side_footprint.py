@@ -23,8 +23,10 @@ INCLUDES = (
 
 FIXTURE = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCrashSideMovement.h"
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -95,12 +97,54 @@ std::vector<ActorSnapshot> Light(Dummy const& dummy, bool all = false)
     return lit;
 }
 
-MagmawCrashFootprint Footprint(std::vector<ActorSnapshot> const& lit)
+MagmawCrashFootprint Footprint(std::vector<ActorSnapshot> const& lit,
+    std::vector<Vector3> const& inside = {})
 {
     std::vector<ActorSnapshot const*> pointers;
     for (ActorSnapshot const& actor : lit)
         pointers.push_back(&actor);
-    return BuildMagmawCrashFootprint(pointers);
+    return BuildMagmawCrashFootprint(pointers, inside);
+}
+
+float Travel(Vector3 const& first, Vector3 const& second)
+{
+    return std::hypot(first.X - second.X, first.Y - second.Y);
+}
+
+// Independent statement of the review's escape rule: the side candidates,
+// then each hull edge's nearest point stepped outward by margin + 1 yd; the
+// shortest point within reach that clears coverage and was not rejected.
+std::optional<Vector3> ExpectedEscape(MagmawCrashFootprint const& footprint,
+    Vector3 const& actor, std::vector<Vector3> candidates, float floorZ,
+    std::optional<Vector3> const& rejected)
+{
+    std::size_t const count = footprint.Hull.size();
+    for (std::size_t index = 0; index < count; ++index)
+    {
+        Vector3 const& a = footprint.Hull[index];
+        Vector3 const& b = footprint.Hull[(index + 1) % count];
+        float const ex = b.X - a.X;
+        float const ey = b.Y - a.Y;
+        float const length = std::hypot(ex, ey);
+        float t = ((actor.X - a.X) * ex + (actor.Y - a.Y) * ey)
+            / (length * length);
+        t = std::min(1.0f, std::max(0.0f, t));
+        float const step = MagmawCrashCoverageMargin + 1.0f;
+        candidates.push_back({ a.X + t * ex + ey / length * step,
+            a.Y + t * ey - ex / length * step, floorZ });
+    }
+    std::optional<Vector3> best;
+    float bestTravel = MagmawCrashEscapeReach;
+    for (Vector3 const& candidate : candidates)
+        if (!MagmawCrashCovers(footprint, candidate)
+            && Travel(actor, candidate) <= bestTravel
+            && !(rejected && Travel(candidate, *rejected)
+                <= MagmawCrashRejectedPointTolerance))
+        {
+            best = candidate;
+            bestTravel = Travel(actor, candidate);
+        }
+    return best;
 }
 
 struct Anchors { Vector3 Support, Left, Right; };
@@ -278,10 +322,80 @@ int main()
         && laneDestination.Y == anchors.Left.Y);
     assert(!InsideNativeCone(RaidWide, laneDestination));
 
-    // No reachable point outside the crash: hold and keep casting.
-    MagmawCrashFootprint const everywhere = Footprint(Light(RaidWide, true));
-    assert(MagmawCrashCovers(everywhere, wideDestination));
-    assert(MagmawCrashCovers(everywhere, narrowDestination));
+    // Review item 1: a covered side point is not a reason to hold while a
+    // nearby point clears. Lighting the three stalkers around the raid-wide
+    // evade point covers it (and the opposite side stays inside the cone).
+    std::vector<ActorSnapshot> blocked = raidWide;
+    for (ActorSnapshot const& stalker : narrow)
+        for (float const x : { -307.519f, -301.389f, -296.743f })
+            if (stalker.Position.X == x)
+                blocked.push_back(stalker);
+    MagmawCrashFootprint const blockedFootprint = Footprint(blocked);
+    MagmawCrashSideMovement const blockedSide = ResolveMagmawCrashSideMovement(
+        anchors.Support, blockedFootprint.Centroid, anchors.Support,
+        anchors.Left, anchors.Right, false, 8.0f);
+    assert(blockedSide.SafeDestinationValid);
+    assert(MagmawCrashCovers(blockedFootprint, blockedSide.SafeDestination));
+    Vector3 const opposite{ 2.0f * anchors.Support.X
+        - blockedSide.SafeDestination.X, 2.0f * anchors.Support.Y
+        - blockedSide.SafeDestination.Y, anchors.Support.Z };
+    assert(MagmawCrashCovers(blockedFootprint, opposite));
+    MagmawEventMovementTransitionState blockedState;
+    MagmawCrashSideProposal escaped = ProposeMagmawCrashSideMovement(board,
+        Bot(anchors.Support), blockedFootprint, anchors.Support, anchors.Left,
+        anchors.Right, false, 8.0f, &blockedState, 450.0f);
+    assert(escaped.CoverageModel && !escaped.Hold && escaped.Movement);
+    Vector3 const outward = MoveTarget(escaped);
+    assert(!MagmawCrashCovers(blockedFootprint, outward));
+    assert(Travel(anchors.Support, outward) <= MagmawCrashEscapeReach);
+    std::optional<Vector3> const expected = ExpectedEscape(blockedFootprint,
+        anchors.Support, { opposite, blockedSide.SafeSideAnchor,
+            blockedSide.UnsafeSideAnchor }, anchors.Support.Z, std::nullopt);
+    assert(expected && Travel(*expected, outward) < 0.01f);
+
+    // An invalid side point (zero-length side axis) also falls through to
+    // the outward steps rather than holding inside the cone.
+    MagmawEventMovementTransitionState degenerateState;
+    MagmawCrashSideProposal degenerate = ProposeMagmawCrashSideMovement(board,
+        Bot(anchors.Support), wide, anchors.Support, anchors.Left,
+        anchors.Left, false, 8.0f, &degenerateState, 450.0f);
+    assert(degenerate.Movement && !degenerate.NoSafeSpot);
+    Vector3 const degenerateTarget = MoveTarget(degenerate);
+    assert(!MagmawCrashCovers(wide, degenerateTarget));
+    std::optional<Vector3> const degenerateExpected = ExpectedEscape(wide,
+        anchors.Support, { anchors.Left }, anchors.Support.Z, std::nullopt);
+    assert(degenerateExpected
+        && Travel(*degenerateExpected, degenerateTarget) < 0.01f);
+
+    // Without ranged anchors the outward steps remain, on the actor's floor.
+    MagmawEventMovementTransitionState anchorlessState;
+    MagmawCrashSideProposal anchorless =
+        ProposeMagmawCrashSideMovementWithoutAnchors(board,
+            Bot(anchors.Support), wide, &anchorlessState, 450.0f);
+    assert(anchorless.CoverageModel && anchorless.Movement);
+    Vector3 const anchorlessTarget = MoveTarget(anchorless);
+    assert(!MagmawCrashCovers(wide, anchorlessTarget));
+    assert(anchorlessTarget.Z == anchors.Support.Z);
+    MagmawCrashSideProposal anchorlessClear =
+        ProposeMagmawCrashSideMovementWithoutAnchors(board,
+            Bot(wideDestination), wide, nullptr, 450.0f);
+    assert(anchorlessClear.Hold && !anchorlessClear.Movement);
+
+    // No reachable point outside the crash: a lit field far larger than the
+    // escape reach around the actor. Hold and keep casting.
+    std::vector<ActorSnapshot> field;
+    uint32 fieldCounter = 0;
+    for (float x = -380.0f; x <= -240.0f; x += 10.0f)
+        for (float y = -110.0f; y <= 30.0f; y += 10.0f)
+        {
+            ActorSnapshot stalker;
+            stalker.Guid = ObjectGuid(HighGuid::Unit, 47196, 260000 + ++fieldCounter);
+            stalker.Entry = 47196;
+            stalker.Alive = true;
+            stalker.Position = { x, y, 211.815f };
+            field.push_back(stalker);
+        }
+    MagmawCrashFootprint const everywhere = Footprint(field);
     MagmawEventMovementTransitionState trappedState;
     for (Vector3 const& position : path)
     {
@@ -291,6 +405,87 @@ int main()
         assert(trapped.Hold && trapped.NoSafeSpot && !trapped.Movement);
         assert(!trappedState.ActiveLethal());
     }
+
+    // Review item 2: the observed crash dummy closes the cone tip. It extends
+    // the covered hull only; the side decision and identity are unchanged.
+    Vector3 const dummyPosition{ RaidWide.X, RaidWide.Y, 211.257f };
+    MagmawCrashFootprint const tipped = Footprint(raidWide, { dummyPosition });
+    assert(tipped.Identity == wide.Identity);
+    assert(tipped.Centroid.X == wide.Centroid.X
+        && tipped.Centroid.Y == wide.Centroid.Y);
+    assert(std::any_of(tipped.Hull.begin(), tipped.Hull.end(),
+        [&dummyPosition](Vector3 const& vertex)
+        {
+            return vertex.X == dummyPosition.X && vertex.Y == dummyPosition.Y;
+        }));
+    Vector3 const tip{ (RaidWide.X + Boss.X) / 2.0f,
+        (RaidWide.Y + Boss.Y) / 2.0f, 211.0f };
+    assert(InsideNativeCone(RaidWide, tip));
+    assert(!MagmawCrashCovers(wide, tip));
+    assert(MagmawCrashCovers(tipped, tip));
+    // Known-inside points never create coverage without a lit area.
+    assert(!Footprint(std::vector<ActorSnapshot>(raidWide.begin(),
+        raidWide.begin() + 2), { dummyPosition, Boss }).HasCoverage());
+
+    // Review item 3: a permanent native path rejection of the exact crash
+    // intent retires it; the next proposal falls through to an alternative
+    // instead of repeating the unreachable point.
+    MagmawEventMovementTransitionState rejectState;
+    ActorSnapshot const rejectBot = Bot(anchors.Support);
+    MagmawCrashSideProposal planned = ProposeMagmawCrashSideMovement(board,
+        rejectBot, wide, anchors.Support, anchors.Left, anchors.Right, false,
+        8.0f, &rejectState, 450.0f);
+    Vector3 const unreachable = MoveTarget(planned);
+    uint64 const plannedIntent = planned.Movement->Id.EventGeneration;
+    assert(!ObserveMagmawCrashEvadeNativeRejection(rejectState, rejectBot.Guid,
+        plannedIntent, unreachable, "magmaw_movement_executor_unavailable"));
+    assert(!ObserveMagmawCrashEvadeNativeRejection(rejectState, rejectBot.Guid,
+        plannedIntent + 1, unreachable, "route_destination_unreachable"));
+    assert(!ObserveMagmawCrashEvadeNativeRejection(rejectState,
+        ObjectGuid(HighGuid::Player, uint32(30099)), plannedIntent,
+        unreachable, "route_destination_unreachable"));
+    assert(!ObserveMagmawCrashEvadeNativeRejection(rejectState, rejectBot.Guid,
+        plannedIntent, { unreachable.X + 3.0f, unreachable.Y, unreachable.Z },
+        "route_destination_unreachable"));
+    assert(rejectState.ActiveLethal());
+    assert(ObserveMagmawCrashEvadeNativeRejection(rejectState, rejectBot.Guid,
+        plannedIntent, unreachable, "route_destination_unreachable"));
+    assert(!rejectState.ActiveLethal());
+    MagmawCrashSideProposal fallback = ProposeMagmawCrashSideMovement(board,
+        rejectBot, wide, anchors.Support, anchors.Left, anchors.Right, false,
+        8.0f, &rejectState, 450.0f);
+    assert(fallback.Movement);
+    Vector3 const alternative = MoveTarget(fallback);
+    assert(Travel(alternative, unreachable) > MagmawCrashRejectedPointTolerance);
+    assert(!MagmawCrashCovers(wide, alternative));
+    assert(fallback.Movement->Id.EventGeneration != plannedIntent);
+    std::optional<Vector3> const alternativeExpected = ExpectedEscape(wide,
+        anchors.Support, { {
+            2.0f * anchors.Support.X - unreachable.X,
+            2.0f * anchors.Support.Y - unreachable.Y, anchors.Support.Z },
+            anchors.Left, anchors.Right }, anchors.Support.Z, unreachable);
+    assert(alternativeExpected
+        && Travel(*alternativeExpected, alternative) < 0.01f);
+    // The alternative's own rejection is not repeated on the next tick.
+    assert(ObserveMagmawCrashEvadeNativeRejection(rejectState, rejectBot.Guid,
+        fallback.Movement->Id.EventGeneration, alternative,
+        "route_destination_partial_path"));
+    MagmawCrashSideProposal third = ProposeMagmawCrashSideMovement(board,
+        rejectBot, wide, anchors.Support, anchors.Left, anchors.Right, false,
+        8.0f, &rejectState, 450.0f);
+    assert(!third.Movement || Travel(MoveTarget(third), alternative)
+        > MagmawCrashRejectedPointTolerance);
+    // Other mechanics are never retired by the crash hook, and a genuine
+    // arrival is not an abandoned destination.
+    MagmawEventMovementTransitionState pillarState;
+    auto const* pillar = pillarState.RetainLethal(
+        ObjectGuid(HighGuid::Unit, 41843, uint32(5)), rejectBot.Guid,
+        "pillar_evade", unreachable);
+    assert(pillar && !ObserveMagmawCrashEvadeNativeRejection(pillarState,
+        rejectBot.Guid, pillar->IntentId, unreachable,
+        "route_destination_unreachable"));
+    assert(!MagmawCrashAbandonedDestination(&state, wide.Identity,
+        Bot(wideDestination).Guid, wideDestination));
 
     // Fewer than three lit stalkers: no coverage model, historical rule.
     std::vector<ActorSnapshot> single{ raidWide.front() };

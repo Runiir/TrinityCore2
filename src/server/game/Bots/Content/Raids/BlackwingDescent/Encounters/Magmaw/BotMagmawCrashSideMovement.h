@@ -9,6 +9,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace BotEncounter
@@ -28,17 +29,26 @@ namespace BotEncounter
 // 12.8 yd outside it.  A point within this margin of the hull is covered.
 constexpr float MagmawCrashCoverageMargin = 5.5f;
 constexpr std::size_t MagmawCrashCoverageMinimumStalkers = 3;
+// Alternative escape points beyond the chosen side point must be reachable
+// before impact: 6 s from Light Show to damage, less about 1 s of decision
+// and launch latency, at the 7 yd/s base run speed is 35 yd; two thirds of
+// that leaves room for native path detours.  The primary side point keeps its
+// historical contract (including fixed-lane baiters crossing lanes).
+constexpr float MagmawCrashEscapeReach = 24.0f;
+constexpr float MagmawCrashRejectedPointTolerance = 0.5f;
 
 struct MagmawCrashFootprint
 {
     bool Valid = false;
     // Lowest raw GUID of the lit set: a stable identity for one crash.
     ObjectGuid Identity;
+    // Centroid of the lit set only; it alone decides the crash side.
     Vector3 Centroid;
     uint32 LitCount = 0;
-    // Counter-clockwise convex hull of the lit stalkers. Empty when fewer
-    // than three non-collinear stalkers are visible; callers then keep the
-    // side-anchor rule without a coverage model.
+    // Counter-clockwise convex hull of the lit stalkers plus any native
+    // points known to be inside the same cone. Empty when fewer than three
+    // non-collinear stalkers are lit; callers then keep the side-anchor rule
+    // without a coverage model.
     std::vector<Vector3> Hull;
 
     bool HasCoverage() const
@@ -91,8 +101,12 @@ inline std::vector<Vector3> MagmawCrashCoverageHull(std::vector<Vector3> points)
 }
 
 // The caller supplies only alive Room Stalkers that carry native Light Show.
+// knownInside adds native points inside the same damage cone that are not
+// stalkers, such as the observed crash dummy at the cone tip. They extend the
+// covered hull only; they never change the side decision or the identity.
 inline MagmawCrashFootprint BuildMagmawCrashFootprint(
-    std::vector<ActorSnapshot const*> const& lit)
+    std::vector<ActorSnapshot const*> const& lit,
+    std::vector<Vector3> const& knownInside = {})
 {
     MagmawCrashFootprint footprint;
     // Accumulate in GUID order so the footprint is bit-identical however the
@@ -127,6 +141,12 @@ inline MagmawCrashFootprint BuildMagmawCrashFootprint(
     footprint.Valid = true;
     footprint.LitCount = uint32(points.size());
     footprint.Centroid = { sumX / count, sumY / count, sumZ / count };
+    // Coverage exists only when the lit set itself spans an area.
+    if (MagmawCrashCoverageHull(points).empty())
+        return footprint;
+    for (Vector3 const& inside : knownInside)
+        if (std::isfinite(inside.X) && std::isfinite(inside.Y))
+            points.push_back(inside);
     footprint.Hull = MagmawCrashCoverageHull(std::move(points));
     return footprint;
 }
@@ -239,33 +259,172 @@ inline MagmawCrashSideMovement ResolveMagmawCrashSideMovement(
     return result;
 }
 
+struct MagmawCrashSideAnchors
+{
+    Vector3 Support;
+    Vector3 Left;
+    Vector3 Right;
+};
+
+// For every hull edge: the edge point nearest the actor, stepped outward by
+// the coverage margin plus one yard. Beyond that edge's supporting line the
+// whole convex hull lies behind it, so each point clears the coverage test.
+inline void AppendMagmawCrashOutwardCandidates(
+    MagmawCrashFootprint const& crash, Vector3 const& actor, float floorZ,
+    std::vector<Vector3>& candidates)
+{
+    std::vector<Vector3> const& hull = crash.Hull;
+    if (hull.size() < MagmawCrashCoverageMinimumStalkers)
+        return;
+    float const step = MagmawCrashCoverageMargin + 1.0f;
+    for (std::size_t index = 0; index < hull.size(); ++index)
+    {
+        Vector3 const& start = hull[index];
+        Vector3 const& end = hull[(index + 1) % hull.size()];
+        float const edgeX = end.X - start.X;
+        float const edgeY = end.Y - start.Y;
+        float const length = std::hypot(edgeX, edgeY);
+        if (length < 0.01f)
+            continue;
+        float const t = std::clamp(((actor.X - start.X) * edgeX
+            + (actor.Y - start.Y) * edgeY) / (length * length), 0.0f, 1.0f);
+        // Counter-clockwise hull: the outward normal is the edge turned right.
+        candidates.push_back({ start.X + t * edgeX + edgeY / length * step,
+            start.Y + t * edgeY - edgeX / length * step, floorZ });
+    }
+}
+
+// The escape point for an actor inside the covered crash area: the chosen
+// side point when it clears; otherwise the shortest clear alternative within
+// reach among the opposite side point, both side anchors and the outward
+// edge steps.  A point the native path has already rejected for this crash is
+// never proposed again.
+inline std::optional<Vector3> SelectMagmawCrashEscape(
+    MagmawCrashFootprint const& crash, Vector3 const& actor,
+    MagmawCrashSideMovement const* movement,
+    MagmawCrashSideAnchors const* anchors, bool fixedLane,
+    std::optional<Vector3> const& rejected)
+{
+    auto distance = [](Vector3 const& first, Vector3 const& second)
+    {
+        return std::hypot(first.X - second.X, first.Y - second.Y);
+    };
+    auto usable = [&](Vector3 const& point)
+    {
+        return std::isfinite(point.X) && std::isfinite(point.Y)
+            && std::isfinite(point.Z) && !MagmawCrashCovers(crash, point)
+            && !(rejected && distance(point, *rejected)
+                <= MagmawCrashRejectedPointTolerance);
+    };
+    if (movement && movement->SafeDestinationValid
+        && usable(movement->SafeDestination))
+        return movement->SafeDestination;
+
+    std::vector<Vector3> candidates;
+    if (movement && anchors)
+    {
+        if (!fixedLane && movement->SafeDestinationValid)
+            candidates.push_back({
+                2.0f * anchors->Support.X - movement->SafeDestination.X,
+                2.0f * anchors->Support.Y - movement->SafeDestination.Y,
+                anchors->Support.Z });
+        candidates.push_back(movement->SafeSideAnchor);
+        candidates.push_back(movement->UnsafeSideAnchor);
+    }
+    AppendMagmawCrashOutwardCandidates(crash, actor,
+        anchors ? anchors->Support.Z : actor.Z, candidates);
+
+    std::optional<Vector3> best;
+    float bestDistance = MagmawCrashEscapeReach;
+    for (Vector3 const& candidate : candidates)
+    {
+        float const travel = distance(actor, candidate);
+        if (travel <= bestDistance && usable(candidate))
+        {
+            best = candidate;
+            bestDistance = travel;
+        }
+    }
+    return best;
+}
+
+// Same permanent native path rejections as the parasite hazard lifecycle.
+inline bool IsMagmawCrashPermanentNativeRejection(std::string_view reason)
+{
+    return reason == "route_destination_endpoint_mismatch"
+        || reason == "route_destination_unreachable"
+        || reason == "route_destination_partial_path"
+        || reason == "route_destination_missing_mmap";
+}
+
+// Native outcome hook for "massive_crash_evade" movement: a permanent path
+// rejection of the exact active crash intent retires it instead of letting
+// the retained task re-propose an unreachable point every tick.
+inline bool ObserveMagmawCrashEvadeNativeRejection(
+    MagmawEventMovementTransitionState& state, ObjectGuid actor,
+    uint64 intentId, Vector3 const& destination, std::string_view reason)
+{
+    MagmawEventMovementTransitionState::Episode const* active =
+        state.ActiveLethal();
+    if (!IsMagmawCrashPermanentNativeRejection(reason) || !active
+        || active->Mechanic != "massive_crash_evade"
+        || active->AssignmentGuid != actor || active->IntentId != intentId
+        || std::hypot(active->Destination.X - destination.X,
+            active->Destination.Y - destination.Y)
+            > MagmawCrashRejectedPointTolerance)
+        return false;
+    state.RetireActiveLethal();
+    return true;
+}
+
+// A crash task for this crash and actor that ended away from its destination
+// was retired (a native path rejection or a preempting mechanic), not
+// reached: that point must not be proposed again during the same crash.
+inline std::optional<Vector3> MagmawCrashAbandonedDestination(
+    MagmawEventMovementTransitionState const* state, ObjectGuid crash,
+    ObjectGuid actor, Vector3 const& position)
+{
+    if (!state)
+        return std::nullopt;
+    MagmawEventMovementTransitionState::Episode const& lethal = state->Lethal;
+    if (lethal.Active || !lethal.Arrived
+        || !lethal.Matches(crash, actor, "massive_crash_evade")
+        || std::hypot(position.X - lethal.Destination.X,
+            position.Y - lethal.Destination.Y) <= lethal.ArrivalTolerance)
+        return std::nullopt;
+    return lethal.Destination;
+}
+
 struct MagmawCrashSideProposal
 {
     bool Hold = false;
-    // Hold because the only reachable evade point is also inside the crash:
-    // keep position and keep casting instead of moving under the crash.
+    // Hold because no reachable point clears the crash: keep position and
+    // keep casting instead of moving under the crash.
     bool NoSafeSpot = false;
     bool CoverageModel = false;
     std::optional<BotNativeAction::Candidate> Movement;
 };
 
-inline MagmawCrashSideProposal ProposeMagmawCrashSideMovement(
+inline MagmawCrashSideProposal ProposeMagmawCrashSide(
     Blackboard const& board, ActorSnapshot const& bot,
-    MagmawCrashFootprint const& crash, Vector3 const& support,
-    Vector3 const& left, Vector3 const& right, bool fixedLane,
-    float supportSideDistance, MagmawEventMovementTransitionState* transition,
-    float utility)
+    MagmawCrashFootprint const& crash, MagmawCrashSideAnchors const* anchors,
+    bool fixedLane, float supportSideDistance,
+    MagmawEventMovementTransitionState* transition, float utility)
 {
     MagmawCrashSideProposal proposal;
     if (!crash.Valid)
         return proposal;
-    MagmawCrashSideMovement const movement =
-        ResolveMagmawCrashSideMovement(bot.Position, crash.Centroid, support,
-            left, right, fixedLane, supportSideDistance);
-    if (!movement.Resolved)
-        return proposal;
+    std::optional<MagmawCrashSideMovement> movement;
+    if (anchors)
+    {
+        movement = ResolveMagmawCrashSideMovement(bot.Position, crash.Centroid,
+            anchors->Support, anchors->Left, anchors->Right, fixedLane,
+            supportSideDistance);
+        if (!movement->Resolved)
+            movement.reset();
+    }
 
-    Vector3 destination = movement.Destination;
+    Vector3 destination;
     bool completeOnDestination = false;
     if (crash.HasCoverage())
     {
@@ -277,20 +436,29 @@ inline MagmawCrashSideProposal ProposeMagmawCrashSideMovement(
             proposal.Hold = true;
             return proposal;
         }
-        if (!movement.SafeDestinationValid
-            || MagmawCrashCovers(crash, movement.SafeDestination))
+        std::optional<Vector3> const escape = SelectMagmawCrashEscape(crash,
+            bot.Position, movement ? &*movement : nullptr, anchors, fixedLane,
+            MagmawCrashAbandonedDestination(transition, crash.Identity,
+                bot.Guid, bot.Position));
+        if (!escape)
         {
             proposal.Hold = true;
             proposal.NoSafeSpot = true;
             return proposal;
         }
-        destination = movement.SafeDestination;
+        destination = *escape;
         completeOnDestination = true;
     }
-    else if (!movement.ActorUnsafe)
+    else
     {
-        proposal.Hold = true;
-        return proposal;
+        if (!movement)
+            return proposal;
+        if (!movement->ActorUnsafe)
+        {
+            proposal.Hold = true;
+            return proposal;
+        }
+        destination = movement->Destination;
     }
 
     if (transition)
@@ -302,7 +470,7 @@ inline MagmawCrashSideProposal ProposeMagmawCrashSideMovement(
                 "massive_crash_evade", destination, crash.Centroid, 0.0f)
             : transition->RetainRoomSideLethal(crash.Identity, bot.Guid,
                 "massive_crash_evade", destination,
-                movement.UnsafeSideAnchor, movement.SafeSideAnchor);
+                movement->UnsafeSideAnchor, movement->SafeSideAnchor);
         if (episode)
             proposal.Movement = BuildMagmawEventMovement(board, *episode,
                 BotActionArbitration::Priority::Survival, utility);
@@ -317,6 +485,29 @@ inline MagmawCrashSideProposal ProposeMagmawCrashSideMovement(
     proposal.Movement = BuildMagmawEventMovement(board, episode,
         BotActionArbitration::Priority::Survival, utility);
     return proposal;
+}
+
+inline MagmawCrashSideProposal ProposeMagmawCrashSideMovement(
+    Blackboard const& board, ActorSnapshot const& bot,
+    MagmawCrashFootprint const& crash, Vector3 const& support,
+    Vector3 const& left, Vector3 const& right, bool fixedLane,
+    float supportSideDistance, MagmawEventMovementTransitionState* transition,
+    float utility)
+{
+    MagmawCrashSideAnchors const anchors{ support, left, right };
+    return ProposeMagmawCrashSide(board, bot, crash, &anchors, fixedLane,
+        supportSideDistance, transition, utility);
+}
+
+// Without ranged anchors only the coverage model can act: the outward edge
+// steps remain available, and there is no side rule to fall back to.
+inline MagmawCrashSideProposal ProposeMagmawCrashSideMovementWithoutAnchors(
+    Blackboard const& board, ActorSnapshot const& bot,
+    MagmawCrashFootprint const& crash,
+    MagmawEventMovementTransitionState* transition, float utility)
+{
+    return ProposeMagmawCrashSide(board, bot, crash, nullptr, false, 1.0f,
+        transition, utility);
 }
 }
 

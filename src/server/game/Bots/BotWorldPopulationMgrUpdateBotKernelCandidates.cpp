@@ -6,6 +6,7 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidTrashStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCrashSideMovement.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMovementKernelAdapter.h"
 
 #include "ObjectAccessor.h"
@@ -161,6 +162,16 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         magmawAdapter.ObserveNativeOutcome = [&context](BotEncounter::
             MagmawMovementNativeOutcome const& outcome)
         {
+            if (outcome.Mechanic == "massive_crash_evade")
+            {
+                // A permanently unreachable crash exit retires the episode so the
+                // next proposal falls through to another clear point.
+                BotEncounter::ObserveMagmawCrashEvadeNativeRejection(
+                    context.State.MagmawEventMovement, outcome.Actor,
+                    outcome.EventGeneration, outcome.Destination,
+                    outcome.Result.Reason);
+                return;
+            }
             if (outcome.Mechanic != "parasite_contact_evade")
                 return;
             if (BotEncounter::

@@ -260,13 +260,27 @@ int main()
             destination.Y - geometry.Support.Y) > 7.99f);
     }
 
-    // With no reachable point outside the crash the actor stays and casts.
+    // With no reachable point outside the crash the actor stays and casts:
+    // a lit field far wider than the escape reach around the actor.
     {
+        std::vector<ActorSnapshot> field;
+        uint32 counter = 0;
+        for (float x = -380.0f; x <= -240.0f; x += 10.0f)
+            for (float y = -110.0f; y <= 30.0f; y += 10.0f)
+            {
+                ActorSnapshot stalker;
+                stalker.Guid = ObjectGuid(HighGuid::Unit,
+                    AdaptiveMagmawStrategy::RoomStalkerEntry, 260000 + ++counter);
+                stalker.Entry = AdaptiveMagmawStrategy::RoomStalkerEntry;
+                stalker.Alive = true;
+                stalker.Position = { x, y, 211.815f };
+                stalker.Auras.push_back({ 87949, ObjectGuid{}, 1, 0 });
+                field.push_back(stalker);
+            }
         MagmawEventMovementTransitionState state;
         ActorSnapshot tested = Player(30005, "dps", "balance_druid",
             geometry.Support);
-        Blackboard board = Board(boss, geometry, Lit(RaidWide, true),
-            Raid(tested));
+        Blackboard board = Board(boss, geometry, field, Raid(tested));
         for (int tick = 0; tick < 3; ++tick)
         {
             board.Revision += 1;
@@ -277,6 +291,96 @@ int main()
             assert(plan.DamageTarget == boss.Guid);
             assert(!state.ActiveLethal());
         }
+    }
+
+    // Every native stalker lit: the old side points are covered, but a short
+    // outward step from the lit area clears it, so the actor moves.
+    {
+        MagmawEventMovementTransitionState state;
+        ActorSnapshot tested = Player(30005, "dps", "balance_druid",
+            geometry.Support);
+        Blackboard board = Board(boss, geometry, Lit(RaidWide, true),
+            Raid(tested));
+        auto plan = strategy.Propose(board, tested.Guid, "dps", nullptr,
+            false, false, nullptr, nullptr, &state);
+        Vector3 const destination = Destination(plan);
+        assert(std::hypot(destination.X - geometry.Support.X,
+            destination.Y - geometry.Support.Y) <= MagmawCrashEscapeReach);
+    }
+
+    // Review item 2 through the blackboard: an observed crash dummy whose
+    // native arc holds the lit set closes the cone tip. A bot at the tip
+    // holds without it and evades with it; the inactive dummy is ignored.
+    {
+        auto dummy = [](Dummy const& native, uint32 counter)
+        {
+            ActorSnapshot actor;
+            actor.Guid = ObjectGuid(HighGuid::Unit,
+                AdaptiveMagmawStrategy::PersistentCrashDummyEntry, counter);
+            actor.Entry = AdaptiveMagmawStrategy::PersistentCrashDummyEntry;
+            actor.Alive = true;
+            actor.Position = { native.X, native.Y, 211.257f };
+            actor.Facing = native.O;
+            return actor;
+        };
+        Vector3 const tip{ (RaidWide.X + boss.Position.X) / 2.0f,
+            (RaidWide.Y + boss.Position.Y) / 2.0f, 211.0f };
+        assert(std::fabs(RelativeDegrees(RaidWide, tip.X, tip.Y)) < 22.5f);
+        ActorSnapshot tested = Player(30005, "dps", "balance_druid", tip);
+        std::vector<ActorSnapshot> const lit = Lit(RaidWide);
+
+        MagmawEventMovementTransitionState unseenState;
+        Blackboard unseen = Board(boss, geometry, lit, Raid(tested));
+        auto withoutDummy = strategy.Propose(unseen, tested.Guid, "dps",
+            nullptr, false, false, nullptr, nullptr, &unseenState);
+        assert(withoutDummy.Movement.Empty());
+
+        MagmawEventMovementTransitionState wrongState;
+        Blackboard wrong = Board(boss, geometry, lit, Raid(tested));
+        wrong.Interactables = { dummy(Narrow, 250060) };
+        auto inactiveDummy = strategy.Propose(wrong, tested.Guid, "dps",
+            nullptr, false, false, nullptr, nullptr, &wrongState);
+        assert(inactiveDummy.Movement.Empty());
+
+        MagmawEventMovementTransitionState seenState;
+        Blackboard seen = Board(boss, geometry, lit, Raid(tested));
+        seen.Interactables = { dummy(Narrow, 250060), dummy(RaidWide, 250061) };
+        auto withDummy = strategy.Propose(seen, tested.Guid, "dps", nullptr,
+            false, false, nullptr, nullptr, &seenState);
+        Vector3 const escape = Destination(withDummy);
+        assert(std::fabs(RelativeDegrees(RaidWide, escape.X, escape.Y)) > 24.0f);
+        assert(std::hypot(escape.X - tip.X, escape.Y - tip.Y)
+            <= MagmawCrashEscapeReach);
+    }
+
+    // Review item 3 through the strategy: once the native path rejects the
+    // retained crash point, the next tick evades elsewhere instead of
+    // re-proposing it.
+    {
+        MagmawEventMovementTransitionState state;
+        ActorSnapshot tested = Player(30005, "dps", "balance_druid",
+            geometry.Support);
+        Blackboard board = Board(boss, geometry, Lit(RaidWide), Raid(tested));
+        auto first = strategy.Propose(board, tested.Guid, "dps", nullptr,
+            false, false, nullptr, nullptr, &state);
+        Vector3 const rejected = Destination(first);
+        uint64 const intent = first.Movement->Id.EventGeneration;
+        board.Revision += 1;
+        auto retained = strategy.Propose(board, tested.Guid, "dps", nullptr,
+            false, false, nullptr, nullptr, &state);
+        assert(retained.Movement->Id.EventGeneration == intent);
+        assert(ObserveMagmawCrashEvadeNativeRejection(state, tested.Guid,
+            intent, rejected, "route_destination_unreachable"));
+        board.Revision += 1;
+        auto fallback = strategy.Propose(board, tested.Guid, "dps", nullptr,
+            false, false, nullptr, nullptr, &state);
+        Vector3 const alternative = Destination(fallback);
+        assert(fallback.Movement->Id.EventGeneration != intent);
+        assert(std::hypot(alternative.X - rejected.X,
+            alternative.Y - rejected.Y) > MagmawCrashRejectedPointTolerance);
+        assert(std::fabs(RelativeDegrees(RaidWide, alternative.X,
+            alternative.Y)) > 24.0f);
+        assert(fallback.DamageTarget == boss.Guid);
     }
     return 0;
 }
