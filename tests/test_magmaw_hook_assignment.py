@@ -426,7 +426,7 @@ int main()
     _compile_and_run(source, binary)
 
 
-def test_magmaw_hook_riders_prefer_lowest_load_healer(tmp_path: Path) -> None:
+def test_magmaw_hook_riders_are_dps_with_healers_last(tmp_path: Path) -> None:
     source = tmp_path / "magmaw_hook_riders.cpp"
     binary = tmp_path / "magmaw_hook_riders"
     source.write_text(
@@ -609,184 +609,139 @@ static void Mangle(Blackboard& board, float tankHealthPct)
 
 int main()
 {
-    RiderSet const discAndFire{ 30005, 30007 };
     RiderSet const twoDps{ 30007, 30008 };
-    RiderSet const priest{ 30005 };
     RiderSet const fireB{ 30007 };
 
-    // Three living healers: Discipline replaces Balance and Fire B keeps the
-    // DPS seat. Every caller agrees, from the warning to the native launch.
+    // Live roster: Fire B and Affliction ride. Balance and every healer stay
+    // out, from the warning to the native launch, in any board order.
     Blackboard warning = LiveRoster();
     Warn(warning);
-    AssertRiders(warning, "pincer_preposition", discAndFire);
+    AssertRiders(warning, "pincer_preposition", twoDps);
     Blackboard open = LiveRoster();
     OpenWindow(open);
-    AssertRiders(open, "pincer_approach", discAndFire);
-    assert(AnyHookHolders(open) == discAndFire);
-
-    // Partner late: the priest mounts last. While Fire B is still on its way
-    // the priest waits at the approach point with no interaction, so the
-    // heal candidate keeps its cast lane.
-    AssertRiders(open, "mount_free_pincer", fireB);
-    Blackboard waiting = open;
-    Member(waiting, 30005).Position = { 0.0f, -4.0f, 210.0f };
-    AdaptiveMagmawPlan const waitingPriest = PlanFor(waiting, 30005);
-    assert(!waitingPriest.Interaction.has_value());
-    assert(waitingPriest.Movement.Empty());
-    Blackboard partnerSeated = open;
-    Seat(partnerSeated, 30007, 1);
-    AssertRiders(partnerSeated, "mount_free_pincer", priest);
-    Blackboard seated = partnerSeated;
-    Seat(seated, 30005, 0);
-    AssertRiders(seated, "launch_native_hook", discAndFire);
-    assert(PlanFor(seated, 30005).Movement.Empty());
+    AssertRiders(open, "pincer_approach", twoDps);
+    AssertRiders(open, "mount_free_pincer", twoDps);
+    assert(AnyHookHolders(open) == twoDps);
+    Blackboard seated = open;
+    Seat(seated, 30007, 0);
+    Seat(seated, 30008, 1);
+    AssertRiders(seated, "launch_native_hook", twoDps);
     assert(Holders(seated, "release_pincer_seat").empty());
+    assert(PlanFor(seated, 30007).Movement.Empty());
 
-    // Partner dead before the priest mounts: the next DPS partners it and
-    // the priest again waits for that seat.
+    // The Discipline Priest keeps Mangle support: no hook duty, and the
+    // warning sends it to the Mangle midpoint stage like the other healers.
+    for (uint32 healer : { 30003u, 30004u, 30005u })
+        assert(HasMechanic(PlanFor(warning, healer), "mangle_midpoint_stage"));
+
+    // Partner dead before mounting: the next non-Balance DPS replaces it.
     Blackboard partnerDead = open;
-    Member(partnerDead, 30007).Alive = false;
-    AssertRiders(partnerDead, "pincer_approach", RiderSet{ 30005, 30008 });
-    AssertRiders(partnerDead, "mount_free_pincer", RiderSet{ 30008 });
-
-    // Partner dies after the priest mounted. With healers and tank healthy
-    // the priest keeps its seat for the replacement while the window lasts.
-    Blackboard brokenPair = seated;
-    Member(brokenPair, 30007).Alive = false;
-    Member(brokenPair, 30007).VehicleGuid = ObjectGuid();
-    AssertRiders(brokenPair, "mount_free_pincer", RiderSet{ 30008 });
-    assert(Holders(brokenPair, "launch_native_hook").empty());
+    Member(partnerDead, 30008).Alive = false;
+    AssertRiders(partnerDead, "pincer_approach", RiderSet{ 30007, 30010 });
+    AssertRiders(partnerDead, "mount_free_pincer", RiderSet{ 30007, 30010 });
+    // Partner dies after one DPS mounted: the seated DPS keeps its seat for
+    // the replacement while the window is open.
+    Blackboard brokenPair = open;
+    Seat(brokenPair, 30007, 0);
+    Member(brokenPair, 30008).Alive = false;
+    AssertRiders(brokenPair, "mount_free_pincer", RiderSet{ 30010 });
     assert(Holders(brokenPair, "release_pincer_seat").empty());
-    // The window closes first: the seat can never pair, so the priest leaves.
+    assert(Holders(brokenPair, "launch_native_hook").empty());
+    // The window closes first: the seat can never pair, so the DPS leaves.
     Blackboard brokenClosed = brokenPair;
     brokenClosed.Hostiles.front().Interactable = false;
-    AssertRiders(brokenClosed, "release_pincer_seat", priest);
-    assert(Holders(brokenClosed, "mount_free_pincer").empty());
-
-    // Healer death while seated in a complete pair: the launch goes out.
+    AssertRiders(brokenClosed, "release_pincer_seat", fireB);
+    AdaptiveMagmawPlan const released = PlanFor(brokenClosed, 30007);
+    assert(std::holds_alternative<BotNativeAction::VehicleExit>(
+        released.Interaction->Action));
+    // A complete DPS pair launches through a healer death or a critical tank.
     Blackboard seatedHealerLoss = seated;
     Member(seatedHealerLoss, 30003).Alive = false;
-    AssertRiders(seatedHealerLoss, "launch_native_hook", discAndFire);
-    assert(Holders(seatedHealerLoss, "release_pincer_seat").empty());
-    // Healer death with the pair broken: the priest leaves at once, even in
-    // an open window, and two DPS take the hook.
-    Blackboard brokenHealerLoss = brokenPair;
-    Member(brokenHealerLoss, 30003).Alive = false;
-    AssertRiders(brokenHealerLoss, "release_pincer_seat", priest);
-    AssertRiders(brokenHealerLoss, "mount_free_pincer",
-        RiderSet{ 30008, 30010 });
-    AdaptiveMagmawPlan const releasedPriest = PlanFor(brokenHealerLoss, 30005);
-    assert(releasedPriest.Movement.Empty());
-    assert(std::holds_alternative<BotNativeAction::VehicleExit>(
-        releasedPriest.Interaction->Action));
-    assert(releasedPriest.Interaction->ActionPriority
-        == BotActionArbitration::Priority::Mechanic);
-
-    // Mangled tank below 35% with the pair broken: the priest leaves, and no
-    // other healer is conscripted in its place.
-    Blackboard brokenTankCritical = brokenPair;
-    Mangle(brokenTankCritical, 34.0f);
-    AssertRiders(brokenTankCritical, "release_pincer_seat", priest);
-    AssertRiders(brokenTankCritical, "mount_free_pincer",
-        RiderSet{ 30008, 30010 });
-    Blackboard brokenTankLow = brokenPair;
-    Mangle(brokenTankLow, 36.0f);
-    assert(Holders(brokenTankLow, "release_pincer_seat").empty());
-    AssertRiders(brokenTankLow, "mount_free_pincer", RiderSet{ 30008 });
-    // A complete pair launches even with the tank critical: the impale is
-    // what frees the tank from Mangle.
+    AssertRiders(seatedHealerLoss, "launch_native_hook", twoDps);
     Blackboard pairTankCritical = seated;
     Mangle(pairTankCritical, 20.0f);
-    AssertRiders(pairTankCritical, "launch_native_hook", discAndFire);
+    AssertRiders(pairTankCritical, "launch_native_hook", twoDps);
     assert(Holders(pairTankCritical, "release_pincer_seat").empty());
-    // An unseated priest still completes a waiting pair when the tank is
-    // critical; its mount triggers the launch.
-    Blackboard mountTankCritical = partnerSeated;
-    Mangle(mountTankCritical, 20.0f);
-    AssertRiders(mountTankCritical, "mount_free_pincer", priest);
-
-    // After the impale the window closes: the priest leaves without waiting
-    // for the 3.5 s native eject, then the unpaired DPS leaves too.
+    // After the impale a complete DPS pair waits for the native eject.
     Blackboard impaled = seated;
     impaled.Hostiles.front().Interactable = false;
-    AssertRiders(impaled, "release_pincer_seat", priest);
-    assert(Holders(impaled, "launch_native_hook").empty());
-    Blackboard impaledPriestOut = impaled;
-    Member(impaledPriestOut, 30005).VehicleGuid = ObjectGuid();
-    AssertRiders(impaledPriestOut, "release_pincer_seat", fireB);
-    // A lone DPS inside the open window keeps waiting for its partner.
-    assert(Holders(partnerSeated, "release_pincer_seat").empty());
+    assert(Holders(impaled, "release_pincer_seat").empty());
 
-    // After the ride the priest holds no hook duty and is an ordinary healer.
-    Blackboard afterRide = LiveRoster();
-    assert(AnyHookHolders(afterRide).empty());
+    // After the ride nobody holds hook duty.
+    assert(AnyHookHolders(LiveRoster()).empty());
 
-    // Balance is excluded while two other DPS are eligible, even when no
-    // healer may ride and Balance holds the lowest DPS GUID.
+    // Healer count never changes the DPS pair.
     Blackboard oneHealer = LiveRoster();
     Remove(oneHealer, { 30004, 30005 });
     OpenWindow(oneHealer);
     AssertRiders(oneHealer, "mount_free_pincer", twoDps);
 
-    // Fallback: fewer than three living healers keeps every healer healing.
-    Blackboard twoHealers = LiveRoster();
-    Remove(twoHealers, { 30004 });
-    OpenWindow(twoHealers);
-    AssertRiders(twoHealers, "mount_free_pincer", twoDps);
-    Blackboard deadHealer = LiveRoster();
-    Member(deadHealer, 30003).Alive = false;
-    OpenWindow(deadHealer);
-    AssertRiders(deadHealer, "mount_free_pincer", twoDps);
-    Blackboard deadHealerWarning = LiveRoster();
-    Member(deadHealerWarning, 30004).Alive = false;
-    Warn(deadHealerWarning);
-    AssertRiders(deadHealerWarning, "pincer_preposition", twoDps);
-
-    // Fallback: healers outside the closed load ranking never ride.
-    Blackboard unrankedHealers = LiveRoster();
-    for (uint32 guid : { 30003u, 30004u, 30005u })
-        Member(unrankedHealers, guid).ClassSpec = "unclassified_healer";
-    OpenWindow(unrankedHealers);
-    AssertRiders(unrankedHealers, "mount_free_pincer", twoDps);
-
-    // Without Discipline the lowest-ranked listed healer rides, ties by GUID.
-    Blackboard noDiscipline = LiveRoster();
-    Member(noDiscipline, 30005).ClassSpec = "restoration_druid";
-    OpenWindow(noDiscipline);
-    AssertRiders(noDiscipline, "pincer_approach", RiderSet{ 30003, 30007 });
-    AssertRiders(noDiscipline, "mount_free_pincer", fireB);
-    Blackboard holyPriest = LiveRoster();
-    Member(holyPriest, 30004).ClassSpec = "holy_priest";
-    Member(holyPriest, 30005).ClassSpec = "holy_paladin";
-    OpenWindow(holyPriest);
-    AssertRiders(holyPriest, "pincer_approach", RiderSet{ 30004, 30007 });
-
-    // Fallback: with no eligible healer and one ordinary DPS, the previous
-    // DPS order fills the second seat, which reaches Balance.
+    // Fallback: one ordinary DPS left, so the previous DPS order brings
+    // Balance in before any healer.
     Blackboard onlyBalanceLeft = LiveRoster();
-    Remove(onlyBalanceLeft, { 30004, 30008, 30010 });
+    Remove(onlyBalanceLeft, { 30008, 30010 });
     OpenWindow(onlyBalanceLeft);
     AssertRiders(onlyBalanceLeft, "mount_free_pincer",
         RiderSet{ 30001, 30007 });
 
-    // An eligible healer pairs with Balance only when Balance is the last
-    // non-baiter DPS; Balance mounts first.
-    Blackboard healerAndBalance = LiveRoster();
-    Remove(healerAndBalance, { 30007, 30008, 30010 });
-    OpenWindow(healerAndBalance);
-    AssertRiders(healerAndBalance, "pincer_approach",
-        RiderSet{ 30001, 30005 });
-    AssertRiders(healerAndBalance, "mount_free_pincer", RiderSet{ 30001 });
+    // Last resort: one DPS in total, so the lowest-GUID healer fills the
+    // second seat. It mounts only after the DPS holds a pincer.
+    Blackboard lastResort = LiveRoster();
+    Remove(lastResort, { 30001, 30008, 30010 });
+    OpenWindow(lastResort);
+    RiderSet const druidAndFire{ 30003, 30007 };
+    AssertRiders(lastResort, "pincer_approach", druidAndFire);
+    AssertRiders(lastResort, "mount_free_pincer", fireB);
+    Blackboard lrPartnerSeated = lastResort;
+    Seat(lrPartnerSeated, 30007, 1);
+    AssertRiders(lrPartnerSeated, "mount_free_pincer", RiderSet{ 30003 });
+    Blackboard lrSeated = lrPartnerSeated;
+    Seat(lrSeated, 30003, 0);
+    AssertRiders(lrSeated, "launch_native_hook", druidAndFire);
+    // Its partner dies after it mounted: with three healers and the tank
+    // healthy it keeps the seat while the window is open.
+    Blackboard lrBroken = lrSeated;
+    Member(lrBroken, 30007).Alive = false;
+    Member(lrBroken, 30007).VehicleGuid = ObjectGuid();
+    assert(Holders(lrBroken, "release_pincer_seat").empty());
+    Blackboard lrBrokenClosed = lrBroken;
+    lrBrokenClosed.Hostiles.front().Interactable = false;
+    AssertRiders(lrBrokenClosed, "release_pincer_seat", RiderSet{ 30003 });
+    // Another healer dies, or the mangled tank drops below 35%: it leaves
+    // at once, even inside the window.
+    Blackboard lrHealerLoss = lrBroken;
+    Member(lrHealerLoss, 30005).Alive = false;
+    AssertRiders(lrHealerLoss, "release_pincer_seat", RiderSet{ 30003 });
+    AdaptiveMagmawPlan const releasedHealer = PlanFor(lrHealerLoss, 30003);
+    assert(releasedHealer.Movement.Empty());
+    Blackboard lrTankCritical = lrBroken;
+    Mangle(lrTankCritical, 34.0f);
+    AssertRiders(lrTankCritical, "release_pincer_seat", RiderSet{ 30003 });
+    Blackboard lrTankLow = lrBroken;
+    Mangle(lrTankLow, 36.0f);
+    assert(Holders(lrTankLow, "release_pincer_seat").empty());
+    // A complete pair still launches with the tank critical: the impale is
+    // what frees the tank from Mangle.
+    Blackboard lrPairTankCritical = lrSeated;
+    Mangle(lrPairTankCritical, 20.0f);
+    AssertRiders(lrPairTankCritical, "launch_native_hook", druidAndFire);
+    assert(Holders(lrPairTankCritical, "release_pincer_seat").empty());
+    // After the impale the healer leaves without the 3.5 s native eject,
+    // then its now unpaired DPS partner leaves too.
+    Blackboard lrImpaled = lrSeated;
+    lrImpaled.Hostiles.front().Interactable = false;
+    AssertRiders(lrImpaled, "release_pincer_seat", RiderSet{ 30003 });
+    Member(lrImpaled, 30003).VehicleGuid = ObjectGuid();
+    AssertRiders(lrImpaled, "release_pincer_seat", fireB);
 
-    // Fallback: with no ordinary DPS, the next non-tank fills the second
-    // seat after the selected healer. Two healer riders mount in list order.
+    // No DPS at all: two healers ride and mount in list order.
     Blackboard healersOnly = LiveRoster();
     Remove(healersOnly, { 30001, 30007, 30008, 30010 });
     OpenWindow(healersOnly);
-    AssertRiders(healersOnly, "pincer_approach", RiderSet{ 30003, 30005 });
-    AssertRiders(healersOnly, "mount_free_pincer", priest);
-    Seat(healersOnly, 30005, 0);
+    AssertRiders(healersOnly, "pincer_approach", RiderSet{ 30003, 30004 });
     AssertRiders(healersOnly, "mount_free_pincer", RiderSet{ 30003 });
+    Seat(healersOnly, 30003, 0);
+    AssertRiders(healersOnly, "mount_free_pincer", RiderSet{ 30004 });
 
     // Tanks and fixed baiters never ride; with nobody else nobody mounts.
     Blackboard nobody = LiveRoster();
@@ -794,7 +749,7 @@ int main()
     OpenWindow(nobody);
     assert(AnyHookHolders(nobody).empty());
     for (Blackboard const* board : { &open, &warning, &seated, &oneHealer,
-             &twoHealers, &healersOnly, &brokenHealerLoss, &impaled })
+             &lastResort, &healersOnly, &lrHealerLoss, &brokenClosed })
     {
         RiderSet const holders = AnyHookHolders(*board);
         for (uint32 excluded : { 30002u, 30006u, 30009u })

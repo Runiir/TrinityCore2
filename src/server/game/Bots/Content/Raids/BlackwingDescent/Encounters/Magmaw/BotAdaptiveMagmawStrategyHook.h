@@ -5,29 +5,15 @@
         return guid == baiters.first || guid == baiters.second;
     }
 
-    // A healer rides only while two other living healers keep healing Mangle.
+    // Healers ride only as a last resort (live 3-kill bundle: a Discipline
+    // rider left Mangle support and the tank died in 2 of 3 boss windows).
+    // If one does sit in a no-cast pincer seat with its pair broken, it
+    // leaves once fewer than three healers live or the mangled tank is below
+    // 35%. Baselines 0891a99 k1-k3: tank 202-232k HP, lowest 49-57%, worst
+    // Mangle 5 s bucket 136k (~12%/s); 35% (~75k) is about three seconds of
+    // that, enough for the exit and one heal.
     static constexpr std::size_t HookHealerMinimumLivingHealers = 3;
-    // A seated healer whose pair is broken leaves its no-cast pincer seat
-    // once the mangled tank falls below this. Baselines 0891a99 k1-k3: tank
-    // 202-232k HP, lowest 49-57%, worst Mangle 5 s bucket 136k (~12%/s).
-    // 35% (~75k) is about three seconds of that worst case, enough for the
-    // exit and one heal, and stays clear of every observed minimum.
     static constexpr float HookHealerCriticalTankHealthPct = 35.0f;
-
-    // Static prior of each healer's share of raid healing, lowest first.
-    // Baselines 0891a99 k1-k3 (10N): Discipline 0.8-1.8k HPS against
-    // Restoration Druid and Holy Paladin at 4-6k. Unlisted specs never ride.
-    static std::optional<std::size_t> HookHealerLoadRank(
-        std::string_view classSpec)
-    {
-        static constexpr std::array<std::string_view, 5> order = {
-            "discipline_priest", "holy_priest", "restoration_shaman",
-            "restoration_druid", "holy_paladin" };
-        auto itr = std::find(order.begin(), order.end(), classSpec);
-        if (itr == order.end())
-            return std::nullopt;
-        return std::size_t(std::distance(order.begin(), itr));
-    }
 
     static std::size_t LivingHealers(Blackboard const& board)
     {
@@ -36,32 +22,6 @@
             {
                 return member.Alive && member.Role == "healer";
             }));
-    }
-
-    // A released healer is not swapped for the next healer in rank: its
-    // seat goes to the DPS order instead.
-    static ObjectGuid SelectHookHealer(Blackboard const& board)
-    {
-        ActorSnapshot const* selected = nullptr;
-        std::size_t selectedRank = 0;
-        for (ActorSnapshot const& member : board.Players)
-        {
-            if (!member.Alive || member.Role != "healer")
-                continue;
-            std::optional<std::size_t> const rank =
-                HookHealerLoadRank(member.ClassSpec);
-            if (rank && (!selected || *rank < selectedRank
-                || (*rank == selectedRank && member.Guid.GetRawValue()
-                    < selected->Guid.GetRawValue())))
-            {
-                selected = &member;
-                selectedRank = *rank;
-            }
-        }
-        return selected
-            && LivingHealers(board) >= HookHealerMinimumLivingHealers
-            && !SeatReleased(board, *selected)
-            ? selected->Guid : ObjectGuid();
     }
 
     static bool SeatedOnPincer(Blackboard const& board,
@@ -128,11 +88,11 @@
     // everywhere. Preference order:
     //  1. living riders already seated on a pincer, so a roster change during
     //     the ride never strands an unassigned actor in a pincer seat;
-    //  2. the lowest-load healer while three or more healers are alive;
-    //  3. non-baiter DPS by raw GUID, except Balance, which keeps its
+    //  2. non-baiter DPS by raw GUID, except Balance, which keeps its
     //     stationary casts and the parasite mushroom duty;
-    //  4. the previous choice: non-baiter DPS by raw GUID, then any other
-    //     non-tank, now by raw GUID instead of board order.
+    //  3. non-baiter DPS including Balance, by raw GUID;
+    //  4. only when no DPS can fill a seat, any other non-tank (healers) by
+    //     raw GUID.
     // Tanks and the fixed pillar baiters never ride.
     static std::vector<ObjectGuid> BuildHookUsers(Blackboard const& board)
     {
@@ -177,7 +137,6 @@
         };
         for (ObjectGuid guid : seated)
             append(guid);
-        append(SelectHookHealer(board));
         for (std::vector<ObjectGuid> const* tier : { &dps, &previousDps,
                  &others })
             for (ObjectGuid guid : *tier)
