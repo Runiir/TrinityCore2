@@ -1,0 +1,7 @@
+{
+  "schema": "cata_raid_program_rework_note_v1",
+  "unit_id": "magmaw:tuning_01",
+  "revision": 458,
+  "reason": "Plan bookkeeping only: owned_files listed the two staged migration paths that the promotion deletes, and the graph's owned-file snapshot requires every owned file to exist. No implementation, review or measurement outcome is rejected; the same bundle is re-planned without those two paths.",
+  "claimed": false
+}

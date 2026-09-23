@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 458,
+    "revision": 460,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -663,7 +663,7 @@
       "owner_blood_boss_damage_cadence": 3,
       "shared_route_progress_authority": 1,
       "shared_native_engagement_authority": 3,
-      "owner_blood_wcl_dps_gap": 1
+      "owner_blood_wcl_dps_gap": 2
     },
     "history": [
       {
@@ -8650,6 +8650,43 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 458,
+        "unit_id": "magmaw:tuning_01",
+        "from": "implement",
+        "to": "diagnose",
+        "event": {
+          "action": "rework",
+          "revision": 458,
+          "unit_id": "magmaw:tuning_01",
+          "reason": "Plan bookkeeping only: owned_files listed the two staged migration paths that the promotion deletes, and the graph's owned-file snapshot requires every owned file to exist. No implementation, review or measurement outcome is rejected; the same bundle is re-planned without those two paths.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_rework_note_20260923.json",
+            "sha256": "e80a3ccb3091bee8ce06ad4e35d1b951f3cad76f5506b8a047a0762c33b62625"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "class_native"
+      },
+      {
+        "revision": 459,
+        "unit_id": "magmaw:tuning_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 459,
+          "unit_id": "magmaw:tuning_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_20260923.json",
+            "sha256": "072c4867fd9d8da2897bd2bee845af1cad82298e36bf616bc01ece349b971b70"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8724,9 +8761,7 @@
         "tests/test_autonomy_pipeline_smoke.py",
         "tests/test_elemental_fulmination_gate.py",
         "tests/fixtures/survival_8146_native_admission.json",
-        "tests/fixtures/affliction_doomguard_native.json",
-        "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
-        "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql"
+        "tests/fixtures/affliction_doomguard_native.json"
       ],
       "forbidden_changes": [
         "No invented auras, procs, damage multipliers, forced targets or casts, resource refills, cooldown or coefficient changes; spell facts only from the pinned 4.3.4 client data.",
@@ -8813,7 +8848,7 @@
     "receipts": {
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_20260923.json",
-        "sha256": "32bcd62d3912dbea6ab1f0776914f66f33f36cd2926f79f0558d3b1b6bf0d6de"
+        "sha256": "072c4867fd9d8da2897bd2bee845af1cad82298e36bf616bc01ece349b971b70"
       }
     }
   },
