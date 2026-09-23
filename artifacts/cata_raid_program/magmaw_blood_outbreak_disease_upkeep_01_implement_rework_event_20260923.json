@@ -1,0 +1,11 @@
+{
+  "action": "rework",
+  "revision": 456,
+  "unit_id": "magmaw:tuning_01",
+  "claim_token": "8437be90c031e121edcd11279103691edc60e6a5cc8a4e54dbd7d6f9bf025a5f",
+  "reason": "Blood Outbreak (spell 77575) was provisioned into the blood_death_knight tank rotation profile, reviewed, built, and measured live over a 3-kill scoreboard batch (label outbreak-ee8547e, all native clears, 0 deaths) against baseline r3-47cd175. scoreboard show's own printed verdict was revert: neither party DPS nor actor 30002 (TANK-002) improved beyond the two-sided 95% Welch t critical value, so per the playbook's keep/revert rule (within noise means revert) the change was reverted in source, in the generated bot-admission identities, in the staged/promoted SQL location, and directly in the live world DB rows (bot_rotation_profile id=267 and its bot_rotation_action rows), restoring the profile's version/source_note/scope_note to the true predecessor state left by the unrelated, already-committed 2026_09_23_41_blood_mangle_disease_runes.sql migration rather than this unit's own now-stale reverse-migration block. The error ledger's TANK-002 row was updated with the label, deltas, and revert outcome. No performance requirement was accepted, so this closes as a rework (failure counted on the diagnosed edge) rather than a supersede, per docs/bot_raids/development_graph.md's guidance that supersede is for a label that became the new baseline.",
+  "receipt": {
+    "path": "artifacts/cata_raid_program/magmaw_blood_outbreak_disease_upkeep_01_implement_rework_reconciliation_20260923.json",
+    "sha256": "99c4886b89f5b2efe79e93e77191808b6349bf5642607fa4738755fc0f004331"
+  }
+}
