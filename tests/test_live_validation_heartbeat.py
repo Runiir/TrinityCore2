@@ -140,7 +140,7 @@ def test_transport_heartbeats_are_light_in_combat_and_full_out_of_combat(tmp_pat
             execute, ["attached"], None,
             command_script(start=False, exit_server=False, trace_delta=True, trace_limit=128),
             tmp_path, {}, {}, heartbeat_sec=1, no_progress_window_sec=600,
-            sleep=sleep, retain_trace_route_nodes=("bwd.magmaw.drudges",),
+            sleep=sleep, retain_trace_route_nodes=("bwd.magmaw.drudges",), light_combat_heartbeats=True,
         )
     traces = [command for command in commands if command.startswith(".botauto trace")]
     assert traces == [FULL_TRACE, ".botauto trace all 8", ".botauto trace all 8", FULL_TRACE]
@@ -200,7 +200,7 @@ def test_process_heartbeats_are_light_in_combat(tmp_path):
         binary, responses, 4,
         command_script(start=False, trace_delta=True, trace_limit=128),
         output_dir, {}, {}, heartbeat_sec=1, no_progress_window_sec=600,
-        retain_trace_route_nodes=("bwd.magmaw.drudges",),
+        retain_trace_route_nodes=("bwd.magmaw.drudges",), light_combat_heartbeats=True,
     )
     commands = log.read_text(encoding="utf-8").splitlines()
     traces = [command for command in commands if command.startswith(".botauto trace")]
@@ -328,3 +328,13 @@ def test_process_no_light_combat_heartbeats_sends_full_traces(tmp_path):
     heartbeat_rows = [command for command in commands if not command.startswith((".botauto combatlog", "server "))]
     assert heartbeat_rows
     assert heartbeat_rows == [".botauto status", ".botauto diagnose all", FULL_TRACE, ".botexp summary"] * (len(heartbeat_rows) // 4)
+
+
+def test_light_combat_heartbeats_are_opt_in():
+    """The full trace is the default: light mode hides watchdog rows and is only an opt-in."""
+    import inspect
+    from tools.bot_ml import run_live_bot_validation as harness
+    for runner in (harness.run_transport_completion_watchdog, harness.run_worldserver_completion_watchdog):
+        assert inspect.signature(runner).parameters["light_combat_heartbeats"].default is False
+    source = inspect.getsource(harness._main)
+    assert '"--light-combat-heartbeats"' in source and "set_defaults(light_combat_heartbeats=False)" in source

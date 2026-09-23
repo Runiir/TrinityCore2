@@ -6504,7 +6504,7 @@ def run_transport_completion_watchdog(
     status_command: str = ".botauto status",
     calibration_native_completion: bool = False,
     sleep: Callable[[float], None] = time.sleep,
-    light_combat_heartbeats: bool = True,
+    light_combat_heartbeats: bool = False,
     retain_trace_route_nodes: Sequence[str] = (),
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
@@ -6896,7 +6896,7 @@ def run_worldserver_completion_watchdog(
     validation_route: dict[str, Any] | None = None,
     validation_route_manifest: dict[str, Any] | None = None,
     calibration_native_completion: bool = False,
-    light_combat_heartbeats: bool = True,
+    light_combat_heartbeats: bool = False,
     retain_trace_route_nodes: Sequence[str] = (),
 ) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
@@ -7474,7 +7474,7 @@ def run_soap_completion_watchdog(
         max_repeated_decisions=args.max_repeated_decision_count,
         max_death_loops=args.max_death_loop_count,
         calibration_native_completion=args.calibration_native_completion,
-        light_combat_heartbeats=getattr(args, "light_combat_heartbeats", True),
+        light_combat_heartbeats=getattr(args, "light_combat_heartbeats", False),
         retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
     )
 
@@ -7579,8 +7579,8 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         command.append("--force-start-command")
     if args.stop:
         command.append("--stop")
-    if getattr(args, "light_combat_heartbeats", True) is False:
-        command.append("--no-light-combat-heartbeats")
+    if getattr(args, "light_combat_heartbeats", False):
+        command.append("--light-combat-heartbeats")
     for route_node in getattr(args, "retain_trace_route_node", None) or []:
         command.extend(["--retain-trace-route-node", str(route_node)])
     if getattr(args, "preserve_worldserver", False):
@@ -8367,7 +8367,7 @@ def run_reusable_validation_session(
                 max_death_loops=args.max_death_loop_count,
                 status_command=executor.status_command,
                 calibration_native_completion=calibration_native_completion,
-                light_combat_heartbeats=getattr(args, "light_combat_heartbeats", True),
+                light_combat_heartbeats=getattr(args, "light_combat_heartbeats", False),
                 retain_trace_route_nodes=tuple(getattr(args, "retain_trace_route_node", None) or ()),
             )
             output_parts.append(output)
@@ -8559,11 +8559,20 @@ def _main() -> int:
     parser.add_argument("--max-repeated-decision-count", type=int, default=DEFAULT_MAX_REPEATED_DECISIONS)
     parser.add_argument("--max-death-loop-count", type=int, default=DEFAULT_MAX_DEATH_LOOPS)
     parser.add_argument(
+        "--light-combat-heartbeats",
+        dest="light_combat_heartbeats",
+        action="store_true",
+        help="Opt in to an 8-row trace while the cohort is in combat or a boss node is open. The linear console reader "
+        "makes the full trace cost ~0.1-0.2 s per heartbeat, and light mode hides repeated-decision and death-loop rows "
+        "from the watchdog, so it is off by default.",
+    )
+    parser.add_argument(
         "--no-light-combat-heartbeats",
         dest="light_combat_heartbeats",
         action="store_false",
-        help="Send the full diagnose/trace heartbeat even while the cohort is in combat or a boss node is open (reintroduces multi-second world stalls).",
+        help="Send the full diagnose/trace heartbeat on every heartbeat (the default).",
     )
+    parser.set_defaults(light_combat_heartbeats=False)
     parser.add_argument(
         "--retain-trace-route-node",
         action="append",
