@@ -88,6 +88,50 @@ def spec_targets(root: Path, target: dict[str, Any]) -> dict[str, float]:
     return {spec: statistics.median(dps) for spec, dps in values.items()}
 
 
+def fallback_index_path(root: Path, target: dict[str, Any]) -> Path | None:
+    fallback = target.get("fallback_reference") or {}
+    return root / fallback["promotion_index"] if fallback.get("promotion_index") else None
+
+
+def fallback_targets(root: Path, target: dict[str, Any]) -> dict[str, float]:
+    """WoWSims DPS per spec from the promotion index, used only where no matched WCL reference exists.
+
+    A spec's DPS is result_observation.dps of its entry's generation receipt. A receipt that is
+    missing, unreadable, differs from the index sha256, names another spec, reports a simulator
+    error or has no positive DPS is skipped, so that spec stays no_reference.
+    """
+    path = fallback_index_path(root, target)
+    if path is None or not path.exists():
+        return {}
+    values: defaultdict[str, list[float]] = defaultdict(list)
+    for entry in json.loads(path.read_text()).get("entries") or []:
+        receipt = (entry or {}).get("generation_receipt") or {}
+        spec = entry.get("target_spec")
+        try:
+            data = (root / receipt["path"]).read_bytes()
+            if hashlib.sha256(data).hexdigest() != receipt.get("sha256"):
+                continue
+            document = json.loads(data)
+            dps = float(document["result_observation"]["dps"])
+        except (KeyError, TypeError, ValueError, OSError):
+            continue
+        if document.get("target_spec") not in (None, spec) or document.get("simulator_error"):
+            continue
+        if spec and dps > 0 and dps != float("inf"):
+            values[spec].append(dps)
+    return {spec: statistics.median(dps) for spec, dps in values.items()}
+
+
+def reference_targets(root: Path, target: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Per spec: {"dps", "basis", "ratio"}. Matched WCL wins; WoWSims is the fallback."""
+    references = {spec: {"dps": dps, "basis": "wowsims_fallback",
+                         "ratio": float(target["fallback_reference"]["ratio"])}
+                  for spec, dps in fallback_targets(root, target).items()}
+    references.update({spec: {"dps": dps, "basis": "wcl", "ratio": float(target["actor_dps_ratio"])}
+                       for spec, dps in spec_targets(root, target).items()})
+    return references
+
+
 def party_reference_dps(root: Path, target: dict[str, Any]) -> float | None:
     values = [float(ref["raid_dps"]) for ref in _matched_references(root, target) if ref.get("raid_dps")]
     return statistics.median(values) if values else None

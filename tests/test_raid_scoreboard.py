@@ -17,7 +17,7 @@ from tools.raid_program.scoreboard import (
     party_reference_dps, spec_targets,
 )
 from tools.raid_program.scoreboard_compare import critical_t, keep_recommendation, welch
-from tools.raid_program.scoreboard_core import load_lines, scoreboard_path
+from tools.raid_program.scoreboard_core import fallback_targets, load_lines, reference_targets, scoreboard_path
 from tools.raid_program.scoreboard_record import (
     classify_outcome, death_evidence, is_native_clear, record_from_summary,
 )
@@ -150,6 +150,7 @@ def test_low_actor_fails_and_insufficient_kills_before_three(root):
 
 
 def test_missing_reference_is_never_a_pass(root):
+    # The scratch root has no WoWSims promotion index, so the hunter has neither WCL nor a fallback.
     target = json.loads((root / TARGET).read_text())
     target["roster"]["30009"] = ROSTER["30009"]
     (root / TARGET).write_text(json.dumps(target))
@@ -918,3 +919,104 @@ def test_record_keeps_rng_from_the_harness_or_recomputes_it(tmp_path):
                                   "encounter_rng": new["encounter_rng"]}, root=ROOT, target=target, scenario=SCENARIO,
                                  label="x", kill_id="x-1", deaths={"boss_window_deaths": 0, "deaths": []})
     assert record["encounter_rng"] == new["encounter_rng"]
+
+
+# --- WoWSims fallback reference -----------------------------------------------------------------
+
+INDEX = "experiments/configs/wowsims_cata_dps_reference_promotion_index_v1.json"
+SURVIVAL_WOWSIMS = 36534.93193894304
+
+
+def install_fallback(root, specs=("survival_hunter", "balance_druid")):
+    """Copy the real promotion index and the named specs' generation receipts into the scratch root,
+    and put the hunter back on the roster."""
+    (root / INDEX).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(ROOT / INDEX, root / INDEX)
+    receipts = {}
+    for entry in json.loads((ROOT / INDEX).read_text())["entries"]:
+        if entry["target_spec"] in specs:
+            path = entry["generation_receipt"]["path"]
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(ROOT / path, root / path)
+            receipts[entry["target_spec"]] = root / path
+    target = json.loads((root / TARGET).read_text())
+    target["roster"]["30009"] = ROSTER["30009"]
+    (root / TARGET).write_text(json.dumps(target))
+    return receipts
+
+
+def hunter_batch(root, label, fraction):
+    hunter = {"actor_id": "30009", "name": "Mgwdpsd", "spec": "survival_hunter", "role": "dps",
+              "encounter_window_dps": SURVIVAL_WOWSIMS * fraction, "damage_uptime": 0.8, "casts_per_minute": 40.0}
+    record_all(root, *(kill(label, f"k{i}") | {"actors": roster_actors() + [hunter]} for i in range(3)))
+
+
+def test_survival_resolves_to_the_wowsims_fallback_with_the_real_index():
+    target = load_target(ROOT, SCENARIO)
+    assert target["fallback_reference"]["source"] == "wowsims" and target["fallback_reference"]["ratio"] == 0.90
+    references = reference_targets(ROOT, target)
+    assert references["survival_hunter"]["basis"] == "wowsims_fallback"
+    assert references["survival_hunter"]["dps"] == pytest.approx(SURVIVAL_WOWSIMS)
+    assert references["survival_hunter"]["ratio"] == 0.90
+    # A spec with a matched WCL reference keeps it even though WoWSims has one too (35447.6).
+    assert references["balance_druid"] == {"dps": 41029.1, "basis": "wcl", "ratio": 0.95}
+    assert fallback_targets(ROOT, target)["balance_druid"] == pytest.approx(35447.58892725215)
+
+
+def test_fallback_applies_its_own_ratio(root):
+    install_fallback(root)
+    hunter_batch(root, "pass", 0.92)  # 0.92 >= 0.90: passes the WoWSims floor, would fail a 0.95 WCL floor
+    hunter_batch(root, "fail", 0.88)
+    passing = evaluate_target(root, SCENARIO, "pass")
+    hunter = passing["actors"]["30009"]
+    assert hunter["reference_basis"] == "wowsims_fallback" and hunter["required_ratio"] == 0.90
+    assert hunter["target_dps"] == pytest.approx(SURVIVAL_WOWSIMS, abs=0.01)
+    assert hunter["required_dps"] == round(SURVIVAL_WOWSIMS * 0.90, 1) and hunter["status"] == "pass"
+    assert passing["status"] == "pass" and passing["reasons"] == []
+    balance = passing["actors"]["30001"]
+    assert balance["reference_basis"] == "wcl" and balance["required_dps"] == round(41029.1 * 0.95, 1)
+    assert passing["actors"]["30003"]["reference_basis"] == "none"  # healers have no DPS target
+    assert passing["fallback_index_sha256"] == hashlib.sha256((root / INDEX).read_bytes()).hexdigest()
+    failing = evaluate_target(root, SCENARIO, "fail")
+    assert failing["actors"]["30009"]["status"] == "fail" and failing["actors"]["30009"]["reason"] == "below_target"
+    assert "of WoWSims fallback" in failing["reason"]
+
+
+@pytest.mark.parametrize("damage", ["missing", "tampered", "simulator_error", "no_index"])
+def test_broken_fallback_is_no_reference(root, damage):
+    receipts = install_fallback(root)
+    receipt = receipts["survival_hunter"]
+    if damage == "missing":
+        receipt.unlink()
+    elif damage == "tampered":
+        receipt.write_bytes(receipt.read_bytes().replace(b"36534.93", b"46534.93"))
+    elif damage == "simulator_error":  # consistent sha, but the simulator reported an error
+        document = json.loads(receipt.read_text())
+        document["simulator_error"] = "crashed"
+        data = json.dumps(document).encode()
+        receipt.write_bytes(data)
+        index = json.loads((root / INDEX).read_text())
+        for entry in index["entries"]:
+            if entry["target_spec"] == "survival_hunter":
+                entry["generation_receipt"]["sha256"] = hashlib.sha256(data).hexdigest()
+        (root / INDEX).write_text(json.dumps(index))
+    else:
+        (root / INDEX).unlink()
+    hunter_batch(root, "a", 1.0)
+    verdict = evaluate_target(root, SCENARIO, "a")
+    hunter = verdict["actors"]["30009"]
+    assert hunter["status"] == "no_reference" and hunter["reference_basis"] == "none" and hunter["target_dps"] is None
+    assert verdict["status"] == "fail" and "no_reference" in verdict["reasons"]
+    assert verdict["actors"]["30001"]["reference_basis"] == "wcl"  # WCL specs are unaffected
+    assert (verdict["fallback_index_sha256"] is None) == (damage == "no_index")
+
+
+def test_show_prints_the_reference_basis(root):
+    install_fallback(root)
+    hunter_batch(root, "a", 0.92)
+    text = render(root, SCENARIO, "a")
+    hunter = next(line for line in text.splitlines() if line.startswith("30009"))
+    assert " WoWS " in hunter and "pass" in hunter
+    assert " 41029 WCL " in next(line for line in text.splitlines() if line.startswith("30001"))
+    assert "(no WCL: >= 0.9 x WoWSims)" in text
+    assert "[references: 6 WCL, 1 WoWSims fallback]" in text

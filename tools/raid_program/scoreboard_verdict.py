@@ -5,6 +5,10 @@ infrastructure failures, missing evidence, clears whose post-processing
 crashed, recorded without measurement_validity, or measured over a stalled
 boss window. Every kill of the label is listed in kills_detail with its exclusion.
 `reasons` holds stable codes; `reason` is the readable explanation.
+
+Each non-healer actor is judged against a reference_basis: "wcl" (median matched
+WCL DPS x actor_dps_ratio), else "wowsims_fallback" (the verified WoWSims DPS of
+the spec x fallback_reference.ratio), else "none" (status no_reference).
 """
 from __future__ import annotations
 
@@ -12,10 +16,12 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_core import (
-    VERDICT_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, exclusion_reason, file_sha256,
-    healer_roles, label_kills, latest_label, load_records, load_target, mean_sd, party_reference_dps, roster,
-    spec_targets, target_path,
+    VERDICT_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, exclusion_reason, fallback_index_path,
+    file_sha256, healer_roles, label_kills, latest_label, load_records, load_target, mean_sd, party_reference_dps,
+    reference_targets, roster, target_path,
 )
+
+BASIS_TEXT = {"wcl": "WCL", "wowsims_fallback": "WoWSims fallback"}
 
 
 def _round(value: float | None, digits: int = 1) -> float | None:
@@ -143,7 +149,7 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
     clears = clear_kills(all_kills)
     required = int(target["kills_per_measurement"])
     minimum = float(target["actor_dps_ratio"])
-    targets = spec_targets(root, target)
+    references = reference_targets(root, target)
     healers = healer_roles(target)
     reasons = _Reasons()
     encounter = _encounter_verdict(target, kills, clears, party_reference_dps(root, target), reasons)
@@ -157,7 +163,11 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         series = rows[actor_id]
         spec, role, name = actor_identity(target, actor_id, series)
         mean, sd = mean_sd([float(row["encounter_window_dps"]) for row in series])
-        target_dps = None if role in healers else targets.get(spec)
+        reference = None if role in healers else references.get(spec)
+        target_dps = reference["dps"] if reference else None
+        required_ratio = reference["ratio"] if reference else None
+        basis = reference["basis"] if reference else "none"
+        source = BASIS_TEXT.get(basis, basis)
         ratio = mean / target_dps if target_dps and mean is not None else None
         reason = None
         if role in healers:
@@ -165,12 +175,13 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
             reason = "encounter_failed" if status == "fail" else None
         elif target_dps is None:
             status, reason = "no_reference", "no_reference"
-            reasons.add("no_reference", f"actor {actor_id} ({spec}) has no matched WCL reference; add one before this target can pass")
+            reasons.add("no_reference", f"actor {actor_id} ({spec}) has no matched WCL reference and no verified "
+                                        "WoWSims fallback; add one before this target can pass")
         elif len(series) < required:
             status, reason = "insufficient_kills", "insufficient_kills"
-        elif ratio < minimum:
+        elif ratio < required_ratio:
             status, reason = "fail", "below_target"
-            reasons.add("below_target", f"actor {actor_id} ({spec}) ratio {ratio:.3f} < {minimum}")
+            reasons.add("below_target", f"actor {actor_id} ({spec}) ratio {ratio:.3f} < {required_ratio} of {source}")
         elif encounter["status"] != "pass":
             status, reason = "fail", "encounter_failed"
             reasons.add("encounter_failed", f"actor {actor_id} ({spec}) meets its target but the encounter failed")
@@ -179,8 +190,10 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         actors[actor_id] = {
             "spec": spec, "role": role, "name": name, "n": len(series),
             "mean_dps": _round(mean), "sd_dps": _round(sd),
-            "target_dps": target_dps,
-            "required_dps": _round(target_dps * minimum) if target_dps else None,
+            "target_dps": _round(target_dps, 2),
+            "reference_basis": basis,
+            "required_ratio": required_ratio,
+            "required_dps": _round(target_dps * required_ratio) if target_dps else None,
             "ratio": _round(ratio, 3), "status": status, "reason": reason,
         }
 
@@ -200,6 +213,7 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
                 reasons.add(detail["exclusion_reason"],
                             f"kill {detail['kill_id']} not counted: {detail['exclusion_reason']}")
     binaries = {record.get("worldserver_sha256") for record in kills}
+    index = fallback_index_path(root, target)
     stamps = sorted(str(record.get("recorded_at")) for record in all_kills if record.get("recorded_at"))
     return {
         "schema": VERDICT_SCHEMA,
@@ -212,6 +226,7 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         "target_sha256": file_sha256(target_path(root, scenario)),
         "wcl_manifest_sha256": file_sha256(root / target["wcl_reference_manifest"]),
         "wcl_timelines_sha256": file_sha256(root / target["wcl_cast_timelines"]) if target.get("wcl_cast_timelines") else None,
+        "fallback_index_sha256": file_sha256(index) if index is not None and index.exists() else None,
         "worldserver_sha256": next(iter(binaries)) if len(binaries) == 1 else None,
         "source_commits": sorted({record["source_commit"] for record in kills if record.get("source_commit")}),
         "first_recorded_at": stamps[0] if stamps else None,

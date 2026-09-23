@@ -10,6 +10,7 @@ from tools.raid_program.scoreboard_core import (
 )
 
 RNG_PRIMARY_SIDE = {"massive_crash": "raid_wide"}  # side whose share is compared between labels
+BASIS_TAG = {"wcl": "WCL", "wowsims_fallback": "WoWS", "none": "-"}  # reference_basis next to the target
 from tools.raid_program.scoreboard_verdict import evaluate_target
 
 
@@ -158,11 +159,13 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     comparison = compare_labels(root, scenario, label, vs, targeted_actor) if vs else None
     encounter = verdict["encounter"]
 
+    fallback = target.get("fallback_reference") or {}
     out = [f"scoreboard {scenario} label={label} counted={verdict['kills']} of {len(kills)} clears={encounter['clears']}"
            + (f"  vs {vs}" if vs else ""),
-           f"target: actor DPS >= {target['actor_dps_ratio']} x median WCL of {', '.join(target['matched_reference_ids'])}; "
+           f"target: actor DPS >= {target['actor_dps_ratio']} x median WCL of {', '.join(target['matched_reference_ids'])}"
+           + (f" (no WCL: >= {fallback['ratio']} x WoWSims)" if fallback else "") + "; "
            f"{target['kills_per_measurement']} kills per measurement; max {target['max_boss_window_deaths']} boss-window deaths"]
-    header = (f"{'actor':6} {'name':9} {'spec':19} {'role':6} {'n':>2} {'mean DPS':>8} {'± sd':>6} {'WCL':>7} "
+    header = (f"{'actor':6} {'name':9} {'spec':19} {'role':6} {'n':>2} {'mean DPS':>8} {'± sd':>6} {'target':>7} {'ref':4} "
               f"{'ratio':>5} {'status':18} {'active':>6} {'casts/m':>7}")
     if vs:
         header += f" | {'n':>2} {vs[:8]:>8} {'delta':>7} {'t':>6} {'df':>5} {'t95':>5} verdict"
@@ -172,6 +175,7 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
         uptime = _mean_of(series, "damage_uptime")
         line = (f"{actor_id:6} {str(actor['name'])[:9]:9} {actor['spec'][:19]:19} {actor['role'][:6]:6} {actor['n']:>2} "
                 f"{_num(actor['mean_dps'], 8)} {_num(actor['sd_dps'], 6)} {_num(actor['target_dps'])} "
+                f"{BASIS_TAG.get(actor.get('reference_basis'), '-'):4} "
                 f"{_num(actor['ratio'], 5, 2)} {actor['status']:18} "
                 f"{_num(uptime * 100 if uptime is not None else None, 5)}% {_num(_mean_of(series, 'casts_per_minute'), 7, 1)}")
         if comparison:
@@ -182,7 +186,7 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     party_values = [float(r["encounter"]["encounter_window_party_dps"]) for r in clear_kills(kills)]
     mean, sd = mean_sd(party_values)
     party_line = (f"{'party':6} {'':9} {'':19} {'':6} {len(party_values):>2} {_num(mean, 8)} {_num(sd, 6)} "
-                  f"{_num(encounter['party_wcl_dps'])} {_num(encounter['party_ratio'], 5, 2)} "
+                  f"{_num(encounter['party_wcl_dps'])} {'WCL':4} {_num(encounter['party_ratio'], 5, 2)} "
                   f"{'encounter ' + encounter['status']:18} {'':>6}  {'':>7}")
     if comparison:
         party_line += _change(comparison["party"])
@@ -209,7 +213,12 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
         out.append(_rng_line(vs, old_kills, old_mix))
         out += [text for _, text in rng_mix_warnings(mix, old_mix)]
     out.append("")
-    out.append(f"verdict: {verdict['status']}" + (f" - {verdict['reason']}" if verdict["reason"] else ""))
+    bases = [actor.get("reference_basis") for actor in verdict["actors"].values()
+             if actor["role"] not in set(target.get("roles_without_dps_target", ["healer"]))]
+    basis_text = ", ".join(f"{bases.count(key)} {text}" for key, text in (
+        ("wcl", "WCL"), ("wowsims_fallback", "WoWSims fallback"), ("none", "no reference")) if bases.count(key))
+    out.append(f"verdict: {verdict['status']}" + (f" [references: {basis_text}]" if basis_text else "")
+               + (f" - {verdict['reason']}" if verdict["reason"] else ""))
     if comparison:
         keep = comparison["keep"]
         out.append(f"keep/revert (two-sided 95% Welch t): {keep['decision']}"

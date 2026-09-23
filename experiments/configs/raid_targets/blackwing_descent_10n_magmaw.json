@@ -25,7 +25,15 @@
   "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count. Unknown counts never pass.",
   "roles_without_dps_target": ["healer"],
   "healer_status": "Healers have no DPS target; their status follows the encounter status.",
-  "missing_reference_policy": "An actor whose spec has no matched reference gets status no_reference and no target. The overall status is fail until a matched reference exists: a missing reference is work, not a pass.",
+  "fallback_reference": {
+    "source": "wowsims",
+    "promotion_index": "experiments/configs/wowsims_cata_dps_reference_promotion_index_v1.json",
+    "ratio": 0.90,
+    "applies_when": "the spec has no matched WCL reference",
+    "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
+  },
+  "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
   "roster": {
     "30001": {"name": "Mgwtanka", "spec": "balance_druid", "role": "dps"},
     "30002": {"name": "Mgwtankb", "spec": "blood_death_knight", "role": "tank"},
