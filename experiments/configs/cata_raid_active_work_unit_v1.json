@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 482,
+    "revision": 483,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "build",
     "actor_ids": [
@@ -9353,6 +9353,27 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 482,
+        "unit_id": "magmaw:tuning_03",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "action": "release",
+          "revision": 482,
+          "unit_id": "magmaw:tuning_03",
+          "owner": "coordinator-bca90d3b",
+          "reason": "The queued build aborted with build_provenance_abort (source_identity_changed_or_dirty_before_completion): the coordinator committed a documentation-only ledger update (f426f04104) while the worldserver build ran, so the queue saw HEAD move. No binary was produced; the failed queue result is retained under workflow-build-a5db704b0e0b. Release and re-claim the build on the unchanged reviewed source.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_build_release_20260924.json",
+            "sha256": "f3642b45edd77114069aa3b9fb5debec9eef490aa67a7b390fc253689ac61fa5"
+          },
+          "claim_token": "a5db704b0e0beeb6c303118248087bee78c5bd5da398cfa58c217acde272a23e"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9494,14 +9515,7 @@
       "tests/test_magmaw_support_target_admission.py": "1800a816de9512c57c7b662e89b2a85cd6d6b687c87b683f6a85d466487684f8"
     },
     "tested_commit": "061b54dc71d7de225befea6e4991f4453689cebb",
-    "implementer": "coordinator-bca90d3b",
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "a5db704b0e0beeb6c303118248087bee78c5bd5da398cfa58c217acde272a23e",
-      "operation_id": "a5db704b0e0beeb6c303118248087bee78c5bd5da398cfa58c217acde272a23e",
-      "stage": "build",
-      "claimed_at": "2026-09-23T22:37:31Z"
-    }
+    "implementer": "coordinator-bca90d3b"
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
