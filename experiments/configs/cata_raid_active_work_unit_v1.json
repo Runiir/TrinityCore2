@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes",
+  "next_action": "Select the next largest verdict gap, or complete only when every requirement is accepted. follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 473,
+    "revision": 474,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "publish",
+    "stage": "route",
     "actor_ids": [
       "30001",
       "30002",
@@ -477,7 +477,7 @@
         }
       },
       "actor_30003": {
-        "status": "open",
+        "status": "accepted",
         "description": "Healer 30003 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -487,10 +487,46 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "restoration_druid",
+          "n": 5,
+          "mean_dps": 1739.5,
+          "target_dps": null,
+          "ratio": null,
+          "reference_basis": "none",
+          "required_ratio": null,
+          "required_dps": null,
+          "encounter_status": "pass"
         }
       },
       "actor_30004": {
-        "status": "open",
+        "status": "accepted",
         "description": "Healer 30004 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -500,10 +536,46 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "holy_paladin",
+          "n": 5,
+          "mean_dps": 0.0,
+          "target_dps": null,
+          "ratio": null,
+          "reference_basis": "none",
+          "required_ratio": null,
+          "required_dps": null,
+          "encounter_status": "pass"
         }
       },
       "actor_30005": {
-        "status": "open",
+        "status": "accepted",
         "description": "Healer 30005 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -513,10 +585,46 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "discipline_priest",
+          "n": 5,
+          "mean_dps": 3773.4,
+          "target_dps": null,
+          "ratio": null,
+          "reference_basis": "none",
+          "required_ratio": null,
+          "required_dps": null,
+          "encounter_status": "pass"
         }
       },
       "actor_30006": {
-        "status": "open",
+        "status": "accepted",
         "description": "Fire 30006 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -526,10 +634,46 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "fire_mage",
+          "n": 5,
+          "mean_dps": 39922.7,
+          "target_dps": 40189.9,
+          "ratio": 0.993,
+          "reference_basis": "wcl",
+          "required_ratio": 0.95,
+          "required_dps": 38180.4,
+          "encounter_status": "pass"
         }
       },
       "actor_30007": {
-        "status": "open",
+        "status": "accepted",
         "description": "Fire 30007 encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -539,10 +683,46 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "fire_mage",
+          "n": 5,
+          "mean_dps": 51272.4,
+          "target_dps": 40189.9,
+          "ratio": 1.276,
+          "reference_basis": "wcl",
+          "required_ratio": 0.95,
+          "required_dps": 38180.4,
+          "encounter_status": "pass"
         }
       },
       "actor_30008": {
-        "status": "open",
+        "status": "accepted",
         "description": "Affliction encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -552,10 +732,46 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "affliction_warlock",
+          "n": 5,
+          "mean_dps": 43276.7,
+          "target_dps": 40281.0,
+          "ratio": 1.074,
+          "reference_basis": "wcl",
+          "required_ratio": 0.95,
+          "required_dps": 38266.9,
+          "encounter_status": "pass"
         }
       },
       "actor_30009": {
-        "status": "open",
+        "status": "accepted",
         "description": "Survival encounter behavior and duty-adjusted performance",
         "needs_raid": true,
         "needs_performance": true,
@@ -565,6 +781,42 @@
         "roster_source": {
           "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
           "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+        },
+        "receipt": {
+          "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+          "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+        },
+        "accepted_at_revision": 473,
+        "verdict": {
+          "receipt": {
+            "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+            "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+          },
+          "label": "b2-fd4ba456",
+          "kills": 5,
+          "kill_ids": [
+            "b2-fd4ba456-k1-20260923T203751Z",
+            "b2-fd4ba456-k2-20260923T203751Z",
+            "b2-fd4ba456-k3-20260923T203751Z",
+            "b2-fd4ba456-k4-20260923T203751Z",
+            "b2-fd4ba456-k5-20260923T203751Z"
+          ],
+          "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860",
+          "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+          "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+          "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+          "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+          "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+          "status": "pass",
+          "spec": "survival_hunter",
+          "n": 5,
+          "mean_dps": 36721.0,
+          "target_dps": 36534.93,
+          "ratio": 1.005,
+          "reference_basis": "wowsims_fallback",
+          "required_ratio": 0.9,
+          "required_dps": 32881.4,
+          "encounter_status": "pass"
         }
       },
       "actor_30010": {
@@ -8919,6 +9171,33 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 473,
+        "unit_id": "magmaw:tuning_01",
+        "from": "publish",
+        "to": "route",
+        "event": {
+          "revision": 473,
+          "unit_id": "magmaw:tuning_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+            "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
+          },
+          "claim_token": "c3212a753f01c84b4b5f02c41c7f797cd4e2d8c61347fdf87e2959ec5621b1ca"
+        },
+        "accepted_requirements": [
+          "actor_30003",
+          "actor_30004",
+          "actor_30005",
+          "actor_30006",
+          "actor_30007",
+          "actor_30008",
+          "actor_30009"
+        ],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9109,6 +9388,10 @@
       "assessment": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_assessment_20260924.json",
         "sha256": "eb9cd553c969730b782dd59bcdbb9ca72b90c02813686aa63e9db43572c6605c"
+      },
+      "publication": {
+        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_publication_20260924.json",
+        "sha256": "aa3390c23edd9c2ed32986bc2467a85fab68ba6067ec7ea9d5ea80bf0419c567"
       }
     },
     "tested_files": {
@@ -9399,13 +9682,6 @@
       "performance_accepted": false,
       "verdict_status": "fail",
       "verdict_label": "b2-fd4ba456"
-    },
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "c3212a753f01c84b4b5f02c41c7f797cd4e2d8c61347fdf87e2959ec5621b1ca",
-      "operation_id": "c3212a753f01c84b4b5f02c41c7f797cd4e2d8c61347fdf87e2959ec5621b1ca",
-      "stage": "publish",
-      "claimed_at": "2026-09-23T21:23:03Z"
     }
   },
   "parked_scenarios": {
