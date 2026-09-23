@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 485,
+    "revision": 486,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "smoke",
     "actor_ids": [
@@ -9408,6 +9408,21 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 485,
+        "unit_id": "magmaw:tuning_03",
+        "from": "smoke",
+        "to": "smoke",
+        "event": {
+          "action": "claim",
+          "revision": 485,
+          "unit_id": "magmaw:tuning_03",
+          "owner": "coordinator-bca90d3b"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9557,6 +9572,13 @@
     "build_identity": {
       "source_commit": "7a96d00b815d3a5d98b23f6931a01e9702b7c0a5",
       "binary_sha256": "5a05e67fc9d556aafb18595acded629386585c12622e2043b6094968af6f6f28"
+    },
+    "claim": {
+      "owner": "coordinator-bca90d3b",
+      "token": "be70ac64ddfbb4a758d6b1fc25e7e0be294191ab81c6b5924d7e458d3174f71c",
+      "operation_id": "be70ac64ddfbb4a758d6b1fc25e7e0be294191ab81c6b5924d7e458d3174f71c",
+      "stage": "smoke",
+      "claimed_at": "2026-09-23T22:59:05Z"
     }
   },
   "parked_scenarios": {
