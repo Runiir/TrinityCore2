@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "shared_runtime only: one watchdog-bounded kill on the new build before the measurement batch. Re-record the bundle-03 plan on base 2b45a4fa9c, re-run the declared tests, reuse the unchanged approved review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456.",
+  "next_action": "Reconcile any existing attempt before launching. Run one labelled scoreboard measurement batch with the canonical controller and its ownership locks; record scoreboard_label. Re-record the bundle-03 plan on base 2b45a4fa9c, re-run the declared tests, reuse the unchanged approved review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 506,
+    "revision": 507,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "smoke",
+    "stage": "validate",
     "actor_ids": [
       "30001",
       "30002",
@@ -9799,6 +9799,25 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 506,
+        "unit_id": "magmaw:tuning_05",
+        "from": "smoke",
+        "to": "validate",
+        "event": {
+          "revision": 506,
+          "unit_id": "magmaw:tuning_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_smoke_20260924.json",
+            "sha256": "f610f984d9a1a430446d8a10ad071a2f3734ebc461ccb854d08dcb2fbe2ea2b3"
+          },
+          "claim_token": "6e5be79cebc15c627e3c410c08ae02aeff11cc0d08977422c94f5253f368280c"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9925,6 +9944,10 @@
       "build": {
         "path": "artifacts/cata_raid_program/workflow-build-8074624be18956707f06db5c4e61da1e27f2347344a364aa01e0d8a968d1d241.json",
         "sha256": "e475aa301d074dca745f4739098798a92ae039227398fcea14aa3e7d1134e961"
+      },
+      "smoke": {
+        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_smoke_20260924.json",
+        "sha256": "f610f984d9a1a430446d8a10ad071a2f3734ebc461ccb854d08dcb2fbe2ea2b3"
       }
     },
     "tested_files": {
@@ -9949,12 +9972,9 @@
       "source_commit": "ab91316292f8edd51f1823c23dcc506372873639",
       "binary_sha256": "0dbce440ef146292eb5e92204ed9f46514f994098ebfaa2b160fd8bca009e89c"
     },
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "6e5be79cebc15c627e3c410c08ae02aeff11cc0d08977422c94f5253f368280c",
-      "operation_id": "6e5be79cebc15c627e3c410c08ae02aeff11cc0d08977422c94f5253f368280c",
-      "stage": "smoke",
-      "claimed_at": "2026-09-23T23:23:20Z"
+    "smoke": {
+      "attempt_id": "scoreboard:smoke-0dbce440",
+      "server_epoch": "2026-09-23T23:29:01Z"
     }
   },
   "parked_scenarios": {
