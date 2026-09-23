@@ -222,7 +222,8 @@ def test_soap_completion_watchdog_receives_route_manifest(tmp_path, monkeypatch)
     assert live.observed_native_manifest_clear(report)
     # The native clear ended the watchdog on its first heartbeat.
     assert report["heartbeat_index"] == 1
-    assert cohort.commands.count(".botauto status") == 1
+    # One heartbeat status, then the cleanup world-tick status read.
+    assert cohort.commands.count(".botauto status") == 2
     assert (returncode, timed_out, command) == (0, False, ["SOAP", args.soap_url])
 
 

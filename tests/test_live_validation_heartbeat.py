@@ -326,6 +326,9 @@ def test_process_no_light_combat_heartbeats_sends_full_traces(tmp_path):
     )
     commands = log.read_text(encoding="utf-8").splitlines()
     heartbeat_rows = [command for command in commands if not command.startswith((".botauto combatlog", "server "))]
+    # Cleanup reads status once more for native world ticks.
+    assert heartbeat_rows[-1] == ".botauto status"
+    heartbeat_rows = heartbeat_rows[:-1]
     assert heartbeat_rows
     assert heartbeat_rows == [".botauto status", ".botauto diagnose all", FULL_TRACE, ".botexp summary"] * (len(heartbeat_rows) // 4)
 

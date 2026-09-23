@@ -2,6 +2,7 @@
 #include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
 #include "Bots/BotMeleeResolutionEventJson.h"
 #include "Bots/BotWorldTraceExportCursor.h"
+#include "Bots/BotWorldTickRecorder.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -169,7 +170,9 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"node_id\":\"" << JsonEscape(Cohort().Config.ValidationRouteNodeId) << "\""
          << ",\"label\":\"" << JsonEscape(Cohort().Config.ValidationRouteLabel) << "\""
          << ",\"kind\":\"" << JsonEscape(Cohort().Config.ValidationRouteKind) << "\"}"
-         << ",\"stuck\":" << status.StuckEvents
+         << ",\"world_update\":";
+    BotWorldTick::WorldRecorder().WriteJson(json, NowMs());
+    json << ",\"stuck\":" << status.StuckEvents
          << ",\"decisions\":" << status.Decisions
          << ",\"failures\":" << status.Failures
          << ",\"failure_reason\":"

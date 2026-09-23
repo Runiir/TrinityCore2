@@ -1,19 +1,23 @@
 """World-thread stall detection and DPS measurement validity.
 
-A frozen world thread produces a combat-log signature: no event for the
-freeze, then every periodic effect and swing that was due lands in the same
-millisecond (the catch-up burst).  The Magmaw 10N evidence runs showed
-heartbeat freezes of 3.6-12.3 s ending in 56-260 same-millisecond events,
-plus unrelated 0.4-0.8 s world-update hitches ending in 13-53 events, while
-ordinary combat lulls end with 1-8 events.
+Two bases, reported as ``measurement_validity.stall_basis``:
 
-Inside a boss encounter window (first to last positive party damage, so the
-party is in combat) every event gap of at least ``STALL_MIN_GAP_SEC`` is a
-stall, whatever its catch-up burst size.  Outside boss windows a gap is a
-stall only when it ends in a catch-up burst and either began after a harness
-console command was sent (the heartbeat freeze class) or lasted at least
-``UNATTRIBUTED_STALL_MIN_GAP_SEC``; shorter unattributed catch-up gaps are
-hitches.
+``native_world_tick``
+    The worldserver records each world update diff of at least 500 ms
+    (``live_validation_world_ticks``).  When those rows cover every boss
+    window, a stall is exactly such a diff overlapping the window.
+
+``combat_log_inference``
+    Otherwise stalls are inferred from combat-log event gaps.  A frozen
+    world thread shows no event for the freeze, then every periodic effect
+    and swing that was due lands in one millisecond (the catch-up burst).
+    Inside a boss window a gap of at least ``STALL_MIN_GAP_SEC`` is a stall
+    only if a harness console command caused it, it ends in a catch-up burst
+    of ``CATCHUP_BURST_MIN_EVENTS`` or more, or it lasts at least
+    ``UNATTRIBUTED_STALL_MIN_GAP_SEC``; other such gaps are combat ``lulls``
+    (reported, never gating).  Outside boss windows a catch-up gap is a
+    stall when a console command caused it or it lasted at least
+    ``UNATTRIBUTED_STALL_MIN_GAP_SEC``; shorter ones are ``hitches``.
 
 ``valid_for_dps`` tolerates a shared host: the boss-window stalled fraction
 must stay at or below ``MAX_BOSS_WINDOW_STALL_FRACTION`` and no single
@@ -30,8 +34,10 @@ from typing import Any, Iterable, Mapping, Sequence
 
 try:
     from .live_validation_heartbeat import cleanup_steps_from_payloads, load_command_timings
+    from .live_validation_world_ticks import load_world_tick_ledger, native_coverage, native_stall_intervals
 except ImportError:  # pragma: no cover - script-style imports
     from live_validation_heartbeat import cleanup_steps_from_payloads, load_command_timings
+    from live_validation_world_ticks import load_world_tick_ledger, native_coverage, native_stall_intervals
 
 STALL_MIN_GAP_SEC = 0.5
 UNATTRIBUTED_STALL_MIN_GAP_SEC = 1.0
@@ -155,6 +161,33 @@ def boss_windows(
     return windows
 
 
+def _attribution(
+    start_ms: int,
+    end_ms: int,
+    command_timings: Sequence[Mapping[str, Any]],
+    heartbeat_events: Sequence[Mapping[str, Any]],
+) -> tuple[str, int, list[dict[str, Any]]]:
+    commands = _overlapping_commands(start_ms, end_ms, command_timings)
+    causal = [row for row in commands if row.get("freeze_started_after_send")]
+    heartbeat_index = next(
+        (_int(row.get("heartbeat_index")) for row in causal if row.get("phase") == "heartbeat"),
+        0,
+    )
+    attribution = "console_command" if causal else "unattributed"
+    if not commands and heartbeat_events:
+        heartbeat_index = _report_time_heartbeat(end_ms, heartbeat_events)
+        if heartbeat_index:
+            attribution = "heartbeat_report_time"
+    return attribution, heartbeat_index, commands
+
+
+def _window_overlap_ms(start_ms: int, end_ms: int, windows: Sequence[Mapping[str, Any]]) -> int:
+    return sum(
+        _overlap_ms(start_ms, end_ms, _int(window.get("first_at_ms")), _int(window.get("last_at_ms")))
+        for window in windows
+    )
+
+
 def detect_world_stalls(
     combat_log: Mapping[str, Any] | None,
     *,
@@ -165,7 +198,7 @@ def detect_world_stalls(
     unattributed_min_gap_sec: float = UNATTRIBUTED_STALL_MIN_GAP_SEC,
     catchup_burst_min_events: int = CATCHUP_BURST_MIN_EVENTS,
 ) -> dict[str, Any]:
-    """Scan combat-log event gaps for world-thread freezes."""
+    """Infer world-thread freezes from combat-log event gaps."""
     log = combat_log if isinstance(combat_log, Mapping) else {}
     events = _events(log)
     same_ms: Counter[int] = Counter()
@@ -173,33 +206,24 @@ def detect_world_stalls(
         same_ms[_int(row.get("timestamp_ms"))] += _catchup_weight(row)
     stalls: list[dict[str, Any]] = []
     hitches: list[dict[str, Any]] = []
+    lulls: list[dict[str, Any]] = []
     for index in range(1, len(events)):
         start_ms = _int(events[index - 1].get("timestamp_ms"))
         end_ms = _int(events[index].get("timestamp_ms"))
         gap_sec = (end_ms - start_ms) / 1000.0
         if gap_sec < min_gap_sec:
             continue
-        overlap = sum(
-            _overlap_ms(start_ms, end_ms, _int(window.get("first_at_ms")), _int(window.get("last_at_ms")))
-            for window in windows
-        )
+        overlap = _window_overlap_ms(start_ms, end_ms, windows)
         catchup = same_ms[end_ms]
         in_boss_window = overlap > 0
-        if catchup < catchup_burst_min_events and not in_boss_window:
+        is_catchup = catchup >= catchup_burst_min_events
+        if not is_catchup and not in_boss_window:
             # Outside a boss window a gap without a catch-up burst is an
             # ordinary lull, travel or no combat at all: nothing was due.
             continue
-        commands = _overlapping_commands(start_ms, end_ms, command_timings)
-        causal = [row for row in commands if row.get("freeze_started_after_send")]
-        heartbeat_index = next(
-            (_int(row.get("heartbeat_index")) for row in causal if row.get("phase") == "heartbeat"),
-            0,
+        attribution, heartbeat_index, commands = _attribution(
+            start_ms, end_ms, command_timings, heartbeat_events
         )
-        attribution = "console_command" if causal else "unattributed"
-        if not commands and heartbeat_events:
-            heartbeat_index = _report_time_heartbeat(end_ms, heartbeat_events)
-            if heartbeat_index:
-                attribution = "heartbeat_report_time"
         end_event = events[index]
         row = {
             "start_ms": start_ms,
@@ -208,27 +232,29 @@ def detect_world_stalls(
             "route_node_id": str(end_event.get("route_node_id") or ""),
             "route_generation": _int(end_event.get("route_generation")),
             "catchup_events": catchup,
-            "detection": (
-                "catchup_burst" if catchup >= catchup_burst_min_events else "boss_window_event_gap"
-            ),
+            "detection": "catchup_burst" if is_catchup else "boss_window_event_gap",
             "attribution": attribution,
             "heartbeat_index": heartbeat_index or None,
             "overlapping_commands": commands,
             "boss_window_overlap_sec": round(overlap / 1000.0, 3),
         }
-        if in_boss_window or attribution != "unattributed" or gap_sec >= unattributed_min_gap_sec:
+        caused_or_long = attribution != "unattributed" or gap_sec >= unattributed_min_gap_sec
+        if caused_or_long or (in_boss_window and is_catchup):
             stalls.append(row)
+        elif in_boss_window:
+            row["detection"] = "combat_lull"
+            lulls.append(row)
         else:
             hitches.append(row)
     return {
-        "schema": "bot_world_stall_scan_v2",
+        "schema": "bot_world_stall_scan_v3",
         "source": "combat_log_recent_events",
         "thresholds": {
             "stall_min_gap_sec": min_gap_sec,
             "unattributed_stall_min_gap_sec": unattributed_min_gap_sec,
             "catchup_burst_min_events": catchup_burst_min_events,
             "command_overlap_slack_ms": COMMAND_OVERLAP_SLACK_MS,
-            "boss_window_gap_rule": "every_gap_at_least_stall_min_gap_sec",
+            "boss_window_stall_rule": "console_command_or_catchup_burst_or_unattributed_min_gap",
         },
         "event_window": {
             "event_count": len(events),
@@ -239,7 +265,47 @@ def detect_world_stalls(
         "command_timing_rows": len(command_timings),
         "stalls": stalls,
         "hitches": hitches,
+        "lulls": lulls,
     }
+
+
+def native_world_stalls(
+    ledger: Mapping[str, Any] | None,
+    *,
+    combat_log: Mapping[str, Any] | None = None,
+    command_timings: Sequence[Mapping[str, Any]] = (),
+    windows: Sequence[Mapping[str, Any]] = (),
+) -> list[dict[str, Any]]:
+    """Return stall rows from native world update diffs of at least 500 ms."""
+    events = _events(combat_log if isinstance(combat_log, Mapping) else {})
+    same_ms: Counter[int] = Counter()
+    for event in events:
+        same_ms[_int(event.get("timestamp_ms"))] += _catchup_weight(event)
+    rows: list[dict[str, Any]] = []
+    for interval in native_stall_intervals(ledger):
+        start_ms, end_ms = interval["start_ms"], interval["end_ms"]
+        overlap = _window_overlap_ms(start_ms, end_ms, windows)
+        window = next(
+            (row for row in windows
+             if _overlap_ms(start_ms, end_ms, _int(row.get("first_at_ms")), _int(row.get("last_at_ms"))) > 0),
+            None,
+        )
+        attribution, heartbeat_index, commands = _attribution(start_ms, end_ms, command_timings, ())
+        rows.append({
+            "start_ms": start_ms,
+            "end_ms": end_ms,
+            "duration_sec": round(interval["diff_ms"] / 1000.0, 3),
+            "sequence": interval["sequence"],
+            "route_node_id": str((window or {}).get("route_node_id") or ""),
+            "route_generation": _int((window or {}).get("route_generation")),
+            "catchup_events": same_ms.get(end_ms, 0),
+            "detection": "native_world_tick",
+            "attribution": attribution,
+            "heartbeat_index": heartbeat_index or None,
+            "overlapping_commands": commands,
+            "boss_window_overlap_sec": round(overlap / 1000.0, 3),
+        })
+    return rows
 
 
 def measurement_validity(
@@ -270,7 +336,8 @@ def measurement_validity(
             **dict(window),
             "stall_count": len(inside),
             "catchup_burst_stall_count": sum(1 for row in inside if row.get("detection") == "catchup_burst"),
-            "event_gap_stall_count": sum(1 for row in inside if row.get("detection") != "catchup_burst"),
+            "event_gap_stall_count": sum(1 for row in inside if row.get("detection") == "boss_window_event_gap"),
+            "native_world_tick_stall_count": sum(1 for row in inside if row.get("detection") == "native_world_tick"),
             "stalled_sec": round(stalled_ms / 1000.0, 3),
             "unstalled_duration_sec": round(max(0, last - first - stalled_ms) / 1000.0, 3),
             "stall_fraction": round(stalled_ms / max(1, last - first), 6),
@@ -298,7 +365,7 @@ def measurement_validity(
     if window_rows and max_boss_stall >= max_single_stall_sec:
         reasons.append("boss_window_stall_too_long")
     return {
-        "schema": "bot_measurement_validity_v2",
+        "schema": "bot_measurement_validity_v3",
         "valid_for_dps": not reasons,
         "reasons": reasons,
         "stall_fraction": stall_fraction,
@@ -330,6 +397,7 @@ def world_stall_report(
     validation_route: Mapping[str, Any] | None = None,
     command_timings: Sequence[Mapping[str, Any]] = (),
     heartbeat_events: Iterable[Mapping[str, Any]] = (),
+    world_ticks: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Return ``(world_stalls, measurement_validity)`` for one run."""
     windows = boss_windows(combat_analysis, validation_route_manifest, validation_route)
@@ -342,9 +410,41 @@ def world_stall_report(
         heartbeat_events=[] if command_timings else list(heartbeat_events),
         windows=windows,
     )
-    validity = measurement_validity(scan, windows, combat_log_available=available)
-    validity["hitches"] = scan["hitches"]
-    return list(scan["stalls"]), validity
+    coverage = native_coverage(world_ticks, windows)
+    inferred = measurement_validity(scan, windows, combat_log_available=available)
+    if coverage.get("complete_for_boss_windows"):
+        native_scan = dict(scan)
+        native_scan["stalls"] = native_world_stalls(
+            world_ticks, combat_log=combat_log, command_timings=command_timings, windows=windows,
+        )
+        native_scan["hitches"] = []
+        native_scan["thresholds"] = {
+            **dict(scan.get("thresholds") or {}),
+            "native_world_tick_min_diff_ms": _int(coverage.get("threshold_ms")),
+        }
+        validity = measurement_validity(native_scan, windows, combat_log_available=available)
+        validity["stall_basis"] = "native_world_tick"
+        validity["combat_log_inference"] = {
+            key: inferred[key]
+            for key in (
+                "valid_for_dps", "reasons", "stall_fraction", "max_boss_window_stall_sec",
+                "boss_window_stalled_sec", "boss_window_stall_count",
+            )
+        }
+        stalls = list(native_scan["stalls"])
+    else:
+        validity = inferred
+        validity["stall_basis"] = "combat_log_inference"
+        stalls = list(scan["stalls"])
+    coverage["stalls"] = native_stall_intervals(world_ticks)
+    validity["native_world_tick"] = coverage
+    validity["hitches"] = list(scan["hitches"])
+    lulls = list(scan.get("lulls") or [])
+    validity["lulls"] = lulls
+    validity["lull_count"] = len(lulls)
+    validity["max_lull_sec"] = max((float(row.get("duration_sec") or 0.0) for row in lulls), default=0.0)
+    validity["boss_window_lull_sec"] = round(sum(float(row.get("boss_window_overlap_sec") or 0.0) for row in lulls), 3)
+    return stalls, validity
 
 
 def _heartbeat_events(output_dir: Path) -> list[dict[str, Any]]:
@@ -379,6 +479,7 @@ def attach_measurement_validity(
     timings = load_command_timings(Path(output_dir))
     combat_log = report.get("combat_log")
     combat_analysis = report.get("combat_analysis")
+    status = report.get("status")
     found, validity = world_stall_report(
         combat_log if isinstance(combat_log, Mapping) else None,
         combat_analysis if isinstance(combat_analysis, Mapping) else None,
@@ -386,6 +487,9 @@ def attach_measurement_validity(
         validation_route=validation_route,
         command_timings=timings,
         heartbeat_events=_heartbeat_events(Path(output_dir)),
+        world_ticks=load_world_tick_ledger(
+            Path(output_dir), status if isinstance(status, Mapping) else None
+        ),
     )
     report["world_stalls"] = found
     report["measurement_validity"] = validity

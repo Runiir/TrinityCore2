@@ -3,6 +3,7 @@
 #include "Bots/BotCalibrationFixtureContractGenerated.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotWorldTickRecorder.h"
 
 #include "Config.h"
 #include "Cryptography/CryptoHash.h"
@@ -155,6 +156,10 @@ bool OrdinaryPersistentPetMatches(OrdinaryPetSetupSnapshot const& snapshot,
 
 void BotWorldPopulationMgr::Update(uint32 diff)
 {
+    // World::Update passes the time since the previous world tick; a long
+    // diff is a world-thread stall that ended at this tick's game time.
+    BotWorldTick::WorldRecorder().Observe(NowMs(), diff);
+
     std::vector<CohortRuntime*> registeredCohorts;
     registeredCohorts.reserve(_cohorts.size());
     for (auto const& [_, runtime] : _cohorts)

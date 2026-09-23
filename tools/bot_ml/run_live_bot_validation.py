@@ -53,10 +53,12 @@ try:
         TraceRouteRetention,
         cleanup_step_receipt,
         drain_trace_backlog,
+        is_status_command,
         now_ms,
     )
     from .live_validation_stalls import attach_measurement_validity
     from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
+    from .live_validation_world_ticks import WorldTickLedger
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -91,10 +93,12 @@ except ImportError:
         TraceRouteRetention,
         cleanup_step_receipt,
         drain_trace_backlog,
+        is_status_command,
         now_ms,
     )
     from live_validation_stalls import attach_measurement_validity
     from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
+    from live_validation_world_ticks import WorldTickLedger
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -6527,6 +6531,7 @@ def run_transport_completion_watchdog(
     )
     trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
     previous_report: dict[str, Any] | None = None
+    world_ticks = WorldTickLedger()
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -6636,6 +6641,8 @@ def run_transport_completion_watchdog(
             if returncode != 0 or timed_out:
                 return returncode, timed_out
             planner.observe(configured_command, last_output["text"])
+            if world_ticks.observe_output(last_output["text"], parse_json_objects):
+                world_ticks.write(output_dir)
             if trace_retention.enabled and effective_command.startswith(".botauto trace"):
                 trace_retention.observe(
                     heartbeat_index=heartbeat_index,
@@ -6693,6 +6700,20 @@ def run_transport_completion_watchdog(
             deadline=deadline,
             stop_pending=any(is_stop_command(value) for value in cleanup_commands),
         )
+        if heartbeat_index > 0 and budget.step_timeout(status_command) > 0:
+            # One more native world-tick read after the last boss window.
+            sent_at_ms = now_ms()
+            status_output, status_returncode, status_timed_out = execute_command(
+                status_command, budget.step_timeout(status_command)
+            )
+            timings.record(
+                phase="cleanup_status", heartbeat_index=heartbeat_index,
+                command=status_command, sent_at_ms=sent_at_ms, completed_at_ms=now_ms(),
+                response_bytes=len(status_output or ""), returncode=status_returncode,
+                timed_out=status_timed_out,
+            )
+            if world_ticks.observe_output(status_output or "", parse_json_objects):
+                world_ticks.write(output_dir)
         drained = False
         for command_text in cleanup_commands:
             if is_stop_command(command_text) and not drained:
@@ -6914,6 +6935,7 @@ def run_worldserver_completion_watchdog(
     )
     trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
     previous_report: dict[str, Any] | None = None
+    world_ticks = WorldTickLedger()
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -7057,6 +7079,8 @@ def run_worldserver_completion_watchdog(
             effective_command = planner.effective_command(configured_command)
             command_output = send_command(effective_command, record_as=configured_command)
             planner.observe(configured_command, command_output)
+            if world_ticks.observe_output(command_output, parse_json_objects):
+                world_ticks.write(output_dir)
             if trace_retention.enabled and effective_command.startswith(".botauto trace"):
                 trace_retention.observe(
                     heartbeat_index=heartbeat_index,
@@ -7082,6 +7106,14 @@ def run_worldserver_completion_watchdog(
             output_parts.append_cleanup(receipt)
 
     def send_cleanup_commands(budget: CleanupBudget) -> None:
+        status_command = next((value for value in heartbeat_commands if is_status_command(value)), "")
+        if heartbeat_index > 0 and status_command and process.poll() is None:
+            # One more native world-tick read after the last boss window.
+            status_output = send_command(
+                status_command, cleanup=True, phase="cleanup_status", record=False, budget=budget,
+            )
+            if world_ticks.observe_output(status_output, parse_json_objects):
+                world_ticks.write(output_dir)
         drained = False
         for command_text in cleanup_commands:
             if is_stop_command(command_text) and not drained and process.poll() is None:
@@ -9340,6 +9372,7 @@ def _main() -> int:
             "combat_log.json",
             "heartbeat_command_timings.jsonl",
             "heartbeat_events.jsonl",
+            "world_update_ticks.json",
             "latest.json",
             "worldserver_output.log",
         ):
