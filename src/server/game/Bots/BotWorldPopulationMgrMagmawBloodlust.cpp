@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlustTiming.h"
 
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -206,14 +207,20 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         return;
     }
 
-    if (!window)
-        return;
-
-    if (!raid->MagmawBloodlustHeadGuid.IsEmpty()
+    // The first exposed head stays bound to the head identity it latched.
+    // Without one, the WCL-timed pre-Mangle lead opens the same single lust.
+    std::optional<HeadWindow> headWindow = window;
+    if (headWindow && !raid->MagmawBloodlustHeadGuid.IsEmpty()
         && raid->MagmawBloodlustHeadGuid != window->HeadGuid)
+        headWindow.reset();
+    std::optional<LustWindow> const lustWindow =
+        SelectLustWindow(board, headWindow);
+    if (!lustWindow)
         return;
-    raid->MagmawBloodlustHeadGuid = window->HeadGuid;
-    ObjectGuid const headGuid = window->HeadGuid;
+    if (lustWindow->Trigger == LustTrigger::FirstExposedHead)
+        raid->MagmawBloodlustHeadGuid = lustWindow->TargetGuid;
+    ObjectGuid const targetGuid = lustWindow->TargetGuid;
+    LustTrigger const trigger = lustWindow->Trigger;
 
     auto findNativeRaidLockout = [this, party]() -> std::pair<uint32, std::string>
     {
@@ -244,7 +251,8 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
     bloodlust.RetryMaxMs = 2000;
     bloodlust.EscalateAfter = 4;
     bloodlust.Attempt = [this, &context, originalBot, raid, encounterSnapshot,
-        headGuid, ownerGuid = *owner, currentMagmawBloodlustContextReason,
+        targetGuid, trigger, ownerGuid = *owner,
+        currentMagmawBloodlustContextReason,
         recordBloodlustEvent, findNativeRaidLockout]()
     {
         if (char const* staleReason = currentMagmawBloodlustContextReason())
@@ -254,14 +262,14 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
             SelectKnownBloodlustSpell(originalBot->HasSpell(BloodlustSpell),
                 originalBot->HasSpell(HeroismSpell));
 
-        auto block = [originalBot, headGuid,
+        auto block = [originalBot, targetGuid,
             currentMagmawBloodlustContextReason, recordBloodlustEvent,
             knownBloodlustSpell](
             std::string const& reason)
         {
             if (char const* staleReason = currentMagmawBloodlustContextReason())
                 return BotActionArbitration::Outcome::NotApplicable(staleReason);
-            Unit* target = ObjectAccessor::GetUnit(*originalBot, headGuid);
+            Unit* target = ObjectAccessor::GetUnit(*originalBot, targetGuid);
             std::string const result = "blocked_" + reason;
             recordBloodlustEvent(result.c_str(), target,
                 knownBloodlustSpell.value_or(0));
@@ -273,11 +281,19 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
             return BotActionArbitration::Outcome::NotApplicable(
                 "magmaw_bloodlust_already_latched");
 
-        Unit* head = ObjectAccessor::GetUnit(*originalBot, headGuid);
-        if (!head || !head->IsAlive() || head->GetEntry() != ExposedHeadEntry
-            || head->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE)
-            || !originalBot->IsValidAttackTarget(head))
+        // Re-prove the window natively: an exposed, attackable head, or the
+        // engaged Magmaw body itself for the pre-Mangle lead.
+        Unit* target = ObjectAccessor::GetUnit(*originalBot, targetGuid);
+        if (trigger == LustTrigger::FirstExposedHead
+            && (!target || !target->IsAlive()
+                || target->GetEntry() != ExposedHeadEntry
+                || target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE)
+                || !originalBot->IsValidAttackTarget(target)))
             return block("head_not_selectable_or_attackable");
+        if (trigger == LustTrigger::PreMangleLead
+            && (!target || !target->IsAlive()
+                || target->GetEntry() != BossEntry || !target->IsInCombat()))
+            return block("boss_not_engaged");
 
         if (auto const observedLockout = FindRaidLockout(*encounterSnapshot))
             return block(RaidLockoutReason(*observedLockout));
@@ -304,8 +320,9 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         context.Action = "magmaw_bloodlust_submitted";
         context.State.LastDecisionHandler = "adaptive_magmaw_bloodlust";
         std::string const result = "submitted_native_spell_"
-            + std::to_string(*knownBloodlustSpell);
-        recordBloodlustEvent(result.c_str(), head, *knownBloodlustSpell);
+            + std::to_string(*knownBloodlustSpell) + "_"
+            + LustTriggerName(trigger);
+        recordBloodlustEvent(result.c_str(), target, *knownBloodlustSpell);
         return BotActionArbitration::Outcome::Submitted(
             "magmaw_bloodlust_submitted_native");
     };
