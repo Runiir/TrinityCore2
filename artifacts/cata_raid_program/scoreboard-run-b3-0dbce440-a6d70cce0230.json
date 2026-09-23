@@ -1,0 +1,68 @@
+{
+  "attempt_id": "scoreboard:b3-0dbce440",
+  "authority": "coordinator_attestation",
+  "build_identity": {
+    "binary_sha256": "0dbce440ef146292eb5e92204ed9f46514f994098ebfaa2b160fd8bca009e89c",
+    "source_commit": "ab91316292f8edd51f1823c23dcc506372873639"
+  },
+  "cleanup_verified": true,
+  "clock": "completion_watchdog",
+  "closed": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k1-20260923T232945Z.tar.gz.dvc",
+      "sha256": "be66a40e4c13aa541fc2cfba496c44acd741cec8eef97a959376c466a7c5f051"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k2-20260923T232945Z.tar.gz.dvc",
+      "sha256": "8445c80eb9bb91308bf2383aa7fac253dd71023435d2c56b20f1c7933032a416"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k3-20260923T232945Z.tar.gz.dvc",
+      "sha256": "dd89fc3a9e3deef98cfe28e4323d91d48b0df63806fcd21236e1324bea46b081"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k4-20260923T232945Z.tar.gz.dvc",
+      "sha256": "c18acd5e35febe3ca601fbe4c6c6ca63a38c583e3fcccaa78e5312c1cb72c034"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k5-20260923T232945Z.tar.gz.dvc",
+      "sha256": "7cf9d6f2fc7ed44bef86595c10d6a25363e21215a364a41cc44f0c6c7bc05ed3"
+    }
+  ],
+  "kill_ids": [
+    "b3-0dbce440-k1-20260923T232945Z",
+    "b3-0dbce440-k2-20260923T232945Z",
+    "b3-0dbce440-k3-20260923T232945Z",
+    "b3-0dbce440-k4-20260923T232945Z",
+    "b3-0dbce440-k5-20260923T232945Z"
+  ],
+  "kind": "run",
+  "operation_id": "3296815da5a14ea5923825aef79a67d388c3d84e85ad9e68d14f098cb5453f27",
+  "producer": "coordinator-bca90d3b",
+  "scenario_kind": "raid",
+  "scoreboard_label": "b3-0dbce440",
+  "server_epoch": "2026-09-23T23:36:27Z",
+  "terminal_reason": "clear",
+  "unit_id": "magmaw:tuning_05",
+  "validation_identity": {
+    "encounter": {
+      "boss": "magmaw",
+      "mode": "10N",
+      "raid": "blackwing_descent"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "d3ef70bfc6017aa523c9ae762e2b7cfa7bef319b33632fd7e1d3c3b48f20741a"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "raid"
+  }
+}
