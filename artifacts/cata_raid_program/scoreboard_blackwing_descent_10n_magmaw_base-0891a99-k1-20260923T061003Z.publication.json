@@ -1,0 +1,18 @@
+{
+  "archive_bytes": 4593380,
+  "dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_base-0891a99-k1-20260923T061003Z.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 120899005,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "883e157ba3617c8c37f1e40e2d4fd1a3",
+  "remote_sha256": "4acdaaaf756ec0016bead9d83786373e339f575433564c24b622c28f56053e39",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/scoreboard-base-0891a99-k1-20260923T061003Z",
+    "/tmp/scoreboard-base-0891a99-k1-20260923T061003Z-analysis",
+    "/tmp/scoreboard-base-0891a99-k1-20260923T061003Z.stdout",
+    "/tmp/scoreboard-base-0891a99-k1-20260923T061003Z.stderr"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 18
+}
