@@ -1,0 +1,144 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_24_00_balance_moonfire_not_over_sunfire.sql": "67d005141679fb2236400e1cf0e7f4258b267f0e4275ea489de35b3802fb40be",
+    "sql/custom/world/2026_09_24_01_dk_glyph_of_death_strike_script.sql": "cc3559880df3e7b0c5d836a68d107c38e4c640dbd373a7befa9f53e94ee8f118",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "9e8086fe1d8eab41a3d2cea903a2ce1b4fce931d0376528a268356e86586bebf",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp": "8a7d1f2c7e68b9d9dc2963a536f4ee404d6558728607c023e902a2829596578d",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h": "5348b3b52d9f100d618b46bc17340efef3fefbd09b9af27f03006456142f49ef",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawObservations.h": "a3f19f2664b447c62621c97a2a47bf316cae8d35fbff11a336f476ba9445b6e0",
+    "src/server/game/Entities/Pet/GuardianInitialization.cpp": "10c672b0bcfa55289a8b288c3751ebd1bb2cd907a7c8c6ece90c0d5db782548f",
+    "src/server/scripts/Spells/spell_dk_glyphs.cpp": "c25ab65773fdb0ae0f83804d7c513bcf84be6baa1fc14579cbde98bfb6bd2534",
+    "src/server/scripts/Spells/spell_script_loader.cpp": "300e9c07a4e80a2a2f92e7ed2b83928db5849c61435e7745c8679285f6d22e7f",
+    "tests/test_balance_moonfire_not_over_sunfire.py": "67e48a32530f2d7821f597dda5c6a21be32b9ae1d4d64ddc3ed374c8da7f41ac",
+    "tests/test_blood_native_fidelity.py": "e734d26d5ada7fb1a3e160299b171d470ef4283abaf4688107257683f2d6b7b2",
+    "tests/test_magmaw_balance_mushroom_duty.py": "162b446b13c7ee342d8fbe149d81ea3965626d2cb4e4317b64443ae95804660b",
+    "tests/test_magmaw_parasite_los_gate.py": "c01ab6e11ee1a11355e6e68d43995bd04b4708a1012e503d6a079ef813976052",
+    "tests/test_magmaw_support_target_admission.py": "1800a816de9512c57c7b662e89b2a85cd6d6b687c87b683f6a85d466487684f8"
+  },
+  "findings": [
+    {
+      "failure_scenario": "Non-baiter fire mage 30007 (Magmaw shard) has a LOS-visible parasite within 9 yd, for example when Parasitic Infection expires at its feet. Before the bundle it targeted the parasite; now it stays on Magmaw until kiting opens more than 9 yd. This is transient (parasite run speed 0.4286, contact-escape task active) but departs from 'targeted exactly as before' in that band.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
+      "line": 189,
+      "severity": "low",
+      "summary": "The personal-threat gate reuses the static opportunity set, whose minimum is max(profile/action min_range, native minimum). Fire mage profile 263 has min_range 9 on every enemy action with requires_ranged_range=0, so the game allows casting inside 9 yd. A demonology warlock profile (max 18) is also narrower than the 22 yd kite lead. Such threats are natively hittable but no longer targeted."
+    },
+    {
+      "failure_scenario": "A Blood DK with 15% melee crit has DRW copies critting at about 20%, raising DRW damage by roughly 4% (a small fraction of total tank DPS). This composition already exists for Army ghouls and is newly exercised on DRW.",
+      "file": "src/server/game/Entities/Pet/GuardianInitialization.cpp",
+      "line": 322,
+      "severity": "low",
+      "summary": "Applying 110474 to the Rune Weapon feeds spell_dk_pet_scaling_05, which sets MOD_CRIT_PCT to the owner's GetMeleeCritFromAgility (including class base crit) plus rating and auras. Unit::GetUnitCriticalChanceDone adds a flat 5% base for creatures on top. The rune weapon therefore crits at about owner crit + 5 points, while WoWSims inherits owner crit exactly."
+    },
+    {
+      "failure_scenario": "The value is used only in SpellHealingBonusDone (DRW copies do not heal: the Death Strike heal needs the 89832 enabler aura) and in summon telemetry (BotCalibrationSummonObservation, pet spell power ledger), which will report thousands of pet spell power while DRW is active. No damage effect.",
+      "file": "src/server/game/Entities/Unit/GuardianStatSystem.cpp",
+      "line": 192,
+      "severity": "info",
+      "summary": "Guardian::UpdateAttackPowerAndDamage sums every SPELL_AURA_MOD_DAMAGE_DONE amount into SetBonusDamage. With 51906 EFFECT_0 this makes the rune weapon's bonus spell damage, and the owner's PLAYER_PET_SPELL_POWER field, equal to the owner's weapon roll."
+    },
+    {
+      "failure_scenario": "Copies of weapon strikes land at about 50%, but AP-scaled copy components stay far below 50% and copies are dodged or parried more than the owner's strikes. This is an under-count only, with no invented benefit.",
+      "file": "src/server/game/Entities/Pet/GuardianInitialization.cpp",
+      "line": 313,
+      "severity": "info",
+      "summary": "DRW copies still under-scale where the owner's AP is not carried over: spell parts with AP coefficients (Rune Strike AP bonus, Blood Boil, Death Coil, Icy Touch, disease ticks) use the rune weapon's own ~4 AP, and expertise is not inherited. 51906 EFFECT_0 is also a single owner normalized roll taken at summon (min equals max for 12 s)."
+    },
+    {
+      "failure_scenario": "A dual-wield Frost or Unholy player with Glyph of Death Strike gets the bonus on the main-hand hit only. No effect on the two-handed Blood tank in this encounter.",
+      "file": "sql/custom/world/2026_09_24_01_dk_glyph_of_death_strike_script.sql",
+      "line": 15,
+      "severity": "low",
+      "summary": "The glyph handler is bound only to 49998. Death Strike Off-Hand 66188 (Threat of Thassarian) gets no glyph bonus, whereas pinned WoWSims applies the glyph mod to both through the shared DeathKnightSpellDeathStrike class mask."
+    },
+    {
+      "failure_scenario": "A cluster disperses after the third placement and its parasites die away from the mushrooms. The set then waits for a later wave to bring 3 hits, or for an inactive Solar-Eclipse detonation. This costs Balance DPS only; parasite control is unaffected because mushrooms are not the control mechanism.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp",
+      "line": 242,
+      "severity": "low",
+      "summary": "A full set whose hits drop to 1-2 while 3 or more parasites live is held. If hits reach 0 before the wave ends, the set is stranded: NeedsPlacement is false at 3 owned, so it cannot be re-placed. The wave-ending salvage also runs only while the duty is Active (pillar visible or parasite target), and the LOS gate makes Balance target parasites less often."
+    },
+    {
+      "failure_scenario": "A 5-man or raid group with two Balance bots loses Moonfire uptime on shared targets while the other druid's Sunfire is up. The current BWD shards have one Balance druid, so Magmaw is unaffected.",
+      "file": "sql/custom/world/2026_09_24_00_balance_moonfire_not_over_sunfire.sql",
+      "line": 50,
+      "severity": "low",
+      "summary": "forbidden_target_aura=93402 applies to any caster and to every Balance DPS profile globally. With two Balance druids on one target, one druid's Sunfire blocks the other's Moonfire maintain row."
+    },
+    {
+      "failure_scenario": "Unholy Strength procs about half as often as the reference model, so the planned +0.6-0.9k Fallen Crusader projection is likely overstated and may be misattributed during the batch judgement.",
+      "file": "experiments/configs/cata_blood_permanent_enchant_overlays_v1.json",
+      "line": 25,
+      "severity": "low",
+      "summary": "Setup-parity commit f52d106673: the enchant 3368 overlay is correct, but the live spell_enchant_proc_data row for 3368 is 1 PPM while pinned WoWSims runeforging.go uses NewDynamicProcManagerForEnchant(3368, 2.0, 0). The commit notes the 1 PPM row without resolving provenance."
+    },
+    {
+      "failure_scenario": "If 59336 is missing at pull, the Death Strike average-hit evidence would silently show no glyph effect, and the live check would not identify the cause.",
+      "file": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_plan_20260924.json",
+      "line": 41,
+      "severity": "info",
+      "summary": "The acceptance mechanism evidence lists glyph auras 58616/58669/63330 at pull but not 59336 (Glyph of Death Strike, item 43827, GlyphProperties 558), which the new handler requires on the owner."
+    }
+  ],
+  "implementer_session_id": "coordinator-bca90d3b",
+  "limits": [
+    "No build, link, server or live run: runtime aura application before AddToMap, script Load owner resolution and the resulting ~50% copies are established by code reading, the Spirit Wolf precedent and the replay tests, not by an in-game combat log.",
+    "Client data does not bind creatures to auras, so whether retail applied 61697/110474 to the Rune Weapon rests on the Army-ghoul precedent and WoWSims owner-stat inheritance, not on pinned data.",
+    "The glyph reads runic power after Death Strike's own +20 RP gain (TakeRunePower precedes damage). The tooltip supports that reading, but WoWSims uses a lagged, non-floored formula; retail ordering was not proven.",
+    "The new file is collected by a plain file(GLOB) without CONFIGURE_DEPENDS; CMake must be reconfigured before the policy build, otherwise linking fails loudly on AddSC_deathknight_glyph_spell_scripts.",
+    "Both new SQL files (spell_script_names row for 49998 and the forbidden_target_aura on row 2540) are not yet in the live world DB; they apply at worldserver startup. The live rows were read with SELECT only.",
+    "How the LOS gate and the 3-hit threshold affect Balance DPS, mushroom duty Active windows and target flapping near LOS edges is not unit-tested; the 5-kill scoreboard batch must measure it.",
+    "The Fallen Crusader proc rate (1 PPM row vs WoWSims 2.0) is not determined by client data and was not resolved."
+  ],
+  "proof": {
+    "final_message_bytes": 17434,
+    "final_message_sha256": "f4cd7397ef364b5482039ae2b3e4747d2736c4b346c6e769586461e16d8175a2",
+    "implementer_session_id": "coordinator-bca90d3b",
+    "prefix_bytes": 1251979,
+    "prefix_sha256": "82b76935e0eba39196fe82c533c97b33e2fbd8e503e6133b4db4e3a1c7b43596",
+    "review_transport": "external_json",
+    "schema": "claude_transcript_review_proof_v1",
+    "session_id": "adaebf508b41241b6",
+    "transcript_path": "/home/runiir/.claude/projects/-home-runiir-Games-trinity-cata/bca90d3b-d7ce-4037-bbd9-8e21eea7a900/subagents/agent-adaebf508b41241b6.jsonl"
+  },
+  "review_transport": "external_json",
+  "reviewer_session_id": "adaebf508b41241b6",
+  "schema": "cata_raid_review_report_v1",
+  "source_report_path": "/tmp/b3-review.json",
+  "source_report_sha256": "ffc16c3efde8e623bae548706980edc66c1ea7c9c7a4d3088ea7524302961fe5",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_native_fidelity.py tests/test_fire_elemental_spell_mod_owner.py tests/test_fire_elemental_health_owner.py",
+      "summary": "15 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_parasite_policy.py tests/test_magmaw_balance_mushroom_duty.py",
+      "summary": "19 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_balance_moonfire_not_over_sunfire.py tests/test_balance_moving_moonfire.py tests/test_balance_rotation_cadence.py",
+      "summary": "18 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_generated_bot_admission_identities.py tests/test_blood_permanent_enchant_profile.py",
+      "summary": "11 passed"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "summary": "exit 0, no output (nothing staged); manual line counts of the 7 changed C++ files are 44-527, all below 1000"
+    },
+    {
+      "command": "syntax-only compile (build/compile_commands.json, -c/-o replaced by -fsyntax-only) of GuardianInitialization.cpp, BotMagmawBalanceMushroomDuty.cpp, spell_dk_glyphs.cpp (spell_dk.cpp command line), spell_script_loader.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+      "summary": "all rc=0; only the pre-existing <ciso646> C++20 warning"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_canonical_dps_glyphs.py",
+      "summary": "3 passed (including the new Blood glyph test), 1 failed: the known test_all_six_bwd_shards_clone_canonical_or_declared_override_glyph_source KeyError 'catalog:balance_druid'"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths (at HEAD and on a /tmp git-archive export of 15bc2fa2f3)",
+      "summary": "both fail identically before and after the bundle (Movement.Size()==2 and StackSeparation assertions); unrelated to the bundle, export deleted afterwards"
+    }
+  ],
+  "verdict": "approved"
+}
