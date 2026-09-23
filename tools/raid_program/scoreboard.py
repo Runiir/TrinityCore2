@@ -73,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--worldserver", type=Path, help="default: the target's run_plan.default_worldserver")
     run.add_argument("--source-commit", help="default: git HEAD")
     run.add_argument("--dry-run", action="store_true", help="print the plan and run nothing")
+    run.add_argument("--top-up", action="store_true",
+                     help="add kills to an existing label whose kills were excluded only for measurement reasons "
+                          "(stall, infrastructure); same binary and source commit required")
 
     ingest = commands.add_parser("ingest", help="record existing kills (summary JSON or raw run dir)")
     ingest.add_argument("--scenario", required=True)

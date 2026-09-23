@@ -765,3 +765,42 @@ def test_run_path_records_fidelity_without_affecting_the_batch(root, fakes):
     # Fake runs carry no route manifest or melee: the status is unknown, not a failure.
     assert all(record["encounter_fidelity"]["blizzlike"] is None for record in records)
     assert evaluate_target(root, SCENARIO, "fid")["status"] == "pass"
+
+
+# --- top-up -----------------------------------------------------------------------------------
+
+def _top_up_args(label, source_commit=None, top_up=True, dry_run=False):
+    import argparse
+    return argparse.Namespace(scenario=SCENARIO, label=label, kills=None, worldserver=None,
+                              source_commit=source_commit, top_up=top_up, dry_run=dry_run)
+
+
+def test_top_up_replaces_only_measurement_exclusions(root, tmp_path):
+    from tools.raid_program.scoreboard_run import top_up_plan
+    binary = tmp_path / "worldserver"
+    binary.write_bytes(b"same build")
+    sha = hashlib.sha256(b"same build").hexdigest()
+    target = load_target(root, SCENARIO)
+    clean = [kill("a", f"k{i}", sha=sha) for i in range(2)]
+    stalled = kill("a", "k2", sha=sha, validity=STALLED)
+    assert top_up_plan(clean + [stalled], target, binary, _top_up_args("a")) == (1, "0" * 40)
+    refusals = {
+        "counted non-clear": clean + [kill("a", "w", sha=sha, clear=False)],
+        "excluded for no_evidence": clean + [kill("a", "n", sha=sha, pointer=None)],
+        "mixes binaries": clean + [kill("a", "k2", sha="2" * 64, validity=STALLED)],
+        "enough counted native clears": clean + [kill("a", "k9", sha=sha)],
+    }
+    for message, kills in refusals.items():
+        with pytest.raises(SystemExit, match=message):
+            top_up_plan(kills, target, binary, _top_up_args("a"))
+    other = [kill("a", f"o{i}", sha="2" * 64) for i in range(2)] + [kill("a", "o2", sha="2" * 64, validity=STALLED)]
+    with pytest.raises(SystemExit, match="not the label's binary"):
+        top_up_plan(other, target, binary, _top_up_args("a"))
+    with pytest.raises(SystemExit, match="--source-commit differs"):
+        top_up_plan(clean + [stalled], target, binary, _top_up_args("a", source_commit="f" * 40))
+
+
+def test_run_refuses_an_existing_label_without_top_up(root):
+    batch(root, "a")
+    with pytest.raises(SystemExit, match="--top-up"):
+        scoreboard_run.run_batch(root, _top_up_args("a", top_up=False, dry_run=True))

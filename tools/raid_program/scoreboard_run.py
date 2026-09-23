@@ -1,7 +1,8 @@
 """Run one labelled batch of live kills: validate, summarize, record, archive.
 
 A label is one build and one batch: `run` refuses a label that already has
-kills, and copies the worldserver once to /tmp/worldserver-<sha12> so a rebuild
+kills (unless `--top-up` replaces kills excluded for measurement reasons with
+the same binary and source commit), and copies the worldserver once to /tmp/worldserver-<sha12> so a rebuild
 cannot change the binary mid-batch. Each kill runs the target's
 bot-live-validate argv template into /tmp/scoreboard-<label>-k<i>-<timestamp>.
 Whatever happens afterwards, one kill record is appended and archiving is
@@ -21,8 +22,8 @@ from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_core import (
-    ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, exclusion_reason, file_sha256, git_head, label_kills,
-    load_records, load_target, scoreboard_path, utc_now,
+    ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, clear_kills, exclusion_reason, file_sha256, git_head,
+    label_kills, load_records, load_target, scoreboard_path, utc_now,
 )
 from tools.raid_program.scoreboard_record import (
     fallback_record, kill_line, record_from_run_dir, write_timeline,
@@ -233,17 +234,53 @@ def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, k
     return not problems
 
 
+# Exclusions that say nothing about gameplay: the kill may be replaced by a top-up.
+TOP_UP_REASONS = frozenset({"stalled_boss_window", "infrastructure_failure", "interrupted"})
+
+
+def top_up_plan(existing: list[dict[str, Any]], target: dict[str, Any], worldserver: Path, args) -> tuple[int, str]:
+    """How many kills a --top-up may add to an existing label, and the label's source commit.
+
+    Only kills excluded for measurement reasons can be replaced; a counted non-clear (a wipe) or
+    any other exclusion refuses.  The binary and source commit must match the label's kills.
+    """
+    reasons = [exclusion_reason(record) for record in existing]
+    others = sorted({reason for reason in reasons if reason and reason not in TOP_UP_REASONS})
+    if others:
+        raise SystemExit(f"--top-up refused: label {args.label} has kills excluded for {', '.join(others)}")
+    wipes = [record["kill_id"] for record, reason in zip(existing, reasons)
+             if reason is None and not record.get("native_clear")]
+    if wipes:
+        raise SystemExit(f"--top-up refused: label {args.label} has counted non-clear kills {', '.join(wipes)}")
+    shas = {record.get("worldserver_sha256") for record in existing}
+    commits = {record.get("source_commit") for record in existing}
+    if len(shas) != 1 or len(commits) != 1:
+        raise SystemExit(f"--top-up refused: label {args.label} already mixes binaries or commits")
+    sha, commit = next(iter(shas)), next(iter(commits))
+    if not worldserver.exists() or file_sha256(worldserver) != sha:
+        raise SystemExit(f"--top-up refused: {worldserver} is not the label's binary {sha}")
+    if args.source_commit and args.source_commit != commit:
+        raise SystemExit(f"--top-up refused: --source-commit differs from the label's {commit}")
+    missing = int(target["kills_per_measurement"]) - len(clear_kills(existing))
+    if missing < 1:
+        raise SystemExit(f"--top-up refused: label {args.label} already has enough counted native clears")
+    return min(args.kills or missing, missing), commit
+
+
 def run_batch(root: Path, args) -> int:
     target = load_target(root, args.scenario)
     kills = args.kills or int(target["kills_per_measurement"])
     if kills < 1:
         raise SystemExit("--kills must be at least 1")
     existing = label_kills(load_records(root, args.scenario), args.label)
-    if existing:
-        raise SystemExit(f"label {args.label} already has {len(existing)} kill(s); a label is one build and one "
-                         "batch. Use a new label.")
     worldserver = args.worldserver or Path(target["run_plan"]["default_worldserver"])
     worldserver = (worldserver if worldserver.is_absolute() else root / worldserver).resolve()
+    top_up_commit = None
+    if existing and not getattr(args, "top_up", False):
+        raise SystemExit(f"label {args.label} already has {len(existing)} kill(s); a label is one build and one "
+                         "batch. Use a new label, or --top-up to replace kills excluded for measurement reasons.")
+    if existing:
+        kills, top_up_commit = top_up_plan(existing, target, worldserver, args)
     batch = stamp()
     if args.dry_run:
         sha = file_sha256(worldserver) if worldserver.exists() else None
@@ -257,7 +294,7 @@ def run_batch(root: Path, args) -> int:
         raise SystemExit(f"worldserver not found: {worldserver}")
     pinned, sha = pin_worldserver(worldserver)
     print(f"pinned {worldserver} -> {pinned} ({sha}); the copy is kept for re-measuring this build", flush=True)
-    source_commit = args.source_commit or git_head(root)
+    source_commit = top_up_commit or args.source_commit or git_head(root)
     pointers = {r["evidence_dvc_pointer"] for r in load_records(root, args.scenario) if r.get("evidence_dvc_pointer")}
     for kill in plan_kills(target, label=args.label, kills=kills, worldserver=pinned, batch=batch):
         if not run_kill(root, target, scenario=args.scenario, label=args.label, kill=kill, sha=sha,
