@@ -21,16 +21,13 @@
         "7": 4062,
         "8": 4191,
         "9": 4106,
-        "14": 4100
+        "14": 4100,
+        "15": 3368
       },
-      "excluded_source_enchants": [
-        {
-          "slot": 15,
-          "enchant_id": 3368,
-          "kind": "dk_runeforge",
-          "reason": "Runeforge presence is a separate native observation and is not created by this permanent-enchant overlay."
-        }
-      ]
+      "excluded_source_enchants": [],
+      "notes": {
+        "slot_15_runeforge": "Slot 15 (main hand) carries Rune of the Fallen Crusader, SpellItemEnchantment 3368, taken from the pinned preset's main-hand enchant. It is the item state that a Death Knight's native Runeforging spell 53344 leaves behind: SPELL_EFFECT_ENCHANT_ITEM (53) with misc value 3368, written to PERM_ENCHANTMENT_SLOT, which is enchantment field 0. The overlay writes that same field, so the only difference is that the character does not click the runeforge. The enchant is a combat-spell proc of 53365 Unholy Strength (+15% total Strength for 15 sec, plus a 3% heal). SpellItemEnchantment gives RequiredSkillID 776 (Runeforging), a Death Knight class skill, so profession resolution skips it and it takes neither of the two primary-profession slots."
+      }
     }
   }
 }

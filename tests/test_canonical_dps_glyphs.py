@@ -21,7 +21,10 @@ FIXTURE = ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
 
 EXPECTED_NON_DPS_GLYPHS = {
     "protection_paladin": [45742, 41098, 43869, 41107, 43367, 43867, 43368, 43340, 43366],
-    "blood_death_knight": [43533, 43547, 43549],
+    # Pinned WoWSims Blood preset and all-spec target catalog: primes Death
+    # Strike, Heart Strike, Rune Strike; majors Anti-Magic Shell, Dancing Rune
+    # Weapon, Bone Shield; minors Death Gate, Path of Frost, Horn of Winter.
+    "blood_death_knight": [43827, 43534, 43550, 43533, 45799, 43536, 43673, 43671, 43544],
     "restoration_druid": [45623, 40906, 40913],
     "holy_paladin": [45741, 41099, 41105],
     "discipline_priest": [42409, 42400, 42403],
@@ -112,3 +115,24 @@ def test_bwd_dps_normalized_glyph_slots_use_pinned_dbc_and_elemental_950_is_prim
         214,
         950,
     ]
+
+
+def test_bwd_blood_tank_glyphs_match_target_catalog_and_fill_three_of_each_type():
+    config = _read(CONFIG)
+    canonical = _canonical(config)
+    catalog = _read(ROOT / config["canonical_target_catalog"])
+    catalog_blood = next(
+        row["provisioning_bot"]["glyphs"]
+        for row in catalog["targets"]
+        if row.get("runtime_join_key") == "blood_death_knight"
+    )
+    blood = next(bot for bot in canonical["bots"] if bot["class_spec"] == "blood_death_knight")
+    assert blood["glyphs"] == catalog_blood == EXPECTED_NON_DPS_GLYPHS["blood_death_knight"]
+
+    dbc_dir = ROOT / "data/dbc/enUS"
+    item_to_property = glyph_item_to_property_map(dbc_dir)
+    property_types = glyph_property_type_map(dbc_dir)
+    types = [property_types[item_to_property[item_id]] for item_id in blood["glyphs"]]
+    # GlyphProperties type: 0 major, 1 minor, 2 prime.
+    assert sorted(types) == [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    assert 0 not in normalized_glyph_slots(blood, item_to_property, property_types)
