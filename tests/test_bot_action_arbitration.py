@@ -1388,9 +1388,15 @@ int main()
         float const dz = move.Z - point.Z;
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     };
+    // The Discipline Priest is the healer hook rider (lowest healing load with
+    // three healers alive), so during Mangle it prepositions for the pincer
+    // instead of staging at the midpoint; it still heals the mangled tank.
+    assert(disciplineManglePlan.Movement.has_value());
+    assert(disciplineManglePlan.Movement->Id.Mechanic == "pincer_preposition");
+    assert(disciplineManglePlan.Movement->ActionPriority
+        == BotActionArbitration::Priority::Mechanic);
     for (BotEncounter::AdaptiveMagmawPlan const* healerPlan : {
-             &movingHealerManglePlan, &stationaryHealerManglePlan,
-             &disciplineManglePlan })
+             &movingHealerManglePlan, &stationaryHealerManglePlan })
     {
         assert(healerPlan->Movement.has_value());
         assert(healerPlan->Movement->Id.Mechanic

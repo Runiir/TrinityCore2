@@ -5,27 +5,113 @@
         return guid == baiters.first || guid == baiters.second;
     }
 
+    // A healer rides only while two other living healers keep healing Mangle.
+    static constexpr std::size_t HookHealerMinimumLivingHealers = 3;
+
+    // Static prior of each healer's share of raid healing, lowest first.
+    // Baselines 0891a99 k1-k3 (10N): Discipline 0.8-1.8k HPS against
+    // Restoration Druid and Holy Paladin at 4-6k. Unlisted specs never ride.
+    static std::optional<std::size_t> HookHealerLoadRank(
+        std::string_view classSpec)
+    {
+        static constexpr std::array<std::string_view, 5> order = {
+            "discipline_priest", "holy_priest", "restoration_shaman",
+            "restoration_druid", "holy_paladin" };
+        auto itr = std::find(order.begin(), order.end(), classSpec);
+        if (itr == order.end())
+            return std::nullopt;
+        return std::size_t(std::distance(order.begin(), itr));
+    }
+
+    static ObjectGuid SelectHookHealer(Blackboard const& board)
+    {
+        std::size_t livingHealers = 0;
+        ActorSnapshot const* selected = nullptr;
+        std::size_t selectedRank = 0;
+        for (ActorSnapshot const& member : board.Players)
+        {
+            if (!member.Alive || member.Role != "healer")
+                continue;
+            ++livingHealers;
+            std::optional<std::size_t> const rank =
+                HookHealerLoadRank(member.ClassSpec);
+            if (rank && (!selected || *rank < selectedRank
+                || (*rank == selectedRank && member.Guid.GetRawValue()
+                    < selected->Guid.GetRawValue())))
+            {
+                selected = &member;
+                selectedRank = *rank;
+            }
+        }
+        return selected && livingHealers >= HookHealerMinimumLivingHealers
+            ? selected->Guid : ObjectGuid();
+    }
+
+    static bool SeatedOnPincer(Blackboard const& board,
+        ActorSnapshot const& member)
+    {
+        ActorSnapshot const* vehicle = member.VehicleGuid.IsEmpty()
+            ? nullptr : board.FindActor(member.VehicleGuid);
+        return vehicle && vehicle->Alive && IsPincerVehicle(*vehicle);
+    }
+
+    // Every hook caller derives the riders from this one ordered list; only
+    // the first two are assigned. Preference order:
+    //  1. living riders already seated on a pincer, so a roster change during
+    //     the ride never strands an unassigned actor in a pincer seat;
+    //  2. the lowest-load healer while three or more healers are alive;
+    //  3. non-baiter DPS by raw GUID, except Balance, which keeps its
+    //     stationary casts and the parasite mushroom duty;
+    //  4. the previous choice: non-baiter DPS by raw GUID, then any other
+    //     non-tank, now by raw GUID instead of board order.
+    // Tanks and the fixed pillar baiters never ride.
     static std::vector<ObjectGuid> BuildHookUsers(Blackboard const& board)
     {
         std::pair<ObjectGuid, ObjectGuid> const baiters =
             MagmawParasitePolicy::ResolveFixedBaiters(board);
-        std::vector<ObjectGuid> hookUsers;
+        std::vector<ObjectGuid> seated;
+        std::vector<ObjectGuid> dps;
+        std::vector<ObjectGuid> balance;
+        std::vector<ObjectGuid> others;
         for (ActorSnapshot const& member : board.Players)
-            if (member.Alive && member.Role == "dps"
-                && !IsFixedBaiter(baiters, member.Guid))
-                hookUsers.push_back(member.Guid);
-        std::sort(hookUsers.begin(), hookUsers.end(), [](ObjectGuid left,
-            ObjectGuid right)
+        {
+            if (!member.Alive || member.Role == "tank"
+                || IsFixedBaiter(baiters, member.Guid))
+                continue;
+            if (SeatedOnPincer(board, member))
+                seated.push_back(member.Guid);
+            if (member.Role != "dps")
+                others.push_back(member.Guid);
+            else if (member.ClassSpec == "balance_druid")
+                balance.push_back(member.Guid);
+            else
+                dps.push_back(member.Guid);
+        }
+        auto byRawGuid = [](ObjectGuid left, ObjectGuid right)
         {
             return left.GetRawValue() < right.GetRawValue();
-        });
-        if (hookUsers.size() < 2)
-            for (ActorSnapshot const& member : board.Players)
-                if (member.Alive && member.Role != "tank"
-                    && !IsFixedBaiter(baiters, member.Guid)
-                    && std::find(hookUsers.begin(), hookUsers.end(), member.Guid)
-                        == hookUsers.end())
-                    hookUsers.push_back(member.Guid);
+        };
+        std::sort(seated.begin(), seated.end(), byRawGuid);
+        std::sort(dps.begin(), dps.end(), byRawGuid);
+        std::sort(others.begin(), others.end(), byRawGuid);
+        std::vector<ObjectGuid> previousDps = dps;
+        previousDps.insert(previousDps.end(), balance.begin(), balance.end());
+        std::sort(previousDps.begin(), previousDps.end(), byRawGuid);
+
+        std::vector<ObjectGuid> hookUsers;
+        auto append = [&hookUsers](ObjectGuid guid)
+        {
+            if (!guid.IsEmpty() && std::find(hookUsers.begin(),
+                    hookUsers.end(), guid) == hookUsers.end())
+                hookUsers.push_back(guid);
+        };
+        for (ObjectGuid guid : seated)
+            append(guid);
+        append(SelectHookHealer(board));
+        for (std::vector<ObjectGuid> const* tier : { &dps, &previousDps,
+                 &others })
+            for (ObjectGuid guid : *tier)
+                append(guid);
         return hookUsers;
     }
     static bool IsAssignedHookUser(std::vector<ObjectGuid> const& hookUsers,
