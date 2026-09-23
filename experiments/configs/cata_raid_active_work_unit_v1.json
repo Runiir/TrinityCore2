@@ -1,6 +1,6 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:tuning_02",
+  "work_unit": "magmaw:tuning_03",
   "owner_skill": "raid-role-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Read the scoreboard verdict (baseline label) and retained evidence; pick the largest actor gap, then record a plan with its risk_tier. Follow the raid-tuning-playbook against baseline b2-fd4ba456: diagnose the Blood DK per-cast damage and Blood Boil area admission (TANK-002/TANK-003), the Elemental regression (DPS-066) and the Balance cadence gap (DPS-065) from retained b2 evidence, then record one bundled plan with its risk_tier.",
+  "next_action": "Read the scoreboard verdict (baseline label) and retained evidence; pick the largest actor gap, then record a plan with its risk_tier. Record the bundle-03 plan (Blood DRW/glyph native fidelity, Magmaw parasite LOS gate, mushroom threshold, Moonfire row) against baseline b2-fd4ba456, then implement, review, build, smoke and measure a 5-kill batch.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 475,
+    "revision": 477,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "diagnose",
     "actor_ids": [
@@ -841,8 +841,8 @@
       }
     },
     "unit": {
-      "id": "magmaw:tuning_02",
-      "edge": "owner_blood_damage_per_cast_and_area_admission",
+      "id": "magmaw:tuning_03",
+      "edge": "owner_blood_native_fidelity_and_parasite_targeting",
       "requirements": [
         "actor_30001",
         "actor_30002",
@@ -851,7 +851,7 @@
       ],
       "owner_skill": "raid-role-implementation",
       "risk_tier": "shared_runtime",
-      "next_action": "Follow the raid-tuning-playbook against baseline b2-fd4ba456: diagnose the Blood DK per-cast damage and Blood Boil area admission (TANK-002/TANK-003), the Elemental regression (DPS-066) and the Balance cadence gap (DPS-065) from retained b2 evidence, then record one bundled plan with its risk_tier."
+      "next_action": "Record the bundle-03 plan (Blood DRW/glyph native fidelity, Magmaw parasite LOS gate, mushroom threshold, Moonfire row) against baseline b2-fd4ba456, then implement, review, build, smoke and measure a 5-kill batch."
     },
     "completed_measurements": [
       {
@@ -9220,6 +9220,54 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 475,
+        "unit_id": "magmaw:tuning_02",
+        "from": "diagnose",
+        "to": "route",
+        "event": {
+          "action": "supersede",
+          "revision": 475,
+          "unit_id": "magmaw:tuning_02",
+          "reason": "The Blood setup-parity change (glyph set, Fallen Crusader runeforge, regenerated shards and admission header) landed as commit f52d106673 outside the graph because it changes the roster input the unit binds; re-route so the next unit's source base includes it.",
+          "superseded_by": {
+            "commits": [
+              "f52d106673a4e7bd6be8a3f0585708fe227f837b"
+            ]
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 476,
+        "unit_id": "magmaw:tuning_02",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "action": "route",
+          "revision": 476,
+          "unit_id": "magmaw:tuning_02",
+          "reason": "Open bundle 03 on the Blood setup-parity base f52d106673: Blood native fidelity (Dancing Rune Weapon owner stats, Glyph of Death Strike handler), Balance/Elemental parasite line-of-sight targeting, mushroom duty threshold and the Moonfire-over-Sunfire row.",
+          "unit": {
+            "id": "magmaw:tuning_03",
+            "edge": "owner_blood_native_fidelity_and_parasite_targeting",
+            "requirements": [
+              "actor_30001",
+              "actor_30002",
+              "actor_30010",
+              "magmaw_10n"
+            ],
+            "owner_skill": "raid-role-implementation",
+            "risk_tier": "shared_runtime",
+            "next_action": "Record the bundle-03 plan (Blood DRW/glyph native fidelity, Magmaw parasite LOS gate, mushroom threshold, Moonfire row) against baseline b2-fd4ba456, then implement, review, build, smoke and measure a 5-kill batch."
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9228,7 +9276,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "125b4cd96b1970855e633cedf200b15d12373234",
+    "source_base_commit": "f52d106673a4e7bd6be8a3f0585708fe227f837b",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
