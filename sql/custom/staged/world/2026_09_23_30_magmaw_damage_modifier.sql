@@ -1,0 +1,69 @@
+-- Magmaw 10N (creature_template 41570): restore melee damage with DamageModifier 16.
+--
+-- Why the value is 1 today. Upstream migration
+-- sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set
+-- DamageModifier = 1 for every creature. The previous change had moved creature
+-- damage to the NpcDamageByClass game tables (58ef56d335), and the reset was
+-- "pending re-evaluation". On 2026-09-23 all 46,627 templates are at 1.
+--
+-- Native formula (Creature.cpp UpdateLevelDependantStats and
+-- CreatureStatSystem.cpp CalculateMinMaxDamage):
+--   base = gt_npc_damage_by_class_exp3[level 88].Warrior = 2947.94
+--          (unit_class 1, HealthScalingExpansion 3, rank 1, rate 1)
+--   weapon min/max = base, base * 1.5 = 2947.94, 4421.91
+--   AP term = creature_classlevelstats(88, 1).attackpower 1226 / 14 * BaseVariance 1 = 87.57
+--   swing = (weapon + AP term) * BaseAttackTime 2.5 s * DamageModifier * TOTAL_PCT
+--   At DamageModifier 1, one swing is 7,588.8 to 11,273.7. That is the
+--   attacker_published_min/max seen in base-0891a99 kills 1-3.
+--
+-- Matched stage. WCL "U" (unmitigatedAmount) is the damage before the target's
+-- armor, block, damage-taken reductions and absorbs. The Mangle 89773 DoT shows
+-- this: all 12 ticks log U = 116,904, which is inside the pinned client base roll
+-- 110,464-128,377 even though the Blood DK tank had Blood Presence and Bone
+-- Shield. The matching native stage is melee_resolution.after_attacker_bonus_amount.
+-- Attacker-side -10% physical done auras (Scarlet Fever 81130, Demoralizing
+-- Roar 99, Demoralizing Shout 1160 and Vindication 26017, all aura 79 misc 1)
+-- are part of that stage. Natively they sit in TOTAL_PCT, i.e. inside the roll.
+-- Frost Fever 55095 (aura 342, -20% melee haste) changes swing interval, not
+-- per-swing damage.
+--
+-- WCL MxFq7TRbvnjGY1hJ fight 22 (10N, 2024-10-28): 14 landed Magmaw melee U
+-- values of 111,531-178,540, plus 7 misses/parries. Scarlet Fever was on
+-- Magmaw from 8.9-37.9 s and 64.6-93.6 s.
+--   largest hit unreduced : 178,540 / 11,273.7          = 15.84 (lower bound)
+--   smallest hit under -10%: 111,531 / (0.9 * 7,588.8)  = 16.33 (upper bound)
+-- No unreduced reading fits both ends: 111,531 / 7,588.8 = 14.70 < 15.84.
+-- Cross-check: Mangle's initial hit is 150% weapon damage with
+-- SPELL_ATTR3_IGNORE_CASTER_MODIFIERS. Its WCL U is 240,338, so one unmodified
+-- swing is 160,225. With modifier 16 that is a native roll of 10,014, inside
+-- 7,589-11,274.
+-- Replay: 70 native Magmaw swings from base-0891a99 kills 1-3, scaled by 16,
+-- give a U-stage range of 110,512-181,904 (mean 138.6-143.5k per kill).
+-- The WCL range is 111,531-178,540.
+-- The native pipeline also adds an unconditional +1% to auto-attacks
+-- (AddPct of GetTotalAuraMultiplier(SPELL_AURA_MOD_MELEE_DAMAGE_FROM_CASTER)
+-- in Unit::MeleeDamageBonusDone). 16 * 1.01 = 16.16 is still inside the
+-- 15.84-16.33 range.
+-- Era: the pinned 4.3.4 DBC rolls for Lava Spew and Magma Spit, both nerfed
+-- in 4.2, match the same 10N sample. The sample therefore reflects post-4.2
+-- (4.3.4-equivalent) tuning.
+--
+-- Scope. Only 10N entry 41570. It also scales Mangle's 150% weapon hit, which
+-- uses the same weapon roll. Spell damage (Magma Spit, Lava Spew, Massive
+-- Crash, Mangle DoT) does not read DamageModifier. The 25N, 10H and 25H
+-- templates 51101, 51102 and 51103 keep DamageModifier 1 and use
+-- BaseAttackTime 2000, not 2500. There are no same-mode melee samples for
+-- them yet, so they are left open, not copied.
+-- The worldserver loads creature_template at startup.
+--
+-- The migration is idempotent. The reverse migration is a commented block at
+-- the end of this file, not a separate file: the worldserver auto-updater
+-- applies every file in sql/custom/world at startup, so a separate revert file
+-- would undo this one immediately. The reverse only restores 1 when the value
+-- is still this migration's 16.
+
+UPDATE `creature_template` SET `DamageModifier` = 16 WHERE `entry` = 41570;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `creature_template` SET `DamageModifier` = 1 WHERE `entry` = 41570 AND `DamageModifier` = 16;
+-- END REVERSE MIGRATION
