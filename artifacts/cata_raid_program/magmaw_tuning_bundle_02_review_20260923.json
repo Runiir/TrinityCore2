@@ -1,0 +1,47 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_review_20260923.report.json",
+      "sha256": "02af78688c45a2e6fe7446251e1923b0acdb4e83626f6aa23c790abb0dea4551"
+    }
+  ],
+  "file_hashes": {
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "1042b953f967883b03141071860cc3fdec33bf780b3f0f71ed80f6d574e33c08",
+    "experiments/configs/cata_434_action_profiles.json": "59d103410f06242e1ba1cdc1838ba6a27df55b14344138a3997bcfe3d444d9b6",
+    "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql": "deleted",
+    "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql": "deleted",
+    "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql": "c46438b6e19df35bde8d47e959e4c36a13b1487c0b7814fc613048823838e9b6",
+    "sql/custom/world/2026_09_23_20_balance_moving_moonfire.sql": "3d146a7228790eccc4e481e8607933344a565aeb5b5415f292fce119fc4b7afa",
+    "sql/custom/world/2026_09_23_50_blood_max_ready_runes_gate.sql": "0e6a1f2641162b2e9e9c8949a958d9d152248ed177cf3b345a027d35ee47a617",
+    "sql/custom/world/2026_09_23_51_blood_tap_rune_recovery.sql": "68eeacd6bb0b8ae15f7aa7e0ced0b1f6b16f92175d809ce41c85a6f80a2a5bf9",
+    "sql/custom/world/2026_09_23_52_blood_empower_rune_weapon_rune_recovery.sql": "5b4d53e891de09d386fa051923d6a618462b08f97a8b2cb9582de0bda0274347",
+    "sql/custom/world/2026_09_23_60_fire_hot_streak_native_range.sql": "901b06fd3c240369fc056ce9aaa0d922524e47ace2020539d858a1412680469e",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "becaf10ddfa4030546e83d0e4a3e4a087f3e65a493923e29db58d946786dfd83",
+    "src/server/game/Bots/BotCastWhileMoving.h": "cfed227d989037df477b1ec50f5c38fcdce888d10671a07c40b847b824c993f4",
+    "src/server/game/Bots/BotClassSpecActionProfile.h": "a8ad829e579511a2c8827cbc351b003bcf68dddd85ab4d73cd95b3a69e8f145e",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "320f4c5be7aeebf2bd604f582af3c8275e955329a2a866e690201a6691452502",
+    "src/server/game/Bots/BotClassSpecActionProfileDb.cpp": "f739a29b8631c7d98dbccf884e50b518cbac03a46c085e0f98bd3fed2d5a84e2",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp": "dafbf5b9d71cc3e2aa3274d2a17ed324952e6ec60cee1ca41730d2d868c97cb0",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": "471b0d83fd5969a3775152b5d292a3102166401b7fba09941ac65f8ab5f58eb2",
+    "tests/fixtures/affliction_doomguard_native.json": "26384a0535a2267771e54dbfa01db3f6e355755b19ba348ca9304941858be4d7",
+    "tests/fixtures/survival_8146_native_admission.json": "03c1266df1f032584e9494eb12ea00ffd0164a6a77c33877a3a429dfde0f1f47",
+    "tests/test_autonomy_pipeline_smoke.py": "a0e05ac265dafefc909ecd08f0fa1840fe055ba4e1d964d19055418c77496a94",
+    "tests/test_balance_moving_moonfire.py": "5485fcea653d34d88b862a6d75061a64690509ef85c83ca54e3a8454595fca99",
+    "tests/test_blood_outbreak_disease_upkeep.py": "2b04ac236570aeb80ff0ea4a5c64cca96833e746ab67b74ffed4b55e318cada5",
+    "tests/test_blood_rune_recovery.py": "950a0a51eb500676dead04ed69d12dff809bb9533f7dade712b1606ca02c0737",
+    "tests/test_bot_cast_while_moving.py": "ef6c1d4a87ef3c52272055dd04782e8a3d53ecadf4df35f15a53d0014fdc06db",
+    "tests/test_elemental_fulmination_gate.py": "f825aae583aac4f087993fe75cad941998d8f31d0a8c40a7ba8a65381e5740f9",
+    "tests/test_fire_hot_streak_native_range.py": "2d02a55cf589ca0d9bfc189929cc71b1cbdde60ce21ded904804f812dbcdf85d",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "22dbaaba2909691593ffee761521011f6e404a3435d1a4679fe88735bc70af03"
+  },
+  "kind": "review",
+  "producer": "a7c6b3217e53139ca",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_review_20260923.report.json",
+    "sha256": "02af78688c45a2e6fe7446251e1923b0acdb4e83626f6aa23c790abb0dea4551"
+  },
+  "reviewer_session_id": "a7c6b3217e53139ca",
+  "unit_id": "magmaw:tuning_01",
+  "verdict": "approved"
+}

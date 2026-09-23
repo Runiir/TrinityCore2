@@ -1,0 +1,138 @@
+{
+  "file_hashes": {
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "1042b953f967883b03141071860cc3fdec33bf780b3f0f71ed80f6d574e33c08",
+    "experiments/configs/cata_434_action_profiles.json": "59d103410f06242e1ba1cdc1838ba6a27df55b14344138a3997bcfe3d444d9b6",
+    "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql": "deleted",
+    "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql": "deleted",
+    "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql": "c46438b6e19df35bde8d47e959e4c36a13b1487c0b7814fc613048823838e9b6",
+    "sql/custom/world/2026_09_23_20_balance_moving_moonfire.sql": "3d146a7228790eccc4e481e8607933344a565aeb5b5415f292fce119fc4b7afa",
+    "sql/custom/world/2026_09_23_50_blood_max_ready_runes_gate.sql": "0e6a1f2641162b2e9e9c8949a958d9d152248ed177cf3b345a027d35ee47a617",
+    "sql/custom/world/2026_09_23_51_blood_tap_rune_recovery.sql": "68eeacd6bb0b8ae15f7aa7e0ced0b1f6b16f92175d809ce41c85a6f80a2a5bf9",
+    "sql/custom/world/2026_09_23_52_blood_empower_rune_weapon_rune_recovery.sql": "5b4d53e891de09d386fa051923d6a618462b08f97a8b2cb9582de0bda0274347",
+    "sql/custom/world/2026_09_23_60_fire_hot_streak_native_range.sql": "901b06fd3c240369fc056ce9aaa0d922524e47ace2020539d858a1412680469e",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h": "becaf10ddfa4030546e83d0e4a3e4a087f3e65a493923e29db58d946786dfd83",
+    "src/server/game/Bots/BotCastWhileMoving.h": "cfed227d989037df477b1ec50f5c38fcdce888d10671a07c40b847b824c993f4",
+    "src/server/game/Bots/BotClassSpecActionProfile.h": "a8ad829e579511a2c8827cbc351b003bcf68dddd85ab4d73cd95b3a69e8f145e",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp": "320f4c5be7aeebf2bd604f582af3c8275e955329a2a866e690201a6691452502",
+    "src/server/game/Bots/BotClassSpecActionProfileDb.cpp": "f739a29b8631c7d98dbccf884e50b518cbac03a46c085e0f98bd3fed2d5a84e2",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp": "dafbf5b9d71cc3e2aa3274d2a17ed324952e6ec60cee1ca41730d2d868c97cb0",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": "471b0d83fd5969a3775152b5d292a3102166401b7fba09941ac65f8ab5f58eb2",
+    "tests/fixtures/affliction_doomguard_native.json": "26384a0535a2267771e54dbfa01db3f6e355755b19ba348ca9304941858be4d7",
+    "tests/fixtures/survival_8146_native_admission.json": "03c1266df1f032584e9494eb12ea00ffd0164a6a77c33877a3a429dfde0f1f47",
+    "tests/test_autonomy_pipeline_smoke.py": "a0e05ac265dafefc909ecd08f0fa1840fe055ba4e1d964d19055418c77496a94",
+    "tests/test_balance_moving_moonfire.py": "5485fcea653d34d88b862a6d75061a64690509ef85c83ca54e3a8454595fca99",
+    "tests/test_blood_outbreak_disease_upkeep.py": "2b04ac236570aeb80ff0ea4a5c64cca96833e746ab67b74ffed4b55e318cada5",
+    "tests/test_blood_rune_recovery.py": "950a0a51eb500676dead04ed69d12dff809bb9533f7dade712b1606ca02c0737",
+    "tests/test_bot_cast_while_moving.py": "ef6c1d4a87ef3c52272055dd04782e8a3d53ecadf4df35f15a53d0014fdc06db",
+    "tests/test_elemental_fulmination_gate.py": "f825aae583aac4f087993fe75cad941998d8f31d0a8c40a7ba8a65381e5740f9",
+    "tests/test_fire_hot_streak_native_range.py": "2d02a55cf589ca0d9bfc189929cc71b1cbdde60ce21ded904804f812dbcdf85d",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "22dbaaba2909691593ffee761521011f6e404a3435d1a4679fe88735bc70af03"
+  },
+  "findings": [
+    {
+      "failure_scenario": "A plain git add -A / commit -a records only the staged deletions. On a clean checkout the worldserver built from the committed loader selects a.max_ready_runes on a DB that never received 2026_09_23_50. The rotation query fails, no profiles load, and the tests that reference the sql/custom/world paths fail.",
+      "file": "sql/custom/world/.gitignore",
+      "line": 1,
+      "severity": "medium",
+      "summary": "Commit hazard, not a code defect: *.sql in sql/custom/world is git-ignored, so the six new or promoted migrations (10, 20, 50, 51, 52, 60) are untracked while the tracked staged copies of 10 and 20 show as deleted. They must be force-added (git add -f), as 2026_09_23_40/41 were."
+    },
+    {
+      "failure_scenario": "An operator reverting DPS-065 from the SQL file alone finds no reverse and must reconstruct it from the test.",
+      "file": "sql/custom/world/2026_09_23_20_balance_moving_moonfire.sql",
+      "line": 52,
+      "severity": "low",
+      "summary": "The promoted Balance migration has no in-file reverse block, unlike the other five and unlike sql/custom/staged/README.md ('Each file carries its reverse'). The exact reverse exists only as REVERSE_SQL in tests/test_balance_moving_moonfire.py (the sql/custom/rollback file it names does not exist). The forward rows are correct: byte-identical to the staged file, NOT EXISTS-guarded, enabled balance_druid dps only, moving-only, bucket 14."
+    },
+    {
+      "failure_scenario": "A later run of the full smoke file reports this failure and it gets misattributed to the moving-cast change.",
+      "file": "tests/test_autonomy_pipeline_smoke.py",
+      "line": 5411,
+      "severity": "low",
+      "summary": "An earlier failing test outside the two known failures: test_combat_keeps_high_priority_movement_and_selects_instant_dps. The diff's edit (pinning HasEffectiveCastTime at line 5408) passes, but the test still fails at the unrelated assertion 'state->MovementLease.ExpiresAtMs > nowMs' in ExecuteProfileCombatAction. It fails identically on a HEAD export, so it is not caused by this diff."
+    },
+    {
+      "failure_scenario": "A healer with a proc-instant heal (e.g. Nature's Swiftness) is still rejected or stopped while moving, and an attached bot blocks movement for one tick after a proc-instant cast. The result is lost throughput, never an unlawful cast.",
+      "file": "src/server/game/Bots/BotController.cpp",
+      "line": 237,
+      "severity": "info",
+      "summary": "Remaining base-CalcCastTime movement decisions outside the three shared predicates: BotController.cpp:237 (attached-controller castTimeMovementBlocked), BotWorldPopulationMgrCombatSupport.cpp:218 (movement_requires_instant_heal) and :348 (heal-submission stop), BotWorldPopulationMgrNativeAction.cpp:316 (combat-res stop), BotWorldPopulationMgrValidationGroupHeal.cpp:67. All are more cautious than the client, none calls RejectMovingCandidate, YieldsToProtectedMovement or StopUncoveredMovingCast, and none is on the DPS profile path. BotActionExecutor.cpp:378 keeps a base pre-filter but defers to StopUncoveredMovingCast's effective check, so it is consistent."
+    },
+    {
+      "failure_scenario": "None functional; one extra spell-mod scan per candidate per decision.",
+      "file": "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+      "line": 365,
+      "severity": "info",
+      "summary": "Duplicate preview: candidate.CastTimeMs, from ProfileSpellCastTimeMs in the candidate builder, already holds the identical effective cast time for the same resolved SpellInfo, so 'candidate.CastTimeMs > 0' would be equivalent. Behaviour is correct."
+    },
+    {
+      "failure_scenario": "A strict diff-scope check against owned_files flags the two staged deletions as out-of-scope edits.",
+      "file": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_20260923.json",
+      "line": 1,
+      "severity": "low",
+      "summary": "owned_files omits sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql and ..._20_balance_moving_moonfire.sql, which the diff deletes as the other half of the promotion (the Outbreak test asserts the staged copy is gone)."
+    },
+    {
+      "failure_scenario": "A later rotation review misreads Blood Tap or ERW as always-on and proposes a redundant gate.",
+      "file": "tools/bot_ml/review_rotation_mechanics.py",
+      "line": 76,
+      "severity": "info",
+      "summary": "Not owned: _TRINITY_GATE_COLUMNS here and TYPED_COLUMNS in build_phase4_rotation_contract.py do not list max_ready_runes, so rotation-review exports will show the Blood Tap and ERW rows as ungated by rune count."
+    }
+  ],
+  "implementer_session_id": "coordinator-bca90d3b",
+  "limits": [
+    "No build, link or live run: the DPS effect per actor and the acceptance evidence (Outbreak >= 3, Blood Tap >= 2, ERW 1, Pyroblast!/Combustion, moving Starsurge) are unverified.",
+    "I did not re-verify the combat-log and trace figures quoted in the migration headers (DS gate rejections, WCL cast times, 35.043 yd anchor); only the spell facts and score math were checked.",
+    "The preview passes no Spell, so no charge is taken, unless the player's spell-mod-taking spell is set. That exposure already exists in ProfileSpellCastTimeMs, and no bot hook runs inside Spell::cast's mod-taking windows.",
+    "The preview can differ from the real cast only for a charge-using aura left at 0 charges before removal; the native cast would then fail harmlessly with SPELL_FAILED_MOVING.",
+    "On a fresh database, name order applies 10 before 40/41. The final state (v31, ERW note) matches the incremental path, but the Outbreak reverse block restores the profile note only on the incremental path.",
+    "Live database state was read at review time and may change before the build."
+  ],
+  "proof": {
+    "final_message_bytes": 12731,
+    "final_message_sha256": "97243d74946f593f7f8072676974944f1543bbde54e0ca8cbf5fc580638d583d",
+    "implementer_session_id": "coordinator-bca90d3b",
+    "prefix_bytes": 1019930,
+    "prefix_sha256": "bfaa1ae2c59dcec3abdedc62539a54b6c8c325ae5d026a025e6175149f30fc09",
+    "review_transport": "external_json",
+    "schema": "claude_transcript_review_proof_v1",
+    "session_id": "a7c6b3217e53139ca",
+    "transcript_path": "/home/runiir/.claude/projects/-home-runiir-Games-trinity-cata/bca90d3b-d7ce-4037-bbd9-8e21eea7a900/subagents/agent-a7c6b3217e53139ca.jsonl"
+  },
+  "review_transport": "external_json",
+  "reviewer_session_id": "a7c6b3217e53139ca",
+  "schema": "cata_raid_review_report_v1",
+  "source_report_path": "/tmp/impl-review.json",
+  "source_report_sha256": "ab2a5586541ad7e38def04c5e49714c8bf7565cd0a989526f9be2f32bfe0c857",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_outbreak_disease_upkeep.py tests/test_blood_rune_recovery.py tests/test_blood_death_strike_priority.py tests/test_generated_bot_admission_identities.py tests/test_fire_hot_streak_native_range.py tests/test_bot_cast_while_moving.py tests/test_balance_moving_moonfire.py tests/test_bot_trash_drudge_minimum_distance_exit.py tests/test_survival_remote_trap_admission.py \"tests/test_ml_pipeline.py::test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance\"",
+      "summary": "48 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_fire_combustion_native.py tests/test_fire_combustion_native_range.py tests/test_fire_moving_scorch.py tests/test_fire_mage_rotation_review.py tests/test_fire_native_range.py tests/test_magmaw_parasite_policy.py tests/test_balance_rotation_cadence.py tests/test_bot_world_population_mgr_combat_resolver_module.py tests/test_elemental_fulmination_gate.py tests/test_affliction_doomguard.py tests/test_autonomy_pipeline_smoke.py::test_combat_keeps_high_priority_movement_and_selects_instant_dps --deselect <two known failures>",
+      "summary": "32 passed, 1 failed (test_autonomy_pipeline_smoke MovementLease assertion; also fails on HEAD)"
+    },
+    {
+      "command": "HEAD export in /tmp: pytest on the two known failures plus the smoke test",
+      "summary": "All 3 fail identically at HEAD (elemental: BuildCandidates regex returns None; doomguard: extracted-source compile error; smoke: MovementLease assertion). Temporary copy removed."
+    },
+    {
+      "command": "syntax-only compile (compile_commands.json entries with -c/-o replaced by -fsyntax-only) of BotClassSpecActionProfileDb.cpp, BotClassSpecActionProfileCandidates.cpp, BotWorldPopulationMgrCombatResolver.cpp, BotWorldPopulationMgrCombatExecution.cpp, plus BotActionExecutor.cpp (which includes the changed header)",
+      "summary": "All rc=0; only the existing <ciso646> warning"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "summary": "rc=0; the largest changed C/C++ file is 932 lines"
+    },
+    {
+      "command": "pinned DBC checks (Spell, SpellEffect, SpellClassOptions, SpellCastTimes)",
+      "summary": "Shooting Stars 93400 is a -100% cast-time modifier on Starsurge's class mask; Hot Streak 48108 swaps in Pyroblast! 92315, which is already instant; Lava Surge 77762 is a dummy effect with no cast-time modifier; Starsurge base cast 2000 ms"
+    },
+    {
+      "command": "read-only SELECTs on the world DB (updates, bot_rotation_profile, bot_rotation_action)",
+      "summary": "Blood 267 is at v28 with the 41 note and no 77575/45529/47568 rows; no updates row for 2026_09_23_10 or _20; Fire changes hit exactly 4 rows in profile 263; Balance 290 Starsurge has no stationary gate"
+    }
+  ],
+  "verdict": "approved"
+}
