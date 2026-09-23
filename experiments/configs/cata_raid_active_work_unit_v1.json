@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits. Record the bundle-03 plan (Blood DRW/glyph native fidelity, Magmaw parasite LOS gate, mushroom threshold, Moonfire row) against baseline b2-fd4ba456, then implement, review, build, smoke and measure a 5-kill batch.",
+  "next_action": "shared_runtime only: one watchdog-bounded kill on the new build before the measurement batch. Record the bundle-03 plan (Blood DRW/glyph native fidelity, Magmaw parasite LOS gate, mushroom threshold, Moonfire row) against baseline b2-fd4ba456, then implement, review, build, smoke and measure a 5-kill batch.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 484,
+    "revision": 485,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "build",
+    "stage": "smoke",
     "actor_ids": [
       "30001",
       "30002",
@@ -9389,6 +9389,25 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 484,
+        "unit_id": "magmaw:tuning_03",
+        "from": "build",
+        "to": "smoke",
+        "event": {
+          "revision": 484,
+          "unit_id": "magmaw:tuning_03",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/workflow-build-240a9c39e2e9c8b79d160af7c5f54395670c0f41b6eb89577ecaa617a9cd3a8e.json",
+            "sha256": "9905fd52b7f3865d9ee0435f178a959bb620ba638b1ccc131fa5a6c155a46370"
+          },
+          "claim_token": "240a9c39e2e9c8b79d160af7c5f54395670c0f41b6eb89577ecaa617a9cd3a8e"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9511,6 +9530,10 @@
       "review": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_review_20260924.json",
         "sha256": "135ac25a926643998c106c3236a969a3beeb8a6e684803897bc0c4de78dc91bb"
+      },
+      "build": {
+        "path": "artifacts/cata_raid_program/workflow-build-240a9c39e2e9c8b79d160af7c5f54395670c0f41b6eb89577ecaa617a9cd3a8e.json",
+        "sha256": "9905fd52b7f3865d9ee0435f178a959bb620ba638b1ccc131fa5a6c155a46370"
       }
     },
     "tested_files": {
@@ -9531,12 +9554,9 @@
     },
     "tested_commit": "061b54dc71d7de225befea6e4991f4453689cebb",
     "implementer": "coordinator-bca90d3b",
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "240a9c39e2e9c8b79d160af7c5f54395670c0f41b6eb89577ecaa617a9cd3a8e",
-      "operation_id": "240a9c39e2e9c8b79d160af7c5f54395670c0f41b6eb89577ecaa617a9cd3a8e",
-      "stage": "build",
-      "claimed_at": "2026-09-23T22:57:27Z"
+    "build_identity": {
+      "source_commit": "7a96d00b815d3a5d98b23f6931a01e9702b7c0a5",
+      "binary_sha256": "5a05e67fc9d556aafb18595acded629386585c12622e2043b6094968af6f6f28"
     }
   },
   "parked_scenarios": {
