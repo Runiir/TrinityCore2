@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Run one labelled scoreboard measurement batch with the canonical controller and its ownership locks; record scoreboard_label. follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes",
+  "next_action": "Write the scoreboard verdict (graph_acceptance verdict --label) and cite it; actor/encounter requirements close only on pass. follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 470,
+    "revision": 471,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "assess",
     "actor_ids": [
       "30001",
       "30002",
@@ -8859,6 +8859,25 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 470,
+        "unit_id": "magmaw:tuning_01",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 470,
+          "unit_id": "magmaw:tuning_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/scoreboard-run-b2-fd4ba456-b2637ba09d18.json",
+            "sha256": "b2637ba09d1824adc56f307dcfefc45a210db40f7baf995c7a8efda33943c617"
+          },
+          "claim_token": "72d5e34a97ac94c0600910832882a2e83f64ba56f4c577d23ed20ccc4f2fe20d"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9041,6 +9060,10 @@
       "smoke": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_smoke_20260923.json",
         "sha256": "a789c99369ea6ed844572fe95ee648300c72cc3bac766d917641023992538308"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/scoreboard-run-b2-fd4ba456-b2637ba09d18.json",
+        "sha256": "b2637ba09d1824adc56f307dcfefc45a210db40f7baf995c7a8efda33943c617"
       }
     },
     "tested_files": {
@@ -9082,12 +9105,20 @@
       "attempt_id": "scoreboard:smoke-fd4ba456",
       "server_epoch": "2026-09-23T20:30:49Z"
     },
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "72d5e34a97ac94c0600910832882a2e83f64ba56f4c577d23ed20ccc4f2fe20d",
-      "operation_id": "72d5e34a97ac94c0600910832882a2e83f64ba56f4c577d23ed20ccc4f2fe20d",
-      "stage": "validate",
-      "claimed_at": "2026-09-23T20:38:17Z"
+    "run": {
+      "attempt_id": "scoreboard:b2-fd4ba456",
+      "server_epoch": "2026-09-23T20:43:00Z",
+      "scenario_kind": "raid",
+      "terminal_reason": "clear",
+      "claimed_at": "2026-09-23T20:38:17Z",
+      "kill_ids": [
+        "b2-fd4ba456-k1-20260923T203751Z",
+        "b2-fd4ba456-k2-20260923T203751Z",
+        "b2-fd4ba456-k3-20260923T203751Z",
+        "b2-fd4ba456-k4-20260923T203751Z",
+        "b2-fd4ba456-k5-20260923T203751Z"
+      ],
+      "scoreboard_label": "b2-fd4ba456"
     }
   },
   "parked_scenarios": {
