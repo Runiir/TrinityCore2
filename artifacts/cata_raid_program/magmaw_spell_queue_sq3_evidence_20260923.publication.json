@@ -1,0 +1,18 @@
+{
+  "archive_bytes": 4430045,
+  "dvc_pointer": "artifacts/cata_raid_program/magmaw_spell_queue_sq3_evidence_20260923.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 119909139,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "b82c5c74fde28535fc30e742b71f95ce",
+  "remote_sha256": "c387ef1b23c0754bec5c403d07fb96768881a3537381d754e0b3829749567abc",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/cata-magmaw-spellqueue-sq3-20260923",
+    "/tmp/magmaw-sq3-analysis",
+    "/tmp/magmaw-spellqueue-sq3.stdout",
+    "/tmp/magmaw-spellqueue-sq3.stderr"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 17
+}
