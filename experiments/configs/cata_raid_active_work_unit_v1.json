@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 455,
+    "revision": 456,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -8596,6 +8596,21 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "class_native"
+      },
+      {
+        "revision": 455,
+        "unit_id": "magmaw:tuning_01",
+        "from": "implement",
+        "to": "implement",
+        "event": {
+          "action": "claim",
+          "revision": 455,
+          "unit_id": "magmaw:tuning_01",
+          "owner": "coordinator-magmaw-outbreak-disease-upkeep-01-implement"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "class_native"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8707,6 +8722,13 @@
         "path": "artifacts/cata_raid_program/magmaw_blood_outbreak_disease_upkeep_01_plan_20260923.json",
         "sha256": "4153e8371df900eb3609be47fb648e478f779daf3784c515073372816a01529d"
       }
+    },
+    "claim": {
+      "owner": "coordinator-magmaw-outbreak-disease-upkeep-01-implement",
+      "token": "8437be90c031e121edcd11279103691edc60e6a5cc8a4e54dbd7d6f9bf025a5f",
+      "operation_id": "8437be90c031e121edcd11279103691edc60e6a5cc8a4e54dbd7d6f9bf025a5f",
+      "stage": "implement",
+      "claimed_at": "2026-09-23T15:09:18Z"
     }
   },
   "parked_scenarios": {
