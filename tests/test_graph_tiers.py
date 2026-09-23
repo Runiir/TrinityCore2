@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[1]
 def commit(root, path, text):
     (root/path).parent.mkdir(parents=True, exist_ok=True)
     (root/path).write_text(text)
-    graph.git(root, 'add', path)
+    graph.git(root, 'add', '-f', path)
     graph.git(root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'edit ' + path)
 
 
@@ -65,23 +65,55 @@ def test_profile_unit_needs_only_tests_and_one_measurement(case):
     assert {h['risk_tier'] for h in g['history']} == {'profile'}
 
 
-def test_profile_unit_with_native_diff_is_raised_to_class_native(case):
+def test_profile_plan_owning_native_code_is_raised_to_class_native(case):
     root, state, evidence = case
     owned = 'src/server/game/Bots/Profile.cpp'
-    state = profile_plan(root, state, evidence, owned)
-    state = step(root, state, evidence, file_hashes=graph.snapshot(root, [owned]))
+    state = profile_plan(root, state, evidence, owned, reuse=False)
     g = state['development_graph']
-    assert g['stage'] == 'review' and tiers.tier_of(g) == 'class_native'
-    assert g['tier_raised']['from'] == 'profile' and owned in g['tier_raised']['reason']
-    assert 'build_identity' not in g  # no reuse: the raised unit must build
-    graph.check_graph(g)
+    assert tiers.tier_of(g) == 'class_native' and g['assignment']['risk_tier'] == 'profile'
     put(root/graph.STATE_PATH, state)
     shown = graph.resume(root)['tier']
-    assert shown['risk_tier'] == 'class_native' and shown['tier_raised'] == g['tier_raised']
-    assert shown['remaining_steps'][:3] == ['review', 'build', 'validate']
-    for expected in ('build', 'validate'):
+    assert shown['risk_tier'] == 'class_native' and shown['raised_by_paths'] == [owned]
+    assert shown['declared'] == {'unit': None, 'plan': 'profile'}
+    for expected in ('review', 'build', 'validate'):
         state = step(root, state, evidence, file_hashes=graph.snapshot(root, [owned]))
         assert state['development_graph']['stage'] == expected
+    assert {h['risk_tier'] for h in state['development_graph']['history'] if h['event']['action'] == 'advance'} == {'class_native'}
+
+
+def test_profile_plan_cannot_reuse_a_build_for_native_code(case):
+    root, state, evidence = case
+    with pytest.raises(graph.GraphError, match='only for profile units'):
+        profile_plan(root, state, evidence, 'src/server/game/Bots/Profile.cpp')
+
+
+@pytest.mark.parametrize('owned', ['src/server/game/Bots/BotSpellQueue.cpp', 'tools/raid_program/scoreboard_record.py',
+                                   'experiments/configs/raid_targets/fixture_10n_fixture.json',
+                                   'experiments/configs/cata_raid_encounters/fixture/boss_wcl_dps_reference_v1.json'])
+def test_shared_runtime_and_measurement_inputs_require_smoke(case, owned):
+    root, state, evidence = case
+    state = profile_plan(root, state, evidence, owned, reuse=False)
+    g = state['development_graph']
+    assert tiers.tier_of(g) == 'shared_runtime'
+    state = step(root, state, evidence, file_hashes=graph.snapshot(root, [owned]))
+    assert state['development_graph']['stage'] == 'review'
+
+
+def test_plan_can_raise_but_never_lower_the_unit_tier(case):
+    root, state, evidence = case
+    state['development_graph']['unit']['risk_tier'] = 'class_native'
+    with pytest.raises(graph.GraphError, match='cannot lower the unit tier'):
+        step(root, state, evidence, risk_tier='profile')
+    raised = step(root, state, evidence, risk_tier='shared_runtime')['development_graph']
+    assert tiers.tier_of(raised) == 'shared_runtime'
+
+
+def test_native_diff_outside_the_floor_is_rejected(case, monkeypatch):
+    root, state, evidence = case
+    state = profile_plan(root, state, evidence, 'src/server/game/Bots/Profile.cpp', reuse=False)
+    monkeypatch.setattr(tiers, 'path_tier', lambda path: None)  # simulate a floor that misses native code
+    with pytest.raises(graph.GraphError, match='diff touches native paths'):
+        step(root, state, evidence, file_hashes=graph.snapshot(root, ['src/server/game/Bots/Profile.cpp']))
 
 
 def test_profile_builds_without_review_when_native_changed_outside_its_diff(case):
@@ -227,6 +259,18 @@ def test_route_validates_and_carries_unit_tier(case):
     assert 'review' not in resumed['tier']['remaining_steps']
     assert 'build' in resumed['tier']['conditional_steps']
     assert resumed['reusable_build'] == state['development_graph']['receipts']['build']
+
+
+def test_path_floor_and_legacy_default():
+    assert tiers.path_tier('src/server/game/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp') == 'shared_runtime'
+    assert tiers.path_tier('src/server/game/Bots/BotClassSpecActionProfile.cpp') == 'class_native'
+    assert tiers.path_tier('tools/raid_program/graph_acceptance.py') == 'shared_runtime'
+    assert tiers.path_tier('tools/bot_ml/live_validation_session.py') == 'shared_runtime'
+    assert tiers.path_tier('experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json') is None
+    assert tiers.path_tier('sql/custom/world/rotation.sql') is None
+    legacy = {'unit': {}, 'assignment': {'owned_files': ['sql/custom/world/rotation.sql']}}
+    assert tiers.tier_of(legacy) == 'class_native'
+    assert tiers.tier_of({'unit': {'risk_tier': 'profile'}, 'assignment': legacy['assignment']}) == 'profile'
 
 
 def test_successors_and_native_paths():

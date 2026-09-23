@@ -56,30 +56,36 @@ def staged_checkpoint(root: Path, task: dict, output: Path) -> dict:
 
 
 def unit_notice(root: Path) -> str | None:
-    """One warning when staged code conflicts with the active unit; None otherwise."""
-    from tools.raid_program import development_graph as graph
-    from tools.raid_program import graph_tiers as tiers
+    """One warning when staged code conflicts with the active unit; None otherwise.
+
+    Never raises: a commit hook must not fail because the graph state is unreadable.
+    """
     try:
-        g = json.loads((root / graph.STATE_PATH).read_text())["development_graph"]
+        from tools.raid_program import development_graph as graph
+        from tools.raid_program import graph_tiers as tiers
+        state = root / graph.STATE_PATH
+        if not state.is_file():
+            return None
+        g = json.loads(state.read_text())["development_graph"]
         stage, unit, assignment = g["stage"], g["unit"], g.get("assignment")
-    except (OSError, ValueError, KeyError, TypeError):
+        if not assignment or stage not in ("implement", *BOUND_STAGES):
+            return None
+        code = [p for p in staged_paths(root) if graph.code_path(p)]
+        tier = tiers.tier_of(g)
+        prefix = f"Unit {unit['id']} ({tier}, {stage}): "
+        if stage == "implement":
+            scope = set(assignment.get("owned_files", [])) | set(assignment.get("supporting_files", {}))
+            outside = sorted(p for p in code if p not in scope)
+            if outside:
+                return (prefix + "staged code outside owned files will fail tests/review binding: "
+                        + ", ".join(outside[:8]) + (f" (+{len(outside) - 8} more)" if len(outside) > 8 else ""))
+            return None
+        if code:
+            return (prefix + "staged code changes invalidate the recorded tests/build; expect rework. Remaining steps: "
+                    + " -> ".join(tiers.describe(g, stage)["remaining_steps"]))
         return None
-    if not assignment or stage not in ("implement", *BOUND_STAGES):
-        return None
-    code = [p for p in staged_paths(root) if graph.code_path(p)]
-    tier = tiers.tier_of(g)
-    prefix = f"Unit {unit['id']} ({tier}, {stage}): "
-    if stage == "implement":
-        scope = set(assignment.get("owned_files", [])) | set(assignment.get("supporting_files", {}))
-        outside = sorted(p for p in code if p not in scope)
-        if outside:
-            return (prefix + "staged code outside owned files will fail tests/review binding: "
-                    + ", ".join(outside[:8]) + (f" (+{len(outside) - 8} more)" if len(outside) > 8 else ""))
-        return None
-    if code:
-        return (prefix + "staged code changes invalidate the recorded tests/build; expect rework. Remaining steps: "
-                + " -> ".join(tiers.remaining(stage, tier)["remaining_steps"]))
-    return None
+    except Exception as exc:  # noqa: BLE001 - advisory notice only
+        return f"unit notice skipped ({type(exc).__name__}: {str(exc)[:120]})"
 
 
 def main(argv: list[str] | None = None) -> int:

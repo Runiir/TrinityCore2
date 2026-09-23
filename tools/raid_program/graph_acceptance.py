@@ -3,13 +3,20 @@
 The target file (`experiments/configs/raid_targets/<scenario>.json`, schema
 raid_target_v1) defines the ratio, kill count and death limits. The scoreboard
 turns retained kills into a raid_target_verdict_v1. An actor requirement is
-accepted when its verdict row is `pass`; an encounter requirement (one with
-`needs_all_actors`) when the overall verdict is `pass`. `no_reference` is
-missing reference work and never acceptance. Other requirements keep the
-reviewed repair assessment.
+accepted when its verdict row and the encounter are `pass`; an encounter
+requirement (one with `needs_all_actors`) when the overall verdict is `pass`
+and its roster covers every program actor. `no_reference` is missing reference
+work and never acceptance. Other requirements keep the reviewed assessment.
 
-CLI: `python -m tools.raid_program.graph_acceptance verdict --label <label>`
-writes the verdict file to cite as the assessment adapter's `verdict`.
+A verdict only counts for the unit that produced it: every counted kill ran the
+unit's binary, every kill was recorded after the unit claimed validation, the
+label was not used by an earlier acceptance, and the target/WCL inputs still
+hash to what the scoreboard judged. It is recomputed at assessment and again at
+publication.
+
+CLI:
+  receipt --label L --cleanup-verified   write the validate (run) adapter for a batch
+  verdict --label L                      write the verdict file to cite at assessment
 """
 from __future__ import annotations
 
@@ -17,6 +24,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from tools.raid_program import development_graph as graph
@@ -24,13 +32,14 @@ from tools.raid_program import development_graph as graph
 ROOT = Path(__file__).resolve().parents[2]
 TARGET_DIR = Path('experiments/configs/raid_targets')
 VERDICT_DIR = Path('artifacts/cata_raid_program/verdicts')
+RUN_DIR = Path('artifacts/cata_raid_program')  # top level: completed_operation scans it for run receipts
 VERDICT_SCHEMA = 'raid_target_verdict_v1'
 TARGET_SCHEMA = 'raid_target_v1'
-CONTRACT = ('schema', 'scenario', 'label', 'kills', 'target_path', 'actors', 'encounter', 'status')
 UNATTRIBUTABLE = ('infrastructure_loss', 'contamination', 'interruption')
-RULE = ('Actor requirements close when their scoreboard verdict row is pass; encounter requirements '
-        'when the overall verdict is pass. The target file sets ratio, kill count and death limits. '
-        'no_reference/insufficient_kills/fail keep the requirement open.')
+RULE = ('Actor requirements close when their scoreboard verdict row and the encounter are pass; encounter '
+        'requirements when the overall verdict is pass with the full roster. The target file sets ratio, kill '
+        'count and death limits. Kills must come from the unit binary after its validation claim, on a label no '
+        'earlier acceptance used. no_reference/insufficient_kills/fail keep the requirement open.')
 
 
 def scenario_id(encounter: dict) -> str:
@@ -66,27 +75,81 @@ def evaluate(root: Path, scenario: str, label: str) -> dict:
     return verdict
 
 
-def _contract(verdict: dict) -> dict:
-    return json.loads(json.dumps({key: verdict.get(key) for key in CONTRACT}))
+def _normal(value) -> object:
+    return json.loads(json.dumps(value, sort_keys=True))
 
 
-def load_verdict(root: Path, g: dict, ref: dict) -> dict:
-    """The cited verdict must be this run's batch and match a fresh recomputation."""
+def _time(value) -> datetime:
+    try:
+        return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    except ValueError as exc:
+        raise graph.GraphError('invalid timestamp: ' + str(value)) from exc
+
+
+def check_inputs(root: Path, g: dict, verdict: dict) -> None:
+    """The judged target and WCL reference files are the current ones."""
+    pointer = target_pointer(g)
+    if verdict.get('target_path') != pointer['path']:
+        raise graph.GraphError('verdict target differs from the program raid target')
+    target_file = root / pointer['path']
+    if not target_file.is_file() or verdict.get('target_sha256') != graph.digest(target_file.read_bytes()):
+        raise graph.GraphError('raid target changed since the verdict (target_sha256)')
+    target = graph.read(target_file)
+    for field, key in (('wcl_manifest_sha256', 'wcl_reference_manifest'), ('wcl_timelines_sha256', 'wcl_cast_timelines')):
+        path = target.get(key)
+        if path is None and field == 'wcl_timelines_sha256' and verdict.get(field) is None:
+            continue
+        reference = root / str(path or '')
+        if not path or not reference.is_file() or verdict.get(field) != graph.digest(reference.read_bytes()):
+            raise graph.GraphError(f'WCL reference changed since the verdict ({field})')
+
+
+def check_kills(g: dict, verdict: dict) -> None:
+    """Every kill belongs to this unit's validated run and binary."""
+    run, binary = g['run'], g['build_identity']['binary_sha256']
+    kills = verdict.get('kills_detail')
+    if not isinstance(kills, list) or not kills:
+        raise graph.GraphError('verdict has no kills_detail')
+    counted = [k for k in kills if k.get('counted')]
+    if not counted:
+        raise graph.GraphError('verdict counts no kills')
+    if verdict.get('worldserver_sha256') != binary or any(k.get('worldserver_sha256') != binary for k in counted):
+        raise graph.GraphError("counted kills did not all run the unit's binary " + binary[:12])
+    if not run.get('claimed_at'):
+        raise graph.GraphError('validation claim has no claimed_at; claim validation again before measuring')
+    claimed = _time(run['claimed_at'])
+    if any(_time(k.get('recorded_at')) < claimed for k in kills):
+        raise graph.GraphError("verdict includes kills recorded before the unit's validation claim")
+    if run.get('kill_ids') is not None and sorted(k.get('kill_id') for k in kills) != sorted(run['kill_ids']):
+        raise graph.GraphError("verdict kills differ from the validated run's kill_ids")
+
+
+def check_label_unused(g: dict, label: str) -> None:
+    for key, requirement in g['requirements'].items():
+        if requirement['status'] == 'accepted' and (requirement.get('verdict') or {}).get('label') == label:
+            raise graph.GraphError(f'label {label} already accepted {key}; measure a new batch')
+
+
+def verify_verdict(root: Path, g: dict, ref: dict) -> dict:
+    """The cited verdict is this unit's batch and matches a fresh recomputation."""
     verdict = graph.read(graph.file_ref(root, ref))
     if verdict.get('schema') != VERDICT_SCHEMA:
         raise graph.GraphError('verdict must be ' + VERDICT_SCHEMA)
-    pointer = target_pointer(g)
-    if verdict.get('scenario') != pointer['scenario']:
+    scenario = target_pointer(g)['scenario']
+    if verdict.get('scenario') != scenario:
         raise graph.GraphError('verdict scenario differs from the program encounter')
     label = (g.get('run') or {}).get('scoreboard_label')
     if not label or verdict.get('label') != label:
         raise graph.GraphError("verdict label must equal the validated run's scoreboard_label")
-    if _contract(evaluate(root, pointer['scenario'], label)) != _contract(verdict):
+    if _normal(evaluate(root, scenario, label)) != _normal(verdict):
         raise graph.GraphError('verdict file differs from the scoreboard recomputation; regenerate it')
+    check_inputs(root, g, verdict)
+    check_kills(g, verdict)
+    check_label_unused(g, label)
     return verdict
 
 
-def check_requirement(key: str, requirement: dict, verdict: dict) -> None:
+def check_requirement(key: str, requirement: dict, verdict: dict, actor_ids: list[str]) -> None:
     if scope(requirement) == 'actor':
         row = (verdict.get('actors') or {}).get(requirement['actor_id'])
         if not isinstance(row, dict):
@@ -94,8 +157,15 @@ def check_requirement(key: str, requirement: dict, verdict: dict) -> None:
         if requirement.get('spec') and row.get('spec') != requirement['spec']:
             raise graph.GraphError(key + ': verdict spec differs from the roster actor')
         status = row.get('status')
+        encounter = (verdict.get('encounter') or {}).get('status')
+        if status == 'pass' and encounter != 'pass':
+            raise graph.GraphError(f'{key}: encounter verdict is {encounter}, not pass')
     else:
         status = verdict.get('status')
+        roster = verdict.get('roster') or {}
+        if (roster.get('missing') or not set(actor_ids) <= set(roster.get('expected') or [])
+                or not set(actor_ids) <= set(verdict.get('actors') or {})):
+            raise graph.GraphError(key + ': verdict roster must cover every program actor with none missing')
     if status == 'no_reference':
         raise graph.GraphError(key + ': no matched WCL reference; that is reference work, never acceptance')
     if status != 'pass':
@@ -103,13 +173,16 @@ def check_requirement(key: str, requirement: dict, verdict: dict) -> None:
 
 
 def record(requirement: dict, ref: dict, verdict: dict) -> dict:
-    """Compact acceptance record kept on the requirement."""
+    """Compact acceptance record kept on the requirement, pinning the judged inputs."""
     base = {'receipt': ref, 'label': verdict['label'], 'kills': verdict.get('kills'),
-            'target_path': verdict.get('target_path')}
+            'kill_ids': [k['kill_id'] for k in verdict['kills_detail'] if k.get('counted')],
+            **{key: verdict.get(key) for key in ('worldserver_sha256', 'target_path', 'target_sha256',
+                                                  'wcl_manifest_sha256', 'wcl_timelines_sha256')}}
     if scope(requirement) == 'actor':
         row = verdict['actors'][requirement['actor_id']]
-        return base | {key: row.get(key) for key in ('status', 'spec', 'n', 'mean_dps', 'target_dps', 'ratio')}
-    return base | {'status': verdict['status'], 'encounter': verdict.get('encounter'),
+        return base | {key: row.get(key) for key in ('status', 'spec', 'n', 'mean_dps', 'target_dps', 'ratio')} | {
+            'encounter_status': verdict['encounter']['status']}
+    return base | {'status': verdict['status'], 'encounter': verdict.get('encounter'), 'roster': verdict.get('roster'),
                    'ratios': {actor: row.get('ratio') for actor, row in verdict['actors'].items()}}
 
 
@@ -147,7 +220,7 @@ def assess(root: Path, g: dict, r: dict) -> None:
     run = g['run']
     if r.get('attempt_id') != run['attempt_id']:
         raise graph.GraphError('assessment attempt mismatch')
-    verdict = load_verdict(root, g, r['verdict']) if r.get('verdict') is not None else None
+    verdict = verify_verdict(root, g, r['verdict']) if r.get('verdict') is not None else None
     if verdict is None:
         graph.required(r, 'baseline', 'comparison', 'actor_reviews')
     for key in ('baseline', 'comparison'):
@@ -182,7 +255,7 @@ def assess(root: Path, g: dict, r: dict) -> None:
         if scope(requirement):
             if verdict is None:
                 raise graph.GraphError(key + ': actor and encounter requirements are accepted only from a scoreboard verdict')
-            check_requirement(key, requirement, verdict)
+            check_requirement(key, requirement, verdict, g['actor_ids'])
             pending_verdict[key] = record(requirement, r['verdict'], verdict)
             continue
         if not repair:
@@ -219,16 +292,86 @@ def finish_line(root: Path, g: dict) -> dict:
     return {'scenario': pointer['scenario'], 'target_path': pointer['path'], 'target_present': present,
             'rule': RULE, 'open_actor_requirements': open_by_scope['actor'],
             'open_encounter_requirements': open_by_scope['encounter'],
+            'run_receipt_command': 'pixi run python -m tools.raid_program.graph_acceptance receipt --label <label> --cleanup-verified',
             'verdict_command': 'pixi run python -m tools.raid_program.graph_acceptance verdict --label <scoreboard_label>',
             'work_item': None if present else
                 f"Author {pointer['path']} ({TARGET_SCHEMA}) from matched WCL kills; no actor or encounter requirement can close without it."}
 
 
-def write_verdict(root: Path, label: str, *, write: bool = True) -> dict:
-    """Evaluate the active scenario's batch and retain the verdict content-addressed."""
+def _active(root: Path) -> dict:
     state = graph.read(root / graph.STATE_PATH)
     graph.check_state(root, state)
-    g = state['development_graph']
+    return state['development_graph']
+
+
+def _write_once(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        with path.open('xb') as stream:
+            stream.write(payload)
+
+
+def _safe(label: str) -> str:
+    return re.sub(r'[^A-Za-z0-9._-]', '_', label)
+
+
+def write_run_receipt(root: Path, label: str, *, producer: str, cleanup_verified: bool,
+                      terminal_reason: str | None = None) -> dict:
+    """Validate adapter for one labelled scoreboard batch of the claimed unit."""
+    g = _active(root)
+    claim = g.get('claim')
+    if g['stage'] != 'validate' or not claim:
+        raise graph.GraphError('claim the validate stage before writing its run receipt')
+    if not cleanup_verified:
+        raise graph.GraphError('check that every attempt closed and was cleaned up, then pass --cleanup-verified')
+    identity = g['assignment']['validation_identity']
+    if identity.get('scenario_kind') != 'raid':
+        raise graph.GraphError('scoreboard batches validate raid units only')
+    verdict = evaluate(root, target_pointer(g)['scenario'], label)
+    kills = verdict.get('kills_detail') or []
+    if not kills:
+        raise graph.GraphError('label has no recorded kills: ' + label)
+    binary = g['build_identity']['binary_sha256']
+    foreign = [str(k.get('kill_id')) for k in kills if k.get('worldserver_sha256') != binary]
+    if foreign:
+        raise graph.GraphError("kills did not run the unit's binary " + binary[:12] + ': ' + ', '.join(foreign[:5]))
+    if claim.get('claimed_at') and any(_time(k.get('recorded_at')) < _time(claim['claimed_at']) for k in kills):
+        raise graph.GraphError('label has kills recorded before this validation claim; use a new label')
+    if terminal_reason is None:
+        if not all(k.get('native_clear') for k in kills):
+            raise graph.GraphError('not every kill cleared natively; pass --terminal-reason')
+        terminal_reason = 'clear'
+    pointers = sorted({k['evidence_dvc_pointer'] for k in kills if k.get('evidence_dvc_pointer')})
+    from tools.raid_program.workflow_step import receipt_reference
+    evidence = [receipt_reference(root, pointer) for pointer in pointers]
+    if not evidence:
+        raise graph.GraphError("the label's kills name no evidence_dvc_pointer")
+    receipt = {'authority': 'coordinator_attestation', 'kind': 'run', 'unit_id': g['unit']['id'],
+               'producer': producer, 'evidence': evidence, 'operation_id': claim['operation_id'],
+               'build_identity': g['build_identity'], 'validation_identity': identity,
+               'scenario_kind': 'raid', 'clock': 'completion_watchdog', 'attempt_id': 'scoreboard:' + label,
+               'server_epoch': verdict.get('first_recorded_at') or min(k['recorded_at'] for k in kills),
+               'closed': True, 'cleanup_verified': True, 'terminal_reason': terminal_reason,
+               'scoreboard_label': label, 'kill_ids': [k['kill_id'] for k in kills]}
+    payload = (json.dumps(receipt, indent=2, sort_keys=True) + '\n').encode()
+    sha = graph.digest(payload)
+    relative = RUN_DIR / f'scoreboard-run-{_safe(label)}-{sha[:12]}.json'
+    _write_once(root / relative, payload)
+    from tools.raid_program.workflow_step import apply_step
+    result = {'receipt': {'path': relative.as_posix(), 'sha256': sha}, 'kills': len(kills),
+              'next_command': f"pixi run python -m tools.raid_program.workflow_step advance --receipt {relative.as_posix()} "
+                              f"--owner {claim['owner']}"}
+    try:
+        preview = apply_step(root, relative, owner=claim['owner'], dry_run=True)
+        result['dry_run'] = {'from_stage': preview['from_stage'], 'to_stage': preview['to_stage']}
+    except (graph.GraphError, ValueError, OSError) as exc:
+        result['dry_run_error'] = str(exc)
+    return result
+
+
+def write_verdict(root: Path, label: str, *, write: bool = True) -> dict:
+    """Evaluate the active scenario's batch and retain the verdict content-addressed."""
+    g = _active(root)
     scenario = target_pointer(g)['scenario']
     verdict = evaluate(root, scenario, label)
     acceptable = []
@@ -236,7 +379,7 @@ def write_verdict(root: Path, label: str, *, write: bool = True) -> dict:
         requirement = g['requirements'][key]
         if requirement['status'] == 'open' and scope(requirement):
             try:
-                check_requirement(key, requirement, verdict)
+                check_requirement(key, requirement, verdict, g['actor_ids'])
                 acceptable.append(key)
             except graph.GraphError:
                 pass
@@ -244,17 +387,20 @@ def write_verdict(root: Path, label: str, *, write: bool = True) -> dict:
               'actors': {actor: {k: row.get(k) for k in ('spec', 'status', 'ratio')}
                          for actor, row in (verdict.get('actors') or {}).items()},
               'encounter': verdict.get('encounter'), 'acceptable_unit_requirements': acceptable}
+    if g['stage'] == 'assess':
+        try:
+            check_inputs(root, g, verdict)
+            check_kills(g, verdict)
+            check_label_unused(g, label)
+        except graph.GraphError as exc:
+            result['binding_error'] = str(exc)
     if not write:
         return result
     payload = (json.dumps(verdict, indent=2, sort_keys=True) + '\n').encode()
     sha = graph.digest(payload)
-    name = f"{scenario}-{re.sub(r'[^A-Za-z0-9._-]', '_', label)}-{sha[:12]}.json"
-    path = root / VERDICT_DIR / name
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not path.exists():
-        with path.open('xb') as stream:
-            stream.write(payload)
-    ref = {'path': (VERDICT_DIR / name).as_posix(), 'sha256': sha}
+    relative = VERDICT_DIR / f'{scenario}-{_safe(label)}-{sha[:12]}.json'
+    _write_once(root / relative, payload)
+    ref = {'path': relative.as_posix(), 'sha256': sha}
     graph.file_ref(root, ref)
     return result | {'verdict': ref, 'next': 'Cite "verdict" in the assessment adapter with encounter_clear and '
                      'accepted_requirements drawn from acceptable_unit_requirements.'}
@@ -264,12 +410,22 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--root', type=Path, default=ROOT)
     commands = parser.add_subparsers(dest='command', required=True)
+    run = commands.add_parser('receipt', help='Write the validate (run) adapter for a scoreboard batch')
+    run.add_argument('--label', required=True)
+    run.add_argument('--producer', default='coordinator')
+    run.add_argument('--cleanup-verified', action='store_true', help='Attest every attempt closed and was cleaned up')
+    run.add_argument('--terminal-reason', help='Required when not every kill cleared natively')
     verdict = commands.add_parser('verdict', help='Evaluate a scoreboard batch for the active scenario')
     verdict.add_argument('--label', required=True)
     verdict.add_argument('--print-only', action='store_true', help='Do not write the verdict file')
     args = parser.parse_args(argv)
+    root = args.root.resolve()
     try:
-        result = write_verdict(args.root.resolve(), args.label, write=not args.print_only)
+        if args.command == 'receipt':
+            result = write_run_receipt(root, args.label, producer=args.producer,
+                                       cleanup_verified=args.cleanup_verified, terminal_reason=args.terminal_reason)
+        else:
+            result = write_verdict(root, args.label, write=not args.print_only)
     except (graph.GraphError, OSError, ValueError, KeyError) as exc:
         print(json.dumps({'error': str(exc)}), file=sys.stderr)
         return 2

@@ -111,7 +111,8 @@ def _unit_repo(tmp_path, stage, **graph_fields):
 def _stage(root, *paths):
     for path in paths:
         (root / path).parent.mkdir(parents=True, exist_ok=True)
-        (root / path).write_text("x\n")
+        if not (root / path).exists():
+            (root / path).write_text("x\n")
         subprocess.run(["git", "-C", str(root), "add", "-f", path], check=True)
 
 
@@ -122,8 +123,20 @@ def test_coordinator_commit_without_task_is_silent(tmp_path, monkeypatch, capsys
     monkeypatch.chdir(root)
     assert main([]) == 0
     assert capsys.readouterr().out == ""
-    (root / graph.STATE_PATH).write_text("{}")  # no unit: still silent
+    (root / graph.STATE_PATH).unlink()  # no graph at all: still silent
     assert main([]) == 0 and capsys.readouterr().out == ""
+
+
+@pytest.mark.parametrize("state", ["{}", "not json", '{"development_graph": {"stage": "implement", "unit": {"id": "u1"}, "assignment": {"owned_files": 7}}}'])
+def test_unreadable_graph_state_never_breaks_the_hook(tmp_path, monkeypatch, capsys, state):
+    from tools.raid_program import development_graph as graph
+    root = _unit_repo(tmp_path, "implement")
+    _stage(root, "src/server/game/Bots/Other.cpp")
+    (root / graph.STATE_PATH).write_text(state)
+    monkeypatch.chdir(root)
+    assert main([]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("Worker checkpoint: unit notice skipped (") and out.count("\n") == 1
 
 
 def test_implementing_unit_warns_about_code_outside_owned_files(tmp_path, monkeypatch, capsys):

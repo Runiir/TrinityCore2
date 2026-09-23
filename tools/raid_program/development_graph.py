@@ -13,6 +13,7 @@ import os
 import shlex
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from tools.raid_program import graph_tiers as tiers
@@ -34,11 +35,15 @@ ACTIONS = {
 }
 REWORKABLE = ('diagnose', 'implement', 'review', 'build', 'smoke', 'validate')
 # Per-unit keys cleared when a unit is routed or reworked.
-UNIT_KEYS = ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'reused_build', 'build_reason', 'tier_raised', 'smoke')
+UNIT_KEYS = ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'reused_build', 'build_reason', 'smoke')
 
 
 class GraphError(ValueError):
     pass
+
+
+def utc_now() -> str:
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
 
 
 def digest(data: bytes) -> str:
@@ -143,7 +148,9 @@ def check_graph(g: dict) -> None:
             row = history[revision]
             if row['from'] != 'publish' or key not in row.get('accepted_requirements', []) or requirement.get('receipt') != row['event'].get('receipt'):
                 raise GraphError('accepted requirement lacks publication evidence')
-            if 'verdict' in requirement and requirement['verdict'].get('status') != 'pass':
+            verdict = requirement.get('verdict')
+            if verdict is not None and (verdict.get('status') != 'pass'
+                                        or (requirement.get('actor_id') and verdict.get('encounter_status') != 'pass')):
                 raise GraphError('accepted requirement verdict is not pass')
     fields = {
         'implement': ('assignment',), 'review': ('assignment', 'tested_files', 'implementer'),
@@ -198,7 +205,6 @@ def resume(root: Path) -> dict:
             input_changes.append(path)
     from tools.raid_program.graph_acceptance import finish_line
     finish = finish_line(root, g)
-    tier = tiers.tier_of(g)
     return {
         'state_sha256': digest(data), 'revision': g['revision'],
         'diagnostic_entrypoint': shlex.join(['pixi', 'run', 'python', '-m', 'tools.raid_program.evidence_view', 'task', '--root', str(root.resolve())]),
@@ -211,8 +217,7 @@ def resume(root: Path) -> dict:
         'parent_objective_complete': g['stage'] == 'complete',
         'owner_skill': unit.get('owner_skill'),
         'next_action': ('Initialization inputs have changed; consult current reviewed inputs before reusing that historical snapshot. ' if input_changes else '') + ('Claimed by ' + g['claim']['owner'] + '; reconcile this operation before continuing. ' if g.get('claim') else '') + (finish['work_item'] + ' ' if finish['work_item'] else '') + ACTIONS[g['stage']],
-        'tier': (tiers.remaining(g['stage'], tier)
-                 | {key: g[key] for key in ('build_reason', 'tier_raised') if g.get(key)}
+        'tier': (tiers.describe(g, g['stage']) | ({'build_reason': g['build_reason']} if g.get('build_reason') else {})
                  if g['stage'] != 'complete' else None),
         'finish_line': finish,
         'reusable_build': next((h['event']['receipt'] for h in reversed(g['history'])
@@ -475,7 +480,8 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             except (ValueError, KeyError, SystemExit) as exc:
                 raise GraphError('pre-build validation failed: ' + str(exc)) from exc
         token = digest(f"{g['unit']['id']}:{stage}:{g['revision']}:{event['owner']}".encode())
-        g['claim'] = {'owner': event['owner'], 'token': token, 'operation_id': token, 'stage': stage}
+        g['claim'] = {'owner': event['owner'], 'token': token, 'operation_id': token, 'stage': stage,
+                      'claimed_at': utc_now()}
     elif action == 'amend_tests' and stage == 'implement':
         from tools.raid_program.workflow_tests import amend_assignment
         g['assignment'] = amend_assignment(root, g['assignment'], event)
@@ -570,6 +576,9 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             if r.get('risk_tier') is not None:
                 if r['risk_tier'] not in tiers.TIERS:
                     raise GraphError('risk_tier must be one of ' + ', '.join(tiers.TIERS))
+                unit_tier = g['unit'].get('risk_tier')
+                if unit_tier and tiers.RANK[r['risk_tier']] < tiers.RANK[unit_tier]:
+                    raise GraphError(f"plan risk_tier {r['risk_tier']} cannot lower the unit tier {unit_tier}")
                 g['assignment']['risk_tier'] = r['risk_tier']
             if r.get('reuse_build') is not None:
                 if tiers.tier_of(g) != 'profile':
@@ -597,13 +606,11 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 g['tested_files'] = current
                 g['tested_commit'] = current_commit
                 g['implementer'] = r['producer']
-                native = native_changes(root, g['assignment']['base_commit'], current_commit) if tiers.tier_of(g) == 'profile' else []
-                if native:
-                    # A unit whose own diff is native code is at least class_native: review and build.
-                    g['assignment']['risk_tier'] = 'class_native'
-                    g['tier_raised'] = {'from': 'profile', 'to': 'class_native',
-                                        'reason': 'unit diff touches native paths: ' + ', '.join(native[:5])}
-                elif tiers.tier_of(g) == 'profile':
+                # Owned native files already raise the tier (graph_tiers.path_floor); keep a
+                # diff check so a profile unit can never skip review for native code.
+                if tiers.tier_of(g) == 'profile' and native_changes(root, g['assignment']['base_commit'], current_commit):
+                    raise GraphError('profile unit diff touches native paths; own them in the plan (tier floor) and rework')
+                if tiers.tier_of(g) == 'profile':
                     identity, reason = reusable_build(root, g)
                     if identity:
                         g['build_identity'] = identity
@@ -674,6 +681,12 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             elif r.get('scenario_kind') != 'raid' or r.get('clock') != 'completion_watchdog' or r['terminal_reason'] == 'measurement_complete':
                 raise GraphError('raid requires completion watchdog')
             g['run'] = {k: r.get(k) for k in ('attempt_id', 'server_epoch', 'scenario_kind', 'terminal_reason')}
+            if claim and claim.get('claimed_at'):
+                g['run']['claimed_at'] = claim['claimed_at']
+            if r.get('kill_ids') is not None:
+                if not isinstance(r['kill_ids'], list) or not r['kill_ids'] or len(set(r['kill_ids'])) != len(r['kill_ids']):
+                    raise GraphError('kill_ids must be a nonempty unique list')
+                g['run']['kill_ids'] = r['kill_ids']
             label = r.get('scoreboard_label')
             if label is not None:
                 if not isinstance(label, str) or not label.strip():
@@ -690,6 +703,11 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 if r.get(key) is not True:
                     raise GraphError('publication incomplete: ' + key)
             verdicts = g.get('pending_verdict', {})
+            if verdicts:
+                # The scoreboard may not change between assessment and publication.
+                from tools.raid_program.graph_acceptance import verify_verdict
+                for ref in {json.dumps(v['receipt'], sort_keys=True) for v in verdicts.values()}:
+                    verify_verdict(root, g, json.loads(ref))
             for key in g.get('pending_acceptance', []):
                 g['requirements'][key].update(status='accepted', receipt=event['receipt'], accepted_at_revision=g['revision'])
                 if key in verdicts:

@@ -1,85 +1,230 @@
-"""Run a batch of live kills for one label: validate, summarize, record, archive.
+"""Run one labelled batch of live kills: validate, summarize, record, archive.
 
-Each kill runs the target's bot-live-validate argv template into
-/tmp/scoreboard-<label>-k<i>-<timestamp>. Afterwards the WCL timeline
-comparison and the summary go to <run dir>-analysis, one line is appended to
-the scoreboard, and the run is archived through experiments.archive_run_evidence
-(DVC push, remote verify, local eviction). A kill without a native clear is
-recorded and stops the batch.
+A label is one build and one batch: `run` refuses a label that already has
+kills, and copies the worldserver once to /tmp/worldserver-<sha12> so a rebuild
+cannot change the binary mid-batch. Each kill runs the target's
+bot-live-validate argv template into /tmp/scoreboard-<label>-k<i>-<timestamp>.
+Whatever happens afterwards, one kill record is appended and archiving is
+attempted; failures are recorded (postprocess_error, archive_error) and the
+/tmp evidence is kept for `archive-pending`.
 """
 from __future__ import annotations
 
+import os
 import shlex
+import shutil
+import signal
 import subprocess
 import time
+import traceback
 from pathlib import Path
 from typing import Any
 
-from tools.raid_program.scoreboard import (
-    append_record, label_kills, load_records, load_target, scoreboard_path,
+from tools.raid_program.scoreboard_core import (
+    ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, file_sha256, git_head, label_kills,
+    load_records, load_target, scoreboard_path, utc_now,
 )
 from tools.raid_program.scoreboard_record import (
-    file_sha256, git_head, kill_line, record_from_run_dir, write_timeline,
+    fallback_record, kill_line, record_from_run_dir, write_timeline,
 )
 
-EVIDENCE_DIR = "artifacts/cata_raid_program"
+PIN_DIR = Path("/tmp")
+KILL_GRACE_SEC = 30
 
 
-def plan_kills(root: Path, target: dict[str, Any], *, scenario: str, label: str, kills: int,
-               worldserver: Path, first_index: int, stamp: str) -> list[dict[str, Any]]:
+def stamp() -> str:
+    return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+
+
+def plan_kills(target: dict[str, Any], *, label: str, kills: int, worldserver: Path, batch: str) -> list[dict[str, Any]]:
     """Exact argv and paths for each kill; nothing is created."""
     plan = []
-    for index in range(first_index, first_index + kills):
-        base = target["run_plan"].get("output_dir_pattern", "/tmp/scoreboard-{label}-k{kill}-{timestamp}")
-        output_dir = Path(base.format(label=label, kill=index, timestamp=stamp))
+    pattern = target["run_plan"].get("output_dir_pattern", "/tmp/scoreboard-{label}-k{kill}-{timestamp}")
+    for index in range(1, kills + 1):
+        output_dir = Path(pattern.format(label=label, kill=index, timestamp=batch))
         values = {"{worldserver}": str(worldserver), "{output_dir}": str(output_dir)}
-        argv = [values.get(arg, arg) for arg in target["run_plan"]["argv_template"]]
-        name = f"scoreboard_{scenario}_{label}_k{index}_{stamp}"
         plan.append({
             "kill": index,
-            "argv": argv,
+            "kill_id": f"{label}-k{index}-{batch}",
+            "argv": [values.get(arg, arg) for arg in target["run_plan"]["argv_template"]],
             "output_dir": output_dir,
             "analysis_dir": Path(f"{output_dir}-analysis"),
             "stdout": Path(f"{output_dir}.stdout"),
             "stderr": Path(f"{output_dir}.stderr"),
-            "archive_name": name,
-            "evidence_dvc_pointer": f"{EVIDENCE_DIR}/{name}.tar.gz.dvc",
         })
     return plan
 
 
-def archive_argv(kill: dict[str, Any], sources: list[Path]) -> list[str]:
-    return ["pixi", "run", "python", "-m", "experiments.archive_run_evidence",
-            "--name", kill["archive_name"], *map(str, sources)]
+def evidence_sources(kill: dict[str, Any]) -> list[Path]:
+    return [kill["output_dir"], kill["analysis_dir"], kill["stdout"], kill["stderr"]]
 
 
-def _print_plan(root: Path, target: dict[str, Any], plan: list[dict[str, Any]], scenario: str) -> None:
-    manifest = target["wcl_cast_timelines"]
-    for kill in plan:
-        analysis = kill["analysis_dir"]
-        print(f"kill {kill['kill']}:")
-        print(f"  cwd:      {root}")
-        print(f"  argv:     {shlex.join(kill['argv'])}")
-        print(f"  stdout:   {kill['stdout']}")
-        print(f"  stderr:   {kill['stderr']}")
-        print(f"  run dir:  {kill['output_dir']}")
-        print(f"  timeline: pixi run python -m tools.bot_ml.compare_magmaw_timelines --bot-run {kill['output_dir']} "
-              f"--wcl-manifest {manifest} --output {analysis / 'timeline.json'}")
-        print(f"  summary:  {analysis / 'summary.json'}")
-        print(f"  record:   append to {scoreboard_path(root, scenario).relative_to(root)}")
-        sources = [kill["output_dir"], analysis, kill["stdout"], kill["stderr"]]
-        print(f"  archive:  {shlex.join(archive_argv(kill, sources))}")
-        print(f"  pointer:  {kill['evidence_dvc_pointer']}")
+def archive_base(scenario: str, kill_id: str) -> str:
+    return f"scoreboard_{scenario}_{kill_id}"
 
 
-def _archive(root: Path, kill: dict[str, Any]) -> str | None:
-    sources = [path for path in (kill["output_dir"], kill["analysis_dir"], kill["stdout"], kill["stderr"])
-               if path.exists()]
-    if not sources:
-        return None
-    result = subprocess.run(archive_argv(kill, sources), cwd=root)
-    pointer = kill["evidence_dvc_pointer"]
-    return pointer if result.returncode == 0 and (root / pointer).exists() else None
+def archive_argv(name: str, sources: list[Path]) -> list[str]:
+    return ["pixi", "run", "python", "-m", "experiments.archive_run_evidence", "--name", name, *map(str, sources)]
+
+
+def _leftovers(root: Path, base: str) -> list[Path]:
+    return sorted((root / EVIDENCE_DIR).glob(f"{base}*"))
+
+
+def _fresh_name(root: Path, base: str) -> str:
+    """The first free archive name: a leftover pointer or tarball never blocks a retry."""
+    name, attempt = base, 0
+    while any((root / EVIDENCE_DIR).glob(f"{name}.*")):
+        attempt += 1
+        name = f"{base}_retry{attempt}"
+    return name
+
+
+def archive_evidence(root: Path, scenario: str, kill_id: str, sources: list[Path],
+                     recorded_pointers: set[str]) -> tuple[str | None, str | None]:
+    """Archive through experiments.archive_run_evidence; returns (pointer, error)."""
+    existing = [path for path in sources if path.exists()]
+    if not existing:
+        return None, "no evidence paths exist"
+    base = archive_base(scenario, kill_id)
+    stale = [path for path in _leftovers(root, base) if str(path.relative_to(root)) not in recorded_pointers]
+    if stale:
+        print("left behind by an earlier archive attempt (not removed): "
+              + ", ".join(str(path.relative_to(root)) for path in stale))
+    name = _fresh_name(root, base)
+    pointer = f"{EVIDENCE_DIR}/{name}.tar.gz.dvc"
+    try:
+        returncode = subprocess.run(archive_argv(name, existing), cwd=root).returncode
+    except Exception as error:
+        returncode, detail = None, f"{type(error).__name__}: {error}"
+    else:
+        detail = f"exit {returncode}"
+    if returncode == 0 and (root / pointer).exists():
+        return pointer, None
+    left = [str(path.relative_to(root)) for path in _leftovers(root, name)]
+    if left:
+        print(f"left behind by the failed archive {name}: {', '.join(left)}")
+    return None, f"archive_run_evidence failed ({detail}) for {name}"
+
+
+def pin_worldserver(worldserver: Path) -> tuple[Path, str]:
+    """Copy the binary once; the copy's bytes name it, so a concurrent rebuild cannot slip in."""
+    partial = PIN_DIR / f"worldserver-pinning-{os.getpid()}.partial"
+    shutil.copy2(worldserver, partial)
+    sha = file_sha256(partial)
+    pinned = PIN_DIR / f"worldserver-{sha[:12]}"
+    if pinned.exists() and file_sha256(pinned) == sha:
+        partial.unlink()
+    else:
+        partial.replace(pinned)
+    return pinned, sha
+
+
+def run_harness(argv: list[str], cwd: Path, stdout, stderr) -> int:
+    """Run in its own session; the whole process group dies on interrupt or error."""
+    process = subprocess.Popen(argv, cwd=cwd, stdout=stdout, stderr=stderr, start_new_session=True)
+    try:
+        return process.wait()
+    except BaseException:
+        for sig, grace in ((signal.SIGTERM, KILL_GRACE_SEC), (signal.SIGKILL, None)):
+            try:
+                os.killpg(process.pid, sig)
+            except ProcessLookupError:
+                break
+            try:
+                process.wait(timeout=grace)
+                break
+            except subprocess.TimeoutExpired:
+                continue
+        raise
+
+
+def _base_record(scenario: str, label: str, kill: dict[str, Any], sha: str, source_commit: str | None) -> dict[str, Any]:
+    return {"schema": KILL_SCHEMA, "kill_id": kill["kill_id"], "scenario": scenario, "label": label,
+            "recorded_at": utc_now(), "source_commit": source_commit, "worldserver_sha256": sha,
+            "run_dir": str(kill["output_dir"]), "evidence_dvc_pointer": None, "native_clear": False,
+            "native_reason": None, "completion_reason": None, "outcome": "unknown", "route_deaths": None,
+            "boss_window_deaths": None, "death_basis": "unknown", "deaths": [], "encounter": None,
+            "actors": [], "ranked_gaps": []}
+
+
+def _postprocess(root, target, scenario, label, kill, sha, source_commit) -> dict[str, Any]:
+    options = dict(scenario=scenario, label=label, kill_id=kill["kill_id"], run_dir=kill["output_dir"],
+                   source_commit=source_commit, worldserver_sha256=sha)
+    try:
+        kill["analysis_dir"].mkdir(parents=True, exist_ok=True)
+        timeline = write_timeline(kill["output_dir"], root / target["wcl_cast_timelines"],
+                                  kill["analysis_dir"] / "timeline.json") if target.get("wcl_cast_timelines") else None
+        return record_from_run_dir(root, target, timeline_path=timeline,
+                                   summary_output=kill["analysis_dir"] / "summary.json", **options)
+    except Exception as error:
+        traceback.print_exc()
+        message = f"{type(error).__name__}: {error}"
+    try:
+        record = fallback_record(root, target, **options)
+    except Exception as error:
+        record = _base_record(scenario, label, kill, sha, source_commit)
+        message += f"; fallback failed: {type(error).__name__}: {error}"
+    return record | {"postprocess_error": message}
+
+
+def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, kill: dict[str, Any],
+             sha: str, source_commit: str | None, recorded_pointers: set[str]) -> bool:
+    """One kill end to end. Returns True when the batch may continue."""
+    for path in evidence_sources(kill):
+        if path.exists():
+            raise SystemExit(f"refusing to reuse an existing path: {path}")
+    print(f"kill k{kill['kill']}: {shlex.join(kill['argv'])}", flush=True)
+    try:
+        with kill["stdout"].open("w") as out, kill["stderr"].open("w") as err:
+            exit_code = run_harness(kill["argv"], root, out, err)
+    except BaseException as error:
+        record = _base_record(scenario, label, kill, sha, source_commit) | {
+            "outcome": "interrupted", "interrupted": type(error).__name__, "harness_exit_code": None,
+            "evidence_paths": [str(path) for path in evidence_sources(kill) if path.exists()]}
+        append_record(root, scenario, record)
+        print(f"INTERRUPTED: kill {kill['kill_id']} ({type(error).__name__}); the harness process group was "
+              f"stopped. The kill is recorded as not counted and its evidence is kept under /tmp; run "
+              f"`scoreboard archive-pending --scenario {scenario}` to archive it.", flush=True)
+        raise
+    record = _postprocess(root, target, scenario, label, kill, sha, source_commit)
+    record["worldserver_sha256"] = sha  # the hash of the pinned file that was launched always wins
+    if record.get("report_binary_sha256"):
+        print(f"warning: report.json names binary {record['report_binary_sha256']} but the launched file is {sha}; "
+              "both are recorded, the file hash is used", flush=True)
+    record["harness_exit_code"] = exit_code
+    record["evidence_paths"] = [str(path) for path in evidence_sources(kill) if path.exists()]
+    try:
+        pointer, error = archive_evidence(root, scenario, kill["kill_id"], evidence_sources(kill), recorded_pointers)
+    except Exception as failure:
+        pointer, error = None, f"{type(failure).__name__}: {failure}"
+    record["evidence_dvc_pointer"] = pointer
+    if error:
+        record["archive_error"] = error
+    append_record(root, scenario, record)
+    if pointer:
+        recorded_pointers.add(pointer)
+    # The exit code is informational: diagnostic route runs exit 1 even on a clean clear.
+    print(kill_line(record) + f" harness_exit={exit_code} (informational) evidence={pointer}", flush=True)
+    problems = []
+    if record.get("postprocess_error"):
+        problems.append(f"POSTPROCESS FAILED: {record['postprocess_error']}. The kill is recorded "
+                        "(a clear is not counted until its numbers exist); fix the tool before measuring again.")
+    if record["outcome"] == "infrastructure_failure":
+        problems.append(f"INFRASTRUCTURE FAILURE: {record.get('completion_reason')}; the kill is not counted "
+                        "and is not a gameplay failure. Investigate the harness, then measure under a new label.")
+    elif record["outcome"] == "gameplay_failure":
+        problems.append(f"NOT A NATIVE CLEAR (completion={record.get('completion_reason')}, "
+                        f"native={record.get('native_reason')}): it is recorded and fails this label; "
+                        "fix the cause and measure under a new label.")
+    elif record["outcome"] == "clear" and not record.get("encounter"):
+        problems.append("CLEARED WITHOUT ENCOUNTER DATA: combat_analysis.json has no encounter window.")
+    if error:
+        problems.append(f"ARCHIVE FAILED: {error}. Evidence kept: {', '.join(record['evidence_paths'])}. "
+                        f"Retry with `scoreboard archive-pending --scenario {scenario}`.")
+    for problem in problems:
+        print(f"STOP: {problem}", flush=True)
+    return not problems
 
 
 def run_batch(root: Path, args) -> int:
@@ -87,56 +232,77 @@ def run_batch(root: Path, args) -> int:
     kills = args.kills or int(target["kills_per_measurement"])
     if kills < 1:
         raise SystemExit("--kills must be at least 1")
+    existing = label_kills(load_records(root, args.scenario), args.label)
+    if existing:
+        raise SystemExit(f"label {args.label} already has {len(existing)} kill(s); a label is one build and one "
+                         "batch. Use a new label.")
     worldserver = args.worldserver or Path(target["run_plan"]["default_worldserver"])
     worldserver = (worldserver if worldserver.is_absolute() else root / worldserver).resolve()
-    first_index = len(label_kills(load_records(root, args.scenario), args.label)) + 1
-    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
-    plan = plan_kills(root, target, scenario=args.scenario, label=args.label, kills=kills,
-                      worldserver=worldserver, first_index=first_index, stamp=stamp)
+    batch = stamp()
     if args.dry_run:
+        sha = file_sha256(worldserver) if worldserver.exists() else None
+        pinned = PIN_DIR / f"worldserver-{sha[:12]}" if sha else PIN_DIR / "worldserver-<sha12>"
         print(f"dry run: {kills} kill(s) for {args.scenario} label {args.label}; nothing is executed")
-        if not worldserver.exists():
-            print(f"warning: worldserver not found: {worldserver}")
-        _print_plan(root, target, plan, args.scenario)
+        print(f"pin:      copy {worldserver} -> {pinned}" + ("" if sha else "  (warning: worldserver not found)"))
+        for kill in plan_kills(target, label=args.label, kills=kills, worldserver=pinned, batch=batch):
+            _print_kill(root, target, args.scenario, kill)
         return 0
     if not worldserver.exists():
         raise SystemExit(f"worldserver not found: {worldserver}")
-
+    pinned, sha = pin_worldserver(worldserver)
+    print(f"pinned {worldserver} -> {pinned} ({sha}); the copy is kept for re-measuring this build", flush=True)
     source_commit = args.source_commit or git_head(root)
-    manifest = root / target["wcl_cast_timelines"]
-    for position, kill in enumerate(plan, start=1):
-        for path in (kill["output_dir"], kill["analysis_dir"], kill["stdout"], kill["stderr"]):
-            if path.exists():
-                raise SystemExit(f"refusing to reuse an existing path: {path}")
-        sha = file_sha256(worldserver)
-        print(f"kill {position}/{kills} (k{kill['kill']}): {shlex.join(kill['argv'])}", flush=True)
-        with kill["stdout"].open("w") as out, kill["stderr"].open("w") as err:
-            returncode = subprocess.run(kill["argv"], cwd=root, stdout=out, stderr=err).returncode
-        kill["analysis_dir"].mkdir(parents=True)
-        timeline = write_timeline(kill["output_dir"], manifest, kill["analysis_dir"] / "timeline.json")
-        record = record_from_run_dir(
-            root, target, scenario=args.scenario, label=args.label, run_dir=kill["output_dir"],
-            timeline_path=timeline, source_commit=source_commit, worldserver_sha256=sha,
-            summary_output=kill["analysis_dir"] / "summary.json")
-        if record["worldserver_sha256"] != sha:
-            print(f"warning: report binary {record['worldserver_sha256']} differs from {worldserver} ({sha})")
-        record["evidence_dvc_pointer"] = _archive(root, kill)
-        append_record(root, args.scenario, record)
-        # The exit code is informational: diagnostic route runs exit 1 even on a
-        # clean native clear. The clear decision comes from report.json.
-        print(kill_line(record) + f" harness_exit={returncode} (informational) "
-              f"evidence={record['evidence_dvc_pointer']}", flush=True)
-        if not record["native_clear"] or not record.get("encounter"):
-            problem = ("was not a native clear" if not record["native_clear"]
-                       else "cleared but combat_analysis.json has no encounter window")
-            print(f"STOP: kill k{kill['kill']} {problem} "
-                  f"(completion={record.get('completion_reason')}, native={record.get('native_reason')}). "
-                  "It is recorded and fails this label; fix the cause and measure under a new label.")
-            return 1
-        if record["evidence_dvc_pointer"] is None:
-            print(f"STOP: archiving k{kill['kill']} failed; the evidence is still under /tmp. "
-                  "Archive it with experiments.archive_run_evidence before continuing.")
+    pointers = {r["evidence_dvc_pointer"] for r in load_records(root, args.scenario) if r.get("evidence_dvc_pointer")}
+    for kill in plan_kills(target, label=args.label, kills=kills, worldserver=pinned, batch=batch):
+        if not run_kill(root, target, scenario=args.scenario, label=args.label, kill=kill, sha=sha,
+                        source_commit=source_commit, recorded_pointers=pointers):
             return 1
     print(f"batch done: {kills} kill(s) recorded under {args.label}. Next: "
           f"pixi run python -m tools.raid_program.scoreboard verdict --scenario {args.scenario} --label {args.label}")
     return 0
+
+
+def _print_kill(root: Path, target: dict[str, Any], scenario: str, kill: dict[str, Any]) -> None:
+    analysis = kill["analysis_dir"]
+    name = archive_base(scenario, kill["kill_id"])
+    print(f"kill {kill['kill']} ({kill['kill_id']}):")
+    print(f"  cwd:      {root}")
+    print(f"  argv:     {shlex.join(kill['argv'])}  (own session; process group killed on interrupt)")
+    print(f"  stdout:   {kill['stdout']}")
+    print(f"  stderr:   {kill['stderr']}")
+    print(f"  run dir:  {kill['output_dir']}")
+    if target.get("wcl_cast_timelines"):
+        print(f"  timeline: pixi run python -m tools.bot_ml.compare_magmaw_timelines --bot-run {kill['output_dir']} "
+              f"--wcl-manifest {target['wcl_cast_timelines']} --output {analysis / 'timeline.json'}")
+    print(f"  summary:  {analysis / 'summary.json'}")
+    print(f"  record:   append to {scoreboard_path(root, scenario).relative_to(root)}")
+    print(f"  archive:  {shlex.join(archive_argv(name, evidence_sources(kill)))}")
+    print(f"  pointer:  {EVIDENCE_DIR}/{name}.tar.gz.dvc (a fresh _retryN name if that one is taken)")
+
+
+def archive_pending(root: Path, scenario: str) -> int:
+    """Archive the kept /tmp evidence of every kill without a pointer; attach the pointer."""
+    records = load_records(root, scenario)
+    pointers = {r["evidence_dvc_pointer"] for r in records if r.get("evidence_dvc_pointer")}
+    pending = [record for record in records if not record.get("evidence_dvc_pointer")]
+    if not pending:
+        print("every kill has evidence; nothing to archive")
+        return 0
+    failures = 0
+    for record in pending:
+        sources = [Path(path) for path in record.get("evidence_paths") or []]
+        if not any(path.exists() for path in sources):
+            print(f"{record['kill_id']}: no kept evidence exists ({', '.join(map(str, sources)) or 'none recorded'}); "
+                  "it stays not counted (no_evidence); void it if it should be ignored")
+            failures += 1
+            continue
+        pointer, error = archive_evidence(root, scenario, record["kill_id"], sources, pointers)
+        if pointer is None:
+            print(f"{record['kill_id']}: {error}; evidence kept")
+            failures += 1
+            continue
+        pointers.add(pointer)
+        append_record(root, scenario, {"schema": ATTACHMENT_SCHEMA, "kill_id": record["kill_id"],
+                                       "evidence_dvc_pointer": pointer, "recorded_at": utc_now()})
+        print(f"{record['kill_id']}: attached {pointer}")
+    return 1 if failures else 0

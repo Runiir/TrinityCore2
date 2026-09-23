@@ -138,12 +138,15 @@ def task_summary(root, section='summary'):
 
 def progress_view(progress, root, section='summary'):
     """Shared CLI projection; complete graph data stays available explicitly."""
+    tier, finish = progress.get('tier') or {}, progress.get('finish_line') or {}
     base = {'schema': 'evidence_task_summary_v1', 'state_sha256': progress['state_sha256'],
             'revision': progress['revision'], 'stage': progress['stage'],
             'coordinator_worktree': progress['coordinator_worktree'],
             'encounter': progress.get('encounter'), 'coordinator_skill': progress.get('coordinator_skill'),
             'dps_acceptance': progress.get('dps_acceptance'),
-            'tier': progress.get('tier'), 'finish_line': progress.get('finish_line'),
+            # Detail sections share a 6000-character budget: keep these compact there.
+            'tier': {k: tier[k] for k in ('risk_tier', 'remaining_steps') if k in tier} or None,
+            'finish_line': {k: finish[k] for k in ('target_path', 'target_present', 'work_item') if k in finish} or None,
             'completed_measurement_count': len(progress.get('completed_measurements', []))}
     if section == 'unit':
         return base | {'unit': progress['unit'], 'test_plan': progress.get('test_plan', {}),
@@ -179,6 +182,7 @@ def progress_view(progress, root, section='summary'):
     claim = progress['claim']
     worker_ready = progress['stage'] == 'implement' and not claim
     return base | {
+        'tier': progress.get('tier'), 'finish_line': progress.get('finish_line'),
         'objective': progress['objective'],
         'unit': {key: unit.get(key) for key in ('id', 'edge', 'owner_skill', 'risk_tier', 'objective', 'requirements', 'next_action')},
         'claim': claim,

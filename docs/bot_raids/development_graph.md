@@ -38,16 +38,23 @@ over the required kills at least 0.95 x the median matched WCL DPS for the spec,
 and no boss-window deaths. The scoreboard turns a labelled batch of kills into a
 `raid_target_verdict_v1`.
 
-- An actor requirement (`actor_<id>`) is accepted only when its verdict row is `pass`.
+- An actor requirement (`actor_<id>`) is accepted only when its verdict row and
+  the encounter are `pass`.
 - An encounter requirement (one with `needs_all_actors`, e.g. `magmaw_10n`,
-  `encounter_performance`) is accepted only when the overall verdict is `pass`.
+  `encounter_performance`) is accepted only when the overall verdict is `pass` and
+  its `roster` covers every program actor with nothing missing.
 - `no_reference`, `insufficient_kills` and `fail` keep the requirement open.
   `no_reference` is missing reference work, never acceptance.
 - Free-form actor reviews, dummy calibrations and raid totals cannot close these
   requirements. Other requirements keep the reviewed repair assessment.
 
-Accepting requirements records a compact verdict on each one (verdict file
-reference, label, kills, status, ratio(s)). Lawful behavior is unchanged: no
+A verdict only counts for the unit that produced it: every counted kill ran the
+unit's binary (`build_identity`, including a verified reuse), every kill was
+recorded after the unit's validation claim, the label was not used by an earlier
+acceptance, and `target_sha256`/`wcl_manifest_sha256`/`wcl_timelines_sha256` match
+the current files. The graph recomputes it at assessment and again at publication
+and rejects any change. Each accepted requirement records the verdict file,
+label, counted kill IDs, binary, pinned input hashes, status and ratio(s). Lawful behavior is unchanged: no
 coefficient tuning, external buffs, pre-applied debuffs or DTR allowance.
 
 A missing target file is open work: new scenarios get a `raid_target`
@@ -55,22 +62,29 @@ requirement (in the first unit) and resume prefixes the next action with it.
 
 ## Risk tiers
 
-A unit's `risk_tier` (set by `route` on the unit, or by the plan) fixes its steps:
+The effective tier is the highest of the unit's `risk_tier` (set by `route`), the
+plan's `risk_tier` and a floor from the unit's owned and supporting files. A plan
+may raise the unit tier, never lower it.
 
 | Tier | Use for | Steps after `implement` |
 | --- | --- | --- |
 | `profile` | rotation/profile, SQL data, config | `validate -> assess -> publish` (+ `build` only if needed, see below) |
 | `class_native` | class/spec C++ under `src/server/game/Bots` | `review -> build -> validate -> assess -> publish` |
-| `shared_runtime` | shared bot runtime, action arbitration, harness/validation tooling | `review -> build -> smoke -> validate -> assess -> publish` |
+| `shared_runtime` | shared bot runtime, action arbitration, harness/validation tooling, measurement inputs | `review -> build -> smoke -> validate -> assess -> publish` |
 
-Units without a tier (all saved history) are `class_native`, which is exactly the
-pre-tier flow. Skipped steps need no receipt. Plan-drift review and model advice
-are never steps.
+Path floor (`graph_tiers.path_tier`): native code (`src/`, `dep/`, `cmake/`, CMake
+files) is at least `class_native`; shared runtime C++ (action/movement arbiters and
+executors, spell queue, per-bot update loop, movement and recovery) and measurement
+or acceptance inputs (live validation runner, scoreboard, `graph_acceptance.py`,
+`experiments/configs/raid_targets/`, WCL manifests under
+`experiments/configs/cata_raid_encounters/`) are `shared_runtime`. Resume shows
+`tier.declared` and, when the floor raised it, `tier.raised_by_paths`.
 
-A unit whose own diff (plan base to tested commit) touches a native path (`src/`,
-`dep/`, `cmake/`, CMake files) is at least `class_native`: the tests transition
-raises a `profile` plan to `class_native` (review and build required) and resume
-shows `tier.tier_raised`. A non-native `profile` unit skips `build` when the plan
+Units that declare no tier keep the pre-tier `class_native` steps unless their
+files demand more. Skipped steps need no receipt. Plan-drift review and model
+advice are never steps.
+
+A `profile` unit skips `build` when the plan
 cites `reuse_build` (a recorded build adapter or the queued-build receipt of the
 binary on disk) that verifies under the plan policy and no native path changed
 between that build and the tested commit. Otherwise it builds without review and
@@ -108,16 +122,18 @@ Raid runs use `clock=completion_watchdog` and never a fixed success timer. Dummy
 calibration uses `terminal_reason=measurement_complete`, `scoring_ms=300000`.
 Failed or interrupted runs are closed and assessed without inventing a window.
 
-Verdict assessment: run the labelled batch, then
+Scoreboard batches: after claiming validation, run the labelled kills, then
 
 ```sh
-pixi run python -m tools.raid_program.graph_acceptance verdict --label <scoreboard_label>
+pixi run python -m tools.raid_program.graph_acceptance receipt --label <label> --cleanup-verified
+pixi run python -m tools.raid_program.graph_acceptance verdict --label <label>   # at assess
 ```
 
-It evaluates the active scenario, writes the verdict under
-`artifacts/cata_raid_program/verdicts/` and lists `acceptable_unit_requirements`.
-Cite its `{path, sha256}` as `verdict`. The graph requires the run's
-`scoreboard_label`, the program scenario and an identical fresh recomputation.
+`receipt` writes the run adapter (label, kill IDs, binary, evidence pointers)
+after checking every kill ran the unit's binary after the claim, dry-runs it and
+prints the advance command. `verdict` writes the verdict under
+`artifacts/cata_raid_program/verdicts/`, lists `acceptable_unit_requirements` and
+any `binding_error`. Cite its `{path, sha256}` as the assessment's `verdict`.
 Accepting a non-verdict requirement in the same adapter needs `repair_accepted=true`.
 Legacy assessments (no verdict) keep their gates, including the 95% dummy DPS gate
 for `performance_accepted`. Requirements close only at publication, only inside
@@ -228,12 +244,13 @@ picks against the scoreboard delta:
 ```sh
 pixi run python -m tools.raid_program.jev_outcomes append --unit <id> \
   --candidate <gap1> --candidate <gap2> --jev-pick <gap> --laya-pick <gap> --chosen <gap> \
-  --label-before <label> --label-after <label> --party-delta <dps> --actor-delta <dps>
+  --label-before <label> --label-after <label>
 pixi run python -m tools.raid_program.jev_outcomes summary
 ```
 
 Records go to `artifacts/cata_raid_program/jev_pick_outcomes.jsonl`; omit a pick
-for a model that was not run. An optional `advice` object in a plan/tests adapter
+for a model that was not run. Party and per-actor deltas and their noise verdicts
+come from `scoreboard.compare_labels`, never typed in. An optional `advice` object in a plan/tests adapter
 may hold `jev` and/or `laya` entries, each with `status` (`reviewed` plus receipt,
 or `not_reviewed` plus reason) and the coordinator's `adjudication`.
 

@@ -141,3 +141,18 @@ def test_task_view_rejects_reference_path_escape(tmp_path, monkeypatch):
     )
     result = task_view(tmp_path)
     assert result['missing'] == 'receipt path escapes repository'
+
+
+def test_detail_sections_keep_tier_and_finish_line_compact(tmp_path):
+    from tools.raid_program.evidence_task import progress_view
+    progress = {'state_sha256': 's', 'revision': 1, 'stage': 'diagnose', 'coordinator_worktree': str(tmp_path),
+                'open_requirements': {'actor_1': {'status': 'open'}},
+                'tier': {'risk_tier': 'class_native', 'remaining_steps': ['diagnose'], 'skipped_steps': ['smoke'],
+                         'conditional_steps': {}, 'declared': {'unit': None, 'plan': None}},
+                'finish_line': {'target_path': 't.json', 'target_present': True, 'work_item': None, 'rule': 'long rule',
+                                'open_actor_requirements': ['actor_1'], 'open_encounter_requirements': [],
+                                'verdict_command': 'cmd', 'run_receipt_command': 'cmd'}}
+    view = progress_view(progress, tmp_path, 'requirements')
+    assert view['tier'] == {'risk_tier': 'class_native', 'remaining_steps': ['diagnose']}
+    assert view['finish_line'] == {'target_path': 't.json', 'target_present': True, 'work_item': None}
+    assert view['open_requirements'] == progress['open_requirements']
