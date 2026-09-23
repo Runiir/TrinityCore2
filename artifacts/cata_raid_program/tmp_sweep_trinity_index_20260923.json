@@ -1,0 +1,2881 @@
+{
+ "created": "2026-09-23",
+ "dvc_pointer": "artifacts/cata_raid_program/tmp_sweep_trinity_evidence_20260923.tar.gz.dvc",
+ "entries": [
+  {
+   "bytes": 0,
+   "is_dir": true,
+   "modified": "2026-09-20 09:35",
+   "name": ".tmpxwxjeV"
+  },
+  {
+   "bytes": 4676,
+   "is_dir": false,
+   "modified": "2026-09-20 10:53",
+   "name": "add_workflow_tests.py"
+  },
+  {
+   "bytes": 863,
+   "is_dir": false,
+   "modified": "2026-09-20 08:23",
+   "name": "adjust_graph_fixture_20260920.py"
+  },
+  {
+   "bytes": 3622,
+   "is_dir": false,
+   "modified": "2026-09-20 12:21",
+   "name": "agent_drift_check_prepare.py"
+  },
+  {
+   "bytes": 2299,
+   "is_dir": false,
+   "modified": "2026-09-19 19:51",
+   "name": "an696.py"
+  },
+  {
+   "bytes": 3185,
+   "is_dir": false,
+   "modified": "2026-09-19 19:52",
+   "name": "analyze_696a_healers.py"
+  },
+  {
+   "bytes": 171551,
+   "is_dir": false,
+   "modified": "2026-09-19 09:00",
+   "name": "analyze_head.py"
+  },
+  {
+   "bytes": 254931,
+   "is_dir": false,
+   "modified": "2026-09-22 22:20",
+   "name": "audit_files.tsv"
+  },
+  {
+   "bytes": 22796,
+   "is_dir": false,
+   "modified": "2026-09-20 19:23",
+   "name": "balance-apl-full-20260920.json"
+  },
+  {
+   "bytes": 2096,
+   "is_dir": true,
+   "modified": "2026-09-20 12:28",
+   "name": "balance-cleanup-evidence-20260920"
+  },
+  {
+   "bytes": 794,
+   "is_dir": false,
+   "modified": "2026-09-20 12:28",
+   "name": "balance-cleanup-publication.log"
+  },
+  {
+   "bytes": 20294,
+   "is_dir": true,
+   "modified": "2026-09-20 21:31",
+   "name": "balance-gap-audit-20260920"
+  },
+  {
+   "bytes": 14595,
+   "is_dir": false,
+   "modified": "2026-09-20 19:20",
+   "name": "balance-generation-receipt-20260920.json"
+  },
+  {
+   "bytes": 21524,
+   "is_dir": false,
+   "modified": "2026-09-20 19:23",
+   "name": "balance-player-rotation-20260920.json"
+  },
+  {
+   "bytes": 13063,
+   "is_dir": false,
+   "modified": "2026-09-20 19:19",
+   "name": "balance-request-summary-20260920.json"
+  },
+  {
+   "bytes": 96527,
+   "is_dir": false,
+   "modified": "2026-09-20 18:48",
+   "name": "balance_request_view.json"
+  },
+  {
+   "bytes": 2261,
+   "is_dir": false,
+   "modified": "2026-09-20 08:28",
+   "name": "bind_graph_scenario_20260920.py"
+  },
+  {
+   "bytes": 1277,
+   "is_dir": false,
+   "modified": "2026-09-21 14:37",
+   "name": "blood-record.json"
+  },
+  {
+   "bytes": 3667,
+   "is_dir": false,
+   "modified": "2026-09-21 14:37",
+   "name": "blood-summary.json"
+  },
+  {
+   "bytes": 902912,
+   "is_dir": false,
+   "modified": "2026-09-22 22:19",
+   "name": "branch-only-rerun.log"
+  },
+  {
+   "bytes": 9835,
+   "is_dir": false,
+   "modified": "2026-09-19 19:06",
+   "name": "build_focused_blood_case_v2.py"
+  },
+  {
+   "bytes": 1573,
+   "is_dir": false,
+   "modified": "2026-09-19 19:39",
+   "name": "build_magmaw_reviewed_batch.py"
+  },
+  {
+   "bytes": 1955,
+   "is_dir": false,
+   "modified": "2026-09-19 19:18",
+   "name": "capture_magmaw_reviewed_batch.py"
+  },
+  {
+   "bytes": 0,
+   "is_dir": true,
+   "modified": "2026-09-20 17:49",
+   "name": "cata-magmaw-moonkin-probe.B7HqBA"
+  },
+  {
+   "bytes": 0,
+   "is_dir": true,
+   "modified": "2026-09-20 17:49",
+   "name": "cata-magmaw-moonkin-probe.kfiEc2"
+  },
+  {
+   "bytes": 580938,
+   "is_dir": true,
+   "modified": "2026-09-20 17:53",
+   "name": "cata-magmaw-moonkin-probe.vSqX2m"
+  },
+  {
+   "bytes": 38200550,
+   "is_dir": true,
+   "modified": "2026-09-22 15:46",
+   "name": "cata-magmaw-route-progress-final-20260922",
+   "raid_encounters": [
+    {
+     "actors": [
+      {
+       "dps": 8662.714,
+       "encounter_window_dps": 934.965,
+       "name": "Mgwdpse",
+       "role": "dps"
+      },
+      {
+       "dps": 230.286,
+       "encounter_window_dps": 24.855,
+       "name": "Mgwdpsa",
+       "role": "dps"
+      },
+      {
+       "dps": 163.857,
+       "encounter_window_dps": 17.685,
+       "name": "Mgwdpsd",
+       "role": "dps"
+      },
+      {
+       "dps": 124.786,
+       "encounter_window_dps": 13.468,
+       "name": "Mgwdpsb",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwtanka",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwtankb",
+       "role": "tank"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwheala",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealb",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealc",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwdpsc",
+       "role": "dps"
+      }
+     ],
+     "content_sha256_16": "cb20ae327e34ccb4",
+     "duration_sec": 129.714,
+     "encounter_window_party_dps": 990.972,
+     "file": "combat_analysis.json",
+     "party_dps": 9181.643,
+     "route_node_id": "bwd.magmaw.encounter"
+    }
+   ],
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_shared_route_progress_identity_01_publication_20260922.json"
+   ],
+   "reports": [
+    {
+     "completion_reason": "semantic_progress_plateau_watchdog",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 1496,
+   "is_dir": false,
+   "modified": "2026-09-22 15:42",
+   "name": "cata-magmaw-route-progress-final-identity-20260922.json"
+  },
+  {
+   "bytes": 51104325,
+   "is_dir": true,
+   "modified": "2026-09-22 15:35",
+   "name": "cata-magmaw-route-progress-prep-20260922",
+   "reports": [
+    {
+     "completion_reason": "emergency_wall_clock_timeout",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 34243394,
+   "is_dir": true,
+   "modified": "2026-09-22 15:38",
+   "name": "cata-magmaw-route-progress-prep2-20260922",
+   "raid_encounters": [
+    {
+     "actors": [
+      {
+       "dps": 24529.5,
+       "encounter_window_dps": 12277.027,
+       "name": "Mgwdpse",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwtanka",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwtankb",
+       "role": "tank"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwheala",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealb",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealc",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwdpsb",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwdpsc",
+       "role": "dps"
+      }
+     ],
+     "content_sha256_16": "66b7d3133005d23b",
+     "duration_sec": 3.996,
+     "encounter_window_party_dps": 12277.027,
+     "file": "combat_analysis.json",
+     "party_dps": 24529.5,
+     "route_node_id": "bwd.magmaw.encounter"
+    }
+   ],
+   "reports": [
+    {
+     "completion_reason": "semantic_progress_plateau_watchdog",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 169195,
+   "is_dir": true,
+   "modified": "2026-09-22 15:31",
+   "name": "cata-magmaw-route-progress-session-20260922"
+  },
+  {
+   "bytes": 9531851,
+   "is_dir": true,
+   "modified": "2026-09-22 20:49",
+   "name": "cata-magmaw-shared-native-engagement-authority-01-dryrun-20260922",
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 45007193,
+   "is_dir": true,
+   "modified": "2026-09-22 20:53",
+   "name": "cata-magmaw-shared-native-engagement-authority-01-run-20260922",
+   "raid_encounters": [
+    {
+     "actors": [
+      {
+       "dps": 9308.3,
+       "encounter_window_dps": 640.781,
+       "name": "Mgwdpse",
+       "role": "dps"
+      },
+      {
+       "dps": 172.1,
+       "encounter_window_dps": 11.847,
+       "name": "Mgwdpsa",
+       "role": "dps"
+      },
+      {
+       "dps": 150.3,
+       "encounter_window_dps": 10.347,
+       "name": "Mgwdpsb",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwtanka",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwtankb",
+       "role": "tank"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwheala",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealb",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealc",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwdpsc",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwdpsd",
+       "role": "dps"
+      }
+     ],
+     "content_sha256_16": "de393e05ce09d25d",
+     "duration_sec": 145.265,
+     "encounter_window_party_dps": 662.975,
+     "file": "combat_analysis.json",
+     "party_dps": 9630.7,
+     "route_node_id": "bwd.magmaw.encounter"
+    }
+   ],
+   "reports": [
+    {
+     "completion_reason": "semantic_progress_plateau_watchdog",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 0,
+   "is_dir": true,
+   "modified": "2026-09-20 13:41",
+   "name": "cata-moonkin-trace.h4IvsY"
+  },
+  {
+   "bytes": 0,
+   "is_dir": true,
+   "modified": "2026-09-20 13:40",
+   "name": "cata-moonkin-trace.k2ElaU"
+  },
+  {
+   "bytes": 6959,
+   "is_dir": false,
+   "modified": "2026-09-20 09:40",
+   "name": "cata_raid_magmaw_balance_setup_plan_20260920.json"
+  },
+  {
+   "bytes": 5447,
+   "is_dir": false,
+   "modified": "2026-09-20 09:48",
+   "name": "cata_raid_magmaw_balance_setup_plan_20260920_scope2.json"
+  },
+  {
+   "bytes": 27782,
+   "is_dir": true,
+   "modified": "2026-09-20 09:40",
+   "name": "cata_raid_magmaw_balance_setup_plan_review2_20260920",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_setup_plan_jev_advice_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_setup_plan_laya_advice_20260920.json"
+   ]
+  },
+  {
+   "bytes": 28175,
+   "is_dir": true,
+   "modified": "2026-09-20 09:40",
+   "name": "cata_raid_magmaw_balance_setup_plan_review_20260920"
+  },
+  {
+   "bytes": 23442,
+   "is_dir": true,
+   "modified": "2026-09-20 09:48",
+   "name": "cata_raid_magmaw_balance_setup_plan_review_scope2_20260920"
+  },
+  {
+   "bytes": 73753,
+   "is_dir": false,
+   "modified": "2026-09-21 09:43",
+   "name": "cc51a7ob.s"
+  },
+  {
+   "bytes": 2862117,
+   "is_dir": true,
+   "modified": "2026-09-22 21:31",
+   "name": "claude-inspect-696a"
+  },
+  {
+   "bytes": 52747711,
+   "is_dir": true,
+   "modified": "2026-09-22 21:30",
+   "name": "claude-inspect-blood05",
+   "raid_encounters": [
+    {
+     "actors": [
+      {
+       "dps": 76548.28,
+       "encounter_window_dps": 81601.015,
+       "name": "Mgwdpsb",
+       "role": "dps"
+      },
+      {
+       "dps": 27422.8,
+       "encounter_window_dps": 29232.901,
+       "name": "Mgwdpsc",
+       "role": "dps"
+      },
+      {
+       "dps": 22471.28,
+       "encounter_window_dps": 23954.545,
+       "name": "Mgwdpsa",
+       "role": "dps"
+      },
+      {
+       "dps": 18183.76,
+       "encounter_window_dps": 19384.018,
+       "name": "Mgwtanka",
+       "role": "dps"
+      },
+      {
+       "dps": 17277.72,
+       "encounter_window_dps": 18418.173,
+       "name": "Mgwdpse",
+       "role": "dps"
+      },
+      {
+       "dps": 13251.36,
+       "encounter_window_dps": 14126.045,
+       "name": "Mgwtankb",
+       "role": "tank"
+      },
+      {
+       "dps": 10820.8,
+       "encounter_window_dps": 11535.05,
+       "name": "Mgwdpsd",
+       "role": "dps"
+      }
+     ],
+     "content_sha256_16": "a108c005f3c2a97e",
+     "duration_sec": 23.452,
+     "encounter_window_party_dps": 198251.748,
+     "file": "magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "party_dps": 185976.0,
+     "route_node_id": "bwd.magmaw.chainwielder"
+    },
+    {
+     "actors": [
+      {
+       "dps": 49049.297,
+       "encounter_window_dps": 45853.205,
+       "name": "Mgwdpsa",
+       "role": "dps"
+      },
+      {
+       "dps": 31045.757,
+       "encounter_window_dps": 29022.79,
+       "name": "Mgwdpsb",
+       "role": "dps"
+      },
+      {
+       "dps": 30123.108,
+       "encounter_window_dps": 28160.262,
+       "name": "Mgwdpse",
+       "role": "dps"
+      },
+      {
+       "dps": 27027.946,
+       "encounter_window_dps": 25266.783,
+       "name": "Mgwdpsc",
+       "role": "dps"
+      },
+      {
+       "dps": 22347.865,
+       "encounter_window_dps": 20891.66,
+       "name": "Mgwtanka",
+       "role": "dps"
+      },
+      {
+       "dps": 15396.459,
+       "encounter_window_dps": 14393.214,
+       "name": "Mgwtankb",
+       "role": "tank"
+      },
+      {
+       "dps": 13498.757,
+       "encounter_window_dps": 12619.167,
+       "name": "Mgwdpsd",
+       "role": "dps"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwheala",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealb",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealc",
+       "role": "healer"
+      }
+     ],
+     "content_sha256_16": "ce1abc69bbee3a35",
+     "duration_sec": 39.579,
+     "encounter_window_party_dps": 176207.08,
+     "file": "magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "party_dps": 188489.189,
+     "route_node_id": "bwd.magmaw.drudges"
+    },
+    {
+     "actors": [
+      {
+       "dps": 46775.856,
+       "encounter_window_dps": 42413.39,
+       "name": "Mgwdpsb",
+       "role": "dps"
+      },
+      {
+       "dps": 45366.955,
+       "encounter_window_dps": 41135.888,
+       "name": "Mgwdpsc",
+       "role": "dps"
+      },
+      {
+       "dps": 41319.775,
+       "encounter_window_dps": 37466.161,
+       "name": "Mgwdpse",
+       "role": "dps"
+      },
+      {
+       "dps": 37943.892,
+       "encounter_window_dps": 34405.123,
+       "name": "Mgwtanka",
+       "role": "dps"
+      },
+      {
+       "dps": 36310.153,
+       "encounter_window_dps": 32923.752,
+       "name": "Mgwdpsd",
+       "role": "dps"
+      },
+      {
+       "dps": 28205.82,
+       "encounter_window_dps": 25575.255,
+       "name": "Mgwdpsa",
+       "role": "dps"
+      },
+      {
+       "dps": 14182.685,
+       "encounter_window_dps": 12859.962,
+       "name": "Mgwtankb",
+       "role": "tank"
+      },
+      {
+       "dps": 3804.703,
+       "encounter_window_dps": 3449.864,
+       "name": "Mgwhealc",
+       "role": "healer"
+      },
+      {
+       "dps": 1967.586,
+       "encounter_window_dps": 1784.082,
+       "name": "Mgwheala",
+       "role": "healer"
+      },
+      {
+       "dps": 0.0,
+       "encounter_window_dps": 0.0,
+       "name": "Mgwhealb",
+       "role": "healer"
+      }
+     ],
+     "content_sha256_16": "5b5f28bb9ed4a8dc",
+     "duration_sec": 122.417,
+     "encounter_window_party_dps": 232013.479,
+     "file": "magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "party_dps": 255877.423,
+     "route_node_id": "bwd.magmaw.encounter"
+    }
+   ],
+   "reports": [
+    {
+     "completion_reason": "semantic_progress_plateau_watchdog",
+     "file": "magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 3037,
+   "is_dir": false,
+   "modified": "2026-09-20 12:25",
+   "name": "cleanup_closed_balance_runs.py"
+  },
+  {
+   "bytes": 1823,
+   "is_dir": false,
+   "modified": "2026-09-19 22:21",
+   "name": "cleanup_dummy_50ec676cdb_20260919.py"
+  },
+  {
+   "bytes": 13690,
+   "is_dir": false,
+   "modified": "2026-09-20 12:26",
+   "name": "closed-balance-cleanup-receipt.json"
+  },
+  {
+   "bytes": 368,
+   "is_dir": false,
+   "modified": "2026-09-20 12:26",
+   "name": "closed-balance-cleanup.log"
+  },
+  {
+   "bytes": 1761,
+   "is_dir": false,
+   "modified": "2026-09-19 21:44",
+   "name": "compare_dummy_run_20260919.py"
+  },
+  {
+   "bytes": 7001,
+   "is_dir": false,
+   "modified": "2026-09-20 12:20",
+   "name": "current-agent-drift-state.json"
+  },
+  {
+   "bytes": 56612,
+   "is_dir": false,
+   "modified": "2026-09-20 12:20",
+   "name": "current-agent-drift-tools.json"
+  },
+  {
+   "bytes": 193,
+   "is_dir": false,
+   "modified": "2026-09-20 08:28",
+   "name": "development-graph-final-tests-20260920.log"
+  },
+  {
+   "bytes": 2112,
+   "is_dir": false,
+   "modified": "2026-09-20 08:29",
+   "name": "development-graph-independent-review-20260920.json"
+  },
+  {
+   "bytes": 223,
+   "is_dir": false,
+   "modified": "2026-09-20 08:31",
+   "name": "development-graph-publication-20260920.json"
+  },
+  {
+   "bytes": 818,
+   "is_dir": false,
+   "modified": "2026-09-20 08:31",
+   "name": "development-graph-publication-20260920.log"
+  },
+  {
+   "bytes": 3268,
+   "is_dir": false,
+   "modified": "2026-09-20 08:31",
+   "name": "development-graph-publication-manifest-20260920.json"
+  },
+  {
+   "bytes": 5505,
+   "is_dir": false,
+   "modified": "2026-09-20 08:28",
+   "name": "development-graph-resume-20260920.json"
+  },
+  {
+   "bytes": 5505,
+   "is_dir": false,
+   "modified": "2026-09-20 08:28",
+   "name": "development-graph-resume-review.json"
+  },
+  {
+   "bytes": 1079,
+   "is_dir": false,
+   "modified": "2026-09-20 08:18",
+   "name": "development-graph-suite-20260920.log"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 08:24",
+   "name": "development-graph-tests-20260920.log"
+  },
+  {
+   "bytes": 4926458,
+   "is_dir": true,
+   "modified": "2026-09-22 14:15",
+   "name": "dvc-remote-verify.M8PHhi"
+  },
+  {
+   "bytes": 304,
+   "is_dir": true,
+   "modified": "2026-09-22 14:15",
+   "name": "dvc-remote-verify.d9SWSk"
+  },
+  {
+   "bytes": 26594,
+   "is_dir": true,
+   "modified": "2026-09-22 14:15",
+   "name": "dvc-remote-verify.gWhceF"
+  },
+  {
+   "bytes": 12828,
+   "is_dir": false,
+   "modified": "2026-09-19 02:50",
+   "name": "elem58.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-19 02:50",
+   "name": "elem58.txt"
+  },
+  {
+   "bytes": 4689,
+   "is_dir": false,
+   "modified": "2026-09-19 02:50",
+   "name": "elem58_diag.json"
+  },
+  {
+   "bytes": 8867,
+   "is_dir": false,
+   "modified": "2026-09-19 02:52",
+   "name": "elem58_events_window.json"
+  },
+  {
+   "bytes": 2812,
+   "is_dir": false,
+   "modified": "2026-09-19 02:50",
+   "name": "elem58_log_actions.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-19 02:51",
+   "name": "elem58_movement_records.json"
+  },
+  {
+   "bytes": 18277,
+   "is_dir": false,
+   "modified": "2026-09-19 02:50",
+   "name": "elem58_outcomes.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-19 02:52",
+   "name": "elem58_trace.json"
+  },
+  {
+   "bytes": 14739,
+   "is_dir": false,
+   "modified": "2026-09-19 03:03",
+   "name": "elem59.json"
+  },
+  {
+   "bytes": 152433,
+   "is_dir": false,
+   "modified": "2026-09-19 03:03",
+   "name": "elem59_events.json"
+  },
+  {
+   "bytes": 26707,
+   "is_dir": false,
+   "modified": "2026-09-19 03:03",
+   "name": "elem59_outcomes.json"
+  },
+  {
+   "bytes": 3588,
+   "is_dir": false,
+   "modified": "2026-09-18 18:08",
+   "name": "elemental32-actor.json"
+  },
+  {
+   "bytes": 11501,
+   "is_dir": false,
+   "modified": "2026-09-18 18:08",
+   "name": "elemental32-summary.json"
+  },
+  {
+   "bytes": 39770,
+   "is_dir": false,
+   "modified": "2026-09-19 15:19",
+   "name": "elemental_catalog_extract.json"
+  },
+  {
+   "bytes": 110860,
+   "is_dir": false,
+   "modified": "2026-09-19 15:22",
+   "name": "elemental_decision_context.json"
+  },
+  {
+   "bytes": 37114,
+   "is_dir": false,
+   "modified": "2026-09-19 15:22",
+   "name": "elemental_report_extract.json"
+  },
+  {
+   "bytes": 36402,
+   "is_dir": false,
+   "modified": "2026-09-19 15:24",
+   "name": "elemental_request_contract.json"
+  },
+  {
+   "bytes": 2723,
+   "is_dir": false,
+   "modified": "2026-09-20 10:22",
+   "name": "evict_verified_raid_cache.py"
+  },
+  {
+   "bytes": 192,
+   "is_dir": false,
+   "modified": "2026-09-19 22:33",
+   "name": "final-handoff-dvc-cloud-20260919.log"
+  },
+  {
+   "bytes": 3407,
+   "is_dir": false,
+   "modified": "2026-09-20 08:25",
+   "name": "final_graph_docs_20260920.py"
+  },
+  {
+   "bytes": 3215,
+   "is_dir": false,
+   "modified": "2026-09-19 22:32",
+   "name": "finalize_handoff_text_20260919.py"
+  },
+  {
+   "bytes": 953,
+   "is_dir": false,
+   "modified": "2026-09-20 08:27",
+   "name": "finish_graph_reconciliation_20260920.py"
+  },
+  {
+   "bytes": 1961,
+   "is_dir": false,
+   "modified": "2026-09-20 08:24",
+   "name": "fix_graph_tests_20260920.py"
+  },
+  {
+   "bytes": 2599,
+   "is_dir": false,
+   "modified": "2026-09-19 21:43",
+   "name": "generate_dummy_debug_20260919.py"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 08:25",
+   "name": "graph-model-plan-20260920.log"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 08:29",
+   "name": "graph-model-result-20260920.log"
+  },
+  {
+   "bytes": 415,
+   "is_dir": false,
+   "modified": "2026-09-20 08:25",
+   "name": "graph-readiness-baseline-20260920.json"
+  },
+  {
+   "bytes": 40982,
+   "is_dir": true,
+   "modified": "2026-09-20 08:31",
+   "name": "graph-review-20260920"
+  },
+  {
+   "bytes": 2281,
+   "is_dir": false,
+   "modified": "2026-09-20 08:29",
+   "name": "graph_model_result_20260920.py"
+  },
+  {
+   "bytes": 2044,
+   "is_dir": false,
+   "modified": "2026-09-20 08:24",
+   "name": "graph_model_review_20260920.py"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 10:25",
+   "name": "host12-build-tests-20260920.log"
+  },
+  {
+   "bytes": 4634,
+   "is_dir": false,
+   "modified": "2026-09-20 10:29",
+   "name": "host12-independent-review-20260920.json"
+  },
+  {
+   "bytes": 1533,
+   "is_dir": false,
+   "modified": "2026-09-20 10:20",
+   "name": "inventory_raid_storage.py"
+  },
+  {
+   "bytes": 229192,
+   "is_dir": false,
+   "modified": "2026-09-19 03:02",
+   "name": "jev71_summary.json"
+  },
+  {
+   "bytes": 22,
+   "is_dir": false,
+   "modified": "2026-09-19 13:25",
+   "name": "jev_probe"
+  },
+  {
+   "bytes": 82,
+   "is_dir": false,
+   "modified": "2026-09-19 13:34",
+   "name": "laya-health"
+  },
+  {
+   "bytes": 150316,
+   "is_dir": true,
+   "modified": "2026-09-19 03:00",
+   "name": "laya-retained-research-20260919"
+  },
+  {
+   "bytes": 236,
+   "is_dir": false,
+   "modified": "2026-09-19 13:39",
+   "name": "m.log"
+  },
+  {
+   "bytes": 74434,
+   "is_dir": false,
+   "modified": "2026-09-20 16:36",
+   "name": "magmaw-24907-spell.json"
+  },
+  {
+   "bytes": 6477,
+   "is_dir": false,
+   "modified": "2026-09-21 18:32",
+   "name": "magmaw-active-task-audit-20260921.json"
+  },
+  {
+   "bytes": 7622,
+   "is_dir": false,
+   "modified": "2026-09-20 12:21",
+   "name": "magmaw-agent-drift-checkpoint.json"
+  },
+  {
+   "bytes": 32405,
+   "is_dir": true,
+   "modified": "2026-09-20 12:21",
+   "name": "magmaw-agent-drift-review"
+  },
+  {
+   "bytes": 1329,
+   "is_dir": false,
+   "modified": "2026-09-20 12:21",
+   "name": "magmaw-agent-drift-review-summary.json"
+  },
+  {
+   "bytes": 22899,
+   "is_dir": true,
+   "modified": "2026-09-21 14:53",
+   "name": "magmaw-agent-progress-review-20260921"
+  },
+  {
+   "bytes": 4899,
+   "is_dir": false,
+   "modified": "2026-09-20 18:09",
+   "name": "magmaw-balance-05-result-checkpoint-20260920.json"
+  },
+  {
+   "bytes": 21925,
+   "is_dir": true,
+   "modified": "2026-09-20 18:09",
+   "name": "magmaw-balance-05-result-checkpoint-output-20260920.json"
+  },
+  {
+   "bytes": 13452,
+   "is_dir": false,
+   "modified": "2026-09-20 11:43",
+   "name": "magmaw-balance-asset-root-configure-20260920.json"
+  },
+  {
+   "bytes": 23565,
+   "is_dir": false,
+   "modified": "2026-09-20 11:43",
+   "name": "magmaw-balance-asset-root-worldserver-20260920.json"
+  },
+  {
+   "bytes": 4784,
+   "is_dir": false,
+   "modified": "2026-09-20 11:51",
+   "name": "magmaw-balance-compat-summary.json"
+  },
+  {
+   "bytes": 592955,
+   "is_dir": true,
+   "modified": "2026-09-20 15:57",
+   "name": "magmaw-balance-effective-stat-parity-03-20260920",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework3_reconciliation_20260920.json",
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework_reconciliation_20260920.json"
+   ]
+  },
+  {
+   "bytes": 117099855,
+   "dummy_results": [
+    {
+     "dps": 31837.97333333333,
+     "file": "results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-20 16:04",
+   "name": "magmaw-balance-effective-stat-parity-03-20260920-r2",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework_reconciliation_20260920.json"
+   ]
+  },
+  {
+   "bytes": 117161359,
+   "dummy_results": [
+    {
+     "dps": 32203.266666666666,
+     "file": "results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-20 16:33",
+   "name": "magmaw-balance-effective-stat-parity-03-20260920-r3",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_effective_stat_parity_03_validate_rework3_reconciliation_20260920.json"
+   ]
+  },
+  {
+   "bytes": 157165,
+   "is_dir": true,
+   "modified": "2026-09-21 11:15",
+   "name": "magmaw-balance-flow006-v3"
+  },
+  {
+   "bytes": 893,
+   "is_dir": false,
+   "modified": "2026-09-21 11:08",
+   "name": "magmaw-balance-flow006-v3-closure.json"
+  },
+  {
+   "bytes": 6841247,
+   "is_dir": true,
+   "modified": "2026-09-21 11:16",
+   "name": "magmaw-balance-flow006-v4",
+   "reports": [
+    {
+     "completion_reason": "combat_calibration_role_gate_failed",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 23466743,
+   "is_dir": true,
+   "modified": "2026-09-21 11:21",
+   "name": "magmaw-balance-flow006-v5",
+   "reports": [
+    {
+     "completion_reason": "combat_calibration_role_gate_failed",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 92645087,
+   "is_dir": true,
+   "modified": "2026-09-21 11:27",
+   "name": "magmaw-balance-flow006-v6"
+  },
+  {
+   "bytes": 13455,
+   "is_dir": false,
+   "modified": "2026-09-20 12:11",
+   "name": "magmaw-balance-observer-configure-20260920.json"
+  },
+  {
+   "bytes": 23563,
+   "is_dir": false,
+   "modified": "2026-09-20 12:11",
+   "name": "magmaw-balance-observer-worldserver-20260920.json"
+  },
+  {
+   "bytes": 23563,
+   "is_dir": false,
+   "modified": "2026-09-20 12:11",
+   "name": "magmaw-balance-observer-worldserver-success-20260920.json"
+  },
+  {
+   "bytes": 6045609,
+   "is_dir": true,
+   "modified": "2026-09-20 14:21",
+   "name": "magmaw-balance-parity-closure-20260920"
+  },
+  {
+   "bytes": 11166176,
+   "is_dir": true,
+   "modified": "2026-09-20 14:22",
+   "name": "magmaw-balance-parity-closure-20260920-existing"
+  },
+  {
+   "bytes": 466,
+   "is_dir": true,
+   "modified": "2026-09-20 14:38",
+   "name": "magmaw-balance-parity-dvc-verify-aTrkwQ"
+  },
+  {
+   "bytes": 119948603,
+   "dummy_results": [
+    {
+     "dps": 32815.97,
+     "file": "results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-20 15:04",
+   "name": "magmaw-balance-rotation-cadence-20260920-r1",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_validate_reconciliation_20260920.json"
+   ]
+  },
+  {
+   "bytes": 119948606,
+   "dummy_results": [
+    {
+     "dps": 33855.26666666667,
+     "file": "magmaw-balance-effective-stat-parity-20260920-r1/results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-20 14:41",
+   "name": "magmaw-balance-rotation-review-20260920",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_rotation_cadence_diagnosis_20260920.json"
+   ]
+  },
+  {
+   "bytes": 7865717,
+   "is_dir": true,
+   "modified": "2026-09-20 19:22",
+   "name": "magmaw-balance-rotation-review-post-parity-20260920"
+  },
+  {
+   "bytes": 39713,
+   "is_dir": false,
+   "modified": "2026-09-20 11:55",
+   "name": "magmaw-balance-stat-summary.json"
+  },
+  {
+   "bytes": 592653,
+   "is_dir": true,
+   "modified": "2026-09-20 11:33",
+   "name": "magmaw-balance-validation-rebased-20260920",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_setup_validate_preflight_rework_rebased_20260920.json"
+   ]
+  },
+  {
+   "bytes": 117166164,
+   "dummy_results": [
+    {
+     "dps": 31877.553333333333,
+     "file": "magmaw-balance-observer-validation-20260920/results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-20 13:16",
+   "name": "magmaw-balance-validation.i2md6H"
+  },
+  {
+   "bytes": 125423868,
+   "is_dir": true,
+   "modified": "2026-09-22 14:14",
+   "name": "magmaw-blood-correction.nAYpSM",
+   "raid_encounters": [
+    {
+     "content_sha256_16": "a108c005f3c2a97e",
+     "duplicate_of": "claude-inspect-blood05/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "duration_sec": 23.452,
+     "encounter_window_party_dps": 198251.748,
+     "file": "archive-stage/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "party_dps": 185976.0,
+     "route_node_id": "bwd.magmaw.chainwielder"
+    },
+    {
+     "content_sha256_16": "ce1abc69bbee3a35",
+     "duplicate_of": "claude-inspect-blood05/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "duration_sec": 39.579,
+     "encounter_window_party_dps": 176207.08,
+     "file": "archive-stage/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "party_dps": 188489.189,
+     "route_node_id": "bwd.magmaw.drudges"
+    },
+    {
+     "content_sha256_16": "5b5f28bb9ed4a8dc",
+     "duplicate_of": "claude-inspect-blood05/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "duration_sec": 122.417,
+     "encounter_window_party_dps": 232013.479,
+     "file": "archive-stage/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "party_dps": 255877.423,
+     "route_node_id": "bwd.magmaw.encounter"
+    },
+    {
+     "content_sha256_16": "a108c005f3c2a97e",
+     "duplicate_of": "claude-inspect-blood05/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "duration_sec": 23.452,
+     "encounter_window_party_dps": 198251.748,
+     "file": "runs/blackwing_descent_10n_magmaw_diagnostic/combat_analysis.json",
+     "party_dps": 185976.0,
+     "route_node_id": "bwd.magmaw.chainwielder"
+    },
+    {
+     "content_sha256_16": "ce1abc69bbee3a35",
+     "duplicate_of": "claude-inspect-blood05/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "duration_sec": 39.579,
+     "encounter_window_party_dps": 176207.08,
+     "file": "runs/blackwing_descent_10n_magmaw_diagnostic/combat_analysis.json",
+     "party_dps": 188489.189,
+     "route_node_id": "bwd.magmaw.drudges"
+    },
+    {
+     "content_sha256_16": "5b5f28bb9ed4a8dc",
+     "duplicate_of": "claude-inspect-blood05/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/combat_analysis.json",
+     "duration_sec": 122.417,
+     "encounter_window_party_dps": 232013.479,
+     "file": "runs/blackwing_descent_10n_magmaw_diagnostic/combat_analysis.json",
+     "party_dps": 255877.423,
+     "route_node_id": "bwd.magmaw.encounter"
+    }
+   ],
+   "reports": [
+    {
+     "completion_reason": "semantic_progress_plateau_watchdog",
+     "file": "archive-stage/magmaw_blood_tank_boss_damage_cadence_05_validation_20260922/report.json",
+     "native_clear": false
+    },
+    {
+     "completion_reason": "semantic_progress_plateau_watchdog",
+     "file": "runs/blackwing_descent_10n_magmaw_diagnostic/report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 10375885,
+   "is_dir": true,
+   "modified": "2026-09-21 11:41",
+   "name": "magmaw-blood-evidence-fCyFBC"
+  },
+  {
+   "bytes": 3612458,
+   "is_dir": true,
+   "modified": "2026-09-22 10:01",
+   "name": "magmaw-blood-provisioning.thXPK9",
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 143,
+   "is_dir": false,
+   "modified": "2026-09-22 20:43",
+   "name": "magmaw-build-claim-20260922.json"
+  },
+  {
+   "bytes": 133,
+   "is_dir": false,
+   "modified": "2026-09-22 20:19",
+   "name": "magmaw-claim-event-20260922.json"
+  },
+  {
+   "bytes": 133,
+   "is_dir": false,
+   "modified": "2026-09-22 20:22",
+   "name": "magmaw-claim-event-r2-20260922.json"
+  },
+  {
+   "bytes": 133,
+   "is_dir": false,
+   "modified": "2026-09-22 20:34",
+   "name": "magmaw-claim-event-r3-20260922.json"
+  },
+  {
+   "bytes": 6986,
+   "is_dir": false,
+   "modified": "2026-09-20 12:27",
+   "name": "magmaw-cleanup-final-resume.json"
+  },
+  {
+   "bytes": 510,
+   "is_dir": false,
+   "modified": "2026-09-20 12:27",
+   "name": "magmaw-cleanup-invariants.json"
+  },
+  {
+   "bytes": 6846,
+   "is_dir": false,
+   "modified": "2026-09-20 12:24",
+   "name": "magmaw-cleanup-resume.json"
+  },
+  {
+   "bytes": 6041747,
+   "is_dir": false,
+   "modified": "2026-09-21 13:53",
+   "name": "magmaw-closure-control-v2.json"
+  },
+  {
+   "bytes": 5124477,
+   "is_dir": false,
+   "modified": "2026-09-21 13:53",
+   "name": "magmaw-closure-control-v2.stdout"
+  },
+  {
+   "bytes": 6552,
+   "is_dir": false,
+   "modified": "2026-09-20 18:45",
+   "name": "magmaw-comparator-result-20260920.json"
+  },
+  {
+   "bytes": 26827,
+   "is_dir": true,
+   "modified": "2026-09-20 18:55",
+   "name": "magmaw-comparator-result-review-20260920.json"
+  },
+  {
+   "bytes": 64159142,
+   "is_dir": false,
+   "modified": "2026-09-20 19:20",
+   "name": "magmaw-current-report-20260920.json"
+  },
+  {
+   "bytes": 32944042,
+   "is_dir": false,
+   "modified": "2026-09-20 19:19",
+   "name": "magmaw-current-report-calibration-20260920.json"
+  },
+  {
+   "bytes": 3205,
+   "is_dir": false,
+   "modified": "2026-09-20 19:19",
+   "name": "magmaw-current-report-detail-20260920.json"
+  },
+  {
+   "bytes": 1740,
+   "is_dir": false,
+   "modified": "2026-09-20 19:19",
+   "name": "magmaw-current-report-keys-20260920.json"
+  },
+  {
+   "bytes": 1432,
+   "is_dir": false,
+   "modified": "2026-09-20 19:19",
+   "name": "magmaw-current-report-summary-20260920.json"
+  },
+  {
+   "bytes": 546432,
+   "is_dir": true,
+   "modified": "2026-09-21 11:14",
+   "name": "magmaw-dvc-validation-scenarios-20260921",
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 546446,
+   "is_dir": true,
+   "modified": "2026-09-21 11:14",
+   "name": "magmaw-dvc-validation-scenarios-rev-20260921",
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 2734218,
+   "is_dir": true,
+   "modified": "2026-09-21 11:31",
+   "name": "magmaw-evidence-trash-20260921-remote-verify",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_damage_loss_accounting_06_publication_v3_20260921.json"
+   ]
+  },
+  {
+   "bytes": 47550699,
+   "is_dir": true,
+   "modified": "2026-09-21 20:42",
+   "name": "magmaw-holy-paladin-capability-profile-01-source.YB7Fy9",
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "dataset/validation_gear_profiles/report.json",
+     "native_clear": null
+    },
+    {
+     "completion_reason": null,
+     "file": "dataset/validation_scenarios/report.json",
+     "native_clear": null
+    },
+    {
+     "completion_reason": null,
+     "file": "dataset/validation_scenarios/validation_scenarios/report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 47004267,
+   "is_dir": true,
+   "modified": "2026-09-21 20:45",
+   "name": "magmaw-holy-paladin-capability-profile-01-source.wERm7q",
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "dataset/validation_gear_profiles/report.json",
+     "native_clear": null
+    },
+    {
+     "completion_reason": null,
+     "file": "dataset/validation_scenarios/report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 157175,
+   "is_dir": true,
+   "modified": "2026-09-21 20:45",
+   "name": "magmaw-holy-paladin-capability-profile-01-validation.7QZHu5"
+  },
+  {
+   "bytes": 5454381,
+   "is_dir": false,
+   "modified": "2026-09-21 20:45",
+   "name": "magmaw-holy-paladin-closure-669-v2.json"
+  },
+  {
+   "bytes": 5459677,
+   "is_dir": false,
+   "modified": "2026-09-21 20:44",
+   "name": "magmaw-holy-paladin-closure-669.json"
+  },
+  {
+   "bytes": 258428,
+   "is_dir": false,
+   "modified": "2026-09-21 20:40",
+   "name": "magmaw-holy-paladin-closure-debug.json"
+  },
+  {
+   "bytes": 4630307,
+   "is_dir": false,
+   "modified": "2026-09-21 20:45",
+   "name": "magmaw-holy-paladin-closure-verify-v2.log"
+  },
+  {
+   "bytes": 37491,
+   "is_dir": false,
+   "modified": "2026-09-21 20:37",
+   "name": "magmaw-holy-paladin-update.9Df1cp.log"
+  },
+  {
+   "bytes": 1768232,
+   "is_dir": false,
+   "modified": "2026-09-20 10:42",
+   "name": "magmaw-new-reference-requests.json"
+  },
+  {
+   "bytes": 75196701,
+   "is_dir": true,
+   "modified": "2026-09-09 12:04",
+   "name": "magmaw-old-reference-bundle-20260920"
+  },
+  {
+   "bytes": 7648,
+   "is_dir": false,
+   "modified": "2026-09-20 18:40",
+   "name": "magmaw-plan-drift-comparator-20260920.json"
+  },
+  {
+   "bytes": 30158,
+   "is_dir": true,
+   "modified": "2026-09-20 18:40",
+   "name": "magmaw-plan-drift-comparator-output-20260920.json"
+  },
+  {
+   "bytes": 30017,
+   "is_dir": true,
+   "modified": "2026-09-20 18:40",
+   "name": "magmaw-plan-drift-comparator-output2-20260920.json"
+  },
+  {
+   "bytes": 29911,
+   "is_dir": true,
+   "modified": "2026-09-20 18:40",
+   "name": "magmaw-plan-drift-comparator-output3-20260920.json"
+  },
+  {
+   "bytes": 6225,
+   "is_dir": false,
+   "modified": "2026-09-20 19:16",
+   "name": "magmaw-plan-drift-post-comparator-20260920.json"
+  },
+  {
+   "bytes": 25640,
+   "is_dir": true,
+   "modified": "2026-09-20 19:16",
+   "name": "magmaw-plan-drift-post-comparator-output-20260920-v1"
+  },
+  {
+   "bytes": 9362,
+   "is_dir": false,
+   "modified": "2026-09-20 18:01",
+   "name": "magmaw-plan-drift-post-moonkin-probe-20260920-absolute.json"
+  },
+  {
+   "bytes": 9266,
+   "is_dir": false,
+   "modified": "2026-09-20 18:01",
+   "name": "magmaw-plan-drift-post-moonkin-probe-20260920.json"
+  },
+  {
+   "bytes": 32786,
+   "is_dir": true,
+   "modified": "2026-09-20 18:01",
+   "name": "magmaw-plan-drift-post-moonkin-probe-prepare-20260920.json"
+  },
+  {
+   "bytes": 33850,
+   "is_dir": true,
+   "modified": "2026-09-20 18:01",
+   "name": "magmaw-plan-drift-post-moonkin-probe-review-20260920.json"
+  },
+  {
+   "bytes": 9673,
+   "is_dir": false,
+   "modified": "2026-09-20 18:30",
+   "name": "magmaw-plan-drift-post-paired-probe-20260920.json"
+  },
+  {
+   "bytes": 34404,
+   "is_dir": true,
+   "modified": "2026-09-20 18:30",
+   "name": "magmaw-plan-drift-post-paired-probe-output-20260920.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-20 19:21",
+   "name": "magmaw-post-parity-diagnosis-data-20260920.json"
+  },
+  {
+   "bytes": 1768232,
+   "is_dir": false,
+   "modified": "2026-09-20 11:08",
+   "name": "magmaw-reference-pending-20260920.json"
+  },
+  {
+   "bytes": 12060,
+   "is_dir": false,
+   "modified": "2026-09-20 20:55",
+   "name": "magmaw-resume-05.json"
+  },
+  {
+   "bytes": 66808643,
+   "is_dir": true,
+   "modified": "2026-09-21 08:05",
+   "name": "magmaw-review-eWKUxX"
+  },
+  {
+   "bytes": 258,
+   "is_dir": false,
+   "modified": "2026-09-22 20:41",
+   "name": "magmaw-review-files-r3.json"
+  },
+  {
+   "bytes": 419,
+   "is_dir": false,
+   "modified": "2026-09-22 20:33",
+   "name": "magmaw-review-rework-event-20260922.json"
+  },
+  {
+   "bytes": 545,
+   "is_dir": false,
+   "modified": "2026-09-22 20:21",
+   "name": "magmaw-rework-event-20260922.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": true,
+   "modified": "2026-09-21 11:10",
+   "name": "magmaw-runtime-bundle-input-only-20260921"
+  },
+  {
+   "bytes": 6041714,
+   "is_dir": false,
+   "modified": "2026-09-21 11:14",
+   "name": "magmaw-runtime-closure-input-only-final.json"
+  },
+  {
+   "bytes": 5124444,
+   "is_dir": false,
+   "modified": "2026-09-21 11:14",
+   "name": "magmaw-runtime-closure-input-only-final.stdout"
+  },
+  {
+   "bytes": 5962240,
+   "is_dir": false,
+   "modified": "2026-09-21 11:12",
+   "name": "magmaw-runtime-closure-input-only-v2.json"
+  },
+  {
+   "bytes": 5051400,
+   "is_dir": false,
+   "modified": "2026-09-21 11:12",
+   "name": "magmaw-runtime-closure-input-only-v2.stdout"
+  },
+  {
+   "bytes": 6043321,
+   "is_dir": false,
+   "modified": "2026-09-21 11:13",
+   "name": "magmaw-runtime-closure-input-only-v3.json"
+  },
+  {
+   "bytes": 258410,
+   "is_dir": false,
+   "modified": "2026-09-21 11:10",
+   "name": "magmaw-runtime-closure-input-only.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-20 19:22",
+   "name": "magmaw-with-profile-summary-20260920.json"
+  },
+  {
+   "bytes": 12716,
+   "is_dir": false,
+   "modified": "2026-09-20 11:20",
+   "name": "magmaw-wowsims-promotion-index-20260920.json"
+  },
+  {
+   "bytes": 75190662,
+   "is_dir": true,
+   "modified": "2026-09-20 11:14",
+   "name": "magmaw-wowsims-reference-build-20260920"
+  },
+  {
+   "bytes": 86518,
+   "is_dir": true,
+   "modified": "2026-09-20 11:14",
+   "name": "magmaw-wowsims-reference-cohort-20260920"
+  },
+  {
+   "bytes": 269086,
+   "is_dir": true,
+   "modified": "2026-09-20 11:20",
+   "name": "magmaw-wowsims-reference-reconstruction-20260920"
+  },
+  {
+   "bytes": 53630,
+   "is_dir": false,
+   "modified": "2026-09-18 19:14",
+   "name": "magmaw34_encounter.json"
+  },
+  {
+   "bytes": 27463,
+   "is_dir": false,
+   "modified": "2026-09-19 03:57",
+   "name": "magmaw62_balance.json"
+  },
+  {
+   "bytes": 239084,
+   "is_dir": false,
+   "modified": "2026-09-19 03:57",
+   "name": "magmaw62_v74_summary.json"
+  },
+  {
+   "bytes": 819,
+   "is_dir": false,
+   "modified": "2026-09-21 18:41",
+   "name": "magmaw_assignment.json"
+  },
+  {
+   "bytes": 15514,
+   "is_dir": false,
+   "modified": "2026-09-20 15:53",
+   "name": "magmaw_balance_effective_stat_parity_03_build_20260920.json"
+  },
+  {
+   "bytes": 23561,
+   "is_dir": false,
+   "modified": "2026-09-20 15:54",
+   "name": "magmaw_balance_effective_stat_parity_03_build_success_20260920.json"
+  },
+  {
+   "bytes": 13458,
+   "is_dir": false,
+   "modified": "2026-09-20 15:53",
+   "name": "magmaw_balance_effective_stat_parity_03_configure_20260920.json"
+  },
+  {
+   "bytes": 13453,
+   "is_dir": false,
+   "modified": "2026-09-20 15:53",
+   "name": "magmaw_balance_effective_stat_parity_03_configure_current_20260920.json"
+  },
+  {
+   "bytes": 13454,
+   "is_dir": false,
+   "modified": "2026-09-20 16:23",
+   "name": "magmaw_balance_effective_stat_parity_03_configure_reseed_20260920.json"
+  },
+  {
+   "bytes": 13455,
+   "is_dir": false,
+   "modified": "2026-09-20 16:43",
+   "name": "magmaw_balance_effective_stat_parity_03_configure_rework4_20260920.json"
+  },
+  {
+   "bytes": 592431,
+   "is_dir": true,
+   "modified": "2026-09-21 13:51",
+   "name": "magmaw_balance_regression_91pct_07_control_20260921"
+  },
+  {
+   "bytes": 117318212,
+   "dummy_results": [
+    {
+     "dps": 32719.18,
+     "file": "results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-21 14:00",
+   "name": "magmaw_balance_regression_91pct_07_control_v2_20260921",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json"
+   ]
+  },
+  {
+   "bytes": 117317081,
+   "dummy_results": [
+    {
+     "dps": 31651.763333333332,
+     "file": "results.json",
+     "performance_accepted": false,
+     "scored_seconds": 300.0,
+     "spec": "balance_druid"
+    }
+   ],
+   "is_dir": true,
+   "modified": "2026-09-21 14:07",
+   "name": "magmaw_balance_regression_91pct_07_treatment_v2_20260921",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_balance_regression_91pct_07_paired_evidence_20260921.json"
+   ]
+  },
+  {
+   "bytes": 23563,
+   "is_dir": false,
+   "modified": "2026-09-20 14:55",
+   "name": "magmaw_balance_rotation_cadence_build_20260920.json"
+  },
+  {
+   "bytes": 13459,
+   "is_dir": false,
+   "modified": "2026-09-20 14:54",
+   "name": "magmaw_balance_rotation_cadence_configure_20260920.json"
+  },
+  {
+   "bytes": 22375,
+   "is_dir": false,
+   "modified": "2026-09-20 10:16",
+   "name": "magmaw_balance_setup_build_20260920.json"
+  },
+  {
+   "bytes": 23563,
+   "is_dir": false,
+   "modified": "2026-09-20 10:39",
+   "name": "magmaw_balance_setup_build_rebuild_20260920.json"
+  },
+  {
+   "bytes": 23222,
+   "is_dir": false,
+   "modified": "2026-09-20 10:29",
+   "name": "magmaw_balance_setup_build_retry_20260920.json"
+  },
+  {
+   "bytes": 13469,
+   "is_dir": false,
+   "modified": "2026-09-20 10:10",
+   "name": "magmaw_balance_setup_configure_20260920.json"
+  },
+  {
+   "bytes": 13451,
+   "is_dir": false,
+   "modified": "2026-09-20 11:29",
+   "name": "magmaw_balance_setup_configure_rebased_20260920.json"
+  },
+  {
+   "bytes": 15357,
+   "is_dir": false,
+   "modified": "2026-09-20 11:29",
+   "name": "magmaw_balance_setup_configure_rebased_stdout.json"
+  },
+  {
+   "bytes": 13445,
+   "is_dir": false,
+   "modified": "2026-09-20 10:39",
+   "name": "magmaw_balance_setup_configure_rebuild_20260920.json"
+  },
+  {
+   "bytes": 24221,
+   "is_dir": true,
+   "modified": "2026-09-20 10:00",
+   "name": "magmaw_balance_setup_plan_scope3_checkpoint_20260920"
+  },
+  {
+   "bytes": 4993,
+   "is_dir": false,
+   "modified": "2026-09-20 10:00",
+   "name": "magmaw_balance_setup_plan_scope3_packet_20260920.json"
+  },
+  {
+   "bytes": 15527,
+   "is_dir": false,
+   "modified": "2026-09-20 11:28",
+   "name": "magmaw_balance_setup_queued_build_rebased_20260920.json"
+  },
+  {
+   "bytes": 23564,
+   "is_dir": false,
+   "modified": "2026-09-20 11:30",
+   "name": "magmaw_balance_setup_queued_build_rebased_retry_20260920.json"
+  },
+  {
+   "bytes": 36431,
+   "is_dir": false,
+   "modified": "2026-09-20 11:30",
+   "name": "magmaw_balance_setup_queued_build_rebased_retry_stdout.json"
+  },
+  {
+   "bytes": 15527,
+   "is_dir": false,
+   "modified": "2026-09-20 11:28",
+   "name": "magmaw_balance_setup_queued_build_rebased_stdout.json"
+  },
+  {
+   "bytes": 24099,
+   "is_dir": true,
+   "modified": "2026-09-20 09:58",
+   "name": "magmaw_balance_setup_result_checkpoint_20260920"
+  },
+  {
+   "bytes": 5245,
+   "is_dir": false,
+   "modified": "2026-09-20 09:57",
+   "name": "magmaw_balance_setup_result_packet_20260920.json"
+  },
+  {
+   "bytes": 23955,
+   "is_dir": true,
+   "modified": "2026-09-20 10:02",
+   "name": "magmaw_balance_setup_result_scope3_checkpoint_20260920"
+  },
+  {
+   "bytes": 4931,
+   "is_dir": false,
+   "modified": "2026-09-20 10:02",
+   "name": "magmaw_balance_setup_result_scope3_packet_20260920.json"
+  },
+  {
+   "bytes": 1019,
+   "is_dir": false,
+   "modified": "2026-09-21 18:13",
+   "name": "magmaw_blood_loaded_profile_04_reviewer_last.json"
+  },
+  {
+   "bytes": 1015,
+   "is_dir": false,
+   "modified": "2026-09-21 18:13",
+   "name": "magmaw_blood_loaded_profile_04_reviewer_last_corrected.json"
+  },
+  {
+   "bytes": 6043327,
+   "is_dir": false,
+   "modified": "2026-09-21 18:25",
+   "name": "magmaw_blood_loaded_profile_04_runtime_closure.json"
+  },
+  {
+   "bytes": 6041786,
+   "is_dir": false,
+   "modified": "2026-09-21 18:26",
+   "name": "magmaw_blood_loaded_profile_04_runtime_input_closure.json"
+  },
+  {
+   "bytes": 5124516,
+   "is_dir": false,
+   "modified": "2026-09-21 18:26",
+   "name": "magmaw_blood_loaded_profile_04_runtime_input_closure.stdout.json"
+  },
+  {
+   "bytes": 3748457,
+   "is_dir": true,
+   "modified": "2026-09-21 14:31",
+   "name": "magmaw_blood_tank_priority_02_tank_threat_20260921"
+  },
+  {
+   "bytes": 6041741,
+   "is_dir": false,
+   "modified": "2026-09-21 17:07",
+   "name": "magmaw_blood_tank_threat_floor_03_contract_v2_closure_check.json"
+  },
+  {
+   "bytes": 264438,
+   "is_dir": true,
+   "modified": "2026-09-21 17:16",
+   "name": "magmaw_blood_tank_threat_floor_03_contract_v2_lifecycle_probe_20260921"
+  },
+  {
+   "bytes": 60873045,
+   "is_dir": true,
+   "modified": "2026-09-21 17:18",
+   "name": "magmaw_blood_tank_threat_floor_03_contract_v2_validation_20260921",
+   "reports": [
+    {
+     "completion_reason": "combat_calibration_role_gate_failed",
+     "file": "report.json",
+     "native_clear": false
+    }
+   ]
+  },
+  {
+   "bytes": 595460,
+   "is_dir": false,
+   "modified": "2026-09-21 17:19",
+   "name": "magmaw_blood_tank_threat_floor_03_dvc_status_20260921.json"
+  },
+  {
+   "bytes": 753,
+   "is_dir": false,
+   "modified": "2026-09-21 17:19",
+   "name": "magmaw_blood_tank_threat_floor_03_dvc_status_20260921.stderr"
+  },
+  {
+   "bytes": 4806,
+   "is_dir": false,
+   "modified": "2026-09-21 18:18",
+   "name": "magmaw_build_receipt_extract.json"
+  },
+  {
+   "bytes": 10113570,
+   "is_dir": true,
+   "modified": "2026-09-21 15:47",
+   "name": "magmaw_calibration_teardown_01_tank_threat_20260921",
+   "referenced_by": [
+    "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_20260921.json",
+    "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_review_20260921.json/checkpoint.json",
+    "artifacts/cata_raid_program/magmaw_calibration_teardown_01_plan_drift_review_v2_20260921.json/checkpoint.json"
+   ],
+   "reports": [
+    {
+     "completion_reason": null,
+     "file": "report.json",
+     "native_clear": null
+    }
+   ]
+  },
+  {
+   "bytes": 595460,
+   "is_dir": false,
+   "modified": "2026-09-21 16:14",
+   "name": "magmaw_dvc_status_20260921.json"
+  },
+  {
+   "bytes": 753,
+   "is_dir": false,
+   "modified": "2026-09-21 16:14",
+   "name": "magmaw_dvc_status_20260921.stderr"
+  },
+  {
+   "bytes": 3082,
+   "is_dir": false,
+   "modified": "2026-09-20 09:32",
+   "name": "magmaw_entry_model_review.py"
+  },
+  {
+   "bytes": 897,
+   "is_dir": false,
+   "modified": "2026-09-19 19:46",
+   "name": "magmaw_live_status.py"
+  },
+  {
+   "bytes": 91,
+   "is_dir": false,
+   "modified": "2026-09-20 09:56",
+   "name": "magmaw_parent_worktree.log"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-20 09:56",
+   "name": "magmaw_parent_worktree_remove.log"
+  },
+  {
+   "bytes": 683416,
+   "is_dir": false,
+   "modified": "2026-09-19 15:18",
+   "name": "magmaw_report_meta_extract.json"
+  },
+  {
+   "bytes": 4778,
+   "is_dir": false,
+   "modified": "2026-09-22 15:52",
+   "name": "magmaw_route_drift_checkpoint_20260922.json"
+  },
+  {
+   "bytes": 21487,
+   "is_dir": true,
+   "modified": "2026-09-22 15:52",
+   "name": "magmaw_route_drift_checkpoint_review_20260922"
+  },
+  {
+   "bytes": 1617,
+   "is_dir": false,
+   "modified": "2026-09-21 18:41",
+   "name": "magmaw_run_identity.json"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-21 14:53",
+   "name": "magmaw_status.err"
+  },
+  {
+   "bytes": 28008,
+   "is_dir": false,
+   "modified": "2026-09-21 08:56",
+   "name": "magmaw_u05_vs_u04.json"
+  },
+  {
+   "bytes": 40367,
+   "is_dir": false,
+   "modified": "2026-09-21 08:59",
+   "name": "magmaw_u05_vs_wowsims.json"
+  },
+  {
+   "bytes": 10304,
+   "is_dir": false,
+   "modified": "2026-09-22 22:18",
+   "name": "master-failed.txt"
+  },
+  {
+   "bytes": 18208,
+   "is_dir": true,
+   "modified": "2026-09-20 18:52",
+   "name": "moonkin-loop-audit-20260920"
+  },
+  {
+   "bytes": 92936,
+   "is_dir": false,
+   "modified": "2026-09-19 20:53",
+   "name": "phase_test"
+  },
+  {
+   "bytes": 226,
+   "is_dir": false,
+   "modified": "2026-09-19 20:52",
+   "name": "phase_test.cpp"
+  },
+  {
+   "bytes": 28066,
+   "is_dir": false,
+   "modified": "2026-09-20 13:10",
+   "name": "plain-entry-checkpoint.json"
+  },
+  {
+   "bytes": 6519,
+   "is_dir": false,
+   "modified": "2026-09-20 13:08",
+   "name": "plain-entry-current-result.json"
+  },
+  {
+   "bytes": 16887,
+   "is_dir": false,
+   "modified": "2026-09-20 13:10",
+   "name": "plain-entry-diff.patch"
+  },
+  {
+   "bytes": 2261,
+   "is_dir": true,
+   "modified": "2026-09-20 13:13",
+   "name": "plain-entry-evidence"
+  },
+  {
+   "bytes": 2000,
+   "is_dir": false,
+   "modified": "2026-09-20 13:13",
+   "name": "plain-entry-independent-review.json"
+  },
+  {
+   "bytes": 94997,
+   "is_dir": true,
+   "modified": "2026-09-20 13:10",
+   "name": "plain-entry-model-review"
+  },
+  {
+   "bytes": 1325,
+   "is_dir": false,
+   "modified": "2026-09-20 13:10",
+   "name": "plain-entry-model-summary.json"
+  },
+  {
+   "bytes": 762,
+   "is_dir": false,
+   "modified": "2026-09-20 13:13",
+   "name": "plain-entry-publication.log"
+  },
+  {
+   "bytes": 3067,
+   "is_dir": false,
+   "modified": "2026-09-20 13:10",
+   "name": "plain_entry_checkpoint.py"
+  },
+  {
+   "bytes": 5922,
+   "is_dir": false,
+   "modified": "2026-09-20 13:03",
+   "name": "premature-stop-resume.json"
+  },
+  {
+   "bytes": 2387,
+   "is_dir": false,
+   "modified": "2026-09-19 22:14",
+   "name": "prepare_orchestrator_checkpoint_20260919.py"
+  },
+  {
+   "bytes": 1731,
+   "is_dir": false,
+   "modified": "2026-09-20 10:27",
+   "name": "prepare_raid_storage_rescue.py"
+  },
+  {
+   "bytes": 3880,
+   "is_dir": false,
+   "modified": "2026-09-19 22:07",
+   "name": "prepare_worker_checkpoint_pilot_20260919.py"
+  },
+  {
+   "bytes": 728,
+   "is_dir": false,
+   "modified": "2026-09-19 22:32",
+   "name": "preserve-retired-worktree-20260919.log"
+  },
+  {
+   "bytes": 2392,
+   "is_dir": false,
+   "modified": "2026-09-19 22:31",
+   "name": "preserve_retired_worktree_20260919.py"
+  },
+  {
+   "bytes": 807,
+   "is_dir": false,
+   "modified": "2026-09-20 10:59",
+   "name": "prove_workflow_baseline.py"
+  },
+  {
+   "bytes": 2459,
+   "is_dir": false,
+   "modified": "2026-09-20 12:28",
+   "name": "publish_balance_cleanup.py"
+  },
+  {
+   "bytes": 2664,
+   "is_dir": false,
+   "modified": "2026-09-20 08:31",
+   "name": "publish_development_graph_20260920.py"
+  },
+  {
+   "bytes": 567,
+   "is_dir": false,
+   "modified": "2026-09-19 22:19",
+   "name": "publish_dummy_50ec676cdb_20260919.log"
+  },
+  {
+   "bytes": 2766,
+   "is_dir": false,
+   "modified": "2026-09-19 22:17",
+   "name": "publish_dummy_50ec676cdb_20260919.py"
+  },
+  {
+   "bytes": 441,
+   "is_dir": false,
+   "modified": "2026-09-19 22:25",
+   "name": "publish_dummy_50ec_closure_20260919.log"
+  },
+  {
+   "bytes": 1356,
+   "is_dir": false,
+   "modified": "2026-09-19 22:25",
+   "name": "publish_dummy_50ec_closure_20260919.py"
+  },
+  {
+   "bytes": 533,
+   "is_dir": false,
+   "modified": "2026-09-19 21:24",
+   "name": "publish_dummy_b8e9803721.log"
+  },
+  {
+   "bytes": 2420,
+   "is_dir": false,
+   "modified": "2026-09-19 21:23",
+   "name": "publish_dummy_b8e9803721.py"
+  },
+  {
+   "bytes": 3805,
+   "is_dir": false,
+   "modified": "2026-09-19 20:29",
+   "name": "publish_magmaw_696a_review.py"
+  },
+  {
+   "bytes": 2731,
+   "is_dir": false,
+   "modified": "2026-09-20 09:34",
+   "name": "publish_magmaw_entry_repair_20260920.py"
+  },
+  {
+   "bytes": 2826,
+   "is_dir": false,
+   "modified": "2026-09-19 19:19",
+   "name": "publish_magmaw_followup.py"
+  },
+  {
+   "bytes": 2111,
+   "is_dir": false,
+   "modified": "2026-09-19 19:54",
+   "name": "publish_magmaw_raw.py"
+  },
+  {
+   "bytes": 2317,
+   "is_dir": false,
+   "modified": "2026-09-20 13:13",
+   "name": "publish_plain_entry.py"
+  },
+  {
+   "bytes": 2210,
+   "is_dir": false,
+   "modified": "2026-09-20 10:30",
+   "name": "publish_raid_storage_rescue.py"
+  },
+  {
+   "bytes": 3088,
+   "is_dir": false,
+   "modified": "2026-09-20 08:56",
+   "name": "publish_scenario_bootstrap_20260920.py"
+  },
+  {
+   "bytes": 2163,
+   "is_dir": false,
+   "modified": "2026-09-20 10:32",
+   "name": "publish_storage_maintenance.py"
+  },
+  {
+   "bytes": 4766,
+   "is_dir": false,
+   "modified": "2026-09-20 11:02",
+   "name": "publish_workflow_repair.py"
+  },
+  {
+   "bytes": 8407581,
+   "is_dir": false,
+   "modified": "2026-09-20 10:26",
+   "name": "raid-legacy-workspace-plan-20260920.json"
+  },
+  {
+   "bytes": 788792,
+   "is_dir": false,
+   "modified": "2026-09-22 13:57",
+   "name": "raid-status.json"
+  },
+  {
+   "bytes": 10699321,
+   "is_dir": true,
+   "modified": "2026-09-20 10:32",
+   "name": "raid-storage-cleanup-20260920"
+  },
+  {
+   "bytes": 38178,
+   "is_dir": false,
+   "modified": "2026-09-20 10:21",
+   "name": "raid-storage-eviction-plan-20260920.json"
+  },
+  {
+   "bytes": 1984057,
+   "is_dir": false,
+   "modified": "2026-09-20 10:20",
+   "name": "raid-storage-inventory-20260920.json"
+  },
+  {
+   "bytes": 2528,
+   "is_dir": false,
+   "modified": "2026-09-19 22:33",
+   "name": "remove_retired_worktree_20260919.py"
+  },
+  {
+   "bytes": 0,
+   "is_dir": false,
+   "modified": "2026-09-22 22:20",
+   "name": "resume_audit.err"
+  },
+  {
+   "bytes": 3221,
+   "is_dir": false,
+   "modified": "2026-09-22 22:20",
+   "name": "resume_audit.json"
+  },
+  {
+   "bytes": 548,
+   "is_dir": false,
+   "modified": "2026-09-19 22:33",
+   "name": "retired-worktree-cleanup-20260919.json"
+  },
+  {
+   "bytes": 238541,
+   "is_dir": false,
+   "modified": "2026-09-19 22:31",
+   "name": "retired-worktree-manifest-20260919.json"
+  },
+  {
+   "bytes": 471,
+   "is_dir": false,
+   "modified": "2026-09-19 22:32",
+   "name": "retired-worktree-remote-20260919.json"
+  },
+  {
+   "bytes": 4202,
+   "is_dir": false,
+   "modified": "2026-09-20 10:57",
+   "name": "reuse_build_compatibility.py"
+  },
+  {
+   "bytes": 18360,
+   "is_dir": false,
+   "modified": "2026-09-19 18:58",
+   "name": "run_focused_blood_case.py"
+  },
+  {
+   "bytes": 10232,
+   "is_dir": false,
+   "modified": "2026-09-19 19:04",
+   "name": "run_focused_blood_case_v2_api.py"
+  },
+  {
+   "bytes": 15520,
+   "is_dir": false,
+   "modified": "2026-09-19 17:45",
+   "name": "run_focused_magmaw_case.py"
+  },
+  {
+   "bytes": 10986,
+   "is_dir": false,
+   "modified": "2026-09-19 17:51",
+   "name": "run_focused_magmaw_case_v2.py"
+  },
+  {
+   "bytes": 11010,
+   "is_dir": false,
+   "modified": "2026-09-19 17:54",
+   "name": "run_focused_magmaw_case_v3.py"
+  },
+  {
+   "bytes": 11214,
+   "is_dir": false,
+   "modified": "2026-09-19 17:55",
+   "name": "run_focused_magmaw_case_v4.py"
+  },
+  {
+   "bytes": 5538,
+   "is_dir": false,
+   "modified": "2026-09-18 08:27",
+   "name": "runtime-asset-receipt-20260918.json"
+  },
+  {
+   "bytes": 194,
+   "is_dir": false,
+   "modified": "2026-09-20 08:54",
+   "name": "scenario-bootstrap-full-tests-20260920.log"
+  },
+  {
+   "bytes": 3557,
+   "is_dir": false,
+   "modified": "2026-09-20 08:55",
+   "name": "scenario-bootstrap-independent-review-20260920.json"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 08:45",
+   "name": "scenario-bootstrap-model-plan-20260920.log"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 08:54",
+   "name": "scenario-bootstrap-model-result-20260920.log"
+  },
+  {
+   "bytes": 224,
+   "is_dir": false,
+   "modified": "2026-09-20 08:57",
+   "name": "scenario-bootstrap-publication-20260920.json"
+  },
+  {
+   "bytes": 3647,
+   "is_dir": false,
+   "modified": "2026-09-20 08:56",
+   "name": "scenario-bootstrap-publication-manifest-20260920.json"
+  },
+  {
+   "bytes": 82790,
+   "is_dir": true,
+   "modified": "2026-09-20 08:56",
+   "name": "scenario-bootstrap-review-20260920"
+  },
+  {
+   "bytes": 4988,
+   "is_dir": false,
+   "modified": "2026-09-20 08:47",
+   "name": "scenario-bootstrap-tests-20260920.log"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 08:40",
+   "name": "scenario-existing-graph-tests-20260920.log"
+  },
+  {
+   "bytes": 17787,
+   "is_dir": false,
+   "modified": "2026-09-20 08:40",
+   "name": "scenario-magmaw25h-preview-20260920.json"
+  },
+  {
+   "bytes": 2348,
+   "is_dir": false,
+   "modified": "2026-09-20 08:51",
+   "name": "scenario_bootstrap_canary_20260920.py"
+  },
+  {
+   "bytes": 2214,
+   "is_dir": false,
+   "modified": "2026-09-20 08:45",
+   "name": "scenario_model_review_20260920.py"
+  },
+  {
+   "bytes": 2096,
+   "is_dir": false,
+   "modified": "2026-09-20 08:54",
+   "name": "scenario_result_review_20260920.py"
+  },
+  {
+   "bytes": 3600,
+   "is_dir": false,
+   "modified": "2026-09-20 08:14",
+   "name": "seed_magmaw_graph_20260920.py"
+  },
+  {
+   "bytes": 550,
+   "is_dir": false,
+   "modified": "2026-09-19 16:10",
+   "name": "surv-baseline-abilities.tsv"
+  },
+  {
+   "bytes": 485,
+   "is_dir": false,
+   "modified": "2026-09-19 16:10",
+   "name": "surv-current-abilities.tsv"
+  },
+  {
+   "bytes": 9304587,
+   "is_dir": true,
+   "modified": "2026-09-22 12:13",
+   "name": "tmp.37j02sl1yl"
+  },
+  {
+   "bytes": 2862117,
+   "is_dir": true,
+   "modified": "2026-09-22 12:13",
+   "name": "tmp.PerZZ2ESHp"
+  },
+  {
+   "bytes": 52,
+   "is_dir": false,
+   "modified": "2026-09-18 18:06",
+   "name": "tmpsnaujevx"
+  },
+  {
+   "bytes": 1677,
+   "is_dir": true,
+   "modified": "2026-09-22 15:36",
+   "name": "trinity-cata-live-validation"
+  },
+  {
+   "bytes": 48,
+   "is_dir": false,
+   "modified": "2026-09-19 14:05",
+   "name": "trinity-laya-install.log"
+  },
+  {
+   "bytes": 1075,
+   "is_dir": false,
+   "modified": "2026-09-19 14:11",
+   "name": "trinity-laya-staging.log"
+  },
+  {
+   "bytes": 163,
+   "is_dir": false,
+   "modified": "2026-09-18 01:29",
+   "name": "trinity-worldserver-gdb-wrapper.sh"
+  },
+  {
+   "bytes": 2034,
+   "is_dir": false,
+   "modified": "2026-09-20 08:18",
+   "name": "update_graph_skills_20260920.py"
+  },
+  {
+   "bytes": 3007,
+   "is_dir": false,
+   "modified": "2026-09-20 08:21",
+   "name": "update_graph_tests_20260920.py"
+  },
+  {
+   "bytes": 5980,
+   "is_dir": false,
+   "modified": "2026-09-20 08:44",
+   "name": "update_scenario_docs_20260920.py"
+  },
+  {
+   "bytes": 2065,
+   "is_dir": false,
+   "modified": "2026-09-20 08:47",
+   "name": "update_scenario_fixtures_20260920.py"
+  },
+  {
+   "bytes": 3996,
+   "is_dir": false,
+   "modified": "2026-09-20 10:55",
+   "name": "update_workflow_docs.py"
+  },
+  {
+   "bytes": 5764,
+   "is_dir": false,
+   "modified": "2026-09-19 08:26",
+   "name": "wcl-casts.html"
+  },
+  {
+   "bytes": 7392,
+   "is_dir": false,
+   "modified": "2026-09-19 22:18",
+   "name": "worker-checkpoint-final-review-20260919.json"
+  },
+  {
+   "bytes": 188707,
+   "is_dir": true,
+   "modified": "2026-09-19 22:18",
+   "name": "worker-checkpoint-pilot-20260919"
+  },
+  {
+   "bytes": 385,
+   "is_dir": false,
+   "modified": "2026-09-20 10:55",
+   "name": "workflow-build-balance-preflight.log"
+  },
+  {
+   "bytes": 236,
+   "is_dir": false,
+   "modified": "2026-09-20 10:59",
+   "name": "workflow-build-baseline-proof.json"
+  },
+  {
+   "bytes": 34645,
+   "is_dir": false,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow-build-checkpoint.json"
+  },
+  {
+   "bytes": 29248,
+   "is_dir": false,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow-build-diff.patch"
+  },
+  {
+   "bytes": 4934,
+   "is_dir": true,
+   "modified": "2026-09-20 11:02",
+   "name": "workflow-build-evidence-20260920"
+  },
+  {
+   "bytes": 261,
+   "is_dir": false,
+   "modified": "2026-09-20 11:01",
+   "name": "workflow-build-final-tests.log"
+  },
+  {
+   "bytes": 181,
+   "is_dir": false,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow-build-focused.log"
+  },
+  {
+   "bytes": 115135,
+   "is_dir": true,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow-build-model-review"
+  },
+  {
+   "bytes": 1325,
+   "is_dir": false,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow-build-model-review-summary.json"
+  },
+  {
+   "bytes": 843,
+   "is_dir": false,
+   "modified": "2026-09-20 11:03",
+   "name": "workflow-build-publication.log"
+  },
+  {
+   "bytes": 101,
+   "is_dir": false,
+   "modified": "2026-09-20 11:00",
+   "name": "workflow-build-queue-status.json"
+  },
+  {
+   "bytes": 99,
+   "is_dir": false,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow-build-recurrence.log"
+  },
+  {
+   "bytes": 300,
+   "is_dir": false,
+   "modified": "2026-09-20 11:00",
+   "name": "workflow-build-refs.json"
+  },
+  {
+   "bytes": 5185,
+   "is_dir": false,
+   "modified": "2026-09-20 10:53",
+   "name": "workflow-build-tests.log"
+  },
+  {
+   "bytes": 5805,
+   "is_dir": false,
+   "modified": "2026-09-20 10:47",
+   "name": "workflow-repair-resume.json"
+  },
+  {
+   "bytes": 3635,
+   "is_dir": false,
+   "modified": "2026-09-20 10:58",
+   "name": "workflow_checkpoint_prepare.py"
+  },
+  {
+   "bytes": 2596,
+   "is_dir": false,
+   "modified": "2026-09-20 11:01",
+   "name": "workflow_ledger_update.py"
+  },
+  {
+   "bytes": 2069,
+   "is_dir": false,
+   "modified": "2026-09-21 09:05",
+   "name": "wowsims_balance_stats.json"
+  },
+  {
+   "bytes": 1868396,
+   "is_dir": false,
+   "modified": "2026-09-20 11:21",
+   "name": "wowsims_cata_dps_reference_requests_v1.promoted.json"
+  },
+  {
+   "bytes": 5788,
+   "is_dir": false,
+   "modified": "2026-09-19 20:11",
+   "name": "write_696a_balance_models.py"
+  },
+  {
+   "bytes": 15211,
+   "is_dir": false,
+   "modified": "2026-09-19 20:08",
+   "name": "write_696a_reviews.py"
+  },
+  {
+   "bytes": 7026,
+   "is_dir": false,
+   "modified": "2026-09-19 17:57",
+   "name": "write_adjudication.py"
+  },
+  {
+   "bytes": 7161,
+   "is_dir": false,
+   "modified": "2026-09-19 18:33",
+   "name": "write_d495_balance.py"
+  },
+  {
+   "bytes": 4159,
+   "is_dir": false,
+   "modified": "2026-09-19 17:35",
+   "name": "write_ele_review.py"
+  }
+ ],
+ "entry_count": 363,
+ "not_archived": {
+  "/tmp/magmaw-source-immutable-20260921": "clean git worktree at 4871a7ae31 (on master); removed with git worktree remove",
+  "/tmp/pytest-of-runiir": "pytest temporary directories; regenerated by every test run"
+ },
+ "purpose": "Everything trinity-related left in /tmp by earlier sessions (Sept 9-23), packed into one DVC archive and removed locally. Restore with `pixi run dvc pull <pointer>` and untar.",
+ "schema": "cata_tmp_sweep_index_v1",
+ "total_bytes": 1968567443
+}

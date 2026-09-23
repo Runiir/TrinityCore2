@@ -1,0 +1,5 @@
+outs:
+- md5: 325ca6588e8ab51c7926c7e050fe736e
+  size: 105156201
+  hash: md5
+  path: tmp_sweep_trinity_evidence_20260923.tar.gz
