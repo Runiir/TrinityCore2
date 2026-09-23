@@ -119,6 +119,20 @@
         return actor.Entry == RoomStalkerEntry && HasAura(actor, 87949);
     }
 
+    // One footprint per native Massive Crash, shared by every bot: all alive
+    // lit Room Stalkers, never only the one nearest this bot, so the chosen
+    // side and the episode identity cannot flip while the bot moves.
+    static MagmawCrashFootprint ObserveCrashFootprint(Blackboard const& board)
+    {
+        std::vector<ActorSnapshot const*> lit;
+        for (std::vector<ActorSnapshot> const* actors : {
+                 &board.Hostiles, &board.Summons })
+            for (ActorSnapshot const& actor : *actors)
+                if (actor.Alive && IsCrashHazard(actor))
+                    lit.push_back(&actor);
+        return BuildMagmawCrashFootprint(lit);
+    }
+
     static bool HasMangleAura(ActorSnapshot const& actor)
     {
         return HasAura(actor, 89773) || HasAura(actor, 78412);
@@ -173,6 +187,7 @@
         bool* crashSideHold)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
+        MagmawCrashFootprint const crash = ObserveCrashFootprint(board);
         bool const pillarBaiter = IsPillarBaiter(board, bot.Guid);
         bool const parasiteWave = HasLivingParasite(board);
         bool retainedCrashMayYieldToRoute = false;
@@ -182,8 +197,8 @@
                 bool const newerPillar = observed.Pillar
                     && observed.Pillar->Guid != lethal->SourceGuid
                     && Distance2d(bot.Position, observed.Pillar->Position) <= 12.0f;
-                bool const newerCrash = observed.Crash
-                    && observed.Crash->Guid != lethal->SourceGuid;
+                bool const newerCrash = crash.Valid
+                    && crash.Identity != lethal->SourceGuid;
                 retainedCrashMayYieldToRoute = pillarBaiter && parasiteWave
                     && lethal->Mechanic == "massive_crash_evade";
                 if (newerPillar || newerCrash)
@@ -194,12 +209,12 @@
                         BotActionArbitration::Priority::Survival, 450.0f);
             }
         MagmawCrashSideProposal crashSide;
-        if (observed.Crash)
+        if (crash.Valid)
             if (std::optional<MagmawRangedAnchors> const anchors =
                     ResolveRangedAnchors(board, boss))
             {
                 crashSide = ProposeMagmawCrashSideMovement(board, bot,
-                    *observed.Crash, anchors->Support, anchors->Left,
+                    crash, anchors->Support, anchors->Left,
                     anchors->Right, pillarBaiter, SupportStackDistance,
                     eventMovement, 450.0f);
                 if (crashSide.Movement
@@ -211,7 +226,7 @@
                 }
             }
         if (observed.Pillar
-            && !(observed.Crash && pillarBaiter && parasiteWave))
+            && !(crash.Valid && pillarBaiter && parasiteWave))
         {
             if (pincerWindow)
             {
@@ -241,13 +256,13 @@
             return std::nullopt;
         }
         if (pincerWindow
-            && !(observed.Crash && pillarBaiter && parasiteWave))
+            && !(crash.Valid && pillarBaiter && parasiteWave))
             return std::nullopt;
 
         // Lease expiry and observation churn keep the actor-owned lifecycle.
         // The native adapter separately retires a permanently rejected exact
         // endpoint before a fresh route may be sampled.
-        if (pillarBaiter && hazardState && !observed.Crash)
+        if (pillarBaiter && hazardState && !crash.Valid)
             if (std::optional<BotNativeAction::Candidate> const retained =
                     MagmawParasitePolicy::RetainedHazardMovement(board,
                         *hazardState))
@@ -258,16 +273,19 @@
                     ResolveRangedAnchors(board, boss))
             {
                 std::optional<MagmawParasiteCrashObstacle> crashObstacle;
-                if (observed.Crash)
+                if (crash.Valid)
                 {
+                    // The side comes from the whole lit set; the local
+                    // obstacle keeps the lit stalker nearest this baiter.
                     MagmawCrashSideMovement const geometry =
                         ResolveMagmawCrashSideMovement(bot.Position,
-                            observed.Crash->Position, anchors->Support,
+                            crash.Centroid, anchors->Support,
                             anchors->Left, anchors->Right, true,
                             SupportStackDistance);
                     if (geometry.Resolved)
                         crashObstacle = MagmawParasiteCrashObstacle{
-                            true, observed.Crash->Position,
+                            true, observed.Crash ? observed.Crash->Position
+                                : crash.Centroid,
                             geometry.UnsafeSideAnchor,
                             geometry.SafeSideAnchor, 12.0f };
                 }
@@ -326,13 +344,13 @@
             if (std::optional<MagmawRangedAnchors> const anchors =
                     ResolveRangedAnchors(board, boss))
             {
-                bool const baiterCrashSide = pillarBaiter && observed.Crash;
+                bool const baiterCrashSide = pillarBaiter && crash.Valid;
                 ActorSnapshot const* mangleOwner = FindMangleOwner(board);
                 std::optional<Vector3> destination;
                 if (baiterCrashSide)
                     destination = Distance2d(anchors->Left,
-                        observed.Crash->Position) >= Distance2d(anchors->Right,
-                            observed.Crash->Position)
+                        crash.Centroid) >= Distance2d(anchors->Right,
+                            crash.Centroid)
                         ? anchors->Left : anchors->Right;
                 else if (pillarBaiter)
                     destination = FormationAnchor(board, *anchors, bot.Guid);
