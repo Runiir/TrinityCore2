@@ -1,0 +1,104 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:tuning_04",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_tuning_bundle_03_v2_20260924",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL.",
+  "latest_user_direction": "Finish the Magmaw 10N implementation with subagents.",
+  "objective": "Raise the three actors still below 0.95 on baseline b2-fd4ba456 (Blood DK 30002 at 0.80, Balance 30001 at 0.943, Elemental 30010 at 0.941) with one bundle measured as one 5-kill batch under the playbook keep rule.",
+  "hypothesis": "Blood: on b2 k4 the tank's Dancing Rune Weapon copies hit at ~6% of its own hits because the Rune Weapon guardian never received its native scaling auras (51906 owner weapon damage + haste - 50%, 61697 hit, 110474 crit); applying them at summon restores the Blizzlike 50% copies (+1.0-1.3k). Glyph of Death Strike (59336) is a dummy aura with no handler; implementing +2%/5 RP up to 40% restores its native effect (+0.5-0.9k). Together with the setup-parity base f52d106673 (Blood glyph set +2.0k, Fallen Crusader +0.6-0.9k) the tank projects to ~25k against 24,844. Balance: 45.5-47.6k in clean stretches, 38.7k overall because parasite windows cost 4.7-7.1k: the policy switched to a threatening parasite without line of sight (8-11 failed casts per kill, 5 s spell blocks, walking toward it), mushroom sets fired on 1-2 parasites (4 GCDs for 24k), and Moonfire recast over a live Sunfire; gating the switch on the native LOS opportunity set (+0.8-1.4k), requiring 3 parasite hits within the native 6 yd radius (+0.6-0.9k) and forbidding Moonfire over Sunfire (+0.2-0.4k) project ~40.9k. Elemental: the b2 drop is proc RNG (non-proc DPS flat); the LOS gate removes its parasite LOS failures too; re-measure.",
+  "first_broken_edge": "owner_blood_native_fidelity_and_parasite_targeting",
+  "observations": [
+    "b2-fd4ba456-k4, actor 30002: Heart Strike 22 casts avg 25.1k (25.7% of damage), Death Strike 11 casts avg 32.7k, Rune Strike 18, DRW copies 18 hits totalling 17.4k (0.8%); casts/min 37.9 vs WCL 36.2; runes/min 27.6 vs 27.5-29; Blood Boil worth <=0.4k (no parasite within 10 yd of the tank).",
+    "b2-fd4ba456-k4/k5, actor 30001: clean-stretch DPS 47.6k/45.5k; 8/11 line-of-sight failures at parasites; third mushroom set 2 hits/24k; Moonfire over Sunfire at 7.1 s and 57.2 s (k4).",
+    "Elemental DPS-066: hardcasts/min 35.1 vs 35.1, non-proc DPS 27.0k vs 26.7k; the gap is Dragonwrath/overload/Fulmination proc variance.",
+    "Pre-existing failing tests unrelated to this bundle, reported per AGENTS.md: 240 of the 242 full-suite failures at HEAD also fail at b8ce9b9af5 (an export); tests/test_ml_pipeline.py::test_live_bot_validation_rejects_soap_route_config_bypass[--validation-route-sequence] expects the SOAP identity error before the route-prerequisite check added on 2026-09-22 (6bad2af351); tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel and tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths fail before and after this bundle; tests/test_canonical_dps_glyphs.py::test_all_six_bwd_shards_clone_canonical_or_declared_override_glyph_source fails on a missing catalog:balance_druid key before and after the setup-parity commit.",
+    "Re-recorded on base d891bcd1c0 after reproducing the validation_provisioning/validation_scenarios DVC stages for the Blood glyph roster (smoke-5a05e67f-k1 was an infrastructure failure of the stale-stage preflight). Owned files, tests and the approved review adaebf508b41241b6 are byte-identical."
+  ],
+  "owned_files": [
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawObservations.h",
+    "src/server/game/Entities/Pet/GuardianInitialization.cpp",
+    "src/server/scripts/Spells/spell_script_loader.cpp",
+    "src/server/scripts/Spells/spell_dk_glyphs.cpp",
+    "sql/custom/world/2026_09_24_00_balance_moonfire_not_over_sunfire.sql",
+    "sql/custom/world/2026_09_24_01_dk_glyph_of_death_strike_script.sql",
+    "tests/test_magmaw_balance_mushroom_duty.py",
+    "tests/test_balance_moonfire_not_over_sunfire.py",
+    "tests/test_blood_native_fidelity.py",
+    "tests/test_magmaw_parasite_los_gate.py",
+    "tests/test_magmaw_support_target_admission.py"
+  ],
+  "forbidden_changes": [
+    "No invented auras, procs, multipliers, forced casts or resource refills; the Rune Weapon receives only its native scaling auras and the glyph only its client-data values.",
+    "No change to the shared area-damage protection, encounter scripts, route manifests, the roster beyond the setup-parity base, WCL references, coefficients, the scoreboard or graph tooling.",
+    "Parasites stay controlled: a hittable threatening parasite is targeted exactly as before; the mushroom wave-ending rule keeps placed sets from being wasted."
+  ],
+  "acceptance_conditions": [
+    "Declared tests pass; module_size reports no oversized file; an independent reviewer (separate subagent session, transcript-bound import-json) approves the exact diff.",
+    "A clean policy-bound build, one smoke kill (shared_runtime), then a 5-kill scoreboard batch vs baseline b2-fd4ba456 judged with `scoreboard show --actor <id>` per targeted actor under the playbook keep rule; mechanism evidence: DRW copy hits ~50% of owner hits; Death Strike average hit rising with runic power; glyph auras 58616/58669/63330 present at pull; weapon enchant 3368 in the readback; no LOS-failed casts at parasites for 30001/30010; no 1-2-hit detonations; no Moonfire while Sunfire is up.",
+    "Boss-window deaths stay 0 and every counted kill is a native clear; otherwise the failing part is reverted.",
+    "This plan does not by itself accept any actor, the encounter or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_native_fidelity.py tests/test_fire_elemental_spell_mod_owner.py tests/test_fire_elemental_health_owner.py",
+    "pixi run pytest -q tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_parasite_policy.py tests/test_magmaw_balance_mushroom_duty.py",
+    "pixi run pytest -q tests/test_balance_moonfire_not_over_sunfire.py tests/test_balance_moving_moonfire.py tests/test_balance_rotation_cadence.py",
+    "pixi run pytest -q tests/test_generated_bot_admission_identities.py tests/test_blood_permanent_enchant_profile.py",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "fe90fec207345cdd458d3b8b63b033c03abb30e8",
+  "risk_tier": "shared_runtime",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "d3ef70bfc6017aa523c9ae762e2b7cfa7bef319b33632fd7e1d3c3b48f20741a"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "0ca927d6c3585bd97d1d9d35b50abd52812cab3e5e16f95d5b1802f33ff391fd"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "8177b44d47a2a48c7ca44a71186ab44bea657233253c15da3ab5e0368590e553"
+    },
+    {
+      "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+      "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+    },
+    {
+      "path": "sql/custom/world/2026_09_24_01_dk_glyph_of_death_strike_script.sql",
+      "sha256": "cc3559880df3e7b0c5d836a68d107c38e4c640dbd373a7befa9f53e94ee8f118"
+    },
+    {
+      "path": "src/server/scripts/Spells/spell_dk_glyphs.cpp",
+      "sha256": "c25ab65773fdb0ae0f83804d7c513bcf84be6baa1fc14579cbde98bfb6bd2534"
+    }
+  ],
+  "acceptance_claim": "Plan only. Claims the bounded bundle and no gameplay, build, live, actor, performance, raid-clear, publication or parent acceptance."
+}
