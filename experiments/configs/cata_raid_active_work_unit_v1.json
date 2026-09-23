@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 460,
+    "revision": 462,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "implement",
     "actor_ids": [
@@ -663,7 +663,7 @@
       "owner_blood_boss_damage_cadence": 3,
       "shared_route_progress_authority": 1,
       "shared_native_engagement_authority": 3,
-      "owner_blood_wcl_dps_gap": 2
+      "owner_blood_wcl_dps_gap": 3
     },
     "history": [
       {
@@ -8687,6 +8687,43 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 460,
+        "unit_id": "magmaw:tuning_01",
+        "from": "implement",
+        "to": "diagnose",
+        "event": {
+          "action": "rework",
+          "revision": 460,
+          "unit_id": "magmaw:tuning_01",
+          "reason": "Plan bookkeeping only: the graph could not record a staged-migration promotion (owned staged paths are deleted by git mv). The graph now records deleted owned files; the plan is re-recorded with those paths owned and the tooling change covered by supporting review v2. No implementation, review or measurement outcome is rejected.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_rework_note_2_20260923.json",
+            "sha256": "658c09f224a1a258638a11dd9c0dd6d2a5919cd6f5814191f25660a4c7560d1a"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "class_native"
+      },
+      {
+        "revision": 461,
+        "unit_id": "magmaw:tuning_01",
+        "from": "diagnose",
+        "to": "implement",
+        "event": {
+          "revision": 461,
+          "unit_id": "magmaw:tuning_01",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_20260923.json",
+            "sha256": "b3f9aa9f4ff5765ff4e1b59ca6756e94ab797672f0920c5becb3c311a67bd08a"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8761,7 +8798,9 @@
         "tests/test_autonomy_pipeline_smoke.py",
         "tests/test_elemental_fulmination_gate.py",
         "tests/fixtures/survival_8146_native_admission.json",
-        "tests/fixtures/affliction_doomguard_native.json"
+        "tests/fixtures/affliction_doomguard_native.json",
+        "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+        "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql"
       ],
       "forbidden_changes": [
         "No invented auras, procs, damage multipliers, forced targets or casts, resource refills, cooldown or coefficient changes; spell facts only from the pinned 4.3.4 client data.",
@@ -8809,8 +8848,8 @@
         }
       },
       "supporting_review": {
-        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_supporting_review_20260923.json",
-        "sha256": "b34c0e3e668347b90b66c7283cd647fcf4dfe65becf4c788005036df17ef5b88"
+        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_supporting_review_v2_20260923.json",
+        "sha256": "375e23dda9c18de06f9f87fd2bb433d421837afdf4a54ec44aa4a191c97bbfce"
       },
       "supporting_files": {
         "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
@@ -8830,25 +8869,27 @@
         "experiments/configs/wowsims_promoted_generation_receipts/d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f.json": "d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f",
         "experiments/configs/wowsims_promoted_generation_receipts/e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e.json": "e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e",
         "experiments/configs/wowsims_promoted_generation_receipts/ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8.json": "ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8",
-        "tests/test_development_graph.py": "3a0e035cd74a583e9b1cc28a4577abc0d6d777510145735b36df44cc7d70d58b",
+        "tests/test_development_graph.py": "f870b7ba357fd319b8ae8d10dd480ba346417295f3ea5d8827617dfc9f8b35e2",
         "tests/test_raid_scoreboard.py": "5a1932c7a2c0bd2eb09514e345edc541abcacad40b5331fa5a7c18c2b6ca9f07",
         "tests/test_raid_scoreboard_keep.py": "bf8976b084762dcbb7dbfc1a60188063333789136ccacc0bb90db337cdad3db3",
-        "tests/test_review_execution.py": "41fcb28322cf20d125c9ec24f5cb20b4735fd21a23687cdfd3e2de79dbefb3d4",
-        "tools/raid_program/development_graph.py": "54ecf8ab45598811937b5389dc07a7b52fd35f8ee3c75f85b30052ef8878160a",
-        "tools/raid_program/review_execution.py": "a166ca561a1792d5f9eb85bd0317551ccf66d5b2b8e5ed1626708abd1c85aa71",
+        "tests/test_review_execution.py": "adb721829ef4c70ece9b2deee367110be536b6dd36e1838919d74aeafa828c69",
+        "tests/test_workflow_step.py": "38b2efa57b96d6b653f4c105056eada2a5645029b298badd2529b742027e6d48",
+        "tools/raid_program/development_graph.py": "6b2f2eb6414f4b7c3bf02f44bb99522fe13a93fa7011d92666b080abf9511e0a",
+        "tools/raid_program/review_execution.py": "944926b3204ed40be6ad295026657c2b833b2957ff0202a6ccf32ae7857ea703",
         "tools/raid_program/scoreboard.py": "600b3d17b96437b77f561e5e38a36a567dc7cc13c71bf8cd2b6cb8c0db4fc389",
         "tools/raid_program/scoreboard_compare.py": "a4a8a79c63708f7db90f84aa34b9b0b739d47e6705bf471f059d3fec78a53b43",
         "tools/raid_program/scoreboard_core.py": "db67392d3f3019c4dfd4096b427c8ea878824de2d22ed0fa874ce5bb72f1a655",
         "tools/raid_program/scoreboard_run.py": "f69008052fcac7507cfee5a778aef301fbcbdcabb9493aa30e2c510a5ec0b6f8",
         "tools/raid_program/scoreboard_show.py": "dda6ae58be1b0fbba25a3ad24179e486ea8b5a0c85204094a0318030a3f4e9b5",
-        "tools/raid_program/scoreboard_verdict.py": "50bed93d5e0115f40adbed27ab19c213f3bc91a44a134495427e1abcf7cdbf9a"
+        "tools/raid_program/scoreboard_verdict.py": "50bed93d5e0115f40adbed27ab19c213f3bc91a44a134495427e1abcf7cdbf9a",
+        "tools/raid_program/workflow_tests.py": "d425795c31cc1d5df6cea0edd62b5a7c2b4e6e792b02dc8c821206651517cb29"
       },
       "risk_tier": "shared_runtime"
     },
     "receipts": {
       "plan": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_plan_20260923.json",
-        "sha256": "072c4867fd9d8da2897bd2bee845af1cad82298e36bf616bc01ece349b971b70"
+        "sha256": "b3f9aa9f4ff5765ff4e1b59ca6756e94ab797672f0920c5becb3c311a67bd08a"
       }
     }
   },

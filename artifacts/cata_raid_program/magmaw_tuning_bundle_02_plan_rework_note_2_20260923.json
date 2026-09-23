@@ -1,0 +1,7 @@
+{
+  "schema": "cata_raid_program_rework_note_v1",
+  "unit_id": "magmaw:tuning_01",
+  "revision": 460,
+  "reason": "Plan bookkeeping only: the graph could not record a staged-migration promotion (owned staged paths are deleted by git mv). The graph now records deleted owned files; the plan is re-recorded with those paths owned and the tooling change covered by supporting review v2. No implementation, review or measurement outcome is rejected.",
+  "claimed": false
+}

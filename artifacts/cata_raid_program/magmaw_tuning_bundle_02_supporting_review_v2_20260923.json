@@ -1,0 +1,61 @@
+{
+  "authority": "coordinator_attestation",
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_supporting_review_v2_20260923.report.json",
+      "sha256": "6bd43f60c167a6a83540a2185abf57a2fc7e3e19fa58dbb640db48e03a3cdd89"
+    }
+  ],
+  "file_hashes": {
+    "experiments/configs/all_spec_targets_cata_p4_v1.json": "1042b953f967883b03141071860cc3fdec33bf780b3f0f71ed80f6d574e33c08",
+    "experiments/configs/cata_434_action_profiles.json": "59d103410f06242e1ba1cdc1838ba6a27df55b14344138a3997bcfe3d444d9b6",
+    "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+    "experiments/configs/wowsims_promoted_generation_receipts/106a5a520f7ae14db7b350dfa6140e9fe189da93300b1d25f7538a68f1e5094d.json": "106a5a520f7ae14db7b350dfa6140e9fe189da93300b1d25f7538a68f1e5094d",
+    "experiments/configs/wowsims_promoted_generation_receipts/1e05c9b951f5594b82f51595631e438ef061a0e34c706c2199d287f4871b016e.json": "1e05c9b951f5594b82f51595631e438ef061a0e34c706c2199d287f4871b016e",
+    "experiments/configs/wowsims_promoted_generation_receipts/2bed4c89ef5f526884524a3f2c5606ed0bfcde5ee27e446e0e9ed3b2e831e1b0.json": "2bed4c89ef5f526884524a3f2c5606ed0bfcde5ee27e446e0e9ed3b2e831e1b0",
+    "experiments/configs/wowsims_promoted_generation_receipts/3e1176505b6815e4be373556bef446608362ca8adff16755bda711e9ec4126ee.json": "3e1176505b6815e4be373556bef446608362ca8adff16755bda711e9ec4126ee",
+    "experiments/configs/wowsims_promoted_generation_receipts/4fbd85f2c1dd8ea4cbd66873175a1addca193771e4c73b4e359c004787dc1039.json": "4fbd85f2c1dd8ea4cbd66873175a1addca193771e4c73b4e359c004787dc1039",
+    "experiments/configs/wowsims_promoted_generation_receipts/613ac7364d3a8435c304273294a929742dad54d24a57990af23982528cb11f95.json": "613ac7364d3a8435c304273294a929742dad54d24a57990af23982528cb11f95",
+    "experiments/configs/wowsims_promoted_generation_receipts/6e124ddc9c07417b2847c8dfa8d7d80bf601fd05ed9db700748cfee7b1b774fa.json": "6e124ddc9c07417b2847c8dfa8d7d80bf601fd05ed9db700748cfee7b1b774fa",
+    "experiments/configs/wowsims_promoted_generation_receipts/71ba4386dc4bb2e95e5a5d36e2daf1225598ccd8c27526dc4fb5692ff6637192.json": "71ba4386dc4bb2e95e5a5d36e2daf1225598ccd8c27526dc4fb5692ff6637192",
+    "experiments/configs/wowsims_promoted_generation_receipts/833d38792bdb11ee8741e1b92e20a4fbfbea48b9bb09d5b09c1bb3220e36e2ea.json": "833d38792bdb11ee8741e1b92e20a4fbfbea48b9bb09d5b09c1bb3220e36e2ea",
+    "experiments/configs/wowsims_promoted_generation_receipts/987ef4bf2e78a06d9a58ed98b7aac192a1f206ff1aff2193da677a52866f030f.json": "987ef4bf2e78a06d9a58ed98b7aac192a1f206ff1aff2193da677a52866f030f",
+    "experiments/configs/wowsims_promoted_generation_receipts/a3d9ed350e513971f4e53595b4f3ea475e90baacac9388f4921b2af97ed0ed47.json": "a3d9ed350e513971f4e53595b4f3ea475e90baacac9388f4921b2af97ed0ed47",
+    "experiments/configs/wowsims_promoted_generation_receipts/aa9509e1cf76354858677375b4c944281ba0c4718466686f0d213b146db3703b.json": "aa9509e1cf76354858677375b4c944281ba0c4718466686f0d213b146db3703b",
+    "experiments/configs/wowsims_promoted_generation_receipts/beefecdca302aac8b3b936be98f3d96b52b4b5d9207f31a5e8e1b092c00c76ff.json": "beefecdca302aac8b3b936be98f3d96b52b4b5d9207f31a5e8e1b092c00c76ff",
+    "experiments/configs/wowsims_promoted_generation_receipts/d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f.json": "d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f",
+    "experiments/configs/wowsims_promoted_generation_receipts/e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e.json": "e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e",
+    "experiments/configs/wowsims_promoted_generation_receipts/ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8.json": "ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8",
+    "tests/test_autonomy_pipeline_smoke.py": "a0e05ac265dafefc909ecd08f0fa1840fe055ba4e1d964d19055418c77496a94",
+    "tests/test_balance_moving_moonfire.py": "5485fcea653d34d88b862a6d75061a64690509ef85c83ca54e3a8454595fca99",
+    "tests/test_blood_outbreak_disease_upkeep.py": "2b04ac236570aeb80ff0ea4a5c64cca96833e746ab67b74ffed4b55e318cada5",
+    "tests/test_blood_rune_recovery.py": "950a0a51eb500676dead04ed69d12dff809bb9533f7dade712b1606ca02c0737",
+    "tests/test_bot_cast_while_moving.py": "ef6c1d4a87ef3c52272055dd04782e8a3d53ecadf4df35f15a53d0014fdc06db",
+    "tests/test_development_graph.py": "f870b7ba357fd319b8ae8d10dd480ba346417295f3ea5d8827617dfc9f8b35e2",
+    "tests/test_elemental_fulmination_gate.py": "f825aae583aac4f087993fe75cad941998d8f31d0a8c40a7ba8a65381e5740f9",
+    "tests/test_fire_hot_streak_native_range.py": "2d02a55cf589ca0d9bfc189929cc71b1cbdde60ce21ded904804f812dbcdf85d",
+    "tests/test_raid_scoreboard.py": "5a1932c7a2c0bd2eb09514e345edc541abcacad40b5331fa5a7c18c2b6ca9f07",
+    "tests/test_raid_scoreboard_keep.py": "bf8976b084762dcbb7dbfc1a60188063333789136ccacc0bb90db337cdad3db3",
+    "tests/test_review_execution.py": "adb721829ef4c70ece9b2deee367110be536b6dd36e1838919d74aeafa828c69",
+    "tests/test_workflow_step.py": "38b2efa57b96d6b653f4c105056eada2a5645029b298badd2529b742027e6d48",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py": "22dbaaba2909691593ffee761521011f6e404a3435d1a4679fe88735bc70af03",
+    "tools/raid_program/development_graph.py": "6b2f2eb6414f4b7c3bf02f44bb99522fe13a93fa7011d92666b080abf9511e0a",
+    "tools/raid_program/review_execution.py": "944926b3204ed40be6ad295026657c2b833b2957ff0202a6ccf32ae7857ea703",
+    "tools/raid_program/scoreboard.py": "600b3d17b96437b77f561e5e38a36a567dc7cc13c71bf8cd2b6cb8c0db4fc389",
+    "tools/raid_program/scoreboard_compare.py": "a4a8a79c63708f7db90f84aa34b9b0b739d47e6705bf471f059d3fec78a53b43",
+    "tools/raid_program/scoreboard_core.py": "db67392d3f3019c4dfd4096b427c8ea878824de2d22ed0fa874ce5bb72f1a655",
+    "tools/raid_program/scoreboard_run.py": "f69008052fcac7507cfee5a778aef301fbcbdcabb9493aa30e2c510a5ec0b6f8",
+    "tools/raid_program/scoreboard_show.py": "dda6ae58be1b0fbba25a3ad24179e486ea8b5a0c85204094a0318030a3f4e9b5",
+    "tools/raid_program/scoreboard_verdict.py": "50bed93d5e0115f40adbed27ab19c213f3bc91a44a134495427e1abcf7cdbf9a",
+    "tools/raid_program/workflow_tests.py": "d425795c31cc1d5df6cea0edd62b5a7c2b4e6e792b02dc8c821206651517cb29"
+  },
+  "kind": "review",
+  "producer": "ac4fc4694d59b03e9",
+  "review_report": {
+    "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_supporting_review_v2_20260923.report.json",
+    "sha256": "6bd43f60c167a6a83540a2185abf57a2fc7e3e19fa58dbb640db48e03a3cdd89"
+  },
+  "reviewer_session_id": "ac4fc4694d59b03e9",
+  "unit_id": "magmaw:tuning_01",
+  "verdict": "approved"
+}
