@@ -66,10 +66,10 @@ For every DPS actor and spec, report available evidence for:
 
 Party damage may include tanks, pets, adds, encounter-attributed effects and
 redirected damage. Use the existing originated-damage accounting rather than
-summing raw mirrored events. Use complete fight elapsed time for comparisons
-with Warcraft Logs when its
-DPS uses that denominator. Preserve the existing scored/active-second number
-as a separately named metric; never compare it directly to elapsed-time DPS.
+summing raw mirrored events. Compare with Warcraft Logs only through
+encounter-window DPS as the raid tuning playbook defines it. Keep
+scored/active-second numbers as separately named diagnostics; never compare
+them directly to encounter-window DPS.
 State whether transfers between linked targets are deduplicated and whether
 pets and adds are included. A spell's moving-event fraction is not the actor's
 movement uptime; a DOT ticking while
@@ -95,12 +95,13 @@ Rank improvements across the roster before selecting one bounded implementation;
 "one repair per iteration" does not mean "review only one bot."
 Do not estimate recoverable DPS by subtracting an unmatched simulator total.
 
-## Account for the DPS loss before selecting a repair
+## Account for the DPS loss when the mechanism is unclear
 
-For a DPS optimization task, add this accounting to the existing `dps_review.json`
-before handing off an implementation. Reuse retained reports and simulator
-results; no new logger, simulator run or live canary is required for this step.
-A visible APL difference alone is not a quantified performance cause.
+Use this accounting when a ranked gap has no clear mechanism. It is a diagnosis
+aid, not a gate: the raid tuning playbook's batch measurement decides whether a
+change is kept. Reuse retained reports and simulator results; no new logger,
+simulator run or live canary is required for this step. A visible APL
+difference alone is not a quantified performance cause.
 
 1. Join the native report with the pinned request, aggregate result, ComputeStats
    and relevant debug timeline. Bind actor, window, target filters, owner/pet
@@ -151,10 +152,7 @@ cannot be resolved offline. Revert or replace a change when controlled evidence
 establishes regression; preserve unrelated repairs. Matching cast totals or a
 passing behavior fixture does not establish a performance improvement.
 
-The reviewer checks joined inputs, event classification, reconciled totals and
-the repair estimate before approving a DPS optimization patch. Optionally send Jev/Laya the
-largest signed gaps, unknown residual, selected estimate and acceptance limits;
-agreement with a prose hypothesis does not explain the loss.
+Model agreement with a prose hypothesis does not explain the loss.
 
 ## Select the next work unit
 
@@ -193,8 +191,7 @@ Route cadence/priority/resource/pet-policy defects to role implementation;
 shared arbitration/movement/target-ownership defects to runtime implementation;
 matching setup/stats/cadence with incorrect event damage to native class
 mechanics. Missing parity data means request that observation, not guess a
-coefficient. Exact dummy calibration lasts 300 seconds; raid runs remain
-completion-watchdog driven.
+coefficient.
 
 Keep three conclusions separate: encounter clear, acceptance of this repair,
 and overall roster performance. A kill or one improved actor does not establish
@@ -208,15 +205,7 @@ Choose one next actionable loss; do not reopen repaired lifecycle failures or
 require a new documentation/authorization chain for ordinary tuning iterations.
 
 
-## Compact local-Jev and Luna handoff
-
-Use [the local shadow commands](../../../../docs/bot_raids/local_jev_shadow.md)
-after native closure. Do not send the entire group packet to the 8 GiB local
-service. Keep the exact per-actor inputs, responses and model revision. Local
-confidence or agreement with hosted Jev is not evidence that a repair is right.
-Run deterministic checks on predicted assignment/repair eligibility. Preserve
-contradictory predictions as diagnostic negatives pending adjudication; do not
-execute them or silently discard them.
+## Compact Luna handoff
 
 Before dispatch, keep a single all-roster table with DPS/HPS, known duties,
 reference availability, the largest component differences and unresolved edges.

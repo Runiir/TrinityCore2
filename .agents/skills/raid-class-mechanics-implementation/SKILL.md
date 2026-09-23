@@ -118,16 +118,16 @@ that explains the measured discrepancy. Preserve normal spell legality and the
 priority/action model. Do not add hidden damage multipliers, simulator-only
 auras, synthetic procs, or calibration-specific gameplay branches.
 
-Permit one implementation attempt in the admitted mode. Run focused unit/replay tests, then request
-one heavyweight build through `queued_build.py`. Hand the resulting binary and
-receipt to `raid-shard-architecture`; this skill must not start, stop, restart,
-or attach to a worldserver.
+Permit one implementation attempt in the admitted mode. Run focused unit/replay
+tests; the coordinator reviews and builds it as a `class_native` change (raid
+tuning playbook). This skill must not start, stop, restart, or attach to a
+worldserver.
 
 ## Verify once and stop
 
-Use one matched isolated training-dummy calibration window; DPS throughput
-uses the exact 300-second scoring duration. Never reuse that duration as a raid
-or dungeon completion condition. A stat/inheritance repair passes when gear
+Use one matched isolated training-dummy calibration window (exact 300-second
+scoring duration) to verify the native outcome; the raid effect is then measured
+with the playbook's batch. A stat/inheritance repair passes when gear
 still matches and the affected effective stats enter the declared parity
 envelope; the coordinator then re-runs cadence and damage classification. A
 damage-outcome repair passes only when gear and effective stats still match,

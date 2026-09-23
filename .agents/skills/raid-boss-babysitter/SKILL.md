@@ -58,10 +58,8 @@ wipe as proof that the originally observed condition was lethal.
 - Infrastructure loss: stale/missing status, diagnose, or trace; process loss; identity drift.
 - Contamination: operator/gameplay intervention, forbidden assistance, cross-shard rows, or repeated stuck recovery.
 
-Do not use a 300-second observation deadline for a raid or dungeon. That exact
-window belongs to isolated training-dummy DPS calibration. Observe the route
-until a typed success/failure condition occurs; an emergency host timeout is
-noncompletion evidence, not success.
+Observe the route until a typed success/failure condition occurs; there is no
+300-second raid deadline, and an emergency host timeout is noncompletion evidence.
 
 Tell the coordinator whether evidence is sufficient to stop. Do not stop the run yourself.
 

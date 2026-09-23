@@ -6,10 +6,10 @@ description: Implement or repair one Cataclysm raid boss or instance-script slic
 # Raid Encounter Implementation
 
 This skill owns a bounded native-script task. A direct user request to implement
-an encounter's bots belongs first to `trinity-orchestrator` and
-`raid-performance-loop`; their saved work unit determines whether a native script
-repair is needed. Returning this specialist's result does not complete that parent
-request. Resolve scope using the current checkout's AGENTS.md before proceeding.
+an encounter's bots belongs first to the coordinator
+([raid tuning playbook](../raid-tuning-playbook/SKILL.md)); its saved work unit
+determines whether a native script repair is needed. Returning this specialist's
+result does not complete that parent request.
 
 Implement one bounded encounter work unit without inventing missing mechanics or hiding server-side assistance in bot behavior. The reviewed dossier and claim ledger define the intended encounter; native execution and telemetry prove it.
 
@@ -132,13 +132,10 @@ Run the narrowest applicable static and unit checks, then native replay. If nati
 tools.raid_program.queued_build
 ```
 
-Do not run direct heavyweight builds. After deterministic checks pass, hand one
-exact route/mode shard to `raid-shard-architecture`; use the generated
-completion-watchdog validation plan, not a 90-second command smoke test or a
-fixed 300-second observation. The route ends on normal completion or typed
-stall/repeated-decision/death-loop/infrastructure evidence; any generous
-emergency wall-clock expiry is noncompletion. `raid-boss-babysitter` observes
-an already-started run and `raid-evidence-lifecycle` owns capture and
+Do not run direct heavyweight builds. After deterministic checks pass, the
+coordinator validates one exact route/mode shard with the completion-watchdog
+plan; a 90-second command smoke test is not validation. `raid-boss-babysitter`
+observes an already-started run and `raid-evidence-lifecycle` owns capture and
 publication.
 
 ## Completion gate

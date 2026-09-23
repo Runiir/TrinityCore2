@@ -21,33 +21,28 @@ evidence when stuck. Jev/Laya remain advisory. Historical receipts retain their
 actual model identities; old Sol requirements do not override this preference.
 This controls model selection for new agents, not the model of an existing session.
 
-For a broad request such as "implement Magmaw 10N bots", act as the coordinator
-using `.agents/skills/trinity-orchestrator/SKILL.md` and
-`.agents/skills/raid-performance-loop/SKILL.md`. A specialist's bounded patch
-and handoff do not replace the requested encounter implementation and live validation.
-Read these skills from the current checkout, even if a cached skill points elsewhere.
-First inspect `git worktree list --porcelain`. Use the checkout holding `master`
-and verify it matches the saved graph's `coordinator_worktree`; preserve unrelated
-dirty work rather than building an old branch or copying its task state.
+For a broad request such as "implement Magmaw 10N bots", act as the coordinator:
+follow `.agents/skills/raid-tuning-playbook/SKILL.md` for the tuning loop and
+`.agents/skills/trinity-orchestrator/SKILL.md` for startup, the saved graph and
+review. A specialist's bounded patch and handoff do not replace the requested
+encounter implementation and live validation. Read these skills from the current
+checkout, even if a cached skill points elsewhere.
 
 For boss-bot implementation requests naming an encounter and difficulty, run
 `pixi run python -m tools.raid_program.raid_workloop start "<request>"`
 on the current mainline coordinator checkout. Example: `start "implement magmaw 25hc bots"`.
 This selects or initializes the requested scenario; it does not launch a server.
-The plain request is sufficient on every new tab: a matching saved scenario is
-continued, not restarted or narrowed to its current class/review. The primary
-agent remains coordinator; `unit.owner_skill` assigns only the bounded subtask.
-After assessment, publication or routing, execute the next returned step in the
-same turn. Before a final reply, resume and check the parent objective. Open
-requirements mean continue unless the user explicitly limited/stopped the task
-or a demonstrated external blocker prevents all remaining authorized work.
-Do not require the user to supply a special handoff or say "continue" again.
 For continuation without a new encounter/difficulty, use `raid_workloop resume`.
-Follow `docs/bot_raids/development_graph.md`. Preserve other scenarios and every
-open actor requirement; missing research/scripts/runtime assets are implementation
-work, not permission to borrow a different difficulty's acceptance.
-Continue from the returned unit through evidence, repair, review, build preparation,
-watchdog validation and publication. A dirty checkout or stale build configuration
+First inspect `git worktree list --porcelain`. Use the checkout holding `master`
+and verify it matches the saved graph's `coordinator_worktree`; preserve unrelated
+dirty work rather than building an old branch or copying its task state.
+The plain request is sufficient on every new tab. The primary agent remains
+coordinator; `unit.owner_skill` assigns only the bounded subtask. Execute each
+returned step in the same turn; do not require the user to say "continue" again.
+Before a final reply, resume and check the parent objective: open requirements
+mean continue. Preserve other scenarios and every open actor requirement; missing
+research/scripts/runtime assets are implementation work, not permission to borrow
+a different difficulty's acceptance. A dirty checkout or stale build configuration
 requires source isolation/configuration repair, not a generic completion reply.
 Report any earlier failing tests even if a narrower selection later passes; classify
 their relevance without silently dropping them. Only stop for the user's requested

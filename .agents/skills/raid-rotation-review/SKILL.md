@@ -31,9 +31,8 @@ observation; another page without a new question is not progress.
 
 Load a deep reference only for the unanswered question named by that compact
 output: [post-run-dps-review.md](references/post-run-dps-review.md)'s damage-loss
-accounting section only before recommending an implementation; it requires signed
-component gaps, ordinary casts versus triggered/proc copies, and bounded net gain.
-Missing attribution routes to diagnosis. Read [translation-model.md](references/translation-model.md)
+accounting when the mechanism behind a ranked gap is unclear (signed component
+gaps, ordinary casts versus triggered/proc copies). Read [translation-model.md](references/translation-model.md)
 for action or condition mapping, [runtime-and-parity.md](references/runtime-and-parity.md)
 for exact inputs and gates, and [decision-trace-and-mechanics.md](references/decision-trace-and-mechanics.md)
 for a decision-chain, route-mechanics, or reporting question. Read
@@ -41,15 +40,10 @@ for a decision-chain, route-mechanics, or reporting question. Read
 in scope, and only a matching class note. Parallel reviewers use the coordinator's
 actor subset and shared context; the overall reviewer joins all actors.
 
-For optional improvement suggestions, send actor-scoped `evidence_view compare`
-output to `tools.raid_program.bot_improvement_advice`; see
-[`bot_improvement_advice.md`](../../../docs/bot_raids/bot_improvement_advice.md).
-Do not ask a broad boss-goal approval question or wait for model agreement.
-For legacy local Laya or hosted Jev shadow analysis, check the pinned
-model/revision. Packets must fit both question/options and total context budgets;
-token saturation, confidence, or prediction agreement does not prove retention or
-repair. Keep missing external access explicit. One accepted repair does not certify
-the roster or require simulator regeneration.
+Jev advice is optional and only chooses between the top two ranked gaps; see
+the [raid tuning playbook](../raid-tuning-playbook/SKILL.md), which also defines
+every DPS metric and threshold. Laya shadows Jev on the same packet; both
+are optional and never gate anything.
 
 ## Exact inputs and gates
 
@@ -59,17 +53,14 @@ WCL damage/casts with matched incoming-damage, tank-duty and phase context;
 retain survival/threat as separate safety checks. Follow
 [class and encounter validation](../raid-performance-loop/references/class-and-encounter-validation.md).
 Do not turn an incompatible threat-fixture denominator into another class tuning
-task, or refuse a proven partial recovery solely because it remains below 95%.
+task.
 
-Resolve the denominator with `tools.raid_program.raid_workloop spec <spec>` and
+Resolve the WoWSims denominator with `tools.raid_program.raid_workloop spec <spec>` and
 the promoted `wowsims_cata_dps_reference_requests_v1.json` cohort. Embedded DPS
 in `all_spec_references_cata_p4_v1.json` is not promotion authority; hydrate the
-existing cohort through `raid-wowsims-reference` when needed. Historical
-`optimization_target_met` can mean only 85% of a compatible reference and stays
-separate from unresolved parity. Current acceptance requires 95% per DPS actor,
-using policy v3 and a run-bound `dps_calibration` packet verified by
-`tools.raid_program.dps_gate`. Account for DTR within the total 5% gap, never as
-an additional 1,000 DPS waiver. Review remaining losses even when the ratio passes.
+existing cohort through `raid-wowsims-reference` when needed. Account for DTR
+copies within a gap, never as an extra waiver. Review remaining losses even when
+a ratio passes.
 
 Record simulator revision/binary, APL bytes, exported `RaidSimRequest`, gear,
 talents, glyphs, options, encounter/target, Trinity commit/binary, profile
@@ -114,9 +105,7 @@ effect/damage/progress`. Stop at the first missing or contradictory edge. Do not
 call a profile correct because a spell exists, or a rotation wrong when range, LOS,
 route authority, setup, resource ownership, or mechanic preemption is the first
 failure. Ordinary movement yields to hazards at declared priority without taking
-unrelated GCD/cast resources; ordinary DPS continues when independent. Route
-evidence is completion-watchdog driven with typed terminal reason. Exactly 300
-seconds is reserved for isolated training-dummy calibration, never raid completion.
+unrelated GCD/cast resources; ordinary DPS continues when independent.
 
 Report one concrete counterexample with severity/type, exact actor/spec/node/target
 and source identities, policy/profile/trace paths, expected versus observed

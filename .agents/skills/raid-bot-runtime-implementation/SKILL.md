@@ -420,10 +420,8 @@ lease without changing its generation, destination, or progress clock. Replay
 a later tick past the original expiry with a competing lower-priority action;
 prove native path retention as well as eventual termination of a true stall.
 
-Report implementation, fixture, build, and live results separately. Development
-uses the affected tests and a bounded native canary; full qualification has its
-own criteria. A recurrence requires a corrected causal fixture before retrying
-the same edge, not a new authorization or an unrelated historical test bank.
+A recurrence requires a corrected causal fixture before retrying the same edge,
+not a new authorization or an unrelated historical test bank.
 
 For event-owned encounter movement, retain a typed semantic transition in
 addition to the short generic lease. Bind it to encounter/attempt and mechanic
@@ -510,16 +508,10 @@ failure. Include the competing candidate or native recovery caller that could
 undo the repair. Do not require unrelated pet, class, or boss simulation in
 every movement fixture; state which native outcomes still need live validation.
 
-Return the reproduced failure, repair, and focused test result. The coordinator
-owns live validation and continues after the bounded worker finishes. A native
-boss kill proves a development clear; qualification uses its separate criteria.
-
-Use the queued build coordinator for every native build. Return a runtime
-verification plan to `raid-shard-architecture`; that coordinator runs at most
-one matched completion-watchdog shard. If the same edge remains, return a
-failed handoff. Do not add another hypothesis or tune adjacent policies.
-
-Use the shared handoff contract from
-`raid-performance-loop/references/handoff-contract.md`. Report the exact
-before/after edge, changed files, tests, build receipt, runtime verdict, and
-next owner.
+Shared runtime changes are risk tier `shared_runtime`: the coordinator runs the
+full review, build, smoke kill and measurement batch from the raid tuning
+playbook. Return, using the shared handoff contract in
+`raid-performance-loop/references/handoff-contract.md`, the reproduced failure,
+before/after edge, changed files, focused tests, runtime verification plan and
+next owner. If the same edge remains after validation, return a failed handoff;
+do not add another hypothesis or tune adjacent policies.

@@ -1,129 +1,58 @@
 ---
 name: raid-performance-loop
-description: Coordinate bounded raid and class repairs, join specialist results, and continue through live validation until the user's objective is achieved.
+description: Route a picked raid DPS gap, failed run or missing encounter prerequisite to the one specialist skill that owns it, and join the specialist result back into the tuning loop.
 ---
 
 # Raid performance loop
 
-Coordinate one bounded repair at a time while preserving the encounter-wide parent
-objective, every actor's open requirements, and the distinction between diagnosis,
-implementation, review, build, live acceptance, and publication. A specialist
-handoff or passing canary is progress, not completion while the parent remains open.
+The measure-change-measure loop, finish line, thresholds and risk tiers are in
+[raid-tuning-playbook](../raid-tuning-playbook/SKILL.md); startup and graph
+commands are in [trinity-orchestrator](../trinity-orchestrator/SKILL.md). This
+skill decides who owns the next change.
 
-## Authority and evidence
+## Find the first broken edge
 
-Startup, worktree selection, `start`/`resume` semantics, and continuation authority
-belong to [trinity-orchestrator](../trinity-orchestrator/SKILL.md); follow that skill
-instead of creating a second startup protocol. Use the existing command first. For
-admission and saved-task queries, use `evidence_view admission` and
-`evidence_view task`, with command details in
-[rotation evidence views](../raid-rotation-review/references/evidence-views.md).
-Then issue selected narrow queries. Pass compact comparisons and decisive event pages
-to workers or advisory models; never dump graph history, raw reports, or generated
-datasets. Missing evidence is unknown and becomes a bounded capture task.
-For post-run triage, use the [tool-call examples](../raid-rotation-review/references/evidence-views.md#tool-call-examples):
-read failed checks and the requested repair's metric, then act. Keep repair outcome,
-reference eligibility and parent acceptance separate. A missing reference binding
-does not justify repeating the same gameplay run or discarding a measured repair;
-resolve that binding while leaving qualification open.
+Follow one actor's loss forward and stop at the first missing or contradictory edge:
 
-Read the current result at the top of
-[shared_worldserver_workflow_20260907.md](../../../docs/bot_raids/shared_worldserver_workflow_20260907.md)
-and only the matching [error-ledger entry](../../../docs/bot_raids/error_ledger.md).
-Historical entries do not override current state. Keep the active-work-unit status
-consistent with the observed edge, preserve immutable receipts, and update the
-workflow's latest-run paragraph and ledger edge together when closing a run,
-including failures before the boss.
+`policy -> observed state -> candidate/gates -> arbitration/resources -> movement/authority -> native submission -> native outcome -> landed damage`
 
-## Parent objective and repair loop
+A spell existing in a profile does not make the rotation correct, and a low
+number does not make it wrong when range, LOS, duty, setup or a mechanic is the
+first failure. Keep reusable class calibration (dummy, shared across bosses)
+separate from per-boss encounter validation.
 
-For a roster-wide request, keep an actor acceptance table with each actor's native
-result, reference limitations, unresolved cause, next action, and validation state.
-Update every actor after each closed run; an accepted actor or improved raid total
-does not close other rows. Continue to the next actionable row after publication.
-Preserve the requested composition and distinguish actual from requested roles.
+## Route to one owner
 
-Use one loop: inspect the failed run, identify the earliest actionable mismatch,
-repair it, test affected behavior, independently review risky changes, build once,
-run the completion-watchdog attempt, close evidence, publish, and route the next
-edge. Before repeating a measurement, inspect `recent_attempts`,
-`failure_counts_by_edge`, and prior unit names; a renamed edge is not new evidence.
-At ten repeats of the same first-broken edge, stop unchanged retries and change the
-hypothesis or architecture after recording the causal summary.
+| Broken edge | Specialist skill |
+| --- | --- |
+| Cadence, priorities, resources, targeting, cooldowns, pets, healer/tank choices | `raid-role-implementation` |
+| Native stats, coefficients, auras/procs, pet inheritance, damage per event | `raid-class-mechanics-implementation` |
+| Shared movement, recovery, lifecycle, arbitration, native submission | `raid-bot-runtime-implementation` |
+| Encounter facts, timers, spell values, strategy | `raid-encounter-research` |
+| Native boss/instance script or DB binding | `raid-encounter-implementation` |
+| Route manifests, rosters, provisioning, shard/live coordination | `raid-shard-architecture` |
+| Exact WoWSims input or reference value | `raid-wowsims-reference` |
+| Rotation discrepancy analysis (no implementation) | `raid-rotation-review` |
+| Read-only observation of a started run | `raid-boss-babysitter` |
+| Capture identity, publication and DVC cleanup | `raid-evidence-lifecycle` |
+| Closed decision data or a learned ranker | `raid-policy-flywheel` |
 
-A short diagnostic may answer startup/lifecycle questions but cannot be accepted DPS:
-isolated dummy calibration is exactly 300 scoring seconds, while raids and dungeons
-use the generated watchdog and typed terminal reasons. A development clear requires
-native boss death but does not qualify a full raid, every mechanic, or training data.
-A trash skip does not validate a route regression. Count death, release, runback,
-resurrection, regroup, and resumed progress separately; bind recovery entrance to
-the immutable admission receipt, and keep death-loop/stall limits. Read full-route
-lifecycle events before declaring an optional recovery gate exercised.
+Give the worker exactly one skill and one packet. The coordinator keeps the
+parent objective; a specialist handoff is progress, not completion. When a fix
+needs a native change or a new capture, stop that lane instead of approximating
+it in tooling.
 
-## Gates and routing
+## References (read only when the question arises)
 
-Separate reusable class qualification from per-boss validation. Before scheduling
-a dummy run, check the shared calibration catalog and retained evidence using
-[class and encounter validation](references/class-and-encounter-validation.md).
-For low tank DPS, require the matched WCL damage/cadence review described there;
-a threat test is not a substitute. A proven partial recovery may be accepted below
-95% while final qualification stays open. Every comparison must end in a repair,
-revert, supported keep decision, or one explicit missing observation.
-
-Every DPS actor must reach at least 95% of its current promoted self-provided
-WoWSims reference in an attributable, setup-admitted 300-second dummy window.
-Use policy v3 and `tools.raid_program.dps_gate` to bind the retained run/report to
-the actor review's `dps_calibration` packet. Historical 75/85% flags, a tank/healer
-role check, an observation repair or a raid clear cannot close this requirement.
-A roughly 1,000 DPS Dragonwrath difference explains part of the total gap; it is
-not an extra allowance, denominator reduction or permission to round up to 95%.
-Keep raid mechanics, WCL comparison and per-actor encounter acceptance separate.
-
-Do not tune native class coefficients, priorities, or damage from a raw delta. Before
-any stat-sensitive cadence, event-damage, or DPS repair, join the exact promoted
-WoWSims request/result/debug inputs to the native scoring-window observation and
-require gear identity, effective-stat parity, setup/consume parity,
-`dps_tuning_gate.tuning_admitted == true`, and
-`total_dps_comparison_gate.comparison_admitted == true`. For
-`self_provided_baseline`, exact gear/ratings remain required and a higher native
-monotonic throughput stat may be marked `favorable`; lower values fail.
-`controlled_live_parity` requires exact parity. Missing or mismatched joined gates
-route to capture/reference/stat application, never guessed coefficients. Keep
-ordinary player casts separate from proc/triggered copies, ticks, AoE impacts, and
-pet actions before accounting for loss.
-
-Route cadence, targeting, resources, healing choices, and pet policy to
-`raid-role-implementation`; matching setup/stats/cadence with wrong event damage
-to `raid-class-mechanics-implementation`; encounter facts or native scripts to
-`raid-encounter-research` or `raid-encounter-implementation`; shared movement,
-submission, recovery, or lifecycle to `raid-bot-runtime-implementation`; exact
-references to `raid-wowsims-reference`; evidence and cleanup to
-`raid-evidence-lifecycle`. Movement-only work does not require a new simulator
-run. Native terrain owns pathing: no bot Z steering, teleportation, global
-tolerance relaxation, or encounter MMAP workaround.
-
-## Workers and review
-
-Use Luna max for implementation, ambiguous causal diagnosis, and independent review;
-keep implementer and reviewer in separate sessions. Do not use nested agents.
-Give one owner one evidence packet, one hypothesis, production files plus affected
-callers/tests, forbidden changes, focused Pixi command, and expected native outcome.
-Use the [bounded packet](references/bounded-work-unit-contract.md),
-[causal routing](references/causal-routing.md), and
-[handoff contract](references/handoff-contract.md). Predictions and confidence are
-advisory; preserve provider/model identity, requests, responses, missing fields,
-and contradictory findings. A `no_action` resolution or wait is not a failed
-native cast. Keep healing denominators explicit, and do not let model agreement
-erase another actor's open issue.
-
-Assign one dedicated `raid-rotation-review` owner to every raid, dungeon, or
-calibration attempt, including successful clears. It reviews every actor and
-returns a compact DPS/HPS table, matched WoWSims/WCL comparisons, ranked losses,
-and one next repair or missing observation. Keep throughput acceptance separate
-from boss-clear and overall roster acceptance.
-
-Read [coordination and live-validation details](references/coordination-and-live-validation.md)
-only for run closure, recovery, development/qualification boundaries, or dispatch/build
-rules. Read [parallel role review](references/parallel-role-review.md) only when
-several roles underperform, and [recurrence procedure](references/recurrence-procedure.md)
-when a previously green edge returns.
+- [coordination-and-live-validation.md](references/coordination-and-live-validation.md):
+  run closure, route-wide survival and death recovery, development versus qualification.
+- [class-and-encounter-validation.md](references/class-and-encounter-validation.md):
+  dummy calibration reuse and tank-damage review.
+- [causal-routing.md](references/causal-routing.md): ambiguous ownership,
+  persistent-task and movement slices, identity or detector alarms.
+- [parallel-role-review.md](references/parallel-role-review.md): several roles
+  underperform in the same run.
+- [bounded-work-unit-contract.md](references/bounded-work-unit-contract.md) and
+  [handoff-contract.md](references/handoff-contract.md): worker packet and handoff format.
+- [recurrence-procedure.md](references/recurrence-procedure.md): only for an
+  explicitly requested legacy sealed replay.

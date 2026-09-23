@@ -5,9 +5,8 @@ identity/admission, target selection, build ownership, or repeated failures.
 
 ## Native and telemetry boundaries
 
-Keep C and C++ source and headers below 1,000 lines; split by concern so a small
-repair invalidates as little build cache as practical. When splitting a translation
-unit, preserve prerequisite include order and inspect file-local names in the active
+When splitting a translation unit to stay below the 1,000-line limit in AGENTS.md,
+preserve prerequisite include order and inspect file-local names in the active
 build receipt/cache if unity is enabled. A dormant CMake unity branch and an
 extracted-body fixture do not prove the real include chain; in this core
 `Pet.h` depends on `Common.h` being available first. Keep native compilation a
@@ -101,18 +100,15 @@ reviewed claim; it runs configure and build through the queue without intermedia
 Git writes. Inspect argv with `workflow_build commands` without launching.
 A failed step returns its receipt and stops; correct the cause before retrying.
 
-Python uses Pixi, code/configuration uses Git, and generated evidence uses DVC.
 Reuse exact verified assets, verify remote copies, and evict only exact duplicate
-payloads. After an experiment, check DVC status and push the remote as required by
-the repository instructions.
+payloads.
 
 ## Retry and reviewer boundaries
 
 Ordinary fixture, configuration, implementation, and review failures are repair
 tasks; only a real tool/account/resource failure should require external input.
-At ten occurrences of the same first-broken edge, stop unchanged retries, write the
-causal summary, and change the hypothesis or architecture before resuming. This
-threshold does not permanently stop the program when a new bounded repair exists.
+The graph's ten-failure rule forces a changed hypothesis; it does not stop the
+program when a new bounded repair exists.
 
 When replacing or resuming a worker, name the latest implementation review and its
 unresolved findings. The worker reconciles those findings with the current diff;
@@ -123,8 +119,5 @@ collects it; a passing filtered suite that excludes the new test is not evidence
 Do not interrupt a quiet worker arbitrarily; send decisive context and use
 `followup_task` to resume a completed worker.
 
-For a worker packet, include immutable evidence, owned production and affected test
-files, one hypothesis, excluded changes, a focused command, and concrete acceptance.
 The reviewer is a separate session that read the patch. Model agreement is not
-review approval, and an unavailable advisory model routes to the existing reviewer
-rather than blocking unrelated work.
+review approval.

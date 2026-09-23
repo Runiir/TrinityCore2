@@ -11,9 +11,8 @@ encounter source, live server, or evidence publisher.
 A tank damage assignment needs a damage/cadence comparison against matched WCL
 or a compatible class reference, not only threat or survival qualification.
 Use the coordinator's ranked loss review and preserve mitigation while repairing
-damage delivery. Class calibration carries across bosses when inputs/behavior
-remain equivalent; see
-[class and encounter validation](../raid-performance-loop/references/class-and-encounter-validation.md).
+damage delivery. Measuring and keeping or reverting a change follows the
+[raid tuning playbook](../raid-tuning-playbook/SKILL.md).
 
 For an assigned read-only tank or healer review, use the supplied run context
 and relevant `references/tank-review-notes.md` or `healer-review-notes.md` when
@@ -34,42 +33,9 @@ commands. Do not repeat completed diagnosis or load a second specialist skill
 to reconstruct that packet. For a healer/tank result, use the compact gate/metric
 projection in [tool-call examples](../raid-rotation-review/references/evidence-views.md#tool-call-examples).
 Do not dump `raw_runtime_status` to find a metric already exposed by the evaluator.
-When current spec/reference status is missing, run:
-
-```bash
-pixi run python -m tools.raid_program.raid_workloop spec <spec>
-```
-
-For DPS, interpret `benchmark.state=blocked_exact_reference` as an acceptance
-gate, not a blanket diagnostic stop. Hand the exact denominator to
-`raid-wowsims-reference` and copy `benchmark.required_reference_work_unit`
-verbatim: reference promotion is one atomic 16-spec cohort, never a per-spec
-work unit. While that work is pending, a bounded `diagnostic_only` class work
-unit may still implement one trace-backed mismatch in cast mix, cast cadence,
-failed/rejected actions, priority order, DoT or buff uptime, resources, or pet
-execution. It must not use stale DPS as a tuning target, claim a simulator DPS
-ratio, or promote the result.
-
-If `benchmark.state=hydrate_exact_reference`, do not hand off generation and
-do not edit the role. Return the emitted `required_hydration_work_unit` to the
-coordinator. After its hydrate-and-verify command passes, rerun the same spec
-work unit and proceed from the now-local promoted reference.
-
-Parameter differences such as target distance are dimensions to normalize, not
-reasons to abandon the whole diagnostic. Compare unaffected actions and signals
-directly; isolate or exclude actions whose eligibility changes with the
-parameter. Require a matched rerun before changing those parameter-sensitive
-actions or making a total-DPS acceptance claim. Stop only when the proposed code
-change depends on the missing exact reference or when no attributable runtime
-signal remains.
-
-Read `benchmark.reference_class_policy` before using a DPS number. A
-`self_provided_baseline` is a one-sided floor, so exceeding it passes and is not
-an overtuning failure. Use `controlled_live_parity` for action ratios and
-damage-per-event diagnosis. Never compare Trinity against a UI or full-preset
-number whose race, professions, consumes, external buffs/debuffs, duration,
-variation, distance, or target differs. Such a difference narrows the usable
-signals; it does not halt the whole work unit.
+When the work uses a WoWSims reference (spec status, benchmark states,
+reference classes, stat parity), first read
+[WoWSims comparison rules](references/wowsims-comparison.md).
 
 Compare only hashes with the same explicit field name; catalog file, canonical
 JSON, target-catalog, and receipt hashes are different identities. Treat
@@ -91,21 +57,11 @@ exercise the observed native mechanism through eligibility and execution;
 retain the requested action identity separately when resolving its native form.
 
 Use the supplied rotation review; request only the evidence missing for this
-repair. For stat-sensitive DPS tuning, require its `gear_parity.status` and
-`effective_stat_parity.status` to be `match`, and require
-`dps_tuning_gate.tuning_admitted` to be true before changing stat-dependent
-priorities or damage behavior. A trace-backed legality or candidate-coverage
-repair may proceed without numerical stat parity when its correctness does not
-depend on those stats. Keep its acceptance limited to the repaired edge.
-Gear-manifest equality alone is not enough. A stat mismatch belongs to setup,
-core stat application, or pet inheritance; an `insufficient_data` result needs
-a scoring-start recapture or bound WoWSims stat artifact. Return that boundary
-instead of compensating with priorities, coefficients, or repeated search.
-
-For a `self_provided_baseline`, `effective_stat_parity.status=match` may include
-explicit `favorable` checks where a monotonic Trinity throughput stat is above
-the simulator minimum. A lower stat, gear drift, or secondary-rating drift is
-still a blocker.
+repair. A rotation, priority or cadence change measured by the playbook's raid
+batch needs no WoWSims parity. A claim based on a WoWSims comparison, or a
+change to damage behavior, needs the stat-parity gates in the WoWSims
+comparison rules; never compensate for a stat mismatch with priorities or
+coefficients.
 
 Stop at the first missing edge:
 
@@ -199,22 +155,13 @@ unrelated class action. The role repair is complete only when its candidate
 uses normal combat or lifecycle state and leaves gear, talents/glyphs, group,
 map/instance, roster lease, and persistent-pet identity untouched.
 
-Do not tune from final DPS alone. A diagnostic-only edit needs one observed
-first-broken edge and one metric expected to move; run one before/after check
-and stop. Permit at most one implementation plus one matched verification run
-for the bounded work unit. If the same first-broken edge remains, report it and
-hand it back to its owning layer rather than entering an optimization loop.
-Never manufacture a proc, aura, resource, threat state, target, cast success,
-heal demand, or boss outcome.
+Name one observed first-broken edge and the metric expected to move; the
+playbook's batch measurement decides keep or revert. Never manufacture a proc,
+aura, resource, threat state, target, cast success, heal demand, or boss outcome.
 
-Before calling a previously observed role blocker fixed, consult the active
-route recurrence ledger. A clean intervening canary does not reset an
-intermittent candidate, pet, target, or movement-authority failure. Reappearance
-uses the existing causal signature and increments it once for that run. At ten
-occurrences, return the accumulated evidence for architecture review instead of
-adding another class-policy branch.
-
-A recurrent role or pet blocker invalidates the previously passing fixture.
+A blocker that reappears after a clean run keeps its original error-ledger ID;
+a clean intervening run does not reset an intermittent failure. A recurrent
+role or pet blocker invalidates the previously passing fixture.
 Replace it with a higher revision that executes the exact observed state and
 fails against the pre-fix behavior; source-text assertions and configuration
 presence checks are insufficient. For persistent pet autocast, separately
@@ -225,13 +172,11 @@ tests at the reviewed source identity; the entire bank belongs to qualification.
 
 ## Validate by role
 
-Run focused unit/replay checks first. Use `queued_build.py` for every native
-heavyweight build. Then run one deterministic role window. Only an isolated
-training-dummy DPS throughput check uses the exact 300-second scoring window;
-tank/healer harnesses use their declared demand contracts, and raid/dungeon
-checks use completion watchdogs rather than a fixed 300-second timer:
+Run focused unit/replay checks first; raid measurement follows the playbook.
+Tank/healer harnesses use their declared demand contracts. Diagnose with these
+role metrics:
 
-- DPS: current reference ratio, active/elapsed DPS, action mix, landed/attempted
+- DPS: ratio to target and encounter-window DPS (playbook definitions), action mix, landed/attempted
   ratio, resource capping/starvation, cooldown/proc uptime, movement/range loss,
   target correctness, and pet contribution. For pet specs, separate pet
   alive/target uptime, action or landed-event cadence, and damage per event; do

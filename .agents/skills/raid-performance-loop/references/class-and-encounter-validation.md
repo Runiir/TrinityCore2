@@ -7,9 +7,9 @@ Class qualification is reusable across bosses. Encounter performance is not.
 Run `pixi run python -m tools.raid_program.calibration_reuse list --spec <spec>`.
 Check the shared catalog and retained actor evidence before launching a server.
 Hydrate missing DVC evidence; missing local files do not justify another experiment.
-The catalog starts empty deliberately: historical 75/85% passes and the Balance
-92.30% comparison do not satisfy the current 95% gate. Index existing eligible
-evidence without rerunning it:
+Thresholds (75% class floor, legacy 95% `dps_gate`, historical 85%/92.3%) are
+defined once in the [raid tuning playbook](../../raid-tuning-playbook/SKILL.md).
+Index existing eligible evidence without rerunning it:
 
 ```text
 pixi run python -m tools.raid_program.calibration_reuse register --spec <spec> --actor-id <actor> --packet <existing-packet.json>
@@ -23,7 +23,7 @@ not itself an invalidation. Failed qualification still needs repair and validati
 "once" does not mean permanently accepting the first attempt.
 
 Reuse the packet in the next actor review's `dps_calibration` field. The verifier
-recomputes the current 95% gate and setup/reference admission from retained data.
+recomputes the `dps_gate` ratio and setup/reference admission from retained data.
 For another build or roster actor, add `calibration_compatibility` pointing to a hash-bound JSON
 with `statement` and `review` file references. The statement must contain:
 
@@ -55,7 +55,6 @@ duties, cooldowns, survival, recovery and damage/healing in that encounter.
 Compare WCL only after recording gear, buffs, composition, duration, phases,
 target scope and actor duty differences. Reuse class qualification while measuring
 encounter losses. A boss clear neither qualifies a class nor proves WCL parity.
-Use the completion watchdog, not a 300-second raid success timer.
 
 ## Tank damage is a required objective
 
@@ -63,7 +62,7 @@ When the problem is low tank DPS, start with retained matched boss WCL damage
 and cast timelines. Do not route to a threat fixture merely because role=tank.
 The review must contain:
 
-- Elapsed DPS and damage by spell, including melee, periodic effects and pets;
+- Encounter-window DPS and damage by spell, including melee, periodic effects and pets;
   body/add/phase contributions; cast cadence, resource spending and idle time.
 - Gear and buffs, main/off-tank assignment, tank swaps, incoming damage,
   Vengeance or equivalent class mechanics, melee uptime and movement duties.
@@ -87,9 +86,6 @@ are context to match, not unconditional targets or proof that threat is automati
 
 ## Finish the decision, not just the report
 
-Keep partial repair acceptance, class qualification and encounter acceptance
-separate. A proven recovery below 95% can justify a focused revert/repair while
-qualification stays open. After an A/B comparison, explicitly choose repair,
-revert, keep with evidence, or one named additional observation. If a shared
-blocker interrupts that decision, retain its exact return task. Publishing a
-diagnosis does not close a damage gap or justify routing it away indefinitely.
+Keep class qualification and encounter acceptance separate. Every A/B comparison
+ends in keep or revert under the playbook's noise rule, or in one named missing
+observation. Publishing a diagnosis does not close a damage gap.

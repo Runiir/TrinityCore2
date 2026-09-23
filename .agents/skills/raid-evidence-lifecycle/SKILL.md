@@ -62,9 +62,8 @@ trace identity. Count repeated actor death episodes or unique native wipes separ
 from first casualties. Activity, repeated decisions, or endpoint submission alone is not
 semantic progress.
 
-Run until native clear or a typed stall, repeated decision, death loop, infrastructure
-loss, contamination, or interruption. Only isolated dummy calibration has a 300-second
-scoring window. An emergency wall-clock limit is never success.
+Run under the completion watchdog (clock rules: AGENTS.md); contamination is also a
+typed terminal reason.
 
 Boss completion requires matching native route/node/generation and confirmed boss death.
 Arrival, trash clear, fixture success, or high damage totals do not prove boss completion.
@@ -78,11 +77,12 @@ such. Only the shared-server owner may stop the whole worldserver.
 
 ## Close, publish, continue
 
-Before publication/eviction, give the assigned DPS reviewer the closed report,
-native combat aggregates, decision/diagnosis traces, exact roster and reference
-identities. Include its compact review with the run's evidence. A later review
-of an already-published run is a separately attributable analysis artifact;
-do not rewrite the original accepted report or archive.
+Scoreboard runs record, publish and evict each kill automatically (raid tuning
+playbook). When a DPS reviewer is assigned, give it the closed report, native
+combat aggregates, decision/diagnosis traces, exact roster and reference
+identities before eviction, and include its compact review with the run's
+evidence. A later review of an already-published run is a separately
+attributable analysis artifact; do not rewrite the original accepted report or archive.
 
 A completed reviewer handoff freezes its report for publication. Put later findings
 in a separate addendum once publication starts; do not edit a file while it is

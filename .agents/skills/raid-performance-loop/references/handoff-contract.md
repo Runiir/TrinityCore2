@@ -24,11 +24,12 @@ next_work_unit
 Rules:
 
 - Record one hypothesis and one first-broken edge.
-- For DPS role tuning, require `gear_parity.status=match`,
-  `effective_stat_parity.status=match`, and
-  `dps_tuning_gate.tuning_admitted=true`. Otherwise
-  return the single reference, capture, stat-application, or pet-inheritance
-  dependency; do not return another rotation-tuning work unit.
+- A rotation/profile change is judged by the raid tuning playbook's batch
+  measurement and needs no WoWSims parity. A native damage, coefficient or stat
+  change, or a claim based on a WoWSims comparison, requires
+  `gear_parity.status=match`, `effective_stat_parity.status=match`, and
+  `dps_tuning_gate.tuning_admitted=true`; otherwise return the single reference,
+  capture, stat-application, or pet-inheritance dependency.
 - Use `blocked` only for missing authority or an unavailable external input.
 - Use `failed` for a completed work unit whose gate did not pass.
 - Missing `scoring_start_stats` in an existing closed runtime report is a

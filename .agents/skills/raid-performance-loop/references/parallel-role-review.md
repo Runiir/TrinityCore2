@@ -43,18 +43,17 @@ Each reviewer returns a compact result:
 Deduplicate findings as they arrive. Give shared movement, targeting, execution
 or measurement failures one owner; class workers must not compensate for the
 same shared defect. Dispatch an independently supported bounded repair once its
-ownership is clear, without waiting for unrelated class writeups. Join the
-findings before building the selected batch. Preserve unresolved actors rather
-than declaring overall success after one local fix.
+ownership is clear, without waiting for unrelated class writeups. Preserve
+unresolved actors rather than declaring overall success after one local fix.
 
-Use Luna max for approved narrow implementations with disjoint ownership.
-Batch independent, trace-backed fixes that can each be checked in the same
-run. Hold conflicting or causally dependent changes for the next batch.
-After workers finish, inspect the combined diff, run affected fixtures once,
-obtain independent review, verify assets, then build once and run one bounded
-canary. A worker finishing is not a reason to build immediately.
-Worker results distinguish the base revision from uncommitted implementation;
-only the coordinator's final commit identifies the combined build source.
+Narrow implementations may be prepared in parallel with disjoint ownership.
+Hold conflicting or causally dependent changes. After workers finish, inspect
+each diff, run affected fixtures, complete each change's risk-tier checks and
+verify assets. Then commit and measure the changes one at a time, each with its
+own batch and keep/revert decision (raid tuning playbook). A worker finishing is
+not a reason to build immediately. Worker results distinguish the base revision
+from uncommitted implementation; only the coordinator's commit identifies the
+build source.
 
 Keep the shared context and per-owner findings with that run's evidence. The
 overall reviewer joins attribution and repair acceptance before DVC publication

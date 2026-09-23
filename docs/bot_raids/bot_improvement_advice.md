@@ -1,15 +1,19 @@
 # Optional per-bot improvement advice
 
-Jev/Laya suggest where to investigate. They never gate a commit, build, experiment,
-graph transition, or acceptance. Keep the 95% WoWSims requirement, exact dummy
-window, encounter completion, independent review and deterministic checks intact.
-Broad "implement this boss" approvals are not DPS diagnostics.
+Jev and Laya suggest where to investigate. They never gate a commit, build, experiment,
+graph transition, or acceptance. Under the raid tuning playbook
+(`.agents/skills/raid-tuning-playbook/SKILL.md`) Jev (hosted) is optional and is used only
+to choose between the top two ranked gaps. Laya (local) shadows Jev on the same
+packet so their signal can be compared; an offline Laya is recorded as not
+reviewed. Log both picks and yours with `tools.raid_program.jev_outcomes append`
+after the measurement batch (see `docs/bot_raids/development_graph.md`). Broad "implement
+this boss" approvals are not DPS diagnostics.
 
 Start with the existing comparison, not another raw-log packet:
 
 ```sh
 pixi run python -m tools.raid_program.evidence_view compare --current RUN --wowsims RESULT --actor GUID --output comparison.json
-pixi run python -m tools.raid_program.bot_improvement_advice --comparison comparison.json --actor GUID --top 2 --output advice --backend both
+pixi run python -m tools.raid_program.bot_improvement_advice --comparison comparison.json --actor GUID --top 2 --output advice
 ```
 
 `--baseline RUN` and `--wcl REFERENCE` comparisons work too. Use the full
@@ -31,8 +35,8 @@ cannot prove wrong priority. Different target counts or tank damage intake canno
 establish single-target parity. Duty overlap does not make every idle second
 necessary. DoTs, pets and triggered copies are not ordinary player casts.
 
-Use one pass on the largest gaps. Do not wait for agreement, invent an approval
-receipt, or repeat an unchanged request. Provider failure/disagreement leaves the
+Use one pass on the top two gaps. Do not wait for agreement, invent an approval
+receipt, or repeat an unchanged request. Provider failure leaves the
 coordinator free to continue from deterministic evidence. A byte-budget preflight
 avoids oversized packets; it is not a tokenizer guarantee. It preserves and skips
 oversized requests instead of truncating evidence. A local 422 means not reviewed.

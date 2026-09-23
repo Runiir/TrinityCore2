@@ -13,8 +13,9 @@ check pass. Reuse unchanged local asset hashes instead of building temporary
 source views for each calibration. Strict archived permission checks belong to
 sealed replay, not ordinary navigation readers.
 
-For ordinary development, use the current `raid-performance-loop` launch path;
-the sealed replay/qualification procedures below apply only to those work units.
+For ordinary development and tuning, launch through the scoreboard in the
+[raid tuning playbook](../raid-tuning-playbook/SKILL.md); the sealed
+replay/qualification procedures below apply only to those work units.
 
 Player gear needs an acquisition authority, not just a client item definition,
 an item-level cap, or a name filter. Provision DPS from the selected pinned
@@ -422,10 +423,7 @@ not route other shards through the Chainwielder module.
    A boss worker must not launch a separate server or restart a shared one.
 5. Confirm console/process readiness and active runtime identity.
 6. Only then attach the boss babysitter. The babysitter monitors; it does not silently repair or manufacture state.
-7. Keep route observation completion-driven. Terminate on success, explicit
-   user interruption, stale telemetry/infrastructure loss, a monotonic
-   semantic/no-progress stall, repeated-decision watchdog, or excessive death
-   loops—not an arbitrary fight deadline.
+7. Keep route observation completion-driven (see Keep timing semantics separate).
 
 ## Keep timing semantics separate
 
@@ -438,17 +436,9 @@ phase additions. Observe current actor/target phases at capture time; a cached
 spawn match cannot prove isolation during scoring. Do not repair drift by
 silently reapplying phases every tick.
 
-- Reserve the exact 300-second scoring window for isolated training-dummy DPS
-  calibration. It measures stable throughput, action mix, cadence, and pet
-  contribution; it does not model raid or dungeon completion.
-- Never pass `--observe-sec 300` as a raid/dungeon success condition. Use
-  `--duration-policy completion-watchdog` and poll at the configured heartbeat.
-- For raids and dungeons, require typed terminal evidence: normal clear,
-  monotonic semantic/no-progress stall, repeated decisions, excessive death
-  loops, stale telemetry/infrastructure loss, contamination, or explicit
-  interruption.
-- A generous emergency wall-clock cap may protect the host. Expiry is an
-  infrastructure/noncompletion result, never a successful fight result.
+- The clock rules are in AGENTS.md and the playbook. In launcher terms: pass
+  `--duration-policy completion-watchdog` for raids and dungeons, never
+  `--observe-sec 300`, and treat contamination as a typed terminal reason too.
 
 ## Interpret recovery at the correct scope
 
