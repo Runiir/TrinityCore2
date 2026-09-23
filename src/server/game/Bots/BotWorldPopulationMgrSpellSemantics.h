@@ -28,7 +28,11 @@ std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt,
     bool groundDanger, bool tankSpike, bool raidDamage, bool adds);
 bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0);
 bool SpellHasHostileMeleeChainSemantics(SpellInfo const* spellInfo);
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target);
+// Without a spell, or for area spells, protected creatures within 45 yards of
+// the target block the cast. A pure hostile melee chain spell is blocked only
+// by protected creatures its native chain search can select.
+bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target,
+    SpellInfo const* spellInfo = nullptr);
 }
 
 #endif

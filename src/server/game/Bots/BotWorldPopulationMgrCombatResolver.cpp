@@ -369,7 +369,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "movement_requires_instant_action";
             continue;
         }
-        if (HasNearbyProtectedEncounterTarget(bot, target)
+        if (HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)
             && SpellHasHostileMultiTargetSemantics(candidateSpellInfo)
             && !magmawMushroomAction
             && (!scopedAreaAction || SpellHasHostileMeleeChainSemantics(candidateSpellInfo)))

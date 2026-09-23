@@ -119,7 +119,7 @@ using AuraStateType=uint32;
     source += r'''
 enum class BotActionResult {Ok,BadSpell,InvalidTarget,DeadTarget,NoLineOfSight,OutOfRange,Throttled,Casting,GlobalCooldown,Cooldown,NoMana,NoOwner,CastFailed,NoAction};
 bool HasEnoughPowerForSpell(Player const* bot,SpellInfo const* info){return bot->power>=info->cost;}
-bool HasNearbyProtectedEncounterTarget(Player*,Unit*){return false;}
+bool HasNearbyProtectedEncounterTarget(Player*,Unit*,SpellInfo const* =nullptr){return false;}
 bool SpellHasHostileMultiTargetSemantics(SpellInfo const*){return false;}
 bool IsSchedulingResult(BotActionResult){return true;}
 namespace BotCastWhileMoving {template<class F>bool StopUncoveredMovingCast(Player*,SpellInfo const*,F){return false;}}

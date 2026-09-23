@@ -2352,7 +2352,7 @@ def test_trash_profile_damage_cannot_pull_or_compound_the_next_boss_encounter():
     # Protection spell helpers, not only profile-resolved actions.
     assert "IsAllOffenseSuppressed(ownerGuid)" in ACTION_EXECUTOR
     assert "IsProtectedEncounterTarget(" in ACTION_EXECUTOR
-    assert "HasNearbyProtectedEncounterTarget(bot, target)" in ACTION_EXECUTOR
+    assert "HasNearbyProtectedEncounterTarget(bot, target, spellInfo)" in ACTION_EXECUTOR
     assert "using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;" in resolver
     assert "BotRaidAreaAuthority::HasProtectedEncounterEntries" not in resolver
     assert "BotRaidAreaAuthority::IsProtectedEncounterTarget(" not in resolver

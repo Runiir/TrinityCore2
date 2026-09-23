@@ -49,7 +49,7 @@ def _production_fixture_source() -> str:
     )
     resolver = (BOT / "BotWorldPopulationMgrCombatResolver.cpp").read_text()
     resolver_start = resolver.index(
-        "        if (HasNearbyProtectedEncounterTarget(bot, target)"
+        "        if (HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)"
     )
     resolver_guard = resolver[resolver_start : resolver.index(
         "        if (forbidArea", resolver_start
@@ -212,7 +212,7 @@ bool CallerForbidArea(BotWorldPopulationMgr& manager, Player* bot,
 }
 
 bool nearbyProtected = false;
-bool HasNearbyProtectedEncounterTarget(Player*, Unit const*)
+bool HasNearbyProtectedEncounterTarget(Player*, Unit const*, SpellInfo const* = nullptr)
 {
     return nearbyProtected;
 }

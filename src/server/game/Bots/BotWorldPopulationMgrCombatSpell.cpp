@@ -78,26 +78,7 @@ bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth
     return false;
 }
 
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
-{
-    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
-        return false;
-    std::vector<WorldObject*> nearbyObjects;
-    Trinity::AllWorldObjectsInRange check(target, 45.0f);
-    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(target, nearbyObjects, check);
-    Cell::VisitAllObjects(target, searcher, 45.0f);
-    for (WorldObject* object : nearbyObjects)
-    {
-        Creature* creature = object ? object->ToCreature() : nullptr;
-        if (!creature || creature == target || !creature->IsAlive()
-            || !owner->IsValidAttackTarget(creature))
-            continue;
-        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(owner->GetGUID().GetRawValue(),
-                creature->GetEntry(), creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
-            return true;
-    }
-    return false;
-}
+using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;
 }
 
 uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
@@ -312,7 +293,7 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
             ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
             creature->GetGUID().GetRawValue()))
         return false;
-    if (HasNearbyProtectedEncounterTarget(bot, target)
+    if (HasNearbyProtectedEncounterTarget(bot, target, spellInfo)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
         return false;
     if (bot->HasUnitState(UNIT_STATE_CONTROLLED)

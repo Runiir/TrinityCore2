@@ -282,7 +282,7 @@ namespace BotRaidAreaAuthority {
 bool IsAllOffenseSuppressed(uint64){return false;}
 bool IsProtectedEncounterTarget(uint64,uint32,uint32,uint64){return false;}
 }
-bool HasNearbyProtectedEncounterTarget(Player*,Unit*){return false;}
+bool HasNearbyProtectedEncounterTarget(Player*,Unit*,SpellInfo const* =nullptr){return false;}
 bool SpellHasHostileMultiTargetSemantics(SpellInfo const*){return false;}
 bool HasPowerForSpell(Player*,SpellInfo const*){return true;}
 Unit* NativeBoss=nullptr;

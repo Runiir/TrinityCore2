@@ -25,9 +25,9 @@ def test_native_summon_semantics_reaches_both_callers(tmp_path):
         assert 'bool SpellHasHostileMultiTargetSemantics(' not in source
         assert 'using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;' in source
         assert '#include "Bots/BotWorldPopulationMgrSpellSemantics.h"' in source
-    start=resolver.index('        if (HasNearbyProtectedEncounterTarget(bot, target)\n')
+    start=resolver.index('        if (HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)\n')
     gates=resolver[start:resolver.index('        if (bot->HasUnitState',start)]
-    start=executor.index('    if (HasNearbyProtectedEncounterTarget(bot, target)\n        && SpellHasHostileMultiTargetSemantics(spellInfo))')
+    start=executor.index('    if (HasNearbyProtectedEncounterTarget(bot, target, spellInfo)\n        && SpellHasHostileMultiTargetSemantics(spellInfo))')
     spell_gate=executor[start:executor.index('    BotActionResult check =',start)]
     start=executor.index('    if ((action.SuppressAreaDamage\n')
     preview_gate=executor[start:executor.index('    if (!target',start)]
@@ -55,7 +55,7 @@ namespace BotWorldPopulationMgrSpellSemantics {
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMeleeChainSemantics;
 bool nearby=false;
-bool HasNearbyProtectedEncounterTarget(void*,void*){return nearby;}
+bool HasNearbyProtectedEncounterTarget(void*,void*,SpellInfo const* =nullptr){return nearby;}
 std::string Resolve(SpellInfo const* candidateSpellInfo,bool forbidArea){
  void* bot=nullptr;void* target=nullptr;struct {std::string RejectReason;}candidate;
  bool magmawMushroomAction=false,scopedAreaAction=false;

@@ -72,6 +72,6 @@ def test_scoped_magic_keeps_the_melee_chain_protection_split() -> None:
 
     # A scoped exception remains available to the two existing magic roots,
     # while the melee-chain exception is still subject to future-target safety.
-    nearby_gate = resolver[resolver.index("if (HasNearbyProtectedEncounterTarget(bot, target)") :]
+    nearby_gate = resolver[resolver.index("if (HasNearbyProtectedEncounterTarget(bot, target, candidateSpellInfo)") :]
     nearby_gate = nearby_gate[:nearby_gate.index("if (forbidArea")]
     assert "!scopedAreaAction || SpellHasHostileMeleeChainSemantics(candidateSpellInfo)" in nearby_gate

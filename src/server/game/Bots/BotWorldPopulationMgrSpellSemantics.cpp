@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
+#include "Bots/BotProtectedTargetReach.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "CellImpl.h"
 #include "Creature.h"
@@ -10,6 +11,7 @@
 #include "SpellMgr.h"
 #include "Unit.h"
 
+#include <algorithm>
 #include <chrono>
 #include <sstream>
 #include <vector>
@@ -265,24 +267,73 @@ bool SpellHasHostileMeleeChainSemantics(SpellInfo const* spellInfo)
     return false;
 }
 
+namespace
+{
+// Mirrors the native chain inputs: Spell::SelectImplicitChainTargets applies
+// the owner's ChainTargets modifiers, and Spell::SearchChainTargets consumes
+// the chain-from-caster and treat-as-area attributes.
+BotProtectedTargetReach::MeleeChainShape DescribeMeleeChain(Player* owner,
+    SpellInfo const* spellInfo)
+{
+    BotProtectedTargetReach::MeleeChainShape shape;
+    if (!SpellHasHostileMeleeChainSemantics(spellInfo))
+        return shape;
+
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (effect.TriggerSpell && SpellHasHostileMultiTargetSemantics(
+                sSpellMgr->GetSpellInfo(effect.TriggerSpell), 1))
+            return {};
+        if (spellInfo->IsPositiveEffect(effectIndex))
+            continue;
+        if (effect.IsTargetingArea()
+            || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+            || effect.IsAreaAuraEffect())
+            return {};
+        shape.ChainTargets = std::max(shape.ChainTargets, effect.ChainTarget);
+    }
+
+    if (Player* modOwner = owner->GetSpellModOwner())
+        modOwner->ApplySpellMod(spellInfo, SpellModOp::ChainTargets, shape.ChainTargets);
+    shape.PureMeleeChain = true;
+    shape.ChainFromCaster = spellInfo->HasAttribute(SPELL_ATTR2_CHAIN_FROM_CASTER);
+    shape.TreatAsAreaEffect = spellInfo->HasAttribute(SPELL_ATTR5_TREAT_AS_AREA_EFFECT)
+        && spellInfo->SpellFamilyName != SPELLFAMILY_GENERIC;
+    return shape;
+}
+}
+
 // Future encounter protection must be geometry-aware. Keeping the global entry
 // set is useful for route bookkeeping, but it must not suppress AoE on a
-// current trash pack that is nowhere near the protected encounter.
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
+// current trash pack that is nowhere near the protected encounter. Area spells
+// keep the fixed 45-yard target radius; melee chains use their native reach.
+bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target,
+    SpellInfo const* spellInfo)
 {
     if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
         return false;
 
+    using namespace BotProtectedTargetReach;
+    Reach const reach = spellInfo ? Resolve(DescribeMeleeChain(owner, spellInfo)) : Reach{};
+    WorldObject const* anchor = reach.From == Anchor::Caster
+        ? static_cast<WorldObject const*>(owner) : target;
+    float const collectRadius = CollectRadius(reach, owner->GetCombatReach());
     std::vector<WorldObject*> nearbyObjects;
-    Trinity::AllWorldObjectsInRange check(target, 45.0f);
+    Trinity::AllWorldObjectsInRange check(anchor, collectRadius);
     Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
-        target, nearbyObjects, check);
-    Cell::VisitAllObjects(target, searcher, 45.0f);
+        anchor, nearbyObjects, check);
+    Cell::VisitAllObjects(anchor, searcher, collectRadius);
     for (WorldObject* object : nearbyObjects)
     {
         Creature* creature = object ? object->ToCreature() : nullptr;
         if (!creature || creature == target || !creature->IsAlive()
             || !owner->IsValidAttackTarget(creature))
+            continue;
+        if (reach.From == Anchor::Target && !TargetAnchoredCandidateInReach(reach,
+                creature->GetExactDist2d(target), creature->GetMeleeRange(owner)))
             continue;
         if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
                 owner->GetGUID().GetRawValue(), creature->GetEntry(),

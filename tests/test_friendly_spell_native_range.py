@@ -239,7 +239,7 @@ bool IsProtectedEncounterTarget(uint64, uint32, uint32, uint64)
 }
 }
 
-bool HasNearbyProtectedEncounterTarget(Player*, Unit*)
+bool HasNearbyProtectedEncounterTarget(Player*, Unit*, SpellInfo const* = nullptr)
 {
     return false;
 }

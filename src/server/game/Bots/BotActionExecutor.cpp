@@ -38,34 +38,9 @@ constexpr uint32 ShadowfiendSpellId = 34433;
 
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
 using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMeleeChainSemantics;
-
 // Route protection is about preventing splash onto a future encounter that is
-// physically near the selected target.  A global "any protected entry" check
-// incorrectly disables tank AoE on an approach pack when the next boss is
-// hundreds of yards away.
-bool HasNearbyProtectedEncounterTarget(Player* owner, Unit const* target)
-{
-    if (!owner || !target || !BotRaidAreaAuthority::HasProtectedEncounterEntries(owner->GetGUID().GetRawValue()))
-        return false;
-
-    std::vector<WorldObject*> nearbyObjects;
-    Trinity::AllWorldObjectsInRange check(target, 45.0f);
-    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
-        target, nearbyObjects, check);
-    Cell::VisitAllObjects(target, searcher, 45.0f);
-    for (WorldObject* object : nearbyObjects)
-    {
-        Creature* creature = object ? object->ToCreature() : nullptr;
-        if (!creature || creature == target || !creature->IsAlive()
-            || !owner->IsValidAttackTarget(creature))
-            continue;
-        if (BotRaidAreaAuthority::IsProtectedEncounterTarget(
-                owner->GetGUID().GetRawValue(), creature->GetEntry(),
-                creature->GetSpawnId(), creature->GetGUID().GetRawValue()))
-            return true;
-    }
-    return false;
-}
+// physically near the selected target (shared geometry-aware guard).
+using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;
 
 float GetNominalRange(HealerIntent intent)
 {
@@ -202,7 +177,7 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
             ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
             creature->GetGUID().GetRawValue()))
         return BotActionResult::NoAction;
-    if (HasNearbyProtectedEncounterTarget(bot, target)
+    if (HasNearbyProtectedEncounterTarget(bot, target, spellInfo)
         && SpellHasHostileMultiTargetSemantics(spellInfo))
         return BotActionResult::NoAction;
     BotActionResult check = CheckSpell(owner, bot, target, action.SpellId);
@@ -285,7 +260,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
             || (!action.AllowMagmawBalanceMushroomSplash
                 && (!action.AllowScopedEncounterAreaDamage
                     || SpellHasHostileMeleeChainSemantics(preview.Effective))
-                && HasNearbyProtectedEncounterTarget(bot, target)))
+                && HasNearbyProtectedEncounterTarget(bot, target, preview.Effective)))
         && SpellHasHostileMultiTargetSemantics(preview.Effective))
         return BotActionResult::NoAction;
 
@@ -382,7 +357,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
             || (!action.AllowMagmawBalanceMushroomSplash
                 && (!action.AllowScopedEncounterAreaDamage
                     || SpellHasHostileMeleeChainSemantics(resolved.Effective))
-                && HasNearbyProtectedEncounterTarget(bot, target)))
+                && HasNearbyProtectedEncounterTarget(bot, target, resolved.Effective)))
         && SpellHasHostileMultiTargetSemantics(resolved.Effective))
         return BotActionResult::NoAction;
     BotActionResult check = CheckHostileSpell(owner, bot, target, resolved,
