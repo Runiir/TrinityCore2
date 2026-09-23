@@ -101,8 +101,10 @@ With at least 3 counted native-clear kills per label, `show` runs a two-sided
 critical value it prints, otherwise **within noise**. With 3 kills only large
 effects (roughly 7% of party DPS) are detectable; use `--kills 5` for smaller
 expected gains. Keep the change only if party
-DPS or the target actor improved, no non-healer actor regressed, route deaths
-per kill did not increase, and every kill of the new label is a native clear.
+DPS or the target actor improved, no non-healer actor regressed, boss-window
+deaths per kill did not increase, and every kill of the new label is a native
+clear. Trash deaths the party recovers from are context only; a trash wipe that
+stops the route already fails the kill.
 Otherwise revert it: revert the commit, and for SQL profile rows apply the
 reverse migration and read the rows back. Within noise means revert. A kept
 change's label becomes the new baseline.

@@ -48,7 +48,10 @@ def welch(new: list[float], old: list[float], min_kills: int = MIN_KILLS) -> dic
 def keep_recommendation(party: dict[str, Any], actors: dict[str, dict[str, Any]], *,
                         targeted_actor: str | None, new_deaths_per_kill: float, old_deaths_per_kill: float,
                         new_non_clears: int, min_kills: int = MIN_KILLS) -> tuple[str, list[str]]:
-    """keep only if party or the targeted actor improved, nothing regressed, deaths did not rise.
+    """keep only if party or the targeted actor improved, nothing regressed, boss deaths did not rise.
+
+    The death counts are boss-window deaths per kill: recovered trash deaths are context, not a
+    regression (a trash wipe the party does not recover from already fails the kill as a non-clear).
 
     A candidate label with counted non-clear kills is reverted even before it has enough kills.
     """
@@ -68,14 +71,14 @@ def keep_recommendation(party: dict[str, Any], actors: dict[str, dict[str, Any]]
     if regressed:
         reasons.append(f"regressed actors: {', '.join(regressed)}")
     if new_deaths_per_kill > old_deaths_per_kill:
-        reasons.append(f"route deaths per kill rose {old_deaths_per_kill:.2f} -> {new_deaths_per_kill:.2f}")
+        reasons.append(f"boss-window deaths per kill rose {old_deaths_per_kill:.2f} -> {new_deaths_per_kill:.2f}")
     if new_non_clears:
         reasons.append(wipes)
     return ("revert" if reasons else "keep"), reasons
 
 
-def _deaths_per_kill(kills: list[dict[str, Any]]) -> float:
-    return sum(int(record.get("route_deaths") or 0) for record in kills) / len(kills) if kills else 0.0
+def _deaths_per_kill(kills: list[dict[str, Any]], field: str) -> float:
+    return sum(int(record.get(field) or 0) for record in kills) / len(kills) if kills else 0.0
 
 
 def compare_labels(root: Path, scenario: str, new_label: str, old_label: str,
@@ -113,10 +116,12 @@ def compare_labels(root: Path, scenario: str, new_label: str, old_label: str,
                         [float(row["encounter_window_dps"]) for row in old_rows.get(actor_id, [])])
         actors[actor_id] = {"spec": spec, "role": role, "name": name, "gating": role not in healers, **change}
     new_clear_count = len(clear_kills(new_kills))
-    deaths = {"new": _deaths_per_kill(new_counted), "old": _deaths_per_kill(old_counted)}
+    deaths = {"new": _deaths_per_kill(new_counted, "route_deaths"), "old": _deaths_per_kill(old_counted, "route_deaths")}
+    boss_deaths = {"new": _deaths_per_kill(new_counted, "boss_window_deaths"),
+                   "old": _deaths_per_kill(old_counted, "boss_window_deaths")}
     decision, reasons = keep_recommendation(
-        party, actors, targeted_actor=targeted_actor, new_deaths_per_kill=deaths["new"],
-        old_deaths_per_kill=deaths["old"], new_non_clears=len(new_counted) - new_clear_count, min_kills=min_kills)
+        party, actors, targeted_actor=targeted_actor, new_deaths_per_kill=boss_deaths["new"],
+        old_deaths_per_kill=boss_deaths["old"], new_non_clears=len(new_counted) - new_clear_count, min_kills=min_kills)
     durations = {side: mean_sd([float(r["encounter"]["duration_sec"]) for r in clears])[0]
                  for side, clears in (("new", new_clears), ("old", old_clears))}
     return {
@@ -128,6 +133,7 @@ def compare_labels(root: Path, scenario: str, new_label: str, old_label: str,
         "party": party,
         "actors": actors,
         "route_deaths_per_kill": deaths,
+        "boss_window_deaths_per_kill": boss_deaths,
         "mean_duration_sec": durations,
         "targeted_actor": targeted_actor,
         "keep": {"decision": decision, "reasons": reasons},

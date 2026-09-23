@@ -307,6 +307,18 @@ def test_compare_labels_and_show(root):
     assert "(healer, not gating)" in text and "kill time" in text
 
 
+def test_recovered_trash_deaths_do_not_gate_but_boss_deaths_do(root):
+    batch(root, "old", scales=(0.80, 0.81, 0.79))
+    batch(root, "trash", scales=(1.00, 1.01, 0.99), route_deaths=2)
+    trash = compare_labels(root, SCENARIO, "trash", "old")
+    assert trash["keep"]["decision"] == "keep"
+    assert trash["route_deaths_per_kill"]["new"] == 2.0 and trash["boss_window_deaths_per_kill"]["new"] == 0.0
+    batch(root, "boss", scales=(1.00, 1.01, 0.99), route_deaths=1, window_deaths=1)
+    boss = compare_labels(root, SCENARIO, "boss", "old")
+    assert boss["keep"]["decision"] == "revert"
+    assert any("boss-window deaths per kill rose" in reason for reason in boss["keep"]["reasons"])
+
+
 def test_show_lists_each_kill_with_stall_share_and_reconciliation(root):
     batch(root, "a")
     record_all(root, kill("a", "stalled", validity=STALLED,
