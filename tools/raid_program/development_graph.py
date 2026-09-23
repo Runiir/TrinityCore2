@@ -303,16 +303,31 @@ def required(value: dict, *keys: str) -> None:
             raise GraphError('required: ' + key)
 
 
+DELETED = 'deleted'  # hash value of an owned file the unit removed (e.g. a promoted staged migration)
+
+
 def snapshot(root: Path, paths: list[str]) -> dict:
     if not isinstance(paths, list) or not paths or len(paths) != len(set(paths)):
         raise GraphError('nonempty unique owned_files required')
     result = {}
     for name in paths:
         p = (root / name).resolve()
-        if not p.is_relative_to(root.resolve()) or not p.is_file():
+        if not p.is_relative_to(root.resolve()):
+            raise GraphError('owned file missing: ' + name)
+        if not p.exists():
+            # An owned file may be deleted by the unit (git mv from sql/custom/staged to
+            # sql/custom/world); plan admission checks it existed at the base commit.
+            result[name] = DELETED
+            continue
+        if not p.is_file():
             raise GraphError('owned file missing: ' + name)
         result[name] = digest(p.read_bytes())
     return result
+
+
+def exists_at(root: Path, commit: str, path: str) -> bool:
+    return subprocess.run(['git', 'cat-file', '-e', f'{commit}:{path}'], cwd=root,
+                          capture_output=True).returncode == 0
 
 
 def git(root: Path, *args: str) -> str:
@@ -615,6 +630,9 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             paths = r.get('owned_files')
             if not isinstance(paths, list) or not paths or any(not isinstance(p, str) or Path(p).is_absolute() or '..' in Path(p).parts for p in paths):
                 raise GraphError('invalid owned_files')
+            missing = [p for p in paths if not (root / p).is_file() and not exists_at(root, r['base_commit'], p)]
+            if missing:
+                raise GraphError('owned files exist neither now nor at base_commit: ' + ', '.join(missing))
             g['assignment'] = {k: r[k] for k in ('hypothesis', 'owned_files', 'forbidden_changes', 'acceptance_conditions', 'required_test_commands', 'base_commit', 'policy', 'validation_identity')}
             if r.get('supporting_review'):
                 review = read(file_ref(root, r['supporting_review']))

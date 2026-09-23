@@ -306,7 +306,8 @@ def _validated_file_hashes(root: Path, value: Any, tested_files: Iterable[str] |
     for path in paths:
         _require(isinstance(path, str) and not Path(path).is_absolute() and ".." not in Path(path).parts, "invalid reviewed file path")
         expected = value.get(path)
-        _require(isinstance(expected, str) and SHA256_RE.fullmatch(expected) is not None, "invalid reviewed file hash")
+        _require(isinstance(expected, str) and (SHA256_RE.fullmatch(expected) is not None or expected == graph.DELETED),
+                 "invalid reviewed file hash")
         normalized[path] = expected
     current = graph.snapshot(root, paths)
     _require(normalized == current, "review file hashes do not match current files", code="stale_file_hashes")

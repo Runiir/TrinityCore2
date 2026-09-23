@@ -591,3 +591,17 @@ def test_published_unit_routes_to_next_task_without_losing_parent_or_assessment(
     assert graph.file_ref(root, status['latest_assessment']).is_file()
     assert set(status['open_requirements']) == {'actor_1', 'actor_2'}
     assert status['completed_measurements'][0]['spec'] == 'Survival'
+
+
+def test_snapshot_records_deleted_owned_files_and_plan_rejects_never_existing_paths(tmp_path):
+    # A promotion (git mv sql/custom/staged/world/x.sql sql/custom/world/x.sql) deletes an owned file.
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path / 'kept.sql').write_text('rows')
+    subprocess.run(['git', '-C', str(tmp_path), 'add', 'kept.sql'], check=True)
+    subprocess.run(['git', '-C', str(tmp_path), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'base'], check=True)
+    base = graph.git(tmp_path, 'rev-parse', 'HEAD')
+    assert graph.snapshot(tmp_path, ['kept.sql', 'gone.sql']) == {'kept.sql': graph.digest(b'rows'), 'gone.sql': graph.DELETED}
+    assert graph.exists_at(tmp_path, base, 'kept.sql') and not graph.exists_at(tmp_path, base, 'gone.sql')
+    (tmp_path / 'sub').mkdir()
+    with pytest.raises(graph.GraphError, match='owned file missing'):
+        graph.snapshot(tmp_path, ['sub'])

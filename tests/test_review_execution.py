@@ -524,7 +524,8 @@ def test_import_json_rejects_stale_file_hashes(external_case):
         _import(root, source, transcript, transcripts)
     assert failure.value.code == "stale_file_hashes"
     missing = _reviewer_json(root, _document({"gone.py": "0" * 64}), name="missing.json")
-    with pytest.raises(review_execution.ReviewExecutionError, match="new review") as failure:
+    # a reviewed file that no longer exists snapshots as "deleted" and therefore mismatches the report
+    with pytest.raises(review_execution.ReviewExecutionError, match="do not match current files") as failure:
         _import(root, missing, transcript, transcripts)
     assert failure.value.code == "stale_file_hashes"
     assert not (root / "artifacts").exists()
@@ -592,3 +593,11 @@ def test_import_json_adapter_passes_graph_review_stage(external_case, monkeypatc
     assert preview["from_stage"] == "review" and preview["to_stage"] != "review"
     result = workflow_step.apply_step(root, approved["receipt"]["path"])
     assert result["stage"] == preview["to_stage"]
+
+
+def test_file_hashes_accept_deleted_for_absent_files_only(workflow_case):
+    root, _ = workflow_case
+    current = graph.snapshot(root, ["code.py"])
+    assert review_execution._validated_file_hashes(root, current | {"gone.py": graph.DELETED}) == current | {"gone.py": graph.DELETED}
+    with pytest.raises(review_execution.ReviewExecutionError):
+        review_execution._validated_file_hashes(root, {"code.py": graph.DELETED})
