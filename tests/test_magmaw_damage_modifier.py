@@ -20,7 +20,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "sql/custom/staged/world/2026_09_23_30_magmaw_damage_modifier.sql"
+MIGRATION = ROOT / "sql/custom/world/2026_09_23_30_magmaw_damage_modifier.sql"
 CREATURE = ROOT / "src/server/game/Entities/Creature/Creature.cpp"
 CREATURE_DATA = ROOT / "src/server/game/Entities/Creature/CreatureData.h"
 CREATURE_STATS = ROOT / "src/server/game/Entities/Unit/CreatureStatSystem.cpp"

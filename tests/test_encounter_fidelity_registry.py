@@ -57,7 +57,7 @@ def test_magmaw_seed():
     magmaw = CREATURES["41570"]
     assert magmaw["status"] == "calibrated" and magmaw["damage_modifier"] == 16.0 and magmaw["role"] == "boss"
     assert magmaw["evidence"]["wcl_report"] == "MxFq7TRbvnjGY1hJ" and magmaw["evidence"]["wcl_fight"] == 22
-    assert magmaw["evidence"]["derivation_file"] == "sql/custom/staged/world/2026_09_23_30_magmaw_damage_modifier.sql"
+    assert magmaw["evidence"]["derivation_file"] == "sql/custom/world/2026_09_23_30_magmaw_damage_modifier.sql"
     for entry, mode in (("51101", "25N"), ("51102", "10H"), ("51103", "25H")):
         assert CREATURES[entry]["status"] == "open" and CREATURES[entry]["mode"] == mode
         assert CREATURES[entry]["base_entry"] == 41570 and CREATURES[entry]["role"] == "boss"
