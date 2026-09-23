@@ -769,10 +769,11 @@ def test_run_path_records_fidelity_without_affecting_the_batch(root, fakes):
 
 # --- top-up -----------------------------------------------------------------------------------
 
-def _top_up_args(label, source_commit=None, top_up=True, dry_run=False):
+def _top_up_args(label, source_commit=None, top_up=True, dry_run=False, target_kills=None):
     import argparse
     return argparse.Namespace(scenario=SCENARIO, label=label, kills=None, worldserver=None,
-                              source_commit=source_commit, top_up=top_up, dry_run=dry_run)
+                              source_commit=source_commit, top_up=top_up, dry_run=dry_run,
+                              target_kills=target_kills)
 
 
 def test_top_up_replaces_only_measurement_exclusions(root, tmp_path):
@@ -788,7 +789,7 @@ def test_top_up_replaces_only_measurement_exclusions(root, tmp_path):
         "counted non-clear": clean + [kill("a", "w", sha=sha, clear=False)],
         "excluded for no_evidence": clean + [kill("a", "n", sha=sha, pointer=None)],
         "mixes binaries": clean + [kill("a", "k2", sha="2" * 64, validity=STALLED)],
-        "enough counted native clears": clean + [kill("a", "k9", sha=sha)],
+        "already has 3 counted native clears": clean + [kill("a", "k9", sha=sha)],
     }
     for message, kills in refusals.items():
         with pytest.raises(SystemExit, match=message):
@@ -798,6 +799,9 @@ def test_top_up_replaces_only_measurement_exclusions(root, tmp_path):
         top_up_plan(other, target, binary, _top_up_args("a"))
     with pytest.raises(SystemExit, match="--source-commit differs"):
         top_up_plan(clean + [stalled], target, binary, _top_up_args("a", source_commit="f" * 40))
+    extend = _top_up_args("a")
+    extend.target_kills = 5
+    assert top_up_plan(clean + [kill("a", "k9", sha=sha)], target, binary, extend) == (2, "0" * 40)
 
 
 def test_run_refuses_an_existing_label_without_top_up(root):

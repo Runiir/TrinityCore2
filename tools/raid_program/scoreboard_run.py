@@ -261,9 +261,12 @@ def top_up_plan(existing: list[dict[str, Any]], target: dict[str, Any], worldser
         raise SystemExit(f"--top-up refused: {worldserver} is not the label's binary {sha}")
     if args.source_commit and args.source_commit != commit:
         raise SystemExit(f"--top-up refused: --source-commit differs from the label's {commit}")
-    missing = int(target["kills_per_measurement"]) - len(clear_kills(existing))
+    # --target-kills raises the goal above kills_per_measurement when a smaller effect needs
+    # more power (the playbook's "--kills 5" case); both compared labels should use it.
+    goal = int(getattr(args, "target_kills", None) or target["kills_per_measurement"])
+    missing = goal - len(clear_kills(existing))
     if missing < 1:
-        raise SystemExit(f"--top-up refused: label {args.label} already has enough counted native clears")
+        raise SystemExit(f"--top-up refused: label {args.label} already has {goal} counted native clears")
     return min(args.kills or missing, missing), commit
 
 

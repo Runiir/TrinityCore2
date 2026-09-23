@@ -76,6 +76,9 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--top-up", action="store_true",
                      help="add kills to an existing label whose kills were excluded only for measurement reasons "
                           "(stall, infrastructure); same binary and source commit required")
+    run.add_argument("--target-kills", type=int,
+                     help="with --top-up: counted native clears to reach (default kills_per_measurement); "
+                          "raise it on both compared labels for a smaller expected effect")
 
     ingest = commands.add_parser("ingest", help="record existing kills (summary JSON or raw run dir)")
     ingest.add_argument("--scenario", required=True)
