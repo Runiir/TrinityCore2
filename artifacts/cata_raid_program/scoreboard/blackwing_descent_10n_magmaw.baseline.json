@@ -1,10 +1,10 @@
 {
- "counted_kills": 4,
- "label": "r3-47cd175",
- "reason": "kept round 3 (Mangle survival, crash-side dodge); 4 counted native clears on binary 47cd175c2875",
+ "counted_kills": 5,
+ "label": "b2-fd4ba456",
+ "reason": "kept bundle 02 (Blood rune supply, Fire Hot Streak range, Balance moving instants): 5 native clears, 0 deaths, party 275.6k = 1.12x WCL, +12.2k vs r3-47cd175 (improved); kept with --min-kills 4 because the r3 baseline predates kills_per_batch and cannot be topped up on the changed DB profiles",
  "scenario": "blackwing_descent_10n_magmaw",
  "schema": "raid_scoreboard_baseline_v1",
- "set_at": "2026-09-23T19:16:24Z",
- "source_commit": "a5c0f72b5d716ab06903fea1c30fcdb057dfbc48",
- "worldserver_sha256": "47cd175c2875c2c17bacb34fdb78f7f30d7f56bc12a60a7f4ed5fcc06c77d902"
+ "set_at": "2026-09-23T21:19:06Z",
+ "source_commit": "590078dd6fcaf5b5cd43dbd141d0504a8acc448f",
+ "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860"
 }
