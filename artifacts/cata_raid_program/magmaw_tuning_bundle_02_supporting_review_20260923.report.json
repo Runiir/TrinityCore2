@@ -1,0 +1,102 @@
+{
+  "file_hashes": {
+    "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+    "experiments/configs/wowsims_promoted_generation_receipts/106a5a520f7ae14db7b350dfa6140e9fe189da93300b1d25f7538a68f1e5094d.json": "106a5a520f7ae14db7b350dfa6140e9fe189da93300b1d25f7538a68f1e5094d",
+    "experiments/configs/wowsims_promoted_generation_receipts/1e05c9b951f5594b82f51595631e438ef061a0e34c706c2199d287f4871b016e.json": "1e05c9b951f5594b82f51595631e438ef061a0e34c706c2199d287f4871b016e",
+    "experiments/configs/wowsims_promoted_generation_receipts/2bed4c89ef5f526884524a3f2c5606ed0bfcde5ee27e446e0e9ed3b2e831e1b0.json": "2bed4c89ef5f526884524a3f2c5606ed0bfcde5ee27e446e0e9ed3b2e831e1b0",
+    "experiments/configs/wowsims_promoted_generation_receipts/3e1176505b6815e4be373556bef446608362ca8adff16755bda711e9ec4126ee.json": "3e1176505b6815e4be373556bef446608362ca8adff16755bda711e9ec4126ee",
+    "experiments/configs/wowsims_promoted_generation_receipts/4fbd85f2c1dd8ea4cbd66873175a1addca193771e4c73b4e359c004787dc1039.json": "4fbd85f2c1dd8ea4cbd66873175a1addca193771e4c73b4e359c004787dc1039",
+    "experiments/configs/wowsims_promoted_generation_receipts/613ac7364d3a8435c304273294a929742dad54d24a57990af23982528cb11f95.json": "613ac7364d3a8435c304273294a929742dad54d24a57990af23982528cb11f95",
+    "experiments/configs/wowsims_promoted_generation_receipts/6e124ddc9c07417b2847c8dfa8d7d80bf601fd05ed9db700748cfee7b1b774fa.json": "6e124ddc9c07417b2847c8dfa8d7d80bf601fd05ed9db700748cfee7b1b774fa",
+    "experiments/configs/wowsims_promoted_generation_receipts/71ba4386dc4bb2e95e5a5d36e2daf1225598ccd8c27526dc4fb5692ff6637192.json": "71ba4386dc4bb2e95e5a5d36e2daf1225598ccd8c27526dc4fb5692ff6637192",
+    "experiments/configs/wowsims_promoted_generation_receipts/833d38792bdb11ee8741e1b92e20a4fbfbea48b9bb09d5b09c1bb3220e36e2ea.json": "833d38792bdb11ee8741e1b92e20a4fbfbea48b9bb09d5b09c1bb3220e36e2ea",
+    "experiments/configs/wowsims_promoted_generation_receipts/987ef4bf2e78a06d9a58ed98b7aac192a1f206ff1aff2193da677a52866f030f.json": "987ef4bf2e78a06d9a58ed98b7aac192a1f206ff1aff2193da677a52866f030f",
+    "experiments/configs/wowsims_promoted_generation_receipts/a3d9ed350e513971f4e53595b4f3ea475e90baacac9388f4921b2af97ed0ed47.json": "a3d9ed350e513971f4e53595b4f3ea475e90baacac9388f4921b2af97ed0ed47",
+    "experiments/configs/wowsims_promoted_generation_receipts/aa9509e1cf76354858677375b4c944281ba0c4718466686f0d213b146db3703b.json": "aa9509e1cf76354858677375b4c944281ba0c4718466686f0d213b146db3703b",
+    "experiments/configs/wowsims_promoted_generation_receipts/beefecdca302aac8b3b936be98f3d96b52b4b5d9207f31a5e8e1b092c00c76ff.json": "beefecdca302aac8b3b936be98f3d96b52b4b5d9207f31a5e8e1b092c00c76ff",
+    "experiments/configs/wowsims_promoted_generation_receipts/d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f.json": "d56c42306b7e48ca8f51545b038c58a48b576c88425ab59a5766c917ae2c642f",
+    "experiments/configs/wowsims_promoted_generation_receipts/e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e.json": "e6872307d721ed8740eae75f48c2db721835abd185bbd00dc8155c014f12bb4e",
+    "experiments/configs/wowsims_promoted_generation_receipts/ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8.json": "ee697f0776e05a61311ebb8b4d9d6e3d6f317b2bbe39486933cc6c57aec495d8",
+    "tests/test_development_graph.py": "3a0e035cd74a583e9b1cc28a4577abc0d6d777510145735b36df44cc7d70d58b",
+    "tests/test_raid_scoreboard.py": "5a1932c7a2c0bd2eb09514e345edc541abcacad40b5331fa5a7c18c2b6ca9f07",
+    "tests/test_raid_scoreboard_keep.py": "bf8976b084762dcbb7dbfc1a60188063333789136ccacc0bb90db337cdad3db3",
+    "tests/test_review_execution.py": "41fcb28322cf20d125c9ec24f5cb20b4735fd21a23687cdfd3e2de79dbefb3d4",
+    "tools/raid_program/development_graph.py": "54ecf8ab45598811937b5389dc07a7b52fd35f8ee3c75f85b30052ef8878160a",
+    "tools/raid_program/review_execution.py": "a166ca561a1792d5f9eb85bd0317551ccf66d5b2b8e5ed1626708abd1c85aa71",
+    "tools/raid_program/scoreboard.py": "600b3d17b96437b77f561e5e38a36a567dc7cc13c71bf8cd2b6cb8c0db4fc389",
+    "tools/raid_program/scoreboard_compare.py": "a4a8a79c63708f7db90f84aa34b9b0b739d47e6705bf471f059d3fec78a53b43",
+    "tools/raid_program/scoreboard_core.py": "db67392d3f3019c4dfd4096b427c8ea878824de2d22ed0fa874ce5bb72f1a655",
+    "tools/raid_program/scoreboard_run.py": "f69008052fcac7507cfee5a778aef301fbcbdcabb9493aa30e2c510a5ec0b6f8",
+    "tools/raid_program/scoreboard_show.py": "dda6ae58be1b0fbba25a3ad24179e486ea8b5a0c85204094a0318030a3f4e9b5",
+    "tools/raid_program/scoreboard_verdict.py": "50bed93d5e0115f40adbed27ab19c213f3bc91a44a134495427e1abcf7cdbf9a"
+  },
+  "findings": [
+    {
+      "failure_scenario": "An operator reading the help text expects 3 clears to be enough for a baseline or top-up goal and is surprised by the kills_per_batch refusal. The behavior is correct; only the wording is misleading.",
+      "file": "tools/raid_program/scoreboard.py",
+      "line": 80,
+      "severity": "info",
+      "summary": "Stale text after the kills_per_batch change: the set_baseline docstring (line 80) and --target-kills help (line 148) still say kills_per_measurement; the baseline_problems docstring and --force help still say 'counted non-clears'; the scoreboard_run.py line 264 comment still describes kills_per_measurement as the goal."
+    },
+    {
+      "failure_scenario": "A target file with kills_per_batch set to 0 or null makes set_baseline and run fall back to kills_per_measurement while the keep rule uses 0 (or fails on null). No current target does this.",
+      "file": "tools/raid_program/scoreboard.py",
+      "line": 87,
+      "severity": "info",
+      "summary": "set_baseline and scoreboard_run.py (lines 266 and 275) write out the batch-size rule again instead of calling scoreboard_core.kills_per_batch(); the two differ only when kills_per_batch is 0 or null."
+    },
+    {
+      "failure_scenario": "Every default `scoreboard show` against r3-47cd175 returns insufficient_kills because of the baseline-side batch shortfall until the label is topped up to 5 clears (the top-up goal now defaults to 5; its binary is required) or a new 5-clear baseline is set.",
+      "file": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "line": 2,
+      "severity": "info",
+      "summary": "The committed baseline pointer r3-47cd175 has 4 counted clears, below the new kills_per_batch 5 minimum, and load_baseline does not recheck it. This is workflow state, not a code defect."
+    },
+    {
+      "failure_scenario": "A deliberately forged transcript with the correct layout, meta file, cwd and sessionId still passes. A coordinator root containing '.' or '_' (for example a .claude/worktrees path) would reject a genuine transcript with transcript_identity_mismatch; this fails closed and does not affect the current root.",
+      "file": "tools/raid_program/review_execution.py",
+      "line": 360,
+      "severity": "info",
+      "summary": "The transcript binding is now tied to the location, meta file, session and cwd, but it is not cryptographic (same as the Codex rollout path). _project_slug replaces only '/', while Claude Code replaces every non-alphanumeric character."
+    }
+  ],
+  "implementer_session_id": "coordinator-bca90d3b",
+  "limits": [
+    "Reviewed only in-scope tooling, tests, experiments/configs and scoreboard files in b8ce9b9af5..d09d655a3b; skills, docs, the graph state file and other artifacts were not reviewed for content.",
+    "The range also contains Blood Outbreak implement/revert coordination commits, which were not reviewed as gameplay changes.",
+    "The full test suite was not run; no server, build or DVC operation was run.",
+    "The transcript format was checked against local Claude Code 2.1.280 subagent transcripts only; this review's own transcript could not be end-to-end imported before its final message exists.",
+    "file_hashes cover the coordinator's corrected scope (29 files), all verified equal to HEAD."
+  ],
+  "proof": {
+    "final_message_bytes": 12562,
+    "final_message_sha256": "203645dc78fddba413f41e5e4ff5d00b2577727f4d3d0d31053c9ee3031cbf1b",
+    "implementer_session_id": "coordinator-bca90d3b",
+    "prefix_bytes": 758723,
+    "prefix_sha256": "836ca60b8264ae3e06f7e0b6bf09e1435603f3ef18cea46215384aa79988d65a",
+    "review_transport": "external_json",
+    "schema": "claude_transcript_review_proof_v1",
+    "session_id": "ac4fc4694d59b03e9",
+    "transcript_path": "/home/runiir/.claude/projects/-home-runiir-Games-trinity-cata/bca90d3b-d7ce-4037-bbd9-8e21eea7a900/subagents/agent-ac4fc4694d59b03e9.jsonl"
+  },
+  "review_transport": "external_json",
+  "reviewer_session_id": "ac4fc4694d59b03e9",
+  "schema": "cata_raid_review_report_v1",
+  "source_report_path": "/tmp/supporting-review.json",
+  "source_report_sha256": "40e4372315501c15532e2558ac7591ba5a86e0176217cb2abf76e17880dc152f",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_raid_scoreboard.py tests/test_raid_scoreboard_keep.py tests/test_graph_acceptance.py tests/test_review_execution.py tests/test_development_graph.py tests/test_workflow_step.py",
+      "summary": "190 passed in 14.36s"
+    },
+    {
+      "command": "PYTHONPATH=.:tests pixi run pytest -q -p no:cacheprovider /tmp/probe_review_ext2/test_probe2.py (temporary, deleted)",
+      "summary": "8 passed: quoted approval before real verdict rejected (real verdict imports); JSON followed by prose rejected; flat path, missing meta, missing cwd, wrong session and wrong project slug transcripts rejected; uncounted wipe and 3-clear labels refused as baseline, clean 5-clear label accepted"
+    },
+    {
+      "command": "pixi run python -c (review_execution._transcript_path on this reviewer's own transcript agent-ac4fc4694d59b03e9.jsonl)",
+      "summary": "Path, meta file, project slug and session checks pass; all records of 8 local subagent transcripts carry cwd equal to the root and sessionId equal to the session directory"
+    }
+  ],
+  "verdict": "approved"
+}

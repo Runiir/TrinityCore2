@@ -1,0 +1,124 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:tuning_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_tuning_bundle_02_20260923",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL.",
+  "latest_user_direction": "Implement magmaw 10n bots; finish the Magmaw 10N implementation with subagents.",
+  "objective": "Raise the three failing actors on baseline r3-47cd175 (Blood DK 30002 at 0.68, Fire A 30006 at 0.87, Balance 30001 at 0.93 of their WCL targets) with one bundle per actor, measured as one 5-kill scoreboard batch under the playbook's keep rule.",
+  "hypothesis": "Blood (TANK-002): the tank is rune-starved (Death Strike ready_rune_gate rejections 1,715 per kill, Icy Touch/Plague Strike spend Frost/Unholy runes); provisioning Outbreak 77575 and adding Blood Tap 45529 and Empower Rune Weapon 47568 rows gated by a new max_ready_runes column (native ready_rune_cap gate) restores Death Strike cadence (measured Outbreak alone: +1,907 DPS on outbreak-ee8547e). Fire A (DPS-064): the parasite baiter idles at 35.04 yd from Magmaw where Pyroblast! 92315, Flame Orb 82731 and Scorch 2948 are capped at a stale 35 yd max_range (native 40 yd), so Hot Streak is wasted and the Combustion gate never sees a Pyroblast DoT; raising those rows to 40 yd restores Pyroblast!/Combustion (k4: 30006 lost 1.65M of a 1.96M gap on those three abilities). Balance (DPS-065): the moving-cast check uses the base cast time, so a Shooting Stars instant Starsurge is rejected while moving; using the caster's effective cast time in the resolver and the protected-movement yield, plus the staged moving Moonfire/Sunfire filler, recovers the moving casts.",
+  "first_broken_edge": "owner_blood_wcl_dps_gap",
+  "observations": [
+    "r3-47cd175 kill 5, actor 30002: Death Strike 10 casts vs WCL 18; ready_rune_gate rejections 1,715 (DS) and 1,021 (HS); no Outbreak, Blood Tap or ERW; Blood Boil rejected 993x declarative_area_damage_forbidden (shared protection, not in this bundle).",
+    "r3-47cd175 kill 4, actor 30006: Pyroblast! 2 casts vs 10 for 30007; Hot Streak up 14.3-31.0 s with no Pyroblast!; lane anchor 35.043 yd from Magmaw; profile rows 92315/82731/2948 max_range 35 while client range is 40.",
+    "Resolver line ~366 used candidateSpellInfo->CalcCastTime(level) > 0; BotWorldPopulationMgrCombatExecution.cpp:355 used the same base cast time for the protected-movement yield.",
+    "Pre-existing failures unrelated to this bundle: tests/test_elemental_fulmination_gate.py::test_actual_candidate_builder_and_regular_selection_use_charges and tests/test_affliction_doomguard.py::test_production_admission_self_resolution_reservations_and_submission fail before and after the change (deselected in the declared command).",
+    "The unit's source_base_commit b8ce9b9af5 and HEAD fbae4c82db have an empty diff under src/, sql/, dep/ and cmake/: the Outbreak provisioning (8e4e19e492) and its revert (b8db6c08c2) cancel, and the later commits are workflow tooling, tests, docs and configs only.",
+    "Workflow tooling commits 4f470b432c..d09d655a3b (scoreboard baseline/keep rule, review import, WoWSims receipt mirror) are covered by an approved independent supporting review (transcript-bound import-json, reviewer ac4fc4694d59b03e9)."
+  ],
+  "owned_files": [
+    "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+    "sql/custom/world/2026_09_23_20_balance_moving_moonfire.sql",
+    "sql/custom/world/2026_09_23_50_blood_max_ready_runes_gate.sql",
+    "sql/custom/world/2026_09_23_51_blood_tap_rune_recovery.sql",
+    "sql/custom/world/2026_09_23_52_blood_empower_rune_weapon_rune_recovery.sql",
+    "sql/custom/world/2026_09_23_60_fire_hot_streak_native_range.sql",
+    "experiments/configs/cata_434_action_profiles.json",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h",
+    "src/server/game/Bots/BotClassSpecActionProfile.h",
+    "src/server/game/Bots/BotClassSpecActionProfileDb.cpp",
+    "src/server/game/Bots/BotClassSpecActionProfileCandidates.cpp",
+    "src/server/game/Bots/BotCastWhileMoving.h",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp",
+    "tests/test_blood_outbreak_disease_upkeep.py",
+    "tests/test_blood_rune_recovery.py",
+    "tests/test_fire_hot_streak_native_range.py",
+    "tests/test_bot_cast_while_moving.py",
+    "tests/test_balance_moving_moonfire.py",
+    "tests/test_autonomy_pipeline_smoke.py",
+    "tests/test_elemental_fulmination_gate.py",
+    "tests/fixtures/survival_8146_native_admission.json",
+    "tests/fixtures/affliction_doomguard_native.json",
+    "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+    "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql"
+  ],
+  "forbidden_changes": [
+    "No invented auras, procs, damage multipliers, forced targets or casts, resource refills, cooldown or coefficient changes; spell facts only from the pinned 4.3.4 client data.",
+    "No change to the shared area-damage protection, encounter scripts, route manifests, rosters, WCL references, the scoreboard or the graph tooling in this unit.",
+    "No change to other specs' provisioning lists or rotation rows; the generated header is regenerated only.",
+    "No baiter alternation; the parasite policy is unchanged."
+  ],
+  "acceptance_conditions": [
+    "Declared tests pass; module_size reports no oversized file; an independent reviewer (separate subagent session, transcript-bound import-json) approves the exact diff.",
+    "A clean policy-bound build, one smoke kill (shared_runtime), then a 5-kill scoreboard batch vs baseline r3-47cd175 judged with `scoreboard show --actor <id>` per targeted actor under the playbook keep rule; mechanism evidence per actor: 30002 Outbreak >= 3, Blood Tap >= 2, ERW 1, Icy Touch + Plague Strike near 0; 30006 Pyroblast! near 10 and Combustion >= 1 per kill; 30001 moving Starsurge/Moonfire casts without movement_requires_instant_action rejections.",
+    "Boss-window deaths stay 0 and every counted kill is a native clear; otherwise the failing actor's part is reverted.",
+    "This plan does not by itself accept any actor, the encounter or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_outbreak_disease_upkeep.py tests/test_blood_rune_recovery.py tests/test_blood_death_strike_priority.py tests/test_generated_bot_admission_identities.py",
+    "pixi run pytest -q tests/test_fire_hot_streak_native_range.py tests/test_fire_combustion_native.py tests/test_fire_combustion_native_range.py tests/test_fire_moving_scorch.py tests/test_fire_mage_rotation_review.py tests/test_fire_native_range.py tests/test_magmaw_parasite_policy.py",
+    "pixi run pytest -q tests/test_bot_cast_while_moving.py tests/test_balance_moving_moonfire.py tests/test_balance_rotation_cadence.py tests/test_bot_world_population_mgr_combat_resolver_module.py tests/test_bot_trash_drudge_minimum_distance_exit.py",
+    "pixi run pytest -q tests/test_survival_remote_trap_admission.py tests/test_elemental_fulmination_gate.py tests/test_affliction_doomguard.py --deselect tests/test_elemental_fulmination_gate.py::test_actual_candidate_builder_and_regular_selection_use_charges --deselect tests/test_affliction_doomguard.py::test_production_admission_self_resolution_reservations_and_submission",
+    "pixi run pytest -q tests/test_ml_pipeline.py::test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "b8ce9b9af5b7b5adb8123fdb0839594ff856d1eb",
+  "risk_tier": "shared_runtime",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "d12f259db97206d92e35aa13679ee1643a3573968521d26346e135cc6edba571"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "5aab583e623daeb4fa588e0cb121fd8964a913e1a3bd547a5b1cd9b921b18f55"
+    },
+    {
+      "path": "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+      "sha256": "c46438b6e19df35bde8d47e959e4c36a13b1487c0b7814fc613048823838e9b6"
+    },
+    {
+      "path": "sql/custom/world/2026_09_23_51_blood_tap_rune_recovery.sql",
+      "sha256": "68eeacd6bb0b8ae15f7aa7e0ced0b1f6b16f92175d809ce41c85a6f80a2a5bf9"
+    },
+    {
+      "path": "sql/custom/world/2026_09_23_60_fire_hot_streak_native_range.sql",
+      "sha256": "901b06fd3c240369fc056ce9aaa0d922524e47ace2020539d858a1412680469e"
+    }
+  ],
+  "acceptance_claim": "Plan only. Claims the bounded three-actor bundle and no gameplay, build, live, actor, performance, raid-clear, publication or parent acceptance.",
+  "supporting_review": {
+    "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_02_supporting_review_20260923.json",
+    "sha256": "b34c0e3e668347b90b66c7283cd647fcf4dfe65becf4c788005036df17ef5b88"
+  }
+}
