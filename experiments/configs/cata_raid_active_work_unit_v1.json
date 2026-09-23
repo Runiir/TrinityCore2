@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:route_prerequisites_restoration_01",
-  "owner_skill": "raid-shard-architecture",
+  "work_unit": "magmaw:tuning_01",
+  "owner_skill": "raid-role-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "430a1691a2b971f211d5c9603990a12cd16eddce",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "User stopped for cleanup. Full-route engagement/kill is proven; do not repeat the boss-only launch or reopen trash target tuning. On explicit resume, read docs/bot_raids/magmaw_route_prerequisites_cleanup_20260922.md, independently review the saved diagnostic-clear stop/export patch, then run its frozen autostop recipe once to verify automatic capture/cleanup and exact combat accounting.",
+  "next_action": "Read the latest scoreboard verdict and retained evidence; pick the largest actor gap (optional Jev, shadowed by Laya, may choose between the top two), then record a plan with its risk_tier. follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 450,
+    "revision": 453,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "diagnose",
     "actor_ids": [
@@ -411,20 +411,40 @@
         "accepted_at_revision": 53
       },
       "potion_ownership": {
-        "status": "open",
-        "description": "Live-validate reviewed calibration potion exclusion"
+        "status": "deferred",
+        "description": "Live-validate reviewed calibration potion exclusion",
+        "deferred": {
+          "reason": "Dummy-era calibration item (single potion owner in the isolated 300 s window); not on the Magmaw raid kill-DPS path.",
+          "belongs_to": "isolated dummy calibration / phase-8 class qualification",
+          "revision": 451
+        }
       },
       "survival_reference": {
-        "status": "open",
-        "description": "Reconcile legitimate cooldown reference and Explosive Shot cadence"
+        "status": "deferred",
+        "description": "Reconcile legitimate cooldown reference and Explosive Shot cadence",
+        "deferred": {
+          "reason": "Dummy-era WoWSims reference reconciliation; in the raid, Survival is judged by the scoreboard's WoWSims fallback (0.99 of 36.5k on r3-47cd175).",
+          "belongs_to": "isolated dummy calibration / phase-8 class qualification",
+          "revision": 451
+        }
       },
       "affliction_comparison": {
-        "status": "open",
-        "description": "Resolve event/cadence differences with exact setup"
+        "status": "deferred",
+        "description": "Resolve event/cadence differences with exact setup",
+        "deferred": {
+          "reason": "Dummy-era event/cadence comparison; Affliction passes the raid scoreboard (1.08x WCL on r3-47cd175).",
+          "belongs_to": "isolated dummy calibration / phase-8 class qualification",
+          "revision": 451
+        }
       },
       "elemental_comparison": {
-        "status": "open",
-        "description": "Reconcile summon mapping, stats and native event/cadence evidence"
+        "status": "deferred",
+        "description": "Reconcile summon mapping, stats and native event/cadence evidence",
+        "deferred": {
+          "reason": "Dummy-era summon/stat/cadence comparison; Elemental passes the raid scoreboard (1.02x WCL on r3-47cd175).",
+          "belongs_to": "isolated dummy calibration / phase-8 class qualification",
+          "revision": 451
+        }
       },
       "actor_30001": {
         "status": "open",
@@ -569,15 +589,23 @@
       }
     },
     "unit": {
-      "id": "magmaw:route_prerequisites_restoration_01",
-      "edge": "fresh_instance_route_prerequisites",
-      "owner_skill": "raid-shard-architecture",
+      "id": "magmaw:tuning_01",
+      "edge": "owner_blood_wcl_dps_gap",
+      "owner_skill": "raid-role-implementation",
       "requirements": [
+        "actor_30001",
         "actor_30002",
+        "actor_30003",
+        "actor_30004",
+        "actor_30005",
+        "actor_30006",
+        "actor_30007",
+        "actor_30008",
+        "actor_30009",
+        "actor_30010",
         "magmaw_10n"
       ],
-      "objective": "Restore full entrance/Chainwielder/Drudge/Magmaw route on unchanged current native binary; classify pull, recovery and clear separately from DPS acceptance.",
-      "next_action": "User stopped for cleanup. Full-route engagement/kill is proven; do not repeat the boss-only launch or reopen trash target tuning. On explicit resume, read docs/bot_raids/magmaw_route_prerequisites_cleanup_20260922.md, independently review the saved diagnostic-clear stop/export patch, then run its frozen autostop recipe once to verify automatic capture/cleanup and exact combat accounting."
+      "next_action": "follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes"
     },
     "completed_measurements": [
       {
@@ -8440,6 +8468,95 @@
         },
         "accepted_requirements": [],
         "proposed_acceptance": []
+      },
+      {
+        "revision": 450,
+        "unit_id": "magmaw:route_prerequisites_restoration_01",
+        "from": "diagnose",
+        "to": "route",
+        "event": {
+          "revision": 450,
+          "unit_id": "magmaw:route_prerequisites_restoration_01",
+          "action": "supersede",
+          "reason": "Done outside the graph: the diagnostic-clear stop/export patch was independently reviewed and fixed (d2393eb5a1, 6c02d9fa43) and every live run since stops and exports correctly; later tuning is recorded as scoreboard baseline r3-47cd175 on build 47cd175c (kept in 6160c982a4).",
+          "superseded_by": {
+            "commits": [
+              "d2393eb5a110b2f52ad1e3eb280d21ce8c630e5d",
+              "6c02d9fa43a54a8335c9d1f6ba857d8b2d80b76e",
+              "6160c982a40375f6c23c15862f5710387f203458"
+            ],
+            "scoreboard_label": "r3-47cd175"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "class_native"
+      },
+      {
+        "revision": 451,
+        "unit_id": "magmaw:route_prerequisites_restoration_01",
+        "from": "route",
+        "to": "route",
+        "event": {
+          "revision": 451,
+          "unit_id": "magmaw:route_prerequisites_restoration_01",
+          "action": "defer",
+          "requirements": {
+            "potion_ownership": {
+              "reason": "Dummy-era calibration item (single potion owner in the isolated 300 s window); not on the Magmaw raid kill-DPS path.",
+              "belongs_to": "isolated dummy calibration / phase-8 class qualification"
+            },
+            "survival_reference": {
+              "reason": "Dummy-era WoWSims reference reconciliation; in the raid, Survival is judged by the scoreboard's WoWSims fallback (0.99 of 36.5k on r3-47cd175).",
+              "belongs_to": "isolated dummy calibration / phase-8 class qualification"
+            },
+            "affliction_comparison": {
+              "reason": "Dummy-era event/cadence comparison; Affliction passes the raid scoreboard (1.08x WCL on r3-47cd175).",
+              "belongs_to": "isolated dummy calibration / phase-8 class qualification"
+            },
+            "elemental_comparison": {
+              "reason": "Dummy-era summon/stat/cadence comparison; Elemental passes the raid scoreboard (1.02x WCL on r3-47cd175).",
+              "belongs_to": "isolated dummy calibration / phase-8 class qualification"
+            }
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "class_native"
+      },
+      {
+        "revision": 452,
+        "unit_id": "magmaw:route_prerequisites_restoration_01",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "revision": 452,
+          "unit_id": "magmaw:route_prerequisites_restoration_01",
+          "action": "route",
+          "reason": "Largest remaining scoreboard gap on r3-47cd175: Blood 30002 at 0.68x WCL (-11.3k DPS), then Fire A 30006 0.87x and Balance 30001 0.93x; Survival 30009 passes via the WoWSims fallback.",
+          "unit": {
+            "id": "magmaw:tuning_01",
+            "edge": "owner_blood_wcl_dps_gap",
+            "owner_skill": "raid-role-implementation",
+            "requirements": [
+              "actor_30001",
+              "actor_30002",
+              "actor_30003",
+              "actor_30004",
+              "actor_30005",
+              "actor_30006",
+              "actor_30007",
+              "actor_30008",
+              "actor_30009",
+              "actor_30010",
+              "magmaw_10n"
+            ],
+            "next_action": "follow the raid-tuning-playbook: current baseline r3-47cd175; pick the top ranked gap from scoreboard show; see the error ledger's open Magmaw items for diagnosed next fixes"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "class_native"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8448,7 +8565,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "f199f6ad7d785ac1c1eeefe4b684f25b4ac1df6a",
+    "source_base_commit": "b8ce9b9af5b7b5adb8123fdb0839594ff856d1eb",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
