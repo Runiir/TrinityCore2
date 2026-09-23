@@ -79,7 +79,7 @@ def test_heartbeat_freeze_in_boss_window_invalidates_dps():
     assert validity["thresholds"]["max_single_boss_window_stall_sec"] == 2.0
 
 
-def test_boss_window_lulls_are_reported_but_never_gate():
+def test_boss_window_possible_stalls_never_gate_but_leave_the_run_unverified():
     rows = (
         steady(0, 10_000)
         + burst(10_650, 20)  # 0.85 s catch-up hitch, no console command
@@ -91,8 +91,11 @@ def test_boss_window_lulls_are_reported_but_never_gate():
         combat_log(rows), {"encounters": windows()}, validation_route_manifest=MANIFEST,
     )
     assert [(row["duration_sec"], row["detection"]) for row in found] == [(0.85, "catchup_burst")]
-    assert [(row["duration_sec"], row["detection"]) for row in validity["lulls"]] == [(0.6, "combat_lull")]
-    assert validity["lull_count"] == 1 and validity["boss_window_lull_sec"] == 0.6
+    assert [(row["duration_sec"], row["detection"]) for row in validity["possible_stalls"]] == [(0.6, "possible_stall")]
+    assert validity["possible_stall_count"] == 1 and validity["boss_window_possible_stall_sec"] == 0.6
+    assert validity["lulls"] == []
+    assert validity["verification"] == "unverified"
+    assert validity["unverified_reasons"] == ["boss_window_possible_stall"]
     assert validity["boss_windows"][0]["catchup_burst_stall_count"] == 1
     assert validity["boss_windows"][0]["event_gap_stall_count"] == 0
     assert validity["stall_fraction"] == 0.014167
@@ -112,8 +115,9 @@ def test_base_0891a99_kill_shapes_keep_lulls_out_of_the_gate():
         combat_log(kill_one), {"encounters": windows(112_100)}, validation_route_manifest=MANIFEST,
     )
     assert first["boss_window_stall_count"] == 0
-    assert [row["duration_sec"] for row in first["lulls"]] == [0.728, 0.577, 0.501]
+    assert [row["duration_sec"] for row in first["possible_stalls"]] == [0.728, 0.577, 0.501]
     assert first["valid_for_dps"] is True
+    assert first["verification"] == "unverified"
     kill_three = (
         steady(0, 20_000) + burst(20_723, 2)  # 0.923 s / 2
         + steady(20_800, 50_000) + burst(50_348, 1)  # 0.548 s / 1
@@ -124,7 +128,7 @@ def test_base_0891a99_kill_shapes_keep_lulls_out_of_the_gate():
         combat_log(kill_three), {"encounters": windows(113_490)}, validation_route_manifest=MANIFEST,
     )
     assert [(row["duration_sec"], row["catchup_events"]) for row in found] == [(0.946, 54)]
-    assert [row["duration_sec"] for row in third["lulls"]] == [0.923, 0.548]
+    assert [row["duration_sec"] for row in third["possible_stalls"]] == [0.923, 0.548]
     assert third["stall_fraction"] == 0.008336
     assert third["valid_for_dps"] is True
 
@@ -140,7 +144,7 @@ def test_boss_window_gap_caused_by_a_console_command_is_a_stall():
     assert [(row["duration_sec"], row["attribution"], row["heartbeat_index"]) for row in found] == [
         (0.8, "console_command", 5)
     ]
-    assert validity["lulls"] == []
+    assert validity["possible_stalls"] == [] and validity["verification"] == "verified"
 
 
 def test_small_boss_window_stalls_stay_valid_on_a_shared_host():
@@ -156,7 +160,7 @@ def test_small_boss_window_stalls_stay_valid_on_a_shared_host():
         combat_log(rows), {"encounters": windows(112_100)}, validation_route_manifest=MANIFEST,
     )
     assert [row["duration_sec"] for row in found] == [0.59]
-    assert [row["duration_sec"] for row in validity["lulls"]] == [0.612]
+    assert [row["duration_sec"] for row in validity["possible_stalls"]] == [0.612]
     assert validity["valid_for_dps"] is True
     assert validity["reasons"] == []
     assert validity["stall_fraction"] == 0.005263
@@ -320,8 +324,11 @@ def test_native_world_ticks_override_combat_log_inference():
     assert validity["combat_log_inference"]["boss_window_stall_count"] == 1
     assert validity["native_world_tick"]["complete_for_boss_windows"] is True
     assert [row["sequence"] for row in validity["native_world_tick"]["stalls"]] == [1, 2, 3]
-    # Lulls are still reported from the combat log for comparison.
+    # Native ticks decide the stalls: the combat-log gaps stay lulls and
+    # the measurement is verified.
     assert [row["duration_sec"] for row in validity["lulls"]] == [0.923]
+    assert validity["possible_stalls"] == []
+    assert validity["verification"] == "verified" and validity["unverified_reasons"] == []
 
 
 def test_native_world_ticks_gate_like_any_stall():
@@ -396,3 +403,23 @@ def test_final_report_reads_the_native_ledger_file(tmp_path):
     attach_measurement_validity(report, tmp_path, [], validation_route_manifest=MANIFEST)
     assert report["measurement_validity"]["stall_basis"] == "native_world_tick"
     assert report["measurement_validity"]["native_world_tick"]["reads"] == 1
+
+
+def test_native_stall_interval_uses_the_published_start_ms():
+    """start_ms is game time; at_ms - diff_ms would mix clocks."""
+    rows = steady(0, 60_001)
+    ticks = ledger((30_000, 600))
+    ticks["stalls"][0]["start_ms"] = T0 + 29_300  # the system clock saw 700 ms
+    found, validity = stalls.world_stall_report(
+        combat_log(rows), {"encounters": windows()}, validation_route_manifest=MANIFEST, world_ticks=ticks,
+    )
+    assert (found[0]["start_ms"], found[0]["end_ms"]) == (T0 + 29_300, T0 + 30_000)
+    assert found[0]["duration_sec"] == 0.7 and found[0]["diff_ms"] == 600
+    assert found[0]["start_basis"] == "previous_update_game_time"
+    assert validity["boss_window_stalled_sec"] == 0.7
+    ticks["stalls"][0].pop("start_ms")
+    fallback, _ = stalls.world_stall_report(
+        combat_log(rows), {"encounters": windows()}, validation_route_manifest=MANIFEST, world_ticks=ticks,
+    )
+    assert fallback[0]["start_ms"] == T0 + 29_400
+    assert fallback[0]["start_basis"] == "at_ms_minus_diff_ms"

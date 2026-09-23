@@ -155,3 +155,49 @@ def test_process_reads_world_ticks_each_heartbeat_and_at_cleanup(tmp_path):
     assert ledger["reads"] == 2
     assert [row["sequence"] for row in ledger["stalls"]] == [1, 2]
     assert ledger["missing_sequences"] == []
+
+
+def restarted(first_update_at_ms: int, stall_count: int, now_ms: int) -> dict:
+    update = world_update(stall_count, capacity=8, now_ms=now_ms)
+    update["first_update_at_ms"] = first_update_at_ms
+    for row in update["stalls"]:
+        row["at_ms"] += first_update_at_ms
+        row["start_ms"] = row["at_ms"] - 700
+    return update
+
+
+def test_ledger_keeps_each_worldserver_start_as_its_own_epoch():
+    ledger = WorldTickLedger()
+    ledger.observe(restarted(10, 3, now_ms=4_000))
+    # The worldserver restarted: sequences begin again at 1.
+    ledger.observe(restarted(50_000, 2, now_ms=53_000))
+    ledger.observe(restarted(50_000, 3, now_ms=54_000))
+    snapshot = ledger.snapshot()
+    assert snapshot["schema"] == "bot_world_update_tick_ledger_v2"
+    assert snapshot["epoch_count"] == 2
+    assert [(row["first_update_at_ms"], row["sequence"]) for row in snapshot["stalls"]] == [
+        (10, 1), (10, 2), (10, 3), (50_000, 1), (50_000, 2), (50_000, 3),
+    ]
+    assert [epoch["missing_sequences"] for epoch in snapshot["epochs"]] == [[], []]
+    assert snapshot["first_update_at_ms"] == 50_000 and snapshot["stall_count"] == 3
+    assert snapshot["stalls"][0]["start_ms"] == snapshot["stalls"][0]["at_ms"] - 700
+
+
+def test_coverage_follows_the_epoch_that_owns_each_window():
+    from tools.bot_ml.live_validation_world_ticks import native_coverage, native_stall_intervals
+
+    ledger = WorldTickLedger()
+    ledger.observe(restarted(10, 3, now_ms=4_000))
+    ledger.observe(restarted(50_000, 3, now_ms=90_000))
+    snapshot = ledger.snapshot()
+    after_restart = [{"first_at_ms": 60_000, "last_at_ms": 80_000}]
+    coverage = native_coverage(snapshot, after_restart)
+    assert coverage["complete_for_boss_windows"] is True
+    assert coverage["epoch_count"] == 2 and coverage["stall_count"] == 6
+    across_restart = [{"first_at_ms": 40_000, "last_at_ms": 60_000}]
+    assert native_coverage(snapshot, across_restart)["reason"] == "worldserver_restarted_during_boss_window"
+    assert len(native_stall_intervals(snapshot)) == 6
+    # A v1 ledger file (one recorder, no epochs) still loads as one epoch.
+    legacy = {key: value for key, value in snapshot["epochs"][1].items()}
+    legacy["reads"] = 1
+    assert native_coverage(legacy, after_restart)["complete_for_boss_windows"] is True

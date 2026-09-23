@@ -60,6 +60,16 @@ int main()
     assert(recorder.Stalls().size() == 3);
     std::cout << first.str();
 
+    // The stall start is the previous update's game time, never
+    // at_ms - diff_ms: diff comes from the steady world-loop clock.
+    assert(recorder.Stalls()[0].StartMs == 2000);
+    assert(recorder.LastUpdateAtMs() == 10300);
+    BotWorldTick::Recorder fresh(500, 4);
+    assert(fresh.Observe(5000, 800));
+    assert(fresh.Stalls().front().StartMs == 4200);  // no previous update yet
+    assert(fresh.Observe(5900, 850));
+    assert(fresh.Stalls().back().StartMs == 5000);
+
     assert(&BotWorldTick::WorldRecorder() == &BotWorldTick::WorldRecorder());
     assert(BotWorldTick::WorldRecorder().ThresholdMs() == BotWorldTick::StallThresholdMs);
     assert(BotWorldTick::WorldRecorder().Capacity() == BotWorldTick::StallCapacity);
@@ -68,7 +78,7 @@ int main()
 ''')
     payload = json.loads(output)
     assert payload == {
-        "schema": "bot_world_update_ticks_v1",
+        "schema": "bot_world_update_ticks_v2",
         "now_ms": 11000,
         "threshold_ms": 500,
         "capacity": 3,
@@ -79,9 +89,9 @@ int main()
         "stall_count": 4,
         "dropped_count": 1,
         "stalls": [
-            {"sequence": 2, "at_ms": 9000, "diff_ms": 7000},
-            {"sequence": 3, "at_ms": 9700, "diff_ms": 700},
-            {"sequence": 4, "at_ms": 10300, "diff_ms": 600},
+            {"sequence": 2, "start_ms": 2000, "at_ms": 9000, "diff_ms": 7000},
+            {"sequence": 3, "start_ms": 9000, "at_ms": 9700, "diff_ms": 700},
+            {"sequence": 4, "start_ms": 9700, "at_ms": 10300, "diff_ms": 600},
         ],
     }
 

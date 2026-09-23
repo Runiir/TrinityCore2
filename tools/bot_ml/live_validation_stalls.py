@@ -14,8 +14,11 @@ Two bases, reported as ``measurement_validity.stall_basis``:
     Inside a boss window a gap of at least ``STALL_MIN_GAP_SEC`` is a stall
     only if a harness console command caused it, it ends in a catch-up burst
     of ``CATCHUP_BURST_MIN_EVENTS`` or more, or it lasts at least
-    ``UNATTRIBUTED_STALL_MIN_GAP_SEC``; other such gaps are combat ``lulls``
-    (reported, never gating).  Outside boss windows a catch-up gap is a
+    ``UNATTRIBUTED_STALL_MIN_GAP_SEC``.  Other such gaps may be combat lulls
+    or short freezes with little due work: they are ``possible_stalls``,
+    never gating ``valid_for_dps`` but marking the measurement
+    ``verification: unverified``.  With native coverage the same gaps are
+    reported as ``lulls``.  Outside boss windows a catch-up gap is a
     stall when a console command caused it or it lasted at least
     ``UNATTRIBUTED_STALL_MIN_GAP_SEC``; shorter ones are ``hitches``.
 
@@ -206,7 +209,7 @@ def detect_world_stalls(
         same_ms[_int(row.get("timestamp_ms"))] += _catchup_weight(row)
     stalls: list[dict[str, Any]] = []
     hitches: list[dict[str, Any]] = []
-    lulls: list[dict[str, Any]] = []
+    unexplained: list[dict[str, Any]] = []
     for index in range(1, len(events)):
         start_ms = _int(events[index - 1].get("timestamp_ms"))
         end_ms = _int(events[index].get("timestamp_ms"))
@@ -242,8 +245,10 @@ def detect_world_stalls(
         if caused_or_long or (in_boss_window and is_catchup):
             stalls.append(row)
         elif in_boss_window:
-            row["detection"] = "combat_lull"
-            lulls.append(row)
+            # Without native ticks a short unexplained gap may be a lull or a
+            # freeze that happened to have little due work behind it.
+            row["detection"] = "possible_stall"
+            unexplained.append(row)
         else:
             hitches.append(row)
     return {
@@ -265,7 +270,7 @@ def detect_world_stalls(
         "command_timing_rows": len(command_timings),
         "stalls": stalls,
         "hitches": hitches,
-        "lulls": lulls,
+        "boss_window_unexplained_gaps": unexplained,
     }
 
 
@@ -294,7 +299,11 @@ def native_world_stalls(
         rows.append({
             "start_ms": start_ms,
             "end_ms": end_ms,
-            "duration_sec": round(interval["diff_ms"] / 1000.0, 3),
+            # Both ends are game time; diff_ms is the steady-clock diff.
+            "duration_sec": round((end_ms - start_ms) / 1000.0, 3),
+            "diff_ms": interval["diff_ms"],
+            "start_basis": interval["start_basis"],
+            "first_update_at_ms": interval["first_update_at_ms"],
             "sequence": interval["sequence"],
             "route_node_id": str((window or {}).get("route_node_id") or ""),
             "route_generation": _int((window or {}).get("route_generation")),
@@ -439,11 +448,29 @@ def world_stall_report(
     coverage["stalls"] = native_stall_intervals(world_ticks)
     validity["native_world_tick"] = coverage
     validity["hitches"] = list(scan["hitches"])
-    lulls = list(scan.get("lulls") or [])
+    gaps = [dict(row) for row in scan.get("boss_window_unexplained_gaps") or []]
+    if validity["stall_basis"] == "native_world_tick":
+        # Native ticks decide the stalls; the combat-log gaps stay lulls.
+        lulls = [{**row, "detection": "combat_lull"} for row in gaps]
+        possible: list[dict[str, Any]] = []
+    else:
+        lulls = []
+        possible = gaps
     validity["lulls"] = lulls
     validity["lull_count"] = len(lulls)
     validity["max_lull_sec"] = max((float(row.get("duration_sec") or 0.0) for row in lulls), default=0.0)
     validity["boss_window_lull_sec"] = round(sum(float(row.get("boss_window_overlap_sec") or 0.0) for row in lulls), 3)
+    validity["possible_stalls"] = possible
+    validity["possible_stall_count"] = len(possible)
+    validity["max_possible_stall_sec"] = max((float(row.get("duration_sec") or 0.0) for row in possible), default=0.0)
+    validity["boss_window_possible_stall_sec"] = round(
+        sum(float(row.get("boss_window_overlap_sec") or 0.0) for row in possible), 3
+    )
+    # valid_for_dps comes from real stalls only; unexplained short gaps make
+    # the measurement unverified until native ticks can rule them out.
+    unverified = ["boss_window_possible_stall"] if possible else []
+    validity["verification"] = "unverified" if unverified else "verified"
+    validity["unverified_reasons"] = unverified
     return stalls, validity
 
 

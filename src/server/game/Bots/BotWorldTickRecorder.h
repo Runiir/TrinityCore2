@@ -18,8 +18,12 @@ inline constexpr std::size_t StallCapacity = 256;
 struct Stall
 {
     std::uint64_t Sequence = 0;
-    // End of the stalled interval (the update that observed the diff), on
-    // the game-time system clock used by combat-log ``timestamp_ms``.
+    // Start of the stalled interval: the previous update's game time.  Both
+    // ends use the game-time system clock of combat-log ``timestamp_ms``;
+    // ``DiffMs`` comes from the steady world-loop clock, so it is kept as
+    // reported but never subtracted from a system-clock time.
+    std::uint64_t StartMs = 0;
+    // End of the stalled interval: the update that observed the diff.
     std::uint64_t AtMs = 0;
     std::uint32_t DiffMs = 0;
 };
@@ -38,9 +42,15 @@ public:
 
     bool Observe(std::uint64_t nowMs, std::uint32_t diffMs)
     {
+        // Before the first observed update there is no previous game time;
+        // that single row falls back to the (mixed-clock) difference.
+        std::uint64_t const previousMs = _updateCount
+            ? _lastUpdateAtMs
+            : (nowMs > diffMs ? nowMs - diffMs : 0);
         if (!_updateCount)
             _firstUpdateAtMs = nowMs;
         ++_updateCount;
+        _lastUpdateAtMs = nowMs;
         if (diffMs > _maxDiffMs)
         {
             _maxDiffMs = diffMs;
@@ -50,6 +60,7 @@ public:
             return false;
         Stall stall;
         stall.Sequence = ++_stallCount;
+        stall.StartMs = previousMs;
         stall.AtMs = nowMs;
         stall.DiffMs = diffMs;
         _stalls.push_back(stall);
@@ -65,6 +76,7 @@ public:
     std::size_t Capacity() const { return _capacity; }
     std::uint64_t UpdateCount() const { return _updateCount; }
     std::uint64_t FirstUpdateAtMs() const { return _firstUpdateAtMs; }
+    std::uint64_t LastUpdateAtMs() const { return _lastUpdateAtMs; }
     std::uint32_t MaxDiffMs() const { return _maxDiffMs; }
     std::uint64_t MaxDiffAtMs() const { return _maxDiffAtMs; }
     std::uint64_t StallCount() const { return _stallCount; }
@@ -73,7 +85,7 @@ public:
 
     void WriteJson(std::ostream& json, std::uint64_t nowMs) const
     {
-        json << "{\"schema\":\"bot_world_update_ticks_v1\""
+        json << "{\"schema\":\"bot_world_update_ticks_v2\""
              << ",\"now_ms\":" << nowMs
              << ",\"threshold_ms\":" << _thresholdMs
              << ",\"capacity\":" << _capacity
@@ -91,6 +103,7 @@ public:
                 json << ',';
             first = false;
             json << "{\"sequence\":" << stall.Sequence
+                 << ",\"start_ms\":" << stall.StartMs
                  << ",\"at_ms\":" << stall.AtMs
                  << ",\"diff_ms\":" << stall.DiffMs << '}';
         }
@@ -102,6 +115,7 @@ private:
     std::size_t _capacity;
     std::uint64_t _updateCount = 0;
     std::uint64_t _firstUpdateAtMs = 0;
+    std::uint64_t _lastUpdateAtMs = 0;
     std::uint32_t _maxDiffMs = 0;
     std::uint64_t _maxDiffAtMs = 0;
     std::uint64_t _stallCount = 0;
