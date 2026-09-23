@@ -1,0 +1,12 @@
+{
+  "schema": "cata_raid_program_operation_reconciliation_v1",
+  "operation_id": "a5db704b0e0beeb6c303118248087bee78c5bd5da398cfa58c217acde272a23e",
+  "unit_id": "magmaw:tuning_03",
+  "stage": "build",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "The queued build aborted with build_provenance_abort (source_identity_changed_or_dirty_before_completion): the coordinator committed a documentation-only ledger update (f426f04104) while the worldserver build ran, so the queue saw HEAD move. No binary was produced; the failed queue result is retained under workflow-build-a5db704b0e0b. Release and re-claim the build on the unchanged reviewed source.",
+  "queue_result": "artifacts/cata_raid_program/workflow-build-a5db704b0e0beeb6c303118248087bee78c5bd5da398cfa58c217acde272a23e.json"
+}
