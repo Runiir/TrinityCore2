@@ -354,5 +354,5 @@ def test_scenario_closure_rule(repo):
     with pytest.raises(ValueError, match="no boss entry"):
         fidelity.check_scenario_damage_fidelity(repo, {"raid": "r", "boss": "b", "mode": "25H"})
     real = fidelity.scenario_damage_fidelity(ROOT, {"raid": "blackwing_descent", "boss": "magmaw", "mode": "10N"})
-    assert real["boss_entries"] == {"41570": "calibrated", "42347": "open", "48270": "open"}
-    assert real["closable"] is False and real["reason"] == "not calibrated or not_applicable: 42347, 48270"
+    assert real["boss_entries"] == {"41570": "calibrated", "42347": "not_applicable", "48270": "not_applicable"}
+    assert real["closable"] is True and real["reason"] is None

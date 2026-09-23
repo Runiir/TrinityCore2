@@ -306,7 +306,7 @@ def test_damage_fidelity_closes_only_when_every_boss_entry_is_settled(repo, stat
             check_scenario_damage_fidelity(repo, encounter)
 
 
-def test_real_registry_keeps_magmaw_10n_fidelity_open_until_the_heads_are_settled():
+def test_real_registry_closes_magmaw_10n_fidelity_once_the_heads_are_settled():
     requirement = bootstrap.damage_fidelity_requirement(ROOT, {'raid': 'blackwing_descent', 'boss': 'magmaw', 'mode': '10N'})
-    assert requirement['registry_boss_entries_at_bootstrap'] == {'41570': 'calibrated', '42347': 'open', '48270': 'open'}
-    assert requirement['registry_closable_at_bootstrap'] is False
+    assert requirement['registry_boss_entries_at_bootstrap'] == {'41570': 'calibrated', '42347': 'not_applicable', '48270': 'not_applicable'}
+    assert requirement['registry_closable_at_bootstrap'] is True

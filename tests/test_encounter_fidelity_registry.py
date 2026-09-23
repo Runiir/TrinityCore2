@@ -61,8 +61,11 @@ def test_magmaw_seed():
     for entry, mode in (("51101", "25N"), ("51102", "10H"), ("51103", "25H")):
         assert CREATURES[entry]["status"] == "open" and CREATURES[entry]["mode"] == mode
         assert CREATURES[entry]["base_entry"] == 41570 and CREATURES[entry]["role"] == "boss"
-    for entry in ("41806", "42321", "42347", "48270", "49416"):
+    for entry in ("41806", "42321", "49416"):
         assert CREATURES[entry]["status"] == "open" and CREATURES[entry]["boss"] == "magmaw"
+    # The Exposed Heads are seat body parts that never melee (0 swings in every recorded kill).
+    for entry in ("42347", "48270"):
+        assert CREATURES[entry]["status"] == "not_applicable" and "0 melee_resolution rows" in CREATURES[entry]["reason"]
 
 
 def test_magmaw_reference_matches_the_encounter_ledger():
