@@ -180,3 +180,11 @@ def test_refresh_support_event_uses_current_claim_token(workflow_case):
     assert event["revision"] == state["development_graph"]["revision"]
     assert event["unit_id"] == "unit-1"
     assert event["claim_token"] == state["development_graph"]["claim"]["token"]
+
+
+def test_amend_tests_rejects_a_test_file_that_does_not_exist(tmp_path):
+    from tools.raid_program import workflow_tests, development_graph as graph
+    assignment = {'owned_files': ['code.py'], 'required_test_commands': ['pytest -q tests/test_real.py']}
+    (tmp_path / 'tests').mkdir()
+    with pytest.raises(graph.GraphError, match='regular file under tests/'):
+        workflow_tests.amend_assignment(tmp_path, assignment, {'reason': 'typo', 'add_files': ['tests/test_reall.py'], 'add_commands': ['pytest -q tests/test_reall.py']})

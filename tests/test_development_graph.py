@@ -605,3 +605,6 @@ def test_snapshot_records_deleted_owned_files_and_plan_rejects_never_existing_pa
     (tmp_path / 'sub').mkdir()
     with pytest.raises(graph.GraphError, match='owned file missing'):
         graph.snapshot(tmp_path, ['sub'])
+    (tmp_path / 'dangling.sql').symlink_to('nowhere.sql')
+    with pytest.raises(graph.GraphError, match='owned file missing'):  # never "deleted"
+        graph.snapshot(tmp_path, ['dangling.sql'])

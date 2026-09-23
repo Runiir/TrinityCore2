@@ -32,7 +32,7 @@ def amend_assignment(root: Path, assignment: dict, event: dict) -> dict:
         path = Path(name)
         if (path.is_absolute() or '..' in path.parts or len(path.parts) < 2
                 or path.parts[0] != 'tests' or path.as_posix() != name
-                or (root/path).is_symlink()):
+                or (root/path).is_symlink() or not (root/path).is_file()):
             raise graph.GraphError('test dependency must be a regular file under tests/')
     if files:
         graph.snapshot(root, files)

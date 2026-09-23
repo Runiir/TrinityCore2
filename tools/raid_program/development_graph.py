@@ -311,6 +311,8 @@ def snapshot(root: Path, paths: list[str]) -> dict:
         raise GraphError('nonempty unique owned_files required')
     result = {}
     for name in paths:
+        if (root / name).is_symlink():  # a symlink (dangling or not) is never an owned file
+            raise GraphError('owned file missing: ' + name)
         p = (root / name).resolve()
         if not p.is_relative_to(root.resolve()):
             raise GraphError('owned file missing: ' + name)
