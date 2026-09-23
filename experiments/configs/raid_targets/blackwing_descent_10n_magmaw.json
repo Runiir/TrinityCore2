@@ -1,0 +1,80 @@
+{
+  "schema": "raid_target_v1",
+  "scenario": "blackwing_descent_10n_magmaw",
+  "purpose": "Numeric finish line for Magmaw 10N bots: per-actor kill DPS on par with the matched Warcraft Logs reference, measured over a batch of native kills rather than one noisy run.",
+  "validation_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+  "encounter_route_node_id": "bwd.magmaw.encounter",
+  "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_dps_reference_v1.json",
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_wcl_cast_timelines_v1.json",
+  "matched_reference_ids": ["Y8ajQ7dbmKMG1RZy-fight22"],
+  "unmatched_reference_notes": {
+    "xAhkN2y9YP3KRmnJ-fight10": "Short 70.9 s fight with eight DPS and no Balance Druid; throughput context only, never a target."
+  },
+  "kills_per_measurement": 3,
+  "actor_dps_ratio": 0.95,
+  "actor_dps_metric": "Per actor: mean encounter_window_dps over the label's native-clear kills divided by the median actor_dps of the matched references for the same spec. target_dps is that WCL median; the actor passes when ratio >= actor_dps_ratio.",
+  "party_dps_ratio": 0.95,
+  "party_dps_gating": false,
+  "party_dps_metric": "Mean encounter_window_party_dps over native-clear kills divided by the median raid_dps of the matched references. Reported, not gating.",
+  "clear_rule": {
+    "native_clear": true,
+    "completion_reason": "validation_route_manifest_complete",
+    "basis": "report.json native_gameplay_outcome.native_clear and completion_reason. The harness exit code is informational: diagnostic route runs exit 1 (all_passed=false) even on a clean native clear."
+  },
+  "max_boss_window_deaths": 0,
+  "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count. Unknown counts never pass.",
+  "roles_without_dps_target": ["healer"],
+  "healer_status": "Healers have no DPS target; their status follows the encounter status.",
+  "missing_reference_policy": "An actor whose spec has no matched reference gets status no_reference and no target. The overall status is fail until a matched reference exists: a missing reference is work, not a pass.",
+  "status_rules": {
+    "encounter": "fail if any kill of the label is not a native clear, or any kill has more than max_boss_window_deaths boss-window deaths or an unknown count; otherwise insufficient_kills below kills_per_measurement native clears; otherwise pass.",
+    "actor": "no_reference without a matched spec reference; insufficient_kills below kills_per_measurement; otherwise pass or fail against actor_dps_ratio.",
+    "overall": "pass only if the encounter passes and every non-healer actor passes."
+  },
+  "noise_rule": {
+    "min_kills_per_label": 3,
+    "statistic": "sample mean and sample standard deviation (n - 1) over native-clear kills",
+    "threshold": "2 * sqrt(sd1^2 / n1 + sd2^2 / n2)",
+    "improved": "delta_mean > threshold",
+    "regressed": "delta_mean < -threshold",
+    "within_noise": "otherwise",
+    "insufficient_kills": "either label has fewer than min_kills_per_label native-clear kills",
+    "applies_to": "each actor's encounter_window_dps and the party encounter_window_party_dps",
+    "keep_rule": "Keep a change only if party DPS or the targeted actor improved, no non-healer actor regressed, route deaths per kill did not increase, and every kill of the candidate label is a native clear. Otherwise revert."
+  },
+  "run_plan": {
+    "default_worldserver": "build/src/server/worldserver/worldserver",
+    "output_dir_pattern": "/tmp/scoreboard-{label}-k{kill}-{timestamp}",
+    "duration_policy": "completion-watchdog: stop on native clear, no-progress stall, repeated decisions, death loops or infrastructure loss. There is no success timer.",
+    "argv_template_source": "experiments/configs/cata_magmaw_spell_queue_validation_20260922.json",
+    "argv_template": [
+      "pixi",
+      "run",
+      "bot-live-validate",
+      "--worldserver",
+      "{worldserver}",
+      "--config",
+      "trinity-worldserver-test.conf",
+      "--duration-policy",
+      "completion-watchdog",
+      "--apply-validation-provisioning",
+      "--reset-bot-pool",
+      "--bot-pool-tag",
+      "blackwing_descent_10n_magmaw_diagnostic",
+      "--keep-bot-pool-position",
+      "--heartbeat-sec",
+      "30",
+      "--no-progress-window-sec",
+      "180",
+      "--max-repeated-decision-count",
+      "20",
+      "--max-death-loop-count",
+      "3",
+      "--validation-scenario-id",
+      "blackwing_descent_10n_magmaw_diagnostic",
+      "--validation-route-manifest",
+      "--output-dir",
+      "{output_dir}"
+    ]
+  }
+}
