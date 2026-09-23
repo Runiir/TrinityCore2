@@ -320,6 +320,13 @@ def _historical_target_catalog_bytes(current, materialization):
             # Reverse only that sanctioned addition for this historical catalog.
             if 89744 in row["action_profile_spell_ids"]:
                 row["action_profile_spell_ids"].remove(89744)
+        elif row["spec_target_id"] == "blood_death_knight":
+            # Bundle 02 (2026-09-23, commit 215f830987) provisioned Outbreak, Blood Tap and
+            # Empower Rune Weapon for the Blood tank. Reverse only that sanctioned addition
+            # so the historical catalog identity (pinned before it) still reconstructs.
+            for spell_id in (77575, 45529, 47568):
+                if spell_id in row["action_profile_spell_ids"]:
+                    row["action_profile_spell_ids"].remove(spell_id)
     payload = (json.dumps(historical, indent=2) + "\n").encode("utf-8")
     # This is the original WHOLE source catalog identity, not a projection
     # digest. Every other field and unsupported-spec spell remains guarded.
