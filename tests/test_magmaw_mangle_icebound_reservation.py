@@ -6,7 +6,7 @@ In bundle1 kill 1 the tank fell to 27.6% on the Drudge pack 41 s before the
 pull, where the trash recovery lane casts Icebound at 55%; 180 s later it is
 still down at the 90 s Mangle. The generic rule: on the trash node right
 before a boss with a declared opening hit, a Defensive whose own cooldown
-exceeds that hit's time after pull is reserved. On the boss node, a Defensive
+exceeds that hit's time after pull is reserved above 35% health. On the boss node, a Defensive
 whose cooldown exceeds the big-hit spacing is kept between big hits while the
 boss's native timer runs (the Mangle helper casts it), released while the hit
 is in progress (timer at 0 or the tank held in the boss's seat) and at 35%
@@ -69,23 +69,29 @@ int main()
     assert(BossOpeningHitAfterPullMs("boss", "bwd.chimaeron.encounter") == 0);
 
     RouteContext trash{true, true, false, false, "trash", "trash", ""};
-    char const* reserved = BossDefensiveReservationReason(trash, 90000,
+    char const* reserved = BossDefensiveReservationReason(trash, 90000, 0.60f,
         BotCombatActionCategory::Defensive, 180000);
     assert(reserved && std::strcmp(reserved, "raid_boss_defensive_reserved") == 0);
     // Back in time (Vampiric Blood, Bone Shield: 60 s): trash keeps it.
-    assert(!BossDefensiveReservationReason(trash, 90000, BotCombatActionCategory::Defensive, 60000));
-    assert(!BossDefensiveReservationReason(trash, 90000, BotCombatActionCategory::Defensive, 90000));
+    assert(!BossDefensiveReservationReason(trash, 90000, 0.60f, BotCombatActionCategory::Defensive, 60000));
+    assert(!BossDefensiveReservationReason(trash, 90000, 0.60f, BotCombatActionCategory::Defensive, 90000));
     // Only Defensive rows; Death Strike (Mitigation) and heals are untouched.
-    assert(!BossDefensiveReservationReason(trash, 90000, BotCombatActionCategory::Mitigation, 180000));
+    assert(!BossDefensiveReservationReason(trash, 90000, 0.60f, BotCombatActionCategory::Mitigation, 180000));
     // No declared next boss hit, a boss node, outside the validation route
     // or outside a raid: nothing is reserved.
-    assert(!BossDefensiveReservationReason(trash, 0, BotCombatActionCategory::Defensive, 180000));
+    assert(!BossDefensiveReservationReason(trash, 0, 0.60f, BotCombatActionCategory::Defensive, 180000));
     RouteContext boss{true, true, true, false, "boss", "boss", "combat"};
-    assert(!BossDefensiveReservationReason(boss, 90000, BotCombatActionCategory::Defensive, 180000));
+    assert(!BossDefensiveReservationReason(boss, 90000, 0.60f, BotCombatActionCategory::Defensive, 180000));
     RouteContext free{false, true, false, false, "trash", "trash", ""};
-    assert(!BossDefensiveReservationReason(free, 90000, BotCombatActionCategory::Defensive, 180000));
+    assert(!BossDefensiveReservationReason(free, 90000, 0.60f, BotCombatActionCategory::Defensive, 180000));
     RouteContext dungeon{true, false, false, false, "trash", "trash", ""};
-    assert(!BossDefensiveReservationReason(dungeon, 90000, BotCombatActionCategory::Defensive, 180000));
+    assert(!BossDefensiveReservationReason(dungeon, 90000, 0.60f, BotCombatActionCategory::Defensive, 180000));
+    // Emergency release for everyone on trash: a dead lone tank can wipe the
+    // pack instead of being a recovered death.
+    assert(!BossDefensiveReservationReason(trash, 90000, 0.35f, BotCombatActionCategory::Defensive, 180000));
+    assert(!BossDefensiveReservationReason(trash, 90000, 0.20f, BotCombatActionCategory::Defensive, 300000));
+    assert(BossDefensiveReservationReason(trash, 90000, 0.36f, BotCombatActionCategory::Defensive, 180000));
+    static_assert(BossHitEmergencyHealthPct == 0.35f, "one emergency floor for both rules");
     // The existing emergency exemption still leaves defensives alone.
     assert(!ReservationReason(trash, { BotCombatActionCategory::Defensive, "icebound_fortitude" }));
 
@@ -149,6 +155,9 @@ def test_route_helper_and_every_trash_defensive_path_use_the_rule() -> None:
     reserve = function_body(gate, "char const* BotWorldPopulationMgr::BossDefensiveReservationReason(")
     assert "std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime)" in reserve
     assert "NextValidationRouteBossOpeningHitMs()" in reserve
+    trash_call = reserve[reserve.index("BotRaidCooldownReservation::BossDefensiveReservationReason("):]
+    trash_call = trash_call[:trash_call.index("return trash;")]
+    assert "BotWorldPopulationMgrNativeHelpers::UnitHealthPct(bot)" in trash_call
     # Boss node: the boss's own native timer, seat hold and current health.
     assert "actor.FindMechanicTimer(hit->TimerSpellId)" in reserve
     assert "native->Source == BotEncounter::FactSource::NativeInstanceState" in reserve

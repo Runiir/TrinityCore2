@@ -126,8 +126,10 @@ int main() {
 
 def test_release_paths_reach_the_release_branch_in_the_right_state() -> None:
     source = BOSS.read_text(encoding="utf-8")
-    # Sweltering Armor is cast only in the release branch.
-    assert source.count("SPELL_SWELTERING_ARMOR") == 1
+    # Sweltering Armor is cast only in the release branch and cleared from
+    # players on evade/wipe, like the parasite auras.
+    assert source.count("SPELL_SWELTERING_ARMOR") == 2
+    assert source.count("CastSpell(passenger, SPELL_SWELTERING_ARMOR, true)") == 1
     boarded = body(source, "void PassengerBoarded(Unit* passenger, int8 seatId, bool apply) override")
     release = boarded[boarded.index("else"):]
     assert "passenger->CastSpell(passenger, SPELL_SWELTERING_ARMOR, true);" in release
@@ -139,6 +141,10 @@ def test_release_paths_reach_the_release_branch_in_the_right_state() -> None:
     assert "DoCastSelf(SPELL_EJECT_PASSENGER_3, true);" in expose
     # Evade clears combat before it ejects the Mangle seat, so a wipe does not.
     evade = body(source, "void EnterEvadeMode(EvadeReason /*why*/) override")
+    parasite = evade.index("DoRemoveAurasDueToSpellOnPlayers(SPELL_PARASITIC_INFECTION_PERIODIC_DAMAGE);")
+    armor = evade.index("instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SWELTERING_ARMOR);")
+    # After the eject (which applies nothing once combat has stopped).
+    assert evade.index("DoCastSelf(SPELL_EJECT_PASSENGER_3, true);") < parasite < armor
     assert evade.index("_EnterEvadeMode();") < evade.index("DoCastSelf(SPELL_EJECT_PASSENGER_3, true);")
     creature_ai = (ROOT / "src/server/game/AI/CreatureAI.cpp").read_text(encoding="utf-8")
     assert "me->CombatStop(true);" in body(creature_ai, "bool CreatureAI::_EnterEvadeMode(EvadeReason /*why*/)")

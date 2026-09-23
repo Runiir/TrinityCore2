@@ -151,26 +151,29 @@ inline uint32 BossOpeningHitAfterPullMs(std::string_view nodeKind,
     return hit ? hit->AfterPullMs : 0;
 }
 
+// Below this health a reserved defensive is released: an immediate death is
+// worse than facing the next big hit without it.  On trash a dead tank can
+// also wipe the pack instead of being a recovered death.
+constexpr float BossHitEmergencyHealthPct = 0.35f;
+
 // On the trash node right before a boss, keep a defensive whose own cooldown
 // would still be running at that boss's opening hit even if the pull came
 // immediately.  The raid accepts a recovered trash death; a death in the
 // boss window is the failure that matters.  Defensives that return in time
-// stay available to trash emergencies.
+// stay available to trash emergencies, and every defensive is released at
+// BossHitEmergencyHealthPct or less.
 inline char const* BossDefensiveReservationReason(RouteContext const& route,
-    uint32 nextBossOpeningHitMs, BotCombatActionCategory category,
-    uint32 cooldownMs)
+    uint32 nextBossOpeningHitMs, float healthPct,
+    BotCombatActionCategory category, uint32 cooldownMs)
 {
     if (!route.ValidationRouteEnabled || !route.RaidInstance
         || route.RouteKind != "trash" || !nextBossOpeningHitMs
+        || healthPct <= BossHitEmergencyHealthPct
         || category != BotCombatActionCategory::Defensive
         || cooldownMs <= nextBossOpeningHitMs)
         return nullptr;
     return "raid_boss_defensive_reserved";
 }
-
-// Below this health a reserved defensive is released: an immediate death is
-// worse than facing the next big hit without it.
-constexpr float BossHitEmergencyHealthPct = 0.35f;
 
 struct BossHitTimer
 {

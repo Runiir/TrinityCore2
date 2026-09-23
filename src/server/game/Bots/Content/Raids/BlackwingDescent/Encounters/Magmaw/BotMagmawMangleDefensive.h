@@ -47,6 +47,18 @@ inline uint32 PreMangleLeadMs(uint32 spellId)
         ? PreMangleIceboundLeadMs : PreMangleBoneShieldLeadMs;
 }
 
+// boss_magmaw.cpp repeats EVENT_MANGLE every 1min + 35s, and the first one is
+// 90 s after pull, so a live timer never exceeds 95 s.  The boss reports 0 for
+// an overdue Mangle; a larger value can only be EventMap::GetTimeUntilEvent's
+// uint32 subtraction wrapping on an overdue event (~4.29e9 ms).  Treat it as
+// due now rather than 71 minutes away.
+constexpr uint32 NativeMangleRepeatMs = 95000;
+
+inline uint32 MangleDueInMs(uint32 publishedMs)
+{
+    return publishedMs > NativeMangleRepeatMs ? 0 : publishedMs;
+}
+
 enum class DefensiveTrigger : uint8
 {
     PreMangleLead,
@@ -112,10 +124,12 @@ inline std::optional<DefensiveWindow> ObserveMangleDefensiveWindow(
         boss->FindMechanicTimer(MassiveCrashSpell);
     if (!mangle || mangle->Source != FactSource::NativeInstanceState)
         return std::nullopt;
-    // 0 covers an overdue Mangle that waits for a cast and the running
-    // Mangle -> Massive Crash sequence.  Once Mangle has seized someone
+    // The boss publishes 0 while the Mangle -> Massive Crash sequence runs
+    // and for a Mangle held past its due time by a cast; MangleDueInMs also
+    // maps a wrapped overdue value to 0.  Once Mangle has seized someone
     // else, the victim check below closes the window.
-    uint32 const remainingMs = mangle->SequenceActive ? 0 : mangle->RemainingMs;
+    uint32 const remainingMs = mangle->SequenceActive
+        ? 0 : MangleDueInMs(mangle->RemainingMs);
     if (remainingMs > PreMangleBoneShieldLeadMs)
         return std::nullopt;
     if (boss->VictimGuid != tankGuid)

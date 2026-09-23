@@ -12,6 +12,7 @@
 #include "Unit.h"
 
 #include <array>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -61,8 +62,11 @@ std::optional<DefensiveWindow> NativeWindow(Player* bot, ObjectGuid bossGuid)
         return DefensiveWindow{ bossGuid, bot->GetGUID(),
             DefensiveTrigger::Mangled, 0 };
 
-    uint32 const remainingMs =
+    uint32 const publishedMs =
         boss->AI()->GetTimeUntilEncounterMechanic(MassiveCrashSpell);
+    if (publishedMs == std::numeric_limits<uint32>::max())
+        return std::nullopt;
+    uint32 const remainingMs = MangleDueInMs(publishedMs);
     if (remainingMs > PreMangleBoneShieldLeadMs || boss->GetVictim() != bot)
         return std::nullopt;
     return DefensiveWindow{ bossGuid, bot->GetGUID(),

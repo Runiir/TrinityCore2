@@ -204,8 +204,9 @@ bool ObjectiveContext::RunTankTrashRecovery(
         // emergency lane.  Give it first refusal so a low-health tank
         // does not spend the decision/GCD on Icebound Fortitude and die
         // before the heal can land.  Icebound remains the bounded
-        // fallback mitigation when Death Strike is unavailable or fails,
-        // unless the next boss's opening hit needs it (3 min cooldown).
+        // fallback mitigation when Death Strike is unavailable or fails.
+        // Before a boss whose opening hit needs it (3 min cooldown), the
+        // reservation holds it between 55% and 35% and releases it below.
         if (UnitHealthPct(bot) <= 0.55f && bot->HasSpell(48792)
             && !bot->HasAura(48792)
             && !Manager.BossDefensiveReservationReason(bot, 48792)

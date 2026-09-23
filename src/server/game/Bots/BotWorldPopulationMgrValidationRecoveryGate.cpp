@@ -83,6 +83,7 @@ char const* BotWorldPopulationMgr::BossDefensiveReservationReason(
         Cohort().Raid.EncounterPhase};
     if (char const* trash = BotRaidCooldownReservation::BossDefensiveReservationReason(
             route, NextValidationRouteBossOpeningHitMs(),
+            BotWorldPopulationMgrNativeHelpers::UnitHealthPct(bot),
             BotCombatActionCategory::Defensive, cooldownMs))
         return trash;
 

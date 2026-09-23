@@ -243,6 +243,7 @@ struct boss_magmaw : public BossAI
         instance->SetBossState(DATA_MAGMAW, FAIL);
         instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_PARASITIC_INFECTION_VOMIT);
         instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_PARASITIC_INFECTION_PERIODIC_DAMAGE);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SWELTERING_ARMOR);
         if (head)
             head->DespawnOrUnsummon();
         summons.DespawnAll();
@@ -320,6 +321,12 @@ struct boss_magmaw : public BossAI
                 != std::numeric_limits<uint32>::max())
             return 0;
 
+        // A Mangle held past its due time by a cast is due now. UpdateAI
+        // returns while casting, and GetTimeUntilEvent's uint32 subtraction
+        // would wrap an overdue event to ~4.29e9 ms.
+        uint32 const mangleAt = events.GetNextEventTime(EVENT_MANGLE);
+        if (mangleAt && mangleAt <= events.GetTimer())
+            return 0;
         return events.GetTimeUntilEvent(EVENT_MANGLE);
     }
 

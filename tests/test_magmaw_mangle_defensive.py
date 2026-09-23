@@ -126,6 +126,18 @@ int main()
     assert(overdue && overdue->RemainingMs == 0);
     assert(SelectDefensive(*overdue, Ready()) == IceboundFortitudeSpell);
 
+    // A live Mangle timer never exceeds the 95 s repeat. A larger value is
+    // an overdue event's wrapped uint32 subtraction: due now, not closed.
+    static_assert(NativeMangleRepeatMs == 95000, "EVENT_MANGLE repeat");
+    for (uint32 wrapped : { 4294967295u - 1u, 4294966000u, 95001u })
+    {
+        auto due = ObserveMangleDefensiveWindow(Encounter(wrapped), TankGuid);
+        assert(due && due->RemainingMs == 0);
+        assert(SelectDefensive(*due, Ready()) == IceboundFortitudeSpell);
+    }
+    assert(MangleDueInMs(95000) == 95000 && MangleDueInMs(1500) == 1500);
+    assert(!ObserveMangleDefensiveWindow(Encounter(95000), TankGuid));
+
     // Mangle lands on the victim: another victim, another bot, no window.
     assert(!ObserveMangleDefensiveWindow(Encounter(1000, false, DpsGuid), TankGuid));
     assert(!ObserveMangleDefensiveWindow(Encounter(1000), DpsGuid));
@@ -216,6 +228,10 @@ def test_candidate_reproves_the_window_natively_and_casts_only_known_ready_spell
     # At attempt time the live boss's own timer and victim are re-read.
     native = function_body(module, "std::optional<DefensiveWindow> NativeWindow(")
     assert "GetTimeUntilEncounterMechanic(MassiveCrashSpell)" in native
+    # No timer stays closed; a wrapped overdue value is due now.
+    assert "publishedMs == std::numeric_limits<uint32>::max()" in native
+    assert "uint32 const remainingMs = MangleDueInMs(publishedMs);" in native
+    assert "MangleDueInMs(mangle->RemainingMs)" in text(HEADER)
     assert "boss->GetVictim() != bot" in native
     assert "boss->GetEntry() != BossEntry" in native and "!boss->IsInCombat()" in native
 
@@ -233,6 +249,9 @@ def test_candidate_reproves_the_window_natively_and_casts_only_known_ready_spell
     boss = text(BOSS)
     timer = function_body(boss, "uint32 GetTimeUntilEncounterMechanic(")
     assert "return events.GetTimeUntilEvent(EVENT_MANGLE);" in timer
+    assert "if (mangleAt && mangleAt <= events.GetTimer())\n            return 0;" in timer
+    mangle_event = boss[boss.index("case EVENT_MANGLE:"):boss.index("case EVENT_PREPARE_MASSIVE_CRASH:")]
+    assert "events.Repeat(1min + 35s);" in mangle_event
 
     # Wiring: declared, submitted next to the lust candidate, built.
     assert "void SubmitMagmawMangleDefensiveCandidate(BotUpdateContext& context);" in text(MANAGER)
