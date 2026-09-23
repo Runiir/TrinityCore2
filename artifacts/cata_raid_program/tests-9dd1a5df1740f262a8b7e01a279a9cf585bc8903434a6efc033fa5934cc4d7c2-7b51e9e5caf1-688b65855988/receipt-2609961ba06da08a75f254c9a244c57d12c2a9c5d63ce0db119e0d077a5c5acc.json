@@ -1,0 +1,101 @@
+{
+  "kind": "tests",
+  "authority": "coordinator_attestation",
+  "unit_id": "magmaw:tuning_05",
+  "producer": "coordinator-bca90d3b",
+  "operation_id": "9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2",
+  "source_commit": "7b51e9e5caf1b4c6bcb95649694f37dd51394caf",
+  "file_hashes": {
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategySupport.h": "9e8086fe1d8eab41a3d2cea903a2ce1b4fce931d0376528a268356e86586bebf",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.cpp": "8a7d1f2c7e68b9d9dc2963a536f4ee404d6558728607c023e902a2829596578d",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h": "5348b3b52d9f100d618b46bc17340efef3fefbd09b9af27f03006456142f49ef",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawObservations.h": "a3f19f2664b447c62621c97a2a47bf316cae8d35fbff11a336f476ba9445b6e0",
+    "src/server/game/Entities/Pet/GuardianInitialization.cpp": "10c672b0bcfa55289a8b288c3751ebd1bb2cd907a7c8c6ece90c0d5db782548f",
+    "src/server/scripts/Spells/spell_script_loader.cpp": "300e9c07a4e80a2a2f92e7ed2b83928db5849c61435e7745c8679285f6d22e7f",
+    "src/server/scripts/Spells/spell_dk_glyphs.cpp": "c25ab65773fdb0ae0f83804d7c513bcf84be6baa1fc14579cbde98bfb6bd2534",
+    "sql/custom/world/2026_09_24_00_balance_moonfire_not_over_sunfire.sql": "67d005141679fb2236400e1cf0e7f4258b267f0e4275ea489de35b3802fb40be",
+    "sql/custom/world/2026_09_24_01_dk_glyph_of_death_strike_script.sql": "cc3559880df3e7b0c5d836a68d107c38e4c640dbd373a7befa9f53e94ee8f118",
+    "tests/test_magmaw_balance_mushroom_duty.py": "162b446b13c7ee342d8fbe149d81ea3965626d2cb4e4317b64443ae95804660b",
+    "tests/test_balance_moonfire_not_over_sunfire.py": "67e48a32530f2d7821f597dda5c6a21be32b9ae1d4d64ddc3ed374c8da7f41ac",
+    "tests/test_blood_native_fidelity.py": "e734d26d5ada7fb1a3e160299b171d470ef4283abaf4688107257683f2d6b7b2",
+    "tests/test_magmaw_parasite_los_gate.py": "c01ab6e11ee1a11355e6e68d43995bd04b4708a1012e503d6a079ef813976052",
+    "tests/test_magmaw_support_target_admission.py": "1800a816de9512c57c7b662e89b2a85cd6d6b687c87b683f6a85d466487684f8"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_blood_native_fidelity.py tests/test_fire_elemental_spell_mod_owner.py tests/test_fire_elemental_health_owner.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 1.066,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/00.json",
+        "sha256": "c9f1a24f959c4a67784e22963f3b86ef62a567d78b35796b3083b670fbd116c4"
+      }
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_parasite_policy.py tests/test_magmaw_balance_mushroom_duty.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 37.37,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/01.json",
+        "sha256": "11c7a5f117cc7bc4df01f1706748d6b11415c5ec2c0ddc91eff1ebef1584ff13"
+      }
+    },
+    {
+      "command": "pixi run pytest -q tests/test_balance_moonfire_not_over_sunfire.py tests/test_balance_moving_moonfire.py tests/test_balance_rotation_cadence.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.915,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/02.json",
+        "sha256": "0debdd71d7148875c6e8693e364f634535058887fedb6da1abf8cc452d55461a"
+      }
+    },
+    {
+      "command": "pixi run pytest -q tests/test_generated_bot_admission_identities.py tests/test_blood_permanent_enchant_profile.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 7.124,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/03.json",
+        "sha256": "a03f95441e31413698306946fb118b0425f92eb5d66ac789cd0d08a054a7d6bb"
+      }
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.114,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/04.json",
+        "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/00.json",
+      "sha256": "c9f1a24f959c4a67784e22963f3b86ef62a567d78b35796b3083b670fbd116c4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/01.json",
+      "sha256": "11c7a5f117cc7bc4df01f1706748d6b11415c5ec2c0ddc91eff1ebef1584ff13"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/02.json",
+      "sha256": "0debdd71d7148875c6e8693e364f634535058887fedb6da1abf8cc452d55461a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/03.json",
+      "sha256": "a03f95441e31413698306946fb118b0425f92eb5d66ac789cd0d08a054a7d6bb"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-9dd1a5df1740f262a8b7e01a279a9cf585bc8903434a6efc033fa5934cc4d7c2-7b51e9e5caf1-688b65855988/04.json",
+      "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+    }
+  ],
+  "source_and_state_stable": true,
+  "behavior_command": "pixi run pytest -q tests/test_blood_native_fidelity.py tests/test_fire_elemental_spell_mod_owner.py tests/test_fire_elemental_health_owner.py",
+  "limits": "Command execution is observed. Reviewer must verify behavior coverage; no native performance acceptance."
+}
