@@ -1,0 +1,39 @@
+{
+  "schema": "cata_raid_program_assessment_receipt_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:tuning_01",
+  "producer": "coordinator-bca90d3b",
+  "authority": "coordinator_attestation",
+  "attempt_id": "scoreboard:b2-fd4ba456",
+  "scoreboard_label": "b2-fd4ba456",
+  "encounter_clear": true,
+  "verdict": {
+    "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+    "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+  },
+  "accepted_requirements": [
+    "actor_30003",
+    "actor_30004",
+    "actor_30005",
+    "actor_30006",
+    "actor_30007",
+    "actor_30008",
+    "actor_30009"
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b2-fd4ba456-88fb5ca969fc.json",
+      "sha256": "88fb5ca969fcf6d52eb012aec9d2b231b5703114c9e0ca5ce1962f30a8497395"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard-run-b2-fd4ba456-b2637ba09d18.json",
+      "sha256": "b2637ba09d1824adc56f307dcfefc45a210db40f7baf995c7a8efda33943c617"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "8177b44d47a2a48c7ca44a71186ab44bea657233253c15da3ab5e0368590e553"
+    }
+  ],
+  "summary": "b2-fd4ba456: 5 native clears, 0 boss-window deaths, party 275.6k = 1.12x WCL (improved vs r3-47cd175). Fire A 30006 passes at 0.99 (range cap fix); Blood 30002 0.80 (+3.1k, still open), Balance 30001 0.943 (flat), Elemental 30010 0.941 (regressed within noise, DPS-066). Bundle kept under the playbook keep rule with --min-kills 4; b2-fd4ba456 is the new baseline.",
+  "acceptance_claim": "Accepts only the requirements whose verdict rows pass with the passing encounter; actor_30001, actor_30002, actor_30010 and magmaw_10n stay open."
+}
