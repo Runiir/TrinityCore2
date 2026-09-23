@@ -148,6 +148,12 @@ def label_kills(records: list[dict[str, Any]], label: str | None) -> list[dict[s
     return [record for record in records if record["label"] == label]
 
 
+# Harness reason codes for a boss window invalidated by world stalls: v1 used one code,
+# v2 (bot_measurement_validity_v2) separates the stalled fraction from one long stall.
+BOSS_WINDOW_STALL_REASONS = frozenset({"world_stall_overlaps_boss_window", "boss_window_stall_fraction_exceeded",
+                                       "boss_window_stall_too_long"})
+
+
 def exclusion_reason(record: dict[str, Any]) -> str | None:
     """Why a kill does not count toward a verdict (None = counted)."""
     if record.get("voided"):
@@ -169,7 +175,7 @@ def exclusion_reason(record: dict[str, Any]) -> str | None:
         # A clear with an invalid window is not a DPS measurement. A wipe still counts
         # as a gameplay failure unless a stall actually hit the boss window (a trash
         # wipe is invalid only because it has no boss window).
-        if record.get("native_clear") or "world_stall_overlaps_boss_window" in (validity.get("reasons") or []):
+        if record.get("native_clear") or BOSS_WINDOW_STALL_REASONS & set(validity.get("reasons") or []):
             return "stalled_boss_window"
     return None
 

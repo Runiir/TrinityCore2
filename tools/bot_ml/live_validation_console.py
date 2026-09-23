@@ -14,6 +14,7 @@ chunk, so its cost is linear in the response size.
 """
 from __future__ import annotations
 
+import codecs
 import os
 import select
 import subprocess
@@ -31,26 +32,48 @@ _F_SETPIPE_SZ = 1031
 _F_GETPIPE_SZ = 1032
 
 
-def enlarge_pipe_buffer(file_obj: Any, size: int = CONSOLE_PIPE_BUFFER_BYTES) -> int:
-    """Best-effort pipe enlargement; return the resulting size or 0."""
+def pipe_buffer_receipt(file_obj: Any, size: int = CONSOLE_PIPE_BUFFER_BYTES) -> dict[str, Any]:
+    """Enlarge a pipe (best effort) and return what was actually achieved.
+
+    ``achieved_bytes`` is the size read back after the attempt; the errno
+    fields are ``None`` on success so a report shows why a pipe stayed small.
+    """
+    receipt: dict[str, Any] = {
+        "schema": "bot_console_pipe_buffer_v1",
+        "requested_bytes": int(size),
+        "achieved_bytes": 0,
+        "set_errno": None,
+        "get_errno": None,
+        "error": "",
+    }
     try:
         import fcntl
     except ImportError:  # pragma: no cover - non-POSIX
-        return 0
+        receipt["error"] = "fcntl_unavailable"
+        return receipt
     try:
         fd = file_obj.fileno()
-    except (AttributeError, OSError, ValueError):
-        return 0
+    except (AttributeError, OSError, ValueError) as exc:
+        receipt["error"] = f"no_file_descriptor:{type(exc).__name__}"
+        return receipt
     set_op = getattr(fcntl, "F_SETPIPE_SZ", _F_SETPIPE_SZ)
     get_op = getattr(fcntl, "F_GETPIPE_SZ", _F_GETPIPE_SZ)
     try:
         fcntl.fcntl(fd, set_op, int(size))
-    except OSError:
-        pass
+    except OSError as exc:
+        receipt["set_errno"] = exc.errno
+        receipt["error"] = f"set_pipe_size_failed:{exc.strerror or exc.errno}"
     try:
-        return int(fcntl.fcntl(fd, get_op))
-    except OSError:
-        return 0
+        receipt["achieved_bytes"] = int(fcntl.fcntl(fd, get_op))
+    except OSError as exc:
+        receipt["get_errno"] = exc.errno
+        receipt["error"] = receipt["error"] or f"get_pipe_size_failed:{exc.strerror or exc.errno}"
+    return receipt
+
+
+def enlarge_pipe_buffer(file_obj: Any, size: int = CONSOLE_PIPE_BUFFER_BYTES) -> int:
+    """Best-effort pipe enlargement; return the resulting size or 0."""
+    return int(pipe_buffer_receipt(file_obj, size)["achieved_bytes"])
 
 
 def _count_new_prompts(window: str, old_tail_len: int) -> int:
@@ -101,6 +124,9 @@ def read_until_console_prompt(
     marker_found = False
     post_marker_tail = ""
     prompt_count = 0
+    # A multi-byte UTF-8 character can straddle two reads; decoding each
+    # chunk on its own would replace both halves with U+FFFD.
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
     while process.poll() is None and time.monotonic() < deadline:
         remaining = max(0.0, deadline - time.monotonic())
         ready, _, _ = select.select([fd], [], [], min(1.0, remaining))
@@ -116,7 +142,7 @@ def read_until_console_prompt(
         chunk = os.read(fd, CONSOLE_READ_CHUNK_BYTES)
         if not chunk:
             break
-        text = chunk.decode(errors="replace")
+        text = decoder.decode(chunk)
         output.append(text)
         window = tail + text
         old_tail_len = len(tail)
@@ -186,4 +212,5 @@ def read_until_console_prompt(
             and time.monotonic() - pre_marker_prompt_at >= grace
         ):
             break
+    output.append(decoder.decode(b"", final=True))
     return "".join(output)

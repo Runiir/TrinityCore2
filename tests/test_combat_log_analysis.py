@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from tools.bot_ml.analyze_combat_log import analyze_combat_log
+from tools.bot_ml.analyze_combat_log import analyze_combat_log, unit_deaths_from_report
 from tools.bot_ml.combat_log_event_stream import CombatLogEventStream
 from tools.bot_ml.run_live_bot_validation import (
     combined_combat_log,
@@ -1181,16 +1181,123 @@ def test_killed_hostile_damage_reconciliation_flags_unlogged_damage():
 
 
 def test_killed_hostile_reconciliation_tolerates_one_percent_and_reports_dropped_events():
+    # 5 HP were lost before the first logged hit (0.5%): within tolerance,
+    # and no loss is unexplained between two logged events.
     events = [
-        _landed(1, 30001, 60, 995, 1000, max_health=1000),
+        _landed(1, 30001, 60, 990, 995, max_health=1000),
         _landed(2, 30001, 60, 5, 5, max_health=1000),
     ]
-    events[1]["landed_damage_observation"]["target_health_before_damage"] = 5
-    events[0]["amount"] = 990  # 0.5% short: inside tolerance
-    events[1]["amount"] = 5
     result = analyze_combat_log({"recent_events": events, "recent_events_dropped": 3})[
         "killed_hostile_damage_reconciliation"
     ]
+    assert result["killed_hostile_count"] == 1
+    assert result["hostiles"][0]["damage_before_first_logged_event"] == 5
     assert result["mismatch_count"] == 0
     assert result["event_window_complete"] is False
     assert result["reconciled"] is False
+
+
+def test_any_unlogged_health_loss_is_flagged_inside_the_percent_tolerance():
+    events = [
+        _landed(1, 30001, 60, 4432, 100_000, max_health=100_000),
+        # 144 HP vanished between two logged ticks (0.144%).
+        _landed(2, 30001, 60, 95_424, 95_424, max_health=100_000),
+    ]
+    result = analyze_combat_log({"recent_events": events})["killed_hostile_damage_reconciliation"]
+    mismatch = result["mismatches"][0]
+    assert mismatch["mismatch_pct"] == 0.144
+    assert mismatch["flag_reasons"] == ["unlogged_health_loss"]
+    assert mismatch["unlogged_health_loss"] == 144
+
+
+def test_unlogged_killing_blow_is_reconciled_when_the_death_is_confirmed():
+    """A dead caster's final DoT tick is not logged, but the unit died."""
+    events = [
+        _landed(1, 30001, 60, 600, 1000),
+        _landed(2, 30001, 60, 300, 400),
+        _landed(3, 30001, 61, 200, 1000),  # survived or despawned: unknown
+    ]
+    unconfirmed = analyze_combat_log({"recent_events": events})["killed_hostile_damage_reconciliation"]
+    assert unconfirmed["killed_hostile_count"] == 0
+    assert [row["target_guid"] for row in unconfirmed["unconfirmed_deaths"]] == [60, 61]
+    assert all(row["killing_blow_unlogged"] for row in unconfirmed["unconfirmed_deaths"])
+    assert unconfirmed["unconfirmed_deaths"][0]["health_after_last_logged_event"] == 100
+
+    creature_guid = (0xF130 << 48) | (42362 << 32) | 60  # full native GUID (Cata layout)
+    deaths = unit_deaths_from_report({
+        "status": {"validation_route": {"boss_death_evidence": [
+            {"target_id": creature_guid, "target_entry": 42362, "result": "confirmed_unit_death"}
+        ]}},
+        "trace": {"entries": [{"action": "mob_killed", "target_id": 61, "event_target": {"entry": 42362, "guid": 61}}]},
+    })
+    confirmed = analyze_combat_log({"recent_events": events}, deaths)["killed_hostile_damage_reconciliation"]
+    assert confirmed["unconfirmed_deaths"] == []
+    assert confirmed["killing_blow_unlogged_count"] == 2
+    first = next(row for row in confirmed["hostiles"] if row["target_guid"] == 60)
+    assert first["death_confirmed_by"] == "unit_death_evidence"
+    assert first["delta"] == -100
+    assert first["flag_reasons"] == ["recorded_damage_mismatch"]
+    # A combat-log death event confirms a death the same way.
+    death_event = {"kind": "unit_death", "timestamp_ms": 4, "target_guid": 60, "target_entry": 42362}
+    via_log = analyze_combat_log({"recent_events": events + [death_event]})["killed_hostile_damage_reconciliation"]
+    assert [row["target_guid"] for row in via_log["hostiles"]] == [60]
+
+
+def test_shared_health_targets_are_exempt_from_reconciliation_flags():
+    events = [
+        _landed(1, 30001, 76, 700, 1000, target_entry=42347),
+        _landed(2, 30001, 76, 100, 100, target_entry=42347),
+    ]
+    result = analyze_combat_log({"recent_events": events})["killed_hostile_damage_reconciliation"]
+    head = result["hostiles"][0]
+    assert head["exempt"] == "exposed_head_of_magmaw_shared_health"
+    assert head["unlogged_health_loss"] == 200
+    assert head["flagged"] is False
+    assert result["mismatch_count"] == 0
+    assert result["exempt_entries"]["41570"] == "magmaw_shares_health_with_exposed_head"
+
+
+def _positioned_ability(spell_id, events, samples, distance_avg, *, moving_events=0, moving_fraction=0.0):
+    return {
+        "route_generation": 4, "route_node_id": "bwd.magmaw.encounter", "perspective": "damage_done",
+        "actor_guid": 30008, "actor_name": "Mgwdpsc", "actor_role": "dps", "actor_class_id": 9,
+        "spell_id": spell_id, "spell_name": f"spell-{spell_id}", "amount": 1000 * events,
+        "originated_amount": 1000 * events, "event_count": events, "distance_samples": samples,
+        "distance_avg": distance_avg, "distance_min": None if not samples else distance_avg,
+        "moving_events": moving_events, "moving_fraction": moving_fraction,
+        "first_at_ms": 1_000, "last_at_ms": 60_000,
+    }
+
+
+def test_zero_sample_rows_do_not_count_as_zero_distance():
+    """DoT ticks from a caster who left the map carry no position."""
+    log = {"combat_log_schema_version": 8, "abilities": [
+        _positioned_ability(172, 20, 20, 30.0, moving_events=5, moving_fraction=0.25),
+        _positioned_ability(980, 40, 0, 0.0),  # released caster: no samples
+    ]}
+    actor = analyze_combat_log(log)["encounters"][0]["actors"][0]
+    assert actor["distance_avg"] == 30.0
+    assert actor["moving_fraction"] == 0.25
+    assert actor["distance_samples"] == 20
+    by_spell = {row["spell_id"]: row for row in actor["abilities"]}
+    assert by_spell[980]["distance_avg"] is None
+    assert by_spell[980]["moving_fraction"] is None
+    assert by_spell[980]["distance_samples"] == 0
+    assert by_spell[172]["distance_avg"] == 30.0
+
+
+def test_ranged_too_close_needs_positioned_events():
+    only_unpositioned = {"combat_log_schema_version": 8, "abilities": [
+        _positioned_ability(980, 40, 0, 0.0),
+    ]}
+    analysis = analyze_combat_log(only_unpositioned)
+    assert analysis["encounters"][0]["actors"][0]["distance_avg"] is None
+    assert not [row for row in analysis["diagnostics"] if row["kind"] == "ranged_damage_too_close"]
+    close = {"combat_log_schema_version": 8, "abilities": [_positioned_ability(172, 12, 12, 5.0)]}
+    diagnostic = next(row for row in analyze_combat_log(close)["diagnostics"] if row["kind"] == "ranged_damage_too_close")
+    assert diagnostic["distance_avg"] == 5.0 and diagnostic["distance_samples"] == 12
+    # Logs without distance_samples keep weighting by event_count.
+    legacy_row = _positioned_ability(172, 12, 0, 5.0)
+    legacy_row.pop("distance_samples")
+    legacy = analyze_combat_log({"abilities": [legacy_row]})
+    assert legacy["encounters"][0]["actors"][0]["distance_avg"] == 5.0

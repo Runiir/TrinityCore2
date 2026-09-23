@@ -7,12 +7,19 @@ heartbeat freezes of 3.6-12.3 s ending in 56-260 same-millisecond events,
 plus unrelated 0.4-0.8 s world-update hitches ending in 13-53 events, while
 ordinary combat lulls end with 1-8 events.
 
-``world_stalls`` lists catch-up gaps of at least ``STALL_MIN_GAP_SEC`` that
-began after a harness console command was sent and before it completed (the
-heartbeat freeze class), and any catch-up gap of at least
-``UNATTRIBUTED_STALL_MIN_GAP_SEC`` whatever its cause.  Shorter unattributed
-catch-up gaps (including a command that was merely sent into a running
-hitch) are summarised as hitches and do not invalidate a measurement.
+Inside a boss encounter window (first to last positive party damage, so the
+party is in combat) every event gap of at least ``STALL_MIN_GAP_SEC`` is a
+stall, whatever its catch-up burst size.  Outside boss windows a gap is a
+stall only when it ends in a catch-up burst and either began after a harness
+console command was sent (the heartbeat freeze class) or lasted at least
+``UNATTRIBUTED_STALL_MIN_GAP_SEC``; shorter unattributed catch-up gaps are
+hitches.
+
+``valid_for_dps`` tolerates a shared host: the boss-window stalled fraction
+must stay at or below ``MAX_BOSS_WINDOW_STALL_FRACTION`` and no single
+boss-window stall may reach ``MAX_SINGLE_BOSS_WINDOW_STALL_SEC``.  The raw
+fraction and maximum are always reported so a stricter consumer can decide
+for itself.
 """
 from __future__ import annotations
 
@@ -29,6 +36,8 @@ except ImportError:  # pragma: no cover - script-style imports
 STALL_MIN_GAP_SEC = 0.5
 UNATTRIBUTED_STALL_MIN_GAP_SEC = 1.0
 CATCHUP_BURST_MIN_EVENTS = 10
+MAX_BOSS_WINDOW_STALL_FRACTION = 0.02
+MAX_SINGLE_BOSS_WINDOW_STALL_SEC = 2.0
 # A command's recorded send/complete window is harness-side wall time; the
 # first/last combat event around the freeze can sit a few ms outside it.
 COMMAND_OVERLAP_SLACK_MS = 100
@@ -170,9 +179,15 @@ def detect_world_stalls(
         gap_sec = (end_ms - start_ms) / 1000.0
         if gap_sec < min_gap_sec:
             continue
+        overlap = sum(
+            _overlap_ms(start_ms, end_ms, _int(window.get("first_at_ms")), _int(window.get("last_at_ms")))
+            for window in windows
+        )
         catchup = same_ms[end_ms]
-        if catchup < catchup_burst_min_events:
-            # Ordinary combat lull or no combat at all: nothing was due.
+        in_boss_window = overlap > 0
+        if catchup < catchup_burst_min_events and not in_boss_window:
+            # Outside a boss window a gap without a catch-up burst is an
+            # ordinary lull, travel or no combat at all: nothing was due.
             continue
         commands = _overlapping_commands(start_ms, end_ms, command_timings)
         causal = [row for row in commands if row.get("freeze_started_after_send")]
@@ -193,27 +208,27 @@ def detect_world_stalls(
             "route_node_id": str(end_event.get("route_node_id") or ""),
             "route_generation": _int(end_event.get("route_generation")),
             "catchup_events": catchup,
+            "detection": (
+                "catchup_burst" if catchup >= catchup_burst_min_events else "boss_window_event_gap"
+            ),
             "attribution": attribution,
             "heartbeat_index": heartbeat_index or None,
             "overlapping_commands": commands,
+            "boss_window_overlap_sec": round(overlap / 1000.0, 3),
         }
-        overlap = sum(
-            _overlap_ms(start_ms, end_ms, _int(window.get("first_at_ms")), _int(window.get("last_at_ms")))
-            for window in windows
-        )
-        row["boss_window_overlap_sec"] = round(overlap / 1000.0, 3)
-        if attribution != "unattributed" or gap_sec >= unattributed_min_gap_sec:
+        if in_boss_window or attribution != "unattributed" or gap_sec >= unattributed_min_gap_sec:
             stalls.append(row)
         else:
             hitches.append(row)
     return {
-        "schema": "bot_world_stall_scan_v1",
+        "schema": "bot_world_stall_scan_v2",
         "source": "combat_log_recent_events",
         "thresholds": {
             "stall_min_gap_sec": min_gap_sec,
             "unattributed_stall_min_gap_sec": unattributed_min_gap_sec,
             "catchup_burst_min_events": catchup_burst_min_events,
             "command_overlap_slack_ms": COMMAND_OVERLAP_SLACK_MS,
+            "boss_window_gap_rule": "every_gap_at_least_stall_min_gap_sec",
         },
         "event_window": {
             "event_count": len(events),
@@ -232,6 +247,8 @@ def measurement_validity(
     windows: Sequence[Mapping[str, Any]],
     *,
     combat_log_available: bool,
+    max_stall_fraction: float = MAX_BOSS_WINDOW_STALL_FRACTION,
+    max_single_stall_sec: float = MAX_SINGLE_BOSS_WINDOW_STALL_SEC,
 ) -> dict[str, Any]:
     """Summarise stall impact on the boss encounter window(s)."""
     stalls = [row for row in scan.get("stalls") or [] if isinstance(row, Mapping)]
@@ -249,19 +266,22 @@ def measurement_validity(
             _overlap_ms(_int(row.get("start_ms")), _int(row.get("end_ms")), first, last)
             for row in inside
         )
-        hitch_ms = sum(
-            _overlap_ms(_int(row.get("start_ms")), _int(row.get("end_ms")), first, last)
-            for row in hitches
-        )
         window_rows.append({
             **dict(window),
             "stall_count": len(inside),
+            "catchup_burst_stall_count": sum(1 for row in inside if row.get("detection") == "catchup_burst"),
+            "event_gap_stall_count": sum(1 for row in inside if row.get("detection") != "catchup_burst"),
             "stalled_sec": round(stalled_ms / 1000.0, 3),
             "unstalled_duration_sec": round(max(0, last - first - stalled_ms) / 1000.0, 3),
             "stall_fraction": round(stalled_ms / max(1, last - first), 6),
             "max_stall_sec": max((float(row.get("duration_sec") or 0.0) for row in inside), default=0.0),
-            "hitch_sec": round(hitch_ms / 1000.0, 3),
         })
+    total_window_ms = sum(
+        max(0, _int(row.get("last_at_ms")) - _int(row.get("first_at_ms"))) for row in window_rows
+    )
+    boss_stalled_sec = round(sum(float(row["stalled_sec"]) for row in window_rows), 3)
+    stall_fraction = round(boss_stalled_sec * 1000.0 / max(1, total_window_ms), 6)
+    max_boss_stall = max((float(row["max_stall_sec"]) for row in window_rows), default=0.0)
     reasons: list[str] = []
     if not combat_log_available:
         reasons.append("combat_log_unavailable")
@@ -273,25 +293,30 @@ def measurement_validity(
         or any(first_event > _int(row.get("first_at_ms")) for row in window_rows)
     ):
         reasons.append("combat_log_event_window_misses_boss_window")
-    boss_stalls = [row for row in window_rows if int(row["stall_count"]) > 0]
-    if boss_stalls:
-        reasons.append("world_stall_overlaps_boss_window")
-    boss_stalled_sec = round(sum(float(row["stalled_sec"]) for row in window_rows), 3)
+    if window_rows and stall_fraction > max_stall_fraction:
+        reasons.append("boss_window_stall_fraction_exceeded")
+    if window_rows and max_boss_stall >= max_single_stall_sec:
+        reasons.append("boss_window_stall_too_long")
     return {
-        "schema": "bot_measurement_validity_v1",
+        "schema": "bot_measurement_validity_v2",
         "valid_for_dps": not reasons,
         "reasons": reasons,
+        "stall_fraction": stall_fraction,
+        "max_boss_window_stall_sec": max_boss_stall,
         "boss_window_stalled_sec": boss_stalled_sec,
+        "boss_window_duration_sec": round(total_window_ms / 1000.0, 3),
         "boss_window_stall_count": sum(int(row["stall_count"]) for row in window_rows),
-        "max_boss_window_stall_sec": max((float(row["max_stall_sec"]) for row in window_rows), default=0.0),
         "max_stall_sec": max((float(row.get("duration_sec") or 0.0) for row in stalls), default=0.0),
         "stall_count": len(stalls),
         "stalled_sec": round(sum(float(row.get("duration_sec") or 0.0) for row in stalls), 3),
         "boss_windows": window_rows,
         "hitch_count": len(hitches),
         "max_hitch_sec": max((float(row.get("duration_sec") or 0.0) for row in hitches), default=0.0),
-        "boss_window_hitch_sec": round(sum(float(row["hitch_sec"]) for row in window_rows), 3),
-        "thresholds": dict(scan.get("thresholds") or {}),
+        "thresholds": {
+            **dict(scan.get("thresholds") or {}),
+            "max_boss_window_stall_fraction": max_stall_fraction,
+            "max_single_boss_window_stall_sec": max_single_stall_sec,
+        },
         "event_window": dict(event_window),
         "command_timing_rows": _int(scan.get("command_timing_rows")),
     }
@@ -346,10 +371,10 @@ def attach_measurement_validity(
     validation_route_manifest: Mapping[str, Any] | None = None,
     validation_route: Mapping[str, Any] | None = None,
 ) -> None:
-    """Attach ``world_stalls``, ``measurement_validity`` and cleanup receipts.
+    """Attach stall, validity, console-pipe and cleanup receipts to a report.
 
-    ``report["measurement_validity"]["valid_for_dps"]`` is true only when no
-    stall overlaps a boss encounter window.
+    ``report["measurement_validity"]["valid_for_dps"]`` applies the boss
+    window stall tolerance described in this module's docstring.
     """
     timings = load_command_timings(Path(output_dir))
     combat_log = report.get("combat_log")
@@ -368,3 +393,24 @@ def attach_measurement_validity(
     steps = cleanup_steps_from_payloads(payloads)
     if steps:
         report["harness_cleanup_steps"] = steps
+    summary = next(
+        (
+            dict(row) for row in reversed(list(payloads))
+            if isinstance(row, Mapping) and row.get("action") == "harness_cleanup_summary"
+        ),
+        None,
+    )
+    if summary is not None:
+        summary.pop("action", None)
+        report["harness_cleanup"] = summary
+        report["cleanup_overrun_sec"] = float(summary.get("cleanup_overrun_sec") or 0.0)
+    pipe = next(
+        (
+            dict(row) for row in payloads
+            if isinstance(row, Mapping) and row.get("action") == "harness_console_pipe"
+        ),
+        None,
+    )
+    if pipe is not None:
+        pipe.pop("action", None)
+        report["console_pipe_buffer"] = pipe

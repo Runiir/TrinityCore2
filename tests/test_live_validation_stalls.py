@@ -43,8 +43,11 @@ def steady(start_ms: int, end_ms: int, step: int = 200, **kwargs) -> list[dict]:
     return [event(ms, **kwargs) for ms in range(start_ms, end_ms, step)]
 
 
-def windows() -> list[dict]:
-    return [{"route_node_id": BOSS, "route_generation": 4, "first_at_ms": T0, "last_at_ms": T0 + 60_000}]
+def windows(last_ms: int = 60_000) -> list[dict]:
+    return [{"route_node_id": BOSS, "route_generation": 4, "first_at_ms": T0, "last_at_ms": T0 + last_ms}]
+
+
+TRASH = {"node": "bwd.magmaw.drudges", "generation": 3}
 
 
 def test_heartbeat_freeze_in_boss_window_invalidates_dps():
@@ -62,27 +65,81 @@ def test_heartbeat_freeze_in_boss_window_invalidates_dps():
     stall = found[0]
     assert stall["duration_sec"] == 5.2
     assert stall["route_node_id"] == BOSS
+    assert stall["detection"] == "catchup_burst"
     assert stall["attribution"] == "console_command"
     assert stall["heartbeat_index"] == 3
     assert stall["overlapping_commands"][0]["command"] == ".botauto trace all 128 delta"
     assert validity["valid_for_dps"] is False
-    assert validity["reasons"] == ["world_stall_overlaps_boss_window"]
+    assert validity["reasons"] == ["boss_window_stall_fraction_exceeded", "boss_window_stall_too_long"]
+    assert validity["stall_fraction"] == 0.086667
     assert validity["boss_window_stalled_sec"] == 5.2
     assert validity["max_boss_window_stall_sec"] == 5.2
     assert validity["boss_windows"][0]["unstalled_duration_sec"] == 54.8
+    assert validity["thresholds"]["max_boss_window_stall_fraction"] == 0.02
+    assert validity["thresholds"]["max_single_boss_window_stall_sec"] == 2.0
 
 
-def test_short_unattributed_hitch_and_ordinary_lull_do_not_invalidate():
+def test_boss_window_flags_every_half_second_gap_whatever_its_burst():
     rows = (
         steady(0, 10_000)
-        + burst(10_650, 20)  # 0.85 s world hitch, not near any console command
+        + burst(10_650, 20)  # 0.85 s catch-up hitch, no console command
         + steady(10_800, 30_000)
-        + [event(32_000), event(32_001)]  # 2 s lull ending in ordinary combat
-        + steady(32_200, 60_001)
+        + [event(30_400), event(30_401)]  # 0.6 s gap ending in ordinary combat
+        + steady(30_600, 60_001)
     )
     found, validity = stalls.world_stall_report(
         combat_log(rows), {"encounters": windows()}, validation_route_manifest=MANIFEST,
-        command_timings=[{"phase": "heartbeat", "heartbeat_index": 1, "command": ".botauto status", "sent_at_ms": T0 + 40_000, "completed_at_ms": T0 + 40_010}],
+    )
+    assert [(row["duration_sec"], row["detection"]) for row in found] == [
+        (0.85, "catchup_burst"),
+        (0.6, "boss_window_event_gap"),
+    ]
+    assert validity["boss_windows"][0]["catchup_burst_stall_count"] == 1
+    assert validity["boss_windows"][0]["event_gap_stall_count"] == 1
+    # 1.45 s of 60 s is above the 2% tolerance; no single stall reaches 2 s.
+    assert validity["stall_fraction"] == 0.024167
+    assert validity["reasons"] == ["boss_window_stall_fraction_exceeded"]
+
+
+def test_small_boss_window_stalls_stay_valid_on_a_shared_host():
+    """Smoke-kill shape: 1.202 s of stall in a 112.1 s kill is 1.07%."""
+    rows = (
+        steady(0, 50_000)
+        + burst(50_412, 3)  # 0.612 s after the 49.8 s event
+        + steady(50_600, 80_000)
+        + burst(80_390, 12)  # 0.59 s
+        + steady(80_600, 112_101)
+    )
+    found, validity = stalls.world_stall_report(
+        combat_log(rows), {"encounters": windows(112_100)}, validation_route_manifest=MANIFEST,
+    )
+    assert [row["duration_sec"] for row in found] == [0.612, 0.59]
+    assert validity["valid_for_dps"] is True
+    assert validity["reasons"] == []
+    assert validity["stall_fraction"] == 0.010723
+    assert validity["max_boss_window_stall_sec"] == 0.612
+
+
+def test_one_two_second_boss_window_stall_is_too_long_even_below_the_fraction():
+    rows = steady(0, 50_000) + burst(51_800, 3) + steady(52_000, 112_101)
+    _, validity = stalls.world_stall_report(
+        combat_log(rows), {"encounters": windows(112_100)}, validation_route_manifest=MANIFEST,
+    )
+    assert validity["stall_fraction"] <= 0.02
+    assert validity["max_boss_window_stall_sec"] == 2.0
+    assert validity["reasons"] == ["boss_window_stall_too_long"]
+
+
+def test_outside_boss_windows_short_hitches_and_lulls_do_not_invalidate():
+    rows = (
+        steady(-60_000, -40_000, **TRASH)
+        + burst(-39_350, 20, **TRASH)  # 0.85 s unattributed catch-up hitch
+        + steady(-39_000, -30_000, **TRASH)
+        + [event(-27_000, **TRASH)]  # 3.2 s lull with nothing due
+        + steady(0, 60_001)
+    )
+    found, validity = stalls.world_stall_report(
+        combat_log(rows), {"encounters": windows()}, validation_route_manifest=MANIFEST,
     )
     assert found == []
     assert validity["valid_for_dps"] is True
@@ -91,9 +148,9 @@ def test_short_unattributed_hitch_and_ordinary_lull_do_not_invalidate():
 
 
 def test_command_sent_into_a_running_hitch_is_not_blamed():
-    rows = steady(0, 30_000) + burst(30_600, 25) + steady(30_800, 60_001)
+    rows = steady(-60_000, -30_000, **TRASH) + burst(-29_400, 25, **TRASH) + steady(-29_200, -10_000, **TRASH) + steady(0, 60_001)
     timings = [{"phase": "heartbeat", "heartbeat_index": 4, "command": ".botauto status",
-                "sent_at_ms": T0 + 30_300, "completed_at_ms": T0 + 30_610}]
+                "sent_at_ms": T0 - 29_700, "completed_at_ms": T0 - 29_390}]
     found, validity = stalls.world_stall_report(
         combat_log(rows), {"encounters": windows()}, validation_route_manifest=MANIFEST,
         command_timings=timings,
@@ -152,8 +209,15 @@ def test_final_report_exposes_stall_validity_and_cleanup_fields(tmp_path):
         "recent_events": rows,
     }
     report = {"combat_log": log, "combat_analysis": analyze_combat_log(log)}
-    receipt = '{"action":"harness_cleanup_step","command":".botauto combatlog","returncode":0,"timed_out":false,"completed":true}'
-    attach_measurement_validity(report, tmp_path, parse_json_objects(receipt), validation_route_manifest=MANIFEST)
+    receipts = "\n".join([
+        '{"action":"harness_console_pipe","requested_bytes":1048576,"achieved_bytes":1048576,"set_errno":null}',
+        '{"action":"harness_cleanup_step","command":".botauto combatlog","returncode":0,"timed_out":false,"completed":true}',
+        '{"action":"harness_cleanup_summary","complete":true,"cleanup_overrun_sec":1.5,"shutdown_killed":false}',
+    ])
+    attach_measurement_validity(report, tmp_path, parse_json_objects(receipts), validation_route_manifest=MANIFEST)
+    assert report["console_pipe_buffer"] == {"requested_bytes": 1048576, "achieved_bytes": 1048576, "set_errno": None}
+    assert report["harness_cleanup"]["complete"] is True
+    assert report["cleanup_overrun_sec"] == 1.5
     assert report["measurement_validity"]["valid_for_dps"] is False
     assert report["measurement_validity"]["boss_window_stalled_sec"] == 5.2
     assert report["world_stalls"][0]["heartbeat_index"] == 2

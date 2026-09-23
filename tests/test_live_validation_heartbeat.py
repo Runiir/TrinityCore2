@@ -9,6 +9,7 @@ import pytest
 from tools.bot_ml import live_validation_heartbeat as heartbeat
 from tools.bot_ml.run_live_bot_validation import (
     command_script,
+    heartbeat_commands_from_script,
     parse_json_objects,
     run_transport_completion_watchdog,
     run_worldserver_completion_watchdog,
@@ -250,3 +251,80 @@ def test_trace_retention_drains_until_the_backlog_moves_past_the_node(tmp_path):
     disabled = heartbeat.TraceRouteRetention(tmp_path / "off", (), parse_json_objects)
     assert disabled.observe(heartbeat_index=1, phase="full", command=FULL_TRACE, output=_trace(1, "x"))["entry_count"] == 0
     assert not (tmp_path / "off").exists()
+
+
+def test_no_light_combat_heartbeats_restores_the_full_trace_sequence(tmp_path):
+    """--no-light-combat-heartbeats sends exactly the configured commands."""
+    respond = _responses([True, True, True])
+    commands: list[str] = []
+    beats = {"count": 0}
+
+    def execute(command: str, _timeout: int):
+        commands.append(command)
+        return respond(command) + "\n", 0, False
+
+    def sleep(_seconds: float) -> None:
+        beats["count"] += 1
+        if beats["count"] > 3:
+            raise KeyboardInterrupt
+
+    script = command_script(start=False, exit_server=False, trace_delta=True, trace_limit=128)
+    _startup, heartbeat_commands, _cleanup = heartbeat_commands_from_script(script)
+    assert heartbeat_commands == [".botauto status", ".botauto diagnose all", FULL_TRACE, ".botexp summary"]
+    with pytest.raises(KeyboardInterrupt):
+        run_transport_completion_watchdog(
+            execute, ["attached"], None, script, tmp_path, {}, {},
+            heartbeat_sec=1, no_progress_window_sec=600, sleep=sleep,
+            light_combat_heartbeats=False,
+        )
+    assert commands == heartbeat_commands * 3
+    latest = json.loads((tmp_path / "latest.json").read_text(encoding="utf-8"))
+    assert latest["heartbeat_plan"]["mode"] == "full"
+    assert latest["heartbeat_plan"]["commands"] == heartbeat_commands
+    assert not (tmp_path / heartbeat.TRACE_HISTORY_FILE).exists()
+
+
+def test_no_light_flag_reaches_the_soap_watchdog(tmp_path, monkeypatch):
+    import argparse
+
+    from tools.bot_ml import run_live_bot_validation as live
+
+    respond = _responses([True])
+    commands: list[str] = []
+
+    def execute(_url, _user, _password, command, _timeout):
+        commands.append(command)
+        return respond(command) + "\n", 0, False
+
+    monkeypatch.setattr(live, "execute_soap_command", execute)
+    args = argparse.Namespace(
+        soap_url="http://127.0.0.1:7878/", soap_user="u", soap_password="p",
+        timeout_sec=2, output_dir=tmp_path, duration_policy="completion-watchdog",
+        heartbeat_sec=1, no_progress_window_sec=600, max_repeated_decision_count=20,
+        max_death_loop_count=3, calibration_native_completion=False,
+        light_combat_heartbeats=False, retain_trace_route_node=[],
+    )
+    live.run_soap_completion_watchdog(
+        args, command_script(start=False, exit_server=False, trace_delta=True, trace_limit=128), {}, {}, None
+    )
+    traces = [command for command in commands if command.startswith(".botauto trace")]
+    assert traces and all(command == FULL_TRACE for command in traces)
+
+
+def test_process_no_light_combat_heartbeats_sends_full_traces(tmp_path):
+    log = tmp_path / "commands.log"
+    responses = tmp_path / "responses.json"
+    responses.write_text(json.dumps({"combat": [True], "status": status(), "log": str(log)}), encoding="utf-8")
+    binary = tmp_path / "fake_worldserver.py"
+    binary.write_text(FAKE_WORLDSERVER, encoding="utf-8")
+    binary.chmod(0o755)
+    run_worldserver_completion_watchdog(
+        binary, responses, 3,
+        command_script(start=False, trace_delta=True, trace_limit=128),
+        tmp_path / "run", {}, {}, heartbeat_sec=1, no_progress_window_sec=600,
+        light_combat_heartbeats=False,
+    )
+    commands = log.read_text(encoding="utf-8").splitlines()
+    heartbeat_rows = [command for command in commands if not command.startswith((".botauto combatlog", "server "))]
+    assert heartbeat_rows
+    assert heartbeat_rows == [".botauto status", ".botauto diagnose all", FULL_TRACE, ".botexp summary"] * (len(heartbeat_rows) // 4)

@@ -629,3 +629,28 @@ def test_rejects_evidence_without_reconstructible_terminal(tmp_path: Path) -> No
         assert str(error) == "terminal timestamp cannot be reconstructed"
     else:
         raise AssertionError("missing terminal identity must fail closed")
+
+
+def test_combat_event_without_a_source_position_stays_missing() -> None:
+    from tools.raid_program.tactical_replay_lite import _compact_combat_event, _position_samples
+
+    released_caster_tick = {
+        "timestamp_ms": 5_000, "kind": "damage", "actor_guid": 7, "source_guid": 7,
+        "source_x": None, "source_y": None, "source_z": None,
+        "target_x": 1.0, "target_y": 2.0, "target_z": 3.0,
+        "distance": None, "source_moving": None, "amount": 900,
+    }
+    positioned_hit = dict(
+        released_caster_tick, timestamp_ms=4_000, source_x=10.0, source_y=0.0,
+        source_z=0.0, distance=9.0, source_moving=False,
+    )
+    tick = _compact_combat_event(released_caster_tick)
+    assert tick["source_position"] is None
+    assert tick["distance"] is None
+    assert tick["source_moving"] is None
+    assert tick["target_position"] == {"x": 1.0, "y": 2.0, "z": 3.0}
+    hit = _compact_combat_event(positioned_hit)
+    assert hit["source_position"] == {"x": 10.0, "y": 0.0, "z": 0.0}
+    assert hit["distance"] == 9.0 and hit["source_moving"] is False
+    samples = _position_samples([hit, tick], [])
+    assert [sample["position"] for sample in samples] == [{"x": 10.0, "y": 0.0, "z": 0.0}]

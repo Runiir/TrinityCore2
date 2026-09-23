@@ -38,6 +38,28 @@ def _number(value: Any) -> float:
         return 0.0
 
 
+def _optional_number(value: Any) -> float | None:
+    """Keep a missing observation missing (``None``) instead of zero."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_position(row: dict[str, Any], prefix: str) -> dict[str, float] | None:
+    """Return a position, or ``None`` when any coordinate was not observed.
+
+    Native combat events carry null source coordinates for ticks whose
+    caster has left the map; ``(0, 0, 0)`` would be a false position.
+    """
+    coordinates = {axis: _optional_number(row.get(f"{prefix}_{axis}")) for axis in ("x", "y", "z")}
+    if any(value is None for value in coordinates.values()):
+        return None
+    return coordinates  # type: ignore[return-value]
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -849,18 +871,12 @@ def _compact_combat_event(row: dict[str, Any]) -> dict[str, Any]:
             else row.get("amount")
         ),
         "absorbed_amount": _integer(row.get("absorbed_amount")),
-        "source_position": {
-            "x": _number(row.get("source_x")),
-            "y": _number(row.get("source_y")),
-            "z": _number(row.get("source_z")),
-        },
-        "target_position": {
-            "x": _number(row.get("target_x")),
-            "y": _number(row.get("target_y")),
-            "z": _number(row.get("target_z")),
-        },
-        "distance": _number(row.get("distance")),
-        "source_moving": bool(row.get("source_moving")),
+        "source_position": _optional_position(row, "source"),
+        "target_position": _optional_position(row, "target"),
+        "distance": _optional_number(row.get("distance")),
+        "source_moving": (
+            None if row.get("source_moving") is None else bool(row.get("source_moving"))
+        ),
     }
 
 
@@ -870,6 +886,8 @@ def _position_samples(
     samples: dict[tuple[int, int, str], dict[str, Any]] = {}
     for event in combat:
         if event["source_guid"] != event["actor_guid"] or event["source_is_pet"]:
+            continue
+        if event["source_position"] is None:
             continue
         key = (event["actor_guid"], event["timestamp_ms"] // 1000, "combat_event")
         samples[key] = {

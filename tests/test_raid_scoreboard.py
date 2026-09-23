@@ -63,7 +63,7 @@ def roster_actors(scale=1.0, skip=()):
 
 VALID = {"valid_for_dps": True, "reasons": [], "stalled_sec": 0.0, "stall_fraction": 0.0, "max_stall_sec": 0.0,
          "stall_count": 0, "window_duration_sec": 120.0, "unstalled_duration_sec": 120.0, "thresholds": {}}
-STALLED = VALID | {"valid_for_dps": False, "reasons": ["world_stall_overlaps_boss_window"], "stalled_sec": 18.0,
+STALLED = VALID | {"valid_for_dps": False, "reasons": ["boss_window_stall_fraction_exceeded"], "stalled_sec": 18.0,
                    "stall_fraction": 0.15, "max_stall_sec": 9.5, "stall_count": 2, "unstalled_duration_sec": 102.0}
 RECONCILED = {"reconciled": True, "mismatch_count": 0, "encounter_mismatch_count": 0, "killed_hostile_count": 5,
               "unlogged_health_loss": 0}

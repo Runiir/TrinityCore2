@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 import re
 
 try:
-    from .analyze_combat_log import analyze_combat_log
+    from .analyze_combat_log import analyze_combat_log, unit_deaths_from_report
     from .combat_log_event_stream import (
         CombatLogEventStream,
         combat_log_identity,
@@ -46,7 +46,7 @@ try:
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
     from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_live_validation_standard_marker, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
-    from .live_validation_console import enlarge_pipe_buffer, read_until_console_prompt as linear_read_until_console_prompt
+    from .live_validation_console import pipe_buffer_receipt, read_until_console_prompt as linear_read_until_console_prompt
     from .live_validation_heartbeat import (
         CommandTimingRecorder,
         HeartbeatPlanner,
@@ -56,12 +56,13 @@ try:
         now_ms,
     )
     from .live_validation_stalls import attach_measurement_validity
+    from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
     from .phase8_reference_conditions import load_reference_request_binding
 except ImportError:
-    from analyze_combat_log import analyze_combat_log
+    from analyze_combat_log import analyze_combat_log, unit_deaths_from_report
     from combat_log_event_stream import (
         CombatLogEventStream,
         combat_log_identity,
@@ -83,7 +84,7 @@ except ImportError:
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from generate_bot_admission_identities import source_content_sha256 as admission_identity_source_sha256
     from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_live_validation_standard_marker, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, inspect_session, live_validation_lock, sha256_file, sha256_text
-    from live_validation_console import enlarge_pipe_buffer, read_until_console_prompt as linear_read_until_console_prompt
+    from live_validation_console import pipe_buffer_receipt, read_until_console_prompt as linear_read_until_console_prompt
     from live_validation_heartbeat import (
         CommandTimingRecorder,
         HeartbeatPlanner,
@@ -93,6 +94,7 @@ except ImportError:
         now_ms,
     )
     from live_validation_stalls import attach_measurement_validity
+    from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
     from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
@@ -5992,7 +5994,11 @@ def live_validation_report(
     combat_log_transport = classified["combat_log_transport"]
     combat_calibration_transport = classified["combat_calibration_transport"]
     combat_calibration = enrich_combat_calibration_reference(classified["combat_calibration"])
-    combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
+    combat_analysis = (
+        analyze_combat_log(combat_log, unit_deaths_from_report({"status": status, "trace": trace}))
+        if combat_log
+        else {}
+    )
 
     active_bots = int(status.get("active_bots") or status.get("bots") or status.get("activeBots") or 0)
     target_bots = int(status.get("target_bots") or status.get("targetBots") or 0)
@@ -6554,29 +6560,28 @@ def run_transport_completion_watchdog(
         *,
         record_as: str = "",
         phase: str = "heartbeat",
-        cleanup: bool = False,
+        budget: CleanupBudget | None = None,
     ) -> tuple[int, bool]:
-        if cleanup:
-            # Cleanup owns a bounded floor budget: an expired emergency cap
-            # must not skip the combat-log export or the cohort stop.
-            floor = max(120, int(heartbeat_sec), int(no_progress_window_sec))
-            remaining = (
-                floor
-                if deadline is None
-                else max(floor, int(deadline - time.monotonic()))
-            )
-        else:
-            remaining = (
-                max(30, int(no_progress_window_sec))
-                if deadline is None
-                else max(1, int(deadline - time.monotonic()))
-            )
+        remaining = (
+            max(30, int(no_progress_window_sec))
+            if deadline is None
+            else max(1, int(deadline - time.monotonic()))
+        )
         key = record_as or command_text
         attempts = 2 if command_text.startswith(".botauto combatlog") else 1
         output = ""
         returncode = 0
         timed_out = False
         for attempt in range(1, attempts + 1):
+            if budget is not None:
+                # Cleanup is bounded by its own per-step and total budget,
+                # independent of the (possibly expired) emergency cap.
+                remaining = budget.step_timeout(command_text)
+                if remaining <= 0:
+                    if attempt > 1:
+                        # Keep the incomplete first export for diagnosis.
+                        output_parts.append_cleanup(f"$ {command_text}\n" + output)
+                    break
             sent_at_ms = now_ms()
             output, returncode, timed_out = execute_command(command_text, remaining)
             timings.record(
@@ -6640,10 +6645,13 @@ def run_transport_completion_watchdog(
                 )
         return 0, False
 
-    def drain_retained_trace() -> None:
+    def drain_retained_trace(budget: CleanupBudget) -> None:
         def run(drain_command: str) -> tuple[str, bool]:
+            timeout = budget.step_timeout(drain_command)
+            if timeout <= 0:
+                return "", False
             sent_at_ms = now_ms()
-            output, returncode, timed_out = execute_command(drain_command, max(120, int(heartbeat_sec)))
+            output, returncode, timed_out = execute_command(drain_command, timeout)
             timings.record(
                 phase="trace_retention_drain", heartbeat_index=heartbeat_index,
                 command=drain_command, sent_at_ms=sent_at_ms, completed_at_ms=now_ms(),
@@ -6679,31 +6687,50 @@ def run_transport_completion_watchdog(
             persist_timeout(returncode)
         # Every cleanup step is attempted even after a failed or timed-out
         # step (or an emergency-cap timeout): the combat-log export and the
-        # cohort stop are independent, and each result is recorded.
-        first_failure: tuple[int, bool] | None = None
+        # cohort stop are independent, and each result is recorded.  Cleanup
+        # results never change the watchdog verdict returned below.
+        budget = CleanupBudget(
+            deadline=deadline,
+            stop_pending=any(is_stop_command(value) for value in cleanup_commands),
+        )
+        drained = False
         for command_text in cleanup_commands:
+            if is_stop_command(command_text) and not drained:
+                # Stopping despawns the bots and their trace rings.
+                drain_retained_trace(budget)
+                drained = True
+            if budget.step_timeout(command_text) <= 0:
+                budget.skip(command_text)
+                output_parts.append_cleanup(cleanup_step_receipt(
+                    command_text, returncode=124, timed_out=True, completed=False,
+                    extra={"skipped": "cleanup_budget_exhausted"},
+                ))
+                continue
+            last_output["text"] = ""
             cleanup_returncode, cleanup_timed_out = send(
-                command_text, phase="cleanup", cleanup=True
+                command_text, phase="cleanup", budget=budget
             )
             marker = expected_command_output_marker(command_text)
+            completed = (
+                cleanup_returncode == 0
+                and not cleanup_timed_out
+                and (not marker or marker in last_output["text"])
+            )
+            budget.record(
+                command_text, completed=completed,
+                returncode=cleanup_returncode, timed_out=cleanup_timed_out,
+            )
             output_parts.append_cleanup(cleanup_step_receipt(
                 command_text,
                 returncode=cleanup_returncode,
                 timed_out=cleanup_timed_out,
-                completed=(
-                    cleanup_returncode == 0
-                    and not cleanup_timed_out
-                    and (not marker or marker in last_output["text"])
-                ),
+                completed=completed,
             ))
-            if (cleanup_returncode != 0 or cleanup_timed_out) and first_failure is None:
-                first_failure = (cleanup_returncode, cleanup_timed_out)
-        if not timed_out:
-            drain_retained_trace()
-        if first_failure is not None and not timed_out and returncode == 0:
-            if first_failure[1]:
-                persist_timeout(first_failure[0])
-            return output_parts.render(), first_failure[0], first_failure[1], command
+            if is_stop_command(command_text):
+                budget.stop_pending = False
+        if not drained:
+            drain_retained_trace(budget)
+        output_parts.append_cleanup(budget.summary_receipt(watchdog_timed_out=timed_out))
         return output_parts.render(), returncode, timed_out, command
 
     for command_text in startup_commands:
@@ -6922,7 +6949,10 @@ def run_worldserver_completion_watchdog(
     assert process.stdin is not None
     # The world thread blocks in printf until the harness drains all but one
     # pipe buffer of each response; a 1 MiB buffer absorbs status/diagnosis.
-    enlarge_pipe_buffer(process.stdout)
+    output_parts.append(json.dumps(
+        {"action": "harness_console_pipe", **pipe_buffer_receipt(process.stdout)},
+        sort_keys=True, separators=(",", ":"),
+    ) + "\n")
 
     def joined_output() -> str:
         return output_parts.render()
@@ -6947,6 +6977,8 @@ def run_worldserver_completion_watchdog(
         record_as: str = "",
         phase: str = "",
         record: bool = True,
+        budget: CleanupBudget | None = None,
+        timeout_sec: float | None = None,
     ) -> str:
         """Send one command; ``record_as`` keys a light variant's output."""
         assert process.stdin is not None
@@ -6957,15 +6989,28 @@ def run_worldserver_completion_watchdog(
         )
         command_output = ""
         for attempt in range(1, attempts + 1):
+            if budget is not None:
+                step_timeout = budget.step_timeout(command_text)
+                if step_timeout <= 0:
+                    if attempt > 1 and record:
+                        # Keep the incomplete first export for diagnosis.
+                        record_command_output(
+                            record_as or command_text,
+                            f"$ {command_text}\n" + command_output,
+                            cleanup=cleanup,
+                        )
+                    break
+                command_deadline = time.monotonic() + step_timeout
+            elif timeout_sec is not None:
+                command_deadline = time.monotonic() + timeout_sec
+            elif cleanup:
+                command_deadline = time.monotonic() + max(120, heartbeat_sec)
+            else:
+                command_deadline = bounded_console_deadline(deadline, max(5, heartbeat_sec))
             sent_at_ms = now_ms()
             process.stdin.write(command_text + "\n")
             process.stdin.flush()
             command_output_prefix = f"$ {command_text}\n"
-            command_deadline = (
-                time.monotonic() + max(120, heartbeat_sec)
-                if cleanup
-                else bounded_console_deadline(deadline, max(5, heartbeat_sec))
-            )
             command_output = read_until_console_prompt(
                 process,
                 command_deadline,
@@ -7020,26 +7065,14 @@ def run_worldserver_completion_watchdog(
                     output=command_output,
                 )
 
-    def send_cleanup_commands() -> None:
-        for command_text in cleanup_commands:
-            if process.poll() is not None:
-                output_parts.append_cleanup(cleanup_step_receipt(
-                    command_text, returncode=1, timed_out=False, completed=False,
-                    extra={"skipped": "worldserver_process_exited"},
-                ))
-                continue
-            command_output = send_command(command_text, cleanup=True)
-            marker = expected_command_output_marker(command_text)
-            output_parts.append_cleanup(cleanup_step_receipt(
-                command_text,
-                returncode=0 if process.poll() is None else int(process.returncode or 0),
-                timed_out=False,
-                completed=not marker or marker in command_output,
-            ))
+    def drain_retained_trace(budget: CleanupBudget) -> None:
         receipt = drain_trace_backlog(
             lambda drain_command: (
-                send_command(drain_command, cleanup=True, phase="trace_retention_drain", record=False),
-                process.poll() is None,
+                send_command(
+                    drain_command, cleanup=True, phase="trace_retention_drain",
+                    record=False, budget=budget,
+                ),
+                process.poll() is None and budget.step_timeout(drain_command) > 0,
             ),
             trace_retention,
             heartbeat_commands,
@@ -7047,6 +7080,46 @@ def run_worldserver_completion_watchdog(
         )
         if receipt:
             output_parts.append_cleanup(receipt)
+
+    def send_cleanup_commands(budget: CleanupBudget) -> None:
+        drained = False
+        for command_text in cleanup_commands:
+            if is_stop_command(command_text) and not drained and process.poll() is None:
+                # Stopping despawns the bots and their trace rings.
+                drain_retained_trace(budget)
+                drained = True
+            if process.poll() is not None:
+                budget.record(command_text, completed=False, returncode=1, timed_out=False)
+                output_parts.append_cleanup(cleanup_step_receipt(
+                    command_text, returncode=1, timed_out=False, completed=False,
+                    extra={"skipped": "worldserver_process_exited"},
+                ))
+                continue
+            step_timeout = budget.step_timeout(command_text)
+            if step_timeout <= 0:
+                budget.skip(command_text)
+                output_parts.append_cleanup(cleanup_step_receipt(
+                    command_text, returncode=124, timed_out=True, completed=False,
+                    extra={"skipped": "cleanup_budget_exhausted"},
+                ))
+                continue
+            started = time.monotonic()
+            command_output = send_command(command_text, cleanup=True, budget=budget)
+            marker = expected_command_output_marker(command_text)
+            completed = not marker or marker in command_output
+            step_timed_out = not completed and time.monotonic() - started >= step_timeout - 0.5
+            returncode = 0 if process.poll() is None else int(process.returncode or 0)
+            budget.record(command_text, completed=completed, returncode=returncode, timed_out=step_timed_out)
+            output_parts.append_cleanup(cleanup_step_receipt(
+                command_text,
+                returncode=returncode,
+                timed_out=step_timed_out,
+                completed=completed,
+            ))
+            if is_stop_command(command_text):
+                budget.stop_pending = False
+        if not drained and process.poll() is None:
+            drain_retained_trace(budget)
 
     def persist_timeout(code: int) -> None:
         persist_final_timeout_liveness(
@@ -7259,17 +7332,25 @@ def run_worldserver_completion_watchdog(
                 finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
+        # ``timed_out`` is the watchdog verdict: only the emergency cap sets
+        # it.  Cleanup overruns are recorded in the cleanup summary instead.
         timed_out = time.monotonic() >= deadline
-        send_cleanup_commands()
+        budget = CleanupBudget(
+            deadline=deadline,
+            stop_pending=any(is_stop_command(value) for value in cleanup_commands),
+        )
+        send_cleanup_commands(budget)
+        shutdown_sent = False
         if process.poll() is None and process.stdin and not process.stdin.closed:
             try:
-                send_command("server shutdown force 0", cleanup=True)
+                send_command("server shutdown force 0", cleanup=True, timeout_sec=SHUTDOWN_GRACE_SEC)
+                shutdown_sent = True
             except BrokenPipeError:
                 pass
         if process.stdin and not process.stdin.closed:
             process.stdin.close()
             process.stdin = None
-        shutdown_deadline = min(time.monotonic() + 10, deadline + 10)
+        shutdown_deadline = time.monotonic() + SHUTDOWN_GRACE_SEC
         while process.poll() is None and time.monotonic() < shutdown_deadline:
             remaining = max(0.0, shutdown_deadline - time.monotonic())
             if process.stdout is None:
@@ -7282,12 +7363,28 @@ def run_worldserver_completion_watchdog(
                 )
                 if drained == 0:
                     time.sleep(min(0.05, remaining))
+        shutdown_killed = False
         if process.poll() is None:
             process.kill()
-            timed_out = True
+            shutdown_killed = True
         if process.stdout:
             output_parts.append_cleanup(process.stdout.read())
-        returncode = process.returncode if process.returncode is not None else (124 if timed_out else 0)
+        if shutdown_killed:
+            try:
+                process.wait(timeout=SHUTDOWN_GRACE_SEC)
+            except subprocess.TimeoutExpired:
+                pass
+            # A kill after the watchdog ended on its own is a cleanup
+            # overrun, not a run timeout (as in run_worldserver).
+            returncode = 124 if timed_out else 0
+        else:
+            returncode = process.returncode if process.returncode is not None else (124 if timed_out else 0)
+        output_parts.append_cleanup(budget.summary_receipt(
+            watchdog_timed_out=timed_out,
+            shutdown_sent=shutdown_sent,
+            shutdown_killed=shutdown_killed,
+            worldserver_exit_code=process.returncode,
+        ))
         if timed_out:
             persist_timeout(returncode)
         return joined_output(), returncode, timed_out, command
@@ -9078,7 +9175,7 @@ def _main() -> int:
         if final_payloads.get("combat_log"):
             report["combat_log"] = final_payloads["combat_log"]
             report["combat_analysis"] = analyze_combat_log(
-                final_payloads["combat_log"]
+                final_payloads["combat_log"], unit_deaths_from_report(report)
             )
         if final_payloads.get("combat_calibration"):
             report["combat_calibration"] = enrich_combat_calibration_reference(
@@ -9156,7 +9253,9 @@ def _main() -> int:
         report, session_lifecycle
     )
     if report.get("combat_log"):
-        report["combat_analysis"] = analyze_combat_log(report["combat_log"])
+        report["combat_analysis"] = analyze_combat_log(
+            report["combat_log"], unit_deaths_from_report(report)
+        )
     attach_measurement_validity(
         report,
         args.output_dir,

@@ -177,3 +177,43 @@ def test_large_trace_response_does_not_block_the_writer(tmp_path):
     assert len(output) >= body.stat().st_size
     assert elapsed < 3.0
     assert float(blocked.read_text()) < 3.0
+
+
+def test_multibyte_character_split_across_reads_survives(monkeypatch):
+    payload = '{"action":"botauto_status","target_bots":1,"name":"Brûlure"}\nTC> '
+    raw = payload.encode("utf-8")
+    split = raw.index("û".encode("utf-8")) + 1  # cut inside the two-byte character
+    chunks = [raw[:split], raw[split:]]
+
+    class RawProcess(ScriptedProcess):
+        def __init__(self):
+            super().__init__([])
+            self.chunks = list(chunks)
+
+    process = RawProcess()
+    monkeypatch.setattr(select, "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(os, "read", lambda _fd, _size: process.chunks.pop(0))
+    output = console.read_until_console_prompt(process, time.monotonic() + 1, '"target_bots"')
+    assert output == payload
+    assert "�" not in output
+
+
+def test_pipe_buffer_receipt_reports_size_or_errno(tmp_path):
+    read_fd, write_fd = os.pipe()
+    try:
+        with os.fdopen(read_fd, "rb", closefd=False) as reader:
+            receipt = console.pipe_buffer_receipt(reader)
+        assert receipt["requested_bytes"] == console.CONSOLE_PIPE_BUFFER_BYTES
+        assert receipt["achieved_bytes"] >= 64 * 1024
+        assert receipt["set_errno"] is None or receipt["achieved_bytes"] < receipt["requested_bytes"]
+    finally:
+        os.close(read_fd)
+        os.close(write_fd)
+    regular = tmp_path / "not-a-pipe"
+    regular.write_bytes(b"")
+    with regular.open("rb") as handle:
+        failed = console.pipe_buffer_receipt(handle)
+    assert failed["achieved_bytes"] == 0
+    assert isinstance(failed["set_errno"], int)
+    assert failed["error"].startswith("set_pipe_size_failed")
+    assert console.pipe_buffer_receipt(object())["error"].startswith("no_file_descriptor")

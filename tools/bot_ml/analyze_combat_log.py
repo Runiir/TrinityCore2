@@ -51,11 +51,44 @@ def _combat_log_schema_version(combat_log: dict[str, Any]) -> int:
     return max(1, value)
 
 
-def _weighted_average(rows: list[dict[str, Any]], field: str) -> float:
-    weight = sum(int(row.get("event_count") or 0) for row in rows)
-    if not weight:
-        return 0.0
-    return sum(_number(row.get(field)) * int(row.get("event_count") or 0) for row in rows) / weight
+def _distance_samples(row: dict[str, Any]) -> int:
+    """Events with an observed source position.
+
+    Native aggregates count them in ``distance_samples``; ticks from a caster
+    who left the map have no position.  Older logs lack the field, and every
+    event there had a position.
+    """
+    value = row.get("distance_samples") if "distance_samples" in row else row.get("event_count")
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _sampled_total(rows: list[dict[str, Any]]) -> int:
+    return sum(_distance_samples(row) for row in rows)
+
+
+def _weighted_average(rows: list[dict[str, Any]], field: str) -> float | None:
+    """Average a distance/movement field over rows with position samples.
+
+    Zero-sample rows and null values are missing data, not zero distance.
+    Returns ``None`` when no row carries a sample.
+    """
+    total = 0.0
+    weight = 0
+    for row in rows:
+        samples = _distance_samples(row)
+        value = row.get(field)
+        if samples <= 0 or value is None:
+            continue
+        total += _number(value) * samples
+        weight += samples
+    return total / weight if weight else None
+
+
+def _rounded(value: float | None, digits: int) -> float | None:
+    return None if value is None else round(value, digits)
 
 
 def _ability_rows(
@@ -93,6 +126,8 @@ def _ability_rows(
                 "events": 0,
                 "moving_events": 0,
                 "distance_weighted": 0.0,
+                "distance_samples": 0,
+                "moving_samples": 0,
             },
         )
         if include_target:
@@ -105,14 +140,21 @@ def _ability_rows(
         target["raw_event_damage"] += raw_damage
         target["originated_damage"] += originated_damage
         target["events"] += events
-        target["moving_events"] += int(row.get("moving_events") or 0)
-        target["distance_weighted"] += _number(row.get("distance_avg")) * events
+        samples = _distance_samples(row)
+        if samples > 0:
+            target["moving_events"] += int(row.get("moving_events") or 0)
+            target["moving_samples"] += samples
+            if row.get("distance_avg") is not None:
+                target["distance_weighted"] += _number(row.get("distance_avg")) * samples
+                target["distance_samples"] += samples
 
     abilities: list[dict[str, Any]] = []
     for row in grouped.values():
         events = max(1, int(row.pop("events")))
         moving_events = int(row.pop("moving_events"))
         distance_weighted = float(row.pop("distance_weighted"))
+        distance_samples = int(row.pop("distance_samples"))
+        moving_samples = int(row.pop("moving_samples"))
         row["events"] = events
         row["damage_share"] = round(int(row["damage"]) / max(1, total_damage), 6)
         row["raw_event_damage_share"] = round(
@@ -121,8 +163,9 @@ def _ability_rows(
         row["originated_damage_share"] = round(
             int(row["originated_damage"]) / max(1, total_damage), 6
         )
-        row["moving_fraction"] = round(moving_events / events, 6)
-        row["distance_avg"] = round(distance_weighted / events, 3)
+        row["moving_fraction"] = round(moving_events / moving_samples, 6) if moving_samples else None
+        row["distance_avg"] = round(distance_weighted / distance_samples, 3) if distance_samples else None
+        row["distance_samples"] = distance_samples
         abilities.append(row)
     return sorted(abilities, key=lambda row: (-int(row["damage"]), int(row["spell_id"])))
 
@@ -198,6 +241,15 @@ def _compact_candidate_rejections(rows: list[dict[str, Any]]) -> list[dict[str, 
 
 
 KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT = 1.0
+# Hostiles whose health is shared with (or reset by) another unit cannot be
+# reconciled against their own max HP.  Keyed by creature entry.
+RECONCILIATION_EXEMPT_ENTRIES: dict[int, str] = {
+    41570: "magmaw_shares_health_with_exposed_head",
+    42347: "exposed_head_of_magmaw_shared_health",
+    48270: "exposed_head_of_magmaw_shared_health",
+}
+UNIT_DEATH_EVENT_KINDS = frozenset({"death", "unit_death", "unit_died", "killed"})
+CREATURE_GUID_LOW_MASK = 0xFFFFFFFF
 
 
 def _landed_health(row: dict[str, Any], field: str) -> int:
@@ -210,21 +262,89 @@ def _landed_health(row: dict[str, Any], field: str) -> int:
         return 0
 
 
-def killed_hostile_damage_reconciliation(combat_log: dict[str, Any]) -> dict[str, Any]:
-    """Compare logged damage taken by every killed hostile with its max HP.
+def _death_keys(rows: Any) -> tuple[set[tuple[int, int]], set[int]]:
+    """Return confirmed deaths as ``(guid_low, entry)`` pairs and bare entries.
+
+    Accepts combat-log death events (``target_guid``/``target_entry``) and
+    native death evidence (``target_id`` full GUID plus ``target_entry``).
+    """
+    exact: set[tuple[int, int]] = set()
+    entries: set[int] = set()
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        try:
+            entry = int(row.get("target_entry") or row.get("entry") or 0)
+            guid = int(row.get("target_guid") or row.get("target_id") or row.get("guid") or 0)
+        except (TypeError, ValueError):
+            continue
+        if guid:
+            exact.add((guid & CREATURE_GUID_LOW_MASK, entry))
+        elif entry:
+            entries.add(entry)
+    return exact, entries
+
+
+NATIVE_KILL_TRACE_ACTIONS = frozenset({"mob_killed", "boss_killed", "raid_boss_killed"})
+
+
+def unit_deaths_from_report(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Collect confirmed unit deaths from native live-validation evidence.
+
+    Sources: ``status.validation_route.boss_death_evidence`` (full GUID in
+    ``target_id``) and kill rows in the retained trace (low GUID in
+    ``target_id``, entry in ``event_target``).
+    """
+    deaths: list[dict[str, Any]] = []
+    status = report.get("status") if isinstance(report.get("status"), dict) else {}
+    route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    for row in route.get("boss_death_evidence") or []:
+        if isinstance(row, dict) and row.get("target_id") and row.get("target_entry"):
+            deaths.append({"target_guid": row.get("target_id"), "target_entry": row.get("target_entry"), "source": "boss_death_evidence"})
+    trace = report.get("trace") if isinstance(report.get("trace"), dict) else {}
+    entries = list(trace.get("entries") or [])
+    for bot in trace.get("bots") or []:
+        if isinstance(bot, dict):
+            entries.extend(bot.get("entries") or [])
+    for entry in entries:
+        if not isinstance(entry, dict) or str(entry.get("action") or "") not in NATIVE_KILL_TRACE_ACTIONS:
+            continue
+        target = entry.get("event_target") if isinstance(entry.get("event_target"), dict) else {}
+        guid = entry.get("target_id") or target.get("guid")
+        entry_id = target.get("entry") or entry.get("target_entry")
+        if guid and entry_id:
+            deaths.append({"target_guid": guid, "target_entry": entry_id, "source": "trace_" + str(entry.get("action"))})
+    return deaths
+
+
+def killed_hostile_damage_reconciliation(
+    combat_log: dict[str, Any],
+    unit_deaths: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Compare logged damage taken by every dead hostile with its max HP.
 
     ``amount`` is the landed, overkill-free damage, so a hostile that died with
     every damage event logged reconciles to its maximum health.  A shortfall
     means damage that reached the hostile was not logged (for example periodic
-    ticks from a bot that already died); an excess means the hostile regained
-    health.  ``unlogged_health_loss`` sums health drops between consecutive
-    logged events that no logged event explains.
+    ticks from a bot that already died); an excess means it regained health.
+    ``unlogged_health_loss`` sums health drops between consecutive logged
+    events that no logged event explains; any such loss is flagged.
+
+    A hostile is dead when a logged hit killed it or a death is confirmed by a
+    combat-log death event or ``unit_deaths`` (native boss/trace evidence).
+    A hostile whose killing blow was not logged is never skipped: with a
+    confirmed death it is reconciled (``killing_blow_unlogged``); without one
+    it is listed under ``unconfirmed_deaths`` (it may also have survived or
+    despawned).  Shared-health or resetting targets in
+    ``RECONCILIATION_EXEMPT_ENTRIES`` are reported but never flagged.
     """
-    events = [
-        row for row in combat_log.get("recent_events") or []
-        if isinstance(row, dict) and str(row.get("kind") or "") == "damage"
-    ]
+    all_events = [row for row in combat_log.get("recent_events") or [] if isinstance(row, dict)]
+    events = [row for row in all_events if str(row.get("kind") or "") == "damage"]
     events.sort(key=lambda row: (int(row.get("timestamp_ms") or 0), int(row.get("event_sequence") or 0)))
+    death_exact, death_entries = _death_keys(
+        [row for row in all_events if str(row.get("kind") or "") in UNIT_DEATH_EVENT_KINDS]
+        + list(unit_deaths or [])
+    )
     friendly: set[tuple[int, int]] = set()
     bot_guids: set[int] = set()
     for row in events:
@@ -248,6 +368,7 @@ def killed_hostile_damage_reconciliation(combat_log: dict[str, Any]) -> dict[str
             by_target[key].append(row)
 
     hostiles: list[dict[str, Any]] = []
+    unconfirmed: list[dict[str, Any]] = []
     for key, rows in by_target.items():
         killing = next(
             (
@@ -256,8 +377,9 @@ def killed_hostile_damage_reconciliation(combat_log: dict[str, Any]) -> dict[str
             ),
             None,
         )
-        if killing is None:
-            continue
+        death_confirmed = (
+            (key[0] & CREATURE_GUID_LOW_MASK, key[1]) in death_exact or key[1] in death_entries
+        )
         max_health = max(_landed_health(row, "target_max_health") for row in rows)
         if max_health <= 0:
             continue
@@ -271,48 +393,90 @@ def killed_hostile_damage_reconciliation(combat_log: dict[str, Any]) -> dict[str
                 unlogged_loss += expected - observed
             elif observed > expected:
                 health_gain += observed - expected
-        first_health = _landed_health(rows[0], "target_health_before_damage")
-        delta = recorded - max_health
-        mismatch_pct = abs(delta) * 100.0 / max_health
-        hostiles.append({
+        last = rows[-1]
+        health_after_last = max(
+            0, _landed_health(last, "target_health_before_damage") - int(last.get("amount") or 0)
+        )
+        exempt = RECONCILIATION_EXEMPT_ENTRIES.get(key[1], "")
+        row_out: dict[str, Any] = {
             "target_guid": key[0],
             "target_entry": key[1],
             "target_name": str(rows[0].get("target_name") or ""),
-            "route_node_id": str(killing.get("route_node_id") or ""),
-            "route_generation": int(killing.get("route_generation") or 0),
+            "route_node_id": str((killing or last).get("route_node_id") or ""),
+            "route_generation": int((killing or last).get("route_generation") or 0),
             "max_health": max_health,
             "recorded_damage_taken": recorded,
-            "delta": delta,
-            "mismatch_pct": round(mismatch_pct, 4),
-            "flagged": mismatch_pct > KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT,
-            "damage_before_first_logged_event": max(0, max_health - first_health),
+            "damage_before_first_logged_event": max(
+                0, max_health - _landed_health(rows[0], "target_health_before_damage")
+            ),
             "unlogged_health_loss": unlogged_loss,
             "health_gain_between_events": health_gain,
+            "health_after_last_logged_event": health_after_last,
+            "shared_damage_events": sum(1 for row in rows if row.get("shared_damage")),
             "damage_events": len(rows),
             "first_at_ms": int(rows[0].get("timestamp_ms") or 0),
-            "killed_at_ms": int(killing.get("timestamp_ms") or 0),
-            "killing_blow_source": str(killing.get("source_name") or ""),
+            "last_logged_at_ms": int(last.get("timestamp_ms") or 0),
+            "killing_blow_unlogged": killing is None,
+            "death_confirmed_by": (
+                "logged_killing_blow" if killing is not None
+                else "unit_death_evidence" if death_confirmed
+                else None
+            ),
+            "exempt": exempt or None,
+        }
+        if killing is None and not death_confirmed:
+            row_out["flagged"] = False
+            unconfirmed.append(row_out)
+            continue
+        delta = recorded - max_health
+        mismatch_pct = abs(delta) * 100.0 / max_health
+        flag_reasons: list[str] = []
+        if mismatch_pct > KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT:
+            flag_reasons.append("recorded_damage_mismatch")
+        if unlogged_loss > 0:
+            flag_reasons.append("unlogged_health_loss")
+        row_out.update({
+            "delta": delta,
+            "mismatch_pct": round(mismatch_pct, 4),
+            "killed_at_ms": int((killing or last).get("timestamp_ms") or 0),
+            "killing_blow_source": str(killing.get("source_name") or "") if killing else "",
+            "flag_reasons": [] if exempt else flag_reasons,
+            "flagged": bool(flag_reasons) and not exempt,
         })
+        hostiles.append(row_out)
     hostiles.sort(key=lambda row: (row["killed_at_ms"], row["target_guid"]))
+    unconfirmed.sort(key=lambda row: (row["last_logged_at_ms"], row["target_guid"]))
     dropped = int(combat_log.get("recent_events_dropped") or 0)
     mismatches = [row for row in hostiles if row["flagged"]]
     return {
-        "schema": "bot_killed_hostile_damage_reconciliation_v1",
+        "schema": "bot_killed_hostile_damage_reconciliation_v2",
         "tolerance_pct": KILLED_HOSTILE_RECONCILIATION_TOLERANCE_PCT,
         "basis": "sum_landed_overkill_free_damage_vs_max_health",
+        "flag_rule": "mismatch_pct_above_tolerance_or_unlogged_health_loss_above_zero",
+        "exempt_entries": {str(entry): reason for entry, reason in sorted(RECONCILIATION_EXEMPT_ENTRIES.items())},
         "source": "combat_log_recent_events",
         "event_window_complete": dropped == 0,
         "recent_events_dropped": dropped,
         "killed_hostile_count": len(hostiles),
+        "killing_blow_unlogged_count": sum(1 for row in hostiles if row["killing_blow_unlogged"]),
         "mismatch_count": len(mismatches),
+        "unconfirmed_death_count": len(unconfirmed),
         "reconciled": dropped == 0 and not mismatches,
         "mismatches": mismatches,
         "hostiles": hostiles,
+        "unconfirmed_deaths": unconfirmed,
     }
 
 
-def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
-    """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics."""
+def analyze_combat_log(
+    combat_log: dict[str, Any],
+    unit_deaths: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Return encounter, DPS/HPS, rotation, pet, and positioning diagnostics.
+
+    ``unit_deaths`` (optional) confirms deaths whose killing blow was not
+    logged; see ``killed_hostile_damage_reconciliation``.
+    """
     schema_version = _combat_log_schema_version(combat_log)
     friendly_split_available = (
         schema_version >= 3
@@ -491,8 +655,9 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                 "pet_active_seconds": pet_active_seconds,
                 "pet_active_dps": round(pet_damage / max(1, pet_active_seconds), 3),
                 "pet_uptime": round(pet_active_seconds / combat_seconds, 6),
-                "distance_avg": round(_weighted_average(player_done, "distance_avg"), 3),
-                "moving_fraction": round(_weighted_average(player_done, "moving_fraction"), 6),
+                "distance_avg": _rounded(_weighted_average(player_done, "distance_avg"), 3),
+                "moving_fraction": _rounded(_weighted_average(player_done, "moving_fraction"), 6),
+                "distance_samples": _sampled_total(player_done),
                 "abilities": ability_summary,
                 "friendly_abilities": friendly_ability_summary,
                 "damage_taken_sources": _ability_rows(taken, total_taken)[:10],
@@ -533,8 +698,15 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                     "actor_name": actor_name,
                     "damage_uptime": round(active_seconds / combat_seconds, 6),
                 })
-            non_pet_event_count = sum(int(row.get("event_count") or 0) for row in done if not row.get("source_is_pet"))
-            if actor_class_id in RANGED_CLASS_IDS and non_pet_event_count >= 10 and _weighted_average(player_done, "distance_avg") < 8.0:
+            # Only positioned events can show a ranged actor standing too close.
+            sampled_player_events = _sampled_total(player_done)
+            player_distance = _weighted_average(player_done, "distance_avg")
+            if (
+                actor_class_id in RANGED_CLASS_IDS
+                and sampled_player_events >= 10
+                and player_distance is not None
+                and player_distance < 8.0
+            ):
                 diagnostics.append({
                     "severity": "warning",
                     "kind": "ranged_damage_too_close",
@@ -542,7 +714,8 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                     "route_node_id": node_id,
                     "actor_guid": actor_guid,
                     "actor_name": actor_name,
-                    "distance_avg": round(_weighted_average(player_done, "distance_avg"), 3),
+                    "distance_avg": round(player_distance, 3),
+                    "distance_samples": sampled_player_events,
                 })
 
             avoidable_damage = sum(
@@ -633,7 +806,9 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         "all_events_preserved_in_aggregates": True,
         "encounters": encounters,
         "diagnostics": diagnostics,
-        "killed_hostile_damage_reconciliation": killed_hostile_damage_reconciliation(combat_log),
+        "killed_hostile_damage_reconciliation": killed_hostile_damage_reconciliation(
+            combat_log, unit_deaths
+        ),
     }
 
 
