@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 465,
+    "revision": 466,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "build",
     "actor_ids": [
@@ -8776,6 +8776,21 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 465,
+        "unit_id": "magmaw:tuning_01",
+        "from": "build",
+        "to": "build",
+        "event": {
+          "action": "claim",
+          "revision": 465,
+          "unit_id": "magmaw:tuning_01",
+          "owner": "coordinator-bca90d3b"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -8982,7 +8997,14 @@
       "sql/custom/staged/world/2026_09_23_20_balance_moving_moonfire.sql": "deleted"
     },
     "tested_commit": "7131d6bdf8f1af228a98b9bdaf0ab320bd4aed4f",
-    "implementer": "coordinator-bca90d3b"
+    "implementer": "coordinator-bca90d3b",
+    "claim": {
+      "owner": "coordinator-bca90d3b",
+      "token": "9182421ac94d479c24e53c9fc29ef7d29c4a840ed9b5503f727a026eae0ed277",
+      "operation_id": "9182421ac94d479c24e53c9fc29ef7d29c4a840ed9b5503f727a026eae0ed277",
+      "stage": "build",
+      "claimed_at": "2026-09-23T20:18:14Z"
+    }
   },
   "parked_scenarios": {
     "blackwing_descent:magmaw:25H": {
