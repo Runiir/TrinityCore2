@@ -47,7 +47,7 @@ Each threshold has one meaning:
 | --- | --- | --- |
 | 95% of WCL | The finish line above | `scoreboard verdict`, per non-healer actor |
 | 75% of the hard reference | Per-class dummy qualification floor: one best DPS spec per class must reach it (Phase 8); for Death Knight prefer and keep optimizing Unholy | Isolated dummy calibration only |
-| 2 × standard error | Noise rule (step f) | Every keep/revert decision |
+| Two-sided 95% Welch t | Noise rule (step f) | Every keep/revert decision |
 | 300 s | Exact scoring window of isolated training-dummy calibration | Never a raid or dungeon timer |
 | 10 | Failures of one edge before the graph demands a changed hypothesis | Graph routing |
 | 95% of self-provided WoWSims (`dps_gate`) | Legacy gate, checked only when a graph assessment cites no scoreboard verdict; not the finish line or a tuning target | Legacy graph assessment |
@@ -69,7 +69,9 @@ never switch to a boss-only slice.
 **b. Baseline batch.** `scoreboard run --scenario S --label base-<short-sha> --kills 3`
 on the unchanged build, then `scoreboard show --scenario S --label base-<short-sha>`.
 Reuse an existing label when the binary, database profiles and configuration are
-unchanged. `--worldserver PATH` measures a pinned binary. Add an already
+unchanged; `run` refuses to add kills to a label that already has some, and it
+runs a pinned copy of the binary (`/tmp/worldserver-<sha12>`, delete it once the
+label is settled). `--worldserver PATH` measures another binary. Add an already
 completed run with `scoreboard ingest --scenario S --label L --run-dir DIR`
 (or `--summary FILE`).
 
@@ -94,9 +96,11 @@ between the two labels.
 
 **f. Keep or revert.** Run
 `scoreboard show --scenario S --label <change-label> --vs <baseline-label> --actor <target-actor-id>`.
-With at least 3 native-clear kills per label, a metric **improved** if
-Δmean > 2·sqrt(sd1²/n1 + sd2²/n2), **regressed** if Δmean is below the negative
-of that value, and is otherwise **within noise**. Keep the change only if party
+With at least 3 counted native-clear kills per label, `show` runs a two-sided
+95% Welch t-test per metric: **improved** or **regressed** when |t| exceeds the
+critical value it prints, otherwise **within noise**. With 3 kills only large
+effects (roughly 7% of party DPS) are detectable; use `--kills 5` for smaller
+expected gains. Keep the change only if party
 DPS or the target actor improved, no non-healer actor regressed, route deaths
 per kill did not increase, and every kill of the new label is a native clear.
 Otherwise revert it: revert the commit, and for SQL profile rows apply the
@@ -106,9 +110,14 @@ change's label becomes the new baseline.
 **g. Record and clean up.** The scoreboard appends each kill to
 `artifacts/cata_raid_program/scoreboard/<scenario>.jsonl` and publishes, verifies
 and evicts run evidence through DVC. Confirm it reported success and that
-`dvc status` shows nothing left to push. Add one line (label, Δ, kept or
+`dvc status` shows nothing left to push; if archiving failed, run
+`scoreboard archive-pending --scenario S`. A kill lost to infrastructure (no
+report, never reached the boss) is excluded automatically; any other exclusion
+needs `scoreboard void --scenario S --kill-id K --reason TEXT`, which is audited. Add one line (label, Δ, kept or
 reverted) to each ledger entry you touched. Record the graph steps with the
-commands `raid_workloop` returns; at `assess`, cite the verdict written by
+commands `raid_workloop` returns: write the validate receipt with
+`pixi run python -m tools.raid_program.graph_acceptance receipt --label <label> --cleanup-verified`,
+and at `assess` cite the verdict written by
 `pixi run python -m tools.raid_program.graph_acceptance verdict --label <label>`,
 because actor and encounter requirements close only on a passing scoreboard
 verdict. Run `scoreboard verdict`, then continue with the next gap of this
