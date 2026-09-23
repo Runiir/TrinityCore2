@@ -34,6 +34,9 @@ ACTIONS = {
     'complete': 'All recorded requirements accepted; report the evidence and stop.',
 }
 REWORKABLE = ('diagnose', 'implement', 'review', 'build', 'smoke', 'validate')
+STATUSES = ('open', 'accepted', 'deferred')
+# Requirement parking happens between units, never with work in flight.
+PARKING_STAGES = ('diagnose', 'route')
 # Per-unit keys cleared when a unit is routed or reworked.
 UNIT_KEYS = ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'reused_build', 'build_reason', 'smoke')
 
@@ -74,7 +77,7 @@ def check_graph(g: dict) -> None:
     requirements = g.get('requirements')
     if not isinstance(requirements, dict) or not requirements:
         raise GraphError('requirements missing')
-    if any(v.get('status') not in ('open', 'accepted') for v in requirements.values()):
+    if any(v.get('status') not in STATUSES for v in requirements.values()):
         raise GraphError('invalid requirement status')
     if not g.get('objective') or not isinstance(g.get('history'), list):
         raise GraphError('objective/history missing')
@@ -84,6 +87,8 @@ def check_graph(g: dict) -> None:
     required(unit, 'id', 'edge', 'requirements', 'next_action')
     if not set(unit['requirements']) <= set(requirements):
         raise GraphError('unit references unknown requirements')
+    if any(requirements[k]['status'] == 'deferred' for k in unit['requirements']):
+        raise GraphError('unit cannot select deferred requirements')
     for value in (unit.get('risk_tier'), (g.get('assignment') or {}).get('risk_tier')):
         if value is not None and value not in tiers.TIERS:
             raise GraphError('risk_tier must be one of ' + ', '.join(tiers.TIERS))
@@ -123,6 +128,8 @@ def check_graph(g: dict) -> None:
             or (action == 'advance' and previous in RECEIPTS and target in tiers.successors(previous, row.get('risk_tier', tiers.DEFAULT_TIER)))
             or (action == 'route' and previous == 'route' and target == 'diagnose')
             or (action == 'rework' and previous in REWORKABLE and target in ('diagnose','route'))
+            or (action == 'supersede' and previous in REWORKABLE and target == 'route')
+            or (action in ('defer', 'reopen') and previous == target and previous in PARKING_STAGES)
             or (action == 'complete' and previous == 'route' and target == 'complete')
         )
         if not legal:
@@ -152,6 +159,14 @@ def check_graph(g: dict) -> None:
             if verdict is not None and (verdict.get('status') != 'pass'
                                         or (requirement.get('actor_id') and verdict.get('encounter_status') != 'pass')):
                 raise GraphError('accepted requirement verdict is not pass')
+        if requirement['status'] == 'deferred':
+            parked = requirement.get('deferred') or {}
+            revision = parked.get('revision')
+            if (not str(parked.get('reason') or '').strip() or not str(parked.get('belongs_to') or '').strip()
+                    or type(revision) is not int or not 0 <= revision < len(history)
+                    or history[revision]['event'].get('action') != 'defer'
+                    or key not in (history[revision]['event'].get('requirements') or {})):
+                raise GraphError('deferred requirement lacks its recorded defer transition')
     fields = {
         'implement': ('assignment',), 'review': ('assignment', 'tested_files', 'implementer'),
         'build': ('assignment', 'tested_files', 'implementer'),
@@ -167,7 +182,7 @@ def check_graph(g: dict) -> None:
             raise GraphError('pending acceptance does not match assessment history')
         if not set(g.get('pending_verdict', {})) <= set(pending):
             raise GraphError('pending verdict does not match pending acceptance')
-    if g['stage'] == 'complete' and any(r['status'] != 'accepted' for r in requirements.values()):
+    if g['stage'] == 'complete' and any(r['status'] == 'open' for r in requirements.values()):
         raise GraphError('complete graph still has open requirements')
 
 
@@ -192,7 +207,11 @@ def check_state(root: Path, state: dict) -> None:
 
 def resume(root: Path) -> dict:
     data = (root / STATE_PATH).read_bytes()
-    state = json.loads(data)
+    return project(root, json.loads(data), data)
+
+
+def project(root: Path, state: dict, data: bytes) -> dict:
+    """Read-only resume projection of one validated state (data: its exact bytes)."""
     g = state['development_graph']
     check_state(root, state)
     unit = g['unit']
@@ -222,16 +241,16 @@ def resume(root: Path) -> dict:
         'finish_line': finish,
         'reusable_build': next((h['event']['receipt'] for h in reversed(g['history'])
                                 if h['from'] == 'build' and h['event']['action'] == 'advance'), None),
-        'open_requirements': {k: v for k, v in g['requirements'].items() if v['status'] != 'accepted'},
+        'open_requirements': {k: v for k, v in g['requirements'].items() if v['status'] == 'open'},
+        # Parked outside this scenario's critical path; they never block completion.
+        'deferred_requirements': {k: v for k, v in g['requirements'].items() if v['status'] == 'deferred'},
         'completed_measurements': g.get('completed_measurements', []),
         'receipts': g.get('receipts', {}), 'outcomes': g.get('outcomes', {}),
         'test_plan': {key: g.get('assignment', {}).get(key, [])
                       for key in ('owned_files', 'required_test_commands', 'acceptance_conditions')},
-        'latest_assessment': next((h['event']['receipt'] for h in reversed(g['history'])
-                                   if h['from'] == 'assess' and h['event']['action'] == 'advance'), None),
+        'latest_assessment': latest_assessment(g),
+        'superseded': latest_supersede(g),
         'same_edge_failures': g.get('failures', {}).get(unit['edge'], 0),
-        'dps_acceptance': {'minimum_reference_ratio': 0.95, 'scoring_seconds': 300,
-                           'reference': 'current_promoted_self_provided', 'dtr_extra_allowance': False},
         'failure_counts_by_edge': g.get('failures', {}),
         'recent_attempts': recent_attempts(g),
         'retry_limit': 10,
@@ -244,7 +263,28 @@ def resume(root: Path) -> dict:
                       'An assessment, publication, route or specialist handoff does not finish the parent objective. '
                       'Respect explicit user limits or interruption; otherwise stop only for a demonstrated external blocker. ')
                      + ' This command is read-only. Reconcile queued_build and active controller receipts; never duplicate launches.',
-    }
+    } | ({} if finish['target_present'] else {
+        # Legacy dummy gate; the scoreboard verdict is the only finish line once a raid target exists.
+        'dps_acceptance': {'minimum_reference_ratio': 0.95, 'scoring_seconds': 300,
+                           'reference': 'current_promoted_self_provided', 'dtr_extra_allowance': False}})
+
+
+def latest_supersede(g: dict) -> dict | None:
+    row = next((h for h in reversed(g['history']) if h['event']['action'] == 'supersede'), None)
+    if row is None:
+        return None
+    return {'revision': row['revision'], 'unit_id': row['unit_id'], 'reason': row['event']['reason'],
+            **row['event']['superseded_by']}
+
+
+def latest_assessment(g: dict) -> dict | None:
+    """Newest assessment receipt, unless a later supersede replaced that evidence."""
+    for row in reversed(g['history']):
+        if row['event']['action'] == 'supersede':
+            return None
+        if row['from'] == 'assess' and row['event']['action'] == 'advance':
+            return row['event']['receipt']
+    return None
 
 
 def recent_attempts(g: dict) -> list[dict]:
@@ -252,7 +292,7 @@ def recent_attempts(g: dict) -> list[dict]:
     attempts = []
     for row in g['history']:
         event = row['event']
-        if event['action'] == 'rework' or (row['from'] == 'assess' and event['action'] == 'advance'):
+        if event['action'] in ('rework', 'supersede') or (row['from'] == 'assess' and event['action'] == 'advance'):
             attempts.append({'unit_id': row['unit_id'], 'revision': row['revision'],
                              'stage': row['from'], 'action': event['action'],
                              'reason': event.get('reason'), 'receipt': event.get('receipt'),
@@ -426,6 +466,28 @@ def reusable_build(root: Path, g: dict) -> tuple[dict | None, str]:
     if native:
         return None, 'native source changed since the reused build: ' + ', '.join(native[:5])
     return identity, ''
+
+
+def superseded_evidence(root: Path, g: dict, evidence) -> None:
+    """Commits in this history and/or a scoreboard label with kills; optional file references."""
+    if not isinstance(evidence, dict):
+        raise GraphError('superseded_by must be an object')
+    commits, label = evidence.get('commits', []), evidence.get('scoreboard_label')
+    if not isinstance(commits, list) or not (commits or label):
+        raise GraphError('superseded_by needs commits and/or scoreboard_label')
+    for commit in commits:
+        resolved = subprocess.run(['git', 'rev-parse', '--verify', '--quiet', str(commit) + '^{commit}'],
+                                  cwd=root, capture_output=True, text=True).stdout.strip()
+        if not isinstance(commit, str) or resolved != commit:
+            raise GraphError('superseded_by commits must be full commit hashes')
+        if subprocess.run(['git', 'merge-base', '--is-ancestor', commit, 'HEAD'], cwd=root, capture_output=True).returncode:
+            raise GraphError('superseded_by commit is not in the current history: ' + commit)
+    if label is not None:
+        from tools.raid_program.graph_acceptance import evaluate, target_pointer
+        if not isinstance(label, str) or not evaluate(root, target_pointer(g)['scenario'], label).get('kills'):
+            raise GraphError('superseded_by scoreboard_label has no recorded kills')
+    for ref in evidence.get('evidence', []):
+        file_ref(root, ref)
 
 
 def native_changes(root: Path, old: str, new: str) -> list[str]:
@@ -751,8 +813,48 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         g['stage'] = 'route' if g['failures'][edge] >= 10 else 'diagnose'
         for key in (*UNIT_KEYS, 'receipts'):
             g.pop(key, None)
+    elif action == 'supersede' and stage in REWORKABLE:
+        # Work already done outside the graph closes the unit without counting a failure.
+        required(event, 'reason', 'superseded_by')
+        superseded_evidence(root, g, event['superseded_by'])
+        if claim and stage in ('implement', 'build', 'smoke', 'validate'):
+            reconciliation = read(file_ref(root, event.get('receipt')))
+            from tools.raid_program.completed_operation import reject_completed_rework
+            reject_completed_rework(root, g, reconciliation)
+            if reconciliation.get('ownership_checked') is not True or reconciliation.get('active_operation') is not False or reconciliation.get('operation_id') != claim['operation_id']:
+                raise GraphError('reconcile controller/worker/build before superseding a claimed operation')
+        g['stage'] = 'route'
+        for key in (*UNIT_KEYS, 'receipts'):
+            g.pop(key, None)
+    elif action in ('defer', 'reopen') and stage in PARKING_STAGES:
+        if claim:
+            raise GraphError('reconcile the claimed operation before parking requirements')
+        changes = event.get('requirements')
+        if not isinstance(changes, dict) or not changes:
+            raise GraphError('requirements map {key: {reason, belongs_to}} required')
+        for key, detail in changes.items():
+            requirement = g['requirements'].get(key)
+            if requirement is None:
+                raise GraphError('unknown requirement: ' + str(key))
+            if not isinstance(detail, dict) or not str(detail.get('reason') or '').strip():
+                raise GraphError(key + ': reason required')
+            if action == 'defer':
+                if requirement['status'] != 'open':
+                    raise GraphError(key + ': only open requirements can be deferred')
+                if key in g['unit']['requirements']:
+                    raise GraphError(key + ': route the current unit away from it before deferring')
+                if not str(detail.get('belongs_to') or '').strip():
+                    raise GraphError(key + ': belongs_to (where this work lives now) required')
+                requirement.update(status='deferred', deferred={'reason': detail['reason'], 'belongs_to': detail['belongs_to'],
+                                                                'revision': g['revision']})
+            else:
+                if requirement['status'] != 'deferred':
+                    raise GraphError(key + ': only deferred requirements can be reopened')
+                requirement['status'] = 'open'
+                requirement['reopened'] = {'reason': detail['reason'], 'revision': g['revision'],
+                                           'was_deferred': requirement.pop('deferred')}
     elif action == 'complete' and stage == 'route':
-        if any(r['status'] != 'accepted' for r in g['requirements'].values()):
+        if any(r['status'] == 'open' for r in g['requirements'].values()):
             raise GraphError('open requirements prevent completion')
         g['stage'] = 'complete'
     else:

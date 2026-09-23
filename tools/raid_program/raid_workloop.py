@@ -632,8 +632,10 @@ def active_work_unit_status(root: Path = ROOT) -> dict[str, Any]:
         progress = resume(root)
         # Persisted workflow evidence, not the age of a prose handoff, owns
         # the next step. Legacy descriptors retain their strict old checks.
+        # Only the graph speaks for a graph-backed state; legacy top-level
+        # descriptor fields are stale history and are not re-emitted.
         return {
-            **active, **progress["encounter"], "work_unit": progress["unit"]["id"],
+            "schema": active.get("schema"), **progress["encounter"], "work_unit": progress["unit"]["id"],
             "owner_skill": progress["owner_skill"], "descriptor_valid": True, "issues": [],
             "workflow": progress,
             "next_action": progress["next_action"] + " " + progress["unit"]["next_action"],

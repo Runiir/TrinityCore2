@@ -261,8 +261,36 @@ hash-bound `causal_summary` and a different edge. `recent_attempts` and
 
 At route submit `action=route`, reason and a new `unit` (unique id, edge, open
 requirements, next_action, optional owner_skill and risk_tier). Route to the
-largest remaining verdict gap. `action=complete` is rejected while any
-requirement is open; scope changes come from the user and are committed.
+largest remaining verdict gap and include every open actor requirement plus the
+encounter requirement, so one batch can close everything that passes (a label is
+accepted once). `action=complete` is rejected while any requirement is open;
+scope changes come from the user and are committed.
+
+## Superseding and deferring
+
+When a unit's work was finished outside the graph (coordinator commits, a
+scoreboard baseline), close it with `action=supersede` from diagnose through
+validate: `reason` plus `superseded_by` with full `commits` in the current
+history and/or a `scoreboard_label` that has kills (optional file `evidence`).
+It moves to `route` without counting a failure; a claimed operation also needs a
+reconciliation `receipt`, and a completed run must be recorded instead. Resume
+shows it under `superseded` and drops the older `latest_assessment`.
+
+At diagnose or route (no claim), `action=defer` parks open requirements outside
+the current unit: `requirements: {key: {reason, belongs_to}}`. Deferred
+requirements leave the scenario's critical path (routing, `complete`,
+`parent_objective_complete`) and stay listed under `deferred_requirements`;
+`action=reopen` with a reason returns them to open. Deferral never accepts work;
+it records where it belongs (e.g. isolated dummy calibration, whose own rules
+are unchanged).
+
+Once the scenario's raid target exists, resume and the evidence views omit the
+legacy `dps_acceptance` (95% of the self-provided WoWSims dummy, 300 s); the
+scoreboard verdict is the only finish line shown.
+
+```sh
+pixi run python -m tools.raid_program.raid_workloop advance --event /abs/event.json --expect STATE_SHA256
+```
 
 ## Scenario initialization and preservation
 

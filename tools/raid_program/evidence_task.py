@@ -66,7 +66,7 @@ def task_view(root):
     graph = json.loads(state_bytes)['development_graph']
     result = {k: graph.get(k) for k in ('objective', 'stage', 'unit', 'claim', 'coordinator_worktree')}
     result.update(schema='evidence_task_v1', state_sha256=hashlib.sha256(state_bytes).hexdigest(),
-                  open_requirements={k: v for k, v in graph['requirements'].items() if v['status'] != 'accepted'},
+                  open_requirements={k: v for k, v in graph['requirements'].items() if v['status'] == 'open'},
                   commands=[], limitations=['Read-only retained diagnosis. Does not change the active stage or authorize duplicate live work.'])
     assessment_ref = next((h['event']['receipt'] for h in reversed(graph['history'])
                            if h['from'] == 'assess' and h['event']['action'] == 'advance'), None)
@@ -143,18 +143,20 @@ def progress_view(progress, root, section='summary'):
             'revision': progress['revision'], 'stage': progress['stage'],
             'coordinator_worktree': progress['coordinator_worktree'],
             'encounter': progress.get('encounter'), 'coordinator_skill': progress.get('coordinator_skill'),
-            'dps_acceptance': progress.get('dps_acceptance'),
             # Detail sections share a 6000-character budget: keep these compact there.
             'tier': {k: tier[k] for k in ('risk_tier', 'remaining_steps') if k in tier} or None,
             'finish_line': {k: finish[k] for k in ('target_path', 'target_present', 'work_item') if k in finish} or None,
             'completed_measurement_count': len(progress.get('completed_measurements', []))}
+    if progress.get('dps_acceptance'):  # legacy dummy gate, only for scenarios without a raid target
+        base['dps_acceptance'] = progress['dps_acceptance']
     if section == 'unit':
         return base | {'unit': progress['unit'], 'test_plan': progress.get('test_plan', {}),
                        'test_execution': 'Commit source, then workflow_step tests --owner <claim owner> '
                            '--producer <implementer session ID> --behavior-command <exact declared command>. '
                            'Use workflow_step amend-tests for necessary test dependencies; do not remove them to fit the initial file list.'}
     if section == 'requirements':
-        return base | {'open_requirements': progress['open_requirements']}
+        return base | {'open_requirements': progress['open_requirements'],
+                       'deferred_requirement_ids': list(progress.get('deferred_requirements', {}))}
     if section == 'receipts':
         from tools.raid_program.completed_operation import completed_runs
         completed = completed_runs(root, progress)
@@ -190,6 +192,8 @@ def progress_view(progress, root, section='summary'):
                      'changed_bootstrap_sources': progress['changed_bootstrap_sources'],
                      'same_edge_failures': progress['same_edge_failures']},
         'open_requirement_ids': list(progress['open_requirements']),
+        'deferred_requirements': {k: v.get('deferred') for k, v in progress.get('deferred_requirements', {}).items()},
+        'superseded': progress.get('superseded'),
         'evidence': {'latest_assessment': progress['latest_assessment'],
                      'reusable_build': progress.get('reusable_build'),
                      'bound_receipt_kinds': list(progress['receipts'])},

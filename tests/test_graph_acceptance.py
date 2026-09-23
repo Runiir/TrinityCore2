@@ -13,6 +13,9 @@ from tests.test_development_graph import case, claimed, put, reach, receipt  # n
 SCENARIO = 'fixture_10n_fixture'
 TARGET = 'experiments/configs/raid_targets/' + SCENARIO + '.json'
 MANIFEST = 'experiments/configs/cata_raid_encounters/fixture/boss_wcl_dps_reference_v1.json'
+FALLBACK = 'experiments/configs/wowsims_fixture_promotion_index.json'
+TARGET_DOC = {'schema': 'raid_target_v1', 'scenario': SCENARIO, 'wcl_reference_manifest': MANIFEST,
+              'fallback_reference': {'source': 'wowsims', 'promotion_index': FALLBACK, 'ratio': 0.9}}
 BINARY = 'b'*64  # the fixture build adapter's worldserver hash
 LATER = '2099-01-01T00:00:0{}Z'
 
@@ -32,12 +35,15 @@ def kill(n, *, binary=BINARY, recorded=None, counted=True, clear=True):
 def make_verdict(root, label='batch1', actor1='pass', actor2='pass', overall='pass', encounter=None,
                  ratio=1.02, kills=None, roster=None):
     row = lambda spec, role, status: {'spec': spec, 'role': role, 'n': 3, 'mean_dps': 102.0, 'sd_dps': 1.5,
-                                      'target_dps': 100.0, 'ratio': ratio, 'status': status}
+                                      'target_dps': 100.0, 'ratio': ratio, 'status': status,
+                                      'reference_basis': 'wcl', 'required_ratio': 0.95, 'required_dps': 95.0}
+    fallback = (root/FALLBACK).is_file() and 'fallback_reference' in json.loads((root/TARGET).read_text())
     kills = kills or [kill(1), kill(2), kill(3)]
     binaries = {k['worldserver_sha256'] for k in kills if k['counted']}
     return {'schema': 'raid_target_verdict_v1', 'scenario': SCENARIO, 'label': label, 'kills': len(kills),
             'target_path': TARGET, 'target_sha256': graph.digest((root/TARGET).read_bytes()),
             'wcl_manifest_sha256': graph.digest((root/MANIFEST).read_bytes()), 'wcl_timelines_sha256': None,
+            'fallback_index_sha256': graph.digest((root/FALLBACK).read_bytes()) if fallback else None,
             'worldserver_sha256': binaries.pop() if len(binaries) == 1 else None,
             'source_commits': ['c'*40], 'kills_detail': kills,
             'first_recorded_at': min(k['recorded_at'] for k in kills), 'last_recorded_at': max(k['recorded_at'] for k in kills),
@@ -63,7 +69,8 @@ def assessing(case, scoreboard):
     """A class_native unit for actor_1 and the encounter, validated with scoreboard batch 'batch1'."""
     root, state, evidence = case
     write(root, MANIFEST, {'references': ['wcl']})
-    write(root, TARGET, {'schema': 'raid_target_v1', 'scenario': SCENARIO, 'wcl_reference_manifest': MANIFEST})
+    write(root, FALLBACK, {'entries': ['wowsims']})
+    write(root, TARGET, TARGET_DOC)
     (root/'kill-evidence.json').write_text('{"dvc": "pointer stand-in"}')
     g = state['development_graph']
     g['requirements']['encounter'] = {'status': 'open', 'needs_raid': True, 'needs_performance': True, 'needs_all_actors': True}
@@ -113,6 +120,9 @@ def test_passing_verdict_accepts_actor_and_encounter_and_pins_inputs(assessing, 
     assert actor['verdict']['target_sha256'] == graph.digest((root/TARGET).read_bytes())
     assert actor['verdict']['wcl_manifest_sha256'] == graph.digest((root/MANIFEST).read_bytes())
     assert g['requirements']['encounter']['verdict']['roster'] == {'expected': ['1', '2'], 'missing': []}
+    assert (actor['verdict']['reference_basis'], actor['verdict']['required_ratio'], actor['verdict']['required_dps']) == ('wcl', 0.95, 95.0)
+    assert actor['verdict']['fallback_index_sha256'] == graph.digest((root/FALLBACK).read_bytes())
+    assert g['requirements']['encounter']['verdict']['fallback_index_sha256'] == actor['verdict']['fallback_index_sha256']
     actor['verdict']['encounter_status'] = 'fail'  # defense in depth in the graph check
     with pytest.raises(graph.GraphError, match='verdict is not pass'):
         graph.check_graph(g)
@@ -167,9 +177,34 @@ def test_changed_target_or_wcl_manifest_invalidates_the_verdict(assessing, score
     (root/MANIFEST).write_text('{"references": ["changed"]}')
     with pytest.raises(graph.GraphError, match='wcl_manifest_sha256'):
         graph.reduce(root, state, assessment(root, state, evidence, ref))
-    write(root, TARGET, {'schema': 'raid_target_v1', 'scenario': SCENARIO, 'wcl_reference_manifest': MANIFEST, 'edited': 1})
+    write(root, TARGET, TARGET_DOC | {'edited': 1})
     with pytest.raises(graph.GraphError, match='target_sha256'):
         graph.reduce(root, state, assessment(root, state, evidence, ref))
+
+
+def test_wowsims_fallback_index_is_pinned(assessing, scoreboard):
+    root, state, evidence = assessing
+    ref = cite(root, scoreboard['batch1'])
+    write(root, FALLBACK, {'entries': ['wowsims', 'regenerated']})
+    with pytest.raises(graph.GraphError, match='fallback_index_sha256'):
+        graph.reduce(root, state, assessment(root, state, evidence, ref))
+    write(root, FALLBACK, {'entries': ['wowsims']})
+    stale = cite(root, scoreboard['batch1'] | {'fallback_index_sha256': None}, 'null-index.json')
+    scoreboard['batch1']['fallback_index_sha256'] = None
+    with pytest.raises(graph.GraphError, match='fallback_index_sha256'):  # target declares a fallback: null is not allowed
+        graph.reduce(root, state, assessment(root, state, evidence, stale))
+
+
+def test_target_without_fallback_needs_a_null_fallback_index(assessing, scoreboard):
+    root, state, evidence = assessing
+    write(root, TARGET, {k: v for k, v in TARGET_DOC.items() if k != 'fallback_reference'})
+    scoreboard['batch1'] = make_verdict(root)
+    assert scoreboard['batch1']['fallback_index_sha256'] is None
+    graph.reduce(root, state, assessment(root, state, evidence, cite(root, scoreboard['batch1'])))
+    pinned = scoreboard['batch1'] | {'fallback_index_sha256': 'f'*64}
+    scoreboard['batch1'] = pinned
+    with pytest.raises(graph.GraphError, match='does not declare'):
+        graph.reduce(root, state, assessment(root, state, evidence, cite(root, pinned, 'pinned.json')))
 
 
 def test_label_used_by_an_earlier_acceptance_is_rejected(assessing, scoreboard):
@@ -254,7 +289,8 @@ def test_raid_target_requirement_needs_the_target_file(case):
 def validating(case, scoreboard):
     root, state, evidence = case
     write(root, MANIFEST, {'references': ['wcl']})
-    write(root, TARGET, {'schema': 'raid_target_v1', 'scenario': SCENARIO, 'wcl_reference_manifest': MANIFEST})
+    write(root, FALLBACK, {'entries': ['wowsims']})
+    write(root, TARGET, TARGET_DOC)
     (root/'kill-evidence.json').write_text('{"dvc": "pointer stand-in"}')
     root, state, evidence = reach((root, state, evidence), 'validate')
     put(root/graph.STATE_PATH, state)

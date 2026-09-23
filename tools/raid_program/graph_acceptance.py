@@ -87,7 +87,7 @@ def _time(value) -> datetime:
 
 
 def check_inputs(root: Path, g: dict, verdict: dict) -> None:
-    """The judged target and WCL reference files are the current ones."""
+    """The judged target, WCL reference and WoWSims fallback index files are the current ones."""
     pointer = target_pointer(g)
     if verdict.get('target_path') != pointer['path']:
         raise graph.GraphError('verdict target differs from the program raid target')
@@ -102,6 +102,13 @@ def check_inputs(root: Path, g: dict, verdict: dict) -> None:
         reference = root / str(path or '')
         if not path or not reference.is_file() or verdict.get(field) != graph.digest(reference.read_bytes()):
             raise graph.GraphError(f'WCL reference changed since the verdict ({field})')
+    index = (target.get('fallback_reference') or {}).get('promotion_index')
+    if target.get('fallback_reference') is None:
+        if verdict.get('fallback_index_sha256') is not None:
+            raise graph.GraphError('verdict pins a WoWSims fallback index the target does not declare')
+    elif (not index or not (root / index).is_file()
+          or verdict.get('fallback_index_sha256') != graph.digest((root / index).read_bytes())):
+        raise graph.GraphError('WoWSims fallback index changed since the verdict (fallback_index_sha256)')
 
 
 def check_kills(g: dict, verdict: dict) -> None:
@@ -167,7 +174,7 @@ def check_requirement(key: str, requirement: dict, verdict: dict, actor_ids: lis
                 or not set(actor_ids) <= set(verdict.get('actors') or {})):
             raise graph.GraphError(key + ': verdict roster must cover every program actor with none missing')
     if status == 'no_reference':
-        raise graph.GraphError(key + ': no matched WCL reference; that is reference work, never acceptance')
+        raise graph.GraphError(key + ': no matched WCL reference or verified WoWSims fallback; that is reference work, never acceptance')
     if status != 'pass':
         raise graph.GraphError(f'{key}: scoreboard verdict is {status}, not pass')
 
@@ -177,10 +184,12 @@ def record(requirement: dict, ref: dict, verdict: dict) -> dict:
     base = {'receipt': ref, 'label': verdict['label'], 'kills': verdict.get('kills'),
             'kill_ids': [k['kill_id'] for k in verdict['kills_detail'] if k.get('counted')],
             **{key: verdict.get(key) for key in ('worldserver_sha256', 'target_path', 'target_sha256',
-                                                  'wcl_manifest_sha256', 'wcl_timelines_sha256')}}
+                                                  'wcl_manifest_sha256', 'wcl_timelines_sha256',
+                                                  'fallback_index_sha256')}}
     if scope(requirement) == 'actor':
         row = verdict['actors'][requirement['actor_id']]
-        return base | {key: row.get(key) for key in ('status', 'spec', 'n', 'mean_dps', 'target_dps', 'ratio')} | {
+        return base | {key: row.get(key) for key in ('status', 'spec', 'n', 'mean_dps', 'target_dps', 'ratio',
+                                                     'reference_basis', 'required_ratio', 'required_dps')} | {
             'encounter_status': verdict['encounter']['status']}
     return base | {'status': verdict['status'], 'encounter': verdict.get('encounter'), 'roster': verdict.get('roster'),
                    'ratios': {actor: row.get('ratio') for actor, row in verdict['actors'].items()}}
@@ -295,7 +304,7 @@ def finish_line(root: Path, g: dict) -> dict:
     present = (root / pointer['path']).is_file()
     open_by_scope = {'actor': [], 'encounter': []}
     for key, requirement in g['requirements'].items():
-        if requirement['status'] != 'accepted' and scope(requirement):
+        if requirement['status'] == 'open' and scope(requirement):
             open_by_scope[scope(requirement)].append(key)
     return {'scenario': pointer['scenario'], 'target_path': pointer['path'], 'target_present': present,
             'rule': RULE, 'open_actor_requirements': open_by_scope['actor'],
