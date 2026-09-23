@@ -1,0 +1,15 @@
+{
+  "archive_bytes": 557638,
+  "dvc_pointer": "artifacts/cata_raid_program/configs_offload_20260923.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 2121011,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "e54c9da39b79cb201048fc1e0c98ec4f",
+  "remote_sha256": "7f67960a31eb974c6c2c36693134865ddd4a0722e0c513151d3eb9d56aaab58a",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/agent-offload/configs_offload_20260923"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 325
+}

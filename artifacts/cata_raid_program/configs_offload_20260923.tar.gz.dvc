@@ -1,0 +1,5 @@
+outs:
+- md5: e54c9da39b79cb201048fc1e0c98ec4f
+  size: 557638
+  hash: md5
+  path: configs_offload_20260923.tar.gz

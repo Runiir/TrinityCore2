@@ -1,0 +1,5 @@
+outs:
+- md5: dbe6dc4eedf8d010dd672cf4adc83d90
+  size: 22753
+  hash: md5
+  path: plan_drift_offload_20260923.tar.gz

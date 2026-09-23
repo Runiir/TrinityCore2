@@ -1,0 +1,15 @@
+{
+  "archive_bytes": 22753,
+  "dvc_pointer": "artifacts/cata_raid_program/plan_drift_offload_20260923.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 134496,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "dbe6dc4eedf8d010dd672cf4adc83d90",
+  "remote_sha256": "319dfb503c332c279e7be0bca9f10a2bdde4c18430cd6b9ca32077a8e026a54c",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/agent-offload/plan_drift_offload_20260923"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 21
+}
