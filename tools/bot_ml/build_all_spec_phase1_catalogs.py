@@ -396,7 +396,7 @@ QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
     "protection_warrior": [772, 845, 871, 6343],
     "arms_warrior": [845, 1719, 6343],
     "fury_warrior": [845, 1134, 1719, 18499],
-    "blood_death_knight": [48721, 56815],
+    "blood_death_knight": [48721, 56815, 77575],
     "frost_death_knight": [42650, 45529, 46584, 47568, 48265, 77575],
     "unholy_death_knight": [42650, 43265, 45529, 46584, 47568, 48265, 49016, 49206, 77575],
     "feral_druid_tank": [99, 6807, 80964],
