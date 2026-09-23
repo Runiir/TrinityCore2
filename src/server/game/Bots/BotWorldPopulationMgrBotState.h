@@ -375,6 +375,12 @@ namespace BotWorldPopulationMgrBotState
         std::string CombatLogName;
         std::string CombatLogRole;
         uint8 CombatLogClassId = 0;
+        // The Drudge minimum-distance exit whose movement was last admitted.
+        // Only this exact move may keep its lease past the damaging radius.
+        float MinimumDistanceExitX = 0.0f;
+        float MinimumDistanceExitY = 0.0f;
+        float MinimumDistanceExitZ = 0.0f;
+        uint64 MinimumDistanceExitStartedMs = 0;
         uint32 RecentDeathCount = 0;
         ObjectGuid TargetGuid;
         // A melee player's autoattack is a persistent toggle independent of

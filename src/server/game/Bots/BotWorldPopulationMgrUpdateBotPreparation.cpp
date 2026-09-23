@@ -645,7 +645,9 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
         : std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);
 
     context.EnsureProgressionScored();
-    context.State.CombatLogRole = GetDungeonRole(context.Bot);
+    // The cadence profile was built for this decision's role; reuse it
+    // instead of a second role lookup (a pool query for DPS bots).
+    context.State.CombatLogRole = cadenceProfile.Role;
 
     if (context.Target && StopDisallowedDummyCombat(context.State, context.Bot, context.Target))
         context.Target = nullptr;

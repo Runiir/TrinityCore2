@@ -540,7 +540,13 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"distance_samples\":" << value.DistanceSamples
              << ",\"moving_fraction\":" << (value.DistanceSamples ? double(value.MovingEvents) / double(value.DistanceSamples) : 0.0)
              << ",\"distance_avg\":" << averageDistance
-             << ",\"distance_min\":" << std::max(0.0f, value.MinDistance)
+             << ",\"distance_min\":";
+        // No distance sample (only absent sources): there is no minimum.
+        if (value.DistanceSamples)
+            json << std::max(0.0f, value.MinDistance);
+        else
+            json << "null";
+        json
              << ",\"distance_max\":" << value.MaxDistance << '}';
     }
 

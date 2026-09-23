@@ -34,8 +34,10 @@ bool HasMovementCompatibleLease(
     if (!state || !bot)
         return false;
 
-    if (!state->IsMoving && !bot->isMoving()
-        && !bot->HasUnitState(UNIT_STATE_MOVING))
+    // Real unit movement only: a stale cached IsMoving on a standing bot
+    // must not keep the rotation on movement-compatible spells.  A freshly
+    // launched native path already sets the unit movement state.
+    if (!bot->isMoving() && !bot->HasUnitState(UNIT_STATE_MOVING))
         return false;
 
     return state->MovementLease.ExpiresAtMs > nowMs

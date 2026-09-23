@@ -238,8 +238,11 @@ using namespace BotRaidDrudgeMinimumDistanceExit;
 int main()
 {
     ExitProgress progress;
-    progress.MechanicLease = true;
+    progress.ExitRecorded = true;
+    progress.LeaseIsThisExit = true;
+    progress.LeaseActive = true;
     progress.Moving = true;
+    progress.ElapsedMs = 1200;
     progress.BotSourceDistance = 15.4f;
     progress.DestinationSourceDistance = 17.5f;
     progress.SafeDistance = 17.0f;
@@ -248,15 +251,30 @@ int main()
     progress.BotSourceDistance = 16.6f;
     assert(!ContinueAdmittedExit(progress));
     progress.BotSourceDistance = 15.4f;
-    // Stopped, another owner, or a destination the Drudge has since reached.
+    // Re-review: only the recorded exit, under an unexpired lease, on a bot
+    // that really moves, and never beyond the continuation cap.
+    progress.ExitRecorded = false;
+    assert(!ContinueAdmittedExit(progress));
+    progress.ExitRecorded = true;
+    progress.LeaseIsThisExit = false;  // another Mechanic move or destination
+    assert(!ContinueAdmittedExit(progress));
+    progress.LeaseIsThisExit = true;
+    progress.LeaseActive = false;
+    assert(!ContinueAdmittedExit(progress));
+    progress.LeaseActive = true;
     progress.Moving = false;
     assert(!ContinueAdmittedExit(progress));
     progress.Moving = true;
-    progress.MechanicLease = false;
+    progress.ElapsedMs = ExitContinuationCapMs + 1;
     assert(!ContinueAdmittedExit(progress));
-    progress.MechanicLease = true;
+    progress.ElapsedMs = ExitContinuationCapMs;
+    assert(ContinueAdmittedExit(progress));
+    // A destination the Drudge has since reached is no longer an exit.
     progress.DestinationSourceDistance = 12.0f;
     assert(!ContinueAdmittedExit(progress));
+
+    assert(SameExitDestination(-331.5f, -118.2f, -331.45f, -118.25f));
+    assert(!SameExitDestination(-331.5f, -118.2f, -331.3f, -118.2f));
 }
 """)
 
@@ -335,7 +353,7 @@ def test_minimum_distance_exit_is_its_own_module_and_traces_rejections() -> None
     assert refused.index("break;") < refused.index("attempt.Reject(Rejection::MoveRejected);")
     # A kept lease is recognised from this submission only, and the earlier
     # diagnostic survives when the executor does not replace it.
-    submit = loop[loop.index("previousRecoveryResult"):loop.index("if (moved)\n            break;")]
+    submit = loop[loop.index("previousRecoveryResult"):loop.index("if (moved)\n        {")]
     assert "State.LastRecoveryResult.clear();" in submit
     assert '"higher_priority_movement_active"' in submit
     assert "State.LastRecoveryResult = previousRecoveryResult;" in submit
@@ -347,19 +365,35 @@ def test_minimum_distance_exit_is_its_own_module_and_traces_rejections() -> None
     assert "State.LastRecoveryResult = attempt.ToString(moved);" in minimum
     assert '"minimum_distance_exit_started" : "minimum_distance_exit_failed"' in minimum
     assert '"move_to_minimum_distance" : "hold_minimum_distance_exit_failed"' in minimum
-    # Past the radius the exit still owns its move until the safe distance,
-    # refreshing the same Mechanic destination, then yields to the rotation.
+    # Past the radius only the recorded exit keeps its move until the safe
+    # distance: this destination, an unexpired lease, real unit movement.
     outside = minimum[minimum.index("if (sourceDistance >= minimumDistance)"):]
     outside = outside[:outside.index("return false;")]
     assert "ContinueAdmittedExit(progress)" in outside
-    assert "Manager.MoveBotToPoint(State, Bot, lease.X, lease.Y, lease.Z," in outside
+    assert "SameExitDestination(lease.X," in outside
+    assert "progress.LeaseActive = lease.ExpiresAtMs > nowMs;" in outside
+    assert "progress.Moving = Bot->isMoving() || Bot->HasUnitState(UNIT_STATE_MOVING);" in outside
+    assert "State.IsMoving" not in outside
+    assert "nowMs - State.MinimumDistanceExitStartedMs" in outside
+    assert "Manager.MoveBotToPoint(State, Bot, State.MinimumDistanceExitX," in outside
     assert "BotMovementArbitration::Owner::Mechanic" in outside
+    assert "State.MinimumDistanceExitStartedMs = 0;" in outside
+    # The admitted exit is recorded where its movement was admitted.
+    admitted = loop[loop.index("if (moved)\n        {"):loop.index("break;", loop.index("if (moved)\n        {"))]
+    for field in ("State.MinimumDistanceExitX = safeX;", "State.MinimumDistanceExitY = safeY;",
+                  "State.MinimumDistanceExitZ = safeZ;", "State.MinimumDistanceExitStartedMs ="):
+        assert field in admitted
+    state = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrBotState.h").read_text()
+    assert "uint64 MinimumDistanceExitStartedMs = 0;" in state
     # The rotation never stops a protected lease to submit a cast-time spell.
     execution = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatExecution.cpp").read_text()
     guard = execution.index("BotCastWhileMoving::YieldsToProtectedMovement(")
     assert guard < execution.index("executor.ExecuteCombat(bot, bot, action)")
     assert "HasProtectedMovementLease(state, bot, NowMs())" in execution[guard:guard + 400]
     assert ">= uint8(BotMovementArbitration::Priority::Mechanic)" in execution
+    compatible = execution[execution.index("bool HasMovementCompatibleLease("):execution.index("bool HasProtectedMovementLease(")]
+    assert "state->IsMoving" not in compatible
+    assert "!bot->isMoving() && !bot->HasUnitState(UNIT_STATE_MOVING)" in compatible
     # Movement ownership and path admission are unchanged by the split.
     assert "BotMovementArbitration::Priority::Mechanic" in minimum
     assert "path.SetUseStraightPath(true)" in minimum

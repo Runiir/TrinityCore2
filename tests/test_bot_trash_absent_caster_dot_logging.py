@@ -129,4 +129,15 @@ def test_attackerless_periodic_damage_is_logged_for_the_aura_caster() -> None:
     preparation = (BOTS / "BotWorldPopulationMgrUpdateBotPreparation.cpp").read_text()
     cache = preparation.index("context.State.CombatLogName = context.Bot->GetName();")
     assert "context.Bot->IsAlive() && context.State.CombatLogName.empty()" in preparation[cache - 200:cache]
-    assert "context.State.CombatLogRole = GetDungeonRole(context.Bot);" in preparation
+    # The role reuses the decision's cadence profile, not a second lookup.
+    assert "context.State.CombatLogRole = cadenceProfile.Role;" in preparation
+    assert "context.State.CombatLogRole = GetDungeonRole(" not in preparation
+    # A bot that dies before its first decision still has an identity.
+    for creator in ("BotWorldPopulationMgrValidationAdmission.cpp", "BotWorldPopulationMgrPopulation.cpp"):
+        text = (BOTS / creator).read_text()
+        creation = text[text.index("state.RosterClassSpec = GetBotClassSpec(bot);"):text.index("Party().Bots.push_back(state);")]
+        for field in ("state.CombatLogName = bot->GetName();", "state.CombatLogClassId = bot->getClass();",
+                      "state.CombatLogRole = GetDungeonRole(bot);"):
+            assert field in creation
+    # An aggregate with no distance sample has no minimum.
+    assert 'json << "null";' in status[status.index('",\\"distance_min\\":"'):]

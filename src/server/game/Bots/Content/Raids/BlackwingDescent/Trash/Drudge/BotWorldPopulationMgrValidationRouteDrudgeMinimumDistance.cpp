@@ -5,6 +5,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrNativePathValidation.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
@@ -98,32 +99,44 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
     float safeDistance = minimumDistance + 2.0f;
     if (sourceDistance >= minimumDistance)
     {
-        // Outside the radius the rotation owns the decision again, but an
+        // Outside the radius the rotation owns the decision again, but the
         // admitted exit keeps its movement (and lease) until it reaches the
         // safe distance.  The refreshed Mechanic lease restricts the rotation
         // to movement-compatible spells, so no cast parks the bot at the
-        // radius edge.
+        // radius edge.  Only the recorded exit continues, never another
+        // Mechanic move, and never on a standing bot.
+        uint64 const nowMs = BotWorldPopulationMgrSpellSemantics::NowMs();
         BotMovementArbitration::Lease const& lease = State.MovementLease;
         BotRaidDrudgeMinimumDistanceExit::ExitProgress progress;
-        progress.MechanicLease = lease.MovementOwner
-            == BotMovementArbitration::Owner::Mechanic;
-        progress.Moving = State.IsMoving || Bot->isMoving()
-            || Bot->HasUnitState(UNIT_STATE_MOVING);
+        progress.ExitRecorded = State.MinimumDistanceExitStartedMs != 0
+            && nowMs >= State.MinimumDistanceExitStartedMs;
+        progress.LeaseIsThisExit = lease.MovementOwner
+                == BotMovementArbitration::Owner::Mechanic
+            && BotRaidDrudgeMinimumDistanceExit::SameExitDestination(lease.X,
+                lease.Y, State.MinimumDistanceExitX, State.MinimumDistanceExitY);
+        progress.LeaseActive = lease.ExpiresAtMs > nowMs;
+        progress.Moving = Bot->isMoving() || Bot->HasUnitState(UNIT_STATE_MOVING);
+        progress.ElapsedMs = progress.ExitRecorded
+            ? nowMs - State.MinimumDistanceExitStartedMs : 0;
         progress.BotSourceDistance = sourceDistance;
         progress.DestinationSourceDistance = std::numeric_limits<float>::max();
         for (Creature const* candidateSource : sources)
             progress.DestinationSourceDistance = std::min(
-                progress.DestinationSourceDistance, Distance2d(lease.X, lease.Y,
+                progress.DestinationSourceDistance, Distance2d(
+                    State.MinimumDistanceExitX, State.MinimumDistanceExitY,
                     candidateSource->GetPositionX(), candidateSource->GetPositionY()));
         progress.SafeDistance = safeDistance;
         if (BotRaidDrudgeMinimumDistanceExit::ContinueAdmittedExit(progress)
-            && Manager.MoveBotToPoint(State, Bot, lease.X, lease.Y, lease.Z,
-                false, BotMovementArbitration::Owner::Mechanic,
+            && Manager.MoveBotToPoint(State, Bot, State.MinimumDistanceExitX,
+                State.MinimumDistanceExitY, State.MinimumDistanceExitZ, false,
+                BotMovementArbitration::Owner::Mechanic,
                 BotMovementArbitration::Priority::Mechanic))
         {
             State.LastRecoveryMode = "minimum_distance_exit";
             State.LastRecoveryResult = "exit_continuing";
         }
+        else
+            State.MinimumDistanceExitStartedMs = 0;
         return false;
     }
     std::vector<BotRaidDrudgeMinimumDistanceExit::Point> sourcePoints;
@@ -291,7 +304,19 @@ bool DrudgeLaneContext::TryMinimumDistance(bool specializedDrudgeRecovery)
         if (State.LastRecoveryResult.empty())
             State.LastRecoveryResult = previousRecoveryResult;
         if (moved)
+        {
+            // Record the admitted exit; a retained move to the same point
+            // keeps its original start for the continuation cap.
+            if (!State.MinimumDistanceExitStartedMs
+                || !BotRaidDrudgeMinimumDistanceExit::SameExitDestination(safeX,
+                    safeY, State.MinimumDistanceExitX, State.MinimumDistanceExitY))
+                State.MinimumDistanceExitStartedMs =
+                    BotWorldPopulationMgrSpellSemantics::NowMs();
+            State.MinimumDistanceExitX = safeX;
+            State.MinimumDistanceExitY = safeY;
+            State.MinimumDistanceExitZ = safeZ;
             break;
+        }
         if (leaseRefused)
         {
             attempt.LeaseOwner = uint32(State.MovementLease.MovementOwner);

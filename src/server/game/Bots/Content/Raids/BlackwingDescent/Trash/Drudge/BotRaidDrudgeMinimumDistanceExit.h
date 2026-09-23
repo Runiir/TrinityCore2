@@ -157,25 +157,43 @@ inline FallbackLane EvaluateFallbackLane(FallbackLaneInput const& input)
 }
 
 // An admitted exit ends 2 yd beyond the damaging radius, but the exit stops
-// owning the decision once the bot crosses the radius.  While its movement is
-// still carrying the bot toward an exterior destination, keep that movement
-// (and its lease) until the bot arrives, so a cast-time spell cannot park the
-// bot at the radius edge.
+// owning the decision once the bot crosses the radius.  While the movement
+// admitted for that exit is still carrying the bot, keep it (and its lease)
+// until the bot arrives, so a cast-time spell cannot park the bot at the
+// radius edge.  Only that exact exit continues: an unexpired Mechanic lease to
+// its recorded destination, real unit movement (never the cached moving flag)
+// and at most ExitContinuationCapMs after it was admitted.
 struct ExitProgress
 {
-    bool MechanicLease = false;
+    bool ExitRecorded = false;
+    // Lease owner is Mechanic and its destination is the recorded exit.
+    bool LeaseIsThisExit = false;
+    // The lease has not expired.
+    bool LeaseActive = false;
+    // Native unit movement.
     bool Moving = false;
-    // Nearest live source, from the bot and from the lease destination.
+    std::uint64_t ElapsedMs = 0;
+    // Nearest live source, from the bot and from the exit destination.
     float BotSourceDistance = 0.0f;
     float DestinationSourceDistance = 0.0f;
     float SafeDistance = 0.0f;
 };
 
 constexpr float ExitArrivalToleranceYards = 0.5f;
+constexpr std::uint64_t ExitContinuationCapMs = 3000;
+
+// Same tolerance as the movement lease's destination identity.
+inline bool SameExitDestination(float leftX, float leftY, float rightX,
+    float rightY)
+{
+    return std::fabs(leftX - rightX) <= 0.1f && std::fabs(leftY - rightY) <= 0.1f;
+}
 
 inline bool ContinueAdmittedExit(ExitProgress const& progress)
 {
-    return progress.MechanicLease && progress.Moving
+    return progress.ExitRecorded && progress.LeaseIsThisExit
+        && progress.LeaseActive && progress.Moving
+        && progress.ElapsedMs <= ExitContinuationCapMs
         && progress.BotSourceDistance + ExitArrivalToleranceYards
             < progress.SafeDistance
         && progress.DestinationSourceDistance + ExitArrivalToleranceYards

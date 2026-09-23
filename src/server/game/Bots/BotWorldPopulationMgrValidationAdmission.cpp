@@ -493,6 +493,11 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
                 break;
             }
         state.RosterClassSpec = GetBotClassSpec(bot);
+        // Combat-log identity from the start, so a bot that dies before its
+        // first decision still publishes a role for its periodic ticks.
+        state.CombatLogName = bot->GetName();
+        state.CombatLogClassId = bot->getClass();
+        state.CombatLogRole = GetDungeonRole(bot);
         state.RosterAverageItemLevel = bot->GetAverageItemLevel();
         state.ValidationRouteGeneration = Party().ValidationRouteGeneration;
         state.DecisionTimer = urand(0, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000));
