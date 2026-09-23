@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from tests.test_raid_scoreboard import SCENARIO, batch, kill, record_all, roster_actors, root  # noqa: F401
+from tests.test_raid_scoreboard import SCENARIO, TARGET, batch, kill, record_all, roster_actors, root  # noqa: F401
 from tools.raid_program.scoreboard import (
     compare_labels, evaluate_target, load_baseline, main, set_baseline, void_kill,
 )
@@ -214,7 +214,16 @@ def test_show_prints_the_detectable_delta(root):
 
 # --- baseline pointer ---------------------------------------------------------------------------
 
+def batch_size(root, n):
+    """set_baseline needs kills_per_batch counted clears; these fixtures record 3-kill batches."""
+    path = root / TARGET
+    target = json.loads(path.read_text())
+    target["kills_per_batch"] = n
+    path.write_text(json.dumps(target))
+
+
 def test_baseline_set_print_and_verdict_default(root, capsys):
+    batch_size(root, 3)
     batch(root, "a")
     batch(root, "b", scales=(0.9, 0.91, 0.92))
     cli = ["--root", str(root)]
@@ -241,6 +250,7 @@ def test_baseline_set_print_and_verdict_default(root, capsys):
 
 
 def test_evaluate_target_defaults_to_the_baseline(root, capsys):
+    batch_size(root, 3)
     batch(root, "a")
     batch(root, "b", scales=(0.9, 0.91, 0.92))
     assert evaluate_target(root, SCENARIO)["label"] == "b"
@@ -252,6 +262,7 @@ def test_evaluate_target_defaults_to_the_baseline(root, capsys):
 
 
 def test_baseline_needs_enough_clears_on_one_build(root):
+    batch_size(root, 3)
     batch(root, "short", scales=(1.0, 1.0))
     batch(root, "mixed")
     record_all(root, kill("mixed", "other", sha="2" * 64))
@@ -262,12 +273,13 @@ def test_baseline_needs_enough_clears_on_one_build(root):
 
 
 def test_baseline_refuses_non_clears_and_boss_deaths_without_force(root, capsys):
+    batch_size(root, 3)
     batch(root, "wiped")
     record_all(root, kill("wiped", "w", clear=False))
     batch(root, "died", window_deaths=1)
     batch(root, "unknown")
     record_all(root, kill("unknown", "u", window_deaths=None))
-    for label, problem in (("wiped", "counted kill wiped-w is not a native clear"),
+    for label, problem in (("wiped", "kill wiped-w is not a native clear"),
                            ("died", "counted kill died-k0 has 1 boss-window death(s)"),
                            ("unknown", "counted kill unknown-u has unknown boss-window death(s)")):
         with pytest.raises(SystemExit, match="not a clean baseline") as refused:

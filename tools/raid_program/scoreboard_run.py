@@ -263,7 +263,7 @@ def top_up_plan(existing: list[dict[str, Any]], target: dict[str, Any], worldser
         raise SystemExit(f"--top-up refused: --source-commit differs from the label's {commit}")
     # --target-kills raises the goal above kills_per_measurement when a smaller effect needs
     # more power (the playbook's "--kills 5" case); both compared labels should use it.
-    goal = int(getattr(args, "target_kills", None) or target["kills_per_measurement"])
+    goal = int(getattr(args, "target_kills", None) or target.get("kills_per_batch") or target["kills_per_measurement"])
     missing = goal - len(clear_kills(existing))
     if missing < 1:
         raise SystemExit(f"--top-up refused: label {args.label} already has {goal} counted native clears")
@@ -272,7 +272,7 @@ def top_up_plan(existing: list[dict[str, Any]], target: dict[str, Any], worldser
 
 def run_batch(root: Path, args) -> int:
     target = load_target(root, args.scenario)
-    kills = args.kills or int(target["kills_per_measurement"])
+    kills = args.kills or int(target.get("kills_per_batch") or target["kills_per_measurement"])
     if kills < 1:
         raise SystemExit("--kills must be at least 1")
     existing = label_kills(load_records(root, args.scenario), args.label)

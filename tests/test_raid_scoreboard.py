@@ -734,6 +734,7 @@ def test_top_up_replaces_only_measurement_exclusions(root, tmp_path):
     binary.write_bytes(b"same build")
     sha = hashlib.sha256(b"same build").hexdigest()
     target = load_target(root, SCENARIO)
+    target["kills_per_batch"] = 3  # this test pins the top-up arithmetic at a 3-kill goal
     clean = [kill("a", f"k{i}", sha=sha) for i in range(2)]
     stalled = kill("a", "k2", sha=sha, validity=STALLED)
     assert top_up_plan(clean + [stalled], target, binary, _top_up_args("a")) == (1, "0" * 40)

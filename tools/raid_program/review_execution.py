@@ -348,7 +348,18 @@ def _transcript_path(path: Any, reviewer: str, transcripts_root: Path | None = N
         "reviewer transcript is not this reviewer's subagent transcript",
         code="transcript_identity_mismatch",
     )
+    # <root>/<project-slug>/<session-id>/subagents/agent-<id>.jsonl plus its meta file.
+    _require(candidate.with_suffix(".meta.json").is_file(), "reviewer transcript has no agent meta file", code="transcript_meta_missing")
+    _require(candidate.parent.parent.parent.parent == base, "reviewer transcript is not at <root>/<project>/<session>/subagents", code="transcript_outside_root")
     return candidate
+
+
+def _transcript_session(candidate: Path) -> str:
+    return candidate.parent.parent.name
+
+
+def _project_slug(root: Path) -> str:
+    return str(root.resolve()).replace("/", "-")
 
 
 def _read_transcript(path: Path, root: Path, reviewer: str, selected_prefix_bytes: int | None = None) -> dict[str, Any]:
@@ -381,9 +392,14 @@ def _read_transcript(path: Path, root: Path, reviewer: str, selected_prefix_byte
                 _require(record.get("isSidechain") is True, "reviewer transcript is not an independent subagent sidechain", code="independent_subagent_required")
                 cwd = record.get("cwd")
                 _require(
-                    cwd is None or (isinstance(cwd, str) and Path(cwd).resolve() == root),
+                    isinstance(cwd, str) and bool(cwd) and Path(cwd).resolve() == root,
                     "reviewer transcript checkout differs from coordinator worktree",
                     code="checkout_mismatch",
+                )
+                _require(
+                    record.get("sessionId") == _transcript_session(path) and path.parent.parent.parent.name == _project_slug(root),
+                    "reviewer transcript session or project does not match its location",
+                    code="transcript_identity_mismatch",
                 )
                 message = record.get("message")
                 role = message.get("role") if isinstance(message, Mapping) else None
@@ -447,17 +463,21 @@ def _read_transcript(path: Path, root: Path, reviewer: str, selected_prefix_byte
 def _contains_document(text: str, expected: Mapping[str, Any]) -> bool:
     """Whether ``text`` embeds a JSON object canonically equal to ``expected``."""
 
+    # Only the LAST JSON object of the message counts: a quoted or example object
+    # earlier in the text (for example a conditional approval followed by the real
+    # changes_required verdict) must never be importable as the reviewer's answer.
     target = _canonical(expected)
     decoder = json.JSONDecoder()
-    index = text.find("{")
+    tail_ok = re.compile(r"^\s*(```+\s*)?$")
+    index = text.rfind("{")
     while index != -1:
         try:
-            value, _ = decoder.raw_decode(text, index)
+            value, end = decoder.raw_decode(text, index)
         except json.JSONDecodeError:
-            value = None
-        if isinstance(value, dict) and _canonical(value) == target:
-            return True
-        index = text.find("{", index + 1)
+            value, end = None, None
+        if isinstance(value, dict) and end is not None and tail_ok.match(text[end:]):
+            return _canonical(value) == target
+        index = text.rfind("{", 0, index)
     return False
 
 

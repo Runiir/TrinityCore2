@@ -340,8 +340,10 @@ def _transcript(
 ) -> Path:
     """Write a Claude Code subagent transcript with the observed record shape."""
 
-    path = transcripts / "-fixture-project" / "parent-session" / "subagents" / f"agent-{file_agent or agent}.jsonl"
+    # <transcripts-root>/<project-slug>/<session-id>/subagents/agent-<id>.jsonl (+ .meta.json), as Claude Code writes it
+    path = transcripts / str(root.resolve()).replace("/", "-") / "parent-session" / "subagents" / f"agent-{file_agent or agent}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
+    path.with_suffix(".meta.json").write_text(json.dumps({"agentType": "general-purpose", "model": "opus"}))
     common = {"agentId": agent, "isSidechain": True, "cwd": str(root), "sessionId": "parent-session", "userType": "external"}
     answer = "My verdict is **approved**.\n\n```json\n" + json.dumps(final_document, indent=2) + "\n```"
     rows = [

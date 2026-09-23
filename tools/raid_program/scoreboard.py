@@ -33,8 +33,9 @@ import json
 import re
 from pathlib import Path
 
-from tools.raid_program.scoreboard_compare import compare_labels
+from tools.raid_program.scoreboard_compare import NON_GAMEPLAY_EXCLUSIONS, compare_labels
 from tools.raid_program.scoreboard_core import (
+    exclusion_reason,
     BASELINE_SCHEMA, KILL_SCHEMA, ROOT, VERDICT_SCHEMA, VOID_SCHEMA, append_record, baseline_path, clear_kills,
     counted_kills, git_head, label_kills, load_baseline, load_records, load_target, party_reference_dps,
     scoreboard_path, spec_targets, utc_now,
@@ -66,8 +67,9 @@ def void_kill(root: Path, scenario: str, kill_id: str, reason: str) -> dict:
 def baseline_problems(kills: list[dict]) -> list[str]:
     """Why a label is not a clean baseline: counted non-clears and counted kills with boss-window deaths."""
     counted = counted_kills(kills)
-    problems = [f"counted kill {record['kill_id']} is not a native clear" for record in counted
-                if not record.get("native_clear")]
+    # Same blocking set as keep condition (a): every recorded gameplay kill, not only counted ones.
+    problems = [f"kill {record['kill_id']} is not a native clear" for record in kills
+                if not record.get("native_clear") and exclusion_reason(record) not in NON_GAMEPLAY_EXCLUSIONS]
     problems += [f"counted kill {record['kill_id']} has "
                  + ("unknown" if record.get("boss_window_deaths") is None else str(record["boss_window_deaths"]))
                  + " boss-window death(s)" for record in counted if record.get("boss_window_deaths") != 0]
@@ -81,7 +83,8 @@ def set_baseline(root: Path, scenario: str, label: str, reason: str | None = Non
     unless force is set with a reason; the overridden problems are recorded in the pointer.
     """
     reason = (reason or "").strip() or None
-    required = int(load_target(root, scenario)["kills_per_measurement"])
+    target = load_target(root, scenario)
+    required = int(target.get("kills_per_batch") or target["kills_per_measurement"])
     kills = label_kills(load_records(root, scenario), label)
     if not kills:
         raise SystemExit(f"no kills recorded for label {label!r} in {scenario}")
@@ -92,7 +95,7 @@ def set_baseline(root: Path, scenario: str, label: str, reason: str | None = Non
     clears = clear_kills(kills)
     if len(clears) < required:
         raise SystemExit(f"label {label} has {len(clears)} counted native-clear kill(s); a baseline needs "
-                         f">= {required} (kills_per_measurement)")
+                         f">= {required} (kills_per_batch)")
     (sha, commit), = builds
     if not sha or not commit:
         raise SystemExit(f"label {label} lacks a worldserver_sha256 or source_commit on its counted kills")
@@ -134,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     run = commands.add_parser("run", help="run N live kills under a new label, record and archive each")
     run.add_argument("--scenario", required=True)
     run.add_argument("--label", required=True, type=_label, help="must not have kills yet")
-    run.add_argument("--kills", type=int, help="default: the target's kills_per_measurement")
+    run.add_argument("--kills", type=int, help="default: the target's kills_per_batch (else kills_per_measurement)")
     run.add_argument("--worldserver", type=Path, help="default: the target's run_plan.default_worldserver")
     run.add_argument("--source-commit", help="default: git HEAD")
     run.add_argument("--dry-run", action="store_true", help="print the plan and run nothing")
@@ -174,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
     base = commands.add_parser("baseline", help="print the scenario's baseline pointer, or set it with --label")
     base.add_argument("--scenario", required=True)
     base.add_argument("--label", type=_label,
-                      help="set the baseline (needs kills_per_measurement counted native clears on one binary/commit)")
+                      help="set the baseline (needs kills_per_batch counted native clears on one binary/commit)")
     base.add_argument("--reason", help="with --label: why this label is the kept state (recorded)")
     base.add_argument("--force", action="store_true",
                       help="with --label and --reason: accept counted non-clears or boss-window deaths (recorded)")
