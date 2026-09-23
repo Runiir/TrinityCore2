@@ -4,9 +4,10 @@ The graph stores a small review adapter, while this module verifies that its
 reviewer identity and verdict came from one independent session.  The default
 transport is a Codex rollout: only the final JSON message and a hash of the
 rollout prefix are retained; the rollout transcript is never copied into
-repository evidence.  ``import-json`` records a non-Codex reviewer's final JSON
-(``review_transport: external_json``) bound to its SHA256, both session ids and
-the current file hashes.
+repository evidence.  ``import-json`` binds a Claude Code reviewer subagent's
+final JSON (``review_transport: external_json``) to that subagent's persisted
+transcript prefix in the same way, plus both session ids and the current file
+hashes.
 """
 
 from __future__ import annotations
@@ -25,17 +26,20 @@ from tools.raid_program import development_graph as graph
 
 
 SESSIONS_ROOT = Path.home() / ".codex" / "sessions"
+TRANSCRIPTS_ROOT = Path.home() / ".claude" / "projects"
 ROOT = Path(__file__).resolve().parents[2]
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 MAX_FINDINGS_BYTES = 256 * 1024
-SUPPORTED_REVIEW_VERDICTS = frozenset({"approved", "changes_requested"})
+# Only ``approved`` advances the graph; both spellings of the rejection verdict are retained.
+SUPPORTED_REVIEW_VERDICTS = frozenset({"approved", "changes_requested", "changes_required"})
 EXTERNAL_TRANSPORT = "external_json"
-EXTERNAL_REVIEW_VERDICTS = frozenset({"approved", "changes_required"})
+TRANSCRIPT_PROOF_SCHEMA = "claude_transcript_review_proof_v1"
 MAX_EXTERNAL_REPORT_BYTES = 1024 * 1024
 FINAL_FIELDS = frozenset({"verdict", "file_hashes", "findings", "tests", "limits"})
 REQUIRED_FINAL_FIELDS = frozenset({"verdict", "file_hashes", "findings"})
 EXTERNAL_REPORT_FIELDS = FINAL_FIELDS | {
-    "schema", "reviewer_session_id", "proof", "review_transport", "implementer_session_id", "source_report_sha256",
+    "schema", "reviewer_session_id", "proof", "review_transport", "implementer_session_id",
+    "source_report_sha256", "source_report_path",
 }
 
 
@@ -333,13 +337,139 @@ def _optional_fields(document: Mapping[str, Any]) -> dict[str, Any]:
     return {key: document[key] for key in ("tests", "limits") if key in document}
 
 
+def _transcript_path(path: Any, reviewer: str, transcripts_root: Path | None = None) -> Path:
+    base = (transcripts_root or TRANSCRIPTS_ROOT).expanduser().resolve()
+    _require(isinstance(path, (str, Path)) and str(path), "reviewer transcript path required", code="transcript_required")
+    candidate = Path(path).expanduser().resolve()
+    _require(candidate.is_relative_to(base), "reviewer transcript must be under the Claude projects root", code="transcript_outside_root")
+    _require(candidate.is_file() and candidate.suffix == ".jsonl", "reviewer transcript must be an existing JSONL file", code="transcript_missing")
+    _require(
+        candidate.name == f"agent-{reviewer}.jsonl" and candidate.parent.name == "subagents",
+        "reviewer transcript is not this reviewer's subagent transcript",
+        code="transcript_identity_mismatch",
+    )
+    return candidate
+
+
+def _read_transcript(path: Path, root: Path, reviewer: str, selected_prefix_bytes: int | None = None) -> dict[str, Any]:
+    """Return the reviewer subagent's final assistant text and its prefix binding.
+
+    Every record must belong to ``reviewer`` as a sidechain in ``root``.  With
+    ``selected_prefix_bytes`` only that prefix is read and it must still end with
+    the final assistant message; appended records are ignored, as for rollouts.
+    """
+
+    before = path.stat()
+    final: dict[str, Any] | None = None
+    user_after = False
+    hasher = hashlib.sha256()
+    offset = 0
+    reached = False
+    try:
+        with path.open("rb") as stream:
+            for line in stream:
+                if selected_prefix_bytes is not None and offset + len(line) > selected_prefix_bytes:
+                    break
+                offset += len(line)
+                hasher.update(line)
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise ReviewExecutionError("reviewer transcript contains invalid JSON", code="transcript_invalid_json") from exc
+                _require(isinstance(record, Mapping), "reviewer transcript records must be JSON objects", code="transcript_record_invalid")
+                _require(record.get("agentId") == reviewer, "reviewer transcript record belongs to another agent", code="transcript_identity_mismatch")
+                _require(record.get("isSidechain") is True, "reviewer transcript is not an independent subagent sidechain", code="independent_subagent_required")
+                cwd = record.get("cwd")
+                _require(
+                    cwd is None or (isinstance(cwd, str) and Path(cwd).resolve() == root),
+                    "reviewer transcript checkout differs from coordinator worktree",
+                    code="checkout_mismatch",
+                )
+                message = record.get("message")
+                role = message.get("role") if isinstance(message, Mapping) else None
+                if record.get("type") == "assistant":
+                    content = message.get("content") if isinstance(message, Mapping) else None
+                    _require(role == "assistant" and isinstance(content, list), "assistant record has no assistant message", code="transcript_record_invalid")
+                    items = [item for item in content if isinstance(item, Mapping)]
+                    text = "".join(item["text"] for item in items if item.get("type") == "text" and isinstance(item.get("text"), str))
+                    tool_use = any(item.get("type") == "tool_use" for item in items)
+                    message_id = message.get("id")
+                    if final is not None and not user_after and message_id is not None and final["message_id"] == message_id:
+                        text, tool_use = final["text"] + text, tool_use or final["tool_use"]
+                    final = {
+                        "text": text, "tool_use": tool_use, "stop_reason": message.get("stop_reason"),
+                        "message_id": message_id, "end_offset": offset, "prefix_sha256": hasher.copy().hexdigest(),
+                    }
+                    user_after = False
+                elif record.get("type") in ("user", "tool") or role in ("user", "tool"):
+                    user_after = True
+                if selected_prefix_bytes is not None and offset == selected_prefix_bytes:
+                    reached = True
+                    break
+    except OSError as exc:
+        raise ReviewExecutionError("cannot read reviewer transcript", code="transcript_unreadable") from exc
+    after = path.stat()
+    if selected_prefix_bytes is None:
+        _require(
+            (before.st_size, before.st_mtime_ns, before.st_ino) == (after.st_size, after.st_mtime_ns, after.st_ino),
+            "reviewer transcript changed while it was being read",
+            code="transcript_unstable",
+        )
+    else:
+        _require(
+            reached and after.st_size >= selected_prefix_bytes and before.st_ino == after.st_ino,
+            "reviewer transcript prefix was truncated or replaced",
+            code="transcript_prefix_unstable",
+        )
+        try:
+            with path.open("rb") as stream:
+                prefix = stream.read(selected_prefix_bytes)
+        except OSError as exc:
+            raise ReviewExecutionError("cannot reread proven transcript prefix", code="transcript_unreadable") from exc
+        _require(
+            len(prefix) == selected_prefix_bytes and _sha256(prefix) == hasher.hexdigest(),
+            "reviewer transcript prefix changed while it was being read",
+            code="transcript_prefix_changed",
+        )
+    _require(final is not None, "reviewer transcript has no final assistant message", code="final_response_missing")
+    _require(not user_after, "reviewer transcript continues with a user/tool record after its final assistant message", code="final_response_not_last")
+    _require(
+        bool(final["text"]) and not final["tool_use"] and final["stop_reason"] in (None, "end_turn")
+        and len(final["text"].encode("utf-8")) <= MAX_EXTERNAL_REPORT_BYTES,
+        "reviewer final assistant message must be a text answer",
+        code="final_response_invalid",
+    )
+    if selected_prefix_bytes is not None:
+        _require(final["end_offset"] == selected_prefix_bytes, "reviewer transcript prefix does not end with the final message", code="final_prefix_missing")
+    return final
+
+
+def _contains_document(text: str, expected: Mapping[str, Any]) -> bool:
+    """Whether ``text`` embeds a JSON object canonically equal to ``expected``."""
+
+    target = _canonical(expected)
+    decoder = json.JSONDecoder()
+    index = text.find("{")
+    while index != -1:
+        try:
+            value, _ = decoder.raw_decode(text, index)
+        except json.JSONDecodeError:
+            value = None
+        if isinstance(value, dict) and _canonical(value) == target:
+            return True
+        index = text.find("{", index + 1)
+    return False
+
+
 def _verify_external(
+    root: Path,
     review: Mapping[str, Any],
     report: Mapping[str, Any],
     hashes: Mapping[str, str],
     implementer_session_id: str | None,
+    transcripts_root: Path | None,
 ) -> None:
-    """Check an ``external_json`` report's identities and content binding."""
+    """Check an ``external_json`` report against its reviewer transcript prefix."""
 
     reviewer = review["reviewer_session_id"]
     _require(set(report) <= EXTERNAL_REPORT_FIELDS, "external review report has unexpected fields")
@@ -353,17 +483,22 @@ def _verify_external(
         _require(key not in report or isinstance(report[key], list), "external review field must be a list: " + key)
     source_sha256 = report.get("source_report_sha256")
     _require(isinstance(source_sha256, str) and SHA256_RE.fullmatch(source_sha256) is not None, "external review source hash invalid")
+    _require(isinstance(report.get("source_report_path"), str) and report["source_report_path"], "external review source path missing")
     proof = report.get("proof")
-    _require(isinstance(proof, Mapping), "external review proof missing")
-    _require(proof.get("schema") == "external_json_review_proof_v1", "external review proof schema mismatch")
+    _require(isinstance(proof, Mapping), "external review transcript proof missing", code="transcript_required")
+    _require(proof.get("schema") == TRANSCRIPT_PROOF_SCHEMA, "external review proof schema mismatch", code="transcript_required")
     _require(proof.get("review_transport") == EXTERNAL_TRANSPORT, "external review proof transport mismatch")
     _require(proof.get("session_id") == reviewer, "external review proof session mismatch")
     _require(proof.get("implementer_session_id") == implementer, "external review proof implementer mismatch")
-    _require(proof.get("final_message_sha256") == source_sha256, "external review source hash mismatch")
-    size = proof.get("final_message_bytes")
-    _require(type(size) is int and 0 < size <= MAX_EXTERNAL_REPORT_BYTES, "external review source length invalid")
+    transcript = _transcript_path(proof.get("transcript_path"), reviewer, transcripts_root)
+    prefix_bytes = proof.get("prefix_bytes")
+    _require(type(prefix_bytes) is int and prefix_bytes > 0, "transcript proof prefix length missing")
+    final = _read_transcript(transcript, root, reviewer, prefix_bytes)
+    _require(proof.get("prefix_sha256") == final["prefix_sha256"], "transcript proof prefix hash mismatch", code="transcript_prefix_changed")
+    _require(proof.get("final_message_sha256") == _sha256(final["text"].encode("utf-8")), "transcript final message hash mismatch")
+    _require(proof.get("final_message_bytes") == len(final["text"].encode("utf-8")), "transcript final message length mismatch")
     document = {"verdict": report["verdict"], "file_hashes": dict(hashes), "findings": report["findings"]} | _optional_fields(report)
-    _require(proof.get("final_document_sha256") == _sha256(_canonical(document)), "external review content does not match its source hash")
+    _require(_contains_document(final["text"], document), "reviewer final message does not match the review report", code="final_response_mismatch")
 
 
 def verify_review(
@@ -372,8 +507,9 @@ def verify_review(
     *,
     implementer_session_id: str | None = None,
     sessions_root: Path | None = None,
+    transcripts_root: Path | None = None,
 ) -> dict[str, str]:
-    """Verify a review adapter and its rollout proof without writing files."""
+    """Verify a review adapter and its rollout or transcript proof without writing files."""
 
     _require(isinstance(review, Mapping), "review receipt must be an object")
     _require(review.get("kind") in {"review", "supporting_review", "supporting_workflow_review"}, "review receipt kind required")
@@ -382,7 +518,7 @@ def verify_review(
     _require(isinstance(reviewer, str) and reviewer, "reviewer session identity required")
     _require(isinstance(review.get("unit_id"), str) and review["unit_id"], "review unit identity required")
     _require(review.get("producer") == reviewer, "review producer must be the proven reviewer session")
-    _require(isinstance(review.get("verdict"), str) and review["verdict"], "review verdict required", code="verdict_missing")
+    verdict = _validated_verdict(review.get("verdict"))
     if implementer_session_id is not None:
         _require(reviewer != implementer_session_id, "reviewer session must differ from implementer")
 
@@ -398,7 +534,6 @@ def verify_review(
     _require(isinstance(report, Mapping), "review report must be a JSON object")
     transport = report.get("review_transport")
     _require(transport in (None, EXTERNAL_TRANSPORT), "unsupported review transport")
-    verdict = _validated_verdict(review.get("verdict"), EXTERNAL_REVIEW_VERDICTS if transport else SUPPORTED_REVIEW_VERDICTS)
     _require(report.get("schema") == "cata_raid_review_report_v1", "review report schema mismatch")
     _require(report.get("reviewer_session_id") == reviewer, "review report reviewer identity mismatch")
     _require(report.get("verdict") == verdict, "review report verdict mismatch")
@@ -407,7 +542,7 @@ def verify_review(
     _require(report.get("findings") is not None, "review report findings missing")
     _require(len(_canonical(report.get("findings"))) <= MAX_FINDINGS_BYTES, "review findings are too large")
     if transport == EXTERNAL_TRANSPORT:
-        _verify_external(review, report, hashes, implementer_session_id)
+        _verify_external(root, review, report, hashes, implementer_session_id, transcripts_root)
         return hashes
 
     proof = report.get("proof")
@@ -504,6 +639,7 @@ def _write_review(
     *,
     implementer_session_id: str | None,
     sessions_root: Path | None = None,
+    transcripts_root: Path | None = None,
     extra: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Write the compact review report and graph adapter shared by both transports."""
@@ -534,7 +670,10 @@ def _write_review(
         "review_report": report_ref_target,
         "evidence": [report_ref_target],
     }
-    verify_review(root, receipt, implementer_session_id=implementer_session_id, sessions_root=sessions_root)
+    verify_review(
+        root, receipt, implementer_session_id=implementer_session_id,
+        sessions_root=sessions_root, transcripts_root=transcripts_root,
+    )
     receipt_target = receipt_path if receipt_path is not None else report_target.with_suffix(".receipt.json")
     if not receipt_target.is_absolute():
         receipt_target = root / receipt_target
@@ -569,14 +708,19 @@ def import_external_review(
     reviewer_session_id: str,
     implementer_session_id: str,
     receipt_path: str | Path,
+    transcript_path: str | Path,
+    transcripts_root: Path | None = None,
     output_report_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Record a non-Codex reviewer's final JSON as a hash-bound review adapter.
+    """Record a Claude Code reviewer subagent's final JSON as a review adapter.
 
     ``report_path`` holds exactly the final JSON the separate reviewer returned
     (``verdict``, ``file_hashes``, ``findings``, optional ``tests``/``limits``).
-    Every hash must match the working tree now; changed files need a new
-    review.  The compact report defaults to ``<receipt>.report.json``.
+    ``transcript_path`` is that subagent's persisted JSONL; its last assistant
+    message must embed the same JSON and nothing but non-user records may
+    follow.  Every hash must match the working tree now; changed files need a
+    new review.  The compact report defaults to ``<receipt>.report.json``; no
+    output is left behind when any check fails.
     """
 
     root = root.resolve()
@@ -592,7 +736,7 @@ def import_external_review(
     except UnicodeDecodeError as exc:
         raise ReviewExecutionError("reviewer JSON report must be UTF-8", code="final_response_invalid") from exc
     document = _final_document(text)
-    _validated_verdict(document.get("verdict"), EXTERNAL_REVIEW_VERDICTS)
+    _validated_verdict(document.get("verdict"))
     _require(isinstance(document.get("findings"), list), "reviewer findings must be a list", code="findings_invalid")
     for key in ("tests", "limits"):
         _require(key not in document or isinstance(document[key], list), "reviewer field must be a list: " + key, code="optional_field_invalid")
@@ -601,6 +745,13 @@ def import_external_review(
         hashes = _validated_file_hashes(root, document.get("file_hashes"))
     except graph.GraphError as exc:  # a reviewed file no longer exists
         raise ReviewExecutionError(str(exc) + "; changed files need a new review", code="stale_file_hashes") from exc
+    transcript = _transcript_path(transcript_path, reviewer_session_id, transcripts_root)
+    final = _read_transcript(transcript, root, reviewer_session_id)
+    _require(
+        _contains_document(final["text"], document),
+        "reviewer final message does not contain this report JSON",
+        code="final_response_mismatch",
+    )
     receipt_target = _inside(root, receipt_path)
     if output_report_path is None:
         stem = receipt_target.name.removesuffix(".json").removesuffix(".receipt")
@@ -608,33 +759,45 @@ def import_external_review(
     else:
         report_target = _inside(root, output_report_path)
     _require(len({source, receipt_target, report_target}) == 3, "reviewer JSON, report and receipt paths must differ", code="path_collision")
-    source_sha256 = _sha256(raw)
+    final_bytes = final["text"].encode("utf-8")
     proof = {
-        "schema": "external_json_review_proof_v1",
+        "schema": TRANSCRIPT_PROOF_SCHEMA,
         "review_transport": EXTERNAL_TRANSPORT,
+        "transcript_path": str(transcript),
         "session_id": reviewer_session_id,
         "implementer_session_id": implementer_session_id,
-        "final_message_bytes": len(raw),
-        "final_message_sha256": source_sha256,
-        "final_document_sha256": _sha256(_canonical({**document, "file_hashes": hashes})),
+        "prefix_bytes": final["end_offset"],
+        "prefix_sha256": final["prefix_sha256"],
+        "final_message_bytes": len(final_bytes),
+        "final_message_sha256": _sha256(final_bytes),
     }
     extra = {
         "review_transport": EXTERNAL_TRANSPORT,
         "implementer_session_id": implementer_session_id,
-        "source_report_sha256": source_sha256,
+        "source_report_sha256": _sha256(raw),
+        "source_report_path": str(source),
     }
-    result = _write_review(
-        root, reviewer_session_id, document, hashes, proof, report_target, receipt_target,
-        implementer_session_id=implementer_session_id, extra=extra,
-    )
+    preexisting = {path for path in (report_target, receipt_target) if path.exists()}
+    try:
+        result = _write_review(
+            root, reviewer_session_id, document, hashes, proof, report_target, receipt_target,
+            implementer_session_id=implementer_session_id, transcripts_root=transcripts_root, extra=extra,
+        )
+    except BaseException:
+        for path in (report_target, receipt_target):
+            if path not in preexisting:
+                path.unlink(missing_ok=True)
+        raise
     return {"ok": True, "review_transport": EXTERNAL_TRANSPORT, "implementer_session_id": implementer_session_id} | result
 
 
 def _import_json_main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="Record an independent review from a non-Codex reviewer's final JSON")
+    parser = argparse.ArgumentParser(description="Record an independent review from a Claude Code reviewer subagent's final JSON")
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--report", type=Path, required=True, help="reviewer final JSON: verdict, file_hashes, findings[, tests, limits]")
-    parser.add_argument("--reviewer-session-id", "--reviewer-id", dest="reviewer_session_id", required=True)
+    parser.add_argument("--transcript", type=Path, required=True, help="reviewer subagent JSONL: <transcripts-root>/<project>/<session>/subagents/agent-<id>.jsonl")
+    parser.add_argument("--transcripts-root", type=Path, help="default ~/.claude/projects")
+    parser.add_argument("--reviewer-session-id", "--reviewer-id", dest="reviewer_session_id", required=True, help="reviewer subagent agentId")
     parser.add_argument("--implementer-session-id", "--implementer-id", dest="implementer_session_id", required=True)
     parser.add_argument("--receipt", type=Path, required=True, help="review adapter to write (inside --root)")
     parser.add_argument("--output-report", type=Path, help="compact report to write; default <receipt>.report.json")
@@ -646,6 +809,8 @@ def _import_json_main(argv: list[str]) -> int:
             reviewer_session_id=args.reviewer_session_id,
             implementer_session_id=args.implementer_session_id,
             receipt_path=args.receipt,
+            transcript_path=args.transcript,
+            transcripts_root=args.transcripts_root,
             output_report_path=args.output_report,
         )
     except (ReviewExecutionError, graph.GraphError, OSError, ValueError) as exc:

@@ -1,5 +1,7 @@
 """Raid scoreboard: target, counting rules, verdict contract, Welch comparison and the run path.
 
+The keep/revert rule and the baseline pointer are tested in test_raid_scoreboard_keep.py.
+
 Synthetic kills and fake subprocesses only; nothing here launches a server or touches DVC.
 """
 import hashlib
@@ -13,17 +15,15 @@ import pytest
 
 from tools.raid_program import scoreboard_run
 from tools.raid_program.scoreboard import (
-    KILL_SCHEMA, append_record, compare_labels, evaluate_target, load_baseline, load_records, load_target, main,
-    party_reference_dps, set_baseline, spec_targets,
+    KILL_SCHEMA, append_record, compare_labels, evaluate_target, load_records, load_target, main,
+    party_reference_dps, spec_targets,
 )
-from tools.raid_program.scoreboard_compare import critical_t, keep_recommendation, welch
-from tools.raid_program.scoreboard_core import (
-    baseline_path, fallback_targets, load_lines, mean_sd, reference_targets, scoreboard_path,
-)
+from tools.raid_program.scoreboard_compare import critical_t, welch
+from tools.raid_program.scoreboard_core import fallback_targets, load_lines, reference_targets, scoreboard_path
 from tools.raid_program.scoreboard_record import (
     classify_outcome, death_evidence, is_native_clear, record_from_summary,
 )
-from tools.raid_program.scoreboard_show import MECHANISM_REMINDER, render
+from tools.raid_program.scoreboard_show import render
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO = "blackwing_descent_10n_magmaw"
@@ -281,59 +281,6 @@ def test_welch_matches_the_textbook_formula():
     assert welch([6.0] * 3, [5.0] * 3)["verdict"] == "improved"
 
 
-def test_keep_rule():
-    # 2026-09-23: the rule no longer needs the Welch test to say improved; a non-negative point
-    # estimate with no regression, no new deaths and native clears is a keep (playbook step f).
-    up = {"verdict": "improved", "new_mean": 110.0, "old_mean": 100.0}
-    flat_up = {"verdict": "within_noise", "new_mean": 101.0, "old_mean": 100.0}
-    flat_down = {"verdict": "within_noise", "new_mean": 99.0, "old_mean": 100.0}
-    down = {"verdict": "regressed", "new_mean": 80.0, "old_mean": 100.0}
-    actors = {"1": {**flat_up, "gating": True}, "2": {**down, "gating": False}}
-    common = dict(new_deaths_per_kill=0.0, old_deaths_per_kill=0.0, new_non_clears=0)
-    assert keep_recommendation(up, actors, targeted_actor=None, **common)[0] == "keep"
-    assert keep_recommendation(flat_up, actors, targeted_actor=None, **common)[0] == "keep"
-    decision, reasons = keep_recommendation(flat_down, actors, targeted_actor=None, **common)
-    assert decision == "revert" and "party mean fell" in reasons[0]
-    assert keep_recommendation(flat_down, {"1": {**flat_up, "gating": True}}, targeted_actor="1", **common)[0] == "keep"
-    decision, reasons = keep_recommendation(up, {"1": {**down, "gating": True}}, targeted_actor=None, **common)
-    assert decision == "revert" and "regressed" in reasons[0]
-    assert keep_recommendation(up, actors, targeted_actor=None, new_deaths_per_kill=0.5, old_deaths_per_kill=0.0,
-                               new_non_clears=0)[0] == "revert"
-    assert keep_recommendation(up, actors, targeted_actor=None, new_deaths_per_kill=0.0, old_deaths_per_kill=0.0,
-                               new_non_clears=1)[0] == "revert"
-    assert keep_recommendation(up, actors, targeted_actor=None, new_deaths_per_kill=1.0,
-                               old_deaths_per_kill=0.0, new_non_clears=0)[0] == "revert"
-    assert keep_recommendation({"verdict": "insufficient_kills"}, actors, targeted_actor=None,
-                               **common)[0] == "insufficient_kills"
-
-
-def test_compare_labels_and_show(root):
-    batch(root, "old", scales=(0.80, 0.81, 0.79))
-    batch(root, "new", scales=(1.00, 1.01, 0.99))
-    result = compare_labels(root, SCENARIO, "new", "old")
-    assert result["schema"] == "raid_label_comparison_v1" and result["keep"]["decision"] == "keep"
-    assert result["party"]["verdict"] == "improved" and result["party"]["delta"] == pytest.approx(48000.0)
-    fire = result["actors"]["30006"]
-    assert fire["verdict"] == "improved" and fire["gating"] and fire["df"] > 0 and fire["t"] > fire["critical_t"]
-    assert result["actors"]["30003"]["gating"] is False
-    text = render(root, SCENARIO, "new", "old")
-    # show prints the four-condition keep rule (a)-(d) instead of compare_labels' improved-beyond-noise advice
-    assert "keep/revert: keep" in text and "t95" in text
-    assert "(healer, not gating)" in text and "kill time" in text
-
-
-def test_recovered_trash_deaths_do_not_gate_but_boss_deaths_do(root):
-    batch(root, "old", scales=(0.80, 0.81, 0.79))
-    batch(root, "trash", scales=(1.00, 1.01, 0.99), route_deaths=2)
-    trash = compare_labels(root, SCENARIO, "trash", "old")
-    assert trash["keep"]["decision"] == "keep"
-    assert trash["route_deaths_per_kill"]["new"] == 2.0 and trash["boss_window_deaths_per_kill"]["new"] == 0.0
-    batch(root, "boss", scales=(1.00, 1.01, 0.99), route_deaths=1, window_deaths=1)
-    boss = compare_labels(root, SCENARIO, "boss", "old")
-    assert boss["keep"]["decision"] == "revert"
-    assert any("boss-window deaths per kill rose" in reason for reason in boss["keep"]["reasons"])
-
-
 def test_show_lists_each_kill_with_stall_share_and_reconciliation(root):
     batch(root, "a")
     record_all(root, kill("a", "stalled", validity=STALLED,
@@ -346,16 +293,6 @@ def test_show_lists_each_kill_with_stall_share_and_reconciliation(root):
     assert stalled.split()[-2:] == ["2", "51234"]
     counted = next(line for line in lines if line.strip().startswith("a-k0"))
     assert " yes " in counted and "0.00" in counted
-
-
-def test_compare_keeps_a_numeric_delta_without_clears(root):
-    batch(root, "old")
-    record_all(root, *(kill("new", f"w{i}", clear=False, scale=0.5) for i in range(2)))
-    result = compare_labels(root, SCENARIO, "new", "old")
-    assert result["basis"] == "counted_kills_with_encounter_data"
-    assert result["party"]["delta"] == pytest.approx(0.5 * 240000.0 - 240000.0 * (1.0 + 1.02 + 0.99) / 3)
-    assert result["party"]["verdict"] == "insufficient_kills" and result["actors"]["30001"]["delta"] is not None
-    assert result["keep"]["decision"] == "revert"  # candidate kills did not clear
 
 
 # --- records ----------------------------------------------------------------------------------
@@ -1037,112 +974,3 @@ def test_show_prints_the_reference_basis(root):
     assert " 41029 WCL " in next(line for line in text.splitlines() if line.startswith("30001"))
     assert "(no WCL: >= 0.9 x WoWSims)" in text
     assert "[references: 6 WCL, 1 WoWSims fallback]" in text
-
-
-# --- baseline pointer and the keep rule -------------------------------------------------------
-
-def test_baseline_set_print_and_verdict_default(root, capsys):
-    batch(root, "a")
-    batch(root, "b", scales=(0.9, 0.91, 0.92))
-    cli = ["--root", str(root)]
-    assert main(cli + ["baseline", "--scenario", SCENARIO]) == 0
-    assert capsys.readouterr().out.startswith(f"no baseline set for {SCENARIO}")
-    assert main(cli + ["verdict", "--scenario", SCENARIO]) == 0
-    out = capsys.readouterr()
-    assert json.loads(out.out)["label"] == "b" and "verdict label: b (latest recorded label" in out.err
-    assert main(cli + ["baseline", "--scenario", SCENARIO, "--label", "a", "--reason", " kept round 3 "]) == 0
-    written = json.loads(baseline_path(root, SCENARIO).read_text())
-    assert written == load_baseline(root, SCENARIO) and written["set_at"].endswith("Z")
-    assert {key: written[key] for key in written if key != "set_at"} == {
-        "schema": "raid_scoreboard_baseline_v1", "scenario": SCENARIO, "label": "a", "source_commit": "0" * 40,
-        "worldserver_sha256": "1" * 64, "counted_kills": 3, "reason": "kept round 3"}
-    capsys.readouterr()
-    assert main(cli + ["baseline", "--scenario", SCENARIO]) == 0
-    assert json.loads(capsys.readouterr().out) == written
-    assert main(cli + ["verdict", "--scenario", SCENARIO]) == 0
-    out = capsys.readouterr()
-    assert json.loads(out.out)["label"] == "a" and out.err.startswith("verdict label: a (baseline set ")
-    assert main(cli + ["verdict", "--scenario", SCENARIO, "--label", "b"]) == 0
-    assert json.loads(capsys.readouterr().out)["label"] == "b"
-
-
-def test_baseline_needs_enough_clears_on_one_build(root):
-    batch(root, "short", scales=(1.0, 1.0))
-    batch(root, "mixed")
-    record_all(root, kill("mixed", "other", sha="2" * 64))
-    for label, message in (("short", "has 2 counted native-clear"), ("mixed", "mixes builds"), ("none", "no kills")):
-        with pytest.raises(SystemExit, match=message):
-            set_baseline(root, SCENARIO, label)
-    assert load_baseline(root, SCENARIO) is None
-
-
-def test_show_compares_against_the_baseline_by_default(root):
-    batch(root, "old", scales=(0.80, 0.81, 0.79))
-    batch(root, "new", scales=(1.00, 1.01, 0.99))
-    assert render(root, SCENARIO).splitlines()[0].endswith("label=new baseline=unset counted=3 of 3 clears=3")
-    set_baseline(root, SCENARIO, "old")
-    auto = render(root, SCENARIO).splitlines()
-    assert auto[0].endswith("label=new baseline=old counted=3 of 3 clears=3  vs old (the baseline; pass --vs to override)")
-    assert auto[1:] == render(root, SCENARIO, "new", "old").splitlines()[1:] and "keep/revert: keep" in auto
-    same = render(root, SCENARIO, "old")
-    assert "baseline=old" in same and " vs " not in same.splitlines()[0] and "keep/revert" not in same
-
-
-def scaled(scale, factors):
-    """Roster actors at scale with some actors' DPS multiplied by a factor."""
-    actors = roster_actors(scale)
-    for actor in actors:
-        actor["encounter_window_dps"] *= factors.get(actor["actor_id"], 1.0)
-    return actors
-
-
-def keep_block(root, new, old="old", actor=None):
-    lines = render(root, SCENARIO, new, old, actor).splitlines()
-    start = next(index for index, line in enumerate(lines) if line.startswith("keep/revert:"))
-    assert lines[start + 5] == MECHANISM_REMINDER  # the reminder follows every decision
-    return lines[start:start + 5]
-
-
-def test_keep_rule_conditions_each_fail_alone(root):
-    batch(root, "old")
-    batch(root, "wipe", scales=(1.1, 1.12, 1.09))
-    record_all(root, kill("wipe", "w", clear=False, scale=1.1))
-    batch(root, "deaths", scales=(1.1, 1.12, 1.09), window_deaths=1)
-    record_all(root, *(kill("fire", f"k{i}", scale=s, actors=scaled(s, {"30006": 0.5}))
-                       for i, s in enumerate((1.1, 1.12, 1.09))))
-    batch(root, "lower", scales=(0.99, 1.01, 0.98))  # party -1%: within noise but a negative point estimate
-    record_all(root, *(kill("dk", f"k{i}", scale=s, actors=scaled(s, {"30002": 0.99}))
-                       for i, s in enumerate((1.0, 1.02, 0.99))))
-    batch(root, "few", scales=(1.1, 1.12))
-    failing = {"wipe": "a", "deaths": "b", "fire": "c", "lower": "d"}
-    for label, condition in failing.items():
-        block = keep_block(root, label)
-        assert block[0].startswith(f"keep/revert: revert - ({condition}) "), (label, block[0])
-        assert [line.split()[1] for line in block[1:]] == ["FAIL" if name == condition else "ok" for name in "abcd"]
-    assert "regressed non-healer actors (two-sided 95% Welch t): 30006" in keep_block(root, "fire")[0]
-    # a targeted actor whose mean fell reverts even when the party is flat; within noise the sign decides
-    assert keep_block(root, "dk")[0] == "keep/revert: keep"
-    assert keep_block(root, "dk", actor="30002")[0].startswith("keep/revert: revert - (d) actor 30002 mean ")
-    record_all(root, *(kill("dkup", f"k{i}", scale=s, actors=scaled(s, {"30002": 1.01}))
-                       for i, s in enumerate((1.0, 1.02, 0.99))))
-    assert compare_labels(root, SCENARIO, "dkup", "old")["actors"]["30002"]["verdict"] == "within_noise"
-    assert keep_block(root, "dkup", actor="30002")[0] == "keep/revert: keep"
-    assert keep_block(root, "few")[0].startswith("keep/revert: insufficient_kills - (c) not judged")
-
-
-def test_show_prints_the_detectable_delta_and_warns_below_kills_per_batch(root):
-    old_scales, new_scales = (1.0, 1.02, 0.99, 1.01, 0.97), (1.03, 1.0, 1.05)
-    batch(root, "old", scales=old_scales)
-    batch(root, "new", scales=new_scales)
-    text = render(root, SCENARIO, "new", "old")
-    lines = text.splitlines()
-    party = compare_labels(root, SCENARIO, "new", "old")["party"]
-    new, old = [240000.0 * s for s in new_scales], [240000.0 * s for s in old_scales]
-    expected = party["critical_t"] * (mean_sd(new)[1] ** 2 / 3 + mean_sd(old)[1] ** 2 / 5) ** 0.5
-    assert next(line for line in lines if line.startswith("actor ")).split("|")[1].split()[6] == "det95"
-    assert next(line for line in lines if line.startswith("party ")).split("|")[1].split()[6] == f"{expected:.0f}"
-    assert next(line for line in lines if line.startswith("30003")).split("|")[1].split()[6] == "-"  # healer
-    assert any(line.startswith("det95 = detectable delta (95%, these n)") for line in lines)
-    warnings = [line for line in lines if line.startswith("warning:")]
-    assert warnings == ["warning: new has 3 counted native-clear kill(s), fewer than kills_per_batch 5; "
-                        "see det95 for what these n can detect"]

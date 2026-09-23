@@ -119,9 +119,10 @@ It compares against the recorded baseline (`--vs L` overrides). With at least 3
 counted native-clear kills per label, `show` classifies each metric with a
 two-sided 95% Welch t-test as **improved**, **regressed** or **within noise**,
 prints the delta it could have detected at these kill counts, and prints
-**keep** or **revert**. Keep when every counted kill of the new label is a
-native clear, boss-window deaths per kill did not increase, no non-healer actor
-regressed, and the target actor's mean (party mean without `--actor`) is not
+**keep**, **revert** or **insufficient_kills** (a side below `kills_per_batch`;
+`--min-kills N` overrides it and the decision line says so). Keep when every
+kill recorded under the new label is a native clear, boss-window deaths per kill did not increase, neither the party nor any
+non-healer actor regressed, and the target actor's mean (party mean without `--actor`) is not
 below the baseline. A within-noise positive delta is kept only when the
 change's mechanism is visible in the candidate kills: the new ability was
 submitted and landed, the named gap shrank or the rejection count fell. Check
@@ -129,7 +130,8 @@ that in the ranked gaps or with `evidence_view` before keeping. Otherwise
 revert it: revert the commit, and for SQL profile rows apply the reverse
 migration and read the rows back. A kept change's label becomes the new
 baseline: record it with
-`scoreboard baseline --scenario S --label <change-label> --reason TEXT`.
+`scoreboard baseline --scenario S --label <change-label> --reason TEXT`
+(it refuses a label with a wipe or a boss-window death unless `--force`).
 Trash deaths the party recovers from are context only; a trash wipe that stops
 the route already fails the kill. The random Massive Crash side moves casters
 by several thousand DPS; read the RNG line and never credit a caster delta to a

@@ -4,10 +4,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from tools.raid_program.scoreboard_compare import compare_labels
+from tools.raid_program.scoreboard_compare import batch_shortfall, compare_labels
 from tools.raid_program.scoreboard_core import (
-    actor_rows, clear_kills, counted_kills, detectable_delta, exclusion_reason, kills_per_batch, label_kills,
-    latest_label, load_baseline, load_records, load_target, mean_sd,
+    actor_rows, clear_kills, detectable_delta, exclusion_reason, kills_per_batch, label_kills, latest_label,
+    load_baseline, load_records, load_target, mean_sd,
 )
 
 RNG_PRIMARY_SIDE = {"massive_crash": "raid_wide"}  # side whose share is compared between labels
@@ -37,55 +37,15 @@ def _change(change: dict[str, Any], detect: float | None = None) -> str:
             f"{_num(detect)} {change['verdict']}")
 
 
-def keep_decision(comparison: dict[str, Any], new_kills: list[dict[str, Any]],
-                  targeted_actor: str | None = None) -> tuple[str, list[tuple[str, bool | None, str]]]:
-    """keep only when all hold: (a) every counted candidate kill is a native clear, (b) boss-window deaths
-    per counted kill did not increase, (c) no non-healer actor regressed (two-sided 95% Welch t, per row)
-    and (d) the point estimate is non-negative: the targeted actor's mean, else the party mean, is at
-    least the baseline mean.
-
-    Returns (decision, [(condition, ok, text)]). A failed condition means revert; a condition that cannot
-    be judged (fewer than min_kills_per_label counted native clears on a side) means insufficient_kills.
-    """
-    new_label, old_label = comparison["new_label"], comparison["old_label"]
-    counted = counted_kills(new_kills)
-    non_clears = [record["kill_id"] for record in counted if not record.get("native_clear")]
-    conditions = [("a", not non_clears, f"{len(counted) - len(non_clears)} of {len(counted)} counted kill(s) of "
-                   f"{new_label} are native clears" + (f"; not: {', '.join(non_clears)}" if non_clears else ""))]
-    deaths = comparison["boss_window_deaths_per_kill"]
-    conditions.append(("b", deaths["new"] <= deaths["old"], f"boss-window deaths per counted kill "
-                       f"{old_label} {deaths['old']:.2f} -> {new_label} {deaths['new']:.2f}"))
-    gating = {actor_id: row for actor_id, row in comparison["actors"].items() if row["gating"]}
-    regressed = [actor_id for actor_id, row in gating.items() if row["verdict"] == "regressed"]
-    unjudged = [actor_id for actor_id, row in gating.items() if row["verdict"] == "insufficient_kills"]
-    if regressed:
-        conditions.append(("c", False, f"regressed non-healer actors (two-sided 95% Welch t): {', '.join(regressed)}"))
-    elif unjudged:
-        conditions.append(("c", None, f"not judged: fewer than {comparison['min_kills_per_label']} counted "
-                           f"native-clear kills on a side for {', '.join(unjudged)}"))
-    else:
-        conditions.append(("c", True, "no non-healer actor regressed (two-sided 95% Welch t)"))
-    subject = f"actor {targeted_actor}" if targeted_actor else "party"
-    row = comparison["actors"].get(targeted_actor) if targeted_actor else comparison["party"]
-    if row is None:
-        conditions.append(("d", False, f"{subject} is in neither label"))
-    elif comparison["basis"] != "counted_native_clears" or row["new_mean"] is None or row["old_mean"] is None:
-        conditions.append(("d", None, f"{subject} has no counted native-clear mean on a side"))
-    else:
-        conditions.append(("d", row["new_mean"] >= row["old_mean"],
-                           f"{subject} mean {row['new_mean']:.0f} vs {old_label} {row['old_mean']:.0f} "
-                           f"({row['new_mean'] - row['old_mean']:+.0f})"))
-    states = [ok for _, ok, _ in conditions]
-    decision = "revert" if False in states else "insufficient_kills" if None in states else "keep"
-    return decision, conditions
-
-
-def _keep_lines(decision: str, conditions: list[tuple[str, bool | None, str]]) -> list[str]:
-    failed = [f"({name}) {text}" for name, ok, text in conditions if ok is False]
-    unjudged = [f"({name}) {text}" for name, ok, text in conditions if ok is None]
-    reasons = failed if decision == "revert" else unjudged
-    lines = [f"keep/revert: {decision}" + (f" - {'; '.join(reasons)}" if reasons else "")]
-    lines += [f"  ({name}) {'ok' if ok else 'FAIL' if ok is False else 'n/a':4} {text}" for name, ok, text in conditions]
+def _keep_lines(keep: dict[str, Any]) -> list[str]:
+    """The keep_decision of compare_labels: decision, override, reasons, one line per condition, reminder."""
+    override = keep.get("min_kills_override")
+    line = f"keep/revert: {keep['decision']}"
+    if override is not None:
+        line += f" [--min-kills {override} overrides kills_per_batch {keep['target_kills_per_batch']}]"
+    lines = [line + (f" - {'; '.join(keep['reasons'])}" if keep["reasons"] else "")]
+    lines += [f"  ({c['condition']}) {'ok' if c['ok'] else 'FAIL' if c['ok'] is False else 'n/a':4} {c['text']}"
+              for c in keep["conditions"]]
     return lines + [MECHANISM_REMINDER]
 
 
@@ -207,7 +167,11 @@ def _gap_line(rank: int, gap: dict[str, Any]) -> str:
 
 
 def render(root: Path, scenario: str, label: str | None = None, vs: str | None = None,
-           targeted_actor: str | None = None) -> str:
+           targeted_actor: str | None = None, batch_kills: int | None = None) -> str:
+    """The scoreboard table; with a comparison label (--vs, else the baseline) the keep/revert decision.
+
+    batch_kills (show --min-kills) overrides kills_per_batch for the keep decision only.
+    """
     target = load_target(root, scenario)
     records = load_records(root, scenario)
     label = label or latest_label(records)
@@ -217,7 +181,7 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     verdict = evaluate_target(root, scenario, label)
     kills = label_kills(records, label)
     rows = actor_rows(clear_kills(kills))
-    comparison = compare_labels(root, scenario, label, vs, targeted_actor) if vs else None
+    comparison = compare_labels(root, scenario, label, vs, targeted_actor, batch_kills) if vs else None
     old_kills = label_kills(records, vs) if vs else []
     old_rows = actor_rows(clear_kills(old_kills))
     encounter = verdict["encounter"]
@@ -286,12 +250,13 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     out.append(f"verdict: {verdict['status']}" + (f" [references: {basis_text}]" if basis_text else "")
                + (f" - {verdict['reason']}" if verdict["reason"] else ""))
     if comparison:
-        out += _keep_lines(*keep_decision(comparison, kills, targeted_actor))
+        keep = comparison["keep"]
+        out += _keep_lines(keep)
         batch = kills_per_batch(target)
         for side, side_kills in ((label, kills), (vs, old_kills)):
-            if len(clear_kills(side_kills)) < batch:
-                out.append(f"warning: {side} has {len(clear_kills(side_kills))} counted native-clear kill(s), fewer "
-                           f"than kills_per_batch {batch}; see det95 for what these n can detect")
+            text = batch_shortfall(side, len(clear_kills(side_kills)), batch)
+            if len(clear_kills(side_kills)) < batch and text not in keep["reasons"]:
+                out.append("warning: " + text)
     if kills:
         latest = kills[-1]
         gaps = latest.get("ranked_gaps") or []

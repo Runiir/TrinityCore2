@@ -300,132 +300,292 @@ def test_preflight_cli_reports_specific_nonzero_error(workflow_case, tmp_path: P
     assert error["code"] == "reviewer_identity_mismatch"
 
 
-def _reviewer_json(root: Path, file_hashes: dict[str, str], *, verdict: str = "approved", name: str = "reviewer-final.json") -> Path:
-    path = root / name
-    path.write_text(json.dumps({
+
+@pytest.mark.parametrize("verdict", ["changes_requested", "changes_required"])
+def test_rollout_path_records_either_rejection_spelling(workflow_case, tmp_path: Path, verdict):
+    root, _ = workflow_case
+    sessions = tmp_path / "sessions"
+    rollout = _rollout(root, sessions, graph.snapshot(root, ["code.py"]), verdict=verdict)
+    result = review_execution.build_review(root, rollout, ["code.py"], "review.json", sessions_root=sessions)
+    assert result["verdict"] == verdict
+
+
+REVIEWER = "a0123456789abcdef"
+
+
+def _document(file_hashes: dict[str, str], verdict: str = "approved") -> dict:
+    return {
         "verdict": verdict,
         "file_hashes": file_hashes,
         "findings": [],
         "tests": [{"command": "pixi run pytest -q", "exit_status": 0}],
         "limits": ["workflow review only"],
-    }, indent=2) + "\n", encoding="utf-8")
+    }
+
+
+def _reviewer_json(root: Path, document: dict, *, name: str = "reviewer-final.json") -> Path:
+    path = root / name
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     return path
 
 
-def _import(root: Path, report: Path, **changes):
+def _transcript(
+    transcripts: Path,
+    root: Path,
+    final_document: dict,
+    *,
+    agent: str = REVIEWER,
+    file_agent: str | None = None,
+    trailing: list[dict] | None = None,
+) -> Path:
+    """Write a Claude Code subagent transcript with the observed record shape."""
+
+    path = transcripts / "-fixture-project" / "parent-session" / "subagents" / f"agent-{file_agent or agent}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    common = {"agentId": agent, "isSidechain": True, "cwd": str(root), "sessionId": "parent-session", "userType": "external"}
+    answer = "My verdict is **approved**.\n\n```json\n" + json.dumps(final_document, indent=2) + "\n```"
+    rows = [
+        {"type": "user", "message": {"role": "user", "content": "Review code.py and end with the final JSON."}},
+        {"type": "attachment", "attachment": {"type": "total_tokens_reminder"}},
+        {"type": "assistant", "message": {"id": "msg_1", "role": "assistant", "stop_reason": "tool_use",
+                                           "content": [{"type": "tool_use", "id": "toolu_1", "name": "Bash", "input": {"command": "cat code.py"}}]}},
+        {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_1", "content": "answer = 1"}]}},
+        {"type": "assistant", "message": {"id": "msg_2", "role": "assistant", "stop_reason": None,
+                                           "content": [{"type": "thinking", "thinking": "", "signature": "x"}]}},
+        {"type": "assistant", "message": {"id": "msg_2", "role": "assistant", "stop_reason": "end_turn",
+                                           "content": [{"type": "text", "text": answer}]}},
+        {"type": "attachment", "attachment": {"type": "total_tokens_reminder"}},
+        *(trailing or []),
+    ]
+    path.write_text("".join(json.dumps(common | row) + "\n" for row in rows), encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def external_case(workflow_case, tmp_path_factory):
+    root, tests_ref = workflow_case
+    transcripts = tmp_path_factory.mktemp("claude-projects")
+    document = _document(graph.snapshot(root, ["code.py"]))
+    return root, tests_ref, transcripts, document
+
+
+def _import(root: Path, report: Path, transcript: Path, transcripts: Path, **changes):
     arguments = {
-        "reviewer_session_id": "claude-reviewer",
+        "reviewer_session_id": REVIEWER,
         "implementer_session_id": "worker-tab",
         "receipt_path": "artifacts/review.json",
+        "transcript_path": transcript,
+        "transcripts_root": transcripts,
     } | changes
     return review_execution.import_external_review(root, report, **arguments)
 
 
-def test_import_json_writes_hash_bound_report_and_rollout_shaped_adapter(workflow_case, tmp_path: Path, capsys):
-    root, _ = workflow_case
-    hashes = graph.snapshot(root, ["code.py"])
-    source = _reviewer_json(root, hashes)
+def test_import_json_binds_transcript_and_writes_rollout_shaped_adapter(external_case, capsys):
+    root, _, transcripts, document = external_case
+    source = _reviewer_json(root, document)
+    transcript = _transcript(transcripts, root, document)
     assert review_execution.main([
         "import-json", "--root", str(root), "--report", str(source),
-        "--reviewer-session-id", "claude-reviewer", "--implementer-session-id", "worker-tab",
+        "--transcript", str(transcript), "--transcripts-root", str(transcripts),
+        "--reviewer-session-id", REVIEWER, "--implementer-session-id", "worker-tab",
         "--receipt", "artifacts/review.json",
     ]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["ok"] is True and result["review_transport"] == "external_json"
     receipt = json.loads((root / "artifacts/review.json").read_text())
     report = json.loads((root / "artifacts/review.report.json").read_text())
-    assert result["receipt"]["path"] == "artifacts/review.json"
     assert result["report"] == receipt["review_report"] == {"path": "artifacts/review.report.json",
                                                              "sha256": graph.digest((root / "artifacts/review.report.json").read_bytes())}
     # The adapter mirrors the rollout path's adapter key for key.
     assert set(receipt) == {"authority", "kind", "unit_id", "producer", "reviewer_session_id", "verdict",
                             "file_hashes", "review_report", "evidence"}
     assert receipt["kind"] == "review" and receipt["unit_id"] == "unit-1"
-    assert receipt["producer"] == receipt["reviewer_session_id"] == "claude-reviewer"
-    assert receipt["evidence"] == [receipt["review_report"]] and receipt["file_hashes"] == hashes
-    assert report["schema"] == "cata_raid_review_report_v1" and report["review_transport"] == "external_json"
-    assert report["reviewer_session_id"] == "claude-reviewer" and report["implementer_session_id"] == "worker-tab"
+    assert receipt["producer"] == receipt["reviewer_session_id"] == REVIEWER
+    assert receipt["evidence"] == [receipt["review_report"]] and receipt["file_hashes"] == document["file_hashes"]
+    assert report["review_transport"] == "external_json" and report["implementer_session_id"] == "worker-tab"
     assert report["source_report_sha256"] == graph.digest(source.read_bytes())
-    assert report["tests"] == [{"command": "pixi run pytest -q", "exit_status": 0}]
-    assert report["limits"] == ["workflow review only"]
-    assert review_execution.verify_review(root, receipt, implementer_session_id="worker-tab") == hashes
+    assert report["source_report_path"] == str(source.resolve())
+    proof = report["proof"]
+    final_end = transcript.read_bytes().rfind(b'"end_turn"')
+    prefix_bytes = transcript.read_bytes().index(b"\n", final_end) + 1
+    assert proof["transcript_path"] == str(transcript.resolve()) and proof["session_id"] == REVIEWER
+    assert proof["prefix_bytes"] == prefix_bytes < transcript.stat().st_size
+    assert proof["prefix_sha256"] == graph.digest(transcript.read_bytes()[:prefix_bytes])
+    assert report["tests"] == document["tests"] and report["limits"] == document["limits"]
+    hashes = document["file_hashes"]
+    assert review_execution.verify_review(root, receipt, implementer_session_id="worker-tab", transcripts_root=transcripts) == hashes
     with pytest.raises(ValueError, match="implementer identity mismatch"):
-        review_execution.verify_review(root, receipt, implementer_session_id="other-implementer")
+        review_execution.verify_review(root, receipt, implementer_session_id="other-implementer", transcripts_root=transcripts)
+    # A resumed reviewer may append records; the proven prefix is unchanged.
+    with transcript.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps({"type": "user", "agentId": REVIEWER, "isSidechain": True, "message": {"role": "user", "content": "more"}}) + "\n")
+    assert review_execution.verify_review(root, receipt, transcripts_root=transcripts) == hashes
 
 
-def test_import_json_rejects_self_review_without_writing(workflow_case, capsys):
-    root, _ = workflow_case
-    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]))
+def test_forged_external_report_without_transcript_is_rejected(external_case, monkeypatch):
+    from tools.raid_program import workflow_step
+
+    root, tests_ref, transcripts, document = external_case
+    monkeypatch.setattr(review_execution, "TRANSCRIPTS_ROOT", transcripts)
+    workflow_step.apply_step(root, tests_ref["path"], owner="worker-tab")
+    source = _reviewer_json(root, document)
+    with pytest.raises(review_execution.ReviewExecutionError, match="transcript") as failure:
+        _import(root, source, transcripts / "missing" / "subagents" / f"agent-{REVIEWER}.jsonl", transcripts)
+    assert failure.value.code == "transcript_missing"
+    # A hand-written report and adapter with a made-up reviewer id cannot advance review.
+    report = {"schema": "cata_raid_review_report_v1", "reviewer_session_id": "made-up", "verdict": "approved",
+              "file_hashes": document["file_hashes"], "findings": [], "review_transport": "external_json",
+              "implementer_session_id": "worker-tab", "source_report_sha256": "0" * 64, "source_report_path": "x",
+              "proof": {"schema": "claude_transcript_review_proof_v1", "review_transport": "external_json",
+                        "session_id": "made-up", "implementer_session_id": "worker-tab", "prefix_bytes": 1,
+                        "prefix_sha256": "0" * 64, "transcript_path": str(transcripts / "made-up.jsonl")}}
+    (root / "forged.report.json").write_text(json.dumps(report), encoding="utf-8")
+    ref = {"path": "forged.report.json", "sha256": graph.digest((root / "forged.report.json").read_bytes())}
+    adapter = {"authority": "coordinator_attestation", "kind": "review", "unit_id": "unit-1", "producer": "made-up",
+               "reviewer_session_id": "made-up", "verdict": "approved", "file_hashes": document["file_hashes"],
+               "review_report": ref, "evidence": [ref]}
+    (root / "forged.json").write_text(json.dumps(adapter), encoding="utf-8")
+    with pytest.raises(graph.GraphError, match="independent review execution: reviewer transcript"):
+        workflow_step.apply_step(root, "forged.json", dry_run=True)
+
+
+def test_import_json_rejects_transcript_of_another_agent(external_case):
+    root, _, transcripts, document = external_case
+    source = _reviewer_json(root, document)
+    foreign = _transcript(transcripts, root, document, agent="a-other-agent", file_agent=REVIEWER)
+    with pytest.raises(review_execution.ReviewExecutionError, match="another agent") as failure:
+        _import(root, source, foreign, transcripts)
+    assert failure.value.code == "transcript_identity_mismatch"
+    with pytest.raises(review_execution.ReviewExecutionError, match="this reviewer") as failure:
+        _import(root, source, foreign, transcripts, reviewer_session_id="a-other-agent")
+    assert failure.value.code == "transcript_identity_mismatch"
+    assert not (root / "artifacts").exists()
+
+
+def test_import_json_rejects_final_message_that_differs_from_report(external_case):
+    root, _, transcripts, document = external_case
+    source = _reviewer_json(root, document)
+    transcript = _transcript(transcripts, root, document | {"findings": [{"severity": "high", "text": "real finding"}]})
+    with pytest.raises(review_execution.ReviewExecutionError, match="does not contain this report") as failure:
+        _import(root, source, transcript, transcripts)
+    assert failure.value.code == "final_response_mismatch"
+    assert not (root / "artifacts").exists()
+
+
+def test_import_json_requires_json_to_be_the_final_answer(external_case):
+    root, _, transcripts, document = external_case
+    source = _reviewer_json(root, document)
+    followed = {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "content": ""}]}}
+    transcript = _transcript(transcripts, root, document, trailing=[followed])
+    with pytest.raises(review_execution.ReviewExecutionError, match="after its final assistant") as failure:
+        _import(root, source, transcript, transcripts)
+    assert failure.value.code == "final_response_not_last"
+
+
+@pytest.mark.parametrize("mutation", ["edit", "truncate"])
+def test_tampered_transcript_fails_verification(external_case, mutation):
+    root, _, transcripts, document = external_case
+    transcript = _transcript(transcripts, root, document)
+    _import(root, _reviewer_json(root, document), transcript, transcripts)
+    receipt = json.loads((root / "artifacts/review.json").read_text())
+    original = transcript.read_bytes()
+    if mutation == "edit":
+        transcript.write_bytes(original.replace(b"cat code.py", b"cat code.px", 1))
+    else:
+        transcript.write_bytes(original[: original.rfind(b'"end_turn"')])
+    with pytest.raises(ValueError, match="transcript"):
+        review_execution.verify_review(root, receipt, transcripts_root=transcripts)
+
+
+def test_import_json_rejects_self_review_without_writing(external_case, capsys):
+    root, _, transcripts, document = external_case
+    source = _reviewer_json(root, document)
+    transcript = _transcript(transcripts, root, document)
     with pytest.raises(review_execution.ReviewExecutionError, match="differ from implementer") as failure:
-        _import(root, source, reviewer_session_id="worker-tab")
+        _import(root, source, transcript, transcripts, implementer_session_id=REVIEWER)
     assert failure.value.code == "self_review"
     assert review_execution.main([
-        "import-json", "--root", str(root), "--report", str(source), "--reviewer-session-id", "same",
-        "--implementer-session-id", "same", "--receipt", "artifacts/review.json",
+        "import-json", "--root", str(root), "--report", str(source), "--transcript", str(transcript),
+        "--transcripts-root", str(transcripts), "--reviewer-session-id", REVIEWER,
+        "--implementer-session-id", REVIEWER, "--receipt", "artifacts/review.json",
     ]) == 2
     assert json.loads(capsys.readouterr().err)["code"] == "self_review"
     assert not (root / "artifacts").exists()
 
 
-def test_import_json_rejects_stale_file_hashes(workflow_case):
-    root, _ = workflow_case
-    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]))
+def test_import_json_rejects_stale_file_hashes(external_case):
+    root, _, transcripts, document = external_case
+    source = _reviewer_json(root, document)
+    transcript = _transcript(transcripts, root, document)
     (root / "code.py").write_text("answer = 2\n", encoding="utf-8")
     with pytest.raises(review_execution.ReviewExecutionError, match="do not match current files") as failure:
-        _import(root, source)
+        _import(root, source, transcript, transcripts)
     assert failure.value.code == "stale_file_hashes"
-    missing = _reviewer_json(root, {"gone.py": "0" * 64}, name="missing.json")
+    missing = _reviewer_json(root, _document({"gone.py": "0" * 64}), name="missing.json")
     with pytest.raises(review_execution.ReviewExecutionError, match="new review") as failure:
-        _import(root, missing)
+        _import(root, missing, transcript, transcripts)
     assert failure.value.code == "stale_file_hashes"
     assert not (root / "artifacts").exists()
 
 
-@pytest.mark.parametrize("verdict", ["changes_requested", "rejected", "APPROVED", ""])
-def test_import_json_rejects_unsupported_verdicts(workflow_case, verdict):
-    root, _ = workflow_case
-    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]), verdict=verdict)
+@pytest.mark.parametrize("verdict", ["rejected", "APPROVED", "approve", ""])
+def test_import_json_rejects_unsupported_verdicts(external_case, verdict):
+    root, _, transcripts, document = external_case
+    bad = document | {"verdict": verdict}
     with pytest.raises(review_execution.ReviewExecutionError, match="verdict") as failure:
-        _import(root, source)
+        _import(root, _reviewer_json(root, bad), _transcript(transcripts, root, bad), transcripts)
     assert failure.value.code in {"verdict_unsupported", "verdict_missing"}
     assert not (root / "artifacts").exists()
 
 
-def test_import_json_rejects_tampered_report_content(workflow_case):
-    root, _ = workflow_case
-    source = _reviewer_json(root, graph.snapshot(root, ["code.py"]))
-    _import(root, source)
+def test_import_json_leaves_no_partial_report_on_failure(external_case):
+    root, _, transcripts, document = external_case
+    (root / "artifacts").mkdir()
+    (root / "artifacts/review.json").write_text("{}\n", encoding="utf-8")
+    with pytest.raises(review_execution.ReviewExecutionError, match="overwrite"):
+        _import(root, _reviewer_json(root, document), _transcript(transcripts, root, document), transcripts)
+    assert not (root / "artifacts/review.report.json").exists()
+    assert (root / "artifacts/review.json").read_text() == "{}\n"
+
+
+def test_import_json_rejects_tampered_report_content(external_case):
+    root, _, transcripts, document = external_case
+    _import(root, _reviewer_json(root, document), _transcript(transcripts, root, document), transcripts)
     receipt = json.loads((root / "artifacts/review.json").read_text())
     report = json.loads((root / "artifacts/review.report.json").read_text())
     report["findings"] = [{"severity": "info", "text": "inserted after review"}]
     forged = root / "artifacts/forged.report.json"
     forged.write_text(json.dumps(report), encoding="utf-8")
     ref = {"path": "artifacts/forged.report.json", "sha256": graph.digest(forged.read_bytes())}
-    with pytest.raises(ValueError, match="source hash"):
-        review_execution.verify_review(root, receipt | {"review_report": ref, "evidence": [ref]})
+    with pytest.raises(ValueError, match="does not match the review report"):
+        review_execution.verify_review(root, receipt | {"review_report": ref, "evidence": [ref]}, transcripts_root=transcripts)
 
 
-def test_import_json_adapter_passes_graph_review_stage(workflow_case):
+def test_import_json_adapter_passes_graph_review_stage(external_case, monkeypatch):
     from tools.raid_program import workflow_step
 
-    root, tests_ref = workflow_case
+    root, tests_ref, transcripts, document = external_case
+    monkeypatch.setattr(review_execution, "TRANSCRIPTS_ROOT", transcripts)
     workflow_step.apply_step(root, tests_ref["path"], owner="worker-tab")
     state = json.loads((root / graph.STATE_PATH).read_text())["development_graph"]
     assert state["stage"] == "review" and state["implementer"] == "worker-tab"
-    hashes = graph.snapshot(root, ["code.py"])
 
-    rejected = _import(root, _reviewer_json(root, hashes, verdict="changes_required", name="rejected.json"),
-                       receipt_path="artifacts/rejected-review.json")
-    assert rejected["verdict"] == "changes_required"
-    with pytest.raises(graph.GraphError, match="independent approving reviewer"):
-        workflow_step.apply_step(root, rejected["receipt"]["path"], dry_run=True)
+    for index, verdict in enumerate(("changes_required", "changes_requested")):
+        rejected_doc = document | {"verdict": verdict}
+        rejected = _import(root, _reviewer_json(root, rejected_doc, name=f"rejected{index}.json"),
+                           _transcript(transcripts, root, rejected_doc, agent=f"a-rejecting-{index}"), transcripts,
+                           reviewer_session_id=f"a-rejecting-{index}", receipt_path=f"artifacts/rejected-{index}.json")
+        assert rejected["verdict"] == verdict
+        with pytest.raises(graph.GraphError, match="independent approving reviewer"):
+            workflow_step.apply_step(root, rejected["receipt"]["path"], dry_run=True)
 
-    wrong = _import(root, _reviewer_json(root, hashes, name="wrong.json"), implementer_session_id="someone-else",
-                    receipt_path="artifacts/wrong-implementer-review.json")
+    transcript = _transcript(transcripts, root, document)
+    wrong = _import(root, _reviewer_json(root, document, name="wrong.json"), transcript, transcripts,
+                    implementer_session_id="someone-else", receipt_path="artifacts/wrong-implementer-review.json")
     with pytest.raises(graph.GraphError, match="implementer identity mismatch"):
         workflow_step.apply_step(root, wrong["receipt"]["path"], dry_run=True)
 
-    approved = _import(root, _reviewer_json(root, hashes))
+    approved = _import(root, _reviewer_json(root, document), transcript, transcripts)
     preview = workflow_step.apply_step(root, approved["receipt"]["path"], dry_run=True)
     assert preview["from_stage"] == "review" and preview["to_stage"] != "review"
     result = workflow_step.apply_step(root, approved["receipt"]["path"])

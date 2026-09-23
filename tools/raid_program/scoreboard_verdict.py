@@ -12,13 +12,14 @@ the spec x fallback_reference.ratio), else "none" (status no_reference).
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
 from tools.raid_program.scoreboard_core import (
-    VERDICT_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, exclusion_reason, fallback_index_path,
-    file_sha256, healer_roles, label_kills, latest_label, load_records, load_target, mean_sd, party_reference_dps,
-    reference_targets, roster, target_path,
+    VERDICT_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, default_label, exclusion_reason,
+    fallback_index_path, file_sha256, healer_roles, label_kills, load_records, load_target, mean_sd,
+    party_reference_dps, reference_targets, roster, target_path,
 )
 
 BASIS_TEXT = {"wcl": "WCL", "wowsims_fallback": "WoWSims fallback"}
@@ -139,11 +140,17 @@ def _kill_detail(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict[str, Any]:
-    """Judge one label's counted kills against the scenario target (label None = latest label)."""
+    """Judge one label's counted kills against the scenario target.
+
+    label None judges the baseline label when a baseline is set, else the latest recorded label, and
+    names the choice on stderr.
+    """
     root = Path(root)
     target = load_target(root, scenario)
     records = load_records(root, scenario)
-    label = latest_label(records) if label is None else label
+    if label is None:
+        label, source = default_label(root, scenario, records)
+        print(f"verdict label: {label} ({source})", file=sys.stderr)
     all_kills = label_kills(records, label)
     kills = counted_kills(all_kills)
     clears = clear_kills(all_kills)

@@ -8,9 +8,9 @@ from a single run.
 
     pixi run python -m tools.raid_program.scoreboard run --scenario S --label L --dry-run
     pixi run python -m tools.raid_program.scoreboard ingest --scenario S --label L --summary FILE
-    pixi run python -m tools.raid_program.scoreboard show --scenario S [--label L] [--vs L2] [--actor A]
+    pixi run python -m tools.raid_program.scoreboard show --scenario S [--label L] [--vs L2] [--actor A] [--min-kills N]
     pixi run python -m tools.raid_program.scoreboard verdict --scenario S [--label L]
-    pixi run python -m tools.raid_program.scoreboard baseline --scenario S [--label L --reason TEXT]
+    pixi run python -m tools.raid_program.scoreboard baseline --scenario S [--label L --reason TEXT [--force]]
     pixi run python -m tools.raid_program.scoreboard archive-pending --scenario S
     pixi run python -m tools.raid_program.scoreboard void --scenario S --kill-id K --reason TEXT
     pixi run python -m tools.raid_program.scoreboard rng-backfill --scenario S --label L --evidence-root DIR
@@ -18,8 +18,9 @@ from a single run.
 Only the coordinator runs `run` without --dry-run: it launches live kills.
 
 The baseline pointer (<scenario>.baseline.json next to the scoreboard) names the kept label.
-`verdict` without --label judges the baseline (else the latest label); `show` without --vs
-compares the shown label against the baseline when they differ.
+`verdict` (and evaluate_target) without a label judges the baseline, else the latest label;
+`show` without --vs compares the shown label against the baseline when they differ. The
+keep/revert decision needs kills_per_batch counted native clears per label (--min-kills N overrides).
 
 Python API: evaluate_target(root, scenario, label=None) and
 compare_labels(root, scenario, new_label, old_label).
@@ -30,13 +31,12 @@ import argparse
 import getpass
 import json
 import re
-import sys
 from pathlib import Path
 
 from tools.raid_program.scoreboard_compare import compare_labels
 from tools.raid_program.scoreboard_core import (
     BASELINE_SCHEMA, KILL_SCHEMA, ROOT, VERDICT_SCHEMA, VOID_SCHEMA, append_record, baseline_path, clear_kills,
-    counted_kills, default_label, git_head, label_kills, load_baseline, load_records, load_target, party_reference_dps,
+    counted_kills, git_head, label_kills, load_baseline, load_records, load_target, party_reference_dps,
     scoreboard_path, spec_targets, utc_now,
 )
 from tools.raid_program.scoreboard_verdict import evaluate_target
@@ -63,8 +63,24 @@ def void_kill(root: Path, scenario: str, kill_id: str, reason: str) -> dict:
     return line
 
 
-def set_baseline(root: Path, scenario: str, label: str, reason: str | None = None) -> dict:
-    """Point the scenario's baseline at a label with >= kills_per_measurement counted native clears on one build."""
+def baseline_problems(kills: list[dict]) -> list[str]:
+    """Why a label is not a clean baseline: counted non-clears and counted kills with boss-window deaths."""
+    counted = counted_kills(kills)
+    problems = [f"counted kill {record['kill_id']} is not a native clear" for record in counted
+                if not record.get("native_clear")]
+    problems += [f"counted kill {record['kill_id']} has "
+                 + ("unknown" if record.get("boss_window_deaths") is None else str(record["boss_window_deaths"]))
+                 + " boss-window death(s)" for record in counted if record.get("boss_window_deaths") != 0]
+    return problems
+
+
+def set_baseline(root: Path, scenario: str, label: str, reason: str | None = None, force: bool = False) -> dict:
+    """Point the scenario's baseline at a label with >= kills_per_measurement counted native clears on one build.
+
+    A label with a counted non-clear or a counted boss-window death (or an unknown count) is refused
+    unless force is set with a reason; the overridden problems are recorded in the pointer.
+    """
+    reason = (reason or "").strip() or None
     required = int(load_target(root, scenario)["kills_per_measurement"])
     kills = label_kills(load_records(root, scenario), label)
     if not kills:
@@ -80,13 +96,28 @@ def set_baseline(root: Path, scenario: str, label: str, reason: str | None = Non
     (sha, commit), = builds
     if not sha or not commit:
         raise SystemExit(f"label {label} lacks a worldserver_sha256 or source_commit on its counted kills")
+    problems = baseline_problems(kills)
+    if problems and not force:
+        raise SystemExit(f"label {label} is not a clean baseline: {'; '.join(problems)}. "
+                         "Pass --force --reason TEXT to set it anyway.")
+    if force and not reason:
+        raise SystemExit("--force needs --reason explaining why this label is the baseline anyway")
     baseline = {"schema": BASELINE_SCHEMA, "scenario": scenario, "label": label, "set_at": utc_now(),
                 "source_commit": commit, "worldserver_sha256": sha, "counted_kills": len(clears),
-                "reason": (reason or "").strip() or None}
+                "reason": reason}
+    if problems:
+        baseline["forced_over"] = problems
     path = baseline_path(root, scenario)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(baseline, indent=1, sort_keys=True) + "\n")
     return baseline
+
+
+def _positive(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be a positive number of kills")
+    return number
 
 
 def _label(value: str) -> str:
@@ -133,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     show.add_argument("--label", help="default: the most recently recorded label")
     show.add_argument("--vs", help="label to compare against (default: the baseline when it differs from --label)")
     show.add_argument("--actor", help="actor id the change targeted (for the keep/revert rule)")
+    show.add_argument("--min-kills", type=_positive, dest="batch_kills",
+                      help="override the target's kills_per_batch for the keep decision (printed in the decision)")
 
     verdict = commands.add_parser("verdict", help="print the evaluate_target JSON")
     verdict.add_argument("--scenario", required=True)
@@ -143,6 +176,8 @@ def main(argv: list[str] | None = None) -> int:
     base.add_argument("--label", type=_label,
                       help="set the baseline (needs kills_per_measurement counted native clears on one binary/commit)")
     base.add_argument("--reason", help="with --label: why this label is the kept state (recorded)")
+    base.add_argument("--force", action="store_true",
+                      help="with --label and --reason: accept counted non-clears or boss-window deaths (recorded)")
 
     pending = commands.add_parser("archive-pending", help="archive kept /tmp evidence of kills without a pointer")
     pending.add_argument("--scenario", required=True)
@@ -161,28 +196,24 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     root = args.root.resolve()
-    if args.command == "verdict":
-        label = args.label
-        if label is None:
-            label, source = default_label(root, args.scenario, load_records(root, args.scenario))
-            print(f"verdict label: {label} ({source})", file=sys.stderr)
-        print(json.dumps(evaluate_target(root, args.scenario, label), indent=1, sort_keys=True))
+    if args.command == "verdict":  # without --label evaluate_target judges the baseline and names it on stderr
+        print(json.dumps(evaluate_target(root, args.scenario, args.label), indent=1, sort_keys=True))
         return 0
     if args.command == "baseline":
         if args.label is None:
-            if args.reason:
-                parser.error("--reason needs --label")
+            if args.reason or args.force:
+                parser.error("--reason and --force need --label")
             current = load_baseline(root, args.scenario)
             print(json.dumps(current, indent=1, sort_keys=True) if current else
                   f"no baseline set for {args.scenario} (scoreboard baseline --scenario {args.scenario} --label L)")
             return 0
-        written = set_baseline(root, args.scenario, args.label, args.reason)
+        written = set_baseline(root, args.scenario, args.label, args.reason, args.force)
         print(json.dumps(written, indent=1, sort_keys=True))
         print(f"baseline for {args.scenario} is now {written['label']}: {baseline_path(root, args.scenario)}")
         return 0
     if args.command == "show":
         from tools.raid_program.scoreboard_show import render
-        print(render(root, args.scenario, args.label, args.vs, args.actor))
+        print(render(root, args.scenario, args.label, args.vs, args.actor, args.batch_kills))
         return 0
     if args.command == "void":
         line = void_kill(root, args.scenario, args.kill_id, args.reason)

@@ -107,29 +107,38 @@ graph checks hashes, identity and prerequisites, not native truth.
 | --- | --- | --- |
 | diagnose | plan | full `base_commit`, hypothesis, owned_files, forbidden_changes, acceptance_conditions, required_test_commands, policy, validation_identity; optional `risk_tier`, `reuse_build` (profile), `worker_context`, `supporting_review`, `advice` |
 | implement | tests | file_hashes for every owned file, tests with command/exit_status |
-| review | review | file_hashes, verdict=approved, reviewer_session_id and hash-bound review_report from a separate session; written by `review_execution` (Codex rollout) or `review_execution import-json` (other sessions) |
+| review | review | file_hashes, verdict=approved, reviewer_session_id and hash-bound review_report from a separate session; written by `review_execution` (Codex rollout) or `review_execution import-json` (Claude subagent transcript) |
 | build | build | file_hashes, source_commit, binary_sha256, build_receipt, policy |
 | smoke | smoke | build_identity, attempt_id, server_epoch, closed/cleanup_verified=true, scenario_kind=raid, clock=completion_watchdog, encounter, terminal_reason=clear |
 | validate | run | build_identity, attempt_id, server_epoch, closed/cleanup_verified=true, terminal_reason, scenario_kind, validation_identity; `scoreboard_label` for verdict acceptance |
 | assess | assessment | attempt_id, encounter_clear, accepted_requirements, and either `verdict` or the legacy baseline/comparison/actor_reviews/repair_accepted/performance_accepted |
 | publish | publication | dvc_status_checked, dvc_push_completed, remote_verified, cleanup_verified, all true |
 
-**Review from a non-Codex session.** The separate reviewer (for example a Claude
-subagent) returns only a final JSON object with `verdict` (`approved` or
-`changes_required`), `file_hashes` (repo-relative path to current SHA256),
-`findings` (list) and optional `tests`/`limits` lists. Save it, then run
+**Review from a non-Codex session.** A separate Claude Code reviewer subagent
+ends its final answer with one JSON object holding only `verdict` (`approved`,
+or `changes_required`/`changes_requested`), `file_hashes` (repo-relative path to
+current SHA256), `findings` (list) and optional `tests`/`limits` lists. Save that
+object, then run
 
 ```sh
 pixi run python -m tools.raid_program.review_execution import-json \
-  --report /tmp/reviewer-final.json --reviewer-session-id <REVIEWER_ID> \
-  --implementer-session-id <IMPLEMENTER_ID> --receipt artifacts/cata_raid_program/<unit>_review.json
+  --report /tmp/reviewer-final.json \
+  --transcript ~/.claude/projects/<project-slug>/<session-id>/subagents/agent-<AGENT_ID>.jsonl \
+  --reviewer-session-id <AGENT_ID> --implementer-session-id <IMPLEMENTER_ID> \
+  --receipt artifacts/cata_raid_program/<unit>_review.json
 ```
 
-It refuses self-review, verdicts outside those two, and any hash that differs
-from the working tree (changed files need a new review). It writes
-`<unit>_review.report.json` (`review_transport=external_json`, source SHA256,
-both session ids) and the adapter for `workflow_step advance --receipt`. Pass the
-graph's implementer id; the graph rejects a mismatch.
+The transcript must lie under `--transcripts-root` (default `~/.claude/projects`),
+be named `agent-<AGENT_ID>.jsonl`, and carry that `agentId` with
+`isSidechain=true` and this checkout as `cwd` on every record. Its last assistant
+message must embed the same JSON, with no user/tool record after it. Import
+refuses self-review, other verdicts and any hash that differs from the working
+tree (changed files need a new review), and leaves no output on failure. It
+writes `<unit>_review.report.json` (`review_transport=external_json`, source
+path and SHA256, both ids, transcript path and final-prefix bytes/SHA256, which
+`verify_review` rechecks) and the adapter for `workflow_step advance --receipt`.
+Pass the graph's implementer id; the graph rejects a mismatch. Only `approved`
+advances.
 
 The plan's `validation_identity` binds scenario_kind, roster and runtime_profile;
 a raid adds route and the program encounter, a dummy adds actor_id, spec and

@@ -74,10 +74,13 @@ the reviewer is a separate session that never edited the files:
    reviewed file), `findings`, and optional `tests` and `limits`. Save it as a
    file, for example `/tmp/reviewer-final.json`.
 3. Record it with
-   `pixi run python -m tools.raid_program.review_execution import-json --report /tmp/reviewer-final.json --reviewer-session-id <REVIEWER_ID> --implementer-session-id <IMPLEMENTER_ID> --receipt artifacts/cata_raid_program/<unit>_review.json`.
-   The implementer id must be the one recorded in the graph; every hash must
-   match the working tree now; a self-review or a stale hash fails with a code.
-   Then `workflow_step advance --receipt <that receipt>`.
+   `pixi run python -m tools.raid_program.review_execution import-json --report /tmp/reviewer-final.json --transcript ~/.claude/projects/<project-slug>/<session-id>/subagents/agent-<AGENT_ID>.jsonl --reviewer-session-id <AGENT_ID> --implementer-session-id <IMPLEMENTER_ID> --receipt artifacts/cata_raid_program/<unit>_review.json`.
+   The reviewer id is the subagent's `agentId`; its transcript is the persisted
+   JSONL named after it, and the JSON in its final message must equal the
+   report. The implementer id must be the one recorded in the graph; every hash
+   must match the working tree now; a self-review, a stale hash, a transcript
+   that does not end with that JSON, or a report edited after import fails
+   with a code. Then `workflow_step advance --receipt <that receipt>`.
    A Codex reviewer rollout can instead go through
    `review_execution preflight` and `import` (`--rollout` under `~/.codex/sessions`).
 
