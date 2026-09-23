@@ -1,0 +1,11 @@
+{
+  "schema": "cata_raid_program_operation_reconciliation_v1",
+  "operation_id": "be70ac64ddfbb4a758d6b1fc25e7e0be294191ab81c6b5924d7e458d3174f71c",
+  "unit_id": "magmaw:tuning_03",
+  "stage": "smoke",
+  "ownership_checked": true,
+  "active_operation": false,
+  "completed_operation": false,
+  "reusable_receipt_found": false,
+  "reason": "smoke-5a05e67f-k1 was an infrastructure failure: the harness preflight refused to launch because the DVC stages consuming cata_raid_bwd_diagnostic_shards_v1.json were stale after the setup-parity commit. The stages were reproduced (d891bcd1c0, dvc.lock changed), which moves the source base; release, supersede and re-route on the new base."
+}

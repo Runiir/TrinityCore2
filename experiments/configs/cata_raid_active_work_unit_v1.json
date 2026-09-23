@@ -385,7 +385,7 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 486,
+    "revision": 487,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
     "stage": "smoke",
     "actor_ids": [
@@ -9423,6 +9423,27 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 486,
+        "unit_id": "magmaw:tuning_03",
+        "from": "smoke",
+        "to": "smoke",
+        "event": {
+          "action": "release",
+          "revision": 486,
+          "unit_id": "magmaw:tuning_03",
+          "owner": "coordinator-bca90d3b",
+          "claim_token": "be70ac64ddfbb4a758d6b1fc25e7e0be294191ab81c6b5924d7e458d3174f71c",
+          "reason": "smoke-5a05e67f-k1 was an infrastructure failure: the harness preflight refused to launch because the DVC stages consuming cata_raid_bwd_diagnostic_shards_v1.json were stale after the setup-parity commit. The stages were reproduced (d891bcd1c0, dvc.lock changed), which moves the source base; release, supersede and re-route on the new base.",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_smoke_release_20260924.json",
+            "sha256": "b3de2dba70eb328b9882541c4777c24e1028bff3e4729595eab5ecdf8b782b6f"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9572,13 +9593,6 @@
     "build_identity": {
       "source_commit": "7a96d00b815d3a5d98b23f6931a01e9702b7c0a5",
       "binary_sha256": "5a05e67fc9d556aafb18595acded629386585c12622e2043b6094968af6f6f28"
-    },
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "be70ac64ddfbb4a758d6b1fc25e7e0be294191ab81c6b5924d7e458d3174f71c",
-      "operation_id": "be70ac64ddfbb4a758d6b1fc25e7e0be294191ab81c6b5924d7e458d3174f71c",
-      "stage": "smoke",
-      "claimed_at": "2026-09-23T22:59:05Z"
     }
   },
   "parked_scenarios": {
