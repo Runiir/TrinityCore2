@@ -320,18 +320,22 @@ Player* BotWorldPopulationMgr::FindCombatLogCohortPlayer(Unit* unit) const
 
 void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source,
     Unit* target, uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
-    uint64 timestampMs, bool sharedDamage)
+    uint64 timestampMs, bool sharedDamage, CombatLogAbsentSource const* absentSource)
 {
-    if (!actor || !source || !target)
+    // An absent source is described only by absentSource: its unit belongs to
+    // another map's thread and is never read.  A null actor is that source.
+    if (!target || (!absentSource && (!actor || !source)))
         return;
 
-    bool const sourceIsPet = source != actor && CombatOwnerPlayer(source) == actor;
+    bool const sourceIsPet = !absentSource && source != actor
+        && CombatOwnerPlayer(source) == actor;
+    uint32 const actorGuid = actor ? actor->GetGUID().GetCounter() : absentSource->Guid;
 
     CombatLogAbilityKey key;
     key.RouteGeneration = Party().ValidationRouteGeneration;
     key.Perspective = perspective;
-    key.ActorGuid = actor->GetGUID().GetCounter();
-    key.SourceEntry = source->GetEntry();
+    key.ActorGuid = actorGuid;
+    key.SourceEntry = absentSource ? 0 : source->GetEntry();
     key.SpellId = spellId;
     key.TargetEntry = target->GetEntry();
     key.EffectType = effectType;
@@ -341,17 +345,16 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
     {
         aggregate.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
         aggregate.RouteLabel = Cohort().Config.ValidationRouteLabel;
-        aggregate.ActorName = actor->GetName();
-        aggregate.ActorRole = GetDungeonRole(actor);
-        aggregate.ActorClassId = actor->getClass();
-        aggregate.SourceName = source->GetName();
+        aggregate.ActorName = actor ? actor->GetName() : absentSource->Name;
+        aggregate.ActorRole = actor ? std::string(GetDungeonRole(actor)) : absentSource->Role;
+        aggregate.ActorClassId = actor ? actor->getClass() : absentSource->ClassId;
+        aggregate.SourceName = absentSource ? absentSource->Name : source->GetName();
         aggregate.SpellName = spellId ? (sSpellMgr->GetSpellInfo(spellId) ? sSpellMgr->GetSpellInfo(spellId)->SpellName : "Unknown") : "Melee";
         aggregate.TargetName = target->GetName();
         aggregate.FirstAtMs = timestampMs;
         aggregate.SourceIsPet = sourceIsPet;
     }
 
-    float distance = source->GetExactDist(target);
     aggregate.LastAtMs = timestampMs;
     ++aggregate.EventCount;
     aggregate.Amount += amount;
@@ -361,13 +364,22 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
         aggregate.OriginatedAmount += amount;
     aggregate.RawAmount += rawAmount;
     aggregate.AbsorbedAmount += absorbedAmount;
-    aggregate.MovingEvents += source->isMoving() ? 1 : 0;
-    aggregate.DistanceTotal += distance;
-    if (aggregate.MinDistance < 0.0f || distance < aggregate.MinDistance)
-        aggregate.MinDistance = distance;
-    aggregate.MaxDistance = std::max(aggregate.MaxDistance, distance);
+    // Distance and movement are sampled only where the source position is
+    // known on the target's map; never measure across maps.
+    if (!absentSource || absentSource->PositionKnown)
+    {
+        float const distance = absentSource
+            ? target->GetExactDist(absentSource->X, absentSource->Y, absentSource->Z)
+            : source->GetExactDist(target);
+        ++aggregate.DistanceSamples;
+        aggregate.MovingEvents += !absentSource && source->isMoving() ? 1 : 0;
+        aggregate.DistanceTotal += distance;
+        if (aggregate.MinDistance < 0.0f || distance < aggregate.MinDistance)
+            aggregate.MinDistance = distance;
+        aggregate.MaxDistance = std::max(aggregate.MaxDistance, distance);
+    }
     CombatLogSecondBucket& bucket = Party().CombatLogSecondBuckets[std::make_tuple(
-        Party().ValidationRouteGeneration, perspective, actor->GetGUID().GetCounter(),
+        Party().ValidationRouteGeneration, perspective, actorGuid,
         sourceIsPet, timestampMs / 1000)];
     bucket.RawAmount += amount;
     if (!sharedDamage)
@@ -378,9 +390,12 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     uint32 spellId, uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount,
     uint32 absorbedAmount, uint64 timestampMs, bool sharedDamage, uint64 relatedEventSequence,
     MeleeDamageResolutionObservation const* meleeResolution,
-    CombatLogLandedDamageObservation const* landedDamage)
+    CombatLogLandedDamageObservation const* landedDamage,
+    CombatLogAbsentSource const* absentSource)
 {
-    if (!actor || !source || !target)
+    // As AddCombatLogAggregate: an absent source is never read, and a null
+    // actor is that source.
+    if (!target || (!absentSource && (!actor || !source)))
         return;
 
     CombatLogEvent event;
@@ -391,13 +406,13 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.RouteGeneration = Party().ValidationRouteGeneration;
     event.RouteNodeId = Cohort().Config.ValidationRouteNodeId;
     event.Kind = kind ? kind : "unknown";
-    event.ActorGuid = actor->GetGUID().GetCounter();
-    event.ActorName = actor->GetName();
-    event.ActorRole = GetDungeonRole(actor);
-    event.ActorClassId = actor->getClass();
-    event.SourceGuid = source->GetGUID().GetCounter();
-    event.SourceEntry = source->GetEntry();
-    event.SourceName = source->GetName();
+    event.ActorGuid = actor ? actor->GetGUID().GetCounter() : absentSource->Guid;
+    event.ActorName = actor ? actor->GetName() : absentSource->Name;
+    event.ActorRole = actor ? std::string(GetDungeonRole(actor)) : absentSource->Role;
+    event.ActorClassId = actor ? actor->getClass() : absentSource->ClassId;
+    event.SourceGuid = absentSource ? absentSource->Guid : source->GetGUID().GetCounter();
+    event.SourceEntry = absentSource ? 0 : source->GetEntry();
+    event.SourceName = absentSource ? absentSource->Name : source->GetName();
     event.TargetGuid = target->GetGUID().GetCounter();
     event.TargetEntry = target->GetEntry();
     event.TargetName = target->GetName();
@@ -420,15 +435,28 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
         event.HasMeleeResolution = true;
         event.MeleeResolution = *meleeResolution;
     }
-    event.SourceX = source->GetPositionX();
-    event.SourceY = source->GetPositionY();
-    event.SourceZ = source->GetPositionZ();
     event.TargetX = target->GetPositionX();
     event.TargetY = target->GetPositionY();
     event.TargetZ = target->GetPositionZ();
-    event.Distance = source->GetExactDist(target);
-    event.SourceMoving = source->isMoving();
-    event.SourceIsPet = source != actor && CombatOwnerPlayer(source) == actor;
+    if (!absentSource)
+    {
+        event.SourceX = source->GetPositionX();
+        event.SourceY = source->GetPositionY();
+        event.SourceZ = source->GetPositionZ();
+        event.Distance = source->GetExactDist(target);
+        event.SourceMoving = source->isMoving();
+    }
+    else if (absentSource->PositionKnown)
+    {
+        event.SourceX = absentSource->X;
+        event.SourceY = absentSource->Y;
+        event.SourceZ = absentSource->Z;
+        event.Distance = target->GetExactDist(event.SourceX, event.SourceY, event.SourceZ);
+    }
+    else
+        event.SourcePositionKnown = false;
+    event.SourceIsPet = !absentSource && source != actor
+        && CombatOwnerPlayer(source) == actor;
     event.SharedDamage = sharedDamage;
     Party().CombatLogRecentEvents.push_back(std::move(event));
     static constexpr size_t MaxRecentCombatEvents =

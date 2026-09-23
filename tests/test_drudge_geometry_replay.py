@@ -580,6 +580,11 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    # The ranged/healer minimum-distance safety exit was split out of the
+    # Drudge anchor geometry module.
+    minimum_distance_module = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeMinimumDistance.cpp").read_text(
+        encoding="utf-8"
+    )
     recovery = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp").read_text(
         encoding="utf-8"
     )
@@ -595,8 +600,8 @@ def test_worldserver_uses_geometry_transition_for_edge_and_combat_anchor_barrier
 
     assert "TryValidationRouteDrudgeMinimumDistance" in implementation
     assert "TryValidationRouteDrudgeChargeLanes" in implementation
-    assert "SelectMinimumDistanceOwner" in geometry
-    assert "MinimumDistanceOwner::LandedRushRecovery" in geometry
+    assert "SelectMinimumDistanceOwner" in minimum_distance_module
+    assert "MinimumDistanceOwner::LandedRushRecovery" in minimum_distance_module
     assert "RecoveryPathPreservesTankSeparation" in recovery
     assert "ValidationRouteDrudgeAnchorSource0Identity" in geometry
     assert "ExactRosterPrepullStaged" in geometry
@@ -797,6 +802,11 @@ def test_drudge_reseparation_requires_live_safety_and_recovery_anchor_arrival():
     geometry = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    # The ranged/healer minimum-distance safety exit was split out of the
+    # Drudge anchor geometry module.
+    minimum_distance_module = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeMinimumDistance.cpp").read_text(
+        encoding="utf-8"
+    )
     group_safety = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGroupSafety.cpp").read_text(
         encoding="utf-8"
     )
@@ -831,14 +841,11 @@ def test_drudge_reseparation_requires_live_safety_and_recovery_anchor_arrival():
     assert "return SourceCombatStarted || IsEntrancePullEstablished();" in recovery
     assert "ValidationRouteDrudgeChargeObservations" not in recovery
 
-    minimum_distance_start = geometry.index(
+    minimum_distance_start = minimum_distance_module.index(
         "bool DrudgeLaneContext::TryMinimumDistance"
     )
-    minimum_distance_end = geometry.index(
-        "DrudgeLaneContext::PhaseResult DrudgeLaneContext::BuildAnchorPolicies",
-        minimum_distance_start,
-    )
-    minimum_distance = geometry[minimum_distance_start:minimum_distance_end]
+    minimum_distance = minimum_distance_module[minimum_distance_start:]
+    assert "bool DrudgeLaneContext::TryMinimumDistance" not in geometry
     assert "ExactDrudgeLaneOwnsGroupMovement" in minimum_distance
     assert "return false;" in minimum_distance
 
@@ -846,8 +853,8 @@ def test_drudge_reseparation_requires_live_safety_and_recovery_anchor_arrival():
     # explicit mechanic lease instead of falling through to combat movement.
     assert actions.count("BotMovementArbitration::Owner::Mechanic") >= 2
     assert actions.count("BotMovementArbitration::Priority::Mechanic") >= 2
-    assert geometry.count("BotMovementArbitration::Owner::Mechanic") >= 1
-    assert geometry.count("BotMovementArbitration::Priority::Mechanic") >= 1
+    assert minimum_distance.count("BotMovementArbitration::Owner::Mechanic") >= 1
+    assert minimum_distance.count("BotMovementArbitration::Priority::Mechanic") >= 1
 
 
 def test_canary39_unsafe_healer_replays_native_recovery_before_same_tick_support():

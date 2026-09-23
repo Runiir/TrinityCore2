@@ -1,7 +1,9 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotCastWhileMoving.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotSpellResolution.h"
 #include "Creature.h"
 #include "GameTime.h"
 #include "Map.h"
@@ -39,6 +41,17 @@ bool HasMovementCompatibleLease(
     return state->MovementLease.ExpiresAtMs > nowMs
         && uint8(state->MovementLease.MovementPriority)
             >= uint8(BotMovementArbitration::Priority::Combat);
+}
+
+// A Mechanic, Hazard or Recovery lease is carrying the bot (for example a
+// Drudge minimum-distance exit or a hazard escape).
+bool HasProtectedMovementLease(
+    BotWorldPopulationMgrBotState::WorldBotState const* state,
+    Player const* bot, uint64 nowMs)
+{
+    return HasMovementCompatibleLease(state, bot, nowMs)
+        && uint8(state->MovementLease.MovementPriority)
+            >= uint8(BotMovementArbitration::Priority::Mechanic);
 }
 }
 
@@ -329,6 +342,22 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         // cone/area anchor a player would face before pressing the action.
         bot->SetFacingToObject(target);
     }
+
+    // The executor stops movement to submit an uncovered cast-time spell.
+    // Never stop a protected lease that way: yield this decision and let
+    // the move finish.  Ordinary combat movement keeps the stop-and-cast.
+    if (state && action.Valid && action.Type == "cast" && action.SpellId)
+        if (SpellInfo const* castInfo =
+                BotSpellResolution::Resolve(bot, action.SpellId).Effective)
+            if (BotCastWhileMoving::YieldsToProtectedMovement(bot, castInfo,
+                    castInfo->CalcCastTime(bot->getLevel()) > 0,
+                    bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING),
+                    HasProtectedMovementLease(state, bot, NowMs())))
+            {
+                RecordCombatAttempt(*state, bot, target, "cast", &action,
+                    BotActionResult::Casting, "protected_movement_active");
+                return BotActionResult::Casting;
+            }
 
     BotActionExecutor executor;
     BotActionResult result = executor.ExecuteCombat(bot, bot, action);

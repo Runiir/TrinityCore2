@@ -5,14 +5,15 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DRUDGE_GEOMETRY = ROOT / (
+# The minimum-distance exit was split out of the Drudge geometry module.
+DRUDGE_MINIMUM_DISTANCE = ROOT / (
     "src/server/game/Bots/Content/Raids/BlackwingDescent/Trash/Drudge/"
-    "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    "BotWorldPopulationMgrValidationRouteDrudgeMinimumDistance.cpp"
 )
 
 
 def test_minimum_distance_rejects_a_complete_corridor_that_misses_its_destination():
-    source = DRUDGE_GEOMETRY.read_text(encoding="utf-8")
+    source = DRUDGE_MINIMUM_DISTANCE.read_text(encoding="utf-8")
 
     path_check = source.index("PathGenerator path(Bot);")
     path_end = source.index("std::string raw = Manager.BuildRawJson", path_check)
@@ -32,13 +33,13 @@ def test_minimum_distance_rejects_a_complete_corridor_that_misses_its_destinatio
 
 
 def test_minimum_distance_endpoint_guard_stays_in_the_drudge_module():
-    source = DRUDGE_GEOMETRY.read_text(encoding="utf-8")
+    source = DRUDGE_MINIMUM_DISTANCE.read_text(encoding="utf-8")
     assert len(source.splitlines()) < 1000
     assert "MovePoint(" not in source
 
 
 def test_established_entrance_combat_skips_minimum_distance_churn():
-    source = DRUDGE_GEOMETRY.read_text(encoding="utf-8")
+    source = DRUDGE_MINIMUM_DISTANCE.read_text(encoding="utf-8")
 
     entrance_guard = source.index("if (ordinaryEntranceCombat)")
     movement_attempt = source.index("moved = Manager.MoveBotToPoint")

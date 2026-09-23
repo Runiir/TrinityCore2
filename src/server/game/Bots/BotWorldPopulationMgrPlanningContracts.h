@@ -379,6 +379,9 @@
         uint64 RawAmount = 0;
         uint64 AbsorbedAmount = 0;
         uint64 MovingEvents = 0;
+        // Events whose source position was observed; the distance and
+        // movement statistics are taken over these only.
+        uint64 DistanceSamples = 0;
         double DistanceTotal = 0.0;
         float MinDistance = -1.0f;
         float MaxDistance = 0.0f;
@@ -514,8 +517,28 @@
         float TargetZ = 0.0f;
         float Distance = 0.0f;
         bool SourceMoving = false;
+        // False for an absent source: position, distance and movement are
+        // published as null.
+        bool SourcePositionKnown = true;
         bool SourceIsPet = false;
         bool SharedDamage = false;
+    };
+
+    // A combat-log source that is no longer on the target's map (a released
+    // caster whose periodic aura still ticks).  Identity comes from the bot's
+    // own cached state, never from the ghost, which another map's thread
+    // owns.  Without a known position on the target's map and instance, the
+    // event carries no distance or movement sample.
+    struct CombatLogAbsentSource
+    {
+        uint32 Guid = 0;
+        std::string Name;
+        std::string Role;
+        uint8 ClassId = 0;
+        bool PositionKnown = false;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
     };
 
     struct SemanticOutcomeStats

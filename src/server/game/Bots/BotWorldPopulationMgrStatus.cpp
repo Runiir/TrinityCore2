@@ -448,15 +448,25 @@ void BotWorldPopulationMgr::AppendCombatLogEventJson(std::ostringstream& json,
     }
     if (event.HasMeleeResolution)
         BotMeleeResolutionEventJson::Append(json, event.EventSequence, event.MeleeResolution);
+    // An absent source (a released caster) has no observed position.
+    if (event.SourcePositionKnown)
+        json
+             << ",\"source_x\":" << event.SourceX
+             << ",\"source_y\":" << event.SourceY
+             << ",\"source_z\":" << event.SourceZ;
+    else
+        json << ",\"source_x\":null,\"source_y\":null,\"source_z\":null";
     json
-         << ",\"source_x\":" << event.SourceX
-         << ",\"source_y\":" << event.SourceY
-         << ",\"source_z\":" << event.SourceZ
          << ",\"target_x\":" << event.TargetX
          << ",\"target_y\":" << event.TargetY
-         << ",\"target_z\":" << event.TargetZ
-         << ",\"distance\":" << event.Distance
-         << ",\"source_moving\":" << (event.SourceMoving ? "true" : "false")
+         << ",\"target_z\":" << event.TargetZ;
+    if (event.SourcePositionKnown)
+        json
+             << ",\"distance\":" << event.Distance
+             << ",\"source_moving\":" << (event.SourceMoving ? "true" : "false");
+    else
+        json << ",\"distance\":null,\"source_moving\":null";
+    json
          << ",\"source_is_pet\":" << (event.SourceIsPet ? "true" : "false")
          << ",\"shared_damage\":" << (event.SharedDamage ? "true" : "false") << '}';
 }
@@ -499,7 +509,9 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
         if (!first)
             json << ',';
         first = false;
-        double averageDistance = value.EventCount ? value.DistanceTotal / double(value.EventCount) : 0.0;
+        // Distance and movement are averaged over the events whose source
+        // position was observed (all of them unless a source was absent).
+        double averageDistance = value.DistanceSamples ? value.DistanceTotal / double(value.DistanceSamples) : 0.0;
         json << "{\"route_generation\":" << key.RouteGeneration
              << ",\"route_node_id\":\"" << JsonEscape(value.RouteNodeId) << "\""
              << ",\"route_label\":\"" << JsonEscape(value.RouteLabel) << "\""
@@ -525,7 +537,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
              << ",\"raw_amount\":" << value.RawAmount
              << ",\"absorbed_amount\":" << value.AbsorbedAmount
              << ",\"moving_events\":" << value.MovingEvents
-             << ",\"moving_fraction\":" << (value.EventCount ? double(value.MovingEvents) / double(value.EventCount) : 0.0)
+             << ",\"distance_samples\":" << value.DistanceSamples
+             << ",\"moving_fraction\":" << (value.DistanceSamples ? double(value.MovingEvents) / double(value.DistanceSamples) : 0.0)
              << ",\"distance_avg\":" << averageDistance
              << ",\"distance_min\":" << std::max(0.0f, value.MinDistance)
              << ",\"distance_max\":" << value.MaxDistance << '}';

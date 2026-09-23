@@ -35,6 +35,12 @@ constexpr uint32 RegenerationPollMs = 100;
 // In-combat decision cadence for a spec without a calibration reference
 // interval (tanks and healers).  It equals the native reference floor.
 constexpr uint32 CombatDecisionIntervalMs = 100;
+// An in-combat kernel releases the queue every combat decision.  A longer
+// gap since the previous release check means the decision was not running:
+// the bot was dead, held or skipped by its update, or the world thread was
+// stalled (for example by a console heartbeat).  Intents released after
+// such a pause are counted separately instead of as scheduler latency.
+constexpr uint32 PausedReleaseGapMs = 5 * CombatDecisionIntervalMs;
 
 struct NativeLock
 {
@@ -44,7 +50,19 @@ struct NativeLock
 
     uint64 ReleaseAtMs() const;
     bool Locked(uint64 nowMs) const { return ReleaseAtMs() > nowMs; }
+    // A cast or channel is in progress: no new cast can start.
+    bool Casting(uint64 nowMs) const
+    {
+        return CastEndsAtMs > nowMs || ChannelEndsAtMs > nowMs;
+    }
 };
+
+// When a candidate blocked by this lock may be attempted again.  A GCD
+// cannot end early, so it is waited for exactly.  A cast or channel can
+// (interrupt, movement, target death), so it is re-checked after at most
+// one combat decision instead of holding the candidate until its nominal
+// end.  An unobserved lock is polled at the regeneration cadence.
+uint64 LockRetryAtMs(NativeLock const& lock, uint64 nowMs);
 
 // Observe the bot's current native lock.  The GCD is read through a spell
 // that shares its start recovery category; zero skips the GCD component.
@@ -89,7 +107,9 @@ public:
     void Schedule(std::string key, std::string reason, uint8 priority,
         uint64 readyAtMs, uint64 nowMs);
     // Release every intent whose lock has cleared, recording how late the
-    // decision that released it ran.  Returns the number released.
+    // decision that released it ran.  Intents released by the first check
+    // after a paused decision loop are excluded from the latency statistics.
+    // Returns the number released.
     uint32 ReleaseDue(uint64 nowMs);
     // Delay until the earliest pending release, never longer than
     // currentTimerMs.  At least 1 ms so the scheduler always advances.
@@ -109,6 +129,8 @@ private:
     uint64 _nextSerial = 0;
     uint64 _scheduled = 0;
     uint64 _released = 0;
+    uint64 _releasedAfterPause = 0;
+    uint64 _lastReleaseCheckMs = 0;
     uint64 _totalReleaseLatencyMs = 0;
     uint64 _maxReleaseLatencyMs = 0;
     std::string _lastReleasedKey;

@@ -57,8 +57,9 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ScheduleNativeLockWait(
     uint64 const nowMs = BotWorldPopulationMgrSpellSemantics::NowMs();
     BotSpellQueue::NativeLock const lock = BotSpellQueue::ObserveNativeLock(
         bot, queue.GcdProbeSpellId, nowMs);
-    uint64 const readyAtMs = lock.Locked(nowMs) ? lock.ReleaseAtMs()
-        : nowMs + BotSpellQueue::RegenerationPollMs;
+    // Only the GCD is waited for exactly: a cast or channel interrupted by a
+    // hazard move must not hold an emergency heal key until its nominal end.
+    uint64 const readyAtMs = BotSpellQueue::LockRetryAtMs(lock, nowMs);
     queue.Schedule(key, reason, uint8(priority), readyAtMs, nowMs);
     return BotActionArbitration::Outcome::WaitUntil(reason, readyAtMs);
 }

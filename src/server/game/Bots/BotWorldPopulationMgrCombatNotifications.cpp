@@ -5,6 +5,7 @@
 #include "Creature.h"
 #include "GameTime.h"
 #include "Log.h"
+#include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Spell.h"
@@ -254,7 +255,9 @@ uint64 BotWorldPopulationMgr::NotifyCombatMeleeResolution(CalcDamageInfo const& 
 void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
     uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask, uint64 relatedEventSequence)
 {
-    if (!attacker || !victim)
+    // The attacker may be absent: a periodic tick whose caster has left the
+    // victim's map.  The victim alone then places the event in a cohort.
+    if (!victim)
         return;
     CohortScope scope = ScopeCallbackCohort(attacker, victim);
     if (!scope)
@@ -292,6 +295,13 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
 
     if (!Cohort().Active || (!damage && !unmitigatedDamage))
         return;
+    if (!attacker)
+    {
+        if (damageType == uint32(DOT))
+            NotifyAbsentCasterPeriodicDamage(victim, spellId, damage,
+                unmitigatedDamage, schoolMask, relatedEventSequence);
+        return;
+    }
     Player* owner = CombatOwnerPlayer(attacker);
     bool const stoppingCalibrationClone = Cohort().CalibrationStopping && owner
         && BotWorldPopulationMgrCalibrationLifecycle::IsIdentifiedCalibrationClone(
@@ -555,4 +565,83 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
     AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
         damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs,
         sharedDamage, relatedEventSequence, nullptr, &landedDamage);
+}
+
+void BotWorldPopulationMgr::NotifyAbsentCasterPeriodicDamage(Unit* victim,
+    uint32 spellId, uint32 damage, uint32 unmitigatedDamage, uint32 schoolMask,
+    uint64 relatedEventSequence)
+{
+    if (!victim || !spellId || (!damage && !unmitigatedDamage))
+        return;
+
+    // A dead bot's DoTs keep ticking after it releases and its ghost leaves
+    // the instance.  The native tick then resolves no caster on this map, but
+    // the ticking aura still names it.
+    std::vector<BotCombatDamageAttribution::PeriodicCasterCandidate> candidates;
+    auto const applications = victim->GetAppliedAuras().equal_range(spellId);
+    for (auto itr = applications.first; itr != applications.second; ++itr)
+    {
+        Aura const* aura = itr->second ? itr->second->GetBase() : nullptr;
+        if (!aura)
+            continue;
+        ObjectGuid const casterGuid = aura->GetCasterGUID();
+        candidates.push_back({ casterGuid.GetRawValue(), casterGuid.IsPlayer(),
+            ObjectAccessor::GetUnit(*victim, casterGuid) != nullptr });
+    }
+    uint64 const casterRawGuid =
+        BotCombatDamageAttribution::AbsentPeriodicCaster(candidates);
+    if (!casterRawGuid)
+        return;
+
+    // The ghost is on another map, so the caller scoped the cohort by the
+    // victim alone; the caster must be one of that cohort's bots.  Another
+    // map's thread owns the ghost: describe it only from its own cached
+    // state, never by reading the player object.
+    WorldBotState const* casterState = nullptr;
+    for (WorldBotState const& state : Party().Bots)
+        if (state.Guid.GetRawValue() == casterRawGuid)
+            casterState = &state;
+    if (!casterState || casterState->CombatLogName.empty()
+        || Cohort().CalibrationMetricsByGuid.count(casterState->Guid.GetCounter()))
+        return;
+
+    CombatLogAbsentSource absent;
+    absent.Guid = casterState->Guid.GetCounter();
+    absent.Name = casterState->CombatLogName;
+    absent.Role = casterState->CombatLogRole;
+    absent.ClassId = casterState->CombatLogClassId;
+    // Place the absent caster where it died only when that death was on the
+    // victim's map and instance; otherwise publish no distance or movement.
+    absent.PositionKnown = casterState->LastDeathMapId == victim->GetMapId()
+        && casterState->LastDeathInstanceId == victim->GetInstanceId();
+    if (absent.PositionKnown)
+    {
+        absent.X = casterState->LastDeathX;
+        absent.Y = casterState->LastDeathY;
+        absent.Z = casterState->LastDeathZ;
+    }
+
+    // Reaction checks would read the ghost across maps; a periodic damage
+    // aura on a non-cohort unit is outgoing damage.
+    Player* targetActor = FindCombatLogCohortPlayer(victim);
+    BotCombatDamageAttribution::NativeRelationship const relationship{
+        false, targetActor != nullptr, false, false };
+    CombatLogPerspective const outgoingPerspective =
+        BotCombatDamageAttribution::IsFriendlyOrCohortTarget(relationship)
+        ? CombatLogPerspective::FriendlyDamageDone
+        : CombatLogPerspective::DamageDone;
+    CombatLogLandedDamageObservation const landedDamage{ false, false, 0.0f,
+        victim->GetHealth(), victim->GetMaxHealth() };
+
+    uint64 const nowMs = NowMs();
+    ++Party().CombatLogEventCount;
+    AddCombatLogAggregate(outgoingPerspective, nullptr, nullptr, victim, spellId,
+        uint32(DOT), damage, unmitigatedDamage, 0, nowMs, false, &absent);
+    if (targetActor)
+        AddCombatLogAggregate(CombatLogPerspective::DamageTaken, targetActor,
+            nullptr, victim, spellId, uint32(DOT), damage, unmitigatedDamage, 0,
+            nowMs, false, &absent);
+    AddCombatLogEvent("damage", nullptr, nullptr, victim, spellId, uint32(DOT),
+        schoolMask, damage, unmitigatedDamage, 0, nowMs, false,
+        relatedEventSequence, nullptr, &landedDamage, &absent);
 }

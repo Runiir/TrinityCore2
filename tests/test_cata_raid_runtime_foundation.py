@@ -770,6 +770,9 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
     geometry = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp").read_text(
         encoding="utf-8"
     )
+    minimum_distance = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeMinimumDistance.cpp").read_text(
+        encoding="utf-8"
+    )
     recovery = (BOT_DIR / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeRecovery.cpp").read_text(
         encoding="utf-8"
     )
@@ -916,7 +919,7 @@ def test_bwd_drudge_pair_executes_exact_roster_lanes_and_native_charge_reseparat
         "ExactCombatTankAnchorsReached",
         "TryMinimumDistance",
     ):
-        assert token in geometry or token in recovery
+        assert token in geometry or token in minimum_distance or token in recovery
 
     cast_hook = COMBAT_LOG[
         COMBAT_LOG.index("uint64 BotWorldPopulationMgr::NotifyNativeCreatureSpellStarted"):
@@ -2398,7 +2401,17 @@ def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():
 
 def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     route_runtime = (BOT_DIR / "BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    # The minimum-distance exit and its pure direction generator were split
+    # out of the Drudge anchor geometry module.
     minimum = (
+        BOT_DIR
+        / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeMinimumDistance.cpp"
+    ).read_text(encoding="utf-8")
+    exit_directions = (
+        BOT_DIR
+        / "Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeMinimumDistanceExit.h"
+    ).read_text(encoding="utf-8")
+    geometry = (
         BOT_DIR
         / "Content/Raids/BlackwingDescent/Trash/Drudge/BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
     ).read_text(encoding="utf-8")
@@ -2421,8 +2434,9 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert 'creature->GetEntry() != sourceEntry' in minimum
     assert 'safeDistance = minimumDistance + 2.0f' in minimum
     assert "sources.push_back(creature)" in minimum
-    assert "for (size_t left = 0; left < sources.size(); ++left)" in minimum
-    assert "addDirection(-pairY, pairX);" in minimum
+    assert "BotRaidDrudgeMinimumDistanceExit::CandidateDirections(" in minimum
+    assert "for (size_t left = 0; left < sources.size(); ++left)" in exit_directions
+    assert "addDirection(-pairY, pairX);" in exit_directions
     assert "PathGenerator path(Bot);" in minimum
     assert "for (G3D::Vector3 const& point : path.GetPath())" in minimum
     assert "std::min(startDistance, minimumDistance) - 0.25f" in minimum
@@ -2439,18 +2453,18 @@ def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
     assert "auto observation = std::find_if(" in landed_owner
     assert "&& observation->Landed" in landed_owner
     assert "std::any_of(" not in landed_owner
-    assert minimum.index("drudge_anchor_source_unsafe") < minimum.index(
+    assert geometry.index("drudge_anchor_source_unsafe") < geometry.index(
         "if (!pathSearch.NativePathSearchDue)"
     )
-    source_reject = minimum.index('"drudge_anchor_source_unsafe"')
-    spacing_reject = minimum.index('"drudge_anchor_spacing_unsafe"')
-    path_transition = minimum.index("SelectAnchorPathSearch(")
+    source_reject = geometry.index('"drudge_anchor_source_unsafe"')
+    spacing_reject = geometry.index('"drudge_anchor_spacing_unsafe"')
+    path_transition = geometry.index("SelectAnchorPathSearch(")
     assert path_transition < source_reject < spacing_reject
-    assert "pathSearch.RetryAfterMs" in minimum[path_transition:source_reject]
+    assert "pathSearch.RetryAfterMs" in geometry[path_transition:source_reject]
     assert lane_selection.index("ContractResolved =") < lane_selection.index(
         "if (!ContractResolved"
     )
-    assert "State.LastRecoveryResult.clear();" in minimum
+    assert "State.LastRecoveryResult.clear();" in geometry
     assert route_runtime.index("if (TryValidationRouteMovementCheck(state, bot, power, stage,") < route_runtime.index(
         "if (TryValidationRouteDrudgeMinimumDistance(state, bot, power, stage,"
     )

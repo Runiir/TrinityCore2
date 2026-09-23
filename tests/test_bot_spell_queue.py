@@ -271,6 +271,219 @@ int main()
 ''')
 
 
+def test_release_latency_excludes_paused_decision_loops(tmp_path: Path) -> None:
+    # Live Magmaw runs reported 115-224 ms mean release latency and a 3-9 s
+    # maximum per bot: each maximum matched the longest heartbeat world stall
+    # of that run, and a bot that died and was revived reported 42 s.  The
+    # queue must describe its own lateness, not how long the loop was paused.
+    compile_and_run(tmp_path, "paused_latency", r'''
+#include "Bots/BotSpellQueue.h"
+#include <cassert>
+#include <string>
+
+using namespace BotSpellQueue;
+
+bool Contains(std::string const& json, std::string const& field)
+{
+    return json.find(field) != std::string::npos;
+}
+
+int main()
+{
+    static_assert(PausedReleaseGapMs > CombatDecisionIntervalMs,
+        "an ordinary combat decision must never count as a pause");
+
+    Queue queue;
+    // Continuous 100 ms decisions: a release 30 ms late is scheduler latency.
+    queue.ReleaseDue(1000);
+    queue.Schedule("world.profile_combat", "global_cooldown", 60, 1070, 1000);
+    assert(queue.ReleaseDue(1100) == 1);
+
+    // A heartbeat stalls the world thread for 3.6 s while an intent is due.
+    queue.Schedule("world.profile_combat", "global_cooldown", 60, 1150, 1100);
+    assert(queue.ReleaseDue(4700) == 1);
+    std::string json = queue.ToJson(4700);
+    assert(Contains(json, "\"released\":2"));
+    assert(Contains(json, "\"released_after_pause\":1"));
+    assert(Contains(json, "\"mean_release_latency_ms\":30"));
+    assert(Contains(json, "\"max_release_latency_ms\":30"));
+
+    // The next ordinary decision counts again.
+    queue.Schedule("native.lock_release", "cast", 60, 4750, 4700);
+    assert(queue.ReleaseDue(4800) == 1);
+    json = queue.ToJson(4800);
+    assert(Contains(json, "\"released\":3"));
+    assert(Contains(json, "\"released_after_pause\":1"));
+    assert(Contains(json, "\"mean_release_latency_ms\":40"));
+    assert(Contains(json, "\"max_release_latency_ms\":50"));
+
+    // A bot that dies keeps its pending intent until the kernel runs again
+    // after the revive; that release is not a 42 s scheduler delay.
+    queue.Schedule("raid.support.heal.30005", "already_casting", 100, 4900, 4800);
+    assert(queue.ReleaseDue(47000) == 1);
+    json = queue.ToJson(47000);
+    assert(Contains(json, "\"released_after_pause\":2"));
+    assert(Contains(json, "\"max_release_latency_ms\":50"));
+
+    // A gap at the pause bound still counts as an ordinary decision.
+    queue.Schedule("world.profile_combat", "global_cooldown", 60, 47100, 47000);
+    assert(queue.ReleaseDue(47000 + PausedReleaseGapMs) == 1);
+    json = queue.ToJson(47000 + PausedReleaseGapMs);
+    assert(Contains(json, "\"released_after_pause\":2"));
+    assert(Contains(json, "\"max_release_latency_ms\":400"));
+}
+''')
+
+
+def test_only_the_gcd_is_waited_for_exactly(tmp_path: Path) -> None:
+    # Review of 585abda09c: a healer that failed with already_casting waited
+    # for the full cast end (up to 3 s) on its per-target heal key.  A hazard
+    # move interrupts that cast, and the emergency heal then sat blocked.
+    compile_and_run(tmp_path, "lock_retry", r'''
+#include "Bots/BotActionArbiter.h"
+#include "Bots/BotSpellQueue.h"
+#include <cassert>
+
+using namespace BotActionArbitration;
+using namespace BotSpellQueue;
+
+int main()
+{
+    uint64 const now = 10000;
+    NativeLock gcd;
+    gcd.GlobalCooldownEndsAtMs = now + 1200;
+    assert(LockRetryAtMs(gcd, now) == now + 1200);
+
+    NativeLock cast;
+    cast.GlobalCooldownEndsAtMs = now + 900;
+    cast.CastEndsAtMs = now + 2500;
+    assert(LockRetryAtMs(cast, now) == now + CombatDecisionIntervalMs);
+
+    NativeLock channel;
+    channel.ChannelEndsAtMs = now + 3000;
+    assert(LockRetryAtMs(channel, now) == now + CombatDecisionIntervalMs);
+    assert(cast.Casting(now) && channel.Casting(now) && !gcd.Casting(now));
+
+    // A cast about to finish is still re-checked at its own end.
+    NativeLock finishing;
+    finishing.CastEndsAtMs = now + 40;
+    assert(LockRetryAtMs(finishing, now) == now + 40);
+
+    // An expired cast leaves only the GCD, which is exact again.
+    NativeLock expired;
+    expired.GlobalCooldownEndsAtMs = now + 700;
+    expired.CastEndsAtMs = now - 1;
+    assert(LockRetryAtMs(expired, now) == now + 700);
+
+    // No observable lock: poll at the regeneration cadence.
+    assert(LockRetryAtMs(NativeLock{}, now) == now + RegenerationPollMs);
+
+    // Kernel replay: the heal key that met already_casting is eligible again
+    // one combat decision later, long before the interrupted cast would have
+    // ended, and the retry never counts as a failure.
+    Kernel kernel;
+    std::string const key = "raid.support.heal.30007";
+    kernel.Observe(key, Outcome::WaitUntil("already_casting",
+        LockRetryAtMs(cast, now)), now, 100, 3000, 5);
+    Lifecycle const* heal = kernel.FindLifecycle(key);
+    assert(heal->RetryAfterMs == now + CombatDecisionIntervalMs);
+    assert(heal->ConsecutiveFailures == 0);
+}
+''')
+
+
+def test_timed_wait_preserves_the_failure_streak(tmp_path: Path) -> None:
+    # Review of 585abda09c: every timed wait zeroed ConsecutiveFailures and
+    # FirstFailureAtMs, so a candidate that alternated a real failure with a
+    # GCD wait could never escalate.
+    compile_and_run(tmp_path, "wait_streak", r'''
+#include "Bots/BotActionArbiter.h"
+#include <cassert>
+
+using namespace BotActionArbitration;
+
+int main()
+{
+    Kernel kernel;
+    std::string const key = "world.profile_combat";
+    uint64 now = 1000;
+    for (int attempt = 0; attempt < 4; ++attempt, now += 1000)
+    {
+        kernel.Observe(key, Outcome::Retryable("cast_failed"), now, 100, 3000, 5);
+        kernel.Observe(key, Outcome::WaitUntil("global_cooldown", now + 500),
+            now + 1, 100, 3000, 5);
+        Lifecycle const* lifecycle = kernel.FindLifecycle(key);
+        assert(lifecycle->ConsecutiveFailures == uint32(attempt + 1));
+        assert(lifecycle->FirstFailureAtMs == 1000);
+        assert(lifecycle->RetryAfterMs == now + 500);
+    }
+    kernel.Observe(key, Outcome::Retryable("cast_failed"), now, 100, 3000, 5);
+    assert(kernel.FindLifecycle(key)->ConsecutiveFailures == 5);
+    assert(kernel.ShouldEscalate(key, now, 3000));
+
+    // A timed wait on a fresh key still starts no streak, and a commit
+    // still clears one.
+    kernel.Observe("fresh", Outcome::WaitUntil("global_cooldown", 1500), 1000, 100, 3000, 5);
+    assert(kernel.FindLifecycle("fresh")->ConsecutiveFailures == 0);
+    assert(kernel.FindLifecycle("fresh")->FirstFailureAtMs == 0);
+    kernel.Observe(key, Outcome::Submitted("native_action_submitted"), now, 100, 3000, 5);
+    assert(kernel.FindLifecycle(key)->ConsecutiveFailures == 0);
+    assert(kernel.FindLifecycle(key)->FirstFailureAtMs == 0);
+}
+''')
+
+
+def test_clear_is_cheap_and_complete(tmp_path: Path) -> None:
+    compile_and_run(tmp_path, "queue_clear", r'''
+#include "Bots/BotSpellQueue.h"
+#include <cassert>
+
+using namespace BotSpellQueue;
+
+int main()
+{
+    Queue queue;
+    queue.Clear();
+    assert(queue.Empty());
+    queue.Schedule("raid.support.heal.30005", "already_casting", 100, 2000, 1000);
+    queue.Schedule("world.profile_combat", "global_cooldown", 60, 1500, 1000);
+    queue.Clear();
+    assert(queue.Empty());
+    assert(queue.WakeDelayMs(1000, 100) == 100);
+    assert(queue.ReleaseDue(5000) == 0);
+}
+''')
+
+
+def test_queue_is_cleared_on_death_and_combat_end_before_any_gate() -> None:
+    preparation = (BOTS / "BotWorldPopulationMgrUpdateBotPreparation.cpp").read_text()
+    body = preparation[preparation.index("bool BotWorldPopulationMgr::PrepareBotUpdate("):]
+    clear = body.index("context.State.SpellQueue.Clear();")
+    assert "!context.Bot->IsAlive() || !context.Bot->IsInCombat()" in body[:clear]
+    assert "return false;" not in body[:clear]
+    assert clear < body.index("HandleBotDeath(context.State, context.Bot, context.Diff);")
+
+    module = (BOTS / "BotWorldPopulationMgrSpellQueue.cpp").read_text()
+    wait = module[module.index("::ScheduleNativeLockWait("):]
+    assert "BotSpellQueue::LockRetryAtMs(lock, nowMs)" in wait
+    assert "lock.ReleaseAtMs()" not in wait[:wait.index("void BotWorldPopulationMgr::")]
+
+
+def test_heal_attempt_skips_selection_while_casting() -> None:
+    # Review of this batch: a 100 ms re-check during a cast re-ran heal
+    # selection, the protected-target grid search and a LOS raycast before
+    # TryCastFriendlySpell reported already_casting.
+    candidates = (BOTS / "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp").read_text()
+    attempt = candidates[candidates.index('"heal_target_stale");'):]
+    precheck = attempt.index(".Casting(lockNowMs))")
+    assert "BotSpellQueue::ObserveNativeLock(context.Bot," in attempt[:precheck]
+    assert precheck < attempt.index("SelectHealSpell(context.Bot,")
+    assert precheck < attempt.index("TryCastFriendlySpell(")
+    wait = attempt[precheck:attempt.index("bool const instantHealRequired")]
+    assert "return ScheduleNativeLockWait(context.State," in wait
+    assert '"already_casting"' in wait
+
+
 def test_live_wiring_uses_the_spell_queue() -> None:
     decision = (BOTS / "BotWorldPopulationMgrUpdateBotDecision.cpp").read_text()
     release = decision.index("SpellQueue.ReleaseDue(")

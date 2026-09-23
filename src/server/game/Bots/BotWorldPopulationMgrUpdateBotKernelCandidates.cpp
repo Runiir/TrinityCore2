@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/BotHealSelectionDiagnostic.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/BotSpellQueue.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/Content/Raids/Shared/Trash/BotAdaptiveRaidHazardPlanner.h"
@@ -781,6 +782,19 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                         || !context.Bot->IsValidAssistTarget(healTarget))
                         return BotActionArbitration::Outcome::Retryable(
                             "heal_target_stale");
+                    // No heal can start during a cast or channel.  Skip heal
+                    // selection, the protected-target search and the LOS
+                    // raycast; re-check within one combat decision.
+                    uint64 const lockNowMs =
+                        BotWorldPopulationMgrSpellSemantics::NowMs();
+                    if (BotSpellQueue::ObserveNativeLock(context.Bot,
+                            context.State.SpellQueue.GcdProbeSpellId, lockNowMs)
+                            .Casting(lockNowMs))
+                        return ScheduleNativeLockWait(context.State,
+                            context.Bot, supportKey, supportPriority,
+                            "already_casting",
+                            BotActionArbitration::Outcome::Retryable(
+                                "already_casting"));
                     bool const instantHealRequired = activeNativeMovementPath();
                     BotHealSelection::Diagnostic healSelection;
                     uint32 const healSpell = SelectHealSpell(context.Bot,

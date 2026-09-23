@@ -168,8 +168,10 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     combat = (
         DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeCombat.cpp"
     ).read_text(encoding="utf-8")
-    geometry = (
-        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeGeometry.cpp"
+    # The safety movement (minimum-distance exit) was split out of the
+    # Drudge anchor geometry module.
+    minimum_distance = (
+        DRUDGE / "BotWorldPopulationMgrValidationRouteDrudgeMinimumDistance.cpp"
     ).read_text(encoding="utf-8")
 
     run = lane_selection[
@@ -190,13 +192,13 @@ def test_native_entrance_ownership_uses_simple_balanced_combat_and_safety_moveme
     assert "false, false, true, false, false" in combat
     assert "drudge_entrance_lane_action" in combat
     assert "return PhaseResult::Handled;" in combat
-    assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in geometry
-    entrance_guard = geometry.index("if (ordinaryEntranceCombat)")
-    assert entrance_guard < geometry.index("moved = Manager.MoveBotToPoint")
-    assert "return false;" in geometry[entrance_guard:entrance_guard + 80]
-    assert "specializedLaneMovement = drudgeProfile" in geometry
-    assert "specializedLaneMovement, exactPrepullStaged" in geometry
-    assert "specializedLaneMovement, IsLandedRushPending()" in geometry
+    assert "ordinaryEntranceCombat = IsEntrancePullEstablished()" in minimum_distance
+    entrance_guard = minimum_distance.index("if (ordinaryEntranceCombat)")
+    assert entrance_guard < minimum_distance.index("moved = Manager.MoveBotToPoint")
+    assert "return false;" in minimum_distance[entrance_guard:entrance_guard + 80]
+    assert "specializedLaneMovement = drudgeProfile" in minimum_distance
+    assert "specializedLaneMovement, exactPrepullStaged" in minimum_distance
+    assert "specializedLaneMovement, IsLandedRushPending()" in minimum_distance
 
 
 def test_established_entrance_maintenance_has_its_native_callbacks_bound() -> None:

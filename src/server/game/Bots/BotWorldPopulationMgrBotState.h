@@ -364,9 +364,17 @@ namespace BotWorldPopulationMgrBotState
         std::string ActivePathRouteNodeId;
         std::string LastPathRejectReason;
         uint32 LastDeathMapId = 0;
+        uint32 LastDeathInstanceId = 0;
         uint32 LastDeathAreaId = 0;
         float LastDeathX = 0.0f;
         float LastDeathY = 0.0f;
+        float LastDeathZ = 0.0f;
+        // Identity cached by the bot's own update while it is alive.  A
+        // released ghost belongs to another map's thread, so combat-log events
+        // for its still-ticking periodic auras use these instead.
+        std::string CombatLogName;
+        std::string CombatLogRole;
+        uint8 CombatLogClassId = 0;
         uint32 RecentDeathCount = 0;
         ObjectGuid TargetGuid;
         // A melee player's autoattack is a persistent toggle independent of

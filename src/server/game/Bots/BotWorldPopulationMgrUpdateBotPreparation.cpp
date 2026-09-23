@@ -322,6 +322,18 @@ void BotWorldPopulationMgr::HoldValidationAttemptFailure(WorldBotState& state,
 
 bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
 {
+    // Spell-queue intents belong to one life and one combat.  Drop them as
+    // soon as either ends, even when a gate, a hold or the death handler
+    // keeps the decision kernel from running.
+    if (!context.Bot->IsAlive() || !context.Bot->IsInCombat())
+        context.State.SpellQueue.Clear();
+    // Combat-log identity for periodic ticks that outlive a released ghost.
+    if (context.Bot->IsAlive() && context.State.CombatLogName.empty())
+    {
+        context.State.CombatLogName = context.Bot->GetName();
+        context.State.CombatLogClassId = context.Bot->getClass();
+    }
+
     if (Cohort().Config.ValidationRouteEnable)
     {
         if (!Cohort().Raid.BotActionsEnabled)
@@ -633,6 +645,7 @@ bool BotWorldPopulationMgr::PrepareBotUpdate(BotUpdateContext& context)
         : std::max<uint32>(responsiveSpecCombat ? reactionTimeMs : 500, decisionTickMs);
 
     context.EnsureProgressionScored();
+    context.State.CombatLogRole = GetDungeonRole(context.Bot);
 
     if (context.Target && StopDisallowedDummyCombat(context.State, context.Bot, context.Target))
         context.Target = nullptr;

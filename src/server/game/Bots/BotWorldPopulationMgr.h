@@ -901,12 +901,16 @@ private:
     Player* FindCombatLogCohortPlayer(Unit* unit) const;
     void AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source, Unit* target,
         uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
-        uint64 timestampMs, bool sharedDamage = false);
+        uint64 timestampMs, bool sharedDamage = false,
+        CombatLogAbsentSource const* absentSource = nullptr);
     void AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target, uint32 spellId,
         uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
         uint64 timestampMs, bool sharedDamage = false, uint64 relatedEventSequence = 0,
         MeleeDamageResolutionObservation const* meleeResolution = nullptr,
-        CombatLogLandedDamageObservation const* landedDamage = nullptr);
+        CombatLogLandedDamageObservation const* landedDamage = nullptr,
+        CombatLogAbsentSource const* absentSource = nullptr);
+    void NotifyAbsentCasterPeriodicDamage(Unit* victim, uint32 spellId, uint32 damage,
+        uint32 unmitigatedDamage, uint32 schoolMask, uint64 relatedEventSequence);
 
 #include "Bots/BotWorldPopulationMgrCalibrationMetrics.h"
     static void ObserveCalibrationEffectiveStats(Unit const* unit,

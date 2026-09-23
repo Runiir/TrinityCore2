@@ -482,8 +482,9 @@ public:
         }
         if (outcome.Result == Disposition::Retryable && outcome.RetryAtMs)
         {
-            lifecycle.ConsecutiveFailures = 0;
-            lifecycle.FirstFailureAtMs = 0;
+            // A timed native wait is neither a failure nor progress: an
+            // earlier failure streak survives it unchanged, so waiting for
+            // the GCD can never hide a candidate that keeps failing.
             lifecycle.RetryAfterMs = std::min<uint64>(
                 std::max<uint64>(outcome.RetryAtMs, nowMs), nowMs + retryMaxMs);
             return;

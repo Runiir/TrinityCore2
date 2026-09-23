@@ -482,9 +482,11 @@ void BotWorldPopulationMgr::MarkDeathDangerZone(WorldBotState& state, Player* bo
         state.RecentDeathCount = 1;
 
     state.LastDeathMapId = bot->GetMapId();
+    state.LastDeathInstanceId = bot->GetInstanceId();
     state.LastDeathAreaId = bot->GetAreaId();
     state.LastDeathX = bot->GetPositionX();
     state.LastDeathY = bot->GetPositionY();
+    state.LastDeathZ = bot->GetPositionZ();
 
     std::ostringstream metadata;
     metadata << "{\"recent_death_count\":" << state.RecentDeathCount

@@ -10,6 +10,16 @@ uint64 NativeLock::ReleaseAtMs() const
     return std::max({ GlobalCooldownEndsAtMs, CastEndsAtMs, ChannelEndsAtMs });
 }
 
+uint64 LockRetryAtMs(NativeLock const& lock, uint64 nowMs)
+{
+    if (!lock.Locked(nowMs))
+        return nowMs + RegenerationPollMs;
+    if (lock.Casting(nowMs))
+        return std::min<uint64>(lock.ReleaseAtMs(),
+            nowMs + CombatDecisionIntervalMs);
+    return lock.GlobalCooldownEndsAtMs;
+}
+
 bool IsRegenerationWaitReason(std::string const& reason)
 {
     // Candidate rejection reasons that clear on their own as runes, energy,
@@ -46,16 +56,26 @@ void Queue::Schedule(std::string key, std::string reason, uint8 priority,
 
 uint32 Queue::ReleaseDue(uint64 nowMs)
 {
+    // The lateness of a release after a paused decision loop measures the
+    // pause (death, hold, skipped update, world stall), not the scheduler.
+    bool const resumedAfterPause = _lastReleaseCheckMs
+        && nowMs > _lastReleaseCheckMs + PausedReleaseGapMs;
+    _lastReleaseCheckMs = nowMs;
     uint32 released = 0;
     while (!_pending.empty() && _pending.top().ReadyAtMs <= nowMs)
     {
         Entry const& top = _pending.top();
         if (IsCurrent(top))
         {
-            uint64 const latencyMs = nowMs - top.ReadyAtMs;
             ++_released;
-            _totalReleaseLatencyMs += latencyMs;
-            _maxReleaseLatencyMs = std::max(_maxReleaseLatencyMs, latencyMs);
+            if (resumedAfterPause)
+                ++_releasedAfterPause;
+            else
+            {
+                uint64 const latencyMs = nowMs - top.ReadyAtMs;
+                _totalReleaseLatencyMs += latencyMs;
+                _maxReleaseLatencyMs = std::max(_maxReleaseLatencyMs, latencyMs);
+            }
             _lastReleasedKey = top.Key;
             _lastReleasedReason = top.Reason;
             _currentSerialByKey.erase(top.Key);
@@ -80,6 +100,9 @@ uint32 Queue::WakeDelayMs(uint64 nowMs, uint32 currentTimerMs)
 
 void Queue::Clear()
 {
+    // Called on every update of a dead or out-of-combat bot.
+    if (_pending.empty() && _currentSerialByKey.empty())
+        return;
     _pending = {};
     _currentSerialByKey.clear();
 }
@@ -94,6 +117,7 @@ bool Queue::Empty()
 std::string Queue::ToJson(uint64 nowMs)
 {
     Empty();
+    uint64 const timedReleases = _released - _releasedAfterPause;
     std::ostringstream out;
     out << "{\"pending\":" << _currentSerialByKey.size()
         << ",\"next_key\":\""
@@ -103,8 +127,10 @@ std::string Queue::ToJson(uint64 nowMs)
             ? 0 : _pending.top().ReadyAtMs - nowMs)
         << ",\"scheduled\":" << _scheduled
         << ",\"released\":" << _released
+        << ",\"released_after_pause\":" << _releasedAfterPause
         << ",\"mean_release_latency_ms\":"
-        << (_released ? double(_totalReleaseLatencyMs) / double(_released) : 0.0)
+        << (timedReleases
+            ? double(_totalReleaseLatencyMs) / double(timedReleases) : 0.0)
         << ",\"max_release_latency_ms\":" << _maxReleaseLatencyMs
         << ",\"last_released_key\":\"" << _lastReleasedKey
         << "\",\"last_released_reason\":\"" << _lastReleasedReason
