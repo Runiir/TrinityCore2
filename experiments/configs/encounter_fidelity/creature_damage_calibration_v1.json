@@ -1,0 +1,175 @@
+{
+  "schema": "creature_damage_calibration_v1",
+  "purpose": "Blizzlike creature melee damage. Upstream migration sql/updates/world/4.3.4/2025_06_18_06_world.sql (commit 68a3622133) set creature_template.DamageModifier to 1 for all 46,627 templates, pending re-evaluation. Every boss, add and trash template is uncalibrated until an entry here says otherwise. Check every new boss and its adds against this registry.",
+  "consumers": [
+    "tools/bot_ml/live_validation_fidelity.py: report.json and combat_analysis.json encounter_fidelity (preflight, boss_melee, blizzlike)",
+    "tools/raid_program/scoreboard_record.py and scoreboard_show.py: per-kill fidelity status, informational only",
+    "tools/raid_program/scenario_bootstrap.py: encounter_damage_fidelity requirement of new scenarios"
+  ],
+  "upstream_reset": {
+    "migration": "sql/updates/world/4.3.4/2025_06_18_06_world.sql",
+    "commit": "68a3622133",
+    "value": 1,
+    "template_count_at_audit": 46627,
+    "audited_utc_date": "2026-09-23"
+  },
+  "statuses": {
+    "calibrated": "damage_modifier is derived from a matched same-mode WCL sample; the world DB must hold exactly this value",
+    "open": "not derived yet; the DB keeps the upstream value (normally 1) and runs with it are not Blizzlike",
+    "not_applicable": "the creature has no melee or weapon damage, so DamageModifier has no effect; reason required"
+  },
+  "method": {
+    "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+    "wcl_field": "unmitigatedAmount (U) of landed melee rows (WCL ability 1)",
+    "stage_note": "U is before the target's armor, block, damage-taken reductions and absorbs. Attacker-side -10% physical done auras (Scarlet Fever 81130, Demoralizing Roar 99, Demoralizing Shout 1160, Vindication 26017) are inside both U and the native after-attacker stage. The native stage is computed before the outcome roll, so parried, dodged and missed swings are valid roll samples too.",
+    "steps": [
+      "Pick a same-mode WCL kill (same size and difficulty, post-4.2 tuning era). List the boss melee rows with U, hit type and the attacker-side -10% auras active at the time.",
+      "Take the native per-swing roll at DamageModifier 1 from melee_resolution attacker_published_min/max_damage, or compute it: (gt_npc_damage_by_class_expN[level][class] * {1, 1.5} + AP / 14 * BaseVariance) * BaseAttackTime_s.",
+      "Lower bound = largest unreduced U / native max. Upper bound = smallest U taken under a -10% done aura / (0.9 * native min). Choose a value inside both bounds, also after the native +1% auto-attack bonus.",
+      "Cross-check with a weapon-percent ability that ignores caster modifiers when the encounter has one (Magmaw: Mangle 89773).",
+      "Stage an idempotent single-entry UPDATE under sql/custom/staged/world with the derivation in its header, record it here as calibrated, and confirm on a live kill that encounter_fidelity.boss_melee shows the after-attacker stage within +-10% of WCL.",
+      "A creature that never swings (vehicle part, stalker, caster without melee) is not_applicable with the evidence in reason."
+    ],
+    "difficulty_entries": "Each difficulty template (difficulty_entry_1..3) has its own DamageModifier and often a different BaseAttackTime. Calibrate each from its own mode's sample; never copy another mode's value.",
+    "wcl_mean_basis": "wcl_melee_reference.u_mean is the WCL sample mean when recorded. Without it, per-run reports compare the native mean with the midpoint of the WCL envelope and label the basis wcl_envelope_midpoint."
+  },
+  "creatures": {
+    "41570": {
+      "name": "Magmaw",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N",
+      "base_entry": 41570,
+      "role": "boss",
+      "status": "calibrated",
+      "damage_modifier": 16.0,
+      "template_at_audit": {"base_attack_time_ms": 2500, "unit_class": 1, "rank": 1, "flags_extra": 1, "level": 88},
+      "evidence": {
+        "wcl_report": "MxFq7TRbvnjGY1hJ",
+        "wcl_fight": 22,
+        "wcl_mode": "10N",
+        "wcl_date": "2024-10-28",
+        "matched_stage": "melee_resolution.after_attacker_bonus_amount",
+        "native_roll_at_modifier_1": {"min": 7588.8, "max": 11273.7},
+        "bounds": {"lower": 15.84, "upper": 16.33},
+        "bounds_derivation": "lower = 178,540 / 11,273.7 (largest hit, unreduced); upper = 111,531 / (0.9 * 7,588.8) (smallest hit under Scarlet Fever)",
+        "cross_check": "Mangle 89773 initial hit U 240,338 / 1.5 = 160,225 per unmodified swing; at modifier 16 that is a native roll of 10,014, inside 7,589-11,274",
+        "replay": "70 native swings from base-0891a99 kills 1-3 scaled by 16 give 110,512-181,904 at the U stage",
+        "derivation_file": "sql/custom/staged/world/2026_09_23_30_magmaw_damage_modifier.sql",
+        "migration_state": "staged",
+        "test": "tests/test_magmaw_damage_modifier.py"
+      },
+      "wcl_melee_reference": {
+        "stage": "after_attacker_bonus_amount",
+        "u_min": 111531,
+        "u_max": 178540,
+        "u_mean": null,
+        "landed_samples": 14,
+        "avoided_samples": 7,
+        "meaning": "observed sample envelope, not recovered roll endpoints",
+        "source_ref": "wcl_MxFq7TRbvnjGY1hJ_22"
+      },
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+        "value_key": "boss_melee_pressure",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "51101": {
+      "name": "Magmaw (1)",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "25N",
+      "base_entry": 41570,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 1, "flags_extra": 1},
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 2500; do not copy the 10N value."
+    },
+    "51102": {
+      "name": "Magmaw (2)",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10H",
+      "base_entry": 41570,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 1, "flags_extra": 1},
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 2500; do not copy the 10N value."
+    },
+    "51103": {
+      "name": "Magmaw (3)",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "25H",
+      "base_entry": 41570,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 1, "flags_extra": 1},
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 2500; do not copy the 10N value."
+    },
+    "42347": {
+      "name": "Exposed Head of Magmaw",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N",
+      "base_entry": 42347,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2700, "unit_class": 1, "rank": 3, "flags_extra": 8192},
+      "open_reason": "Rank 3 vehicle-passenger body part (difficulty entries 51248-51250). No native melee_resolution from it in base-0891a99 kills 1-3. If WCL confirms it never swings, mark not_applicable with that evidence."
+    },
+    "48270": {
+      "name": "Exposed Head of Magmaw",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N",
+      "base_entry": 48270,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2700, "unit_class": 1, "rank": 3, "flags_extra": 8192},
+      "open_reason": "Rank 3 Mangle head, distinct from 42347 (difficulty entries 51251-51253). No native melee observed; WCL actor 72 only receives attacks. Confirm and mark not_applicable, or calibrate."
+    },
+    "41806": {
+      "name": "Lava Parasite",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N",
+      "base_entry": 41806,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 0, "flags_extra": 1073750272},
+      "open_reason": "Melee add (difficulty entries 51456-51458); 2-4 native swings per kill in base-0891a99. No matched WCL melee sample yet."
+    },
+    "42321": {
+      "name": "Lava Parasite",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N",
+      "base_entry": 42321,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 0, "flags_extra": 1073750272},
+      "open_reason": "Second Lava Parasite template (difficulty entries 51459-51461). No matched WCL melee sample yet."
+    },
+    "49416": {
+      "name": "Blazing Bone Construct",
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N",
+      "base_entry": 49416,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 1, "flags_extra": 1073742080},
+      "open_reason": "Heroic-only add; the templates that spawn are difficulty entries 49483 (10H) and 49484 (25H). Needs a heroic WCL melee sample."
+    }
+  }
+}

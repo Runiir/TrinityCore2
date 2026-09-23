@@ -24,6 +24,16 @@ the measuring harness, not the goal.
 4. Missing research, native scripts, rosters or runtime scenarios are
    implementation work: route them with [raid-performance-loop](../raid-performance-loop/SKILL.md).
    Never borrow another difficulty's result.
+5. Check that the boss is Blizzlike before trusting any DPS or HPS ratio. Every
+   run reports `encounter_fidelity` (report.json, and one line in
+   `scoreboard show`): the preflight compares each engaged creature's
+   `DamageModifier` with `experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json`,
+   and `boss_melee` compares the boss's after-attacker melee with the WCL
+   samples. An upstream migration set every creature's `DamageModifier` to 1,
+   so an uncalibrated or mismatched boss is open fidelity work (the scenario's
+   `encounter_damage_fidelity` requirement): calibrate it from matched WCL
+   damage stages, stage the migration in `sql/custom/staged/world/`, and
+   record it in the registry.
 
 ## 2. Finish line, metric and thresholds
 

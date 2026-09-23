@@ -44,6 +44,35 @@ def _kill_table(label: str | None, kills: list[dict[str, Any]]) -> list[str]:
     return lines
 
 
+def _fidelity_line(kills: list[dict[str, Any]]) -> str:
+    """Creature damage fidelity of the label's kills. Informational: counting and the verdict ignore it."""
+    rows = [record["encounter_fidelity"] for record in kills if isinstance(record.get("encounter_fidelity"), dict)]
+    if not rows:
+        return "encounter fidelity (informational): not recorded"
+    states = [row.get("blizzlike") for row in rows]
+    parts = [f"blizzlike true {states.count(True)}, false {states.count(False)}, unknown {states.count(None)} "
+             f"of {len(kills)} kills"]
+    bosses: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        for entry, boss in (row.get("bosses") or {}).items():
+            bosses.setdefault(entry, []).append(boss)
+    for entry, series in sorted(bosses.items()):
+        mean = _mean_of(series, "after_attacker_mean")
+        if mean is None:
+            continue
+        ratio = _mean_of(series, "mean_ratio")
+        reference = next((boss for boss in reversed(series) if boss.get("wcl_mean")), None)
+        text = f"{series[-1].get('name') or entry} after-attacker mean {mean:.0f}"
+        if ratio is not None and reference is not None:
+            text += (f" = {ratio:.2f}x WCL {reference['wcl_mean']:.0f}"
+                     + (" (envelope midpoint)" if reference.get("wcl_mean_basis") == "wcl_envelope_midpoint" else ""))
+        parts.append(text)
+    reason = next((row["reasons"][0] for row in reversed(rows) if row.get("reasons")), None)
+    if reason:
+        parts.append(reason)
+    return "encounter fidelity (informational): " + "; ".join(parts)
+
+
 def _gap_line(rank: int, gap: dict[str, Any]) -> str:
     line = (f"  {rank}. {gap['actor_id']} {gap['name']} {gap['spec']}: {gap['dps']:.0f} vs WCL "
             f"{gap['target_dps']:.0f} (-{gap['gap_dps']:.0f} DPS)")
@@ -111,6 +140,7 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     out += _kill_table(label, kills)
     if vs:
         out += _kill_table(vs, label_kills(records, vs))
+    out.append(_fidelity_line(kills))
     out.append("")
     out.append(f"verdict: {verdict['status']}" + (f" - {verdict['reason']}" if verdict["reason"] else ""))
     if comparison:

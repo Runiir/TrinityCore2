@@ -57,6 +57,7 @@ try:
         now_ms,
     )
     from .live_validation_stalls import attach_measurement_validity
+    from .live_validation_fidelity import attach_encounter_fidelity
     from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from .live_validation_world_ticks import WorldTickLedger
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
@@ -97,6 +98,7 @@ except ImportError:
         now_ms,
     )
     from live_validation_stalls import attach_measurement_validity
+    from live_validation_fidelity import attach_encounter_fidelity
     from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from live_validation_world_ticks import WorldTickLedger
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
@@ -9304,6 +9306,8 @@ def _main() -> int:
         validation_route_manifest=validation_route_manifest,
         validation_route=validation_route,
     )
+    # Informational creature damage fidelity (registry vs read-only DB, boss melee); never raises.
+    attach_encounter_fidelity(report, validation_route_manifest, effective_config)
     if report.get("combat_log"):
         write_json(args.output_dir / "combat_log.json", report["combat_log"])
         write_json(args.output_dir / "combat_analysis.json", report["combat_analysis"])

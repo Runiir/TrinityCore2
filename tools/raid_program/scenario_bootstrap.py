@@ -4,9 +4,27 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 
+from tools.bot_ml.live_validation_fidelity import REGISTRY_PATH, scenario_damage_fidelity
 from tools.raid_program import development_graph as graph
 from tools.raid_program.graph_acceptance import TARGET_SCHEMA, target_pointer
 from tools.raid_program.scenario_catalog import discover, key, resolve
+
+
+def damage_fidelity_requirement(root: Path, encounter: dict) -> dict:
+    """Open until every boss entry of the scenario is calibrated or not_applicable in the registry.
+
+    The upstream DamageModifier reset leaves every creature at 1, so boss and add
+    damage must be checked against Blizzlike references before tank and healer
+    pressure means anything. The registry snapshot is informational; the rule is
+    re-checked with check_scenario_damage_fidelity when the requirement closes.
+    """
+    registry = scenario_damage_fidelity(root, encounter)
+    return {'status': 'open', 'registry': REGISTRY_PATH.as_posix(),
+            'description': ('Verify boss and add damage against Blizzlike references; see the calibration registry '
+                            f"{REGISTRY_PATH.as_posix()} and report.json encounter_fidelity"),
+            'closure_rule': 'every boss entry of this scenario is calibrated or not_applicable in the registry',
+            'registry_boss_entries_at_bootstrap': registry['boss_entries'],
+            'registry_closable_at_bootstrap': registry['closable']}
 
 
 def make_state(root: Path, encounter: dict, inputs: dict) -> dict:
@@ -19,6 +37,7 @@ def make_state(root: Path, encounter: dict, inputs: dict) -> dict:
         'role_references': {'status': 'open', 'description': 'Match current simulator requests and tank/healer diagnostics to the selected roster'},
         'runtime_scenario': {'status': 'open', 'description': 'Prepare exact-mode route/profile/provisioning, native unlocks and isolated instance ownership', 'needs_raid': True},
         'assignments': {'status': 'open', 'description': 'Implement requested-mode raid assignments and persistent mechanic tasks', 'needs_raid': True},
+        'encounter_damage_fidelity': damage_fidelity_requirement(root, encounter),
     }
     if not (root / target['path']).is_file():
         requirements['raid_target'] = {'status': 'open', 'target_path': target['path'],

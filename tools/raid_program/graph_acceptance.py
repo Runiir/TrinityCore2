@@ -262,6 +262,14 @@ def assess(root: Path, g: dict, r: dict) -> None:
             raise graph.GraphError('requirement acceptance needs end-to-end repair acceptance')
         if key == 'raid_target':
             check_target_file(root, g)
+        if key == 'encounter_damage_fidelity':
+            # Blizzlike boss damage: closes only when every boss entry of the
+            # scenario is calibrated (or not applicable) in the registry.
+            from tools.bot_ml.live_validation_fidelity import check_scenario_damage_fidelity
+            try:
+                check_scenario_damage_fidelity(root, g['encounter'])
+            except ValueError as exc:
+                raise graph.GraphError(str(exc)) from exc
         if requirement.get('needs_performance') and not legacy_performance:
             raise graph.GraphError('requirement needs performance acceptance')
     if verdict is None:

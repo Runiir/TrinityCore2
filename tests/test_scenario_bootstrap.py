@@ -66,7 +66,7 @@ def test_invalid_request_does_not_change_state(repo,requested,mode):
 def test_25h_uses_frozen_25_not_ten_normal_shard(repo):
     result=bootstrap.start(repo,'implement magmaw 25hc bots')
     assert result['encounter']['mode']=='25H'
-    assert len(result['open_requirements'])==33  # 6 setup + raid_target + 25 actors + encounter
+    assert len(result['open_requirements'])==34  # 6 setup + damage fidelity + raid_target + 25 actors + encounter
     assert result['completed_measurements']==[]
     inputs=result['bootstrap_inputs']
     assert len(inputs['roster']['actors'])==25
@@ -266,3 +266,47 @@ def test_existing_target_file_needs_no_target_work_item(repo):
     assert 'raid_target' not in result['open_requirements']
     assert result['unit']['requirements']==['encounter_research']
     assert result['finish_line']['target_present'] is True and result['finish_line']['work_item'] is None
+
+
+def write_registry(root, creatures):
+    from tools.bot_ml.live_validation_fidelity import REGISTRY_PATH, REGISTRY_SCHEMA
+    write(root, REGISTRY_PATH, {'schema': REGISTRY_SCHEMA, 'creatures': creatures})
+
+
+def test_new_scenario_opens_encounter_damage_fidelity_against_the_registry(repo):
+    result = bootstrap.start(repo, 'magmaw 25hc')
+    requirement = result['open_requirements']['encounter_damage_fidelity']
+    assert requirement['status'] == 'open'
+    assert requirement['registry'] == 'experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json'
+    assert 'Blizzlike' in requirement['description'] and requirement['registry'] in requirement['description']
+    assert requirement['closure_rule'] == 'every boss entry of this scenario is calibrated or not_applicable in the registry'
+    # No registry in this scratch repository: nothing to close against.
+    assert requirement['registry_boss_entries_at_bootstrap'] == {} and requirement['registry_closable_at_bootstrap'] is False
+    assert 'encounter_damage_fidelity' not in result['unit']['requirements']  # the first unit is unchanged
+
+
+@pytest.mark.parametrize('statuses,closable', [({'1': 'calibrated', '2': 'not_applicable'}, True),
+                                               ({'1': 'calibrated', '2': 'open'}, False)])
+def test_damage_fidelity_closes_only_when_every_boss_entry_is_settled(repo, statuses, closable):
+    from tools.bot_ml.live_validation_fidelity import check_scenario_damage_fidelity
+    creatures = {entry: {'raid': 'blackwing_descent', 'boss': 'magmaw', 'mode': '10H', 'role': 'boss', 'status': status}
+                 for entry, status in statuses.items()}
+    creatures['3'] = {'raid': 'blackwing_descent', 'boss': 'magmaw', 'mode': '10H', 'role': 'add', 'status': 'open'}
+    creatures['4'] = {'raid': 'blackwing_descent', 'boss': 'magmaw', 'mode': '25H', 'role': 'boss', 'status': 'open'}
+    write_registry(repo, creatures)
+    requirement = bootstrap.start(repo, 'magmaw 10hc')['open_requirements']['encounter_damage_fidelity']
+    assert requirement['status'] == 'open'  # closing is a publication, never a bootstrap shortcut
+    assert requirement['registry_boss_entries_at_bootstrap'] == statuses
+    assert requirement['registry_closable_at_bootstrap'] is closable
+    encounter = {'raid': 'blackwing_descent', 'boss': 'magmaw', 'mode': '10H'}
+    if closable:
+        check_scenario_damage_fidelity(repo, encounter)
+    else:
+        with pytest.raises(ValueError, match='not calibrated or not_applicable: 2'):
+            check_scenario_damage_fidelity(repo, encounter)
+
+
+def test_real_registry_keeps_magmaw_10n_fidelity_open_until_the_heads_are_settled():
+    requirement = bootstrap.damage_fidelity_requirement(ROOT, {'raid': 'blackwing_descent', 'boss': 'magmaw', 'mode': '10N'})
+    assert requirement['registry_boss_entries_at_bootstrap'] == {'41570': 'calibrated', '42347': 'open', '48270': 'open'}
+    assert requirement['registry_closable_at_bootstrap'] is False

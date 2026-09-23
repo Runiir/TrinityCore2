@@ -687,3 +687,81 @@ def test_run_dry_run_executes_nothing(root, capsys, monkeypatch, tmp_path):
     append_record(root, SCENARIO, kill("sq", "k1"))
     with pytest.raises(SystemExit, match="already has 1 kill"):
         main(["--root", str(root), "run", "--scenario", SCENARIO, "--label", "sq", "--dry-run"])
+
+
+# --- encounter damage fidelity (informational) --------------------------------------------------
+
+def fidelity_block(blizzlike=False, mean=8683.4, ratio=0.0599):
+    """The compact per-kill fidelity status scoreboard_record keeps."""
+    return {"blizzlike": blizzlike, "basis": "harness",
+            "reasons": [] if blizzlike else ["boss 41570 Magmaw: mismatch (registry DamageModifier 16, DB 1)"],
+            "bosses": {"41570": {"name": "Magmaw", "swings": 24, "after_attacker_mean": mean, "wcl_mean": 145035.5,
+                                 "wcl_mean_basis": "wcl_envelope_midpoint", "mean_ratio": ratio, "wcl_flags": [],
+                                 "runtime_damage_modifier": 1.0, "registry_damage_modifier": 16.0}}}
+
+
+def test_fidelity_is_shown_but_never_changes_counting_or_the_verdict(root):
+    batch(root, "plain")
+    batch(root, "fidelity", encounter_fidelity=fidelity_block())
+    plain, marked = evaluate_target(root, SCENARIO, "plain"), evaluate_target(root, SCENARIO, "fidelity")
+    for key in ("status", "reason", "reasons", "kills", "encounter", "actors"):
+        assert plain[key] == marked[key], key
+    assert [row["counted"] for row in marked["kills_detail"]] == [True, True, True]
+    line = next(line for line in render(root, SCENARIO, "fidelity").splitlines() if line.startswith("encounter fidelity"))
+    assert line == ("encounter fidelity (informational): blizzlike true 0, false 3, unknown 0 of 3 kills; "
+                    "Magmaw after-attacker mean 8683 = 0.06x WCL 145036 (envelope midpoint); "
+                    "boss 41570 Magmaw: mismatch (registry DamageModifier 16, DB 1)")
+    assert "encounter fidelity (informational): not recorded" in render(root, SCENARIO, "plain")
+
+
+def magmaw_run_dir(folder, *, report_extra=None, modifier=1.0):
+    """A closed run with a Magmaw route manifest and two native Magmaw swings."""
+    from tools.bot_ml.live_validation_fidelity import FIDELITY_SCHEMA  # noqa: F401 - module must import
+    folder.mkdir(parents=True)
+    (folder / "report.json").write_text(json.dumps({"native_gameplay_outcome": {"native_clear": True},
+                                                    "completion_reason": CLEAR, "status": {"deaths": 0},
+                                                    **(report_extra or {})}))
+    (folder / "validation_route_manifest.json").write_text(json.dumps({"scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+        "routes": [{"route_node_id": "bwd.magmaw.encounter", "kind": "boss", "source_entry": 41570}]}))
+
+    def swing(at, amount):
+        return {"kind": "melee_resolution", "event_sequence": at, "melee_resolution_sequence": at, "timestamp_ms": at,
+                "route_node_id": "bwd.magmaw.encounter", "source_entry": 41570, "source_guid": 39,
+                "source_name": "Magmaw", "source_is_pet": False, "target_guid": 30002,
+                "melee_resolution": {"after_attacker_bonus_amount": amount, "hit_outcome_name": "normal",
+                                     "attack_type": 0, "attacker_template_damage_modifier": modifier,
+                                     "attacker_base_attack_time_ms": 2500}}
+    events = [swing(1_000_000, 8000), swing(1_003_000, 9000)]
+    (folder / "combat_log.json").write_text(json.dumps({"recent_events": events, "recent_events_dropped": 0}))
+    (folder / "combat_analysis.json").write_text(json.dumps({"encounters": []}))
+    return folder
+
+
+def test_record_keeps_fidelity_from_the_harness_or_recomputes_it(tmp_path):
+    from tools.bot_ml.live_validation_fidelity import FIDELITY_SCHEMA
+    from tools.raid_program.scoreboard_record import outcome_summary
+    old = outcome_summary(magmaw_run_dir(tmp_path / "old"), None, "bwd.magmaw.encounter")["encounter_fidelity"]
+    assert old["basis"] == "combat_log_recomputed_without_db" and old["blizzlike"] is False
+    assert "boss 41570 Magmaw: runtime DamageModifier 1 != registry 16" in old["reasons"]
+    magmaw = old["bosses"]["41570"]
+    assert magmaw["after_attacker_mean"] == 8500.0 and magmaw["mean_ratio"] == pytest.approx(8500 / 145035.5, abs=1e-4)
+    assert magmaw["wcl_mean_basis"] == "wcl_envelope_midpoint" and magmaw["registry_damage_modifier"] == 16.0
+    harness = {"schema": FIDELITY_SCHEMA, "basis": "harness", "blizzlike": True, "reasons": [], "boss_melee": {}}
+    new = outcome_summary(magmaw_run_dir(tmp_path / "new", report_extra={"encounter_fidelity": harness}), None,
+                          "bwd.magmaw.encounter")["encounter_fidelity"]
+    assert new == {"blizzlike": True, "reasons": [], "basis": "harness", "bosses": {}}
+    target = load_target(ROOT, SCENARIO)
+    record = record_from_summary({"native_clear": True, "completion_reason": CLEAR, "actors": [],
+                                  "encounter_fidelity": new}, root=ROOT, target=target, scenario=SCENARIO,
+                                 label="x", kill_id="x-1", deaths={"boss_window_deaths": 0, "deaths": []})
+    assert record["encounter_fidelity"] == new
+
+
+def test_run_path_records_fidelity_without_affecting_the_batch(root, fakes):
+    install, worldserver = fakes
+    install([{}, {}, {}])
+    assert run_cli(root, worldserver, "fid", 3) == 0
+    records = load_records(root, SCENARIO)
+    # Fake runs carry no route manifest or melee: the status is unknown, not a failure.
+    assert all(record["encounter_fidelity"]["blizzlike"] is None for record in records)
+    assert evaluate_target(root, SCENARIO, "fid")["status"] == "pass"

@@ -9,7 +9,9 @@ The harness exit code is recorded but never decides the outcome: diagnostic
 route runs exit 1 even on a clean native clear. measurement_validity (world
 stalls in the encounter window) and damage_reconciliation (killed-hostile damage
 vs max HP) are copied from report.json / combat_analysis.json when the harness
-wrote them.
+wrote them. encounter_fidelity (creature DamageModifier calibration and boss melee
+vs WCL, tools/bot_ml/live_validation_fidelity.py) is informational: nothing in
+counting or the verdict reads it.
 """
 from __future__ import annotations
 
@@ -183,11 +185,27 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
         } if encounter else None,
         "actors": actors,
         "ranked_gaps": ranked_gaps(actors, spec_targets(root, target), timeline, healer_roles(target)),
-        **{key: summary[key] for key in MEASUREMENT_KEYS if summary.get(key) is not None},
+        **{key: summary[key] for key in (*MEASUREMENT_KEYS, *INFO_KEYS) if summary.get(key) is not None},
     }
 
 
 MEASUREMENT_KEYS = ("measurement_validity", "damage_reconciliation")
+INFO_KEYS = ("encounter_fidelity",)  # shown by scoreboard show; never read by counting or the verdict
+
+
+def fidelity_fields(run_dir: Path, report: dict[str, Any]) -> dict[str, Any]:
+    """Blizzlike status and each boss's after-attacker melee mean vs WCL for one kill.
+
+    Taken from report.json encounter_fidelity, or recomputed from combat_log.json and the
+    calibration registry for runs recorded before the harness wrote it.
+    """
+    from tools.bot_ml.live_validation_fidelity import fidelity_from_run_dir, scoreboard_summary
+    try:
+        summary = scoreboard_summary(fidelity_from_run_dir(run_dir, report=report))
+    except Exception as error:  # informational: never costs a kill its record
+        summary = {"blizzlike": None, "reasons": [f"fidelity unavailable: {type(error).__name__}: {error}"],
+                   "basis": "error", "bosses": {}}
+    return {"encounter_fidelity": summary} if summary else {}
 
 
 def measurement_fields(report: dict[str, Any], analysis: dict[str, Any] | None, node: str) -> dict[str, Any]:
@@ -251,7 +269,8 @@ def outcome_summary(run_dir: Path, worldserver_sha256: str | None, encounter_nod
             "native_reason": outcome.get("native_reason"), "completion_reason": report.get("completion_reason"),
             "route_deaths": (report.get("status") or {}).get("deaths"),
             "worldserver_sha256": worldserver_sha256 or sha, "report_binary_sha256": sha,
-            **measurement_fields(report, analysis, encounter_node), "encounter": None, "actors": []}
+            **measurement_fields(report, analysis, encounter_node), **fidelity_fields(run_dir, report),
+            "encounter": None, "actors": []}
 
 
 def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,
@@ -269,7 +288,7 @@ def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,
             timeline_path = Path(temp) / "timeline.json"
             timeline_path.write_text('{"actors": []}')
         full = summarize(run_dir, timeline_path, label, summary["worldserver_sha256"] or "")
-    kept = ("report_present", "worldserver_sha256", "report_binary_sha256", *MEASUREMENT_KEYS)
+    kept = ("report_present", "worldserver_sha256", "report_binary_sha256", *MEASUREMENT_KEYS, *INFO_KEYS)
     return full | {key: summary[key] for key in kept if key in summary}
 
 
