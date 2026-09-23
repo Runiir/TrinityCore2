@@ -22,6 +22,7 @@
 #include "SpellHistory.h"
 #include "SpellMgr.h"
 #include "Unit.h"
+#include "Vehicle.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Server/Packets/NPCPackets.h"
@@ -568,6 +569,22 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                         }
                     return BotActionArbitration::Outcome::Retryable(reason);
                 }();
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::VehicleExit>)
+        {
+            // Leave the seat the way a player does: the native exit request
+            // honours the seat's own enter/exit flag.
+            Vehicle* vehicle = bot->GetVehicle();
+            if (!vehicle)
+                return BotActionArbitration::Outcome::NotApplicable("native_vehicle_exit_not_seated");
+            VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(bot);
+            if (!seat || !seat->CanEnterOrExit())
+                return BotActionArbitration::Outcome::Unsafe("native_vehicle_exit_seat_forbids_exit");
+            WorldPacket exit(CMSG_REQUEST_VEHICLE_EXIT, 0);
+            bot->GetSession()->HandleRequestVehicleExit(exit);
+            return bot->GetVehicle()
+                ? BotActionArbitration::Outcome::Retryable("native_vehicle_exit_rejected")
+                : BotActionArbitration::Outcome::Submitted("native_vehicle_exit_submitted");
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::PetCommand>)
         {

@@ -7,6 +7,12 @@
 
     // A healer rides only while two other living healers keep healing Mangle.
     static constexpr std::size_t HookHealerMinimumLivingHealers = 3;
+    // A seated healer whose pair is broken leaves its no-cast pincer seat
+    // once the mangled tank falls below this. Baselines 0891a99 k1-k3: tank
+    // 202-232k HP, lowest 49-57%, worst Mangle 5 s bucket 136k (~12%/s).
+    // 35% (~75k) is about three seconds of that worst case, enough for the
+    // exit and one heal, and stays clear of every observed minimum.
+    static constexpr float HookHealerCriticalTankHealthPct = 35.0f;
 
     // Static prior of each healer's share of raid healing, lowest first.
     // Baselines 0891a99 k1-k3 (10N): Discipline 0.8-1.8k HPS against
@@ -23,16 +29,25 @@
         return std::size_t(std::distance(order.begin(), itr));
     }
 
+    static std::size_t LivingHealers(Blackboard const& board)
+    {
+        return std::size_t(std::count_if(board.Players.begin(),
+            board.Players.end(), [](ActorSnapshot const& member)
+            {
+                return member.Alive && member.Role == "healer";
+            }));
+    }
+
+    // A released healer is not swapped for the next healer in rank: its
+    // seat goes to the DPS order instead.
     static ObjectGuid SelectHookHealer(Blackboard const& board)
     {
-        std::size_t livingHealers = 0;
         ActorSnapshot const* selected = nullptr;
         std::size_t selectedRank = 0;
         for (ActorSnapshot const& member : board.Players)
         {
             if (!member.Alive || member.Role != "healer")
                 continue;
-            ++livingHealers;
             std::optional<std::size_t> const rank =
                 HookHealerLoadRank(member.ClassSpec);
             if (rank && (!selected || *rank < selectedRank
@@ -43,7 +58,9 @@
                 selectedRank = *rank;
             }
         }
-        return selected && livingHealers >= HookHealerMinimumLivingHealers
+        return selected
+            && LivingHealers(board) >= HookHealerMinimumLivingHealers
+            && !SeatReleased(board, *selected)
             ? selected->Guid : ObjectGuid();
     }
 
@@ -55,8 +72,60 @@
         return vehicle && vehicle->Alive && IsPincerVehicle(*vehicle);
     }
 
+    // Both pincers are held by living players. This reads seats only, so
+    // the release rule never depends on the rider list it shapes.
+    static bool PincersPaired(Blackboard const& board)
+    {
+        bool left = false;
+        bool right = false;
+        for (ActorSnapshot const& member : board.Players)
+            if (member.Alive && SeatedOnPincer(board, member))
+            {
+                uint32 const entry = board.FindActor(member.VehicleGuid)->Entry;
+                left = left || entry == PincerLeftEntry;
+                right = right || entry == PincerRightEntry;
+            }
+        return left && right;
+    }
+
+    static bool MangledTankCritical(Blackboard const& board)
+    {
+        ActorSnapshot const* owner = FindMangleOwner(board);
+        return owner && owner->HealthPct < HookHealerCriticalTankHealthPct;
+    }
+
+    // A seated rider gives up its pincer (native exit, seat addon lands it
+    // on the room floor) and its hook duty when the seat cannot produce the
+    // hook, or when a seated healer is needed back:
+    //  - any rider: the mount window (Massive Crash, 6 s) has closed with the
+    //    other pincer empty. Nobody can join, and the script only ejects at
+    //    the next Massive Crash;
+    //  - a healer: the window has closed (after the impale this skips the
+    //    3.5 s native eject), or its pair is broken while fewer than three
+    //    healers live or the mangled tank is critical. With healers and tank
+    //    healthy it keeps the seat for a replacement until the window closes.
+    // A complete pair inside the window keeps both seats: the launch goes out
+    // on this tick, and the impale is what frees the tank from Mangle.
+    static bool SeatReleased(Blackboard const& board,
+        ActorSnapshot const& member)
+    {
+        if (!member.Alive || !SeatedOnPincer(board, member))
+            return false;
+        ActorSnapshot const* boss = FindActorByEntry(board, BossEntry);
+        bool const windowOpen = boss && boss->Interactable;
+        bool const paired = PincersPaired(board);
+        if (!windowOpen && !paired)
+            return true;
+        if (member.Role != "healer")
+            return false;
+        return !windowOpen || (!paired
+            && (LivingHealers(board) < HookHealerMinimumLivingHealers
+                || MangledTankCritical(board)));
+    }
+
     // Every hook caller derives the riders from this one ordered list; only
-    // the first two are assigned. Preference order:
+    // the first two are assigned. Released seats (SeatReleased) are skipped
+    // everywhere. Preference order:
     //  1. living riders already seated on a pincer, so a roster change during
     //     the ride never strands an unassigned actor in a pincer seat;
     //  2. the lowest-load healer while three or more healers are alive;
@@ -76,7 +145,8 @@
         for (ActorSnapshot const& member : board.Players)
         {
             if (!member.Alive || member.Role == "tank"
-                || IsFixedBaiter(baiters, member.Guid))
+                || IsFixedBaiter(baiters, member.Guid)
+                || SeatReleased(board, member))
                 continue;
             if (SeatedOnPincer(board, member))
                 seated.push_back(member.Guid);
@@ -122,11 +192,16 @@
             && std::distance(hookUsers.begin(), hookUser) < 2;
     }
 
+    // Assigned covers the two riders and any actor still holding a pincer
+    // seat, so a released passenger stays committed to the mechanic (no
+    // formation or Mangle staging move while the window or warning lasts)
+    // until its exit lands.
     static MagmawHookAssignment ResolveHookAssignment(
         Blackboard const& board, ActorSnapshot const& bot, ObjectGuid botGuid)
     {
         std::vector<ObjectGuid> const hookUsers = BuildHookUsers(board);
-        if (!IsAssignedHookUser(hookUsers, botGuid))
+        if (!IsAssignedHookUser(hookUsers, botGuid)
+            && !SeatedOnPincer(board, bot))
             return {};
         return { true, board.FindActor(bot.VehicleGuid),
             FindActorByEntry(board, SpikeEntry) };
@@ -196,20 +271,59 @@
         return mount;
     }
 
+    static BotNativeAction::Candidate BuildSeatReleaseCandidate(
+        Blackboard const& board, ActorSnapshot const& bot)
+    {
+        BotNativeAction::Candidate release;
+        release.Id.ScopeKey = board.CurrentScope.Key();
+        release.Id.Strategy = "adaptive_magmaw";
+        release.Id.Mechanic = "release_pincer_seat";
+        release.Id.Actor = bot.VehicleGuid;
+        release.Id.EventGeneration = board.Revision;
+        release.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        release.Utility = 420.0f;
+        release.ExpiresAtMs = board.ObservedAtMs + 500;
+        release.Action = BotNativeAction::VehicleExit{};
+        return release;
+    }
+
+    // A healer rider mounts last: only once the other rider holds a pincer,
+    // so its seat completes the pair and the launch follows at once. Until
+    // then it waits at the approach point, where it can still heal. Two
+    // healer riders mount in list order.
+    static bool MayMountPincer(Blackboard const& board,
+        std::vector<ObjectGuid> const& hookUsers, ActorSnapshot const& bot)
+    {
+        if (bot.Role != "healer")
+            return true;
+        if (hookUsers.size() < 2)
+            return false;
+        bool const first = hookUsers[0] == bot.Guid;
+        ActorSnapshot const* partner = board.FindActor(
+            hookUsers[first ? 1 : 0]);
+        if (!partner || !partner->Alive)
+            return false;
+        return SeatedOnPincer(board, *partner)
+            || (first && partner->Role == "healer");
+    }
+
     static std::optional<BotNativeAction::Candidate> ProposeHookInteraction(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& boss, ObjectGuid botGuid)
     {
-        MagmawHookAssignment const assignment = ResolveHookAssignment(board,
-            bot, botGuid);
-        if (!assignment.Assigned)
-            return std::nullopt;
-        if (assignment.Vehicle && assignment.Spike
-            && IsPincerVehicle(*assignment.Vehicle)
+        std::vector<ObjectGuid> const hookUsers = BuildHookUsers(board);
+        if (!IsAssignedHookUser(hookUsers, botGuid))
+            return SeatedOnPincer(board, bot)
+                ? std::optional<BotNativeAction::Candidate>(
+                    BuildSeatReleaseCandidate(board, bot))
+                : std::nullopt;
+        ActorSnapshot const* vehicle = board.FindActor(bot.VehicleGuid);
+        ActorSnapshot const* spike = FindActorByEntry(board, SpikeEntry);
+        if (vehicle && spike && IsPincerVehicle(*vehicle)
             && HookPairReady(board))
-            return BuildHookCandidate(board, *assignment.Vehicle,
-                *assignment.Spike);
-        if (boss.Interactable && bot.VehicleGuid.IsEmpty())
+            return BuildHookCandidate(board, *vehicle, *spike);
+        if (boss.Interactable && bot.VehicleGuid.IsEmpty()
+            && MayMountPincer(board, hookUsers, bot))
             return BuildMountCandidate(board, boss);
         return std::nullopt;
     }

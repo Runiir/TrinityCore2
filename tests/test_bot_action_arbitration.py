@@ -1499,6 +1499,8 @@ int main()
     BotEncounter::ActorSnapshot nonHookBot = hookBot;
     nonHookBot.Guid = ObjectGuid(HighGuid::Player, uint32(300));
     nonHookBot.Role = "healer";
+    // A copy of hookBot would share its one-seat pincer; this healer is on foot.
+    nonHookBot.VehicleGuid = ObjectGuid{};
     magmawHook.Players = { secondHookBot, hookBot, nonHookBot };
     magmawHook.Hostiles = { magmawBoss, magmawHead };
     BotEncounter::ActorSnapshot leftPincer = magmawBoss;

@@ -10,10 +10,12 @@
 
 #include "ObjectAccessor.h"
 #include "CharmInfo.h"
+#include "DBCStructure.h"
 #include "MotionMaster.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
+#include "Vehicle.h"
 
 #include <optional>
 #include <string>
@@ -21,6 +23,20 @@
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+
+namespace
+{
+// Mirrors SpellInfo::CheckVehicle for an ordinary player spell: a passenger
+// may cast only from a seat that carries VEHICLE_SEAT_FLAG_CAN_ATTACK.
+bool PassengerSeatForbidsCasting(Player const* bot)
+{
+    Vehicle const* vehicle = bot->GetVehicle();
+    if (!vehicle)
+        return false;
+    VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(bot);
+    return !seat || !seat->HasFlag(VEHICLE_SEAT_FLAG_CAN_ATTACK);
+}
+}
 
 void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
     BotUpdateContext& context)
@@ -777,6 +793,13 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                     activeNativeMovementPath, supportKey = support.Key,
                     supportPriority = support.ActionPriority]()
                 {
+                    // A passenger in a no-cast seat (Magmaw's pincers) cannot
+                    // start any heal. Decline before spell selection so the
+                    // seat records no failure and the heal key carries no
+                    // backoff once the bot is back on the ground.
+                    if (PassengerSeatForbidsCasting(context.Bot))
+                        return BotActionArbitration::Outcome::NotApplicable(
+                            "heal_vehicle_seat_forbids_casting");
                     Unit* healTarget = ObjectAccessor::GetUnit(*context.Bot, healTargetGuid);
                     if (!healTarget || !healTarget->IsAlive()
                         || !context.Bot->IsValidAssistTarget(healTarget))
