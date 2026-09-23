@@ -1,0 +1,108 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:tuning_01",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_blood_outbreak_disease_upkeep_01_20260923",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
+  "latest_user_direction": "Implement magmaw 10n bots.",
+  "objective": "Provision native Outbreak (77575) for the Blood Death Knight tank profile so Blood Plague and Frost Fever are maintained without spending Frost/Unholy runes on Icy Touch and Plague Strike, freeing those runes for Death Strike (TANK-002, error ledger).",
+  "hypothesis": "On baseline r3-47cd175 the Blood tank (actor 30002) is rune-starved: the profile has no Outbreak row, so Icy Touch and Plague Strike (the two lowest-scoring valid bucket-1 actions) refresh diseases and spend 5-7 Frost/Unholy runes per kill that Death Strike needs, while WCL's Nexry casts only Outbreak. Adding one Outbreak row, already staged and scored in sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql (score 4.885 in balanced_role_dps, below Death Strike's survival-mode scores so it never displaces a defensive Death Strike), should raise Death Strike's rune availability and actor 30002's kill DPS toward the 0.95x WCL floor without changing any other spell's priority, rune cost or mitigation. This plan authorizes only the Outbreak provisioning and its dependent generated/config files; Blood Tap and Empower Rune Weapon rune-state conditioning (also named in TANK-002) and the Bone Shield/Death Strike pre-Mangle timing (TANK-003) are separate, un-authorized follow-up work.",
+  "first_broken_edge": "blood_outbreak_not_provisioned_rune_starved_death_strike",
+  "observations": [
+    "docs/bot_raids/error_ledger.md TANK-002: base-8ee1047/bundle1 shows Blood spends ~3.3 runes/min on Icy Touch/Plague Strike (WCL uses Outbreak at 1.6/min) with no Blood Tap/ERW; Death Strike/Heart Strike rune-check rejections ~900-1,800 per kill.",
+    "The staged migration sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql documents the exact scoring math (candidate score 4.885 balanced_role_dps, above the rune-costing fallbacks, below Death Strike in every survival-weighted mode) and states the provisioning dependency explicitly: PlayerStart.AllSpells is 0, so the bot only knows spells listed in experiments/configs/cata_434_action_profiles.json's action_profile_spells_by_spec.blood_death_knight, which lacks 77575 while frost_death_knight and unholy_death_knight already have it.",
+    "tests/test_blood_outbreak_disease_upkeep.py already exists (drafted by the diagnosis pass) and exercises the forward/reverse SQL replay and the score-ordering math against pinned resolver/candidate source text; it currently only conditionally checks provisioning (skips the assertion once 77575 is added).",
+    "tests/test_ml_pipeline.py::test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance asserts QUALIFICATION_TUNED_ACTION_SPELL_IDS is a subset of each target's action_profile_spell_ids in experiments/configs/all_spec_targets_cata_p4_v1.json, so adding 77575 to the Python constant without also adding it to that target's list would fail this existing test.",
+    "tests/test_generated_bot_admission_identities.py asserts the checked-in src/server/game/Bots/BotAdmissionIdentityGenerated.h is byte-identical to a fresh render from experiments/configs/all_spec_targets_cata_p4_v1.json (among other sources), so the header must be regenerated with tools/bot_ml/generate_bot_admission_identities after the target file changes."
+  ],
+  "owned_files": [
+    "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+    "sql/custom/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+    "experiments/configs/cata_434_action_profiles.json",
+    "experiments/configs/all_spec_targets_cata_p4_v1.json",
+    "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h"
+  ],
+  "forbidden_changes": [
+    "Do not change Death Strike, Heart Strike, Rune Strike, Icy Touch or Plague Strike priority buckets, scores, rune costs, validity, mitigation, target selection or native submission behavior.",
+    "Do not change the frost_death_knight or unholy_death_knight action lists, or any other class/spec's QUALIFICATION_TUNED_ACTION_SPELL_IDS entry or action_profile_spell_ids.",
+    "Do not touch the Mangle seat forbidden_self_aura rows added in 2026_09_23_40/41, encounter scripts, route manifests, runtime profiles, roster, WCL denominators, simulator references, gear, stats, gems, reforges or consumables.",
+    "Do not add an aura, proc, damage multiplier, forced cast, resource refill or teleport; Outbreak's effects, cooldown and rune cost come only from the pinned 4.3.4 DBC as already documented in the staged migration.",
+    "Do not modify files outside the bounded owned set, and do not hand-edit the generated header outside running the generator."
+  ],
+  "acceptance_conditions": [
+    "77575 is added to action_profile_spells_by_spec.blood_death_knight in cata_434_action_profiles.json, to the blood_death_knight target's action_profile_spell_ids in all_spec_targets_cata_p4_v1.json, and to QUALIFICATION_TUNED_ACTION_SPELL_IDS['blood_death_knight'] in build_all_spec_phase1_catalogs.py; no other spec's list changes.",
+    "The staged migration is promoted unchanged (git mv) from sql/custom/staged/world/ to sql/custom/world/ so the worldserver auto-updater applies it.",
+    "src/server/game/Bots/BotAdmissionIdentityGenerated.h is regenerated via tools/bot_ml.generate_bot_admission_identities from the updated sources with no manual edits.",
+    "tests/test_blood_outbreak_disease_upkeep.py, tests/test_generated_bot_admission_identities.py and tests/test_ml_pipeline.py::test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance pass, and tools.raid_program.module_size reports no oversized file.",
+    "An independent reviewer approves the exact bounded diff before any build.",
+    "A clean policy-bound build, then a completion-watchdog Magmaw 10N scoreboard batch (kills=3, same route/roster/config as baseline r3-47cd175) shows via `scoreboard show --vs r3-47cd175` that party DPS or actor 30002 improved (or both stayed within noise with no non-healer regression), boss-window deaths per kill did not increase, and every counted kill is a native clear; otherwise the change is reverted per the playbook's keep/revert rule. This plan does not by itself accept actor_30002, magmaw_10n or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_blood_outbreak_disease_upkeep.py",
+    "pixi run pytest -q tests/test_generated_bot_admission_identities.py",
+    "pixi run pytest -q tests/test_ml_pipeline.py -k test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "b8ce9b9af5b7b5adb8123fdb0839594ff856d1eb",
+  "risk_tier": "class_native",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "dec807cbe7fe980653f77075c68ba1c1e5d21fb240dac4a30afac9283c2830ab"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "4f19bb1bff4adcb1b27767c7bd6b2fdd97c829fa792ae909113642a9d79d20d4"
+    },
+    {
+      "path": "sql/custom/staged/world/2026_09_23_10_blood_outbreak_disease_upkeep.sql",
+      "sha256": "0269275aaafc632b55880760d560a59ade782166753d9a487c80fcf699e285fe"
+    },
+    {
+      "path": "tests/test_blood_outbreak_disease_upkeep.py",
+      "sha256": "824bab03148409b71d2bfdc5156024d7c6015d56571fdedd1ad1425065a8649b"
+    },
+    {
+      "path": "experiments/configs/cata_434_action_profiles.json",
+      "sha256": "8c29ba9e7d5bce03ceb41946bd9ea17d8d2c4d9e005f5471634aaa8094206c38"
+    },
+    {
+      "path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+      "sha256": "2cf3f0118828aa7ea19feb9b61b1a35730659b14f81eecad797cf3704702b099"
+    },
+    {
+      "path": "tools/bot_ml/build_all_spec_phase1_catalogs.py",
+      "sha256": "4a759ab4d00f59eef384ae18003ae70adc8dd47047cdc35a852380fb38a10b4e"
+    },
+    {
+      "path": "src/server/game/Bots/BotAdmissionIdentityGenerated.h",
+      "sha256": "84a6f5432b5d36782a7cc742a54ca9fbb69186f1b7e77c57104a46e1d0361ace"
+    }
+  ],
+  "acceptance_claim": "Plan only. This receipt claims the Blood Outbreak provisioning repair path and no gameplay, build, live, actor, performance, raid-clear, publication or parent acceptance.",
+  "advice": {}
+}
