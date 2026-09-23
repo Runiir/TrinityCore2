@@ -15,21 +15,26 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from tools.raid_program import graph_tiers as tiers
+
 STATE_PATH = Path('experiments/configs/cata_raid_active_work_unit_v1.json')
-STEPS = ('diagnose', 'implement', 'review', 'build', 'validate', 'assess', 'publish', 'route', 'complete')
-RECEIPTS = dict(zip(STEPS[:7], ('plan', 'tests', 'review', 'build', 'run', 'assessment', 'publication')))
-NEXT = dict(zip(STEPS, STEPS[1:]))
+STEPS = (*tiers.ORDER, 'complete')
+RECEIPTS = dict(zip(tiers.ORDER[:-1], ('plan', 'tests', 'review', 'build', 'smoke', 'run', 'assessment', 'publication')))
 ACTIONS = {
-    'diagnose': 'Read retained evidence; identify one causal mismatch and prepare a bounded worker task.',
-    'implement': 'Implement the bounded task, run its required tests, and obtain a result checkpoint.',
-    'review': 'Obtain independent review of the exact tested files. Resolve findings before building.',
+    'diagnose': 'Read the latest scoreboard verdict and retained evidence; pick the largest actor gap (optional Jev, shadowed by Laya, may choose between the top two), then record a plan with its risk_tier.',
+    'implement': 'Implement the bounded task and run its required tests.',
+    'review': 'Obtain independent review (separate session) of the exact tested files. Resolve findings before building.',
     'build': 'Run workflow_build preflight before claiming; commit reviewed code and graph state, then use queued_build with the retained policy. Reuse a verified build across coordination-only commits.',
-    'validate': 'Reconcile any existing attempt before launching. Use the canonical controller and its ownership locks.',
-    'assess': 'Review every actor; compare matched baseline, native outcome, and performance separately.',
+    'smoke': 'shared_runtime only: one watchdog-bounded kill on the new build before the measurement batch.',
+    'validate': 'Reconcile any existing attempt before launching. Run one labelled scoreboard measurement batch with the canonical controller and its ownership locks; record scoreboard_label.',
+    'assess': 'Write the scoreboard verdict (graph_acceptance verdict --label) and cite it; actor/encounter requirements close only on pass.',
     'publish': 'Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates.',
-    'route': 'Select the next proven edge, or complete only when every requirement is accepted.',
+    'route': 'Select the next largest verdict gap, or complete only when every requirement is accepted.',
     'complete': 'All recorded requirements accepted; report the evidence and stop.',
 }
+REWORKABLE = ('diagnose', 'implement', 'review', 'build', 'smoke', 'validate')
+# Per-unit keys cleared when a unit is routed or reworked.
+UNIT_KEYS = ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'reused_build', 'build_reason', 'tier_raised', 'smoke')
 
 
 class GraphError(ValueError):
@@ -74,6 +79,14 @@ def check_graph(g: dict) -> None:
     required(unit, 'id', 'edge', 'requirements', 'next_action')
     if not set(unit['requirements']) <= set(requirements):
         raise GraphError('unit references unknown requirements')
+    for value in (unit.get('risk_tier'), (g.get('assignment') or {}).get('risk_tier')):
+        if value is not None and value not in tiers.TIERS:
+            raise GraphError('risk_tier must be one of ' + ', '.join(tiers.TIERS))
+    if g['stage'] in tiers.ORDER and g['stage'] not in tiers.steps(tiers.tier_of(g)):
+        raise GraphError('stage is skipped by the unit risk tier')
+    target = g.get('raid_target')
+    if target is not None and (not isinstance(target, dict) or not all(isinstance(target.get(k), str) and target[k] for k in ('scenario', 'path'))):
+        raise GraphError('raid_target needs scenario and path')
     if not g.get('actor_ids') or len(set(g['actor_ids'])) != len(g['actor_ids']):
         raise GraphError('unique actor IDs required')
     encounter = g.get('encounter', {})
@@ -98,12 +111,13 @@ def check_graph(g: dict) -> None:
         if event.get('revision') != revision or event.get('unit_id') != row.get('unit_id'):
             raise GraphError('history event identity mismatch')
         target = row.get('to')
+        # Rows without risk_tier predate tiers and followed the class_native order.
         legal = (
             (action in ('claim', 'release') and target == previous and previous != 'complete')
             or (action in ('refresh_support', 'amend_tests') and previous == target == 'implement')
-            or (action == 'advance' and previous in RECEIPTS and target == NEXT[previous])
+            or (action == 'advance' and previous in RECEIPTS and target in tiers.successors(previous, row.get('risk_tier', tiers.DEFAULT_TIER)))
             or (action == 'route' and previous == 'route' and target == 'diagnose')
-            or (action == 'rework' and previous in ('diagnose','implement','review','build','validate') and target in ('diagnose','route'))
+            or (action == 'rework' and previous in REWORKABLE and target in ('diagnose','route'))
             or (action == 'complete' and previous == 'route' and target == 'complete')
         )
         if not legal:
@@ -129,9 +143,12 @@ def check_graph(g: dict) -> None:
             row = history[revision]
             if row['from'] != 'publish' or key not in row.get('accepted_requirements', []) or requirement.get('receipt') != row['event'].get('receipt'):
                 raise GraphError('accepted requirement lacks publication evidence')
+            if 'verdict' in requirement and requirement['verdict'].get('status') != 'pass':
+                raise GraphError('accepted requirement verdict is not pass')
     fields = {
         'implement': ('assignment',), 'review': ('assignment', 'tested_files', 'implementer'),
         'build': ('assignment', 'tested_files', 'implementer'),
+        'smoke': ('assignment', 'tested_files', 'build_identity'),
         'validate': ('assignment', 'tested_files', 'build_identity'),
         'assess': ('run',), 'publish': ('run', 'outcomes'),
     }
@@ -141,6 +158,8 @@ def check_graph(g: dict) -> None:
         assessment = next((h for h in reversed(history) if h['from'] == 'assess' and h['event']['action'] == 'advance'), {})
         if not isinstance(pending, list) or not set(pending) <= set(unit['requirements']) or pending != assessment.get('proposed_acceptance'):
             raise GraphError('pending acceptance does not match assessment history')
+        if not set(g.get('pending_verdict', {})) <= set(pending):
+            raise GraphError('pending verdict does not match pending acceptance')
     if g['stage'] == 'complete' and any(r['status'] != 'accepted' for r in requirements.values()):
         raise GraphError('complete graph still has open requirements')
 
@@ -177,6 +196,9 @@ def resume(root: Path) -> dict:
         current_hash = digest(file.read_bytes()) if file.is_relative_to(root.resolve()) and file.is_file() else None
         if current_hash != (reference or {}).get('sha256'):
             input_changes.append(path)
+    from tools.raid_program.graph_acceptance import finish_line
+    finish = finish_line(root, g)
+    tier = tiers.tier_of(g)
     return {
         'state_sha256': digest(data), 'revision': g['revision'],
         'diagnostic_entrypoint': shlex.join(['pixi', 'run', 'python', '-m', 'tools.raid_program.evidence_view', 'task', '--root', str(root.resolve())]),
@@ -188,7 +210,13 @@ def resume(root: Path) -> dict:
         'coordinator_skill': 'trinity-orchestrator',
         'parent_objective_complete': g['stage'] == 'complete',
         'owner_skill': unit.get('owner_skill'),
-        'next_action': ('Initialization inputs have changed; consult current reviewed inputs before reusing that historical snapshot. ' if input_changes else '') + ('Claimed by ' + g['claim']['owner'] + '; reconcile this operation before continuing. ' if g.get('claim') else '') + ACTIONS[g['stage']],
+        'next_action': ('Initialization inputs have changed; consult current reviewed inputs before reusing that historical snapshot. ' if input_changes else '') + ('Claimed by ' + g['claim']['owner'] + '; reconcile this operation before continuing. ' if g.get('claim') else '') + (finish['work_item'] + ' ' if finish['work_item'] else '') + ACTIONS[g['stage']],
+        'tier': (tiers.remaining(g['stage'], tier)
+                 | {key: g[key] for key in ('build_reason', 'tier_raised') if g.get(key)}
+                 if g['stage'] != 'complete' else None),
+        'finish_line': finish,
+        'reusable_build': next((h['event']['receipt'] for h in reversed(g['history'])
+                                if h['from'] == 'build' and h['event']['action'] == 'advance'), None),
         'open_requirements': {k: v for k, v in g['requirements'].items() if v['status'] != 'accepted'},
         'completed_measurements': g.get('completed_measurements', []),
         'receipts': g.get('receipts', {}), 'outcomes': g.get('outcomes', {}),
@@ -203,7 +231,9 @@ def resume(root: Path) -> dict:
         'recent_attempts': recent_attempts(g),
         'retry_limit': 10,
         'claim': g.get('claim'), 'coordinator_worktree': g['coordinator_worktree'],
-        'model_advice': 'Optional: use bot_improvement_advice on an actor-scoped evidence_view comparison to suggest a next investigation. No model checkpoint is required to advance; retain deterministic gates and independent review.',
+        'model_advice': ('Never required and never a gate. Optional: ask Jev to choose between the top two ranked damage gaps, '
+                         'with Laya shadowing Jev on the same packet (offline Laya is recorded as not reviewed); '
+                         'record both picks with tools.raid_program.jev_outcomes append.'),
         'execution': ('Parent objective accepted; report its evidence.' if g['stage'] == 'complete' else
                       'For implementation/resume requests, remain the coordinator and execute this stage, then the next returned stage. '
                       'An assessment, publication, route or specialist handoff does not finish the parent objective. '
@@ -341,6 +371,62 @@ def _receipt(root: Path, event: dict, kind: str, g: dict) -> dict:
     return r
 
 
+def verify_build(root: Path, r: dict, policy: dict) -> dict:
+    """A build adapter bound to a gate-bearing queued native build under the plan policy."""
+    required(r, 'source_commit', 'binary_sha256', 'build_receipt')
+    if r.get('policy') != policy:
+        raise GraphError('build policy differs from reviewed assignment')
+    build = read(file_ref(root, r['build_receipt']))
+    from tools.raid_program.queued_build import verify_receipt
+    try:
+        verified = verify_receipt(file_ref(root, r['build_receipt']), read(file_ref(root, r.get('policy'))), allow_test_mode=False)
+    except Exception as exc:
+        raise GraphError('queued-build verification failed: ' + str(exc)) from exc
+    if verified.get('classification') != 'success' or verified.get('gate_bearing') is not True:
+        raise GraphError('queued-build receipt is not gate-bearing success')
+    if build.get('commit') != r['source_commit'] or build.get('exit_code') != 0 or build.get('source_identity_stable') is not True or build.get('test_mode') is not False:
+        raise GraphError('nested queued-build receipt does not match a successful native build')
+    if not any(a.get('kind') == 'worldserver_elf' and a.get('sha256') == r['binary_sha256'] and a.get('produced_by_ticket') is True for a in build.get('output_artifacts', [])):
+        raise GraphError('binary hash missing from queued-build output artifacts')
+    return {k: r[k] for k in ('source_commit', 'binary_sha256')}
+
+
+def reuse_adapter(root: Path, ref: dict, policy: dict) -> dict:
+    """A recorded graph build adapter, or the queued-build receipt of the binary on disk."""
+    doc = read(file_ref(root, ref))
+    if doc.get('kind') == 'build' and doc.get('authority') == 'coordinator_attestation':
+        return doc
+    if 'ticket_id' not in doc:
+        raise GraphError('reuse_build must reference a build adapter or queued-build receipt')
+    binaries = [a.get('sha256') for a in doc.get('output_artifacts', [])
+                if a.get('kind') == 'worldserver_elf' and a.get('produced_by_ticket') is True]
+    if len(binaries) != 1:
+        raise GraphError('reuse_build receipt must produce exactly one worldserver binary')
+    return {'source_commit': doc.get('commit'), 'binary_sha256': binaries[0], 'build_receipt': ref, 'policy': policy}
+
+
+def reusable_build(root: Path, g: dict) -> tuple[dict | None, str]:
+    """Profile units skip build only when the tested source keeps a verified binary's native tree."""
+    ref, policy = g['assignment'].get('reuse_build'), g['assignment']['policy']
+    if not ref:
+        return None, 'plan has no reuse_build'
+    try:
+        identity = verify_build(root, reuse_adapter(root, ref, policy), policy)
+    except GraphError as exc:
+        return None, 'reuse_build no longer verifies: ' + str(exc)
+    source, tested = identity['source_commit'], g['tested_commit']
+    if subprocess.run(['git', 'merge-base', '--is-ancestor', source, tested], cwd=root, capture_output=True).returncode:
+        return None, 'reused build is not an ancestor of the tested source'
+    native = native_changes(root, source, tested)
+    if native:
+        return None, 'native source changed since the reused build: ' + ', '.join(native[:5])
+    return identity, ''
+
+
+def native_changes(root: Path, old: str, new: str) -> list[str]:
+    return [p for p in git(root, 'diff', '--name-only', '--no-renames', '-z', old, new).split('\0') if p and tiers.native_path(p)]
+
+
 def advice(root: Path, r: dict) -> None:
     """Validate advice if supplied; no provider call or disposition is required."""
     reviews = r.get('advice', {})
@@ -372,7 +458,7 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
     claim = g.get('claim')
     if action != 'claim' and claim and event.get('claim_token') != claim['token']:
         raise GraphError('operation is claimed; reconcile owner before continuing')
-    if action == 'advance' and stage in ('implement', 'build', 'validate', 'publish') and not claim:
+    if action == 'advance' and stage in tiers.CLAIMED and not claim:
         raise GraphError('claim this operation before executing it')
     if stage == 'complete':
         raise GraphError('completed program; explicit new objective required')
@@ -429,6 +515,7 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         g.setdefault('support_refreshes', []).append(event['receipt'])
     elif action == 'advance' and stage in RECEIPTS:
         kind = RECEIPTS[stage]
+        following = None
         r = _receipt(root, event, kind, g)
         if claim and r.get('operation_id') != claim['operation_id']:
             raise GraphError('receipt operation identity mismatch')
@@ -480,6 +567,16 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 from tools.raid_program.worker_packet import validate_context
                 validate_context(root, r['worker_context'])
                 g['assignment']['worker_context'] = r['worker_context']
+            if r.get('risk_tier') is not None:
+                if r['risk_tier'] not in tiers.TIERS:
+                    raise GraphError('risk_tier must be one of ' + ', '.join(tiers.TIERS))
+                g['assignment']['risk_tier'] = r['risk_tier']
+            if r.get('reuse_build') is not None:
+                if tiers.tier_of(g) != 'profile':
+                    raise GraphError('reuse_build is only for profile units; other tiers build')
+                # Fail fast; a later verification failure only falls back to building.
+                verify_build(root, reuse_adapter(root, r['reuse_build'], r['policy']), r['policy'])
+                g['assignment']['reuse_build'] = r['reuse_build']
         elif stage in ('implement', 'review', 'build'):
             current_commit = source_binding(root, g['assignment'], g.get('tested_commit'))
             current = snapshot(root, g['assignment']['owned_files'])
@@ -500,6 +597,20 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                 g['tested_files'] = current
                 g['tested_commit'] = current_commit
                 g['implementer'] = r['producer']
+                native = native_changes(root, g['assignment']['base_commit'], current_commit) if tiers.tier_of(g) == 'profile' else []
+                if native:
+                    # A unit whose own diff is native code is at least class_native: review and build.
+                    g['assignment']['risk_tier'] = 'class_native'
+                    g['tier_raised'] = {'from': 'profile', 'to': 'class_native',
+                                        'reason': 'unit diff touches native paths: ' + ', '.join(native[:5])}
+                elif tiers.tier_of(g) == 'profile':
+                    identity, reason = reusable_build(root, g)
+                    if identity:
+                        g['build_identity'] = identity
+                        g['reused_build'] = g['assignment']['reuse_build']
+                        following = 'validate'
+                    else:
+                        g['build_reason'] = reason
             elif stage == 'review':
                 if r['producer'] == g['implementer'] or r.get('verdict') != 'approved':
                     raise GraphError('independent approving reviewer required')
@@ -516,30 +627,33 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
                     raise GraphError('independent review execution: ' + str(exc)) from exc
                 g['source_base_commit'] = g['tested_commit']
             else:
-                required(r, 'source_commit', 'binary_sha256', 'build_receipt')
-                if r.get('policy') != g['assignment']['policy']:
-                    raise GraphError('build policy differs from reviewed assignment')
-                build = read(file_ref(root, r['build_receipt']))
-                from tools.raid_program.queued_build import verify_receipt
-                try:
-                    verified = verify_receipt(file_ref(root, r['build_receipt']), read(file_ref(root, r.get('policy'))), allow_test_mode=False)
-                except Exception as exc:
-                    raise GraphError('queued-build verification failed: ' + str(exc)) from exc
-                if verified.get('classification') != 'success' or verified.get('gate_bearing') is not True:
-                    raise GraphError('queued-build receipt is not gate-bearing success')
-                if build.get('commit') != r['source_commit'] or build.get('exit_code') != 0 or build.get('source_identity_stable') is not True or build.get('test_mode') is not False:
-                    raise GraphError('nested queued-build receipt does not match a successful native build')
-                if not any(a.get('kind') == 'worldserver_elf' and a.get('sha256') == r['binary_sha256'] and a.get('produced_by_ticket') is True for a in build.get('output_artifacts', [])):
-                    raise GraphError('binary hash missing from queued-build output artifacts')
+                identity = verify_build(root, r, g['assignment']['policy'])
                 source_binding(root, g['assignment'], r['source_commit'])
-                g['build_identity'] = {k: r[k] for k in ('source_commit', 'binary_sha256')}
+                g['build_identity'] = identity
+        elif stage == 'smoke':
+            source_binding(root, g['assignment'], g['build_identity']['source_commit'])
+            if snapshot(root, g['assignment']['owned_files']) != g['tested_files']:
+                raise GraphError('files changed since tested build')
+            if r.get('build_identity') != g['build_identity']:
+                raise GraphError('smoke/build mismatch')
+            required(r, 'attempt_id', 'server_epoch')
+            if r.get('closed') is not True or r.get('cleanup_verified') is not True:
+                raise GraphError('attempt must be closed and cleaned before measurement')
+            if r.get('scenario_kind') != 'raid' or r.get('clock') != 'completion_watchdog' or r.get('encounter') != g['encounter']:
+                raise GraphError('smoke kill needs the program encounter under the completion watchdog')
+            if r.get('terminal_reason') != 'clear':
+                raise GraphError('smoke needs an observed kill; rework the unit on failure')
+            g['smoke'] = {k: r[k] for k in ('attempt_id', 'server_epoch')}
         elif stage == 'validate':
             recorded = event.get('recorded_source_commit')
             if recorded is not None:
+                if g.get('reused_build'):
+                    raise GraphError('--recorded-source needs a unit built by its own build stage')
                 from tools.raid_program.completed_operation import verify_recorded_source
                 verify_recorded_source(root, g, recorded)
             else:
-                source_binding(root, g['assignment'], g['build_identity']['source_commit'])
+                # A reused binary predates the unit; its source must not change after tests.
+                source_binding(root, g['assignment'], g['tested_commit'] if g.get('reused_build') else g['build_identity']['source_commit'])
             if r.get('validation_identity') != g['assignment']['validation_identity'] or r.get('scenario_kind') != g['assignment']['validation_identity']['scenario_kind']:
                 raise GraphError('run scenario/roster/profile/route differs from assignment')
             if r.get('build_identity') != g['build_identity']:
@@ -560,75 +674,35 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
             elif r.get('scenario_kind') != 'raid' or r.get('clock') != 'completion_watchdog' or r['terminal_reason'] == 'measurement_complete':
                 raise GraphError('raid requires completion watchdog')
             g['run'] = {k: r.get(k) for k in ('attempt_id', 'server_epoch', 'scenario_kind', 'terminal_reason')}
+            label = r.get('scoreboard_label')
+            if label is not None:
+                if not isinstance(label, str) or not label.strip():
+                    raise GraphError('scoreboard_label must be a non-empty string')
+                g['run']['scoreboard_label'] = label
             if recorded is not None:
                 g['run'].update(source_scope='recorded_source_only', launch_commit=recorded,
                                 build_identity=g['build_identity'])
         elif stage == 'assess':
-            if r.get('attempt_id') != g['run']['attempt_id']:
-                raise GraphError('assessment attempt mismatch')
-            required(r, 'baseline', 'comparison', 'actor_reviews')
-            file_ref(root, r['baseline'])
-            file_ref(root, r['comparison'])
-            if set(r['actor_reviews']) != set(g['actor_ids']):
-                raise GraphError('every roster actor needs a review or explicit not_exercised')
-            for actor_review in r['actor_reviews'].values():
-                if actor_review.get('status') == 'reviewed':
-                    file_ref(root, actor_review.get('receipt'))
-                elif actor_review.get('status') == 'not_exercised':
-                    required(actor_review, 'reason')
-                else:
-                    raise GraphError('invalid actor review disposition')
-            for key in ('encounter_clear', 'repair_accepted', 'performance_accepted'):
-                if type(r.get(key)) is not bool:
-                    raise GraphError('separate boolean outcome required: ' + key)
-            if r['encounter_clear'] and (g['run']['scenario_kind'] != 'raid' or g['run']['terminal_reason'] != 'clear'):
-                raise GraphError('no observed raid clear')
-            accepted = r.get('accepted_requirements', [])
-            if g['run'].get('source_scope') == 'recorded_source_only' and (
-                    accepted or r['repair_accepted'] or r['performance_accepted']):
-                raise GraphError('historical run closure cannot accept the current source; preserve evidence and route the next edge')
-            if g['run']['terminal_reason'] in ('infrastructure_loss', 'contamination', 'interruption') and (r['repair_accepted'] or r['performance_accepted']):
-                raise GraphError('unattributable/incomplete run cannot accept a repair or performance')
-            if r['performance_accepted'] and (r.get('baseline_matched') is not True or r.get('unexplained_material_decline') is not False):
-                raise GraphError('performance needs matched baseline and no unexplained decline')
-            if not set(accepted) <= set(g['unit']['requirements']):
-                raise GraphError('cannot accept requirements outside current unit')
-            if accepted and not r['repair_accepted']:
-                raise GraphError('requirement acceptance needs end-to-end repair acceptance')
-            for key in accepted:
-                requirement = g['requirements'][key]
-                if requirement.get('needs_raid') and not r['encounter_clear']:
-                    raise GraphError('requirement needs raid validation')
-                if requirement.get('needs_performance') and not r['performance_accepted']:
-                    raise GraphError('requirement needs performance acceptance')
-                actor = requirement.get('actor_id')
-                if actor and (r['actor_reviews'][actor]['status'] != 'reviewed' or r['actor_reviews'][actor].get('accepted') is not True):
-                    raise GraphError('actor acceptance needs an exercised review')
-                if requirement.get('needs_all_actors') and not all(v.get('accepted') is True for v in r['actor_reviews'].values()):
-                    raise GraphError('encounter performance needs every actor accepted')
-            from tools.raid_program.dps_gate import verify_assessment
-            try:
-                verify_assessment(root, g, r)
-            except (ValueError, KeyError, OSError) as exc:
-                raise GraphError('DPS performance acceptance: ' + str(exc)) from exc
-            g['pending_acceptance'] = accepted
-            g['outcomes'] = {k: r[k] for k in ('encounter_clear', 'repair_accepted', 'performance_accepted')}
-            if not accepted:
-                edge = g['unit']['edge']
-                g['failures'][edge] = g['failures'].get(edge, 0) + 1
+            from tools.raid_program.graph_acceptance import assess
+            assess(root, g, r)
         elif stage == 'publish':
             for key in ('dvc_status_checked', 'dvc_push_completed', 'remote_verified', 'cleanup_verified'):
                 if r.get(key) is not True:
                     raise GraphError('publication incomplete: ' + key)
+            verdicts = g.get('pending_verdict', {})
             for key in g.get('pending_acceptance', []):
                 g['requirements'][key].update(status='accepted', receipt=event['receipt'], accepted_at_revision=g['revision'])
+                if key in verdicts:
+                    g['requirements'][key]['verdict'] = verdicts[key]
             accepted_now = g.get('pending_acceptance', [])
         g.setdefault('receipts', {})[kind] = event['receipt']
-        g['stage'] = NEXT[stage]
+        g['stage'] = following or tiers.successors(stage, tiers.tier_of(g))[0]
     elif action == 'route' and stage == 'route':
         required(event, 'reason', 'unit')
         unit = event['unit']
         required(unit, 'id', 'edge', 'requirements', 'next_action')
+        if unit.get('risk_tier') is not None and unit['risk_tier'] not in tiers.TIERS:
+            raise GraphError('risk_tier must be one of ' + ', '.join(tiers.TIERS))
         if unit['id'] == g['unit']['id'] or unit['id'] in [h['unit_id'] for h in g['history']]:
             raise GraphError('unit ID already used')
         if not set(unit['requirements']) <= {k for k, v in g['requirements'].items() if v['status'] == 'open'}:
@@ -643,12 +717,12 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         # A new unit starts from current source, not the previous unit's base.
         # This establishes a diagnosis boundary; it accepts no code/performance.
         g['source_base_commit'] = git(root, 'rev-parse', 'HEAD')
-        for key in ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'run', 'pending_acceptance', 'outcomes', 'receipts'):
+        for key in (*UNIT_KEYS, 'run', 'pending_acceptance', 'pending_verdict', 'outcomes', 'receipts'):
             g.pop(key, None)
-    elif action == 'rework' and stage in ('diagnose', 'implement', 'review', 'build', 'validate'):
+    elif action == 'rework' and stage in REWORKABLE:
         required(event, 'reason')
         rework = file_ref(root, event.get('receipt'))
-        if claim and stage in ('implement', 'build', 'validate'):
+        if claim and stage in ('implement', 'build', 'smoke', 'validate'):
             reconciliation = read(rework)
             from tools.raid_program.completed_operation import reject_completed_rework
             reject_completed_rework(root, g, reconciliation)
@@ -657,7 +731,7 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         edge = g['unit']['edge']
         g['failures'][edge] = g['failures'].get(edge, 0) + 1
         g['stage'] = 'route' if g['failures'][edge] >= 10 else 'diagnose'
-        for key in ('assignment', 'tested_files', 'tested_commit', 'implementer', 'build_identity', 'receipts'):
+        for key in (*UNIT_KEYS, 'receipts'):
             g.pop(key, None)
     elif action == 'complete' and stage == 'route':
         if any(r['status'] != 'accepted' for r in g['requirements'].values()):
@@ -665,7 +739,8 @@ def reduce(root: Path, state: dict, event: dict) -> dict:
         g['stage'] = 'complete'
     else:
         raise GraphError('invalid action for stage: ' + str(action))
-    g['history'].append({'revision': g['revision'], 'unit_id': event['unit_id'], 'from': stage, 'to': g['stage'], 'event': event, 'accepted_requirements': accepted_now, 'proposed_acceptance': g.get('pending_acceptance', []) if stage == 'assess' else []})
+    g['history'].append({'revision': g['revision'], 'unit_id': event['unit_id'], 'from': stage, 'to': g['stage'], 'event': event, 'accepted_requirements': accepted_now, 'proposed_acceptance': g.get('pending_acceptance', []) if stage == 'assess' else [],
+                         'risk_tier': tiers.tier_of(g)})
     if action not in ('claim', 'release', 'amend_tests'):
         g.pop('claim', None)
     g['revision'] += 1

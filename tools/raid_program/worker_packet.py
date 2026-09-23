@@ -61,6 +61,7 @@ def packet(root: Path) -> dict:
               'plan_receipt': g.get('receipts', {}).get('plan'),
               'coordinator_worktree': str(root.resolve()),
               'first_broken_edge': g['unit']['edge'], 'hypothesis': assignment['hypothesis'],
+              'risk_tier': graph.tiers.tier_of(g),
               'owned_files': assignment['owned_files'],
               'forbidden_changes': assignment['forbidden_changes'],
               'required_test_commands': assignment['required_test_commands'],

@@ -1,536 +1,277 @@
 # Resume raid development
 
-Run from the current mainline coordinator checkout, `/home/runiir/Games/trinity-cata`
-on `master` (relocated 2026-09-20). For another tab/worktree, inspect
-`git worktree list --porcelain` and read that checkout's AGENTS.md first.
-The saved `coordinator_worktree` must agree. Preserve side-branch work; do not
-copy an older state file over current progress.
+Run from the mainline coordinator checkout, `/home/runiir/Games/trinity-cata` on
+`master`. For another tab/worktree, inspect `git worktree list --porcelain`; the
+saved `coordinator_worktree` must agree. Never copy an older state file over
+current progress.
 
-The normal request is simply "implement <boss> <mode> bots", including on a new
-tab after an interruption. No handoff paragraph or extra "continue" instruction
-is required. `start` resumes the matching saved scenario, completed measurements
-and current unfinished unit. The primary agent owns the parent objective;
-`owner_skill` identifies the bounded specialist and does not change that ownership.
-
-`start`, `resume` and transitions return `coordinator_skill`,
-`parent_objective_complete` and the last `latest_assessment` reference, including
-after routing clears the current unit's receipts. Use that evidence for the next
-diagnosis. After each step, execute the next returned stage. Before a final reply
-on an implementation/resume task, check the saved parent state; publication or
-routing alone is not completion. Explicit user scope limits/interruption and
-real external blockers still apply. The CLI does not run an agent in the background;
-its output and repository instructions direct the active coordinator.
-
-Select the requested encounter:
+The normal request is "implement <boss> <mode> bots", also on a new tab:
 
 ```sh
 pixi run python -m tools.raid_program.raid_workloop start "implement magmaw 25hc bots"
+pixi run python -m tools.raid_program.raid_workloop resume   # continue the selected scenario
 ```
 
-`start` resolves the boss from the strategy catalog and normalizes 10N/10HC/25N/25HC
-(including "25-player heroic"). A matching saved scenario resumes unchanged.
-A new scenario binds its requested-mode research, native source, roster and class
-reference catalogs. No server or database is changed. Unknown bosses, unsupported
-modes, missing difficulty and conflicting requests fail without changing progress.
-For structured calls, use `start magmaw --mode 25hc --raid blackwing_descent`.
-`--preview` inspects inputs without selecting anything; `--expect` optionally
-binds a selection to the state SHA256 observed by the caller.
+`start` resolves boss and 10N/10HC/25N/25HC from the strategy catalog. A matching
+saved scenario resumes unchanged; a new one is initialized from requested-mode
+inputs (see below). `--preview` inspects without selecting; `--expect` binds to
+an observed state SHA256. Neither command launches a server, build or agent.
 
-To continue whichever scenario is already selected:
+The primary agent stays coordinator; `owner_skill` names only the bounded
+specialist. Output includes the parent objective, current unit and stage, its
+`tier` (remaining/skipped steps), the `finish_line`, open requirements,
+`reusable_build`, `latest_assessment` and a state hash. After each step execute
+the next returned stage. Publication or routing is not completion; stop only for
+explicit user limits or a demonstrated external blocker.
 
-```sh
-pixi run python -m tools.raid_program.raid_workloop resume
-```
+State lives in `experiments/configs/cata_raid_active_work_unit_v1.json` under
+`development_graph`. Legacy fields outside it are historical context. For
+diagnosis use the [compact evidence CLI](../../.agents/skills/raid-rotation-review/references/evidence-views.md);
+keep full evidence on disk/DVC, not in model context.
 
-This is the entry point for continuation without a new encounter/difficulty. It returns the parent
-objective, current bounded task, stage, every open requirement, completed
-measurements, retained receipts and a state hash. Read the referenced evidence
-and specialist skill before implementing. The saved state is
-`experiments/configs/cata_raid_active_work_unit_v1.json`, under `development_graph`.
-Its state owns task progress; historical handoffs provide context. The legacy
-fields outside it are historical compatibility data, not separate acceptance.
+## Finish line
 
-For diagnosis, use the [compact evidence CLI](../../.agents/skills/raid-rotation-review/references/evidence-views.md).
-Compare retained runs against native/WoWSims/WCL inputs, then retrieve only relevant
-event pages or JSON Pointers. Keep full evidence on disk/DVC; do not print the
-complete saved graph, normalized review or raw trace into model context.
+Each scenario has a numeric target at
+`experiments/configs/raid_targets/<raid>_<mode>_<boss>.json` (schema
+`raid_target_v1`, e.g. `blackwing_descent_10n_magmaw`): per-actor mean kill DPS
+over the required kills at least 0.95 x the median matched WCL DPS for the spec,
+and no boss-window deaths. The scoreboard turns a labelled batch of kills into a
+`raid_target_verdict_v1`.
 
-The graph is:
+- An actor requirement (`actor_<id>`) is accepted only when its verdict row is `pass`.
+- An encounter requirement (one with `needs_all_actors`, e.g. `magmaw_10n`,
+  `encounter_performance`) is accepted only when the overall verdict is `pass`.
+- `no_reference`, `insufficient_kills` and `fail` keep the requirement open.
+  `no_reference` is missing reference work, never acceptance.
+- Free-form actor reviews, dummy calibrations and raid totals cannot close these
+  requirements. Other requirements keep the reviewed repair assessment.
 
-`diagnose -> implement -> review -> build -> validate -> assess -> publish -> route`
+Accepting requirements records a compact verdict on each one (verdict file
+reference, label, kills, status, ratio(s)). Lawful behavior is unchanged: no
+coefficient tuning, external buffs, pre-applied debuffs or DTR allowance.
 
-For DPS optimization, `diagnose -> implement` requires the existing review's
-[damage-loss accounting](../../.agents/skills/raid-rotation-review/references/post-run-dps-review.md#account-for-the-dps-loss-before-selecting-a-repair):
-joined native/reference inputs, separate ordinary casts and triggered damage,
-signed component gaps reconciled to the total with an explicit unknown residual,
-and a supported net gain estimate for the selected repair. This is a coordinator
-and reviewer requirement, not an automatic truth check by the graph CLI. Missing
-causal attribution routes to diagnosis using retained evidence; it does not
-authorize another DPS optimization patch or require a new live run by default.
-An urgent correctness repair may proceed with its own behavior acceptance;
-it does not close the unexplained DPS gap or overall performance requirement.
+A missing target file is open work: new scenarios get a `raid_target`
+requirement (in the first unit) and resume prefixes the next action with it.
 
-From route, select another open requirement or finish when every requirement is
-accepted. Passing tests, getting a kill or accepting one repair does not finish
-the parent objective. Magmaw's five 50ec measurements are already recorded;
-reference comparability and all ten actors' encounter acceptance remain open.
+## Risk tiers
 
-This command does not run an agent, build or server in the background. The
-coordinator executes the existing tools for the current stage. Reuse verified
-receipts; do not relaunch because a tab changed. Before a build/run, inspect
-queued_build and the controller's actual ownership/attempt receipts. Graph file
-locking prevents conflicting updates to this state, not concurrent server
-launches. The existing build/server locks remain authoritative. Pick one
-coordinator checkout; do not fork independent progress files across worktrees.
+A unit's `risk_tier` (set by `route` on the unit, or by the plan) fixes its steps:
 
-## Scenario initialization and preservation
+| Tier | Use for | Steps after `implement` |
+| --- | --- | --- |
+| `profile` | rotation/profile, SQL data, config | `validate -> assess -> publish` (+ `build` only if needed, see below) |
+| `class_native` | class/spec C++ under `src/server/game/Bots` | `review -> build -> validate -> assess -> publish` |
+| `shared_runtime` | shared bot runtime, action arbitration, harness/validation tooling | `review -> build -> smoke -> validate -> assess -> publish` |
 
-The same atomic state file holds one active scenario and a `parked_scenarios`
-map of inactive scenario states. Switching parks the full prior state, including
-its accepted work, receipts, counters, claims history and completed measurements.
-Reselecting restores it; no completed experiment is rerun by the initializer.
-There is no duplicate active copy to reconcile. Claimed operations and unresolved
-validate/assess/publish stages block switching until the current lifecycle closes.
-The state lock and compare-before-write protect selection and ordinary transitions.
+Units without a tier (all saved history) are `class_native`, which is exactly the
+pre-tier flow. Skipped steps need no receipt. Plan-drift review and model advice
+are never steps.
 
-For 25-player requests, initialization uses all slots from the frozen 25-player
-roster, preserving duplicate specs and recording logical slot IDs. Native GUID
-binding, exact gear/setup readback and encounter assignments remain work. It never
-reuses the ten Magmaw diagnostic GUIDs as a 25-player raid. Existing explicit
-Blackwing Descent 10N shards retain their declared roster/profile/route. Where an
-exact ten-player roster is absent, ten visibly unassigned slots and a roster task
-are created; the initializer does not guess an encounter composition.
+A unit whose own diff (plan base to tested commit) touches a native path (`src/`,
+`dep/`, `cmake/`, CMake files) is at least `class_native`: the tests transition
+raises a `profile` plan to `class_native` (review and build required) and resume
+shows `tier.tier_raised`. A non-native `profile` unit skips `build` when the plan
+cites `reuse_build` (a recorded build adapter or the queued-build receipt of the
+binary on disk) that verifies under the plan policy and no native path changed
+between that build and the tested commit. Otherwise it builds without review and
+resume shows `tier.build_reason`. An unverifiable `reuse_build` is rejected at
+plan time. `smoke` records one watchdog-bounded kill of the program encounter on
+the new build before the measurement batch; a failed smoke is reworked.
 
-Simulator references bind the current self-provided request catalog, provider
-revision and request/source-contract hashes. No embedded historical DPS number is
-promoted. Missing DPS requests and tank/healer role diagnostics stay explicit.
-DVC hydration, exact gear comparison and native readback remain required before
-using references to tune damage. A catalog row is not a live-ready bot.
-
-Each scenario retains requirements for encounter research, native script, exact
-roster/setup, role references, runtime scenario, assignments, every actor, and
-final encounter performance. Missing native scripts route to the research contract
-and implementation work. Missing exact-mode runtime scenarios require the shard
-specialist; a normal-mode route is never relabeled heroic. Initial acceptance is
-false for all requirements, even when a script or contract file exists. Findings
-in another size/difficulty are context, not inherited validation or DPS baselines.
-
-`resume` includes the bound catalogs, their source hashes, owner skill, current
-encounter and parked scenario IDs. Changed bound source files are reported in
-`changed_bootstrap_sources`; reselecting does not silently overwrite the prior
-snapshot or erase progress. Reconcile changed authority before using that input.
-The bootstrap snapshot is provenance; later plans bind the actual reviewed runtime
-and reference inputs through the ordinary graph receipts.
-
-Initialization does not promise an automatic successful raid. The agent continues
-from the first unresolved dependency using the existing specialist and review
-workflow. It is a general entry point for catalog-supported encounters, including
-ones whose scripts have not been implemented yet.
+A `profile` unit is 8 revisions and 5 receipts: plan, claim + tests, claim + run,
+assessment (citing the verdict), claim + publication, then `route`.
 
 ## Record a step
 
-Keep existing producer outputs unchanged. A small JSON adapter records the
-coordinator's interpretation and links original receipts with SHA256. Paths
-are relative to the repository; hydrate DVC data only when a transition needs
-its contents. Historical references may point to evicted payloads after closure.
-Resume never repeats a run simply because that payload was evicted.
+Producer outputs stay unchanged. A small JSON adapter records the coordinator's
+interpretation and links original receipts by SHA256. Every adapter has
+`authority=coordinator_attestation`, `kind`, `unit_id`, `producer` and a nonempty
+`evidence` list of `{"path", "sha256"}`. Adapter booleans are attestations; the
+graph checks hashes, identity and prerequisites, not native truth.
 
-Every adapter requires `authority=coordinator_attestation`, `kind`, `unit_id`,
-`producer` and a nonempty `evidence`
-list of `{ "path": "...", "sha256": "..." }`. The graph checks these bytes.
-It does not independently rerun tests or infer native correctness from a hash.
-The coordinator must read and interpret the source evidence. Adapter booleans
-are explicit attestations, not cryptographic proof or a model's verdict.
-
-| Current stage | Adapter kind | Required additional fields |
+| Stage | Kind | Required fields |
 | --- | --- | --- |
-| diagnose | plan | full Git base_commit, hypothesis, owned_files, forbidden_changes, acceptance_conditions, required_test_commands, policy reference, validation_identity, advice |
-| implement | tests | file_hashes for every owned file, tests containing command/exit_status, advice |
-| review | review | file_hashes, verdict=approved, distinct producer, reviewer_session_id and hash-bound review_report from the separate reviewer |
-| build | build | file_hashes, source_commit, binary_sha256, build_receipt and exact policy references |
-| validate | run | build_identity matching source_commit/binary_sha256; attempt_id, server_epoch, closed=true, cleanup_verified=true, terminal_reason, scenario_kind, validation_identity |
-| assess | assessment | attempt_id, baseline, comparison, actor_reviews, separate encounter_clear/repair_accepted/performance_accepted, accepted_requirements |
+| diagnose | plan | full `base_commit`, hypothesis, owned_files, forbidden_changes, acceptance_conditions, required_test_commands, policy, validation_identity; optional `risk_tier`, `reuse_build` (profile), `worker_context`, `supporting_review`, `advice` |
+| implement | tests | file_hashes for every owned file, tests with command/exit_status |
+| review | review | file_hashes, verdict=approved, reviewer_session_id and hash-bound review_report from a separate session |
+| build | build | file_hashes, source_commit, binary_sha256, build_receipt, policy |
+| smoke | smoke | build_identity, attempt_id, server_epoch, closed/cleanup_verified=true, scenario_kind=raid, clock=completion_watchdog, encounter, terminal_reason=clear |
+| validate | run | build_identity, attempt_id, server_epoch, closed/cleanup_verified=true, terminal_reason, scenario_kind, validation_identity; `scoreboard_label` for verdict acceptance |
+| assess | assessment | attempt_id, encounter_clear, accepted_requirements, and either `verdict` or the legacy baseline/comparison/actor_reviews/repair_accepted/performance_accepted |
 | publish | publication | dvc_status_checked, dvc_push_completed, remote_verified, cleanup_verified, all true |
 
-The plan's `validation_identity` binds scenario_kind, roster and runtime_profile
-file references. For a raid it also includes route and encounter (raid/boss/mode)
-matching the saved program. For a dummy it includes actor_id, spec and a reference
-file reference. Run adapters must match that complete reviewed identity. The
-plan's policy reference must also match the build adapter's policy exactly.
+The plan's `validation_identity` binds scenario_kind, roster and runtime_profile;
+a raid adds route and the program encounter, a dummy adds actor_id, spec and
+reference. Runs must match it and the policy must match the build's.
 
-If a separately reviewed workflow repair lands during a paused native unit,
-keep the old base and native owned files. A replacement plan may include
-`supporting_review`, a hash-bound JSON review with `verdict=approved`, a separate
-`reviewer_session_id`, `review_report` and `file_hashes` for the supporting
-workflow Python/tests only. Those files are frozen, not added to worker ownership.
-The graph checks their hashes on every source admission. Native files and selected
-runtime/reference inputs cannot use this path. Rework the incomplete unit and
-record the replacement plan; never move its base past unreviewed native edits.
-These adapter identities are checked alongside the canonical controller's own
-native identity admission; copying expected values is not a native observation.
+Raid runs use `clock=completion_watchdog` and never a fixed success timer. Dummy
+calibration uses `terminal_reason=measurement_complete`, `scoring_ms=300000`.
+Failed or interrupted runs are closed and assessed without inventing a window.
 
-For raid runs, `clock` must be `completion_watchdog`. Successful dummy runs use
-`terminal_reason=measurement_complete`, `scoring_ms=300000`. Failed/interrupted
-runs can be closed without manufacturing a successful scoring window.
+Verdict assessment: run the labelled batch, then
 
-`actor_reviews` maps every roster actor to either
-`{"status":"reviewed","receipt":{...}}` or
-`{"status":"not_exercised","reason":"..."}`. An actor requirement also needs that row to contain `accepted=true`.
-An isolated dummy review must
-explicitly leave unexercised raid actors open. Performance acceptance also needs
-`baseline_matched=true` and `unexplained_material_decline=false`, with the actual
-comparison retained. Include exact DPS/HPS, activity, body/add damage, switch
-latency, survival and phase/duty coverage in that comparison. The graph does
-not invent an acceptable WCL delta or turn incomparable runs into matches.
-Requirements close only after publication. It cannot accept requirements outside
-the bounded unit, and raid/performance requirements retain their extra gates.
-
-Before executing implementation, build, validation or publication, submit a
-claim event using the current revision and state hash:
-
-```json
-{"revision": 1, "unit_id": "magmaw:balance_self_setup_01", "action": "claim", "owner": "coordinator-tab-name"}
+```sh
+pixi run python -m tools.raid_program.graph_acceptance verdict --label <scoreboard_label>
 ```
 
-Use the same advance CLI below. It returns the new revision/state hash and
-`claim.token`/`claim.operation_id`. Include `claim_token` in the completion event
-and `operation_id` in its receipt adapter. A second tab cannot claim the same
-operation. A new tab must inspect the owner's worker/build/controller/DVC state;
-never launch merely because an operation has no completion adapter yet.
+It evaluates the active scenario, writes the verdict under
+`artifacts/cata_raid_program/verdicts/` and lists `acceptable_unit_requirements`.
+Cite its `{path, sha256}` as `verdict`. The graph requires the run's
+`scoreboard_label`, the program scenario and an identical fresh recomputation.
+Accepting a non-verdict requirement in the same adapter needs `repair_accepted=true`.
+Legacy assessments (no verdict) keep their gates, including the 95% dummy DPS gate
+for `performance_accepted`. Requirements close only at publication, only inside
+the bounded unit.
 
-To transfer an abandoned claim, use `action=release`, its claim_token and a
-hash-bound reconciliation receipt with operation_id, ownership_checked=true,
-active_operation=false, completed_operation=false and reusable_receipt_found=false.
-If a completed operation has a receipt, record it with advance; do not release
-the claim and repeat it. Release does not imply failure or completion. It does
-not expire by elapsed time. Claimed rework also requires reconciliation.
-For validation, release/rework checks attached evidence and the existing compact
-receipt directory for a closed run matching the exact unit and operation. An
-agent's `completed_operation=false` cannot override that receipt, even when its
-reference or performance gate failed.
+Example event (take values from resume):
 
-An already completed run may be recorded after unrelated source changes with:
+```json
+{"revision": 0, "unit_id": "magmaw:balance_self_setup_01", "action": "advance",
+ "receipt": {"path": "artifacts/current-plan.json", "sha256": "ACTUAL_SHA256"}}
+```
+
+```sh
+pixi run python -m tools.raid_program.workflow_step advance --receipt <adapter.json> --dry-run
+pixi run python -m tools.raid_program.workflow_step advance --receipt <adapter.json> --owner <claim owner>
+# or: raid_workloop advance --event /abs/event.json --expect STATE_SHA256
+```
+
+Writes take a Git-common-dir lock, compare the prior state hash and replace
+atomically. A stale tab must resume. Commit state with code; publish adapters and
+evidence through DVC; never edit a published receipt.
+
+## Claims
+
+Before executing implement, build, smoke, validate or publish, submit
+`{"action": "claim", "revision": N, "unit_id": "...", "owner": "tab-name"}`. Put
+`claim_token` in the completion event and `operation_id` in its adapter. A second
+tab cannot claim the same operation and must inspect the owner's worker, build,
+controller and DVC state rather than relaunch.
+
+`release` (or claimed `rework`) needs a hash-bound reconciliation with
+operation_id, ownership_checked=true, active_operation=false,
+completed_operation=false and reusable_receipt_found=false. A completed operation
+is recorded with `advance`, never released and repeated; for validation the graph
+also searches the compact receipt directory for a closed run of this operation.
+
+A completed run can be recorded after unrelated source changes:
 
 ```sh
 pixi run python -m tools.raid_program.workflow_step advance \
   --receipt <original-run.json> --owner <original-owner> --recorded-source --dry-run
 ```
 
-Repeat without `--dry-run` after inspecting the result. The tool locates the
-committed validation claim, verifies its assignment, tested files, build and
-operation identities, and rejects source changes between build and launch. It
-retains that historical source through assessment/publication without rebuilding
-or relabeling it as current-source validation. Current-source repair/performance
-acceptance and requirement closure are forbidden on this path. All ordinary run
-identity, cleanup, scoring-window and watchdog checks still apply. If the frozen
-snapshot is missing or conflicts, retain the evidence and repair its attribution;
-do not manufacture a snapshot or repeat combat to erase the failure.
-
-Start/resume/advance CLI output is compact by default. Use `evidence_view task`
-detail selectors, `result` for native outcomes, or explicit `--full` for a machine
-consumer needing the complete projection. The saved state is never truncated.
-The canonical coordinator worktree is bound in saved state; another worktree
-must use that checkout rather than fork progress. Moving it is an explicit
-coordinator migration in Git after reconciling outstanding ownership.
-
-Plan binds the full base commit. A failed review retains its source baseline across rework; a new plan cannot
-relabel unreviewed code as accepted baseline. Commit implementation before recording tests;
-review/build check the actual source delta against owned files, including files
-omitted from the adapter. Progress JSON, docs, skills and evidence are control
-data excluded from that source delta. Native/config/tool/test code is included.
-Record graph changes and commit before queued_build so its normal clean-source
-admission still applies. Its existing verifier checks the original build
-receipt with the exact policy, source identity and output binary. Workflow tests
-mock valid native build verification and separately reject fabricated receipts;
-they do not claim a native compilation occurred.
-
-Example unclaimed plan completion event (take current values from resume):
-
-```json
-{
-  "revision": 0,
-  "unit_id": "magmaw:balance_self_setup_01",
-  "action": "advance",
-  "receipt": {"path": "artifacts/current-plan.json", "sha256": "ACTUAL_SHA256"}
-}
-```
-
-```sh
-pixi run python -m tools.raid_program.raid_workloop advance \
-  --event /absolute/path/event.json --expect STATE_SHA256_FROM_RESUME
-```
-
-Each accepted event is retained in the same JSON history. Writes use an advisory
-Git-common-directory lock, compare the entire prior state's hash, and replace
-atomically. A stale tab must resume and reassess; never silently overwrite.
-Commit updated state with code/configuration. Publish generated adapters and
-source evidence through DVC. Do not edit a published receipt to fit new code.
+It verifies the committed launch snapshot and closes the run as historical
+evidence only: no current-source repair/performance acceptance. Units that reused
+a build cannot use this path.
 
 ## Build once across progress commits
 
-Before claiming `build`, run:
-
 ```sh
-pixi run python -m tools.raid_program.workflow_build preflight
-pixi run python -m tools.raid_program.workflow_build snapshot
-pixi run python -m tools.raid_program.workflow_build refs artifacts/cata_raid_program/current-build.json
+pixi run python -m tools.raid_program.workflow_build preflight   # before claiming build
+pixi run python -m tools.raid_program.workflow_build run          # after claiming and committing
+pixi run python -m tools.raid_program.workflow_build finish       # completed build, interrupted handoff
 ```
 
-`preflight` verifies the reviewed policy and validation references. For dummy
-calibration it also calls the same exact WoWSims binding check used at launch.
-The build claim repeats this check and leaves the graph unchanged on failure.
-Fix stale reference/fixture authority before spending time on compilation.
-This is not native readiness or database validation; those remain launch checks.
-`refs` and `snapshot` generate hashes, not test results or review approval.
+`preflight` checks the reviewed policy and validation references (for dummy
+calibration also the WoWSims binding); the build claim repeats it. `run` executes
+policy-derived configure/build through the queue with no intervening Git writes,
+stops on failure without retry, and returns the exact CAS-bound `next_command`.
+`finish` verifies an existing queue result and never compiles.
 
-After review, claim the build and commit its state, then run:
+Runners accept the canonical build receipt for a clean descendant commit when
+only coordination paths changed: the active graph JSON, AGENTS.md, Markdown under
+docs or skills, JSON under `artifacts/cata_raid_program/`, and newly added adjacent
+DVC pointers/ignore lines there. Source, tools, configuration, references and
+policy changes need a new build. Executables and symlinks never qualify.
 
-```sh
-pixi run python -m tools.raid_program.workflow_build run
-```
+## Tests and worker packets
 
-This executes policy-derived configure/build argv through the existing queue,
-with no Git writes between them. Unique canonical receipts stay in the queue's
-Git-common directory. The command stops on failure and never retries automatically.
-On success it copies the exact queue receipt into publication evidence, generates
-the graph build receipt, validates it through the real reducer, and returns the
-exact `next_command` including owner and state compare-and-swap hash. Execute it.
-Compiler output stays in the queue's existing log rather than flooding stdout.
-The tool retains the operation's queue results before creating the handoff;
-rerunning the same operation cannot silently rebuild.
-
-For a completed build whose handoff was interrupted:
-
-```sh
-pixi run python -m tools.raid_program.workflow_build finish
-# Older builds without the operation result index:
-pixi run python -m tools.raid_program.workflow_build finish --queue-receipt <exact-ticket.json>
-```
-
-Finish verifies the queue policy, frozen claim/unit, reviewed source and produced
-binary, and never compiles. It does not advance the graph until its returned
-command is executed. Wrong/stale tickets fail instead of being replaced by a
-search for an arbitrary recent build.
-`workflow_build commands` prints the same argv without running either step.
-Existing successful receipts should still be reused; this command is for a new
-reviewed build, not a reason to rebuild for progress metadata.
-
-### Necessary test dependencies and execution
-
-During `implement`, an explicit additive amendment can include a necessary
-fixture without abandoning the repair:
-
-```sh
-pixi run python -m tools.raid_program.workflow_step amend-tests \
-  --file tests/test_affected_behavior.py \
-  --command 'pixi run python -m pytest -q tests/test_affected_behavior.py' \
-  --reason 'The production change adds a dependency to this extracted fixture' \
-  --owner <current-claim-owner> --dry-run
-# Repeat without --dry-run after inspecting the amendment.
-```
-
-Only existing regular files under `tests/` may be added; commands and files are
-additive. The history retains the reason and exact additions. Source base,
-production ownership, claim, old tests, requirements and failure counts stay
-unchanged. `--expect <state hash>` protects a reviewed preview. Coordinate with
-the worker before amending its scope. Production changes and amendments after
-implementation use the existing rework path and fresh review. Never remove a
-needed test dependency merely to fit the first file list.
-
-After committing the source, run the whole declared test set:
+Commit the implementation, then run the declared tests:
 
 ```sh
 pixi run python -m tools.raid_program.workflow_step tests \
-  --owner <current-claim-owner> --producer <actual-implementer-session-id> \
-  --behavior-command 'pixi run python -m pytest -q tests/test_affected_behavior.py'
+  --owner <claim owner> --producer <implementer session> --behavior-command '<declared command>'
 ```
 
-The behavior command must be one of the declared commands. Its name is a review
-pointer, not automatic certification: the reviewer verifies that it executes
-the production behavior, reproduces the counterexample, and covers the relevant
-neighboring case. For persistent progress, keep identity unchanged while observed
-state changes across updates. Text/order assertions alone cannot prove this.
+It runs every declared command with timeouts, stores full output as artifacts
+and returns the CAS-bound advance command only on success. A narrower passing
+subset cannot replace the declared suite. `workflow_step amend-tests --file
+tests/... --command ... --reason ...` adds a necessary test dependency during
+implement without rebasing; production changes after tests need rework.
 
-The helper executes all declared checks with per-command timeouts and pipefail,
-stores full output in JSON artifacts, and returns only statuses, artifact paths
-and an exact CAS-bound advance command. Failures, timeouts or source/state changes
-produce no advance command. The reducer rejects mixed failing/passing duplicate
-results for a required command. A successful narrow subset cannot replace the
-declared suite. Logs and receipts use the existing evidence publication lifecycle.
-Reinvoking an unchanged source/claim/state returns the recorded result without
-running tests again; incomplete capture requires explicit reconciliation.
+Source binding is checked at plan admission and implementation claim. `route`
+starts the new unit from current HEAD; `rework` keeps the old base so a rejected
+patch cannot hide in a new baseline. A separately reviewed workflow repair
+(Python/tests/configs/pre-commit hook only) can join a paused unit through
+`supporting_review`/`refresh_support`; native files and selected inputs cannot.
 
-`evidence_view task --section unit` exposes current test ownership, commands and
-acceptance conditions. Use it instead of reading graph implementation and old
-receipts to reconstruct the next test handoff. Legacy receipts remain readable;
-no native/DPS acceptance is inferred from the new test runner.
-
-### Worker packets
-
-Source binding is checked at plan admission and again at implementation claim,
-before a worker starts. A new `route` transition freezes current HEAD for the new
-unit; `rework` keeps the prior baseline so a rejected patch cannot disappear into
-a changed base. No acceptance requirement is closed by selecting a baseline.
-
-An implementation plan can retain `worker_context` with these fields:
-
-- `kind`: `implementation` or `observation`.
-- `question`, `decision`: the uncertainty and the choice its answer changes.
-- `counterexample`: concrete input/behavior the repair must handle.
-- `fixture`: a real `{path, sha256}` reference to the focused deterministic fixture.
-- `native_behavior`: source `{path, sha256, start_line, end_line}` references to
-  relevant native behavior, callers or lifecycle boundaries. Excerpts are loaded
-  from verified files, not rewritten from memory; each is at most 80 lines.
-- For observation work, `observation_decision` requires `signal`, `if_confirmed`,
-  `if_refuted`, and `live_check`. Merely adding fields is not a useful experiment.
-
-After admitting the plan, before claiming implementation:
+A plan may carry `worker_context` (`kind`, `question`, `decision`,
+`counterexample`, a real `fixture`, and `native_behavior` line/hash excerpts of at
+most 80 lines; observation work adds `observation_decision`). Then
 
 ```sh
 pixi run python -m tools.raid_program.workflow_step packet --output /tmp/worker-packet.json
 ```
 
-The packet combines that context with parent objective, open requirements, source,
-owned files, forbidden changes, acceptance conditions and required commands. Send
-it directly to the bounded worker. Missing context or stale source fails explicitly;
-the tool does not infer an implementation from raw logs. Context is capped at 6KB
-and the complete packet at 10KB, with no silent truncation. Narrow the work unit
-when it cannot fit. Existing plans without context remain readable and closable;
-prepare the context before dispatching another implementation worker.
-
-Commit reviewed source, claim/state and any preparation before queued compilation.
-After the build, commit the build adapter, graph advance and validation claim.
-Launch with the original queued receipt and its original policy. The dummy and
-shared-instance runners verify the canonical receipt and allow its clean descendant
-when only coordination files changed: the active graph JSON, AGENTS.md, Markdown
-under docs or skills, and JSON evidence under artifacts/cata_raid_program.
-Selected runtime fixtures and their declared inputs cannot use an evidence-directory
-exemption. Executable files and symlinks cannot use these exemptions. No dirty-file exemption
-exists. Source, tools, configuration, references, DVC pointers and build policy
-changes require a new matching build. The graph additionally recognizes newly
-added adjacent DVC output pointers under `artifacts/cata_raid_program/` and exact
-appended ignore lines for those outputs. Publication does not invalidate a closed
-run or require pointer removal before the next unit. Changed existing pointers,
-selected inputs, broad ignore patterns, executable files and symlinks remain
-source changes. This does not loosen native build/launch compatibility or attest
-archive contents.
-
-The run retains `build_source_commit` and a `source_compatibility` proof listing
-all intervening coordination paths. `source_commit`/`source_tree` identify the
-current clean checkout used to derive runtime configuration. Never relabel the
-binary as built from a later commit. No configure/build is needed solely because
-recording progress advanced HEAD. Existing receipts, binary hashes and toolchain
-checks remain mandatory; a compatibility proof alone cannot admit a run.
+builds a packet (context <= 6KB, packet <= 10KB, never truncated) for the worker.
 
 ## Jev/Laya and retries
 
-Model calls and `advice` are optional. Prefer [per-bot improvement suggestions](bot_improvement_advice.md)
-over broad plan/result approvals. An omitted or empty `advice` object does not
-block a transition. When supplied, `advice` records `jev` and/or `laya`.
-Each entry has `status=reviewed`, a receipt reference and coordinator
-`adjudication`; service/context failures use `status=not_reviewed`, `reason`
-and the coordinator's alternative review. A model failure is visible without
-blocking unrelated work. Model outputs cannot replace the independent approving
-reviewer. The graph never interprets model confidence as acceptance.
+Jev (hosted) and Laya (local) are optional advisory tools; neither gates a
+transition or can be a producer or acceptance receipt. Their use here is choosing
+between the top two ranked damage gaps: ask Jev, with Laya shadowing Jev on the
+same packet so their signal can be compared. An offline or context-rejected Laya
+is recorded as not reviewed, never as a vote. After the measurement, log both
+picks against the scoreboard delta:
 
-Use `plan-drift-review` when switching work units or when requested. Review the
-parent objective and all open requirements returned by resume, not just the
-selected class. No per-tool model polling.
+```sh
+pixi run python -m tools.raid_program.jev_outcomes append --unit <id> \
+  --candidate <gap1> --candidate <gap2> --jev-pick <gap> --laya-pick <gap> --chosen <gap> \
+  --label-before <label> --label-after <label> --party-delta <dps> --actor-delta <dps>
+pixi run python -m tools.raid_program.jev_outcomes summary
+```
 
-Before build, rejected work returns with `action=rework`, revision, unit_id,
-reason and a receipt reference. Each failed rework or closed run accepting no requirement increments the
-current edge's counter. A closed live failure passes through assessment and publication before
-routing. At ten failures, route requires a hash-bound causal_summary and a
-changed causal hypothesis; unchanged retries are rejected.
-`recent_attempts` returns the last ten assessment/rework receipts across unit
-names; `failure_counts_by_edge` keeps the other counters visible. These are
-history, not proof that differently named causes are identical. Inspect them
-before retrying. A completed failed measurement must be assessed/published,
-not described as `completed_operation=false` to abandon its validation claim.
+Records go to `artifacts/cata_raid_program/jev_pick_outcomes.jsonl`; omit a pick
+for a model that was not run. An optional `advice` object in a plan/tests adapter
+may hold `jev` and/or `laya` entries, each with `status` (`reviewed` plus receipt,
+or `not_reviewed` plus reason) and the coordinator's `adjudication`.
 
-At route, submit `action=route`, reason and a new `unit` with unique id, edge,
-nonempty open requirements and next_action. To finish, submit `action=complete`.
-Completion is rejected while any requirement is open. Scope changes come from
-explicit user direction and must update the objective/requirements transparently
-in Git; do not erase outstanding requirements to obtain a completion verdict.
+Rework (`action=rework`, reason, receipt) and every closed run that accepts no
+requirement increment the edge's failure counter. At ten, `route` needs a
+hash-bound `causal_summary` and a different edge. `recent_attempts` and
+`failure_counts_by_edge` show history across unit renames.
 
-## Verification and limits
+At route submit `action=route`, reason and a new `unit` (unique id, edge, open
+requirements, next_action, optional owner_skill and risk_tier). Route to the
+largest remaining verdict gap. `action=complete` is rejected while any
+requirement is open; scope changes come from the user and are committed.
 
-The focused tests exercise the real CLI in a fresh process after saved steps,
-stale concurrent writers, code/receipt changes, missing tests/review, wrong
-build/attempt identity, dummy/raid clocks, incomplete publication and retry
-limits. They are synthetic workflow fixtures, not raid or class evidence.
+## Scenario initialization and preservation
 
-This is a resumable coordination layer. Correctness still depends on the
-existing native validators and independent review of actual evidence. It has
-no autonomous execution authority, and does not replace source/build/runtime
-identity checks in the canonical live controller.
+One active scenario plus a `parked_scenarios` map share the state file. Switching
+parks the full prior state; reselecting restores it; nothing is rerun. Claimed
+operations and open validate/assess/publish stages block switching.
 
-Validated on 2026-09-20: 36 workflow tests and 44 related workloop/checkpoint
-checks passed. Independent review approved this control-plane scope. The full
-related suite also exposed a pre-existing boss-script readiness hash mismatch:
-recorded `0855911a...` versus current `df4c8ee5...`. Running the unchanged HEAD
-implementation against unchanged native files reproduced it. The targeted
-80-test rerun explicitly deselected that one test; no audit claim was weakened
-or silently refreshed. Reconcile the underlying encounter audit before relying
-on its readiness result.
+A new scenario binds requested-mode research, native source, roster, simulator
+reference catalogs and the raid target pointer. 25-player modes use all frozen
+25 slots; a missing exact 10-player roster yields visibly unassigned slots, never
+a guessed composition or another difficulty's actors. Requirements (all open):
+encounter research, native script, roster setup, role references, runtime
+scenario, assignments, raid target (if missing), every actor, and encounter
+performance. Findings from another size/difficulty are context, not acceptance.
+Changed bound inputs appear in `changed_bootstrap_sources`.
 
-Hosted Jev reviewed the plan and result. Local Laya refused connections at both
-checkpoints and remains not reviewed; independent review covered this change.
-The evidence bundle is
-`artifacts/cata_raid_program/development_graph_20260920.tar.gz.dvc`.
-It contains tests, independent review, resume output, baseline-failure proof,
-and exact model requests/responses. These are development records and are not
-eligible for native raid-policy training. No new build or live raid was run.
+## Limits and history
 
-## Scenario initializer validation (2026-09-20)
+The graph is a resumable coordination layer with no execution authority. Native
+validators, the canonical controller's identity checks and independent review of
+class/shared code remain authoritative. Workflow tests are synthetic fixtures;
+build-verifier and review-session checks are mocked there and tested separately.
 
-The catalog dry run initialized all 110 declared boss/mode combinations. A real
-CLI round trip selected Magmaw 25H with 25 frozen slots, reselected it without
-changing the state hash, then restored the existing Magmaw 10N state and its five
-completed measurements exactly. The 25H task remains parked for later selection.
-No native build, server, raid or training-data admission ran.
-
-The related suite passed 112 tests. One existing source-readiness audit mismatch
-(`test_script_readiness_uses_source_tree_identity`) was excluded; its unchanged
-baseline failure is retained, not reclassified as passing. Independent review,
-model advice/dispositions, test output and CLI receipts are published at
-`artifacts/cata_raid_program/scenario_bootstrap_20260920.tar.gz.dvc`.
-Local Laya was unavailable; Jev advice did not substitute for independent review.
-
-## Build workflow repair (2026-09-20)
-
-FLOW-002 removes the progress-commit rebuild loop in canonical dummy/shared
-admission using the existing build-control verifier's strict coordination mode.
-The focused suite passed 185 tests, including both production admission paths,
-changed runtime input rejection, pre-build reference failure and the older
-recurrence admission tests. Native provenance remains covered by queued-build
-verifier tests; the runner fixtures do not start or validate a worldserver.
-
-The earlier broader check had 97 passes and two failures in
-`test_shared_instance_fixture.py`, both from the existing generated gear-profile
-hash mismatch. The unchanged HEAD fixture loader reproduced the mismatch
-(expected `0d8919d5...`, actual `8a2efd46...`). No fixture authority was refreshed.
-The live Balance preflight still rejects `catalog_fixture_contract_content_hash`
-and `reference_request_catalog_independently_validated`; fix those before building.
-Other coordinator WIP is preserved and no calibration or raid was launched here.
-
-Hosted Jev supported the bounded workflow claim. Local Laya was offline; its
-failure is retained, not an approval. The remote-verified evidence pointer is
-`artifacts/cata_raid_program/workflow_build_repair_20260920.tar.gz.dvc`.
-
-## Plain-request continuation check (2026-09-20)
-
-The exact request `implement magmaw 10n bots` resumed revision 55 and the saved
-Balance effective-stat diagnosis without changing state. A fresh-context agent
-loaded the prior assessment and inspected the native stat producer, while keeping
-the full encounter as its objective. It identified assessment/publication/routing
-as intermediate steps. This is an entry/diagnostic trial, not proof of completing
-an autonomous raid program.
-
-The focused suite passed 72 tests. The first run exposed a test that incorrectly
-pinned live state to the old Balance setup edge; routed-unit regression coverage
-replaces that assertion. Independent broader checks reported 104 passes and the
-previously documented script-readiness hash failure (0855911a versus df4c8ee5).
-Jev supported the limited claim; Laya was offline. Evidence and the independent
-review are at `artifacts/cata_raid_program/plain_request_continuation_20260920.tar.gz.dvc`.
+Earlier control-plane validation bundles (2026-09-20):
+`development_graph_20260920`, `scenario_bootstrap_20260920`,
+`workflow_build_repair_20260920`, `plain_request_continuation_20260920`
+(`artifacts/cata_raid_program/<name>.tar.gz.dvc`). The script-readiness hash
+mismatch in `test_script_readiness_uses_source_tree_identity` (recorded
+`0855911a...` vs current `df4c8ee5...`) predates this workflow and remains open.

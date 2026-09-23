@@ -5,11 +5,13 @@ import copy
 from pathlib import Path
 
 from tools.raid_program import development_graph as graph
+from tools.raid_program.graph_acceptance import TARGET_SCHEMA, target_pointer
 from tools.raid_program.scenario_catalog import discover, key, resolve
 
 
 def make_state(root: Path, encounter: dict, inputs: dict) -> dict:
     scenario_id = key(encounter)
+    target = target_pointer({'encounter': encounter})  # experiments/configs/raid_targets/<scenario>.json
     requirements = {
         'encounter_research': {'status': 'open', 'description': 'Review requested-mode WCL, DBM, client/server values and unresolved contract claims'},
         'native_script': {'status': 'open', 'description': inputs['script']['task'], 'needs_raid': True},
@@ -18,13 +20,16 @@ def make_state(root: Path, encounter: dict, inputs: dict) -> dict:
         'runtime_scenario': {'status': 'open', 'description': 'Prepare exact-mode route/profile/provisioning, native unlocks and isolated instance ownership', 'needs_raid': True},
         'assignments': {'status': 'open', 'description': 'Implement requested-mode raid assignments and persistent mechanic tasks', 'needs_raid': True},
     }
+    if not (root / target['path']).is_file():
+        requirements['raid_target'] = {'status': 'open', 'target_path': target['path'],
+            'description': f"Author {target['path']} ({TARGET_SCHEMA}) from matched WCL kills; no actor or encounter requirement can close without it"}
     for actor in inputs['roster']['actors']:
         actor_id = actor['actor_id']
         requirements['actor_' + actor_id] = {'status': 'open', 'actor_id': actor_id,
             'role': actor['role'], 'spec': actor['class_spec'],
-            'description': f"{actor['slot']}: {actor['class_spec'] or 'roster selection required'} behavior and duty-adjusted performance",
+            'description': f"{actor['slot']}: {actor['class_spec'] or 'roster selection required'} lawful behavior; accepted when its scoreboard verdict row is pass",
             'needs_raid': True, 'needs_performance': True}
-    requirements['encounter_performance'] = {'status': 'open', 'description': 'Matched encounter clear, every actor reviewed, performance accepted and evidence published',
+    requirements['encounter_performance'] = {'status': 'open', 'description': 'Accepted when the overall scoreboard verdict is pass (every actor at target, no boss-window deaths) and evidence is published',
         'needs_raid': True, 'needs_performance': True, 'needs_all_actors': True}
     if not inputs['script']['source_present']:
         edge, owner = 'missing_native_boss_script', 'raid-encounter-research'
@@ -40,9 +45,11 @@ def make_state(root: Path, encounter: dict, inputs: dict) -> dict:
               'Keep every actor open; initialize no server or database from this descriptor.')
     unit_id = 'boss:' + scenario_id + ':initial_diagnosis'
     g = {'version': 1, 'revision': 0, 'coordinator_worktree': str(root.resolve()),
-         'objective': f"Implement and validate lawful {encounter['boss']} {encounter['mode']} bots across every DPS, tank and healer against matched encounter evidence.",
+         'objective': f"Implement lawful {encounter['boss']} {encounter['mode']} bots across every DPS, tank and healer until the scoreboard verdict against {target['path']} passes.",
          'encounter': encounter, 'stage': 'diagnose', 'actor_ids': [a['actor_id'] for a in inputs['roster']['actors']],
-         'requirements': requirements, 'unit': {'id': unit_id, 'edge': edge, 'owner_skill': owner, 'requirements': ['encounter_research'], 'next_action': action},
+         'requirements': requirements, 'raid_target': target,
+         'unit': {'id': unit_id, 'edge': edge, 'owner_skill': owner, 'next_action': action,
+                  'requirements': ['encounter_research', *(['raid_target'] if 'raid_target' in requirements else [])]},
          'completed_measurements': [], 'failures': {}, 'history': [], 'bootstrap_inputs': inputs}
     return {'schema': 'cata_raid_active_work_unit_v1', **encounter,
             'work_unit': unit_id, 'classification': 'scenario_initialization', 'owner_skill': owner,

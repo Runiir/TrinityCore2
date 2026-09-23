@@ -51,7 +51,8 @@ def receipt(root, state, evidence, **changes):
         'review': {'file_hashes':graph.snapshot(root,['code.cpp']), 'verdict':'approved',
                    'reviewer_session_id':'fixture-independent-session', 'review_report': evidence},
         'build': {'policy':put(root/'policy.json',json.loads((Path(__file__).resolve().parents[1]/'experiments/configs/cata_raid_build_resource_policy_host12_v1.json').read_text())),'file_hashes':graph.snapshot(root,['code.cpp']), 'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64,'build_receipt':put(root/'build-native.json',{'commit':graph.git(root,'rev-parse','HEAD'),'exit_code':0,'source_identity_stable':True,'test_mode':False,'output_artifacts':[{'kind':'worldserver_elf','sha256':'b'*64,'produced_by_ticket':True}]})},
-        'validate': {'validation_identity':g.get('assignment',{}).get('validation_identity'),'build_identity':{'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64},'attempt_id':'attempt1','server_epoch':'epoch1','closed':True,'cleanup_verified':True,'terminal_reason':'clear','scenario_kind':'raid','clock':'completion_watchdog'},
+        'smoke': {'build_identity':g.get('build_identity'),'attempt_id':'smoke1','server_epoch':'epoch1','closed':True,'cleanup_verified':True,'terminal_reason':'clear','scenario_kind':'raid','clock':'completion_watchdog','encounter':g['encounter']},
+        'validate': {'validation_identity':g.get('assignment',{}).get('validation_identity'),'build_identity':g.get('build_identity') or {'source_commit':graph.git(root,'rev-parse','HEAD'),'binary_sha256':'b'*64},'attempt_id':'attempt1','server_epoch':'epoch1','closed':True,'cleanup_verified':True,'terminal_reason':'clear','scenario_kind':'raid','clock':'completion_watchdog'},
         'assess': {'attempt_id':'attempt1','baseline':evidence,'comparison':evidence,'actor_reviews':{'1':{'status':'reviewed','receipt':evidence},'2':{'status':'not_exercised','reason':'not in this fixture'}},'encounter_clear':True,'repair_accepted':True,'performance_accepted':False,'accepted_requirements':['setup']},
         'publish': {'dvc_status_checked':True,'dvc_push_completed':True,'remote_verified':True,'cleanup_verified':True},
     }[stage])
@@ -65,7 +66,7 @@ def receipt(root, state, evidence, **changes):
 
 def claimed(root,state):
     g=state['development_graph']
-    if g['stage'] in ('implement','build','validate','publish') and not g.get('claim'):
+    if g['stage'] in graph.tiers.CLAIMED and not g.get('claim'):
         return graph.reduce(root,state,{'action':'claim','revision':g['revision'],'unit_id':g['unit']['id'],'owner':'fixture-tab'})
     return state
 
@@ -429,8 +430,10 @@ def test_unaccepted_actor_review_cannot_close_actor(case):
     root,state,evidence=case
     state['development_graph']['unit']['requirements']=['actor_1']
     root,state,evidence=reach((root,state,evidence),'assess')
-    with pytest.raises(graph.GraphError,match='actor acceptance'):
-        graph.reduce(root,state,receipt(root,state,evidence,accepted_requirements=['actor_1'],performance_accepted=True,baseline_matched=True,unexplained_material_decline=False))
+    # Actor requirements close only from a scoreboard verdict, never a free-form review.
+    with pytest.raises(graph.GraphError,match='only from a scoreboard verdict'):
+        graph.reduce(root,state,receipt(root,state,evidence,accepted_requirements=['actor_1'],performance_accepted=True,baseline_matched=True,unexplained_material_decline=False,
+            actor_reviews={'1':{'status':'reviewed','receipt':evidence,'accepted':True},'2':{'status':'not_exercised','reason':'fixture'}}))
 
 
 def test_wrong_worktree_resume_has_no_action(case):

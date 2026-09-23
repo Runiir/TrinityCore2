@@ -94,3 +94,52 @@ def test_default_commit_does_not_call_a_model(tmp_path, monkeypatch):
     monkeypatch.chdir(root)
     monkeypatch.setattr(worker_precommit, "review_checkpoint", lambda *a, **k: pytest.fail("network review must be opt-in"))
     assert main(["--task", str(task), "--output", str(tmp_path / "review")]) == 0
+
+
+def _unit_repo(tmp_path, stage, **graph_fields):
+    from tools.raid_program import development_graph as graph
+    root = tmp_path / "repo"
+    root.mkdir()
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    state = root / graph.STATE_PATH
+    state.parent.mkdir(parents=True)
+    state.write_text(json.dumps({"development_graph": {"stage": stage, "unit": {"id": "u1", "risk_tier": "profile"},
+        "assignment": {"owned_files": ["sql/rotation.sql"]}, **graph_fields}}))
+    return root
+
+
+def _stage(root, *paths):
+    for path in paths:
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        (root / path).write_text("x\n")
+        subprocess.run(["git", "-C", str(root), "add", "-f", path], check=True)
+
+
+def test_coordinator_commit_without_task_is_silent(tmp_path, monkeypatch, capsys):
+    from tools.raid_program import development_graph as graph
+    root = _unit_repo(tmp_path, "implement")
+    _stage(root, str(graph.STATE_PATH), "docs/bot_raids/note.md", "sql/rotation.sql")
+    monkeypatch.chdir(root)
+    assert main([]) == 0
+    assert capsys.readouterr().out == ""
+    (root / graph.STATE_PATH).write_text("{}")  # no unit: still silent
+    assert main([]) == 0 and capsys.readouterr().out == ""
+
+
+def test_implementing_unit_warns_about_code_outside_owned_files(tmp_path, monkeypatch, capsys):
+    root = _unit_repo(tmp_path, "implement")
+    _stage(root, "src/server/game/Bots/Other.cpp")
+    monkeypatch.chdir(root)
+    assert main([]) == 0
+    out = capsys.readouterr().out
+    assert "Unit u1 (profile, implement)" in out and "src/server/game/Bots/Other.cpp" in out
+    assert "NOT REVIEWED" not in out
+
+
+def test_code_after_tests_warns_with_remaining_tier_steps(tmp_path, monkeypatch, capsys):
+    root = _unit_repo(tmp_path, "validate")
+    _stage(root, "sql/rotation.sql")
+    monkeypatch.chdir(root)
+    assert main([]) == 0
+    out = capsys.readouterr().out
+    assert "(profile, validate)" in out and "validate -> assess -> publish -> route" in out

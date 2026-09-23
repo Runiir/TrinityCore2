@@ -66,7 +66,7 @@ def test_invalid_request_does_not_change_state(repo,requested,mode):
 def test_25h_uses_frozen_25_not_ten_normal_shard(repo):
     result=bootstrap.start(repo,'implement magmaw 25hc bots')
     assert result['encounter']['mode']=='25H'
-    assert len(result['open_requirements'])==32
+    assert len(result['open_requirements'])==33  # 6 setup + raid_target + 25 actors + encounter
     assert result['completed_measurements']==[]
     inputs=result['bootstrap_inputs']
     assert len(inputs['roster']['actors'])==25
@@ -246,3 +246,23 @@ def test_plain_implementation_request_preserves_saved_task_and_coordinator_role(
     full = json.loads(subprocess.check_output(cmd + ['--full'], cwd=ROOT, text=True))
     assert full['completed_measurements'] == saved['development_graph']['completed_measurements']
     assert (repo/graph.STATE_PATH).read_bytes() == before
+
+
+def test_new_scenario_points_at_numeric_target_and_missing_file_is_open_work(repo):
+    result=bootstrap.start(repo,'implement magmaw 25hc bots')
+    path='experiments/configs/raid_targets/blackwing_descent_25h_magmaw.json'
+    saved=graph.read(repo/graph.STATE_PATH)['development_graph']
+    assert saved['raid_target']=={'scenario':'blackwing_descent_25h_magmaw','path':path}
+    assert result['open_requirements']['raid_target']['target_path']==path
+    assert 'raid_target' in result['unit']['requirements']
+    assert result['finish_line']['target_present'] is False
+    assert path in result['next_action'] and result['finish_line']['work_item']
+    assert 'scoreboard verdict' in result['open_requirements']['encounter_performance']['description']
+
+
+def test_existing_target_file_needs_no_target_work_item(repo):
+    write(repo,'experiments/configs/raid_targets/blackwing_descent_10h_magmaw.json',{'schema':'raid_target_v1'})
+    result=bootstrap.start(repo,'magmaw 10hc')
+    assert 'raid_target' not in result['open_requirements']
+    assert result['unit']['requirements']==['encounter_research']
+    assert result['finish_line']['target_present'] is True and result['finish_line']['work_item'] is None

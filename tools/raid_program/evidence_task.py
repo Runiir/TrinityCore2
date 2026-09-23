@@ -143,6 +143,7 @@ def progress_view(progress, root, section='summary'):
             'coordinator_worktree': progress['coordinator_worktree'],
             'encounter': progress.get('encounter'), 'coordinator_skill': progress.get('coordinator_skill'),
             'dps_acceptance': progress.get('dps_acceptance'),
+            'tier': progress.get('tier'), 'finish_line': progress.get('finish_line'),
             'completed_measurement_count': len(progress.get('completed_measurements', []))}
     if section == 'unit':
         return base | {'unit': progress['unit'], 'test_plan': progress.get('test_plan', {}),
@@ -179,13 +180,14 @@ def progress_view(progress, root, section='summary'):
     worker_ready = progress['stage'] == 'implement' and not claim
     return base | {
         'objective': progress['objective'],
-        'unit': {key: unit.get(key) for key in ('id', 'edge', 'owner_skill', 'objective', 'requirements', 'next_action')},
+        'unit': {key: unit.get(key) for key in ('id', 'edge', 'owner_skill', 'risk_tier', 'objective', 'requirements', 'next_action')},
         'claim': claim,
         'blockers': {'claimed_operation_owner': claim.get('owner') if claim else None,
                      'changed_bootstrap_sources': progress['changed_bootstrap_sources'],
                      'same_edge_failures': progress['same_edge_failures']},
         'open_requirement_ids': list(progress['open_requirements']),
         'evidence': {'latest_assessment': progress['latest_assessment'],
+                     'reusable_build': progress.get('reusable_build'),
                      'bound_receipt_kinds': list(progress['receipts'])},
         'next_action': progress['next_action'],
         'next_command': shlex.join(['pixi', 'run', 'python', '-m', 'tools.raid_program.workflow_step',
