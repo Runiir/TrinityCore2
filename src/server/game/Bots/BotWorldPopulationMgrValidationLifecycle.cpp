@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotRaidAreaAuthority.h"
 
@@ -137,7 +138,8 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
                         && bot->GetMapId() == state.ValidationCohortMapId
                         && bot->GetInstanceId() == state.ValidationCohortInstanceId
                         && group && group->GetGUID() == state.ValidationCohortGroupGuid
-                        && group->GetLeaderGUID() == state.ValidationCohortLeaderGuid;
+                        && BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(
+                            *this, group, state.ValidationCohortLeaderGuid);
                 }
 
                 if (nativeWorldportComplete)
@@ -208,7 +210,8 @@ bool BotWorldPopulationMgr::IsNativeCombatResTarget(WorldBotState const& state, 
     Group const* group = bot->GetGroup();
     return group
         && group->GetGUID() == state.ValidationCohortGroupGuid
-        && group->GetLeaderGUID() == state.ValidationCohortLeaderGuid;
+        && BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(
+            *this, group, state.ValidationCohortLeaderGuid);
 }
 
 bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const
@@ -221,7 +224,8 @@ bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority(WorldBotState const& st
 
     Group const* group = bot->GetGroup();
     if (!group || group->GetGUID() != state.ValidationCohortGroupGuid
-        || group->GetLeaderGUID() != state.ValidationCohortLeaderGuid)
+        || !BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(
+            *this, group, state.ValidationCohortLeaderGuid))
         return false;
 
     // Player::GetCorpse() follows the current map, which is deliberately the
@@ -381,7 +385,8 @@ bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotS
 
     Group const* group = bot->GetGroup();
     if (!group || group->GetGUID() != state.ValidationCohortGroupGuid
-        || group->GetLeaderGUID() != state.ValidationCohortLeaderGuid)
+        || !BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(
+            *this, group, state.ValidationCohortLeaderGuid))
         return false;
 
     // A released ghost must leave an instance to run from the native

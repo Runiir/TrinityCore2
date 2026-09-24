@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "WorldSession.h"
 #include "CharacterCache.h"
 #include "Common.h"
@@ -751,6 +752,8 @@ void WorldSession::HandleRaidReadyCheckOpcode(WorldPacket& recvData)
         group->BroadcastPacket(&data, false, -1);
 
         group->OfflineReadyCheck();
+        // Bots of a human play raid answer the leader's check.
+        BotWorldPopulationMgrPlay::OnRaidReadyCheckStarted(group, GetPlayer());
     }
     else                                                    // answer
     {

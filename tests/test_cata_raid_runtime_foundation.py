@@ -1549,7 +1549,10 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
     assert "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId" in original_instance
     assert "bot->GetCorpse()->GetInstanceId()" not in original_instance
     assert "group->GetGUID() != state.ValidationCohortGroupGuid" in original_instance
-    assert "group->GetLeaderGUID() != state.ValidationCohortLeaderGuid" in original_instance
+    # The frozen leader check is FrozenLeaderHolds: the exact comparison for
+    # validation, relaxed only for human-led play raids
+    # (tests/test_play_mode_runtime_contract.py pins that identity).
+    assert "!BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(\n            *this, group, state.ValidationCohortLeaderGuid)" in original_instance
 
 
 def test_validation_saved_position_is_route_map_bound_without_spawn_fallback():

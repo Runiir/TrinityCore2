@@ -254,6 +254,9 @@ def build_human_participant_sql(target: HumanTarget, loadout: HumanLoadout, *, o
         "--   docker exec -i trinity-cata-db mariadb -utrinity -ptrinity < this.sql",
         "-- A failed precondition stops the batch with ERROR 1242 on the named @abort_* variable;",
         "-- the open transaction then rolls back on disconnect.  Re-running yields the same state.",
+        "-- WARNING: the character's currently equipped combat items are deleted, not mailed.",
+        "-- MariaDB resolves multi-table DELETE aliases only with a default database.",
+        "USE `characters`;",
         "START TRANSACTION;",
     ]
     account_clause = f" AND `account` = {int(target.account)}" if target.account is not None else ""

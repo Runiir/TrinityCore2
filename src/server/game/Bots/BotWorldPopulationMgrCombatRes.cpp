@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 
 #include "Creature.h"
 #include "Group.h"
@@ -121,9 +122,11 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
     if (!targetGroup || !ownerGroup || ownerGroup != targetGroup
         || !owner->IsInSameGroupWith(target)
         || targetGroup->GetGUID() != targetState.ValidationCohortGroupGuid
-        || targetGroup->GetLeaderGUID() != targetState.ValidationCohortLeaderGuid
+        || !BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(
+            *this, targetGroup, targetState.ValidationCohortLeaderGuid)
         || ownerGroup->GetGUID() != ownerState->ValidationCohortGroupGuid
-        || ownerGroup->GetLeaderGUID() != ownerState->ValidationCohortLeaderGuid)
+        || !BotWorldPopulationMgrPlay::Context::FrozenLeaderHolds(
+            *this, ownerGroup, ownerState->ValidationCohortLeaderGuid))
     {
         declineReason = "declined_owner_wrong_group";
         return false;

@@ -43,7 +43,9 @@ def test_cohorts_default_to_validation_and_only_fill_starts_play() -> None:
 
 # Shared-lifecycle files may reach play code only behind the Play purpose or
 # through Context helpers that return validation-neutral values.
-NEUTRAL_HELPERS = ("IsExternalSlot", "ExternalSlotCount", "ExpectedBotCount", "StatusFieldsJson")
+NEUTRAL_HELPERS = (
+    "IsExternalSlot", "ExternalSlotCount", "ExpectedBotCount", "StatusFieldsJson", "FrozenLeaderHolds",
+)
 
 
 def test_shared_lifecycle_hooks_are_gated_or_neutral() -> None:
@@ -109,3 +111,32 @@ def test_external_members_stay_out_of_duty_selectors() -> None:
         "BotWorldPopulationMgrPlay.cpp",
         "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
     ]
+
+
+def test_no_ungated_frozen_leader_comparison_remains() -> None:
+    # A human leads a play raid, so every comparison of the live group leader
+    # with a bot's frozen leader must be play-gated or use FrozenLeaderHolds
+    # (review of 1f5a8178ab: an ungated one made every fill roll back).
+    offenders = []
+    for path in sorted(BOTS.glob("*.cpp")):
+        for number, line in enumerate(_read(path).splitlines(), 1):
+            if "GetLeaderGUID()" in line and "ValidationCohortLeaderGuid" in line and "!play" not in line:
+                offenders.append(f"{path.name}:{number}")
+    assert offenders == []
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    helper = play[play.index("bool Context::FrozenLeaderHolds("):]
+    helper = helper[: helper.index("}") + 1]
+    assert "mgr.Cohort().Purpose == CohortPurpose::Play" in helper
+    assert "group->GetLeaderGUID() == frozenLeader" in helper
+
+
+def test_human_ready_check_hook_is_a_no_op_outside_play() -> None:
+    handler = _read(ROOT / "src/server/game/Handlers/GroupHandler.cpp")
+    request = handler[handler.index("group->OfflineReadyCheck();"):]
+    assert request.index("BotWorldPopulationMgrPlay::OnRaidReadyCheckStarted(group, GetPlayer());") < 200
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    hook = play[play.index("void Context::OnRaidReadyCheckStarted("):]
+    guard = hook[: hook.index("return;")]
+    for condition in ("cohort->Purpose != CohortPurpose::Play", "!cohort->Play.Active",
+                      "group->GetGUID() != cohort->Play.GroupGuid", "!IsHuman(initiator)"):
+        assert condition in guard

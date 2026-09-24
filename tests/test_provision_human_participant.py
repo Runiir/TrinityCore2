@@ -228,7 +228,10 @@ def test_character_update_preserves_identity_and_appearance(sql):
 def test_transaction_guards_and_idempotence_structure(sql, loadout):
     assert sql == human.build_human_participant_sql(TARGET, human.resolve_loadout(CLASS_SPEC, TARGET))
     body = statements(sql)
-    assert body[0] == "START TRANSACTION;"
+    # Multi-table DELETE aliases need a default database (live apply failed
+    # with ERROR 1046 without it).
+    assert body[0] == "USE `characters`;"
+    assert body[1] == "START TRANSACTION;"
     commit = body.index("COMMIT;")
     assert all(not DML.match(s) for s in body[commit + 1:])
     first_dml = next(i for i, s in enumerate(body) if DML.match(s))

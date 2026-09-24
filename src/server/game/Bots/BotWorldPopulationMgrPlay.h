@@ -26,6 +26,10 @@ namespace BotWorldPopulationMgrPlay
 inline constexpr char const* CohortId = "play";
 inline constexpr char const* Scenario = "blackwing_descent_10n_magmaw_diagnostic";
 
+// Core hook for WorldSession::HandleRaidReadyCheckOpcode; no-op unless a
+// play session owns the group.
+void OnRaidReadyCheckStarted(Group* group, Player* initiator);
+
 struct Context
 {
     // `.botauto play` commands. Each returns one JSON line.
@@ -45,6 +49,14 @@ struct Context
     static bool NativeGroupAdmits(BotWorldPopulationMgr& mgr, Group* group,
         std::set<ObjectGuid> const& botGuids);
     static bool PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveGeneration);
+    // The frozen leader check of validation; any leader holds in play,
+    // where a human leads and may pass the lead.
+    static bool FrozenLeaderHolds(BotWorldPopulationMgr const& mgr, Group const* group,
+        ObjectGuid frozenLeader);
+    // A human raid leader started a native ready check: arm the play
+    // cohort's bots to answer it (the validation cohort's bot leader arms it
+    // through `.botauto readycheck` instead).
+    static void OnRaidReadyCheckStarted(BotWorldPopulationMgr& mgr, Group* group, Player* initiator);
     static void PublishExternalPlayers(BotWorldPopulationMgr& mgr,
         BotEncounter::Blackboard& board, Player* observer,
         std::function<BotEncounter::ActorSnapshot(Unit*)> const& build,

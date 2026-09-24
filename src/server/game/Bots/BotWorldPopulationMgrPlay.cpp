@@ -186,14 +186,30 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
         session.Externals[externals[index].Guid.GetRawValue()] = externals[index];
     }
     session.LastEvent = "filling";
+    // Each human takes the subgroup of the trained slot it replaces, so the
+    // bots' trained subgroups stay at five members each.
+    for (size_t index = 0; index < roster.size(); ++index)
+        for (BotPlayExternal const& external : externals)
+            if (external.SlotId == roster[index].SlotId
+                && group->GetMemberGroup(external.Guid) != uint8(index / MAXGROUPSIZE))
+                group->ChangeMembersGroup(external.Guid, uint8(index / MAXGROUPSIZE));
     mgr._selectedCohortId = previous;
 
     TC_LOG_INFO("server", "BotWorld play fill session=%s leader=%s group=%s humans=%u",
         session.SessionId.c_str(), leader->GetName().c_str(),
         group->GetGUID().ToString().c_str(), uint32(humans.size()));
-    bool const started = mgr.StartAutonomyForCohort(CohortId);
+    bool const autonomyStarted = mgr.StartAutonomyForCohort(CohortId);
 
     mgr._selectedCohortId = CohortId;
+    // StartAutonomy reports Cohort().Active, which a failed admission leaves
+    // set; success is an active admission of exactly the planned bots on the
+    // Magmaw scenario (a configured runtime profile must not replace it).
+    uint32 const expectedBots = uint32(roster.size() - session.ExternalSlotIds.size());
+    bool const started = autonomyStarted
+        && mgr.Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
+        && mgr.Cohort().ValidationRaidAdmissionComplete
+        && mgr.Party().Bots.size() == expectedBots
+        && mgr.Cohort().Config.Name == Scenario;
     std::ostringstream extra;
     extra << ",\"session_id\":\"" << Escape(session.SessionId) << "\""
           << ",\"bots\":" << mgr.Party().Bots.size()
@@ -205,18 +221,23 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
         first = false;
     }
     extra << ']';
-    std::string const reason = !mgr.Cohort().ValidationAttemptFailureReason.empty()
+    std::string reason = !mgr.Cohort().ValidationAttemptFailureReason.empty()
         ? mgr.Cohort().ValidationAttemptFailureReason
         : mgr.Cohort().LastPopulationFailureReason;
+    if (reason.empty() && mgr.Cohort().Config.Name != Scenario)
+        reason = "play_profile_replaced:" + mgr.Cohort().Config.Name;
+    mgr._selectedCohortId = previous;
     if (!started)
     {
-        session.Active = false;
-        session.LastEvent = "fill_failed";
+        // Leave nothing half-started, so the leader can simply fill again.
+        mgr.StopAutonomyForCohort(CohortId);
+        cohort->Play = BotPlaySession();
+        cohort->Play.LastEvent = "fill_failed:" + reason;
+        cohort->Purpose = CohortPurpose::Validation;
+        return Result(action, false, reason.empty() ? "play_start_failed" : reason, extra.str());
     }
-    else
-        session.LastEvent = "holding_at_entrance";
-    mgr._selectedCohortId = previous;
-    return Result(action, started, reason.empty() ? "play_start_failed" : reason, extra.str());
+    session.LastEvent = "holding_at_entrance";
+    return Result(action, true, "", extra.str());
 }
 
 std::string Context::Go(BotWorldPopulationMgr& mgr, Player* invoker)
@@ -259,26 +280,20 @@ std::string Context::Stop(BotWorldPopulationMgr& mgr, Player* invoker)
             || !group->IsLeader(invoker->GetGUID()))
             return Result(action, false, "only_the_raid_leader_can_stop");
     }
-    std::string const previous = mgr._selectedCohortId;
-    mgr._selectedCohortId = CohortId;
-    // Leave the human's raid first so no offline bot stays listed in it.
-    uint32 removed = 0;
-    if (Group* group = sGroupMgr->GetGroupByGUID(cohort->Play.GroupGuid))
-        for (auto const& state : mgr.Party().Bots)
-            if (group->IsMember(state.Guid) && group->RemoveMember(state.Guid))
-                ++removed;
-    mgr._selectedCohortId = previous;
+    // Despawning removes each bot from the human's raid (BotMgr cleanup
+    // re-reads the bot's group every time). A raid left with one human is
+    // disbanded by the core.
     std::string const stopped = mgr.StopAutonomyForCohort(CohortId);
     cohort->Play = BotPlaySession();
     cohort->Play.LastEvent = "stopped";
-    return Result(action, true, "", ",\"removed_from_group\":" + std::to_string(removed)
-        + ",\"stop\":" + stopped);
+    cohort->Purpose = CohortPurpose::Validation;
+    return Result(action, true, "", ",\"stop\":" + stopped);
 }
 
 std::string Context::Status(BotWorldPopulationMgr& mgr)
 {
     BotWorldPopulationMgr::CohortRuntime* cohort = mgr.FindCohort(CohortId);
-    if (!cohort || cohort->Purpose != CohortPurpose::Play)
+    if (!cohort)
         return Result("status", false, "no_play_cohort");
     std::string const previous = mgr._selectedCohortId;
     mgr._selectedCohortId = CohortId;
@@ -296,8 +311,9 @@ std::string Context::Status(BotWorldPopulationMgr& mgr)
           << ",\"admission\":\"" << Escape(mgr.Cohort().ValidationAttemptFailureReason.empty()
               ? mgr.Cohort().LastPopulationFailureReason
               : mgr.Cohort().ValidationAttemptFailureReason) << "\"";
+    extra << StatusFieldsJson(mgr);
     mgr._selectedCohortId = previous;
-    return Result("status", true, "", extra.str() + StatusFieldsJson(mgr));
+    return Result("status", true, "", extra.str());
 }
 
 bool Context::IsExternalSlot(BotWorldPopulationMgr const& mgr, std::string const& slotId)
@@ -436,6 +452,42 @@ bool Context::PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveG
         return true;
     session.LastEvent = "holding_for_go";
     return false;
+}
+
+bool Context::FrozenLeaderHolds(BotWorldPopulationMgr const& mgr, Group const* group,
+    ObjectGuid frozenLeader)
+{
+    return mgr.Cohort().Purpose == CohortPurpose::Play
+        || (group && group->GetLeaderGUID() == frozenLeader);
+}
+
+void Context::OnRaidReadyCheckStarted(BotWorldPopulationMgr& mgr, Group* group, Player* initiator)
+{
+    BotWorldPopulationMgr::CohortRuntime* cohort = mgr.FindCohort(CohortId);
+    if (!group || !IsHuman(initiator) || !cohort || !cohort->Active
+        || cohort->Purpose != CohortPurpose::Play || !cohort->Play.Active
+        || group->GetGUID() != cohort->Play.GroupGuid)
+        return;
+    // Same arming as RequestNativeRaidReadyCheckForCohort, minus the request
+    // packet the human leader already sent. Each bot answers from its own
+    // update loop once it is independently ready (TryRespondNativeRaidReadyCheck).
+    auto& raid = cohort->Raid;
+    ++raid.EvidenceSequence;
+    ++raid.NativeReadyCheckActionGeneration;
+    raid.NativeReadyCheckActionAttemptId = raid.AttemptId;
+    raid.NativeReadyCheckActionWipeGeneration = raid.WipeGeneration;
+    raid.NativeReadyCheckAssignmentGeneration = raid.AssignmentGeneration;
+    raid.NativeReadyCheckActionEvidenceSequence = raid.EvidenceSequence;
+    raid.NativeReadyCheckResponseCount = 0;
+    raid.NativeReadyCheckResponders.clear();
+    raid.NativeReadyCheckActionObserved = false;
+    raid.NativeReadyCheckPending = true;
+    cohort->Play.LastEvent = "ready_check:" + initiator->GetName();
+}
+
+void OnRaidReadyCheckStarted(Group* group, Player* initiator)
+{
+    Context::OnRaidReadyCheckStarted(*sBotWorldPopulationMgr, group, initiator);
 }
 
 void Context::PublishExternalPlayers(BotWorldPopulationMgr& mgr,
