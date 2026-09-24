@@ -1,0 +1,59 @@
+{
+  "attempt_id": "scoreboard:smoke-2c0ed2d8",
+  "authority": "coordinator_attestation",
+  "build_identity": {
+    "binary_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f",
+    "source_commit": "0c19e828672b46881dab3dd085073b3e08da5265"
+  },
+  "cleanup_verified": true,
+  "clock": "completion_watchdog",
+  "closed": true,
+  "encounter": {
+    "boss": "magmaw",
+    "mode": "10N",
+    "raid": "blackwing_descent"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_smoke-2c0ed2d8-k1-20260924T010819Z.tar.gz.dvc",
+      "sha256": "6831260560840cec21cbad7fa948fbe1e008af4603ecd9002fe970c3b4289b07"
+    }
+  ],
+  "kill_ids": [
+    "smoke-2c0ed2d8-k1-20260924T010819Z"
+  ],
+  "kind": "smoke",
+  "observed": {
+    "boss_window_deaths": 0,
+    "duration_sec": 100.777,
+    "encounter_window_party_dps": 279757.524,
+    "native_clear": true
+  },
+  "operation_id": "0c0948cacff32991524b4acb4a4a67e3dd3f83ec3f64032aebe3b2765ae5a23e",
+  "producer": "coordinator-bca90d3b",
+  "scenario_kind": "raid",
+  "scoreboard_label": "smoke-2c0ed2d8",
+  "server_epoch": "2026-09-24T01:14:00Z",
+  "terminal_reason": "clear",
+  "unit_id": "magmaw:tuning_06",
+  "validation_identity": {
+    "encounter": {
+      "boss": "magmaw",
+      "mode": "10N",
+      "raid": "blackwing_descent"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "d3ef70bfc6017aa523c9ae762e2b7cfa7bef319b33632fd7e1d3c3b48f20741a"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "scenario_kind": "raid"
+  }
+}
