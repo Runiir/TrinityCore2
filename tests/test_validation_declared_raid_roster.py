@@ -35,6 +35,12 @@ struct BotWorldPopulationMgr {
  PartyState const& Party() const { return party; }
  std::vector<RaidRosterPlanSlot> BuildRosterPlan() const;
 };
+// Validation cohorts: no play slot is ever external.
+namespace BotWorldPopulationMgrPlay {
+struct Context {
+ static bool IsExternalSlot(BotWorldPopulationMgr const&, std::string const&) { return false; }
+};
+}
 '''+method+r'''
 int main() {
  BotWorldPopulationMgr mgr;

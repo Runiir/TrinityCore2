@@ -472,6 +472,7 @@
         // Validation unless a play session starts this cohort; play cohorts
         // are never certifying (BotCohortPurpose.h).
         CohortPurpose Purpose = CohortPurpose::Validation;
+        BotPlaySession Play;
         uint64 ExperimentId = 0;
         uint64 RunId = 0;
         uint32 ElapsedMs = 0;

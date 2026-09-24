@@ -130,6 +130,7 @@ Comparison Compare(std::string_view configuredFixture,
 #ifndef BOT_CONTROLLER_ROUTE_HOLD_CONFIG_IDENTITY_ADAPTER_ONLY
 
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 
@@ -435,6 +436,10 @@ std::string BotWorldPopulationMgr::ReleaseControllerRouteHoldForCohort(
 bool BotWorldPopulationMgr::PermitControllerRouteAdvance(
     uint64 prospectiveGeneration)
 {
+    // Play raids advance only when the human leader says go.
+    if (Cohort().Purpose == CohortPurpose::Play
+        && !BotWorldPopulationMgrPlay::Context::PermitRouteAdvance(*this, prospectiveGeneration))
+        return false;
     BotControllerRouteHold::State& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     BotControllerRouteHold::Identity identity =

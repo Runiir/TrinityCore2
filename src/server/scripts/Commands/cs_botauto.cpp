@@ -28,6 +28,9 @@
 #include <system_error>
 #include <vector>
 
+// Human play mode subcommands (cs_botauto_play.cpp).
+std::vector<ChatCommand> BotAutoPlayCommandTable();
+
 class botauto_commandscript : public CommandScript
 {
 public:
@@ -66,6 +69,7 @@ public:
             { "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoCalibrateCommand, "" },
             { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
             { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
+            { "play", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, nullptr, "", BotAutoPlayCommandTable() },
         };
 
         static std::vector<ChatCommand> commandTable =

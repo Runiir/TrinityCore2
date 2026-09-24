@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotAdmissionIdentityGenerated.h"
 #include "Bots/BotHunterPetIdentityContract.h"
 #include "Bots/BotValidationRaidAdmissionReadiness.h"
@@ -100,6 +101,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         return;
     bool const activeObservationOnly = Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
         || Cohort().Raid.BotActionsEnabled;
+    // A play raid is led by a human who may pass the lead, and holds human
+    // members next to the cohort bots (BotWorldPopulationMgrPlay).
+    bool const play = Cohort().Purpose == CohortPurpose::Play;
 
     std::vector<Player*> members;
     members.reserve(Party().Bots.size());
@@ -165,9 +169,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
             Group* group = bot->GetGroup();
             if (!group || group->GetGUID() != state.ValidationCohortGroupGuid
-                || group->GetLeaderGUID() != state.ValidationCohortLeaderGuid
+                || (!play && group->GetLeaderGUID() != state.ValidationCohortLeaderGuid)
                 || group->GetGUID() != admission.GroupGuid
-                || group->GetLeaderGUID() != admission.LeaderGuid)
+                || (!play && group->GetLeaderGUID() != admission.LeaderGuid))
             {
                 invalidate(state, bot, "validation_active_group_identity_drift");
                 continue;
@@ -267,7 +271,9 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
             std::set<ObjectGuid> nativeGroupGuids;
             for (Group::MemberSlot const& slot : admittedGroup->GetMemberSlots())
                 nativeGroupGuids.insert(slot.guid);
-            if (nativeGroupGuids != expectedGuids)
+            if (play ? !BotWorldPopulationMgrPlay::Context::NativeGroupAdmits(
+                        *this, admittedGroup, expectedGuids)
+                    : nativeGroupGuids != expectedGuids)
                 invalidate(Party().Bots.front(), GetLoadedBot(Party().Bots.front()),
                     "validation_active_native_group_membership_drift");
         }
@@ -364,7 +370,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     for (WorldBotState& state : Party().Bots)
         if (state.ValidationCohortLocked
             && (state.ValidationCohortGroupGuid != group->GetGUID()
-                || state.ValidationCohortLeaderGuid != group->GetLeaderGUID()))
+                || (!play && state.ValidationCohortLeaderGuid != group->GetLeaderGUID())))
         {
             MarkValidationCohortViolation(state, GetLoadedBot(state),
                 "validation_cohort_immutable_group_leader_drift");
@@ -510,8 +516,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     std::set<ObjectGuid> observedNativeGroupGuids;
     for (Group::MemberSlot const& slot : group->GetMemberSlots())
         observedNativeGroupGuids.insert(slot.guid);
-    bool const nativeGroupMembershipExact = expectedNativeGroupGuids == observedNativeGroupGuids
-        && observedNativeGroupGuids.size() == raid.ExpectedSize;
+    bool const nativeGroupMembershipExact = play
+        ? BotWorldPopulationMgrPlay::Context::NativeGroupAdmits(*this, group, expectedNativeGroupGuids)
+        : expectedNativeGroupGuids == observedNativeGroupGuids
+            && observedNativeGroupGuids.size() == raid.ExpectedSize;
 
     // Admission gear is immutable for the whole attempt.  Re-observe the
     // loaded Player equipment on every active cohort pass so an item/enchant/

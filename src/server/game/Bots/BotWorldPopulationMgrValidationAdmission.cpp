@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -72,12 +73,15 @@ struct PlannedValidationRaidSpawn
 std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
     if (Cohort().ValidationRaidAdmissionFailed)
         return;
+    bool const play = Cohort().Purpose == CohortPurpose::Play;
+    uint32 const playExternalSlots = BotWorldPopulationMgrPlay::Context::ExternalSlotCount(*this);
     if (Cohort().ValidationRaidAdmissionComplete)
     {
         std::string identityDriftDetail;
         uint32 nativeRecoveryWorldportsDeferred = 0;
         bool exactIdentity = Party().ValidationRouteManifest.size() > 0
-            && Party().ValidationRouteManifest.front().ExpectedRoster.size() == expectedPopulation
+            && Party().ValidationRouteManifest.front().ExpectedRoster.size()
+                == expectedPopulation + playExternalSlots
             && Party().Bots.size() == expectedPopulation
             && Cohort().RosterLeases.size() == expectedPopulation
             && Cohort().Raid.RosterComplete && Cohort().Raid.UniqueLeases
@@ -90,6 +94,8 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
             ValidationRouteManifestNode const& routeStart = Party().ValidationRouteManifest.front();
             for (ValidationRouteManifestNode::RosterIdentity const& expected : routeStart.ExpectedRoster)
             {
+                if (BotWorldPopulationMgrPlay::Context::IsExternalSlot(*this, expected.RosterSlotId))
+                    continue;
                 expectedGuids.insert(expected.Guid);
                 auto const state = std::find_if(Party().Bots.begin(), Party().Bots.end(),
                     [&expected](WorldBotState const& row)
@@ -150,8 +156,9 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
                     identityDriftDetail = "frozen_roster_slot_mismatch:" + std::to_string(expected.Guid);
                     break;
                 }
+                // A human leads a play raid and may pass the lead.
                 if (group->GetGUID() != state->ValidationCohortGroupGuid
-                    || group->GetLeaderGUID() != state->ValidationCohortLeaderGuid)
+                    || (!play && group->GetLeaderGUID() != state->ValidationCohortLeaderGuid))
                 {
                     exactIdentity = false;
                     identityDriftDetail = "frozen_group_or_leader_mismatch:" + std::to_string(expected.Guid);
@@ -182,13 +189,24 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
             if (!exactIdentity && identityDriftDetail.empty())
                 identityDriftDetail = "raid_group_identity_mismatch";
 
-            if (exactIdentity && (!exactNativeGroup
+            if (exactIdentity && play)
+            {
+                std::set<ObjectGuid> botGuids;
+                for (WorldBotState const& state : Party().Bots)
+                    botGuids.insert(state.Guid);
+                if (!BotWorldPopulationMgrPlay::Context::NativeGroupAdmits(*this, exactNativeGroup, botGuids))
+                {
+                    exactIdentity = false;
+                    identityDriftDetail = "play_native_group_rejected";
+                }
+            }
+            else if (exactIdentity && (!exactNativeGroup
                 || exactNativeGroup->GetMembersCount() != expectedPopulation))
             {
                 exactIdentity = false;
                 identityDriftDetail = "native_group_membership_count_mismatch";
             }
-            if (exactIdentity)
+            if (exactIdentity && !play)
                 for (Group::MemberSlot const& member : exactNativeGroup->GetMemberSlots())
                 {
                     uint32 const memberGuid = member.guid.GetCounter();
@@ -315,8 +333,8 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
     static constexpr float RouteStartHorizontalToleranceYards = 5.0f;
     static constexpr float RouteStartVerticalToleranceYards = 3.0f;
     if (!routeStart.BotStartMapId
-        || routeStart.ExpectedBotCount != rosterPlan.size()
-        || routeStart.ExpectedRoster.size() != rosterPlan.size()
+        || routeStart.ExpectedBotCount != rosterPlan.size() + playExternalSlots
+        || routeStart.ExpectedRoster.size() != rosterPlan.size() + playExternalSlots
         || !MapManager::IsValidMapCoord(routeStart.BotStartMapId, routeStart.BotStartX,
             routeStart.BotStartY, routeStart.BotStartZ, routeStart.BotStartO))
     {
@@ -450,6 +468,17 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
             {
                 groupAnchor = candidate;
                 break;
+            }
+        }
+        // Play bots join the human leader's raid and instance; they never
+        // seed a bot-led raid of their own.
+        if (!groupAnchor && play)
+        {
+            groupAnchor = BotWorldPopulationMgrPlay::Context::AdmissionAnchor(*this);
+            if (!groupAnchor)
+            {
+                rollbackAdmission("play_leader_missing");
+                return;
             }
         }
 

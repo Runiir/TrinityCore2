@@ -2225,7 +2225,7 @@ def test_raid_healing_is_independent_and_does_not_cancel_hazard_movement() -> No
     support_start = candidates.index('support.Key = "raid.support.heal."')
     support = candidates[support_start:]
     target_selection = candidates[
-        candidates.index("ObjectGuid healTargetGuid =", support_start - 1200) : support_start
+        candidates.index("ObjectGuid healTargetGuid =", support_start - 1600) : support_start
     ]
     assert "ObjectGuid AdaptiveMagmawPriorityHealTargetGuid;" in context
     assert "context.AdaptiveMagmawPriorityHealTargetGuid =\n                magmawPlan.PriorityHealTarget;" in preparation

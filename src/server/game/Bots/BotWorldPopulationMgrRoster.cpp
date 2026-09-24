@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotMgr.h"
 
 #include "DatabaseEnv.h"
@@ -42,6 +43,7 @@ std::vector<BotWorldPopulationMgr::RaidRosterPlanSlot> BotWorldPopulationMgr::Bu
                     return {};
                 std::set<std::string> slots;
                 plan.reserve(raidSize);
+                uint32 declaredIndex = 0;
                 for (auto const& identity : declared)
                 {
                     if (identity.RosterSlotId.empty()
@@ -49,8 +51,13 @@ std::vector<BotWorldPopulationMgr::RaidRosterPlanSlot> BotWorldPopulationMgr::Bu
                         || (identity.Role != "tank" && identity.Role != "healer"
                             && identity.Role != "dps"))
                         return {};
+                    // A play cohort leaves the slots humans took; the rest
+                    // keep their trained index and subgroup.
+                    uint32 const slotIndex = declaredIndex++;
+                    if (BotWorldPopulationMgrPlay::Context::IsExternalSlot(*this, identity.RosterSlotId))
+                        continue;
                     RaidRosterPlanSlot slot;
-                    slot.SlotIndex = uint32(plan.size());
+                    slot.SlotIndex = slotIndex;
                     slot.SubGroup = uint8(slot.SlotIndex / MAXGROUPSIZE);
                     slot.RosterSlotId = identity.RosterSlotId;
                     slot.Role = identity.Role;

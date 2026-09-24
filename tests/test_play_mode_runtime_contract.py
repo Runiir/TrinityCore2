@@ -23,10 +23,11 @@ def test_play_mode_is_default_off() -> None:
     assert "bool PlayModeEnable = false;" in _read(BOTS / "BotWorldPopulationMgrConfig.h")
 
 
-def test_cohorts_default_to_validation_and_nothing_starts_play_yet() -> None:
+def test_cohorts_default_to_validation_and_only_fill_starts_play() -> None:
     contracts = _read(BOTS / "BotWorldPopulationMgrRuntimeContracts.h")
     assert "CohortPurpose Purpose = CohortPurpose::Validation;" in contracts
-    # Phase 1 is inert for validation: no runtime path can select Play.
+    # The only runtime path that selects Play is `.botauto play fill`, and it
+    # checks the default-off config key before touching any cohort.
     writers = [
         path.relative_to(ROOT).as_posix()
         for path in BOTS.rglob("*")
@@ -34,7 +35,42 @@ def test_cohorts_default_to_validation_and_nothing_starts_play_yet() -> None:
         and path.name != "BotCohortPurpose.h"
         and re.search(r"Purpose\s*=\s*CohortPurpose::Play", _read(path))
     ]
-    assert writers == []
+    assert writers == ["src/server/game/Bots/BotWorldPopulationMgrPlay.cpp"]
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    fill = play[play.index("std::string Context::Fill("):]
+    assert fill.index('"BotWorld.PlayMode.Enable"') < fill.index("cohort->Purpose = CohortPurpose::Play")
+
+
+# Shared-lifecycle files may reach play code only behind the Play purpose or
+# through Context helpers that return validation-neutral values.
+NEUTRAL_HELPERS = ("IsExternalSlot", "ExternalSlotCount", "ExpectedBotCount", "StatusFieldsJson")
+
+
+def test_shared_lifecycle_hooks_are_gated_or_neutral() -> None:
+    hooks = []
+    for path in sorted(BOTS.glob("BotWorldPopulationMgr*.cpp")):
+        if path.name == "BotWorldPopulationMgrPlay.cpp":
+            continue
+        lines = _read(path).splitlines()
+        for index, line in enumerate(lines):
+            match = re.search(r"BotWorldPopulationMgrPlay::Context::(\w+)", line)
+            if not match:
+                continue
+            window = "\n".join(lines[max(0, index - 8) : index + 1])
+            gated = "CohortPurpose::Play" in window or re.search(r"\bplay\b", window)
+            hooks.append((path.name, match.group(1)))
+            assert match.group(1) in NEUTRAL_HELPERS or gated, (path.name, index + 1, line)
+    names = {name for _, name in hooks}
+    assert {"PermitRouteAdvance", "NativeGroupAdmits", "AdmissionAnchor", "ResetBotPool",
+            "PublishExternalPlayers"} <= names
+
+
+def test_neutral_helpers_are_identity_for_validation() -> None:
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    assert "return mgr.Cohort().Purpose == CohortPurpose::Play\n        && mgr.Cohort().Play.ExternalSlotIds.count(slotId) != 0;" in play
+    assert "return mgr.Cohort().Purpose == CohortPurpose::Play\n        ? uint32(mgr.Cohort().Play.ExternalSlotIds.size()) : 0;" in play
+    status = play[play.index("std::string Context::StatusFieldsJson("):]
+    assert 'return "";' in status.split("BotPlaySession const& session")[0]
 
 
 def test_status_and_diagnose_publish_purpose_and_duty_plan() -> None:
@@ -54,6 +90,8 @@ def test_external_members_stay_out_of_duty_selectors() -> None:
     assert blackboard.index("findIn(Interactables)") < blackboard.index(
         "findIn(ExternalPlayers)"
     )
+    # Duty selectors never read external members; only the play publisher
+    # fills them and only heal targeting reads them.
     magmaw = BOTS / "Content/Raids/BlackwingDescent/Encounters/Magmaw"
     readers = [
         path.name
@@ -61,3 +99,13 @@ def test_external_members_stay_out_of_duty_selectors() -> None:
         if path.suffix in {".h", ".cpp"} and "ExternalPlayers" in _read(path)
     ]
     assert readers == []
+    users = sorted(
+        path.name
+        for path in BOTS.glob("*.cpp")
+        if "ExternalPlayers" in _read(path)
+    )
+    assert users == [
+        "BotWorldPopulationMgrEncounterBlackboard.cpp",  # PublishExternalPlayers call
+        "BotWorldPopulationMgrPlay.cpp",
+        "BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+    ]

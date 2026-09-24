@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
@@ -408,6 +409,12 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
             snapshot->Summons.push_back(buildUnit(controlled, BotEncounter::ActorKind::Pet));
         }
     }
+
+    // Human raid members of a play cohort: observed, never assigned duties.
+    if (Cohort().Purpose == CohortPurpose::Play)
+        BotWorldPopulationMgrPlay::Context::PublishExternalPlayers(*this, *snapshot, observer,
+            [&buildUnit](Unit* unit) { return buildUnit(unit, BotEncounter::ActorKind::Player); },
+            seenUnits);
 
     std::vector<WorldObject*> objects;
     Trinity::AllWorldObjectsInRange check(observer, 180.0f);

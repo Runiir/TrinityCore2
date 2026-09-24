@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -249,6 +250,11 @@ bool BotWorldPopulationMgr::PrepareCurrentValidationProfile(char const* reason)
             : "validation_route_not_initialized";
         return false;
     }
+
+    // A play cohort spawns only part of the pool into a human's raid; its
+    // reset touches bot-owned rows only and never the human's group.
+    if (Cohort().Purpose == CohortPurpose::Play)
+        return BotWorldPopulationMgrPlay::Context::ResetBotPool(*this, reason);
 
     if (sConfigMgr->GetBoolDefault("BotWorld.ValidationProvisionOnPrepare", false)
         && !ApplyValidationProvisioningSql(reason))

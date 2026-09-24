@@ -16,6 +16,7 @@
 #include "Bots/BotValidationPatrolPullState.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotPlaySession.h"
 #include "Bots/BotExperimentCoordinator.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotMovementArbiter.h"
@@ -67,6 +68,10 @@ struct SpecContract;
 namespace BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil
 {
 struct HealerAddWavePrepositionRequest;
+struct Context;
+}
+namespace BotWorldPopulationMgrPlay
+{
 struct Context;
 }
 namespace BotEncounter
@@ -246,6 +251,7 @@ private:
     friend struct BotWorldPopulationMgrValidationRoute::GroupRecoveryContext;
     friend struct BotWorldPopulationMgrValidationRoute::ObjectiveContext;
     friend struct BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::Context;
+    friend struct BotWorldPopulationMgrPlay::Context;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
 

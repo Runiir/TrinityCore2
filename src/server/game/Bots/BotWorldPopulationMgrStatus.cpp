@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotWorldPopulationMgrDecisionTraceJson.h"
 #include "Bots/BotMeleeResolutionEventJson.h"
 #include "Bots/BotWorldTraceExportCursor.h"
@@ -114,6 +115,7 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
          << ",\"cohort_purpose\":\"" << CohortPurposeName(Cohort().Purpose) << "\""
          << ",\"play_mode_enabled\":" << (Cohort().Config.PlayModeEnable ? "true" : "false")
+         << BotWorldPopulationMgrPlay::Context::StatusFieldsJson(*this)
          << ",\"loaded_profile_count\":" << Cohort().RuntimeProfiles.size()
          << ",\"profile_manifest_path\":\"" << JsonEscape(Cohort().ProfileManifestPath) << "\""
          << ",\"profile_manifest_load_error\":\"" << JsonEscape(Cohort().ProfileManifestLoadError) << "\""

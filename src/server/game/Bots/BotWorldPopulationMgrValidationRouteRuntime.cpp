@@ -51,6 +51,7 @@ InitialRouteBindingDecision AdmitCanonicalInitialRouteBinding(
 #ifndef BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
 
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrValidationCohortReadiness.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteDestination.h"
@@ -342,7 +343,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteOpenerSummonZ = node.OpenerSummonZ;
     Cohort().Config.ValidationRouteOpenerSummonO = node.OpenerSummonO;
     if (node.ExpectedBotCount)
-        Cohort().Config.TargetPopulation = node.ExpectedBotCount;
+        Cohort().Config.TargetPopulation = BotWorldPopulationMgrPlay::Context::ExpectedBotCount(
+            *this, node.ExpectedBotCount);
 
     ResetValidationRouteRuntimeState(reason ? reason : "manifest_route_apply");
     // Adaptive owners intentionally skip the generic route objective gate.

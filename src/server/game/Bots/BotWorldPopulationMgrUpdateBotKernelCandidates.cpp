@@ -785,12 +785,16 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                         Cohort().EncounterSnapshot->FindActor(healTargetGuid))
                     lowestHealth = priority->HealthPct;
             if (healTargetGuid.IsEmpty())
-                for (BotEncounter::ActorSnapshot const& member : Cohort().EncounterSnapshot->Players)
-                    if (member.Alive && member.HealthPct < lowestHealth)
-                {
-                    lowestHealth = member.HealthPct;
-                    healTargetGuid = member.Guid;
-                }
+                // Play cohorts also heal their human members; the external
+                // list is always empty for validation cohorts.
+                for (auto const* members : { &Cohort().EncounterSnapshot->Players,
+                         &Cohort().EncounterSnapshot->ExternalPlayers })
+                    for (BotEncounter::ActorSnapshot const& member : *members)
+                        if (member.Alive && member.HealthPct < lowestHealth)
+                        {
+                            lowestHealth = member.HealthPct;
+                            healTargetGuid = member.Guid;
+                        }
 
             if (!healTargetGuid.IsEmpty())
             {
