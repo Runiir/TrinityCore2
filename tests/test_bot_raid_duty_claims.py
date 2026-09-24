@@ -100,6 +100,9 @@ int main()
     Expect("i got hero", { Bloodlust }, claim);
     Expect("I'll lust at 30%", { Bloodlust }, claim);
     Expect("time warp on me", { Bloodlust }, claim);
+    Expect("I'll pop the lust", { Bloodlust }, claim);
+    Expect("I have the bl", { Bloodlust }, claim);
+    Expect("I'll use a heroism", { Bloodlust }, claim);
     Expect("I'll brez the tank", { BattleRes }, claim);
     Expect("I do mushrooms", { Magmaw::Mushrooms }, claim);
     Expect("no bots, I do chains", { Magmaw::Chains }, claim);

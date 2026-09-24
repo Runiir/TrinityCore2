@@ -294,3 +294,9 @@ def test_verdict_and_keep_rules_treat_play_records_as_excluded_non_gameplay() ->
 
     assert "play_mode_run" in REASON_ORDER
     assert "play_mode_run" in NON_GAMEPLAY_EXCLUSIONS
+
+
+def test_prefixed_command_output_inside_a_payload_is_scanned() -> None:
+    payload = {"commands": [{"output": '$ .botauto status play\n{"ok":true,"cohort_purpose":"play"}'}]}
+    assert is_play(payload)
+    assert not is_play({"commands": [{"output": '$ .botauto status\n{"cohort_purpose":"validation"}'}]})

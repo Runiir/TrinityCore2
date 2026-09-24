@@ -15,12 +15,14 @@ A payload or run is play when any of these holds:
 
 Files are scanned as raw bytes with compiled regexes in bounded chunks
 (latest.json is ~26 MB and report.json ~32 MB), so they are never parsed.
-Markers inside JSON-encoded strings (escaped quotes) also count: a guard
-refuses rather than misses. In-memory objects are walked, and string values
-that hold JSON text (embedded command output) are scanned too. A top-level
-str that starts with "{" or "[" is scanned as JSON text; any other str is a
-path. Run directories scan JSON files and nested tarballs. An unreadable or
-corrupt input is reported on stderr, never silently treated as clean.
+Markers inside JSON-encoded strings (escaped quotes) also count. In-memory
+objects are walked, and any string value containing a marker key (embedded
+command output, with or without a prefix) is scanned with the same quoted
+key/value regexes. A top-level str that starts with "{" or "[" is scanned as
+JSON text; any other str is a path. Run directories scan JSON files and
+nested tarballs. An unreadable or corrupt input cannot be scanned: it is
+reported on stderr and contributes no marker (the scoring paths that read it
+fail on their own).
 """
 from __future__ import annotations
 
@@ -151,8 +153,7 @@ def _walk(value: Any, reasons: dict[str, None]) -> None:
         elif isinstance(node, (list, tuple)):
             stack.extend((child, f"{where}[{index}]") for index, child in enumerate(node)
                          if isinstance(child, (dict, list, tuple, str)))
-        elif isinstance(node, str) and node.lstrip()[:1] in ("{", "[") and (
-                "cohort_purpose" in node or "play_session_id" in node):
+        elif isinstance(node, str) and ("cohort_purpose" in node or "play_session_id" in node):
             _scan_bytes(node.encode("utf-8"), where, reasons)
 
 

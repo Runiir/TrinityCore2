@@ -1,7 +1,61 @@
 # Human play mode: humans raiding with trained bots
 
-Status: design, 2026-09-24. Nothing is implemented yet. First target is Magmaw 10N
-(`blackwing_descent_10n_magmaw_diagnostic`, trained roster GUIDs 30001-30010).
+Status (2026-09-24): steps 0-1 are done. Step 2 (first playable version) is next.
+First target is Magmaw 10N (`blackwing_descent_10n_magmaw_diagnostic`, trained
+roster GUIDs 30001-30010).
+
+## Progress
+
+**Steps 0-1: done**
+- Commits:
+  - `e4fa8a143a`: the change itself.
+  - `d60e6deea2`: review fixes.
+  - Follow-up commits: parser and guard nits, plus scoreboard records.
+- Step 0 fixture: `tests/fixtures/magmaw_full_roster_duties_v1.json`. It comes from
+  the 8 accepted `b5-d1898555` kills. Across all 8 kills: baiters are 30006/30007
+  alternating with hunter 30009, the mushroom caster is 30001, and the taunt caster
+  is 30002.
+- Chains riders, pull tank and Bloodlust owner leave no kill evidence, so they are
+  pinned by `tests/test_magmaw_duty_plan.py`. The live status JSON now reports them
+  as `magmaw_duty_plan`: pull 30002, baiters 30006+30009, riders 30007+30008,
+  mushrooms 30001, lust 30010.
+- Runtime seams, inert for validation:
+  - `CohortPurpose` (always validation today);
+  - `BotWorld.PlayMode.Enable` (default off);
+  - `Blackboard.ExternalPlayers` (always empty);
+  - `cohort_purpose` in status and diagnose.
+- Value-only pieces:
+  - raid-chat callout parser and claims (`BotRaidDutyClaims.h`, `BotMagmawDutyCallouts.h`);
+  - raid member view (`BotRaidMember.h`);
+  - human role resolver (`BotRaidRoleResolver.h`, checked against `TalentTab.dbc`).
+- `tools/raid_program/play_mode_guard.py` refuses play runs in:
+  - scoreboard ingest, run, verdict and keep;
+  - graph acceptance;
+  - the evidence archive;
+  - the validation harness.
+- Independent review:
+  - It found one blocker, now fixed. The status read of the duty plan observed the
+    shared baiter rotation, and could switch the bait mage on snapshots no bot
+    observes. The receipt now uses `MagmawBaiterRotationRegistry::PeekBaiters` and
+    `BuildHookUsers(board, baiters)`.
+  - The re-review approved the fixes.
+- Live checks on the fixed build:
+  - Two smoke kills: clean.
+  - Batches `play1-d60e6de` and `play1b-d60e6de`: 10/10 native clears, 0 deaths, and
+    the target verdict passes both.
+  - The Welch test flagged the Survival hunter once, then not in the confirmation
+    batch. Its spells, hit counts and casts per minute match the `b5` kills, so the
+    dip is per-hit RNG.
+
+**Constraints learned (they shape step 2)**
+- `worldserver.conf.dist` and `Makefile` are hash-pinned by
+  `tools/raid_program/tracked_runtime_config_derivation.py` (`TEMPLATE_SHA256`,
+  `RECIPE_SHA256`). Consequences:
+  - the play key stays out of conf.dist (absent means off);
+  - the play launcher must be a standalone script, not a `make` target.
+- Non-graph builds go through `tools.raid_program.queued_build` with the frozen
+  policy. The queue needs a clean worktree and a fresh `configure` ticket for each
+  source commit. `workflow_build run` needs a saved-graph build claim.
 
 ## Goal and decisions
 

@@ -35,8 +35,10 @@ inline constexpr std::string_view BattleRes = "battle_res";
 inline std::vector<DutyKeywords> const& SharedDutyKeywords()
 {
     static std::vector<DutyKeywords> const table{
-        { Bloodlust, { "lust", "bloodlust", "bl", "hero", "heroism",
-            "timewarp", "time warp" }, {}, { "the", "a" } },
+        { Bloodlust, { "lust", "bloodlust", "bl", "heroism", "timewarp",
+            "time warp" } },
+        // "I'm the hero" is not a claim; "I got hero" is.
+        { Bloodlust, { "hero" }, {}, { "the", "a" } },
         { BattleRes, { "brez", "bres", "brezz", "rebirth", "battle res",
             "battle rez", "combat res", "combat rez" } },
     };
