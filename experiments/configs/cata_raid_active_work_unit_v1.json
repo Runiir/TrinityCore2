@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Reconcile any existing attempt before launching. Run one labelled scoreboard measurement batch with the canonical controller and its ownership locks; record scoreboard_label. Plan bundle 05: Blood seize-window throughput (Heart Strike while seized when Death Strike is not castable; Bone Shield reserved for the seize) and Fire baiter duty alternation per parasite wave (actor_30006 is accepted from b2 but must pass again on the final label for magmaw_10n); then implement, review, build, smoke and measure a 5-kill batch against baseline b4-2c0ed2d8.",
+  "next_action": "Write the scoreboard verdict (graph_acceptance verdict --label) and cite it; actor/encounter requirements close only on pass. Plan bundle 05: Blood seize-window throughput (Heart Strike while seized when Death Strike is not castable; Bone Shield reserved for the seize) and Fire baiter duty alternation per parasite wave (actor_30006 is accepted from b2 but must pass again on the final label for magmaw_10n); then implement, review, build, smoke and measure a 5-kill batch against baseline b4-2c0ed2d8.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 536,
+    "revision": 537,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "validate",
+    "stage": "assess",
     "actor_ids": [
       "30001",
       "30002",
@@ -10412,6 +10412,25 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 536,
+        "unit_id": "magmaw:tuning_07",
+        "from": "validate",
+        "to": "assess",
+        "event": {
+          "revision": 536,
+          "unit_id": "magmaw:tuning_07",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/scoreboard-run-b5-d1898555-449e9406cedb.json",
+            "sha256": "449e9406cedb74656d419d6a98bfca03f31baa412826c457a188ea15906f3eb6"
+          },
+          "claim_token": "f241303b1aef89e4cfccefe460ec472561abfbc9f89991a50ca557673054aa57"
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -10537,6 +10556,10 @@
       "smoke": {
         "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_05_smoke_20260924.json",
         "sha256": "ea903d339e610ffa04b051e768b75eea8fb73e29a4796db1a8928db9e3e1b7d6"
+      },
+      "run": {
+        "path": "artifacts/cata_raid_program/scoreboard-run-b5-d1898555-449e9406cedb.json",
+        "sha256": "449e9406cedb74656d419d6a98bfca03f31baa412826c457a188ea15906f3eb6"
       }
     },
     "tested_files": {
@@ -10562,12 +10585,23 @@
       "attempt_id": "scoreboard:smoke-d1898555",
       "server_epoch": "2026-09-24T02:50:12Z"
     },
-    "claim": {
-      "owner": "coordinator-bca90d3b",
-      "token": "f241303b1aef89e4cfccefe460ec472561abfbc9f89991a50ca557673054aa57",
-      "operation_id": "f241303b1aef89e4cfccefe460ec472561abfbc9f89991a50ca557673054aa57",
-      "stage": "validate",
-      "claimed_at": "2026-09-24T02:50:33Z"
+    "run": {
+      "attempt_id": "scoreboard:b5-d1898555",
+      "server_epoch": "2026-09-24T02:55:43Z",
+      "scenario_kind": "raid",
+      "terminal_reason": "clear",
+      "claimed_at": "2026-09-24T02:50:33Z",
+      "kill_ids": [
+        "b5-d1898555-k1-20260924T025034Z",
+        "b5-d1898555-k2-20260924T025034Z",
+        "b5-d1898555-k3-20260924T025034Z",
+        "b5-d1898555-k4-20260924T025034Z",
+        "b5-d1898555-k5-20260924T025034Z",
+        "b5-d1898555-k1-20260924T031933Z",
+        "b5-d1898555-k2-20260924T031933Z",
+        "b5-d1898555-k3-20260924T031933Z"
+      ],
+      "scoreboard_label": "b5-d1898555"
     }
   },
   "parked_scenarios": {
