@@ -88,6 +88,14 @@ int main()
     Expect(ParseChat("pull in 2 min, grab food"), false, false, 0, "chat minutes food");
     Expect(ParseChat("pull 2 packs then boss"), false, false, 0, "chat packs");
     Expect(ParseChat("pull in 90"), true, false, 90, "chat long timer");
+    // Review of 65286275ed: a leader holding the raid must never trigger a pull.
+    Expect(ParseChat("don't pull now"), true, true, 0, "chat dont pull now cancels");
+    Expect(ParseChat("do not pull now, wait for mana"), true, true, 0, "chat do not pull cancels");
+    Expect(ParseChat("can I pull now?"), false, false, 0, "chat question now");
+    Expect(ParseChat("do not pull in 10"), true, true, 0, "chat do not pull in 10 cancels");
+    Expect(ParseChat("dont pull 10"), true, true, 0, "chat dont pull 10 cancels");
+    Expect(ParseChat("wait, hold the pull"), true, true, 0, "chat hold the pull");
+    Expect(ParseChat("pull now wait"), false, false, 0, "chat now not ending");
 
     // Timer phases: counting down, released for a window, then over.
     Expect(Running(10000, 9999) && !Released(10000, 9999), true, false, 0, "running");

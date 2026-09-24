@@ -141,6 +141,9 @@ inline std::optional<Signal> ParseAddon(std::string_view prefix, std::string_vie
 // "pull 1 more pack" or "pull in 5 min" never start a timer.
 inline std::optional<Signal> ParseChat(std::string_view text)
 {
+    // Questions never start or stop a pull ("can I pull now?").
+    if (text.find('?') != std::string_view::npos)
+        return std::nullopt;
     std::vector<std::string> const words = BotRaidDuty::NormalizeWords(text);
     if (words.size() > 8)
         return std::nullopt;
@@ -153,9 +156,16 @@ inline std::optional<Signal> ParseChat(std::string_view text)
     {
         if (words[index] != "pull" && words[index] != "pulling")
             continue;
-        bool const cancelBefore = index > 0
-            && (words[index - 1] == "cancel" || words[index - 1] == "stop"
-                || words[index - 1] == "no");
+        // "don't pull now", "do not pull in 10", "wait, hold the pull": the
+        // leader is holding the raid, so a running timer is cancelled.
+        auto holds = [](std::string const& word)
+        {
+            return word == "cancel" || word == "stop" || word == "no" || word == "dont"
+                || word == "don" || word == "not" || word == "never" || word == "cant"
+                || word == "wait" || word == "hold";
+        };
+        bool const cancelBefore = (index > 0 && holds(words[index - 1]))
+            || (index > 1 && holds(words[index - 2]));
         bool const cancelAfter = index + 1 < words.size()
             && (words[index + 1] == "cancelled" || words[index + 1] == "canceled"
                 || words[index + 1] == "cancel");
@@ -170,8 +180,9 @@ inline std::optional<Signal> ParseChat(std::string_view text)
             ++next;
         if (next < words.size())
         {
+            // "pull now" only as the whole call (DBM's "Pull now!").
             if (words[next] == "now")
-                return Signal{};
+                return next + 1 == words.size() ? std::optional<Signal>(Signal{}) : std::nullopt;
             std::optional<uint32> const seconds = Detail::Number(words[next]);
             bool const endsCall = next + 1 == words.size()
                 || isSecondsUnit(words[next + 1]);

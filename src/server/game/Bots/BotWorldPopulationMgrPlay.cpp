@@ -576,7 +576,15 @@ bool Context::PullPermitted(BotWorldPopulationMgr& mgr)
     }
     // Open only from zero until the release window closes: a timer from an
     // earlier pull never lets the bots pull the boss on arrival.
-    return BotPlayPullTimer::Released(session.PullAtMs, NowMs());
+    uint64 const now = NowMs();
+    if (BotPlayPullTimer::Released(session.PullAtMs, now))
+        return true;
+    // Tell the leader the window closed without a pull, so a new timer is
+    // needed; the stale timer itself never permits a pull again.
+    if (session.PullAtMs && now >= session.PullAtMs
+        && session.LastEvent.rfind("pull_window_expired", 0) != 0)
+        session.LastEvent = "pull_window_expired:start_a_new_pull_timer";
+    return false;
 }
 
 std::string Context::Pull(BotWorldPopulationMgr& mgr, Player* invoker, bool cancel,
@@ -603,7 +611,9 @@ std::string Context::Pull(BotWorldPopulationMgr& mgr, Player* invoker, bool canc
     }
     else
     {
-        seconds = std::min(seconds, BotPlayPullTimer::MaxSeconds);
+        if (seconds > BotPlayPullTimer::MaxSeconds)
+            return Result(action, false, "pull_timer_over_"
+                + std::to_string(BotPlayPullTimer::MaxSeconds) + "_seconds");
         session.PullAtMs = NowMs() + uint64(seconds) * 1000;
         session.PullWipeGeneration = cohort->Raid.WipeGeneration;
         session.LastEvent = "pull_timer:" + std::to_string(seconds) + "s:" + source;
