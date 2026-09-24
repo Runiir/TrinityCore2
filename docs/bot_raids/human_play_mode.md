@@ -1,6 +1,7 @@
 # Human play mode: humans raiding with trained bots
 
-Status (2026-09-24): steps 0-1 are done. Step 2 (first playable version) is next.
+Status (2026-09-24): steps 0-1 are done. Step 2 is playable and verified live with one
+human dps. Its recording/collector and the validation regression batch remain.
 First target is Magmaw 10N (`blackwing_descent_10n_magmaw_diagnostic`, trained
 roster GUIDs 30001-30010).
 
@@ -46,6 +47,23 @@ roster GUIDs 30001-30010).
   - The Welch test flagged the Survival hunter once, then not in the confirmation
     batch. Its spells, hit counts and casts per minute match the `b5` kills, so the
     dip is per-hit RNG.
+
+**Step 2: playable, verified live with one human dps**
+- Commits: `1f5a8178ab`, `1f4405f1dc` and their review fixes; `abae123afd` (Growl
+  autocast reset); `5f3026c6b0` (master loot); `00476132a6`, `9a7b9b1867` (status
+  reports boss engage, kill and reset).
+- Live sessions on 2026-09-24. Dorala (human Retribution Paladin, cross-faction)
+  took `raid_dps_5` beside 9 bots:
+  - The bots advanced only on the human's position (`human_at_next`), with no
+    `.botauto play go`.
+  - Kill 1: console pull timer. Magmaw died in 1:58 with 0 bot deaths, and master
+    loot left no rolls.
+  - Kill 2: the leader typed `/dbm pull 10` (DBM 4.3.4). The server received DBM's
+    `D4` addon sync and the raid-warning countdown (10 to 0). Status read
+    `boss_engaged:pull_timer`, then `boss_killed`. Magmaw died in 2:03 with 0 bot
+    deaths.
+- Still open: tagged play recording and the ML collector (step 2.3), sims, and the
+  validation smoke plus 5-kill regression batch on the step-2 code.
 
 **Constraints learned (they shape step 2)**
 - `worldserver.conf.dist` and `Makefile` are hash-pinned by
@@ -212,7 +230,9 @@ The command `.botauto play claim|release <duty>` is the fallback.
 - Pull timer: `/pull` comes from an addon (DBM or BigWigs), not the base client. The
   server receives addon messages in `HandleAddonMessagechatOpcode`
   (`ChatHandler.cpp:567`), but that function has no script hook, so add one.
-  - DBM sends prefix `D4`, text `PT\t<seconds>` to RAID (0 cancels).
+  - DBM sends prefix `D4` to RAID: `PT\t<seconds>` (0 cancels) or the Cataclysm
+    `U\t<seconds>\tPull in` timer; both parse. Verified live on 4.3.4: `/dbm pull 10`
+    delivers a `D4` pull sync and a raid-warning countdown.
   - The BigWigs 4.3.4 format is unverified. In play mode, log the leader's addon
     messages and confirm with one live `/pull`.
   - Fallbacks: raid chat "pull 10", or `.botauto play pull 10`.
