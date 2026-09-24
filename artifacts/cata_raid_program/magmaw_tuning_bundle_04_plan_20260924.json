@@ -1,0 +1,110 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:tuning_06",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_tuning_bundle_04_20260924",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL.",
+  "latest_user_direction": "Finish the Magmaw 10N implementation with subagents.",
+  "objective": "Remove the Mangle lethality and the ranged strand that killed the tank in b3-0dbce440-k1, then re-measure bundle 03 (already in master) together with these survival fixes as one 5-kill batch against baseline b2-fd4ba456 with 0 boss-window deaths.",
+  "hypothesis": "b3 k1: the tank met Mangle at 46% with Vampiric Blood (health trigger at 50.2 s) and Icebound Fortitude (35% emergency at 60.3 s) already spent while the priest and druid stood 2.7 yd below the platform after a parasite contact-escape leg (straight-away 20 yd, no floor/path check) and retried a failing return for ~45 s; in the 6 s lead the tank cast Heart Strike x2 and Rune Strike with Death Strike rune-gated, so the 86.5k Mangle hit landed on no shield. Planning the tank's cooldowns around Magmaw's published Mangle timer (keep IBF for the hit, spend VB/Rune Tap in emergencies, hold VB's ordinary trigger near a Mangle, pre-cast VB when IBF is on cooldown, hold HS/RS until a Death Strike lands) keeps a defensive and Blood Shield up at every seize; validating escape/stage destinations against the native floor and a level round-trip path, and falling back after three native rejections, ends the strand; a healer within 35 yd with LOS keeps healing through Mangle. Fallen Crusader at 2 PPM (pinned WoWSims) and a Rune Tap row add tank throughput/survival lawfully. Expected: 0 boss-window deaths over 5 kills; Blood >= 0.95 (24.0k on b3 plus ~0.5k from 2 PPM); Balance and Elemental no longer lose kills to strands.",
+  "first_broken_edge": "owner_mangle_survival_and_ranged_strand",
+  "observations": [
+    "b3-0dbce440-k1 timeline (last 25 s): no priest/druid healing on the tank from -25 to -4 s; Mangle hit 86.5k at 46% health; b2 k4 met Mangle at full health with IBF and Bone Shield up (37k hit).",
+    "Strand: priest/druid at (-308.5,-20.6,208.9) where no navmesh exists (nearest walkable 5.7 yd away, 2.9 yd above); warlock/shaman at (-314.4,-20.5,211.1) with only a z 220-224 ledge north; all parasites dead by 54 s yet no return until ~88 s (formation restore re-issued the same destination every tick; the escape alternate used the same geometry).",
+    "Fallen Crusader 3368: live spell_enchant_proc_data 1 PPM (TrinityCore 3.1.3 row); pinned WoWSims runeforging.go 2.0 PPM; 3.1.0 patch note 'chance to proc doubled'.",
+    "Dancing Rune Weapon is not held by any rule: it costs 60 runic power and is cast at the first affordable tick (smoke: 37 insufficient_resource rejections 97.9-101.7 s); no change.",
+    "Pre-existing failures reported: tests/test_fire_survival_combat_potions.py::test_actual_compiled_combustion_condition fails before and after (compiled stub harness); the 240 full-suite failures listed in bundle 03's plan are unchanged."
+  ],
+  "owned_files": [
+    "sql/custom/world/2026_09_24_10_blood_rune_tap.sql",
+    "sql/custom/world/2026_09_24_11_fallen_crusader_ppm.sql",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrRaidCooldownReservation.h",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleDefensive.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformDestination.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformNativeProbe.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp",
+    "tests/test_blood_fallen_crusader_ppm.py",
+    "tests/test_blood_rune_tap.py",
+    "tests/test_magmaw_mangle_cooldown_plan.py",
+    "tests/test_magmaw_mangle_defensive.py",
+    "tests/test_magmaw_mangle_icebound_reservation.py",
+    "tests/test_magmaw_platform_strand_recovery.py"
+  ],
+  "forbidden_changes": [
+    "No invented auras, cooldown resets, damage/mitigation multipliers, health refills, Z steering, tolerance loosening or teleports; native pathing decides reachability.",
+    "No change to Magmaw's script or Mangle values, the Rune Weapon/glyph code of bundle 03, provisioning configs, WCL references, coefficients, the scoreboard or graph tooling."
+  ],
+  "acceptance_conditions": [
+    "Declared tests pass; module_size reports no oversized file; an independent reviewer (separate subagent session, transcript-bound import-json) approves the exact diff.",
+    "A clean policy-bound build, one smoke kill, then a 5-kill scoreboard batch vs baseline b2-fd4ba456 judged with `scoreboard show --actor <id>` under the playbook keep rule; mechanism evidence: IBF or Vampiric Blood active at every seize, a Death Strike and Bone Shield >= 3 charges in the 6 s lead, no Mangle hit above ~50k, Rune Tap only below 60%, Unholy Strength ~12% of landed hits, no actor below the platform, no path_control_level_gap streak over ~5 s, healer casting gaps around Mangle under 4 s, priest heals on the Mangled tank.",
+    "0 boss-window deaths and every counted kill a native clear; otherwise the failing part is reverted.",
+    "This plan does not by itself accept any actor, the encounter or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py",
+    "pixi run pytest -q tests/test_magmaw_platform_strand_recovery.py tests/test_magmaw_support_cast_range.py tests/test_magmaw_parasite_policy.py tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_balance_mushroom_duty.py",
+    "pixi run pytest -q tests/test_blood_fallen_crusader_ppm.py tests/test_blood_death_strike_priority.py tests/test_blood_rune_recovery.py tests/test_blood_outbreak_disease_upkeep.py tests/test_blood_native_fidelity.py",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "fc247826fdfca9a1804fc0ef12f18ba2289a448f",
+  "risk_tier": "shared_runtime",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "d3ef70bfc6017aa523c9ae762e2b7cfa7bef319b33632fd7e1d3c3b48f20741a"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "8cd63dc0f0b0af88d090dab0190fecb4748d3fe28ed0b6ef252e511cfb2ecc02"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "8177b44d47a2a48c7ca44a71186ab44bea657233253c15da3ab5e0368590e553"
+    },
+    {
+      "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b3-0dbce440-aee1e664a5ed.json",
+      "sha256": "aee1e664a5ed3d7f92e9edc496b3fe3fbf5df42805a6c45351e4e7e4e2cf16c7"
+    },
+    {
+      "path": "sql/custom/world/2026_09_24_11_fallen_crusader_ppm.sql",
+      "sha256": "88bef2deb4058bbc6b6ee52ab782525c55e2b1831194a08ee1367845a4026061"
+    },
+    {
+      "path": "sql/custom/world/2026_09_24_10_blood_rune_tap.sql",
+      "sha256": "d3f4d9303fa7a02a9b908c9c48dc4a45e558088a93f209d93e89bef3d8e9f0cf"
+    }
+  ],
+  "acceptance_claim": "Plan only. Claims the bounded survival bundle and no gameplay, build, live, actor, performance, raid-clear, publication or parent acceptance."
+}
