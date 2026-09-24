@@ -1,0 +1,89 @@
+{
+  "schema": "cata_raid_program_plan_receipt_v1",
+  "kind": "plan",
+  "unit_id": "magmaw:tuning_07",
+  "producer": "coordinator",
+  "authority": "coordinator_attestation",
+  "task_id": "magmaw_tuning_bundle_05_20260924",
+  "stage": "plan",
+  "parent_objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL.",
+  "latest_user_direction": "Finish the Magmaw 10N implementation with subagents.",
+  "objective": "Close the last two gaps on baseline b4-2c0ed2d8: Blood DK 30002 at 0.948 (56 DPS short) and Fire A 30006 at 0.92 with a 6.4k fixed-baiter variance, keeping 0 boss-window deaths.",
+  "hypothesis": "Blood: while seized (~11 s per Mangle) Heart Strike, Icy Touch and Plague Strike were rejected forbidden_self_aura_active 136x per kill and the tank used 3 of ~7 GCDs; only Blood runes are recoverable (Death Strike needs Frost+Unholy; the native payment uses Blood before Death runes), so admitting Heart Strike while Death Strike fails its rune preflight and a Blood rune is free beyond Rune Tap's adds 0-1 Heart Strike per kill (+0-310 DPS); reserving Bone Shield for the seize (hold the ordinary recast when it would not be back in time) cuts Mangle hit/tick damage by 20%. Fire: the baiting duty costs ~5-6k DPS per kill and sits on one mage; alternating the baiter per parasite wave (wave ledger from pillar/parasite/infection liveness, 3 s quiet ends a wave, switches wait for hook duty) splits the cost so both mages land near 42-44k, above the 38,181 floor; no damage is invented.",
+  "first_broken_edge": "owner_blood_seize_window_and_fire_baiter_duty",
+  "observations": [
+    "smoke-2c0ed2d8: seize 89.8-100.8 s: Death Strike 95.4 s, Rune Strike 98.0/99.7 s, Rune Tap 91.8 s; Death Strike rune-gated 1,478 of 1,854 decisions; Bone Shield cast 54.3 s (0 charges at the seize, cooldown to 114.3 s).",
+    "Fire A per batch 39.9k/36.2k/37.0k (sd 6.4k) vs Fire B 51.3k/48.5k/48.0k with the same profile; WCL Sethra 40.2k.",
+    "Pre-existing failures unchanged: tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths, tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel, tests/test_fire_survival_combat_potions.py::test_actual_compiled_combustion_condition."
+  ],
+  "owned_files": [
+    "sql/custom/world/2026_09_24_20_blood_seized_heart_strike.sql",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp",
+    "tests/test_magmaw_mangle_cooldown_plan.py",
+    "tests/test_magmaw_mangle_defensive.py",
+    "tests/test_magmaw_parasite_policy.py"
+  ],
+  "forbidden_changes": [
+    "No invented damage, auras, cooldown resets, teleports or Z steering; only the assignment rotates and profile conditions change.",
+    "Parasites stay controlled every wave; a dead or missing alternate keeps the current baiter.",
+    "No change to Balance/Elemental files, provisioning configs, the Rune Weapon/glyph code, WCL references or the scoreboard/graph tooling."
+  ],
+  "acceptance_conditions": [
+    "Declared tests pass; module_size reports no oversized file; an independent reviewer (separate subagent session, transcript-bound import-json) approves the exact diff.",
+    "A clean policy-bound build, one smoke kill, then a 5-kill scoreboard batch vs baseline b4-2c0ed2d8 judged with `scoreboard show --actor <id>` under the playbook keep rule; mechanism evidence: seized Heart Strike rejections read magmaw_mangle_seized_heart_strike_hold and a Heart Strike lands in the seat only while Death Strike is rune-gated; Bone Shield at >=3 charges at the seize; baiter rotation wave 1 30006, wave 2 30007 in the diagnostics; both mages within ~4k; parasites controlled; 0 deaths.",
+    "0 boss-window deaths and every counted kill a native clear; otherwise the failing part is reverted.",
+    "This plan does not by itself accept any actor, the encounter or the parent objective."
+  ],
+  "required_test_commands": [
+    "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py tests/test_blood_death_strike_priority.py",
+    "pixi run pytest -q tests/test_magmaw_parasite_policy.py tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_balance_mushroom_duty.py tests/test_magmaw_platform_strand_recovery.py tests/test_magmaw_support_cast_range.py",
+    "pixi run python -m tools.raid_program.module_size"
+  ],
+  "base_commit": "44caecdc869c97cf03bcdeb05d3e43cc0260e950",
+  "risk_tier": "shared_runtime",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "validation_identity": {
+    "scenario_kind": "raid",
+    "encounter": {
+      "raid": "blackwing_descent",
+      "boss": "magmaw",
+      "mode": "10N"
+    },
+    "roster": {
+      "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+      "sha256": "d3ef70bfc6017aa523c9ae762e2b7cfa7bef319b33632fd7e1d3c3b48f20741a"
+    },
+    "runtime_profile": {
+      "path": "experiments/configs/validation_scenarios_cata_001.json",
+      "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
+    },
+    "route": {
+      "path": "dataset/validation_scenarios/validation_routes.jsonl",
+      "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/bot_raids/error_ledger.md",
+      "sha256": "4902c995508e85510e374028da73bb9f30411c2a56c283993fcf8430dbabb9ab"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "a73ed7d4928ac9fc89c5adb458f8059c5c87c35977027b510df5c67274b4bdfa"
+    },
+    {
+      "path": "sql/custom/world/2026_09_24_20_blood_seized_heart_strike.sql",
+      "sha256": "9475377697c6af278760c23bf8ab46b57ce98394dacf74ec3df45339eeca682d"
+    }
+  ],
+  "acceptance_claim": "Plan only. Claims the bounded bundle and no gameplay, build, live, actor, performance, raid-clear, publication or parent acceptance."
+}
