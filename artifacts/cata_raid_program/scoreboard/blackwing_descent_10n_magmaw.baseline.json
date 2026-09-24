@@ -1,10 +1,10 @@
 {
  "counted_kills": 5,
- "label": "b2-fd4ba456",
- "reason": "kept bundle 02 (Blood rune supply, Fire Hot Streak range, Balance moving instants): 5 native clears, 0 deaths, party 275.6k = 1.12x WCL, +12.2k vs r3-47cd175 (improved); kept with --min-kills 4 because the r3 baseline predates kills_per_batch and cannot be topped up on the changed DB profiles",
+ "label": "b4-2c0ed2d8",
+ "reason": "kept bundles 03+04 (Blood glyphs/runeforge/Rune Weapon scaling/Death Strike glyph, parasite LOS gate, mushroom threshold, Moonfire row, Mangle cooldown planning, rune hold, strand recovery, healer in-place Mangle healing, Rune Tap, Fallen Crusader 2 PPM): 5 native clears, 0 deaths, party 280.5k = 1.14x WCL; Blood +3.9k (0.948), Elemental improved (1.00), Balance 0.98",
  "scenario": "blackwing_descent_10n_magmaw",
  "schema": "raid_scoreboard_baseline_v1",
- "set_at": "2026-09-23T21:19:06Z",
- "source_commit": "590078dd6fcaf5b5cd43dbd141d0504a8acc448f",
- "worldserver_sha256": "fd4ba45627c6c0b0c85e1d152edbab66ab47c4caf4e3e80d501514bb2a01a860"
+ "set_at": "2026-09-24T01:43:21Z",
+ "source_commit": "6e46faa4b81f1c51820f6c30122345a639d08cba",
+ "worldserver_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f"
 }
