@@ -136,6 +136,64 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
+def test_emergency_release_keeps_the_long_defensive_while_a_shorter_option_exists(tmp_path: Path) -> None:
+    """TANK-003 (b3-0dbce440-k1): the 35% release spent Icebound at 60.3 s,
+    29.7 s before Mangle, while nothing else was planned for it.  Below the
+    release the long defensive is still kept when it would miss the next hit
+    and a shorter survival option is castable now; with no option, or when it
+    would be back in time, or inside the helper's lead, the release stands."""
+    source = tmp_path / "boss_hit_emergency_keep.cpp"
+    binary = tmp_path / "boss_hit_emergency_keep"
+    source.write_text(r"""
+#include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
+#include <cassert>
+#include <cstring>
+using namespace BotRaidCooldownReservation;
+int main()
+{
+    // Back for the hit iff cooldown + lead <= due.
+    assert(!ReturnsBeforeNextBigHit(29700, 180000, 1500));
+    assert(!ReturnsBeforeNextBigHit(61499, 60000, 1500));
+    assert(ReturnsBeforeNextBigHit(61500, 60000, 1500));
+    assert(ReturnsBeforeNextBigHit(95000, 30000, 1500));
+    assert(!ReturnsBeforeNextBigHit(95000, 4294967295u, 1500));  // no wrap
+
+    BossHitTimer running{true, false};
+    // k1 60.3 s: 34% health, Mangle due in 29.7 s, Vampiric Blood castable.
+    char const* kept = BossHitEmergencyDefensiveKeptReason(running, 29700, 1500,
+        0.34f, 180000, true);
+    assert(kept && std::strcmp(kept, "raid_boss_big_hit_defensive_kept_for_hit") == 0);
+    // Exactly at the 35% release, due in 40 s: still kept.
+    assert(BossHitEmergencyDefensiveKeptReason(running, 40000, 1500, 0.35f, 180000, true));
+    // Genuinely lethal: no shorter option -> the existing release stands.
+    assert(!BossHitEmergencyDefensiveKeptReason(running, 29700, 1500, 0.34f, 180000, false));
+    // Above the release the ordinary reservation already holds it.
+    assert(!BossHitEmergencyDefensiveKeptReason(running, 29700, 1500, 0.36f, 180000, true));
+    assert(BossHitDefensiveReservationReason({true, true, true, false, "boss", "boss", "combat"},
+        90000, running, 0.36f, BotCombatActionCategory::Defensive, 180000));
+    // Next hit further away than the cooldown (+ lead): back in time, spend it.
+    assert(!BossHitEmergencyDefensiveKeptReason(running, 181500, 1500, 0.30f, 180000, true));
+    assert(BossHitEmergencyDefensiveKeptReason(running, 181499, 1500, 0.30f, 180000, true));
+    assert(!BossHitEmergencyDefensiveKeptReason(running, 95000, 1500, 0.30f, 60000, true));
+    // Inside the helper's lead it is this hit's defensive: never kept.
+    assert(!BossHitEmergencyDefensiveKeptReason(running, 1500, 1500, 0.30f, 180000, true));
+    assert(BossHitEmergencyDefensiveKeptReason(running, 1501, 1500, 0.30f, 180000, true));
+    // Hit in progress or no native timer: never kept.
+    assert(!BossHitEmergencyDefensiveKeptReason(BossHitTimer{true, true}, 29700, 1500, 0.30f, 180000, true));
+    assert(!BossHitEmergencyDefensiveKeptReason(BossHitTimer{false, false}, 29700, 1500, 0.30f, 180000, true));
+    // The ordinary release itself is unchanged.
+    static_assert(BossHitEmergencyHealthPct == 0.35f, "boss-node release is unchanged");
+    assert(!BossHitDefensiveReservationReason({true, true, true, false, "boss", "boss", "combat"},
+        90000, running, 0.35f, BotCombatActionCategory::Defensive, 180000));
+    return 0;
+}
+""", encoding="utf-8")
+    subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+                    "-I", str(ROOT / "src/server/game"), "-I", str(ROOT / "src/common"),
+                    str(source), "-o", str(binary)], check=True, cwd=ROOT)
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
+
+
 def test_magmaw_opening_hit_is_the_native_first_mangle() -> None:
     header = text(RESERVATION)
     assert '{ "bwd.magmaw.encounter", 90000, 88253 },' in header

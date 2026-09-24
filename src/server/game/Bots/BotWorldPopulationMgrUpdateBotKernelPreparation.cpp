@@ -5,6 +5,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeActivationState.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDamageTargetBinding.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformNativeProbe.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
@@ -586,6 +587,11 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 magmawSupportOpportunities =
                     ObserveMagmawSupportTargetOpportunities(context.Bot,
                         *Cohort().EncounterSnapshot, magmawRole.c_str());
+            // Native platform/LOS view for this Propose() only (HEAL-002/003).
+            BotEncounter::MagmawNativeMovementProbe const magmawNativeProbe =
+                BotEncounter::BuildMagmawNativeMovementProbe(context.Bot);
+            context.State.MagmawPersonalParasiteEscape.NativeProbe =
+                &magmawNativeProbe;
             BotEncounter::AdaptiveMagmawStrategy magmawStrategy;
             BotEncounter::AdaptiveMagmawPlan magmawPlan = magmawStrategy.Propose(
                 *Cohort().EncounterSnapshot, context.Bot->GetGUID(),
@@ -600,6 +606,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 &context.State.MagmawPersonalParasiteEscape,
                 &Cohort().MagmawParasiteWave, &retainedFormation,
                 &magmawSupportOpportunities);
+            context.State.MagmawPersonalParasiteEscape.NativeProbe = nullptr;
             if (magmawPlan.ReleaseRetainedRangedFormation)
                 SettleRetainedMagmawFormation(context.State, context.Bot);
 

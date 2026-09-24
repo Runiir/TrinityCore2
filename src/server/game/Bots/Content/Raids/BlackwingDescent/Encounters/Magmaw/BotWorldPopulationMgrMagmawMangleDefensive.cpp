@@ -1,16 +1,21 @@
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleDefensive.h"
 
 #include "Creature.h"
 #include "CreatureAI.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "SpellAuras.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <optional>
@@ -31,22 +36,54 @@ bool NativelyMangled(Player const* bot)
     return false;
 }
 
-// Only natively known spells whose own cooldown is ready; the running aura
-// is never refreshed early.
+bool NativelyKnownAndReady(Player const* bot, uint32 spellId)
+{
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    return spellInfo && bot->HasSpell(spellId)
+        && bot->GetSpellHistory()->IsReady(spellInfo);
+}
+
+bool NativeBoneShieldCovers(Player const* bot)
+{
+    Aura const* boneShield = bot->GetAura(BoneShieldSpell);
+    return BoneShieldCovers(boneShield != nullptr,
+        boneShield ? boneShield->GetCharges() : 0);
+}
+
+// Only natively known spells whose own cooldown is ready.  A running aura is
+// never refreshed early, except a Bone Shield below 3 charges.
 Readiness NativeReadiness(Player const* bot)
 {
     Readiness states;
     for (size_t index = 0; index < DefensivePriority.size(); ++index)
     {
         uint32 const spellId = DefensivePriority[index];
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
         DefensiveReadiness& state = states[index];
         state.SpellId = spellId;
-        state.Known = spellInfo && bot->HasSpell(spellId);
-        state.Ready = state.Known && bot->GetSpellHistory()->IsReady(spellInfo);
-        state.Active = bot->HasAura(spellId);
+        state.Known = sSpellMgr->GetSpellInfo(spellId) && bot->HasSpell(spellId);
+        state.Ready = state.Known && NativelyKnownAndReady(bot, spellId);
+        state.Active = spellId == BoneShieldSpell
+            ? NativeBoneShieldCovers(bot) : bot->HasAura(spellId);
     }
     return states;
+}
+
+uint32 NativeCooldownMs(uint32 spellId)
+{
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    return spellInfo
+        ? std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime) : 0;
+}
+
+// Remaining Blood Shield in ms; 0 when absent, unbounded when permanent.
+uint32 NativeBloodShieldRemainingMs(Player const* bot)
+{
+    using BotEncounter::MagmawMangleCooldownPlan::BloodShieldAbsorbSpell;
+    Aura const* bloodShield = bot->GetAura(BloodShieldAbsorbSpell);
+    if (!bloodShield)
+        return 0;
+    int32 const durationMs = bloodShield->GetDuration();
+    return durationMs < 0 ? std::numeric_limits<uint32>::max() : uint32(durationMs);
 }
 
 // Re-prove the blackboard window on the live boss: engaged Magmaw, its own
@@ -179,4 +216,46 @@ void BotWorldPopulationMgr::SubmitMagmawMangleDefensiveCandidate(
             "magmaw_mangle_defensive_submitted_native");
     };
     context.State.DecisionKernel.Submit(std::move(defensive));
+}
+
+namespace BotEncounter::MagmawMangleCooldownPlan
+{
+Plan Observe(Player const* bot, std::string_view role, Blackboard const* board,
+    std::vector<BotActionCandidate> const& candidates, uint32 excludedSpellId,
+    uint32 policyExcludedSpellId)
+{
+    Plan plan;
+    if (!bot || !board || role != "tank")
+        return plan;
+    ObjectGuid const botGuid = bot->GetGUID();
+    std::optional<MangleTimer> const timer =
+        MagmawMangleDefensive::ObserveMangleTimer(*board, botGuid);
+    if (!timer)
+        return plan;
+
+    bool const seized = NativelyMangled(bot);
+    plan.Active = true;
+    plan.Timer = *timer;
+    plan.Timer.HitInProgress = plan.Timer.HitInProgress || seized;
+    plan.HealthPct = BotWorldPopulationMgrNativeHelpers::UnitHealthPct(bot);
+    plan.IceboundCooldownMs = NativeCooldownMs(IceboundFortitudeSpell);
+    plan.VampiricBloodCooldownMs = NativeCooldownMs(VampiricBloodSpell);
+    for (BotActionCandidate const& candidate : candidates)
+        if ((candidate.SpellId == VampiricBloodSpell
+                || candidate.SpellId == RuneTapSpell)
+            && candidate.RejectReason.empty()
+            && candidate.SpellId != excludedSpellId
+            && candidate.SpellId != policyExcludedSpellId)
+            plan.ShorterSurvivalCastable = true;
+
+    if (seized)
+        return plan;
+    std::optional<DefensiveWindow> const window =
+        MagmawMangleDefensive::ObserveMangleDefensiveWindow(*board, botGuid);
+    bool const boneShieldPending = NativelyKnownAndReady(bot, BoneShieldSpell)
+        && !NativeBoneShieldCovers(bot);
+    plan.RuneHold = HoldRuneSpenders(window,
+        NativeBloodShieldRemainingMs(bot), boneShieldPending);
+    return plan;
+}
 }

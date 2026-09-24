@@ -146,7 +146,29 @@ std::string BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
          << ",\"native_outcome_count\":"
          << diagnostics.NativeOutcomeCount
          << ",\"last_native_reason\":\""
-         << JsonEscape(diagnostics.LastNativeReason) << "\"}}";
+         << JsonEscape(diagnostics.LastNativeReason) << "\"}";
+    MagmawStrandRecoveryState const& strand = task.ReturnRecovery;
+    json << ",\"platform\":{\"probed\":" << task.Platform.Probed
+         << ",\"rejected\":" << task.Platform.Rejected
+         << ",\"holds\":" << task.Platform.Holds
+         << ",\"last_rejection\":\""
+         << JsonEscape(task.Platform.LastRejection) << "\""
+         << ",\"hold_until_ms\":" << task.PlatformHoldUntilMs
+         << ",\"return_recovery\":{\"tracking\":"
+         << (strand.Tracking ? "true" : "false")
+         << ",\"original\":[" << strand.Original.X << ','
+         << strand.Original.Y << ',' << strand.Original.Z << ']'
+         << ",\"consecutive_failures\":" << strand.ConsecutiveFailures
+         << ",\"first_failure_at_ms\":" << strand.FirstFailureAtMs
+         << ",\"last_failure_at_ms\":" << strand.LastFailureAtMs
+         << ",\"last_reason\":\"" << JsonEscape(strand.LastReason) << "\""
+         << ",\"fallback_active\":"
+         << (strand.FallbackActive ? "true" : "false")
+         << ",\"fallback\":[" << strand.Fallback.X << ','
+         << strand.Fallback.Y << ',' << strand.Fallback.Z << ']'
+         << ",\"fallback_count\":" << strand.FallbackCount
+         << ",\"hold_count\":" << strand.HoldCount
+         << ",\"excluded\":" << strand.Excluded.size() << "}}}";
     return json.str();
 }
 }

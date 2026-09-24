@@ -141,7 +141,9 @@ inline void MagmawPersonalParasiteEscapeTask::ObserveScope(
     uint64 const nextLocalWaveGeneration = LocalWave.NextGeneration;
     uint64 const nextTaskGeneration = NextTaskGeneration;
     uint64 const nextCandidateGeneration = NextCandidateGeneration;
+    MagmawNativeMovementProbe const* const nativeProbe = NativeProbe;
     *this = {};
+    NativeProbe = nativeProbe;
     LocalWave.NextGeneration = nextLocalWaveGeneration;
     NextTaskGeneration = nextTaskGeneration;
     NextCandidateGeneration = nextCandidateGeneration;
@@ -454,8 +456,14 @@ MagmawPersonalParasiteEscapeTask::Tick(
         }
         DangerGuid = nearest->Guid;
         DangerPosition = nearest->Position;
-        Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
-            DangerPosition, safeClearance + arrivalTolerance);
+        std::optional<Vector3> const selected = SelectEscapeDestination(board,
+            bot, safeClearance + arrivalTolerance, false);
+        // No admitted platform destination: hold position this tick rather
+        // than walk off the platform; the leg is re-sampled after a short
+        // native retry interval.
+        if (!selected)
+            return std::nullopt;
+        Destination = *selected;
         PrimaryDestination = Destination;
         CandidateGeneration = ++NextCandidateGeneration;
         if (!CandidateGeneration)
@@ -486,9 +494,11 @@ MagmawPersonalParasiteEscapeTask::Tick(
         }
         DangerGuid = nearest->Guid;
         DangerPosition = nearest->Position;
-        Destination = MagmawMoveAwayDestination(bot.Position, bot.Facing,
-            DangerPosition, safeClearance + arrivalTolerance);
-        if (SamePoint(Destination, PrimaryDestination))
+        std::optional<Vector3> const alternate = SelectEscapeDestination(
+            board, bot, safeClearance + arrivalTolerance, true);
+        if (alternate)
+            Destination = *alternate;
+        if (!alternate || SamePoint(Destination, PrimaryDestination))
         {
             State = BotDecision::PersistentTaskState::Failed;
             Failure = MagmawPersonalParasiteEscapeFailure::NoDistinctAlternate;
@@ -572,6 +582,46 @@ inline bool MagmawPersonalParasiteEscapeTask::ObserveNativeOutcome(
     MarkLifecycle(MagmawPersonalParasiteEscapeLifecycle::Failed,
         observedAtMs);
     return true;
+}
+
+// With a native probe, every leg must be on the platform: native floor at
+// the platform level, a complete same-level native path to it, and a complete
+// same-level native path from it back to the ranged support anchor. The
+// radial leg is tried first, then the same exit radius rotated 30/60/90
+// degrees; an alternate excludes the rejected primary.
+inline std::optional<Vector3>
+MagmawPersonalParasiteEscapeTask::SelectEscapeDestination(
+    Blackboard const& board, ActorSnapshot const& bot, float exitDistance,
+    bool alternate)
+{
+    if (!NativeProbe || !NativeProbe->ObserveDestination)
+        return MagmawMoveAwayDestination(bot.Position, bot.Facing,
+            DangerPosition, exitDistance);
+    if (!alternate && board.ObservedAtMs < PlatformHoldUntilMs)
+        return std::nullopt;
+    std::optional<Vector3> const anchor =
+        ResolveMagmawSupportReturnAnchor(board);
+    std::vector<Vector3> excluded;
+    if (alternate)
+        excluded.push_back(PrimaryDestination);
+    MagmawPlatformSelection const selection =
+        SelectMagmawPlatformDestination(*NativeProbe,
+            MagmawPlatformEscapeCandidates(bot.Position, bot.Facing,
+                DangerPosition, exitDistance, anchor),
+            anchor, anchor ? anchor->Z : bot.Position.Z, excluded);
+    Platform.Probed += selection.Probed;
+    Platform.Rejected += selection.Rejected;
+    if (selection.Rejected)
+        Platform.LastRejection = ToString(selection.LastRejection);
+    if (selection.Destination)
+    {
+        PlatformHoldUntilMs = 0;
+        return selection.Destination;
+    }
+    ++Platform.Holds;
+    PlatformHoldUntilMs = board.ObservedAtMs
+        + MagmawPlatformNavigation::HoldRetryMs;
+    return std::nullopt;
 }
 
 inline bool MagmawPersonalParasiteEscapeTask::IsPermanentNativeRejection(

@@ -1,0 +1,52 @@
+-- Rune of the Fallen Crusader (item enchant 3368, proc spell 53365 Unholy
+-- Strength): raise the proc rate from 1 to 2 procs per minute.
+--
+-- Why (error ledger TANK-002). The Blood DK tank 30002 carries the runeforge
+-- (commit f52d106673) and was at 0.92 of WCL on label b3-0dbce440 (needs 0.95).
+--
+-- Evidence (source -> value):
+--   pinned WoWSims cata 70d87383a9b92f30fb9e370c4676d3ce33b6e6b6,
+--     sim/death_knight/runeforging.go line 95 (file sha256
+--     92c20622bfde48fb2e099cc0bfd1a2af5b9d2f33b3080cc7aeeb4b93e2853bad):
+--     NewDynamicProcManagerForEnchant(3368, 2.0, 0)             -> 2.0 PPM
+--   live world DB spell_enchant_proc_data, read 2026-09-24:
+--     EnchantID 3368, Chance 0, ProcsPerMinute 1, HitMask 0,
+--     AttributesMask 0                                           -> 1 PPM
+--   upstream TrinityCore sql: the only row ever written for 3368 is
+--     sql/old/ancient/3.1.3/05445_world_spell_enchant_proc_data.sql
+--     (3368, 0, 1.0, 0). Nothing in sql/updates changes it       -> 1 PPM
+--   patch 3.1.0 (Warcraft Wiki patch history): Strength bonus reduced to
+--     15%, "Chance to proc doubled". The later entries (6.0.2 onward)
+--     change Strength, healing or level, never the proc rate. Doubling 1 PPM
+--     gives 2 PPM; the upstream 1.0 matches the rate before 3.1.0 -> 2 PPM
+--   pinned 4.3.4 client SpellItemEnchantment.dbc 3368: Effect[0] 1
+--     (combat spell), EffectPointsMin[0] 0, EffectArg[0] 53365. Spell.dbc
+--     53365 SpellAuraOptions 3444: ProcChance 101, no rate. The 4.3.4 client
+--     has no SpellProcsPerMinute table                          -> no value
+--   SimulationCraft, as quoted in an MMO-Champion theorycraft thread
+--     (2013): "Fallen Crusader is 2 PPM"                        -> 2 PPM
+--
+-- Native formula (Player::CastItemCombatSpell, Unit::GetPPMProcChance):
+--   chance % = floor(weapon delay ms * ProcsPerMinute / 600), rolled on every
+--   landed main-hand hit that deals damage: white swings and melee-class
+--   specials. WoWSims rolls the same per-hit chance on white and special
+--   main-hand hits. Blood tank weapon 78478 has delay 3600, so the chance per
+--   hit goes from 6% to 12%.
+--
+-- Scope. Only EnchantID 3368, and only ProcsPerMinute. Chance, HitMask and
+-- AttributesMask stay the same. The row is global: the Unholy DK main hand and
+-- the Frost DK off hand carry the same runeforge in the validation gear
+-- profiles, and their WoWSims references also use 2.0 PPM. Rune of
+-- Cinderglacier (3369) and the other rows are left alone. The worldserver
+-- loads this table at startup (SpellMgr::LoadSpellEnchantProcData).
+--
+-- The migration is idempotent. The reverse migration is the commented block at
+-- the end of this file, not a separate file: the world auto-updater applies
+-- every file in sql/custom/world at startup. The reverse restores 1 only while
+-- the value is still this migration's 2.
+
+UPDATE `spell_enchant_proc_data` SET `ProcsPerMinute` = 2 WHERE `EnchantID` = 3368;
+
+-- BEGIN REVERSE MIGRATION
+-- UPDATE `spell_enchant_proc_data` SET `ProcsPerMinute` = 1 WHERE `EnchantID` = 3368 AND `ProcsPerMinute` = 2;
+-- END REVERSE MIGRATION

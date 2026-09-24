@@ -16,6 +16,7 @@
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
 #include "Bots/BotTauntVehicleSeat.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBalanceMushroomDuty.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
@@ -281,6 +282,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     if (profile.SpecTag == BotElementalSpiritwalkersGrace::ElementalSpec)
         BotElementalSpiritwalkersGrace::EvaluateGraceAfterDamageOpportunities(
             candidates);
+    BotEncounter::MagmawMangleCooldownPlan::Plan const manglePlan =
+        BotEncounter::MagmawMangleCooldownPlan::Observe(bot, role,
+            Cohort().EncounterSnapshot.get(), candidates, excludedSpellId,
+            policyExcludedSpellId);
     for (BotActionCandidate& candidate : candidates)
     {
         bool const magmawMushroomPlacement =
@@ -329,6 +334,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             if (char const* bossReserve = BossDefensiveReservationReason(bot, candidate.ResolvedSpellId))
             {
                 candidate.RejectReason = bossReserve;
+                continue;
+            }
+        if (candidate.RejectReason.empty())
+            if (char const* mangleHold = manglePlan.RejectReason(candidate.SpellId))
+            {
+                candidate.RejectReason = mangleHold;
                 continue;
             }
         if (areaOnly && candidate.Category != BotCombatActionCategory::Aoe

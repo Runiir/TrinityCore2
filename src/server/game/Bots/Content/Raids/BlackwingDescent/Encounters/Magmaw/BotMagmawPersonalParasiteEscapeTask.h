@@ -4,6 +4,7 @@
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMoveAwayGeometry.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformDestination.h"
 #include "Bots/Decision/BotPersistentTask.h"
 
 #include <optional>
@@ -84,6 +85,15 @@ struct MagmawPersonalParasiteEscapeDiagnostics
     uint64 NativeOutcomeCount = 0;
 };
 
+// Lifetime counters of the platform admission (HEAL-003), per scope.
+struct MagmawPlatformEscapeCounters
+{
+    uint64 Probed = 0;
+    uint64 Rejected = 0;
+    uint64 Holds = 0;
+    std::string LastRejection;
+};
+
 struct MagmawPersonalThreatEpisodeTransition
 {
     bool Valid = false;
@@ -154,6 +164,14 @@ struct MagmawPersonalParasiteEscapeTask
     bool RisingEpisodeTransitionPending = false;
     uint64 RisingPriorTaskGeneration = 0;
     uint64 RisingPriorCandidateGeneration = 0;
+    // Frame-local native view, set by the world layer around one Propose()
+    // and cleared right after it. Null in pure replays: escape legs then keep
+    // the unvalidated radial destination.
+    MagmawNativeMovementProbe const* NativeProbe = nullptr;
+    uint64 PlatformHoldUntilMs = 0;
+    MagmawPlatformEscapeCounters Platform;
+    // Formation-return strand recovery for the same actor (HEAL-003).
+    MagmawStrandRecoveryState ReturnRecovery;
 
     void ObserveScope(Blackboard const& board, ObjectGuid actor);
     void ObserveActorLife(Blackboard const& board, ObjectGuid actor,
@@ -176,6 +194,9 @@ struct MagmawPersonalParasiteEscapeTask
             && State == BotDecision::PersistentTaskState::Running
             && !AlternatePending;
     }
+
+    std::optional<Vector3> SelectEscapeDestination(Blackboard const& board,
+        ActorSnapshot const& bot, float exitDistance, bool alternate);
 
     static bool IsPermanentNativeRejection(std::string_view reason);
     static bool SamePoint(Vector3 const& left, Vector3 const& right);

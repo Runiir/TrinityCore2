@@ -2,10 +2,12 @@
 
 The window is read from Magmaw's native Mangle timer (published under Massive
 Crash 88253, the same timer the pre-Mangle lust uses). Icebound Fortitude is
-the strongest defensive and gets a 1.5 s lead; Bone Shield gets a 6 s lead.
-Vampiric Blood stays with the profile's reactive 70% row: its 15% health is
-taken back on expiry, which the replay of base-0891a99 / bundle1-b8a539b kills
-showed lands mid-Mangle when it is pre-cast.
+the strongest defensive and gets a 1.5 s lead; Bone Shield gets a 6 s lead and
+is refreshed below 3 charges. Vampiric Blood takes Icebound's place at the same
+1.5 s lead only when Icebound cannot cover the Mangle (TANK-003,
+b3-0dbce440-k1: Icebound spent 30 s earlier, no cooldown at the seize, tank
+dead). Its 15% health is taken back on expiry, but never the last point
+(AuraEffect::HandleAuraModIncreaseHealth).
 """
 from __future__ import annotations
 
@@ -85,41 +87,67 @@ static Blackboard Encounter(uint32 remainingMs, bool sequenceActive = false,
     return board;
 }
 
-using States = std::array<DefensiveReadiness, DefensivePriority.size()>;
+using States = DefensiveStates;
 static States Ready(bool ibfReady = true, bool boneReady = true,
-    bool ibfActive = false, bool boneActive = false)
+    bool ibfActive = false, bool boneActive = false,
+    bool vbReady = true, bool vbActive = false)
 {
     return { DefensiveReadiness{ IceboundFortitudeSpell, true, ibfReady, ibfActive },
+        DefensiveReadiness{ VampiricBloodSpell, true, vbReady, vbActive },
         DefensiveReadiness{ BoneShieldSpell, true, boneReady, boneActive } };
 }
 
 int main()
 {
     static_assert(DefensivePriority[0] == IceboundFortitudeSpell, "strongest first");
+    static_assert(DefensivePriority[1] == VampiricBloodSpell, "Icebound's stand-in");
+    static_assert(DefensivePriority[2] == BoneShieldSpell, "then Bone Shield");
     static_assert(PreMangleIceboundLeadMs == 1500 && PreMangleBoneShieldLeadMs == 6000, "leads");
+    assert(PreMangleLeadMs(VampiricBloodSpell) == PreMangleIceboundLeadMs);
+    assert(PreMangleLeadMs(BoneShieldSpell) == PreMangleBoneShieldLeadMs);
+    static_assert(BoneShieldRefreshBelowCharges == 3, "refresh below 3 charges");
+    assert(!BoneShieldCovers(false, 0) && !BoneShieldCovers(true, 2));
+    assert(BoneShieldCovers(true, 3) && BoneShieldCovers(true, 6));
 
     // Outside the longest lead: nothing.
     assert(!ObserveMangleDefensiveWindow(Encounter(6001), TankGuid));
     assert(!ObserveMangleDefensiveWindow(Encounter(90000), TankGuid));
 
-    // 6 s out: only Bone Shield is inside its lead.
+    // 6 s out: only Bone Shield is inside its lead, whatever Icebound's
+    // state; Vampiric Blood waits for the 1.5 s pre-cast point.
     auto early = ObserveMangleDefensiveWindow(Encounter(6000), TankGuid);
     assert(early && early->Trigger == DefensiveTrigger::PreMangleLead);
     assert(early->RemainingMs == 6000 && early->BossGuid == BossGuid);
     assert(SelectDefensive(*early, Ready()) == BoneShieldSpell);
+    assert(SelectDefensive(*early, Ready(false)) == BoneShieldSpell);
     assert(!SelectDefensive(*early, Ready(true, true, false, true)));
+    assert(!SelectDefensive(*early, Ready(false, true, false, true)));
 
-    // 1.5 s out: Icebound Fortitude first; Bone Shield if IBF is on cooldown
-    // or already running; nothing if both are covered.
+    // 1.5 s out: Icebound Fortitude first.  Icebound running: it covers the
+    // hit, so Bone Shield (if not covering) and never Vampiric Blood.
     auto late = ObserveMangleDefensiveWindow(Encounter(1500), TankGuid);
     assert(late && SelectDefensive(*late, Ready()) == IceboundFortitudeSpell);
-    assert(SelectDefensive(*late, Ready(false)) == BoneShieldSpell);
     assert(SelectDefensive(*late, Ready(true, true, true)) == BoneShieldSpell);
-    assert(!SelectDefensive(*late, Ready(false, false)));
     assert(!SelectDefensive(*late, Ready(true, true, true, true)));
+    assert(!SelectDefensive(*late, Ready(true, false, true)));
+    // TANK-003: Icebound on cooldown at the pre-cast point -> Vampiric Blood,
+    // then Bone Shield if it does not cover.
+    assert(SelectDefensive(*late, Ready(false)) == VampiricBloodSpell);
+    assert(SelectDefensive(*late, Ready(false, false)) == VampiricBloodSpell);
+    assert(SelectDefensive(*late, Ready(false, true, false, false, true, true)) == BoneShieldSpell);
+    assert(SelectDefensive(*late, Ready(false, true, false, false, false)) == BoneShieldSpell);
+    assert(!SelectDefensive(*late, Ready(false, true, false, true, false)));
+    assert(!SelectDefensive(*late, Ready(false, false, false, false, false)));
     States unknown = Ready();
     unknown[0].Known = false;
-    assert(SelectDefensive(*late, unknown) == BoneShieldSpell);
+    assert(SelectDefensive(*late, unknown) == VampiricBloodSpell);
+    States noBlood = Ready(false);
+    noBlood[1].Known = false;
+    assert(SelectDefensive(*late, noBlood) == BoneShieldSpell);
+    // Between the leads (2 s out) Vampiric Blood is not yet due.
+    auto between = ObserveMangleDefensiveWindow(Encounter(2000), TankGuid);
+    assert(between && SelectDefensive(*between, Ready(false)) == BoneShieldSpell);
+    assert(!SelectDefensive(*between, Ready(false, true, false, true)));
 
     // An overdue Mangle or the running Mangle -> Crash sequence publishes 0.
     auto overdue = ObserveMangleDefensiveWindow(Encounter(0, true), TankGuid);
@@ -144,6 +172,8 @@ int main()
 
     // Already seized (any mode's Mangle aura or the seat aura): the window is
     // open whatever the timer says, and the threat wipe does not close it.
+    // Seized without Icebound (on cooldown, or expired mid-seize): Vampiric
+    // Blood covers the rest of the hold.
     for (uint32 aura : MangleAuras)
     {
         Blackboard seized = Encounter(95000, false, DpsGuid);
@@ -151,6 +181,36 @@ int main()
         auto window = ObserveMangleDefensiveWindow(seized, TankGuid);
         assert(window && window->Trigger == DefensiveTrigger::Mangled);
         assert(SelectDefensive(*window, Ready()) == IceboundFortitudeSpell);
+        assert(SelectDefensive(*window, Ready(false, false, false, true)) == VampiricBloodSpell);
+        assert(!SelectDefensive(*window, Ready(false, false, true, true)));
+    }
+
+    // The cooldown plan's timer: open for the whole engaged fight, due time
+    // from the native publication, in progress at 0 or once seized.
+    {
+        auto running = ObserveMangleTimer(Encounter(39800), TankGuid);
+        assert(running && running->DueInMs == 39800 && !running->HitInProgress);
+        auto sequence = ObserveMangleTimer(Encounter(30000, true), TankGuid);
+        assert(sequence && sequence->DueInMs == 0 && sequence->HitInProgress);
+        auto wrapped = ObserveMangleTimer(Encounter(4294966000u), TankGuid);
+        assert(wrapped && wrapped->DueInMs == 0 && wrapped->HitInProgress);
+        // Another victim does not close the plan's timer.
+        auto offTank = ObserveMangleTimer(Encounter(39800, false, DpsGuid), TankGuid);
+        assert(offTank && offTank->DueInMs == 39800);
+        Blackboard seized = Encounter(86500);
+        seized.Players.front().Auras.push_back({ MangleAuras.back(), BossGuid, 1, 0 });
+        auto held = ObserveMangleTimer(seized, TankGuid);
+        assert(held && held->DueInMs == 86500 && held->HitInProgress);
+        Blackboard trash = Encounter(39800);
+        trash.Route.NodeId = "bwd.magmaw.drudges";
+        assert(!ObserveMangleTimer(trash, TankGuid));
+        Blackboard visible = Encounter(39800);
+        visible.Hostiles.front().MechanicTimers.front().Source = FactSource::VisibleCast;
+        assert(!ObserveMangleTimer(visible, TankGuid));
+        Blackboard idle = Encounter(39800);
+        idle.NativeBossState = "not_in_progress";
+        assert(!ObserveMangleTimer(idle, TankGuid));
+        assert(!ObserveMangleTimer(Encounter(39800), ObjectGuid()));
     }
 
     // Never on trash, before pull, after reset, for a dead tank, for a
@@ -202,12 +262,24 @@ int main()
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-def test_vampiric_blood_stays_reactive() -> None:
+def test_vampiric_blood_only_stands_in_for_icebound() -> None:
     header = text(HEADER)
     priority = header[header.index("DefensivePriority = {"):]
     priority = priority[:priority.index("};")]
-    assert "IceboundFortitudeSpell, BoneShieldSpell" in priority
-    assert "55233" not in header and "VampiricBlood" not in priority
+    assert "IceboundFortitudeSpell, VampiricBloodSpell, BoneShieldSpell" in priority
+    assert "constexpr uint32 VampiricBloodSpell = 55233;" in header
+    select = function_body(header, "inline std::optional<uint32> SelectDefensive(")
+    assert "spellId == VampiricBloodSpell && iceboundCovers" in select
+    covers = function_body(header, "inline bool IceboundCovers(")
+    assert "return state.Active || (state.Known && state.Ready);" in covers
+    # The expiry health loss never takes the last point (the header's claim).
+    effects = text(ROOT / "src/server/game/Spells/Auras/SpellAuraEffects.cpp")
+    handler = function_body(effects, "void AuraEffect::HandleAuraModIncreaseHealth(")
+    assert "int32 value = std::min<int32>(target->GetHealth() - 1, GetAmount());" in handler
+    # Vampiric Blood's 15% is a share of maximum health (the spell script).
+    dk = text(ROOT / "src/server/scripts/Spells/spell_dk.cpp")
+    vb = dk[dk.index("class spell_dk_vampiric_blood"):dk.index("// Updated 4.3.4\n// -52284")]
+    assert "amount = GetUnitOwner()->CountPctFromMaxHealth(amount);" in vb
 
 
 def test_candidate_reproves_the_window_natively_and_casts_only_known_ready_spells() -> None:
@@ -219,11 +291,18 @@ def test_candidate_reproves_the_window_natively_and_casts_only_known_ready_spell
     assert 'row->second.Role != "tank"' in body
     assert "BotActionArbitration::Priority::Survival" in body
 
-    # Readiness is native: spellbook, spell history cooldown and own aura.
+    # Readiness is native: spellbook, spell history cooldown and own aura;
+    # Bone Shield's "covers" also reads its native charges.
     readiness = function_body(module, "Readiness NativeReadiness(Player const* bot)")
     assert "bot->HasSpell(spellId)" in readiness
-    assert "bot->GetSpellHistory()->IsReady(spellInfo)" in readiness
+    assert "NativelyKnownAndReady(bot, spellId)" in readiness
     assert "bot->HasAura(spellId)" in readiness
+    assert "spellId == BoneShieldSpell\n            ? NativeBoneShieldCovers(bot)" in readiness
+    ready = function_body(module, "bool NativelyKnownAndReady(Player const* bot, uint32 spellId)")
+    assert "bot->HasSpell(spellId)" in ready
+    assert "bot->GetSpellHistory()->IsReady(spellInfo)" in ready
+    bone = function_body(module, "bool NativeBoneShieldCovers(Player const* bot)")
+    assert "bot->GetAura(BoneShieldSpell)" in bone and "boneShield->GetCharges()" in bone
 
     # At attempt time the live boss's own timer and victim are re-read.
     native = function_body(module, "std::optional<DefensiveWindow> NativeWindow(")

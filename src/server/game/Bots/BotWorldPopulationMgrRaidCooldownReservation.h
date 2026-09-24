@@ -205,6 +205,34 @@ inline char const* BossHitDefensiveReservationReason(RouteContext const& route,
     return "raid_boss_big_hit_defensive_reserved";
 }
 
+// A defensive spent now is back for the next big hit only when its own
+// cooldown ends by the time the encounter helper casts it, leadMs before the
+// hit: cooldownMs + leadMs <= nextHitDueMs, written so the sum cannot wrap.
+inline bool ReturnsBeforeNextBigHit(uint32 nextHitDueMs, uint32 cooldownMs,
+    uint32 leadMs)
+{
+    return cooldownMs <= nextHitDueMs && leadMs <= nextHitDueMs - cooldownMs;
+}
+
+// The emergency release above hands a long defensive to the profile at
+// BossHitEmergencyHealthPct.  When that defensive would miss the next big hit
+// and the caller has proven that a shorter survival option (for example
+// Vampiric Blood or Rune Tap) can be cast now, the shorter one is spent first
+// and the long one is kept for the hit.  With no such option the release
+// stands: a genuinely lethal moment still gets the long defensive.  Inside
+// the helper's own lead the long defensive is for this hit and is never kept.
+inline char const* BossHitEmergencyDefensiveKeptReason(BossHitTimer timer,
+    uint32 nextHitDueMs, uint32 leadMs, float healthPct, uint32 cooldownMs,
+    bool shorterOptionCastable)
+{
+    if (!timer.Running || timer.HitInProgress
+        || healthPct > BossHitEmergencyHealthPct
+        || nextHitDueMs <= leadMs || !shorterOptionCastable
+        || ReturnsBeforeNextBigHit(nextHitDueMs, cooldownMs, leadMs))
+        return nullptr;
+    return "raid_boss_big_hit_defensive_kept_for_hit";
+}
+
 inline char const* ReservationReason(RouteContext const& route,
     CandidateContext const& candidate)
 {

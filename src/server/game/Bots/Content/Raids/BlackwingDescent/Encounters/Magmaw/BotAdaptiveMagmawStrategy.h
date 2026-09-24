@@ -206,7 +206,8 @@ public:
             ProposeHazardMovement(board, *bot, *observed.Boss,
             pincerWindow, pincerWarning, movementLease, laneTransition,
             hazardState, eventMovement, mobility, &plan.DirectionalMobility,
-            &crashSideHold);
+            &crashSideHold,
+            personalEscapeTask ? personalEscapeTask->NativeProbe : nullptr);
         std::optional<BotNativeAction::Candidate> hookPreposition;
         std::optional<BotNativeAction::Candidate> hookApproach;
         if (!crashSideHold)
@@ -244,8 +245,8 @@ public:
             && (!HasLivingParasite(board) || !IsPillarBaiter(board, botGuid))
             && !HasActiveHazardPath(board, movementLease, activePathValid,
                 moving))
-            formationRestore = ProposeRangedFormationRestore(board, *bot,
-                *observed.Boss, role);
+            formationRestore = ProposeRangedFormationReturn(board, *bot,
+                *observed.Boss, role, personalEscapeTask);
         for (MagmawMovementProposalOrigin origin : producerOrder)
         {
             std::optional<BotNativeAction::Candidate>* proposal = nullptr;

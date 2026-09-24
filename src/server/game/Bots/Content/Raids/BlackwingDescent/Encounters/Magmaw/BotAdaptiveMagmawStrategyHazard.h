@@ -1,4 +1,6 @@
 // Included inside AdaptiveMagmawStrategy private scope.
+    static_assert(MagmawPlatformNavigation::SupportStackDistance
+        == SupportStackDistance, "platform return anchor must match support");
     static std::optional<BotNativeAction::Candidate> BuildPillarEvade(
         Blackboard const& board, ActorSnapshot const& bot,
         ActorSnapshot const& pillar,
@@ -230,7 +232,8 @@
         MagmawEventMovementTransitionState* eventMovement,
         std::optional<MagmawDirectionalMobilityInput> const& mobility,
         std::optional<BotNativeAction::Candidate>* directionalMobility,
-        bool* crashSideHold)
+        bool* crashSideHold,
+        MagmawNativeMovementProbe const* nativeProbe = nullptr)
     {
         MagmawHazardObservation const observed = ObserveHazards(board, bot);
         MagmawCrashFootprint const crash = ObserveCrashFootprint(board, boss);
@@ -404,9 +407,19 @@
                 else if (pillarBaiter)
                     destination = FormationAnchor(board, *anchors, bot.Guid);
                 else if (mangleOwner)
+                {
+                    // HEAL-002: a healer already in heal range and line of
+                    // sight of the Mangled tank stays and heals; the stage
+                    // move is only for a healer that would otherwise be out
+                    // of range or sight. Crash, pillar and lava moves above
+                    // are unaffected.
+                    if (HealerSupportsMangleInPlace(bot, *mangleOwner,
+                            nativeProbe))
+                        return std::nullopt;
                     destination = MagmawMangleSupportGeometry::Resolve(
                         anchors->Support, mangleOwner->Position,
                         MangleSupportMaxDistance);
+                }
                 else
                     destination = anchors->Support;
                 if (!destination)
@@ -415,14 +428,78 @@
                     || MagmawMangleSupportGeometry::WithinDistance(
                         bot.Position, mangleOwner->Position,
                         MangleSupportMaxDistance);
-                if (!ownerRangeSafe || Distance2d(bot.Position, *destination)
-                        > RangedStackTolerance)
-                    return BuildPointMovement(board, *destination,
-                        baiterCrashSide
-                            ? "mangle_safe_side" : "mangle_midpoint_stage",
-                        BotActionArbitration::Priority::Survival, 490.0f);
+                if (ownerRangeSafe && Distance2d(bot.Position, *destination)
+                        <= RangedStackTolerance)
+                    return std::nullopt;
+                if (!baiterCrashSide && nativeProbe)
+                {
+                    // HEAL-003: the stage point must be on the platform with a
+                    // native way back; otherwise try the support anchor, else
+                    // hold position.
+                    destination = AdmitMangleStagePoint(*destination,
+                        *anchors, mangleOwner, *nativeProbe);
+                    if (!destination)
+                        return std::nullopt;
+                }
+                return BuildPointMovement(board, *destination,
+                    baiterCrashSide
+                        ? "mangle_safe_side" : "mangle_midpoint_stage",
+                    BotActionArbitration::Priority::Survival, 490.0f);
             }
         return std::nullopt;
+    }
+
+    static bool HealerSupportsMangleInPlace(ActorSnapshot const& bot,
+        ActorSnapshot const& mangleOwner,
+        MagmawNativeMovementProbe const* nativeProbe)
+    {
+        return bot.Role == "healer" && nativeProbe
+            && nativeProbe->LineOfSightTo
+            && MagmawMangleSupportGeometry::WithinDistance(bot.Position,
+                mangleOwner.Position, MangleSupportMaxDistance)
+            && nativeProbe->LineOfSightTo(mangleOwner.Guid);
+    }
+
+    static std::optional<Vector3> AdmitMangleStagePoint(
+        Vector3 const& stage, MagmawRangedAnchors const& anchors,
+        ActorSnapshot const* mangleOwner,
+        MagmawNativeMovementProbe const& nativeProbe)
+    {
+        if (!nativeProbe.ObserveDestination)
+            return stage;
+        std::vector<Vector3> candidates{ stage };
+        if (Distance2d(stage, anchors.Support)
+                > MagmawPlatformNavigation::SamePointTolerance
+            && (!mangleOwner || MagmawMangleSupportGeometry::WithinDistance(
+                anchors.Support, mangleOwner->Position,
+                MangleSupportMaxDistance)))
+            candidates.push_back(anchors.Support);
+        return SelectMagmawPlatformDestination(nativeProbe, candidates,
+            anchors.Support, anchors.Support.Z).Destination;
+    }
+
+    // HEAL-003: the ordinary formation return, unless this non-baiter's
+    // return destination is stranded (consecutive native path rejections).
+    static std::optional<BotNativeAction::Candidate>
+    ProposeRangedFormationReturn(Blackboard const& board,
+        ActorSnapshot const& bot, ActorSnapshot const& boss,
+        std::string_view role, MagmawPersonalParasiteEscapeTask* returnTask)
+    {
+        std::optional<BotNativeAction::Candidate> restore =
+            ProposeRangedFormationRestore(board, bot, boss, role);
+        if (!restore || !returnTask || IsPillarBaiter(board, bot.Guid))
+            return restore;
+        BotNativeAction::Move const* move =
+            std::get_if<BotNativeAction::Move>(&restore->Action);
+        std::optional<MagmawRangedAnchors> const anchors =
+            ResolveRangedAnchors(board, boss);
+        if (!move || !anchors)
+            return restore;
+        Vector3 const original{ move->X, move->Y, move->Z };
+        if (!returnTask->ReturnRecovery.Stranded(original, board.ObservedAtMs))
+            return restore;
+        return ProposeStrandFallback(board, bot, *anchors, original,
+            *returnTask);
     }
 
     static std::optional<BotNativeAction::Candidate>
@@ -456,6 +533,66 @@
         if (rangeSettled && Distance2d(bot.Position, *destination) <= RangedStackTolerance)
             return std::nullopt;
         return BuildPointMovement(board, *destination,
+            "ranged_formation_restore",
+            BotActionArbitration::Priority::Mechanic, 275.0f);
+    }
+
+    // HEAL-003: after ReturnFailureThreshold consecutive native rejections of
+    // the same return destination, stop retrying it and walk to the nearest
+    // native-reachable ranged support anchor or ranged group position (each
+    // proven on the platform with a way back to the support anchor). With no
+    // reachable option the actor holds position; the original destination is
+    // retried once the strand hold expires.
+    static std::optional<BotNativeAction::Candidate> ProposeStrandFallback(
+        Blackboard const& board, ActorSnapshot const& bot,
+        MagmawRangedAnchors const& anchors, Vector3 const& original,
+        MagmawPersonalParasiteEscapeTask& task)
+    {
+        MagmawStrandRecoveryState& strand = task.ReturnRecovery;
+        if (!strand.FallbackActive)
+        {
+            if (!task.NativeProbe || !task.NativeProbe->ObserveDestination
+                || board.ObservedAtMs < strand.NextProbeAtMs)
+            {
+                ++strand.HoldCount;
+                return std::nullopt;
+            }
+            std::vector<Vector3> candidates{ anchors.Support };
+            for (ActorSnapshot const& member : board.Players)
+                if (member.Alive && member.Guid != bot.Guid
+                    && member.Role != "tank"
+                    && !IsPillarBaiter(board, member.Guid)
+                    && Distance2d(member.Position, anchors.Support)
+                        <= MagmawPlatformNavigation::GroupPositionRadius)
+                    candidates.push_back(member.Position);
+            std::stable_sort(candidates.begin(), candidates.end(),
+                [&bot](Vector3 const& left, Vector3 const& right)
+                {
+                    return Distance2d(bot.Position, left)
+                        < Distance2d(bot.Position, right);
+                });
+            std::vector<Vector3> excluded = strand.Excluded;
+            excluded.push_back(original);
+            MagmawPlatformSelection const selection =
+                SelectMagmawPlatformDestination(*task.NativeProbe,
+                    candidates, anchors.Support, anchors.Support.Z,
+                    excluded);
+            if (!selection.Destination)
+            {
+                ++strand.HoldCount;
+                strand.NextProbeAtMs = board.ObservedAtMs
+                    + MagmawPlatformNavigation::HoldRetryMs;
+                return std::nullopt;
+            }
+            strand.FallbackActive = true;
+            strand.Fallback = *selection.Destination;
+            strand.FallbackFailures = 0;
+            strand.FallbackSelectedAtMs = board.ObservedAtMs;
+            ++strand.FallbackCount;
+        }
+        if (Distance2d(bot.Position, strand.Fallback) <= RangedStackTolerance)
+            return std::nullopt;
+        return BuildPointMovement(board, strand.Fallback,
             "ranged_formation_restore",
             BotActionArbitration::Priority::Mechanic, 275.0f);
     }

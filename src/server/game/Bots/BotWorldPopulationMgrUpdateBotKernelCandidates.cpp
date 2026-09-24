@@ -172,6 +172,15 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                     outcome.Result.Reason);
                 return;
             }
+            if (outcome.Mechanic == "ranged_formation_restore")
+            {
+                // HEAL-003: count consecutive native return-path rejections.
+                context.State.MagmawPersonalParasiteEscape.ReturnRecovery.
+                    ObserveReturnOutcome(outcome.Destination,
+                        outcome.Result.Result, outcome.Result.Reason,
+                        outcome.ObservedAtMs);
+                return;
+            }
             if (outcome.Mechanic != "parasite_contact_evade")
                 return;
             if (BotEncounter::
