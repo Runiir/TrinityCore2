@@ -31,6 +31,9 @@ namespace
 constexpr uint32 GhostCharacterFlag = 0x2000;
 constexpr uint32 ResurrectAtLoginFlag = 0x0100;
 constexpr uint32 GhostAuraId = 8326;
+// pet_spell.active ACT_DISABLED (0x81) for the hunter pet's Growl.
+constexpr uint32 HunterPetGrowlSpellId = 2649;
+constexpr uint32 PetGrowlAutocastDisabled = 0x81;
 
 std::string Escape(std::string const& value)
 {
@@ -446,6 +449,13 @@ bool Context::ResetBotPool(BotWorldPopulationMgr& mgr, char const* reason)
         "DELETE pa FROM `pet_aura` pa JOIN `character_pet` cp ON cp.`id` = pa.`guid` WHERE cp.`owner` IN " + in,
         "DELETE FROM `mail_items` WHERE `receiver` IN " + in,
         "DELETE FROM `mail` WHERE `receiver` IN " + in,
+        // Provisioning leaves the hunter pet's Growl autocast disabled and the
+        // Chainwielder patrol pull waits for exactly that; a pet saved after
+        // any later session may have it enabled (live play session, 2026-09-24).
+        "UPDATE `pet_spell` ps JOIN `character_pet` cp ON cp.`id` = ps.`guid`"
+            " SET ps.`active` = " + std::to_string(PetGrowlAutocastDisabled)
+            + " WHERE ps.`spell` = " + std::to_string(HunterPetGrowlSpellId)
+            + " AND cp.`owner` IN " + in,
     };
     for (std::string const& statement : statements)
         CharacterDatabase.DirectExecute(statement.c_str());

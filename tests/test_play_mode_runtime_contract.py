@@ -171,3 +171,17 @@ def test_pull_timer_hooks_are_no_ops_outside_a_play_raid() -> None:
         body = body[: body.index("\n}\n")]
         assert "FromPlayLeadership(" in body
         assert body.index("FromPlayLeadership(") < body.index("Context::Pull(")
+
+
+def test_play_reset_restores_the_provisioned_hunter_pet_growl_state() -> None:
+    # The Chainwielder patrol pull waits for Growl autocast off, which
+    # provisioning sets (active 129) and validation re-applies every run; a
+    # play session found it enabled after earlier runs (2026-09-24).
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    reset = play[play.index("bool Context::ResetBotPool("):]
+    reset = reset[: reset.index("\n}\n")]
+    assert "HunterPetGrowlSpellId" in reset and "PetGrowlAutocastDisabled" in reset
+    assert "constexpr uint32 HunterPetGrowlSpellId = 2649;" in play
+    assert "constexpr uint32 PetGrowlAutocastDisabled = 0x81;" in play
+    provisioning = _read(ROOT / "experiments/configs/validation_provisioning_cata_001.json")
+    assert '{ "id": 2649, "active": 129 }' in provisioning
