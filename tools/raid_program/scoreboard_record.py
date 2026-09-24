@@ -23,6 +23,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from tools.raid_program.play_mode_guard import refuse_play
 from tools.raid_program.scoreboard_core import (
     KILL_SCHEMA, RNG_ATTACHMENT_SCHEMA, append_record, file_sha256, healer_roles, label_kills, legacy_kill_id,
     load_records, load_target, roster, spec_targets, utc_now,
@@ -139,6 +140,7 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
                         source_commit: str | None = None, evidence_pointer: str | None = None,
                         report_present: bool = True, reached_encounter: bool | None = None) -> dict[str, Any]:
     """Convert one run summary into the compact per-kill scoreboard line. Specs come from the target roster."""
+    refuse_play(summary, f"scoreboard record {kill_id}")
     node = target["encounter_route_node_id"]
     expected = roster(target)
     encounter = summary.get("encounter")
@@ -268,6 +270,7 @@ def outcome_summary(run_dir: Path, worldserver_sha256: str | None, encounter_nod
     worldserver_sha256 is the hash of the launched binary file when known; the
     report's own binary hash is kept separately and used only as a fallback.
     """
+    refuse_play(run_dir, "scoreboard record")
     try:
         report = json.loads((run_dir / "report.json").read_text())
     except (OSError, ValueError):
@@ -424,6 +427,7 @@ def ingest(root: Path, args) -> int:
     records = []
     if args.run_dir:
         run_dir = args.run_dir.resolve()
+        refuse_play(run_dir, "scoreboard ingest --run-dir")
         kill_id = legacy_kill_id({"label": args.label, "run_dir": str(run_dir)})
         options = dict(scenario=args.scenario, label=args.label, kill_id=kill_id, run_dir=run_dir,
                        source_commit=commits[0], worldserver_sha256=args.worldserver_sha256, evidence_pointer=pointers[0])
@@ -438,7 +442,10 @@ def ingest(root: Path, args) -> int:
             summary = json.loads(path.read_text())
             if summary.get("schema") != SUMMARY_SCHEMA:
                 raise SystemExit(f"{path} is not a {SUMMARY_SCHEMA} summary")
+            refuse_play(summary, f"scoreboard ingest --summary {path}")
             raw = _find_run_dir(args.evidence_root, summary.get("run_dir"))
+            if raw is not None:
+                refuse_play(raw, "scoreboard ingest --evidence-root")
             deaths = death_evidence(raw, target["encounter_route_node_id"], summary.get("route_deaths"))
             records.append(record_from_summary(
                 summary, root=root, target=target, scenario=args.scenario, label=args.label,

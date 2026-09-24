@@ -6,7 +6,9 @@
 The evidence is packed into artifacts/cata_raid_program/<name>.tar.gz and
 pushed.  The remote bytes are read back and checked against the pointer and
 the packed member list before the local archive, its cache object and the
-source paths are deleted.  Only paths under /tmp are ever removed.
+source paths are deleted.  Only paths under /tmp are ever removed.  Human
+play-mode runs (tools/raid_program/play_mode_guard.py) are refused: they are
+archived under artifacts/play_sessions/ by their own collector, never here.
 """
 
 from __future__ import annotations
@@ -86,6 +88,12 @@ def main() -> int:
             raise SystemExit(f"missing evidence path: {source}")
         if source.parts[:2] != ("/", "tmp"):
             raise SystemExit(f"refusing to archive and delete a path outside /tmp: {source}")
+    from tools.raid_program.play_mode_guard import PlayModeEvidenceRefused, refuse_play
+    try:
+        for source in sources:
+            refuse_play(source, f"archive_run_evidence --name {args.name}")
+    except PlayModeEvidenceRefused as refused:
+        raise SystemExit(str(refused)) from refused
 
     archive = DIRECTORY / f"{args.name}.tar.gz"
     pointer = archive.with_name(archive.name + ".dvc")

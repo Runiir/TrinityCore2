@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_CONFIG_H
 
 #include "Define.h"
+#include "Bots/BotCohortPurpose.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 
 #include <cstddef>
@@ -87,6 +88,9 @@ struct BotWorldExperimentConfig
     bool CombatCalibrationReferenceConditions = false;
     bool CombatCalibrationSelfProvidedBaseline = false;
     bool ValidationRouteEnable = false;
+    // Default-off server permission for human play cohorts. Harness-written
+    // validation configs pin it to 0; nothing reads it for validation.
+    bool PlayModeEnable = false;
     // Default-off cutover for the single Magmaw transfer-lane task. The
     // selector still requires a same-tick equivalent legacy candidate.
     bool MagmawTransferLaneTaskAuthority = false;

@@ -3,6 +3,7 @@
 #include "Bots/BotMeleeResolutionEventJson.h"
 #include "Bots/BotWorldTraceExportCursor.h"
 #include "Bots/BotWorldTickRecorder.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyPlan.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -111,6 +112,8 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << "\",\"run\":" << status.RunId
          << ",\"mode\":\"" << RuntimeModeName(status.Mode) << "\""
          << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
+         << ",\"cohort_purpose\":\"" << CohortPurposeName(Cohort().Purpose) << "\""
+         << ",\"play_mode_enabled\":" << (Cohort().Config.PlayModeEnable ? "true" : "false")
          << ",\"loaded_profile_count\":" << Cohort().RuntimeProfiles.size()
          << ",\"profile_manifest_path\":\"" << JsonEscape(Cohort().ProfileManifestPath) << "\""
          << ",\"profile_manifest_load_error\":\"" << JsonEscape(Cohort().ProfileManifestLoadError) << "\""
@@ -151,6 +154,9 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
          << ",\"magmaw_transfer_lane_shadow\":"
          << BuildMagmawTransferLaneTaskShadowJson()
+         << ",\"magmaw_duty_plan\":"
+         << BotEncounter::BuildMagmawDutyPlanStatusJson(
+                Cohort().EncounterSnapshot.get())
          << ",\"magmaw_transfer_lane_task_authority\":"
          << (Cohort().Config.MagmawTransferLaneTaskAuthority
                 ? "true" : "false")

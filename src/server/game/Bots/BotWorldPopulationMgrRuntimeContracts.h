@@ -469,6 +469,9 @@
         // Synthetic setup is permitted only inside an isolated fixture mode.
         // It is always non-certifying and may never coexist with live Party().Bots.
         bool NonCertifyingAssistance = false;
+        // Validation unless a play session starts this cohort; play cohorts
+        // are never certifying (BotCohortPurpose.h).
+        CohortPurpose Purpose = CohortPurpose::Validation;
         uint64 ExperimentId = 0;
         uint64 RunId = 0;
         uint32 ElapsedMs = 0;

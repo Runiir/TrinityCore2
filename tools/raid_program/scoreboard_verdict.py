@@ -33,7 +33,7 @@ REASON_ORDER = (
     "no_kills", "non_clear_kill", "missing_encounter_data", "boss_window_deaths_unknown", "boss_window_deaths",
     "mixed_binaries", "mixed_commits", "roster_incomplete", "insufficient_kills", "below_target",
     "encounter_failed", "no_reference", "voided", "interrupted", "infrastructure_failure", "no_evidence",
-    "postprocess_error", "no_measurement_validity", "stalled_boss_window",
+    "postprocess_error", "no_measurement_validity", "stalled_boss_window", "play_mode_run",
 )
 
 

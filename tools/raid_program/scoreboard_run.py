@@ -21,6 +21,7 @@ import traceback
 from pathlib import Path
 from typing import Any
 
+from tools.raid_program.play_mode_guard import PlayModeEvidenceRefused, refuse_play
 from tools.raid_program.scoreboard_core import (
     ATTACHMENT_SCHEMA, EVIDENCE_DIR, KILL_SCHEMA, append_record, clear_kills, exclusion_reason, file_sha256, git_head,
     label_kills, load_records, load_target, scoreboard_path, utc_now,
@@ -87,6 +88,11 @@ def archive_evidence(root: Path, scenario: str, kill_id: str, sources: list[Path
     existing = [path for path in sources if path.exists()]
     if not existing:
         return None, "no evidence paths exist"
+    try:  # play sessions are archived by their own collector, never here
+        for path in existing:
+            refuse_play(path, f"scoreboard evidence archive for {kill_id}")
+    except PlayModeEvidenceRefused as refused:
+        return None, str(refused)
     base = archive_base(scenario, kill_id)
     stale = [path for path in _leftovers(root, base) if str(path.relative_to(root)) not in recorded_pointers]
     if stale:
@@ -188,6 +194,8 @@ def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, k
               f"stopped. The kill is recorded as not counted and its evidence is kept under /tmp; run "
               f"`scoreboard archive-pending --scenario {scenario}` to archive it.", flush=True)
         raise
+    # A play-mode run is never recorded or archived; its evidence stays where the harness wrote it.
+    refuse_play(kill["output_dir"], f"scoreboard run {kill['kill_id']} (evidence kept at {kill['output_dir']})")
     record = _postprocess(root, target, scenario, label, kill, sha, source_commit)
     record["worldserver_sha256"] = sha  # the hash of the pinned file that was launched always wins
     if record.get("report_binary_sha256"):

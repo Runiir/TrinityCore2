@@ -294,7 +294,12 @@ struct Blackboard
     // The current observer-centered scan has no proven arena-wide bound.
     bool EncounterArenaObservationComplete = false;
     std::optional<NativeEncounterLifecycle> NativeEncounter;
+    // Assignable cohort bots only. Duty selectors read this list, so play
+    // mode never appends external (human) members here.
     std::vector<ActorSnapshot> Players;
+    // External raid members of a play cohort (humans or simulated humans).
+    // Always empty for validation cohorts; consumers opt in explicitly.
+    std::vector<ActorSnapshot> ExternalPlayers;
     std::vector<ActorSnapshot> Hostiles;
     std::vector<ActorSnapshot> Summons;
     std::vector<ActorSnapshot> Interactables;
@@ -319,7 +324,9 @@ struct Blackboard
             return actor;
         if (ActorSnapshot const* actor = findIn(Summons))
             return actor;
-        return findIn(Interactables);
+        if (ActorSnapshot const* actor = findIn(Interactables))
+            return actor;
+        return findIn(ExternalPlayers);
     }
 };
 }

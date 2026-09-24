@@ -44,8 +44,13 @@ struct AdaptiveMagmawPlan
     std::optional<BotNativeAction::Candidate> DirectionalMobility;
     std::optional<BotNativeAction::Candidate> Interaction;
 };
+struct MagmawDutyPlanBuilder;
+
 class AdaptiveMagmawStrategy
 {
+    // Read-only duty receipts (BotMagmawDutyPlan.cpp) reuse the private
+    // selectors instead of copying them.
+    friend struct MagmawDutyPlanBuilder;
 public:
     using MovementProducerOrder = std::array<MagmawMovementProposalOrigin, 4>;
     static constexpr MovementProducerOrder DefaultMovementProducerOrder{

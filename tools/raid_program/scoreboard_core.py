@@ -11,6 +11,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from tools.raid_program.play_mode_guard import PLAY_EXCLUSION_REASON, find_play_markers
+
 ROOT = Path(__file__).resolve().parents[2]
 TARGET_SCHEMA = "raid_target_v1"
 KILL_SCHEMA = "raid_scoreboard_kill_v1"
@@ -246,6 +248,8 @@ BOSS_WINDOW_STALL_REASONS = frozenset({"world_stall_overlaps_boss_window", "boss
 
 def exclusion_reason(record: dict[str, Any]) -> str | None:
     """Why a kill does not count toward a verdict (None = counted)."""
+    if find_play_markers(record):  # human play sessions are recorded for ML, never scored
+        return PLAY_EXCLUSION_REASON
     if record.get("voided"):
         return "voided"
     if record.get("interrupted"):

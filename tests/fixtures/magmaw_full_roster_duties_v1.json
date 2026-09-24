@@ -1,0 +1,933 @@
+{
+ "caster_rule": "phase cast with result ok/casting on route node bwd.magmaw.encounter",
+ "code_derived_not_in_evidence": [
+  "hook_riders",
+  "pull_tank",
+  "bloodlust_owner"
+ ],
+ "code_derived_note": "Not observable in these receipts (hook riders and the pull tank leave no action_outcomes row, and the Bloodlust path does not log one); tests/test_magmaw_duty_plan.py derives them from the code.",
+ "evidence_confirmed": {
+  "baiter_alternate_mage_guid": {
+   "consistent": true,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": 30007
+    }
+   ],
+   "value": 30007
+  },
+  "baiter_completed_waves": {
+   "consistent": true,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": 2
+    }
+   ],
+   "value": 2
+  },
+  "baiter_hunter_guid": {
+   "consistent": true,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": 30009
+    }
+   ],
+   "value": 30009
+  },
+  "baiter_per_wave_alternation": {
+   "consistent": true,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": true
+    }
+   ],
+   "rule": "wave 1 primary mage (reason initial), then primary/alternate mage alternate every wave",
+   "value": true
+  },
+  "baiter_primary_mage_guid": {
+   "consistent": true,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": 30006
+    }
+   ],
+   "value": 30006
+  },
+  "bloodlust_casters": {
+   "consistent": true,
+   "consistent_when_present": false,
+   "kills": 8,
+   "kills_with_value": 0,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": []
+    }
+   ],
+   "union": [],
+   "value": []
+  },
+  "detonate_casters": {
+   "consistent": false,
+   "consistent_when_present": true,
+   "kills": 8,
+   "kills_with_value": 6,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z"
+     ],
+     "value": [
+      30001
+     ]
+    },
+    {
+     "kills": [
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": []
+    }
+   ],
+   "union": [
+    30001
+   ],
+   "value": null
+  },
+  "misdirection_casters": {
+   "consistent": true,
+   "consistent_when_present": false,
+   "kills": 8,
+   "kills_with_value": 0,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": []
+    }
+   ],
+   "union": [],
+   "value": []
+  },
+  "taunt_casters": {
+   "consistent": false,
+   "consistent_when_present": true,
+   "kills": 8,
+   "kills_with_value": 5,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": [
+      30002
+     ]
+    },
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T031933Z"
+     ],
+     "value": []
+    }
+   ],
+   "union": [
+    30002
+   ],
+   "value": null
+  },
+  "taunt_spell_ids": {
+   "consistent": false,
+   "consistent_when_present": true,
+   "kills": 8,
+   "kills_with_value": 5,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": [
+      56222
+     ]
+    },
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T031933Z"
+     ],
+     "value": []
+    }
+   ],
+   "union": [
+    56222
+   ],
+   "value": null
+  },
+  "wild_mushroom_casters": {
+   "consistent": true,
+   "consistent_when_present": true,
+   "kills": 8,
+   "kills_with_value": 8,
+   "observed": [
+    {
+     "kills": [
+      "b5-d1898555-k1-20260924T025034Z",
+      "b5-d1898555-k1-20260924T031933Z",
+      "b5-d1898555-k2-20260924T025034Z",
+      "b5-d1898555-k2-20260924T031933Z",
+      "b5-d1898555-k3-20260924T025034Z",
+      "b5-d1898555-k3-20260924T031933Z",
+      "b5-d1898555-k4-20260924T025034Z",
+      "b5-d1898555-k5-20260924T025034Z"
+     ],
+     "value": [
+      30001
+     ]
+    }
+   ],
+   "union": [
+    30001
+   ],
+   "value": [
+    30001
+   ]
+  }
+ },
+ "label": "b5-d1898555",
+ "per_kill": {
+  "b5-d1898555-k1-20260924T025034Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     },
+     {
+      "mage_guid": 30006,
+      "reason": "alternate",
+      "wave": 3
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2631,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 1,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88751
+    ]
+   },
+   "encounter_action_rows": 132,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k1-20260924T025034Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k1-20260924T025034Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {},
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 4,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k1-20260924T031933Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2652,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 1,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88751
+    ]
+   },
+   "encounter_action_rows": 145,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k1-20260924T031933Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k1-20260924T031933Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {},
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 4,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k2-20260924T025034Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     },
+     {
+      "mage_guid": 30006,
+      "reason": "alternate",
+      "wave": 3
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2939,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "encounter_action_rows": 146,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k2-20260924T025034Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k2-20260924T025034Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {
+     "30002": [
+      56222
+     ]
+    },
+    "cast_count": 1,
+    "casters": [
+     30002
+    ],
+    "spell_ids": [
+     56222
+    ]
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 2,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k2-20260924T031933Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     },
+     {
+      "mage_guid": 30006,
+      "reason": "alternate",
+      "wave": 3
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2657,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 1,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88751
+    ]
+   },
+   "encounter_action_rows": 130,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k2-20260924T031933Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k2-20260924T031933Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {},
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 3,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k3-20260924T025034Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     },
+     {
+      "mage_guid": 30006,
+      "reason": "alternate",
+      "wave": 3
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2957,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 1,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88751
+    ]
+   },
+   "encounter_action_rows": 145,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k3-20260924T025034Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k3-20260924T025034Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {
+     "30002": [
+      56222
+     ]
+    },
+    "cast_count": 2,
+    "casters": [
+     30002
+    ],
+    "spell_ids": [
+     56222
+    ]
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 4,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k3-20260924T031933Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2648,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 1,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88751
+    ]
+   },
+   "encounter_action_rows": 152,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k3-20260924T031933Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k3-20260924T031933Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {
+     "30002": [
+      56222
+     ]
+    },
+    "cast_count": 1,
+    "casters": [
+     30002
+    ],
+    "spell_ids": [
+     56222
+    ]
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 3,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k4-20260924T025034Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     },
+     {
+      "mage_guid": 30006,
+      "reason": "alternate",
+      "wave": 3
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2958,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 1,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88751
+    ]
+   },
+   "encounter_action_rows": 146,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k4-20260924T025034Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k4-20260924T025034Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {
+     "30002": [
+      56222
+     ]
+    },
+    "cast_count": 2,
+    "casters": [
+     30002
+    ],
+    "spell_ids": [
+     56222
+    ]
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 3,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  },
+  "b5-d1898555-k5-20260924T025034Z": {
+   "baiter_rotation": {
+    "alternate_mage_guid": 30007,
+    "completed_waves": 2,
+    "history": [
+     {
+      "mage_guid": 30006,
+      "reason": "initial",
+      "wave": 1
+     },
+     {
+      "mage_guid": 30007,
+      "reason": "alternate",
+      "wave": 2
+     },
+     {
+      "mage_guid": 30006,
+      "reason": "alternate",
+      "wave": 3
+     }
+    ],
+    "hunter_guid": 30009,
+    "last_revision": 2640,
+    "primary_mage_guid": 30006
+   },
+   "bloodlust": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "detonate": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "encounter_action_rows": 147,
+   "evidence_dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b5-d1898555-k5-20260924T025034Z.tar.gz.dvc",
+   "misdirection": {
+    "attempted_by": [],
+    "cast_count": 0,
+    "casters": [],
+    "spell_ids": []
+   },
+   "native_clear": true,
+   "run_dir_name": "scoreboard-b5-d1898555-k5-20260924T025034Z",
+   "taunt": {
+    "attempted_by": [],
+    "by_caster": {
+     "30002": [
+      56222
+     ]
+    },
+    "cast_count": 1,
+    "casters": [
+     30002
+    ],
+    "spell_ids": [
+     56222
+    ]
+   },
+   "wild_mushroom": {
+    "attempted_by": [],
+    "cast_count": 2,
+    "casters": [
+     30001
+    ],
+    "spell_ids": [
+     88747
+    ]
+   }
+  }
+ },
+ "roster_identity": [
+  {
+   "class_spec": "balance_druid",
+   "guid": 30001,
+   "name": "Mgwtanka",
+   "role": "dps",
+   "roster_slot_id": "raid_tank_1"
+  },
+  {
+   "class_spec": "blood_death_knight",
+   "guid": 30002,
+   "name": "Mgwtankb",
+   "role": "tank",
+   "roster_slot_id": "raid_tank_2"
+  },
+  {
+   "class_spec": "restoration_druid",
+   "guid": 30003,
+   "name": "Mgwheala",
+   "role": "healer",
+   "roster_slot_id": "raid_healer_1"
+  },
+  {
+   "class_spec": "holy_paladin",
+   "guid": 30004,
+   "name": "Mgwhealb",
+   "role": "healer",
+   "roster_slot_id": "raid_healer_2"
+  },
+  {
+   "class_spec": "discipline_priest",
+   "guid": 30005,
+   "name": "Mgwhealc",
+   "role": "healer",
+   "roster_slot_id": "raid_healer_3"
+  },
+  {
+   "class_spec": "fire_mage",
+   "guid": 30006,
+   "name": "Mgwdpsa",
+   "role": "dps",
+   "roster_slot_id": "raid_dps_1"
+  },
+  {
+   "class_spec": "fire_mage",
+   "guid": 30007,
+   "name": "Mgwdpsb",
+   "role": "dps",
+   "roster_slot_id": "raid_dps_2"
+  },
+  {
+   "class_spec": "affliction_warlock",
+   "guid": 30008,
+   "name": "Mgwdpsc",
+   "role": "dps",
+   "roster_slot_id": "raid_dps_3"
+  },
+  {
+   "class_spec": "survival_hunter",
+   "guid": 30009,
+   "name": "Mgwdpsd",
+   "role": "dps",
+   "roster_slot_id": "raid_dps_4"
+  },
+  {
+   "class_spec": "elemental_shaman",
+   "guid": 30010,
+   "name": "Mgwdpse",
+   "role": "dps",
+   "roster_slot_id": "raid_dps_5"
+  }
+ ],
+ "route": {
+  "route_node_id": "bwd.magmaw.encounter",
+  "scenario_id": "blackwing_descent_10n_magmaw_diagnostic"
+ },
+ "scenario": "blackwing_descent_10n_magmaw",
+ "schema": "magmaw_full_roster_duties_v1"
+}

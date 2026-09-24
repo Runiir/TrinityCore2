@@ -726,6 +726,7 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"runtime\":{\"active\":" << (Cohort().Active ? "true" : "false")
          << ",\"mode\":\"" << RuntimeModeName(Cohort().RuntimeMode) << "\""
          << ",\"non_certifying_assistance\":" << (Cohort().NonCertifyingAssistance ? "true" : "false")
+         << ",\"cohort_purpose\":\"" << CohortPurposeName(Cohort().Purpose) << "\""
          << ",\"spawn_source\":\"" << JsonEscape(state.SpawnSource) << "\""
          << ",\"server_provisioned\":" << (state.ServerProvisioned ? "true" : "false")
          << ",\"battle_res_decision\":\"" << JsonEscape(state.NativeBattleResDecision) << "\""

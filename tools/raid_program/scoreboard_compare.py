@@ -23,7 +23,8 @@ MIN_KILLS = 3
 ALPHA = 0.05
 # Kills that are not gameplay outcomes and so never block condition (a): the harness lost the run,
 # the operator interrupted it, or an audited void excluded it.
-NON_GAMEPLAY_EXCLUSIONS = frozenset({"infrastructure_failure", "interrupted", "voided"})
+# A play-mode run (humans in the raid) is never bot gameplay evidence.
+NON_GAMEPLAY_EXCLUSIONS = frozenset({"infrastructure_failure", "interrupted", "voided", "play_mode_run"})
 COUNTED_CLEAR_BASIS = "counted_native_clears"
 
 

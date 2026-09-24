@@ -28,6 +28,7 @@ from datetime import datetime
 from pathlib import Path
 
 from tools.raid_program import development_graph as graph
+from tools.raid_program.play_mode_guard import PLAY_EXCLUSION_REASON, PLAY_TERMINAL_REASON, find_play_markers
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGET_DIR = Path('experiments/configs/raid_targets')
@@ -35,7 +36,7 @@ VERDICT_DIR = Path('artifacts/cata_raid_program/verdicts')
 RUN_DIR = Path('artifacts/cata_raid_program')  # top level: completed_operation scans it for run receipts
 VERDICT_SCHEMA = 'raid_target_verdict_v1'
 TARGET_SCHEMA = 'raid_target_v1'
-UNATTRIBUTABLE = ('infrastructure_loss', 'contamination', 'interruption')
+UNATTRIBUTABLE = ('infrastructure_loss', 'contamination', 'interruption', PLAY_TERMINAL_REASON)
 RULE = ('Actor requirements close when their scoreboard verdict row and the encounter are pass; encounter '
         'requirements when the overall verdict is pass with the full roster. The target file sets ratio, kill '
         'count and death limits. Kills must come from the unit binary after its validation claim, on a label no '
@@ -59,6 +60,15 @@ def scope(requirement: dict) -> str | None:
     if requirement.get('actor_id'):
         return 'actor'
     return 'encounter' if requirement.get('needs_all_actors') else None
+
+
+def check_not_play(evidence: dict, what: str) -> None:
+    """Human play-mode evidence is recorded for ML only and never closes or records a requirement."""
+    reasons = find_play_markers(evidence) + [
+        f"kill {k.get('kill_id')} is {PLAY_EXCLUSION_REASON}" for k in evidence.get('kills_detail') or []
+        if isinstance(k, dict) and k.get('exclusion_reason') == PLAY_EXCLUSION_REASON]
+    if reasons:
+        raise graph.GraphError(f'{what}: play-mode evidence is never accepted ({"; ".join(reasons[:5])})')
 
 
 def evaluate(root: Path, scenario: str, label: str) -> dict:
@@ -142,6 +152,7 @@ def verify_verdict(root: Path, g: dict, ref: dict) -> dict:
     verdict = graph.read(graph.file_ref(root, ref))
     if verdict.get('schema') != VERDICT_SCHEMA:
         raise graph.GraphError('verdict must be ' + VERDICT_SCHEMA)
+    check_not_play(verdict, 'verdict')
     scenario = target_pointer(g)['scenario']
     if verdict.get('scenario') != scenario:
         raise graph.GraphError('verdict scenario differs from the program encounter')
@@ -229,6 +240,7 @@ def assess(root: Path, g: dict, r: dict) -> None:
     run = g['run']
     if r.get('attempt_id') != run['attempt_id']:
         raise graph.GraphError('assessment attempt mismatch')
+    check_not_play(r, 'assessment')
     verdict = verify_verdict(root, g, r['verdict']) if r.get('verdict') is not None else None
     if verdict is None:
         graph.required(r, 'baseline', 'comparison', 'actor_reviews')
@@ -345,6 +357,7 @@ def write_run_receipt(root: Path, label: str, *, producer: str, cleanup_verified
     if identity.get('scenario_kind') != 'raid':
         raise graph.GraphError('scoreboard batches validate raid units only')
     verdict = evaluate(root, target_pointer(g)['scenario'], label)
+    check_not_play(verdict, 'label ' + label)
     kills = verdict.get('kills_detail') or []
     if not kills:
         raise graph.GraphError('label has no recorded kills: ' + label)
@@ -391,6 +404,7 @@ def write_verdict(root: Path, label: str, *, write: bool = True) -> dict:
     g = _active(root)
     scenario = target_pointer(g)['scenario']
     verdict = evaluate(root, scenario, label)
+    check_not_play(verdict, 'label ' + label)
     acceptable = []
     for key in g['unit']['requirements']:
         requirement = g['requirements'][key]
