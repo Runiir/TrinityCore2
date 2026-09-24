@@ -154,3 +154,20 @@ def test_fill_success_never_reads_the_renamable_config_name() -> None:
     play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
     assert "Config.Name" not in play.replace("// Config.Name is renamed", "")
     assert "SelectedProfileName == Scenario" in play
+
+
+def test_pull_timer_hooks_are_no_ops_outside_a_play_raid() -> None:
+    chat = _read(ROOT / "src/server/game/Handlers/ChatHandler.cpp")
+    assert "BotWorldPopulationMgrPlay::OnAddonMessage(sender, type, prefix, message);" in chat
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    leadership = play[play.index("bool Context::FromPlayLeadership("):]
+    leadership = leadership[: leadership.index("\n}\n")]
+    for condition in ("cohort->Active", "cohort->Purpose == CohortPurpose::Play",
+                      "cohort->Play.Active", "IsHuman(sender)",
+                      "group->GetGUID() == cohort->Play.GroupGuid"):
+        assert condition in leadership
+    for hook in ("void OnAddonMessage(", "void OnGroupChat("):
+        body = play[play.index(hook):]
+        body = body[: body.index("\n}\n")]
+        assert "FromPlayLeadership(" in body
+        assert body.index("FromPlayLeadership(") < body.index("Context::Pull(")

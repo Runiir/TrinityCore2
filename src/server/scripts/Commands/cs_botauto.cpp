@@ -28,8 +28,9 @@
 #include <system_error>
 #include <vector>
 
-// Human play mode subcommands (cs_botauto_play.cpp).
+// Human play mode subcommands and raid-chat script (cs_botauto_play.cpp).
 std::vector<ChatCommand> BotAutoPlayCommandTable();
+void RegisterBotAutoPlayScripts();
 
 class botauto_commandscript : public CommandScript
 {
@@ -714,4 +715,5 @@ private:
 void RegisterBotAutoCommands()
 {
     new botauto_commandscript();
+    RegisterBotAutoPlayScripts();
 }

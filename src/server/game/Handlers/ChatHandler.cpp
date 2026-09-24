@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Bots/BotWorldPopulationMgrPlay.h"
 #include "WorldSession.h"
 #include "AccountMgr.h"
 #include "CellImpl.h"
@@ -661,6 +662,9 @@ void WorldSession::HandleAddonMessagechatOpcode(WorldPacket& recvData)
     }
 
     sender->UpdateSpeakTime(Player::ChatFloodThrottle::ADDON);
+
+    // Pull timers (DBM/BigWigs) of a human play raid; read-only.
+    BotWorldPopulationMgrPlay::OnAddonMessage(sender, type, prefix, message);
 
     switch (type)
     {

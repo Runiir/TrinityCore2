@@ -1,10 +1,12 @@
 #include "Bots/BotWorldPopulationMgrPlay.h"
 
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotPlayPullTimer.h"
 #include "Bots/BotPlaySession.h"
 #include "Bots/BotRaidRoleResolver.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Config.h"
+#include "Creature.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "Group.h"
@@ -14,7 +16,9 @@
 #include "Player.h"
 #include "WorldSession.h"
 
+#include <algorithm>
 #include <limits>
+#include <optional>
 #include <sstream>
 
 namespace BotWorldPopulationMgrPlay
@@ -53,6 +57,41 @@ std::string Result(char const* action, bool ok, std::string const& reason,
 bool IsHuman(Player const* player)
 {
     return player && player->GetSession() && !player->GetSession()->IsBotSession();
+}
+
+uint64 NowMs()
+{
+    return uint64(GameTime::GetGameTimeMS());
+}
+
+// A human within this range of the next node's anchor has arrived there.
+constexpr float AdvanceArrivalRange = 45.0f;
+
+// Templates: the route node type is private to the manager; only the friend
+// Context names it.
+template <typename Node>
+Position NodeAnchor(Node const& node)
+{
+    bool const navigation = node.NavigationAnchorX != 0.0f || node.NavigationAnchorY != 0.0f;
+    return Position(navigation ? node.NavigationAnchorX : node.X,
+        navigation ? node.NavigationAnchorY : node.Y,
+        navigation ? node.NavigationAnchorZ : node.Z);
+}
+
+template <typename Node>
+bool IsNodeCreature(Node const& node, Unit const* unit)
+{
+    Creature const* creature = unit ? unit->ToCreature() : nullptr;
+    if (!creature)
+        return false;
+    uint32 const entry = creature->GetEntry();
+    auto in = [entry](std::vector<uint32> const& entries)
+    {
+        return std::find(entries.begin(), entries.end(), entry) != entries.end();
+    };
+    return entry == node.TargetEntry || entry == node.OpenerTargetEntry
+        || in(node.AlternateTargetEntries) || in(node.AddTargetEntries)
+        || in(node.PackTargetEntries) || in(node.ScriptedEventEntries);
 }
 
 uint8 LfgRoleMask(std::string const& role)
@@ -313,6 +352,9 @@ std::string Context::Status(BotWorldPopulationMgr& mgr)
           << ",\"ready_check_pending\":" << (cohort->Raid.NativeReadyCheckPending ? "true" : "false")
           << ",\"ready_check_responses\":" << cohort->Raid.NativeReadyCheckResponseCount
           << ",\"wipe_state\":\"" << Escape(cohort->Raid.WipeState) << "\""
+          << ",\"pull_in_ms\":" << (cohort->Play.PullAtMs
+              ? int64(cohort->Play.PullAtMs) - int64(NowMs()) : 0)
+          << ",\"pull_source\":\"" << Escape(cohort->Play.PullSource) << "\""
           << ",\"admission\":\"" << Escape(mgr.Cohort().ValidationAttemptFailureReason.empty()
               ? mgr.Cohort().LastPopulationFailureReason
               : mgr.Cohort().ValidationAttemptFailureReason) << "\"";
@@ -463,8 +505,135 @@ bool Context::PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveG
     BotPlaySession& session = mgr.Cohort().Play;
     if (prospectiveGeneration <= session.PermittedGeneration)
         return true;
-    session.LastEvent = "holding_for_go";
-    return false;
+    auto const& manifest = mgr.Party().ValidationRouteManifest;
+    size_t const targetIndex = size_t(prospectiveGeneration - 1);
+    // Generation past the last node completes the route; nothing to follow.
+    if (targetIndex == 0 || targetIndex >= manifest.size())
+        return true;
+    auto const& current = manifest[targetIndex - 1];
+    auto const& next = manifest[targetIndex];
+
+    // Read the raid like a human raider: follow the humans toward the next
+    // pack or boss, join a fight they start there, and walk to the boss when
+    // the leader starts a pull timer.
+    std::string reason = session.PullAtMs ? "pull_timer" : "";
+    Position const currentAnchor = NodeAnchor(current);
+    Position const nextAnchor = NodeAnchor(next);
+    auto const& raid = mgr.Cohort().Raid;
+    for (auto const& [raw, external] : session.Externals)
+    {
+        if (!reason.empty())
+            break;
+        Player* human = ObjectAccessor::FindConnectedPlayer(external.Guid);
+        if (!IsHuman(human) || !human->IsInWorld() || !human->IsAlive()
+            || human->GetMapId() != raid.MapId || human->GetInstanceId() != raid.InstanceId)
+            continue;
+        float const toNext = human->GetExactDist(&nextAnchor);
+        if (toNext <= AdvanceArrivalRange)
+            reason = "human_at_next:" + human->GetName();
+        else if (toNext < human->GetExactDist(&currentAnchor))
+            reason = "human_moving_ahead:" + human->GetName();
+        else if (IsNodeCreature(next, human->GetVictim()))
+            reason = "human_engaged:" + human->GetName();
+        else
+            for (Unit* attacker : human->getAttackers())
+                if (IsNodeCreature(next, attacker))
+                {
+                    reason = "human_engaged:" + human->GetName();
+                    break;
+                }
+    }
+    if (reason.empty())
+    {
+        session.LastEvent = "following_raid_to:" + next.NodeId;
+        return false;
+    }
+    session.PermittedGeneration = prospectiveGeneration;
+    session.LastEvent = "advance:" + next.NodeId + ":" + reason;
+    TC_LOG_INFO("server", "BotWorld play advance session=%s node=%s reason=%s",
+        session.SessionId.c_str(), next.NodeId.c_str(), reason.c_str());
+    return true;
+}
+
+bool Context::PullPermitted(BotWorldPopulationMgr& mgr)
+{
+    BotPlaySession& session = mgr.Cohort().Play;
+    if (session.PullAtMs && mgr.Cohort().Raid.WipeGeneration != session.PullWipeGeneration)
+    {
+        session.PullAtMs = 0;
+        session.LastEvent = "pull_timer_consumed_by_wipe";
+    }
+    return session.PullAtMs && NowMs() >= session.PullAtMs;
+}
+
+std::string Context::Pull(BotWorldPopulationMgr& mgr, Player* invoker, bool cancel,
+    uint32 seconds, std::string const& source)
+{
+    char const* action = "pull";
+    BotWorldPopulationMgr::CohortRuntime* cohort = mgr.FindCohort(CohortId);
+    if (!cohort || !cohort->Active || !cohort->Play.Active)
+        return Result(action, false, "no_active_play_session");
+    if (IsHuman(invoker))
+    {
+        Group* group = invoker->GetGroup();
+        if (!group || group->GetGUID() != cohort->Play.GroupGuid
+            || (!group->IsLeader(invoker->GetGUID())
+                && !group->IsAssistant(invoker->GetGUID())))
+            return Result(action, false, "only_the_raid_leader_or_assistant_can_pull");
+    }
+    BotPlaySession& session = cohort->Play;
+    session.PullSource = source;
+    if (cancel)
+    {
+        session.PullAtMs = 0;
+        session.LastEvent = "pull_cancelled:" + source;
+    }
+    else
+    {
+        seconds = std::min(seconds, BotPlayPullTimer::MaxSeconds);
+        session.PullAtMs = NowMs() + uint64(seconds) * 1000;
+        session.PullWipeGeneration = cohort->Raid.WipeGeneration;
+        session.LastEvent = "pull_timer:" + std::to_string(seconds) + "s:" + source;
+    }
+    TC_LOG_INFO("server", "BotWorld play pull session=%s cancel=%u seconds=%u source=%s",
+        session.SessionId.c_str(), uint32(cancel), seconds, source.c_str());
+    return Result(action, true, "", ",\"cancel\":" + std::string(cancel ? "true" : "false")
+        + ",\"seconds\":" + std::to_string(seconds));
+}
+
+bool Context::FromPlayLeadership(BotWorldPopulationMgr& mgr, Player* sender)
+{
+    BotWorldPopulationMgr::CohortRuntime* cohort = mgr.FindCohort(CohortId);
+    Group* group = sender ? sender->GetGroup() : nullptr;
+    return cohort && cohort->Active && cohort->Purpose == CohortPurpose::Play
+        && cohort->Play.Active && IsHuman(sender) && group
+        && group->GetGUID() == cohort->Play.GroupGuid
+        && (group->IsLeader(sender->GetGUID()) || group->IsAssistant(sender->GetGUID()));
+}
+
+void OnAddonMessage(Player* sender, uint32 chatType, std::string const& prefix,
+    std::string const& message)
+{
+    if (chatType != CHAT_MSG_RAID && chatType != CHAT_MSG_PARTY)
+        return;
+    std::optional<BotPlayPullTimer::Signal> const signal =
+        BotPlayPullTimer::ParseAddon(prefix, message);
+    if (!signal || !Context::FromPlayLeadership(*sBotWorldPopulationMgr, sender))
+        return;
+    Context::Pull(*sBotWorldPopulationMgr, sender, signal->Cancel, signal->Seconds,
+        "addon:" + prefix);
+}
+
+void OnGroupChat(Player* sender, uint32 chatType, std::string const& message, Group* /*group*/)
+{
+    if (chatType != CHAT_MSG_RAID && chatType != CHAT_MSG_RAID_LEADER
+        && chatType != CHAT_MSG_RAID_WARNING && chatType != CHAT_MSG_PARTY
+        && chatType != CHAT_MSG_PARTY_LEADER)
+        return;
+    std::optional<BotPlayPullTimer::Signal> const signal = BotPlayPullTimer::ParseChat(message);
+    if (!signal || !Context::FromPlayLeadership(*sBotWorldPopulationMgr, sender))
+        return;
+    Context::Pull(*sBotWorldPopulationMgr, sender, signal->Cancel, signal->Seconds, "chat");
 }
 
 bool Context::FrozenLeaderHolds(BotWorldPopulationMgr const& mgr, Group const* group,

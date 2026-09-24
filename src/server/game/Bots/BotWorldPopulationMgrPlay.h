@@ -29,6 +29,11 @@ inline constexpr char const* Scenario = "blackwing_descent_10n_magmaw_diagnostic
 // Core hook for WorldSession::HandleRaidReadyCheckOpcode; no-op unless a
 // play session owns the group.
 void OnRaidReadyCheckStarted(Group* group, Player* initiator);
+// Core hook for addon messages (DBM/BigWigs pull timers from the leader).
+void OnAddonMessage(Player* sender, uint32 chatType, std::string const& prefix,
+    std::string const& message);
+// Script hook for party/raid chat and raid warnings ("pull 10").
+void OnGroupChat(Player* sender, uint32 chatType, std::string const& message, Group* group);
 
 struct Context
 {
@@ -37,6 +42,9 @@ struct Context
     static std::string Go(BotWorldPopulationMgr& mgr, Player* invoker);
     static std::string Stop(BotWorldPopulationMgr& mgr, Player* invoker);
     static std::string Status(BotWorldPopulationMgr& mgr);
+    // `.botauto play pull [seconds|cancel]`, DBM/BigWigs timers and raid chat.
+    static std::string Pull(BotWorldPopulationMgr& mgr, Player* invoker, bool cancel,
+        uint32 seconds, std::string const& source);
 
     // Lifecycle hooks, called only while a Play cohort is selected.
     static bool IsExternalSlot(BotWorldPopulationMgr const& mgr, std::string const& slotId);
@@ -48,7 +56,14 @@ struct Context
     // other member is a registered (or newly registered) human.
     static bool NativeGroupAdmits(BotWorldPopulationMgr& mgr, Group* group,
         std::set<ObjectGuid> const& botGuids);
+    // Bots advance when a human moves toward (or fights at) the next node,
+    // when a pull timer runs, or on a manual go.
     static bool PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveGeneration);
+    // True once the leader's pull timer expired; bots stage but hold the
+    // boss pull until then (or until anyone engages).
+    static bool PullPermitted(BotWorldPopulationMgr& mgr);
+    // The sender leads or assists the active play raid.
+    static bool FromPlayLeadership(BotWorldPopulationMgr& mgr, Player* sender);
     // The frozen leader check of validation; any leader holds in play,
     // where a human leads and may pass the lead.
     static bool FrozenLeaderHolds(BotWorldPopulationMgr const& mgr, Group const* group,

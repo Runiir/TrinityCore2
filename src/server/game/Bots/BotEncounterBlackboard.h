@@ -277,6 +277,9 @@ struct RouteView
     uint32 CompletionEntry = 0;
     uint32 CompletionSpellId = 0;
     bool Complete = false;
+    // False only in a play raid while the human leader's pull timer runs
+    // (or none was started): bots stage but hold the boss pull.
+    bool PullPermitted = true;
 };
 
 struct Blackboard

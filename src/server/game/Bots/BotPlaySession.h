@@ -36,8 +36,14 @@ struct BotPlaySession
     std::set<std::string> ExternalSlotIds;
     std::map<uint64, BotPlayExternal> Externals;
     // Highest route generation the bots may advance to. Generation 1 is the
-    // entrance regroup; each "go" permits the next node.
+    // entrance regroup. Humans moving toward (or fighting at) the next node
+    // advance it; `.botauto play go` is a manual override.
     uint64 PermittedGeneration = 1;
+    // Boss pull timer: bots hold the boss pull until it expires or anyone
+    // engages. A wipe consumes the timer.
+    uint64 PullAtMs = 0;
+    uint32 PullWipeGeneration = 0;
+    std::string PullSource;
     uint64 StartedAtMs = 0;
     std::string LastEvent;
 };

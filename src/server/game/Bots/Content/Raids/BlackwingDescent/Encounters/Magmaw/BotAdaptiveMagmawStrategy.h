@@ -181,6 +181,12 @@ public:
                             325.0f));
                 return plan;
             }
+            if (!board.Route.PullPermitted)
+            {
+                plan.SuppressOffense = true;
+                plan.SuppressReason = "prepull_pull_timer_wait";
+                return plan;
+            }
             if (prepull.Disposition == PrepullDisposition::HoldOffense)
             {
                 plan.SuppressOffense = true;
