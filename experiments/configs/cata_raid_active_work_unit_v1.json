@@ -1,7 +1,7 @@
 {
   "schema": "cata_raid_active_work_unit_v1",
-  "work_unit": "magmaw:tuning_06",
-  "owner_skill": "raid-bot-runtime-implementation",
+  "work_unit": "magmaw:tuning_07",
+  "owner_skill": "raid-role-implementation",
   "classification": "native_setup_diagnosis",
   "epoch_id": "wider_raid_readiness_20260909",
   "observed_at_commit": "430a1691a2b971f211d5c9603990a12cd16eddce",
@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Select the next largest verdict gap, or complete only when every requirement is accepted. Plan bundle 04: tank cooldown planning around Mangle and the TANK-003 rune hold, healer stage/strand recovery (HEAL-002, the 43.6 s off-platform strand), the Fallen Crusader 2 PPM row and a Dancing Rune Weapon recast; then implement, review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456 with 0 boss-window deaths.",
+  "next_action": "Read the scoreboard verdict (baseline label) and retained evidence; pick the largest actor gap, then record a plan with its risk_tier. Plan bundle 05: Blood seize-window throughput (Heart Strike while seized when Death Strike is not castable; Bone Shield reserved for the seize) and Fire baiter duty alternation per parasite wave (actor_30006 is accepted from b2 but must pass again on the final label for magmaw_10n); then implement, review, build, smoke and measure a 5-kill batch against baseline b4-2c0ed2d8.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 526,
+    "revision": 527,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "route",
+    "stage": "diagnose",
     "actor_ids": [
       "30001",
       "30002",
@@ -913,17 +913,15 @@
       }
     },
     "unit": {
-      "id": "magmaw:tuning_06",
-      "edge": "owner_mangle_survival_and_ranged_strand",
+      "id": "magmaw:tuning_07",
+      "edge": "owner_blood_seize_window_and_fire_baiter_duty",
       "requirements": [
-        "actor_30001",
         "actor_30002",
-        "actor_30010",
         "magmaw_10n"
       ],
-      "owner_skill": "raid-bot-runtime-implementation",
+      "owner_skill": "raid-role-implementation",
       "risk_tier": "shared_runtime",
-      "next_action": "Plan bundle 04: tank cooldown planning around Mangle and the TANK-003 rune hold, healer stage/strand recovery (HEAL-002, the 43.6 s off-platform strand), the Fallen Crusader 2 PPM row and a Dancing Rune Weapon recast; then implement, review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456 with 0 boss-window deaths."
+      "next_action": "Plan bundle 05: Blood seize-window throughput (Heart Strike while seized when Death Strike is not castable; Bone Shield reserved for the seize) and Fire baiter duty alternation per parasite wave (actor_30006 is accepted from b2 but must pass again on the final label for magmaw_10n); then implement, review, build, smoke and measure a 5-kill batch against baseline b4-2c0ed2d8."
     },
     "completed_measurements": [
       {
@@ -10235,6 +10233,32 @@
         ],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 526,
+        "unit_id": "magmaw:tuning_06",
+        "from": "route",
+        "to": "diagnose",
+        "event": {
+          "action": "route",
+          "revision": 526,
+          "unit_id": "magmaw:tuning_06",
+          "reason": "Bundles 03+04 kept as baseline b4-2c0ed2d8 with 0 deaths; Balance and Elemental pass. Blood is 0.948 (56 DPS short) and Fire A 0.92 with a fixed-baiter variance of 6.4k; open the next unit on those two.",
+          "unit": {
+            "id": "magmaw:tuning_07",
+            "edge": "owner_blood_seize_window_and_fire_baiter_duty",
+            "requirements": [
+              "actor_30002",
+              "magmaw_10n"
+            ],
+            "owner_skill": "raid-role-implementation",
+            "risk_tier": "shared_runtime",
+            "next_action": "Plan bundle 05: Blood seize-window throughput (Heart Strike while seized when Death Strike is not castable; Bone Shield reserved for the seize) and Fire baiter duty alternation per parasite wave (actor_30006 is accepted from b2 but must pass again on the final label for magmaw_10n); then implement, review, build, smoke and measure a 5-kill batch against baseline b4-2c0ed2d8."
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -10243,7 +10267,7 @@
       "boss": "magmaw",
       "mode": "10N"
     },
-    "source_base_commit": "f6e5d16fc51e7307db966b6c227d7fb49028c3fb",
+    "source_base_commit": "44caecdc869c97cf03bcdeb05d3e43cc0260e950",
     "continuation": {
       "path": "artifacts/cata_raid_program/magmaw_balance_regression_continuation_20260921.json",
       "sha256": "44c8d4e624e503da159c2668182482b7e43a7a4e5688f425788afa464c81ef23"
@@ -10281,233 +10305,6 @@
       "actor_review": "artifacts/cata_raid_program/magmaw_route_prerequisites_actor_review_20260922.json",
       "evidence": "artifacts/cata_raid_program/magmaw_route_prerequisites_evidence_20260922.tar.gz.dvc",
       "pending": "Independent review of diagnostic-clear stop/export patch interrupted; tests passed, no second live run launched. Exact pull-to-death DPS unavailable. No acceptance changed."
-    },
-    "assignment": {
-      "hypothesis": "b3 k1: the tank met Mangle at 46% with Vampiric Blood (health trigger at 50.2 s) and Icebound Fortitude (35% emergency at 60.3 s) already spent while the priest and druid stood 2.7 yd below the platform after a parasite contact-escape leg (straight-away 20 yd, no floor/path check) and retried a failing return for ~45 s; in the 6 s lead the tank cast Heart Strike x2 and Rune Strike with Death Strike rune-gated, so the 86.5k Mangle hit landed on no shield. Planning the tank's cooldowns around Magmaw's published Mangle timer (keep IBF for the hit, spend VB/Rune Tap in emergencies, hold VB's ordinary trigger near a Mangle, pre-cast VB when IBF is on cooldown, hold HS/RS until a Death Strike lands) keeps a defensive and Blood Shield up at every seize; validating escape/stage destinations against the native floor and a level round-trip path, and falling back after three native rejections, ends the strand; a healer within 35 yd with LOS keeps healing through Mangle. Fallen Crusader at 2 PPM (pinned WoWSims) and a Rune Tap row add tank throughput/survival lawfully. Expected: 0 boss-window deaths over 5 kills; Blood >= 0.95 (24.0k on b3 plus ~0.5k from 2 PPM); Balance and Elemental no longer lose kills to strands.",
-      "owned_files": [
-        "sql/custom/world/2026_09_24_10_blood_rune_tap.sql",
-        "sql/custom/world/2026_09_24_11_fallen_crusader_ppm.sql",
-        "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp",
-        "src/server/game/Bots/BotWorldPopulationMgrRaidCooldownReservation.h",
-        "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp",
-        "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleDefensive.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformDestination.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformNativeProbe.h",
-        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp",
-        "tests/test_blood_fallen_crusader_ppm.py",
-        "tests/test_blood_rune_tap.py",
-        "tests/test_magmaw_mangle_cooldown_plan.py",
-        "tests/test_magmaw_mangle_defensive.py",
-        "tests/test_magmaw_mangle_icebound_reservation.py",
-        "tests/test_magmaw_platform_strand_recovery.py"
-      ],
-      "forbidden_changes": [
-        "No invented auras, cooldown resets, damage/mitigation multipliers, health refills, Z steering, tolerance loosening or teleports; native pathing decides reachability.",
-        "No change to Magmaw's script or Mangle values, the Rune Weapon/glyph code of bundle 03, provisioning configs, WCL references, coefficients, the scoreboard or graph tooling."
-      ],
-      "acceptance_conditions": [
-        "Declared tests pass; module_size reports no oversized file; an independent reviewer (separate subagent session, transcript-bound import-json) approves the exact diff.",
-        "A clean policy-bound build, one smoke kill, then a 5-kill scoreboard batch vs baseline b2-fd4ba456 judged with `scoreboard show --actor <id>` under the playbook keep rule; mechanism evidence: IBF or Vampiric Blood active at every seize, a Death Strike and Bone Shield >= 3 charges in the 6 s lead, no Mangle hit above ~50k, Rune Tap only below 60%, Unholy Strength ~12% of landed hits, no actor below the platform, no path_control_level_gap streak over ~5 s, healer casting gaps around Mangle under 4 s, priest heals on the Mangled tank.",
-        "0 boss-window deaths and every counted kill a native clear; otherwise the failing part is reverted.",
-        "This plan does not by itself accept any actor, the encounter or the parent objective."
-      ],
-      "required_test_commands": [
-        "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py",
-        "pixi run pytest -q tests/test_magmaw_platform_strand_recovery.py tests/test_magmaw_support_cast_range.py tests/test_magmaw_parasite_policy.py tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_balance_mushroom_duty.py",
-        "pixi run pytest -q tests/test_blood_fallen_crusader_ppm.py tests/test_blood_death_strike_priority.py tests/test_blood_rune_recovery.py tests/test_blood_outbreak_disease_upkeep.py tests/test_blood_native_fidelity.py",
-        "pixi run python -m tools.raid_program.module_size"
-      ],
-      "base_commit": "fc247826fdfca9a1804fc0ef12f18ba2289a448f",
-      "policy": {
-        "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
-        "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
-      },
-      "validation_identity": {
-        "scenario_kind": "raid",
-        "encounter": {
-          "raid": "blackwing_descent",
-          "boss": "magmaw",
-          "mode": "10N"
-        },
-        "roster": {
-          "path": "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
-          "sha256": "d3ef70bfc6017aa523c9ae762e2b7cfa7bef319b33632fd7e1d3c3b48f20741a"
-        },
-        "runtime_profile": {
-          "path": "experiments/configs/validation_scenarios_cata_001.json",
-          "sha256": "48d82febef1c535253811147ffcb914d7fde54ae32d08f7923bfaa7eb4e399ae"
-        },
-        "route": {
-          "path": "dataset/validation_scenarios/validation_routes.jsonl",
-          "sha256": "339c2dd8629413ff0cf1e3ba2e65365d7c6099c1280ac2abbeabe19593bd5c4a"
-        }
-      },
-      "risk_tier": "shared_runtime"
-    },
-    "receipts": {
-      "plan": {
-        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_plan_20260924.json",
-        "sha256": "7c75f6e98e4c689a745852607b8e465bf1af15470747a6baad034f0b6a2f898d"
-      },
-      "tests": {
-        "path": "artifacts/cata_raid_program/tests-13c95f3272476b2e16a4456d5886a4ed7645d82922e4356dd4b6bcf53ee2c98c-f6e5d16fc51e-987969d3e57d/receipt-e4d8b22668d3b4e82a2c674dd2ddd31d7209b9b888edb28fa572e29e14ebd6ac.json",
-        "sha256": "e4d8b22668d3b4e82a2c674dd2ddd31d7209b9b888edb28fa572e29e14ebd6ac"
-      },
-      "review": {
-        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_review_20260924.json",
-        "sha256": "4df365375421009b2f43f6b7072b38374e6d6bab5513f28e8cd57e433332531c"
-      },
-      "build": {
-        "path": "artifacts/cata_raid_program/workflow-build-a4af2448c1e982d2b93c998037a9bfa918158c856a0c4bd71fbba8e1308ea6d6.json",
-        "sha256": "e6166e0a38656a6f732b512b8f965af7cc738eca091e786e6dee6809e1425b61"
-      },
-      "smoke": {
-        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_smoke_20260924.json",
-        "sha256": "4a87f1a3663abdf4cd646d12ce84c3b3d19a3d4c5f64571c2f13b8a87c25516f"
-      },
-      "run": {
-        "path": "artifacts/cata_raid_program/scoreboard-run-b4-2c0ed2d8-78b11138fd5f.json",
-        "sha256": "78b11138fd5fa0bb3a3d7f8300e3090b8045aa08fa04bc8b8094b95383323736"
-      },
-      "assessment": {
-        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_assessment_20260924.json",
-        "sha256": "bf15904398545e86cf39d77868bd8f9c7c13c1d61741d799a63a32b1cc83e85c"
-      },
-      "publication": {
-        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_publication_20260924.json",
-        "sha256": "42a27acf5f217405c9605fcf121236ac7a9687dcdc8b9eafa8cfe8329a354e39"
-      }
-    },
-    "tested_files": {
-      "sql/custom/world/2026_09_24_10_blood_rune_tap.sql": "d3f4d9303fa7a02a9b908c9c48dc4a45e558088a93f209d93e89bef3d8e9f0cf",
-      "sql/custom/world/2026_09_24_11_fallen_crusader_ppm.sql": "88bef2deb4058bbc6b6ee52ab782525c55e2b1831194a08ee1367845a4026061",
-      "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": "2399a32dfa884a710b38954af57f5ef1d224cf616451bc05338cd0a1f6ab442c",
-      "src/server/game/Bots/BotWorldPopulationMgrRaidCooldownReservation.h": "61246f996fcf23bfb282dfa42dfc3d590136a2c46db08f76dafe2e499c061311",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp": "7611cd020a114fed240eb1823c433e544c1b2311f2a877dacc3cf76e116a4778",
-      "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": "a1182f206201b8a14f2c175e60a599ed6261f55979980daf1741e260f3dec642",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "e35dffdb7a2493150ab2aa5b4fbe0837b985caa76b0f4b89468c9d6d2b4425be",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h": "2fbf64c043b11092a88a73b64fe9a912eb5daa5211337d677e698263a341ef79",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h": "173267850a16b5bb54c93e4687b3240afef61025aa6e068df3bd5174ccb49bc3",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleDefensive.h": "aa9a54f81c38e5671d7223c24372997fc6a032f75e3742ec3c468ec11e8ed52b",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp": "02674ca54842166f11b3326b496d0b504fa7a34ad76dad463baa67b00211c03f",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h": "8b1ec569fa67ce387ddf711225b475962b095f6b0562a7c78f41fecbd0a4a0bf",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl": "6737df78392f01dfd112645497a7855244a4105740f7fcb5456fd0593aa07c5b",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformDestination.h": "64881eb650c62366fdf47cb6e3fb152fe08a4121115f898a7fb35e74035f2bab",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformNativeProbe.h": "4abc3411dd217db81d0918caf4f1b35abe1dd59707f68643a8e07e49e1b390aa",
-      "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp": "9ef8756e941764165ef8f1a5e2868f1056cd01a1de353efa22cfdc9eed1bbeb7",
-      "tests/test_blood_fallen_crusader_ppm.py": "167efee8d4aaa7929c12441686049d934178d3262acf63787b182833fe4bd3d3",
-      "tests/test_blood_rune_tap.py": "a00d29824a10fe2e316fafe4dcde8f200c27fbd148f44da63bf55502d3277206",
-      "tests/test_magmaw_mangle_cooldown_plan.py": "c37a90078f8dac8a6b8f7f3b4dd7302c4cc24573e683af244c95607320c01ac9",
-      "tests/test_magmaw_mangle_defensive.py": "509e88ebebb0e64104c6821a94886759c6f20c4d035e0985ec20c5b23d04c3ab",
-      "tests/test_magmaw_mangle_icebound_reservation.py": "dc0ac8f5a4b27889eb07b793e54e9391abb06b613f290a0165daefd4b5d7b121",
-      "tests/test_magmaw_platform_strand_recovery.py": "afd8935b02fdb66777b18f92b00b3a9d09febe8f0bc933d7cc1d505699e7dc16"
-    },
-    "tested_commit": "f6e5d16fc51e7307db966b6c227d7fb49028c3fb",
-    "implementer": "coordinator-bca90d3b",
-    "build_identity": {
-      "source_commit": "0c19e828672b46881dab3dd085073b3e08da5265",
-      "binary_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f"
-    },
-    "smoke": {
-      "attempt_id": "scoreboard:smoke-2c0ed2d8",
-      "server_epoch": "2026-09-24T01:14:00Z"
-    },
-    "run": {
-      "attempt_id": "scoreboard:b4-2c0ed2d8",
-      "server_epoch": "2026-09-24T01:20:02Z",
-      "scenario_kind": "raid",
-      "terminal_reason": "clear",
-      "claimed_at": "2026-09-24T01:14:20Z",
-      "kill_ids": [
-        "b4-2c0ed2d8-k1-20260924T011421Z",
-        "b4-2c0ed2d8-k2-20260924T011421Z",
-        "b4-2c0ed2d8-k3-20260924T011421Z",
-        "b4-2c0ed2d8-k4-20260924T011421Z",
-        "b4-2c0ed2d8-k5-20260924T011421Z"
-      ],
-      "scoreboard_label": "b4-2c0ed2d8"
-    },
-    "pending_acceptance": [
-      "actor_30001",
-      "actor_30010"
-    ],
-    "pending_verdict": {
-      "actor_30001": {
-        "receipt": {
-          "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b4-2c0ed2d8-c6e55f0ba0bd.json",
-          "sha256": "c6e55f0ba0bd8b9c290a7ef4791506ec621742580c1a0fe791a63041837c0943"
-        },
-        "label": "b4-2c0ed2d8",
-        "kills": 5,
-        "kill_ids": [
-          "b4-2c0ed2d8-k1-20260924T011421Z",
-          "b4-2c0ed2d8-k2-20260924T011421Z",
-          "b4-2c0ed2d8-k3-20260924T011421Z",
-          "b4-2c0ed2d8-k4-20260924T011421Z",
-          "b4-2c0ed2d8-k5-20260924T011421Z"
-        ],
-        "worldserver_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f",
-        "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
-        "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
-        "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
-        "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
-        "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
-        "status": "pass",
-        "spec": "balance_druid",
-        "n": 5,
-        "mean_dps": 40301.9,
-        "target_dps": 41029.1,
-        "ratio": 0.982,
-        "reference_basis": "wcl",
-        "required_ratio": 0.95,
-        "required_dps": 38977.6,
-        "encounter_status": "pass"
-      },
-      "actor_30010": {
-        "receipt": {
-          "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b4-2c0ed2d8-c6e55f0ba0bd.json",
-          "sha256": "c6e55f0ba0bd8b9c290a7ef4791506ec621742580c1a0fe791a63041837c0943"
-        },
-        "label": "b4-2c0ed2d8",
-        "kills": 5,
-        "kill_ids": [
-          "b4-2c0ed2d8-k1-20260924T011421Z",
-          "b4-2c0ed2d8-k2-20260924T011421Z",
-          "b4-2c0ed2d8-k3-20260924T011421Z",
-          "b4-2c0ed2d8-k4-20260924T011421Z",
-          "b4-2c0ed2d8-k5-20260924T011421Z"
-        ],
-        "worldserver_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f",
-        "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
-        "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
-        "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
-        "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
-        "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
-        "status": "pass",
-        "spec": "elemental_shaman",
-        "n": 5,
-        "mean_dps": 41949.7,
-        "target_dps": 41866.0,
-        "ratio": 1.002,
-        "reference_basis": "wcl",
-        "required_ratio": 0.95,
-        "required_dps": 39772.7,
-        "encounter_status": "pass"
-      }
-    },
-    "outcomes": {
-      "encounter_clear": true,
-      "repair_accepted": false,
-      "performance_accepted": false,
-      "verdict_status": "fail",
-      "verdict_label": "b4-2c0ed2d8"
     }
   },
   "parked_scenarios": {
