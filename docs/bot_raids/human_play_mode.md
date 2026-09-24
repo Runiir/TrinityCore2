@@ -1,7 +1,8 @@
 # Human play mode: humans raiding with trained bots
 
-Status (2026-09-24): steps 0-1 are done. Step 2 is playable and verified live with one
-human dps. Its recording/collector and the validation regression batch remain.
+Status (2026-09-25): steps 0-1 are done. Step 2 is playable, verified live with one human
+dps, and validation-neutral (16/16 clears). Play mode is parked until there are enough
+players; recording/collector, sims and steps 3-5 remain.
 First target is Magmaw 10N (`blackwing_descent_10n_magmaw_diagnostic`, trained
 roster GUIDs 30001-30010).
 
@@ -62,8 +63,23 @@ roster GUIDs 30001-30010).
     `D4` addon sync and the raid-warning countdown (10 to 0). Status read
     `boss_engaged:pull_timer`, then `boss_killed`. Magmaw died in 2:03 with 0 bot
     deaths.
-- Still open: tagged play recording and the ML collector (step 2.3), sims, and the
-  validation smoke plus 5-kill regression batch on the step-2 code.
+- Validation regression on the step-2 build `ab752adab0` (10-bot cohorts, play hooks
+  inert):
+  - Runs: `smoke-ab752ad` plus batches `play2`, `play2b` and `play2c` (`-ab752ad`).
+    16/16 native clears, 0 boss-window deaths, 2 recovered Drudge trash deaths.
+  - Target verdict:
+    - `play2c` passes, every actor at or above 0.99.
+    - `play2` and `play2b` each missed on one actor by a small margin: shaman 0.936,
+      druid 0.926.
+    - A same-host control on the step-1 binary (`ctl-d60e6de`) passes.
+  - Pooled 16 vs 28 kills, the party and every actor are within noise (two-sided 95%
+    Welch). The one flag is a fire mage marked improved.
+  - The shaman's early dip has no behavioral cause:
+    - same combat event rate, no cast gaps, same per-spell damage;
+    - only the Lightning Bolt/Lava Burst hit counts differ, and those come from
+      overload and Lava Surge procs.
+- Still open: tagged play recording and the ML collector (step 2.3) and sims. Parked
+  with the rest of play mode.
 
 **Constraints learned (they shape step 2)**
 - `worldserver.conf.dist` and `Makefile` are hash-pinned by
