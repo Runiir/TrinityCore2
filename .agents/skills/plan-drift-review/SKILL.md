@@ -49,8 +49,8 @@ Return one short verdict: aligned, drift found, or insufficient evidence. State
 the exact divergence and the smallest correction, with any parked requirement
 that must remain visible. If aligned, continue the active work. If drift is
 proved, update the existing plan/status and continue the corrected next action.
-Do not ask for permission again for already authorized work. Retain the model
-responses and the coordinator verdict separately for later evaluation.
+Do not ask for permission again for already authorized work. Retain the
+coordinator verdict with its checkpoint for later evaluation.
 
 Use this checkpoint only on request, never after every tool call. The pre-commit hook checks staged code; this skill also catches
 orchestrator drift that produces no code, such as repeating research or stopping

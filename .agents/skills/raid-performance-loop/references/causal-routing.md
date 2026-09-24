@@ -11,14 +11,13 @@ state mutation or production fixture boundary is unproven, route one evidence,
 telemetry, or fixture-expansion unit rather than an implementation or canary.
 Reject a causal receipt that connects a candidate to a later mutation only by
 actor and time proximity. It must carry an owner-to-owner execution correlation
-key through the consumed mutation. If that join is absent, route a Luna max
+key through the consumed mutation. If that join is absent, route a
 causal/telemetry unit before dispatching an implementation worker. Keep diagnosis
 and implementation scopes distinct even when both use the same model.
 
 Use decision complexity as a routing signal when a trace shows ownership
-conflicts, oscillation, or opaque fallback behavior. The 2026-08-28 native bot
-baseline was average CCN 15.80, p95 73, 45 functions above 100, and maximum
-464. Re-measure before acting because the tree changes. Route one bounded
+conflicts, oscillation, or opaque fallback behavior. Measure the current CCN of
+the functions involved before acting. Route one bounded
 policy extraction to the specialist that owns the first broken edge. Do not
 assign a generic cleanup or accept a refactor that only moves branches into
 helpers. The handoff must preserve typed priority-queue candidates, explicit

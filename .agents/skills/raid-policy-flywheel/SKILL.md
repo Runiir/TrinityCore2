@@ -127,15 +127,14 @@ Return:
 
 Use the shared handoff contract from `raid-performance-loop/references/handoff-contract.md`.
 
-## Local diagnostic shadow
+## Post-run diagnostic data
 
-For post-run diagnostic suggestions, use the existing
-[local JEV workflow](../../../docs/bot_raids/local_jev_shadow.md). This dataset
-has a different boundary from live candidate ranking: post-run context must
-never become action-policy features. Preserve exact request bytes and candidate
-order, backend checkpoint/prompt identity, predictions and native evidence.
-Model predictions or hosted/local agreement are not adjudicated labels. Keep
-unlabeled/incomplete examples in quarantine. An aggregate first/last failure
-interval spanning a damage gap cannot prove failures occurred inside that gap.
-Pet/DoT effects cannot prove owner casting continued; compare like event types
-and actual shared damage windows, with duties and phase coverage explicit.
+Keep existing post-run diagnostic data, such as the retired
+[local JEV shadow](../../../docs/bot_raids/local_jev_shadow.md) dataset, apart
+from live candidate ranking: post-run context must never become action-policy
+features. Model predictions or hosted/local agreement are not adjudicated
+labels; keep unlabeled/incomplete examples in quarantine. An aggregate
+first/last failure interval spanning a damage gap cannot prove failures
+occurred inside that gap. Pet/DoT effects cannot prove owner casting
+continued; compare like event types and actual shared damage windows, with
+duties and phase coverage explicit.

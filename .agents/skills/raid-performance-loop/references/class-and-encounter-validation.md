@@ -7,7 +7,7 @@ Class qualification is reusable across bosses. Encounter performance is not.
 Run `pixi run python -m tools.raid_program.calibration_reuse list --spec <spec>`.
 Check the shared catalog and retained actor evidence before launching a server.
 Hydrate missing DVC evidence; missing local files do not justify another experiment.
-Thresholds (75% class floor, legacy 95% `dps_gate`, historical 85%/92.3%) are
+Thresholds (75% class floor, 90% WoWSims fallback, 85% bundling trigger, legacy 95% `dps_gate`, historical 92.3%) are
 defined once in the [raid tuning playbook](../../raid-tuning-playbook/SKILL.md).
 Index existing eligible evidence without rerunning it:
 

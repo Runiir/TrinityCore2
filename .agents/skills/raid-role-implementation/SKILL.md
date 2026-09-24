@@ -112,8 +112,7 @@ teleportation, or a height offset.
 ## Implement the smallest policy change
 
 If the policy lives in a high-CCN decision function, reduce the decision graph
-as part of the bounded repair. The 2026-08-28 native bot audit found 45
-functions above CCN 100, with a maximum of 464. Do not merely move branches
+as part of the bounded repair. Do not merely move branches
 into helpers and call every helper from the same monolithic decision. Give an
 extracted class/spec or pet concern one typed candidate, explicit gates,
 resource claims, stable reason text, and an observable outcome. Preserve the

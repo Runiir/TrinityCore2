@@ -40,11 +40,13 @@ the measuring harness, not the goal.
 ## 2. Finish line, metric and thresholds
 
 **Finish line.** Each non-healer actor's mean encounter-window DPS over 3 kills
-is at least 0.95 × the median matched WCL DPS for its spec, every kill is a
-native clear, and there are 0 deaths in the boss window. `scoreboard verdict`
-computes this from the target file. Status `no_reference` (Survival today)
-means the matched WCL reference is missing: that is reference work to do, not a
-pass. Healers have no DPS target; they pass with the encounter.
+is at least 0.95 × the median matched WCL DPS for its spec (or, for a spec with
+no matched WCL reference, the target file's `fallback_reference` ratio × the
+verified WoWSims DPS), every kill is a native clear, and there are 0 deaths in
+the boss window. `scoreboard verdict` computes this from the target file and
+prints each actor's `reference_basis`. Status `no_reference` means the spec has
+neither reference: that is reference work to do, not a pass. Healers have no
+DPS target; they pass with the encounter.
 
 **DPS** means encounter-window DPS: the actor's originated damage from the first
 to the last originated hostile damage in the boss window, divided by that
@@ -58,18 +60,20 @@ Each threshold has one meaning:
 | Value | Meaning | Applies to |
 | --- | --- | --- |
 | 95% of WCL | The finish line above | `scoreboard verdict`, per non-healer actor |
+| 90% of verified WoWSims (`fallback_reference`) | Finish line for a spec without a matched WCL reference | `scoreboard verdict`, per non-healer actor |
 | 75% of the hard reference | Per-class dummy qualification floor: one best DPS spec per class must reach it (Phase 8); for Death Knight prefer and keep optimizing Unholy | Isolated dummy calibration only |
 | Two-sided 95% Welch t | Regression check of the keep rule (step f); a positive delta need not pass it | Every keep/revert decision |
 | 5 kills per label | Batch size of every keep/revert comparison (`kills_per_batch`) | `scoreboard run --kills 5`, baseline and candidate |
 | 300 s | Exact scoring window of isolated training-dummy calibration | Never a raid or dungeon timer |
 | 10 | Failures of one edge before the graph demands a changed hypothesis | Graph routing |
 | 95% of self-provided WoWSims (`dps_gate`) | Legacy gate, checked only when a graph assessment cites no scoreboard verdict; not the finish line or a tuning target | Legacy graph assessment |
-| 85%, 92.3%, "75/85% flags" | Historical; ignore | None |
+| 85% of target (0.85) | Bundling trigger: below it, batch the actor's diagnosed error-ledger fixes into one change (step d) | Keep/revert batch planning |
+| 92.3%, "75/85% flags" | Historical; ignore | None |
 
 ## 3. The loop
 
-Work one actor at a time in the tuning order (section 5). Only the coordinator
-runs live kills; workers never launch a server. Each pass:
+Work one actor at a time, failing actors from the largest gap down. Only the
+coordinator runs live kills; workers never launch a server. Each pass:
 
 **a. Smoke kill: prove the harness.** Print the plan with `--dry-run`, then run
 `pixi run python -m tools.raid_program.scoreboard run --scenario S --label smoke-<short-sha> --kills 1`.
@@ -104,8 +108,7 @@ Stop reading when you can say "changing X should raise actor A's DPS because Y".
 mechanism, using the specialist skill that owns it (routing table in
 raid-performance-loop). When the actor is below 0.85 of its target, bundle the
 diagnosed fixes for that actor from the error ledger into one batch: a single
-5% fix cannot be told from noise at these kill counts, and the batches kept so
-far were bundles.
+5% fix cannot be told from noise at these kill counts.
 Classify its risk tier (section 4) and complete that tier's checks. Commit it,
 so each label maps to one commit.
 
@@ -174,19 +177,12 @@ since); a change that touches native code counts as at least `class_native`.
 Reviewer procedure and build commands are in trinity-orchestrator; plan fields
 are in `docs/bot_raids/development_graph.md`.
 
-## 5. Magmaw 10N now
+## 5. Scenario notes: Magmaw 10N
 
-Scenario `blackwing_descent_10n_magmaw`. The baseline label is recorded by
-`scoreboard baseline` and printed in the header of `scoreboard show`; compare
-every change against it and record a kept change as the new baseline. Kills
-vary by about +/-3-4% even on a clean harness, and the random Massive Crash
-side moves casters by several thousand DPS, so read the RNG line `show` prints
-before trusting an actor delta.
-
-Actor status comes from `scoreboard verdict`. The next diagnosed fix for each
-failing actor is its open row in the error ledger (TANK-, DPS-, HEAL- IDs);
-work the failing actors from the largest gap down and bundle per actor (step
-d). Mangle is the fight's lethal moment for the sole Blood tank; any change
+Scenario `blackwing_descent_10n_magmaw`. Kills vary by about +/-3-4% even on a
+clean harness, and the random Massive Crash side moves casters by several
+thousand DPS, so read the RNG line `show` prints before trusting an actor
+delta. Mangle is the fight's lethal moment for the sole Blood tank; any change
 that touches tank cooldowns, healer movement or pincer riders must keep
 boss-window deaths at 0. Encounter fidelity: only Magmaw 10N's melee is
 calibrated (ENC-007 lists the other difficulties, the adds and the route
@@ -211,7 +207,7 @@ trash).
   generated data lives in DVC, and as little as possible stays on disk.
 - **Tests.** Report every earlier failing test, even when a narrower rerun
   passes, and classify its relevance.
-- **Models.** Use the model preference in AGENTS.md, with implementer and
+- **Models.** No subagent model is enforced (AGENTS.md); keep implementer and
   reviewer in separate sessions. Model advisors (Jev, Laya) are not part of the
   workflow.
 

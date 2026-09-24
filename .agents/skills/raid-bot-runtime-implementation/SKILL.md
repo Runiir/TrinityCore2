@@ -85,10 +85,9 @@ A mandatory duty does not make an illegal offensive target usable. Test legal
 alternates and no-legal-target behavior while preserving the duty and its
 movement owner; an old fixture expectation is not strategy authority.
 
-Treat decision complexity as a runtime risk, not as a diagnosis by itself. The
-2026-08-28 native bot audit found a heavy tail: 45 functions above CCN 100 and
-a maximum of 464. When the broken edge is inside a high-CCN function, measure
-it before and after. Extract one independent policy owner that submits a typed
+Treat decision complexity as a runtime risk, not as a diagnosis by itself.
+When the broken edge is inside a high-CCN function, measure it before and
+after. Extract one independent policy owner that submits a typed
 candidate with explicit resource claims and a reason. Do not move the same
 branch tree into helpers that are all still called unconditionally. Preserve
 movement as a set-and-forget intent, keep action selection in the priority
@@ -350,11 +349,11 @@ the unrelated action leaves the frozen field unchanged. Keep the terminal
 receipt check as evidence, but diagnose the illegal writer as the first broken
 edge.
 
-Search for duplicate identity observers before adding another local check.
-The 2026-08-28 audit found `ObserveActiveOrdinaryHunterPet` duplicated across
-six validation/calibration translation units. A bounded repair should reuse one
-shared value-only observer when that duplication touches the admitted edge;
-do not broaden an unrelated repair into a repository-wide cleanup.
+Search for an existing identity observer before adding another local check.
+Reuse the shared value-only observers in
+`BotWorldPopulationMgrCalibrationIdentity` (for example
+`ObserveActiveOrdinaryHunterPet`) when that touches the admitted edge; do not
+broaden an unrelated repair into a repository-wide cleanup.
 
 Keep observation, immediate safety mitigation, gameplay authority, and
 certification verdict as four distinct owners. A detector may record or
@@ -495,13 +494,11 @@ If that live signature recurs while the focused fixture passes, do not patch a
 new helper or run another canary. First replace the incomplete fixture with a
 multi-tick replay spanning selection, arbitration, semantic retention, native
 submission/progress, preemption/resume, arrival, and reset. Preserve the old
-counterexample and record any corrected expectation in the architecture
-handoff.
-
-Preserve the old counterexample and add the missing live boundary to the
-affected behavioral tests. An unchanged passing replay does not explain a
-recurrence. Development does not require fixture-expansion metadata or a
-historical full-bank receipt; those belong to sealed replay and qualification.
+counterexample, add the missing live boundary to the affected behavioral tests,
+and record any corrected expectation in the architecture handoff. An unchanged
+passing replay does not explain a recurrence. Development does not require
+fixture-expansion metadata or a historical full-bank receipt; those belong to
+sealed replay and qualification.
 
 The replay must cross the independent action owners implicated by the observed
 failure. Include the competing candidate or native recovery caller that could

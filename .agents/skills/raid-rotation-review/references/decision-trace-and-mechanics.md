@@ -7,9 +7,8 @@ translation model.
 ## Trace the first broken edge
 
 Include decision complexity when traces show conflicting owners, oscillation, repeated
-decisions, or opaque fallback. The 2026-08-28 audit measured average CCN 15.80,
-p95 73, 45 functions above 100, and maximum 464; remeasure the current tree before
-acting. Split only when the effective decision graph loses overlapping ownership or
+decisions, or opaque fallback. Measure the current CCN of the functions involved
+before acting. Split only when the effective decision graph loses overlapping ownership or
 branches. Moving branches into helpers while calling all of them preserves
 complexity. Prefer independent typed candidates, explicit resource claims, stable
 intent reasons, and traces for admission, rejection, execution, and outcome.

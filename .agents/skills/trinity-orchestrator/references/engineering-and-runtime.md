@@ -77,6 +77,7 @@ logical CPUs, one shared heavyweight lease, and one linker. Load average is only
 diagnostic; memory reserve, PSI, swap growth, and disk space can stop an unsafe
 build. If 12 jobs are unsafe, retain that receipt and derive a bounded lower-memory
 retry rather than silently restoring the old four-job policy.
+If that retry also fails, stop and return the exact build phase and guard samples.
 
 When verifying or reusing a binary, pass the exact policy in its receipt; never
 relabel an old build as host12. A new policy requires its own configure lineage.

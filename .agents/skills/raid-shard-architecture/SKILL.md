@@ -296,16 +296,10 @@ canonical glyph identity and compares it after actions start.
 - For Nefarian, require all five predecessors and prepare on the upper ledge before the native descent/start action.
 - Bind the native instance-save rows and live runtime identity; never trust caller-authored boss-state booleans.
 
-## Degrade builds without regressing resource guards
+## Builds
 
-When a newer reviewed build policy has corrected flapping resource thresholds
-but still fails because compiler concurrency exceeds a load guard, derive the
-degraded retry from that newer policy: reduce concurrency while preserving its
-latest justified load, PSI, memory, swap, sampling, and stop guards. Do not
-select a stale lower-concurrency policy whose older thresholds contradict the
-newer evidence. Do not repeatedly raise resource ceilings while retaining the
-concurrency that produced the overload. If the reduced-concurrency policy also
-fails, stop and return the exact build phase and guard samples for review.
+The coordinator owns builds, including resource policy and degraded retries; see
+the orchestrator's [engineering and runtime rules](../trinity-orchestrator/references/engineering-and-runtime.md).
 
 ## Start and hand off a live shard
 
@@ -394,23 +388,11 @@ not route other shards through the Chainwielder module.
    attempt. Close the failed capture and clean only its owned cohort. Only the
    server lifecycle owner may terminate a server, and a shared server must
    remain alive while another cohort owns an active attempt.
-   For explicitly requested legacy sealed replay (not ordinary development), create the exact
-   `tools.raid_program.recurrence_admission` receipt after preparation and pass
-   its path and SHA-256 to the capture. The seal binds the clean source/tree,
-   binary and build receipt, generated config and route manifest, ledger,
-   recurrence decision, full regression-suite receipt, and fixture revisions.
-   If that replay seal cannot be verified, do not start the sealed replay.
    Ordinary development uses `--development-run` with canonical scenario,
    runtime profile, and pool. It preserves source/build/configuration, roster,
-   runtime asset, native completion, watchdog, and cleanup checks without this seal.
-   A live recurrence invalidates the fixture revision admitted for that run.
-   Require an incremented, value-level replacement fixture for the same causal
-   signature and a new full-bank receipt; an unchanged passing fixture, a
-   renamed fixture, or a source-shape assertion cannot authorize another
-   worldserver. The replacement must cover the causal equivalence class at the
-   final native outcome boundary, including adjacent complete/incomplete and
-   same-floor/cross-floor path variants where applicable; replaying only the
-   latest coordinates is not sufficient admission evidence.
+   runtime asset, native completion, watchdog, and cleanup checks without a
+   replay seal. For explicitly requested legacy sealed replay, follow
+   [sealed replay admission](references/sealed-replay.md) instead.
    Audit fixture predicates in both directions before admitting a live run:
    the production runtime must emit them and the live capture scheduler must
    consume them. Matching JSON in bundle creation and bundle verification is
@@ -465,12 +447,11 @@ silently reapplying phases every tick.
 ## Parallelize safely
 
 - Use one isolated cohort, pool, frozen roster, instance/save, capture namespace, and babysitter per boss.
-- Audit the runtime scheduler before promising same-process fan-out. The
-  current BotWorld design is serialized when `MaxActiveCohorts == 1` and
-  `Update()` selects only `_runningCohortId`; raising the constant alone is
-  unsafe and still does not schedule every cohort. Implement iteration over a
-  frozen active-cohort set, restore cohort scope after each update, and bind
-  every status/trace row to that cohort before enabling parallel shards.
+- Audit the runtime scheduler before promising same-process fan-out. Read the
+  current `MaxActiveCohorts` and `AllowsConcurrentAdmission` limits in source;
+  raising a constant alone does not schedule every cohort. Require iteration
+  over a frozen active-cohort set, restored cohort scope after each update, and
+  every status/trace row bound to its cohort before enabling more parallel shards.
 - Do not let native spell, heal, damage, death, or creature callbacks consult
   a process-wide selected cohort. Route each callback from actor GUID plus
   map/instance into an explicit or thread-local cohort scope; test with map

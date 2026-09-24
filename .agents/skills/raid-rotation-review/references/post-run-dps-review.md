@@ -205,7 +205,7 @@ Choose one next actionable loss; do not reopen repaired lifecycle failures or
 require a new documentation/authorization chain for ordinary tuning iterations.
 
 
-## Compact Luna handoff
+## Compact worker handoff
 
 Before dispatch, keep a single all-roster table with DPS/HPS, known duties,
 reference availability, the largest component differences and unresolved edges.
@@ -214,7 +214,7 @@ same native interval. Check setup and assignment differences before treating
 that gap as recoverable. Native rejection reasons can establish a blocked
 spell; its missing damage does not establish the amount a repair will recover.
 
-Send a Luna max worker one short packet, linked to existing receipts:
+Send the worker one short packet, linked to existing receipts:
 
 1. Mode: diagnosis or implementation; exact error-ledger ID and first broken edge.
 2. Frozen code/source, run/report hash, actor/target/spell and the decisive rows.
