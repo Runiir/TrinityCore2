@@ -55,6 +55,21 @@ static int failures = 0;
     }
 }
 
+[[maybe_unused]] static void ExpectEach(char const* text,
+    std::vector<std::pair<std::string_view, CalloutIntent>> expected)
+{
+    std::vector<Callout> const callouts = ParseCallouts(text, Magmaw::Table());
+    bool ok = callouts.size() == expected.size();
+    for (std::size_t index = 0; ok && index < expected.size(); ++index)
+        ok = callouts[index].Duty == expected[index].first
+            && callouts[index].Intent == expected[index].second;
+    if (!ok)
+    {
+        std::fprintf(stderr, "FAIL: \"%s\" -> %zu callouts\n", text, callouts.size());
+        ++failures;
+    }
+}
+
 [[maybe_unused]] static void ExpectNone(char const* text)
 {
     if (!ParseCallouts(text, Magmaw::Table()).empty())
@@ -95,6 +110,23 @@ int main()
     Expect("i wont bait anymore", { Magmaw::Bait }, release);
     Expect("release chains", { Magmaw::Chains }, release);
 
+    Expect("bres on me", { BattleRes }, claim);
+    ExpectEach("bots do chains, I do bait",
+        { { Magmaw::Chains, release }, { Magmaw::Bait, claim } });
+    ExpectEach("I do chains but bots do bait",
+        { { Magmaw::Chains, claim }, { Magmaw::Bait, release } });
+    if (ParseCallouts("I can't do chains", Magmaw::Table()).front().Personal != true
+        || ParseCallouts("bots do chains", Magmaw::Table()).front().Personal != false)
+        ++failures;
+
+    // Review findings (e4fa8a143a): requests, other spells and positions.
+    ExpectNone("brez me");
+    ExpectNone("give me lust");
+    ExpectNone("lust me");
+    ExpectNone("I'll chain heal the melee");
+    ExpectNone("im chain lightning the adds");
+    ExpectNone("I'm at the pillar");
+    ExpectNone("I'm the hero");
     ExpectNone("the chains were late");
     ExpectNone("chains now");
     ExpectNone("lust now");
@@ -139,6 +171,13 @@ int main()
         return 6;
     if (claims.Apply(giveBack, other, 16))
         return 7;
+    // "I can't do chains" from someone else leaves the owner's claim.
+    claims.Apply(chains, human, 17);
+    Callout const cannot{ std::string(Magmaw::Chains), CalloutIntent::Release, true };
+    if (claims.Apply(cannot, other, 18) || claims.Owner(Magmaw::Chains) != human)
+        return 8;
+    if (!claims.Apply(cannot, human, 19) || claims.IsClaimed(Magmaw::Chains))
+        return 9;
     return 0;
 }
 ''',

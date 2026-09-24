@@ -1260,7 +1260,10 @@ def write_validation_config(
 
     route = validation_route or {}
     if not pool_tag and not route and not validation_route_manifest_path and autostart and not calibration_only:
-        refuse_play_mode_config(base_config.read_text(encoding="utf-8") if base_config.is_file() else "", str(base_config))
+        # Pass-through: only the key line matters, so resolve like the main path and never fail on encoding.
+        checked = base_config if base_config.exists() or base_config.is_absolute() else REPO_ROOT / base_config
+        refuse_play_mode_config(checked.read_text(encoding="utf-8", errors="replace") if checked.is_file() else "",
+                                str(base_config))
         return base_config
     output_dir.mkdir(parents=True, exist_ok=True)
     generated = output_dir / "worldserver.validation.conf"

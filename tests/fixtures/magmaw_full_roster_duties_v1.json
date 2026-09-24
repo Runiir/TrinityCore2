@@ -1,5 +1,9 @@
 {
  "caster_rule": "phase cast with result ok/casting on route node bwd.magmaw.encounter",
+ "unobservable_in_receipts": {
+  "bloodlust_casters": "the Bloodlust path logs no action_outcomes row; see bloodlust_owner (code-derived)",
+  "misdirection_casters": "cast on bwd.magmaw.chainwielder, outside the encounter-node filter"
+ },
  "code_derived_not_in_evidence": [
   "hook_riders",
   "pull_tank",
@@ -103,29 +107,6 @@
    ],
    "value": 30006
   },
-  "bloodlust_casters": {
-   "consistent": true,
-   "consistent_when_present": false,
-   "kills": 8,
-   "kills_with_value": 0,
-   "observed": [
-    {
-     "kills": [
-      "b5-d1898555-k1-20260924T025034Z",
-      "b5-d1898555-k1-20260924T031933Z",
-      "b5-d1898555-k2-20260924T025034Z",
-      "b5-d1898555-k2-20260924T031933Z",
-      "b5-d1898555-k3-20260924T025034Z",
-      "b5-d1898555-k3-20260924T031933Z",
-      "b5-d1898555-k4-20260924T025034Z",
-      "b5-d1898555-k5-20260924T025034Z"
-     ],
-     "value": []
-    }
-   ],
-   "union": [],
-   "value": []
-  },
   "detonate_casters": {
    "consistent": false,
    "consistent_when_present": true,
@@ -157,29 +138,6 @@
     30001
    ],
    "value": null
-  },
-  "misdirection_casters": {
-   "consistent": true,
-   "consistent_when_present": false,
-   "kills": 8,
-   "kills_with_value": 0,
-   "observed": [
-    {
-     "kills": [
-      "b5-d1898555-k1-20260924T025034Z",
-      "b5-d1898555-k1-20260924T031933Z",
-      "b5-d1898555-k2-20260924T025034Z",
-      "b5-d1898555-k2-20260924T031933Z",
-      "b5-d1898555-k3-20260924T025034Z",
-      "b5-d1898555-k3-20260924T031933Z",
-      "b5-d1898555-k4-20260924T025034Z",
-      "b5-d1898555-k5-20260924T025034Z"
-     ],
-     "value": []
-    }
-   ],
-   "union": [],
-   "value": []
   },
   "taunt_casters": {
    "consistent": false,

@@ -90,7 +90,7 @@ inline uint8 SingleRole(uint8 mask)
 
 struct Resolution
 {
-    std::string Role;       // "tank", "healer", "dps", or "" when unknown
+    std::string Role;       // "tank", "healer" or "dps"
     std::string ClassSpec;  // bot spec tag, or "" for an unknown tree
     std::string Source;     // declared_role | talent_tree | assumed_dps | unknown
     bool Ambiguous = false; // the human should set a raid role
@@ -114,6 +114,8 @@ inline Resolution Resolve(uint8 declaredLfgRoles, uint32 primaryTalentTreeId)
     }
     else
     {
+        // No talents and no raid role: dps until the human says otherwise.
+        role = DamageMask;
         resolution.Source = "unknown";
         resolution.Ambiguous = true;
     }

@@ -48,6 +48,13 @@ SUCCESS_RESULTS = frozenset({"ok", "casting"})
 NEEDED = ("latest.json", "combat_log.json")
 _MEMBER = re.compile(r"^(?:\./)?(?P<run>[^/]+)/(?P<file>latest\.json|combat_log\.json)$")
 CODE_DERIVED = ["hook_riders", "pull_tank", "bloodlust_owner"]
+# Present in each receipt but not evidence of absence: Bloodlust casts do not
+# log an action_outcomes row, and Misdirection is cast on the Chainwielder
+# node, outside the encounter-node filter.
+UNOBSERVABLE = {
+    "bloodlust_casters": "the Bloodlust path logs no action_outcomes row; see bloodlust_owner (code-derived)",
+    "misdirection_casters": "cast on bwd.magmaw.chainwielder, outside the encounter-node filter",
+}
 CODE_DERIVED_NOTE = ("Not observable in these receipts (hook riders and the pull tank leave no action_outcomes "
                      "row, and the Bloodlust path does not log one); tests/test_magmaw_duty_plan.py derives them "
                      "from the code.")
@@ -212,8 +219,6 @@ def evidence_confirmed(per_kill: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "detonate_casters": field(lambda receipt: receipt["detonate"]["casters"]),
         "taunt_casters": field(lambda receipt: receipt["taunt"]["casters"]),
         "taunt_spell_ids": field(lambda receipt: receipt["taunt"]["spell_ids"]),
-        "bloodlust_casters": field(lambda receipt: receipt["bloodlust"]["casters"]),
-        "misdirection_casters": field(lambda receipt: receipt["misdirection"]["casters"]),
     }
 
 
@@ -247,6 +252,7 @@ def build_fixture(root: Path, label: str, receipts: dict[str, dict[str, Any]],
             "caster_rule": "phase cast with result ok/casting on route node " + ENCOUNTER_NODE,
             "roster_identity": roster_identity(root), "per_kill": per_kill,
             "evidence_confirmed": evidence_confirmed(per_kill),
+            "unobservable_in_receipts": UNOBSERVABLE,
             "code_derived_not_in_evidence": CODE_DERIVED, "code_derived_note": CODE_DERIVED_NOTE}
 
 

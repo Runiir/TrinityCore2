@@ -96,8 +96,15 @@
     // Tanks and the fixed pillar baiters never ride.
     static std::vector<ObjectGuid> BuildHookUsers(Blackboard const& board)
     {
-        std::pair<ObjectGuid, ObjectGuid> const baiters =
-            MagmawParasitePolicy::ResolveFixedBaiters(board);
+        return BuildHookUsers(board,
+            MagmawParasitePolicy::ResolveFixedBaiters(board));
+    }
+
+    // The same list for a caller that already holds the wave's baiters, so
+    // a read-only duty receipt never observes the shared rotation.
+    static std::vector<ObjectGuid> BuildHookUsers(Blackboard const& board,
+        std::pair<ObjectGuid, ObjectGuid> const& baiters)
+    {
         std::vector<ObjectGuid> seated;
         std::vector<ObjectGuid> dps;
         std::vector<ObjectGuid> balance;

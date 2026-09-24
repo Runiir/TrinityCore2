@@ -88,8 +88,8 @@ struct BotWorldExperimentConfig
     bool CombatCalibrationReferenceConditions = false;
     bool CombatCalibrationSelfProvidedBaseline = false;
     bool ValidationRouteEnable = false;
-    // Default-off server permission for human play cohorts. Harness-written
-    // validation configs pin it to 0; nothing reads it for validation.
+    // Default-off server permission for human play cohorts. Absent means
+    // off; the validation harness refuses a config that enables it.
     bool PlayModeEnable = false;
     // Default-off cutover for the single Magmaw transfer-lane task. The
     // selector still requires a same-tick equivalent legacy candidate.

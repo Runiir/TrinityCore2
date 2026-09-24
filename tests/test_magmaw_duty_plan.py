@@ -157,3 +157,53 @@ def test_magmaw_duty_plan_reports_live_selectors_and_ignores_externals(
     tmp_path: Path,
 ) -> None:
     _compile_and_run(tmp_path, PROGRAM)
+
+
+# Review finding (e4fa8a143a): the status command sees snapshot revisions no
+# bot observes (wipe recovery, runback, partial rosters). A duty-plan read of
+# such a snapshot must not latch the roster or switch the bait mage on the
+# shared rotation that the bots act on.
+PEEK_PROGRAM = PROGRAM.split("int main()")[0] + r"""
+static ObjectGuid BotBaiter(Blackboard board, uint64 revision)
+{
+    board.Revision = revision;
+    return MagmawParasitePolicy::ResolveFixedBaiters(board).first;
+}
+
+int main()
+{
+    // (a) the primary fire mage is absent from the status read's snapshot.
+    Blackboard partial = Board("peek-a");
+    partial.Players.erase(partial.Players.begin() + 5);
+    BuildMagmawDutyPlanStatusJson(&partial);
+    ObjectGuid const afterAbsent = BotBaiter(Board("peek-a"), 22);
+    ObjectGuid const controlAbsent = BotBaiter(Board("peek-a-control"), 22);
+    if (afterAbsent != controlAbsent || afterAbsent.GetCounter() != 30006)
+        return Fail("absent-primary read moved the rotation",
+            std::to_string(afterAbsent.GetCounter()));
+
+    // (b) the primary fire mage is dead in the status read's snapshot.
+    Blackboard dead = Board("peek-b");
+    dead.Players[5].Alive = false;
+    BuildMagmawDutyPlanStatusJson(&dead);
+    ObjectGuid const afterDead = BotBaiter(Board("peek-b"), 22);
+    ObjectGuid const controlDead = BotBaiter(Board("peek-b-control"), 22);
+    if (afterDead != controlDead || afterDead.GetCounter() != 30006)
+        return Fail("dead-primary read moved the rotation",
+            std::to_string(afterDead.GetCounter()));
+
+    // Once the bots have observed a revision, the receipt reports exactly
+    // their baiters and hook riders.
+    Blackboard observed = Board("peek-c");
+    MagmawParasitePolicy::ResolveFixedBaiters(observed);
+    MagmawDutyPlan const plan = BuildMagmawDutyPlan(observed);
+    if (plan.BaitMage.GetCounter() != 30006 || plan.HookRiders.size() != 2
+        || plan.HookRiders[0].GetCounter() != 30007)
+        return Fail("observed receipt", MagmawDutyPlanJson(plan));
+    return 0;
+}
+"""
+
+
+def test_duty_plan_status_read_never_moves_the_baiter_rotation(tmp_path: Path) -> None:
+    _compile_and_run(tmp_path, PEEK_PROGRAM)

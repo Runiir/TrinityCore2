@@ -402,6 +402,26 @@ public:
         return rotation.Baiters();
     }
 
+    // Side-effect-free read for diagnostics. Observes a copy of the
+    // cohort's rotation and never writes it back: a status read can see
+    // snapshot revisions no bot observes (a wipe, a runback, a partial
+    // roster), and observing those on the shared ledger would latch the
+    // roster or switch the mage before the bots act.
+    static std::pair<ObjectGuid, ObjectGuid> PeekBaiters(
+        Blackboard const& board)
+    {
+        std::lock_guard<std::mutex> lock(Mutex());
+        std::string const key = board.CurrentScope.Key();
+        MagmawBaiterRotation rotation;
+        auto const existing = Rotations().find(board.CurrentScope.CohortId);
+        if (existing != Rotations().end() && existing->second.ScopeKey == key)
+            rotation = existing->second;
+        else
+            rotation.Reset(key);
+        rotation.Observe(board);
+        return rotation.Baiters();
+    }
+
     static ObjectGuid ObserveLaneStateAnchor(Blackboard const& board)
     {
         std::lock_guard<std::mutex> lock(Mutex());

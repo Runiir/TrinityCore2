@@ -22,10 +22,11 @@ inline std::vector<BotRaidDuty::DutyKeywords> const& Table()
     static std::vector<BotRaidDuty::DutyKeywords> const table = []
     {
         std::vector<BotRaidDuty::DutyKeywords> duties{
+            // Not Chain Heal or Chain Lightning.
             { Chains, { "chain", "chains", "pincer", "pincers", "hook",
-                "hooks" } },
-            { Bait, { "bait", "baits", "baiting", "parasite", "parasites",
-                "pillar", "pillars" } },
+                "hooks" }, { "heal", "heals", "healing", "lightning" } },
+            // "Pillar" is left out: "I'm at the pillar" is a position.
+            { Bait, { "bait", "baits", "baiting", "parasite", "parasites" } },
             { Mushrooms, { "mushroom", "mushrooms", "shroom", "shrooms" } },
         };
         for (BotRaidDuty::DutyKeywords const& shared :

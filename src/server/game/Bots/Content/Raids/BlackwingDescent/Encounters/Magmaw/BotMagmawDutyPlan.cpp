@@ -10,8 +10,9 @@
 namespace BotEncounter
 {
 // Friend of AdaptiveMagmawStrategy: reads its private selectors without
-// copying them. Baiter observation is idempotent per snapshot revision and
-// reads only the snapshot, so a status read cannot move the rotation.
+// copying them. It must never observe the shared baiter rotation: a status
+// read sees snapshot revisions no bot observes, so it peeks at a copy and
+// hands those baiters to the hook-rider list.
 struct MagmawDutyPlanBuilder
 {
     static MagmawDutyPlan Build(Blackboard const& board)
@@ -23,12 +24,12 @@ struct MagmawDutyPlanBuilder
             return plan;
 
         std::pair<ObjectGuid, ObjectGuid> const baiters =
-            MagmawParasitePolicy::ResolveFixedBaiters(board);
+            MagmawBaiterRotationRegistry::PeekBaiters(board);
         plan.BaitMage = baiters.first;
         plan.BaitHunter = baiters.second;
 
         std::vector<ObjectGuid> const hookUsers =
-            AdaptiveMagmawStrategy::BuildHookUsers(board);
+            AdaptiveMagmawStrategy::BuildHookUsers(board, baiters);
         for (std::size_t index = 0; index < hookUsers.size() && index < 2; ++index)
             plan.HookRiders.push_back(hookUsers[index]);
 

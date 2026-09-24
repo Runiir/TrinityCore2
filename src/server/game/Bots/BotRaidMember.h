@@ -62,9 +62,10 @@ public:
         return Select([](Member const& member) { return member.IsExternal(); });
     }
 
-    // Pull and taunt authority order: bot tanks first, then external
-    // tanks; each by roster slot (unslotted last), then raw GUID. With no
-    // externals this is the bot-only order validation uses.
+    // Play-mode pull and taunt authority order: bot tanks first, then
+    // external tanks; each by roster slot (unslotted last), then raw GUID.
+    // Dead members are included. Validation's Magmaw pull tank is decided
+    // elsewhere (main_tank lease, else lowest living GUID).
     std::vector<Member const*> DeclaredTanks() const
     {
         std::vector<Member const*> tanks = Select([](Member const& member)

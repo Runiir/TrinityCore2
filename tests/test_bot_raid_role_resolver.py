@@ -73,7 +73,7 @@ int main()
     if (!Is(Resolve(TankMask | DamageMask, 845), "tank", "protection_warrior", "talent_tree", false))
         return 9;
     // No talents and no role: unknown, never guessed from class.
-    if (!Is(Resolve(0, 0), "", "", "unknown", true))
+    if (!Is(Resolve(0, 0), "dps", "", "unknown", true))
         return 10;
     if (!Is(Resolve(HealerMask, 0), "healer", "", "declared_role", false))
         return 11;

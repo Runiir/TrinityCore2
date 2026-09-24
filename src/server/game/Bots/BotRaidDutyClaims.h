@@ -17,11 +17,15 @@
 // Without a claim, bots own every duty exactly as in validation.
 namespace BotRaidDuty
 {
-// Keywords are lower-case single words or two-word phrases.
+// Keywords are lower-case single words or two-word phrases. A mention is
+// ignored when the next word is in NotFollowedBy ("chain heal") or the
+// previous word is in NotPrecededBy ("the hero").
 struct DutyKeywords
 {
     std::string_view Duty;
     std::vector<std::string_view> Keywords;
+    std::vector<std::string_view> NotFollowedBy = {};
+    std::vector<std::string_view> NotPrecededBy = {};
 };
 
 inline constexpr std::string_view Bloodlust = "bloodlust";
@@ -32,7 +36,7 @@ inline std::vector<DutyKeywords> const& SharedDutyKeywords()
 {
     static std::vector<DutyKeywords> const table{
         { Bloodlust, { "lust", "bloodlust", "bl", "hero", "heroism",
-            "timewarp", "time warp" } },
+            "timewarp", "time warp" }, {}, { "the", "a" } },
         { BattleRes, { "brez", "bres", "brezz", "rebirth", "battle res",
             "battle rez", "combat res", "combat rez" } },
     };
@@ -49,6 +53,9 @@ struct Callout
 {
     std::string Duty;
     CalloutIntent Intent = CalloutIntent::Claim;
+    // "I can't do chains" releases only the speaker's own claim; "bots do
+    // chains" and "release chains" release anyone's.
+    bool Personal = false;
 };
 
 // Lower-case words; apostrophes are dropped ("I'll" -> "ill") and any other
@@ -91,9 +98,10 @@ inline bool IsOneOf(std::string const& word,
     return std::find(values.begin(), values.end(), word) != values.end();
 }
 
+// "me" is not a subject: "brez me" and "give me lust" are requests.
 inline bool IsFirstPerson(std::string const& word)
 {
-    return IsOneOf(word, { "i", "ill", "im", "ive", "id", "me" });
+    return IsOneOf(word, { "i", "ill", "im", "ive", "id" });
 }
 
 inline bool IsBotWord(std::string const& word)
@@ -150,7 +158,16 @@ inline std::vector<Mention> FindMentions(std::vector<std::string> const& words,
             }
             if (length)
             {
-                mentions.push_back({ index, length, duty.Duty });
+                std::size_t const next = index + length;
+                bool const excluded = (next < words.size()
+                        && std::find(duty.NotFollowedBy.begin(),
+                            duty.NotFollowedBy.end(), words[next])
+                            != duty.NotFollowedBy.end())
+                    || (index > 0 && std::find(duty.NotPrecededBy.begin(),
+                            duty.NotPrecededBy.end(), words[index - 1])
+                            != duty.NotPrecededBy.end());
+                if (!excluded)
+                    mentions.push_back({ index, length, duty.Duty });
                 index += length - 1;
                 break;
             }
@@ -160,23 +177,20 @@ inline std::vector<Mention> FindMentions(std::vector<std::string> const& words,
 }
 }
 
-// Returns one callout per distinct duty named in the message, all with the
-// message's single intent, or nothing when the message is not a callout.
-// Claims need a first-person speaker ("I do chains", "chains on me");
-// releases hand the duty back to bots ("bots do chains", "I can't do
-// chains", "release chains"). Questions and requests never claim.
-inline std::vector<Callout> ParseCallouts(std::string_view text,
+// One clause: every duty it names gets the clause's single intent. Claims
+// need a first-person speaker ("I do chains") or "on me"/"mine" after the
+// duty; releases hand the duty back to bots ("bots do chains", "I can't do
+// chains", "release chains"). Requests never claim.
+inline std::vector<Callout> ParseClause(std::vector<std::string> const& words,
     std::vector<DutyKeywords> const& table)
 {
-    std::vector<std::string> const words = NormalizeWords(text);
     std::vector<Detail::Mention> const mentions =
         Detail::FindMentions(words, table);
-    if (mentions.empty() || text.find('?') != std::string_view::npos)
-        return {};
-    if (std::any_of(words.begin(), words.end(), Detail::IsRequest))
+    if (mentions.empty()
+        || std::any_of(words.begin(), words.end(), Detail::IsRequest))
         return {};
 
-    // The subject nearest the first duty word decides: "no bots, I do
+    // The subject nearest the first duty word decides: "no bots I do
     // chains" claims, "I'll let bots do chains" releases.
     std::size_t const first = mentions.front().Index;
     bool const releaseVerb = std::any_of(words.begin(),
@@ -200,18 +214,21 @@ inline std::vector<Callout> ParseCallouts(std::string_view text,
         }
         negationSeen = negationSeen || Detail::IsNegation(words[index]);
     }
-    // "chains on me", "chains mine", "chains me".
     std::size_t const after = mentions.back().Index + mentions.back().Length;
-    bool const suffixClaim = (after < words.size()
-            && (words[after] == "mine" || words[after] == "me"))
+    bool const suffixClaim = (after < words.size() && words[after] == "mine")
         || (after + 1 < words.size() && words[after] == "on"
             && words[after + 1] == "me");
 
-    CalloutIntent intent;
-    if (bots || releaseVerb || (firstPerson && negated))
-        intent = CalloutIntent::Release;
+    Callout base;
+    if (bots || releaseVerb)
+        base.Intent = CalloutIntent::Release;
+    else if (firstPerson && negated)
+    {
+        base.Intent = CalloutIntent::Release;
+        base.Personal = true;
+    }
     else if (firstPerson || suffixClaim)
-        intent = CalloutIntent::Claim;
+        base.Intent = CalloutIntent::Claim;
     else
         return {};
 
@@ -222,7 +239,60 @@ inline std::vector<Callout> ParseCallouts(std::string_view text,
                 {
                     return callout.Duty == mention.Duty;
                 }))
-            callouts.push_back({ std::string(mention.Duty), intent });
+        {
+            Callout callout = base;
+            callout.Duty = std::string(mention.Duty);
+            callouts.push_back(callout);
+        }
+    return callouts;
+}
+
+// Splits a raid-chat message into clauses at , ; . ! and "but", so "bots
+// do chains, I do bait" releases chains and claims bait. A later clause
+// overrides an earlier one for the same duty. Questions never count.
+inline std::vector<Callout> ParseCallouts(std::string_view text,
+    std::vector<DutyKeywords> const& table)
+{
+    if (text.find('?') != std::string_view::npos)
+        return {};
+    std::vector<Callout> callouts;
+    auto merge = [&callouts](std::vector<Callout> const& clause)
+    {
+        for (Callout const& callout : clause)
+        {
+            auto existing = std::find_if(callouts.begin(), callouts.end(),
+                [&callout](Callout const& other)
+                {
+                    return other.Duty == callout.Duty;
+                });
+            if (existing == callouts.end())
+                callouts.push_back(callout);
+            else
+                *existing = callout;
+        }
+    };
+    std::size_t start = 0;
+    while (start <= text.size())
+    {
+        std::size_t const stop = text.find_first_of(",;.!", start);
+        std::string_view const segment = text.substr(start,
+            stop == std::string_view::npos ? std::string_view::npos : stop - start);
+        std::vector<std::string> clause;
+        for (std::string const& word : NormalizeWords(segment))
+        {
+            if (word == "but")
+            {
+                merge(ParseClause(clause, table));
+                clause.clear();
+            }
+            else
+                clause.push_back(word);
+        }
+        merge(ParseClause(clause, table));
+        if (stop == std::string_view::npos)
+            break;
+        start = stop + 1;
+    }
     return callouts;
 }
 
@@ -250,7 +320,11 @@ public:
     bool Apply(Callout const& callout, ObjectGuid speaker, uint64 atMs)
     {
         if (callout.Intent == CalloutIntent::Release)
+        {
+            if (callout.Personal && Owner(callout.Duty) != speaker)
+                return false;
             return Release(callout.Duty);
+        }
         auto existing = _entries.find(callout.Duty);
         if (existing != _entries.end() && existing->second.Owner == speaker)
             return false;

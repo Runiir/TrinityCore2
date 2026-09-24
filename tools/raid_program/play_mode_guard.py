@@ -16,13 +16,17 @@ A payload or run is play when any of these holds:
 Files are scanned as raw bytes with compiled regexes in bounded chunks
 (latest.json is ~26 MB and report.json ~32 MB), so they are never parsed.
 Markers inside JSON-encoded strings (escaped quotes) also count: a guard
-refuses rather than misses. In-memory objects are walked. A str that starts
-with "{" or "[" is scanned as JSON text; any other str is a path.
+refuses rather than misses. In-memory objects are walked, and string values
+that hold JSON text (embedded command output) are scanned too. A top-level
+str that starts with "{" or "[" is scanned as JSON text; any other str is a
+path. Run directories scan JSON files and nested tarballs. An unreadable or
+corrupt input is reported on stderr, never silently treated as clean.
 """
 from __future__ import annotations
 
 import os
 import re
+import sys
 import tarfile
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO
@@ -79,12 +83,16 @@ def _scan_stream(stream: BinaryIO, source: str, reasons: dict[str, None]) -> Non
         tail = window[-_OVERLAP:]
 
 
+def _unreadable(source: str, error: Exception) -> None:
+    print(f"play_mode_guard: could not scan {source}: {error}", file=sys.stderr)
+
+
 def _scan_file(path: Path, reasons: dict[str, None]) -> None:
     try:
         with path.open("rb") as stream:
             _scan_stream(stream, str(path), reasons)
-    except OSError:
-        return
+    except OSError as error:
+        _unreadable(str(path), error)
 
 
 def _scan_tarball(path: Path, reasons: dict[str, None]) -> None:
@@ -101,8 +109,8 @@ def _scan_tarball(path: Path, reasons: dict[str, None]) -> None:
                     stream = tar.extractfile(member)
                     if stream is not None:
                         _scan_stream(stream, source, reasons)
-    except (OSError, tarfile.TarError):
-        return
+    except (OSError, tarfile.TarError) as error:
+        _unreadable(str(path), error)
 
 
 def _path_markers(path: Path, reasons: dict[str, None]) -> None:
@@ -119,6 +127,8 @@ def _path_markers(path: Path, reasons: dict[str, None]) -> None:
                     reasons[f"{child}: play session file"] = None
                 elif name.endswith(JSON_SUFFIXES):
                     _scan_file(child, reasons)
+                elif name.endswith(TARBALL_SUFFIXES):
+                    _scan_tarball(child, reasons)
     elif path.is_file():
         if path.name.endswith(TARBALL_SUFFIXES):
             _scan_tarball(path, reasons)
@@ -137,10 +147,13 @@ def _walk(value: Any, reasons: dict[str, None]) -> None:
             if isinstance(session, str) and session:
                 reasons[f'{where}: "play_session_id": "{session}"'] = None
             stack.extend((child, f"{where}.{key}") for key, child in node.items()
-                         if isinstance(child, (dict, list, tuple)))
+                         if isinstance(child, (dict, list, tuple, str)))
         elif isinstance(node, (list, tuple)):
             stack.extend((child, f"{where}[{index}]") for index, child in enumerate(node)
-                         if isinstance(child, (dict, list, tuple)))
+                         if isinstance(child, (dict, list, tuple, str)))
+        elif isinstance(node, str) and node.lstrip()[:1] in ("{", "[") and (
+                "cohort_purpose" in node or "play_session_id" in node):
+            _scan_bytes(node.encode("utf-8"), where, reasons)
 
 
 def find_play_markers(obj_or_path: Any) -> list[str]:
@@ -183,4 +196,4 @@ def refuse_play_mode_config(text: str, source: str) -> None:
     if play_mode_config_enabled(text):
         raise PlayModeConfigRefused(
             f"{source} sets {PLAY_MODE_CONFIG_KEY} = 1: validation runs never start in play mode. "
-            f"Use a validation config with {PLAY_MODE_CONFIG_KEY} = 0 (play sessions use make host-world-play).")
+            f"Use a validation config with {PLAY_MODE_CONFIG_KEY} = 0 (play sessions have their own launcher).")
