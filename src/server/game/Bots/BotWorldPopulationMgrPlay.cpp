@@ -137,20 +137,22 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
     mgr._selectedCohortId = CohortId;
     cohort->Purpose = CohortPurpose::Play;
     cohort->Play = BotPlaySession();
+    auto abandon = [&mgr, cohort, &previous](std::string const& reason)
+    {
+        cohort->Purpose = CohortPurpose::Validation;
+        cohort->Play = BotPlaySession();
+        cohort->Play.LastEvent = "fill_failed:" + reason;
+        mgr._selectedCohortId = previous;
+        return Result("fill", false, reason);
+    };
 
     // Load the trained roster of the scenario to choose which bots stay out.
     std::string const selected = mgr.SelectRuntimeProfile(Scenario);
     if (selected.find("\"ok\":true") == std::string::npos)
-    {
-        mgr._selectedCohortId = previous;
-        return Result(action, false, "play_profile_unavailable");
-    }
+        return abandon("play_profile_unavailable");
     mgr.LoadConfig(Scenario, nullptr);
     if (mgr.Party().ValidationRouteManifest.empty())
-    {
-        mgr._selectedCohortId = previous;
-        return Result(action, false, "play_route_manifest_missing");
-    }
+        return abandon("play_route_manifest_missing");
     std::vector<BotPlayRoster::TemplateSlot> roster;
     for (auto const& identity : mgr.Party().ValidationRouteManifest.front().ExpectedRoster)
         roster.push_back({ identity.RosterSlotId, identity.Role, identity.ClassSpec });
@@ -166,10 +168,7 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
     std::vector<std::string> const slots = BotPlayRoster::ChooseExternalSlots(
         roster, roles, BotPlayRoster::DisruptionOrder(Scenario), &failure);
     if (slots.size() != humans.size())
-    {
-        mgr._selectedCohortId = previous;
-        return Result(action, false, failure.empty() ? "play_slot_choice_failed" : failure);
-    }
+        return abandon(failure.empty() ? "play_slot_choice_failed" : failure);
 
     BotPlaySession& session = cohort->Play;
     session.Active = true;
@@ -205,11 +204,14 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
     // set; success is an active admission of exactly the planned bots on the
     // Magmaw scenario (a configured runtime profile must not replace it).
     uint32 const expectedBots = uint32(roster.size() - session.ExternalSlotIds.size());
+    // Config.Name is renamed by an auto recording window; the selected
+    // profile and route scenario are the immutable identity.
     bool const started = autonomyStarted
         && mgr.Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
         && mgr.Cohort().ValidationRaidAdmissionComplete
         && mgr.Party().Bots.size() == expectedBots
-        && mgr.Cohort().Config.Name == Scenario;
+        && mgr.Cohort().SelectedProfileName == Scenario
+        && mgr.Cohort().Config.ValidationRouteScenarioId == Scenario;
     std::ostringstream extra;
     extra << ",\"session_id\":\"" << Escape(session.SessionId) << "\""
           << ",\"bots\":" << mgr.Party().Bots.size()
@@ -224,8 +226,8 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
     std::string reason = !mgr.Cohort().ValidationAttemptFailureReason.empty()
         ? mgr.Cohort().ValidationAttemptFailureReason
         : mgr.Cohort().LastPopulationFailureReason;
-    if (reason.empty() && mgr.Cohort().Config.Name != Scenario)
-        reason = "play_profile_replaced:" + mgr.Cohort().Config.Name;
+    if (reason.empty() && mgr.Cohort().SelectedProfileName != Scenario)
+        reason = "play_profile_replaced:" + mgr.Cohort().SelectedProfileName;
     mgr._selectedCohortId = previous;
     if (!started)
     {
@@ -308,6 +310,9 @@ std::string Context::Status(BotWorldPopulationMgr& mgr)
           << ",\"node\":\"" << Escape(mgr.Cohort().Config.ValidationRouteNodeId) << "\""
           << ",\"route_generation\":" << mgr.Party().ValidationRouteGeneration
           << ",\"permitted_generation\":" << cohort->Play.PermittedGeneration
+          << ",\"ready_check_pending\":" << (cohort->Raid.NativeReadyCheckPending ? "true" : "false")
+          << ",\"ready_check_responses\":" << cohort->Raid.NativeReadyCheckResponseCount
+          << ",\"wipe_state\":\"" << Escape(cohort->Raid.WipeState) << "\""
           << ",\"admission\":\"" << Escape(mgr.Cohort().ValidationAttemptFailureReason.empty()
               ? mgr.Cohort().LastPopulationFailureReason
               : mgr.Cohort().ValidationAttemptFailureReason) << "\"";
@@ -336,6 +341,14 @@ uint32 Context::ExpectedBotCount(BotWorldPopulationMgr const& mgr, uint32 declar
 
 bool Context::ResetBotPool(BotWorldPopulationMgr& mgr, char const* reason)
 {
+    // A configured BotWorld.RuntimeProfile must not replace the play
+    // scenario between fill and admission.
+    if (mgr.Cohort().SelectedProfileName != Scenario
+        || mgr.Cohort().Config.ValidationRouteScenarioId != Scenario)
+    {
+        mgr.Cohort().LastPopulationFailureReason = "play_profile_replaced";
+        return false;
+    }
     std::string tag = mgr.Cohort().Config.PoolTagFilter;
     CharacterDatabase.EscapeString(tag);
     QueryResult result = CharacterDatabase.PQuery(
@@ -472,6 +485,12 @@ void Context::OnRaidReadyCheckStarted(BotWorldPopulationMgr& mgr, Group* group, 
     // packet the human leader already sent. Each bot answers from its own
     // update loop once it is independently ready (TryRespondNativeRaidReadyCheck).
     auto& raid = cohort->Raid;
+    // A check already answered for this wipe and roster stays answered; a
+    // pre-pull check must not reopen a completed wipe recovery.
+    if (raid.NativeReadyCheckActionObserved
+        && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration
+        && raid.NativeReadyCheckAssignmentGeneration == raid.AssignmentGeneration)
+        return;
     ++raid.EvidenceSequence;
     ++raid.NativeReadyCheckActionGeneration;
     raid.NativeReadyCheckActionAttemptId = raid.AttemptId;

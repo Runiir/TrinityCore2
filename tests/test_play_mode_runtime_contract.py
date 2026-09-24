@@ -118,10 +118,17 @@ def test_no_ungated_frozen_leader_comparison_remains() -> None:
     # with a bot's frozen leader must be play-gated or use FrozenLeaderHolds
     # (review of 1f5a8178ab: an ungated one made every fill roll back).
     offenders = []
-    for path in sorted(BOTS.glob("*.cpp")):
-        for number, line in enumerate(_read(path).splitlines(), 1):
-            if "GetLeaderGUID()" in line and "ValidationCohortLeaderGuid" in line and "!play" not in line:
-                offenders.append(f"{path.name}:{number}")
+    for path in sorted(BOTS.rglob("*")):
+        if path.suffix not in {".cpp", ".h", ".inl"}:
+            continue
+        lines = _read(path).splitlines()
+        for index, line in enumerate(lines):
+            if "GetLeaderGUID()" not in line:
+                continue
+            window = "\n".join(lines[max(0, index - 2) : index + 3])
+            if ("ValidationCohortLeaderGuid" in window and "!play" not in window
+                    and "FrozenLeaderHolds" not in window):
+                offenders.append(f"{path.relative_to(BOTS)}:{index + 1}")
     assert offenders == []
     play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
     helper = play[play.index("bool Context::FrozenLeaderHolds("):]
@@ -140,3 +147,10 @@ def test_human_ready_check_hook_is_a_no_op_outside_play() -> None:
     for condition in ("cohort->Purpose != CohortPurpose::Play", "!cohort->Play.Active",
                       "group->GetGUID() != cohort->Play.GroupGuid", "!IsHuman(initiator)"):
         assert condition in guard
+
+
+def test_fill_success_never_reads_the_renamable_config_name() -> None:
+    # An auto recording window renames Config.Name (review of 778df0d620).
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    assert "Config.Name" not in play.replace("// Config.Name is renamed", "")
+    assert "SelectedProfileName == Scenario" in play
