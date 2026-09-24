@@ -47,8 +47,8 @@ inline std::string ObserveEncounter(BotPlaySession& session, bool observed, bool
     session.BossEngaged = inProgress;
     if (!inProgress)
     {
-        // A timer whose zero passed mid-fight is spent too; one still
-        // counting down is the leader's next pull.
+        // A timer whose zero passed before the end was observed is spent
+        // too; one still counting down is the leader's next pull.
         if (session.PullAtMs && nowMs >= session.PullAtMs)
             session.PullAtMs = 0;
         if (bossesDone > session.BossesDoneAtEngage)
