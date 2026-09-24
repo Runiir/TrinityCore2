@@ -46,6 +46,7 @@ struct BotPlaySession
     std::string PullSource;
     uint64 StartedAtMs = 0;
     std::string LastEvent;
+    std::string LastHoldEvent;
 };
 
 namespace BotPlayRoster

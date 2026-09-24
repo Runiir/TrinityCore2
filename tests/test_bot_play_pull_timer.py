@@ -30,6 +30,15 @@ using namespace BotPlayPullTimer;
 
 static int failures = 0;
 
+static void Expect(bool condition, bool, bool, uint32, char const* label)
+{
+    if (!condition)
+    {
+        std::fprintf(stderr, "FAIL: %s\n", label);
+        ++failures;
+    }
+}
+
 static void Expect(std::optional<Signal> signal, bool present, bool cancel, uint32 seconds,
     char const* label)
 {
@@ -49,13 +58,18 @@ int main()
     Expect(ParseAddon("D4", "PT\t10\t669\tMagmaw"), true, false, 10, "dbm d4 extra fields");
     Expect(ParseAddon("D5", "Runiir-Trinity\t1\tPT\t15\t669"), true, false, 15, "dbm d5");
     Expect(ParseAddon("D4", "PT\t0"), true, true, 0, "dbm cancel");
-    Expect(ParseAddon("D4", "PT\t90"), true, false, 60, "dbm clamp");
+    Expect(ParseAddon("D4", "PT\t90"), true, false, 90, "dbm long timer");
+    Expect(ParseAddon("D4", "PT\t900"), false, false, 0, "dbm over max ignored");
+    // Cataclysm-era DBM: pizza timer "U\t<sec>\tPull in".
+    Expect(ParseAddon("D4", "U\t10\tPull in"), true, false, 10, "dbm cata pizza pull");
+    Expect(ParseAddon("D4", "U\t30\tBreak time"), false, false, 0, "dbm other pizza timer");
     Expect(ParseAddon("D4", "V\t12345\tv4.11"), false, false, 0, "dbm version sync");
     Expect(ParseAddon("D4", "PT\tabc"), false, false, 0, "dbm malformed");
     // BigWigs, old and new framing.
     Expect(ParseAddon("BigWigs", "T:BWPull 10"), true, false, 10, "bigwigs old");
     Expect(ParseAddon("BigWigs", "P^Pull^8"), true, false, 8, "bigwigs new");
     Expect(ParseAddon("BigWigs", "VR:12345"), false, false, 0, "bigwigs version");
+    Expect(ParseAddon("BigWigs", "T:BWCustomBar 10 Pull 1"), false, false, 0, "bigwigs custom bar");
     Expect(ParseAddon("Recount", "PT\t10"), false, false, 0, "other addon");
 
     // Raid chat or raid warning from the leader.
@@ -68,6 +82,20 @@ int main()
     Expect(ParseChat("who pulls?"), false, false, 0, "chat question");
     Expect(ParseChat("nice pull guys"), false, false, 0, "chat chatter");
     Expect(ParseChat("pull the boss when ready"), false, false, 0, "chat no number");
+    // Review of 1f4405f1dc: ordinary leader chat must not start timers.
+    Expect(ParseChat("pull 1 more pack"), false, false, 0, "chat more pack");
+    Expect(ParseChat("I'll pull in 5 min"), false, false, 0, "chat minutes");
+    Expect(ParseChat("pull in 2 min, grab food"), false, false, 0, "chat minutes food");
+    Expect(ParseChat("pull 2 packs then boss"), false, false, 0, "chat packs");
+    Expect(ParseChat("pull in 90"), true, false, 90, "chat long timer");
+
+    // Timer phases: counting down, released for a window, then over.
+    Expect(Running(10000, 9999) && !Released(10000, 9999), true, false, 0, "running");
+    Expect(!Running(10000, 10000) && Released(10000, 10000), true, false, 0, "released at zero");
+    Expect(Released(10000, 10000 + ReleaseWindowMs - 1), true, false, 0, "released in window");
+    Expect(!Released(10000, 10000 + ReleaseWindowMs) && !Running(10000, 50000), true, false, 0,
+        "stale timer never permits");
+    Expect(!Running(0, 5) && !Released(0, 5), true, false, 0, "no timer");
     return failures == 0 ? 0 : 1;
 }
 '''

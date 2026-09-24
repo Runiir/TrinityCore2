@@ -108,9 +108,13 @@ Decisions (user, 2026-09-24):
 
 ## Session flow
 
-1. Server: a new `make host-world-play` target (PlayMode enabled, no autostart,
-   play recording path) plus `make host-auth`. Before starting, apply the Magmaw
-   pool reset SQL, because the startup reset does not restore the full-stat seed.
+1. Server: a play worldserver config derived from `trinity-worldserver-test.conf`
+   (the `Makefile` and conf.dist are hash-pinned, so no make target): add
+   `BotWorld.PlayMode.Enable = 1`, `AllowTwoSide.Interaction.Group = 1`,
+   `PlayerBot.Record.Enable = 0`, a higher `AccountInstancesPerHour`, and (until
+   play recordings carry play tags) `BotWorld.AutoStartRecording = 0`. Start it
+   with the console on stdin; `make host-auth` or an existing authserver serves
+   logins. `fill` resets the bot pool itself (bot-owned rows only).
 2. Human: logs in on their own level-85 Alliance character with GM mode off. They
    form a raid, set 10N, set their raid role, and go to the BWD entrance.
 3. The leader runs `.botauto play fill`. The server counts humans by role, and the
@@ -118,27 +122,33 @@ Decisions (user, 2026-09-24):
    into the leader's group with `BotMgr::ProvisionWorldBotInGroup(leader, ...)`,
    which already accepts any grouped anchor (`BotMgr.cpp:218-255`). The instance
    therefore belongs to the human's group.
-   - If a human joins later, the lowest-cost bot of the same role leaves
-     automatically.
+   - Planned: if a human joins later, the lowest-cost bot of the same role
+     leaves automatically (today a later human is registered, and an 11th
+     member ends the session).
    - If the leader kicks a bot, it despawns, and no refill happens unless asked.
-4. Pacing: bots move to the current route node's staging anchor and hold. They
-   advance to the next node when the leader moves into its anchor radius, or on
-   `.botauto play go`. If any member engages a later node's creatures, the route
-   jumps to that node instead of the validation contamination guard.
-5. Trash: bots engage when any member engages the pack, or when a pull timer ends.
+4. Pacing (autonomous; `.botauto play go` is only a manual override). Bots move
+   to the next route node when a human in the raid instance is within 45 yd of
+   it, has moved closer to it than to the bots' node, or is fighting that
+   node's creatures, or while the leader's pull timer is counting down or has
+   just released. Otherwise they hold at their node.
+5. Trash: once the bots have moved to a pack, the bot tank (or the Chainwielder
+   patrol owner) pulls it as in validation. Known gap: a human who pulls the
+   Drudges or the Chainwielder patrol before the bots arrive is not yet handled
+   (the Drudge activation latch keeps bots out until its own pull; phase 4).
 6. Boss:
    - The leader's ready check makes bots answer, through the existing responder
-     (`BotWorldPopulationMgrRecovery.cpp:752`: "ready" after 5 s stable). A bot
-     that is not ready answers not ready and says why in raid chat.
-   - On `/pull N`, bots pre-pot near the end of the countdown and engage at zero or
-     at boss engagement, whichever comes first.
-   - A bot main tank pulls. If the main tank is human, bots wait for the tank's
-     aggro plus a short threat delay.
-7. Wipe (all members dead, or native encounter reset): bots release, run back and
-   hold again until the next ready check or pull timer. Budgets pause the session;
-   a wipe is never terminal.
-8. Kill: bots stay grouped and keep following. `.botauto play stop` removes the
-   bots.
+     (`BotWorldPopulationMgrRecovery.cpp`: "ready" after 5 s stable). Repeated
+     checks are answered too; a check never reopens a completed wipe recovery.
+   - Bots stage at Magmaw but hold the pull (`Route.PullPermitted`) until the
+     leader's pull timer reaches zero or anyone engages the boss. After zero
+     the pull stays open for 30 s; a wipe cancels the timer. Timer sources:
+     DBM raid warning "Pull in N sec" and its addon sync (`D4`/`D5`, `U` pizza
+     timer or `PT`), BigWigs sync, leader/assistant raid chat ("pull 10"), and
+     `.botauto play pull [seconds|cancel]`. A number counts only when it ends
+     the call or is followed by seconds.
+7. Wipe (all bots dead, or native encounter reset): bots release, run back and
+   hold again until the next ready check and pull timer.
+8. Kill: bots stay grouped. `.botauto play stop` removes the bots.
 
 ## Role detection (humans)
 

@@ -663,7 +663,8 @@ void WorldSession::HandleAddonMessagechatOpcode(WorldPacket& recvData)
 
     sender->UpdateSpeakTime(Player::ChatFloodThrottle::ADDON);
 
-    // Pull timers (DBM/BigWigs) of a human play raid; read-only.
+    // Pull timers (DBM/BigWigs) from the leader of a human play raid; this
+    // only updates that play session and never alters the message.
     BotWorldPopulationMgrPlay::OnAddonMessage(sender, type, prefix, message);
 
     switch (type)

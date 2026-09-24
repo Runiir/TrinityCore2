@@ -15,7 +15,22 @@
 // reaches zero or when anyone pulls, whichever comes first.
 namespace BotPlayPullTimer
 {
-inline constexpr uint32 MaxSeconds = 60;
+inline constexpr uint32 MaxSeconds = 300;
+// After zero the pull stays open this long for the bots to engage; a timer
+// never lingers into a later pull (review of 1f4405f1dc).
+inline constexpr uint64 ReleaseWindowMs = 30000;
+
+// Counting down: bots move to the boss and stage.
+inline bool Running(uint64 pullAtMs, uint64 nowMs)
+{
+    return pullAtMs && nowMs < pullAtMs;
+}
+
+// Zero reached and the release window still open: the pull tank engages.
+inline bool Released(uint64 pullAtMs, uint64 nowMs)
+{
+    return pullAtMs && nowMs >= pullAtMs && nowMs < pullAtMs + ReleaseWindowMs;
+}
 
 struct Signal
 {
@@ -61,17 +76,21 @@ inline std::optional<uint32> Number(std::string const& token)
 
 inline std::optional<Signal> FromSeconds(uint32 seconds)
 {
+    // A timer longer than bots can honour is ignored rather than shortened.
+    if (seconds > MaxSeconds)
+        return std::nullopt;
     Signal signal;
     // Both addons cancel a running pull timer with a zero-second timer.
     signal.Cancel = seconds == 0;
-    signal.Seconds = std::min(seconds, MaxSeconds);
+    signal.Seconds = seconds;
     return signal;
 }
 }
 
-// DBM-Core addon sync. 4.3.4-era DBM sends prefix "D4" with
-// "PT\t<seconds>[\t...]"; later DBM uses "D5" with sender and protocol
-// fields before the same "PT\t<seconds>" pair. `/dbm pull 0` cancels.
+// DBM-Core addon sync under prefix "D4" (later "D5" with sender and
+// protocol fields first). Cataclysm-era `/dbm pull N` sends a pizza timer
+// "U\t<seconds>\tPull in" plus a raid warning "Pull in N sec" (ParseChat);
+// Mists-era DBM added "PT\t<seconds>". `/dbm pull 0` cancels.
 inline std::optional<Signal> ParseDbm(std::string_view prefix, std::string_view message)
 {
     if (prefix != "D4" && prefix != "D5")
@@ -79,13 +98,19 @@ inline std::optional<Signal> ParseDbm(std::string_view prefix, std::string_view 
     std::vector<std::string> const fields = Detail::Split(message,
         [](char c) { return c == '\t'; });
     for (size_t index = 0; index + 1 < fields.size(); ++index)
-        if (fields[index] == "PT")
+    {
+        bool const pullTimer = fields[index] == "PT";
+        bool const pizzaPull = fields[index] == "U" && index + 2 < fields.size()
+            && fields[index + 2].rfind("Pull", 0) == 0;
+        if (pullTimer || pizzaPull)
             if (std::optional<uint32> const seconds = Detail::Number(fields[index + 1]))
                 return Detail::FromSeconds(*seconds);
+    }
     return std::nullopt;
 }
 
 // BigWigs pull sync ("T:BWPull 10" in old versions, "P^Pull^10" later).
+// Custom bars that merely mention "Pull" are not pull timers.
 inline std::optional<Signal> ParseBigWigs(std::string_view prefix, std::string_view message)
 {
     if (prefix != "BigWigs")
@@ -93,9 +118,13 @@ inline std::optional<Signal> ParseBigWigs(std::string_view prefix, std::string_v
     std::vector<std::string> const tokens = Detail::Split(message,
         [](char c) { return !std::isalnum(static_cast<unsigned char>(c)); });
     for (size_t index = 0; index + 1 < tokens.size(); ++index)
-        if (tokens[index] == "Pull" || tokens[index] == "BWPull")
+    {
+        bool const oldSync = tokens[index] == "BWPull";
+        bool const newSync = index == 1 && tokens[0] == "P" && tokens[index] == "Pull";
+        if (oldSync || newSync)
             if (std::optional<uint32> const seconds = Detail::Number(tokens[index + 1]))
                 return Detail::FromSeconds(*seconds);
+    }
     return std::nullopt;
 }
 
@@ -107,10 +136,19 @@ inline std::optional<Signal> ParseAddon(std::string_view prefix, std::string_vie
 }
 
 // Raid chat or raid warning from the leader: "pull 10", "pull in 10",
-// "pulling in 5 sec", "pull now", "cancel pull" / "pull cancelled".
+// "Pull in 10 sec" (DBM's raid warning), "pull now", "cancel pull".
+// A number counts only when it ends the call or is followed by seconds, so
+// "pull 1 more pack" or "pull in 5 min" never start a timer.
 inline std::optional<Signal> ParseChat(std::string_view text)
 {
     std::vector<std::string> const words = BotRaidDuty::NormalizeWords(text);
+    if (words.size() > 8)
+        return std::nullopt;
+    auto isSecondsUnit = [](std::string const& word)
+    {
+        return word == "s" || word == "sec" || word == "secs" || word == "second"
+            || word == "seconds";
+    };
     for (size_t index = 0; index < words.size(); ++index)
     {
         if (words[index] != "pull" && words[index] != "pulling")
@@ -134,10 +172,13 @@ inline std::optional<Signal> ParseChat(std::string_view text)
         {
             if (words[next] == "now")
                 return Signal{};
-            if (std::optional<uint32> const seconds = Detail::Number(words[next]))
+            std::optional<uint32> const seconds = Detail::Number(words[next]);
+            bool const endsCall = next + 1 == words.size()
+                || isSecondsUnit(words[next + 1]);
+            if (seconds && endsCall && *seconds <= MaxSeconds)
             {
                 Signal signal;
-                signal.Seconds = std::min(*seconds, MaxSeconds);
+                signal.Seconds = *seconds;
                 return signal;
             }
         }

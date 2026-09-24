@@ -17,6 +17,7 @@
 #include "WorldSession.h"
 
 #include <algorithm>
+#include <chrono>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -59,9 +60,11 @@ bool IsHuman(Player const* player)
     return player && player->GetSession() && !player->GetSession()->IsBotSession();
 }
 
+// Monotonic milliseconds; GameTime's uint32 counter wraps after 49 days.
 uint64 NowMs()
 {
-    return uint64(GameTime::GetGameTimeMS());
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 
 // A human within this range of the next node's anchor has arrived there.
@@ -516,7 +519,10 @@ bool Context::PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveG
     // Read the raid like a human raider: follow the humans toward the next
     // pack or boss, join a fight they start there, and walk to the boss when
     // the leader starts a pull timer.
-    std::string reason = session.PullAtMs ? "pull_timer" : "";
+    uint64 const now = NowMs();
+    std::string reason = BotPlayPullTimer::Running(session.PullAtMs, now)
+            || BotPlayPullTimer::Released(session.PullAtMs, now)
+        ? "pull_timer" : "";
     Position const currentAnchor = NodeAnchor(current);
     Position const nextAnchor = NodeAnchor(next);
     auto const& raid = mgr.Cohort().Raid;
@@ -545,10 +551,15 @@ bool Context::PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveG
     }
     if (reason.empty())
     {
-        session.LastEvent = "following_raid_to:" + next.NodeId;
+        // Written once per hold, so status keeps showing pull and ready-check
+        // events that happen while the bots wait.
+        std::string const holding = "following_raid_to:" + next.NodeId;
+        if (session.LastHoldEvent != holding)
+            session.LastEvent = session.LastHoldEvent = holding;
         return false;
     }
     session.PermittedGeneration = prospectiveGeneration;
+    session.LastHoldEvent.clear();
     session.LastEvent = "advance:" + next.NodeId + ":" + reason;
     TC_LOG_INFO("server", "BotWorld play advance session=%s node=%s reason=%s",
         session.SessionId.c_str(), next.NodeId.c_str(), reason.c_str());
@@ -563,7 +574,9 @@ bool Context::PullPermitted(BotWorldPopulationMgr& mgr)
         session.PullAtMs = 0;
         session.LastEvent = "pull_timer_consumed_by_wipe";
     }
-    return session.PullAtMs && NowMs() >= session.PullAtMs;
+    // Open only from zero until the release window closes: a timer from an
+    // earlier pull never lets the bots pull the boss on arrival.
+    return BotPlayPullTimer::Released(session.PullAtMs, NowMs());
 }
 
 std::string Context::Pull(BotWorldPopulationMgr& mgr, Player* invoker, bool cancel,
@@ -614,11 +627,12 @@ bool Context::FromPlayLeadership(BotWorldPopulationMgr& mgr, Player* sender)
 void OnAddonMessage(Player* sender, uint32 chatType, std::string const& prefix,
     std::string const& message)
 {
-    if (chatType != CHAT_MSG_RAID && chatType != CHAT_MSG_PARTY)
+    if ((chatType != CHAT_MSG_RAID && chatType != CHAT_MSG_PARTY)
+        || !Context::FromPlayLeadership(*sBotWorldPopulationMgr, sender))
         return;
     std::optional<BotPlayPullTimer::Signal> const signal =
         BotPlayPullTimer::ParseAddon(prefix, message);
-    if (!signal || !Context::FromPlayLeadership(*sBotWorldPopulationMgr, sender))
+    if (!signal)
         return;
     Context::Pull(*sBotWorldPopulationMgr, sender, signal->Cancel, signal->Seconds,
         "addon:" + prefix);
@@ -630,8 +644,10 @@ void OnGroupChat(Player* sender, uint32 chatType, std::string const& message, Gr
         && chatType != CHAT_MSG_RAID_WARNING && chatType != CHAT_MSG_PARTY
         && chatType != CHAT_MSG_PARTY_LEADER)
         return;
+    if (!Context::FromPlayLeadership(*sBotWorldPopulationMgr, sender))
+        return;
     std::optional<BotPlayPullTimer::Signal> const signal = BotPlayPullTimer::ParseChat(message);
-    if (!signal || !Context::FromPlayLeadership(*sBotWorldPopulationMgr, sender))
+    if (!signal)
         return;
     Context::Pull(*sBotWorldPopulationMgr, sender, signal->Cancel, signal->Seconds, "chat");
 }
@@ -654,12 +670,20 @@ void Context::OnRaidReadyCheckStarted(BotWorldPopulationMgr& mgr, Group* group, 
     // packet the human leader already sent. Each bot answers from its own
     // update loop once it is independently ready (TryRespondNativeRaidReadyCheck).
     auto& raid = cohort->Raid;
-    // A check already answered for this wipe and roster stays answered; a
-    // pre-pull check must not reopen a completed wipe recovery.
+    // A check already answered for this wipe and roster stays answered (a
+    // pre-pull check must not reopen a completed wipe recovery), but the bots
+    // still answer the new check.
     if (raid.NativeReadyCheckActionObserved
         && raid.NativeReadyCheckActionWipeGeneration == raid.WipeGeneration
         && raid.NativeReadyCheckAssignmentGeneration == raid.AssignmentGeneration)
+    {
+        ++raid.NativeReadyCheckActionGeneration;
+        raid.NativeReadyCheckResponseCount = 0;
+        raid.NativeReadyCheckResponders.clear();
+        raid.NativeReadyCheckPending = true;
+        cohort->Play.LastEvent = "ready_check:" + initiator->GetName();
         return;
+    }
     ++raid.EvidenceSequence;
     ++raid.NativeReadyCheckActionGeneration;
     raid.NativeReadyCheckActionAttemptId = raid.AttemptId;
