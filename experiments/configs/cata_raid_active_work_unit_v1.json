@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Write the scoreboard verdict (graph_acceptance verdict --label) and cite it; actor/encounter requirements close only on pass. Plan bundle 04: tank cooldown planning around Mangle and the TANK-003 rune hold, healer stage/strand recovery (HEAL-002, the 43.6 s off-platform strand), the Fallen Crusader 2 PPM row and a Dancing Rune Weapon recast; then implement, review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456 with 0 boss-window deaths.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Plan bundle 04: tank cooldown planning around Mangle and the TANK-003 rune hold, healer stage/strand recovery (HEAL-002, the 43.6 s off-platform strand), the Fallen Crusader 2 PPM row and a Dancing Rune Weapon recast; then implement, review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456 with 0 boss-window deaths.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 523,
+    "revision": 524,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "assess",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -10105,6 +10105,27 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 523,
+        "unit_id": "magmaw:tuning_06",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 523,
+          "unit_id": "magmaw:tuning_06",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_assessment_20260924.json",
+            "sha256": "bf15904398545e86cf39d77868bd8f9c7c13c1d61741d799a63a32b1cc83e85c"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [
+          "actor_30001",
+          "actor_30010"
+        ],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -10245,6 +10266,10 @@
       "run": {
         "path": "artifacts/cata_raid_program/scoreboard-run-b4-2c0ed2d8-78b11138fd5f.json",
         "sha256": "78b11138fd5fa0bb3a3d7f8300e3090b8045aa08fa04bc8b8094b95383323736"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_04_assessment_20260924.json",
+        "sha256": "bf15904398545e86cf39d77868bd8f9c7c13c1d61741d799a63a32b1cc83e85c"
       }
     },
     "tested_files": {
@@ -10295,6 +10320,81 @@
         "b4-2c0ed2d8-k5-20260924T011421Z"
       ],
       "scoreboard_label": "b4-2c0ed2d8"
+    },
+    "pending_acceptance": [
+      "actor_30001",
+      "actor_30010"
+    ],
+    "pending_verdict": {
+      "actor_30001": {
+        "receipt": {
+          "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b4-2c0ed2d8-c6e55f0ba0bd.json",
+          "sha256": "c6e55f0ba0bd8b9c290a7ef4791506ec621742580c1a0fe791a63041837c0943"
+        },
+        "label": "b4-2c0ed2d8",
+        "kills": 5,
+        "kill_ids": [
+          "b4-2c0ed2d8-k1-20260924T011421Z",
+          "b4-2c0ed2d8-k2-20260924T011421Z",
+          "b4-2c0ed2d8-k3-20260924T011421Z",
+          "b4-2c0ed2d8-k4-20260924T011421Z",
+          "b4-2c0ed2d8-k5-20260924T011421Z"
+        ],
+        "worldserver_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f",
+        "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+        "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+        "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+        "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+        "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+        "status": "pass",
+        "spec": "balance_druid",
+        "n": 5,
+        "mean_dps": 40301.9,
+        "target_dps": 41029.1,
+        "ratio": 0.982,
+        "reference_basis": "wcl",
+        "required_ratio": 0.95,
+        "required_dps": 38977.6,
+        "encounter_status": "pass"
+      },
+      "actor_30010": {
+        "receipt": {
+          "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b4-2c0ed2d8-c6e55f0ba0bd.json",
+          "sha256": "c6e55f0ba0bd8b9c290a7ef4791506ec621742580c1a0fe791a63041837c0943"
+        },
+        "label": "b4-2c0ed2d8",
+        "kills": 5,
+        "kill_ids": [
+          "b4-2c0ed2d8-k1-20260924T011421Z",
+          "b4-2c0ed2d8-k2-20260924T011421Z",
+          "b4-2c0ed2d8-k3-20260924T011421Z",
+          "b4-2c0ed2d8-k4-20260924T011421Z",
+          "b4-2c0ed2d8-k5-20260924T011421Z"
+        ],
+        "worldserver_sha256": "2c0ed2d877fcef8e5f8d44f7eb24a9f6876239a4c6190cda7b9edad7e8fd307f",
+        "target_path": "experiments/configs/raid_targets/blackwing_descent_10n_magmaw.json",
+        "target_sha256": "46c17523fec43f26350d414a8fc5bf66c930109094ac3821bea0c87ff6b36ef2",
+        "wcl_manifest_sha256": "e2186e1446659a320b51de2a7e1a12e005992805d4d215cd1639a7799b7cdddd",
+        "wcl_timelines_sha256": "54301d3076e0a9cd60347627618b9d4a3f77da3baf46d45b7a06364bfe9bc4aa",
+        "fallback_index_sha256": "324429ae2b7f27b06d06428bb55cfb9370aef2b22ab8f8150ea2cdd27f994dbf",
+        "status": "pass",
+        "spec": "elemental_shaman",
+        "n": 5,
+        "mean_dps": 41949.7,
+        "target_dps": 41866.0,
+        "ratio": 1.002,
+        "reference_basis": "wcl",
+        "required_ratio": 0.95,
+        "required_dps": 39772.7,
+        "encounter_status": "pass"
+      }
+    },
+    "outcomes": {
+      "encounter_clear": true,
+      "repair_accepted": false,
+      "performance_accepted": false,
+      "verdict_status": "fail",
+      "verdict_label": "b4-2c0ed2d8"
     }
   },
   "parked_scenarios": {
