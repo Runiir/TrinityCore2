@@ -596,7 +596,10 @@ bool Context::PullPermitted(BotWorldPopulationMgr& mgr)
         session.LastEvent = "pull_timer_consumed_by_wipe";
     }
     uint64 const now = NowMs();
-    std::string const edge = BotPlayPullTimer::ObserveEncounter(session, raid.EncounterInProgress,
+    // DifficultyMemberCount counts the bots the raid refresh found inside the
+    // instance; without one it kept stale boss states.
+    std::string const edge = BotPlayPullTimer::ObserveEncounter(session,
+        raid.DifficultyMemberCount != 0, raid.EncounterInProgress,
         uint32(std::count(raid.BossStates.begin(), raid.BossStates.end(), uint8(DONE))), now);
     if (!edge.empty())
     {

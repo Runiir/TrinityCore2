@@ -147,9 +147,11 @@ Decisions (user, 2026-09-24):
      `.botauto play pull [seconds|cancel]`. A number counts only when it ends
      the call or is followed by seconds.
    - The engagement spends the timer. `.botauto play status` reports
-     `boss_engaged:pull_timer|before_timer|without_timer`, then `boss_killed`
-     or `boss_reset:start_a_new_pull_timer`; `pull_window_expired` appears only
-     when zero passes with no engagement.
+     `boss_engaged:pull_timer|before_timer|after_window|without_timer`, then
+     `boss_killed` or `boss_reset:start_a_new_pull_timer|pull_timer_running`;
+     `pull_window_expired` appears only when zero passes with no engagement.
+     Edges count only when a bot inside the instance observed them. A boss
+     that resets needs a new timer, even inside the 30 s window.
 7. Wipe (all bots dead, or native encounter reset): bots release, run back and
    hold again until the next ready check and pull timer.
 8. Kill: bots stay grouped. `.botauto play stop` removes the bots.

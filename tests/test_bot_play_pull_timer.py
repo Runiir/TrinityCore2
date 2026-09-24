@@ -119,20 +119,39 @@ int main()
     // a kill or a reset.
     BotPlaySession session;
     session.PullAtMs = 10000;
-    ExpectText(ObserveEncounter(session, false, 0, 9000), "", "no edge before the pull");
-    ExpectText(ObserveEncounter(session, true, 0, 10500), "boss_engaged:pull_timer", "engaged on zero");
+    ExpectText(ObserveEncounter(session, true, false, 0, 9000), "", "no edge before the pull");
+    ExpectText(ObserveEncounter(session, true, true, 0, 10500), "boss_engaged:pull_timer",
+        "engaged on zero");
     Expect(session.PullAtMs == 0 && !Released(session.PullAtMs, 45000), true, false, 0,
         "engagement spends the timer");
-    ExpectText(ObserveEncounter(session, true, 0, 50000), "", "no repeat while engaged");
-    ExpectText(ObserveEncounter(session, false, 1, 60000), "boss_killed", "kill");
-    ExpectText(ObserveEncounter(session, false, 1, 61000), "", "no repeat after the kill");
+    ExpectText(ObserveEncounter(session, true, true, 0, 50000), "", "no repeat while engaged");
+    // Review of 00476132a6: every bot dead or outside while humans fight.
+    ExpectText(ObserveEncounter(session, false, false, 0, 55000), "",
+        "a refresh without a bot inside ends nothing");
+    ExpectText(ObserveEncounter(session, true, false, 1, 60000), "boss_killed", "kill");
+    ExpectText(ObserveEncounter(session, true, false, 1, 61000), "", "no repeat after the kill");
     session.PullAtMs = 90000;
-    ExpectText(ObserveEncounter(session, true, 1, 85000), "boss_engaged:before_timer",
+    ExpectText(ObserveEncounter(session, true, true, 1, 85000), "boss_engaged:before_timer",
         "human pulled before zero");
-    ExpectText(ObserveEncounter(session, false, 1, 95000), "boss_reset:start_a_new_pull_timer",
+    ExpectText(ObserveEncounter(session, true, false, 1, 95000), "boss_reset:start_a_new_pull_timer",
         "reset without a kill");
-    ExpectText(ObserveEncounter(session, true, 1, 96000), "boss_engaged:without_timer",
+    ExpectText(ObserveEncounter(session, true, true, 1, 96000), "boss_engaged:without_timer",
         "pull without a timer");
+    // A timer started mid-fight: spent at the end once its zero passed...
+    session.PullAtMs = 100000;
+    ExpectText(ObserveEncounter(session, true, false, 1, 140000), "boss_reset:start_a_new_pull_timer",
+        "reset after a mid-fight timer ran out");
+    Expect(session.PullAtMs == 0, true, false, 0, "a mid-fight timer past zero is spent");
+    // ...kept while it still counts down for the next pull.
+    ExpectText(ObserveEncounter(session, true, true, 1, 150000), "boss_engaged:without_timer",
+        "next pull");
+    session.PullAtMs = 170000;
+    ExpectText(ObserveEncounter(session, true, false, 1, 160000), "boss_reset:pull_timer_running",
+        "reset with the next timer running");
+    Expect(session.PullAtMs == 170000, true, false, 0, "a running timer survives the reset");
+    session.PullAtMs = 200000;
+    ExpectText(ObserveEncounter(session, true, true, 1, 240000), "boss_engaged:after_window",
+        "engaged after the window closed");
     return failures == 0 ? 0 : 1;
 }
 '''
