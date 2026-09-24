@@ -1,0 +1,18 @@
+{
+  "archive_bytes": 4561190,
+  "dvc_pointer": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_smoke-ab752ad-k1-20260924T195644Z.tar.gz.dvc",
+  "dvc_push_completed": true,
+  "evicted_temporary_bytes": 121284674,
+  "exact_archive_and_cache_evicted": true,
+  "remote_md5": "242f99336e116e7db9eb4df816a45297",
+  "remote_sha256": "e73db504b9fe97785c002873f50000c6eabf8673ea15f62547c4a791b637fb32",
+  "remote_verified": true,
+  "removed_roots": [
+    "/tmp/scoreboard-smoke-ab752ad-k1-20260924T195644Z",
+    "/tmp/scoreboard-smoke-ab752ad-k1-20260924T195644Z-analysis",
+    "/tmp/scoreboard-smoke-ab752ad-k1-20260924T195644Z.stdout",
+    "/tmp/scoreboard-smoke-ab752ad-k1-20260924T195644Z.stderr"
+  ],
+  "schema": "cata_evidence_cleanup_v1",
+  "verified_payload_files": 19
+}
