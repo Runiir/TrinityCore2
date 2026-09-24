@@ -1,0 +1,121 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_24_10_blood_rune_tap.sql": "d3f4d9303fa7a02a9b908c9c48dc4a45e558088a93f209d93e89bef3d8e9f0cf",
+    "sql/custom/world/2026_09_24_11_fallen_crusader_ppm.sql": "88bef2deb4058bbc6b6ee52ab782525c55e2b1831194a08ee1367845a4026061",
+    "src/server/game/Bots/BotWorldPopulationMgrCombatResolver.cpp": "2399a32dfa884a710b38954af57f5ef1d224cf616451bc05338cd0a1f6ab442c",
+    "src/server/game/Bots/BotWorldPopulationMgrRaidCooldownReservation.h": "61246f996fcf23bfb282dfa42dfc3d590136a2c46db08f76dafe2e499c061311",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp": "7611cd020a114fed240eb1823c433e544c1b2311f2a877dacc3cf76e116a4778",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": "a1182f206201b8a14f2c175e60a599ed6261f55979980daf1741e260f3dec642",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h": "e35dffdb7a2493150ab2aa5b4fbe0837b985caa76b0f4b89468c9d6d2b4425be",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h": "2fbf64c043b11092a88a73b64fe9a912eb5daa5211337d677e698263a341ef79",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h": "173267850a16b5bb54c93e4687b3240afef61025aa6e068df3bd5174ccb49bc3",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleDefensive.h": "aa9a54f81c38e5671d7223c24372997fc6a032f75e3742ec3c468ec11e8ed52b",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp": "02674ca54842166f11b3326b496d0b504fa7a34ad76dad463baa67b00211c03f",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.h": "8b1ec569fa67ce387ddf711225b475962b095f6b0562a7c78f41fecbd0a4a0bf",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl": "6737df78392f01dfd112645497a7855244a4105740f7fcb5456fd0593aa07c5b",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformDestination.h": "64881eb650c62366fdf47cb6e3fb152fe08a4121115f898a7fb35e74035f2bab",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformNativeProbe.h": "4abc3411dd217db81d0918caf4f1b35abe1dd59707f68643a8e07e49e1b390aa",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp": "9ef8756e941764165ef8f1a5e2868f1056cd01a1de353efa22cfdc9eed1bbeb7",
+    "tests/test_blood_fallen_crusader_ppm.py": "167efee8d4aaa7929c12441686049d934178d3262acf63787b182833fe4bd3d3",
+    "tests/test_blood_rune_tap.py": "a00d29824a10fe2e316fafe4dcde8f200c27fbd148f44da63bf55502d3277206",
+    "tests/test_magmaw_mangle_cooldown_plan.py": "c37a90078f8dac8a6b8f7f3b4dd7302c4cc24573e683af244c95607320c01ac9",
+    "tests/test_magmaw_mangle_defensive.py": "509e88ebebb0e64104c6821a94886759c6f20c4d035e0985ec20c5b23d04c3ab",
+    "tests/test_magmaw_mangle_icebound_reservation.py": "dc0ac8f5a4b27889eb07b793e54e9391abb06b613f290a0165daefd4b5d7b121",
+    "tests/test_magmaw_platform_strand_recovery.py": "afd8935b02fdb66777b18f92b00b3a9d09febe8f0bc933d7cc1d505699e7dc16"
+  },
+  "findings": [
+    {
+      "failure_scenario": "A pillar baiter in the pincer warning with no living parasites has its lane FormationAnchor rejected by the probe (e.g. return path to Support has a level gap); it is sent to the Support anchor or holds instead of its lane anchor, a baiter positioning change the brief described as untouched.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
+      "line": 434,
+      "severity": "low",
+      "summary": "AdmitMangleStagePoint is applied to every non-crash-side pincer-warning destination, including a pillar baiter's FormationAnchor, not only the non-baiter Mangle stage point."
+    },
+    {
+      "failure_scenario": "A ranged bot at the platform edge with all 7 candidates rejected re-probes every 500 ms but stands still while the pursuing parasite closes and can reach it (Parasitic Infection). Safer than walking off the platform, but hold durations (platform.holds) should be checked in the live batch.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeTask.inl",
+      "line": 464,
+      "severity": "low",
+      "summary": "When no fan candidate is admitted the escape leg holds with no upper bound; the 5 s no-progress failure only applies once a candidate exists."
+    },
+    {
+      "failure_scenario": "After Death Strike's Blood Shield is up, a Bone Shield off cooldown but with no Unholy/Death rune keeps Heart Strike and Rune Strike rejected for the whole lead (about 2 GCDs of threat/damage per Mangle), or longer while a Mangle is held overdue by a cast. Always ends at the seize or when the victim changes.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h",
+      "line": 98,
+      "severity": "low",
+      "summary": "HoldRuneSpenders treats Bone Shield as pending whenever it is below 3 charges and off cooldown, without checking rune affordability; with an overdue Mangle published as 0 and the tank not yet seized, the window stays open past 6 s."
+    },
+    {
+      "failure_scenario": "None observed; the Z is native-derived (PathGenerator endpoint), not forced or steered. Noted because it changes the Z of issued escape and stage moves relative to the pre-fix radial leg.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPlatformDestination.h",
+      "line": 235,
+      "severity": "info",
+      "summary": "An admitted destination takes the native path endpoint Z instead of the actor Z."
+    },
+    {
+      "failure_scenario": "A bot already standing where no navmesh exists (the b3 k1 position) gets no admitted fallback, holds, and retries the original every ~8 s; recovery relies on the escape/stage validation preventing the strand.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHazard.h",
+      "line": 546,
+      "severity": "info",
+      "summary": "The strand fallback cannot rescue an actor that is already off-mesh: its outbound probe path from the actor fails too."
+    },
+    {
+      "failure_scenario": "By design: with Icebound ready, Vampiric Blood is still held at 35-70% health for about 60 of every 95 s and is spent during the seize instead; the 35% emergency still releases it.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h",
+      "line": 83,
+      "severity": "info",
+      "summary": "The ordinary Vampiric Blood hold does not consider whether Icebound Fortitude will cover the next Mangle."
+    }
+  ],
+  "implementer_session_id": "coordinator-bca90d3b",
+  "limits": [
+    "No build, server or live run: runtime efficacy (IBF or VB active at every seize, Death Strike and Bone Shield >=3 in the lead, hold durations, strand fallback behaviour, healer in-place casting) is unproven until the smoke kill and the 5-kill batch.",
+    "The Rune Tap and Fallen Crusader migrations are not applied to the live world DB yet (profile 267 still v31, 3368 still 1 PPM); score math was checked by hand against the builder/resolver formulas and live row weights.",
+    "The Fallen Crusader evidence was checked against the WoWSims file at /home/runiir/Games/trinity-shared-instance-validation-03cb01db0b/wowsims-source-70d87383 (sha256 matches) and the Warcraft Wiki 3.1.0 note via web fetch; the MMO-Champion SimulationCraft quote was not checked.",
+    "The known pre-existing failure tests/test_fire_survival_combat_potions.py::test_actual_compiled_combustion_condition was not re-run.",
+    "Syntax-only compiles do not link or cover other translation units that include the changed headers."
+  ],
+  "proof": {
+    "final_message_bytes": 15608,
+    "final_message_sha256": "80ea36958f6d304b73581c7accf8596f6956ad0b80e41bb73a19c7f5d4c649d7",
+    "implementer_session_id": "coordinator-bca90d3b",
+    "prefix_bytes": 922535,
+    "prefix_sha256": "28da10e0f029219c120985c7484ce0921a98ea4c5437d896ba4bfb6472917878",
+    "review_transport": "external_json",
+    "schema": "claude_transcript_review_proof_v1",
+    "session_id": "a711a1b8f5036907f",
+    "transcript_path": "/home/runiir/.claude/projects/-home-runiir-Games-trinity-cata/bca90d3b-d7ce-4037-bbd9-8e21eea7a900/subagents/agent-a711a1b8f5036907f.jsonl"
+  },
+  "review_transport": "external_json",
+  "reviewer_session_id": "a711a1b8f5036907f",
+  "schema": "cata_raid_review_report_v1",
+  "source_report_path": "/tmp/b6-review.json",
+  "source_report_sha256": "bee51094a44d105b974f948f2af222a9042ac358ff78330cf4bfdf838e397174",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py",
+      "summary": "20 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_platform_strand_recovery.py tests/test_magmaw_support_cast_range.py tests/test_magmaw_parasite_policy.py tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_balance_mushroom_duty.py",
+      "summary": "24 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_blood_fallen_crusader_ppm.py tests/test_blood_death_strike_priority.py tests/test_blood_rune_recovery.py tests/test_blood_outbreak_disease_upkeep.py tests/test_blood_native_fidelity.py",
+      "summary": "38 passed"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "summary": "exit 0, no oversized file reported; all 22 changed files under 1,000 lines (largest 943)"
+    },
+    {
+      "command": "compile_commands.json entries with -c/-o removed and -fsyntax-only added for BotWorldPopulationMgrCombatResolver.cpp, BotWorldPopulationMgrMagmawMangleDefensive.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp, BotWorldPopulationMgrUpdateBotKernelCandidates.cpp, BotMagmawPersonalParasiteEscapeDiagnostics.cpp",
+      "summary": "all 5 exit 0; only the pre-existing <ciso646> system-header #warning"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths (HEAD, and a git-archive export of parent 4e42b8bea3 in /tmp, since deleted)",
+      "summary": "known pre-existing failures: both fail with identical assertions before and after the bundle (Movement.Size()==2 at line 134; StackSeparation at line 340); not caused by this commit"
+    }
+  ],
+  "verdict": "approved"
+}
