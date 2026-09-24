@@ -1,0 +1,34 @@
+{
+  "schema": "cata_raid_program_assessment_receipt_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:tuning_07",
+  "producer": "coordinator-bca90d3b",
+  "authority": "coordinator_attestation",
+  "attempt_id": "scoreboard:b5-d1898555",
+  "scoreboard_label": "b5-d1898555",
+  "encounter_clear": true,
+  "verdict": {
+    "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b5-d1898555-7fcea04e9dd3.json",
+    "sha256": "7fcea04e9dd3f50ab64b92484a80c0fbaf3e400c52e04fe1996f647725f33132"
+  },
+  "accepted_requirements": [
+    "actor_30002",
+    "magmaw_10n"
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b5-d1898555-7fcea04e9dd3.json",
+      "sha256": "7fcea04e9dd3f50ab64b92484a80c0fbaf3e400c52e04fe1996f647725f33132"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard-run-b5-d1898555-449e9406cedb.json",
+      "sha256": "449e9406cedb74656d419d6a98bfca03f31baa412826c457a188ea15906f3eb6"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "2e7346f76ebf4abe9c7fd3c87fb5f096ae627ab4b661f7ac5b014014a7c3645a"
+    }
+  ],
+  "summary": "b5-d1898555: 8 native clears (5 + a 3-kill top-up to resolve a borderline Affliction flag), 0 boss-window deaths, party 282.0k = 1.15x WCL. Scoreboard verdict PASS: Blood 25195 (0.96), Balance 40371 (0.98), Fire A 42491 (1.06), Fire B 46596 (1.16), Affliction 42987 (1.07), Survival 37620 (1.03 of WoWSims), Elemental 41004 (0.98). Kept under the playbook keep rule at n=8 (at n=5 Affliction had read regressed at t=-2.34 vs 2.31; at n=8 it is within noise). b5-d1898555 is the new baseline.",
+  "acceptance_claim": "Accepts actor_30002 and magmaw_10n from the passing verdict on the unit's own label and binary."
+}
