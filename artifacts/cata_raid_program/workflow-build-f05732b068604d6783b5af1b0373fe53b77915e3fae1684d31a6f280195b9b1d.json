@@ -1,0 +1,36 @@
+{
+  "authority": "coordinator_attestation",
+  "binary_sha256": "d18985555c4634e62a54d1824dfeff7cd65b677822518d8a2fe5904d9da44b33",
+  "build_receipt": {
+    "path": "artifacts/cata_raid_program/queued-build-f05732b068604d6783b5af1b0373fe53b77915e3fae1684d31a6f280195b9b1d.json",
+    "sha256": "ab2aba49741d9832bb6ca4767353bff3738d38812477be38bc3f205489f558ab"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/queued-build-f05732b068604d6783b5af1b0373fe53b77915e3fae1684d31a6f280195b9b1d.json",
+      "sha256": "ab2aba49741d9832bb6ca4767353bff3738d38812477be38bc3f205489f558ab"
+    }
+  ],
+  "file_hashes": {
+    "sql/custom/world/2026_09_24_20_blood_seized_heart_strike.sql": "9475377697c6af278760c23bf8ab46b57ce98394dacf74ec3df45339eeca682d",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": "f50913557fd76903fa2b67ac3044491b77b77d88465e369884f4bf6ee2f030e7",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h": "ce34e4fbf441bb8ed91b9ee5870538b1e1b08c2f76c8ac6e9dad307c094acc5c",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h": "6b32df364967a6be0956ff1c1b1a6244f888c28998ec378164d4e38c07e04f88",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h": "9fe54ddfefac531b74854db4bec26a754756a3eabeaba1c91ddf395e4e85adbd",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h": "a931c253ec195877c2a0dc3adb09e7f2771cff183f0b38879f8baca07b878d2a",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp": "d44e519f1d81e7cfc1aef5e6f380d0789fd6f0acbc892596f1a23fb1b7b2dff9",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp": "6eebd39e0efd0b6ff71fd957ea4954cf6fae6e3cae9ec4ed793fe48c2b0dddf9",
+    "tests/test_magmaw_mangle_cooldown_plan.py": "0d142461e26523b55bd56b5a759e0c8cbb68d09ca2beb59f7acee5745f004692",
+    "tests/test_magmaw_mangle_defensive.py": "2786c727db9cd5d386826a29364065c3fd4b0c9823bea18894fb1dddc1229fd9",
+    "tests/test_magmaw_parasite_policy.py": "a0b06222f19688f68e611375d8c95cd5b6b3d633d98669fec4699693f6fca358"
+  },
+  "kind": "build",
+  "operation_id": "f05732b068604d6783b5af1b0373fe53b77915e3fae1684d31a6f280195b9b1d",
+  "policy": {
+    "path": "experiments/configs/cata_raid_build_resource_policy_host12_v1.json",
+    "sha256": "a39bd6f8068ec34ee4bcbc8eead8ca001072be104c567e418945cb445030ec6d"
+  },
+  "producer": "coordinator-bca90d3b",
+  "source_commit": "d296e51c408a402f9491ae0de8242d9669c46ceb",
+  "unit_id": "magmaw:tuning_07"
+}
