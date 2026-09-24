@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Select the next largest verdict gap, or complete only when every requirement is accepted. Plan bundle 05: Blood seize-window throughput (Heart Strike while seized when Death Strike is not castable; Bone Shield reserved for the seize) and Fire baiter duty alternation per parasite wave (actor_30006 is accepted from b2 but must pass again on the final label for magmaw_10n); then implement, review, build, smoke and measure a 5-kill batch against baseline b4-2c0ed2d8.",
+  "next_action": "All recorded requirements accepted; report the evidence and stop.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 540,
+    "revision": 541,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "route",
+    "stage": "complete",
     "actor_ids": [
       "30001",
       "30002",
@@ -10596,6 +10596,21 @@
           "actor_30002",
           "magmaw_10n"
         ],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 540,
+        "unit_id": "magmaw:tuning_07",
+        "from": "route",
+        "to": "complete",
+        "event": {
+          "action": "complete",
+          "revision": 540,
+          "unit_id": "magmaw:tuning_07",
+          "reason": "Every requirement is accepted: scoreboard verdict pass on label b5-d1898555 (8 native clears, 0 boss-window deaths, party 1.15x WCL; Blood 0.96, Balance 0.98, Fire A 1.06, Fire B 1.16, Affliction 1.07, Survival 1.03 of WoWSims, Elemental 0.98) on the unit's binary d18985555c46."
+        },
+        "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
       }
