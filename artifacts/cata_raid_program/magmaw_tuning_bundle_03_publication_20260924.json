@@ -1,0 +1,60 @@
+{
+  "schema": "cata_raid_program_publication_receipt_v1",
+  "kind": "publication",
+  "unit_id": "magmaw:tuning_05",
+  "producer": "coordinator-bca90d3b",
+  "authority": "coordinator_attestation",
+  "operation_id": "5251f73676889060e64675ff2949d579cb70c1a613fe0efa7c48a2a8282d2e20",
+  "dvc_status_checked": true,
+  "dvc_push_completed": true,
+  "remote_verified": true,
+  "cleanup_verified": true,
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k1-20260923T232945Z.publication.json",
+      "sha256": "6dd8b041637873356f986665a8cba01aa348e4df9f83bc333cbb7ff85195d4e7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k2-20260923T232945Z.publication.json",
+      "sha256": "e8b31db1171bf463d5069615ae639642abde360b648642a4d98c46d47a84ad9a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k3-20260923T232945Z.publication.json",
+      "sha256": "e39a754aa58a9a30db9f67a1627b2b0374074f785dbb83fa429322928947d46e"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k4-20260923T232945Z.publication.json",
+      "sha256": "c29c8af8d29c232cb104845971e6385b2fa9a427fe9955608af402ba5c872cc4"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k5-20260923T232945Z.publication.json",
+      "sha256": "dc50012bb01949d9af69681f727708e21c32df7d5f878eba4cde1806733adb03"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_smoke-0dbce440-k1-20260923T232320Z.publication.json",
+      "sha256": "9a4a5837685b659ae9ba3731509ad940f8ed451da01e8d665df1a6ea4d76d598"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k1-20260923T232945Z.tar.gz.dvc",
+      "sha256": "be66a40e4c13aa541fc2cfba496c44acd741cec8eef97a959376c466a7c5f051"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k2-20260923T232945Z.tar.gz.dvc",
+      "sha256": "8445c80eb9bb91308bf2383aa7fac253dd71023435d2c56b20f1c7933032a416"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k3-20260923T232945Z.tar.gz.dvc",
+      "sha256": "dd89fc3a9e3deef98cfe28e4323d91d48b0df63806fcd21236e1324bea46b081"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k4-20260923T232945Z.tar.gz.dvc",
+      "sha256": "c18acd5e35febe3ca601fbe4c6c6ca63a38c583e3fcccaa78e5312c1cb72c034"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard_blackwing_descent_10n_magmaw_b3-0dbce440-k5-20260923T232945Z.tar.gz.dvc",
+      "sha256": "7cf9d6f2fc7ed44bef86595c10d6a25363e21215a364a41cc44f0c6c7bc05ed3"
+    }
+  ],
+  "basis": "Each kill's publication receipt records dvc_push_completed, remote_verified and exact_archive_and_cache_evicted.",
+  "scoreboard_label": "b3-0dbce440"
+}
