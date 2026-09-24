@@ -1,0 +1,70 @@
+{
+  "kind": "tests",
+  "authority": "coordinator_attestation",
+  "unit_id": "magmaw:tuning_07",
+  "producer": "coordinator-bca90d3b",
+  "operation_id": "b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97",
+  "source_commit": "a9abb65c02dc70307610f0efd8991d6c90a692d1",
+  "file_hashes": {
+    "sql/custom/world/2026_09_24_20_blood_seized_heart_strike.sql": "9475377697c6af278760c23bf8ab46b57ce98394dacf74ec3df45339eeca682d",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": "f50913557fd76903fa2b67ac3044491b77b77d88465e369884f4bf6ee2f030e7",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h": "ce34e4fbf441bb8ed91b9ee5870538b1e1b08c2f76c8ac6e9dad307c094acc5c",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h": "6b32df364967a6be0956ff1c1b1a6244f888c28998ec378164d4e38c07e04f88",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h": "9fe54ddfefac531b74854db4bec26a754756a3eabeaba1c91ddf395e4e85adbd",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h": "a931c253ec195877c2a0dc3adb09e7f2771cff183f0b38879f8baca07b878d2a",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp": "d44e519f1d81e7cfc1aef5e6f380d0789fd6f0acbc892596f1a23fb1b7b2dff9",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp": "6eebd39e0efd0b6ff71fd957ea4954cf6fae6e3cae9ec4ed793fe48c2b0dddf9",
+    "tests/test_magmaw_mangle_cooldown_plan.py": "0d142461e26523b55bd56b5a759e0c8cbb68d09ca2beb59f7acee5745f004692",
+    "tests/test_magmaw_mangle_defensive.py": "2786c727db9cd5d386826a29364065c3fd4b0c9823bea18894fb1dddc1229fd9",
+    "tests/test_magmaw_parasite_policy.py": "a0b06222f19688f68e611375d8c95cd5b6b3d633d98669fec4699693f6fca358"
+  },
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py tests/test_blood_death_strike_priority.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 4.971,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97-a9abb65c02dc-78da35fc85f6/00.json",
+        "sha256": "9e47fa094146a463e322498055303c43f950b701cfe1d0c0ebd97e0d8c370048"
+      }
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_parasite_policy.py tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_balance_mushroom_duty.py tests/test_magmaw_platform_strand_recovery.py tests/test_magmaw_support_cast_range.py",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 55.948,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97-a9abb65c02dc-78da35fc85f6/01.json",
+        "sha256": "8aab30f849c6065f30ebd2888b3f35ef91e4210b2f14b0bfc5754f9a3f3ea05a"
+      }
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "exit_status": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.114,
+      "log": {
+        "path": "artifacts/cata_raid_program/tests-b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97-a9abb65c02dc-78da35fc85f6/02.json",
+        "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/tests-b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97-a9abb65c02dc-78da35fc85f6/00.json",
+      "sha256": "9e47fa094146a463e322498055303c43f950b701cfe1d0c0ebd97e0d8c370048"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97-a9abb65c02dc-78da35fc85f6/01.json",
+      "sha256": "8aab30f849c6065f30ebd2888b3f35ef91e4210b2f14b0bfc5754f9a3f3ea05a"
+    },
+    {
+      "path": "artifacts/cata_raid_program/tests-b7f15597d47323c4ec8619908a00915e5a6c7ffb6dfc7130037f199021a35b97-a9abb65c02dc-78da35fc85f6/02.json",
+      "sha256": "38ac3da26b5d896385ffa423395bdd764a1633e053e6d608e56eb68d66ae9e7d"
+    }
+  ],
+  "source_and_state_stable": true,
+  "behavior_command": "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py tests/test_blood_death_strike_priority.py",
+  "limits": "Command execution is observed. Reviewer must verify behavior coverage; no native performance acceptance."
+}
