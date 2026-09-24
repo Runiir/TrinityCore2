@@ -51,6 +51,15 @@ static void Expect(std::optional<Signal> signal, bool present, bool cancel, uint
     }
 }
 
+static void ExpectText(std::string const& actual, char const* expected, char const* label)
+{
+    if (actual != expected)
+    {
+        std::fprintf(stderr, "FAIL: %s (got '%s')\n", label, actual.c_str());
+        ++failures;
+    }
+}
+
 int main()
 {
     // DBM 4.3.4 (/dbm pull 10) and later D5 framing; 0 cancels.
@@ -104,6 +113,26 @@ int main()
     Expect(!Released(10000, 10000 + ReleaseWindowMs) && !Running(10000, 50000), true, false, 0,
         "stale timer never permits");
     Expect(!Running(0, 5) && !Released(0, 5), true, false, 0, "no timer");
+
+    // Fight edges (live play 2026-09-24 read "pull_window_expired" during
+    // and after a kill): the engagement spends the timer, the end reads as
+    // a kill or a reset.
+    BotPlaySession session;
+    session.PullAtMs = 10000;
+    ExpectText(ObserveEncounter(session, false, 0, 9000), "", "no edge before the pull");
+    ExpectText(ObserveEncounter(session, true, 0, 10500), "boss_engaged:pull_timer", "engaged on zero");
+    Expect(session.PullAtMs == 0 && !Released(session.PullAtMs, 45000), true, false, 0,
+        "engagement spends the timer");
+    ExpectText(ObserveEncounter(session, true, 0, 50000), "", "no repeat while engaged");
+    ExpectText(ObserveEncounter(session, false, 1, 60000), "boss_killed", "kill");
+    ExpectText(ObserveEncounter(session, false, 1, 61000), "", "no repeat after the kill");
+    session.PullAtMs = 90000;
+    ExpectText(ObserveEncounter(session, true, 1, 85000), "boss_engaged:before_timer",
+        "human pulled before zero");
+    ExpectText(ObserveEncounter(session, false, 1, 95000), "boss_reset:start_a_new_pull_timer",
+        "reset without a kill");
+    ExpectText(ObserveEncounter(session, true, 1, 96000), "boss_engaged:without_timer",
+        "pull without a timer");
     return failures == 0 ? 0 : 1;
 }
 '''

@@ -11,6 +11,7 @@
 #include "GameTime.h"
 #include "Group.h"
 #include "GroupMgr.h"
+#include "InstanceScript.h"
 #include "Log.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -588,19 +589,28 @@ bool Context::PermitRouteAdvance(BotWorldPopulationMgr& mgr, uint64 prospectiveG
 bool Context::PullPermitted(BotWorldPopulationMgr& mgr)
 {
     BotPlaySession& session = mgr.Cohort().Play;
-    if (session.PullAtMs && mgr.Cohort().Raid.WipeGeneration != session.PullWipeGeneration)
+    auto const& raid = mgr.Cohort().Raid;
+    if (session.PullAtMs && raid.WipeGeneration != session.PullWipeGeneration)
     {
         session.PullAtMs = 0;
         session.LastEvent = "pull_timer_consumed_by_wipe";
     }
+    uint64 const now = NowMs();
+    std::string const edge = BotPlayPullTimer::ObserveEncounter(session, raid.EncounterInProgress,
+        uint32(std::count(raid.BossStates.begin(), raid.BossStates.end(), uint8(DONE))), now);
+    if (!edge.empty())
+    {
+        session.LastEvent = edge;
+        TC_LOG_INFO("server", "BotWorld play encounter session=%s event=%s",
+            session.SessionId.c_str(), edge.c_str());
+    }
     // Open only from zero until the release window closes: a timer from an
     // earlier pull never lets the bots pull the boss on arrival.
-    uint64 const now = NowMs();
     if (BotPlayPullTimer::Released(session.PullAtMs, now))
         return true;
     // Tell the leader the window closed without a pull, so a new timer is
     // needed; the stale timer itself never permits a pull again.
-    if (session.PullAtMs && now >= session.PullAtMs
+    if (session.PullAtMs && now >= session.PullAtMs && !session.BossEngaged
         && session.LastEvent.rfind("pull_window_expired", 0) != 0)
         session.LastEvent = "pull_window_expired:start_a_new_pull_timer";
     return false;

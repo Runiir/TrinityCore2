@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_PLAY_PULL_TIMER_H
 #define TRINITY_BOT_PLAY_PULL_TIMER_H
 
+#include "Bots/BotPlaySession.h"
 #include "Bots/BotRaidDutyClaims.h"
 
 #include <algorithm>
@@ -30,6 +31,26 @@ inline bool Running(uint64 pullAtMs, uint64 nowMs)
 inline bool Released(uint64 pullAtMs, uint64 nowMs)
 {
     return pullAtMs && nowMs >= pullAtMs && nowMs < pullAtMs + ReleaseWindowMs;
+}
+
+// Boss fight edges for the status the leader reads. The fight spends the
+// timer that led to it, so an engaged or finished fight never reads as an
+// expired pull window. It ends as a kill when more bosses are DONE than at
+// the pull, else as a reset that needs a new timer. "" means no edge.
+inline std::string ObserveEncounter(BotPlaySession& session, bool inProgress,
+    uint32 bossesDone, uint64 nowMs)
+{
+    if (inProgress == session.BossEngaged)
+        return {};
+    session.BossEngaged = inProgress;
+    if (!inProgress)
+        return bossesDone > session.BossesDoneAtEngage
+            ? "boss_killed" : "boss_reset:start_a_new_pull_timer";
+    session.BossesDoneAtEngage = bossesDone;
+    char const* how = Released(session.PullAtMs, nowMs) ? "pull_timer"
+        : Running(session.PullAtMs, nowMs) ? "before_timer" : "without_timer";
+    session.PullAtMs = 0;
+    return std::string("boss_engaged:") + how;
 }
 
 struct Signal

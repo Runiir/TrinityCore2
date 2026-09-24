@@ -44,6 +44,10 @@ struct BotPlaySession
     uint64 PullAtMs = 0;
     uint32 PullWipeGeneration = 0;
     std::string PullSource;
+    // Boss fight in progress, and how many bosses were DONE at its pull, so
+    // its end reads as a kill or a reset.
+    bool BossEngaged = false;
+    uint32 BossesDoneAtEngage = 0;
     uint64 StartedAtMs = 0;
     std::string LastEvent;
     std::string LastHoldEvent;
