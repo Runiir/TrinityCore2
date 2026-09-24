@@ -1,0 +1,103 @@
+{
+  "file_hashes": {
+    "sql/custom/world/2026_09_24_20_blood_seized_heart_strike.sql": "9475377697c6af278760c23bf8ab46b57ce98394dacf74ec3df45339eeca682d",
+    "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp": "f50913557fd76903fa2b67ac3044491b77b77d88465e369884f4bf6ee2f030e7",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h": "ce34e4fbf441bb8ed91b9ee5870538b1e1b08c2f76c8ac6e9dad307c094acc5c",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h": "6b32df364967a6be0956ff1c1b1a6244f888c28998ec378164d4e38c07e04f88",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h": "9fe54ddfefac531b74854db4bec26a754756a3eabeaba1c91ddf395e4e85adbd",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMangleCooldownPlan.h": "a931c253ec195877c2a0dc3adb09e7f2771cff183f0b38879f8baca07b878d2a",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.cpp": "d44e519f1d81e7cfc1aef5e6f380d0789fd6f0acbc892596f1a23fb1b7b2dff9",
+    "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp": "6eebd39e0efd0b6ff71fd957ea4954cf6fae6e3cae9ec4ed793fe48c2b0dddf9",
+    "tests/test_magmaw_mangle_cooldown_plan.py": "0d142461e26523b55bd56b5a759e0c8cbb68d09ca2beb59f7acee5745f004692",
+    "tests/test_magmaw_mangle_defensive.py": "2786c727db9cd5d386826a29364065c3fd4b0c9823bea18894fb1dddc1229fd9",
+    "tests/test_magmaw_parasite_policy.py": "a0b06222f19688f68e611375d8c95cd5b6b3d633d98669fec4699693f6fca358"
+  },
+  "findings": [
+    {
+      "failure_scenario": "Rune Tap was used before the seize and its cooldown ends mid-seize. Heart Strike has meanwhile spent the last ready Blood rune while Death Strike was rune-gated. Rune Tap then pays its Blood cost with a Death rune (native fallback), and Death Strike, which was waiting for that rune, is delayed about one rune regen. The same applies to Blood Boil if 2 or more enemies are near the seized tank. At most one Death rune per Rune Tap cooldown.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp",
+      "line": 253,
+      "severity": "low",
+      "summary": "The Blood rune is kept for Rune Tap only while Rune Tap passes its preflight now, which includes its 30 s cooldown. The 60% health gate is not a problem because it runs after Observe (resolver line 658). Heart Strike itself never pays with a Death rune."
+    },
+    {
+      "failure_scenario": "A CohortRuntime with the same id is re-created in the same process with an identical scope key (AttemptId back to 1, same map and instance). EncounterSnapshotRevision restarts at 0, so the ledger stays frozen with the previous run's active mage and does no wave detection until revisions pass the old value. A mage still baits (no safety loss), but the rotation and its diagnostics are stale.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h",
+      "line": 176,
+      "severity": "low",
+      "summary": "Observe ignores any board whose revision is at or below LastRevision and never resets when the revision goes backwards. The registry lives for the whole process, keyed by cohort id."
+    },
+    {
+      "failure_scenario": "A pays for wave 1 baiting plus the hook ride; B pays only for wave 2 baiting. The mages' DPS may differ by about the hook-ride cost, so the 'both mages within ~4k' acceptance may not be met. It is a DPS balance issue, not a safety one.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategyHook.h",
+      "line": 98,
+      "severity": "info",
+      "summary": "The hook riders are non-baiter DPS in GUID order, so they now follow the rotation. In the roughly 100 s 10N kill, B baits wave 2 (pillar at about 73 s), the wave 2 to 3 switch is deferred by mangle_imminent, and the 90 s Mangle riders become A (30006) and Affliction (30008) instead of B and 30008."
+    },
+    {
+      "failure_scenario": "No runtime failure. Only the documented rationale is inaccurate.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h",
+      "line": 28,
+      "severity": "info",
+      "summary": "The comment justifies the 3 s quiet boundary by the 2.5 s despawn of dead parasites, but dead actors are already excluded by actor.Alive. The real guard is that a wave is continuously live in boss_magmaw.cpp: pillar (7 s despawn), then living parasites, then infection auras 78097/78941 on players, then released parasites, with pillars about 42 s apart."
+    },
+    {
+      "failure_scenario": "Active mage dead, alternate alive, Mangle due within 15 s at the wave boundary, next pillar before hook duty ends: that wave's mage slot is unbaited and only the Hunter baits. This is not a regression.",
+      "file": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h",
+      "line": 193,
+      "severity": "info",
+      "summary": "If the active mage died and a switch is deferred by hook duty when the next wave arrives, HookDutyKept leaves the dead mage in the Fire Mage slot for that wave. This is the same as the old fixed-roster behaviour (a dead fixed mage was never replaced)."
+    }
+  ],
+  "implementer_session_id": "coordinator-bca90d3b",
+  "limits": [
+    "Read-only review: no build, no server, no live kill. The acceptance evidence (seized Heart Strike rejections and landings, Bone Shield at 3 or more charges at the seize, wave 1 30006 / wave 2 30007 in diagnostics, mage DPS split, 0 deaths) is not verified.",
+    "Wave cadence (pillars about 31 s and 73 s, about 42 s apart) and continuous wave liveness come from reading boss_magmaw.cpp and boss_magmaw_encounter_spells.cpp, not from runtime traces. Missile travel time for 78006 was assumed to be under 3 s.",
+    "The survival trade uses the brief's 30-50k per swing, 200k tank health and the database BaseAttackTime of 2500 ms. Bone Shield's charge use per hit was inferred, not measured.",
+    "The hook-ride DPS cost for A is not quantified, so whether the mages end within about 4k of each other is open.",
+    "The migration was reviewed by reading it and through the sqlite replay test; it was not applied to the MySQL world database. The database shows the Blood tank profile at version 32 and 2026_09_24_20 not yet applied."
+  ],
+  "proof": {
+    "final_message_bytes": 13789,
+    "final_message_sha256": "e27a0eb95d8df39d19e2c9230e49f3c1e5b681ad670e24fb314d9c1c379cf2f6",
+    "implementer_session_id": "coordinator-bca90d3b",
+    "prefix_bytes": 1176724,
+    "prefix_sha256": "f9487c90127e31b5ec35a4e279dc78b620c13bbe40378214aaf6938ef796e0f0",
+    "review_transport": "external_json",
+    "schema": "claude_transcript_review_proof_v1",
+    "session_id": "aaae2646f943fd8f4",
+    "transcript_path": "/home/runiir/.claude/projects/-home-runiir-Games-trinity-cata/bca90d3b-d7ce-4037-bbd9-8e21eea7a900/subagents/agent-aaae2646f943fd8f4.jsonl"
+  },
+  "review_transport": "external_json",
+  "reviewer_session_id": "aaae2646f943fd8f4",
+  "schema": "cata_raid_review_report_v1",
+  "source_report_path": "/tmp/b7-review.json",
+  "source_report_sha256": "2b5d36beb0a12b38bc87f9b8bab1d87190f9fceacc34df1fa9f3ad91de01d377",
+  "tests": [
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_mangle_cooldown_plan.py tests/test_magmaw_mangle_defensive.py tests/test_magmaw_mangle_icebound_reservation.py tests/test_blood_rune_tap.py tests/test_blood_death_strike_priority.py",
+      "summary": "25 passed"
+    },
+    {
+      "command": "pixi run pytest -q tests/test_magmaw_parasite_policy.py tests/test_magmaw_parasite_los_gate.py tests/test_magmaw_support_target_admission.py tests/test_magmaw_balance_mushroom_duty.py tests/test_magmaw_platform_strand_recovery.py tests/test_magmaw_support_cast_range.py",
+      "summary": "26 passed"
+    },
+    {
+      "command": "pixi run python -m tools.raid_program.module_size",
+      "summary": "Exit 0, but it checks staged blobs only and nothing was staged. Manual count: every changed C/C++ file is 842 lines or fewer (BotMagmawBaiterRotation.h is 454)."
+    },
+    {
+      "command": "syntax-only compile (build/compile_commands.json, -c/-o replaced by -fsyntax-only) of BotWorldPopulationMgrMagmawMangleDefensive.cpp, BotWorldPopulationMgrUpdateBotKernelPreparation.cpp, BotMagmawPersonalParasiteEscapeDiagnostics.cpp, BotWorldPopulationMgr.cpp",
+      "summary": "All four rc=0 with no errors; only the pre-existing <ciso646> warning."
+    },
+    {
+      "command": "pixi run pytest -q tests/test_bot_action_arbitration.py::test_magmaw_parasite_baiters_keep_persistent_lane_paths tests/test_magmaw_movement_intent_collection.py::test_magmaw_movement_intents_cross_strategy_and_real_kernel (at HEAD and on a git-archive extract of e16e8e4cdc^ in /tmp)",
+      "summary": "Both fail identically at HEAD and at the parent commit (replay.cpp:340 'Distance(firstDestination, support) >= StackSeparation'; intents.cpp:134 'defaultPlan.Movement.Size() == 2'). Pre-existing, not caused by this bundle."
+    },
+    {
+      "command": "pixi run pytest -q tests/test_fire_survival_combat_potions.py::test_actual_compiled_combustion_condition",
+      "summary": "Fails (known pre-existing); covers the combustion condition, which this commit does not touch."
+    }
+  ],
+  "verdict": "approved"
+}
