@@ -1,4 +1,5 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h"
 
 #include <sstream>
 
@@ -72,6 +73,60 @@ void AppendEpisodeTransition(std::ostringstream& json,
          << transition.PriorCandidateGeneration
          << ",\"new_candidate_generation\":"
          << transition.NewCandidateGeneration << "}";
+}
+
+// DPS-064 evidence: the cohort's parasite bait rotation for this scope. The
+// history proves which Fire Mage owned each wave from any later snapshot.
+void AppendBaiterRotation(std::ostringstream& json,
+    std::string const& taskScopeKey, std::string const& waveScopeKey)
+{
+    std::optional<MagmawBaiterRotation> rotation =
+        MagmawBaiterRotationRegistry::Find(taskScopeKey);
+    if (!rotation)
+        rotation = MagmawBaiterRotationRegistry::Find(waveScopeKey);
+    if (!rotation)
+    {
+        json << "{\"observed\":false}";
+        return;
+    }
+    json << "{\"observed\":true"
+         << ",\"scope_key\":\"" << JsonEscape(rotation->ScopeKey) << "\""
+         << ",\"wave\":" << rotation->Wave
+         << ",\"completed_waves\":" << rotation->CompletedWaves
+         << ",\"wave_observed\":"
+         << (rotation->WaveObserved ? "true" : "false")
+         << ",\"active_mage_guid\":" << rotation->ActiveMage.GetCounter()
+         << ",\"hunter_guid\":" << rotation->Hunter.GetCounter()
+         << ",\"primary_mage_guid\":"
+         << rotation->PrimaryMage.GetCounter()
+         << ",\"alternate_mage_guid\":"
+         << rotation->AlternateMage.GetCounter()
+         << ",\"lane_state_anchor_guid\":"
+         << rotation->LaneStateAnchor().GetCounter()
+         << ",\"switch_pending\":"
+         << (rotation->SwitchPending ? "true" : "false")
+         << ",\"deferrals\":" << rotation->Deferrals
+         << ",\"last_deferral\":\"" << rotation->LastDeferral << "\""
+         << ",\"quiet_since_ms\":"
+         << (rotation->QuietTiming ? rotation->QuietSinceMs : 0)
+         << ",\"last_revision\":" << rotation->LastRevision
+         << ",\"last_observed_at_ms\":" << rotation->LastObservedAtMs
+         << ",\"history\":[";
+    bool first = true;
+    for (MagmawBaiterRotation::Assignment const& assignment :
+        rotation->History)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"wave\":" << assignment.Wave
+             << ",\"mage_guid\":" << assignment.Mage.GetCounter()
+             << ",\"assigned_at_ms\":" << assignment.AssignedAtMs
+             << ",\"revision\":" << assignment.Revision
+             << ",\"reason\":\""
+             << MagmawBaiterRotation::ToString(assignment.Why) << "\"}";
+    }
+    json << "]}";
 }
 }
 
@@ -168,7 +223,10 @@ std::string BuildMagmawPersonalParasiteEscapeDiagnosticsJson(
          << strand.Fallback.Y << ',' << strand.Fallback.Z << ']'
          << ",\"fallback_count\":" << strand.FallbackCount
          << ",\"hold_count\":" << strand.HoldCount
-         << ",\"excluded\":" << strand.Excluded.size() << "}}}";
+         << ",\"excluded\":" << strand.Excluded.size() << "}}";
+    json << ",\"baiter_rotation\":";
+    AppendBaiterRotation(json, task.ScopeKey, wave.ScopeKey);
+    json << "}";
     return json.str();
 }
 }

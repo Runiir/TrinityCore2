@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -474,14 +475,20 @@ int main()
 {
     Blackboard board = Board();
     auto const baiters = MagmawParasitePolicy::ResolveFixedBaiters(board);
+    // Alternation contract (DPS-064): wave 1 belongs to the lowest-GUID roster
+    // Fire Mage; the Mage slot rotates only at a wave boundary, and the
+    // Hunter is the frozen lowest-GUID roster Hunter for the whole attempt.
     assert(baiters.first == board.Players[1].Guid);
     assert(baiters.second == board.Players[3].Guid);
 
-    // Liveness is execution state, not assignment identity. The frozen
-    // lowest-GUID Mage and Hunter remain the baiters after death instead of
-    // splitting combat ownership from the retained lane transition.
+    // Liveness is execution state, not assignment identity. Inside a live
+    // wave (parasite 900) the wave's Mage and Hunter remain the baiters after
+    // death instead of splitting combat ownership from the retained lane
+    // transition; only a later wave boundary may hand the Mage slot over.
     board.Players[1].Alive = false;
     board.Players[3].Alive = false;
+    board.Revision += 1;
+    board.ObservedAtMs += 10000;
     auto const deadBaiters = MagmawParasitePolicy::ResolveFixedBaiters(board);
     assert(deadBaiters.first == baiters.first);
     assert(deadBaiters.second == baiters.second);
@@ -1795,7 +1802,10 @@ int main()
 
     // (3) The fixed 30006/30009 lane remains one identity across GUID churn,
     // midpoint observation, pillar preemption/resume, arrival, next event,
-    // and wipe reset. The old lane fixture remains a separate replay.
+    // and wipe reset. The old lane fixture remains a separate replay. The
+    // Mage slot rotates only at a quiet wave boundary (see
+    // test_magmaw_baiter_rotation_alternates_fire_mages_per_wave); this
+    // replay stays inside wave 1.
     Blackboard laneBoard = board;
     MagmawLaneTransitionState lane;
     AdaptiveMagmawPlan laneMage = strategy.Propose(laneBoard,
@@ -2275,3 +2285,490 @@ int main()
     native_action = (ROOT / "src/server/game/Bots/"
         "BotWorldPopulationMgrNativeAction.cpp").read_text(encoding="utf-8")
     assert "BotNativeAction::NativeMoveOutcome(moved" in native_action
+
+
+ROTATION_INCLUDES = [
+    "-I", str(ROOT / "src/server/game"),
+    "-I", str(ROOT / "src/server/game/Entities/Object"),
+    "-I", str(ROOT / "src/common"),
+    "-I", str(ROOT / "src/common/Utilities"),
+    "-I", str(ROOT / "src/common/Logging"),
+    "-I", str(ROOT / "src/common/Debugging"),
+    "-I", str(ROOT / "dep/g3dlite/include"),
+]
+
+
+def test_magmaw_baiter_rotation_alternates_fire_mages_per_wave(
+    tmp_path: Path,
+) -> None:
+    """DPS-064: the Fire Mage bait slot alternates per parasite wave.
+
+    The roster pin used to be one fixed Mage for the attempt, which cost that
+    Mage ~5-6k DPS per kill. A real raid rotates the duty: wave 1 the
+    lowest-GUID Fire Mage, wave 2 the other, wave 3 the first again. The
+    Hunter stays fixed; dead/missing alternates and one-mage rosters keep the
+    current baiter; hook duty defers the handover; the lane-state storage
+    anchor is stable while its Mage slot follows the active baiter; and the
+    parasite diagnostics publish the wave index and active baiter.
+    """
+    source = tmp_path / "magmaw_baiter_rotation.cpp"
+    binary = tmp_path / "magmaw_baiter_rotation"
+    source.write_text(
+        r'''
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawPersonalParasiteEscapeDiagnostics.h"
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+using namespace BotEncounter;
+using BotNativeAction::Move;
+using Rotation = MagmawBaiterRotation;
+using Direction = MagmawLaneTransitionState::Direction;
+
+std::string ObjectGuid::ToString() const
+{
+    return std::to_string(GetRawValue());
+}
+
+static ObjectGuid PlayerGuid(uint32 guid)
+{
+    return ObjectGuid(HighGuid::Player, guid);
+}
+
+static ActorSnapshot Player(uint32 guid, char const* role, char const* spec,
+    Vector3 position)
+{
+    ActorSnapshot player;
+    player.Guid = PlayerGuid(guid);
+    player.Kind = ActorKind::Player;
+    player.Alive = true;
+    player.Role = role;
+    player.ClassSpec = spec;
+    player.HealthPct = 100.0f;
+    player.Position = position;
+    return player;
+}
+
+static ActorSnapshot Creature(uint32 entry, uint32 guid, Vector3 position)
+{
+    ActorSnapshot creature;
+    creature.Guid = ObjectGuid(HighGuid::Unit, entry, guid);
+    creature.Entry = entry;
+    creature.Alive = true;
+    creature.Attackable = true;
+    creature.Selectable = true;
+    creature.InCombat = true;
+    creature.Position = position;
+    return creature;
+}
+
+// Balance (30000), a healer carrying a fire_mage spec (30004), tanks and
+// other DPS never enter the rotation: only role dps + fire_mage has the kit.
+static Blackboard Board(char const* cohort)
+{
+    Blackboard board;
+    board.CurrentScope = Scope{
+        cohort, 7, 0, 4, "bwd.magmaw.encounter", 669, 1, "magmaw" };
+    board.Revision = 1;
+    board.ObservedAtMs = 100000;
+    board.NativeBossState = "in_progress";
+    board.Route.NodeId = "bwd.magmaw.encounter";
+    board.Route.NavigationHints = { { 0.0f, -1.0f, 210.0f } };
+    board.Players = {
+        Player(30000, "dps", "balance_druid", { -4.0f, -22.0f, 210.0f }),
+        Player(30001, "tank", "protection_paladin", { 0.0f, 0.0f, 210.0f }),
+        Player(30004, "healer", "fire_mage", { 4.0f, -22.0f, 210.0f }),
+        Player(30006, "dps", "fire_mage", { 12.0f, -30.0f, 210.0f }),
+        Player(30007, "dps", "fire_mage", { 0.0f, -22.0f, 210.0f }),
+        Player(30008, "dps", "affliction_warlock", { -2.0f, -22.0f, 210.0f }),
+        Player(30009, "dps", "marksmanship_hunter",
+            { 12.0f, -30.0f, 210.0f }) };
+    ActorSnapshot boss = Creature(AdaptiveMagmawStrategy::BossEntry, 39,
+        { 0.0f, 0.0f, 210.0f });
+    boss.VictimGuid = PlayerGuid(30001);
+    board.Hostiles = { boss };
+    return board;
+}
+
+static ActorSnapshot* Find(Blackboard& board, uint32 guid)
+{
+    for (ActorSnapshot& player : board.Players)
+        if (player.Guid == PlayerGuid(guid))
+            return &player;
+    return nullptr;
+}
+
+// One snapshot refresh: the boss stays; pillar/parasite presence is set.
+// Production resolves the baiters on every revision (every bot, every tick),
+// so the replay observes each refresh too.
+static void Step(Blackboard& board, uint64 advanceMs, bool pillar,
+    bool parasites, Vector3 parasitePosition = { 12.0f, -60.0f, 210.0f })
+{
+    ++board.Revision;
+    board.ObservedAtMs += advanceMs;
+    board.Hostiles.resize(1);
+    board.Summons.clear();
+    if (pillar)
+        board.Summons.push_back(Creature(AdaptiveMagmawStrategy::PillarEntry,
+            700 + uint32(board.Revision), { -20.0f, -40.0f, 210.0f }));
+    if (parasites)
+        board.Hostiles.push_back(Creature(
+            AdaptiveMagmawStrategy::ParasiteEntry,
+            9000 + uint32(board.Revision), parasitePosition));
+    MagmawParasitePolicy::ResolveFixedBaiters(board);
+}
+
+static ObjectGuid ActiveMage(Blackboard const& board)
+{
+    return MagmawParasitePolicy::ResolveFixedBaiters(board).first;
+}
+
+// Pillar, parasites, then a quiet gap long enough to close the wave.
+static void RunWave(Blackboard& board)
+{
+    Step(board, 1000, true, false);
+    Step(board, 1000, false, true);
+    Step(board, 1000, false, false);
+    Step(board, Rotation::QuietBoundaryMs, false, false);
+}
+
+static Rotation Ledger(Blackboard const& board)
+{
+    std::optional<Rotation> rotation =
+        MagmawBaiterRotationRegistry::Find(board.CurrentScope.Key());
+    assert(rotation);
+    return *rotation;
+}
+
+int main()
+{
+    ObjectGuid const mageA = PlayerGuid(30006);
+    ObjectGuid const mageB = PlayerGuid(30007);
+    ObjectGuid const hunter = PlayerGuid(30009);
+
+    // (1) Wave 1 = A, wave 2 = B, wave 3 = A. The Hunter never rotates.
+    Blackboard board = Board("rotation-basic");
+    auto baiters = MagmawParasitePolicy::ResolveFixedBaiters(board);
+    assert(baiters.first == mageA && baiters.second == hunter);
+    assert(Ledger(board).Wave == 1);
+    Step(board, 1000, true, false);
+    assert(ActiveMage(board) == mageA);
+    Step(board, 1000, false, true);
+    assert(ActiveMage(board) == mageA);
+    // A short gap is observation churn inside the same wave.
+    Step(board, 1000, false, false);
+    assert(ActiveMage(board) == mageA);
+    Step(board, 1000, false, true);
+    assert(ActiveMage(board) == mageA && Ledger(board).Wave == 1);
+    Step(board, 1000, false, false);
+    Step(board, Rotation::QuietBoundaryMs - 1, false, false);
+    assert(ActiveMage(board) == mageA && Ledger(board).Wave == 1);
+    Step(board, 1, false, false);
+    assert(ActiveMage(board) == mageB);
+    assert(Ledger(board).Wave == 2 && Ledger(board).CompletedWaves == 1);
+    assert(MagmawParasitePolicy::ResolveFixedBaiters(board).second == hunter);
+    // One snapshot revision is one decision: a re-read cannot advance it.
+    Blackboard sameRevision = board;
+    sameRevision.Hostiles.push_back(Creature(
+        AdaptiveMagmawStrategy::ParasiteEntry, 1, { 0.0f, -60.0f, 210.0f }));
+    assert(ActiveMage(sameRevision) == mageB);
+    assert(!Ledger(board).WaveObserved);
+    // B keeps wave 2 through its parasites.
+    Step(board, 1000, true, false);
+    Step(board, 1000, false, true);
+    assert(ActiveMage(board) == mageB && Ledger(board).Wave == 2);
+    Step(board, 1000, false, false);
+    Step(board, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(board) == mageA && Ledger(board).Wave == 3);
+    RunWave(board);
+    assert(ActiveMage(board) == mageB && Ledger(board).Wave == 4);
+    {
+        Rotation const ledger = Ledger(board);
+        assert(ledger.History.size() == 4);
+        assert(ledger.History[0].Wave == 1 && ledger.History[0].Mage == mageA
+            && ledger.History[0].Why == Rotation::Reason::Initial);
+        assert(ledger.History[1].Wave == 2 && ledger.History[1].Mage == mageB
+            && ledger.History[1].Why == Rotation::Reason::Alternate);
+        assert(ledger.History[2].Wave == 3 && ledger.History[2].Mage == mageA
+            && ledger.History[2].Why == Rotation::Reason::Alternate);
+        assert(ledger.History[3].Wave == 4 && ledger.History[3].Mage == mageB);
+        assert(ledger.PrimaryMage == mageA && ledger.AlternateMage == mageB);
+        assert(ledger.LaneStateAnchor() == mageA);
+    }
+
+    // (2) A parasitic infection still releases parasites: the wave stays
+    // open while a living player carries it.
+    Blackboard infected = Board("rotation-infection");
+    Step(infected, 1000, false, true);
+    Find(infected, 30008)->Auras = { AuraSnapshot{ 78941, {}, 1, 0 } };
+    Step(infected, 1000, false, false);
+    Step(infected, 10000, false, false);
+    assert(ActiveMage(infected) == mageA && Ledger(infected).Wave == 1);
+    Find(infected, 30008)->Auras.clear();
+    Step(infected, 1000, false, false);
+    Step(infected, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(infected) == mageB && Ledger(infected).Wave == 2);
+
+    // (3) The alternate mage dead or missing: the current baiter keeps it.
+    Blackboard dead = Board("rotation-dead");
+    Step(dead, 1000, true, false);
+    Step(dead, 1000, false, true);
+    Find(dead, 30007)->Alive = false;
+    Step(dead, 1000, false, false);
+    Step(dead, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(dead) == mageA && Ledger(dead).Wave == 2);
+    assert(Ledger(dead).History.back().Why
+        == Rotation::Reason::AlternateUnavailable);
+    dead.Players.erase(dead.Players.begin() + 4);
+    RunWave(dead);
+    assert(ActiveMage(dead) == mageA && Ledger(dead).Wave == 3);
+    assert(Ledger(dead).AlternateMage == mageB);
+    assert(Ledger(dead).History.back().Why
+        == Rotation::Reason::AlternateUnavailable);
+    // Back alive and observed: the next boundary alternates again.
+    dead.Players.push_back(Player(30007, "dps", "fire_mage",
+        { 0.0f, -22.0f, 210.0f }));
+    RunWave(dead);
+    assert(ActiveMage(dead) == mageB && Ledger(dead).Wave == 4);
+
+    // (4) Death never promotes mid-wave; between waves a dead baiter hands
+    // the next wave to the living alternate.
+    Blackboard promote = Board("rotation-promote");
+    RunWave(promote);
+    assert(ActiveMage(promote) == mageB);
+    Find(promote, 30007)->Alive = false;
+    Step(promote, 500, false, false);
+    assert(ActiveMage(promote) == mageA && Ledger(promote).Wave == 2);
+    assert(Ledger(promote).History.back().Why
+        == Rotation::Reason::ActiveMageUnavailable);
+    Step(promote, 1000, true, false);
+    Find(promote, 30007)->Alive = true;
+    Find(promote, 30006)->Alive = false;
+    Step(promote, 1000, false, true);
+    assert(ActiveMage(promote) == mageA);
+    Step(promote, 20000, false, true);
+    assert(ActiveMage(promote) == mageA);
+    Step(promote, 1000, false, false);
+    Step(promote, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(promote) == mageB && Ledger(promote).Wave == 3);
+
+    // (5) One Fire Mage in the roster: fixed for every wave.
+    Blackboard single = Board("rotation-single");
+    single.Players.erase(single.Players.begin() + 4);
+    for (int wave = 0; wave < 3; ++wave)
+        RunWave(single);
+    assert(ActiveMage(single) == mageA && Ledger(single).Wave == 4);
+    assert(Ledger(single).AlternateMage.IsEmpty());
+    assert(Ledger(single).History.back().Why == Rotation::Reason::SingleMage);
+
+    // (6) Hook duty: a handover would change the hook riders (baiters never
+    // ride), so it waits for the pincer window, Mangle, a seat or an
+    // imminent Mangle to end; if the next wave comes first, the current
+    // baiter keeps it.
+    Blackboard hook = Board("rotation-hook");
+    Step(hook, 1000, true, false);
+    Step(hook, 1000, false, true);
+    hook.Hostiles.front().Interactable = true;
+    Step(hook, 1000, false, false);
+    Step(hook, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(hook) == mageA);
+    assert(Ledger(hook).SwitchPending && Ledger(hook).Wave == 2);
+    assert(std::strcmp(Ledger(hook).LastDeferral, "pincer_window") == 0);
+    hook.Hostiles.front().Interactable = false;
+    Find(hook, 30008)->VehicleGuid = ObjectGuid(HighGuid::Unit, 41620,
+        uint32(55));
+    Step(hook, 500, false, false);
+    assert(ActiveMage(hook) == mageA);
+    assert(std::strcmp(Ledger(hook).LastDeferral, "vehicle_seat") == 0);
+    assert(Ledger(hook).Deferrals == 1);
+    Find(hook, 30008)->VehicleGuid = ObjectGuid();
+    Step(hook, 500, false, false);
+    assert(ActiveMage(hook) == mageB && !Ledger(hook).SwitchPending);
+    Step(hook, 1000, true, false);
+    Step(hook, 1000, false, true);
+    Find(hook, 30001)->Auras = { AuraSnapshot{ 89773, {}, 1, 0 } };
+    Step(hook, 1000, false, false);
+    Step(hook, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(hook) == mageB && Ledger(hook).SwitchPending);
+    assert(std::strcmp(Ledger(hook).LastDeferral, "mangle_active") == 0);
+    Step(hook, 1000, true, false);
+    assert(ActiveMage(hook) == mageB && !Ledger(hook).SwitchPending);
+    assert(Ledger(hook).Wave == 3);
+    assert(Ledger(hook).History.back().Why == Rotation::Reason::HookDutyKept
+        && Ledger(hook).History.back().Mage == mageB
+        && Ledger(hook).History.back().Wave == 3);
+    Find(hook, 30001)->Auras.clear();
+    MechanicTimerSnapshot mangleTimer;
+    mangleTimer.SpellId = Rotation::MangleTimerSpell;
+    mangleTimer.RemainingMs = 10000;
+    hook.Hostiles.front().MechanicTimers = { mangleTimer };
+    Step(hook, 1000, false, true);
+    Step(hook, 1000, false, false);
+    Step(hook, Rotation::QuietBoundaryMs, false, false);
+    assert(ActiveMage(hook) == mageB);
+    assert(std::strcmp(Ledger(hook).LastDeferral, "mangle_imminent") == 0);
+    hook.Hostiles.front().MechanicTimers.front().RemainingMs = 60000;
+    Step(hook, 500, false, false);
+    assert(ActiveMage(hook) == mageA && Ledger(hook).Wave == 4);
+
+    // (7) Off the Magmaw node the plain roster pair is returned and no
+    // rotation ledger is created.
+    Blackboard trash = Board("rotation-trash");
+    trash.CurrentScope.NodeId = "bwd.trash";
+    trash.Route.NodeId = "bwd.trash";
+    assert(ActiveMage(trash) == mageA);
+    assert(!MagmawBaiterRotationRegistry::Find(trash.CurrentScope.Key()));
+
+    // (8) Lane state: storage stays with the stable roster anchor, the
+    // state's Mage slot follows the active baiter, the Hunter slot and the
+    // committed lane survive the handover, and the next mechanic generation
+    // flips the lane for the new Mage.
+    Blackboard lane = Board("rotation-lane");
+    MagmawLaneTransitionState transition;
+    transition.ObserveScope(lane);
+    baiters = MagmawParasitePolicy::ResolveFixedBaiters(lane);
+    transition.AssignBaiters(baiters.first, baiters.second);
+    assert(transition.MageGuid == mageA && transition.HunterGuid == hunter);
+    assert(MagmawParasitePolicy::ResolveLaneStateOwner(lane) == mageA);
+    MagmawParasitePolicy::FormationAnchors const anchors{
+        { 0.0f, -8.0f, 210.0f },
+        { -24.0f, -30.0f, 210.0f },
+        { 24.0f, -30.0f, 210.0f } };
+    transition.Begin(700, 1, Direction::Right, anchors.Right);
+    std::optional<MagmawParasiteRoutePlan> route = MagmawParasiteRoute::Build(
+        anchors.Left, anchors.Support, anchors.Right,
+        { { 0.0f, -60.0f, 210.0f } });
+    assert(route);
+    transition.AttachParasiteRoute(mageA, *route);
+    assert(!transition.MageParasiteRoute.Empty());
+    transition.ObserveArrival(mageA, anchors.Right, 4.0f, lane.Revision);
+    transition.ObserveArrival(hunter, anchors.Right, 4.0f, lane.Revision);
+    transition.SealNoMechanicArrival(lane.Revision);
+    assert(transition.IsArrived());
+    uint64 const arrivedId = transition.TransitionId;
+    RunWave(lane);
+    assert(ActiveMage(lane) == mageB);
+    baiters = MagmawParasitePolicy::ResolveFixedBaiters(lane);
+    transition.AssignBaiters(baiters.first, baiters.second);
+    assert(transition.MageGuid == mageB && transition.HunterGuid == hunter);
+    assert(transition.IsBaiter(mageB) && !transition.IsBaiter(mageA));
+    assert(transition.MageHandoffs == 1);
+    assert(transition.MageParasiteRoute.Empty());
+    assert(transition.MageRoutePoint == 0);
+    assert(transition.IsArrived());
+    assert(transition.TransitionId == arrivedId);
+    assert(transition.Lane == Direction::Right);
+    assert(MagmawParasitePolicy::ResolveLaneStateOwner(lane) == mageA);
+    // Same mage again is not a handover.
+    transition.AssignBaiters(mageB, hunter);
+    assert(transition.MageHandoffs == 1);
+    ActorSnapshot const* laneMageB = Find(lane, 30007);
+    std::optional<Vector3> const flipped =
+        MagmawParasitePolicy::EnsureLaneDestination(lane, *laneMageB,
+            anchors, transition, 800, 1);
+    assert(flipped && transition.Lane == Direction::Left);
+    assert(transition.TransitionId != arrivedId);
+    assert(!transition.IsArrived());
+    transition.ObserveArrival(mageA, anchors.Left, 4.0f, lane.Revision);
+    assert(!transition.MageArrived);
+    transition.ObserveArrival(mageB, anchors.Left, 4.0f, lane.Revision);
+    assert(transition.MageArrived);
+
+    // (9) Board-only consumers follow the same wave: the active Mage owns the
+    // parasite contract and the lane route; the other Mage is an ordinary
+    // ranged DPS that never writes the shared lane.
+    AdaptiveMagmawStrategy strategy;
+    Blackboard live = Board("rotation-strategy");
+    RunWave(live);
+    assert(ActiveMage(live) == mageB);
+    Find(live, 30007)->Position = { 12.0f, -30.0f, 210.0f };
+    Find(live, 30006)->Position = { 0.0f, -22.0f, 210.0f };
+    Step(live, 1000, false, true, { 12.0f, -26.0f, 210.0f });
+    MagmawLaneTransitionState liveLane;
+    AdaptiveMagmawPlan mageBPlan = strategy.Propose(live, mageB, "dps",
+        nullptr, false, false, &liveLane);
+    assert(mageBPlan.ParasiteCombat.FireMageGuid == mageB);
+    assert(mageBPlan.ParasiteCombat.MarksmanshipHunterGuid == hunter);
+    assert(liveLane.MageGuid == mageB && liveLane.Committed);
+    assert(mageBPlan.Movement);
+    assert(mageBPlan.Movement->Id.Mechanic == "parasite_contact_evade");
+    assert(mageBPlan.Movement->Id.Actor == mageB);
+    Move const* laneMove = std::get_if<Move>(&mageBPlan.Movement->Action);
+    assert(laneMove);
+    uint64 const liveId = liveLane.TransitionId;
+    AdaptiveMagmawPlan mageAPlan = strategy.Propose(live, mageA, "dps",
+        nullptr, false, false, &liveLane);
+    assert(mageAPlan.ParasiteCombat.FireMageGuid == mageB);
+    assert(!mageAPlan.ParasiteCombat.IsAssignedBaiter(mageA));
+    assert(!liveLane.IsBaiter(mageA));
+    assert(liveLane.TransitionId == liveId && liveLane.MageGuid == mageB);
+
+    // (10) The parasite diagnostics publish the wave index, the active
+    // baiter and the per-wave history.
+    MagmawPersonalParasiteEscapeTask task;
+    task.ScopeKey = board.CurrentScope.Key();
+    std::string const json =
+        BuildMagmawPersonalParasiteEscapeDiagnosticsJson(task);
+    assert(json.find("\"baiter_rotation\":{\"observed\":true") != std::string::npos);
+    assert(json.find("\"wave\":4,\"completed_waves\":3") != std::string::npos);
+    assert(json.find("\"active_mage_guid\":30007") != std::string::npos);
+    assert(json.find("\"hunter_guid\":30009") != std::string::npos);
+    assert(json.find("\"lane_state_anchor_guid\":30006") != std::string::npos);
+    assert(json.find("{\"wave\":1,\"mage_guid\":30006,") != std::string::npos);
+    assert(json.find("{\"wave\":2,\"mage_guid\":30007,") != std::string::npos);
+    assert(json.find("{\"wave\":3,\"mage_guid\":30006,") != std::string::npos);
+    assert(json.find("\"reason\":\"alternate\"") != std::string::npos);
+    MagmawPersonalParasiteEscapeTask unknown;
+    unknown.ScopeKey = "unknown";
+    assert(BuildMagmawPersonalParasiteEscapeDiagnosticsJson(unknown).find(
+        "\"baiter_rotation\":{\"observed\":false}") != std::string::npos);
+    std::fputs(json.c_str(), stdout);
+}
+''',
+        encoding="utf-8",
+    )
+    magmaw = ROOT / (
+        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw")
+    subprocess.run(
+        [
+            "g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+            *ROTATION_INCLUDES,
+            str(source),
+            str(magmaw / "BotMagmawPersonalParasiteEscapeDiagnostics.cpp"),
+            str(magmaw / "BotMagmawFacts.cpp"),
+            "-o", str(binary),
+        ],
+        check=True,
+        cwd=ROOT,
+    )
+    result = subprocess.run([str(binary)], check=True, cwd=ROOT,
+        capture_output=True, text=True)
+    rotation = json.loads(result.stdout)["baiter_rotation"]
+    assert [entry["mage_guid"] for entry in rotation["history"]] == [
+        30006, 30007, 30006, 30007]
+    assert [entry["wave"] for entry in rotation["history"]] == [1, 2, 3, 4]
+
+
+def test_magmaw_lane_state_storage_uses_stable_roster_anchor() -> None:
+    """The kernel stores the shared lane on the frozen roster anchor.
+
+    Following the rotating baiter would hand wave 2 a fresh object and wave
+    3 the stale wave-1 state; the rotation instead hands over the Mage slot
+    inside one continuous transition.
+    """
+    preparation = (ROOT / "src/server/game/Bots/"
+        "BotWorldPopulationMgrUpdateBotKernelPreparation.cpp").read_text(
+            encoding="utf-8")
+    assert "MagmawParasitePolicy::ResolveLaneStateOwner(" in preparation
+    assert "MagmawParasitePolicy::ResolveFixedBaiters(" not in preparation
+    assert "&magmawLaneOwner->MagmawLaneTransition" in preparation
+    magmaw = ROOT / (
+        "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw")
+    diagnostics = (magmaw / "BotMagmawPersonalParasiteEscapeDiagnostics.cpp"
+        ).read_text(encoding="utf-8")
+    assert '\\"baiter_rotation\\":' in diagnostics
+    policy = (magmaw / "BotAdaptiveMagmawParasitePolicy.h").read_text(
+        encoding="utf-8")
+    assert "MagmawBaiterRotationRegistry::ObserveBaiters(board)" in policy

@@ -538,16 +538,15 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     }
 
             // The bait pair must read and write one encounter-scoped
-            // transition. Keep that state on the deterministic fire-mage
-            // owner (or the hunter when the mage is absent); per-bot
-            // MovementLease remains only the short native arbitration lease.
+            // transition. Keep that state on the frozen roster anchor (first
+            // fire mage, or the hunter without one), not on the per-wave
+            // baiter: the mage slot inside it rotates between waves while its
+            // lane continues. Per-bot MovementLease remains only the short
+            // native arbitration lease.
             WorldBotState* magmawLaneOwner = &context.State;
-            std::pair<ObjectGuid, ObjectGuid> const magmawBaiters =
-                BotEncounter::MagmawParasitePolicy::ResolveFixedBaiters(
-                    *Cohort().EncounterSnapshot);
             ObjectGuid const magmawLaneOwnerGuid =
-                magmawBaiters.first.IsEmpty() ? magmawBaiters.second
-                    : magmawBaiters.first;
+                BotEncounter::MagmawParasitePolicy::ResolveLaneStateOwner(
+                    *Cohort().EncounterSnapshot);
             if (!magmawLaneOwnerGuid.IsEmpty())
                 for (WorldBotState& candidate : Party().Bots)
                     if (candidate.Guid == magmawLaneOwnerGuid)

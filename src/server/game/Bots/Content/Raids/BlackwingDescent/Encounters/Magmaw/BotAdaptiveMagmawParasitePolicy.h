@@ -4,6 +4,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLaneTransition.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMoveAwayGeometry.h"
 #include <algorithm>
@@ -61,28 +62,44 @@ public:
             "parasite_contact_evade", SafeClearance, hazardState);
     }
 
+    // Roster identity: the lowest-GUID dps Fire Mage and MM/SV Hunter of this
+    // board, independent of liveness.
+    static std::pair<ObjectGuid, ObjectGuid> ResolveRosterBaiters(
+        Blackboard const& board)
+    {
+        MagmawBaiterRotation::Roster const roster =
+            MagmawBaiterRotation::ObserveRoster(board);
+        return { roster.FirstMage, roster.Hunter };
+    }
+
+    // The bait pair of the current parasite wave, fixed for that wave. The
+    // Hunter is the frozen roster Hunter; the Fire Mage alternates between
+    // the two roster Fire Mages per wave (MagmawBaiterRotation). Identity is
+    // never taken from liveness mid-wave: a death must not promote a
+    // different DPS into a lane transition that retains its two actors. Off
+    // the Magmaw encounter node this is the plain roster pair.
     static std::pair<ObjectGuid, ObjectGuid> ResolveFixedBaiters(
         Blackboard const& board)
     {
-        ObjectGuid mage;
-        ObjectGuid hunter;
-        // Assignment identity comes from the frozen roster, not current
-        // liveness.  A death must not promote a different DPS into a lane
-        // transition that deliberately retains its original two actors.
-        for (ActorSnapshot const& member : board.Players)
-            if (member.Role == "dps")
-            {
-                if (member.ClassSpec == "fire_mage"
-                    && (mage.IsEmpty() || member.Guid.GetRawValue()
-                        < mage.GetRawValue()))
-                    mage = member.Guid;
-                else if ((member.ClassSpec == "marksmanship_hunter"
-                        || member.ClassSpec == "survival_hunter")
-                    && (hunter.IsEmpty() || member.Guid.GetRawValue()
-                        < hunter.GetRawValue()))
-                    hunter = member.Guid;
-            }
-        return { mage, hunter };
+        if (!MagmawBaiterRotation::AppliesTo(board))
+            return ResolveRosterBaiters(board);
+        return MagmawBaiterRotationRegistry::ObserveBaiters(board);
+    }
+
+    // The bot that stores the shared lane transition. It must not follow the
+    // rotating mage: the transition's lane, arrival boundary and identity
+    // continue across waves, so storage stays with the frozen roster anchor
+    // (first roster Fire Mage, or the Hunter without one) while the state's
+    // Mage slot is handed to the active baiter.
+    static ObjectGuid ResolveLaneStateOwner(Blackboard const& board)
+    {
+        if (!MagmawBaiterRotation::AppliesTo(board))
+        {
+            std::pair<ObjectGuid, ObjectGuid> const roster =
+                ResolveRosterBaiters(board);
+            return roster.first.IsEmpty() ? roster.second : roster.first;
+        }
+        return MagmawBaiterRotationRegistry::ObserveLaneStateAnchor(board);
     }
 
     // The entire fixed bait lane must remain outside the support stack. An

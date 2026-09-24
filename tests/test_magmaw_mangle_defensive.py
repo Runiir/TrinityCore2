@@ -373,3 +373,25 @@ def test_client_data_behind_the_leads() -> None:
     # Vampiric Blood: 10 s, +15% health (aura 34) and +25% healing (aura 118).
     assert timing(55233) == (10000, 60000, 0)
     assert {(e[3], e[5]) for e in effects[55233]} == {(118, 25), (34, 15)}
+
+
+@pytest.mark.skipif(not (DBC / "Spell.dbc").exists(), reason="pinned DBC not extracted")
+def test_rune_costs_behind_the_seized_heart_strike_and_bone_shield_plan() -> None:
+    """Bone Shield's pre-cast needs one Unholy rune, as Death Strike does;
+    Heart Strike and Rune Tap share the Blood runes, which Death Strike never
+    uses (BotMagmawMangleCooldownPlan.h HoldSeizedHeartStrike)."""
+    sys.path.insert(0, str(ROOT))
+    from tools.bot_ml.build_validation_provisioning import load_wdbc_values
+
+    spells = {r[0]: r for r in load_wdbc_values(
+        DBC / "Spell.dbc", "niiiiiiiiiiiiiiifiiiissxxiixxifiiiiiiixiiiiiiiii")}
+    costs = {r[0]: r for r in load_wdbc_values(DBC / "SpellRuneCost.dbc", "niiii")}
+
+    def runes(spell_id: int) -> tuple[int, int, int]:
+        row = costs[spells[spell_id][26]]
+        return row[1], row[2], row[3]   # blood, unholy, frost
+
+    assert runes(49222) == (0, 1, 0)   # Bone Shield
+    assert runes(49998) == (0, 1, 1)   # Death Strike
+    assert runes(55050) == (1, 0, 0)   # Heart Strike
+    assert runes(48982) == (1, 0, 0)   # Rune Tap

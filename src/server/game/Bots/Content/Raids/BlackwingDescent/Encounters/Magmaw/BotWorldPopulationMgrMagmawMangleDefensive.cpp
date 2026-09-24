@@ -1,3 +1,4 @@
+#include "Bots/BotBloodDecisionObservation.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
@@ -220,12 +221,40 @@ void BotWorldPopulationMgr::SubmitMagmawMangleDefensiveCandidate(
 
 namespace BotEncounter::MagmawMangleCooldownPlan
 {
+namespace
+{
+// The profile candidate passed the native preflight and is not suppressed
+// for this resolution.
+bool CandidateCastable(std::vector<BotActionCandidate> const& candidates,
+    uint32 spellId, uint32 excludedSpellId, uint32 policyExcludedSpellId)
+{
+    if (spellId == excludedSpellId || spellId == policyExcludedSpellId)
+        return false;
+    for (BotActionCandidate const& candidate : candidates)
+        if (candidate.SpellId == spellId && candidate.RejectReason.empty())
+            return true;
+    return false;
+}
+}
+
 Plan Observe(Player const* bot, std::string_view role, Blackboard const* board,
     std::vector<BotActionCandidate> const& candidates, uint32 excludedSpellId,
     uint32 policyExcludedSpellId)
 {
     Plan plan;
-    if (!bot || !board || role != "tank")
+    if (!bot || role != "tank")
+        return plan;
+    auto castable = [&candidates, excludedSpellId, policyExcludedSpellId](uint32 spellId)
+    {
+        return CandidateCastable(candidates, spellId, excludedSpellId,
+            policyExcludedSpellId);
+    };
+    bool const seized = NativelyMangled(bot);
+    plan.SeizedHeartStrikeHold = HoldSeizedHeartStrike(seized,
+        castable(DeathStrikeSpell),
+        BotBloodDecisionObservation::ObserveReadyRunes(bot).Blood,
+        castable(RuneTapSpell));
+    if (!board)
         return plan;
     ObjectGuid const botGuid = bot->GetGUID();
     std::optional<MangleTimer> const timer =
@@ -233,20 +262,15 @@ Plan Observe(Player const* bot, std::string_view role, Blackboard const* board,
     if (!timer)
         return plan;
 
-    bool const seized = NativelyMangled(bot);
     plan.Active = true;
     plan.Timer = *timer;
     plan.Timer.HitInProgress = plan.Timer.HitInProgress || seized;
     plan.HealthPct = BotWorldPopulationMgrNativeHelpers::UnitHealthPct(bot);
     plan.IceboundCooldownMs = NativeCooldownMs(IceboundFortitudeSpell);
     plan.VampiricBloodCooldownMs = NativeCooldownMs(VampiricBloodSpell);
-    for (BotActionCandidate const& candidate : candidates)
-        if ((candidate.SpellId == VampiricBloodSpell
-                || candidate.SpellId == RuneTapSpell)
-            && candidate.RejectReason.empty()
-            && candidate.SpellId != excludedSpellId
-            && candidate.SpellId != policyExcludedSpellId)
-            plan.ShorterSurvivalCastable = true;
+    plan.BoneShieldCooldownMs = NativeCooldownMs(BoneShieldSpell);
+    plan.ShorterSurvivalCastable = castable(VampiricBloodSpell)
+        || castable(RuneTapSpell);
 
     if (seized)
         return plan;

@@ -30,6 +30,11 @@ MODULE = MAGMAW / "BotWorldPopulationMgrMagmawMangleDefensive.cpp"
 RESOLVER = BOTS / "BotWorldPopulationMgrCombatResolver.cpp"
 RESERVATION = BOTS / "BotWorldPopulationMgrRaidCooldownReservation.h"
 RUNE_TAP_SQL = ROOT / "sql/custom/world/2026_09_24_10_blood_rune_tap.sql"
+SEAT_HEART_STRIKE_SQL = ROOT / "sql/custom/world/2026_09_23_40_blood_mangle_death_strike_runes.sql"
+SEAT_DISEASE_SQL = ROOT / "sql/custom/world/2026_09_23_41_blood_mangle_disease_runes.sql"
+SEIZED_HEART_STRIKE_SQL = ROOT / "sql/custom/world/2026_09_24_20_blood_seized_heart_strike.sql"
+MANGLE_SEAT = 78412
+ICY_TOUCH, PLAGUE_STRIKE = 45477, 45462
 
 BONE_SHIELD, ICEBOUND, VAMPIRIC_BLOOD, RUNE_TAP = 49222, 48792, 55233, 48982
 DEATH_STRIKE, HEART_STRIKE, RUNE_STRIKE, BLOOD_TAP, ERW = 49998, 55050, 56815, 45529, 47568
@@ -208,6 +213,8 @@ struct Tick
     bool Seized = false;
     uint32 BloodShieldMs = 0;
     bool BonePending = false;
+    // Ready runes whose current type is Blood (not Death).
+    uint8 BloodRunes = 0;
 };
 
 // What Observe computes natively, from the same inputs.
@@ -220,10 +227,20 @@ static Plan MakePlan(Tick const& tick, std::vector<BotActionCandidate> const& ca
     plan.HealthPct = tick.Health;
     plan.IceboundCooldownMs = CooldownMs(IceboundFortitudeSpell);
     plan.VampiricBloodCooldownMs = CooldownMs(VampiricBloodSpell);
+    plan.BoneShieldCooldownMs = CooldownMs(BoneShieldSpell);
     for (BotActionCandidate const& candidate : candidates)
         if ((candidate.SpellId == VampiricBloodSpell || candidate.SpellId == RuneTapSpell)
             && candidate.RejectReason.empty())
             plan.ShorterSurvivalCastable = true;
+    auto castable = [&candidates](uint32 spell)
+    {
+        for (BotActionCandidate const& candidate : candidates)
+            if (candidate.SpellId == spell && candidate.RejectReason.empty())
+                return true;
+        return false;
+    };
+    plan.SeizedHeartStrikeHold = HoldSeizedHeartStrike(tick.Seized,
+        castable(DeathStrikeSpell), tick.BloodRunes, castable(RuneTapSpell));
     std::optional<DefensiveWindow> window;
     if (tick.Seized)
         window = DefensiveWindow{ {}, {}, DefensiveTrigger::Mangled, 0 };
@@ -288,6 +305,8 @@ int main()
     constexpr char const* Kept = "raid_boss_big_hit_defensive_kept_for_hit";
     constexpr char const* VbReserved = "magmaw_mangle_vampiric_blood_reserved";
     constexpr char const* LeadHold = "magmaw_mangle_lead_death_strike_hold";
+    constexpr char const* SeizedHold = "magmaw_mangle_seized_heart_strike_hold";
+    constexpr char const* BoneReserved = "magmaw_mangle_bone_shield_reserved";
 
     // --- k1 50.2 s: 63% health, Mangle due in 39.8 s, inside a GCD. ----------
     Tick vbTrigger;
@@ -448,12 +467,15 @@ int main()
     lead.BloodShieldMs = 0;
     lead.Valid = { HeartStrikeSpell, RuneStrikeSpell, RuneTapSpell };
     assert(Resolve(lead, true) == RuneTapSpell);
-    // The hold ends at the seize, never opens outside the 6 s lead, and only
-    // for Magmaw's victim.
+    // The lead hold ends at the seize, never opens outside the 6 s lead, and
+    // only for Magmaw's victim.  Seized, only a spare Blood rune may pay
+    // Heart Strike (the seized cases below).
     Tick seized = lead;
     seized.Valid = { HeartStrikeSpell, RuneStrikeSpell };
     seized.Seized = true;
-    assert(Resolve(seized, true) == HeartStrikeSpell);  // seat-aura rows are SQL, not modeled
+    seized.BloodRunes = 1;
+    assert(Resolve(seized, true) == HeartStrikeSpell);
+    assert(!MakePlan(seized, {}).RuneHold);
     Tick before = seized;
     before.Seized = false;
     before.DueMs = 6001;
@@ -462,6 +484,156 @@ int main()
     assert(Resolve(before, true) == 0);
     before.Victim = false;
     assert(Resolve(before, true) == HeartStrikeSpell);
+
+    // --- Seized by Mangle (2c0ed2d8-k1 89.8-100.8 s): Heart Strike. ---------
+    // Death Strike rune-gated (fewer than 2 ready runes), a ready Blood rune,
+    // Rune Tap on cooldown (cast at 91.8 s): Heart Strike takes the Blood
+    // rune, which Death Strike (Frost + Unholy) could never use.
+    Tick grip;
+    grip.Health = 0.70f;
+    grip.DueMs = 0;
+    grip.Seized = true;
+    grip.BloodRunes = 1;
+    grip.Valid = { HeartStrikeSpell, RuneStrikeSpell };
+    assert(Resolve(grip, true) == HeartStrikeSpell);
+    assert(!MakePlan(grip, {}).RejectReason(HeartStrikeSpell));
+    // Rune Strike alone still goes out.
+    grip.Valid = { RuneStrikeSpell };
+    assert(Resolve(grip, true) == RuneStrikeSpell);
+    grip.Valid = { HeartStrikeSpell };
+    assert(Resolve(grip, true) == HeartStrikeSpell);
+    // Death Strike castable: Heart Strike stays held; Death Strike is cast.
+    grip.Valid = { HeartStrikeSpell, RuneStrikeSpell, DeathStrikeSpell };
+    assert(Resolve(grip, true) == DeathStrikeSpell);
+    {
+        std::vector<BotActionCandidate> candidates = Rows();
+        for (BotActionCandidate& candidate : candidates)
+            if (!grip.Valid.count(candidate.SpellId))
+                candidate.RejectReason = "native_preflight";
+        assert(Is(MakePlan(grip, candidates).RejectReason(HeartStrikeSpell), SeizedHold));
+        assert(!MakePlan(grip, candidates).RejectReason(RuneStrikeSpell));
+        assert(!MakePlan(grip, candidates).RejectReason(DeathStrikeSpell));
+    }
+    grip.Valid = { HeartStrikeSpell, DeathStrikeSpell };
+    assert(Resolve(grip, true) == DeathStrikeSpell);
+    // Only a Death rune ready (bundle1-b8a539b): Heart Strike's native
+    // preflight passes on it, but the rune is Death Strike's -> held.
+    grip.BloodRunes = 0;
+    grip.Valid = { HeartStrikeSpell, RuneStrikeSpell };
+    assert(Resolve(grip, true) == RuneStrikeSpell);
+    assert(Is(MakePlan(grip, {}).RejectReason(HeartStrikeSpell), SeizedHold));
+    grip.Valid = { HeartStrikeSpell };
+    assert(Resolve(grip, true) == 0);
+    // Rune Tap castable (off cooldown, a rune ready): the one Blood rune is
+    // kept for it (91.8 s: 55% health -> Rune Tap, as the kill cast it).
+    grip.BloodRunes = 1;
+    grip.Health = 0.55f;
+    grip.Valid = { HeartStrikeSpell, RuneStrikeSpell, RuneTapSpell };
+    assert(Resolve(grip, true) == RuneTapSpell);
+    // Above Rune Tap's 60%: the Blood rune still waits for it.
+    grip.Health = 0.70f;
+    assert(Resolve(grip, true) == RuneStrikeSpell);
+    grip.Valid = { HeartStrikeSpell, RuneTapSpell };
+    assert(Resolve(grip, true) == 0);
+    // Two ready Blood runes: one for Rune Tap, one for Heart Strike.
+    grip.BloodRunes = 2;
+    assert(Resolve(grip, true) == HeartStrikeSpell);
+    grip.Health = 0.55f;
+    grip.Valid = { HeartStrikeSpell, RuneStrikeSpell, RuneTapSpell };
+    assert(Resolve(grip, true) == RuneTapSpell);  // outranks at 60% or less
+    // The rule itself.
+    assert(!HoldSeizedHeartStrike(false, true, 0, true));
+    assert(!HoldSeizedHeartStrike(true, false, 1, false));
+    assert(HoldSeizedHeartStrike(true, true, 2, false));
+    assert(HoldSeizedHeartStrike(true, false, 0, false));
+    assert(HoldSeizedHeartStrike(true, false, 1, true));
+    assert(!HoldSeizedHeartStrike(true, false, 2, true));
+    // The seized hold needs no Mangle timer: the seizure aura proves it.
+    {
+        Plan untimed;
+        untimed.SeizedHeartStrikeHold = true;
+        assert(!untimed.Active);
+        assert(Is(untimed.RejectReason(HeartStrikeSpell), SeizedHold));
+        assert(!untimed.RejectReason(RuneStrikeSpell));
+    }
+    // Not seized: Heart Strike is only the lead's business.
+    Tick unseized = grip;
+    unseized.Seized = false;
+    unseized.DueMs = 30000;
+    unseized.BloodRunes = 0;
+    unseized.Valid = { HeartStrikeSpell, RuneStrikeSpell };
+    assert(Resolve(unseized, true) == HeartStrikeSpell);
+
+    // --- Bone Shield reserved for the helper's pre-cast (2c0ed2d8-k1). -------
+    // 54.3 s: no Bone Shield (the row only fires once the aura is gone), 64%
+    // health, Mangle 35.5 s away.  Unplanned, the ordinary row casts it and
+    // it is on cooldown at the 89.8 s seize.  Planned, it waits.
+    Tick bone;
+    bone.Health = 0.64f;
+    bone.DueMs = 35500;
+    bone.Valid = { BoneShieldSpell };
+    assert(Resolve(bone, false) == BoneShieldSpell);
+    assert(Resolve(bone, true) == 0);
+    assert(Is(MakePlan(bone, {}).RejectReason(BoneShieldSpell), BoneReserved));
+    // The GCD and the Unholy rune go to the rotation instead.
+    bone.Valid = { BoneShieldSpell, HeartStrikeSpell, RuneStrikeSpell };
+    assert(Resolve(bone, true) == HeartStrikeSpell);
+    bone.Valid = { BoneShieldSpell };
+    // Requested: held at Mangle - 60 s.  1 min cooldown + the 6 s lead: back
+    // for the pre-cast from 66 s out.
+    bone.DueMs = 60000;
+    assert(Resolve(bone, true) == 0);
+    bone.DueMs = 65999;
+    assert(Resolve(bone, true) == 0);
+    bone.DueMs = 66000;
+    assert(Resolve(bone, true) == BoneShieldSpell);
+    bone.DueMs = 90000;  // the pull: the first Mangle is 90 s out
+    assert(Resolve(bone, true) == BoneShieldSpell);
+    // Emergency release at 35%, as for Vampiric Blood.
+    bone.DueMs = 35500;
+    bone.Health = 0.35f;
+    assert(Resolve(bone, true) == BoneShieldSpell);
+    bone.Health = 0.36f;
+    assert(Resolve(bone, true) == 0);
+    // During the Mangle (seized, sequence or overdue) nothing is held.
+    Tick boneSeized = bone;
+    boneSeized.Seized = true;
+    assert(Resolve(boneSeized, true) == BoneShieldSpell);
+    Tick boneOverdue = bone;
+    boneOverdue.DueMs = 0;
+    assert(Resolve(boneOverdue, true) == BoneShieldSpell);
+    // Inside the lead the profile row stays held; the helper casts it.
+    bone.DueMs = 6000;
+    assert(Is(MakePlan(bone, {}).RejectReason(BoneShieldSpell), BoneReserved));
+    {
+        auto states = [](bool ibfReady, bool boneReady, bool boneCovers)
+        {
+            return DefensiveStates{ DefensiveReadiness{ IceboundFortitudeSpell, true, ibfReady, false },
+                DefensiveReadiness{ VampiricBloodSpell, true, true, false },
+                DefensiveReadiness{ BoneShieldSpell, true, boneReady, boneCovers } };
+        };
+        DefensiveWindow const boneLead{ {}, {}, DefensiveTrigger::PreMangleLead, 6000 };
+        // Pre-cast allowed: at 6 s Bone Shield is the only defensive in its
+        // lead (Icebound and Vampiric Blood wait for 1.5 s).
+        assert(SelectDefensive(boneLead, states(true, true, false)) == BoneShieldSpell);
+        // The kill as played: recast at 54.3 s, cooldown at the seize.
+        assert(!SelectDefensive(boneLead, states(true, false, false)));
+        // Refreshed (6 charges) -> nothing more; Icebound at 1.5 s.
+        assert(!SelectDefensive(boneLead, states(true, true, true)));
+        DefensiveWindow const precast{ {}, {}, DefensiveTrigger::PreMangleLead, 1500 };
+        assert(SelectDefensive(precast, states(true, true, true)) == IceboundFortitudeSpell);
+        // Pending Bone Shield keeps Heart Strike and Rune Strike off its
+        // Unholy rune and the GCD in the lead.
+        assert(HoldRuneSpenders(boneLead, 10000, true));
+        assert(!HoldRuneSpenders(boneLead, 10000, false));
+    }
+    // An inactive plan (no timer) never holds Bone Shield.
+    {
+        Plan untimed;
+        untimed.BoneShieldCooldownMs = 60000;
+        untimed.HealthPct = 0.64f;
+        assert(!untimed.RejectReason(BoneShieldSpell));
+    }
 
     // --- Rune Tap below 60% ------------------------------------------------
     Tick tap;
@@ -479,6 +651,7 @@ int main()
 
     // --- An inactive plan (not the tank, no board, not Magmaw) rejects nothing.
     Plan idle;
+    assert(!idle.SeizedHeartStrikeHold && !idle.RuneHold);
     for (uint32 spell : { IceboundFortitudeSpell, VampiricBloodSpell, HeartStrikeSpell,
             RuneStrikeSpell, RuneTapSpell, DeathStrikeSpell, BoneShieldSpell })
         assert(!idle.RejectReason(spell));
@@ -496,8 +669,7 @@ def test_replayed_resolver_decisions(tmp_path: Path) -> None:
                .replace("%VB%", str(VAMPIRIC_BLOOD)).replace("%VB_CD%", str(COOLDOWNS[VAMPIRIC_BLOOD]))
                .replace("%BONE%", str(BONE_SHIELD)).replace("%BONE_CD%", str(COOLDOWNS[BONE_SHIELD]))
                .replace("%RUNE_TAP%", str(RUNE_TAP)).replace("%RUNE_TAP_CD%", str(COOLDOWNS[RUNE_TAP]))
-               .replace("BloodTapSpellForTest", f"{BLOOD_TAP}u")
-               .replace("DeathStrikeSpell", f"{DEATH_STRIKE}u"))
+               .replace("BloodTapSpellForTest", f"{BLOOD_TAP}u"))
     assert not re.search(r"%[A-Z_]+%", program)
     source = tmp_path / "mangle_cooldown_plan.cpp"
     binary = tmp_path / "mangle_cooldown_plan"
@@ -552,17 +724,29 @@ def test_resolver_applies_the_plan_after_the_boss_reservation() -> None:
 def test_native_observation_matches_the_replayed_plan() -> None:
     module = text(MODULE)
     observe = function_body(module, "Plan Observe(Player const* bot, std::string_view role, Blackboard const* board,")
-    assert 'if (!bot || !board || role != "tank")' in observe
-    assert "MagmawMangleDefensive::ObserveMangleTimer(*board, botGuid)" in observe
+    assert 'if (!bot || role != "tank")\n        return plan;' in observe
+    # The seized Heart Strike hold is set from the tank's own Mangle aura and
+    # native runes before the board or the Mangle timer is consulted.
+    seized_hold = observe.index("plan.SeizedHeartStrikeHold = HoldSeizedHeartStrike(seized,")
+    assert observe.index("bool const seized = NativelyMangled(bot);") < seized_hold
+    assert seized_hold < observe.index("if (!board)\n        return plan;")
+    assert seized_hold < observe.index("MagmawMangleDefensive::ObserveMangleTimer(*board, botGuid)")
+    assert "castable(DeathStrikeSpell)" in observe
+    assert "BotBloodDecisionObservation::ObserveReadyRunes(bot).Blood" in observe
+    assert "castable(RuneTapSpell)" in observe
+    assert "plan.BoneShieldCooldownMs = NativeCooldownMs(BoneShieldSpell);" in observe
+    assert "plan.ShorterSurvivalCastable = castable(VampiricBloodSpell)\n        || castable(RuneTapSpell);" in observe
+    assert '#include "Bots/BotBloodDecisionObservation.h"' in module
     assert "plan.Timer.HitInProgress = plan.Timer.HitInProgress || seized;" in observe
     assert "BotWorldPopulationMgrNativeHelpers::UnitHealthPct(bot)" in observe
     assert "NativeCooldownMs(IceboundFortitudeSpell)" in observe
     assert "NativeCooldownMs(VampiricBloodSpell)" in observe
     # Castable = the profile candidate passed the native preflight and is not
     # suppressed for this resolution.
-    assert "candidate.RejectReason.empty()" in observe
-    assert "candidate.SpellId != excludedSpellId" in observe
-    assert "candidate.SpellId != policyExcludedSpellId" in observe
+    castable = function_body(module, "bool CandidateCastable(")
+    assert "candidate.RejectReason.empty()" in castable
+    assert "spellId == excludedSpellId || spellId == policyExcludedSpellId" in castable
+    assert "CandidateCastable(candidates, spellId, excludedSpellId,\n            policyExcludedSpellId)" in observe
     # The rune hold reads Blood Shield and Bone Shield natively, never once seized.
     assert "if (seized)\n        return plan;" in observe
     assert "MagmawMangleDefensive::ObserveMangleDefensiveWindow(*board, botGuid)" in observe
@@ -583,8 +767,108 @@ def test_native_observation_matches_the_replayed_plan() -> None:
     assert "constexpr uint32 BloodShieldAbsorbSpell = 77535;" in plan
     assert "constexpr uint32 RuneTapSpell = 48982;" in plan
     assert "constexpr uint32 HeartStrikeSpell = 55050;" in plan
+    assert "constexpr uint32 DeathStrikeSpell = 49998;" in plan
     assert "constexpr uint32 RuneStrikeSpell = 56815;" in plan
     # Lawful: the plan only rejects rows.
     for forbidden in ("CastSpell", "ResetCooldown", "SetHealth", "ModifyHealth", "AddAura"):
         assert forbidden not in plan
         assert forbidden not in observe
+
+
+def test_ready_blood_rune_never_pays_death_strike_natively() -> None:
+    """A spare Blood rune is Heart Strike's without costing Death Strike."""
+    spell = text(ROOT / "src/server/game/Spells/Spell.cpp")
+    take = function_body(spell, "void Spell::TakeRunePower(SpellMissInfo hitInfo)")
+    exact = take.index("runeCost[AsUnderlyingType(rune)] > 0")
+    death = take.index("rune == RuneType::Death")
+    # Exact rune type first, Death runes only for what is left.
+    assert exact < death
+    assert "runeCost[AsUnderlyingType(RuneType::Death)] = runeCost[AsUnderlyingType(RuneType::Blood)]" in take
+    # The candidate preflight: a Blood rune only reduces the Blood cost.
+    candidates = text(BOTS / "BotClassSpecActionProfileCandidates.cpp")
+    power = candidates[candidates.index("bool HasEnoughPowerForProfileSpell"):]
+    power = power[:power.index("\n}\n")]
+    assert re.search(r"case RuneType::Blood:\s*if \(required\[0\] > 0\)\s*--required\[0\];", power)
+    # Ready Blood runes = ready runes whose current type is Blood.
+    observation = text(BOTS / "BotBloodDecisionObservation.h")
+    ready = observation[observation.index("inline ReadyRunes ObserveReadyRunes"):]
+    ready = ready[:ready.index("inline char const* RuneTypeName")]
+    assert "IsRuneReady(actor->GetRuneCooldown(rune))" in ready
+    assert "case RuneType::Blood: ++observation.Blood; break;" in ready
+    # The seizure auras the hold reads (seat 78412 among them).
+    assert "89773, 91912, 94616, 94617, 78412," in text(DEFENSIVE)
+
+
+def _seat_database() -> sqlite3.Connection:
+    db = sqlite3.connect(":memory:")
+    db.executescript("""
+        CREATE TABLE bot_rotation_profile (
+            id INTEGER PRIMARY KEY, class_id INTEGER NOT NULL, spec_tag TEXT NOT NULL,
+            role TEXT NOT NULL, version INTEGER NOT NULL, source_note TEXT NOT NULL,
+            scope_note TEXT NOT NULL);
+        CREATE TABLE bot_rotation_action (
+            id INTEGER PRIMARY KEY, profile_id INTEGER NOT NULL, spell_id INTEGER NOT NULL,
+            required_self_aura INTEGER NOT NULL DEFAULT 0,
+            forbidden_self_aura INTEGER NOT NULL DEFAULT 0);
+    """)
+    db.executemany("INSERT INTO bot_rotation_profile VALUES (?,?,?,?,?,?,?)", [
+        (267, 6, "blood_death_knight", "tank", 25, "n", "s"),
+        (283, 6, "frost_death_knight", "dps", 11, "n", "s"),
+    ])
+    db.executemany("INSERT INTO bot_rotation_action VALUES (?,?,?,?,?)", [
+        (2049, 267, DEATH_STRIKE, 0, 0),
+        (2874, 267, HEART_STRIKE, 0, 0),
+        (2050, 267, ICY_TOUCH, 0, 0),
+        (2051, 267, PLAGUE_STRIKE, 0, 0),
+        (9001, 283, HEART_STRIKE, 0, 0),
+    ])
+    db.executescript(_forward(SEAT_HEART_STRIKE_SQL))
+    db.executescript(_forward(SEAT_DISEASE_SQL))
+    return db
+
+
+def _forward(path: Path) -> str:
+    return text(path).split("-- BEGIN REVERSE MIGRATION")[0]
+
+
+def _reverse(path: Path) -> str:
+    block = text(path).split("-- BEGIN REVERSE MIGRATION")[1].split("-- END REVERSE MIGRATION")[0]
+    return "\n".join(line[3:] for line in block.splitlines() if line.startswith("-- "))
+
+
+def _seat_rows(db: sqlite3.Connection) -> list:
+    return db.execute("SELECT id, required_self_aura, forbidden_self_aura "
+                      "FROM bot_rotation_action ORDER BY id").fetchall()
+
+
+def test_seized_heart_strike_migration_replays_scoped_idempotent_and_reversible() -> None:
+    db = _seat_database()
+    applied = _seat_rows(db)
+    assert applied == [(2049, 0, 0), (2050, 0, MANGLE_SEAT), (2051, 0, MANGLE_SEAT),
+                       (2874, 0, MANGLE_SEAT), (9001, 0, 0)]
+    assert db.execute("SELECT version FROM bot_rotation_profile WHERE id=267").fetchone() == (28,)
+
+    db.executescript(_forward(SEIZED_HEART_STRIKE_SQL))
+    after = _seat_rows(db)
+    # Only Blood tank Heart Strike loses the seat aura; Icy Touch and Plague
+    # Strike keep it (Death Strike's Frost and Unholy runes).
+    assert after == [(2049, 0, 0), (2050, 0, MANGLE_SEAT), (2051, 0, MANGLE_SEAT),
+                     (2874, 0, 0), (9001, 0, 0)]
+    blood = db.execute("SELECT version, source_note FROM bot_rotation_profile WHERE id=267").fetchone()
+    assert blood == (33, "phase9_blood_seized_heart_strike_2026_09_24")
+    assert db.execute("SELECT version FROM bot_rotation_profile WHERE id=283").fetchone() == (11,)
+
+    db.executescript(_forward(SEIZED_HEART_STRIKE_SQL))
+    assert _seat_rows(db) == after
+    db.execute("UPDATE bot_rotation_profile SET version = 40 WHERE id = 267")
+    db.executescript(_forward(SEIZED_HEART_STRIKE_SQL))
+    assert db.execute("SELECT version FROM bot_rotation_profile WHERE id=267").fetchone() == (40,)
+
+    db.executescript(_reverse(SEIZED_HEART_STRIKE_SQL))
+    assert _seat_rows(db) == applied
+    # The applied migrations are untouched and still sort before this one.
+    names = sorted(path.name for path in SEIZED_HEART_STRIKE_SQL.parent.glob("2026_09_2*.sql"))
+    assert names.index(SEAT_HEART_STRIKE_SQL.name) < names.index(SEIZED_HEART_STRIKE_SQL.name)
+    assert names.index(SEAT_DISEASE_SQL.name) < names.index(SEIZED_HEART_STRIKE_SQL.name)
+    assert "SET `forbidden_self_aura` = 78412" in text(SEAT_HEART_STRIKE_SQL)
+    assert "AND `spell_id` = 55050" in text(SEIZED_HEART_STRIKE_SQL)

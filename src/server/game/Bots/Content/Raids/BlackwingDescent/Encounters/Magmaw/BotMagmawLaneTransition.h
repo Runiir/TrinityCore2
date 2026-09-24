@@ -342,7 +342,10 @@ struct MagmawParasiteHazardState
 // This is encounter-owned semantic state, not a movement arbitration lease.
 // The lease may expire while MotionMaster is still traversing the point path;
 // this object keeps the mechanic generation and its destination immutable
-// until the native path reaches both assigned baiters.
+// until the native path reaches both assigned baiters. The Hunter slot is
+// frozen for the attempt; the Fire Mage slot is handed over between parasite
+// waves by MagmawBaiterRotation (DPS-064), so the storage stays with one
+// stable roster anchor while the slot's actor changes.
 struct MagmawLaneTransitionState
 {
     enum class Direction : uint8
@@ -385,6 +388,8 @@ struct MagmawLaneTransitionState
     // keep an explicit bit so it cannot be mistaken for an unobserved
     // arrival generation.
     bool ArrivalGenerationCaptured = false;
+    // Number of Fire Mage slot handovers in this scope (observability).
+    uint32 MageHandoffs = 0;
 
     bool HasAssignedBaiters() const
     {
@@ -425,12 +430,32 @@ struct MagmawLaneTransitionState
         }
     }
 
+    // The Hunter keeps its first assignment for the whole attempt. The Mage
+    // slot follows the wave's active baiter: the rotation only changes it
+    // between waves, so a different mage is a handover, never a restart.
     void AssignBaiters(ObjectGuid mage, ObjectGuid hunter)
     {
-        if (HasAssignedBaiters())
-            return;
+        if (HunterGuid.IsEmpty())
+            HunterGuid = hunter;
+        if (MageGuid.IsEmpty())
+            MageGuid = mage;
+        else if (!mage.IsEmpty() && mage != MageGuid)
+            HandOffMage(mage);
+    }
+
+    // The route was planned from the previous mage's position, so it is
+    // discarded. MageArrived is the slot's completion of the committed
+    // transition, not the actor's position: it carries over, so the next
+    // mechanic generation still retires the arrived lane and flips it, and an
+    // unfinished transition still requires the new mage to reach it.
+    void HandOffMage(ObjectGuid mage)
+    {
         MageGuid = mage;
-        HunterGuid = hunter;
+        if (!MageParasiteRoute.Empty())
+            ++MageRouteRevision;
+        MageParasiteRoute = {};
+        MageRoutePoint = 0;
+        ++MageHandoffs;
     }
 
     void ObserveArrival(ObjectGuid guid, Vector3 const& position,
