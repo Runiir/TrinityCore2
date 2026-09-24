@@ -160,6 +160,15 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
         return Result(action, false, "only_the_raid_leader_can_fill");
     if (!group->isRaidGroup())
         group->ConvertToRaid();
+    // Master loot to the leader: bots never answer loot rolls, so a group
+    // loot roll would wait out its timer on every drop.
+    if (group->GetLootMethod() != MASTER_LOOT || group->GetMasterLooterGuid() != leader->GetGUID())
+    {
+        group->SetLootMethod(MASTER_LOOT);
+        group->SetMasterLooterGuid(leader->GetGUID());
+        group->SetLootThreshold(ITEM_QUALITY_UNCOMMON);
+        group->SendUpdate();
+    }
     if (group->GetRaidDifficulty() != RAID_DIFFICULTY_10MAN_NORMAL)
         return Result(action, false, "set_raid_difficulty_to_10_player_normal");
 

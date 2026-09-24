@@ -185,3 +185,11 @@ def test_play_reset_restores_the_provisioned_hunter_pet_growl_state() -> None:
     assert "constexpr uint32 PetGrowlAutocastDisabled = 0x81;" in play
     provisioning = _read(ROOT / "experiments/configs/validation_provisioning_cata_001.json")
     assert '{ "id": 2649, "active": 129 }' in provisioning
+
+
+def test_play_raids_use_master_loot_by_the_leader() -> None:
+    play = _read(BOTS / "BotWorldPopulationMgrPlay.cpp")
+    fill = play[play.index("std::string Context::Fill("):]
+    assert "group->SetLootMethod(MASTER_LOOT);" in fill
+    assert "group->SetMasterLooterGuid(leader->GetGUID());" in fill
+    assert fill.index("SetLootMethod(MASTER_LOOT)") < fill.index("StartAutonomyForCohort")
