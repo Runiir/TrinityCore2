@@ -1,0 +1,31 @@
+{
+  "schema": "cata_raid_program_assessment_receipt_v1",
+  "kind": "assessment",
+  "unit_id": "magmaw:tuning_05",
+  "producer": "coordinator-bca90d3b",
+  "authority": "coordinator_attestation",
+  "attempt_id": "scoreboard:b3-0dbce440",
+  "scoreboard_label": "b3-0dbce440",
+  "encounter_clear": true,
+  "verdict": {
+    "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b3-0dbce440-aee1e664a5ed.json",
+    "sha256": "aee1e664a5ed3d7f92e9edc496b3fe3fbf5df42805a6c45351e4e7e4e2cf16c7"
+  },
+  "accepted_requirements": [],
+  "evidence": [
+    {
+      "path": "artifacts/cata_raid_program/verdicts/blackwing_descent_10n_magmaw-b3-0dbce440-aee1e664a5ed.json",
+      "sha256": "aee1e664a5ed3d7f92e9edc496b3fe3fbf5df42805a6c45351e4e7e4e2cf16c7"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard-run-b3-0dbce440-a6d70cce0230.json",
+      "sha256": "a6d70cce02303b09405a575e37c438f3edaf0cc6284be935345f8f79aac2b38d"
+    },
+    {
+      "path": "artifacts/cata_raid_program/scoreboard/blackwing_descent_10n_magmaw.baseline.json",
+      "sha256": "8177b44d47a2a48c7ca44a71186ab44bea657233253c15da3ab5e0368590e553"
+    }
+  ],
+  "summary": "b3-0dbce440: 5 native clears, 1 boss-window death (k1: the Blood tank died to Mangle at 46% health with Vampiric Blood and Icebound Fortitude spent 29-39 s earlier while the priest and druid were stranded 2.7 yd below the platform after a failed move at 43.6 s; diagnosed as the pre-existing HEAL-002/TANK-003 exposure plus a movement strand, not a bundle-03 mechanism). Keep rule: revert on (b). DPS: Blood 20851->24013 (improved, t=5.28, 0.92), Balance 39095 (0.953 on DPS), Fire A 36187 (0.90, sd 6.6k), Elemental 38841 (0.93), party 271.3k within noise. Baseline stays b2-fd4ba456; nothing accepted.",
+  "acceptance_claim": "Accepts nothing. The bundle-03 source stays in master for re-measurement together with the survival fixes (tank cooldown planning around Mangle, TANK-003 rune hold, healer strand recovery) in the next unit."
+}

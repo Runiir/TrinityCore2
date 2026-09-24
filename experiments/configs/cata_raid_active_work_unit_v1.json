@@ -39,7 +39,7 @@
   },
   "ready_for_build": false,
   "ready_for_live_verification": false,
-  "next_action": "Write the scoreboard verdict (graph_acceptance verdict --label) and cite it; actor/encounter requirements close only on pass. Re-record the bundle-03 plan on base 2b45a4fa9c, re-run the declared tests, reuse the unchanged approved review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456.",
+  "next_action": "Close evidence, DVC status/push, verify remote bytes and clean exact local duplicates. Re-record the bundle-03 plan on base 2b45a4fa9c, re-run the declared tests, reuse the unchanged approved review, build, smoke and measure a 5-kill batch against baseline b2-fd4ba456.",
   "accepted_isolation": {
     "source_commit": "00db4bec77",
     "isolation_passed": true,
@@ -385,9 +385,9 @@
   },
   "development_graph": {
     "version": 1,
-    "revision": 509,
+    "revision": 510,
     "objective": "Optimize lawful Magmaw 10N bots across every DPS, tank and healer against matched WCL; use exact WoWSims dummy evidence for class diagnosis.",
-    "stage": "assess",
+    "stage": "publish",
     "actor_ids": [
       "30001",
       "30002",
@@ -909,7 +909,8 @@
       "owner_blood_boss_damage_cadence": 3,
       "shared_route_progress_authority": 1,
       "shared_native_engagement_authority": 3,
-      "owner_blood_wcl_dps_gap": 3
+      "owner_blood_wcl_dps_gap": 3,
+      "owner_blood_native_fidelity_and_parasite_targeting": 1
     },
     "history": [
       {
@@ -9852,6 +9853,24 @@
         "accepted_requirements": [],
         "proposed_acceptance": [],
         "risk_tier": "shared_runtime"
+      },
+      {
+        "revision": 509,
+        "unit_id": "magmaw:tuning_05",
+        "from": "assess",
+        "to": "publish",
+        "event": {
+          "revision": 509,
+          "unit_id": "magmaw:tuning_05",
+          "action": "advance",
+          "receipt": {
+            "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_assessment_20260924.json",
+            "sha256": "e1821a5e8e909847c95940d300d208dc0482336d85ba18afc87280999987d8fc"
+          }
+        },
+        "accepted_requirements": [],
+        "proposed_acceptance": [],
+        "risk_tier": "shared_runtime"
       }
     ],
     "coordinator_worktree": "/home/runiir/Games/trinity-cata",
@@ -9986,6 +10005,10 @@
       "run": {
         "path": "artifacts/cata_raid_program/scoreboard-run-b3-0dbce440-a6d70cce0230.json",
         "sha256": "a6d70cce02303b09405a575e37c438f3edaf0cc6284be935345f8f79aac2b38d"
+      },
+      "assessment": {
+        "path": "artifacts/cata_raid_program/magmaw_tuning_bundle_03_assessment_20260924.json",
+        "sha256": "e1821a5e8e909847c95940d300d208dc0482336d85ba18afc87280999987d8fc"
       }
     },
     "tested_files": {
@@ -10028,6 +10051,14 @@
         "b3-0dbce440-k5-20260923T232945Z"
       ],
       "scoreboard_label": "b3-0dbce440"
+    },
+    "pending_acceptance": [],
+    "outcomes": {
+      "encounter_clear": true,
+      "repair_accepted": false,
+      "performance_accepted": false,
+      "verdict_status": "fail",
+      "verdict_label": "b3-0dbce440"
     }
   },
   "parked_scenarios": {
