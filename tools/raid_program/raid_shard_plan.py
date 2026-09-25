@@ -55,10 +55,89 @@ FULL_RAID_BOSS_NUMBER = ids.MAX_BOSS_NUMBER
 FULL_RAID_NAME_CODE = "ful"
 FULL_RAID_KIND = "full_raid"
 BOSS_SHARD_KIND = "boss"
+# The runtime prepull contract (BotWorldPopulationMgrRaidConsumableContracts.cpp)
+# needs a flask, food and potion in every roster member's bags and fails the
+# whole raid closed on the first member without them. The all-spec catalog
+# carries consumables only for its calibrated DPS specs, so every other
+# composition spec gets its contract's primary-stat set, as the legacy BWD
+# roster provisioned (validation_provisioning_cata_001.json). The item IDs are
+# the contract's Strength, Agility and Intellect rows.
+CONTRACT_CONSUMABLE_ITEMS = {
+    "strength": (58088, 62670, 58146),
+    "agility": (58087, 62669, 58145),
+    "intellect": (58086, 62671, 58091),
+}
+CONTRACT_CONSUMABLE_ARCHETYPES = {
+    "blood_death_knight": "strength",
+    "frost_death_knight": "strength",
+    "protection_paladin": "strength",
+    "feral_druid_tank": "agility",
+    "beast_mastery_hunter": "agility",
+    "holy_paladin": "intellect",
+    "holy_priest": "intellect",
+    "discipline_priest": "intellect",
+    "restoration_shaman": "intellect",
+    "restoration_druid": "intellect",
+}
+CONTRACT_CONSUMABLE_SLOTS = (
+    (26, ("flask_before_scoring",)),
+    (27, ("food_before_scoring",)),
+    (28, ("prepot_before_combat", "combat_potion_during_combat")),
+)
 
 
 class ShardPlanError(ValueError):
     pass
+
+
+def contract_consumables(spec: str) -> list[dict[str, Any]] | None:
+    """The prepull contract's flask, food and potion rows for a spec the catalog leaves without any."""
+    archetype = CONTRACT_CONSUMABLE_ARCHETYPES.get(spec)
+    if archetype is None:
+        return None
+    return [{"count": 20, "item_id": item, "slot": slot, "uses": list(uses)}
+            for item, (slot, uses) in zip(CONTRACT_CONSUMABLE_ITEMS[archetype], CONTRACT_CONSUMABLE_SLOTS)]
+
+
+def prepull_contract_failure(bot: dict[str, Any]) -> str | None:
+    """Why this bot would fail the raid prepull closed at runtime, or None.
+
+    Every roster member needs one flask, food and potion row of one contract
+    set (CONTRACT_CONSUMABLE_ITEMS); a spec with a declared archetype needs
+    exactly that set. tests/test_raid_shard_roster_setup.py keeps these sets
+    equal to the native contracts in BotWorldPopulationMgrRaidConsumableContracts.cpp.
+    """
+    rows = bot.get("consumables") or []
+    by_use: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        for use in row.get("uses") or []:
+            by_use.setdefault(str(use), []).append(row)
+    items = []
+    for use in ("flask_before_scoring", "food_before_scoring", "prepot_before_combat"):
+        matches = by_use.get(use) or []
+        if len(matches) != 1 or int(matches[0].get("count") or 0) < 1:
+            return f"prepull_contract_{use}_row"
+        items.append(int(matches[0]["item_id"]))
+    archetype = CONTRACT_CONSUMABLE_ARCHETYPES.get(str(bot.get("class_spec")))
+    if archetype is not None and tuple(items) != CONTRACT_CONSUMABLE_ITEMS[archetype]:
+        return "prepull_contract_archetype_items"
+    if tuple(items) not in CONTRACT_CONSUMABLE_ITEMS.values():
+        return "prepull_contract_unknown_item_set"
+    return None
+
+
+def character_spells(character: dict[str, Any]) -> list[int]:
+    """Class spells a composition character declares beyond its action profile (e.g. Heroism 32182).
+
+    The legacy roster declares them per bot (validation_provisioning_cata_001.json
+    `spells`); raid_loadout_spells refuses one that the race and class could not
+    learn natively.
+    """
+    spells = character.get("spells") or []
+    if not isinstance(spells, list) or any(isinstance(spell, bool) or not isinstance(spell, int) or spell <= 0
+                                           for spell in spells) or len(set(spells)) != len(spells):
+        raise ShardPlanError(f"character_spells_invalid:{character.get('character_key')}")
+    return sorted(spells)
 
 
 def relative(path: Path) -> str:
@@ -177,6 +256,8 @@ def _spec_group(catalog: dict[str, dict[str, Any]], spec: str, group: int, mirro
     for key in ("consumables", "profession_setup"):
         if bot.get(key) is not None:
             row[key] = copy.deepcopy(bot[key])
+    if not row.get("consumables") and (fallback := contract_consumables(spec)) is not None:
+        row["consumables"] = fallback
     return row
 
 
@@ -250,6 +331,8 @@ def _bot(composition: dict[str, Any], catalog: dict[str, dict[str, Any]], charac
     for field in ("consumables", "profession_setup"):
         if active.get(field) is not None:
             bot[field] = copy.deepcopy(active[field])
+    if spells := character_spells(character):
+        bot["spells"] = spells
     if source.get("pet"):
         pet = {k: v for k, v in copy.deepcopy(source["pet"]).items() if k != "id_offset"}
         pet["name"] = (bot["name"].lower() + "pet")[:12]
@@ -604,6 +687,11 @@ def validate_shard_plan(plan: dict[str, Any], name_validators: ids.NameValidator
                 failures.append({"check": "bot_pool_binding", "name": name})
             if bot.get("expected_account_id") != bot.get("account_id") or bot.get("expected_character_guid") != bot.get("character_guid"):
                 failures.append({"check": "identity_expectation_drift", "name": name})
+            # A missing contract set fails the whole raid's prepull minutes into a
+            # live run (round 2: raid_prepull_unknown_spec_contract_beast_mastery_hunter).
+            if (reason := prepull_contract_failure(bot)) is not None:
+                failures.append({"check": "prepull_consumable_contract", "name": name,
+                                 "class_spec": bot.get("class_spec"), "reason": reason})
             overlaps = ids.legacy_overlaps({"character_guid": bot.get("character_guid"), "account_id": bot.get("account_id"),
                                             "pet_id": bot.get("expected_pet_id"),
                                             "item_guid": (bot.get("loadout") or {}).get("item_guid_base")})

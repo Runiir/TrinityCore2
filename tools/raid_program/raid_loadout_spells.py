@@ -215,6 +215,31 @@ def talent_gated_profile_spells(class_id: int, class_spec: str, baseline: frozen
     return spec_spells - set(baseline) - class_wide - proficiency
 
 
+def fits_race_and_class(spell: int, race: int, class_id: int, dbc_dir: Path) -> bool:
+    """True unless every SkillLineAbility row of the spell excludes this race or class.
+
+    Faction variants are split this way: Heroism 32182 is Dwarf/Draenei,
+    Bloodlust 2825 the Horde shaman races (RaceMask 0x404 and 0x1A2).
+    """
+    race_mask, class_mask = 1 << (int(race) - 1), 1 << (int(class_id) - 1)
+    rows = [(races, classes) for skill_spell, races, classes, _acquire in skill_line_abilities(dbc_dir)
+            if skill_spell == int(spell)]
+    return not rows or any((not races or races & race_mask) and (not classes or classes & class_mask)
+                           for races, classes in rows)
+
+
+def declared_spell_failures(bot: dict[str, Any], dbc_dir: Path, learn_map: dict[int, list[int]],
+                            trainers_path: Path = DEFAULT_TRAINERS) -> list[int]:
+    """Declared `spells` this race and class could not learn natively at level 85."""
+    declared = [int(spell) for spell in bot.get("spells") or []]
+    if not declared:
+        return []
+    baseline = native_baseline(int(bot["class"]), int(bot["race"]), dbc_dir, learn_map, trainers_path)
+    return sorted(spell for spell in declared
+                  if spell not in baseline
+                  or not fits_race_and_class(spell, int(bot["race"]), int(bot["class"]), dbc_dir))
+
+
 def loadout_known_spells(bot: dict[str, Any], dbc_dir: Path, action_profiles: dict[str, Any] | None = None,
                          trainers_path: Path = DEFAULT_TRAINERS) -> dict[str, list[int]]:
     action_profiles = action_profiles or DEFAULT_ACTION_PROFILES
@@ -222,6 +247,9 @@ def loadout_known_spells(bot: dict[str, Any], dbc_dir: Path, action_profiles: di
     groups = loadout["groups"]
     active = groups[int(loadout["active_talent_group"])]
     learn_map = spell_learn_map(dbc_dir)
+    foreign = declared_spell_failures(bot, dbc_dir, learn_map, trainers_path)
+    if foreign:
+        raise LoadoutSpellError(f"declared_spell_not_native:{bot.get('name')}:{foreign}")
     single_active = set(bot_known_spell_ids(_view(bot, active), action_profiles))
     inactive = [group for group in groups
                 if group is not active and group.get("mirrors_talent_group") is None

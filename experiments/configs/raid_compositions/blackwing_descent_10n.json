@@ -54,7 +54,8 @@
     {"character_key": "paladin_ret", "slot": 6, "specs": ["retribution_paladin"]},
     {"character_key": "priest", "slot": 7, "specs": ["discipline_priest"]},
     {"character_key": "rogue", "slot": 8, "specs": ["assassination_rogue"]},
-    {"character_key": "shaman", "slot": 9, "specs": ["elemental_shaman", "restoration_shaman"]},
+    {"character_key": "shaman", "slot": 9, "specs": ["elemental_shaman", "restoration_shaman"], "spells": [32182],
+     "spells_note": "Heroism 32182, the Draenei shaman's raid haste (Bloodlust 2825 is Horde-only). It is a trainer class spell outside the action profiles; the legacy roster declared it per bot, and Magmaw's Bloodlust owner casts it."},
     {"character_key": "warlock", "slot": 10, "specs": ["demonology_warlock"]}
   ],
   "bosses": [
