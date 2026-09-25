@@ -3,30 +3,52 @@
   "contract_schema": "cata_raid_encounter_contract_v1",
   "raid": "blackwing_descent",
   "boss_slug": "atramedes",
-  "modes": ["10N", "10H", "25N", "25H"],
+  "modes": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
   "unresolved_material_count": 9,
   "encounter": "atramedes",
-  "scope": ["10N", "10H", "25N", "25H"],
-  "research_state": "planning_only_not_live_validated",
-  "research_as_of": "2026-08-11",
+  "scope": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
+  "research_state": "client_and_native_audited_wcl_blocked_not_live_validated",
+  "research_as_of": "2026-09-25",
   "source_urls": [
     "https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy",
     "https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot",
-    "https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic"
+    "https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic",
+    "https://wago.tools/db2/SpellEffect/csv?build=4.4.2.59185",
+    "https://github.com/BigWigsMods/BigWigs_Cataclysm/blob/master/Blackwing/Atramedes.lua",
+    "https://github.com/DeadlyBossMods/DBM-Cataclysm/blob/master/DBM-Raids-Cata/BlackwingDescent/Atramedes.lua"
   ],
   "repository_evidence": [
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes_spells.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes_shared.h",
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.cpp",
     "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
+    "data/dbc/enUS/Spell.dbc",
+    "data/dbc/enUS/SpellEffect.dbc",
     "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
     "sql/updates/world/4.3.4/2022_01_09_01_world.sql",
-    "sql/updates/world/4.3.4/2023_09_15_00_world.sql",
+    "sql/updates/world/4.3.4/2025_06_07_00_world.sql",
+    "sql/updates/world/4.3.4/2025_06_07_01_world.sql",
+    "sql/updates/world/4.3.4/2025_06_18_06_world.sql",
     "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
-    "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
+    "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql",
+    "sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql"
   ],
   "mode_matrix": {
     "10N": {
@@ -35,8 +57,15 @@
       "heroic": false,
       "gongs_guide": 10,
       "gongs_effective": 10,
-      "ground_air_guide_conflict": ["85s/40s", "80s/40s", "local_91s_first_then_93s_and_31s_air_event"],
-      "fiends": 0
+      "ground_air_guide_conflict": [
+        "85s/40s",
+        "80s/40s",
+        "local_91s_first_then_93s_and_31s_air_event"
+      ],
+      "fiends": 0,
+      "health_native": 26111168,
+      "modulation_sound": 0,
+      "sonar_bomb_targets_native": 5
     },
     "10H": {
       "health_guide": "34.8M",
@@ -44,8 +73,15 @@
       "heroic": true,
       "gongs_guide": 7,
       "gongs_spawned_historical_db": 10,
-      "ground_air_guide_conflict": ["85s/40s", "90s/30s", "local_91s_first_then_93s_and_31s_air_event"],
-      "fiends": "heroic_only_guide_every_30s_ground;local_30s_then_35s_with_phase_reset"
+      "ground_air_guide_conflict": [
+        "85s/40s",
+        "90s/30s",
+        "local_91s_first_then_93s_and_31s_air_event"
+      ],
+      "fiends": "heroic_only_guide_every_30s_ground;local_30s_then_35s_with_phase_reset",
+      "health_native": 34786260,
+      "modulation_sound": 10,
+      "sonar_bomb_targets_native": 5
     },
     "25N": {
       "health_guide": "97.9M",
@@ -53,8 +89,15 @@
       "heroic": false,
       "gongs_guide": 10,
       "gongs_effective": 10,
-      "ground_air_guide_conflict": ["85s/40s", "80s/40s", "local_91s_first_then_93s_and_31s_air_event"],
-      "fiends": 0
+      "ground_air_guide_conflict": [
+        "85s/40s",
+        "80s/40s",
+        "local_91s_first_then_93s_and_31s_air_event"
+      ],
+      "fiends": 0,
+      "health_native": 78333504,
+      "modulation_sound": 0,
+      "sonar_bomb_targets_native": 12
     },
     "25H": {
       "health_guide": "103M",
@@ -62,15 +105,58 @@
       "heroic": true,
       "gongs_guide": 7,
       "gongs_spawned_historical_db": 10,
-      "ground_air_guide_conflict": ["85s/40s", "90s/30s", "local_91s_first_then_93s_and_31s_air_event"],
-      "fiends": "heroic_only_guide_every_30s_ground;local_30s_then_35s_with_phase_reset"
+      "ground_air_guide_conflict": [
+        "85s/40s",
+        "90s/30s",
+        "local_91s_first_then_93s_and_31s_air_event"
+      ],
+      "fiends": "heroic_only_guide_every_30s_ground;local_30s_then_35s_with_phase_reset",
+      "health_native": 103070400,
+      "modulation_sound": 10,
+      "sonar_bomb_targets_native": 12
     }
   },
   "roles": {
-    "gong_owner": ["searing_flame_immediate_interrupt", "air_breath_rescue_only", "use_remaining_shield_budget_policy"],
-    "raid": ["sound_track_below_100", "sonar_pulse_and_sonar_bomb_evade", "ground_breath_move_around_boss", "air_breath_outer_edge_kite"],
-    "healer": ["heal_modulation", "stabilize_after_searing", "track_sound_and_noisy_risk"],
-    "dps": ["maximum_melee_range", "avoid_sound_sources", "heroic_fiend_interrupt_and_kill"]
+    "tank": [
+      "single_tank",
+      "drag_to_ground_anchor_162_-224.5",
+      "max_melee_range_20yd_reach",
+      "no_duty_in_air"
+    ],
+    "gong_owner": [
+      "best_ranged_by_capability_hunter_then_mage",
+      "stand_at_shield_nearest_anchor",
+      "strike_on_searing_flame_channel_start",
+      "strike_on_any_sound_ge_90_or_ge_80_unless_searing_due_within_15s"
+    ],
+    "gong_backup": [
+      "second_ranged_by_capability",
+      "acts_when_owner_dead_or_kiting"
+    ],
+    "sonic_breath_target": [
+      "circle_boss_at_28_42yd_away_from_raid_centroid"
+    ],
+    "roaring_flame_breath_target": [
+      "run_shield_ring_away_from_flame",
+      "self_gong_when_flame_within_11yd_and_shield_in_reach"
+    ],
+    "raid": [
+      "leave_sonic_breath_beam_backward_or_run_ahead_of_sweep",
+      "sidestep_sonar_pulse_lanes",
+      "exit_sonar_bomb_markers",
+      "avoid_roaring_flame_patches",
+      "keep_9yd_from_reverberating_flame",
+      "air_spread_ring_10yd"
+    ],
+    "healer": [
+      "ranged_arc_26yd",
+      "heal_modulation_and_searing_ticks"
+    ],
+    "dps": [
+      "ranged_arc_32yd",
+      "melee_native_max_range",
+      "melee_offense_suppressed_in_air"
+    ]
   },
   "gates": [
     "sound_below_100",
@@ -82,7 +168,11 @@
     "ground_air_transition",
     "sonar_bomb_evade",
     "roaring_flame_breath_outer_edge_kite",
-    "air_gong_redirect_only_when_needed"
+    "air_gong_redirect_only_when_needed",
+    "no_player_reaches_100_sound",
+    "searing_flame_gonged_within_2s",
+    "max_4_shields_per_10n_kill",
+    "melee_do_not_chase_flying_boss"
   ],
   "heroic_gates": [
     "nefarius_extra_ground_shield_destruction",
@@ -95,18 +185,22 @@
     "A ground gong manually interrupts Atramedes and applies Vertigo; an air gong redirects Reverberating Flame to the shield and then the gong user.",
     "Local timing is first Modulation13s, Sonar14.5s, Sonic24s, Searing46s, liftoff91s; after landing, ground events restart with Sonar14s, Modulation13s, Searing51s, Sonic22s, liftoff93s.",
     "Local Heroic Nefarius starts Fiends at30s, repeats35s, stops at liftoff, and restarts30s after landing; the Fiend chooses a random eligible player within100yd and casts Obnoxious after attachment.",
-    "Instance mapping is DATA_ATRAMEDES=3; FAIL schedules shield/boss respawn after30s and DONE despawns shields and notifies generic Nefarius."
+    "Instance mapping is DATA_ATRAMEDES=3; FAIL schedules shield/boss respawn after30s and DONE despawns shields and notifies generic Nefarius.",
+    "4.4.2 client and 4.3.4 DBC agree on every encounter spell value; normal Modulation adds no Sound, heroic adds 10.",
+    "Sound sources (10N): Sonar Pulse disks +3 per 0.5 s within 5 yd; Sonic Breath +20 per 1 s tick in a 15-degree beam; fire patches +5 (3 yd); air breath +3 per 0.5 s (5 yd); spawned air patches +10 (8 yd); Sonar Bomb +20 (6 yd). A shield strike sets everyone to 0.",
+    "Native fixes (2026-09-25): Sound Bar and Noisy! removed on evade/death; intro-flight Vertigo resumes the landing; landing removes the air Sonar Bomb trigger; redirected Reverberating Flame restarts at initial speed; time-to-Searing-Flame/Sonic-Breath/liftoff published through GetTimeUntilEncounterMechanic.",
+    "Devastation (78868) has no DB target restriction; a staged condition limits it to Noisy! holders per both current guides."
   ],
   "unresolved": [
-    "exact_442_client_build_and_hotfix_cutoff",
-    "live_ground_air_movement_and_event_timestamps_all_modes",
-    "exact_sound_gain_and_dbc_spell_coefficients",
-    "sonic_breath_initial_target_random_vs_highest_sound",
-    "roaring_flame_breath_initial_target_rule",
-    "sonar_bomb_target_counts_by_mode",
-    "heroic_fiend_period_damage_and_count",
-    "ai_guid_reset_after_evade",
-    "whether_historical_custom_sql_pack_is_applied"
+    "wcl_10n_kill_reference_pending",
+    "boss_melee_damage_modifier_10n",
+    "boss_health_10n",
+    "ground_air_phase_timestamps",
+    "modulation_repeat_interval",
+    "breath_initial_target_rule",
+    "sonar_bomb_count_by_mode",
+    "breath_speed_scaling_with_sound",
+    "heroic_fiend_and_shield_destruction_cadence"
   ],
   "conflicts": [
     "ground_air_duration_current_wowhead_85_40_vs_current_icy_90_30_vs_historical_icy_80_40_vs_local_91_31_93",
@@ -115,6 +209,12 @@
     "sonar_bomb_counts_current_wowhead_3_or_6_vs_historical_icy_5_or_8",
     "heroic_fiend_cadence_current_wowhead_30s_vs_local_30_then_35s_vs_historical_twice_ground",
     "heroic_obnoxious_period_current_wowhead_1_5s_vs_local_2_5s",
-    "normal_health_current_wowhead_vs_historical_icy"
-  ]
+    "normal_health_current_wowhead_vs_historical_icy",
+    "modulation_sound_current_guides_plus10_vs_client_rows_heroic_only",
+    "addon_bigwigs_classic_modulation16s_air36s_ground85s_vs_native_22_26s_31s_93s"
+  ],
+  "script_readiness": {
+    "classification": "source_present_static_gaps_fixed_live_pending",
+    "audited_revision_file": "atramedes_ledger_v1.json native_audit"
+  }
 }

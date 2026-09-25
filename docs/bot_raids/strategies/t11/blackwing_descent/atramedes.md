@@ -1,96 +1,171 @@
-# Atramedes — Phase 0 research contract v2
+# Atramedes — research contract v3 and 10N bot strategy
 
-Scope: Cataclysm Classic 4.4.2-labelled behavior for 10-player Normal (10N), 10-player Heroic (10H), 25-player Normal (25N), and 25-player Heroic (25H). This is a researched planning contract, not a live-validation result. Exact client/DBC coefficients and movement timing are not inferred where sources disagree.
+Scope: Cataclysm Classic 4.4.2 behavior (client build 4.4.2.59185, hotfix
+cutoff 2025-02-20 23:00 UTC) for 10N, 10H, 25N and 25H, with the 10N bot
+strategy for the canonical composition. State: `fidelity_blocked`. Client data,
+the native script and the database were audited on 2026-09-25 (repository
+revision `a570b44369`). Warcraft Logs (WCL) values are still unresolved: the
+report pages showed a human-verification interstitial that an agent may not
+pass. Nothing here is a live-validation result.
 
-## Contract
+Machine-readable sources: the contract `atramedes_v1.json` and the ledger
+`atramedes_ledger_v1.json` (client values, native audit, completion rows,
+unresolved list), next to them `atramedes_wcl_dps_reference_v1.json` and
+`atramedes_wcl_cast_timelines_v1.json` (pending extraction plans). The raid
+target is `experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json`.
 
-- Track every player’s Sound from 0 to 100. At 100, treat the player as a hard-fail target for Devastation. Keep Sound low enough that gongs are reserved for Searing Flame and air-breath rescue.
-- Assign one gong owner and a second emergency owner. A gong resets raid Sound and applies Vertigo; normal has ten shield spawns, while Heroic Nefarius destroys another available shield after each ground gong, leaving a guide-reported effective budget of seven.
-- Ground: keep melee at maximum range, spread or use stable groups to make Sonar Pulse paths predictable, and move the Sonic Breath target around the boss without crossing the raid. Gong Searing Flame immediately when its cast begins.
-- Air: move continuously to dodge Sonar Bomb and fire patches. Kite Roaring Flame Breath around the outside, never through the center. Gong only when the current breath is about to catch its target; the gong becomes the next breath target and is then destroyed.
-- Heroic: interrupt and kill Obnoxious Fiends immediately. Their approach is phase-shifted/immune in the local AI; after attachment, interrupt Obnoxious and remove the Fiend before it forces an early gong.
+## Access: the shard and its native prerequisites
 
-## Mode matrix
+- Instance: boss index 3 (`DATA_ATRAMEDES`), encounter 1022, map 669. The shard
+  is seeded with Magmaw and Omnotron done. The intro is not seeded.
+- Dwarven spirits: spawn groups 435 (left: Moltenfist, Anvilrage, Shadowforge,
+  Corehammer) and 436 (right: Angerforge, Ironstar, Thaurissan, Burningeye).
+  A dying spirit empowers the survivors of its group (Bestowal). A group that
+  evades resets and respawns after 30 s. In a seeded instance `ReadSaveDataMore`
+  spawns the shields and both spirit groups, because the intro byte is NUL.
+- When all 8 spirits are dead, the intro is saved DONE. The Column of Light
+  appears and the Ancient Bell (204276, spawn 235153) becomes selectable 4.5 s
+  later. Its `GossipHello` summons Atramedes at (288.3, -222.4, 96.6). He flies
+  to (249.4, -223.6), casts Roaring Breath, and lands at (214.5, -223.9, 74.8)
+  as `REACT_AGGRESSIVE`.
+- A wipe sets FAIL, despawns the shields, and respawns shields and boss after
+  30 s at (220.0, -224.3). The kill sets DONE and despawns the shields.
+- Route order (requested from the scenario owner): north spirits, south spirits,
+  regroup at (150, -224.5), bell ready, bell (the raid gathers at the bell),
+  intro wait, encounter.
+  - The regroup must come before the bell. An arrival node completes only when
+    no bot is in combat, and the landing pulls the raid standing at the bell.
+  - `intro_wait` completes on "grounded and aggressive, or engaged", so the
+    encounter node takes over as soon as he lands.
 
-| Mode | Current guide health | Guide shield budget | Local/guide phase model | Heroic delta |
-|---|---:|---:|---|---|
-| 10N | 32.6M | 10 | local first liftoff at 91s, air land event 31s; guides report 85/40 or 80/40 | none |
-| 25N | 97.9M | 10 | same local timer path; exact movement duration unresolved | none |
-| 10H | 34.8M | 7 effective | same local timer path; guides report 85/40 or 90/30 | Nefarius destroys extra ground-gong shields; Fiends; higher damage/Sound |
-| 25H | 103M | 7 effective | same local timer path; exact movement duration unresolved | Nefarius destroys extra ground-gong shields; Fiends; higher damage/Sound |
+## Mechanics (4.4.2 client rows; the 4.3.4 DBC holds the same values)
 
-Current Wowhead reports 32.6M/34.8M/97.9M/103M for 10N/10H/25N/25H. The historical Icy Veins page reports 26.1M/34.8M/78.3M/103M; normal health provenance is unresolved and must not become a bot invariant.
+The Sound Bar (89683, then 88824 on every player) is alternate power
+(UnitPowerBar 23, 0–100). At 100 Sound the player gets Noisy! (30 s).
+Devastation Trigger then fires Devastation (78868) every 500 ms: 24,375–25,625
+Fire (heroic 29,250–30,750).
 
-## Observable mechanics and targeting
+| Source (10N) | Damage | Sound | Area |
+|---|---|---|---|
+| Sonar Pulse disk (4 per cast, 41546) | none (heroic 2,924 Shadow) | +3 per 0.5 s (heroic +7) | 5 yd, moving from the boss toward its player |
+| Modulation (77612) | 31,200–32,800 Shadow, raid | none (heroic +10) | raid |
+| Sonic Breath (78098 at Tracking Flames 41879) | 19,500–20,500 Fire per 1 s tick (heroic 29,250) | +20 per tick (heroic +30) | 15° cone, unlimited range, 2 s cast + 6 s channel |
+| Searing Flame (77840, 6 s channel) | 19,500–20,500 Fire raid every 2 s, +50% Fire taken per tick | none | raid, plus 41807 fire patches within 35 yd |
+| Roaring Flame patch (41807 / 42001) | 9,750 + 7,800/s for 4 s | +5 | 3 yd |
+| Roaring Flame Breath (air, 41962) | 15,600–16,400 Fire per 0.5 s (heroic 29,250) | +3 (heroic +10) | 5 yd around the flame |
+| Roaring Flame spawn (78555) | 14,625–15,375 Fire | +10 | 8 yd |
+| Sonar Bomb (air, 5 markers every 3 s) | 20,000 Arcane (heroic 30,000) | +20 (heroic +30) | 6 yd |
 
-### Sound and gongs
+- **Ancient Dwarven Shields** (spawn group 400: 10 creatures of 8 entries).
+  The spellclick casts 77709 from the shield: everyone goes to 0 Sound and
+  Noisy! is removed.
+  - Ground: the shield interrupts Atramedes and applies Vertigo (5 s stun,
+    +50% damage taken). Atramedes then destroys that shield.
+  - Air: the Reverberating Flame waits 2 s, flies to the shield, destroys it,
+    then tracks the striker.
+  - Heroic: Nefarius destroys one more shield after each ground gong.
+- **Air breath speed.** The Reverberating Flame gains +20% speed every second
+  (78217 → 78218, at most 10 stacks). Both guides say a gong restarts the
+  breath at its initial speed; the native script now does this.
+- **Phases (native).**
+  - Ground: Modulation 13 s, then every 22–26 s. Sonar Pulse 14.5 s, then every
+    11 s. Sonic Breath 24 s, then every 42–43 s. Searing Flame 46 s (once).
+    Liftoff 91 s.
+  - Air: the land event comes 31 s after he reaches the liftoff point.
+  - Ground after landing: Sonar 14 s, Modulation 13 s, Sonic Breath 22 s,
+    Searing Flame 51 s, liftoff 93 s.
+- **Addon bars (BigWigs Classic).** Modulation 11 s, then every 16 s. Sonar
+  11.3 s. Breath 22 s, then every 42 s. Searing 45 s. Air 36 s from take-off,
+  then 85 s of ground. The difference is recorded as a conflict. Native timers
+  change only with WCL evidence.
 
-- The Sound Bar starts at zero. Current guides agree that 100 Sound triggers Devastation and kills the player; the local Sound Bar script adds the Noisy state at alternate power equal to max and the Devastation trigger runs only while a noisy player exists.
-- The local script updates the Silence is Golden world state when any player reaches at least 50 Sound. This is achievement state, not a combat threshold.
-- A shield click in ground uses Resonating Clash Ground, manually interrupts Atramedes, and applies Vertigo. Current guides report five seconds of stun and 50% increased damage; the local script confirms the manual interrupt and shield tracking, but spell duration/coefficient remains DBC data.
-- A shield click in air records both the used shield and clicker. The Reverberating Flame stops, waits two seconds, travels to the shield, casts Sonic Flames, then tracks the clicker (or nearest player within 100 yards if the clicker is unavailable). The local spell script removes the relevant Vertigo/air aura and the breath redirection is therefore an observable local rule.
+## Native audit (fixed 2026-09-25)
 
-### Ground phase
+1. `boss_atramedes.cpp` (1,141 lines) is split into the AIs, `boss_atramedes_spells.cpp`
+   and `boss_atramedes_shared.h`. Registration and DB bindings are unchanged.
+2. The player Sound Bar and Noisy! are removed on evade and on death. Before,
+   survivors carried their Sound into the next pull.
+3. A Vertigo during the intro flight now resumes the landing. Before, the script
+   asked the instance for an AI data id and always got 0.
+4. The landing removes the air Sonar Bomb trigger (92519), not the disk aura.
+5. A redirected Reverberating Flame restarts at its initial speed.
+6. `GetTimeUntilEncounterMechanic` publishes the native time to Searing Flame,
+   Sonic Breath and liftoff. It covers the ground phase only.
+7. Staged, DB-side: `sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql`
+   restricts Devastation to Noisy! holders. Before, it hit the whole raid.
+   Wowhead and Icy Veins both describe a hit on the 100-Sound player only.
 
-- Local first ground events are Modulation 13s, Sonar Pulse 14.5s, Sonic Breath 24s, Searing Flame 46s, and liftoff 91s. Sonar repeats every 11s; Modulation repeats randomly 22–26s; Sonic Breath repeats randomly 42–43s. After landing, local events are Sonar14s, Modulation13s, Searing51s, Sonic22s, then liftoff after 93s. The Searing cast reschedules Modulation six seconds later.
-- Current Wowhead reports an 85-second ground phase, Modulation every 15s, Sonar Pulse every 10s with four disks, Sonic Breath every 20s, and Searing Flame after 40s. Current Icy Veins reports 90s ground and Sonic Breath every 40s; the historical page reports 80s ground and two Sonic Breaths per phase. These are retained as conflicts against the local schedule.
-- Modulation is unavoidable raid damage and adds Sound in current strategy guidance. The local spell script increases each hit by the target’s current alternate-power percentage; no numeric DBC base damage is encoded in C++.
-- Sonic Breath local target filtering removes Atramedes’s current victim, then randomly keeps one eligible area target. Current Wowhead calls the target random; historical Icy Veins says highest Sound and not the tank. Exact 4.4.2 target selection/range is unresolved.
-- Searing Flame is once per ground phase in strategy sources. Wowhead reports 20k normal/40k Heroic every two seconds for six seconds, stacking +50% Fire damage per tick; it also reports Roaring Flame patches lasting 45s, 10k/20k initial damage, 8k/10k periodic damage, and +5/+10 Sound. The local C++ schedules the cast but leaves these coefficients to spell data.
-- Sonar Pulse disks are local summons: the pulse aura starts after 400ms, movement begins after another 800ms, and each disk travels to first collision within 100 yards before despawning at spline duration. The exact disk target and spell coefficients are DBC/guide data.
+## 10N bot strategy (canonical composition: 1 tank, 2 healers, 7 DPS)
 
-### Air phase
+Roster: Blood DK (tank); Balance, BM Hunter, Fire Mage, Retribution,
+Assassination, Elemental, Demonology; Holy Paladin and Discipline healers.
+Duties come from capability on every snapshot (`BotAtramedesDutyPlan.h`), never
+from roster slots.
 
-- On reaching the liftoff point, local Atramedes disables gravity, starts the Sonar Pulse trigger and Roaring Flame Breath, and schedules the land event after 31s. Landing movement then returns him to ground, re-engages players after 800ms, and starts the next ground schedule. Current Wowhead reports 40s air; current Icy Veins reports 30s; the historical page reports 40s. Movement duration is unmeasured.
-- Roaring Flame Breath tracks a moving flame entity. Local tracking follows the summoner, and a gong redirects the flame to the shield before tracking the gong user. Current Wowhead describes a random initial player and a breath that accelerates until gonged; historical Icy Veins says the highest-Sound player is initially selected. Do not encode the disputed initial target as exact.
-- Current Wowhead reports three Sonar Bomb locations every three seconds in Normal and six in Heroic, with 20k/30k Arcane damage within six yards and +20/+30 Sound when hit. Historical Icy Veins reports five 10-player or eight 25-player locations, three-second telegraphs, +20 Sound, and Sound-scaled air damage. Local C++ starts the trigger and handles each bomb summon but does not encode the mode target count.
-- Air fire trails/patches are movement hazards. Keep kites on the outside and place each gong far from the current breath target so the redirect takes longer.
+- **Pull and tank.** Everyone targets the landed boss and the tank's threat
+  takes him. On the ground the tank drags Atramedes to the anchor
+  (162, -224.5). He has 20 yd combat reach, so the tank stands 10 yd past the
+  anchor. Melee keep native maximum range (about 22 yd from his centre).
+- **Gongs** (native spellclick only, `BotAtramedesGongPolicy.h`):
+  - The owner is the best ranged DPS (hunter, then mage, …) and the backup is
+    the next. The owner waits beside the shield nearest the anchor, which is
+    still inside spell reach of the boss.
+  - The owner strikes as soon as Searing Flame starts, when anyone reaches
+    90 Sound, or at 80 Sound unless Searing Flame is due within 15 s.
+  - The backup acts when the owner is dead or kiting. No strike happens while
+    Atramedes is already stunned.
+  - Air: the kiter strikes a shield in reach when the flame comes within 11 yd.
+    Otherwise a bot already beside a shield strikes the one farthest from the
+    flame.
+- **Sonic Breath.**
+  - The tracked player circles the boss 28–42 yd out, away from the raid
+    centroid.
+  - Others leave the beam backward, or run ahead of the sweep when the beam will
+    reach them within its 8 s.
+- **Sound.** Everyone sidesteps Sonar Pulse lanes (5 yd, plus 1.5 yd at
+  60+ Sound). They also leave fire patches, Sonar Bomb markers and the
+  Reverberating Flame.
+- **Formation.**
+  - Ground: ranged stand on an arc 32 yd from the boss and healers 26 yd,
+    facing the arena centre.
+  - Air: one slot per player on a 10 yd-spaced ring around (145, -225), at
+    17 yd or 25 yd. The outer slot is the alternate when a bomb marker is placed.
+- **Air.**
+  - The tracked player runs the ring of shield positions, away from the flame.
+  - Melee and the tank cannot reach the flying boss. They hold their slot and
+    ask for offense suppression.
+  - Ranged keep casting within about 48 yd horizontally of him.
 
-## Heroic mechanics
+Acceptance observations are in the ledger, `acceptance_observations`: native
+clear after spirits and bell, every Searing Flame gonged within 2 s, nobody
+reaches 100 Sound, at most 4 shields, and 0 boss-window deaths.
 
-- Heroic summons Lord Victor Nefarius at engage. Local Nefarius schedules an initial Fiend at 30s, repeats every 35s, stops at liftoff, and restarts 30s after landing. Current Wowhead describes a Fiend every 30s during ground; historical Icy Veins describes twice per ground phase, sometimes once or three times. Treat count/cadence as a conflict.
-- The local Fiend chooses a random eligible player within 100 yards, excluding players already carrying Pestered, focuses/chases after one-second steps, and casts Obnoxious one second after attachment then every 2.5s. Current Wowhead reports +10 Sound every 1.5s; historical Icy Veins reports roughly 10k melee and +10 Sound, so exact period and damage are unresolved.
-- Nefarius’s Destroy Shield spell locally filters to selectable shields and randomly removes one. It is triggered after Vertigo ends, confirming the extra Heroic shield loss, but exact spell target-area behavior is DBC-dependent.
-- Current Icy Veins says Heroic raises damage and Sound scaling for all listed abilities except Roaring Flame Breath and makes Sonar Bombs fall faster. Wowhead supplies individual examples. These claims are recorded as guide-reported deltas; exact per-mode coefficients remain unresolved.
+## Unresolved (fidelity_blocked)
 
-## Reset, completion, and credit
+`wcl_10n_kill_reference_pending`, `boss_melee_damage_modifier_10n` (native
+roll at modifier 1: 4,553–6,764 per 1.5 s swing), `boss_health_10n`
+(native 26,111,168 vs Wowhead 32.6M), `ground_air_phase_timestamps`,
+`modulation_repeat_interval`, `breath_initial_target_rule`,
+`sonar_bomb_count_by_mode` (native 5 vs Wowhead 3),
+`breath_speed_scaling_with_sound`, `heroic_fiend_and_shield_destruction_cadence`.
 
-- `Reset()` calls `_Reset()` and sets the event phase to intro but does not explicitly clear `_noisyPlayerGUIDs`, shield GUIDs, or the Reverberating Flame GUID. Engage reinitializes the Sound Bar and achievement world state. Whether the engine reconstructs the AI object before a repull is unresolved.
-- Evade despawns tracked summons, disengages the encounter, sets `DATA_ATRAMEDES` to FAIL, removes the Nefarius vehicle aura from players, reopens the Athenaeum door, and despawns Atramedes. The instance schedules shield/boss respawn after 30s.
-- Death calls `_JustDied()`, disengages the frame, removes the vehicle aura, reopens the door, and speaks the death line. Instance `SetBossState(DATA_ATRAMEDES, DONE)` despawns the shield spawn group and notifies generic Nefarius; this is the expected boss credit path.
-- The instance creates/spawns Ancient Dwarven Shield group 400, maps creature 41442 to `DATA_ATRAMEDES`, and forwards Atramedes summons (Sonar Pulse, Tracking Flames, Sonar Bomb, Reverberating Flame, Obnoxious Fiend) to the boss AI. Loader registration invokes `AddSC_boss_atramedes`.
+## Sources
 
-## Repository audit
-
-- `boss_atramedes.cpp` defines Sound/Noisy/Devastation, gong ground/air handling, target filters, movement, all local timers, Nefarius/Fiend behavior, cleanup, and spell scripts.
-- `blackwing_descent.h` defines Atramedes 41442, Sonar Pulse 41546, Sonar Bomb 49623, Tracking Flames 41879, Reverberating Flame 41962, Nefarius 49580, and Obnoxious Fiend 49740, plus `DATA_ATRAMEDES=3`.
-- `instance_blackwing_descent.cpp` maps 41442 to `DATA_ATRAMEDES`, spawns shield group 400, forwards summons, sets FAIL/DONE handling, and respawns shields/boss after 30s on failure.
-- The current TDB row for 41442 has difficulty entries 49583/49584/49585 and ScriptName `boss_atramedes`; local TDB rows exist for the Heroic Nefarius and Fiend variants. `sql/updates/world/4.3.4/2022_01_09_01_world.sql` binds Reverberating Flame 41962. The historical custom update explicitly binds the boss, shields, Nefarius, Fiend, spell scripts, vehicle accessory, spellclicks, conditions, and movement. Whether that historical custom pack is applied is outside this audit.
-- Historical map-669 spawn SQL lists ten Ancient Dwarven Shield creature spawns and the Atramedes encounter area. This is DB history, not proof of the live 4.4.2 hotfix state.
-
-## Source metadata
-
-1. Wowhead, “Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic,” Beanna, updated 2024-06-04, page labelled Patch 4.4.2: <https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy>. Used for current health, Sound/gong behavior, current ground/air timing, damage examples, target descriptions, Sonar Bomb counts, and Heroic Fiend/shield behavior.
-2. Icy Veins, “Atramedes Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic,” Abide, updated 2024-07-29: <https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot>. Independent current-era source for Sound, ten/seven shields, ground/air execution, gong use, air kiting, and Heroic Fiends.
-3. Icy Veins, “Atramedes Detailed Strategy Guide (Heroic Mode included),” Damien, last updated 2012-10-08, explicitly marked WoD 6.1.2: <https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic>. Historical independent source used only for alternate phase/timer/target counts, Sound scaling, Heroic deltas, and health values; not treated as 4.4.2 authority.
-4. Local repository: `src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp` (lines 37–1141), `blackwing_descent.h` (lines 25–145), `instance_blackwing_descent.cpp` (lines 31–505), and `eastern_kingdoms_script_loader.cpp` (lines 76–83, 308–315).
-5. Local DB/SQL: `data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql` creature-template rows; `sql/updates/world/4.3.4/2022_01_09_01_world.sql` (Reverberating Flame binding); `sql/updates/world/4.3.4/2023_09_15_00_world.sql` (creature addon rows); `sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql` (lines 166876–167027); and `sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql` (lines 132–141, map 669 shield spawns).
-
-## Material conflicts
-
-- Current Wowhead: 85s ground/40s air; current Icy Veins: 90s/30s; historical Icy Veins: 80s/40s; local: 91s first liftoff, 31s air event, 93s later liftoff plus movement.
-- Sonic Breath cadence/target: current Wowhead random every20s; current Icy Veins every40s; historical Icy Veins highest Sound, twice per ground phase, not tank; local random eligible target excluding current victim.
-- Sonar Bomb: current Wowhead 3 Normal/6 Heroic locations; historical Icy Veins 5 10-player/8 25-player; local trigger has no C++ count.
-- Sound/damage coefficients differ between current Wowhead examples and historical Icy Veins’s Sound-scaling descriptions; exact DBC values are unresolved.
-- Heroic Fiend timing differs (current Wowhead every30s, local 30s then35s, historical Icy twice per ground); Fiend Obnoxious period differs (current guide1.5s, local2.5s).
-- Normal health differs between current Wowhead and historical Icy Veins; no reliable exact build/hotfix evidence resolves it.
-
-## Unresolved fidelity blockers
-
-- Exact Blizzard 4.4.2 client/build/hotfix cutoff and whether the local TDB/SQL snapshot matches it.
-- Live ground/air movement duration and actual event timestamps in all four modes.
-- Exact 4.4.2 Sound gain, DBC coefficients, spell target radii, and mode-specific Sonar/Sonic target counts.
-- Initial Sonic Breath and Roaring Flame Breath target-selection rule (random versus highest Sound) and Heroic timing.
-- Heroic Fiend spawn count/period, Obnoxious period/damage, and whether all ability Sound/damage deltas match the current guide.
-- AI object reconstruction and explicit reset behavior for custom GUID sets after evade.
-- Whether the historical custom SQL pack is applied to the current database.
+1. Wowhead, "Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
+   updated 2024-06-04, 4.4.2 label: <https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy>.
+   Used for health, Sound, shields, 85/40 phases, Devastation target, kiting and composition (1 tank, 2 healers).
+2. Icy Veins, "Atramedes Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic",
+   Abide, 2024-07-29: <https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot>.
+   Used for the Devastation target, gong use, and breath speed rising over time and with Sound.
+3. Icy Veins, "Atramedes Detailed Strategy Guide (Heroic Mode included)", Damien,
+   2012-10-08 (historical): <https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic>.
+   Used for the breath reset to initial speed after a gong, 5 Sonar Bomb markers in 10-player,
+   Modulation adding no Sound, and the relay kite.
+4. wago.tools 4.4.2.59185 DB2 rows (SpellEffect, SpellMisc, SpellTargetRestrictions, …),
+   extracted with `tools.raid_program.extract_442_client_spell_rows --follow-triggers`
+   (hashes in the ledger).
+5. BigWigs_Cataclysm `Blackwing/Atramedes.lua` (commit a5a9f7dea7, 2026-09-24) and
+   DBM-Cataclysm `BlackwingDescent/Atramedes.lua` (commit 721d0f3e15, 2026-05-23).
+6. Repository: `boss_atramedes*.{cpp,h}`, `instance_blackwing_descent.cpp`,
+   `blackwing_descent.cpp`, `SpellMgrCorrectionsPart04.cpp`, the 4.3.4 DBC in `data/dbc/enUS`,
+   and the TDB 434.22011 dump (templates, conditions, spellclicks, spawn groups 400/435/436).

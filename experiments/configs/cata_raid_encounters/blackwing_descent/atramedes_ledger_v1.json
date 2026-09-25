@@ -3,13 +3,18 @@
   "ledger_schema": "cata_raid_value_timer_ledger_v1",
   "raid": "blackwing_descent",
   "boss_slug": "atramedes",
-  "modes": ["10N", "10H", "25N", "25H"],
+  "modes": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
   "fidelity_state": "fidelity_blocked",
   "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
   "unresolved_material_count": 9,
   "encounter": "atramedes",
-  "purpose": "sourced_value_and_timer_ledger; no live assertion",
-  "research_as_of": "2026-08-11",
+  "purpose": "source, client-data and native-audit ledger for Atramedes; no live-validation assertion",
+  "research_as_of": "2026-09-25",
   "source_catalog": {
     "wowhead_442": {
       "title": "Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -18,9 +23,18 @@
       "updated": "2024-06-04",
       "patch_label": "4.4.2",
       "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy",
-      "accessed": "2026-08-11",
-      "used_for": ["health", "sound_and_shields", "ground_air_timing", "damage_examples", "target_descriptions", "sonar_bomb_counts", "heroic_fiends"],
-      "reliability": "current_patch_labelled_strategy_source"
+      "accessed": "2026-09-25 (re-read)",
+      "used_for": [
+        "health",
+        "sound_and_shields",
+        "ground_air_timing",
+        "damage_examples",
+        "target_descriptions",
+        "sonar_bomb_counts",
+        "heroic_fiends"
+      ],
+      "reliability": "current_patch_labelled_strategy_source",
+      "html_sha256_20260925": "f3e38f2d65560bda5aaeb74e9e36a71ef8cfe53fc715605b6c63a6be9edbf023"
     },
     "icy_cata_classic": {
       "title": "Atramedes Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic",
@@ -29,9 +43,16 @@
       "updated": "2024-07-29",
       "patch_label": "Cataclysm Classic",
       "url": "https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot",
-      "accessed": "2026-08-11",
-      "used_for": ["sound_and_shields", "ground_air_execution", "gong_policy", "heroic_fiends", "achievement"],
-      "reliability": "independent_current_era_strategy_source"
+      "accessed": "2026-09-25 (re-read)",
+      "used_for": [
+        "sound_and_shields",
+        "ground_air_execution",
+        "gong_policy",
+        "heroic_fiends",
+        "achievement"
+      ],
+      "reliability": "independent_current_era_strategy_source",
+      "html_sha256_20260925": "1667be3ddf180b16d34f2fb811a7ab06fb1af8e2df7ef293d3bb68e6194dd252"
     },
     "icy_original": {
       "title": "Atramedes Detailed Strategy Guide (Heroic Mode included)",
@@ -40,9 +61,17 @@
       "updated": "2012-10-08",
       "patch_label": "page says WoD 6.1.2; historical encounter reference, not 4.4.2 authority",
       "url": "https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic",
-      "accessed": "2026-08-11",
-      "used_for": ["alternate_health", "alternate_phase_durations", "sound_scaling", "target_counts", "heroic_deltas", "fiend_behavior"],
-      "reliability": "independent_historical_strategy_source_only"
+      "accessed": "2026-09-25 (re-read)",
+      "used_for": [
+        "alternate_health",
+        "alternate_phase_durations",
+        "sound_scaling",
+        "target_counts",
+        "heroic_deltas",
+        "fiend_behavior"
+      ],
+      "reliability": "independent_historical_strategy_source_only",
+      "html_sha256_20260925": "5ca8f1e649e9791d7aada06a2d23e9f26a28c47bc97f7134bf5193f935608858"
     },
     "local_cpp": {
       "title": "TrinityCore Atramedes encounter script",
@@ -50,7 +79,17 @@
       "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
       "lines": "37-1141",
       "accessed": "2026-08-11",
-      "used_for": ["state_machine", "local_timers", "sound_threshold", "gong_ground_air", "target_filters", "air_tracking", "heroic_fiends", "cleanup", "spell_scripts"],
+      "used_for": [
+        "state_machine",
+        "local_timers",
+        "sound_threshold",
+        "gong_ground_air",
+        "target_filters",
+        "air_tracking",
+        "heroic_fiends",
+        "cleanup",
+        "spell_scripts"
+      ],
       "reliability": "current_local_server_baseline_not_live_4.4.2_evidence"
     },
     "local_instance_and_loader": {
@@ -63,7 +102,14 @@
       ],
       "lines": "h:25-145; instance:31-505; loader:76-83,308-315",
       "accessed": "2026-08-11",
-      "used_for": ["entry_ids", "boss_state_mapping", "shield_spawn_group", "summon_forwarding", "respawn", "loader_registration"],
+      "used_for": [
+        "entry_ids",
+        "boss_state_mapping",
+        "shield_spawn_group",
+        "summon_forwarding",
+        "respawn",
+        "loader_registration"
+      ],
       "reliability": "repository_confirmation"
     },
     "current_tdb": {
@@ -71,7 +117,12 @@
       "publisher": "repository database",
       "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
       "accessed": "2026-08-11",
-      "used_for": ["difficulty_entries", "base_script_name", "variant_rows", "creature_template_values"],
+      "used_for": [
+        "difficulty_entries",
+        "base_script_name",
+        "variant_rows",
+        "creature_template_values"
+      ],
       "reliability": "local_dump_provenance_not_4.4.2_client_proof"
     },
     "sql_updates": {
@@ -84,93 +135,1162 @@
         "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
       ],
       "accessed": "2026-08-11",
-      "used_for": ["current_reverberating_binding", "historical_script_bindings", "spell_scripts", "spellclicks", "conditions", "vehicle_accessory", "ten_shield_spawns"],
+      "used_for": [
+        "current_reverberating_binding",
+        "historical_script_bindings",
+        "spell_scripts",
+        "spellclicks",
+        "conditions",
+        "vehicle_accessory",
+        "ten_shield_spawns"
+      ],
       "reliability": "repository_audit_only"
+    },
+    "client_442_spell_rows_20260925": {
+      "title": "Pinned 4.4.2.59185 client spell rows for every Atramedes and dwarven-spirit spell (follow-triggers closure, 78 IDs)",
+      "publisher": "wago.tools",
+      "build": "4.4.2.59185",
+      "accessed": "2026-09-25",
+      "tool": "pixi run python -m tools.raid_program.extract_442_client_spell_rows --follow-triggers --spell-id ... (IDs listed in client_spell_values)",
+      "extract_sha256": "55c452cc7a89eb8f181d92b2de095d73662f89a726aedd9268980949bc692861",
+      "extract_location": "/tmp/atramedes_research/client_442_atramedes.json (not yet DVC-published: agent has no DVC write permission; coordinator publishes)",
+      "table_full_csv_sha256_prefixes": {
+        "SpellEffect": "53463195554e58de",
+        "SpellName": "f6c169613b405ed1",
+        "SpellMisc": "cfe3e68aaab489fc",
+        "SpellAuraOptions": "c6f9dd9b7579ff4d",
+        "SpellTargetRestrictions": "9c332644a146766c",
+        "SpellCooldowns": "e419e4fcaf6638e1",
+        "SpellDuration": "8235071c5172c395",
+        "SpellRadius": "cbb8774c4a5c825d",
+        "SpellRange": "90875cd8e29a0eb6",
+        "SpellCastTimes": "f015c5da360956f4"
+      },
+      "missing_rows": [
+        92554,
+        92555,
+        92647,
+        95537
+      ],
+      "authority": "client data rank 1; server-side targeting and timers are not in these tables"
+    },
+    "dbc_434_execution": {
+      "title": "Execution-era 4.3.4 client DBC (data/dbc/enUS) Spell.dbc, SpellEffect.dbc, SpellDifficulty.dbc, SpellTargetRestrictions.dbc",
+      "publisher": "repository client data",
+      "accessed": "2026-09-25",
+      "sha256": {
+        "Spell.dbc": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+        "SpellEffect.dbc": "e3d9a470bbcb5cea4e3f2947911a908b816cc60e6ffeb9f70b4cfb123bad6252"
+      },
+      "claim": "Every encounter spell's base points, periods, radii and difficulty rows equal the 4.4.2 rows (4.3.4 adds die sides, e.g. Modulation 31,200-32,800). 78100 cone 15 degrees; 78555/92553 60 degrees."
+    },
+    "spellmgr_corrections": {
+      "title": "Atramedes SpellInfo corrections",
+      "publisher": "repository",
+      "path": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
+      "lines": "315-365",
+      "accessed": "2026-09-25",
+      "claim": "Sonar Pulse 77672/92411-92413 MaxAffectedTargets 4; Searing Flame 77840 effect 1 -> periodic trigger 2000 ms; air Sonar Pulse 92526/92532 (10-player) 5 targets, 92531/92533 (25-player) 12; Roaring Flame Breath 78207 1 target; Sonic Flames 77782 target any; Building Speed Effect 78218/92463-92465 StackAmount 10."
+    },
+    "tdb_bindings_20260925": {
+      "title": "TDB 434.22011 Atramedes bindings, spawns and templates",
+      "publisher": "repository database",
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+      "accessed": "2026-09-25",
+      "claim": "spell_script_names bind all 16 spell scripts (incl. 78431, 92452/92453 modulation); conditions target 77673/78098/78168/78230/78431/77611/78945/92607; npc_spellclick_spells 77709 (cast_flags 0, user_type 1) on all 8 shield entries; spawn group 400 = shields 250122-250131 (+10 gameobjects), 435/436 = spirits; 41442 level 88 unit_class 1 BaseAttackTime 1500 (10N) / 2000 (other modes), HealthModifier 304/912/405/1200, CombatReach 20 (model 34547); Tracking/Reverberating Flame speed_run 0.714; Reverberating Flame addon auras 78354 (fire periodic) and 78217 (Building Speed Trigger). No condition restricts Devastation 78868."
+    },
+    "bigwigs_cataclysm_atramedes": {
+      "title": "BigWigs_Cataclysm Blackwing/Atramedes.lua",
+      "publisher": "BigWigsMods (GitHub)",
+      "commit": "a5a9f7dea78e3436eda47c6caef77dbfc38a07d0",
+      "commit_date": "2026-09-24",
+      "file_sha256": "2bb4b22f40f87d95b0be186ae5c1be8835993651bf095b6071d1c99d67d4e291",
+      "accessed": "2026-09-25",
+      "url": "https://github.com/BigWigsMods/BigWigs_Cataclysm/blob/master/Blackwing/Atramedes.lua",
+      "claim": "Classic-aware bars: engage Modulation 11, Sonar 11.3, Sonic Breath 22, Searing Flame 45, stage 2 at 91; Take Off Anim Kit 86915 -> ground after 36; after landing Sonar 12.3, Modulation 14, Sonic Breath 23, Searing Flame 47 (Classic), stage 2 at 85; repeats Sonic Breath 42, Modulation 16, Sonar 11.3; Vertigo 5; Resonating Clash 77611 (ground) / 78168 (air); Sonic Flames kill 77782 / 78945; Roaring Flame 78023.",
+      "authority": "addon expected cooldowns (rank 3); corroborating only"
+    },
+    "dbm_cataclysm_atramedes": {
+      "title": "DBM-Raids-Cata BlackwingDescent/Atramedes.lua",
+      "publisher": "DeadlyBossMods (GitHub)",
+      "commit": "721d0f3e154506cae34eb710973e5795f4608b6b",
+      "commit_date": "2026-05-23",
+      "file_sha256": "0e9a9204ff4414db0e4b41660116347cdb477b88bca16b06afe5caa82f2a60ed",
+      "accessed": "2026-09-25",
+      "url": "https://github.com/DeadlyBossMods/DBM-Cataclysm/blob/master/DBM-Raids-Cata/BlackwingDescent/Atramedes.lua",
+      "claim": "Sonar Pulse CD 10, Sonic Breath 41 (first 25), Searing Flame 45, air phase at 90 (first) / 85, ground 31.5 after the air yell; author notes phase triggers need rework.",
+      "authority": "addon expected cooldowns (rank 3)"
+    },
+    "wcl_human_verification_20260925": {
+      "title": "classic.warcraftlogs.com human-verification interstitial",
+      "accessed": "2026-09-25",
+      "claim": "Every report URL returned 'One Quick Check - I am a human and not a bot' (WebFetch HTTP 403). The agent did not click it. No WCL value in this ledger was read on 2026-09-25."
     }
   },
   "mode_matrix": {
-    "10N": {"health_guide": "32.6M", "health_historical": "26.1M", "heroic": false, "gongs_guide": 10, "gongs_effective": 10, "fiends": 0, "guide_phase_conflict": ["85s_ground_40s_air", "80s_ground_40s_air"]},
-    "10H": {"health_guide": "34.8M", "health_historical": "34.8M", "heroic": true, "gongs_spawned_historical_db": 10, "gongs_effective_guide": 7, "fiends": "heroic_only", "guide_phase_conflict": ["85s_ground_40s_air", "90s_ground_30s_air"]},
-    "25N": {"health_guide": "97.9M", "health_historical": "78.3M", "heroic": false, "gongs_guide": 10, "gongs_effective": 10, "fiends": 0, "guide_phase_conflict": ["85s_ground_40s_air", "80s_ground_40s_air"]},
-    "25H": {"health_guide": "103M", "health_historical": "103M", "heroic": true, "gongs_spawned_historical_db": 10, "gongs_effective_guide": 7, "fiends": "heroic_only", "guide_phase_conflict": ["85s_ground_40s_air", "90s_ground_30s_air"]}
+    "10N": {
+      "health_guide": "32.6M",
+      "health_historical": "26.1M",
+      "heroic": false,
+      "gongs_guide": 10,
+      "gongs_effective": 10,
+      "fiends": 0,
+      "guide_phase_conflict": [
+        "85s_ground_40s_air",
+        "80s_ground_40s_air"
+      ]
+    },
+    "10H": {
+      "health_guide": "34.8M",
+      "health_historical": "34.8M",
+      "heroic": true,
+      "gongs_spawned_historical_db": 10,
+      "gongs_effective_guide": 7,
+      "fiends": "heroic_only",
+      "guide_phase_conflict": [
+        "85s_ground_40s_air",
+        "90s_ground_30s_air"
+      ]
+    },
+    "25N": {
+      "health_guide": "97.9M",
+      "health_historical": "78.3M",
+      "heroic": false,
+      "gongs_guide": 10,
+      "gongs_effective": 10,
+      "fiends": 0,
+      "guide_phase_conflict": [
+        "85s_ground_40s_air",
+        "80s_ground_40s_air"
+      ]
+    },
+    "25H": {
+      "health_guide": "103M",
+      "health_historical": "103M",
+      "heroic": true,
+      "gongs_spawned_historical_db": 10,
+      "gongs_effective_guide": 7,
+      "fiends": "heroic_only",
+      "guide_phase_conflict": [
+        "85s_ground_40s_air",
+        "90s_ground_30s_air"
+      ]
+    }
   },
   "values": [
-    {"key": "atramedes_health_current_guide", "10N": "32.6M", "10H": "34.8M", "25N": "97.9M", "25H": "103M", "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "atramedes_health_historical_conflict", "10N": "26.1M", "10H": "34.8M", "25N": "78.3M", "25H": "103M", "source": "icy_original", "confidence": "historical_conflicting_normal_values"},
-    {"key": "sound_failure_threshold", "value": 100, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:alternate_power_max", "confidence": "two_current_guides_and_repository_confirmation"},
-    {"key": "silence_is_golden_world_state", "value": "set_when_any_player_reaches_50_sound", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_sound_bar", "confidence": "implementation_only_achievement_state"},
-    {"key": "gongs_spawned", "value": 10, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+historical_map669_spawn_sql", "confidence": "two_current_guides_and_repository_spawn_confirmation"},
-    {"key": "heroic_effective_gongs", "value": 7, "modes": ["10H", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp_destroy_shield", "confidence": "two_current_guides_and_repository_confirmation"},
-    {"key": "vertigo_effect", "value": "5s_stun_and_50_percent_damage_taken_increase_guide;local_manual_interrupt_and_aura", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:resonating_clash_ground", "confidence": "two_current_guides_and_repository_confirmation_but_spell_coefficients_dbc"},
-    {"key": "modulation_guide_damage_and_sound", "10N": "about_32k_shadow_and_plus10_sound", "10H": "about_50k_shadow_and_plus10_sound", "25N": "about_32k_shadow_and_plus10_sound", "25H": "about_50k_shadow_and_plus10_sound", "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "modulation_local_scaling", "value": "adds_target_alternate_power_percent_to_base_hit_damage", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_modulation", "confidence": "implementation_only_dbc_base_unknown"},
-    {"key": "searing_flame_damage", "10N": "20k_every2s_for6s", "10H": "40k_every2s_for6s", "25N": "20k_every2s_for6s", "25H": "40k_every2s_for6s", "source": "wowhead_442+icy_cata_classic", "confidence": "current_guide_examples"},
-    {"key": "searing_flame_fire_scaling", "value": "plus50_percent_fire_damage_each_tick;90k_normal_or180k_heroic_total_guide", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "roaring_flame_ground_patch", "value": "45s_duration;10k_normal_or20k_heroic_initial;8k_normal_or10k_heroic_periodic;plus5_or10_sound", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_30s"},
-    {"key": "sonic_breath_damage_and_sound", "10N": "20k_fire_per_second_plus20_sound", "10H": "30k_fire_per_second_plus30_sound", "25N": "20k_fire_per_second_plus20_sound", "25H": "30k_fire_per_second_plus30_sound", "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "roaring_flame_breath_damage_and_sound", "10N": "17k_fire_per_second_plus3_sound", "10H": "30k_fire_per_second_plus10_sound", "25N": "17k_fire_per_second_plus3_sound", "25H": "30k_fire_per_second_plus10_sound", "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_scaling"},
-    {"key": "sonar_bomb_damage_and_sound", "10N": "20k_arcane_within6yd_plus20_sound", "10H": "30k_arcane_within6yd_plus30_sound", "25N": "20k_arcane_within6yd_plus20_sound", "25H": "30k_arcane_within6yd_plus30_sound", "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "heroic_all_ability_delta", "value": "current_icy_says_all_listed_abilities_except_roaring_flame_breath_do_more_damage_and_sound_and_scale;sonar_bombs_fall_faster", "modes": ["10H", "25H"], "source": "icy_cata_classic+wowhead_442", "confidence": "two_current_strategy_sources_but_exact_coefficients_unresolved"},
-    {"key": "heroic_fiend_health_historical", "10H": "155k", "25H": "232k", "source": "icy_original", "confidence": "historical_guide_only"},
-    {"key": "heroic_fiend_sound", "value": "plus10_sound_per_Obnoxious_cast", "modes": ["10H", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp_spell_id", "confidence": "two_current_guides_and_repository_confirmation"}
+    {
+      "key": "atramedes_health_current_guide",
+      "10N": "32.6M",
+      "10H": "34.8M",
+      "25N": "97.9M",
+      "25H": "103M",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "atramedes_health_historical_conflict",
+      "10N": "26.1M",
+      "10H": "34.8M",
+      "25N": "78.3M",
+      "25H": "103M",
+      "source": "icy_original",
+      "confidence": "historical_conflicting_normal_values"
+    },
+    {
+      "key": "sound_failure_threshold",
+      "value": 100,
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+local_cpp:alternate_power_max",
+      "confidence": "two_current_guides_and_repository_confirmation"
+    },
+    {
+      "key": "silence_is_golden_world_state",
+      "value": "set_when_any_player_reaches_50_sound",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:spell_atramedes_sound_bar",
+      "confidence": "implementation_only_achievement_state"
+    },
+    {
+      "key": "gongs_spawned",
+      "value": 10,
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+historical_map669_spawn_sql",
+      "confidence": "two_current_guides_and_repository_spawn_confirmation"
+    },
+    {
+      "key": "heroic_effective_gongs",
+      "value": 7,
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+local_cpp_destroy_shield",
+      "confidence": "two_current_guides_and_repository_confirmation"
+    },
+    {
+      "key": "vertigo_effect",
+      "value": "5s_stun_and_50_percent_damage_taken_increase_guide;local_manual_interrupt_and_aura",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+local_cpp:resonating_clash_ground",
+      "confidence": "two_current_guides_and_repository_confirmation_but_spell_coefficients_dbc"
+    },
+    {
+      "key": "modulation_guide_damage_and_sound",
+      "10N": "about_32k_shadow_and_plus10_sound",
+      "10H": "about_50k_shadow_and_plus10_sound",
+      "25N": "about_32k_shadow_and_plus10_sound",
+      "25H": "about_50k_shadow_and_plus10_sound",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "modulation_local_scaling",
+      "value": "adds_target_alternate_power_percent_to_base_hit_damage",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:spell_atramedes_modulation",
+      "confidence": "implementation_only_dbc_base_unknown"
+    },
+    {
+      "key": "searing_flame_damage",
+      "10N": "20k_every2s_for6s",
+      "10H": "40k_every2s_for6s",
+      "25N": "20k_every2s_for6s",
+      "25H": "40k_every2s_for6s",
+      "source": "wowhead_442+icy_cata_classic",
+      "confidence": "current_guide_examples"
+    },
+    {
+      "key": "searing_flame_fire_scaling",
+      "value": "plus50_percent_fire_damage_each_tick;90k_normal_or180k_heroic_total_guide",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "roaring_flame_ground_patch",
+      "value": "45s_duration;10k_normal_or20k_heroic_initial;8k_normal_or10k_heroic_periodic;plus5_or10_sound",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported_conflicts_historical_30s"
+    },
+    {
+      "key": "sonic_breath_damage_and_sound",
+      "10N": "20k_fire_per_second_plus20_sound",
+      "10H": "30k_fire_per_second_plus30_sound",
+      "25N": "20k_fire_per_second_plus20_sound",
+      "25H": "30k_fire_per_second_plus30_sound",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "roaring_flame_breath_damage_and_sound",
+      "10N": "17k_fire_per_second_plus3_sound",
+      "10H": "30k_fire_per_second_plus10_sound",
+      "25N": "17k_fire_per_second_plus3_sound",
+      "25H": "30k_fire_per_second_plus10_sound",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported_conflicts_historical_scaling"
+    },
+    {
+      "key": "sonar_bomb_damage_and_sound",
+      "10N": "20k_arcane_within6yd_plus20_sound",
+      "10H": "30k_arcane_within6yd_plus30_sound",
+      "25N": "20k_arcane_within6yd_plus20_sound",
+      "25H": "30k_arcane_within6yd_plus30_sound",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "heroic_all_ability_delta",
+      "value": "current_icy_says_all_listed_abilities_except_roaring_flame_breath_do_more_damage_and_sound_and_scale;sonar_bombs_fall_faster",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_cata_classic+wowhead_442",
+      "confidence": "two_current_strategy_sources_but_exact_coefficients_unresolved"
+    },
+    {
+      "key": "heroic_fiend_health_historical",
+      "10H": "155k",
+      "25H": "232k",
+      "source": "icy_original",
+      "confidence": "historical_guide_only"
+    },
+    {
+      "key": "heroic_fiend_sound",
+      "value": "plus10_sound_per_Obnoxious_cast",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+local_cpp_spell_id",
+      "confidence": "two_current_guides_and_repository_confirmation"
+    }
   ],
   "timers": [
-    {"key": "ground_air_duration_current_wowhead", "value": "85s_ground_40s_air", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_approximation"},
-    {"key": "ground_air_duration_current_icy", "value": "90s_ground_30s_air", "modes": ["10N", "10H", "25N", "25H"], "source": "icy_cata_classic", "confidence": "current_guide_approximation_conflicts_wowhead"},
-    {"key": "ground_air_duration_historical_icy", "value": "80s_ground_40s_air", "modes": ["10N", "10H", "25N", "25H"], "source": "icy_original", "confidence": "historical_guide_only"},
-    {"key": "local_initial_ground_schedule", "value": "close_door5s;modulation13s;sonar_pulse14_5s;sonic_breath24s;searing_flame46s;liftoff91s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:JustEngagedWith", "confidence": "implementation_only"},
-    {"key": "local_ground_repeats", "value": "sonar_pulse11s;modulation_random22_to26s;sonic_breath_random42_to43s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
-    {"key": "local_liftoff_air", "value": "MoveTakeoff_to_point_then_land_event31s;movement_duration_unmeasured", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:MovementInform/UpdateAI", "confidence": "implementation_only"},
-    {"key": "local_after_landing_ground_schedule", "value": "reengage800ms;sonar14s;modulation13s;sonic_breath22s;searing_flame51s;liftoff93s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:MovementInform", "confidence": "implementation_only"},
-    {"key": "modulation_after_searing", "value": "rescheduled6s_after_searing_cast", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:EVENT_SEARING_FLAME", "confidence": "implementation_only_patch_comment_4_1"},
-    {"key": "sonar_pulse_local_summon_pipeline", "value": "periodic_trigger400ms_after_summon;movement800ms_later;despawn_at_spline_duration", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:JustSummoned", "confidence": "implementation_only"},
-    {"key": "local_heroic_nefarius", "value": "intro10s;first_fiend30s;repeat35s;reset_at_liftoff;restart30s_after_landing", "modes": ["10H", "25H"], "source": "local_cpp:npc_atramedes_lord_victor_nefarius", "confidence": "implementation_only"},
-    {"key": "heroic_fiend_guide", "value": "current_wowhead_every30s_ground;historical_icy_twice_per_ground_sometimes1_or3", "modes": ["10H", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_guide_conflict"},
-    {"key": "local_fiend_target_pipeline", "value": "focus1s;chase1s;obnoxious1s_after_attachment_then_repeat2_5s", "modes": ["10H", "25H"], "source": "local_cpp:npc_atramedes_obnoxious_fiend", "confidence": "implementation_only"},
-    {"key": "fiend_obnoxious_guide_period", "value": "plus10_sound_every1_5s_current_wowhead", "modes": ["10H", "25H"], "source": "wowhead_442", "confidence": "current_guide_conflicts_local2_5s"},
-    {"key": "air_gong_redirection_local", "value": "interrupt_and_move_to_shield_after2s;track_clicker_after_arrival;nearest100yd_fallback", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ReverberatingFlameAI", "confidence": "implementation_only"}
+    {
+      "key": "ground_air_duration_current_wowhead",
+      "value": "85s_ground_40s_air",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_approximation"
+    },
+    {
+      "key": "ground_air_duration_current_icy",
+      "value": "90s_ground_30s_air",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "icy_cata_classic",
+      "confidence": "current_guide_approximation_conflicts_wowhead"
+    },
+    {
+      "key": "ground_air_duration_historical_icy",
+      "value": "80s_ground_40s_air",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "icy_original",
+      "confidence": "historical_guide_only"
+    },
+    {
+      "key": "local_initial_ground_schedule",
+      "value": "close_door5s;modulation13s;sonar_pulse14_5s;sonic_breath24s;searing_flame46s;liftoff91s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:JustEngagedWith",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "local_ground_repeats",
+      "value": "sonar_pulse11s;modulation_random22_to26s;sonic_breath_random42_to43s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "local_liftoff_air",
+      "value": "MoveTakeoff_to_point_then_land_event31s;movement_duration_unmeasured",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:MovementInform/UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "local_after_landing_ground_schedule",
+      "value": "reengage800ms;sonar14s;modulation13s;sonic_breath22s;searing_flame51s;liftoff93s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:MovementInform",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "modulation_after_searing",
+      "value": "rescheduled6s_after_searing_cast",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:EVENT_SEARING_FLAME",
+      "confidence": "implementation_only_patch_comment_4_1"
+    },
+    {
+      "key": "sonar_pulse_local_summon_pipeline",
+      "value": "periodic_trigger400ms_after_summon;movement800ms_later;despawn_at_spline_duration",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:JustSummoned",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "local_heroic_nefarius",
+      "value": "intro10s;first_fiend30s;repeat35s;reset_at_liftoff;restart30s_after_landing",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp:npc_atramedes_lord_victor_nefarius",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "heroic_fiend_guide",
+      "value": "current_wowhead_every30s_ground;historical_icy_twice_per_ground_sometimes1_or3",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "material_guide_conflict"
+    },
+    {
+      "key": "local_fiend_target_pipeline",
+      "value": "focus1s;chase1s;obnoxious1s_after_attachment_then_repeat2_5s",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp:npc_atramedes_obnoxious_fiend",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "fiend_obnoxious_guide_period",
+      "value": "plus10_sound_every1_5s_current_wowhead",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_conflicts_local2_5s"
+    },
+    {
+      "key": "air_gong_redirection_local",
+      "value": "interrupt_and_move_to_shield_after2s;track_clicker_after_arrival;nearest100yd_fallback",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:ReverberatingFlameAI",
+      "confidence": "implementation_only"
+    }
   ],
   "targeting_and_scaling": [
-    {"key": "sonic_breath_local_target", "target": "area_targets_excluding_current_victim_then_random_one", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_sonic_breath", "confidence": "implementation_only"},
-    {"key": "sonic_breath_guide_target_conflict", "target": "current_wowhead_random;historical_icy_highest_sound_and_not_tank", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_unresolved"},
-    {"key": "roaring_flame_breath_local_tracking", "target": "tracking_flames_follow_summoner;air_gong_redirects_to_shield_then_clicker", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ReverberatingFlameAI+resonating_clash_air", "confidence": "repository_confirmation"},
-    {"key": "roaring_flame_breath_guide_target_conflict", "target": "current_wowhead_random_player;historical_icy_highest_sound", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_unresolved"},
-    {"key": "sonar_pulse_guide_target", "target": "four_disks_toward_random_raid_locations", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "two_strategy_sources_but_historical_target_priority_uncertain"},
-    {"key": "sonar_bomb_guide_target_counts", "10N": "3_locations", "10H": "6_locations", "25N": "3_locations", "25H": "6_locations", "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_5_10n_8_25n"},
-    {"key": "sonar_bomb_historical_target_counts", "10N": "5_locations", "10H": "5_locations", "25N": "8_locations", "25H": "8_locations", "source": "icy_original", "confidence": "historical_guide_only"},
-    {"key": "destroy_shield_local_target", "target": "random_selectable_shield_in_spell_area;not_selectable_shields_removed", "modes": ["10H", "25H"], "source": "local_cpp:spell_atramedes_destroy_shield", "confidence": "implementation_only_area_from_dbc"},
-    {"key": "fiend_local_target", "target": "random_eligible_player_within100yd_excluding_Pestered", "modes": ["10H", "25H"], "source": "local_cpp:npc_atramedes_obnoxious_fiend", "confidence": "implementation_only"},
-    {"key": "modulation_local_damage_scaling", "target": "each_hit_damage_plus_target_alternate_power_percent", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_modulation", "confidence": "implementation_only"},
-    {"key": "heroic_scaling_delta", "target": "current_icy_reports_higher_damage_and_sound_for_all_listed_abilities_except_roaring_flame_breath;wowhead_examples_indicate_higher_mode_values", "modes": ["10H", "25H"], "source": "icy_cata_classic+wowhead_442", "confidence": "two_current_sources_but_exact_coefficients_unresolved"}
+    {
+      "key": "sonic_breath_local_target",
+      "target": "area_targets_excluding_current_victim_then_random_one",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:spell_atramedes_sonic_breath",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "sonic_breath_guide_target_conflict",
+      "target": "current_wowhead_random;historical_icy_highest_sound_and_not_tank",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "material_conflict_unresolved"
+    },
+    {
+      "key": "roaring_flame_breath_local_tracking",
+      "target": "tracking_flames_follow_summoner;air_gong_redirects_to_shield_then_clicker",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:ReverberatingFlameAI+resonating_clash_air",
+      "confidence": "repository_confirmation"
+    },
+    {
+      "key": "roaring_flame_breath_guide_target_conflict",
+      "target": "current_wowhead_random_player;historical_icy_highest_sound",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "material_conflict_unresolved"
+    },
+    {
+      "key": "sonar_pulse_guide_target",
+      "target": "four_disks_toward_random_raid_locations",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "two_strategy_sources_but_historical_target_priority_uncertain"
+    },
+    {
+      "key": "sonar_bomb_guide_target_counts",
+      "10N": "3_locations",
+      "10H": "6_locations",
+      "25N": "3_locations",
+      "25H": "6_locations",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported_conflicts_historical_5_10n_8_25n"
+    },
+    {
+      "key": "sonar_bomb_historical_target_counts",
+      "10N": "5_locations",
+      "10H": "5_locations",
+      "25N": "8_locations",
+      "25H": "8_locations",
+      "source": "icy_original",
+      "confidence": "historical_guide_only"
+    },
+    {
+      "key": "destroy_shield_local_target",
+      "target": "random_selectable_shield_in_spell_area;not_selectable_shields_removed",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp:spell_atramedes_destroy_shield",
+      "confidence": "implementation_only_area_from_dbc"
+    },
+    {
+      "key": "fiend_local_target",
+      "target": "random_eligible_player_within100yd_excluding_Pestered",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp:npc_atramedes_obnoxious_fiend",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "modulation_local_damage_scaling",
+      "target": "each_hit_damage_plus_target_alternate_power_percent",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:spell_atramedes_modulation",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "heroic_scaling_delta",
+      "target": "current_icy_reports_higher_damage_and_sound_for_all_listed_abilities_except_roaring_flame_breath;wowhead_examples_indicate_higher_mode_values",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_cata_classic+wowhead_442",
+      "confidence": "two_current_sources_but_exact_coefficients_unresolved"
+    }
   ],
   "phase_reset_credit": [
-    {"key": "reset", "behavior": "Reset calls _Reset and sets intro phase; custom noisy-player and shield GUID sets are not explicitly cleared", "source": "local_cpp:201-205,484-489", "confidence": "repository_fact_engine_reconstruction_unresolved"},
-    {"key": "engage", "behavior": "sends encounter engage, resets Silence is Golden world state, casts Devastation trigger and Sound Bar, schedules ground phase; Heroic summons Nefarius", "source": "local_cpp:207-225", "confidence": "repository_confirmation"},
-    {"key": "evade", "behavior": "despawn summons; disengage; set FAIL; remove player Nefarius vehicle aura; reopen door; despawn boss; instance respawns shields and boss after30s", "source": "local_cpp:227-237+instance_blackwing_descent.cpp:262-267,458-461", "confidence": "repository_confirmation"},
-    {"key": "death", "behavior": "_JustDied; disengage; remove vehicle aura; reopen door; death talk; instance DONE despawns shield group and notifies generic Nefarius", "source": "local_cpp:239-247+instance_blackwing_descent.cpp:268-274", "confidence": "repository_confirmation_with_base_class_credit"},
-    {"key": "boss_state_mapping", "behavior": "creature41442 maps to DATA_ATRAMEDES=3; loader invokes AddSC_boss_atramedes", "source": "blackwing_descent.h+instance_blackwing_descent.cpp+eastern_kingdoms_script_loader.cpp", "confidence": "repository_confirmation"},
-    {"key": "shield_spawn_and_persistence", "behavior": "instance Create and save-load spawn shield group400; historical map669 SQL lists ten shield creature spawns; used shields become not selectable and are despawned with encounter group", "source": "instance_blackwing_descent.cpp+historical_spawn_sql+local_cpp:npc_shield", "confidence": "repository_confirmation_historical_db"},
-    {"key": "intro_state", "behavior": "instance stores Atramedes intro state; after dwarf groups die it makes the Ancient Bell selectable and can summon/respawn Atramedes", "source": "instance_blackwing_descent.cpp:310-346,451-500", "confidence": "repository_confirmation"}
+    {
+      "key": "reset",
+      "behavior": "Reset calls _Reset and sets intro phase; custom noisy-player and shield GUID sets are not explicitly cleared",
+      "source": "local_cpp:201-205,484-489",
+      "confidence": "repository_fact_engine_reconstruction_unresolved"
+    },
+    {
+      "key": "engage",
+      "behavior": "sends encounter engage, resets Silence is Golden world state, casts Devastation trigger and Sound Bar, schedules ground phase; Heroic summons Nefarius",
+      "source": "local_cpp:207-225",
+      "confidence": "repository_confirmation"
+    },
+    {
+      "key": "evade",
+      "behavior": "despawn summons; disengage; set FAIL; remove player Nefarius vehicle aura; reopen door; despawn boss; instance respawns shields and boss after30s",
+      "source": "local_cpp:227-237+instance_blackwing_descent.cpp:262-267,458-461",
+      "confidence": "repository_confirmation"
+    },
+    {
+      "key": "death",
+      "behavior": "_JustDied; disengage; remove vehicle aura; reopen door; death talk; instance DONE despawns shield group and notifies generic Nefarius",
+      "source": "local_cpp:239-247+instance_blackwing_descent.cpp:268-274",
+      "confidence": "repository_confirmation_with_base_class_credit"
+    },
+    {
+      "key": "boss_state_mapping",
+      "behavior": "creature41442 maps to DATA_ATRAMEDES=3; loader invokes AddSC_boss_atramedes",
+      "source": "blackwing_descent.h+instance_blackwing_descent.cpp+eastern_kingdoms_script_loader.cpp",
+      "confidence": "repository_confirmation"
+    },
+    {
+      "key": "shield_spawn_and_persistence",
+      "behavior": "instance Create and save-load spawn shield group400; historical map669 SQL lists ten shield creature spawns; used shields become not selectable and are despawned with encounter group",
+      "source": "instance_blackwing_descent.cpp+historical_spawn_sql+local_cpp:npc_shield",
+      "confidence": "repository_confirmation_historical_db"
+    },
+    {
+      "key": "intro_state",
+      "behavior": "instance stores Atramedes intro state; after dwarf groups die it makes the Ancient Bell selectable and can summon/respawn Atramedes",
+      "source": "instance_blackwing_descent.cpp:310-346,451-500",
+      "confidence": "repository_confirmation"
+    }
   ],
   "conflicts": [
-    {"key": "phase_duration", "wowhead_442": "85s_ground_40s_air", "icy_cata_classic": "90s_ground_30s_air", "icy_original": "80s_ground_40s_air", "local_cpp": "91s_first_liftoff_31s_air_event_93s_later_liftoff_plus_movement", "resolution": "do_not_schedule_exact_client_phase_timestamp"},
-    {"key": "sonic_breath_cadence", "wowhead_442": "every20s", "icy_cata_classic": "every40s", "icy_original": "twice_per_ground_phase", "local_cpp": "24s_then_random42_to43s;after_landing22s", "resolution": "local_baseline_only_until_live_validation"},
-    {"key": "sonic_breath_target", "wowhead_442": "random_player", "icy_original": "highest_sound_not_tank", "local_cpp": "random_eligible_excluding_victim", "resolution": "unresolved_4_4_2_target_rule"},
-    {"key": "sonar_bomb_counts", "wowhead_442": "3_normal_6_heroic", "icy_original": "5_10_player_8_25_player", "local_cpp": "trigger_only_no_count", "resolution": "unresolved_dbc_mode_target_count"},
-    {"key": "fiend_cadence", "wowhead_442": "every30s_ground", "icy_original": "twice_per_ground_sometimes1_or3", "local_cpp": "30s_then35s_and30s_restart_after_landing", "resolution": "unresolved_heroic_spawn_schedule"},
-    {"key": "fiend_obnoxious_period", "wowhead_442": "1_5s", "local_cpp": "2_5s", "resolution": "unresolved_spell_aura_period"},
-    {"key": "ability_scaling", "icy_cata_classic": "all_listed_except_roaring_flame_breath_higher_and_faster_bombs", "wowhead_442": "individual_higher_damage_examples", "icy_original": "sound_and_damage_scaling_descriptions_differ", "resolution": "unresolved_dbc_coefficients"},
-    {"key": "normal_health", "wowhead_442": "32_6M_10N_97_9M_25N", "icy_original": "26_1M_10N_78_3M_25N", "resolution": "unresolved_build_hotfix_provenance"}
+    {
+      "key": "phase_duration",
+      "wowhead_442": "85s_ground_40s_air",
+      "icy_cata_classic": "90s_ground_30s_air",
+      "icy_original": "80s_ground_40s_air",
+      "local_cpp": "91s_first_liftoff_31s_air_event_93s_later_liftoff_plus_movement",
+      "resolution": "do_not_schedule_exact_client_phase_timestamp"
+    },
+    {
+      "key": "sonic_breath_cadence",
+      "wowhead_442": "every20s",
+      "icy_cata_classic": "every40s",
+      "icy_original": "twice_per_ground_phase",
+      "local_cpp": "24s_then_random42_to43s;after_landing22s",
+      "resolution": "local_baseline_only_until_live_validation"
+    },
+    {
+      "key": "sonic_breath_target",
+      "wowhead_442": "random_player",
+      "icy_original": "highest_sound_not_tank",
+      "local_cpp": "random_eligible_excluding_victim",
+      "resolution": "unresolved_4_4_2_target_rule"
+    },
+    {
+      "key": "sonar_bomb_counts",
+      "wowhead_442": "3_normal_6_heroic",
+      "icy_original": "5_10_player_8_25_player",
+      "local_cpp": "trigger_only_no_count",
+      "resolution": "unresolved_dbc_mode_target_count"
+    },
+    {
+      "key": "fiend_cadence",
+      "wowhead_442": "every30s_ground",
+      "icy_original": "twice_per_ground_sometimes1_or3",
+      "local_cpp": "30s_then35s_and30s_restart_after_landing",
+      "resolution": "unresolved_heroic_spawn_schedule"
+    },
+    {
+      "key": "fiend_obnoxious_period",
+      "wowhead_442": "1_5s",
+      "local_cpp": "2_5s",
+      "resolution": "unresolved_spell_aura_period"
+    },
+    {
+      "key": "ability_scaling",
+      "icy_cata_classic": "all_listed_except_roaring_flame_breath_higher_and_faster_bombs",
+      "wowhead_442": "individual_higher_damage_examples",
+      "icy_original": "sound_and_damage_scaling_descriptions_differ",
+      "resolution": "unresolved_dbc_coefficients"
+    },
+    {
+      "key": "normal_health",
+      "wowhead_442": "32_6M_10N_97_9M_25N",
+      "icy_original": "26_1M_10N_78_3M_25N",
+      "resolution": "unresolved_build_hotfix_provenance"
+    },
+    {
+      "key": "modulation_sound",
+      "wowhead_442": "plus10_sound_each",
+      "icy_cata_classic": "plus10_sound_each",
+      "icy_original": "adds_no_sound",
+      "client_442_and_dbc_434": "energize_only_in_heroic_rows",
+      "resolution": "client_rows_win_normal_no_sound"
+    },
+    {
+      "key": "addon_timer_bars",
+      "bigwigs_classic": "modulation16s;first_modulation11;first_sonar11_3;first_breath22;first_searing45;air36_from_takeoff;ground85",
+      "local_cpp": "modulation22_26;first13;sonar14_5;breath24;searing46;air31_after_liftoff_point;ground93",
+      "resolution": "unresolved_until_wcl_boss_cast_timeline"
+    },
+    {
+      "key": "sonar_bomb_count_10n",
+      "wowhead_442": "3",
+      "icy_original": "5",
+      "local_spellmgr": "5",
+      "resolution": "unresolved_wcl_count_per_3s_wave"
+    }
   ],
   "unresolved": [
-    "exact_442_client_build_and_hotfix_cutoff",
-    "live_ground_air_movement_and_event_timestamps_all_modes",
-    "exact_sound_gain_dbc_coefficients_and_target_radii",
-    "sonic_breath_random_vs_highest_sound_target_selection",
-    "roaring_flame_breath_initial_target_selection",
-    "sonar_bomb_target_count_by_mode",
-    "heroic_fiend_spawn_period_count_obnoxious_period_and_damage",
-    "ai_guid_reconstruction_reset_after_evade",
-    "whether_historical_custom_sql_pack_is_applied_to_current_database"
-  ]
+    {
+      "key": "wcl_10n_kill_reference_pending",
+      "status": "fidelity_blocked",
+      "evidence_gap": "No 10N kill page read (human-verification interstitial, 2026-09-25): per-spec DPS, cast timelines, boss casts."
+    },
+    {
+      "key": "boss_melee_damage_modifier_10n",
+      "status": "fidelity_blocked",
+      "evidence_gap": "DamageModifier of 41442 needs WCL melee U samples; native roll at modifier 1 is 4,553-6,764."
+    },
+    {
+      "key": "boss_health_10n",
+      "status": "conflict",
+      "evidence_gap": "Native 26.1M vs Wowhead 32.6M; needs WCL-derived max HP."
+    },
+    {
+      "key": "ground_air_phase_timestamps",
+      "status": "conflict",
+      "evidence_gap": "Native 91/31+travel/93 vs BigWigs 91/36/85 vs DBM 90/31.5/85."
+    },
+    {
+      "key": "modulation_repeat_interval",
+      "status": "conflict",
+      "evidence_gap": "Native 22-26 s vs BigWigs Classic 16 s vs Wowhead 15 s."
+    },
+    {
+      "key": "breath_initial_target_rule",
+      "status": "unresolved",
+      "evidence_gap": "Sonic Breath and Roaring Flame Breath: random (native, Wowhead) vs highest Sound (historical Icy Veins)."
+    },
+    {
+      "key": "sonar_bomb_count_by_mode",
+      "status": "conflict",
+      "evidence_gap": "10-player 5 (native, historical) vs 3 (Wowhead); heroic 6 vs 5."
+    },
+    {
+      "key": "breath_speed_scaling_with_sound",
+      "status": "unresolved",
+      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed."
+    },
+    {
+      "key": "heroic_fiend_and_shield_destruction_cadence",
+      "status": "unresolved",
+      "evidence_gap": "Fiend period/count and Obnoxious period (1.5 s guide vs 2.5 s native) need a heroic log."
+    }
+  ],
+  "repository_revision_audited": "a570b44369246a47c77b910398bdf0019e71c0ed",
+  "current_audit_scope": "Round-2 boss package AT: 4.4.2.59185 client spell rows and 4.3.4 DBC for every encounter spell, TDB 434.22011 bindings/spawns/templates, BigWigs and DBM modules, native script audit and fixes. WCL extraction blocked by a human-verification interstitial.",
+  "fidelity_target": {
+    "build": "4.4.2.59185",
+    "locale": "enUS",
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "authority": "experiments/configs/cata_raid_acceptance_policy_v1.json"
+  },
+  "client_spell_values": [
+    {
+      "key": "sound_bar",
+      "spells": [
+        89683,
+        88824
+      ],
+      "value": "89683 on Atramedes ticks every 1000 ms and applies 88824 to every enemy (radius 50,000): aura 346 ENABLE_ALT_POWER (UnitPowerBar 23, start 0, max 100) and a 1000 ms periodic dummy that the Noisy script reads",
+      "modes": "all",
+      "status": "resolved_client_and_native"
+    },
+    {
+      "key": "sonar_pulse_disk",
+      "spells": [
+        77672,
+        77673,
+        77674,
+        77675
+      ],
+      "value": "4 disks (SpellMgr MaxAffectedTargets 4), each summoned at Atramedes by one targeted player and moving toward it; 77675 every 500 ms: +3 Sound within 5 yd (10N/25N, no damage); heroic +7 Sound and 2,924 Shadow within 6 yd",
+      "modes": {
+        "10N": "+3 Sound/0.5 s, 5 yd, no damage",
+        "25N": "+3 Sound/0.5 s",
+        "10H": "+7 Sound, 2,924 Shadow",
+        "25H": "+7 Sound, 2,924 Shadow"
+      },
+      "status": "resolved_client"
+    },
+    {
+      "key": "modulation",
+      "spells": [
+        77612,
+        92451,
+        92452,
+        92453
+      ],
+      "value": "31,200-32,800 Shadow raid-wide (normal), no Sound in normal; heroic 48,750-51,250 and +10 Sound. spell_atramedes_modulation (+damage by Sound %) is bound only to the heroic IDs 92452/92453",
+      "modes": {
+        "10N": "31,200-32,800, +0 Sound",
+        "25N": "31,200-32,800, +0 Sound",
+        "10H": "48,750-51,250, +10 Sound",
+        "25H": "48,750-51,250, +10 Sound"
+      },
+      "status": "resolved_client_conflicts_current_guides_plus10_sound",
+      "conflict_note": "Wowhead 2024 and Icy Veins 2024 say +10 Sound per Modulation; the client rows give that only in heroic. Historical Icy Veins: 'Modulation adds no sound'."
+    },
+    {
+      "key": "sonic_breath",
+      "spells": [
+        78075,
+        78091,
+        78092,
+        78098,
+        78100
+      ],
+      "value": "Force-casts 78091 on one random non-victim (spell_atramedes_sonic_breath): the player summons Tracking Flames (10 s) that follow it; Atramedes casts 78098 (2 s cast, 6 s channel, 1 s period) at the flames; 78100 is a 15-degree cone of unlimited range: 19,500-20,500 Fire and +20 Sound per tick (heroic 29,250-30,750, +30)",
+      "modes": "all",
+      "status": "resolved_client"
+    },
+    {
+      "key": "searing_flame",
+      "spells": [
+        77840,
+        77966,
+        77967,
+        77974,
+        77982
+      ],
+      "value": "6 s channel (attr CHANNELED_2); SpellMgr correction makes effect 1 a 2000 ms periodic trigger of 77982: 19,500-20,500 Fire raid-wide and +50% Fire taken (8 s, stacking); heroic 10H 39,000-40,000 (+25%), 25H 39,506-40,493 (+50%). Effect 0 every 200 ms throws 77966 missiles within 35 yd that summon Roaring Flame patches 41807 (30 s). No Sound",
+      "modes": "all",
+      "status": "resolved_client_and_native"
+    },
+    {
+      "key": "roaring_flame_patch",
+      "spells": [
+        78018,
+        78023
+      ],
+      "value": "Patch NPCs 41807 and 42001 carry 78018: every 1 s 78023 within 3 yd = 9,750-10,250 Fire, 7,800-8,200/s for 4 s, +5 Sound",
+      "modes": "10N",
+      "status": "resolved_client"
+    },
+    {
+      "key": "roaring_flame_breath_air",
+      "spells": [
+        78207,
+        78213,
+        78221,
+        78230,
+        78353,
+        78217,
+        78218,
+        78431,
+        78272,
+        78555
+      ],
+      "value": "One random target summons the Reverberating Flame (41962) near itself; the flame tracks it (78092) and Atramedes channels 78221 on it: every 500 ms 78353 within 5 yd = 15,600-16,400 Fire and +3 Sound (heroic 29,250 and +10). 78354 every 250 ms drops a 42001 patch when none is within 2 yd. 78217 adds 78218 (+20% speed) every second, max 10 stacks. 78555 (spawned patches) 14,625-15,375 Fire and +10 Sound within 8 yd",
+      "modes": "all",
+      "status": "resolved_client_and_native"
+    },
+    {
+      "key": "sonar_bomb_air",
+      "spells": [
+        92519,
+        92526,
+        92530,
+        92557,
+        92553
+      ],
+      "value": "92519 (30 s) every 3000 ms: 92526 marks 5 random players (10-player, SpellMgr correction; 12 in 25-player), each summons marker 49623 (6 s) and Atramedes fires 92557 at it (delay value 2.5, heroic 2); 92553: 20,000 Arcane and +20 Sound within 6 yd (heroic 30,000, +30)",
+      "modes": "all",
+      "status": "resolved_client_count_conflict_open"
+    },
+    {
+      "key": "devastation",
+      "spells": [
+        78898,
+        78868
+      ],
+      "value": "78898 every 500 ms casts 78868 while a Noisy player exists: 24,375-25,625 Fire (heroic 29,250-30,750). Client implicit targets are area-enemy with 50,000 yd radius; guides say it hits the 100-Sound player. Staged condition restricts it to Noisy! holders",
+      "modes": "all",
+      "status": "client_resolved_target_restriction_staged"
+    },
+    {
+      "key": "shield_strike",
+      "spells": [
+        77709,
+        77611,
+        77717,
+        78864,
+        77782,
+        78168,
+        78945
+      ],
+      "value": "Spellclick casts 77709 from the shield: -100 Sound to everyone and removes Noisy!. Ground: shield casts 77611 at Atramedes, interrupting him (script) and applying Vertigo 77717 (5 s stun, +50% damage taken); on expiry he casts 78864 at the used shield (77782 instakill). Air: clicker casts 78168; the Reverberating Flame waits 2 s, goes to the shield, casts 78945 (instakill, 4 yd) and tracks the clicker",
+      "modes": "all",
+      "status": "resolved_client_and_native"
+    },
+    {
+      "key": "noisy",
+      "spells": [
+        78897
+      ],
+      "value": "Dummy aura 30 s at 100 Sound; refreshed every Sound Bar tick while at 100",
+      "modes": "all",
+      "status": "resolved_client"
+    }
+  ],
+  "native_audit": {
+    "revision": "a570b44369246a47c77b910398bdf0019e71c0ed",
+    "classification": "source_present_static_gaps (fixed in this package; live observation pending)",
+    "findings": [
+      {
+        "key": "module_size",
+        "observation": "boss_atramedes.cpp was 1,141 lines",
+        "fix": "split into boss_atramedes.cpp (AIs), boss_atramedes_spells.cpp (spell/aura scripts, AddSC_boss_atramedes_spells called from AddSC_boss_atramedes) and boss_atramedes_shared.h",
+        "status": "fixed"
+      },
+      {
+        "key": "sound_bar_persists_after_attempt",
+        "observation": "88824 never expires and a re-cast only refreshes it, so surviving players kept their Sound into the next pull and after the kill",
+        "fix": "remove 88824 and Noisy! from players on evade and death",
+        "status": "fixed"
+      },
+      {
+        "key": "intro_vertigo_resume",
+        "observation": "spell_atramedes_vertigo asked the instance for DATA_IS_IN_INTRO_PHASE (an Atramedes AI data id); the instance returns 0, so a shield struck during the intro flight left Atramedes passive in the air",
+        "fix": "ask the boss AI for DATA_IS_IN_INTRO_FLIGHT (intro phase and still REACT_PASSIVE)",
+        "status": "fixed"
+      },
+      {
+        "key": "landing_removes_wrong_aura",
+        "observation": "EVENT_LAND removed 77674 (the disk's own periodic) instead of the air Sonar Bomb trigger 92519",
+        "fix": "remove the difficulty spell of 92519",
+        "status": "fixed_low_impact_92519_lasts_30s"
+      },
+      {
+        "key": "redirected_breath_keeps_speed",
+        "observation": "After a gong the Reverberating Flame resumed tracking with all Building Speed stacks; both guides say the breath restarts at its initial speed",
+        "fix": "remove the difficulty spell of 78218 when the flame reaches the shield and re-tracks",
+        "status": "fixed_guide_supported"
+      },
+      {
+        "key": "devastation_targets_raid",
+        "observation": "78868 has no target restriction in the DB; with any Noisy player it hits the whole raid",
+        "fix": "staged conditions (sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql)",
+        "status": "staged"
+      },
+      {
+        "key": "mechanic_timer_publication",
+        "observation": "bots had no native time-to-Searing-Flame",
+        "fix": "GetTimeUntilEncounterMechanic for 77840, 78075, 86915 (ground phase only); blackboard publication is a coordinator patch request",
+        "status": "native_fixed_publication_pending"
+      },
+      {
+        "key": "reset_guid_sets",
+        "observation": "Reset does not clear noisy/shield GUIDs",
+        "resolution": "not a defect: evade despawns Atramedes and the instance summons a new creature (fresh AI) after 30 s",
+        "status": "resolved_no_change"
+      }
+    ]
+  },
+  "research_completion": [
+    {
+      "key": "sound_sources_and_amounts",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "status": "resolved",
+      "known": "client_spell_values: disks +3/0.5 s, Sonic Breath +20/s, fire patches +5, air breath +3/0.5 s, spawned patches +10, Sonar Bomb +20, Modulation +10 heroic only; shields -100.",
+      "next": "Observe Sound on live bots against these amounts.",
+      "source_refs": [
+        "client_442_spell_rows_20260925",
+        "dbc_434_execution",
+        "tdb_bindings_20260925"
+      ]
+    },
+    {
+      "key": "phase_timers",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Native 91 s first liftoff, 31 s after reaching the liftoff point, 93 s later; BigWigs Classic: 91 / 36 from take-off / 85; DBM 90 / 31.5 / 85.",
+      "next": "Take-off to landing and landing to take-off from a WCL 10N kill (Take Off Anim Kit 86915).",
+      "source_refs": [
+        "local_cpp",
+        "bigwigs_cataclysm_atramedes",
+        "dbm_cataclysm_atramedes"
+      ]
+    },
+    {
+      "key": "ground_ability_repeats",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "status": "conflict",
+      "known": "Native Modulation 22-26 s vs BigWigs 16 s; Sonic Breath 42-43 vs 42; Sonar 11 vs 11.3; first Modulation 13 vs 11; first Searing 46 vs 45; post-landing Searing 51 vs 47.",
+      "next": "Boss cast timeline of a WCL 10N kill; change native timers only with that evidence.",
+      "source_refs": [
+        "local_cpp",
+        "bigwigs_cataclysm_atramedes"
+      ]
+    },
+    {
+      "key": "shield_budget_and_gong_mechanics",
+      "modes": [
+        "10N",
+        "25N"
+      ],
+      "status": "resolved",
+      "known": "10 shields (spawn group 400); ground gong interrupts + Vertigo 5 s +50% taken; air gong redirects via the shield to the clicker; speed reset per two guides (native fixed).",
+      "next": "Observe shield count per kill live.",
+      "source_refs": [
+        "tdb_bindings_20260925",
+        "wowhead_442",
+        "icy_original"
+      ]
+    },
+    {
+      "key": "devastation_target",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Guides: the 100-Sound player; DB: whole raid.",
+      "next": "Apply the staged condition; a WCL death log with Devastation would confirm single-target.",
+      "source_refs": [
+        "wowhead_442",
+        "icy_cata_classic",
+        "tdb_bindings_20260925"
+      ]
+    },
+    {
+      "key": "boss_melee_damage_modifier_10n",
+      "modes": [
+        "10N"
+      ],
+      "status": "blocked",
+      "known": "Native roll at DamageModifier 1 (BaseAttackTime 1500, gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226): 4,553.3-6,764.2 per swing.",
+      "next": "WCL 10N Atramedes melee U samples and -10% done windows (see atramedes_wcl_dps_reference_v1.json extraction_plan).",
+      "source_refs": [
+        "tdb_bindings_20260925",
+        "wcl_human_verification_20260925"
+      ]
+    },
+    {
+      "key": "boss_health_10n",
+      "modes": [
+        "10N",
+        "25N"
+      ],
+      "status": "conflict",
+      "known": "Native 10N 26,111,168 (85,892 x 304), 25N 78,333,504, 10H 34,786,260, 25H 103,070,400 match historical Icy Veins; Wowhead 2024 says 32.6M / 97.9M normal.",
+      "next": "Derive 10N max HP from a WCL kill with derive_encounter_health.",
+      "source_refs": [
+        "tdb_bindings_20260925",
+        "wowhead_442",
+        "icy_original"
+      ]
+    },
+    {
+      "key": "wcl_dps_references",
+      "modes": [
+        "10N"
+      ],
+      "status": "blocked",
+      "known": "Extraction plan and candidate reports recorded.",
+      "next": "Pass-through of the WCL gate by the user, then extract per the plan.",
+      "source_refs": [
+        "wcl_human_verification_20260925"
+      ]
+    },
+    {
+      "key": "intro_spirits_and_bell",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "status": "resolved",
+      "known": "8 spirits in spawn groups 435 (left: Moltenfist, Anvilrage, Shadowforge, Corehammer) and 436 (right); a group that evades resets and respawns after 30 s; all 8 dead -> intro DONE, Column of Light, bell selectable after 4.5 s; bell GossipHello summons Atramedes (intro flight ~ 288 -> 249 -> 214 then lands at 214.5,-223.9 aggressive). Seeded shards: ReadSaveDataMore spawns shields and spirits when the intro byte is NUL. Route: an arrival/regroup node completes only out of combat, so the regroup must precede the bell (patch request to the scenario owner); intro_wait completes on grounded-aggressive-or-engaged and hands straight to the encounter node.",
+      "next": "Observe spirits, regroup, bell_ready, bell, intro_wait and encounter complete natively in the atramedes_c0 shard.",
+      "source_refs": [
+        "local_instance_and_loader",
+        "tdb_bindings_20260925"
+      ]
+    },
+    {
+      "key": "bot_strategy_obligations",
+      "modes": [
+        "10N"
+      ],
+      "status": "specified",
+      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor; Sonic Breath kiter circles away from the raid; air kiter runs the shield ring and self-gongs; spread 10 yd ring in the air; exits for beam/disks/bombs/fire/flame.",
+      "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100.",
+      "source_refs": [
+        "wowhead_442",
+        "icy_cata_classic",
+        "icy_original"
+      ]
+    }
+  ],
+  "research_completion_policy": "Reference readiness needs sourced values or explicit bounds, a native comparison and specified acceptance observations. WCL-dependent values (DPS references, cast timelines, melee calibration, 10N health) stay blocked until the report pages can be read.",
+  "acceptance_observations": [
+    "Native clear of Atramedes in the atramedes_c0 shard after the route kills 8 spirits and rings the bell (bell_ready, bell, intro_wait nodes complete natively).",
+    "Every Searing Flame channel ends by a Resonating Clash within 2 s of its start (Vertigo on Atramedes).",
+    "No player reaches 100 Sound (no Noisy! aura, no Devastation event).",
+    "Tracking Flames target never shares the beam with another player for more than one tick.",
+    "Shields used per kill <= 4 at 10N; each use records clicker, reason and phase.",
+    "Air phase: melee and tank do not path under the flying boss; Sonar Bomb hits per player <= 1 per air phase.",
+    "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442."
+  ],
+  "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
 }

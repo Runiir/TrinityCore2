@@ -33,167 +33,12 @@
 #include "TemporarySummon.h"
 #include "blackwing_descent.h"
 
+#include "boss_atramedes_shared.h"
+
+void AddSC_boss_atramedes_spells();
+
 namespace BlackwingDescent::Atramedes
 {
-enum Spells
-{
-    // Atramedes
-    SPELL_ROARING_BREATH                    = 81573,
-    SPELL_DEVASTATION_TRIGGER               = 78898,
-    SPELL_SOUND_BAR                         = 89683,
-    SPELL_DEVASTATION                       = 78868,
-    SPELL_SONAR_PULSE                       = 77672,
-    SPELL_MODULATION                        = 77612,
-    SPELL_SEARING_FLAME                     = 77840,
-    SPELL_SONIC_BREATH                      = 78075,
-    SPELL_SONIC_BREATH_CAST                 = 78098,
-    SPELL_TAKE_OFF_ANIM_KIT                 = 86915,
-    SPELL_SONAR_PULSE_TRIGGER               = 92519,
-    SPELL_SONAR_BOMB                        = 92557,
-    SPELL_ROARING_FLAME_BREATH              = 78207,
-
-    // Sonar Pulse
-    SPELL_SONAR_PULSE_PERIODIC_TRIGGER      = 77674,
-
-    // Tracking Flames & Reverberating Flame
-    SPELL_TRACKING                          = 78092,
-
-    // Reverberating Flame
-    SPELL_ROARING_FLAME_BREATH_REVERSE_CAST = 78230,
-    SPELL_ROARING_FLAME_SUMMON              = 78272,
-    SPELL_AGGRO_CREATOR                     = 63709,
-    SPELL_SONIC_FLAMES                      = 78945,
-
-    // Lord Victor Nefarius
-    SPELL_SUMMON_IMP                        = 92625,
-    SPELL_DESTROY_SHIELD                    = 92607,
-    SPELL_APPLY_VEHICLE_PERIODIC            = 92647,
-
-    // Obnoxious Imp
-    SPELL_PHASE_SHIFT                       = 92681,
-    SPELL_PESTERED                          = 92685,
-    SPELL_OBNOXIOUS                         = 92677,
-
-    // Player
-    SPELL_RESONATING_CLASH_GROUND           = 77611,
-    SPELL_RESONATING_CLASH_AIR              = 78168,
-    SPELL_RESONATING_CLASH_RESET_ENERGY     = 77709,
-    SPELL_NOISY                             = 78897
-};
-
-enum Texts
-{
-    // Atramedes
-    SAY_AGGRO                   = 0,
-    SAY_ANNOUNCE_SEARING_FLAME  = 1,
-    SAY_SEARING_FLAME           = 2,
-    SAY_FLIGHT_PHASE            = 3,
-    SAY_SLAY                    = 4,
-    SAY_DEATH                   = 5,
-
-    // Lord Victor Nefarius
-    SAY_INTRO                   = 0,
-    SAY_SUMMON_FIEND            = 1,
-    SAY_DESTROY_SHIELD          = 2
-};
-
-enum Sounds
-{
-    SOUND_ID_ATRAMEDES_VERTIGO = 20828
-};
-
-enum Events
-{
-    // Atramedes
-    EVENT_ROARING_BREATH = 1,
-    EVENT_CLOSE_DOOR,
-    EVENT_FLY_TO_INTRO_LAND_POSITION,
-    EVENT_SONAR_PULSE,
-    EVENT_MODULATION,
-    EVENT_SEARING_FLAME,
-    EVENT_SONIC_BREATH,
-    EVENT_LIFTOFF,
-    EVENT_LAND,
-    EVENT_LANDED,
-    EVENT_REENGAGE_PLAYERS,
-
-    // Lord Victor Nefarius
-    EVENT_SAY_INTRO,
-    EVENT_SUMMON_FIEND,
-
-    // Obnoxious Imp
-    EVENT_FOCUS_PLAYER,
-    EVENT_CHASE_PLAYER,
-    EVENT_OBNOXIOUS,
-
-    // Reverberating Flame
-    EVENT_MOVE_TO_DWARVEN_SHIELD,
-    EVENT_CHECK_TRACKING_TARGET
-};
-
-enum Actions
-{
-    // Atramedes
-    ACTION_START_INTRO              = 0,
-
-    // Lord Victor Nefarius
-    ACTION_DESTROY_SHIELD           = 0,
-    ACTION_STOP_SUMMONING_FIENDS    = 1,
-    ACTION_START_SUMMONING_FIENDS   = 2,
-
-    // Obnoxious Imp
-    ACTION_PLAYER_ENTERED           = 0,
-    ACTION_PLAYER_LEFT              = 1
-};
-
-enum MovePoints
-{
-    // Atramedes
-    POINT_NONE = 0,
-    POINT_CAST_ROARING_BREATH,
-    POINT_PREPARE_LAND_INTRO,
-    POINT_LAND_INTRO,
-    POINT_LIFTOFF,
-    POINT_LAND,
-
-    //Reverberating Flame
-    POINT_DWARVEN_SHIELD
-};
-
-enum Phases
-{
-    PHASE_INTRO     = 0,
-    PHASE_GROUND    = 1,
-    PHASE_AIR       = 2
-};
-
-enum Data
-{
-    // Setter
-    DATA_LAST_USED_ANCIENT_DWARVEN_SHIELD   = 0,
-    DATA_ADD_NOISY_PLAYER                   = 1,
-    DATA_REMOVE_NOISY_PLAYER                = 2,
-    DATA_LAST_SHIELD_USER                   = 3,
-
-
-    // Getter
-    DATA_IS_IN_AIR                          = 0,
-    DATA_HAS_NOISY_PLAYER                   = 1,
-    DATA_IS_IN_INTRO_PHASE                  = 2
-};
-
-enum Misc
-{
-    AI_ANIM_KIT_ID_OBNOXIOUS_IMP = 1162
-};
-
-Position const IntroFlightPosition1             = { 249.432f, -223.616f, 98.6447f };
-Position const IntroFlightPosition2             = { 214.531f, -223.918f, 93.4661f };
-Position const IntroLandingPosition             = { 214.531f, -223.918f, 74.7668f };
-Position const LiftoffPosition                  = { 130.655f, -226.637f, 113.21f  };
-Position const LandPosition                     = { 124.575f, -224.797f, 75.4534f };
-Position const LordVictorNefariusSummonPosition = { 92.91319f, -223.9931f, 96.8985f, 0.0f };
-
 struct boss_atramedes : public BossAI
 {
     boss_atramedes(Creature* creature) : BossAI(creature, DATA_ATRAMEDES) { }
@@ -231,6 +76,7 @@ struct boss_atramedes : public BossAI
         instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
         instance->SetBossState(DATA_ATRAMEDES, FAIL);
         instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_APPLY_VEHICLE_PERIODIC);
+        RemoveEncounterSoundFromPlayers();
         if (GameObject* door = instance->GetGameObject(DATA_ATHENAEUM_DOOR))
             door->SetGoState(GO_STATE_ACTIVE);
         me->DespawnOrUnsummon();
@@ -241,9 +87,52 @@ struct boss_atramedes : public BossAI
         _JustDied();
         instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
         instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_APPLY_VEHICLE_PERIODIC);
+        RemoveEncounterSoundFromPlayers();
         if (GameObject* door = instance->GetGameObject(DATA_ATHENAEUM_DOOR))
             door->SetGoState(GO_STATE_ACTIVE);
         Talk(SAY_DEATH);
+    }
+
+    // The player Sound Bar aura (88824) never expires and its re-application
+    // only refreshes it, so a surviving player carried the previous attempt's
+    // Sound into the next pull and kept the bar after the kill. Removing it
+    // clears the alternate power (HandleEnableAltPower); the next engage
+    // re-applies it from its start value. Noisy! goes with it.
+    void RemoveEncounterSoundFromPlayers()
+    {
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_SOUND_BAR_PLAYER);
+        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_NOISY);
+    }
+
+    // Read-only native schedule for bot observation (UnitAI contract). Only
+    // the ground phase schedules these; the air phase returns "none".
+    uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override
+    {
+        uint32 eventId = 0;
+        switch (spellId)
+        {
+            case SPELL_SEARING_FLAME:
+                eventId = EVENT_SEARING_FLAME;
+                break;
+            case SPELL_SONIC_BREATH:
+                eventId = EVENT_SONIC_BREATH;
+                break;
+            case SPELL_TAKE_OFF_ANIM_KIT:
+                eventId = EVENT_LIFTOFF;
+                break;
+            default:
+                return std::numeric_limits<uint32>::max();
+        }
+
+        if (!events.IsInPhase(PHASE_GROUND))
+            return std::numeric_limits<uint32>::max();
+
+        // An event held past its due time (UpdateAI returns while casting or
+        // stunned) is due now; GetTimeUntilEvent would wrap it to ~4.29e9.
+        uint32 const dueAt = events.GetNextEventTime(eventId);
+        if (dueAt && dueAt <= events.GetTimer())
+            return 0;
+        return events.GetTimeUntilEvent(eventId);
     }
 
     void KilledUnit(Unit* victim) override
@@ -309,6 +198,11 @@ struct boss_atramedes : public BossAI
                 return (uint8(!_noisyPlayerGUIDs.empty()));
             case DATA_IS_IN_INTRO_PHASE:
                 return (uint8(events.IsInPhase(PHASE_INTRO)));
+            case DATA_IS_IN_INTRO_FLIGHT:
+                // The instance summons the intro Atramedes passive and the
+                // intro landing makes him aggressive; a respawned (post-wipe)
+                // Atramedes is also in the intro phase but already grounded.
+                return (uint8(events.IsInPhase(PHASE_INTRO) && me->HasReactState(REACT_PASSIVE)));
         }
 
         return 0;
@@ -465,7 +359,10 @@ struct boss_atramedes : public BossAI
                             nefarius->AI()->DoAction(ACTION_STOP_SUMMONING_FIENDS);
                     break;
                 case EVENT_LAND:
-                    me->RemoveAurasDueToSpell(SPELL_SONAR_PULSE_PERIODIC_TRIGGER);
+                    // End the air Sonar Bomb trigger (92519 and its difficulty
+                    // variant). 77674 is the ground disk's own periodic aura
+                    // and was never on Atramedes.
+                    me->RemoveAurasDueToSpell(sSpellMgr->GetSpellIdForDifficulty(SPELL_SONAR_PULSE_TRIGGER, me));
                     me->InterruptNonMeleeSpells(true);
                     summons.DespawnEntry(NPC_REVERBERATING_FLAME);
                     me->GetMotionMaster()->MoveLand(POINT_LAND, LandPosition, me->GetSpeed(MOVE_RUN) * 3.f);
@@ -703,6 +600,11 @@ struct npc_atramedes_reverberating_flame : public NullCreatureAI
             case POINT_DWARVEN_SHIELD:
             {
                 DoCastSelf(SPELL_SONIC_FLAMES);
+                // The redirected breath restarts on the gong user at its
+                // initial speed (Wowhead Cata Classic guide, 2024-06-04;
+                // Icy Veins detailed guide, 2012-10-08). The Building Speed
+                // Trigger addon aura then stacks it up again from zero.
+                me->RemoveAurasDueToSpell(sSpellMgr->GetSpellIdForDifficulty(SPELL_BUILDING_SPEED_EFFECT, me));
                 Unit* target = ObjectAccessor::GetUnit(*me, _lastUsedDwarvenShieldUserGUID);
                 if (!target)
                     target = me->SelectNearestPlayer(100.f);
@@ -763,354 +665,6 @@ private:
         _events.ScheduleEvent(EVENT_CHECK_TRACKING_TARGET, 500ms);
     }
 };
-
-class spell_atramedes_modulation : public SpellScript
-{
-    void ChangeDamage(SpellEffIndex /*effIndex*/)
-    {
-        Unit* target = GetHitUnit();
-        if (!target)
-            return;
-
-        int32 damage = GetHitDamage();
-        AddPct(damage, target->GetPower(POWER_ALTERNATE_POWER));
-        SetHitDamage(damage);
-    }
-
-    void Register() override
-    {
-        OnEffectLaunchTarget.Register(&spell_atramedes_modulation::ChangeDamage, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
-    }
-};
-
-class spell_atramedes_roaring_flame_breath_reverse_cast : public SpellScript
-{
-    void HandleScriptEffect(SpellEffIndex effIndex)
-    {
-        if (Unit* caster = GetCaster())
-            GetHitUnit()->CastSpell(caster, GetSpellInfo()->Effects[effIndex].BasePoints);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_atramedes_roaring_flame_breath_reverse_cast::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_atramedes_roaring_flame_breath : public AuraScript
-{
-    void HandleTick(AuraEffect const* aurEff)
-    {
-        PreventDefaultAction();
-        GetTarget()->CastSpell(GetTarget(), GetSpellInfo()->Effects[EFFECT_0].TriggerSpell, aurEff);
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_atramedes_roaring_flame_breath::HandleTick, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-    }
-};
-
-class spell_atramedes_roaring_flame_breath_fire_periodic : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_ROARING_FLAME_SUMMON });
-    }
-
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            GetCaster()->CastSpell(GetCaster(), SPELL_ROARING_FLAME_SUMMON, true);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_atramedes_roaring_flame_breath_fire_periodic::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
-    }
-};
-
-class spell_atramedes_resonating_clash_ground : public SpellScript
-{
-    void HandleScriptEffect(SpellEffIndex effIndex)
-    {
-        Unit* caster = GetCaster();
-        Creature* target = GetHitCreature();
-        if (!target || !caster || !target->IsAIEnabled())
-            return;
-
-        target->AI()->SetGUID(caster->GetGUID(), DATA_LAST_USED_ANCIENT_DWARVEN_SHIELD);
-        target->CastSpell(target, GetSpellInfo()->Effects[effIndex].BasePoints, true);
-        target->PlayDirectSound(SOUND_ID_ATRAMEDES_VERTIGO);
-
-        // Atramedes has a interrupt mechanic immunity so we interrupt him manually
-        target->InterruptNonMeleeSpells(true);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_atramedes_resonating_clash_ground::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_atramedes_resonating_clash_air : public SpellScript
-{
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-    {
-        Unit* caster = GetCaster();
-        Creature* target = GetHitCreature();
-        if (!target || !caster || !target->IsAIEnabled())
-            return;
-
-        if (CreatureAI* ai = target->AI())
-        {
-            if (Unit* shield = GetSpell()->GetOriginalCaster())
-                ai->SetGUID(shield->GetGUID(), DATA_LAST_USED_ANCIENT_DWARVEN_SHIELD);
-
-            ai->SetGUID(caster->GetGUID(), DATA_LAST_SHIELD_USER);
-
-            target->PlayDirectSound(SOUND_ID_ATRAMEDES_VERTIGO);
-        }
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_atramedes_resonating_clash_air::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_atramedes_resonating_clash: public SpellScript
-{
-    void HandleScriptEffect(SpellEffIndex effIndex)
-    {
-        GetHitUnit()->RemoveAurasDueToSpell(GetSpellInfo()->Effects[effIndex].BasePoints);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_atramedes_resonating_clash::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_atramedes_sound_bar : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_NOISY });
-    }
-
-    void HandleNoisyAura(AuraEffect const* aurEff)
-    {
-        Unit* target = GetTarget();
-        InstanceScript* instance = target->GetInstanceScript();
-        if (!instance)
-            return;
-
-        if (target->GetPower(POWER_ALTERNATE_POWER) == target->GetMaxPower(POWER_ALTERNATE_POWER))
-        {
-            if (!target->HasAura(SPELL_NOISY))
-                if (Creature* atramedes = instance->GetCreature(DATA_ATRAMEDES))
-                    atramedes->AI()->SetGUID(target->GetGUID(), DATA_ADD_NOISY_PLAYER);
-
-            target->CastSpell(target, SPELL_NOISY, aurEff);
-        }
-        else if (target->GetPower(POWER_ALTERNATE_POWER) >= 50)
-            if (!instance->instance->GetWorldStateValue(WORLD_STATE_ID_SILENCE_IS_GOLDEN))
-                instance->DoUpdateWorldState(WORLD_STATE_ID_SILENCE_IS_GOLDEN, 1);
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_atramedes_sound_bar::HandleNoisyAura, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
-    }
-};
-
-class spell_atramedes_noisy : public AuraScript
-{
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (InstanceScript* instance = GetTarget()->GetInstanceScript())
-            if (Creature* atramedes = instance->GetCreature(DATA_ATRAMEDES))
-                atramedes->AI()->SetGUID(GetTarget()->GetGUID(), DATA_REMOVE_NOISY_PLAYER);
-    }
-
-    void Register() override
-    {
-        AfterEffectRemove.Register(&spell_atramedes_noisy::AfterRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_atramedes_vertigo : public AuraScript
-{
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        Unit* target = GetTarget();
-        target->CastSpell(target, GetSpellInfo()->Effects[EFFECT_1].BasePoints, true);
-
-        if (Creature* atramedes = target->ToCreature())
-        {
-            if (atramedes->IsAIEnabled())
-            {
-                if (InstanceScript* instance = atramedes->GetInstanceScript())
-                {
-                    if (instance->GetData(DATA_IS_IN_INTRO_PHASE))
-                        atramedes->GetMotionMaster()->MovePoint(POINT_PREPARE_LAND_INTRO, IntroFlightPosition2, false);
-
-                    if (Creature* nefarius = instance->GetCreature(DATA_LORD_VICTOR_NEFARIUS_ATRAMEDES))
-                        if (nefarius->IsAIEnabled())
-                            nefarius->AI()->DoAction(ACTION_DESTROY_SHIELD);
-                }
-            }
-        }
-    }
-
-    void Register() override
-    {
-        AfterEffectRemove.Register(&spell_atramedes_vertigo::AfterRemove, EFFECT_1, SPELL_AURA_MOD_STUN, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_atramedes_sonic_flames : public SpellScript
-{
-    void SetTarget(WorldObject*& target)
-    {
-        if (InstanceScript* instance = GetCaster()->GetInstanceScript())
-            if (Creature* atramedes = instance->GetCreature(DATA_ATRAMEDES))
-                if (Creature* shield = ObjectAccessor::GetCreature(*GetCaster(), atramedes->AI()->GetGUID(DATA_LAST_USED_ANCIENT_DWARVEN_SHIELD)))
-                    target = shield;
-    }
-
-    void Register() override
-    {
-        OnObjectTargetSelect.Register(&spell_atramedes_sonic_flames::SetTarget, EFFECT_0, TARGET_UNIT_NEARBY_ENTRY);
-    }
-};
-
-class spell_atramedes_sonic_flames_AuraScript : public AuraScript
-{
-    void HandlePeriodic(AuraEffect const* aurEff)
-    {
-        Unit* caster = GetCaster();
-        if (!caster)
-            return;
-
-        PreventDefaultAction();
-        caster->CastSpell(GetTarget(), GetSpellInfo()->Effects[EFFECT_0].TriggerSpell, aurEff);
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_atramedes_sonic_flames_AuraScript::HandlePeriodic, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-    }
-};
-
-class SonicFlamesGuidCheck
-{
-public:
-    SonicFlamesGuidCheck(ObjectGuid guid) : _guid(guid) { }
-
-    bool operator()(WorldObject* object)
-    {
-        return object->GetGUID() != _guid;
-    }
-private:
-    ObjectGuid _guid;
-};
-
-class spell_atramedes_devastation_trigger : public AuraScript
-{
-    void HandlePeriodic(AuraEffect const* /*aurEff*/)
-    {
-        if (Creature* target = GetTarget()->ToCreature())
-            if (target->IsAIEnabled())
-                if (!target->AI()->GetData(DATA_HAS_NOISY_PLAYER))
-                    PreventDefaultAction();
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_atramedes_devastation_trigger::HandlePeriodic, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-    }
-};
-
-class spell_atramedes_sonic_breath : public SpellScript
-{
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        targets.remove_if(Trinity::Predicates::IsVictimOf(GetCaster()));
-
-        if (targets.size() > 1)
-            Trinity::Containers::RandomResize(targets, 1);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_atramedes_sonic_breath::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-    }
-};
-
-class spell_atramedes_destroy_shield : public SpellScript
-{
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        targets.remove_if([](WorldObject const* obj)
-        {
-            return obj->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-        });
-
-        if (targets.size() > 1)
-            Trinity::Containers::RandomResize(targets, 1);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_atramedes_destroy_shield::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
-    }
-};
-
-class spell_atramedes_pestered : public AuraScript
-{
-    void AfterApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Unit* caster = GetCaster())
-            if (Creature* creature = caster->ToCreature())
-                if (creature->IsAIEnabled())
-                    creature->AI()->DoAction(ACTION_PLAYER_ENTERED);
-    }
-
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (Unit* caster = GetCaster())
-            if (Creature* creature = caster->ToCreature())
-                if (creature->IsAIEnabled())
-                    creature->AI()->DoAction(ACTION_PLAYER_LEFT);
-    }
-
-    void Register() override
-    {
-        AfterEffectApply.Register(&spell_atramedes_pestered::AfterApply, EFFECT_0, SPELL_AURA_CONTROL_VEHICLE, AURA_EFFECT_HANDLE_REAL);
-        AfterEffectRemove.Register(&spell_atramedes_pestered::AfterRemove, EFFECT_0, SPELL_AURA_CONTROL_VEHICLE, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_atramedes_apply_vehicle_periodic : public AuraScript
-{
-    void AfterApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        GetTarget()->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_PLAYER_VEHICLE);
-    }
-
-    void Register() override
-    {
-        AfterEffectApply.Register(&spell_atramedes_apply_vehicle_periodic::AfterApply, EFFECT_0, SPELL_AURA_SET_VEHICLE_ID, AURA_EFFECT_HANDLE_REAL);
-    }
-};
 }
 
 void AddSC_boss_atramedes()
@@ -1122,20 +676,5 @@ void AddSC_boss_atramedes()
     RegisterBlackwingDescentCreatureAI(npc_atramedes_lord_victor_nefarius);
     RegisterBlackwingDescentCreatureAI(npc_atramedes_obnoxious_fiend);
     RegisterBlackwingDescentCreatureAI(npc_atramedes_reverberating_flame);
-    RegisterSpellScript(spell_atramedes_modulation);
-    RegisterSpellScript(spell_atramedes_roaring_flame_breath_reverse_cast);
-    RegisterSpellScript(spell_atramedes_roaring_flame_breath);
-    RegisterSpellScript(spell_atramedes_roaring_flame_breath_fire_periodic);
-    RegisterSpellScript(spell_atramedes_resonating_clash_ground);
-    RegisterSpellScript(spell_atramedes_resonating_clash_air);
-    RegisterSpellScript(spell_atramedes_resonating_clash);
-    RegisterSpellScript(spell_atramedes_sound_bar);
-    RegisterSpellScript(spell_atramedes_noisy);
-    RegisterSpellScript(spell_atramedes_vertigo);
-    RegisterSpellAndAuraScriptPair(spell_atramedes_sonic_flames, spell_atramedes_sonic_flames_AuraScript);
-    RegisterSpellScript(spell_atramedes_devastation_trigger);
-    RegisterSpellScript(spell_atramedes_sonic_breath);
-    RegisterSpellScript(spell_atramedes_destroy_shield);
-    RegisterSpellScript(spell_atramedes_pestered);
-    RegisterSpellScript(spell_atramedes_apply_vehicle_periodic);
+    AddSC_boss_atramedes_spells();
 }

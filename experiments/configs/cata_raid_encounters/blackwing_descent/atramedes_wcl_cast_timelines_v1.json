@@ -1,0 +1,21 @@
+{
+  "schema": "atramedes_wcl_cast_timelines_v1",
+  "encounter": "atramedes",
+  "mode": "10N",
+  "status": "pending_extraction",
+  "status_reason": "Blocked with the DPS reference by the classic.warcraftlogs.com human-verification interstitial (2026-09-25). No report was read.",
+  "reference_id": null,
+  "url": null,
+  "duration_sec": null,
+  "target_scope": "Atramedes",
+  "source_note": "When extracted: completed Cast rows from the matched fight's Casts > Events view per DPS actor (Begin Cast rows excluded), same shape as magmaw_wcl_cast_timelines_v1.json (actor_id, class_spec, observed_dps, source_id, source_name, casts[{ability, t, target}]).",
+  "boss_timeline_wanted": [
+    "Modulation 77612 cast times (native repeat 22-26 s vs BigWigs 16 s)",
+    "Sonar Pulse 77672 cast times (native 11 s)",
+    "Sonic Breath 78075 cast times and Tracking 78092 targets with their Sound",
+    "Searing Flame 77840 start and the Resonating Clash 77611 that interrupts it",
+    "Take Off Anim Kit 86915 and the first ground cast after landing (air duration)",
+    "Roaring Flame Breath target changes (Tracking 78092 in the air) and Resonating Clash 78168"
+  ],
+  "actors": []
+}
