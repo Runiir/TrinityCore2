@@ -510,9 +510,9 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
 2. Shared dispatch files, applied in this order by one owner. Each patch's handoff
    names its merge points. Never use `patch -F3`: it silently misplaces hunks.
    - Atramedes P1-P6 (clean on HEAD).
-   - The Chimaeron dispatch patch with `patch -p1`. `UpdateContext.h` takes fuzz 1.
-     Hand-merge `EncounterBlackboard.cpp`: both constant blocks stay, and the
-     Chimaeron timer call goes after the Atramedes call.
+   - The Chimaeron dispatch patch with `patch -p1`, leaving out the blackboard file.
+     `UpdateContext.h` takes fuzz 1. For `EncounterBlackboard.cpp`, apply
+     `chimaeron_encounter_blackboard_after_atramedes.patch`, which applies cleanly.
    - Omnotron right after Chimaeron: run
      `.git/round2_patches/omnotron/apply_omnotron_dispatch.py <tree>`. It anchors
      after Chimaeron's declarations and route observation. `KernelCandidates.cpp`
@@ -520,8 +520,9 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
    - Nefarian R1-R5 and W1 (R3 brings `KernelCandidates.cpp` to 915; Nefarian may move
      its block into its own TU).
    - M's MP1 and MP2 (MP2 carries the Bloodlust owner fix).
-   - Maloriak's dispatch patch. Hand-merge the `BotWorldPopulationMgr.h` declaration,
-     the candidates call site and the timer function (about 807 lines after).
+   - Maloriak's `maloriak_dispatch.patch` applies at `-F0` last, with no hand merge.
+     Then apply `maloriak_dispatch_dead_code_removal.after_round2_stack.patch`
+     (`KernelCandidates.cpp` goes to 809 lines).
    - Never stage an intermediate tree. Applying Nefarian R3 before Omnotron's
      extraction takes `KernelCandidates.cpp` to 1,020 lines, which the module-size
      hook rejects. Land the whole merge in one commit.
@@ -549,6 +550,19 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
    `program ingest`, `program assess`).
 9. Done: the AGENTS.md routing and the `development_graph.md` note landed in
    d335b6a506, after R's approval.
+
+## Round 3 candidates (from the round 2 reviews)
+
+- **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
+  descent (StepOff, Fall, Land). Phase 2 fails typed (`pillar_ascent_unsupported`)
+  until these exist.
+- **Maloriak:** melee hold near a sphere parked by the boss (35-41% uptime in replay).
+  The main tank should drag Maloriak at least 6 yd away from it.
+- **Shared code:** one table-driven kill-credit observer (replacing the Maloriak,
+  Omnotron and Chimaeron copies, with Magmaw's strings kept byte-identical), one
+  offense-suppression helper, and the arbitration replay's older Magmaw assertions.
+- **Evidence:** WCL references, cast timelines and melee samples for every boss once
+  the site's human check is passed. Damage fidelity stays open until then.
 
 ## Later rounds
 
