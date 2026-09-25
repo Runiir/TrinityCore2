@@ -52,11 +52,19 @@ constexpr std::uint32_t ApproachFollowUpMs = 100;
 constexpr std::uint64_t ApproachBoardLatencyMs = 250;
 // A platform is stationary while its origin stays within this of its height.
 constexpr float StationaryLevelToleranceYards = 0.75f;
-// Body sweep of a straight walk: line-of-sight rays along the centre line
-// and both sides at the collision radius, at heights from the knee up to
-// 0.9 of the collision height at most this far apart.
+// Body sweep of a straight walk: line-of-sight rays along the centre line,
+// at half and at the full collision radius on both sides, at heights from
+// the knee up to 0.9 of the collision height at most this far apart. It is a
+// sampled sweep: an obstacle thinner than the ray spacing (0.35 yd upright,
+// half the collision radius, about 0.19 yd, sideways) could pass between
+// rays; walls, rails, bars and posts that stop a player cannot. Below the
+// knee the floor samples (within the floor tolerance) own the clearance.
 constexpr float BodySweepFirstLiftYards = 0.5f;
 constexpr float BodySweepLiftStepYards = 0.35f;
+constexpr float BodySweepSideFractions[] = { 0.0f, 0.5f, -0.5f, 1.0f, -1.0f };
+// A member neither aboard nor in flight when a completion override holds
+// gets this long to start before the node fails typed.
+constexpr std::uint64_t ApproachHandoverGraceMs = 2000;
 // A walk or step in flight stays inside this corridor around its declared
 // line (the approach start tolerance plus one floor sample).
 constexpr float ApproachCorridorYards = ApproachStartToleranceYards + SurfaceSampleStepYards;

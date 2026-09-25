@@ -633,6 +633,9 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
             return ParseError::Invalid("completion_override_kind_unsupported");
         if (out.CompletionOverride.TimeoutMs)
             return ParseError::Invalid("completion_override_timeout_unsupported");
+        // It hands over boarded members; a ride to an exit is never cut short.
+        if (out.HasExit())
+            return ParseError::Invalid("completion_override_with_exit");
     }
     out.Declared = true;
     return {};

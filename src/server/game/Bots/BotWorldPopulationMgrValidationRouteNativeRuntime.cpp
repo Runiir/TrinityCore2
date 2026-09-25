@@ -318,44 +318,41 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
         "native_route_interaction_submitted", std::move(observe));
 }
 
-// Ledge drops start together: every living member is in the route instance
-// and at the approach start, already past it (dropping, landed) or aboard.
-bool CohortAtApproachStart(Input const& input, NodeRuntime const& runtime,
-    GameObject const* transport, ApproachContract const& approach, float tolerance)
+// Every loaded cohort member as the node-level approach rules see it: the
+// ledge-drop barrier, the completion override's handover and the typed
+// timeout all read the same views.
+std::vector<ApproachMemberView> ApproachMemberViews(Input const& input,
+    NodeRuntime const& runtime, GameObject const* transport, TransportContract const& contract)
 {
+    ApproachContract const& approach = contract.Approach;
+    float const startTolerance =
+        std::min(contract.ArrivalToleranceYards, ApproachStartToleranceYards);
+    std::vector<ApproachMemberView> views;
     for (MemberInput const& member : input.Members)
     {
-        if (!member.Bot || !member.Bot->IsAlive())
+        Player* bot = member.Bot;
+        if (!bot)
             continue;
-        if (!member.OnRouteInstance || !member.Bot->IsInWorld())
-            return false;
-        if (Facts::OnTransport(member.Bot, transport))
-            continue;
-        auto const state = runtime.TransportMembers.find(member.Bot->GetGUID().GetRawValue());
-        if (state != runtime.TransportMembers.end() && state->second.Approach != ApproachPhase::Idle)
-            continue;
-        if (member.Bot->GetExactDist(approach.StartPoint.X, approach.StartPoint.Y,
-                approach.StartPoint.Z) > tolerance)
-            return false;
+        ApproachMemberView view;
+        view.Guid = bot->GetGUID().GetRawValue();
+        view.Alive = bot->IsAlive();
+        view.OnRouteInstance = member.OnRouteInstance && bot->IsInWorld();
+        view.Aboard = Facts::OnTransport(bot, transport);
+        auto const state = runtime.TransportMembers.find(view.Guid);
+        if (state != runtime.TransportMembers.end())
+            view.Phase = state->second.Approach;
+        view.Falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);
+        view.AtStart = approach.StartPoint.Valid && bot->GetExactDist(approach.StartPoint.X,
+            approach.StartPoint.Y, approach.StartPoint.Z) <= startTolerance;
+        view.FallMarginOk = true;
+        if (approach.Mode == ApproachMode::LedgeDrop && bot->GetMaxHealth())
+            view.FallMarginOk = float(bot->GetHealth()) / float(bot->GetMaxHealth())
+                    - BotTransportSurfaceMovement::PredictFallDamagePct(bot,
+                        bot->GetPositionZ() - approach.LandingZ)
+                >= approach.MinHealthAfterFallPct;
+        views.push_back(view);
     }
-    return true;
-}
-
-// A member still walking or stepping onto the platform, falling, or landed
-// but not yet boarded: the node must not hand it over mid-motion.
-bool ApproachStillInFlight(Input const& input, NodeRuntime const& runtime)
-{
-    for (MemberInput const& member : input.Members)
-    {
-        if (!member.Bot || !member.Bot->IsAlive() || !member.OnRouteInstance)
-            continue;
-        if (BotValidationRouteBoardingAction::NativeFallInProgress(member.Bot))
-            return true;
-        auto const state = runtime.TransportMembers.find(member.Bot->GetGUID().GetRawValue());
-        if (state != runtime.TransportMembers.end() && ApproachInFlight(state->second))
-            return true;
-    }
-    return false;
+    return views;
 }
 
 void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& node,
@@ -442,8 +439,8 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         observation.OffApproachCorridor = !OnApproachCorridor(approach.StartPoint,
             approach.StepOffPoint, bot->GetPositionX(), bot->GetPositionY(), ApproachCorridorYards,
             MaxStepOffYards + ApproachStartToleranceYards);
-        observation.CohortAtApproachStart = CohortAtApproachStart(input, runtime, transport.Object,
-            approach, std::min(contract.ArrivalToleranceYards, ApproachStartToleranceYards));
+        observation.CohortAtApproachStart = !CohortBarrierHolder(
+            ApproachMemberViews(input, runtime, transport.Object, contract));
     }
     // A movement generator waiting to resume with no spline would walk an
     // unchecked line once its stun or root ends.
@@ -691,8 +688,8 @@ bool TransportNodeDone(Input const& input, NodeContract& node,
 }
 
 // Completion is evaluated once per cohort observation tick.
-void RefreshVerdict(Input const& input, NodeContract& node, OwnerElection const& election,
-    Player* evaluator)
+void RefreshVerdict(Input const& input, Callbacks const& callbacks, NodeContract& node,
+    OwnerElection const& election, Player* evaluator)
 {
     NodeRuntime& runtime = node.Runtime;
     if (runtime.VerdictValid && runtime.VerdictTick == input.Tick)
@@ -720,12 +717,24 @@ void RefreshVerdict(Input const& input, NodeContract& node, OwnerElection const&
     {
         Verdict const early = Facts::EvaluateCompletion(node.Transport.CompletionOverride,
             evaluator, input.Members, election.Owner, runtime.Completion);
-        if (early.Satisfied && ApproachStillInFlight(input, runtime))
-            reason = "transport_completion_override_waiting_in_flight";
-        else if (early.Satisfied)
+        if (early.Satisfied)
         {
-            satisfied = true;
-            reason = "transport_completion_override:" + early.Reason;
+            if (!runtime.OverrideSatisfiedAtMs)
+                runtime.OverrideSatisfiedAtMs = input.NowMs;
+            Facts::TransportTarget const transport = Facts::ResolveTransport(evaluator,
+                node.Transport.Entry, node.Transport.SpawnId);
+            HandoverDecision const handover = DecideOverrideHandover(
+                ApproachMemberViews(input, runtime, transport.Object, node.Transport),
+                runtime.OverrideSatisfiedAtMs, input.NowMs);
+            reason = handover.Reason;
+            if (handover.Step == HandoverStep::HandOver)
+            {
+                satisfied = true;
+                reason = handover.Reason + ":" + early.Reason;
+            }
+            else if (handover.Step == HandoverStep::Fail)
+                FailOnce(runtime, callbacks,
+                    handover.Reason + ":" + std::to_string(handover.Member));
         }
     }
     runtime.VerdictValid = true;
@@ -763,7 +772,9 @@ Result Run(Input const& input, Callbacks const& callbacks)
     OwnerElection const election = node.Interaction.Declared
         ? ElectOwner(node.Interaction, MemberViews(input)) : OwnerElection();
 
-    RefreshVerdict(input, node, election, evaluator);
+    RefreshVerdict(input, callbacks, node, election, evaluator);
+    if (runtime.FailureRecorded)
+        return result;
     if (runtime.VerdictSatisfied)
     {
         result.Satisfied = true;
@@ -789,7 +800,15 @@ Result Run(Input const& input, Callbacks const& callbacks)
     }
     if (TimedOut(node.Transport.TimeoutMs, runtime, input.NowMs))
     {
-        FailOnce(runtime, callbacks, "native_transport_timeout");
+        // Name the member a ledge drop's cohort barrier is still waiting for.
+        std::uint64_t holder = 0;
+        if (node.Transport.Approach.Mode == ApproachMode::LedgeDrop)
+            holder = CohortBarrierHolder(ApproachMemberViews(input, runtime,
+                Facts::ResolveTransport(input.Bot, node.Transport.Entry,
+                    node.Transport.SpawnId).Object, node.Transport));
+        FailOnce(runtime, callbacks, holder
+            ? "native_transport_timeout:waiting_for_cohort:" + std::to_string(holder)
+            : std::string("native_transport_timeout"));
         return result;
     }
     if (TimedOut(node.Completion.TimeoutMs, runtime, input.NowMs))

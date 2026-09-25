@@ -89,7 +89,7 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert "probe.CollisionFree = BodySweepClear(bot, from, to);" in probe
     sweep = _function(executor, "bool BodySweepClear(")
     assert "Route::BodySweepLifts(bot->GetCollisionHeight())" in sweep
-    assert "for (float const side : { 0.0f, 1.0f, -1.0f })" in sweep
+    assert "for (float const side : Route::BodySweepSideFractions)" in sweep
     assert "LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing" in sweep
 
     step = _function(executor, "Outcome ExecuteStepOff(")
@@ -144,6 +144,9 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert "init.MoveTo(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), false);" in settle
     assert "init.SetFacing(bot->GetOrientation());" in settle
     assert "DisableTransportPathTransformations" not in settle
+    # Finalized at once (a finished stop spline), so MOVEMENTFLAG_FORWARD
+    # clears before the next observation.
+    assert settle.index("init.Launch();") < settle.index("bot->StopMoving();")
     # Gravity never waits for the transport: Fall resolves no transport.
     execute = _function(executor, "BotActionArbitration::Outcome Execute(")
     assert execute.index("Stage::Fall)\n        return ExecuteFall(bot);") < execute.index("ResolveTransport(")
@@ -251,26 +254,33 @@ def test_runtime_submits_typed_approach_intents_with_bounded_observers() -> None
     for marker in (
         "observation.MotionSuspended = bot->movespline->Finalized()\n        && bot->HasUnitState(UNIT_STATE_ROAMING_MOVE);",
         "observation.OffApproachCorridor = !OnApproachCorridor(approach.StartPoint,\n            contract.BoardPoint,",
-        "observation.CohortAtApproachStart = CohortAtApproachStart(input, runtime, transport.Object,",
+        "observation.CohortAtApproachStart = !CohortBarrierHolder(\n            ApproachMemberViews(input, runtime, transport.Object, contract));",
     ):
         assert marker in transport, marker
 
 
-def test_completion_override_hands_over_only_without_members_in_flight() -> None:
+def test_completion_override_hands_over_only_with_every_member_aboard() -> None:
     runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
     verdict = _function(runtime, "void RefreshVerdict(")
     assert "node.Transport.CompletionOverride.Declared)" in verdict
     assert "Facts::EvaluateCompletion(node.Transport.CompletionOverride," in verdict
     assert verdict.index("TransportNodeDone(") < verdict.index("node.Transport.CompletionOverride.Declared")
-    assert "early.Satisfied && ApproachStillInFlight(input, runtime)" in verdict
-    assert '"transport_completion_override_waiting_in_flight"' in verdict
-    assert '"transport_completion_override:" + early.Reason' in verdict
-    in_flight = _function(runtime, "bool ApproachStillInFlight(")
-    assert "BotValidationRouteBoardingAction::NativeFallInProgress(member.Bot)" in in_flight
-    assert "ApproachInFlight(state->second)" in in_flight
-    cohort = _function(runtime, "bool CohortAtApproachStart(")
-    assert "if (!member.OnRouteInstance || !member.Bot->IsInWorld())\n            return false;" in cohort
-    assert "Facts::OnTransport(member.Bot, transport)" in cohort
+    # The pure handover decision (replayed in the approach tests) decides; a
+    # member left behind past the grace fails the node typed, with its GUID.
+    assert "HandoverDecision const handover = DecideOverrideHandover(" in verdict
+    assert "runtime.OverrideSatisfiedAtMs = input.NowMs;" in verdict
+    assert "if (handover.Step == HandoverStep::HandOver)" in verdict
+    assert "FailOnce(runtime, callbacks,\n                    handover.Reason + \":\" + std::to_string(handover.Member));" in verdict
+    views = _function(runtime, "std::vector<ApproachMemberView> ApproachMemberViews(")
+    for marker in ("view.Aboard = Facts::OnTransport(bot, transport);",
+                   "view.Falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);",
+                   "view.OnRouteInstance = member.OnRouteInstance && bot->IsInWorld();",
+                   "BotTransportSurfaceMovement::PredictFallDamagePct(bot,"):
+        assert marker in views, marker
+    run = _function(runtime, "Result Run(")
+    assert "RefreshVerdict(input, callbacks, node, election, evaluator);\n    if (runtime.FailureRecorded)\n        return result;" in run
+    # A timed-out ledge drop names the member its cohort barrier waits for.
+    assert '"native_transport_timeout:waiting_for_cohort:" + std::to_string(holder)' in run
 
 
 def test_nothing_in_the_approach_path_refuses_or_aborts_in_combat() -> None:
@@ -278,8 +288,8 @@ def test_nothing_in_the_approach_path_refuses_or_aborts_in_combat() -> None:
     start-fight pulse hits: the descent, drop, boarding and handover run in
     combat, so none of them may test combat state."""
     runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
-    for name in ("void RunTransport(", "bool CohortAtApproachStart(",
-                 "bool ApproachStillInFlight(", "bool TransportNodeDone(", "void RefreshVerdict("):
+    for name in ("void RunTransport(", "std::vector<ApproachMemberView> ApproachMemberViews(",
+                 "bool TransportNodeDone(", "void RefreshVerdict("):
         assert "Combat" not in _function(runtime, name), name
     for source in ("BotWorldPopulationMgrNativePathTransportSurface.cpp",
                    "BotValidationRouteNativeTransportLogic.h", "BotValidationRouteNativeApproach.h"):

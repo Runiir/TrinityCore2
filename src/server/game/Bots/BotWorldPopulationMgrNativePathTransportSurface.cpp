@@ -86,10 +86,11 @@ float BodyRadius(Player const* bot)
 }
 
 // The body's sweep along the segment: line of sight through static geometry
-// and every collidable gameobject on the centre line and both sides at the
-// collision radius, from the knee to 0.9 of the collision height at most
-// BodySweepLiftStepYards apart (a rail or a pillar corner beside the centre
-// line blocks it).
+// and every collidable gameobject on the centre line and at half and the full
+// collision radius on both sides, from the knee to 0.9 of the collision
+// height at most BodySweepLiftStepYards apart (a rail or a pillar corner
+// beside the centre line blocks it; see BodySweepSideFractions for the
+// sampling limit).
 bool BodySweepClear(Player const* bot, G3D::Vector3 const& from, G3D::Vector3 const& to)
 {
     Map* map = bot->GetMap();
@@ -99,7 +100,7 @@ bool BodySweepClear(Player const* bot, G3D::Vector3 const& from, G3D::Vector3 co
     float const sideX = length > 0.0f ? -(to.y - from.y) / length * radius : 0.0f;
     float const sideY = length > 0.0f ? (to.x - from.x) / length * radius : 0.0f;
     for (float const lift : Route::BodySweepLifts(bot->GetCollisionHeight()))
-        for (float const side : { 0.0f, 1.0f, -1.0f })
+        for (float const side : Route::BodySweepSideFractions)
             if (!map->isInLineOfSight(phase, from.x + side * sideX, from.y + side * sideY,
                     from.z + lift, to.x + side * sideX, to.y + side * sideY, to.z + lift,
                     LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
@@ -235,13 +236,18 @@ void LaunchCheckedLine(Player* bot, G3D::Vector3 const& destination)
 // A finished MoveFall spline keeps its falling attribute (Unit::IsFalling)
 // until another spline replaces it. Turning in place, as Unit::SetFacingTo
 // does (with the passenger transform kept), replaces it with a zero-length
-// spline, so shared code reads the landed member as grounded.
+// spline, so shared code reads the landed member as grounded. SetFacingTo
+// then finalizes it at once (the private Unit::UpdateSplineMovement(1));
+// Unit::StopMoving does the same through the public path: the spline becomes
+// a finished stop spline and MOVEMENTFLAG_FORWARD clears before the next
+// observation.
 void SettleAfterLanding(Player* bot)
 {
     Movement::MoveSplineInit init(bot);
     init.MoveTo(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), false);
     init.SetFacing(bot->GetOrientation());
     init.Launch();
+    bot->StopMoving();
 }
 
 // The checked line owns the active slot and its spline ends at the requested

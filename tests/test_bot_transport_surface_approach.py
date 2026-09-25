@@ -706,6 +706,10 @@ int main()
     CHECK(railCovered);
     // Tiny or unknown models still sweep from the knee up.
     CHECK(BodySweepLifts(0.0f).front() == 0.5f);
+    // Five lines: the centre and half and full collision radius per side.
+    CHECK(sizeof(BodySweepSideFractions) / sizeof(BodySweepSideFractions[0]) == 5);
+    CHECK(BodySweepSideFractions[0] == 0.0f && BodySweepSideFractions[3] == 1.0f
+        && BodySweepSideFractions[4] == -1.0f);
 
     // Elevator walk corridor: start (-251, -224.605) -> board (-247.349, -224.605).
     Point3 const start{ -251.0f, -224.605f, 190.163f, true };
@@ -722,6 +726,91 @@ int main()
         MaxStepOffYards + ApproachStartToleranceYards));
     CHECK(!OnApproachCorridor(lip, stepOff, -152.4f, -224.62f, ApproachCorridorYards,
         MaxStepOffYards + ApproachStartToleranceYards));
+    return failures ? 1 : 0;
+}
+""")
+
+
+def test_completion_override_never_strands_a_member_on_the_ledge(tmp_path: Path) -> None:
+    """Review major: the override held (Onyxia engaged) while one member was
+    still Idle at the lip (health too low to drop); nine had boarded."""
+    _compile_and_run(tmp_path, PRELUDE + r"""
+static std::vector<ApproachMemberView> Raid()
+{
+    std::vector<ApproachMemberView> members;
+    for (std::uint64_t guid = 1; guid <= 10; ++guid)
+    {
+        ApproachMemberView member;
+        member.Guid = guid; member.Alive = true; member.OnRouteInstance = true;
+        member.Aboard = true; member.FallMarginOk = true;
+        members.push_back(member);
+    }
+    // Member 7 is still at the lip, Idle, at 50% health (needs 54.9%).
+    members[6].Aboard = false; members[6].AtStart = true; members[6].FallMarginOk = false;
+    return members;
+}
+
+int main()
+{
+    std::vector<ApproachMemberView> members = Raid();
+    // Override first held at t = 10 s: wait for the member for the grace...
+    HandoverDecision d = DecideOverrideHandover(members, 10000, 10000);
+    CHECK(d.Step == HandoverStep::Wait && d.Member == 7);
+    CHECK(d.Reason == "transport_completion_override_waiting_for_member");
+    d = DecideOverrideHandover(members, 10000, 10000 + ApproachHandoverGraceMs - 1);
+    CHECK(d.Step == HandoverStep::Wait);
+    // ...then fail typed instead of handing over with a member on the ledge.
+    d = DecideOverrideHandover(members, 10000, 10000 + ApproachHandoverGraceMs);
+    CHECK(d.Step == HandoverStep::Fail && d.Member == 7);
+    CHECK(d.Reason == "transport_completion_override_member_not_aboard");
+    // A member already dropping is waited for, past the grace too.
+    members[6].Phase = ApproachPhase::SteppingOff;
+    d = DecideOverrideHandover(members, 10000, 60000);
+    CHECK(d.Step == HandoverStep::Wait && d.Reason == "transport_completion_override_waiting_in_flight");
+    members[6].Phase = ApproachPhase::Falling; members[6].Falling = true;
+    CHECK(DecideOverrideHandover(members, 10000, 60000).Step == HandoverStep::Wait);
+    // Landed but not yet boarded: still in flight.
+    members[6].Phase = ApproachPhase::Landed; members[6].Falling = false;
+    CHECK(DecideOverrideHandover(members, 10000, 60000).Step == HandoverStep::Wait);
+    // Everyone aboard: hand over.
+    members[6].Aboard = true; members[6].Phase = ApproachPhase::Idle;
+    d = DecideOverrideHandover(members, 10000, 10000);
+    CHECK(d.Step == HandoverStep::HandOver && d.Member == 0);
+    // Dead members never hold it; a living member off the route instance does.
+    members[2].Alive = false; members[2].Aboard = false;
+    CHECK(DecideOverrideHandover(members, 10000, 10000).Step == HandoverStep::HandOver);
+    members[3].Aboard = false; members[3].OnRouteInstance = false;
+    CHECK(DecideOverrideHandover(members, 10000, 10000 + ApproachHandoverGraceMs).Step == HandoverStep::Fail);
+
+    // Root cause: with the cohort barrier the low-health member holds the
+    // whole cohort at the lip (out of combat: it regenerates and the healers
+    // beside it can top it up), so nobody boards and engages before it can
+    // drop too.
+    std::vector<ApproachMemberView> lip = Raid();
+    for (ApproachMemberView& member : lip)
+    {
+        member.Aboard = false; member.AtStart = true;
+    }
+    CHECK(CohortBarrierHolder(lip) == 7);
+    lip[6].FallMarginOk = true;
+    CHECK(CohortBarrierHolder(lip) == 0);
+    // Still walking to the lip, or outside the route instance: holds it.
+    lip[1].AtStart = false;
+    CHECK(CohortBarrierHolder(lip) == 2);
+    lip[1].AtStart = true; lip[4].OnRouteInstance = false;
+    CHECK(CohortBarrierHolder(lip) == 5);
+    // Aboard, already dropping, falling or dead: never holds it.
+    lip[4].OnRouteInstance = true; lip[4].AtStart = false; lip[4].Aboard = true;
+    lip[5].AtStart = false; lip[5].Phase = ApproachPhase::SteppingOff;
+    lip[8].AtStart = false; lip[8].Falling = true;
+    lip[9].AtStart = false; lip[9].Alive = false;
+    CHECK(CohortBarrierHolder(lip) == 0);
+
+    // The override only completes boarding nodes: a ride to an exit is never
+    // cut short.
+    TransportContract ride;
+    CHECK(Transport(R"({"entry": 203716, "board_transport_z": 186.551, "exit_transport_z": 73.8806, "board_point": [-247.349, -224.605, 190.028], "exit_point": [-224.0, -224.605, 76.8211], "timeout_ms": 240000, "completion_override": {"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"}})", ride).Detail
+        == "completion_override_with_exit");
     return failures ? 1 : 0;
 }
 """)

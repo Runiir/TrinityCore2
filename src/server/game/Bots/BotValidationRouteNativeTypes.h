@@ -267,6 +267,8 @@ struct NodeRuntime
     bool CompletionRecorded = false;
     bool FailureRecorded = false;
     std::string LastDiagnostic;
+    // When the transport's completion override first held (0: not yet).
+    std::uint64_t OverrideSatisfiedAtMs = 0;
 
     void Enter(RuntimeScope const& scope, std::uint64_t nowMs)
     {

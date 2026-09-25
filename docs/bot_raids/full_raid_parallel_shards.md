@@ -441,10 +441,36 @@ Boss notes:
     `Player::HandleFall` applies fall damage), then boards.
   - **Riders with an exit.** With an approach and an exit, a rider crosses the car to
     `disembark_point` in one checked walk and leaves over static ground there.
+  - **Cohort barrier (ledge_drop).** Nobody steps off until every living route member
+    is at the lip and healthy enough for the fall, or already dropping or aboard
+    (`transport_drop_waiting_for_cohort`). A timeout names the member holding it
+    (`native_transport_timeout:waiting_for_cohort:<guid>`).
+  - **`completion_override`.** An optional `instance_boss_state` contract (or
+    `any_of`/`all_of` of them; no `timeout_ms`, no exit) that also completes the node,
+    for example `bwd.nefarian.descent` once boss index 5 is `in_progress`. It waits for
+    members mid-walk, mid-step, mid-fall or landed but unboarded. A living member that
+    is neither aboard nor in flight 2 s after it first holds fails the node
+    (`transport_completion_override_member_not_aboard:<guid>`).
+  - **Walk supervision.** A walk or step in flight is stopped and re-planned when its
+    generator is suspended, when the member leaves a 1.25 yd corridor around the
+    declared line, or when the rest no longer covers the rest of the walk plus 250 ms.
+    A member already on the car stops and boards at once.
+  - **Falls.** A landing with no floor under the feet falls on from there (not counted
+    toward `max_submissions`, nor is a root holding it); the landing is reported only
+    onto a verified floor.
+  - **Legacy rows.** A settled member with no floor within tolerance that never stood
+    on the platform no longer holds until the node timeout. It re-snaps with an ordinary
+    navmesh move up to 3 times when some floor lies within 1.6 yd, then fails
+    (`transport_member_floor_unverified`); with no floor near it fails at once
+    (`transport_member_airborne_without_floor`).
 - **Encounter seam.** `BotNativeAction::TransportSurfaceMove` (executor
   `BotTransportSurfaceMovement::Execute`, header BotWorldPopulationMgrNativePathTransportSurface.h).
   - **`Walk` to a point:** EndOnTransport is true for a point on the platform and false
-    for static ground. Passengers stay passengers, and the platform must be stationary.
+    for static ground (then the walk must start aboard or on the platform's floor).
+    Passengers stay passengers, and the platform must be stationary and move only
+    vertically. A new Walk replaces a running one and is checked from where the member
+    is now; it is refused only under a controlled effect, while falling, or while
+    rooted or stunned. Legs stay at most 12 yd (`native_surface_walk_length_invalid`).
   - **`StepOff`, then `Fall` once settled with no floor, then `Land`** once
     `BotValidationRouteBoardingAction::NativeFallLandingPending`: works from static
     ground or from a raised part of the same transport, such as a pillar top.

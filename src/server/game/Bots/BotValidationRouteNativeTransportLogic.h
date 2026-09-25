@@ -284,12 +284,93 @@ inline bool ApproachMotionIntact(TransportMemberObservation const& observation)
 }
 
 // A member whose approach has left the ground or not yet boarded after it.
+inline bool ApproachPhaseInFlight(ApproachPhase phase)
+{
+    return phase == ApproachPhase::Walking || phase == ApproachPhase::SteppingOff
+        || phase == ApproachPhase::Falling || phase == ApproachPhase::Landed;
+}
+
 inline bool ApproachInFlight(TransportMemberState const& state)
 {
-    return state.Approach == ApproachPhase::Walking
-        || state.Approach == ApproachPhase::SteppingOff
-        || state.Approach == ApproachPhase::Falling
-        || state.Approach == ApproachPhase::Landed;
+    return ApproachPhaseInFlight(state.Approach);
+}
+
+// One cohort member as the node-level approach rules see it.
+struct ApproachMemberView
+{
+    std::uint64_t Guid = 0;
+    bool Alive = false;
+    // In the route's original instance and in the world.
+    bool OnRouteInstance = false;
+    bool Aboard = false;
+    ApproachPhase Phase = ApproachPhase::Idle;
+    // A native fall is in progress (falling flags or a running fall spline).
+    bool Falling = false;
+    bool AtStart = false;
+    // Health left after the predicted native fall damage keeps the margin.
+    bool FallMarginOk = false;
+};
+
+// Ledge drops start together, and only once every member can drop: the first
+// living member that is not in the route instance, not at the approach start,
+// or not healthy enough to drop from there holds the barrier (0: none). A
+// member aboard, already past the start or falling never holds it, so a
+// low-health member keeps the whole cohort at the lip (out of combat, where
+// it regenerates and the healers beside it can top it up) instead of being
+// left behind when the first passenger engages the encounter.
+inline std::uint64_t CohortBarrierHolder(std::vector<ApproachMemberView> const& members)
+{
+    for (ApproachMemberView const& member : members)
+    {
+        if (!member.Alive)
+            continue;
+        if (!member.OnRouteInstance)
+            return member.Guid;
+        if (member.Aboard || member.Phase != ApproachPhase::Idle || member.Falling)
+            continue;
+        if (!member.AtStart || !member.FallMarginOk)
+            return member.Guid;
+    }
+    return 0;
+}
+
+enum class HandoverStep : std::uint8_t { Wait, HandOver, Fail };
+
+struct HandoverDecision
+{
+    HandoverStep Step = HandoverStep::Wait;
+    std::string Reason;
+    // The member that holds the handover (or fails it).
+    std::uint64_t Member = 0;
+};
+
+// Once a completion override holds (an observed boss state), the node hands
+// over only when every living member is aboard. A member mid-walk, mid-step,
+// mid-fall or landed but unboarded is waited for (it finishes in seconds;
+// the node timeout bounds it). A living member neither aboard nor in flight
+// (held at the lip, off the route instance) gets ApproachHandoverGraceMs to
+// start; after that the node fails typed rather than leaving it behind with
+// nothing to drive its approach.
+inline HandoverDecision DecideOverrideHandover(std::vector<ApproachMemberView> const& members,
+    std::uint64_t overrideSinceMs, std::uint64_t nowMs)
+{
+    std::uint64_t notAboard = 0;
+    for (ApproachMemberView const& member : members)
+    {
+        if (!member.Alive)
+            continue;
+        if (member.Falling || (member.OnRouteInstance && !member.Aboard
+                && ApproachPhaseInFlight(member.Phase)))
+            return { HandoverStep::Wait, "transport_completion_override_waiting_in_flight",
+                member.Guid };
+        if (!member.Aboard && !notAboard)
+            notAboard = member.Guid;
+    }
+    if (!notAboard)
+        return { HandoverStep::HandOver, "transport_completion_override", 0 };
+    if (nowMs >= overrideSinceMs + ApproachHandoverGraceMs)
+        return { HandoverStep::Fail, "transport_completion_override_member_not_aboard", notAboard };
+    return { HandoverStep::Wait, "transport_completion_override_waiting_for_member", notAboard };
 }
 
 // A ledge drop in flight belongs to gravity until its landing is reported:
