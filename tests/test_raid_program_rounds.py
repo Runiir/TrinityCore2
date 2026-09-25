@@ -54,7 +54,8 @@ def discovery() -> dict:
     return {'program_id': f'{RAID}:{MODE}', 'raid': RAID, 'mode': MODE, 'mode_token': '10n', 'size': 10,
             'name': 'Test Raid', 'map_id': 669, 'prerequisites': 'p.json', 'composition': 'c.json', 'raid_inputs': [],
             'units': [_unit('alpha', 0, []), _unit('beta', 1, ['alpha'])], 'excluded_bosses': [], 'e2e': e2e,
-            'sources': {}, 'shard_tests': ['tests/test_raid_shard_plan.py']}
+            'sources': {}, 'shard_tests': ['tests/test_raid_shard_plan.py'],
+            'generated_plan': 'dataset/raid_shard_provisioning/test_raid_v1/plan.json'}
 
 
 def git(root: Path, *args: str) -> str:
@@ -68,13 +69,35 @@ def commit_all(root: Path, message: str = 'step') -> str:
     return git(root, 'rev-parse', 'HEAD')
 
 
+def write_target(root: Path, boss: str) -> None:
+    """A minimal raid_target_v1 the real scoreboard recorder accepts."""
+    folder = root / 'experiments/configs/raid_targets'
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / 'wcl_test_manifest.json').write_text(json.dumps({'references': []}))
+    scenario = f'{RAID}_10n_{boss}'
+    (folder / f'{scenario}.json').write_text(json.dumps({
+        'schema': 'raid_target_v1', 'scenario': scenario, 'encounter_route_node_id': f'bwd.{boss}.encounter',
+        'wcl_reference_manifest': 'experiments/configs/raid_targets/wcl_test_manifest.json',
+        'matched_reference_ids': [], 'kills_per_measurement': 3}))
+
+
 @pytest.fixture
 def world(tmp_path, monkeypatch):
+    from tools.raid_program import scoreboard_run
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
     policy = tmp_path / DEFAULT_POLICY_RELATIVE
     policy.parent.mkdir(parents=True)
     shutil.copy2(REAL / DEFAULT_POLICY_RELATIVE, policy)
-    holder = {'discovery': discovery(), 'verdicts': {}, 'recorded': []}
+    for boss in ('alpha', 'beta'):
+        write_target(tmp_path, boss)
+    holder = {'discovery': discovery(), 'verdicts': {}, 'recorded': [], 'archived': [], 'archive_errors': []}
+
+    def archive(root, scenario, kill_id, sources, pointers):  # keeps the sources; the deleting one is in test_raid_program_build
+        holder['archived'].append((scenario, kill_id, [str(path) for path in sources]))
+        if holder['archive_errors']:
+            return None, holder['archive_errors'].pop()
+        return f'artifacts/cata_raid_program/scoreboard_{scenario}_{kill_id}.tar.gz.dvc', None
+    monkeypatch.setattr(scoreboard_run, 'archive_evidence', archive)
     monkeypatch.setattr(rounds, 'discover_program', lambda root, raid, mode: copy.deepcopy(holder['discovery']))
     monkeypatch.setattr(rounds, 'verdict_for', lambda root, unit, label, build: copy.deepcopy(
         holder['verdicts'].get(unit['boss_key'])) if label else None)
@@ -122,12 +145,15 @@ def shard_run(root: Path, name: str, rows: list[dict], terminal: str = 'complete
     for row in rows:
         run_dir = directory / 'shards' / row['cohort_id']
         run_dir.mkdir(parents=True, exist_ok=True)
-        if row.get('killed') is not None:
-            (run_dir / 'report.json').write_text(json.dumps({'native_gameplay_outcome': {
-                'real_boss_kill_evidence': [{'route_node_id': node} for node in row['killed']]}}))
+        (run_dir / 'report.json').write_text(json.dumps({
+            'native_gameplay_outcome': {'native_clear': row.get('clear', True),
+                                        'real_boss_kill_evidence': [{'route_node_id': node} for node in row.get('killed') or []]},
+            'completion_reason': row.get('reason', 'validation_route_manifest_complete'), 'status': {'deaths': 0},
+            'measurement_validity': {'valid_for_dps': True}}))
         shards.append({'cohort_id': row['cohort_id'], 'run_dir': str(run_dir), 'native_clear': row.get('clear', True),
                        'completion_reason': row.get('reason', 'validation_route_manifest_complete'),
                        'lockout': row.get('lockout'), 'error': '', 'start_refusal': None})
+    (directory / 'console_journal.jsonl').write_text('{}\n')
     path = directory / 'shard_run.json'
     path.write_text(json.dumps({'schema': 'raid_shard_run_v1', 'run_id': name, 'terminal_reason': terminal,
                                 'worldserver': {'path': '/w', 'sha256': binary}, 'shards': shards}))
@@ -135,8 +161,7 @@ def shard_run(root: Path, name: str, rows: list[dict], terminal: str = 'complete
 
 
 def fake_ingest(root: Path, holder: dict, label: str) -> dict:
-    archive = lambda root, scenario, kill_id, sources, pointers: (f'artifacts/cata_raid_program/{kill_id}.tar.gz.dvc', None)
-    return ingests.ingest(root, label, archive=archive, record_kill=lambda root, **kw: holder['recorded'].append(kw))
+    return ingests.ingest(root, label)  # real recorder; the fixture's archiver keeps the sources
 
 
 def both(**alpha) -> list[dict]:
@@ -507,3 +532,83 @@ def test_verdict_must_come_from_the_round_build(monkeypatch, tmp_path):
     assert rounds.verdict_for(tmp_path, unit, 'lbl', None)['status'] == 'build_mismatch'
     assert rounds.verdict_for(tmp_path, unit, 'lbl', {'worldserver_sha256': 'other'})['status'] == 'pass'
     assert rounds.verdict_for(tmp_path, unit, None, None) is None
+
+
+def to_run(root: Path) -> None:
+    rounds.plan(root)
+    for packet_id in list(rounds.current_round(program(root))['packets']):
+        rounds.record_handoff(root, packet_id, None, external_reason='x')
+    fake_build(root)
+
+
+def test_run_plans_name_the_generated_plan(world):
+    root = world['root']
+    to_run(root)
+    plan = runs.run_plans(root)['plans'][0]
+    document = json.loads((root / plan['path']).read_text())
+    assert document['raid_shard_plan'] == 'dataset/raid_shard_provisioning/test_raid_v1/plan.json'
+    world['discovery']['generated_plan'] = None
+    with pytest.raises(GraphError, match='generated raid_shard_plan'):
+        runs.run_plans(root, replan=True)
+
+
+def test_shard_runs_must_live_under_tmp(world):
+    root = world['root']
+    to_run(root)
+    runs.run_plans(root)
+    path = shard_run(root, 'r1', both())
+    summary = json.loads(path.read_text())
+    summary['shards'][0]['run_dir'] = '/var/lib/elsewhere/alpha'
+    path.write_text(json.dumps(summary))
+    with pytest.raises(GraphError, match='under /tmp'):
+        runs.record_run(root, path)
+
+
+def test_ingest_records_then_archives_and_reports_failures(world):
+    from tools.raid_program.scoreboard_core import exclusion_reason, load_records
+    root = world['root']
+    to_run(root)
+    runs.run_plans(root)
+    runs.record_run(root, shard_run(root, 'r1', both()))
+    world['archive_errors'].append('archive_run_evidence failed (exit 1)')
+    result = raid_program.command(root, ['ingest', '--label', 'round1'])
+    assert result['exit_status'] == 1
+    pending = [error for error in result['ingest']['errors'] if 'retry' in error]
+    assert pending and pending[0]['retry'].endswith('archive-pending --scenario blackwing_descent_10n_alpha')
+    alpha = load_records(root, f'{RAID}_10n_alpha')[0]
+    assert alpha['outcome'] == 'clear' and alpha['archive_error'] and alpha['evidence_paths']
+    assert exclusion_reason(alpha) == 'no_evidence', 'counted only once archive-pending attaches the pointer'
+    beta = load_records(root, f'{RAID}_10n_beta')[0]
+    assert beta['evidence_dvc_pointer'] and exclusion_reason(beta) is None
+    again = raid_program.command(root, ['ingest', '--label', 'round1'])
+    assert again['exit_status'] == 1 and len(load_records(root, f'{RAID}_10n_alpha')) == 1, 'never recorded twice'
+    archived = [kill_id for _, kill_id, _ in world['archived']]
+    assert archived.count('round1-r1-blackwing_descent_10n_alpha_c0') == 1
+
+
+def test_ingest_archives_batch_and_untargeted_shard_evidence(world):
+    root = world['root']
+    world['discovery']['units'][1]['raid_target']['present'] = False
+    to_run(root)
+    runs.run_plans(root)
+    runs.record_run(root, shard_run(root, 'r1', both()))
+    result = ingests.ingest(root, 'round1')
+    assert not result['errors']
+    assert [row['cohort_id'] for row in result['shard_evidence']] == [f'{RAID}_10n_beta_c0']
+    batch = next(iter(result['batch_evidence'].values()))
+    assert {Path(path).name for path in batch['paths']} == {'shard_run.json', 'console_journal.jsonl'}
+    current = rounds.current_round(program(root))
+    assert current['runs'][0]['evidence']['pointer'] and current['shard_evidence'][0]['evidence_dvc_pointer']
+    assert ingests.ingest(root, 'round1')['batch_evidence'] == {}, 'archived batches are not archived again'
+
+
+def test_e2e_run_root_is_archived_after_reading_the_report(world):
+    root = world['root']
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, world, both())
+    runs.run_plans(root)
+    e2e = shard_run(root, 'e2e', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter', 'bwd.beta.encounter']}])
+    runs.record_e2e(root, e2e)
+    result = program(root)['e2e']['results'][-1]
+    assert result['outcome'] == 'clear' and result['evidence']['pointer']
+    assert world['archived'][-1][2] == [str(e2e.parent)]

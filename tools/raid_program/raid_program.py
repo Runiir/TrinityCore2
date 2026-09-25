@@ -32,7 +32,8 @@ from tools.raid_program.raid_program_request import raid_aliases, resolve_raid_r
 WORKLOOP = 'pixi run python -m tools.raid_program.raid_workloop'
 COORDINATOR = 'pixi run python -m tools.raid_program.shard_coordinator'
 RESUME_SCHEMA = 'raid_program_resume_v1'
-NEW_RUN_DIR = '<new directory outside the repository>'
+# experiments.archive_run_evidence archives (and deletes) only /tmp paths, so shard runs are written there.
+NEW_RUN_DIR = '/tmp/<new run directory>'
 FINISH_LINE = {
     'boss_unit': ('accepted in a round when its latest shard run is a native clear, its scoreboard verdict passes '
                   '(every non-healer actor at the raid target\'s WCL ratio, native clears, no boss-window deaths) on '
@@ -218,8 +219,9 @@ def _run_step(program: dict, discovery: dict, current: dict, expect: str) -> tup
                 'Close the round so the next one plans that work.', [f'{WORKLOOP} program assess {expect}'])
     recorded = {run['batch'] for run in current.get('runs') or []}
     commands = []
+    slug = program['program_id'].replace(':', '_').lower()
     for plan in plans:
-        output = f"{NEW_RUN_DIR[:-1]} for batch {plan['batch']}>"
+        output = f"/tmp/{slug}-r{program['round']:02d}-b{plan['batch']}-<utc stamp>"
         commands += [f"{COORDINATOR} --plan {plan['path']} --output-dir {output} --dry-run",
                      f"{COORDINATOR} --plan {plan['path']} --output-dir {output}",
                      f'{WORKLOOP} program run --shard-run <output-dir>/shard_run.json {expect}',
@@ -229,11 +231,12 @@ def _run_step(program: dict, discovery: dict, current: dict, expect: str) -> tup
                  f'{WORKLOOP} program assess --label {label} {expect}']
     missing = [plan['batch'] for plan in plans if plan['batch'] not in recorded]
     return (f"Round {program['round']} run: run every batch through shard_coordinator (one worldserver, seeded "
-            'lockouts, completion watchdog) into a new output directory and record each shard_run.json, or record a '
+            'lockouts, completion watchdog) into a new output directory under /tmp and record each shard_run.json, or record a '
             'batch that produced none with --failed-batch'
             + (f" (batches without a run: {missing})" if missing else '')
             + f". Then archive and record the kills of the bosses with a raid target ({', '.join(targets) or 'none'}) "
-              f'with program ingest under label {label}; repeat a batch (same plan, new output directory) and ingest '
+              f'with program ingest under label {label} (it records each kill, then archives its evidence to DVC and '
+            'removes the /tmp copy); repeat a batch (same plan, new /tmp output directory) and ingest '
               'again until those bosses reach their target\'s kills_per_measurement; then assess every boss '
               '(verdict where a target exists, typed stall otherwise), run dvc status and dvc push, and commit.',
             commands)
@@ -372,6 +375,8 @@ def command(root: Path, argv: list[str]) -> dict:
         runs.record_run(root, args.shard_run, expect, args.failed_batch, args.reason)
     elif verb == 'ingest':
         extra['ingest'] = ingests.ingest(root, args.label, expect)
+        if extra['ingest']['errors']:
+            extra['exit_status'] = 1  # raid_workloop exits non-zero; the errors carry their retry commands
     elif verb == 'assess':
         rounds.assess(root, args.label, expect)
     else:

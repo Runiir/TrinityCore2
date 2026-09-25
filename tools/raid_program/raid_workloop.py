@@ -1305,7 +1305,7 @@ def main() -> int:
         program_output = _raid_program_output(args, root)
         if program_output is not None:
             print(json.dumps(program_output, indent=2, sort_keys=True))
-            return 0
+            return 1 if program_output.get("exit_status") else 0
         if args.command == "start":
             from tools.raid_program.scenario_bootstrap import start
             output = start(root, args.request, args.mode, args.raid, args.preview, args.expect)

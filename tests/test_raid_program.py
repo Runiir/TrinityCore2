@@ -269,3 +269,39 @@ def test_skills_route_raid_requests_and_carry_the_agents_patch():
     orchestrator = (REAL / '.agents/skills/trinity-orchestrator/SKILL.md').read_text()
     assert 'references/raid-program.md' in orchestrator
     assert 'program ingest' in (REAL / '.agents/skills/raid-tuning-playbook/SKILL.md').read_text()
+
+
+def _generated_plan(repo: Path, scenarios: list[str]) -> None:
+    composition = json.loads((repo / 'experiments/configs/raid_compositions/blackwing_descent_10n.json').read_text())
+    path = repo / 'dataset/raid_shard_provisioning' / composition['composition_id'] / 'plan.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({'schema': 'raid_shard_plan_v1', 'shards': [{'scenario_id': s} for s in scenarios]}))
+
+
+def test_generated_plan_is_a_typed_shards_input(tmp_path):
+    repo = real_copy(tmp_path)
+    discovery = discover_program(repo, 'blackwing_descent', '10N')
+    assert discovery['generated_plan'].endswith('/plan.json')
+    item = next(item for item in discovery['raid_inputs'] if item['input'] == 'generated_plan')
+    assert item['blocks'] == 'run' and item['owner_skill'] == 'raid-shard-architecture'
+    assert all('generated_plan' in unit['raid_run_blockers'] and not unit['ready_to_run'] for unit in discovery['units'])
+    cohorts = [unit['scenario_id'] for unit in discovery['units']]
+    _full_raid(repo)
+    _generated_plan(repo, cohorts[:-1])
+    discovery = discover_program(repo, 'blackwing_descent', '10N')
+    assert not [item for item in discovery['raid_inputs'] if item['input'] == 'generated_plan']
+    last = discovery['units'][-1]
+    assert 'generated_plan_cohort' in [item['input'] for item in last['missing_inputs']] and not last['ready_to_run']
+    assert 'e2e_generated_plan_cohort' in [item['input'] for item in discovery['e2e']['missing_inputs']]
+    _generated_plan(repo, cohorts + ['blackwing_descent_10n_full_c0'])
+    discovery = discover_program(repo, 'blackwing_descent', '10N')
+    assert not [item for unit in discovery['units'] for item in unit['missing_inputs'] if item['input'] == 'generated_plan_cohort']
+    assert 'e2e_generated_plan_cohort' not in [item['input'] for item in discovery['e2e']['missing_inputs']]
+
+
+def test_reference_requires_tmp_runs_and_names_the_build_time_ownership_check():
+    reference = (REAL / '.agents/skills/trinity-orchestrator/references/raid-program.md').read_text()
+    assert '--output-dir /tmp/' in reference and 'archive-pending' in reference and 'raid_shard_plan' in reference
+    assert 'ownership guarantee' in reference
+    from tools.raid_program.raid_program import NEW_RUN_DIR
+    assert NEW_RUN_DIR.startswith('/tmp/')

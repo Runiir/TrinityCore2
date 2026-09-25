@@ -1,27 +1,34 @@
-"""Record a round's shard kills in the scoreboard with archived evidence.
+"""Record a round's shard kills in the scoreboard, then archive their evidence.
 
-For every recorded shard run of the round and every shard whose boss has a raid
-target, ``ingest`` archives the shard's run directory to DVC under
-``artifacts/cata_raid_program/`` (``scoreboard_run.archive_evidence``, the same
-path ``scoreboard run`` uses) and appends one kill record with that
-``evidence_dvc_pointer``, the run's worldserver sha256 (checked against the
-round build) and the round build's source commit. A kill without a pointer is
-never counted (``no_evidence``), so an archive failure records nothing and the
-command can be repeated. Kill ids are ``<label>-<run_id>-<cohort>``: repeated
-runs of one batch never collide. A round uses one label.
+Mirrors ``scoreboard_run.run_kill`` for every shard of a boss with a raid
+target, in this order:
+
+1. build the kill record from the still-present run directory
+   (``scoreboard_run._postprocess``: ``record_from_run_dir``, falling back to
+   ``fallback_record``; timeline and summary go to a kept ``<run_dir>-analysis``);
+2. archive the evidence (``scoreboard_run.archive_evidence``, which adds, pushes
+   and verifies the DVC pointer and then deletes the /tmp sources);
+3. append the record with its ``evidence_dvc_pointer``, or with
+   ``archive_error`` and ``evidence_paths`` so ``scoreboard archive-pending``
+   can retry.
+
+Shards without a raid target and each batch's run-root files (shard_run.json,
+console journal, logs) are archived too; their pointers are stored in the
+program state. Kill ids are ``<label>-<run_id>-<cohort>``, so repeated runs of
+one batch never collide, and a kill already in the scoreboard is adopted
+rather than recorded twice. A round uses one label.
 """
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 from typing import Callable
 
 from tools.raid_program import raid_program_rounds as rounds
+from tools.raid_program import raid_program_runs as runs
 from tools.raid_program import raid_program_state as store
 from tools.raid_program.development_graph import GraphError, utc_now
 
 Archiver = Callable[[Path, str, str, list[Path], set[str]], tuple[str | None, str | None]]
-Recorder = Callable[..., dict]
 
 
 def _archive(root: Path, scenario: str, kill_id: str, sources: list[Path], pointers: set[str]):
@@ -29,31 +36,36 @@ def _archive(root: Path, scenario: str, kill_id: str, sources: list[Path], point
     return archive_evidence(root, scenario, kill_id, sources, pointers)
 
 
-def _record_kill(root: Path, *, scenario: str, label: str, kill_id: str, run_dir: Path, pointer: str,
-                 worldserver_sha256: str, source_commit: str) -> dict:
-    from tools.raid_program.scoreboard_core import append_record, load_target
-    from tools.raid_program.scoreboard_record import record_from_run_dir, write_timeline
+def _kill(run_dir: Path, kill_id: str) -> dict:
+    """The run_kill layout: the shard dir, a kept analysis dir beside it, no harness stdout/stderr."""
+    return {'kill_id': kill_id, 'output_dir': run_dir, 'analysis_dir': Path(f'{run_dir}-analysis'),
+            'stdout': Path(f'{run_dir}.stdout'), 'stderr': Path(f'{run_dir}.stderr')}
+
+
+def record_then_archive(root: Path, *, scenario: str, label: str, kill: dict, worldserver_sha256: str,
+                        source_commit: str, archive: Archiver) -> dict:
+    """One kill as scoreboard_run.run_kill does it: record from the live dir, archive, then append."""
+    from tools.raid_program.play_mode_guard import refuse_play
+    from tools.raid_program.scoreboard_core import append_record, load_records, load_target
+    from tools.raid_program.scoreboard_run import _postprocess, evidence_sources
+    refuse_play(kill['output_dir'], f"raid program ingest {kill['kill_id']}")
     target = load_target(root, scenario)
-    options = dict(scenario=scenario, label=label, kill_id=kill_id, run_dir=run_dir, source_commit=source_commit,
-                   worldserver_sha256=worldserver_sha256, evidence_pointer=pointer)
-    with tempfile.TemporaryDirectory(prefix='raid-program-timeline-') as temp:
-        timeline = (write_timeline(run_dir, root / target['wcl_cast_timelines'], Path(temp) / 'timeline.json')
-                    if target.get('wcl_cast_timelines') else None)
-        record = record_from_run_dir(root, target, timeline_path=timeline, **options)
-    record['worldserver_sha256'] = worldserver_sha256
+    record = _postprocess(root, target, scenario, label, kill, worldserver_sha256, source_commit)
+    record['worldserver_sha256'] = worldserver_sha256  # the round binary the run was bound to
+    record['evidence_paths'] = [str(path) for path in evidence_sources(kill) if path.exists()]
+    pointers = {row['evidence_dvc_pointer'] for row in load_records(root, scenario) if row.get('evidence_dvc_pointer')}
+    try:
+        pointer, error = archive(root, scenario, kill['kill_id'], evidence_sources(kill), pointers)
+    except Exception as failure:  # noqa: BLE001 - recorded like run_kill; archive-pending retries
+        pointer, error = None, f'{type(failure).__name__}: {failure}'
+    record['evidence_dvc_pointer'] = pointer
+    if error:
+        record['archive_error'] = error
     append_record(root, scenario, record)
     return record
 
 
-def _recorded(root: Path, scenario: str) -> tuple[dict[str, dict], set[str]]:
-    from tools.raid_program.scoreboard_core import load_records
-    records = load_records(root, scenario)
-    return ({record['kill_id']: record for record in records},
-            {record['evidence_dvc_pointer'] for record in records if record.get('evidence_dvc_pointer')})
-
-
-def ingest(root: Path, label: str, expected_sha256: str | None = None,
-           archive: Archiver | None = None, record_kill: Recorder | None = None) -> dict:
+def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: Archiver | None = None) -> dict:
     _, program, data = rounds.load_active(root)
     rounds.require(program, 'run')
     rounds.check_expected(data, expected_sha256)
@@ -65,45 +77,70 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None,
     build = holder.get('build') or {}
     if not build.get('worldserver_sha256') or not build.get('source_commit'):
         raise GraphError('the round has no recorded build to bind kills to')
+    from tools.raid_program.scoreboard_core import load_records
     units = {unit['cohort_id']: unit for unit in rounds.discover(root, program)['units']}
-    done = {(row['run_sha256'], row['cohort_id']) for row in holder.get('ingested') or []}
-    archive, record_kill = archive or _archive, record_kill or _record_kill
-    added, errors, skipped = [], [], []
+    done = {(row['run_sha256'], row['cohort_id']): row for row in holder.get('ingested') or []}
+    archived = {(row['run_sha256'], row['cohort_id']) for row in holder.get('shard_evidence') or []}
+    archive = archive or _archive
+    slug = program['program_id'].replace(':', '_').lower()
+    added, shard_evidence, batch_evidence, errors = [], [], {}, []
     for run in holder['runs']:
         if run.get('failed'):
             continue
         for shard in run['shards']:
+            key, run_dir = (run['sha256'], shard['cohort_id']), Path(str(shard.get('run_dir') or ''))
             unit = units.get(shard['cohort_id'])
             if unit is None or not unit['raid_target']['present']:
-                skipped.append({'cohort_id': shard['cohort_id'], 'reason': 'no raid target'})
+                if key in archived or not run_dir.is_dir():
+                    continue
+                pointer, error = archive(root, f'{slug}_shards', f"{run.get('run_id')}-{shard['cohort_id']}", [run_dir], set())
+                shard_evidence.append({'run_sha256': run['sha256'], 'cohort_id': shard['cohort_id'],
+                                       'evidence_dvc_pointer': pointer, 'archive_error': error})
+                if error:
+                    errors.append({'cohort_id': shard['cohort_id'], 'error': 'shard evidence archive: ' + error})
                 continue
-            if (run['sha256'], shard['cohort_id']) in done:
+            if key in done:
+                scenario, kill_id = done[key]['scenario'], done[key]['kill_id']
+                recorded = next((row for row in load_records(root, scenario) if row['kill_id'] == kill_id), {})
+                if not recorded.get('evidence_dvc_pointer'):
+                    errors.append({'cohort_id': shard['cohort_id'], 'kill_id': kill_id, 'error': 'evidence still not archived',
+                                   'retry': f'pixi run python -m tools.raid_program.scoreboard archive-pending --scenario {scenario}'})
                 continue
             if run.get('worldserver_sha256') != build['worldserver_sha256']:
                 errors.append({'cohort_id': shard['cohort_id'], 'error': 'run binary differs from the round build'})
                 continue
-            run_dir = Path(str(shard.get('run_dir') or ''))
             scenario = unit['raid_target']['scenario']
             kill_id = f"{label}-{run.get('run_id') or run['sha256'][:12]}-{shard['cohort_id']}"
-            known, pointers = _recorded(root, scenario)
-            if kill_id in known and known[kill_id].get('evidence_dvc_pointer'):
-                pointer = known[kill_id]['evidence_dvc_pointer']  # an earlier ingest recorded it; adopt
+            known = {row['kill_id']: row for row in load_records(root, scenario)}
+            if kill_id in known:  # recorded earlier (its archive may be pending): adopt, never record twice
+                record = known[kill_id]
+            elif not run_dir.is_dir():
+                errors.append({'cohort_id': shard['cohort_id'], 'error': f'run dir missing: {run_dir}'})
+                continue
             else:
-                if kill_id in known:
-                    errors.append({'cohort_id': shard['cohort_id'], 'error': f'{kill_id} is recorded without evidence'})
+                try:
+                    record = record_then_archive(root, scenario=scenario, label=label, kill=_kill(run_dir, kill_id),
+                                                 worldserver_sha256=build['worldserver_sha256'],
+                                                 source_commit=build['source_commit'], archive=archive)
+                except (Exception, SystemExit) as failure:  # noqa: BLE001 - one shard's failure must not hide the others
+                    errors.append({'cohort_id': shard['cohort_id'], 'error': f'{type(failure).__name__}: {failure}'})
                     continue
-                if not run_dir.is_dir():
-                    errors.append({'cohort_id': shard['cohort_id'], 'error': f'run dir missing: {run_dir}'})
-                    continue
-                pointer, error = archive(root, scenario, kill_id, [run_dir], pointers)
-                if not pointer:
-                    errors.append({'cohort_id': shard['cohort_id'], 'error': error or 'archive failed'})
-                    continue
-                record_kill(root, scenario=scenario, label=label, kill_id=kill_id, run_dir=run_dir, pointer=pointer,
-                            worldserver_sha256=build['worldserver_sha256'], source_commit=build['source_commit'])
+            if not record.get('evidence_dvc_pointer'):
+                errors.append({'cohort_id': shard['cohort_id'], 'kill_id': kill_id,
+                               'error': 'evidence not archived: ' + str(record.get('archive_error')),
+                               'retry': f'pixi run python -m tools.raid_program.scoreboard archive-pending --scenario {scenario}'})
             added.append({'run_sha256': run['sha256'], 'cohort_id': shard['cohort_id'], 'boss_key': unit['boss_key'],
-                          'scenario': scenario, 'kill_id': kill_id, 'evidence_dvc_pointer': pointer, 'utc': utc_now()})
-            done.add((run['sha256'], shard['cohort_id']))
+                          'scenario': scenario, 'kill_id': kill_id, 'outcome': record.get('outcome'),
+                          'evidence_dvc_pointer': record.get('evidence_dvc_pointer'), 'utc': utc_now()})
+            done[key] = added[-1]
+        if not (run.get('evidence') or {}).get('pointer'):
+            batch = runs.batch_sources(run)
+            if batch:
+                pointer, error = archive(root, f'{slug}_runs', f"r{program['round']:02d}-b{run['batch']}-{run.get('run_id')}",
+                                         batch, set())
+                batch_evidence[run['sha256']] = {'pointer': pointer, 'error': error, 'paths': [str(p) for p in batch]}
+                if error:
+                    errors.append({'run': run['sha256'], 'error': 'batch evidence archive: ' + error})
 
     def reducer(state: dict) -> dict:
         target = rounds.active(state)
@@ -111,7 +148,15 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None,
         current = rounds.current_round(target)
         current['label'] = label
         current.setdefault('ingested', []).extend(added)
+        current.setdefault('shard_evidence', []).extend(row for row in shard_evidence if row['evidence_dvc_pointer'])
+        for run in current['runs']:
+            if run.get('sha256') in batch_evidence:
+                run['evidence'] = batch_evidence[run['sha256']]
         store.history(target, 'ingest', round=target['round'], label=label, kills=len(added), errors=len(errors))
         return state
     store.update(root, reducer)
-    return {'label': label, 'ingested': added, 'errors': errors, 'skipped': skipped}
+    return {'label': label, 'ingested': added, 'shard_evidence': shard_evidence, 'batch_evidence': batch_evidence,
+            'errors': errors,
+            'next_action': ('Resolve every error, then run program ingest again with the same label '
+                            '(recorded kills are adopted, not duplicated; archive failures retry with '
+                            'scoreboard archive-pending)') if errors else 'Continue with the next batch run or program assess.'}

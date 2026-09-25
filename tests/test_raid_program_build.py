@@ -85,50 +85,57 @@ def test_finish_adopts_after_coordination_only_commits(world, tmp_path_factory):
     assert program(root)['stage'] == 'run' and rounds.current_round(program(root))['build']['source_commit'] == launched
 
 
-def _scoreboard_fakes(monkeypatch, archive_error: list[str]):
-    from tools.raid_program import scoreboard_core, scoreboard_record, scoreboard_run
-
-    def archive(root, scenario, kill_id, sources, pointers):
-        if archive_error:
-            return None, archive_error.pop()
-        return f'artifacts/cata_raid_program/scoreboard_{scenario}_{kill_id}.tar.gz.dvc', None
-
-    def record(root, target, *, scenario, label, kill_id, run_dir, timeline_path, source_commit,
-               worldserver_sha256=None, evidence_pointer=None, summary_output=None):
-        return {'schema': scoreboard_core.KILL_SCHEMA, 'kill_id': kill_id, 'scenario': scenario, 'label': label,
-                'run_dir': str(run_dir), 'evidence_dvc_pointer': evidence_pointer, 'source_commit': source_commit,
-                'worldserver_sha256': worldserver_sha256, 'native_clear': True, 'outcome': 'clear',
-                'measurement_validity': {'valid_for_dps': True}}
-    monkeypatch.setattr(scoreboard_run, 'archive_evidence', archive)
-    monkeypatch.setattr(scoreboard_core, 'load_target', lambda root, scenario: {'encounter_route_node_id': 'n'})
-    monkeypatch.setattr(scoreboard_record, 'record_from_run_dir', record)
+def test_finish_refuses_ownership_conflicts_like_build(world, tmp_path_factory):
+    root, tmp = world['root'], tmp_path_factory.mktemp('queue')
+    commit_all(root, 'program selected')
+    rounds.plan(root)
+    to_build(root)
+    (root / 'sql/w').mkdir(parents=True)
+    (root / 'sql/w/alpha_beta.sql').write_text('-- both\n')
+    launched = commit_all(root, 'build stage with an ambiguous file')
+    with pytest.raises(GraphError, match='two packets'):
+        builds.finish(root, _ticket(tmp, root, launched), verifier=GOOD)
+    assert program(root)['stage'] == 'build'
 
 
-def test_ingest_records_counted_kills_with_evidence(world, monkeypatch):
+def test_ingest_records_before_a_deleting_archiver_with_the_real_recorder(world):
+    """The archiver removes its /tmp sources (as experiments.archive_run_evidence does); records are built first."""
+    import shutil
     from tools.raid_program.scoreboard_core import exclusion_reason, load_records
     root = world['root']
-    failures = ['archive_run_evidence failed (exit 1)']
-    _scoreboard_fakes(monkeypatch, failures)
+    seen = []
+
+    def deleting(root, scenario, kill_id, sources, pointers):
+        seen.append({Path(path).name: sorted(child.name for child in Path(path).iterdir()) if Path(path).is_dir() else None
+                     for path in sources if Path(path).exists()})
+        for path in sources:
+            if Path(path).is_dir():
+                shutil.rmtree(path)
+            elif Path(path).exists():
+                Path(path).unlink()
+        return f'artifacts/cata_raid_program/scoreboard_{scenario}_{kill_id}.tar.gz.dvc', None
     rounds.plan(root)
     to_build(root)
     fake_build(root)
     runs.run_plans(root)
-    runs.record_run(root, shard_run(root, 'r1a', both()))
-    runs.record_run(root, shard_run(root, 'r1b', both()))  # the same batch again, a new output directory
-    first = ingests.ingest(root, 'round1')
-    assert len(first['errors']) == 1 and len(first['ingested']) == 3, 'one failed archive records nothing'
-    second = ingests.ingest(root, 'round1')
-    assert len(second['ingested']) == 1 and not second['errors'], 'the retry records only the missing kill'
-    assert ingests.ingest(root, 'round1')['ingested'] == [], 'ingest is idempotent'
-    with pytest.raises(GraphError, match='already ingests under label round1'):
-        ingests.ingest(root, 'other')
+    first, second = shard_run(root, 'r1a', both()), shard_run(root, 'r1b', both())
+    runs.record_run(root, first)
+    runs.record_run(root, second)  # the same batch again, a new output directory
+    result = ingests.ingest(root, 'round1', archive=deleting)
+    assert not result['errors'] and len(result['ingested']) == 4
     for boss in ('alpha', 'beta'):
         records = load_records(root, f'{RAID}_10n_{boss}')
         assert len({record['kill_id'] for record in records}) == 2
         for record in records:
-            assert record['evidence_dvc_pointer'].endswith('.tar.gz.dvc') and exclusion_reason(record) is None
+            assert record['outcome'] == 'clear' and record['native_clear'] is True, record.get('postprocess_error')
+            assert record['evidence_dvc_pointer'] and exclusion_reason(record) is None
             assert record['worldserver_sha256'] == BINARY and record['source_commit'] == 'c' * 40
-    assert rounds.current_round(program(root))['label'] == 'round1'
+            assert not Path(record['run_dir']).exists(), 'the archiver removed the run dir after the record was built'
+    kills = [entry for entry in seen if any(name.endswith('-analysis') for name in entry)]
+    assert len(kills) == 4 and all('summary.json' in next(v for k, v in entry.items() if k.endswith('-analysis'))
+                                   for entry in kills), 'the kept analysis dir is archived with the kill'
+    assert not first.exists() and not second.exists(), 'batch files are archived too'
+    assert ingests.ingest(root, 'round1', archive=deleting)['ingested'] == [], 'recorded kills are adopted, not redone'
 
 
 def test_ingest_needs_a_recorded_build(world):

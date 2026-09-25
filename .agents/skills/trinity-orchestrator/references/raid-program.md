@@ -55,9 +55,10 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
      accepted, because boss packets change scripts.
 
    Globs are segment-aware: `*` stays in one path segment and `**` spans segments.
-   Owned files are disjoint. Coordinator files (native runtime outside a boss
-   content directory, the instance script, the fidelity registry, CMake, skills,
-   AGENTS.md and both state files) are never owned.
+   Coordinator files (native runtime outside a boss content directory, the
+   instance script, the fidelity registry, CMake, skills, AGENTS.md and both state
+   files) are never owned. Plan time only catches obvious overlaps. The ownership
+   guarantee is the build-time check of the actual git diff (step 3).
 2. **Implement.** A raid-level request authorizes one implementation agent per
    packet (user decision, 2026-09-25). Use no model override.
    - Give each agent `$W program packet --id <packet> --output /tmp/<packet>.json`.
@@ -75,8 +76,10 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
       closure ([raid-shard-architecture](../../raid-shard-architecture/SKILL.md)).
    3. Run the focused tests and report any earlier failures.
    4. Commit.
-   5. Run `$W program build --dry-run`. It shows the argv and the ownership check:
-      a file changed since the plan commit that two packets can own stops the build.
+   5. Run `$W program build --dry-run`. It shows the argv and the ownership check,
+      which is the ownership guarantee: every file changed since the plan commit is
+      matched against the packets, and a file two packets can own stops the build
+      (and `--finish`).
    6. Run `$W program build`: one configure and one worldserver build through
       queued_build with `queued_build.DEFAULT_POLICY_RELATIVE`. The job count comes
       from the policy. Step results persist in the queue receipts directory. A
@@ -90,19 +93,31 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
    - `$W program reopen --id <packet> --reason <text>` sends a packet back.
    - `$W program fix --reason <text>` records your own repair.
 4. **Run.** `$W program run-plan` writes the batches once per round (`--replan`
-   replaces them before any run). For each batch:
-   1. `pixi run python -m tools.raid_program.shard_coordinator --plan <file> --output-dir <new dir outside the repo> --dry-run`
-   2. The same without `--dry-run`.
-   3. `$W program run --shard-run <dir>/shard_run.json`. The run must use this
-      round's binary (`worldserver.sha256`). A batch that produced no
+   replaces them before any run). Every plan names the generated `raid_shard_plan`
+   (`dataset/raid_shard_provisioning/<composition_id>/plan.json`) so the canonical
+   cohorts are provisioned. A missing plan, or a cohort absent from it, is a typed
+   shards input. For each batch:
+   1. `pixi run python -m tools.raid_program.shard_coordinator --plan <file> --output-dir /tmp/<new run dir> --dry-run`
+   2. The same without `--dry-run`. Run directories must lie under `/tmp`, the
+      only place evidence is archived from.
+   3. `$W program run --shard-run /tmp/<run dir>/shard_run.json`. The run must use
+      this round's binary (`worldserver.sha256`). A batch that produced no
       `shard_run.json` is recorded with `$W program run --failed-batch N --reason <text>`.
 5. **Ingest.** Run `$W program ingest --label <label>`. For each shard of a boss
-   with a raid target, it archives the run directory to DVC under
-   `artifacts/cata_raid_program/` and records the kill with its
-   `--evidence-pointer`, the run's worldserver sha256 and the build commit. A kill
-   without an evidence pointer never counts. Repeat a batch (same plan, new output
-   directory), record it and ingest again until those bosses reach their target's
-   `kills_per_measurement`. A round uses one label.
+   with a raid target, like `scoreboard run`, it:
+   1. records the kill from the live run directory (timeline and summary kept in
+      `<run dir>-analysis`), with the round binary and build commit;
+   2. archives the evidence to DVC under `artifacts/cata_raid_program/`, which
+      deletes the `/tmp` copy;
+   3. appends the record with its pointer, or with `archive_error` so that
+      `scoreboard archive-pending --scenario <S>` can retry.
+
+   A kill without an evidence pointer never counts. Shards without a target and
+   each batch's run-root files (`shard_run.json`, console journal, logs) are
+   archived too, and their pointers are kept in the state. `ingest` exits
+   non-zero while any error or pending archive remains. Repeat a batch (same plan,
+   new `/tmp` output directory), record it and ingest again until those bosses
+   reach their target's `kills_per_measurement`. A round uses one label.
 6. **Assess.** Run `$W program assess --label <label>`. The label is required
    when a boss with a raid target ran.
    - A boss unit is accepted only when all of these hold: its latest run is a
@@ -115,9 +130,11 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
      raid-level input is open and the e2e unit is ready.
 7. **End to end.**
    1. Run `pixi run python -m tools.raid_program.raid_route_composer --composition <file> --check`.
-   2. Run `$W program run-plan`: one fresh-instance shard.
-   3. Run the plan with shard_coordinator.
-   4. Record it with `$W program e2e --shard-run <file>`.
+   2. Run `$W program run-plan`: one fresh-instance shard of the full-raid cohort,
+      which the generated plan must contain.
+   3. Run the plan with shard_coordinator into `/tmp`.
+   4. Record it with `$W program e2e --shard-run <file>`. It reads the report,
+      then archives the run root to DVC.
 
    It passes only if every composed boss node dies natively on the round binary,
    with no raid-level input open. If the plan cannot run or produced no

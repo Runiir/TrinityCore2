@@ -44,9 +44,11 @@ contract:
   shard_coordinator preflight requires. The composed full route
   (`raid_route_compositions/<raid>_<size><diff>.json`) is its route template and
   names every boss node the run must kill.
-- **Evidence.** Shard kills count only after `raid_workloop program ingest`
-  archives their run directories to DVC and records the evidence pointer. Every
-  run must use the round's worldserver binary.
+- **Evidence.** Shard runs are written under `/tmp`. A kill counts only after
+  `raid_workloop program ingest` records it from the live run directory and
+  archives that directory to DVC with its evidence pointer, in that order. Every
+  run must use the round's worldserver binary, and every run plan names the
+  generated `raid_shard_plan` that provisions the canonical cohorts.
 
 Use the live runner's [runtime asset preflight](../../../docs/bot_raids/runtime_asset_preflight.md).
 Let it derive the selected map; never substitute another boss's map to make a

@@ -1,10 +1,14 @@
 """Shard run plans, run records, batch failures and the end-to-end record of a raid program.
 
-Every recorded shard run must have run the round's binary: ``_shard_run`` reads
+Every recorded shard run must have run the round's binary: ``shard_run`` reads
 ``shard_run.json``'s ``worldserver.sha256`` and it must equal the round build's
-``worldserver_sha256``. Plans are written once per round (``--replan`` replaces
-plans before any run exists); the state update is hash-checked before the plan
-files are written.
+``worldserver_sha256``. Run directories must lie under /tmp, the only place
+``experiments.archive_run_evidence`` archives from (it deletes its sources).
+Every plan names the generated ``raid_shard_plan`` so shard_coordinator
+provisions the canonical cohorts. Plans are written once per round
+(``--replan`` replaces plans before any run exists); the state update is
+hash-checked before the plan files are written. The e2e run root is archived
+to DVC once its report has been read.
 """
 from __future__ import annotations
 
@@ -52,17 +56,22 @@ def _holder(program: dict) -> dict:
 def _documents(program: dict, discovery: dict) -> list[dict]:
     from tools.raid_program.shard_coordinator import MAX_SHARDS
     token = discovery['mode_token']
+    generated = discovery.get('generated_plan')
     if program['stage'] == 'run':
         ready = [unit for unit in discovery['units'] if unit['ready_to_run']]
+        if ready and not generated:
+            raise GraphError('no generated raid_shard_plan to provision the canonical cohorts')
         batches = [ready[index:index + MAX_SHARDS] for index in range(0, len(ready), MAX_SHARDS)]
         return [{'schema': RUN_PLAN_SCHEMA, 'kind': 'boss_shards', 'program_id': program['program_id'],
-                 'round': program['round'], 'shards': [_shard_row(unit, program['raid'], token) for unit in batch]}
+                 'round': program['round'], 'raid_shard_plan': generated,
+                 'shards': [_shard_row(unit, program['raid'], token) for unit in batch]}
                 for batch in batches]
     e2e = discovery['e2e']
-    if not e2e['ready_to_run']:
+    if not e2e['ready_to_run'] or not generated:
         raise GraphError('the end-to-end unit is missing inputs (' + ', '.join(i['input'] for i in e2e['missing_inputs'])
                          + '); leave the e2e stage with program e2e --failed REASON')
     return [{'schema': RUN_PLAN_SCHEMA, 'kind': E2E_KEY, 'program_id': program['program_id'], 'round': program['round'],
+             'raid_shard_plan': generated,
              'shards': [{'cohort_id': e2e['cohort_id'], 'runtime_profile_id': e2e['runtime_profile_id'],
                          'scenario_id': e2e['scenario_id'], 'pool_tag': e2e['pool_tag'], 'raid': program['raid'],
                          'mode': token, 'boss_key': E2E_KEY, 'lockout': None}]}]
@@ -122,10 +131,43 @@ def shard_run(root: Path, path: Path) -> tuple[dict, dict]:
               for row in summary['shards']]
     worldserver = summary.get('worldserver') if isinstance(summary.get('worldserver'), dict) else {}
     record = rounds.repo_ref(root, path) | {
-        'run_id': summary.get('run_id'), 'terminal_reason': summary.get('terminal_reason'),
+        'source_path': str(path.resolve()), 'run_id': summary.get('run_id'), 'terminal_reason': summary.get('terminal_reason'),
         'worldserver_sha256': worldserver.get('sha256'), 'isolation': summary.get('isolation'), 'shards': shards,
         'recorded_utc': utc_now()}
     return summary, record
+
+
+def under_tmp(path: str | Path | None) -> bool:
+    return bool(path) and Path(str(path)).resolve().parts[:2] == ('/', 'tmp')
+
+
+def _require_tmp(path: Path, record: dict) -> None:
+    """experiments.archive_run_evidence archives (and then deletes) only paths under /tmp."""
+    outside = [str(value) for value in [path, *(row.get('run_dir') for row in record['shards'])] if not under_tmp(value)]
+    if outside:
+        raise GraphError('shard runs must be written under /tmp (--output-dir /tmp/...) so their evidence can be '
+                         'archived: ' + ', '.join(outside))
+
+
+def batch_sources(record: dict) -> list[Path]:
+    """Run-root evidence of one batch (shard_run.json, console journal, logs, preparation), not the shard dirs."""
+    source = record.get('source_path')
+    run_root = Path(str(source or '')).parent
+    if not source or not run_root.is_dir():
+        return []
+    shard_dirs = [Path(str(row.get('run_dir'))).resolve() for row in record['shards'] if row.get('run_dir')]
+    return [child for child in sorted(run_root.iterdir())
+            if not any(shard == child.resolve() or shard.is_relative_to(child.resolve()) for shard in shard_dirs)]
+
+
+def archive_evidence(root: Path, name: str, kill_id: str, sources: list[Path]) -> dict:
+    """Archive through scoreboard_run.archive_evidence (DVC add/push/verify; sources are removed)."""
+    from tools.raid_program.scoreboard_run import archive_evidence as archive
+    existing = [path for path in sources if path.exists()]
+    if not existing:
+        return {'pointer': None, 'error': None, 'paths': []}
+    pointer, error = archive(root, name, kill_id, existing, set())
+    return {'pointer': pointer, 'error': error, 'paths': [str(path) for path in existing]}
 
 
 def _require_binary(record: dict, build: dict | None) -> None:
@@ -156,6 +198,7 @@ def record_run(root: Path, path: Path | None, expected_sha256: str | None = None
         if path is None:
             raise GraphError('program run needs --shard-run FILE or --failed-batch N --reason TEXT')
         _, record = shard_run(root, path)
+        _require_tmp(path, record)
         _require_binary(record, holder.get('build'))
         cohorts = sorted(row['cohort_id'] for row in record['shards'])
         batch = next((row['batch'] for row in plans if sorted(row['cohorts']) == cohorts), None)
@@ -174,8 +217,11 @@ def record_run(root: Path, path: Path | None, expected_sha256: str | None = None
 
 
 def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None,
-               failed_reason: str | None = None) -> dict:
-    """Accept the end-to-end unit from one fresh-instance full-route run, or leave the e2e stage on failure."""
+               failed_reason: str | None = None, archive=None) -> dict:
+    """Accept the end-to-end unit from one fresh-instance full-route run, or leave the e2e stage on failure.
+
+    After the report is read, the whole run root is archived to DVC and its pointer kept in the result.
+    """
     _, program, data = rounds.load_active(root)
     rounds.require(program, 'e2e')
     rounds.check_expected(data, expected_sha256)
@@ -189,6 +235,7 @@ def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None
         summary, record = shard_run(root, path)
         if not plans or [row['cohort_id'] for row in record['shards']] != plans[-1]['cohorts']:
             raise GraphError('write the e2e run plan (program run-plan) and run exactly that shard')
+        _require_tmp(path, record)
         _require_binary(record, last_build(program))
         discovery = rounds.discover(root, program)
         shard = record['shards'][0]
@@ -210,6 +257,10 @@ def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None
             problems.append('e2e_inputs_missing:' + ','.join(item['input'] for item in discovery['e2e']['missing_inputs']))
     result = {'round': program['round'], 'outcome': 'clear' if not problems else 'failed', 'problems': problems,
               'run': record, 'boss_nodes_killed': sorted(killed)}
+    if record is not None:
+        slug = program['program_id'].replace(':', '_').lower()
+        result['evidence'] = (archive or archive_evidence)(root, f'{slug}_e2e', f"r{program['round']:02d}-{record['run_id']}",
+                                                           [Path(record['source_path']).parent])
 
     def reducer(state: dict) -> dict:
         target = rounds.active(state)

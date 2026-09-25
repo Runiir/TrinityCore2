@@ -28,6 +28,9 @@ COMPOSITIONS = CONFIG / 'raid_compositions'
 ROUTE_COMPOSITIONS = CONFIG / 'raid_route_compositions'
 TARGETS = CONFIG / 'raid_targets'
 PROFILES = Path('dataset/bot_runtime_profiles/profiles.json')
+# The raid_shard_provisioning DVC stage writes <composition_id>/plan.json; shard_coordinator provisions
+# canonical cohorts only when a run plan names it (raid_shard_plan).
+PROVISIONING = Path('dataset/raid_shard_provisioning')
 CONTENT_ROOT = Path('src/server/game/Bots/Content/Raids')
 # Existing shard-infrastructure test modules (the shards packet's focused tests).
 SHARD_TEST_GLOBS = ('test_raid_shard_*.py', 'test_raid_route_composer*.py', 'test_raid_prerequisites*.py',
@@ -218,6 +221,16 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
     composition_bosses, binding_failure = _composition_bosses(composition, by_key)
     if binding_failure:
         raid_inputs.append(missing('composition_binding', binding_failure, 'raid-shard-architecture', BLOCKS_RUN))
+    generated_plan, generated = None, None
+    if composition and composition.get('composition_id'):
+        generated_plan = (PROVISIONING / str(composition['composition_id']) / 'plan.json').as_posix()
+        document = read_json(root, Path(generated_plan))
+        if document.get('schema') == 'raid_shard_plan_v1':
+            generated = {str(row.get('scenario_id')) for row in document.get('shards') or [] if isinstance(row, dict)}
+        else:
+            raid_inputs.append(missing('generated_plan', f'{generated_plan} is missing or not a raid_shard_plan_v1: '
+                                       'reproduce (or dvc pull) the raid_shard_provisioning stage', 'raid-shard-architecture',
+                                       BLOCKS_RUN, path=generated_plan))
     scenarios, profiles, graphs = _scenario_rows(root), _profiles(root), _boss_graph(root)
     identity_known = raid in ids.RAID_NUMBERS
     if not identity_known:
@@ -226,10 +239,21 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
     units = [_boss_unit(root, raid, mode, token, doc, row, strategy_rows, readiness_raid, composition,
                         composition_bosses.get(row['key']), scenarios, profiles, graphs, identity_known)
              for row in included]
+    for unit in units:
+        if generated is not None and unit['scenario_id'] not in generated:
+            unit['missing_inputs'].append(missing('generated_plan_cohort', f"{generated_plan} has no cohort "
+                                                  f"{unit['scenario_id']}; regenerate the raid_shard_provisioning stage",
+                                                  'raid-shard-architecture', BLOCKS_RUN, path=generated_plan))
+            unit['ready_to_run'], unit['acceptance_blocked'] = False, True
     sources = [prerequisite_path, STRATEGIES, READINESS, ROUTES, PROFILES]
     if composition_path:
         sources.append(composition_path)
     e2e = _e2e_unit(root, raid, mode, token, composition, units, scenarios, profiles)
+    if composition.get('full_raid') and generated is not None and e2e['scenario_id'] not in generated:
+        e2e['missing_inputs'].append(missing('e2e_generated_plan_cohort', f"{generated_plan} has no full-raid cohort "
+                                             f"{e2e['scenario_id']}; regenerate the raid_shard_provisioning stage",
+                                             'raid-shard-architecture', BLOCKS_RUN, path=generated_plan))
+        e2e['ready_to_run'] = False
     if e2e.get('route_composition'):
         sources.append(Path(e2e['route_composition']))
     blockers = [item['input'] for item in raid_inputs if item['blocks'] == BLOCKS_RUN]
@@ -239,6 +263,7 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
     shard_tests = sorted({path.relative_to(root).as_posix() for pattern in SHARD_TEST_GLOBS
                           for path in (root / 'tests').glob(pattern) if path.is_file()})
     return {'program_id': f'{raid}:{mode}', 'raid': raid, 'mode': mode, 'mode_token': token, 'shard_tests': shard_tests,
+            'generated_plan': generated_plan,
             'size': int(mode[:-1]), 'name': doc.get('name') or raid, 'map_id': doc.get('map_id'),
             'prerequisites': prerequisite_path.as_posix(), 'composition': composition_path.as_posix() if composition_path else None,
             'raid_inputs': raid_inputs, 'units': units, 'excluded_bosses': excluded, 'e2e': e2e,

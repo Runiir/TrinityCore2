@@ -209,8 +209,12 @@ def finish(root: Path, queue_receipt: Path | None = None, expected_sha256: str |
     binary_sha = _binary_sha(queued)
     if not binary_sha:
         raise GraphError('the ticket names no produced worldserver binary')
+    ownership = ownership_check(root, program)
+    if ownership.get('conflicts'):
+        raise GraphError('files changed since the plan match two packets; reopen or fix before adopting the build: '
+                         + json.dumps(ownership['conflicts'])[:600])
     record = summary | {'source_commit': commit, 'adopted': True, 'success': True, 'worldserver_sha256': binary_sha,
                         'steps': [{'step': 'worldserver_build', 'receipt': str(path), 'exit_status': 0,
                                    'classification': 'success', 'gate_bearing': True}],
-                        'ownership': ownership_check(root, program), 'recorded_utc': utc_now()}
+                        'ownership': ownership, 'recorded_utc': utc_now()}
     return _record(root, data, record)
