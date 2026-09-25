@@ -1,0 +1,6 @@
+outs:
+- md5: c5e3955b5a3ebbe7de96c4d0429c86d8.dir
+  size: 2528938
+  nfiles: 19
+  hash: md5
+  path: round2_client_extracts
