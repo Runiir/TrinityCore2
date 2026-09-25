@@ -493,6 +493,14 @@ Boss notes:
   - The ledge lip is at x -157.65. A ledge drop lands on the outer ring at z 8.51 (a
     32.8 yd fall, 34.9% of max health).
 
+- **Round 3: casting and refusals** (pending T's patch). A walk, step or fall in progress
+  holds the cast lanes as well as movement, so a same-priority heal cannot stop a member
+  mid-step or mid-air. A step cut short on the lip counts as at the start. A stunned,
+  rooted or effect-moved member holds (`transport_approach_member_not_free`). A refusal
+  counts at most once per second, is traced, and exhaustion reads
+  `transport_submissions_exhausted:<last refusal>:<guid>`. A fall stopped mid-air still
+  owes its landing.
+
 ### Coordination rules for round 2
 
 - Use `raid_workloop start --preview` or `raid_workloop boss ...` read-only. Only the
@@ -581,6 +589,36 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
   | Nefarian | action gate | `transport_submissions_exhausted` before the encounter |
 
   Round 3 starts with the per-boss analysis of these runs.
+
+## Round 3 (2026-09-25): analysis of the first batch, then fixes
+
+The six shards' failures, root-caused:
+
+| Shard | Root cause | Owner |
+|---|---|---|
+| Magmaw (batch), Maloriak | No pre-pull consumables contract for BM hunter, so a raid-wide Terminal. Magmaw died natively; a post-kill diagnosis label beat the kill. | MA patches 01/02, M (roster setup, done), H (harness) |
+| Omnotron | Start/regroup on the next node's Golem Sentry, so a contamination wipe loop | M (done: route move plus generic anchor check) |
+| Chimaeron | Finkle on a soapbox off the navmesh; the approach endpoint mismatched until the 90 s timeout | CH shared route-runtime patch |
+| Atramedes | Start inside the north spirit pack, then no way down the lower-wing elevator after the wipe | AT (spirits plus the user's tactics), M (start, done), T (recovery) |
+| Nefarian | The holy paladin's Holy Light cut its ledge step short; five refusals within 1 s exhausted the node. An orb trash pack was alive. | T patch (after CH's), M (orb trash) |
+| All | Rogue and Ret melee abilities capped at 5 yd centre-to-centre; poisons never applied in raids; the shaman lacked Heroism | C (MA 03/04), M (Heroism, done) |
+
+Packages and owners:
+- **M:** route rows and fixtures, anchor-clearance check, roster setup; orb trash.
+- **AT:** spirit packs and the user's tactics (max-range melee, three air gongers ranked by
+  mobility, two gongs per air phase, the mage Ice Block play).
+- **T:** Nefarian descent (`nefarian_descent_round3.patch`) and lower-wing recovery after a
+  wipe.
+- **C:** class rotations (melee reach, poisons, Demonology, BM hunter trash, Ret, spec
+  audit).
+- **H:** harness (native clear stays a clear, pre-pull label, cumulative route actions,
+  contamination terminal, near-wipe death loops, trace drain, fall damage as
+  environmental).
+- **Shared patches awaiting integration:** CH `interaction_approach_walkable_floor`, then T;
+  MA 01/02.
+
+Rule added: never symlink a checkout directory into a scratch tree that is cleaned up. T
+deleted this doc by accident that way; it was restored from HEAD.
 
 ## Round 3 candidates (from the round 2 reviews)
 
