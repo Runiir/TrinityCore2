@@ -170,6 +170,1438 @@
       "damage_modifier": null,
       "template_at_audit": {"base_attack_time_ms": 2000, "unit_class": 1, "rank": 1, "flags_extra": 1073742080},
       "open_reason": "Heroic-only add; the templates that spawn are difficulty entries 49483 (10H) and 49484 (25H). Needs a heroic WCL melee sample."
+    },
+    "41442": {
+      "name": "Atramedes",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 41442,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 513,
+        "level": 88
+      },
+      "open_reason": "No matched 10N WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: atramedes_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226, BaseAttackTime 1500): 4,553.3-6,764.2.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+        "value_key": "boss_melee_damage_modifier_10n",
+        "samples_field": "wcl_10N_samples"
+      },
+      "native_roll_at_modifier_1": {
+        "min": 4553.3,
+        "max": 6764.2
+      },
+      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Atramedes ledger adds that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+    },
+    "49583": {
+      "name": "Atramedes (1)",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "25N",
+      "base_entry": 41442,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 513,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy the 10N value."
+    },
+    "49584": {
+      "name": "Atramedes (2)",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10H",
+      "base_entry": 41442,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 513,
+        "level": 88
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy the 10N value."
+    },
+    "49585": {
+      "name": "Atramedes (3)",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "25H",
+      "base_entry": 41442,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 513,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy the 10N value."
+    },
+    "41546": {
+      "name": "Sonar Pulse",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 41546,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "41879": {
+      "name": "Tracking Flames",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 41879,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "41962": {
+      "name": "Reverberating Flame",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 41962,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "42001": {
+      "name": "Reverberating Flame (patch)",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 42001,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "41807": {
+      "name": "Roaring Flame",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 41807,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "49623": {
+      "name": "Sonar Pulse (bomb marker)",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 49623,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "42356": {
+      "name": "Blind Dragon Tail",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 42356,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI with UNIT_FLAG_NOT_SELECTABLE (TDB 434.22011 creature_template, checked 2026-09-25): a moving hazard/marker whose damage and Sound come from spells, never melee, so DamageModifier has no effect.",
+      "modes": [
+        "10N",
+        "25N",
+        "10H",
+        "25H"
+      ],
+      "modes_note": "No difficulty_entry_1..3 on this template (TDB 434.22011): the same entry spawns in every mode."
+    },
+    "43119": {
+      "name": "Spirit of Angerforge",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43119,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43122": {
+      "name": "Spirit of Corehammer",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43122,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43125": {
+      "name": "Spirit of Moltenfist",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43125,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43126": {
+      "name": "Spirit of Thaurissan",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43126,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43127": {
+      "name": "Spirit of Ironstar",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43127,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43128": {
+      "name": "Spirit of Anvilrage",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43128,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43129": {
+      "name": "Spirit of Shadowforge",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43129,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "43130": {
+      "name": "Spirit of Burningeye",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10N",
+      "base_entry": 43130,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 2,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.75
+      },
+      "open_reason": "Dwarven-spirit trash on the Atramedes route (npc_bwd_dwarven_spirit melees via DoMeleeAttackIfReady; 25N difficulty entry 4950x). No matched WCL melee sample yet (WCL gate, 2026-09-25).",
+      "role_note": "Dwarven-spirit route trash of the Atramedes shard (spawn groups 435/436), not a boss add. The registry only uses 'boss' and 'add' and its consumers only test role == 'boss', so 'add' keeps it out of the boss fidelity gate without a new role."
+    },
+    "49740": {
+      "name": "Obnoxious Fiend",
+      "raid": "blackwing_descent",
+      "boss": "atramedes",
+      "mode": "10H",
+      "base_entry": 49740,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85
+      },
+      "open_reason": "Heroic-only add (difficulty_entry_3 49798); no heroic sample.",
+      "modes_note": "Heroic-only summon: the base entry serves 10H (difficulty_entry_2 is 0); 49798 (difficulty_entry_3) serves 25H."
+    },
+    "43296": {
+      "name": "Chimaeron",
+      "raid": "blackwing_descent",
+      "boss": "chimaeron",
+      "mode": "10N",
+      "base_entry": 43296,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 4000,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1,
+        "level": 88
+      },
+      "open_reason": "No matched 10N WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Plan: chimaeron_ledger_v1 research_completion boss_melee_damage_fidelity (Chimaeron melee, ability 1, U on the Double Attack tank without Break stacks). Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.9421, AP 1226, BaseAttackTime 4000): 12,142.1-18,037.9 before the +1% auto-attack bonus.",
+      "native_roll_at_modifier_1": {
+        "min": 12142.1,
+        "max": 18037.9
+      },
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+        "value_key": "boss_melee",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "47774": {
+      "name": "Chimaeron (1)",
+      "raid": "blackwing_descent",
+      "boss": "chimaeron",
+      "mode": "25N",
+      "base_entry": 43296,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 4000; do not copy the 10N value."
+    },
+    "47775": {
+      "name": "Chimaeron (2)",
+      "raid": "blackwing_descent",
+      "boss": "chimaeron",
+      "mode": "10H",
+      "base_entry": 43296,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1,
+        "level": 88
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 4000; do not copy the 10N value."
+    },
+    "47776": {
+      "name": "Chimaeron (3)",
+      "raid": "blackwing_descent",
+      "boss": "chimaeron",
+      "mode": "25H",
+      "base_entry": 43296,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 4000; do not copy the 10N value."
+    },
+    "41378": {
+      "name": "Maloriak",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 1,
+        "level": 88,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 4553.3,
+        "max": 6764.2
+      },
+      "open_reason": "No same-mode (10N) Maloriak melee U sample: classic.warcraftlogs.com was behind a human-verification gate on 2026-09-25. Extract ability-1 rows from Maloriak with Scarlet Fever/Demoralizing windows per maloriak_wcl_dps_reference_v1.json (views.boss_melee), first from reports MxFq7TRbvnjGY1hJ and Y8ajQ7dbmKMG1RZy. Historical 10N guide: about 25k per hit after tank mitigation, every 1.5-2 s. Template values come from the TDB dump; read back the live creature_template row before staging.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+        "value_key": "native_melee_roll_modifier_1"
+      }
+    },
+    "49974": {
+      "name": "Maloriak (1)",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "25N",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6071.0,
+        "max": 9019.0
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy the 10N value."
+    },
+    "49980": {
+      "name": "Maloriak (2)",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10H",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6071.0,
+        "max": 9019.0
+      },
+      "open_reason": "No same-mode (10H) melee sample; historical guide about 40k per hit. Do not copy another mode."
+    },
+    "49986": {
+      "name": "Maloriak (3)",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "25H",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6071.0,
+        "max": 9019.0
+      },
+      "open_reason": "No same-mode (25H) melee sample. Do not copy another mode."
+    },
+    "41440": {
+      "name": "Aberration",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41440,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 0,
+        "flags_extra": 512,
+        "level": 88,
+        "base_variance": 0.33
+      },
+      "native_roll_at_modifier_1": {
+        "min": 5953.7,
+        "max": 8901.6
+      },
+      "open_reason": "Melee add (difficulty entries 49971 25N, 49977 10H, 49983 25H; 18 per attempt). No matched WCL melee sample yet. Growth Catalyst (+10% damage per nearby Aberration in normal, +20% heroic) sits inside U: select samples by the attacker's catalyst stacks. Historical 10N guide: about 5k per hit every 2 s."
+    },
+    "41841": {
+      "name": "Prime Subject",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41841,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 0,
+        "flags_extra": 1073742336,
+        "level": 88,
+        "base_variance": 0.4
+      },
+      "native_roll_at_modifier_1": {
+        "min": 5965.9,
+        "max": 8913.9
+      },
+      "open_reason": "Phase-two melee add (difficulty entries 49975, 49981, 49987). No matched WCL melee sample yet. Historical 10N guide: about 20k per hit every 2.3 s plus a stacking Rend that the native script does not cast."
+    },
+    "49811": {
+      "name": "Vile Swill",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10H",
+      "base_entry": 49811,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 88,
+        "base_variance": 0.75
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6027.2,
+        "max": 8975.2
+      },
+      "open_reason": "Heroic-only Dark-phase add; the spawning templates are difficulty entries 49982 (10H) and 49988 (25H). Needs a heroic WCL melee sample."
+    },
+    "41576": {
+      "name": "Flash Freeze",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41576,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Ice block around a frozen player: npc_maloriak_flash_freeze is a NullCreatureAI that never attacks; its damage is the Shatter spell 77715 on death."
+    },
+    "41961": {
+      "name": "Absolute Zero",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41961,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI sphere; damage is the Absolute Zero explosion spell 78208."
+    },
+    "41901": {
+      "name": "Magma Jet",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41901,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI fire marker; damage is the spell 78095 / 78124 aura."
+    },
+    "50030": {
+      "name": "Magma Jet",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 50030,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Jet mover (npc_maloriak_magma_jet, aura 93018) that only summons fire markers; no melee."
+    },
+    "41505": {
+      "name": "Cauldron Trigger",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41505,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Stalker that casts Debilitating Slime 77602/77615/77948; never melees."
+    },
+    "49799": {
+      "name": "Lord Victor Nefarius",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10H",
+      "base_entry": 49799,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Heroic presenter (npc_maloriak_lord_victor_nefarius, NullCreatureAI) that throws the Black vial; never melees."
+    },
+    "42166": {
+      "name": "Arcanotron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "42178": {
+      "name": "Magmatron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "42179": {
+      "name": "Electron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "42180": {
+      "name": "Toxitron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan). Kill-credit creature of instance encounter 1027.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "42186": {
+      "name": "Omnotron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42186,
+      "role": "boss",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Controller: REACT_PASSIVE, UNIT_FLAG_NOT_SELECTABLE, never engages or swings (boss_omnotron_defense_system.cpp Initialize; creature_template unit_flags 33554432)."
+    },
+    "42733": {
+      "name": "Power Generator",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42733,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Passive summon (unit_flags 33554432, flags_extra 130) that only pulses 79629 from its 79628 aura; it has no victim and never swings."
+    },
+    "42897": {
+      "name": "Poison Bomb",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42897,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1000,
+        "unit_class": 1,
+        "rank": 0,
+        "level": 85
+      },
+      "open_reason": "Its melee swing procs 80086 -> Quiet Suicide 3617 -> Poison Bomb 80092 (spell damage, not DamageModifier); the swing's own damage is unobserved. Needs a 10N WCL sample of ability 1 from Poison Bomb. Difficulty entries 49121-49123 have their own open rows."
+    },
+    "42920": {
+      "name": "Poison Puddle",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42920,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Passive summon (unit_flags 33554432, flags_extra 8322) that only pulses 80097 from its 80095 aura; no melee."
+    },
+    "42934": {
+      "name": "Chemical Cloud",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42934,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Passive summon (unit_flags 33554432, flags_extra 8322) that only pulses 80161/80164 from 80162/80163; no melee. Difficulty entries 49118-49120 have their own not_applicable rows."
+    },
+    "49047": {
+      "name": "Electron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49048": {
+      "name": "Electron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49049": {
+      "name": "Electron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49050": {
+      "name": "Toxitron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49051": {
+      "name": "Toxitron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49052": {
+      "name": "Toxitron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49053": {
+      "name": "Magmatron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49054": {
+      "name": "Magmatron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49055": {
+      "name": "Magmatron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49056": {
+      "name": "Arcanotron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49057": {
+      "name": "Arcanotron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49058": {
+      "name": "Arcanotron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49118": {
+      "name": "Chemical Cloud (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42934,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Chemical Cloud difficulty entry: passive summon (unit_flags 33554432, flags_extra 8322, TDB 434.22011) that only pulses 80161/80164 from its 80162/80163 auras; no melee."
+    },
+    "49119": {
+      "name": "Chemical Cloud (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42934,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Chemical Cloud difficulty entry: passive summon (unit_flags 33554432, flags_extra 8322, TDB 434.22011) that only pulses 80161/80164 from its 80162/80163 auras; no melee."
+    },
+    "49120": {
+      "name": "Chemical Cloud (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42934,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Chemical Cloud difficulty entry: passive summon (unit_flags 33554432, flags_extra 8322, TDB 434.22011) that only pulses 80161/80164 from its 80162/80163 auras; no melee."
+    },
+    "49121": {
+      "name": "Poison Bomb (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42897,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1000,
+        "unit_class": 1,
+        "rank": 0,
+        "level": 85,
+        "health_modifier": 1.2
+      },
+      "open_reason": "Poison Bomb difficulty entry (25N). Its swing procs the 80092 explosion (spell damage, not DamageModifier); the swing's own damage is unobserved. Needs a same-mode (25N) WCL sample of ability 1 from Poison Bomb; never copy the 10N value."
+    },
+    "49122": {
+      "name": "Poison Bomb (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42897,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1000,
+        "unit_class": 1,
+        "rank": 0,
+        "level": 85,
+        "health_modifier": 3
+      },
+      "open_reason": "Poison Bomb difficulty entry (10H). Its swing procs the 80092 explosion (spell damage, not DamageModifier); the swing's own damage is unobserved. Needs a same-mode (10H) WCL sample of ability 1 from Poison Bomb; never copy the 10N value."
+    },
+    "49123": {
+      "name": "Poison Bomb (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42897,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1000,
+        "unit_class": 1,
+        "rank": 0,
+        "level": 85,
+        "health_modifier": 4
+      },
+      "open_reason": "Poison Bomb difficulty entry (25H). Its swing procs the 80092 explosion (spell damage, not DamageModifier); the swing's own damage is unobserved. Needs a same-mode (25H) WCL sample of ability 1 from Poison Bomb; never copy the 10N value."
+    },
+    "49226": {
+      "name": "Lord Victor Nefarius",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 49226,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Heroic-only PassiveAI summon on the balcony (npc_lord_victor_nefarius_omnotron); casts spells, never melees."
+    },
+    "41376": {
+      "name": "Nefarian",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 41376,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 8193,
+        "level": 88
+      },
+      "open_reason": "No matched WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: nefarian_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226, BaseAttackTime 1500): 4,553.3-6,764.2. The TDB value 90 belonged to the previous damage formula and must not be reused.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+        "value_key": "melee_swing_at_damage_modifier_1",
+        "samples_field": "wcl_10N_samples"
+      },
+      "native_roll_at_modifier_1": {
+        "min": 4553.3,
+        "max": 6764.2
+      },
+      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Nefarian ledger adds wcl_10N_samples to that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+    },
+    "51104": {
+      "name": "Nefarian (1)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "25N",
+      "base_entry": 41376,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 8193,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25N) melee sample; do not copy another mode. Same class, level and BaseAttackTime as 10N (native roll at modifier 1 4,553.3-6,764.2); HealthModifier 928."
+    },
+    "51105": {
+      "name": "Nefarian (2)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10H",
+      "base_entry": 41376,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 8193,
+        "level": 88
+      },
+      "open_reason": "No same-mode (10H) melee sample; do not copy another mode. Same class, level and BaseAttackTime as 10N (native roll at modifier 1 4,553.3-6,764.2); HealthModifier 598."
+    },
+    "51106": {
+      "name": "Nefarian (3)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "25H",
+      "base_entry": 41376,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 8193,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25H) melee sample; do not copy another mode. Same class, level and BaseAttackTime as 10N (native roll at modifier 1 4,553.3-6,764.2); HealthModifier 2088."
+    },
+    "41270": {
+      "name": "Onyxia",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 41270,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1073741824,
+        "level": 88
+      },
+      "open_reason": "No matched WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: nefarian_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. Native roll at modifier 1 (gt_npc_damage_by_class_exp3[88].Warrior 2947.94, AP 1226, BaseAttackTime 1500): 4,553.3-6,764.2. The TDB value 90 belonged to the previous damage formula and must not be reused.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+        "value_key": "melee_swing_at_damage_modifier_1",
+        "samples_field": "wcl_10N_samples"
+      },
+      "native_roll_at_modifier_1": {
+        "min": 4553.3,
+        "max": 6764.2
+      },
+      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Nefarian ledger adds wcl_10N_samples to that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+    },
+    "51116": {
+      "name": "Onyxia (1)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "25N",
+      "base_entry": 41270,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1073741824,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25N) melee sample; do not copy another mode. Same class, level and BaseAttackTime as 10N (native roll at modifier 1 4,553.3-6,764.2); HealthModifier 230."
+    },
+    "51117": {
+      "name": "Onyxia (2)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10H",
+      "base_entry": 41270,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1073741824,
+        "level": 88
+      },
+      "open_reason": "No same-mode (10H) melee sample; do not copy another mode. Same class, level and BaseAttackTime as 10N (native roll at modifier 1 4,553.3-6,764.2); HealthModifier 115."
+    },
+    "51118": {
+      "name": "Onyxia (3)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "25H",
+      "base_entry": 41270,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 3,
+        "flags_extra": 1073741824,
+        "level": 88
+      },
+      "open_reason": "No same-mode (25H) melee sample; do not copy another mode. Same class, level and BaseAttackTime as 10N (native roll at modifier 1 4,553.3-6,764.2); HealthModifier 405."
+    },
+    "41918": {
+      "name": "Animated Bone Warrior",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 41918,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 85,
+        "base_variance": 0.5
+      },
+      "open_reason": "No matched WCL melee sample yet: classic.warcraftlogs.com showed a human-verification interstitial on 2026-09-25 (agents may not pass it). Extraction plan: nefarian_wcl_dps_reference_v1.json extraction_plan.views.boss_melee. One template serves every difficulty (no difficulty entries). Native roll at modifier 1 before Empower 79330 stacks (gt_npc_damage_by_class_exp3[85].Rogue 2704.75, AP 851, BaseVariance 0.5, BaseAttackTime 2000): 5,470.3-8,175.0. Samples must record the attacker's Empower stack count (+100% damage per stack in normal).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+        "value_key": "melee_swing_at_damage_modifier_1",
+        "samples_field": "wcl_10N_bone_warrior_samples"
+      },
+      "native_roll_at_modifier_1": {
+        "min": 5470.3,
+        "max": 8175.0
+      },
+      "modes_note": "The same entry spawns in 10N, 25N, 10H and 25H; a 10N calibration applies to every mode only if same-mode samples agree.",
+      "ledger_note": "live_validation_fidelity.wcl_reference reads ledger.values[key == value_key][samples_field]; the Nefarian ledger adds wcl_10N_samples to that values entry only when WCL 10N melee samples exist, so no reference is returned until then."
+    },
+    "41948": {
+      "name": "Chromatic Prototype",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 41948,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "npc_nefarians_end_chromatic_prototype is PassiveAI and never calls DoMeleeAttackIfReady (boss_nefarians_end_adds.cpp); it casts Dummy Nuke 80776 and Blast Nova 80734 only, so DamageModifier has no effect (checked 2026-09-25)."
+    },
+    "51119": {
+      "name": "Chromatic Prototype (1)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "25N",
+      "base_entry": 41948,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "npc_nefarians_end_chromatic_prototype is PassiveAI and never calls DoMeleeAttackIfReady (boss_nefarians_end_adds.cpp); it casts Dummy Nuke 80776 and Blast Nova 80734 only, so DamageModifier has no effect (checked 2026-09-25)."
+    },
+    "51120": {
+      "name": "Chromatic Prototype (2)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10H",
+      "base_entry": 41948,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "npc_nefarians_end_chromatic_prototype is PassiveAI and never calls DoMeleeAttackIfReady (boss_nefarians_end_adds.cpp); it casts Dummy Nuke 80776 and Blast Nova 80734 only, so DamageModifier has no effect (checked 2026-09-25)."
+    },
+    "51121": {
+      "name": "Chromatic Prototype (3)",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "25H",
+      "base_entry": 41948,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "npc_nefarians_end_chromatic_prototype is PassiveAI and never calls DoMeleeAttackIfReady (boss_nefarians_end_adds.cpp); it casts Dummy Nuke 80776 and Blast Nova 80734 only, so DamageModifier has no effect (checked 2026-09-25)."
+    },
+    "41379": {
+      "name": "Lord Victor Nefarius",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 41379,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "PassiveAI intro NPC (npc_nefarians_end_lord_victor_nefarius) that despawns after the intro, before any combat. (TDB 434.22011 creature_template, checked 2026-09-25)"
+    },
+    "42856": {
+      "name": "Controller Stalker",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 42856,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI stalker; Onyxia's engage calls DoZoneInCombat on it but it has no melee. (TDB 434.22011 creature_template, checked 2026-09-25)"
+    },
+    "42595": {
+      "name": "Shadowblaze Flashpoint",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 42595,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI fire actor (npc_nefarians_end_shadowblaze); damage comes from Shadowblaze 81007, never melee. (TDB 434.22011 creature_template, checked 2026-09-25)"
+    },
+    "42596": {
+      "name": "Shadowblaze",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 42596,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI fire actor (npc_nefarians_end_shadowblaze); damage comes from Shadowblaze 81007, never melee. (TDB 434.22011 creature_template, checked 2026-09-25)"
+    },
+    "51089": {
+      "name": "Nefarian's Lightning Machine",
+      "raid": "blackwing_descent",
+      "boss": "nefarian",
+      "mode": "10N",
+      "base_entry": 51089,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Scriptless stalker that only casts Electrocute 81198/81272 for Nefarian; no melee. (TDB 434.22011 creature_template, checked 2026-09-25)"
     }
   }
 }
