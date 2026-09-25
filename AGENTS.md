@@ -45,3 +45,18 @@ requires source isolation/configuration repair, not a generic completion reply.
 Report any earlier failing tests even if a narrower selection later passes; classify
 their relevance without silently dropping them. Only stop for the user's requested
 boundary, accepted objective, or a specific external blocker that cannot be resolved.
+
+For raid-level requests naming a raid and difficulty but no boss (for example
+"implement bwd 10n bots"; raid aliases come from experiments/configs/raid_prerequisites,
+such as bwd, bot/bastion, tofw, fl/firelands, ds/dragon soul), run the same
+`raid_workloop start "<request>"`. It selects a raid program: one unit per boss
+shard in a seeded lockout, synchronized rounds (plan, parallel implementation,
+one build, every ready shard in one worldserver, ingest, per-boss assessment),
+then the end-to-end clear with trash and interactions. Follow
+`.agents/skills/trinity-orchestrator/references/raid-program.md`. Plain
+`raid_workloop resume` continues whichever of the raid program or the boss
+graph was started last; `resume --program` and `resume --boss` choose
+explicitly. A raid-level request authorizes one implementation agent per round
+packet (no model override; reviewers in separate sessions). The raid is complete
+only when `raid_workloop resume` reports `parent_objective_complete`; until then
+execute the returned next action.

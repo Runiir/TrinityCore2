@@ -12,6 +12,8 @@ pixi run python -m tools.raid_program.raid_workloop start "implement magmaw 25hc
 pixi run python -m tools.raid_program.raid_workloop resume   # continue the selected scenario
 ```
 
+A raid-level request (`start "implement bwd 10n bots"`) selects a raid program instead; see `.agents/skills/trinity-orchestrator/references/raid-program.md`. Its state is `artifacts/cata_raid_program/raid_program_state_v1.json`; it references boss scenarios and never rewrites this graph.
+
 `start` resolves boss and 10N/10HC/25N/25HC from the strategy catalog. A matching
 saved scenario resumes unchanged; a new one is initialized from requested-mode
 inputs (see below). `--preview` inspects without selecting; `--expect` binds to
