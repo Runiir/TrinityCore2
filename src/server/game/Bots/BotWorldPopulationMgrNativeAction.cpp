@@ -1,12 +1,14 @@
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotNativeMovementOutcome.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 
 #include "CharmInfo.h"
 #include "Corpse.h"
 #include "Creature.h"
 #include "DataStores/DBCStores.h"
 #include "GameClient.h"
+#include "GameObject.h"
 #include "GameTime.h"
 #include "Item.h"
 #include "ItemTemplate.h"
@@ -458,8 +460,21 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 ? BotActionArbitration::Outcome::Submitted("native_cast_submitted")
                 : BotActionArbitration::Outcome::Retryable("native_cast_rejected");
         }
-        else if constexpr (std::is_same_v<T, BotNativeAction::SpellClick>
-            || std::is_same_v<T, BotNativeAction::VehicleEnter>)
+        else if constexpr (std::is_same_v<T, BotNativeAction::VehicleEnter>)
+        {
+            // Seat-aware boarding: spellclick to enter, then the passenger's
+            // own seat-switch request when a specific seat is declared.
+            return BotValidationRouteBoardingAction::EnterVehicle(bot, action);
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::TransportBoard>)
+        {
+            return BotValidationRouteBoardingAction::BoardTransport(bot, action);
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::TransportLeave>)
+        {
+            return BotValidationRouteBoardingAction::LeaveTransport(bot, action);
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::SpellClick>)
         {
             Creature* clickable = ObjectAccessor::GetCreatureOrPetOrVehicle(
                 *bot, action.Target);
@@ -478,6 +493,16 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::GameObjectUse>)
         {
+            // Same reach rule the native handler applies; an out-of-range
+            // request is retryable instead of a silently dropped opcode.
+            GameObject* usable = bot->GetMap()
+                ? bot->GetMap()->GetGameObject(action.Target) : nullptr;
+            if (!usable || !usable->IsInWorld() || !usable->isSpawned())
+                return BotActionArbitration::Outcome::Unsafe(
+                    "native_gameobject_use_target_invalid");
+            if (!usable->IsAtInteractDistance(bot))
+                return BotActionArbitration::Outcome::Retryable(
+                    "native_gameobject_use_out_of_range");
             WorldPacket use(CMSG_GAMEOBJ_USE, sizeof(uint64));
             use << action.Target;
             bot->GetSession()->HandleGameObjectUseOpcode(use);

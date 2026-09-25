@@ -623,13 +623,17 @@ def test_mixed_kind_catalog_matches_canonical_runtime_selection(
     manifest = json.loads(Path(result["output_object_path"]).read_bytes())
 
     assert manifest == canonical_payload
-    assert [row["step"] for row in manifest["routes"]] == [1, 2, 6, 7]
-    assert [row["route_generation"] for row in manifest["routes"]] == [1, 2, 3, 4]
-    assert [row["line_number"] for row in result["selected_row_order"]] == [
-        4, 7, 9, 2
+    # Native interaction rows are executable route nodes; only the foreign
+    # profile and the invalid-coordinate duplicate are excluded.
+    assert [row["step"] for row in manifest["routes"]] == [1, 2, 3, 4, 5, 6, 7]
+    assert [row["route_generation"] for row in manifest["routes"]] == [
+        1, 2, 3, 4, 5, 6, 7
     ]
-    assert result["selected_row_count"] == 4
-    excluded = {3, 5, 6, 8}
+    assert [row["line_number"] for row in result["selected_row_order"]] == [
+        4, 7, 3, 6, 8, 9, 2
+    ]
+    assert result["selected_row_count"] == 7
+    excluded = {1, 5}
     assert excluded.isdisjoint(
         row["line_number"] for row in result["selected_row_order"]
     )
@@ -640,7 +644,7 @@ def test_mixed_kind_catalog_matches_canonical_runtime_selection(
         ([], b'{"scenario_id":\n', "selected", "route_catalog_jsonl_invalid:1"),
         ([[]], None, "selected", "route_catalog_row_invalid:1"),
         ([_route_row("other", 1, "other.first")], None, "selected", "route_catalog_scenario_missing"),
-        ([_route_row("selected", 1, "selected.first", kind="interaction")], None, "selected", "route_catalog_scenario_missing"),
+        ([_route_row("selected", 1, "selected.first", kind="unsupported")], None, "selected", "route_catalog_scenario_missing"),
         ([_route_row("selected", 1, "selected.first", coordinates_valid=False)], None, "selected", "route_catalog_scenario_missing"),
         ([_route_row("selected", 1, "selected.first"), _route_row("selected", 1, "selected.second")], None, "selected", "route_catalog_scenario_ambiguous"),
         ([_route_row("selected", 1, "selected.first"), _route_row("selected", 2, "selected.first")], None, "selected", "route_catalog_scenario_ambiguous"),

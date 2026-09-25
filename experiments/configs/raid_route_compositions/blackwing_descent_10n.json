@@ -1,0 +1,354 @@
+{
+  "schema": "raid_route_composition_v1",
+  "scenario_id": "blackwing_descent_10n",
+  "description": "Full Blackwing Descent 10N route composed from the reviewed per-boss shard node sets in one authoritative order. The upper wing (Magmaw, Omnotron) reaches the lower wing only through the Blackwing Descent Elevator (static navmesh: no complete path from the entrance or Omnotron to the laboratory; the elevator shaft bottom connects to the laboratory and the Orb of Culmination), so the full raid inserts that transport between Omnotron and Maloriak. Magmaw keeps the reviewed two-tank Drudge lanes and tank-swap contract in the full raid; the accepted single-tank Magmaw shard is unchanged.",
+  "node_sets": [
+    {
+      "id": "magmaw",
+      "source_scenario_id": "blackwing_descent_10n_magmaw_diagnostic"
+    },
+    {
+      "id": "omnotron",
+      "source_scenario_id": "blackwing_descent_10n_omnotron_diagnostic"
+    },
+    {
+      "id": "lower_wing_transit",
+      "reason": "Full-raid only: the lower wing is reached from the entrance hall by the continuously cycling Blackwing Descent Elevator (GO 203716, spawn 235178; TransportAnimation.dbc drops 112.67 yd, ~1.8 s rest at the top and ~2 s at the bottom per 17.4 s cycle). Seeded lower-wing shards start below and never ride it.",
+      "rows": [
+        {
+          "node_id": "bwd.transit.lower_wing_elevator",
+          "kind": "transport",
+          "node_kind": "transport",
+          "label": "Blackwing Descent lower-wing elevator",
+          "x": -224.0,
+          "y": -224.6053,
+          "z": 76.8211,
+          "o": 0.0,
+          "source_entry": 203716,
+          "source_guid": "235178",
+          "source_table": "gameobject",
+          "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql",
+          "completion_policy": "native_postcondition",
+          "transport_contract": {
+            "entry": 203716,
+            "spawn_id": 235178,
+            "board_transport_z": 186.5513,
+            "exit_transport_z": 73.8809,
+            "level_tolerance_yards": 0.75,
+            "wait_point": [
+              -256.35,
+              -224.6053,
+              190.163
+            ],
+            "board_point": [
+              -250.35,
+              -224.6053,
+              190.154
+            ],
+            "disembark_point": [
+              -241.35,
+              -224.6053,
+              77.2
+            ],
+            "exit_point": [
+              -224.0,
+              -224.6053,
+              76.8211
+            ],
+            "arrival_tolerance_yards": 1.5,
+            "footprint_margin_yards": 0.5,
+            "timeout_ms": 240000
+          }
+        }
+      ]
+    },
+    {
+      "id": "maloriak",
+      "source_scenario_id": "blackwing_descent_10n_maloriak_diagnostic"
+    },
+    {
+      "id": "atramedes",
+      "source_scenario_id": "blackwing_descent_10n_atramedes_diagnostic"
+    },
+    {
+      "id": "chimaeron",
+      "source_scenario_id": "blackwing_descent_10n_chimaeron_diagnostic"
+    },
+    {
+      "id": "nefarian",
+      "source_scenario_id": "blackwing_descent_10n_nefarian_diagnostic"
+    }
+  ],
+  "variants": [
+    {
+      "node_id": "bwd.magmaw.drudges",
+      "reason": "The full raid runs two tanks (roster slots 1 and 2), so it keeps the reviewed two-tank Drudge charge-lane geometry. The accepted Magmaw shard is a single Blood tank and intentionally runs the Drudge pair as ordinary minimum-distance trash.",
+      "set": {
+        "mechanic_profile": "trash_two_tank_charge_lanes",
+        "split_source_guids": [
+          250140,
+          250141
+        ],
+        "split_source_home_anchors": [
+          {
+            "source_guid": 250140,
+            "x": -298.833,
+            "y": -50.349,
+            "z": 212.2983
+          },
+          {
+            "source_guid": 250141,
+            "x": -307.913,
+            "y": -49.5694,
+            "z": 212.2623
+          }
+        ],
+        "split_lane_a_roster_slots": [
+          1,
+          3,
+          4,
+          6,
+          7
+        ],
+        "split_lane_b_roster_slots": [
+          2,
+          5,
+          8,
+          9,
+          10
+        ],
+        "split_lane_tank_slots": [
+          1,
+          2
+        ],
+        "split_healer_roster_slots": [
+          3,
+          4,
+          5
+        ],
+        "split_member_anchors": [
+          {
+            "roster_slot": 1,
+            "x": -295.0,
+            "y": -68.0,
+            "z": 213.05
+          },
+          {
+            "roster_slot": 2,
+            "x": -329.0,
+            "y": -60.0,
+            "z": 212.35
+          },
+          {
+            "roster_slot": 3,
+            "x": -296.0,
+            "y": -69.9,
+            "z": 213.485
+          },
+          {
+            "roster_slot": 4,
+            "x": -298.8,
+            "y": -71.5,
+            "z": 213.461
+          },
+          {
+            "roster_slot": 5,
+            "x": -311.5,
+            "y": -71.3,
+            "z": 213.292
+          },
+          {
+            "roster_slot": 6,
+            "x": -295.0,
+            "y": -75.0,
+            "z": 213.45
+          },
+          {
+            "roster_slot": 7,
+            "x": -292.5,
+            "y": -69.1,
+            "z": 214.024
+          },
+          {
+            "roster_slot": 8,
+            "x": -311.5,
+            "y": -78.0,
+            "z": 213.5
+          },
+          {
+            "roster_slot": 9,
+            "x": -344.021,
+            "y": -50.4246,
+            "z": 212.216
+          },
+          {
+            "roster_slot": 10,
+            "x": -340.293,
+            "y": -53.7558,
+            "z": 211.888
+          }
+        ],
+        "split_recovery_member_anchors": [
+          {
+            "roster_slot": 1,
+            "x": -330.0,
+            "y": -88.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 2,
+            "x": -348.0,
+            "y": -120.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 3,
+            "x": -324.0,
+            "y": -113.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 4,
+            "x": -318.0,
+            "y": -116.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 5,
+            "x": -321.0,
+            "y": -115.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 6,
+            "x": -312.0,
+            "y": -119.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 7,
+            "x": -320.0,
+            "y": -120.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 8,
+            "x": -315.0,
+            "y": -118.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 9,
+            "x": -309.0,
+            "y": -121.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 10,
+            "x": -316.0,
+            "y": -123.0,
+            "z": 214.0
+          }
+        ],
+        "split_tank_combat_anchors": [
+          {
+            "roster_slot": 1,
+            "x": -286.5,
+            "y": -58.0,
+            "z": 212.2983
+          },
+          {
+            "roster_slot": 2,
+            "x": -322.858,
+            "y": -48.2862,
+            "z": 212.2623
+          }
+        ],
+        "split_tank_navigation_anchors": [
+          {
+            "roster_slot": 1,
+            "x": -289.289093,
+            "y": -57.7575,
+            "z": 212.932236
+          },
+          {
+            "roster_slot": 2,
+            "x": -322.858002,
+            "y": -48.286201,
+            "z": 211.999359
+          }
+        ],
+        "split_tank_recovery_anchors": [
+          {
+            "roster_slot": 1,
+            "x": -330.0,
+            "y": -88.0,
+            "z": 214.0
+          },
+          {
+            "roster_slot": 2,
+            "x": -348.0,
+            "y": -120.0,
+            "z": 214.0
+          }
+        ],
+        "split_minimum_separation_yards": 15.0,
+        "split_navigation_margin_yards": 2.0,
+        "split_arrival_tolerance_yards": 1.0,
+        "split_tank_arrival_tolerance_yards": 1.0,
+        "split_native_melee_stop_yards": 8.0,
+        "split_seed_roster_slots": [
+          8,
+          6
+        ],
+        "split_seed_max_range_yards": 35.0,
+        "split_tank_threat_headroom_multiplier": 2.5,
+        "thunderclap_spell_id": 79604,
+        "charge_spell_id": 79630,
+        "charge_range_yards": 80.0,
+        "charge_native_interval_ms": 20000,
+        "vengeful_rage_spell_id": 80035
+      }
+    },
+    {
+      "node_id": "bwd.magmaw.encounter",
+      "reason": "The full raid assigns the Blood DK (slot 2) as main tank and slot 1 as off tank with the native Sweltering Armor (78199) debuff swap; the accepted single-tank Magmaw shard has no tank swap.",
+      "set": {
+        "mechanic_contract": {
+          "id": "phase1_magmaw_native_engagement_recovery_v2_balance_starfall",
+          "target_control": "focus_fire",
+          "target_entries": [
+            41570,
+            42347,
+            41806,
+            42321
+          ],
+          "allow_area_damage": false,
+          "area_damage_spell_allowlist": [
+            421,
+            48505,
+            55050
+          ],
+          "area_damage_target_allowlist": [
+            41570,
+            42347
+          ],
+          "allow_multidot": false,
+          "main_tank_roster_slot": 2,
+          "off_tank_roster_slot": 1,
+          "tank_swap_trigger": "debuff_stacks",
+          "tank_swap_aura_id": 78199,
+          "tank_swap_aura_stacks": 1
+        }
+      }
+    }
+  ],
+  "mechanic_profiles": {
+    "trash_two_tank_charge_lanes": [
+      "two_tank_split",
+      "charge_lanes",
+      "minimum_distance",
+      "kill_sync"
+    ]
+  }
+}

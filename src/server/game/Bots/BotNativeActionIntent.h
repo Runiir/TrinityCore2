@@ -130,12 +130,20 @@ struct PetCommand { ObjectGuid Pet; ObjectGuid Target; uint32 Command = 0; };
 struct UseItem { ObjectGuid Item; ObjectGuid Target; uint32 SpellId = 0; };
 struct ReleaseSpirit { };
 struct ReclaimCorpse { ObjectGuid Corpse; };
+// Boarding or leaving an elevator platform (GAMEOBJECT_TYPE_TRANSPORT) is a
+// movement report, never a position change. The executor first proves the
+// bot already stands inside the platform footprint (board) or over static
+// ground (leave), then submits the heartbeat a client sends at that exact
+// position and observes the server's own passenger bookkeeping.
+struct TransportBoard { ObjectGuid Transport; float FootprintMarginYards = 0.5f; };
+struct TransportLeave { ObjectGuid Transport; };
 
 using Intent = std::variant<CastSpell, Move, DirectionalMobility,
     CombatResApproach,
     CombatResCast, CombatResAccept, NativeDescent,
     GossipOpen, GossipSelect, SpellClick, GameObjectUse, AreaTrigger, VehicleEnter, VehicleAction,
-    VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse>;
+    VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse,
+    TransportBoard, TransportLeave>;
 
 inline Intent WithMovementReason(Intent intent, std::string_view reason)
 {
@@ -175,7 +183,9 @@ inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent
         if constexpr (std::is_same_v<T, DirectionalMobility>)
             return Uses(Resource::Movement, Resource::GlobalCooldown,
                 Resource::Cast);
-        if constexpr (std::is_same_v<T, NativeDescent>)
+        if constexpr (std::is_same_v<T, NativeDescent>
+            || std::is_same_v<T, TransportBoard>
+            || std::is_same_v<T, TransportLeave>)
             return Uses(Resource::Movement);
         if constexpr (std::is_same_v<T, CombatResApproach>)
             // Approaching only submits native movement.  It observes the

@@ -67,20 +67,24 @@ def test_magmaw_routes_declare_passive_hook_spike():
         "blackwing_descent_10n",
         "blackwing_descent_10n_magmaw_diagnostic",
     }
-    magmaw_nodes = [
-        step
+    magmaw_nodes = {
+        scenario["id"]: step
         for scenario_group in ("scenarios", "diagnostic_scenarios")
         for scenario in config[scenario_group]
         if scenario["id"] in wanted
         for step in scenario["route"]
         if step.get("node_id") == "bwd.magmaw.encounter"
-    ]
-    assert len(magmaw_nodes) == 2
+    }
+    assert set(magmaw_nodes) == wanted
     assert all(node.get("scripted_event_entries") == [41767]
-        for node in magmaw_nodes)
-    assert all(node["mechanic_contract"]["main_tank_roster_slot"] == 2
-        and node["mechanic_contract"]["off_tank_roster_slot"] == 1
-        for node in magmaw_nodes)
+        for node in magmaw_nodes.values())
+    # The composed full raid keeps the two-tank assignment; the accepted
+    # Magmaw shard is a single Blood tank and declares no tank pair.
+    full = magmaw_nodes["blackwing_descent_10n"]["mechanic_contract"]
+    assert (full["main_tank_roster_slot"], full["off_tank_roster_slot"]) == (2, 1)
+    shard = magmaw_nodes["blackwing_descent_10n_magmaw_diagnostic"]["mechanic_contract"]
+    assert "main_tank_roster_slot" not in shard
+    assert "off_tank_roster_slot" not in shard
 
 
 def test_encounter_blackboard_publishes_configured_tank_assignment_lease():

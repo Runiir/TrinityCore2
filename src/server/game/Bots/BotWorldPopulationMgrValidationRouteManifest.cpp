@@ -14,368 +14,10 @@
 #include <string>
 #include <vector>
 
-namespace
-{
-std::string ReadSmallTextFile(std::string const& path, size_t maxBytes = 4 * 1024 * 1024)
-{
-    if (path.empty())
-        return "";
+#include "Bots/BotWorldPopulationMgrValidationRouteManifestFields.h"
+#include "Bots/BotValidationRouteNativeLogic.h"
 
-    std::ifstream input(path.c_str(), std::ios::in | std::ios::binary);
-    if (!input)
-        return "";
-
-    std::ostringstream data;
-    data << input.rdbuf();
-    std::string value = data.str();
-    if (value.size() > maxBytes)
-        return "";
-    return value;
-}
-
-std::string ExtractJsonStringField(std::string const& json, std::string const& key)
-{
-    std::regex pattern("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
-    std::smatch match;
-    if (std::regex_search(json, match, pattern) && match.size() > 1)
-        return match[1].str();
-    return "";
-}
-
-
-std::string ExtractJsonObjectField(std::string const& json, std::string const& key)
-{
-    std::string needle = "\"" + key + "\"";
-    size_t keyPos = json.find(needle);
-    if (keyPos == std::string::npos)
-        return "";
-    size_t colon = json.find(':', keyPos + needle.size());
-    if (colon == std::string::npos)
-        return "";
-    size_t start = json.find('{', colon);
-    if (start == std::string::npos)
-        return "";
-
-    uint32 depth = 0;
-    bool inString = false;
-    bool escaped = false;
-    for (size_t i = start; i < json.size(); ++i)
-    {
-        char c = json[i];
-        if (inString)
-        {
-            if (escaped)
-                escaped = false;
-            else if (c == '\\')
-                escaped = true;
-            else if (c == '"')
-                inString = false;
-            continue;
-        }
-
-        if (c == '"')
-            inString = true;
-        else if (c == '{')
-            ++depth;
-        else if (c == '}')
-        {
-            if (!depth)
-                return "";
-            --depth;
-            if (!depth)
-                return json.substr(start, i - start + 1);
-        }
-    }
-    return "";
-}
-
-
-std::string ExtractJsonArrayField(std::string const& json, std::string const& key)
-{
-    std::string needle = "\"" + key + "\"";
-    size_t keyPos = json.find(needle);
-    if (keyPos == std::string::npos)
-        return "";
-    size_t colon = json.find(':', keyPos + needle.size());
-    if (colon == std::string::npos)
-        return "";
-    size_t start = json.find('[', colon);
-    if (start == std::string::npos)
-        return "";
-
-    uint32 depth = 0;
-    bool inString = false;
-    bool escaped = false;
-    for (size_t i = start; i < json.size(); ++i)
-    {
-        char c = json[i];
-        if (inString)
-        {
-            if (escaped)
-                escaped = false;
-            else if (c == '\\')
-                escaped = true;
-            else if (c == '"')
-                inString = false;
-            continue;
-        }
-
-        if (c == '"')
-            inString = true;
-        else if (c == '[')
-            ++depth;
-        else if (c == ']')
-        {
-            if (!depth)
-                return "";
-            --depth;
-            if (!depth)
-                return json.substr(start, i - start + 1);
-        }
-    }
-    return "";
-}
-
-
-std::vector<std::string> ExtractJsonObjectArrayItems(std::string const& arrayJson)
-{
-    std::vector<std::string> items;
-    uint32 depth = 0;
-    bool inString = false;
-    bool escaped = false;
-    size_t start = std::string::npos;
-    for (size_t i = 0; i < arrayJson.size(); ++i)
-    {
-        char c = arrayJson[i];
-        if (inString)
-        {
-            if (escaped)
-                escaped = false;
-            else if (c == '\\')
-                escaped = true;
-            else if (c == '"')
-                inString = false;
-            continue;
-        }
-
-        if (c == '"')
-            inString = true;
-        else if (c == '{')
-        {
-            if (!depth)
-                start = i;
-            ++depth;
-        }
-        else if (c == '}')
-        {
-            if (depth)
-            {
-                --depth;
-                if (!depth && start != std::string::npos)
-                    items.push_back(arrayJson.substr(start, i - start + 1));
-            }
-        }
-    }
-    return items;
-}
-
-
-std::set<std::string> ExtractJsonTopLevelKeys(std::string const& objectJson)
-{
-    std::set<std::string> keys;
-    uint32 depth = 0;
-    bool inString = false;
-    bool escaped = false;
-    size_t stringStart = std::string::npos;
-    for (size_t i = 0; i < objectJson.size(); ++i)
-    {
-        char const c = objectJson[i];
-        if (inString)
-        {
-            if (escaped)
-                escaped = false;
-            else if (c == '\\')
-                escaped = true;
-            else if (c == '"')
-            {
-                inString = false;
-                if (depth == 1 && stringStart != std::string::npos)
-                {
-                    size_t next = i + 1;
-                    while (next < objectJson.size() && std::isspace(static_cast<unsigned char>(objectJson[next])))
-                        ++next;
-                    if (next < objectJson.size() && objectJson[next] == ':')
-                        keys.insert(objectJson.substr(stringStart, i - stringStart));
-                }
-            }
-            continue;
-        }
-        if (c == '"')
-        {
-            inString = true;
-            stringStart = i + 1;
-        }
-        else if (c == '{' || c == '[')
-            ++depth;
-        else if ((c == '}' || c == ']') && depth)
-            --depth;
-    }
-    return keys;
-}
-
-
-bool ExtractJsonNumberField(std::string const& json, std::string const& key, float& value)
-{
-    std::regex pattern("\"" + key + "\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)");
-    std::smatch match;
-    if (std::regex_search(json, match, pattern) && match.size() > 1)
-    {
-        value = float(std::atof(match[1].str().c_str()));
-        return true;
-    }
-    return false;
-}
-
-
-bool ExtractJsonIntField(std::string const& json, std::string const& key, int& value)
-{
-    float number = 0.0f;
-    if (!ExtractJsonNumberField(json, key, number))
-        return false;
-    value = int(number);
-    return true;
-}
-
-
-std::vector<uint32> ParseUIntList(std::string const& text)
-{
-    std::vector<uint32> values;
-    std::regex pattern("([0-9]+)");
-    for (std::sregex_iterator itr(text.begin(), text.end(), pattern), end; itr != end; ++itr)
-    {
-        uint32 value = uint32(std::strtoul((*itr)[1].str().c_str(), nullptr, 10));
-        if (value && std::find(values.begin(), values.end(), value) == values.end())
-            values.push_back(value);
-    }
-    return values;
-}
-
-
-std::vector<uint32> ExtractJsonUIntArrayField(std::string const& json, std::string const& key)
-{
-    return ParseUIntList(ExtractJsonArrayField(json, key));
-}
-
-
-bool ExtractJsonStrictUIntArrayField(std::string const& json, std::string const& key,
-    std::vector<uint32>& values)
-{
-    values.clear();
-    std::string const array = ExtractJsonArrayField(json, key);
-    if (array.size() < 2 || array.front() != '[')
-        return false;
-
-    size_t index = 1;
-    auto skipWhitespace = [&]()
-    {
-        while (index < array.size()
-            && std::isspace(static_cast<unsigned char>(array[index])))
-            ++index;
-    };
-    skipWhitespace();
-    if (index < array.size() && array[index] == ']')
-    {
-        ++index;
-        skipWhitespace();
-        return index == array.size();
-    }
-
-    while (index < array.size())
-    {
-        if (!std::isdigit(static_cast<unsigned char>(array[index])))
-            return false;
-        uint64 value = 0;
-        while (index < array.size()
-            && std::isdigit(static_cast<unsigned char>(array[index])))
-        {
-            uint64 const digit = uint64(array[index] - '0');
-            if (value > (std::numeric_limits<uint32>::max() - digit) / 10)
-                return false;
-            value = value * 10 + digit;
-            ++index;
-        }
-        values.push_back(uint32(value));
-        skipWhitespace();
-        if (index >= array.size())
-            return false;
-        if (array[index] == ']')
-        {
-            ++index;
-            skipWhitespace();
-            return index == array.size();
-        }
-        if (array[index] != ',')
-            return false;
-        ++index;
-        skipWhitespace();
-    }
-    return false;
-}
-
-bool JsonHasField(std::string const& json, std::string const& key)
-{
-    std::regex pattern("\"" + key + "\"\\s*:");
-    return std::regex_search(json, pattern);
-}
-
-
-bool ExtractJsonBoolField(std::string const& json, std::string const& key, bool& value)
-{
-    std::regex pattern("\"" + key + "\"\\s*:\\s*(true|false)");
-    std::smatch match;
-    if (std::regex_search(json, match, pattern) && match.size() > 1)
-    {
-        value = match[1].str() == "true";
-        return true;
-    }
-    return false;
-}
-
-bool JsonFieldIsString(std::string const& json, std::string const& key)
-{
-    std::regex pattern("\"" + key + "\"\\s*:\\s*\"");
-    return std::regex_search(json, pattern);
-}
-
-bool JsonFieldIsNumber(std::string const& json, std::string const& key)
-{
-    std::regex pattern("\"" + key + "\"\\s*:\\s*-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?");
-    return std::regex_search(json, pattern);
-}
-
-bool JsonFieldIsBool(std::string const& json, std::string const& key)
-{
-    std::regex pattern("\"" + key + "\"\\s*:\\s*(true|false)");
-    return std::regex_search(json, pattern);
-}
-
-
-std::vector<std::string> ExtractJsonLineObjects(std::string const& text)
-{
-    std::vector<std::string> items;
-    std::istringstream input(text);
-    std::string line;
-    while (std::getline(input, line))
-    {
-        size_t first = line.find_first_not_of(" \t\r\n");
-        if (first == std::string::npos || line[first] != '{')
-            continue;
-        items.push_back(line.substr(first));
-    }
-    return items;
-}
-
-}
+using namespace BotValidationRouteManifestFields;
 
 void BotWorldPopulationMgr::LoadValidationRouteManifest()
 {
@@ -445,7 +87,12 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         }
         node.NodeId = ExtractJsonStringField(routeJson, "route_node_id");
         node.Label = ExtractJsonStringField(routeJson, "label");
-        node.Kind = ExtractJsonStringField(routeJson, "kind");
+        // Route rows are written with sorted keys, so a nested
+        // "completion_contract" (and its "kind") precedes the row's own
+        // "kind". Read the row field structurally; the regex value is kept as
+        // the fallback and is identical for rows without nested kinds.
+        node.Kind = BotValidationRouteNativeJson::TopLevelString(routeJson,
+            "kind", ExtractJsonStringField(routeJson, "kind"));
         node.NodeKind = ExtractJsonStringField(routeJson, "node_kind");
         node.DescentAction = ExtractJsonStringField(routeJson, "descent_action");
         node.MechanicProfile = ExtractJsonStringField(routeJson, "mechanic_profile");
@@ -666,87 +313,63 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             if (!node.MechanicContractResolved && node.MechanicContractError.empty())
                 node.MechanicContractError = "unsupported_or_incomplete_contract";
         }
-        std::string const nativeInteractionContract =
-            ExtractJsonObjectField(routeJson, "interaction_contract");
-        if (!nativeInteractionContract.empty())
+        // Native route contracts are parsed structurally and fail closed:
+        // every declared kind/action is executable and observable, unknown
+        // fields or kinds stop the manifest before any bot is admitted.
+        namespace NativeRoute = BotValidationRouteNative;
+        auto parseNativeContract = [&routeJson](char const* field, auto const& parse,
+            auto& contract, char const* unknownPrefix, char const* invalidPrefix,
+            std::string& loadError) -> bool
         {
-            static std::set<std::string> const AllowedInteractionFields =
-                { "action", "entry", "menu", "menus", "option" };
-            for (std::string const& key : ExtractJsonTopLevelKeys(nativeInteractionContract))
-                if (AllowedInteractionFields.find(key) == AllowedInteractionFields.end())
-                {
-                    Party().ValidationRouteManifestLoadError =
-                        "native_interaction_unknown_field:" + key;
-                    return;
-                }
-            node.NativeInteractionAction =
-                ExtractJsonStringField(nativeInteractionContract, "action");
-            node.NativeInteractionEntry = uint32(std::max(
-                0, readInt(nativeInteractionContract, "entry")));
-            node.NativeInteractionMenus =
-                ExtractJsonUIntArrayField(nativeInteractionContract, "menus");
-            uint32 const singleMenu = uint32(std::max(
-                0, readInt(nativeInteractionContract, "menu")));
-            if (singleMenu)
-                node.NativeInteractionMenus.push_back(singleMenu);
-            node.NativeInteractionOption = uint32(std::max(
-                0, readInt(nativeInteractionContract, "option")));
-
-            bool const interactionShapeValid =
-                (node.NativeInteractionAction == "gameobject_use"
-                    && node.NativeInteractionEntry > 0
-                    && node.NativeInteractionMenus.empty())
-                || ((node.NativeInteractionAction == "gossip_select"
-                        || node.NativeInteractionAction == "gossip_select_sequence")
-                    && node.NativeInteractionEntry > 0
-                    && !node.NativeInteractionMenus.empty());
-            if (!interactionShapeValid)
-            {
-                Party().ValidationRouteManifestLoadError =
-                    "native_interaction_contract_invalid";
-                return;
-            }
-        }
-
-        std::string const nativeCompletionContract =
-            ExtractJsonObjectField(routeJson, "completion_contract");
-        if (!nativeCompletionContract.empty())
+            std::string const text = ExtractJsonObjectField(routeJson, field);
+            if (text.empty())
+                return true;
+            NativeRoute::Json object;
+            NativeRoute::ParseError error = NativeRoute::ParseObjectText(text, object);
+            if (!error)
+                error = parse(object, contract);
+            if (!error)
+                return true;
+            loadError = std::string(error.Kind == NativeRoute::ParseError::Code::UnknownField
+                ? unknownPrefix : invalidPrefix) + error.Detail;
+            return false;
+        };
+        std::string nativeContractError;
+        if (!parseNativeContract("interaction_contract",
+                [](NativeRoute::Json const& object, NativeRoute::InteractionContract& out)
+                { return NativeRoute::ParseInteraction(object, out); },
+                node.NativeContract.Interaction, "native_interaction_unknown_field:",
+                "native_interaction_contract_invalid:", nativeContractError)
+            || !parseNativeContract("completion_contract",
+                [](NativeRoute::Json const& object, NativeRoute::CompletionContract& out)
+                { return NativeRoute::ParseCompletion(object, out); },
+                node.NativeContract.Completion, "native_completion_unknown_field:",
+                "native_completion_contract_invalid:", nativeContractError)
+            || !parseNativeContract("transport_contract",
+                [](NativeRoute::Json const& object, NativeRoute::TransportContract& out)
+                { return NativeRoute::ParseTransport(object, out); },
+                node.NativeContract.Transport, "native_transport_unknown_field:",
+                "native_transport_contract_invalid:", nativeContractError))
         {
-            static std::set<std::string> const AllowedCompletionFields =
-                { "kind", "entry", "spell_id" };
-            for (std::string const& key : ExtractJsonTopLevelKeys(nativeCompletionContract))
-                if (AllowedCompletionFields.find(key) == AllowedCompletionFields.end())
-                {
-                    Party().ValidationRouteManifestLoadError =
-                        "native_completion_unknown_field:" + key;
-                    return;
-                }
-            node.NativeCompletionKind =
-                ExtractJsonStringField(nativeCompletionContract, "kind");
-            node.NativeCompletionEntry = uint32(std::max(
-                0, readInt(nativeCompletionContract, "entry")));
-            node.NativeCompletionSpellId = uint32(std::max(
-                0, readInt(nativeCompletionContract, "spell_id")));
-
-            bool const completionShapeValid =
-                ((node.NativeCompletionKind == "gameobject_selectable"
-                    || node.NativeCompletionKind == "boss_summoned"
-                    || node.NativeCompletionKind == "creature_summoned"
-                    || node.NativeCompletionKind == "creature_aggressive_with_victim"
-                    || node.NativeCompletionKind == "creature_grounded_aggressive_or_engaged"
-                    || node.NativeCompletionKind == "intro_complete_and_elevator_ready")
-                    && node.NativeCompletionEntry > 0)
-                || (node.NativeCompletionKind == "aura_present"
-                    && node.NativeCompletionEntry > 0
-                    && node.NativeCompletionSpellId > 0)
-                || node.NativeCompletionKind == "player_in_nefarian_arena";
-            if (!completionShapeValid)
-            {
-                Party().ValidationRouteManifestLoadError =
-                    "native_completion_contract_invalid";
-                return;
-            }
+            Party().ValidationRouteManifestLoadError = nativeContractError;
+            return;
         }
+        if (NativeRoute::ParseError shapeError = NativeRoute::ValidateNodeShape(
+                node.Kind, node.NativeContract.Interaction,
+                node.NativeContract.Completion, node.NativeContract.Transport))
+        {
+            Party().ValidationRouteManifestLoadError =
+                "native_route_contract_shape_invalid:" + shapeError.Detail;
+            return;
+        }
+        // Legacy mirrors read by the encounter blackboard and strategies.
+        node.NativeInteractionAction = node.NativeContract.Interaction.ActionName;
+        node.NativeInteractionEntry = node.NativeContract.Interaction.Entry;
+        node.NativeInteractionMenus = node.NativeContract.Interaction.Menus;
+        node.NativeInteractionOption = node.NativeContract.Interaction.Option;
+        node.NativeCompletionKind = node.NativeContract.Completion.KindName;
+        node.NativeCompletionEntry = node.NativeContract.Completion.Entry;
+        node.NativeCompletionSpellId = node.NativeContract.Completion.SpellId;
         node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
         node.RecoveryEntranceAreaTriggerId = uint32(std::max(0,
             readInt(routeJson, "recovery_entrance_area_trigger_id")));

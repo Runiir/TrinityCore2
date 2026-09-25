@@ -7,6 +7,7 @@
 #include "ObjectAccessor.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawLifecycleIdentity.h"
 #include "Bots/BotWorldPopulationMgrEncounterHazards.h"
+#include "Bots/BotValidationRouteNativeLogic.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 
 #include "CellImpl.h"
@@ -272,6 +273,7 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     snapshot->Route.HazardRadius = Cohort().Config.ValidationRouteHazardRadiusYards;
     snapshot->Route.HazardSafetyMargin = Cohort().Config.ValidationRouteHazardSafetyMarginYards;
     snapshot->Route.MinimumDistance = Cohort().Config.ValidationRouteMinimumDistanceYards;
+    std::vector<uint32> nativeRouteObservedEntries;
     if (Party().ValidationRouteManifestIndex < Party().ValidationRouteManifest.size())
     {
         ValidationRouteManifestNode const& routeNode =
@@ -283,6 +285,10 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
         snapshot->Route.CompletionKind = routeNode.NativeCompletionKind;
         snapshot->Route.CompletionEntry = routeNode.NativeCompletionEntry;
         snapshot->Route.CompletionSpellId = routeNode.NativeCompletionSpellId;
+        // Every creature a native route contract names (nested completion
+        // children, vehicle/interaction targets) stays observable.
+        nativeRouteObservedEntries =
+            BotValidationRouteNative::ObservedCreatureEntries(routeNode.NativeContract);
         ObjectGuid mainTankGuid;
         ObjectGuid offTankGuid;
         if (ResolveConfiguredRaidTankAssignment(mainTankGuid, offTankGuid))
@@ -441,6 +447,8 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
                 bool const routeObserved = creature->GetEntry()
                         == snapshot->Route.InteractionEntry
                     || creature->GetEntry() == snapshot->Route.CompletionEntry
+                    || std::binary_search(nativeRouteObservedEntries.begin(),
+                        nativeRouteObservedEntries.end(), creature->GetEntry())
                     || (creature->HasReactState(REACT_PASSIVE)
                         && std::binary_search(snapshot->Route.AllowedEntries.begin(),
                             snapshot->Route.AllowedEntries.end(), creature->GetEntry()));

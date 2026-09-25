@@ -15,8 +15,8 @@
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotWorldPopulationMgrRaidConsumables.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteNativeRuntime.h"
 
-#include "GossipDef.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "MotionMaster.h"
@@ -217,176 +217,101 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
         {
             BotEncounter::Blackboard const& blackboard =
                 *Cohort().EncounterSnapshot;
-            context.AdaptiveNativeRouteOwnsNode =
-                !blackboard.Route.InteractionAction.empty()
-                || !blackboard.Route.CompletionKind.empty();
-
-            auto actorWithEntry = [&blackboard](uint32 entry)
-                -> BotEncounter::ActorSnapshot const*
+            // Native route contracts (interaction, observed completion and
+            // transport) own the node. The adapter observes the world, runs the
+            // pure contract logic and submits only player-opcode intents.
+            context.AdaptiveNativeRouteOwnsNode = false;
+            if (Party().ValidationRouteManifestIndex < Party().ValidationRouteManifest.size())
             {
-                auto find = [entry](std::vector<BotEncounter::ActorSnapshot> const& actors)
-                    -> BotEncounter::ActorSnapshot const*
+                ValidationRouteManifestNode& routeNode =
+                    Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
+                if (routeNode.NodeId == Cohort().Config.ValidationRouteNodeId
+                    && routeNode.NativeContract.Declared())
                 {
-                    auto itr = std::find_if(actors.begin(), actors.end(),
-                        [entry](BotEncounter::ActorSnapshot const& actor)
-                        {
-                            return actor.Entry == entry && actor.Alive;
-                        });
-                    return itr == actors.end() ? nullptr : &*itr;
-                };
-                if (BotEncounter::ActorSnapshot const* actor = find(blackboard.Hostiles))
-                    return actor;
-                if (BotEncounter::ActorSnapshot const* actor = find(blackboard.Summons))
-                    return actor;
-                return find(blackboard.Interactables);
-            };
+                    namespace NativeRoute = BotWorldPopulationMgrValidationRouteNative;
+                    NativeRoute::Input nativeInput;
+                    nativeInput.Bot = context.Bot;
+                    nativeInput.State = &context.State;
+                    nativeInput.Situation = &context.Situation;
+                    nativeInput.Action = &context.Action;
+                    nativeInput.Board = &blackboard;
+                    nativeInput.Node = &routeNode.NativeContract;
+                    nativeInput.AnchorX = routeNode.NavigationAnchorX;
+                    nativeInput.AnchorY = routeNode.NavigationAnchorY;
+                    nativeInput.AnchorZ = routeNode.NavigationAnchorZ;
+                    for (WorldBotState const& cohortState : Party().Bots)
+                        if (Player* member = GetLoadedBot(cohortState); member
+                            && member->IsInWorld() && member->GetMap() == context.Bot->GetMap())
+                            nativeInput.Members.push_back(member);
+                    for (auto const& roster : Cohort().Raid.RosterByGuid)
+                        if (roster.second.Active && roster.second.LeaseOwned)
+                            nativeInput.Roster[roster.second.Guid.GetRawValue()] =
+                                { roster.second.SlotIndex + 1, roster.second.Role };
+                    nativeInput.Scope = { Cohort().AttemptId,
+                        uint64(Cohort().Raid.WipeGeneration),
+                        Party().ValidationRouteGeneration };
+                    nativeInput.NowMs = context.DecisionNowMs;
+                    nativeInput.CompletionAlreadyRecorded =
+                        std::any_of(Party().Bots.begin(), Party().Bots.end(),
+                            [this](WorldBotState const& cohortState)
+                            {
+                                return cohortState.ValidationRouteTerminalState
+                                    && cohortState.ValidationRouteTerminalGeneration
+                                        == Party().ValidationRouteGeneration
+                                    && cohortState.ValidationRouteTerminalReason
+                                        == "native_postcondition";
+                            });
 
-            bool nativePostconditionSatisfied = false;
-            BotEncounter::ActorSnapshot const* completionActor =
-                actorWithEntry(blackboard.Route.CompletionEntry);
-            if (blackboard.Route.CompletionKind == "gameobject_selectable")
-                nativePostconditionSatisfied = completionActor
-                    && completionActor->Selectable && completionActor->Interactable;
-            else if (blackboard.Route.CompletionKind == "boss_summoned"
-                || blackboard.Route.CompletionKind == "creature_summoned")
-                nativePostconditionSatisfied = completionActor != nullptr;
-            else if (blackboard.Route.CompletionKind == "aura_present")
-                nativePostconditionSatisfied = completionActor
-                    && std::any_of(completionActor->Auras.begin(), completionActor->Auras.end(),
-                        [&blackboard](BotEncounter::AuraSnapshot const& aura)
-                        {
-                            return aura.SpellId == blackboard.Route.CompletionSpellId;
-                        });
-            else if (blackboard.Route.CompletionKind == "creature_aggressive_with_victim")
-                nativePostconditionSatisfied = completionActor
-                    && completionActor->ReactAggressive
-                    && !completionActor->VictimGuid.IsEmpty();
-            else if (blackboard.Route.CompletionKind == "creature_grounded_aggressive_or_engaged")
-                nativePostconditionSatisfied = completionActor
-                    && !completionActor->Flying
-                    && (completionActor->ReactAggressive
-                        || completionActor->InCombat
-                        || !completionActor->VictimGuid.IsEmpty());
-
-            bool nativePostconditionAlreadyRecorded =
-                std::any_of(Party().Bots.begin(), Party().Bots.end(),
-                    [this](WorldBotState const& cohortState)
+                    NativeRoute::Callbacks nativeCallbacks;
+                    nativeCallbacks.Execute = [this, &context](
+                        BotNativeAction::Intent const& intent,
+                        BotMovementArbitration::Owner owner,
+                        BotMovementArbitration::Priority priority)
                     {
-                        return cohortState.ValidationRouteTerminalState
-                            && cohortState.ValidationRouteTerminalGeneration
-                                == Party().ValidationRouteGeneration
-                            && cohortState.ValidationRouteTerminalReason
-                                == "native_postcondition";
-                    });
-            if (nativePostconditionSatisfied && !nativePostconditionAlreadyRecorded)
-            {
-                uint64 const observedAtMs = NowMs();
-                for (WorldBotState& cohortState : Party().Bots)
-                {
-                    cohortState.ValidationRouteTerminalState = true;
-                    cohortState.ValidationRouteTerminalAtMs = observedAtMs;
-                    cohortState.ValidationRouteTerminalGeneration =
-                        Party().ValidationRouteGeneration;
-                    cohortState.ValidationRouteTerminalReason =
-                        "native_postcondition";
-                }
-                std::string raw = BuildRawJson(context.Bot,
-                    completionActor ? ObjectAccessor::GetUnit(*context.Bot,
-                        completionActor->Guid) : nullptr);
-                std::string semantic = BuildSemanticJson(context.Bot, nullptr,
-                    "native_route_postcondition", &context.Power, context.Stage,
-                    context.ChosenActivity.Activity);
-                RecordEvent(context.State, context.Bot, "native_route_postcondition",
-                    completionActor ? ObjectAccessor::GetUnit(*context.Bot,
-                        completionActor->Guid) : nullptr,
-                    blackboard.Route.CompletionKind.c_str(), raw.c_str(),
-                    semantic.c_str(), 1.0f,
-                    blackboard.Route.CompletionEntry,
-                    blackboard.Route.CompletionSpellId);
-            }
-
-            if (!nativePostconditionSatisfied
-                && !blackboard.Route.InteractionAction.empty())
-            {
-                ObjectGuid electedInteractor;
-                for (BotEncounter::ActorSnapshot const& member : blackboard.Players)
-                    if (member.Alive && (electedInteractor.IsEmpty()
-                            || member.Guid.GetRawValue()
-                                < electedInteractor.GetRawValue()))
-                        electedInteractor = member.Guid;
-
-                BotEncounter::ActorSnapshot const* interactionActor =
-                    actorWithEntry(blackboard.Route.InteractionEntry);
-                if (interactionActor && context.Bot->GetGUID() == electedInteractor)
-                {
-                    BotNativeAction::Candidate interaction;
-                    interaction.Id.ScopeKey = blackboard.CurrentScope.Key();
-                    interaction.Id.Strategy = "native_route_interaction";
-                    interaction.Id.Mechanic = blackboard.Route.InteractionAction;
-                    interaction.Id.Actor = interactionActor->Guid;
-                    interaction.Id.EventGeneration = blackboard.Revision;
-                    interaction.ActionPriority =
-                        BotActionArbitration::Priority::Mechanic;
-                    interaction.Utility = 6.0f;
-                    interaction.ExpiresAtMs = context.DecisionNowMs + 500;
-
-                    WorldObject* interactionObject =
-                        ObjectAccessor::GetWorldObject(*context.Bot, interactionActor->Guid);
-                    if (!interactionObject
-                        || !context.Bot->IsWithinDistInMap(interactionObject,
-                            INTERACTION_DISTANCE))
-                        interaction.Action = BotNativeAction::Move{
-                            interactionActor->Position.X,
-                            interactionActor->Position.Y,
-                            interactionActor->Position.Z };
-                    else if (blackboard.Route.InteractionAction
-                        == "gameobject_use")
-                        interaction.Action = BotNativeAction::GameObjectUse{
-                            interactionActor->Guid };
-                    else
-                    {
-                        uint32 const currentMenu =
-                            context.Bot->PlayerTalkClass->GetGossipMenu().GetMenuId();
-                        bool const sourceBound = context.Bot->PlayerTalkClass
-                            ->GetInteractionData().SourceGuid
-                                == interactionActor->Guid;
-                        bool const configuredMenu = sourceBound
-                            && std::find(blackboard.Route.InteractionMenus.begin(),
-                                blackboard.Route.InteractionMenus.end(), currentMenu)
-                                != blackboard.Route.InteractionMenus.end();
-                        interaction.Action = configuredMenu
-                            ? BotNativeAction::Intent(BotNativeAction::GossipSelect{
-                                interactionActor->Guid, currentMenu,
-                                blackboard.Route.InteractionOption })
-                            : BotNativeAction::Intent(BotNativeAction::GossipOpen{
-                                interactionActor->Guid });
-                    }
-
-                    BotActionArbitration::Candidate candidate;
-                    candidate.Key = interaction.Id.Key();
-                    candidate.Source = interaction.Id.Strategy;
-                    candidate.ActionPriority = interaction.ActionPriority;
-                    candidate.UtilityScore = interaction.Utility;
-                    candidate.RequiredResources = interaction.Resources();
-                    candidate.ExpiresAtMs = interaction.ExpiresAtMs;
-                    candidate.Attempt = [this, &context,
-                        intent = interaction.Action]()
-                    {
-                        BotActionArbitration::Outcome outcome =
-                            ExecuteNativeActionIntent(context.State, context.Bot, intent,
-                                BotMovementArbitration::Owner::Route,
-                                BotMovementArbitration::Priority::Route);
-                        if (outcome.Result
-                            == BotActionArbitration::Disposition::Committed)
-                        {
-                            context.Situation = "native_route_interaction";
-                            context.Action = "native_route_interaction_submitted";
-                            context.State.LastDecisionHandler =
-                                "native_route_interaction";
-                        }
-                        return outcome;
+                        return ExecuteNativeActionIntent(context.State, context.Bot,
+                            intent, owner, priority);
                     };
-                    context.State.DecisionKernel.Submit(std::move(candidate));
+                    nativeCallbacks.Record = [this, &context](std::string const& result,
+                        WorldObject* target, float value, uint32 entry)
+                    {
+                        Unit const* unit = target ? target->ToUnit() : nullptr;
+                        std::string raw = BuildRawJson(context.Bot, unit);
+                        std::string semantic = BuildSemanticJson(context.Bot, nullptr,
+                            "native_route_contract", &context.Power, context.Stage,
+                            context.ChosenActivity.Activity);
+                        RecordEvent(context.State, context.Bot, "native_route_contract",
+                            unit, result.c_str(), raw.c_str(), semantic.c_str(), value, entry);
+                    };
+                    nativeCallbacks.Complete = [this, &context, &blackboard](
+                        std::string const& label, WorldObject* evidence)
+                    {
+                        uint64 const observedAtMs = NowMs();
+                        for (WorldBotState& cohortState : Party().Bots)
+                        {
+                            cohortState.ValidationRouteTerminalState = true;
+                            cohortState.ValidationRouteTerminalAtMs = observedAtMs;
+                            cohortState.ValidationRouteTerminalGeneration =
+                                Party().ValidationRouteGeneration;
+                            cohortState.ValidationRouteTerminalReason =
+                                "native_postcondition";
+                        }
+                        Unit const* unit = evidence ? evidence->ToUnit() : nullptr;
+                        std::string raw = BuildRawJson(context.Bot, unit);
+                        std::string semantic = BuildSemanticJson(context.Bot, nullptr,
+                            "native_route_postcondition", &context.Power, context.Stage,
+                            context.ChosenActivity.Activity);
+                        RecordEvent(context.State, context.Bot, "native_route_postcondition",
+                            unit, label.c_str(), raw.c_str(), semantic.c_str(), 1.0f,
+                            blackboard.Route.CompletionEntry,
+                            blackboard.Route.CompletionSpellId);
+                    };
+                    nativeCallbacks.Fail = [this, &context](std::string const& reason)
+                    {
+                        FailValidationAttemptOnce(context.State, context.Bot, reason,
+                            Party().ValidationRouteGeneration);
+                    };
+                    context.AdaptiveNativeRouteOwnsNode =
+                        NativeRoute::Run(nativeInput, nativeCallbacks).OwnsNode;
                 }
             }
 

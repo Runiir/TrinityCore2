@@ -13,6 +13,7 @@ from typing import Any
 from tools.bot_ml.run_live_bot_validation import (
     validation_route_manifest_payload,
 )
+from tools.raid_program.raid_route_kinds import ALLOWED_ROUTE_KINDS
 from tools.raid_program.canonical_route_staging import (
     CanonicalRouteStagingError,
     atomic_write_new,
@@ -23,7 +24,6 @@ from tools.raid_program.canonical_route_staging import (
 
 CATALOG_RECEIPT_SCHEMA = "cata_raid_scenario_route_manifest_receipt_v1"
 MANIFEST_SCHEMA = "bot_live_validation_route_manifest_v1"
-ALLOWED_ROUTE_KINDS = {"trash", "boss", "travel", "regroup", "descent"}
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 SAFE_SCENARIO_RE = re.compile(r"[A-Za-z0-9_.-]+")
 CATALOG_RECEIPT_FIELDS = {
