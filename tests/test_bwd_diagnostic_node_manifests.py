@@ -489,13 +489,17 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.chimaeron.finkle",
         "bwd.chimaeron.wake_wait",
         "bwd.chimaeron.encounter",
+        # Round 3: the central-hall trash whose paths reach the Orb (the laboratory
+        # patrol is already cleared at bwd.maloriak.lab_trash).
+        "bwd.lower_hall.ivoroc",
+        "bwd.lower_hall.north_patrol",
         "bwd.nefarian.orb_regroup",
         "bwd.nefarian.orb_gossip",
         "bwd.nefarian.intro_wait",
         "bwd.nefarian.descent",
         "bwd.nefarian.encounter",
     ]
-    assert [row["step"] for row in routes] == list(range(1, 28))
+    assert [row["step"] for row in routes] == list(range(1, 30))
     assert all(row["diagnostic_only"] is False for row in routes)
     assert all(row["runtime_profile_id"] == CANONICAL_ID for row in routes)
 
@@ -508,7 +512,11 @@ def test_each_bwd_diagnostic_shard_has_exact_local_membership_and_unique_profile
         "maloriak": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.maloriak.encounter"],
         "atramedes": ["bwd.atramedes.north_spirits", "bwd.atramedes.south_spirits", "bwd.atramedes.regroup", "bwd.atramedes.bell_ready", "bwd.atramedes.bell", "bwd.atramedes.intro_wait", "bwd.atramedes.encounter"],
         "chimaeron": ["bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter"],
-        "nefarian": ["bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip", "bwd.nefarian.intro_wait", "bwd.nefarian.descent", "bwd.nefarian.encounter"],
+        # Round 3: a seeded lockout keeps the central-hall trash alive, so the shard
+        # starts at the Maloriak junction and clears it before the Orb.
+        "nefarian": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.lower_hall.ivoroc",
+                     "bwd.lower_hall.north_patrol", "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip",
+                     "bwd.nefarian.intro_wait", "bwd.nefarian.descent", "bwd.nefarian.encounter"],
     }
     for boss, scenario_id in DIAGNOSTIC_IDS.items():
         routes = _routes(manifests, scenario_id)
@@ -553,7 +561,12 @@ def test_diagnostic_prerequisites_are_explicitly_non_certifying():
 
 def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     routes = _routes(_manifests(), DIAGNOSTIC_IDS["nefarian"])
-    preparation, orb, intro, descent, boss = routes
+    junction, lab_patrol, ivoroc, north_patrol, preparation, orb, intro, descent, boss = routes
+    # Round 3: the hall trash is cleared from the Maloriak junction before the Orb regroup.
+    assert (junction["x"], junction["y"], junction["z"]) == (-110.0, -335.0, 67.73)
+    assert [(row["source_entry"], row["source_guid"]) for row in (lab_patrol, ivoroc, north_patrol)] == [
+        (42802, "250117"), (42767, "250108"), (42802, "250116")]
+    assert north_patrol["pack_target_entries"] == [42802, 46083]
     assert preparation["source_entry"] == 203254
     assert (preparation["x"], preparation["y"], preparation["z"]) == (-27.84375, -224.4774, 63.30268)
     assert orb["interaction_contract"] == {
@@ -578,7 +591,8 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     assert descent["transport_contract"]["timeout_ms"] == 180000
     assert "completion_contract" not in descent
     assert boss["label"] == "Nefarian"
-    assert [row["kind"] for row in routes] == ["regroup", "interaction", "interaction", "transport", "boss"]
+    assert [row["kind"] for row in routes] == ["regroup", "trash", "trash", "trash", "regroup", "interaction",
+                                               "interaction", "transport", "boss"]
 
 
 def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():

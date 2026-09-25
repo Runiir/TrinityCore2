@@ -28,8 +28,13 @@ def hostile() -> set[int]:
     return clearance.hostile_faction_templates()
 
 
-def _check(config: dict, creatures: dict, hostile: set[int]) -> dict:
-    return clearance.check_anchor_clearance(config, creatures, hostile)
+@pytest.fixture(scope="module")
+def world() -> dict | None:
+    return clearance.load_world() if clearance.TDB_WORLD.is_file() else None
+
+
+def _check(config: dict, creatures: dict, hostile: set[int], world: dict | None = None) -> dict:
+    return clearance.check_anchor_clearance(config, creatures, hostile, world=world)
 
 
 def _scenario(config: dict, scenario_id: str) -> dict:
@@ -45,8 +50,8 @@ def _spawn(creatures: dict, entry: int, map_id: int = 669) -> dict:
     return {"map_id": map_id, "x": spawn["x"], "y": spawn["y"], "z": spawn["z"], "o": 0.0}
 
 
-def test_every_current_anchor_is_clear_or_explicitly_exempted(creatures, hostile):
-    report = _check(CONFIG, creatures, hostile)
+def test_every_current_anchor_is_clear_or_explicitly_exempted(creatures, hostile, world):
+    report = _check(CONFIG, creatures, hostile, world)
     assert report["all_passed"], report["violations"] or report["unused_exemptions"]
     assert report["violations"] == [] and report["unused_exemptions"] == []
     assert report["anchors_checked"] >= 50
@@ -117,3 +122,59 @@ def test_only_hostile_pack_and_target_entries_count(creatures, hostile):
     omnotron = _scenario(CONFIG, "blackwing_descent_10n_omnotron_c0_diagnostic")
     anchors = {key: first for key, first, _point in clearance.scenario_anchors(omnotron)}
     assert anchors == {"start_position": 0, "bwd.omnotron.regroup": 0}
+
+
+NEFARIAN_C0 = "blackwing_descent_10n_nefarian_c0_diagnostic"
+ORB = {"map_id": 669, "x": -27.84375, "y": -224.4774, "z": 63.30268, "o": 6.265733}
+IVOROC, NORTH_PATROL, LAB_PATROL = 250108, 250116, 250117
+
+
+def _needs_world(world):
+    if world is None:
+        pytest.skip("TDB world dump not hydrated")
+
+
+def test_the_round2_nefarian_orb_start_is_refused_by_the_non_target_rule(creatures, hostile, world):
+    """Round 3 (T): the c0 raid spawned at the Orb inside Ivoroc's wander and two patrol turnarounds."""
+    _needs_world(world)
+    config = copy.deepcopy(CONFIG)
+    nefarian = _scenario(config, NEFARIAN_C0)
+    nefarian["start_position"] = dict(ORB)
+    nefarian["route"] = [step for step in nefarian["route"]
+                         if not step["node_id"].startswith(("bwd.maloriak.", "bwd.lower_hall."))]
+    report = _check(config, creatures, hostile, world)
+    found = {(row["anchor"], row["guid"]): row["yards"] for row in report["violations"]
+             if row["rule"] == "non_target_hostile" and row["scenario_id"] == NEFARIAN_C0}
+    assert {("start_position", IVOROC), ("start_position", NORTH_PATROL), ("start_position", LAB_PATROL),
+            ("bwd.nefarian.orb_regroup", IVOROC)} <= set(found)
+    assert found[("start_position", IVOROC)] < 10.0  # 15.1 yd from the Orb, wandering 10 yd
+    assert 15.0 < found[("start_position", NORTH_PATROL)] < 17.0  # its path turns 16.3 yd from the Orb
+    # Rule 1 alone could not see it: none of these creatures is a node target.
+    assert not any(row["scenario_id"] == NEFARIAN_C0 for row in _check(config, creatures, hostile)["violations"])
+
+
+def test_a_node_that_clears_the_pack_first_satisfies_the_non_target_rule(creatures, hostile, world):
+    _needs_world(world)
+    config = copy.deepcopy(CONFIG)
+    full = _scenario(config, "blackwing_descent_10n")
+    full["route"] = [step for step in full["route"] if not step["node_id"].startswith("bwd.lower_hall.")]
+    report = _check(config, creatures, hostile, world)
+    guids = {row["guid"] for row in report["violations"]
+             if row["scenario_id"] == "blackwing_descent_10n" and row["anchor"] == "bwd.nefarian.orb_regroup"}
+    # bwd.maloriak.lab_trash clears the laboratory patrol (source and formation) long before the Orb.
+    assert IVOROC in guids and NORTH_PATROL in guids and LAB_PATROL not in guids
+    assert 250120 in guids  # a formation member walks its leader's path
+
+
+def test_world_reach_and_aggro_filters(world, hostile):
+    _needs_world(world)
+    spawns = {spawn.guid: spawn for spawn in world["spawns"]}
+    north, member, ivoroc = spawns[NORTH_PATROL], spawns[250120], spawns[IVOROC]
+    assert len(north.reach) == 13 and member.leader == NORTH_PATROL and member.reach[1:] == north.reach[1:]
+    assert ivoroc.slack == 10.0 and len(ivoroc.reach) == 1
+    stalker = next(spawn for spawn in world["spawns"] if spawn.entry == 35592)
+    assert not clearance.can_aggro_players(stalker, world["templates"][35592], hostile)
+    assert clearance.can_aggro_players(ivoroc, world["templates"][42767], hostile)
+    lab_trash = _node(_scenario(CONFIG, "blackwing_descent_10n"), "bwd.maloriak.lab_trash")
+    assert clearance.cleared_by(lab_trash, spawns[LAB_PATROL]) and clearance.cleared_by(lab_trash, spawns[250118])
+    assert not clearance.cleared_by(lab_trash, north)

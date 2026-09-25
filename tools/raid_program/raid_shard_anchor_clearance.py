@@ -18,6 +18,16 @@ of that class of defect:
   of level 85 or more `15 - CombatReach` yards against a level-85 player (the expansion cap removes the
   level bonus), so 30 yards keeps at least 15 yards of margin.
 
+A second rule covers hostiles that no node targets (round 3: the Nefarian orb anchor stood 15 yd from
+Ivoroc and 16 yd from two patrol turnarounds, none of them in the route). Every hostile creature that can
+aggro players (not a trigger, not non-attackable, not immune to players, not unselectable) and that is
+neither a pack/target entry of the anchor's node or a later node nor cleared by an earlier node must stay
+NON_TARGET_CLEARANCE_YARDS (native aggro 15 plus a 10 yd margin) away from the anchor. Its reach is its
+spawn, its waypoint path (a formation member follows its leader's path) and its random-movement radius,
+read from the TDB world dump (creature, creature_addon, waypoint_data, creature_formations,
+creature_template). An earlier node clears a spawn of one of its entries when the spawn is the node's
+source_guid, a member of that spawn's formation, or within the node's cluster radius.
+
 An anchor may stand closer only with an explicit exemption (EXEMPTIONS) that names the node anchor,
 the creature entry and the reason, e.g. the Chimaeron nodes stand on the passive sleeping boss by design.
 Accepted rows (Magmaw, Stonecore) are never moved by this check; a finding there is exempted and reported.
@@ -39,6 +49,16 @@ SCENARIO_CONFIG = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001
 # Every creature entry with spawns (mobs.jsonl drops gossip humanoids such as High Priestess Azil).
 CREATURES = REPO_ROOT / "dataset/world_knowledge/npcs.jsonl"
 FACTION_TEMPLATE_DBC = REPO_ROOT / "data/dbc/enUS/FactionTemplate.dbc"
+TDB_WORLD = REPO_ROOT / "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql"
+NATIVE_AGGRO_MAX_YARDS = 15.0
+NON_TARGET_MARGIN_YARDS = 10.0
+NON_TARGET_CLEARANCE_YARDS = NATIVE_AGGRO_MAX_YARDS + NON_TARGET_MARGIN_YARDS
+DEFAULT_CLUSTER_RADIUS_YARDS = 40.0
+UNIT_FLAG_NON_ATTACKABLE = 0x2
+UNIT_FLAG_IMMUNE_TO_PC = 0x100
+UNIT_FLAG_NOT_SELECTABLE = 0x2000000
+CREATURE_FLAG_EXTRA_TRIGGER = 0x80
+MOVEMENT_RANDOM, MOVEMENT_WAYPOINT = 1, 2
 FACTION_TEMPLATE_FMT = "niiiiiiiiiiiii"
 FACTION_GROUP_PLAYER_MASKS = 1 | 2 | 4  # FACTION_GROUP_MASK_PLAYER, _ALLIANCE, _HORDE
 MIN_CLEARANCE_YARDS = 30.0
@@ -117,6 +137,134 @@ def load_creatures(path: Path = CREATURES, entries: Iterable[int] | None = None)
     return mobs
 
 
+@dataclass(frozen=True)
+class WorldSpawn:
+    guid: int
+    entry: int
+    map_id: int
+    point: tuple[float, float, float]
+    reach: tuple[tuple[float, float, float], ...]  # the spawn and every waypoint it walks
+    slack: float  # random-movement radius or formation follow distance
+    leader: int
+    unit_flags: int
+
+
+def _sql_values(line: str) -> list[list[str]]:
+    """Value tuples of one `INSERT INTO ... VALUES (...),(...);` line of a mysqldump."""
+    rows: list[list[str]] = []
+    current: list[str] = []
+    buffer: list[str] = []
+    quoted = escaped = False
+    depth = 0
+    for char in line[line.index("VALUES") + 6:]:
+        if quoted:
+            if escaped:
+                buffer.append(char)
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == "'":
+                quoted = False
+            else:
+                buffer.append(char)
+        elif char == "'":
+            quoted = True
+        elif char == "(" and depth == 0:
+            depth, current, buffer = 1, [], []
+        elif char == ")" and depth == 1:
+            current.append("".join(buffer))
+            rows.append(current)
+            depth = 0
+        elif depth == 1 and char == ",":
+            current.append("".join(buffer))
+            buffer = []
+        elif depth == 1:
+            buffer.append(char)
+    return rows
+
+
+def load_world(path: Path = TDB_WORLD, maps: Iterable[int] = (669, 725)) -> dict[str, Any]:
+    """Creature spawns of the given maps with their reach, and every creature template, from a TDB dump."""
+    maps = {int(value) for value in maps}
+    tables = {"creature", "creature_template", "creature_addon", "waypoint_data", "creature_formations"}
+    columns: dict[str, list[str]] = {}
+    rows: dict[str, list[list[str]]] = {name: [] for name in tables}
+    creating = None
+    with Path(path).open(encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            if line.startswith("CREATE TABLE `"):
+                creating = line.split("`")[1]
+                columns[creating] = []
+            elif creating and line.startswith("  `"):
+                columns[creating].append(line.split("`")[1])
+            elif creating and line.startswith(")"):
+                creating = None
+            elif line.startswith("INSERT INTO `"):
+                name = line.split("`")[1]
+                if name in tables:
+                    rows[name].extend(_sql_values(line))
+
+    def records(name: str) -> list[dict[str, str]]:
+        return [dict(zip(columns[name], row)) for row in rows[name]]
+
+    templates = {int(row["entry"]): {"name": row["name"], "faction": int(row["faction"]),
+                                     "unit_flags": int(row["unit_flags"]), "flags_extra": int(row["flags_extra"])}
+                 for row in records("creature_template")}
+    creatures = [row for row in records("creature") if int(row["map"]) in maps]
+    guids = {int(row["guid"]) for row in creatures}
+    path_of = {int(row["guid"]): int(row["waypointPathId"]) for row in records("creature_addon")
+               if int(row["guid"]) in guids and int(row["waypointPathId"])}
+    paths: dict[int, list[tuple[int, tuple[float, float, float]]]] = {}
+    wanted_paths = set(path_of.values())
+    for row in records("waypoint_data"):
+        if int(row["id"]) in wanted_paths:
+            paths.setdefault(int(row["id"]), []).append(
+                (int(row["point"]), (float(row["position_x"]), float(row["position_y"]), float(row["position_z"]))))
+    formation = {int(row["MemberGUID"]): (int(row["LeaderGUID"]), float(row["FollowDistance"]))
+                 for row in records("creature_formations") if int(row["MemberGUID"]) in guids}
+    by_guid = {int(row["guid"]): row for row in creatures}
+
+    def walked(guid: int) -> list[tuple[float, float, float]]:
+        row = by_guid.get(guid)
+        if row is None or int(row["MovementType"]) != MOVEMENT_WAYPOINT or guid not in path_of:
+            return []
+        return [point for _, point in sorted(paths.get(path_of[guid], []))]
+
+    spawns = []
+    for guid, row in sorted(by_guid.items()):
+        point = (float(row["position_x"]), float(row["position_y"]), float(row["position_z"]))
+        leader, follow = formation.get(guid, (guid, 0.0))
+        reach = [point] + walked(guid) + (walked(leader) if leader != guid else [])
+        slack = float(row["spawndist"]) if int(row["MovementType"]) == MOVEMENT_RANDOM else 0.0
+        spawns.append(WorldSpawn(guid=guid, entry=int(row["id"]), map_id=int(row["map"]), point=point,
+                                 reach=tuple(reach), slack=max(slack, follow if leader != guid else 0.0),
+                                 leader=leader, unit_flags=int(row["unit_flags"])))
+    return {"spawns": spawns, "templates": templates, "source": str(path)}
+
+
+def can_aggro_players(spawn: WorldSpawn, template: Mapping[str, Any], hostile_factions: set[int]) -> bool:
+    flags = int(template.get("unit_flags") or 0) | spawn.unit_flags
+    return (int(template.get("faction") or 0) in hostile_factions
+            and not flags & (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_NOT_SELECTABLE)
+            and not int(template.get("flags_extra") or 0) & CREATURE_FLAG_EXTRA_TRIGGER)
+
+
+def cleared_by(step: Mapping[str, Any], spawn: WorldSpawn) -> bool:
+    """True when this fight node kills the spawn: its source, that source's formation, or its cluster."""
+    if step.get("kind") not in FIGHT_KINDS or spawn.entry not in node_entries(step):
+        return False
+    source = str(step.get("source_guid") or "")
+    if source.isdigit() and int(source) in (spawn.guid, spawn.leader):
+        return True
+    radius = float(step.get("cluster_radius_yards") or DEFAULT_CLUSTER_RADIUS_YARDS)
+    return "x" in step and math.dist((float(step["x"]), float(step["y"]), float(step["z"])), spawn.point) <= radius
+
+
+def reach_distance(point: Mapping[str, Any], spawn: WorldSpawn) -> float:
+    at = (float(point["x"]), float(point["y"]), float(point["z"]))
+    return min(math.dist(at, place) for place in spawn.reach) - spawn.slack
+
+
 def scenarios(config: Mapping[str, Any]) -> list[dict[str, Any]]:
     return list(config.get("scenarios") or []) + list(config.get("diagnostic_scenarios") or [])
 
@@ -164,7 +312,10 @@ def exemption_for(scenario_id: str, anchor: str, entry: int, point: Mapping[str,
 
 def check_anchor_clearance(config: Mapping[str, Any], mobs: Mapping[int, Mapping[str, Any]],
                            hostile_factions: set[int], *, min_yards: float = MIN_CLEARANCE_YARDS,
-                           exemptions: Iterable[Exemption] = EXEMPTIONS) -> dict[str, Any]:
+                           exemptions: Iterable[Exemption] = EXEMPTIONS,
+                           world: Mapping[str, Any] | None = None,
+                           non_target_yards: float = NON_TARGET_CLEARANCE_YARDS) -> dict[str, Any]:
+    """Rule 1 (later packs, `min_yards` from their spawns) always; rule 2 (hostiles no node targets) with `world`."""
     exemptions = tuple(exemptions)
     violations: list[dict[str, Any]] = []
     exempted: list[dict[str, Any]] = []
@@ -197,7 +348,7 @@ def check_anchor_clearance(config: Mapping[str, Any], mobs: Mapping[int, Mapping
                     yards = distance(point, spawn)
                     if yards >= min_yards:
                         continue
-                    finding = {"scenario_id": scenario_id, "anchor": anchor, "entry": entry,
+                    finding = {"rule": "later_pack", "scenario_id": scenario_id, "anchor": anchor, "entry": entry,
                                "name": mob.get("name"), "node": node, "yards": round(yards, 2),
                                "anchor_point": {axis: point[axis] for axis in ("x", "y", "z")},
                                "spawn": {axis: spawn[axis] for axis in ("x", "y", "z")}}
@@ -207,9 +358,33 @@ def check_anchor_clearance(config: Mapping[str, Any], mobs: Mapping[int, Mapping
                     else:
                         used.add(exemption)
                         exempted.append({**finding, "reason": exemption.reason})
+            if world is None:
+                continue
+            later = set().union(*(node_entries(step) for step in route[first_index:])) if route[first_index:] else set()
+            for spawn in world["spawns"]:
+                template = world["templates"].get(spawn.entry) or {}
+                if (spawn.map_id != map_id or spawn.entry in later
+                        or not can_aggro_players(spawn, template, hostile_factions)
+                        or any(cleared_by(step, spawn) for step in route[:first_index])):
+                    continue
+                yards = reach_distance(point, spawn)
+                if yards >= non_target_yards:
+                    continue
+                finding = {"rule": "non_target_hostile", "scenario_id": scenario_id, "anchor": anchor,
+                           "entry": spawn.entry, "guid": spawn.guid, "name": template.get("name"),
+                           "yards": round(yards, 2), "moves": len(spawn.reach) > 1 or spawn.slack > 0,
+                           "anchor_point": {axis: point[axis] for axis in ("x", "y", "z")},
+                           "spawn": dict(zip(("x", "y", "z"), spawn.point))}
+                exemption = exemption_for(scenario_id, anchor, spawn.entry, point, exemptions)
+                if exemption is None:
+                    violations.append(finding)
+                else:
+                    used.add(exemption)
+                    exempted.append({**finding, "reason": exemption.reason})
     unused = [{**exemption.__dict__, "point": list(exemption.point), "scenarios": list(exemption.scenarios)}
               for exemption in exemptions if exemption not in used]
     return {"schema": "route_anchor_clearance_v1", "min_yards": min_yards, "anchors_checked": checked,
+            "non_target_yards": non_target_yards if world is not None else None,
             "all_passed": not violations and not unused
             and all(row["entry"] in KNOWN_TRUNCATED_ENTRIES for row in missing), "violations": violations, "exempted": exempted,
             "unused_exemptions": unused, "truncated_spawn_lists": missing,
@@ -222,10 +397,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--creatures", type=Path, default=CREATURES)
     parser.add_argument("--faction-template-dbc", type=Path, default=FACTION_TEMPLATE_DBC)
     parser.add_argument("--min-yards", type=float, default=MIN_CLEARANCE_YARDS)
+    parser.add_argument("--tdb-world", type=Path, default=TDB_WORLD,
+                        help="TDB world dump for the non-target rule (skipped when absent)")
     args = parser.parse_args(argv)
     config = json.loads(args.config.read_text(encoding="utf-8"))
+    maps = {int(row.get("map_id") or 0) for row in scenarios(config)}
+    world = load_world(args.tdb_world, maps) if args.tdb_world.is_file() else None
     report = check_anchor_clearance(config, load_creatures(args.creatures), hostile_faction_templates(args.faction_template_dbc),
-                                    min_yards=args.min_yards)
+                                    min_yards=args.min_yards, world=world)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if report["all_passed"] else 1
 

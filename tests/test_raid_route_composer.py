@@ -103,6 +103,7 @@ def test_full_route_order_node_ids_and_drift_repairs() -> None:
         "bwd.atramedes.regroup", "bwd.atramedes.bell_ready", "bwd.atramedes.bell",
         "bwd.atramedes.intro_wait", "bwd.atramedes.encounter", "bwd.chimaeron.regroup",
         "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter",
+        "bwd.lower_hall.ivoroc", "bwd.lower_hall.north_patrol",
         "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip", "bwd.nefarian.intro_wait",
         "bwd.nefarian.descent", "bwd.nefarian.encounter",
     ]
