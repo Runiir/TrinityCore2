@@ -465,9 +465,9 @@
       "prewake": "regroup, finkle and wake_wait nodes while the boss sleeps: offense suppressed unless another hostile fights the raid; on wake_wait the Break tank stands 9 yd north of the boss and everyone else at least 16 yd away; the native route keeps the nodes.",
       "mixture": "slots at least 11 yd apart with a 2 yd arrival tolerance (members stay more than 6 yd apart): Break tank 10 yd north, Double Attack tank 13 yd at -60 degrees, up to three melee 11 yd behind (+/-30 degrees for two), healers then ranged 22 yd behind over +/-75 degrees (six at most), overflow on a 33 yd arc.",
       "outage": "everyone on a 1.5 yd ring 8 yd behind the boss; Barrier at 16.5-12 s Feud remaining, Spirit Link at 11-7 s.",
-      "mortality": "no formation, no healing, no taunts; Discipline shields the victim whenever Weakened Soul allows and uses Pain Suppression once on a failing tank; lust if still unused."
+      "mortality": "no formation, no healing, no taunts; the Break tank stands down behind a living Double Attack tank; Discipline shields the victim whenever Weakened Soul allows and uses Pain Suppression on a failing tank outside its 3 minute cooldown; lust if still unused."
     },
-    "burn_window": "non-tanks hold damage between 23% and 20.3% until the mixture is up, no Massacre is casting or due within 8 s and both tanks are at 80%+ (the Break tank is healed to 80% in the window); the release (ready, lust, floor or Mortality) is latched per attempt; the Mortality handoff taunt waits for it; then the lust owner (mage, else shaman) lusts and the raid pushes.",
+    "burn_window": "one cohort sequence held -> released -> handoff -> push: from 23% non-tanks hold, tanks hold below 21.5%; release only on readiness (mixture up, no Massacre casting or due within 8 s, both tanks 80%+, Break tank healed to 80% in the window); the Double Attack tank's handoff taunt is the first released action, non-tanks wait for it (at most 8 s), the Break tank stands down while the Double Attack tank lives; then the lust owner lusts.",
     "duties_by_capability": "Break tank: Blood DK > Protection Paladin > Protection Warrior > Feral; the next tank soaks Double Attack. Tank healer: Holy Paladin > Discipline > Holy Priest > Restoration Druid > Restoration Shaman. Lust: mage (Time Warp) first, then shaman (Bloodlust/Heroism).",
     "runtime_submission": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotWorldPopulationMgrChimaeronCandidates.cpp (native cast and offense-suppression candidates, route engagement observation; wired by the coordinator dispatch patch)",
     "prewake_nodes": [
@@ -475,7 +475,7 @@
       "bwd.chimaeron.finkle",
       "bwd.chimaeron.wake_wait"
     ],
-    "memory": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronMemory.h (per-bot WorldBotState::ChimaeronMemory; burn release and Pain Suppression latches, reset per scope)"
+    "latches": "cohort-scoped: src/server/game/Bots/BotEncounterLatches.h (generic store, published view) and Encounters/Chimaeron/BotChimaeronBurn.h UpdateEncounterLatches (burn release, Mortality handoff, Pain Suppression cast); updated once per blackboard publication, reset on a new scope, boss object or disengage."
   },
   "repository_audit": [
     {

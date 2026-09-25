@@ -144,8 +144,9 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - once the charge is spent, the Break tank taunts back;
   - during Feud, neither taunts until the last 2.5 s;
   - a non-tank victim is taken back by the Break tank;
-  - between 21.5% and 20%, once the burn is released, the Double Attack tank takes the boss into
-    Mortality (while damage is still held the ordinary exchange continues);
+  - the burn release makes the Double Attack tank's taunt the first action: he takes the boss and
+    retakes it from anyone until Mortality, and the Break tank never taunts again (before the
+    release the ordinary exchange continues at any health);
   - under Mortality nobody taunts.
 - **Healing:**
   - the boss victim at or below 20,000 gets the tank healer and the first raid healer;
@@ -154,12 +155,24 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
     healed in health order, and the healers split that list;
   - during an outage, healers heal by health percentage;
   - under Mortality nothing is published (healing is 99% reduced).
-- **Burn window.** Between 23% and 20.3%, everyone but the tanks holds damage until the mixture is
-  up, no Massacre is casting or due within 8 s, and both tanks are at 80% or more (the Break tank is
-  healed to 80% inside the window). Then the lust owner lusts and the raid pushes into Mortality
-  (both guides). The release is latched for the attempt: a later swing on a tank cannot stop the
-  push. In Mortality the Discipline Priest shields the victim whenever Weakened Soul allows and uses
-  Pain Suppression once on a failing tank. Absorbs still work.
+- **Burn window** (both guides pause around 22-25%, then lust and push). One sequence, held →
+  released → handoff → push:
+  - from 23%, non-tanks hold damage; tanks keep attacking above 21.5% (threat, Death Strike) and
+    hold below it, so their damage cannot carry the boss into Mortality;
+  - the release needs readiness: mixture up, no Massacre casting or due within 8 s, both tanks at
+    80% or more (the Break tank is healed to 80% inside the window). Damage over time drifting the
+    boss down does not release anything;
+  - on release the Double Attack tank taunts first; non-tanks stay held until he is the victim,
+    at most one taunt cooldown (8 s); the Break tank stands down for good while the Double Attack
+    tank lives, so his threat never pulls the boss back onto his Break stacks;
+  - then the lust owner lusts and the raid pushes into Mortality.
+
+  Release, handoff and Pain Suppression use are cohort latches (`src/server/game/Bots/BotEncounterLatches.h`,
+  `BotChimaeronBurn.h`): the blackboard publisher sets them once per revision, so every bot reads the
+  same state whatever its decision cadence. They reset on a new scope (attempt, wipe, route node,
+  native encounter epoch), on a new boss object, and when the boss is seen out of combat. In
+  Mortality the Discipline Priest shields the victim whenever Weakened Soul allows and uses Pain
+  Suppression on a failing tank unless it was cast within its 3 minute cooldown. Absorbs still work.
 
 ## Open items (unresolved)
 

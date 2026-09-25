@@ -1,7 +1,7 @@
 #ifndef TRINITY_BOT_CHIMAERON_TANK_SWAP_H
 #define TRINITY_BOT_CHIMAERON_TANK_SWAP_H
 
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronDutyPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronBurn.h"
 
 #include <optional>
 #include <string_view>
@@ -17,12 +17,12 @@
 // aura, so the right tank is the victim when his melee resumes. Just before
 // 20% the fresh Double Attack tank takes the boss into Mortality (Icy Veins
 // 2024-07-29); under Mortality the boss is immune to taunt (client 82934).
-// The handoff waits for the burn release: while damage is held (damage over
-// time can drift the boss below 21.5% during the hold) the ordinary exchange
-// continues, so Break never piles onto the tank that must enter Mortality.
+// The handoff is the first step of the burn release (BotChimaeronBurn.h):
+// before it the ordinary exchange continues whatever the boss health, so Break
+// never piles onto the tank that must enter Mortality; after it the Break tank
+// never taunts back.
 namespace BotEncounter::Chimaeron
 {
-constexpr float MortalityHandoffPct = 21.5f;
 constexpr uint32 FeudTauntLeadMs = 2500;
 
 inline uint32 TauntSpellFor(std::string_view spec)
@@ -47,15 +47,9 @@ struct TauntDecision
     char const* Reason = "";
 };
 
-inline bool Alive(Blackboard const& board, ObjectGuid guid)
-{
-    ActorSnapshot const* actor = FindPlayer(board, guid);
-    return actor && actor->Alive;
-}
-
 inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
     Observation const& observation, Duties const& duties, ObjectGuid botGuid,
-    bool burnReleased)
+    BurnState const& burn)
 {
     if (!observation.Boss || !observation.Bot
         || (observation.CurrentPhase != Phase::Mixture
@@ -76,29 +70,35 @@ inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
     if (feudHold)
         return std::nullopt;
 
+    // After the burn release the Double Attack tank owns the boss until
+    // Mortality: he takes it (first action of the release) and retakes it
+    // from anyone; the Break tank never taunts again.
+    if (burn.Released && IsAlivePlayer(board, duties.DoubleAttackTank))
+    {
+        if (botGuid == duties.DoubleAttackTank)
+            return TauntDecision{ spell, "taunt_mortality_handoff" };
+        return std::nullopt;
+    }
+
     // Anyone but a tank holding the boss (a wake-up pick, a pet growl, a dead
     // tank's replacement) is taken back by the first living tank in order.
     if (!IsTank(duties, victim))
     {
-        ObjectGuid const owner = Alive(board, duties.BreakTank)
+        ObjectGuid const owner = IsAlivePlayer(board, duties.BreakTank)
             ? duties.BreakTank : duties.DoubleAttackTank;
         if (owner == botGuid)
             return TauntDecision{ spell, "taunt_recover_non_tank_victim" };
         return std::nullopt;
     }
 
-    bool const handoff = burnReleased && boss.HealthPct <= MortalityHandoffPct
-        && boss.HealthPct > MortalityHealthPct;
     if (botGuid == duties.DoubleAttackTank && victim == duties.BreakTank)
     {
-        if (handoff)
-            return TauntDecision{ spell, "taunt_mortality_handoff" };
         if (observation.DoubleAttackPending)
             return TauntDecision{ spell, "taunt_double_attack_soak" };
         return std::nullopt;
     }
     if (botGuid == duties.BreakTank && victim == duties.DoubleAttackTank
-        && !observation.DoubleAttackPending && !handoff)
+        && !observation.DoubleAttackPending && !burn.Released)
         return TauntDecision{ spell, "taunt_back_break_holder" };
     return std::nullopt;
 }

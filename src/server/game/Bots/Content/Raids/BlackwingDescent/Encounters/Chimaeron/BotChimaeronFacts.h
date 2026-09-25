@@ -123,6 +123,17 @@ inline bool OtherHostileEngaged(Blackboard const& board, ActorSnapshot const& bo
     return false;
 }
 
+inline bool IsAlivePlayer(Blackboard const& board, ObjectGuid guid)
+{
+    ActorSnapshot const* actor = FindPlayer(board, guid);
+    return actor && actor->Alive;
+}
+
+inline bool IsEngaged(ActorSnapshot const& boss)
+{
+    return boss.InCombat || !boss.VictimGuid.IsEmpty();
+}
+
 inline bool IsMortality(ActorSnapshot const& boss)
 {
     return HasAura(boss, MortalityBossSpell) || HasAura(boss, MortalityBossAltSpell);
@@ -166,7 +177,9 @@ inline bool IsPrewakeNode(std::string_view node)
     return node == RegroupNode || node == FinkleNode || node == WakeWaitNode;
 }
 
-inline Observation Observe(Blackboard const& board, ObjectGuid botGuid)
+// Boss-side observation, independent of any bot: the blackboard publisher
+// evaluates encounter latches from it once per revision.
+inline Observation ObserveEncounter(Blackboard const& board)
 {
     Observation observation;
     bool const wakeNode = IsPrewakeNode(board.Route.NodeId);
@@ -174,8 +187,7 @@ inline Observation Observe(Blackboard const& board, ObjectGuid botGuid)
     if (!wakeNode && !encounterNode)
         return observation;
     observation.Boss = FindBoss(board);
-    observation.Bot = board.FindActor(botGuid);
-    if (!observation.Boss || !observation.Bot || !observation.Bot->Alive)
+    if (!observation.Boss)
         return observation;
 
     ActorSnapshot const& boss = *observation.Boss;
@@ -196,15 +208,26 @@ inline Observation Observe(Blackboard const& board, ObjectGuid botGuid)
         if (timer->RemainingMs != std::numeric_limits<uint32>::max())
             observation.MassacreInMs = timer->RemainingMs;
 
-    bool const engaged = boss.InCombat || !boss.VictimGuid.IsEmpty();
     if (wakeNode)
-        observation.CurrentPhase = engaged ? Phase::None : Phase::Prewake;
+        observation.CurrentPhase = IsEngaged(boss) ? Phase::None : Phase::Prewake;
     else if (IsMortality(boss))
         observation.CurrentPhase = Phase::Mortality;
     else if (!observation.MixtureOn)
         observation.CurrentPhase = Phase::Outage;
     else
         observation.CurrentPhase = Phase::Mixture;
+    return observation;
+}
+
+inline Observation Observe(Blackboard const& board, ObjectGuid botGuid)
+{
+    Observation observation = ObserveEncounter(board);
+    observation.Bot = board.FindActor(botGuid);
+    if (!observation.Boss || !observation.Bot || !observation.Bot->Alive)
+    {
+        observation.CurrentPhase = Phase::None;
+        observation.Bot = observation.Bot && observation.Bot->Alive ? observation.Bot : nullptr;
+    }
     return observation;
 }
 }

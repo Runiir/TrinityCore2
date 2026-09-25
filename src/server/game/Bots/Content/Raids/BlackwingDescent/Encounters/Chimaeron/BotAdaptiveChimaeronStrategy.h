@@ -3,11 +3,12 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/BotEncounterLatches.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronBurn.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronDutyPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFormation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h"
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronMemory.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronTankSwap.h"
 
@@ -24,9 +25,10 @@ namespace BotEncounter
 //   Bloodlust) of a spell the bot knows;
 // - PriorityHealTarget: the floor/urgency assignment for this healer;
 // - SuppressOffense: hold damage while the boss sleeps (unless another hostile
-//   is fighting the raid) and, for non-tanks, in the burn window.
-// Optional per-bot memory latches the burn release and Pain Suppression use
-// for the scope; without it (replays) only the current revision counts.
+//   is fighting the raid) and through the burn sequence (BotChimaeronBurn.h).
+// Latches come from the cohort's published EncounterLatchView for this
+// revision (set once per publication by UpdateEncounterLatches); without a
+// view (replays) only the current revision counts.
 struct AdaptiveChimaeronPlan
 {
     bool OwnsNode = false;
@@ -47,7 +49,7 @@ public:
     static constexpr uint32 BossEntry = Chimaeron::BossEntry;
 
     AdaptiveChimaeronPlan Propose(Blackboard const& board, ObjectGuid botGuid,
-        std::string_view role, ChimaeronEncounterMemory* memory = nullptr) const
+        std::string_view role, EncounterLatchView const* latches = nullptr) const
     {
         using namespace Chimaeron;
         AdaptiveChimaeronPlan plan;
@@ -79,15 +81,7 @@ public:
 
         plan.OwnsNode = true;
         plan.DamageTarget = boss.Guid;
-        if (memory)
-        {
-            memory->Bind(board.CurrentScope.Key(), boss.Guid);
-            if (!memory->BurnReleased && BurnReleaseObserved(board, observation, duties))
-                memory->BurnReleased = true;
-            if (AnyPlayerHasAura(board, PainSuppressionSpell))
-                memory->PainSuppressionObserved = true;
-        }
-        bool const burnReleased = BurnReleased(board, observation, duties, memory);
+        BurnState const burn = ReadBurnState(board, observation, duties, latches);
         plan.HealingDisabled = observation.CurrentPhase == Phase::Mortality
             || HasAura(bot, MortalityRaidSpell);
 
@@ -95,12 +89,20 @@ public:
             plan.PriorityHealTarget = SelectPriorityHealTarget(board, observation,
                 duties, botGuid);
 
-        // Tanks keep attacking in the hold: threat and self-healing (Death
-        // Strike) must not stop while the raid waits.
-        if (role != "tank" && BurnHold(board, observation, duties, memory))
+        // Non-tanks hold from 23% until release and handoff are done. Tanks
+        // keep threat and self-healing above the handoff line, hold below it,
+        // and the Break tank stands down after the release.
+        if (role != "tank" && burn.HoldNonTanks())
         {
             plan.SuppressOffense = true;
-            plan.SuppressReason = "burn_hold_before_mortality";
+            plan.SuppressReason = burn.HandoffPending()
+                ? "burn_wait_for_mortality_handoff" : "burn_hold_before_mortality";
+        }
+        else if (role == "tank" && HoldTank(burn, observation, duties, botGuid))
+        {
+            plan.SuppressOffense = true;
+            plan.SuppressReason = botGuid == duties.BreakTank && burn.Released
+                ? "burn_break_tank_stand_down" : "burn_hold_tanks_below_handoff";
         }
 
         Point const centre = FormationCentre(board, boss);
@@ -113,10 +115,10 @@ public:
                     "mixture_slime_spread", boss.Guid, 250.0f);
 
         if (std::optional<TauntDecision> taunt = DecideTaunt(board, observation, duties,
-                botGuid, burnReleased))
+                botGuid, burn))
             plan.Action = ProposeCast(board, boss.Guid, taunt->SpellId, taunt->Reason, 400.0f);
         else if (std::optional<CastDecision> cast = DecideSupportCast(board, observation,
-                duties, botGuid, memory))
+                duties, botGuid, burn, latches))
             plan.Action = ProposeCast(board, cast->Target, cast->SpellId, cast->Reason, 350.0f);
         return plan;
     }
