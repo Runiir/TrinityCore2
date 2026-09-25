@@ -43,6 +43,31 @@ def _originated_amount(row: dict[str, Any]) -> int:
     return _raw_event_amount(row)
 
 
+def is_environmental_self_damage(row: dict[str, Any]) -> bool:
+    """Native environmental damage: the victim is its own attacker, with no spell.
+
+    TrinityCore deals falling, lava, drowning and fatigue damage through
+    ``Unit::DealDamage(victim, victim, ...)`` without a SpellInfo, so the bot
+    combat log records it as a spell-0 "Melee" hit whose source is the target
+    (round-2 Nefarian descent: about 60k per bot on the drop).  It is neither
+    friendly fire nor damage done.  Aggregate rows carry names, not GUIDs, so a
+    player (entry 0) hitting itself by name is the aggregate-level signature.
+    """
+    try:
+        if int(row.get("spell_id") or 0) != 0 or row.get("source_is_pet"):
+            return False
+        source_guid = int(row.get("source_guid") or 0)
+        target_guid = int(row.get("target_guid") or 0)
+        if source_guid and target_guid:
+            return source_guid == target_guid
+        if int(row.get("source_entry") or 0) or int(row.get("target_entry") or 0):
+            return False
+    except (TypeError, ValueError):
+        return False
+    source_name = str(row.get("source_name") or "")
+    return bool(source_name) and source_name == str(row.get("target_name") or "")
+
+
 def _combat_log_schema_version(combat_log: dict[str, Any]) -> int:
     try:
         value = int(combat_log.get("combat_log_schema_version") or 1)
@@ -502,6 +527,22 @@ def analyze_combat_log(
     for row in candidate_rejections:
         candidate_rejections_by_generation[int(row.get("route_generation") or 0)].append(row)
 
+    # Second buckets carry no spell or target.  When every friendly row of an
+    # actor's own (non-pet) damage in a generation is environmental self-damage,
+    # its friendly buckets are environmental too and do not extend combat time.
+    friendly_environmental_only: dict[tuple[int, int, bool], bool] = {}
+    for row in abilities:
+        if row.get("perspective") != "friendly_damage_done":
+            continue
+        key = (
+            int(row.get("route_generation") or 0),
+            int(row.get("actor_guid") or 0),
+            bool(row.get("source_is_pet")),
+        )
+        friendly_environmental_only[key] = friendly_environmental_only.get(
+            key, True
+        ) and is_environmental_self_damage(row)
+
     raw_bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
     originated_bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
     for row in buckets:
@@ -509,6 +550,12 @@ def analyze_combat_log(
         if perspective == "friendly_damage_done" and not friendly_split_available:
             # Legacy payloads cannot carry a trustworthy friendly split. Keep
             # them readable without inventing one from an unknown row.
+            continue
+        if perspective == "friendly_damage_done" and friendly_environmental_only.get((
+            int(row.get("route_generation") or 0),
+            int(row.get("actor_guid") or 0),
+            bool(row.get("source_is_pet")),
+        )):
             continue
         raw_amount = _raw_event_amount(row)
         originated_amount = _originated_amount(row)
@@ -536,6 +583,7 @@ def analyze_combat_log(
             for row in rows
             if row.get("perspective") == "damage_done"
             and _originated_amount(row) > 0
+            and not is_environmental_self_damage(row)
         ]
         damage_timestamps = [
             int(row.get("first_at_ms") or 0)
@@ -577,12 +625,26 @@ def analyze_combat_log(
         actors: list[dict[str, Any]] = []
         for actor_guid in actor_guids:
             actor_rows = [row for row in rows if int(row.get("actor_guid") or 0) == actor_guid]
-            done = [row for row in actor_rows if row.get("perspective") == "damage_done"]
-            friendly = [
+            outgoing = [
                 row for row in actor_rows
-                if friendly_split_available
-                and row.get("perspective") == "friendly_damage_done"
+                if row.get("perspective") == "damage_done"
+                or (
+                    friendly_split_available
+                    and row.get("perspective") == "friendly_damage_done"
+                )
             ]
+            environmental = [row for row in outgoing if is_environmental_self_damage(row)]
+            done = [
+                row for row in outgoing
+                if row.get("perspective") == "damage_done"
+                and not is_environmental_self_damage(row)
+            ]
+            friendly = [
+                row for row in outgoing
+                if row.get("perspective") == "friendly_damage_done"
+                and not is_environmental_self_damage(row)
+            ]
+            environmental_damage = sum(_raw_event_amount(row) for row in environmental)
             taken = [row for row in actor_rows if row.get("perspective") == "damage_taken"]
             healing = [row for row in actor_rows if row.get("perspective") == "healing_done"]
             total_damage = sum(_originated_amount(row) for row in done)
@@ -638,6 +700,9 @@ def analyze_combat_log(
                 "raw_event_dps": round(raw_event_damage / max(1, len(raw_event_damage_seconds)), 3),
                 "friendly_damage": friendly_damage,
                 "raw_event_friendly_damage": raw_event_friendly_damage,
+                # Falling/lava/drowning self-damage: never friendly or done.
+                "environmental_damage": environmental_damage,
+                "environmental_sources": _ability_rows(environmental, environmental_damage),
                 "active_seconds": active_seconds,
                 "active_dps": round(player_damage / max(1, active_seconds), 3),
                 "damage_uptime": round(active_seconds / combat_seconds, 6),
@@ -743,8 +808,11 @@ def analyze_combat_log(
         party_healing = sum(int(row["healing"]) for row in actors)
         outgoing_rows = [
             row for row in rows
-            if row.get("perspective") == "damage_done"
-            or (friendly_split_available and row.get("perspective") == "friendly_damage_done")
+            if (
+                row.get("perspective") == "damage_done"
+                or (friendly_split_available and row.get("perspective") == "friendly_damage_done")
+            )
+            and not is_environmental_self_damage(row)
         ]
         encounters.append({
             "route_generation": generation,
@@ -776,6 +844,7 @@ def analyze_combat_log(
             ),
             "party_friendly_damage": party_friendly_damage,
             "party_raw_event_friendly_damage": party_raw_event_friendly_damage,
+            "party_environmental_damage": sum(int(row["environmental_damage"]) for row in actors),
             "party_healing": party_healing,
             "party_hps": round(party_healing / combat_seconds, 3),
             "elapsed_party_hps": round(party_healing / duration_sec, 3),

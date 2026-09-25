@@ -60,6 +60,14 @@ try:
     from .live_validation_fidelity import attach_encounter_fidelity
     from .live_validation_encounter_rng import attach_encounter_rng
     from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
+    from .live_validation_terminal_signals import (
+        CONTAMINATION_COMPLETION_REASON,
+        PREPULL_FAILURE_LABEL_PREFIX,
+        HeartbeatSignals,
+        drain_terminal_trace,
+        prepull_consumables_failure,
+        prepull_failure_label,
+    )
     from .live_validation_world_ticks import WorldTickLedger
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
@@ -102,6 +110,14 @@ except ImportError:
     from live_validation_fidelity import attach_encounter_fidelity
     from live_validation_encounter_rng import attach_encounter_rng
     from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
+    from live_validation_terminal_signals import (
+        CONTAMINATION_COMPLETION_REASON,
+        PREPULL_FAILURE_LABEL_PREFIX,
+        HeartbeatSignals,
+        drain_terminal_trace,
+        prepull_consumables_failure,
+        prepull_failure_label,
+    )
     from live_validation_world_ticks import WorldTickLedger
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, canonical_gear_manifest, canonical_gear_profile_id, evaluate_runtime_calibration, expected_gear_manifest
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
@@ -4851,6 +4867,7 @@ def live_evidence(
     summary: dict[str, Any],
     validation_context: dict[str, Any] | None = None,
     raw_output: str = "",
+    signals: HeartbeatSignals | None = None,
 ) -> dict[str, Any]:
     entries = trace_entries(trace)
     diagnoses = diagnosis_rows(diagnosis)
@@ -5061,6 +5078,14 @@ def live_evidence(
     )
     validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
     validation_route_actions += sum(count for action, count in legacy_diagnosis_action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
+    # The trace is the newest delta window (up to 128 rows per bot), which a
+    # long pre-pull or hold drains of route actions.  The watchdog loop's
+    # ledger keeps the attempt's cumulative count.
+    validation_route_actions_window = validation_route_actions
+    if signals is not None:
+        validation_route_actions = max(
+            validation_route_actions, signals.route_actions.observe(entries)
+        )
     trash_route_actions = (
         action_counts.get("trash_action", 0)
         + action_counts.get("validation_route_trash_action", 0)
@@ -5077,6 +5102,9 @@ def live_evidence(
         route_kill_trash_evidence,
     )
     kill_evidence = kills + teacher_assisted_kills
+    near_wipe_death_loop_events = (
+        signals.near_wipes.observe(status, kills=kills) if signals is not None else 0
+    )
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     role_assignment_evidence = max(
         int(summary.get("role_assignments") or 0),
@@ -5213,6 +5241,10 @@ def live_evidence(
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
+        "validation_route_actions_window": validation_route_actions_window,
+        "prepull_consumables_failure": prepull_consumables_failure(status),
+        "near_wipe_death_loop_events": near_wipe_death_loop_events,
+        "near_wipe_death_loop": signals.near_wipes.receipt() if signals is not None else {},
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
@@ -5248,10 +5280,23 @@ def validation_failure_labels(
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
 ) -> list[str]:
     labels: list[str] = []
+    # A native clear (the manifest completed on a real boss death) cannot be
+    # failed by diagnoses read afterwards: they describe the idle raid, and the
+    # bounded per-bot trace ring may by then hold no route action at all
+    # (round-2 Magmaw c0 batch: 880 s, validation_route_actions 0 in the final
+    # trace window while the boss died natively).
+    native_clear = bool(evidence.get("manifest_completion_evidence")) and bool(
+        evidence.get("real_boss_kill_evidence"))
     if evidence.get("contamination_evidence"):
-        # Certification must quarantine this attempt, but the native runtime
-        # remains live because the C++ observer no longer owns a terminal hold.
+        # Certification must quarantine this attempt; the watchdog loop turns
+        # contamination that persists past its grace into a typed terminal.
         labels.append("validation_route_future_encounter_contamination")
+    prepull_failure = evidence.get("prepull_consumables_failure")
+    if isinstance(prepull_failure, dict) and prepull_failure and not native_clear:
+        # The native pre-pull gate returned Terminal for this scope: surface it
+        # on this heartbeat instead of waiting for the stalled bots to earn a
+        # diagnosis error.  The loop's PrepullWatchdog owns the terminal edge.
+        labels.append(prepull_failure_label(prepull_failure))
     if timed_out:
         labels.append("worldserver_timeout")
     if returncode != 0:
@@ -5319,7 +5364,7 @@ def validation_failure_labels(
 
     if bot_not_loaded_diagnoses > 0:
         labels.append("bot_lifecycle_not_loaded")
-    elif error_diagnoses > 0 and not route_diagnosis_progress:
+    elif error_diagnoses > 0 and not route_diagnosis_progress and not native_clear:
         labels.append("bot_diagnosis_error")
 
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0:
@@ -5346,7 +5391,11 @@ def validation_failure_labels(
         and not recovered_by_route_progress
         and not recovered_by_active_route_combat):
         labels.append("validation_route_stuck_loop")
-    if route_actions > 0 and unresolved_death_loop_events >= max_death_loops:
+    near_wipe_death_loop_events = int(evidence.get("near_wipe_death_loop_events") or 0)
+    if (
+        (route_actions > 0 and unresolved_death_loop_events >= max_death_loops)
+        or near_wipe_death_loop_events >= max(1, max_death_loops)
+    ):
         labels.append("validation_route_death_loop")
     if route_actions > 0 and route_no_progress_diagnoses > 0:
         labels.append("no_progress_observed")
@@ -5385,13 +5434,19 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "trash_pulls": int(evidence.get("trash_pulls") or 0),
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
+        "validation_route_actions_window": int(evidence.get("validation_route_actions_window") or 0),
         "validation_route_terminal_evidence": len(evidence.get("route_terminal_evidence") or []),
         "validation_route_contamination_evidence": len(evidence.get("contamination_evidence") or []),
         "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
         "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
         "validation_route_combat_progress_diagnoses": int(evidence.get("validation_route_combat_progress_diagnoses") or 0),
         "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
-        "death_loop_events": int(evidence.get("unresolved_route_death_loop_events") or 0),
+        # A trace-recorded repeated death or a repeated near-wipe on one node.
+        "death_loop_events": max(
+            int(evidence.get("unresolved_route_death_loop_events") or 0),
+            int(evidence.get("near_wipe_death_loop_events") or 0),
+        ),
+        "near_wipe_death_loop_events": int(evidence.get("near_wipe_death_loop_events") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
         "repath_events": int(evidence.get("repath_events") or 0),
     }
@@ -5880,7 +5935,12 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
     progress_total = int(state.get("progress_total") or 0)
     if progress_total <= 0 and not route_motion_progress:
         return failure_labels
-    return [label for label in failure_labels if label not in nonterminal]
+    # A failed pre-pull gate is surfaced at once but becomes terminal only in
+    # the watchdog loop (PrepullWatchdog): Magmaw engages natively despite it.
+    return [
+        label for label in failure_labels
+        if label not in nonterminal and not str(label).startswith(PREPULL_FAILURE_LABEL_PREFIX)
+    ]
 
 
 def completion_reason(
@@ -5947,6 +6007,7 @@ def final_evidence_rejections(
         "calibration_pre_scoring_blocker_watchdog",
         "cohort_action_gate_failure_watchdog",
         "encounter_capability_blocker_watchdog",
+        CONTAMINATION_COMPLETION_REASON,
     }:
         rejections.append("watchdog_failure_is_not_final_evidence")
     if evidence.get("forbidden_completion_assists"):
@@ -6050,6 +6111,7 @@ def live_validation_report(
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+    signals: HeartbeatSignals | None = None,
 ) -> dict[str, Any]:
     payloads = parse_json_objects(output)
     classified = classify_payloads(payloads)
@@ -6072,7 +6134,7 @@ def live_validation_report(
     target_bots = int(status.get("target_bots") or status.get("targetBots") or 0)
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
-    evidence = live_evidence(status, diagnosis, trace, summary, validation_context, output)
+    evidence = live_evidence(status, diagnosis, trace, summary, validation_context, output, signals=signals)
     failure_labels = validation_failure_labels(
         returncode,
         timed_out,
@@ -6433,6 +6495,7 @@ def rolling_heartbeat_report(
     completion_reason_override: str = "",
     expected_cohort_id: str = "",
     persist: bool = True,
+    signals: HeartbeatSignals | None = None,
 ) -> dict[str, Any]:
     report = live_validation_report(
         output,
@@ -6447,6 +6510,7 @@ def rolling_heartbeat_report(
         no_progress_window_sec=no_progress_window_sec,
         max_repeated_decisions=max_repeated_decisions,
         max_death_loops=max_death_loops,
+        signals=signals,
     )
     if completion_reason_override:
         report["completion_reason"] = completion_reason_override
@@ -6502,6 +6566,7 @@ def persist_final_timeout_liveness(
     validation_route_manifest: dict[str, Any] | None,
     expected_cohort_id: str,
     liveness_clock: Mapping[str, Any],
+    signals: HeartbeatSignals | None = None,
 ) -> None:
     """Persist one bounded emergency-cap receipt before an early timeout exit."""
     report = rolling_heartbeat_report(
@@ -6521,6 +6586,7 @@ def persist_final_timeout_liveness(
         validation_route_manifest,
         expected_cohort_id=expected_cohort_id,
         persist=False,
+        signals=signals,
     )
     advanced_liveness = advance_semantic_liveness(
         report,
@@ -6594,6 +6660,7 @@ def run_transport_completion_watchdog(
         enabled=light_combat_heartbeats,
     )
     trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
+    signals = HeartbeatSignals()
     previous_report: dict[str, Any] | None = None
     world_ticks = WorldTickLedger()
     heartbeat_index = 0
@@ -6623,6 +6690,7 @@ def run_transport_completion_watchdog(
     )
 
     last_output = {"text": ""}
+    terminal_failure = {"value": False}
 
     def send(
         command_text: str,
@@ -6734,6 +6802,41 @@ def run_transport_completion_watchdog(
         if receipt:
             output_parts.append_cleanup(receipt)
 
+    def drain_terminal(budget: CleanupBudget) -> None:
+        """Capture every bot's pending decisions before the stop despawns them."""
+        if not terminal_failure["value"] or heartbeat_index <= 0:
+            return
+
+        def run(drain_command: str) -> tuple[str, bool]:
+            timeout = budget.step_timeout(drain_command)
+            if timeout <= 0:
+                return "", False
+            sent_at_ms = now_ms()
+            output, returncode, timed_out = execute_command(drain_command, timeout)
+            timings.record(
+                phase="terminal_trace_drain", heartbeat_index=heartbeat_index,
+                command=drain_command, sent_at_ms=sent_at_ms, completed_at_ms=now_ms(),
+                response_bytes=len(output or ""), returncode=returncode, timed_out=timed_out,
+            )
+            return output or "", returncode == 0 and not timed_out
+
+        def observe(drain_command: str, output: str) -> None:
+            if trace_retention.enabled:
+                trace_retention.observe(
+                    heartbeat_index=heartbeat_index, phase="terminal_trace_drain",
+                    command=drain_command, output=output,
+                )
+
+        receipt = drain_terminal_trace(
+            run, heartbeat_commands, output_dir, parse_json_objects, observe=observe,
+        )
+        if receipt:
+            output_parts.append_cleanup(receipt)
+
+    def fail(returncode: int = 0, timed_out: bool = False) -> tuple[str, int, bool, list[str]]:
+        terminal_failure["value"] = True
+        return finish(returncode, timed_out)
+
     def finish(returncode: int, timed_out: bool) -> tuple[str, int, bool, list[str]]:
         def persist_timeout(code: int) -> None:
             persist_final_timeout_liveness(
@@ -6752,6 +6855,7 @@ def run_transport_completion_watchdog(
                 validation_route_manifest,
                 expected_cohort_id,
                 liveness_clock,
+                signals=signals,
             )
 
         if timed_out:
@@ -6782,6 +6886,7 @@ def run_transport_completion_watchdog(
         for command_text in cleanup_commands:
             if is_stop_command(command_text) and not drained:
                 # Stopping despawns the bots and their trace rings.
+                drain_terminal(budget)
                 drain_retained_trace(budget)
                 drained = True
             if budget.step_timeout(command_text) <= 0:
@@ -6814,6 +6919,7 @@ def run_transport_completion_watchdog(
             if is_stop_command(command_text):
                 budget.stop_pending = False
         if not drained:
+            drain_terminal(budget)
             drain_retained_trace(budget)
         output_parts.append_cleanup(budget.summary_receipt(watchdog_timed_out=timed_out))
         return output_parts.render(), returncode, timed_out, command
@@ -6866,6 +6972,7 @@ def run_transport_completion_watchdog(
             validation_route_manifest,
             expected_cohort_id=expected_cohort_id,
             persist=False,
+            signals=signals,
         )
         observed_monotonic = time.monotonic()
         advanced_liveness = advance_semantic_liveness(
@@ -6895,7 +7002,12 @@ def run_transport_completion_watchdog(
         raid_terminal = raid_terminal_watchdog_failure(report)
         if raid_terminal:
             finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
-            return finish(0, False)
+            return fail()
+        # Contamination or a failed pre-pull gate held past its grace.
+        signal_terminal = signals.terminal(report, heartbeat_index)
+        if signal_terminal:
+            finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
+            return fail()
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
         semantic_progress_plateau = (
             last_progress_total >= 0
@@ -6920,7 +7032,7 @@ def run_transport_completion_watchdog(
             calibration_blocker_repeats = 1 if blocker_key else 0
         if blocker and calibration_blocker_repeats >= 3:
             finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
-            return finish(0, False)
+            return fail()
         if calibration_clock_reason in {
             "calibration_pre_scoring_timeout",
             "calibration_scoring_timeout",
@@ -6931,18 +7043,17 @@ def run_transport_completion_watchdog(
             finalize_calibration_completion_watchdog(
                 output_dir, report, calibration_clock_reason
             )
+            return fail()
+        if observed_native_manifest_clear(report) or report["acceptable_final_evidence"]:
             return finish(0, False)
-        if observed_native_manifest_clear(report) or report["acceptable_final_evidence"] or (
-            report["completion_reason"] in {
-                "repeated_decision_watchdog",
-                "death_loop_watchdog",
-            }
-            or (
-                report["completion_reason"] == "machine_failure_predicate"
-                and not should_defer_active_combat_bot_diagnosis(report)
-            )
+        if report["completion_reason"] in {
+            "repeated_decision_watchdog",
+            "death_loop_watchdog",
+        } or (
+            report["completion_reason"] == "machine_failure_predicate"
+            and not should_defer_active_combat_bot_diagnosis(report)
         ):
-            return finish(0, False)
+            return fail()
         if validation_route_manifest and semantic_progress_plateau:
             report["completion_reason"] = "semantic_progress_plateau_watchdog"
             report["watchdog_state"]["semantic_progress_plateau"] = True
@@ -6956,12 +7067,13 @@ def run_transport_completion_watchdog(
                 report["final_evidence_rejections"].append("failure_labels_present")
             finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
-            return finish(0, False)
+            return fail()
         if report["watchdog_state"].get("no_progress") and no_progress_expired:
             report["completion_reason"] = "no_progress_watchdog"
             finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
-            return finish(0, False)
+            return fail()
+    # The emergency cap protects infrastructure; it is not a typed bot failure.
     return finish(124, True)
 
 
@@ -6998,6 +7110,8 @@ def run_worldserver_completion_watchdog(
         enabled=light_combat_heartbeats,
     )
     trace_retention = TraceRouteRetention(output_dir, tuple(retain_trace_route_nodes), parse_json_objects)
+    signals = HeartbeatSignals()
+    terminal_failure = False
     previous_report: dict[str, Any] | None = None
     world_ticks = WorldTickLedger()
     heartbeat_index = 0
@@ -7169,6 +7283,31 @@ def run_worldserver_completion_watchdog(
         if receipt:
             output_parts.append_cleanup(receipt)
 
+    def drain_terminal(budget: CleanupBudget) -> None:
+        """Capture every bot's pending decisions before the stop despawns them."""
+        if not terminal_failure or heartbeat_index <= 0 or process.poll() is not None:
+            return
+
+        def observe(drain_command: str, output: str) -> None:
+            if trace_retention.enabled:
+                trace_retention.observe(
+                    heartbeat_index=heartbeat_index, phase="terminal_trace_drain",
+                    command=drain_command, output=output,
+                )
+
+        receipt = drain_terminal_trace(
+            lambda drain_command: (
+                send_command(
+                    drain_command, cleanup=True, phase="terminal_trace_drain",
+                    record=False, budget=budget,
+                ),
+                process.poll() is None and budget.step_timeout(drain_command) > 0,
+            ),
+            heartbeat_commands, output_dir, parse_json_objects, observe=observe,
+        )
+        if receipt:
+            output_parts.append_cleanup(receipt)
+
     def send_cleanup_commands(budget: CleanupBudget) -> None:
         status_command = next((value for value in heartbeat_commands if is_status_command(value)), "")
         if heartbeat_index > 0 and status_command and process.poll() is None:
@@ -7182,6 +7321,7 @@ def run_worldserver_completion_watchdog(
         for command_text in cleanup_commands:
             if is_stop_command(command_text) and not drained and process.poll() is None:
                 # Stopping despawns the bots and their trace rings.
+                drain_terminal(budget)
                 drain_retained_trace(budget)
                 drained = True
             if process.poll() is not None:
@@ -7215,6 +7355,7 @@ def run_worldserver_completion_watchdog(
             if is_stop_command(command_text):
                 budget.stop_pending = False
         if not drained and process.poll() is None:
+            drain_terminal(budget)
             drain_retained_trace(budget)
 
     def persist_timeout(code: int) -> None:
@@ -7234,6 +7375,7 @@ def run_worldserver_completion_watchdog(
             validation_route_manifest,
             expected_cohort_id,
             liveness_clock,
+            signals=signals,
         )
 
     try:
@@ -7272,6 +7414,7 @@ def run_worldserver_completion_watchdog(
                     completion_reason_override="worldserver_process_exit",
                     expected_cohort_id=expected_cohort_id,
                     persist=False,
+                    signals=signals,
                 )
                 advanced_liveness = advance_semantic_liveness(
                     report,
@@ -7321,6 +7464,7 @@ def run_worldserver_completion_watchdog(
                 validation_route_manifest,
                 expected_cohort_id=expected_cohort_id,
                 persist=False,
+                signals=signals,
             )
             observed_monotonic = time.monotonic()
             advanced_liveness = advance_semantic_liveness(
@@ -7350,6 +7494,13 @@ def run_worldserver_completion_watchdog(
             raid_terminal = raid_terminal_watchdog_failure(report)
             if raid_terminal:
                 finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
+                terminal_failure = True
+                break
+            # Contamination or a failed pre-pull gate held past its grace.
+            signal_terminal = signals.terminal(report, heartbeat_index)
+            if signal_terminal:
+                finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
+                terminal_failure = True
                 break
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
             semantic_progress_plateau = (
@@ -7387,6 +7538,7 @@ def run_worldserver_completion_watchdog(
                 report["completion_reason"] == "machine_failure_predicate"
                 and not should_defer_active_combat_bot_diagnosis(report)
             ):
+                terminal_failure = True
                 break
             blocker = calibration_pre_scoring_blocker(report)
             blocker_key = canonical_sha256(blocker) if blocker else ""
@@ -7397,6 +7549,7 @@ def run_worldserver_completion_watchdog(
                 calibration_blocker_repeats = 1 if blocker_key else 0
             if blocker and calibration_blocker_repeats >= 3:
                 finalize_calibration_pre_scoring_blocker(output_dir, report, blocker)
+                terminal_failure = True
                 break
             if calibration_clock_reason in {
                 "calibration_pre_scoring_timeout",
@@ -7408,6 +7561,7 @@ def run_worldserver_completion_watchdog(
                 finalize_calibration_completion_watchdog(
                     output_dir, report, calibration_clock_reason
                 )
+                terminal_failure = True
                 break
             if validation_route_manifest and semantic_progress_plateau:
                 report["completion_reason"] = "semantic_progress_plateau_watchdog"
@@ -7422,11 +7576,13 @@ def run_worldserver_completion_watchdog(
                     report["final_evidence_rejections"].append("failure_labels_present")
                 finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
+                terminal_failure = True
                 break
             if report["watchdog_state"].get("no_progress") and no_progress_expired:
                 report["completion_reason"] = "no_progress_watchdog"
                 finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
+                terminal_failure = True
                 break
         # ``timed_out`` is the watchdog verdict: only the emergency cap sets
         # it.  Cleanup overruns are recorded in the cleanup summary instead.
