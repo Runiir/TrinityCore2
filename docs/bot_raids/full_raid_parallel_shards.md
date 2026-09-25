@@ -556,6 +556,32 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
 9. Done: the AGENTS.md routing and the `development_graph.md` note landed in
    d335b6a506, after R's approval.
 
+## Round 2 results (2026-09-25)
+
+- **Approvals:** R, T, Omnotron, Maloriak, Chimaeron, Atramedes, Nefarian and M were
+  approved after 1-5 review passes each.
+- **Integration:** c0efb93a61 (one change set, no hand-merges). DVC: b969995aca
+  (provisioning, raid shard plans with 7 shards and 70 bots, scenarios, closure rebind).
+  Build: worldserver c0efb93a6158 through host8. Evidence: `round2_batch1_20260925.tar.gz`
+  in DVC.
+- **Magmaw smoke** (canonical roster, c0 alone): a native clear in 120.7 s at 234k raid
+  DPS, with no deaths, stalls or loops. It found two problems: the Assassination rogue
+  used no rogue abilities (3k DPS, auto-attack only), and the assigned Elemental shaman
+  never cast Bloodlust.
+- **Six-shard parallel batch** (one worldserver, instances 8/19/1/3/5/6, zero
+  cross-cohort traffic), no clears:
+
+  | Shard | Ended as | Reason |
+  |---|---|---|
+  | Magmaw | machine failure predicate | `bot_diagnosis_error`, after boss kill evidence |
+  | Omnotron | plateau | `validation_route_future_encounter_contamination`, never engaged |
+  | Chimaeron | action gate | `native_interaction_timeout` (Finkle or the wake) |
+  | Atramedes | plateau | 199 trash pulls, never engaged |
+  | Maloriak | machine failure predicate | `bot_diagnosis_error` after 3 kills |
+  | Nefarian | action gate | `transport_submissions_exhausted` before the encounter |
+
+  Round 3 starts with the per-boss analysis of these runs.
+
 ## Round 3 candidates (from the round 2 reviews)
 
 - **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
