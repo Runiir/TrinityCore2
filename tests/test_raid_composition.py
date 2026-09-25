@@ -66,8 +66,8 @@ def test_per_boss_spec_selection_is_explicit_provisional_and_sets_role_counts():
         assert (specs["druid"], specs["shaman"]) == (druid, shaman)
         assert specs["death_knight"] == "blood_death_knight"
         assert role_counts(composition, catalog, boss) == counts
-        # Round 2: the Atramedes, Chimaeron and Nefarian agents accepted their selections.
-        accepted = boss["boss_key"] in ("atramedes", "chimaeron", "nefarian")
+        # Round 2: every boss agent but Magmaw's (still provisional, see its rationale) accepted its selection.
+        accepted = boss["boss_key"] != "magmaw"
         assert boss["selection_status"] == ("accepted" if accepted else "provisional")
         assert boss["rationale"]
 

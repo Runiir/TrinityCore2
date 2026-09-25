@@ -84,8 +84,16 @@
       "name_code": "omn",
       "route_template_scenario_id": "blackwing_descent_10n_omnotron_diagnostic",
       "spec_selection": {"druid": "feral_druid_tank", "shaman": "elemental_shaman"},
-      "selection_status": "provisional",
-      "rationale": "Two golems are active at once, so two tanks; two healers."
+      "selection_status": "accepted",
+      "rationale": "Two tanks: after the first 45 s two constructs are always active (Activated 90 s, a new one every 45 s on 10N). Two healers (Holy Paladin, Discipline Priest): the pressure is Incineration, Electrical Discharge and Lightning Conductor, and the Holy Paladin carries the poison Cleanse for Soaked In Poison. Elemental keeps Wind Shear in the Arcane Annihilator rotation and a sixth DPS.",
+      "duty_plan": {
+        "tanks": "the tank a construct is attacking owns it; a new construct goes to the tank whose construct is gone or shutting down; the owner taunts it back (Dark Command, Growl)",
+        "interrupts": "Arcane Annihilator rotation by capability and reach: Retribution Rebuke and Assassination Kick, then Elemental Wind Shear, then Blood DK Mind Freeze, then Fire Counterspell, then Feral Skull Bash; backup acts 450 ms into the cast",
+        "dispels": "Soaked In Poison: Holy Paladin Cleanse, then Retribution Cleanse",
+        "bombs": "ranged DPS (BM Hunter, Fire Mage, Elemental, Demonology) kill a Poison Bomb only where its 6 yd blast reaches nobody",
+        "bloodlust": "none (no reviewed release window)",
+        "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h"
+      }
     },
     {
       "boss_key": "chimaeron",
@@ -122,8 +130,8 @@
       "name_code": "mal",
       "route_template_scenario_id": "blackwing_descent_10n_maloriak_diagnostic",
       "spec_selection": {"druid": "feral_druid_tank", "shaman": "elemental_shaman"},
-      "selection_status": "provisional",
-      "rationale": "Aberrations and Prime Subjects need a second tank; two healers."
+      "selection_status": "accepted",
+      "rationale": "Blood DK on Maloriak, Feral holds Aberrations, Prime Subjects and Vile Swills 10+ yd from the boss (Growth Catalyst); two healers because Arcane Storm is interrupted and Remedy dispelled; the Elemental Shaman adds Wind Shear, Purge and phase-two Bloodlust."
     },
     {
       "boss_key": "nefarian",
