@@ -447,7 +447,8 @@ def test_scoped_heart_strike_fixture_executes_production_admission(tmp_path: Pat
         for step in scenario["route"]
         if step.get("node_id") == "bwd.magmaw.encounter"
     ]
-    assert len(contracts) == 2
+    # The full raid, the accepted shard and their round-2 canonical copies (c0 shard, full_c0).
+    assert len(contracts) == 4
     assert all(contract["area_damage_spell_allowlist"] == [421, 48505, 55050]
                for contract in contracts)
     assert all(contract["area_damage_target_allowlist"] == [41570, 42347]

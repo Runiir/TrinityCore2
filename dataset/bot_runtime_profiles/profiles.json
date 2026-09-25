@@ -272,6 +272,233 @@
       "validation_route": {
         "enable": false
       }
+    },
+    {
+      "name": "blackwing_descent_10n_magmaw_c0_diagnostic",
+      "description": "Diagnostic-only raid boss shard; seeded predecessors are assistance and never certify kills.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_magmaw_c0_diagnostic",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "prerequisite_contract": {
+        "certifies_predecessors": false,
+        "precompleted_boss_keys": [],
+        "precompleted_boss_entries": []
+      },
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_magmaw_c0_diagnostic"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n_omnotron_c0_diagnostic",
+      "description": "Diagnostic-only raid boss shard; seeded predecessors are assistance and never certify kills.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_omnotron_c0_diagnostic",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "prerequisite_contract": {
+        "certifies_predecessors": false,
+        "precompleted_boss_keys": [],
+        "precompleted_boss_entries": []
+      },
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_omnotron_c0_diagnostic"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+      "description": "Diagnostic-only raid boss shard; seeded predecessors are assistance and never certify kills.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "prerequisite_contract": {
+        "certifies_predecessors": false,
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron"
+        ],
+        "precompleted_boss_entries": [
+          41570,
+          42186
+        ]
+      },
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_chimaeron_c0_diagnostic"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n_atramedes_c0_diagnostic",
+      "description": "Diagnostic-only raid boss shard; seeded predecessors are assistance and never certify kills.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_atramedes_c0_diagnostic",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "prerequisite_contract": {
+        "certifies_predecessors": false,
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron"
+        ],
+        "precompleted_boss_entries": [
+          41570,
+          42186
+        ]
+      },
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_atramedes_c0_diagnostic"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n_maloriak_c0_diagnostic",
+      "description": "Diagnostic-only raid boss shard; seeded predecessors are assistance and never certify kills.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_maloriak_c0_diagnostic",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "prerequisite_contract": {
+        "certifies_predecessors": false,
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron"
+        ],
+        "precompleted_boss_entries": [
+          41570,
+          42186
+        ]
+      },
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_maloriak_c0_diagnostic"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n_nefarian_c0_diagnostic",
+      "description": "Diagnostic-only raid boss shard; seeded predecessors are assistance and never certify kills.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_nefarian_c0_diagnostic",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "diagnostic_only": true,
+      "diagnostic_parent_scenario_id": "blackwing_descent_10n",
+      "prerequisite_contract": {
+        "certifies_predecessors": false,
+        "precompleted_boss_keys": [
+          "magmaw",
+          "omnotron",
+          "chimaeron",
+          "atramedes",
+          "maloriak"
+        ],
+        "precompleted_boss_entries": [
+          41570,
+          42186,
+          43296,
+          41442,
+          41378
+        ]
+      },
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_nefarian_c0_diagnostic"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n_full_c0",
+      "description": "Canonical-composition end-to-end cohort on the full raid route; every kill is natural.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n_full_c0",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "raid_size": 10,
+      "raid_difficulty": 0,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n_full_c0"
+      }
     }
   ]
 }

@@ -503,6 +503,60 @@ stages:
     metrics:
     - dataset/validation_provisioning_verification/report.json:
         cache: false
+  raid_shard_provisioning:
+    cmd: python -m tools.raid_program.raid_shard_plan --prerequisites-dir
+      experiments/configs/raid_prerequisites --provisioning-config
+      experiments/configs/validation_provisioning_cata_001.json
+      --scenario-config experiments/configs/validation_scenarios_cata_001.json
+      --gear-profiles dataset/validation_gear_profiles/profiles.json --trainers
+      dataset/world_knowledge/trainers.jsonl --dbc-dir data/dbc/enUS --output-dir
+      dataset/raid_shard_provisioning
+    deps:
+    - tools/raid_program/raid_shard_plan.py
+    - tools/raid_program/raid_shard_identity.py
+    - tools/raid_program/raid_shard_contract.py
+    - tools/raid_program/raid_shard_preflight.py
+    - tools/raid_program/raid_composition.py
+    - tools/raid_program/raid_loadout.py
+    - tools/raid_program/raid_loadout_spells.py
+    - tools/raid_program/raid_loadout_sql.py
+    - tools/raid_program/bwd_shard_fixtures.py
+    - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/build_validation_gear_profiles.py
+    - tools/bot_ml/validation_profile_manifests.py
+    - tools/bot_ml/wowsims_gear_binding.py
+    - tools/bot_ml/permanent_enchant_overlays.py
+    - tools/bot_ml/player_gear_acquisition.py
+    - tools/bot_ml/extract_world_knowledge.py
+    - tools/bot_ml/common.py
+    - experiments/configs/cata_blood_permanent_enchant_overlays_v1.json
+    - experiments/configs/raid_compositions
+    - experiments/configs/raid_prerequisites
+    - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/validation_scenarios_cata_001.json
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/wowsims_cata_p4_gear_profiles.json
+    - experiments/configs/wowsims_cata_dps_reference_requests_v1.json
+    - experiments/configs/cata_434_action_profiles.json
+    - experiments/configs/cata_434_combat_loot_profiles.json
+    - sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql
+    - dataset/validation_gear_profiles
+    - dataset/world_knowledge/trainers.jsonl
+    - data/dbc/enUS/SkillLineAbility.dbc
+    - data/dbc/enUS/SpellEffect.dbc
+    - data/dbc/enUS/Talent.dbc
+    - data/dbc/enUS/TalentTab.dbc
+    - data/dbc/enUS/TalentTreePrimarySpells.dbc
+    - data/dbc/enUS/GlyphProperties.dbc
+    - data/dbc/enUS/Item.db2
+    - data/dbc/enUS/Item-sparse.db2
+    - data/dbc/enUS/GemProperties.dbc
+    - data/dbc/enUS/SpellItemEnchantment.dbc
+    - data/dbc/enUS/ItemLimitCategory.dbc
+    - data/dbc/enUS/NamesProfanity.dbc
+    - data/dbc/enUS/NamesReserved.dbc
+    outs:
+    - dataset/raid_shard_provisioning
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config
       experiments/configs/validation_scenarios_cata_001.json
@@ -510,8 +564,10 @@ stages:
       --provisioning-verification
       dataset/validation_provisioning_verification/report.json
       --bwd-diagnostic-shard-fixture
-      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json --output-dir
-      dataset/validation_scenarios
+      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
+      --raid-shard-plan
+      dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json
+      --output-dir dataset/validation_scenarios
     deps:
     - tools/bot_ml/build_validation_scenario_manifests.py
     - tools/bot_ml/common.py
@@ -520,6 +576,8 @@ stages:
     - sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
     - dataset/validation_provisioning/report.json
     - dataset/validation_provisioning_verification/report.json
+    - dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json
+    - dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/report.json
     outs:
     - dataset/validation_scenarios:
         persist: true

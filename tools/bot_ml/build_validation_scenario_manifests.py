@@ -700,14 +700,45 @@ def diagnostic_rosters_by_scenario(
     return rosters
 
 
+def raid_shard_provisioning_rows(
+    provisioned: dict[str, dict[str, Any]],
+    raid_shard_reports: Sequence[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Add each raid-shard cohort's provisioning readiness beside the legacy report.
+
+    `raid_shard_provisioning_report_v1.provisioning_readiness` has the legacy
+    scenario_report shape. A cohort ID may never shadow a legacy scenario, so
+    the legacy rows (and their manifests) stay byte-identical.
+    """
+    merged = dict(provisioned)
+    for report in raid_shard_reports:
+        for scenario_id, row in scenario_by_id(report.get("provisioning_readiness") or {}).items():
+            if scenario_id in merged:
+                raise ValueError(f"raid_shard_provisioning_scenario_collision:{scenario_id}")
+            merged[scenario_id] = row
+    return merged
+
+
+def raid_shard_plan_coverage(
+    configured_scenario_ids: set[str],
+    raid_shard_plans: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    declared = [str(shard.get("scenario_id") or "") for plan in raid_shard_plans for shard in plan.get("shards") or []]
+    return {
+        "raid_shard_plan_scenarios": declared,
+        "raid_shard_plan_scenarios_without_config_rows": [value for value in declared if value not in configured_scenario_ids],
+    }
+
+
 def build_manifests(
     config: dict[str, Any],
     provisioning_report: dict[str, Any],
     provisioning_verify_report: dict[str, Any],
     diagnostic_fixture: dict[str, Any] | None = None,
     raid_shard_plans: Sequence[dict[str, Any]] = (),
+    raid_shard_reports: Sequence[dict[str, Any]] = (),
 ) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
-    provisioned = scenario_by_id(provisioning_report)
+    provisioned = raid_shard_provisioning_rows(scenario_by_id(provisioning_report), raid_shard_reports)
     verification_ready = bool(provisioning_verify_report.get("all_passed"))
     scenarios: list[dict[str, Any]] = []
     routes: list[dict[str, Any]] = []
@@ -719,6 +750,9 @@ def build_manifests(
         if isinstance(row, dict) and row.get("id")
     }
     diagnostic_rosters = diagnostic_rosters_by_scenario(diagnostic_fixture, raid_shard_plans)
+    # A plan's end-to-end cohort is an ordinary (non-diagnostic) scenario whose
+    # roster also comes from the plan; legacy scenarios never appear in a plan.
+    plan_rosters = diagnostic_rosters_by_scenario(None, raid_shard_plans) if raid_shard_plans else {}
 
     for scenario in configured_scenarios:
         scenario_id = str(scenario.get("id") or "")
@@ -739,6 +773,12 @@ def build_manifests(
             scenario_roster = diagnostic_rosters.get(scenario_id, [])
             if len(scenario_roster) != expected_bot_count:
                 missing.append("diagnostic_roster_identity")
+        elif scenario_id in plan_rosters:
+            if scenario.get("roster_identity"):
+                raise ValueError(f"raid_shard_scenario_declares_roster_identity:{scenario_id}")
+            scenario_roster = plan_rosters[scenario_id]
+            if len(scenario_roster) != expected_bot_count:
+                missing.append("raid_shard_roster_identity")
         scenario_required_evidence = ["role_assignments", "party_formation" if scenario_group_kind == "party" else "raid_formation"]
         if any(step.get("kind") in {"trash", "boss"} for step in route_steps):
             scenario_required_evidence.extend(["pulls", "regrouping", "recovery"])
@@ -1106,6 +1146,8 @@ def build_manifests(
         "control_eligible": False,
         "evidence_surfaces": sorted(EVIDENCE_ACTIONS),
     }
+    if raid_shard_plans:
+        report.update(raid_shard_plan_coverage(configured_scenario_ids, raid_shard_plans))
     return {
         "validation_scenarios": sorted(scenarios, key=lambda row: row["scenario_id"]),
         "validation_routes": sorted(routes, key=lambda row: (row["scenario_id"], row["step"])),
@@ -1121,16 +1163,22 @@ def main() -> int:
     parser.add_argument("--provisioning-verification", type=Path, default=Path("dataset/validation_provisioning_verification/report.json"))
     parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=Path("experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"))
     parser.add_argument("--raid-shard-plan", type=Path, action="append", default=[],
-                        help="Optional raid_shard_plan_v1 plan.json whose shard rosters bind diagnostic scenarios.")
+                        help="Optional raid_shard_plan_v1 plan.json whose shard rosters bind diagnostic scenarios. "
+                             "Its sibling report.json (raid_shard_provisioning_report_v1), when present, supplies "
+                             "the cohorts' provisioning readiness.")
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_scenarios"))
     args = parser.parse_args()
 
+    plans = [load_json(path) for path in args.raid_shard_plan]
+    if any(plan.get("schema") != "raid_shard_plan_v1" for plan in plans):
+        raise SystemExit("--raid-shard-plan must name raid_shard_plan_v1 plan.json files")
     manifests = build_manifests(
         load_json(args.config),
         load_json(args.provisioning_report),
         load_json(args.provisioning_verification),
         load_json(args.bwd_diagnostic_shard_fixture),
-        [load_json(path) for path in args.raid_shard_plan],
+        plans,
+        [load_json(path.parent / "report.json") for path in args.raid_shard_plan if (path.parent / "report.json").is_file()],
     )
     counts: dict[str, int] = {}
     hashes: dict[str, str] = {}

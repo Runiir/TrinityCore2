@@ -88,9 +88,10 @@
     // everywhere. Preference order:
     //  1. living riders already seated on a pincer, so a roster change during
     //     the ride never strands an unassigned actor in a pincer seat;
-    //  2. non-baiter DPS by raw GUID, except Balance, which keeps its
+    //  2. non-baiter DPS by raw GUID, except the mushroom caster (Balance,
+    //     MagmawDutyCapabilities::IsMushroomCaster), which keeps its
     //     stationary casts and the parasite mushroom duty;
-    //  3. non-baiter DPS including Balance, by raw GUID;
+    //  3. non-baiter DPS including the mushroom caster, by raw GUID;
     //  4. only when no DPS can fill a seat, any other non-tank (healers) by
     //     raw GUID.
     // Tanks and the fixed pillar baiters never ride.
@@ -119,7 +120,7 @@
                 seated.push_back(member.Guid);
             if (member.Role != "dps")
                 others.push_back(member.Guid);
-            else if (member.ClassSpec == "balance_druid")
+            else if (MagmawDutyCapabilities::IsMushroomCaster(member.ClassSpec))
                 balance.push_back(member.Guid);
             else
                 dps.push_back(member.Guid);

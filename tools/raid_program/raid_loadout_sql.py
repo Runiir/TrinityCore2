@@ -73,8 +73,9 @@ def raid_shard_config(plan: dict[str, Any], scenario_ids: Sequence[str] = ()) ->
             "difficulty": shard["difficulty"],
             "start_position": copy.deepcopy(shard["start_position"]),
             "required_roles": copy.deepcopy(shard["role_counts"]),
-            "diagnostic_only": True,
-            "diagnostic_parent_scenario_id": shard["diagnostic_parent_scenario_id"],
+            # Boss shards are diagnostic; a composition's end-to-end cohort is not.
+            "diagnostic_only": shard.get("diagnostic_only", True) is not False,
+            "diagnostic_parent_scenario_id": shard.get("diagnostic_parent_scenario_id"),
             "runtime_profile_id": shard["runtime_profile_id"],
             "pool_tag": shard["pool_tag"],
             "cohort_id": shard["cohort_id"],
@@ -104,11 +105,20 @@ def materialization_inputs(gear_profiles: Path, trainers_path: Path) -> dict[str
 
 
 def check_plan_sources(plan: dict[str, Any], gear_profiles: Path, trainers_path: Path) -> dict[str, Any]:
-    """Refuse to materialize a plan whose recorded inputs differ from the files at hand."""
+    """Refuse to materialize a plan whose recorded inputs differ from the files at hand.
+
+    A plan must record every materialization input (raid_shard_plan.load_plan_inputs
+    does since 15104b10dd). A plan without one of those records, e.g. one built
+    before the spellbook baseline read the class trainers, is refused as
+    unrecorded instead of passing the drift check silently.
+    """
     inputs = materialization_inputs(gear_profiles, trainers_path)
     recorded = plan.get("sources") or {}
-    drift = sorted(name for name, sha in inputs.items()
-                   if name in recorded and recorded[name].get("sha256") != sha)
+    unrecorded = sorted(name for name in inputs
+                        if not isinstance(recorded.get(name), dict) or "sha256" not in recorded[name])
+    if unrecorded:
+        raise RaidShardSqlError(f"plan_source_unrecorded:{','.join(unrecorded)}")
+    drift = sorted(name for name, sha in inputs.items() if recorded[name].get("sha256") != sha)
     if drift:
         raise RaidShardSqlError(f"plan_source_drift:{','.join(drift)}")
     return inputs

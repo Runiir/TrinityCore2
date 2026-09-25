@@ -50,9 +50,23 @@ def _starts() -> dict:
             for boss in ("magmaw", "omnotron", "chimaeron", "atramedes", "maloriak", "nefarian")}
 
 
-def _plan(copies: int = 1, prerequisites: dict | None = None, composition: dict | None = None) -> dict:
+def _sources() -> dict:
+    """Materialization source records, as load_plan_inputs writes them (plan_source_unrecorded otherwise)."""
+    from tools.raid_program.raid_loadout_sql import materialization_inputs
+    from tools.raid_program.raid_loadout_spells import DEFAULT_TRAINERS
+    return {name: {"sha256": sha} for name, sha in materialization_inputs(
+        ROOT / "dataset/validation_gear_profiles/profiles.json", DEFAULT_TRAINERS).items()}
+
+
+BOSS_KEYS = ("magmaw", "omnotron", "chimaeron", "atramedes", "maloriak", "nefarian")
+
+
+def _plan(copies: int = 1, prerequisites: dict | None = None, composition: dict | None = None,
+          full_raid: bool = False) -> dict:
+    """The six boss shards (Nefarian c0 anchors them); `full_raid` adds the end-to-end cohort."""
     return build_shard_plan(composition or read_json(BWD), prerequisites or bwd_prerequisites(),
-                            copies=copies, starts=_starts(), provisioning_defaults={"default_consumables": []})
+                            copies=copies, starts=_starts(), provisioning_defaults={"default_consumables": []},
+                            sources=_sources(), boss_keys=[*BOSS_KEYS, *(["full"] if full_raid else [])])
 
 
 def test_plan_covers_every_boss_with_contract_named_isolated_cohorts():
@@ -223,3 +237,60 @@ def test_real_package_a_prerequisites_build_the_bwd_plan():
     assert len(closure["nefarian"]) == 5
     assert closure["magmaw"] == set()
     assert all(bot["character_guid"] > ids.CHARACTER_GUID_BASE for shard in plan["shards"] for bot in shard["bots"])
+
+
+FULL = "blackwing_descent_10n_full_c0"
+
+
+def test_full_raid_entry_adds_a_non_diagnostic_end_to_end_cohort():
+    plan = build_shard_plan(read_json(BWD), bwd_prerequisites(), starts=_starts() | {"blackwing_descent_10n": dict(START)},
+                            provisioning_defaults={"default_consumables": []}, sources=_sources())
+    assert plan["shard_count"] == 7 and plan["bot_count"] == 70
+    full = plan["shards"][-1]
+    assert full["shard_kind"] == "full_raid" and [s["shard_kind"] for s in plan["shards"][:6]] == ["boss"] * 6
+    assert full["cohort_id"] == full["scenario_id"] == full["pool_tag"] == full["runtime_profile_id"] == FULL
+    assert full["diagnostic_only"] is False and full["route_template_scenario_id"] == "blackwing_descent_10n"
+    assert full["start_position_source"] == "blackwing_descent_10n"
+    assert full["lockout"]["precompleted_boss_keys"] == [] and full["lockout"]["diagnostic_only_assistance"] is False
+    assert full["role_counts"] == {"tank": 2, "healer": 3, "dps": 5}
+    specs = {bot["character_key"]: bot["class_spec"] for bot in full["bots"]}
+    assert specs["druid"] == "feral_druid_tank" and specs["shaman"] == "restoration_shaman"
+    # Its own identity block (boss number 99): disjoint from every boss shard, and the new anchor.
+    assert sorted(bot["character_guid"] for bot in full["bots"]) == list(range(11_099_001, 11_099_011))
+    assert all(bot["name"].startswith("Bwfulnb") and bot["pool_tag"] == FULL for bot in full["bots"])
+    from tools.raid_program.raid_shard_preflight import plan_reservation
+    assert plan_reservation(plan)["anchor_scenario_id"] == FULL
+    profile = full["runtime_profile"]
+    assert profile["name"] == profile["pool_tag_filter"] == profile["validation_route"]["scenario_id"] == FULL
+    assert "diagnostic_only" not in profile and "prerequisite_contract" not in profile
+    # The legacy full-raid tag is a substring of every shard tag; the cohort never uses it.
+    assert all("blackwing_descent_10n" != bot["pool_tag"] for shard in plan["shards"] for bot in shard["bots"])
+    assert validate_shard_plan(plan)["all_passed"]
+
+
+@pytest.mark.parametrize("mutate,check", [
+    (lambda full: full.update(pool_tag="blackwing_descent_10n"), "full_raid_pool_tag"),
+    (lambda full: full.update(cohort_id="blackwing_descent_10n_full_c1"), "full_raid_cohort_id"),
+    (lambda full: full.update(route_scenario_id="blackwing_descent_10n"), "full_raid_route_scenario_id"),
+    (lambda full: full.update(scenario_id=FULL), "full_raid_route_template_scenario"),
+    (lambda full: full["spec_selection"].update(druid="restoration_druid"), "full_raid_spec_selection"),
+    (lambda full: full.update(selection_status="final"), "full_raid_selection_status"),
+])
+def test_full_raid_entry_defects_fail_closed(mutate, check):
+    composition = read_json(BWD)
+    mutate(composition["full_raid"])
+    with pytest.raises(ShardPlanError, match=check):
+        build_shard_plan(composition, bwd_prerequisites(), starts=_starts())
+
+
+def test_full_raid_contract_drift_fails_plan_validation():
+    plan = _plan(full_raid=True)
+    assert plan["shards"][-1]["cohort_id"] == FULL
+    for mutate in (lambda shard: shard.update(diagnostic_only=True),
+                   lambda shard: shard["lockout"].update(diagnostic_only_assistance=True),
+                   lambda shard: shard["lockout"].update(precompleted_boss_keys=["magmaw"]),
+                   lambda shard: shard.update(pool_tag=FULL + "_diagnostic")):
+        drifted = copy.deepcopy(plan)
+        mutate(drifted["shards"][-1])
+        with pytest.raises(ShardPlanError):
+            validate_shard_plan(drifted)

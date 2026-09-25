@@ -64,7 +64,9 @@ def _bwd_manifest_rows() -> tuple[list[dict], list[dict]]:
 def test_every_generated_bwd_route_carries_the_exact_recovery_entrance() -> None:
     configured_bwd, route_rows = _bwd_manifest_rows()
 
-    assert len(configured_bwd) == 7
+    # The full raid, six legacy boss shards, and the round-2 canonical cohorts
+    # (six c0 boss shards and the end-to-end cohort).
+    assert len(configured_bwd) == 14
     assert {str(scenario["id"]) for scenario in configured_bwd} == {
         str(row["scenario_id"]) for row in route_rows
     }

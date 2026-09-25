@@ -2,6 +2,7 @@
 #define TRINITY_BOT_MAGMAW_BAITER_ROTATION_H
 
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
 #include "ObjectGuid.h"
 
 #include <algorithm>
@@ -20,7 +21,10 @@ namespace BotEncounter
 // the roster Hunter; the Fire Mage slot alternates between the two lowest-GUID
 // dps Fire Mages, one parasite wave at a time (wave 1 the first, wave 2 the
 // second, wave 3 the first again). Only the assignment rotates: geometry,
-// lanes and damage are unchanged.
+// lanes and damage are unchanged. The lanes are capabilities
+// (MagmawDutyCapabilities::BaitLaneFor): the mage lane is the Blink lane
+// (Fire Mage) and the hunter lane the Disengage lane (any Hunter spec), so a
+// roster with one Fire Mage keeps it every wave (SingleMage).
 //
 // A wave is one pillar/parasite episode: it starts when a living Pillar of
 // Flame, a living Lava Parasite or a living player's Parasitic Infection
@@ -106,14 +110,14 @@ struct MagmawBaiterRotation
 
     static bool IsBaitMage(ActorSnapshot const& member)
     {
-        return member.Role == "dps" && member.ClassSpec == "fire_mage";
+        return MagmawDutyCapabilities::BaitLaneFor(member.Role, member.ClassSpec)
+            == MagmawDutyCapabilities::BaitLane::Blink;
     }
 
     static bool IsBaitHunter(ActorSnapshot const& member)
     {
-        return member.Role == "dps"
-            && (member.ClassSpec == "marksmanship_hunter"
-                || member.ClassSpec == "survival_hunter");
+        return MagmawDutyCapabilities::BaitLaneFor(member.Role, member.ClassSpec)
+            == MagmawDutyCapabilities::BaitLane::Disengage;
     }
 
     // Roster identity only, independent of liveness: a death must not

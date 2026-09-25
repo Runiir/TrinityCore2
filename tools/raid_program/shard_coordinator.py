@@ -20,6 +20,14 @@ worldserver_cohort_lines.log. Each run directory can be recorded with
 
 Round 1 keeps MapUpdate.Threads = 1. A seeded lockout is diagnostic assistance:
 the shard identity records it and it never certifies a predecessor kill.
+
+Provisioning happens once, before the worldserver starts, under the owner
+lock. Shards of the run's generated raid_shard_plan_v1 (a run plan's
+`raid_shard_plan`, or the plan itself with --shard) go through
+tools.raid_program.raid_shard_provisioning: the collision preflight, one
+transaction per cohort with the anchor cohort first, and a DB readback. Other
+(legacy) shards keep the unchanged 110-character validation provisioning.
+Every shard is recorded under its boss's raid target `<raid>_<size><diff>_<boss>`.
 """
 from __future__ import annotations
 
@@ -144,6 +152,12 @@ class WatchdogPolicy:
 class ShardRunPlan:
     shards: tuple[ShardSpec, ...]
     watchdog: WatchdogPolicy = WatchdogPolicy()
+    # The generated raid_shard_plan_v1 that provisions this run's plan cohorts
+    # (tools.raid_program.raid_shard_provisioning). None: every shard is legacy.
+    source_plan: Path | None = None
+
+    def plan_backed(self, source_shards: Mapping[str, Any] | None) -> tuple[ShardSpec, ...]:
+        return tuple(shard for shard in self.shards if source_shards and shard.scenario_id in source_shards)
 
 
 def _text(row: Mapping[str, Any], name: str, default: str = "") -> str:
@@ -220,9 +234,36 @@ def validate_plan(plan: ShardRunPlan, *, capacity: int = MAX_SHARDS) -> None:
                 raise ShardPlanError(f"pool tag {left.pool_tag} is contained in {right.pool_tag}")
 
 
+def source_plan_shards(path: Path | None) -> dict[str, dict[str, Any]] | None:
+    """Scenario ID -> shard of a generated raid_shard_plan_v1; None when absent."""
+    if path is None or not Path(path).is_file():
+        return None
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("schema") != SOURCE_PLAN_SCHEMA:
+        raise ShardPlanError(f"{path} is not a {SOURCE_PLAN_SCHEMA}")
+    return {str(row["scenario_id"]): row for row in payload.get("shards") or []}
+
+
+def check_against_source_plan(plan: ShardRunPlan, source: Mapping[str, Mapping[str, Any]] | None) -> None:
+    """Every plan-backed shard must be exactly the generated cohort it provisions."""
+    from tools.raid_program.raid_shard_provisioning import run_shard_identity_failures
+
+    for spec in plan.plan_backed(source):
+        problems = run_shard_identity_failures(
+            dict(source[spec.scenario_id]), cohort_id=spec.cohort_id, profile=spec.profile,
+            scenario_id=spec.scenario_id, pool_tag=spec.pool_tag, boss_key=spec.boss_key,
+            precompleted=None if spec.lockout is None else list(spec.lockout.boss_keys))
+        if problems:
+            raise ShardPlanError(f"{spec.cohort_id} differs from its generated plan shard: {problems}")
+
+
 def load_run_plan(path: Path, *, select: Sequence[str] = (),
                   watchdog: Mapping[str, Any] | None = None) -> ShardRunPlan:
-    """Read a raid_shard_run_plan_v1, or pick shards from package C's raid_shard_plan_v1."""
+    """Read a raid_shard_run_plan_v1, or pick shards from package C's raid_shard_plan_v1.
+
+    A run plan names the generated plan that provisions its plan cohorts in
+    `raid_shard_plan` (repository-relative); a raid_shard_plan_v1 is its own source.
+    """
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     schema = payload.get("schema") if isinstance(payload, Mapping) else None
     if schema not in {RUN_PLAN_SCHEMA, SOURCE_PLAN_SCHEMA}:
@@ -240,8 +281,16 @@ def load_run_plan(path: Path, *, select: Sequence[str] = (),
     elif schema == SOURCE_PLAN_SCHEMA:
         raise ShardPlanError("select the shards to run from a raid_shard_plan_v1 (--shard)")
     policy = WatchdogPolicy.from_mapping(watchdog if watchdog is not None else payload.get("watchdog"))
-    plan = ShardRunPlan(shards=tuple(shards), watchdog=policy)
+    if schema == SOURCE_PLAN_SCHEMA:
+        source = Path(path)
+    else:
+        declared = payload.get("raid_shard_plan")
+        if declared is not None and (not isinstance(declared, str) or not declared or Path(declared).is_absolute()):
+            raise ShardPlanError("raid_shard_plan must be a repository-relative path")
+        source = REPO_ROOT / declared if declared else None
+    plan = ShardRunPlan(shards=tuple(shards), watchdog=policy, source_plan=source)
     validate_plan(plan)
+    check_against_source_plan(plan, source_plan_shards(source))
     return plan
 
 
@@ -282,6 +331,9 @@ class ShardConsoleTransport(ConsoleTransport):
     supports_interruptible = True
     interrupted: threading.Event | None = None
     drain_timeout_sec: int = 180
+    # Exchanges abandoned by an exception other than an operator interruption
+    # (e.g. EIO reading the console log). The run cannot pass after one.
+    transport_faults: int = 0
 
     @classmethod
     def adopt(cls, transport: ConsoleTransport, max_response_bytes: int = 256 * 1024 * 1024,
@@ -329,14 +381,21 @@ class ShardConsoleTransport(ConsoleTransport):
         stop = self.interrupted if interruptible else None
         if stop is not None and stop.is_set():
             return "", 1, False
+        # One budget per exchange: draining an abandoned reply spends the same
+        # deadline as the command's own reply, so no call outlives timeout_sec.
+        deadline = time.monotonic() + timeout_sec
         if self.dirty:
-            if stop is not None:
-                return "", 1, False  # only the coordinator waits for an abandoned reply
-            if not self._drain(min(float(timeout_sec), float(self.drain_timeout_sec))):
+            # After an interruption only the coordinator's teardown gets here
+            # (shard exchanges returned above). Without one, a transport fault
+            # abandoned the reply, and whichever exchange comes next drains it:
+            # it holds the serialized console, so nothing else can be answered.
+            budget = min(deadline - time.monotonic(), float(self.drain_timeout_sec))
+            if not self._drain(max(0.0, budget)):
                 self.failed = True  # its late bytes could answer any later command
                 return "abandoned console reply never completed", 1, True
+            if time.monotonic() >= deadline:
+                return "draining the abandoned reply used the exchange budget", 1, True
         marker = self.reply_marker(command)
-        deadline = time.monotonic() + timeout_sec
         output = bytearray()
         with self.log_path.open("rb") as stream:
             stream.seek(0, os.SEEK_END)
@@ -366,9 +425,11 @@ class ShardConsoleTransport(ConsoleTransport):
                         self._abandon(marker, start + len(output), output)
                         return output.decode(errors="replace"), 1, False
                     time.sleep(0.05)
-            except BaseException:
+            except BaseException as error:
                 # Ctrl-C inside the wait: the reply is still owed; drain it later.
                 self._abandon(marker, start + len(output), output)
+                if not isinstance(error, KeyboardInterrupt):
+                    self.transport_faults += 1
                 raise
         self.failed = True
         return output.decode(errors="replace"), 1, True
@@ -382,6 +443,7 @@ class SerializedConsole:
         self._lock = threading.Lock()
         self._journal_path = journal_path
         self.exchanges = 0
+        self.transport_errors = 0
 
     def __call__(self, command: str, timeout_sec: int, *,
                  owner: str = "coordinator") -> tuple[str, int, bool]:
@@ -395,6 +457,7 @@ class SerializedConsole:
                     output, returncode, timed_out = self._transport(command, timeout_sec)
             except Exception as error:  # a transport fault is a failed exchange, never a crash
                 output, returncode, timed_out = f"transport_error:{type(error).__name__}:{error}", 1, False
+                self.transport_errors += 1
             self.exchanges += 1
             if self._journal_path is not None:
                 row = {"sequence": self.exchanges, "owner": owner, "command": command,
@@ -406,13 +469,17 @@ class SerializedConsole:
         return output or "", returncode, timed_out
 
     def health(self) -> dict[str, Any]:
-        """Whether the console can still be trusted: no latched failure, server alive."""
+        """Whether the console can still be trusted: no latched failure or transport fault, server alive."""
         failed = bool(getattr(self._transport, "failed", False))
         process = getattr(self._transport, "process", None)
         exit_code = process.poll() if process is not None else None
+        # Every transport exception is caught here; the transport's own count
+        # also covers faults raised outside this console.
+        faults = max(self.transport_errors, int(getattr(self._transport, "transport_faults", 0) or 0))
         return {"transport_failed": failed, "server_exited": exit_code is not None,
-                "server_exit_code": exit_code, "healthy": not failed and exit_code is None,
-                "abandoned_reply_pending": bool(getattr(self._transport, "dirty", False))}
+                "server_exit_code": exit_code, "healthy": not failed and exit_code is None and not faults,
+                "abandoned_reply_pending": bool(getattr(self._transport, "dirty", False)),
+                "transport_faults": faults}
 
 
 # ---------------------------------------------------------------- demultiplexing
@@ -812,9 +879,15 @@ class ShardCoordinator:
                  server_pid: int | None = None, run_id: str | None = None,
                  watchdog: Watchdog | None = None, finalizer: Finalizer | None = None,
                  sleep: Callable[[float], None] = time.sleep, console_log: Path | None = None,
-                 interrupted: threading.Event | None = None):
+                 interrupted: threading.Event | None = None, flat: bool = False):
         validate_plan(plan)
+        if flat and len(plan.shards) != 1:
+            raise ShardPlanError("a flat run directory holds exactly one shard")
         self.plan = plan
+        # Flat: the only shard's run directory is the run root itself, so a
+        # scoreboard kill directory can be one shard run (coordinator files
+        # such as shard_run.json and preparation/ sit beside the shard's).
+        self.flat = flat
         self.console = console
         self.run_root = run_root
         self.scenario_dir = scenario_dir
@@ -830,12 +903,12 @@ class ShardCoordinator:
         self.console_log = console_log
 
     def shard_dir(self, spec: ShardSpec) -> Path:
-        return self.run_root / "shards" / spec.cohort_id
+        return self.run_root if self.flat else self.run_root / "shards" / spec.cohort_id
 
     def prepare_outcomes(self) -> None:
         for spec in self.plan.shards:
             shard_dir = self.shard_dir(spec)
-            shard_dir.mkdir(parents=True, exist_ok=False)
+            shard_dir.mkdir(parents=True, exist_ok=self.flat)
             route = load_shard_route(spec, self.scenario_dir, shard_dir)
             transport = ShardTransport(self.console, spec, shard_dir, self.interrupted,
                                        self.plan.watchdog.transition_timeout_sec,
@@ -1038,6 +1111,12 @@ class ShardCoordinator:
                 ("console_transport_failed", summary["console"]["transport_failed"]),
                 ("worldserver_exited", summary["console"]["server_exited"]),
                 ("teardown_unverified", "teardown" in summary and not summary["teardown"].get("verified")),
+                # A transport exception abandoned or failed an exchange: some
+                # shard's commands were refused, so its result is not a pass.
+                ("console_transport_fault", bool(summary["console"].get("transport_faults"))),
+                # A reply still owed at the end means the console was never
+                # drained back to a clean prompt.
+                ("console_reply_abandoned", summary["console"].get("abandoned_reply_pending") is True),
             ) if failed]
             summary["infrastructure_failures"] = infrastructure
             shard_errors = {outcome.spec.cohort_id: outcome.error for outcome in self.outcomes if outcome.error}
@@ -1092,9 +1171,34 @@ def terminal_reason(*, infrastructure: bool, setup_failed: bool, shard_errors: b
     return "completed" if completed else "infrastructure_loss"
 
 
+RAID_TARGETS_DIR = REPO_ROOT / "experiments/configs/raid_targets"
+
+
+def raid_target_scenario(spec: ShardSpec, targets_dir: Path = RAID_TARGETS_DIR) -> str:
+    """The boss's raid-target scenario `<raid>_<size><diff>_<boss>` that records this shard.
+
+    The one raid target naming the shard's validation scenario (its own
+    `validation_scenario_id` or a roster variant's) wins, since a boss key and
+    its target name can differ (cohort ..._omnotron_c0 -> target
+    ..._omnotron_defense_system). Otherwise it is the cohort ID without its copy
+    (e.g. blackwing_descent_10n_maloriak_c3 -> blackwing_descent_10n_maloriak).
+    """
+    matches = []
+    for path in sorted(Path(targets_dir).glob("*.json")) if Path(targets_dir).is_dir() else []:
+        try:
+            target = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        variants = (target.get("roster_variants") or {}).get("variants") or []
+        scenarios = {target.get("validation_scenario_id")} | {row.get("validation_scenario_id") for row in variants}
+        if spec.scenario_id in scenarios:
+            matches.append(str(target.get("scenario") or path.stem))
+    return matches[0] if len(matches) == 1 else re.sub(r"_c[0-9]+$", "", spec.cohort_id)
+
+
 def ingest_command(outcome: ShardOutcome) -> list[str]:
-    """The scoreboard command that records this shard (the scenario needs a raid target)."""
-    scenario = outcome.spec.scenario_id.removesuffix("_diagnostic")
+    """The scoreboard command that records this shard under its boss's raid target."""
+    scenario = raid_target_scenario(outcome.spec)
     return ["pixi", "run", "python", "-m", "tools.raid_program.scoreboard", "ingest",
             "--scenario", scenario, "--label", "<label>", "--run-dir", str(outcome.shard_dir)]
 
@@ -1123,17 +1227,55 @@ class LiveContext:
     preparation: dict[str, Any]
 
 
+PlanProvisioner = Callable[..., dict[str, Any]]
+
+
+def provision_plan_shards(plan: ShardRunPlan, specs: Sequence[ShardSpec], *, config: Path, root: Path,
+                          gear_profiles: Path, apply: bool) -> dict[str, Any]:
+    """Plan cohorts: the guarded preflight and apply path (one transaction per cohort, anchor first)."""
+    from tools.bot_ml.extract_world_knowledge import database_url_from_worldserver_conf
+    from tools.raid_program.raid_shard_provisioning import provision_plan_cohorts
+
+    assert plan.source_plan is not None
+    return provision_plan_cohorts(
+        plan.source_plan, [spec.scenario_id for spec in specs],
+        character_url=database_url_from_worldserver_conf(config, "CharacterDatabaseInfo"),
+        auth_url=database_url_from_worldserver_conf(config, "LoginDatabaseInfo"),
+        gear_profiles=gear_profiles, apply=apply, output=root / "raid_shard_provisioning.json")
+
+
 def prepare_databases(plan: ShardRunPlan, *, config: Path, run_root: Path, provisioning_config: Path,
-                      gear_profiles: Path, apply: bool) -> dict[str, Any]:
-    """Provision every validation character once, then reset each shard's pool, before launch."""
+                      gear_profiles: Path, apply: bool,
+                      plan_provisioner: PlanProvisioner = provision_plan_shards) -> dict[str, Any]:
+    """Provision every shard's characters once, then reset each shard's pool, before launch.
+
+    Legacy shards keep the unchanged 110-character validation provisioning.
+    Shards of the run's generated raid_shard_plan_v1 are provisioned through
+    raid_shard_provisioning instead; a run with only plan shards skips the
+    legacy apply.
+    """
     root = run_root / "preparation"
-    provisioning = harness.prepare_validation_provisioning(
-        root, provisioning_config, gear_profiles, config, apply=apply)
-    harness.bind_validation_provisioning_sql(config, provisioning)
-    resets = {spec.cohort_id: harness.prepare_bot_pool_reset(
+    source = source_plan_shards(plan.source_plan)
+    if plan.source_plan is not None and source is None:
+        raise ShardPlanError(f"generated plan {plan.source_plan} is missing: reproduce the "
+                             "raid_shard_provisioning DVC stage")
+    planned = plan.plan_backed(source)
+    legacy = [spec for spec in plan.shards if spec not in planned]
+    result: dict[str, Any] = {}
+    if legacy or not planned:
+        provisioning = harness.prepare_validation_provisioning(
+            root, provisioning_config, gear_profiles, config, apply=apply)
+        harness.bind_validation_provisioning_sql(config, provisioning)
+        result["validation_provisioning"] = provisioning
+    else:
+        result["validation_provisioning"] = {"skipped": "no_legacy_shards"}
+    if planned:
+        result["raid_shard_provisioning"] = plan_provisioner(plan, planned, config=config, root=root,
+                                                             gear_profiles=gear_profiles, apply=apply)
+    result["bot_pool_reset"] = {spec.cohort_id: harness.prepare_bot_pool_reset(
         root / spec.cohort_id, config, [spec.pool_tag], apply=apply,
         reset_positions=False, reset_quests=True, reset_memory=True) for spec in plan.shards}
-    return {"validation_provisioning": provisioning, "bot_pool_reset": resets}
+    return result
 
 
 def finalize_live_shard(outcome: ShardOutcome, context: LiveContext, policy: WatchdogPolicy,
@@ -1207,11 +1349,40 @@ def preflight(plan: ShardRunPlan, *, config: Path, run_root: Path, scenario_dir:
         args.config, args.output_dir = config, run_root
         prepare_asset_arguments(args, REPO_ROOT, route)
         closures[str(map_id)] = enforce_runtime_asset_closure_from_args(args, worldserver_config=args.config)
-    return {"stage": stage, "runtime_asset_closure": closures}
+    return {"stage": stage, "runtime_asset_closure": closures,
+            "raid_shard_scenarios": check_plan_scenario_rows(plan, config)}
+
+
+def check_plan_scenario_rows(plan: ShardRunPlan, config: Path) -> dict[str, Any] | None:
+    """Plan cohorts: the generated plan exists and each cohort's scenario row and profile match it."""
+    from tools.raid_program.raid_shard_scenarios import (
+        LEGACY_BWD_FIXTURE, SCENARIO_CONFIG, validate_raid_shard_scenarios)
+
+    if plan.source_plan is None:
+        return None
+    source = source_plan_shards(plan.source_plan)
+    if source is None:
+        raise ShardPlanError(f"generated plan {plan.source_plan} is missing: reproduce the "
+                             "raid_shard_provisioning DVC stage")
+    selected = {spec.scenario_id for spec in plan.plan_backed(source)}
+    manifest = Path(harness.trinity_config_string(config, "BotWorld.ProfileManifest",
+                                                  "dataset/bot_runtime_profiles/profiles.json"))
+    manifest = manifest if manifest.is_absolute() else REPO_ROOT / manifest
+    read = lambda path: json.loads(Path(path).read_text(encoding="utf-8"))
+    source_plan = read(plan.source_plan)
+    source_plan["shards"] = [shard for shard in source_plan["shards"] if shard["scenario_id"] in selected]
+    report = validate_raid_shard_scenarios(source_plan, read(SCENARIO_CONFIG), read(manifest),
+                                           read(LEGACY_BWD_FIXTURE) if LEGACY_BWD_FIXTURE.is_file() else None)
+    if not report["all_passed"]:
+        raise ShardPlanError(f"plan cohort scenario rows drifted from {plan.source_plan}: "
+                             + json.dumps(report["failures"], sort_keys=True)[:2000])
+    return report
 
 
 def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_root: Path,
-             scenario_dir: Path, provisioning_config: Path, gear_profiles: Path) -> dict[str, Any]:
+             scenario_dir: Path, provisioning_config: Path, gear_profiles: Path,
+             flat: bool = False) -> dict[str, Any]:
+    from tools.raid_program.raid_shard_provisioning import RaidShardProvisioningError
     from tools.raid_program.shared_instance_console import owned_console, verify_process_binary
     from tools.raid_program.shared_instance_fixture import sha256
 
@@ -1228,24 +1399,30 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                                              provisioning_config=provisioning_config,
                                              gear_profiles=gear_profiles, apply=True))
 
-    with owned_console(repository=REPO_ROOT, source=REPO_ROOT, binary=worldserver, config=config,
-                       output_dir=run_root, before_launch=before_launch, lifecycle=lifecycle) as base:
-        verify_process_binary(base.process, binary_sha256)
-        interrupted = threading.Event()
-        console = SerializedConsole(
-            ShardConsoleTransport.adopt(base, interrupted=interrupted,
-                                        drain_timeout_sec=plan.watchdog.transition_timeout_sec),
-            run_root / "console_journal.jsonl")
-        context = LiveContext(worldserver=worldserver, config=config, provisioning_config=provisioning_config,
-                              gear_profiles=gear_profiles,
-                              runtime_asset_closure=checks["runtime_asset_closure"],
-                              stage_preflight=checks["stage"], preparation=preparation)
-        coordinator = ShardCoordinator(plan, console, run_root, scenario_dir=scenario_dir,
-                                       server_pid=base.process.pid, console_log=base.log_path,
-                                       interrupted=interrupted)
-        coordinator.finalizer = lambda outcome: finalize_live_shard(
-            outcome, context, plan.watchdog, coordinator.server, coordinator.run_id)
-        summary = coordinator.run()
+    try:
+        with owned_console(repository=REPO_ROOT, source=REPO_ROOT, binary=worldserver, config=config,
+                           output_dir=run_root, before_launch=before_launch, lifecycle=lifecycle) as base:
+            verify_process_binary(base.process, binary_sha256)
+            interrupted = threading.Event()
+            console = SerializedConsole(
+                ShardConsoleTransport.adopt(base, interrupted=interrupted,
+                                            drain_timeout_sec=plan.watchdog.transition_timeout_sec),
+                run_root / "console_journal.jsonl")
+            context = LiveContext(worldserver=worldserver, config=config, provisioning_config=provisioning_config,
+                                  gear_profiles=gear_profiles,
+                                  runtime_asset_closure=checks["runtime_asset_closure"],
+                                  stage_preflight=checks["stage"], preparation=preparation)
+            coordinator = ShardCoordinator(plan, console, run_root, scenario_dir=scenario_dir,
+                                           server_pid=base.process.pid, console_log=base.log_path,
+                                           interrupted=interrupted, flat=flat)
+            coordinator.finalizer = lambda outcome: finalize_live_shard(
+                outcome, context, plan.watchdog, coordinator.server, coordinator.run_id)
+            summary = coordinator.run()
+    except RaidShardProvisioningError as error:
+        # Refused before the worldserver started: nothing ran and nothing was admitted.
+        summary = {"schema": RUN_SCHEMA, "run_id": None, "terminal_reason": "setup_failed",
+                   "error": f"raid shard provisioning refused: {error}", "shards": [], "ingest": [],
+                   "preparation": {**preparation, "raid_shard_provisioning": error.report}}
     summary["worldserver"] = {"path": str(worldserver), "sha256": binary_sha256, "lifecycle": lifecycle}
     if lifecycle.get("process_return_code") not in (0, None) and summary.get("terminal_reason") == "completed":
         summary["terminal_reason"] = "infrastructure_loss"
@@ -1266,13 +1443,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--validation-provisioning-config", type=Path,
                         default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
+    parser.add_argument("--flat-shard-dir", action="store_true",
+                        help="exactly one --shard: its run directory is --output-dir itself (a scoreboard kill dir)")
     parser.add_argument("--dry-run", action="store_true", help="validate the plan and print the shard scripts")
     args = parser.parse_args(argv)
     plan = load_run_plan(args.plan, select=args.shard)
+    if args.flat_shard_dir and len(plan.shards) != 1:
+        raise SystemExit("--flat-shard-dir needs exactly one shard")
     if args.dry_run:
+        source = source_plan_shards(plan.source_plan)
+        planned = plan.plan_backed(source)
         print(json.dumps({"schema": RUN_SCHEMA, "dry_run": True, "config_overrides": dict(SHARD_CONFIG_OVERRIDES),
+                          "source_plan": str(plan.source_plan) if plan.source_plan else None,
+                          "source_plan_present": source is not None,
                           "shards": [{"cohort_id": spec.cohort_id, "profile": spec.profile,
                                       "lockout": spec.lockout.seed_argument if spec.lockout else "fresh",
+                                      "provisioning": "raid_shard_plan" if spec in planned else "legacy_validation",
                                       "script": shard_script(spec, plan.watchdog).splitlines()}
                                      for spec in plan.shards]}, indent=2))
         return 0
@@ -1282,7 +1468,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     summary = run_live(plan, worldserver=args.worldserver.resolve(), base_config=args.config.resolve(),
                        run_root=output, scenario_dir=args.validation_scenario_dir.resolve(),
                        provisioning_config=args.validation_provisioning_config.resolve(),
-                       gear_profiles=args.gear_profiles.resolve())
+                       gear_profiles=args.gear_profiles.resolve(), flat=args.flat_shard_dir)
     print(json.dumps({"shard_run": str(output / "shard_run.json"), "terminal_reason": summary.get("terminal_reason"),
                       "shards": [(row["cohort_id"], row["completion_reason"], row["native_clear"])
                                  for row in summary.get("shards", [])]}))

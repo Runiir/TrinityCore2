@@ -480,10 +480,10 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.maloriak.encounter",
         "bwd.atramedes.north_spirits",
         "bwd.atramedes.south_spirits",
+        "bwd.atramedes.regroup",
         "bwd.atramedes.bell_ready",
         "bwd.atramedes.bell",
         "bwd.atramedes.intro_wait",
-        "bwd.atramedes.regroup",
         "bwd.atramedes.encounter",
         "bwd.chimaeron.regroup",
         "bwd.chimaeron.finkle",
@@ -506,7 +506,7 @@ def test_each_bwd_diagnostic_shard_has_exact_local_membership_and_unique_profile
         "magmaw": ["bwd.entry.regroup", "bwd.magmaw.chainwielder", "bwd.magmaw.drudges", "bwd.magmaw.encounter"],
         "omnotron": ["bwd.omnotron.regroup", "bwd.omnotron.sentries", "bwd.omnotron.encounter"],
         "maloriak": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.maloriak.encounter"],
-        "atramedes": ["bwd.atramedes.north_spirits", "bwd.atramedes.south_spirits", "bwd.atramedes.bell_ready", "bwd.atramedes.bell", "bwd.atramedes.intro_wait", "bwd.atramedes.regroup", "bwd.atramedes.encounter"],
+        "atramedes": ["bwd.atramedes.north_spirits", "bwd.atramedes.south_spirits", "bwd.atramedes.regroup", "bwd.atramedes.bell_ready", "bwd.atramedes.bell", "bwd.atramedes.intro_wait", "bwd.atramedes.encounter"],
         "chimaeron": ["bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter"],
         "nefarian": ["bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip", "bwd.nefarian.intro_wait", "bwd.nefarian.descent", "bwd.nefarian.encounter"],
     }
@@ -540,8 +540,10 @@ def test_diagnostic_prerequisites_are_explicitly_non_certifying():
     assert scenarios[CANONICAL_ID]["diagnostic_only"] is False
     assert scenarios[CANONICAL_ID]["prerequisite_contract"] == {}
     assert scenarios[DIAGNOSTIC_IDS["omnotron"]]["prerequisite_contract"]["precompleted_boss_entries"] == []
-    for boss in ("maloriak", "atramedes", "chimaeron"):
+    for boss in ("maloriak", "chimaeron"):
         assert scenarios[DIAGNOSTIC_IDS[boss]]["prerequisite_contract"]["precompleted_boss_entries"] == [41570, 42166]
+    # Round 2 (package AT): the Omnotron predecessor is the controller 42186, not Arcanotron 42166.
+    assert scenarios[DIAGNOSTIC_IDS["atramedes"]]["prerequisite_contract"]["precompleted_boss_entries"] == [41570, 42186]
     assert scenarios[DIAGNOSTIC_IDS["nefarian"]]["prerequisite_contract"]["precompleted_boss_entries"] == [41570, 42166, 41378, 41442, 43296]
     for scenario_id in DIAGNOSTIC_IDS.values():
         row = scenarios[scenario_id]

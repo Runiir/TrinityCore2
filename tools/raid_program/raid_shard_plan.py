@@ -20,6 +20,7 @@ from tools.raid_program import raid_shard_identity as ids
 from tools.raid_program.raid_composition import (
     COMPOSITION_DIR,
     REPO_ROOT,
+    SELECTION_STATUSES,
     catalog_bot,
     load_catalog,
     read_json,
@@ -44,6 +45,15 @@ ACTION_PROFILE_MANIFEST = "experiments/configs/cata_434_action_profiles.json"
 LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
 PROVISIONING_DEFAULT_KEYS = ("account_password", "default_money", "default_skills", "default_consumables", "max_level")
 ROLE_ORDER = {"tank": 0, "healer": 1, "dps": 2}
+# The end-to-end cohort of a composition's `full_raid` entry: one more copy of
+# the characters in its own identity block. Boss number 99 is never a native
+# boss index, so the block cannot collide with a boss shard (it holds the
+# plan's highest IDs, which makes it the anchor cohort).
+FULL_RAID_KEY = "full"
+FULL_RAID_BOSS_NUMBER = ids.MAX_BOSS_NUMBER
+FULL_RAID_NAME_CODE = "ful"
+FULL_RAID_KIND = "full_raid"
+BOSS_SHARD_KIND = "boss"
 
 
 class ShardPlanError(ValueError):
@@ -242,6 +252,138 @@ def _bot(composition: dict[str, Any], catalog: dict[str, dict[str, Any]], charac
     return bot
 
 
+def validate_full_raid(composition: dict[str, Any], catalog: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    """The composition's end-to-end cohort entry, or None when it declares none.
+
+    Its cohort, pool tag and runtime profile are one non-diagnostic ID
+    (`<raid>_<size><diff>_full_c0`), never the legacy full-raid tag, which is
+    a substring of every shard tag. `scenario_id` names the full-raid route
+    the cohort's own scenario row is cloned from.
+    """
+    full = composition.get("full_raid")
+    if full is None:
+        return None
+    raid, mode = str(composition["raid"]), str(composition["mode"])
+    cohort = ids.cohort_id(raid, mode, FULL_RAID_KEY, 0)
+    failures: list[dict[str, Any]] = []
+    if not isinstance(full, dict):
+        raise ShardPlanError(json.dumps({"check": "full_raid_not_an_object"}))
+    for field in ("cohort_id", "runtime_profile_id", "pool_tag"):
+        if full.get(field) != cohort:
+            failures.append({"check": f"full_raid_{field}", "expected": cohort, "actual": full.get(field)})
+    if not str(full.get("scenario_id") or "") or full.get("scenario_id") == cohort:
+        failures.append({"check": "full_raid_route_template_scenario", "actual": full.get("scenario_id")})
+    if full.get("route_scenario_id", cohort) != cohort:
+        failures.append({"check": "full_raid_route_scenario_id", "expected": cohort, "actual": full.get("route_scenario_id")})
+    if full.get("selection_status") not in SELECTION_STATUSES:
+        failures.append({"check": "full_raid_selection_status"})
+    multi = {str(row["character_key"]): [str(spec) for spec in row["specs"]]
+             for row in composition["characters"] if len(row["specs"]) > 1}
+    selection = full.get("spec_selection") if isinstance(full.get("spec_selection"), dict) else {}
+    if set(selection) != set(multi) or any(spec not in multi.get(key, []) for key, spec in selection.items()):
+        failures.append({"check": "full_raid_spec_selection", "expected": sorted(multi), "actual": selection})
+    if any(int(row["boss_number"]) == FULL_RAID_BOSS_NUMBER or row["boss_key"] == FULL_RAID_KEY
+           for row in composition["bosses"]):
+        failures.append({"check": "full_raid_identity_block_taken_by_a_boss"})
+    if not failures:
+        counts = role_counts(composition, catalog, full)
+        if counts["tank"] < 1 or counts["healer"] < 1 or sum(counts.values()) != int(composition["raid_size"]):
+            failures.append({"check": "full_raid_role_counts", "role_counts": counts})
+    if failures:
+        raise ShardPlanError(json.dumps({"full_raid": cohort, "failures": failures}, sort_keys=True))
+    return full
+
+
+def full_raid_shard(composition: dict[str, Any], catalog: dict[str, dict[str, Any]], full: dict[str, Any],
+                    starts: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    raid, mode = str(composition["raid"]), str(composition["mode"])
+    info = ids.mode_info(mode)
+    cohort = ids.cohort_id(raid, mode, FULL_RAID_KEY, 0)
+    identity_boss = {"boss_number": FULL_RAID_BOSS_NUMBER, "name_code": FULL_RAID_NAME_CODE}
+    specs = selected_specs(composition, full)
+    bots = [_bot(composition, catalog, character, identity_boss, FULL_RAID_KEY, 0, cohort,
+                 specs[str(character["character_key"])]) for character in composition["characters"]]
+    bots.sort(key=lambda bot: (ROLE_ORDER[bot["role"]], bot["composition_slot"]))
+    template = str(full["scenario_id"])
+    start_source = cohort if cohort in starts else template
+    return {
+        "shard_id": cohort,
+        "shard_kind": FULL_RAID_KIND,
+        "cohort_id": cohort,
+        "scenario_id": cohort,
+        "pool_tag": cohort,
+        "runtime_profile_id": cohort,
+        "raid": raid,
+        "mode": mode,
+        "map_id": int(composition["map_id"]),
+        "difficulty": info["difficulty"],
+        "boss_key": FULL_RAID_KEY,
+        "composition_boss_key": FULL_RAID_KIND,
+        "boss_number": FULL_RAID_BOSS_NUMBER,
+        "copy": 0,
+        "evidence_namespace": f"cata_raid/{raid}/{info['token']}/{FULL_RAID_KEY}/c0",
+        "required_bot_count": int(composition["raid_size"]),
+        "role_counts": role_counts(composition, catalog, full),
+        "spec_selection": {"specs": specs, "status": full["selection_status"], "rationale": full.get("rationale", "")},
+        "start_position": copy.deepcopy(starts.get(start_source)) if start_source in starts else None,
+        "start_position_source": start_source if start_source in starts else None,
+        "route_template_scenario_id": template,
+        "acceptance_scenario_id": template,
+        "diagnostic_only": False,
+        "diagnostic_parent_scenario_id": None,
+        "lockout": {
+            "schema": "raid_shard_lockout_request_v1",
+            "raid": raid,
+            "difficulty": mode,
+            "map_id": int(composition["map_id"]),
+            "precompleted_boss_keys": [],
+            "precompleted_boss_indices": [],
+            "precompleted_creature_entries": [],
+            "seed_boss_argument": "none",
+            "state_source": "fresh_instance",
+            "diagnostic_only_assistance": False,
+            "certifies_predecessors": False,
+        },
+        "live_identity_requirements": {
+            "fields": list(LIVE_IDENTITY_FIELDS),
+            "must_be_positive": True,
+            "must_be_distinct_across_shards": True,
+            "assigned_at": "live_setup_only",
+            "fixture_values": None,
+        },
+        "runtime_profile": full_raid_runtime_profile_row(composition, cohort),
+        "bots": bots,
+    }
+
+
+def full_raid_runtime_profile_row(composition: dict[str, Any], cohort: str) -> dict[str, Any]:
+    """The end-to-end cohort's profile (mirrors the legacy full-raid profile; natural kills only)."""
+    info = ids.mode_info(composition["mode"])
+    return {
+        "name": cohort,
+        "description": "Canonical-composition end-to-end cohort on the full raid route; every kill is natural.",
+        "target_population": int(composition["raid_size"]),
+        "pool_tag_filter": cohort,
+        "spawn_mode": "resume_or_race_start",
+        "allow_configured_center_fallback": False,
+        "use_saved_position": True,
+        "allow_questing": False,
+        "allow_dungeons": True,
+        "allow_raids": True,
+        "raid_size": int(composition["raid_size"]),
+        "raid_difficulty": int(info["raid_difficulty"]),
+        "track_heroic_raid_progression": False,
+        "enable_progression": True,
+        "auto_start_recording": False,
+        "validation_route": {
+            "enable": True,
+            "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+            "advance_mode": "terminal",
+            "scenario_id": cohort,
+        },
+    }
+
+
 def build_shard_plan(
     composition: dict[str, Any],
     prerequisites: dict[str, Any],
@@ -261,8 +403,9 @@ def build_shard_plan(
     copies = int(copies if copies is not None else composition.get("default_copies", 1))
     if not 1 <= copies <= ids.MAX_COPIES:
         raise ShardPlanError(f"copies_out_of_range:{copies}")
-    wanted = set(boss_keys or [row["boss_key"] for row in composition["bosses"]])
-    unknown = wanted - {row["boss_key"] for row in composition["bosses"]}
+    full = validate_full_raid(composition, catalog)
+    wanted = set(boss_keys or [row["boss_key"] for row in composition["bosses"]] + ([FULL_RAID_KEY] if full else []))
+    unknown = wanted - {row["boss_key"] for row in composition["bosses"]} - ({FULL_RAID_KEY} if full else set())
     if unknown:
         raise ShardPlanError(f"unknown_composition_bosses:{sorted(unknown)}")
     starts = starts if starts is not None else scenario_starts()
@@ -286,6 +429,7 @@ def build_shard_plan(
             keys = [str(row["key"]) for row in closure]
             shards.append({
                 "shard_id": cohort,
+                "shard_kind": BOSS_SHARD_KIND,
                 "cohort_id": cohort,
                 "scenario_id": scenario_id,
                 "pool_tag": scenario_id,
@@ -331,6 +475,8 @@ def build_shard_plan(
                 "runtime_profile": runtime_profile_row(composition, scenario_id, parent, keys, closure),
                 "bots": bots,
             })
+    if full and FULL_RAID_KEY in wanted:
+        shards.append(full_raid_shard(composition, catalog, full, starts))
     plan = {
         "schema": PLAN_SCHEMA,
         "composition_id": composition["composition_id"],
@@ -419,13 +565,20 @@ def validate_shard_plan(plan: dict[str, Any], name_validators: ids.NameValidator
             failures.append({"check": f"duplicate_shard_{field}"})
     for shard in shards:
         cohort = str(shard.get("cohort_id") or "")
-        tag = ids.pool_tag(cohort)
+        full = shard.get("shard_kind") == FULL_RAID_KIND
+        # Boss shards are diagnostic (`_diagnostic` tag); the end-to-end cohort's tag is its cohort ID.
+        tag = cohort if full else ids.pool_tag(cohort)
         if any(shard.get(field) != tag for field in ("scenario_id", "pool_tag", "runtime_profile_id")):
             failures.append({"check": "shard_pool_binding", "cohort_id": cohort})
         if cohort != ids.cohort_id(str(shard.get("raid")), str(shard.get("mode")), str(shard.get("boss_key")), int(shard.get("copy", -1))):
             failures.append({"check": "cohort_naming_contract", "cohort_id": cohort})
+        if full and (shard.get("boss_key") != FULL_RAID_KEY or shard.get("diagnostic_only") is not False
+                     or int(shard.get("copy", -1)) != 0):
+            failures.append({"check": "full_raid_cohort_contract", "cohort_id": cohort})
         lockout = shard.get("lockout") or {}
-        if (lockout.get("certifies_predecessors") is not False or lockout.get("diagnostic_only_assistance") is not True
+        if (lockout.get("certifies_predecessors") is not False
+                or lockout.get("diagnostic_only_assistance") is not (not full)
+                or (full and lockout.get("precompleted_boss_keys"))
                 or str(shard.get("boss_key")) in (lockout.get("precompleted_boss_keys") or [])):
             failures.append({"check": "lockout_contract", "cohort_id": cohort})
         if (shard.get("live_identity_requirements") or {}).get("fixture_values") is not None:

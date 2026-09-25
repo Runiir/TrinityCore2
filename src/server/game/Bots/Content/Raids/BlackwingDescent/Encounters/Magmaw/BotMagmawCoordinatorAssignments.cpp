@@ -1,5 +1,8 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinatorAssignments.h"
 
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
+
 #include <algorithm>
 #include <array>
 #include <set>
@@ -10,12 +13,37 @@ namespace
 {
 using Slot = MagmawRaidAssignmentSlot;
 
+// Slots are filled by capability (BotMagmawDutyCapabilities.h), never by a
+// fixed spec: the Blink bait lane (Fire Mage), the Disengage bait lane (any
+// Hunter), any DPS for the hooks, any tank for the pull, and the single
+// Bloodlust shaman (ReconcileBloodlust).
+using CapabilityMatch = bool (*)(MagmawRosterMember const&);
+
 struct AssignmentRule
 {
     Slot Value;
     char const* Role;
-    char const* ClassSpec;
+    CapabilityMatch Capability;
 };
+
+bool AnyMember(MagmawRosterMember const&) { return true; }
+
+bool BlinkBaiter(MagmawRosterMember const& member)
+{
+    return MagmawDutyCapabilities::BaitLaneFor(member.Role, member.ClassSpec)
+        == MagmawDutyCapabilities::BaitLane::Blink;
+}
+
+bool DisengageBaiter(MagmawRosterMember const& member)
+{
+    return MagmawDutyCapabilities::BaitLaneFor(member.Role, member.ClassSpec)
+        == MagmawDutyCapabilities::BaitLane::Disengage;
+}
+
+bool BloodlustCaster(MagmawRosterMember const& member)
+{
+    return MagmawDutyCapabilities::IsBloodlustCaster(member.ClassSpec);
+}
 
 struct CandidatePool
 {
@@ -25,12 +53,12 @@ struct CandidatePool
 };
 
 std::array<AssignmentRule, 6> const Rules = {{
-    { Slot::FireMageBaiter, "dps", "fire_mage" },
-    { Slot::MarksmanshipHunterBaiter, "dps", "marksmanship_hunter" },
-    { Slot::HookOne, "dps", "" },
-    { Slot::HookTwo, "dps", "" },
-    { Slot::MainPullTank, "tank", "" },
-    { Slot::BloodlustOwner, "dps", "elemental_shaman" }
+    { Slot::FireMageBaiter, "dps", BlinkBaiter },
+    { Slot::MarksmanshipHunterBaiter, "dps", DisengageBaiter },
+    { Slot::HookOne, "dps", AnyMember },
+    { Slot::HookTwo, "dps", AnyMember },
+    { Slot::MainPullTank, "tank", AnyMember },
+    { Slot::BloodlustOwner, "", BloodlustCaster }
 }};
 
 AssignmentRule const* FindRule(Slot slot)
@@ -43,10 +71,7 @@ AssignmentRule const* FindRule(Slot slot)
 bool MatchesRule(MagmawRosterMember const& member,
     AssignmentRule const& rule)
 {
-    return member.Role == rule.Role
-        && (!*rule.ClassSpec || member.ClassSpec == rule.ClassSpec
-            || (rule.Value == Slot::MarksmanshipHunterBaiter
-                && member.ClassSpec == "survival_hunter"));
+    return (!*rule.Role || member.Role == rule.Role) && rule.Capability(member);
 }
 
 CandidatePool BuildCandidates(std::vector<MagmawRosterMember> const& members,
@@ -171,10 +196,28 @@ void ReconcileBloodlust(MagmawRaidPlan& plan, MagmawRaidPlan const& before,
     MagmawRosterObservations const& observations, bool authoritative,
     bool scopeChanged)
 {
-    CandidatePool pool = BuildCandidates(members, observations,
-        Slot::BloodlustOwner, authoritative);
-    if (pool.IdentityCount != 1)
-        pool = CandidatePool();
+    // One owner by roster identity (MagmawBloodlust::SelectBloodlustOwner:
+    // the single DPS Elemental, else the single DPS shaman, else the single
+    // shaman), then liveness decides whether it is assignable now.
+    CandidatePool pool;
+    if (authoritative)
+    {
+        std::vector<MagmawBloodlust::BloodlustCandidate> candidates;
+        for (MagmawRosterMember const& member : members)
+            candidates.push_back({ member.Guid, member.Role, member.ClassSpec });
+        if (std::optional<ObjectGuid> const owner =
+                MagmawBloodlust::SelectBloodlustOwner(candidates))
+        {
+            pool.IdentityCount = 1;
+            MagmawRosterLiveness const liveness =
+                ObserveMagmawRosterMember(observations, *owner);
+            if (liveness == MagmawRosterLiveness::Alive)
+                pool.Assignable.push_back(*owner);
+            if (liveness != MagmawRosterLiveness::Dead
+                && liveness != MagmawRosterLiveness::Invalid)
+                pool.Retainable.push_back(*owner);
+        }
+    }
     ReconcileSlot(plan, before, Slot::BloodlustOwner, pool, scopeChanged);
 }
 }

@@ -24,6 +24,8 @@ def test_two_tank_full_raid_enables_the_native_sweltering_armor_swap() -> None:
     contracts = _magmaw_contracts()
     assert set(contracts) == {
         "blackwing_descent_10n", "blackwing_descent_10n_magmaw_diagnostic",
+        # Round 2 canonical-composition rows (tools/raid_program/raid_shard_scenarios.py).
+        "blackwing_descent_10n_magmaw_c0_diagnostic", "blackwing_descent_10n_full_c0",
     }
     contract = contracts["blackwing_descent_10n"]
     assert contract["main_tank_roster_slot"] == 2
@@ -31,9 +33,16 @@ def test_two_tank_full_raid_enables_the_native_sweltering_armor_swap() -> None:
     assert contract["tank_swap_trigger"] == "debuff_stacks"
     assert contract["tank_swap_aura_id"] == 78199
     assert contract["tank_swap_aura_stacks"] == 1
-    # The accepted Magmaw shard is a single Blood tank: no swap is declared.
-    shard = contracts["blackwing_descent_10n_magmaw_diagnostic"]
-    assert not any(key.startswith("tank_swap") or key.endswith("tank_roster_slot") for key in shard)
+    # The accepted Magmaw shard and its canonical c0 copy are a single Blood tank: no swap is declared.
+    for single in ("blackwing_descent_10n_magmaw_diagnostic", "blackwing_descent_10n_magmaw_c0_diagnostic"):
+        shard = contracts[single]
+        assert not any(key.startswith("tank_swap") or key.endswith("tank_roster_slot") for key in shard)
+    # The canonical end-to-end cohort keeps the swap on its own roster: Blood DK (slot 1) main
+    # tank, Feral druid (slot 2) off tank.
+    full = contracts["blackwing_descent_10n_full_c0"]
+    assert (full["main_tank_roster_slot"], full["off_tank_roster_slot"]) == (1, 2)
+    assert {key: value for key, value in full.items() if not key.endswith("tank_roster_slot")} == {
+        key: value for key, value in contract.items() if not key.endswith("tank_roster_slot")}
 
 
 def _production_debuff_gate(source: str) -> str:

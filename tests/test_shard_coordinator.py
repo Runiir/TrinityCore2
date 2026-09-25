@@ -693,7 +693,7 @@ def test_worldserver_exit_is_infrastructure_loss(tmp_path: Path) -> None:
                                   sleep=fast_watchdog()).run()
     assert summary["terminal_reason"] == "infrastructure_loss"
     assert summary["console"] == {"transport_failed": False, "server_exited": True, "server_exit_code": 139,
-                                  "healthy": False, "abandoned_reply_pending": False}
+                                  "healthy": False, "abandoned_reply_pending": False, "transport_faults": 0}
 
 
 def test_unverified_teardown_is_infrastructure_loss(tmp_path: Path) -> None:
@@ -900,9 +900,87 @@ def test_undrainable_abandoned_reply_latches_the_console(tmp_path: Path) -> None
         assert transport.dirty
         output, code, timed_out = console(".botauto cohorts", 10)
         assert (code, timed_out) == (1, True) and transport.failed
-        assert ".botauto cohorts" not in stand_in.commands()  # never sent into a contaminated console
+        # A second exchange after the latch is refused before it writes.
+        assert console(".botauto stop blackwing_descent_10n_magmaw_c0", 10) == ("", 1, False)
+        # Let the stand-in finish the wedged reply and read everything still in
+        # its stdin (EOF ends it); only then does absence prove nothing was sent.
+        stand_in.process.stdin.close()
+        assert stand_in.process.wait(timeout=10) == 0
+        received = stand_in.commands()
+        assert received[-1] == ".botauto status blackwing_descent_10n_magmaw_c0"
+        assert ".botauto cohorts" not in received and ".botauto stop blackwing_descent_10n_magmaw_c0" not in received
     finally:
         stand_in.close()
+
+
+def test_a_drained_exchange_is_bounded_by_its_own_timeout(tmp_path: Path) -> None:
+    """Round-1 note: draining an abandoned reply spent a separate budget (2.91 s for a 2 s call)."""
+    stand_in = StandIn(tmp_path, slow=".botauto stop")
+    try:
+        event = threading.Event()
+        transport = sc.ShardConsoleTransport(stand_in.process, stand_in.log)
+        transport.interrupted = event
+        transport.drain_timeout_sec = 30  # the drain alone would fit; the exchange budget must not
+        console = sc.SerializedConsole(transport)
+        assert console(".botauto create blackwing_descent_10n_magmaw_c0", 10)[1] == 0
+        threading.Timer(0.3, event.set).start()
+        console(".botauto stop blackwing_descent_10n_magmaw_c0", 600, owner="blackwing_descent_10n_magmaw_c0")
+        assert transport.dirty
+        started = time.monotonic()
+        # The drain needs about 1.2 s more and this stop another 1.5 s: 2.7 s in all.
+        output, code, timed_out = console(".botauto stop blackwing_descent_10n_maloriak_c0", 2)
+        elapsed = time.monotonic() - started
+        assert (code, timed_out) == (1, True) and elapsed < 2.4, elapsed
+    finally:
+        stand_in.close()
+
+
+def test_a_transport_fault_is_drained_by_the_next_shard_exchange_and_fails_the_run(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Round-1 note: a fault (not an interruption) left the console dirty, refused every later
+    shard exchange, and the run could still end completed with exit 0."""
+    stand_in = StandIn(tmp_path, slow=".botauto status blackwing_descent_10n_magmaw_c0")
+    try:
+        transport = sc.ShardConsoleTransport(stand_in.process, stand_in.log)
+        transport.interrupted = threading.Event()  # never set: no operator interruption
+        transport.drain_timeout_sec = 10
+        console = sc.SerializedConsole(transport)
+        assert console(".botauto create blackwing_descent_10n_magmaw_c0", 10)[1] == 0
+        real_sleep, fault = time.sleep, {"armed": True}
+
+        def failing_sleep(seconds: float) -> None:
+            if fault.pop("armed", False):
+                raise OSError(5, "Input/output error")
+            real_sleep(seconds)
+
+        monkeypatch.setattr(sc.time, "sleep", failing_sleep)
+        output, code, _ = console(".botauto status blackwing_descent_10n_magmaw_c0", 10,
+                                  owner="blackwing_descent_10n_magmaw_c0")
+        assert code == 1 and output.startswith("transport_error:OSError") and transport.dirty
+        assert transport.transport_faults == 1 and not transport.failed
+        # The next shard exchange drains the owed reply, then runs normally.
+        output, code, timed_out = console(".botauto diagnose blackwing_descent_10n_magmaw_c0 all", 10,
+                                          owner="blackwing_descent_10n_magmaw_c0")
+        assert (code, timed_out) == (0, False) and '"botauto_diagnose"' in output and not transport.dirty
+        health = console.health()
+        assert health["transport_faults"] == 1 and health["healthy"] is False
+    finally:
+        stand_in.close()
+
+
+def test_a_transport_fault_ends_the_run_as_infrastructure_loss(tmp_path: Path) -> None:
+    class FaultyWorld(FakeWorld):
+        def answer(self, command: str) -> tuple[str, int, bool]:
+            if command.startswith(".botauto diagnose blackwing_descent_10n_maloriak_c0"):
+                raise OSError(5, "Input/output error")
+            return super().answer(command)
+
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+    summary = sc.ShardCoordinator(plan, sc.SerializedConsole(FaultyWorld()), tmp_path, scenario_dir=SCENARIOS,
+                                  sleep=fast_watchdog()).run()
+    assert summary["console"]["transport_faults"] >= 1
+    assert "console_transport_fault" in summary["infrastructure_failures"]
+    assert summary["terminal_reason"] == "infrastructure_loss"
 
 
 def test_interrupted_run_tears_down_through_a_real_console(tmp_path: Path) -> None:

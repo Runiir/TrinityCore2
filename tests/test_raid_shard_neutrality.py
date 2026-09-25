@@ -199,6 +199,7 @@ def _catalog_root(tmp_path, omnotron_key: str):
     (target / "raid_prerequisites").mkdir(parents=True)
     composition = json.loads((ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json").read_text())
     composition["mode"] = "10H"
+    composition.pop("full_raid")  # its cohort IDs name the 10N mode; this 10H copy tests boss shards only
     (target / "raid_compositions/bwd_10h.json").write_text(json.dumps(composition))
     (target / "raid_prerequisites/blackwing_descent.json").write_text(json.dumps(bwd_prerequisites(omnotron_key)))
     shutil.copy(ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json", target)

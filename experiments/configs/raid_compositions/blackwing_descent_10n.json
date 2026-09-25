@@ -5,7 +5,7 @@
   "mode": "10N",
   "map_id": 669,
   "raid_size": 10,
-  "status": "declared_round1_not_yet_admitted",
+  "status": "round2_c0_cohorts_declared_pending_dvc_repro_and_live_admission",
   "decision_source": {
     "document": "docs/bot_raids/full_raid_parallel_shards.md",
     "decided": "2026-09-25",
@@ -35,6 +35,16 @@
       "source_entry": 18756
     }
   },
+  "full_raid": {
+    "scenario_id": "blackwing_descent_10n",
+    "route_scenario_id": "blackwing_descent_10n_full_c0",
+    "cohort_id": "blackwing_descent_10n_full_c0",
+    "runtime_profile_id": "blackwing_descent_10n_full_c0",
+    "pool_tag": "blackwing_descent_10n_full_c0",
+    "spec_selection": {"druid": "feral_druid_tank", "shaman": "restoration_shaman"},
+    "selection_status": "provisional",
+    "rationale": "End-to-end clear with one composition: two tanks (Blood DK, Feral druid) and three healers (Holy Paladin, Discipline Priest, Restoration Shaman) cover the two- and three-healer bosses without a mid-run respec. scenario_id is the full-raid route the cohort's own scenario row (route_scenario_id) is cloned from; the cohort gets its own identity block (boss number 99) and a non-diagnostic pool tag, never the legacy blackwing_descent_10n tag."
+  },
   "characters": [
     {"character_key": "death_knight", "slot": 1, "specs": ["blood_death_knight"]},
     {"character_key": "druid", "slot": 2, "specs": ["balance_druid", "feral_druid_tank"]},
@@ -55,7 +65,17 @@
       "route_template_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
       "spec_selection": {"druid": "balance_druid", "shaman": "elemental_shaman"},
       "selection_status": "provisional",
-      "rationale": "Single-tank boss; the accepted Magmaw shard already runs one Blood tank. Default 1 tank, 2 healers."
+      "rationale": "One tank: Mangle seizes a single Blood DK and the accepted shard kills with one tank and no swap, so the druid is Balance and owns the parasite Wild Mushroom duty. Two healers (Holy Paladin, Discipline Priest): raid damage outside Mangle is light, and the Mangle spike (accepted worst 5 s bucket about 136k, 12%/s of a 202-232k Blood DK) is single-target tank healing that these two cover; accepted kills end in about 100 s, one Mangle cycle. The shaman stays Elemental: it owns Bloodlust for the first exposed-head burn, keeps 19/20 buff coverage and adds a seventh DPS for the bait and chain duties. If a canonical kill loses the tank in a Mangle window, switch the shaman to restoration_shaman (three healers); the capability duty plan then still names that single shaman as the Bloodlust owner.",
+      "duty_plan": {
+        "pull_tank": "lowest-GUID living tank (the Blood DK)",
+        "baiters": "Fire Mage (Blink lane) and the Hunter (Disengage lane, any hunter spec)",
+        "chain_riders": "two non-baiter DPS without a stationary duty, by GUID: Retribution Paladin and Assassination Rogue",
+        "mushrooms": "Balance Druid",
+        "bloodlust": "the single shaman (Elemental here)",
+        "tank_swap": "none (one tank)",
+        "battle_res": "Balance Druid (Rebirth) and Blood DK (Raise Ally)",
+        "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
+      }
     },
     {
       "boss_key": "omnotron",
@@ -73,8 +93,9 @@
       "name_code": "chi",
       "route_template_scenario_id": "blackwing_descent_10n_chimaeron_diagnostic",
       "spec_selection": {"druid": "feral_druid_tank", "shaman": "restoration_shaman"},
-      "selection_status": "provisional",
-      "rationale": "Double Attack tank swap and heavy raid damage; two tanks, three healers."
+      "selection_status": "accepted",
+      "selection_status_note": "Requested as final by the Chimaeron agent (round 2); raid_composition accepts only provisional or accepted.",
+      "rationale": "Chimaeron agent (round 2): the Break/Double Attack taunt exchange needs two tanks (Blood DK holds Break, Feral soaks Double Attack), and Systems Failure outages need three healers (Holy Paladin tank healer, Discipline Power Word: Barrier, Restoration Spirit Link Totem)."
     },
     {
       "boss_key": "atramedes",
@@ -82,8 +103,18 @@
       "name_code": "atr",
       "route_template_scenario_id": "blackwing_descent_10n_atramedes_diagnostic",
       "spec_selection": {"druid": "balance_druid", "shaman": "elemental_shaman"},
-      "selection_status": "provisional",
-      "rationale": "Single-tank boss; default 1 tank, 2 healers."
+      "selection_status": "accepted",
+      "rationale": "One tank: Atramedes is a single-target fight with no tank swap and Sonic Breath never targets his current victim (spell_atramedes_sonic_breath removes it), so the Blood DK tanks alone and the druid stays Balance. Two healers (Holy Paladin, Discipline Priest): Modulation (31.2-32.8k Shadow in 10N, no Sound) is the only unavoidable raid damage, and Searing Flame is gonged at its start. The shaman stays Elemental for 19/20 buff coverage and a seventh damage dealer. Wowhead's 10-player recommendation is 1 tank, 2 healers, 7 DPS.",
+      "duty_plan": {
+        "tank": "main-tank lease or the role tank (Blood DK); drags Atramedes to the ground anchor (162, -224.5)",
+        "gong_owner": "best ranged damage dealer by gong rank (Beast Mastery Hunter), beside the shield nearest the anchor",
+        "gong_backup": "next ranged by gong rank (Fire Mage); strikes when the owner is dead or kiting",
+        "sonic_breath_kite": "whoever carries Tracking from Tracking Flames circles the boss 28-42 yd out, away from the raid",
+        "air_kite": "whoever carries Tracking from the Reverberating Flame runs the shield ring and strikes a shield in reach when the flame is within 11 yd",
+        "bloodlust": "unassigned: no reviewed release window, reservation stays closed",
+        "tank_swap": "none (one tank)",
+        "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesDutyPlan.h"
+      }
     },
     {
       "boss_key": "maloriak",
@@ -100,8 +131,9 @@
       "name_code": "nef",
       "route_template_scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
       "spec_selection": {"druid": "feral_druid_tank", "shaman": "restoration_shaman"},
-      "selection_status": "provisional",
-      "rationale": "Nefarian and Onyxia need two tanks; phase 3 raid damage favors three healers."
+      "selection_status": "accepted",
+      "selection_status_note": "Requested as selected by the Nefarian agent (round 2); raid_composition accepts only provisional or accepted.",
+      "rationale": "Two tanks lead Onyxia and Nefarian to opposite ends (Children of Deathwing 50 yd). Three healers give one healer per pillar in phase 2. The Resto shaman adds a Wind Shear backup and Frost Shock control; the Ret paladin stays Ret for a Rebuke primary and Hammer of Justice on bone warriors. A Protection Paladin third tank was considered and rejected: Shackle Undead, stuns and snares cover the four 10N bone warriors (BotNefarianDutyPlan.h)."
     }
   ]
 }

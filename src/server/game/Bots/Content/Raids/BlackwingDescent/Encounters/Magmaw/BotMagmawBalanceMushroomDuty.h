@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_MAGMAW_BALANCE_MUSHROOM_DUTY_H
 #define TRINITY_BOT_MAGMAW_BALANCE_MUSHROOM_DUTY_H
 
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
 #include "Define.h"
 
 #include <cmath>
@@ -51,7 +52,7 @@ struct MagmawBalanceMushroomDuty
     {
         return validationRouteEnabled
             && routeNodeId == "bwd.magmaw.encounter"
-            && specTag == "balance_druid"
+            && MagmawDutyCapabilities::IsMushroomCaster(specTag)
             && (livePillarVisible || IsParasiteEntry(targetEntry));
     }
 

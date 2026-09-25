@@ -333,6 +333,27 @@ def test_drifted_plan_sources_are_refused(tmp_path):
         prepare_config(drifted, GEAR, DBC, [MAGMAW])
 
 
+@pytest.mark.parametrize("drop", [("trainers",), ("action_profiles", "wowsims_gear_profiles"), "all"])
+def test_plans_without_the_new_source_records_are_refused(drop):
+    """A plan built before 15104b10dd has no materialization records: refuse it, never pass it silently."""
+    from tools.raid_program.raid_loadout_sql import RaidShardSqlError, check_plan_sources
+    plan = _plan()
+    names = sorted(plan["sources"]) if drop == "all" else list(drop)
+    for name in names:
+        plan["sources"].pop(name)
+    if drop == "all":
+        # The pre-15104b10dd shape: only composition-level records.
+        plan["sources"] = {"composition": {"path": "x", "sha256": "0" * 64}}
+    with pytest.raises(RaidShardSqlError, match="plan_source_unrecorded:" + ",".join(sorted(names))):
+        prepare_config(plan, GEAR, DBC, [MAGMAW])
+    malformed = _plan()
+    malformed["sources"]["trainers"] = {"path": "dataset/world_knowledge/trainers.jsonl"}  # no sha256
+    with pytest.raises(RaidShardSqlError, match="plan_source_unrecorded:trainers"):
+        check_plan_sources(malformed, GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl")
+    assert set(check_plan_sources(_plan(), GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl")) == {
+        "trainers", "action_profiles", "gear_profiles", "wowsims_gear_profiles"}
+
+
 def test_generated_sql_warns_that_direct_application_bypasses_the_preflight(config):
     head = build_raid_shard_character_sql(config, DBC, _plan()).splitlines()[:6]
     assert any("applying this file directly bypasses tools.raid_program.raid_shard_preflight" in line for line in head)

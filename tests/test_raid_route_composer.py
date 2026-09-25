@@ -100,8 +100,8 @@ def test_full_route_order_node_ids_and_drift_repairs() -> None:
         "bwd.omnotron.encounter", "bwd.transit.lower_wing_elevator",
         "bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.maloriak.encounter",
         "bwd.atramedes.north_spirits", "bwd.atramedes.south_spirits",
-        "bwd.atramedes.bell_ready", "bwd.atramedes.bell", "bwd.atramedes.intro_wait",
-        "bwd.atramedes.regroup", "bwd.atramedes.encounter", "bwd.chimaeron.regroup",
+        "bwd.atramedes.regroup", "bwd.atramedes.bell_ready", "bwd.atramedes.bell",
+        "bwd.atramedes.intro_wait", "bwd.atramedes.encounter", "bwd.chimaeron.regroup",
         "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter",
         "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip", "bwd.nefarian.intro_wait",
         "bwd.nefarian.descent", "bwd.nefarian.encounter",
@@ -112,9 +112,11 @@ def test_full_route_order_node_ids_and_drift_repairs() -> None:
     for boss in ("magmaw", "omnotron", "maloriak", "atramedes", "chimaeron", "nefarian"):
         assert f"bwd.{boss}.encounter" in node_ids
 
+    # The legacy boss shards are the composer's node-set sources; canonical
+    # cohort rows (cohort_id) remap roster slots onto their own roster.
     shards = {
         row["node_id"]: row
-        for scenario in config["diagnostic_scenarios"]
+        for scenario in config["diagnostic_scenarios"] if not scenario.get("cohort_id")
         for row in scenario["route"]
     }
     by_id = {row["node_id"]: row for row in full["route"]}

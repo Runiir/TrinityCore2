@@ -114,3 +114,30 @@ def test_missing_trainer_data_fails_closed(catalog, tmp_path):
     with pytest.raises(LoadoutSpellError, match="class_trainer_baseline_missing:11"):
         loadout_known_spells(loadout_bot(catalog, ["balance_druid", "feral_druid_tank"], "balance_druid"),
                              DBC, trainers_path=empty)
+
+
+def test_native_baseline_never_overlaps_a_catalog_spec_closure(catalog):
+    """The baseline over-approximates what the core teaches (it ignores skill ownership and
+    rank rules). That is harmless only while no spec's talent/tree LEARN closure lies inside
+    it: an overlapping spell would stay known when that spec is the inactive group. Pin the
+    invariant for every catalog spec (all 31, not just the composition's), for both the
+    auto-learned SkillLineAbility part and the full baseline with class trainers.
+    """
+    from tools.raid_program.raid_loadout_spells import learn_closure, specialization_closure
+
+    learn_map = spell_learn_map(DBC)
+    checked = []
+    for spec in sorted(catalog):
+        bot = catalog_bot(catalog, spec)
+        group = {"class_spec": spec, "talents": bot["talents"],
+                 "primary_tree_spells": bot.get("primary_tree_spells") or [],
+                 "primary_talent_tree_id": bot["primary_talent_tree_id"]}
+        closure = specialization_closure(group, learn_map)
+        assert closure, spec
+        auto = learn_closure(auto_learned_spells(DBC, int(bot["race"]), int(bot["class"])), learn_map)
+        baseline = native_baseline(int(bot["class"]), int(bot["race"]), DBC, learn_map, TRAINERS)
+        assert auto <= baseline, spec
+        assert not closure & auto, (spec, sorted(closure & auto))
+        assert not closure & baseline, (spec, sorted(closure & baseline))
+        checked.append(spec)
+    assert len(checked) == len(catalog) >= 31

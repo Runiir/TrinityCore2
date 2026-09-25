@@ -120,8 +120,9 @@ def test_pinned_transport_rows_match_the_world_database() -> None:
 
 def test_every_transport_board_point_lies_on_its_platform_at_the_ready_frame() -> None:
     rows = _transport_rows()
-    # Full raid: lower-wing elevator and Nefarian platform; Nefarian shard.
-    assert len(rows) == 3
+    # Full raid: lower-wing elevator and Nefarian platform; Nefarian shard; and their
+    # round-2 canonical copies (full_c0, the Nefarian c0 shard).
+    assert len(rows) >= 3 and {row['node_id'] for _, row in rows} == {'bwd.transit.lower_wing_elevator', 'bwd.nefarian.descent'}
     for scenario_id, row in rows:
         contract = row["transport_contract"]
         source = TRANSPORTS[contract["entry"]]

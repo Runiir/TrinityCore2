@@ -2,9 +2,12 @@
 #define TRINITY_BOT_MAGMAW_BLOODLUST_H
 
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
 
 #include <algorithm>
 #include <array>
+#include <cctype>
+#include <cstddef>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -26,6 +29,26 @@ constexpr std::string_view EncounterNode = "bwd.magmaw.encounter";
 constexpr std::string_view DiagnosticScenario =
     "blackwing_descent_10n_magmaw_diagnostic";
 constexpr std::string_view ElementalShamanSpec = "elemental_shaman";
+// Canonical-composition Magmaw cohorts (raid_shard_plan): <cohort>_diagnostic.
+constexpr std::string_view CohortScenarioPrefix = "blackwing_descent_10n_magmaw_c";
+constexpr std::string_view CohortScenarioSuffix = "_diagnostic";
+
+// Scenarios whose Magmaw encounter may cast raid Bloodlust: the accepted
+// diagnostic shard and every canonical-composition copy of it
+// (blackwing_descent_10n_magmaw_c<copy>_diagnostic).
+inline bool IsMagmawBloodlustScenario(std::string_view scenarioId)
+{
+    if (scenarioId == DiagnosticScenario)
+        return true;
+    if (scenarioId.size() <= CohortScenarioPrefix.size() + CohortScenarioSuffix.size()
+        || scenarioId.substr(0, CohortScenarioPrefix.size()) != CohortScenarioPrefix
+        || scenarioId.substr(scenarioId.size() - CohortScenarioSuffix.size()) != CohortScenarioSuffix)
+        return false;
+    std::string_view const copy = scenarioId.substr(CohortScenarioPrefix.size(),
+        scenarioId.size() - CohortScenarioPrefix.size() - CohortScenarioSuffix.size());
+    return std::all_of(copy.begin(), copy.end(),
+        [](char character) { return std::isdigit(static_cast<unsigned char>(character)) != 0; });
+}
 
 // The WCL gear/event API is unavailable for this work unit.  The trigger is
 // therefore deliberately tied to the source-backed Cataclysm tactic: burn the
@@ -170,6 +193,28 @@ inline bool ObservedBloodlustAura(Blackboard const& board,
 {
     return ObservedBloodlustAura(board, ownerGuid,
         std::optional<uint32>(BloodlustSpell));
+}
+
+// The capability rule over any roster view (MagmawDutyCapabilities).
+using BloodlustCandidate = MagmawDutyCapabilities::BloodlustCandidate<ObjectGuid>;
+
+inline std::optional<ObjectGuid> SelectBloodlustOwner(
+    std::vector<BloodlustCandidate> const& members)
+{
+    return MagmawDutyCapabilities::SelectBloodlustOwner(members);
+}
+
+// Board-level Bloodlust owner of a ten-player snapshot (capability rule,
+// SelectBloodlustOwner). For the accepted roster it is its single Elemental
+// Shaman, exactly as FindSingleElementalShaman.
+inline std::optional<ObjectGuid> FindBloodlustOwner(Blackboard const& board)
+{
+    if (board.Players.size() != 10)
+        return std::nullopt;
+    std::vector<BloodlustCandidate> members;
+    for (ActorSnapshot const& member : board.Players)
+        members.push_back({ member.Guid, member.Role, member.ClassSpec });
+    return SelectBloodlustOwner(members);
 }
 
 inline std::optional<ObjectGuid> FindSingleElementalShaman(

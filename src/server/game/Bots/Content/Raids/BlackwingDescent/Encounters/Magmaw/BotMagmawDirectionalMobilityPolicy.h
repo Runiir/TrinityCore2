@@ -3,6 +3,7 @@
 
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotAdaptiveMagmawParasitePolicy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawMobilityReservation.h"
 
 #include <cmath>
@@ -31,10 +32,13 @@ ProposeMagmawDirectionalMobility(Blackboard const& board,
 
     BotNativeAction::Move const* point =
         std::get_if<BotNativeAction::Move>(&pointMovement.Action);
-    bool const fireMage = bot.ClassSpec == "fire_mage"
+    // The bait lanes' escapes (MagmawDutyCapabilities::BaitMobilitySpell):
+    // Blink for the Fire Mage, Disengage for every Hunter spec.
+    uint32 const laneSpell =
+        MagmawDutyCapabilities::BaitMobilitySpell(bot.ClassSpec);
+    bool const fireMage = laneSpell == BlinkSpell
         && input.SpellId == BlinkSpell;
-    bool const rangedHunter = (bot.ClassSpec == "marksmanship_hunter"
-        || bot.ClassSpec == "survival_hunter")
+    bool const rangedHunter = laneSpell == DisengageSpell
         && input.SpellId == DisengageSpell;
     if (!point || (!fireMage && !rangedHunter)
         || !input.NativeReuseCooldownMs)
