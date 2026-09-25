@@ -174,7 +174,8 @@ def test_native_action_splits_vehicle_seats_and_checks_object_reach() -> None:
     assert "native_spellclick_out_of_range" in spellclick
     assert "struct TransportBoard { ObjectGuid Transport; float FloorToleranceYards = 0.5f; };" in intents
     assert "struct TransportLeave { ObjectGuid Transport; float FloorToleranceYards = 0.5f; };" in intents
-    assert "VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse,\n    TransportBoard, TransportLeave>;" in intents
+    # The transport-surface intent (package T) follows the boarding intents.
+    assert "VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse,\n    TransportBoard, TransportLeave" in intents
 
 
 def test_manifest_parses_native_contracts_structurally_and_fail_closed() -> None:
@@ -210,7 +211,10 @@ def test_rest_window_gate_stops_the_walk_and_uses_the_native_path_length() -> No
     assert "bot->StopMoving();" in runtime
     assert "PathGenerator path(bot);" in runtime
     assert ": PathLengthTo(bot, contract.BoardPoint);" in runtime
-    assert "observation.Falling = bot->IsFalling();" in runtime
+    # A finalized MoveFall spline keeps its falling attribute (Unit::IsFalling
+    # stays true); only a running fall or the falling flags count.
+    assert "observation.Falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);" in runtime
+    assert "bot->IsFalling()" not in runtime
     for forbidden in ("Relocate(", "NearTeleportTo(", "TeleportTo(", "UpdatePosition("):
         assert forbidden not in runtime, forbidden
 

@@ -619,10 +619,15 @@ int main()
 def test_every_committed_route_contract_parses_and_matches_its_kind(tmp_path: Path) -> None:
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
     nodes = []
+    transport_nodes = set()
     for group in ("scenarios", "diagnostic_scenarios"):
         for scenario in config[group]:
             for row in scenario["route"]:
                 nodes.append(row)
+                if "transport_contract" in row:
+                    transport_nodes.add(row["node_id"])
+    # Every copy (full raid, shards, c0 cohorts) uses the two BWD transports.
+    assert transport_nodes == {"bwd.transit.lower_wing_elevator", "bwd.nefarian.descent"}
     body = []
     for row in nodes:
         parts = []
@@ -641,7 +646,7 @@ def test_every_committed_route_contract_parses_and_matches_its_kind(tmp_path: Pa
                     + f" CHECK(!ValidateNodeShape({kind}, node.Interaction, node.Completion, node.Transport)); }}")
     # 9 full-raid rows (incl. the elevator and the arena platform) + 8 shard rows.
     assert len(body) >= 17
-    assert sum('CHECK(!Transport(' in line for line in body) == 3
+    assert sum('CHECK(!Transport(' in line for line in body) >= 3
     _compile_and_run(tmp_path, PRELUDE + "int main()\n{\n" + "\n".join(body)
                      + "\n    return failures ? 1 : 0;\n}\n")
 
@@ -712,17 +717,35 @@ int main()
         w.Moving = !w.Falling;
         CHECK(DecideTransportStep(ride, w, walker).Step != TransportStep::Fail);
     }
-    // Stationary and floorless without ever having stood on the platform:
-    // diagnostic hold, never a failure.
+    // Stationary and floorless without ever having stood on the platform,
+    // next to a real floor: a bounded number of re-snapping native-path
+    // moves (never a stranding), then a typed failure instead of holding
+    // until the node timeout.
     TransportMemberState unverified;
     TransportMemberObservation u;
-    u.Alive = true; u.TransportPresent = true;
-    for (std::uint64_t now = 0; now <= 3000; now += 250)
+    u.Alive = true; u.TransportPresent = true; u.FloorNear = true;
+    for (std::uint32_t move = 0; move < MaxResnapMoves; ++move)
     {
-        u.NowMs = now;
+        u.NowMs = 250 * move;
         TransportDecision decision = DecideTransportStep(ride, u, unverified);
-        CHECK(decision.Step == TransportStep::Hold && decision.Reason == "transport_member_floor_unverified");
+        CHECK(decision.Step == TransportStep::MoveToWait
+            && decision.Reason == "transport_member_floor_unverified_resnap");
     }
+    TransportDecision exhausted = DecideTransportStep(ride, u, unverified);
+    CHECK(exhausted.Step == TransportStep::Fail && exhausted.Reason == "transport_member_floor_unverified");
+    // A floor seen again clears the re-snap budget.
+    TransportMemberState resnapped;
+    DecideTransportStep(ride, u, resnapped);
+    CHECK(resnapped.ResnapMoves == 1);
+    u.StaticFloorUnderfoot = true;
+    DecideTransportStep(ride, u, resnapped);
+    CHECK(resnapped.ResnapMoves == 0);
+    // No floor anywhere near the feet: never floated back, fail typed.
+    TransportMemberState airborne;
+    TransportMemberObservation a;
+    a.Alive = true; a.TransportPresent = true;
+    TransportDecision floating = DecideTransportStep(ride, a, airborne);
+    CHECK(floating.Step == TransportStep::Fail && floating.Reason == "transport_member_airborne_without_floor");
     // Walking off the platform onto static ground clears the latch.
     TransportMemberState cleared;
     TransportMemberObservation c;

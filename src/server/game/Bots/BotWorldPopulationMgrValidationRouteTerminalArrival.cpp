@@ -247,7 +247,9 @@ bool ObjectiveContext::Run()
                 // A manifest may name a player input that the server-side bot
                 // cannot safely express (for example a client jump). Keep it
                 // fail-closed instead of substituting a spline or position
-                // mutation.
+                // mutation. A drop from a ledge onto a transport platform is a
+                // transport node with an approach {"mode": "ledge_drop"}
+                // (proven step off, MoveFall, client landing report).
                 State.ActivePathValid = false;
                 State.ValidationRouteDescentPhase =
                     WorldBotState::ValidationDescentPhase::Blocked;

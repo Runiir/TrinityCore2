@@ -33,6 +33,29 @@ bool TransportFloorUnderfoot(Player const* bot, GameObject const* transport,
 std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
     float tolerance);
 
+// How long the platform keeps its current height (the same rule as above).
+std::uint64_t TransportStationaryMs(GameObject const* transport);
+
+// A MotionMaster::MoveFall spline that has not finalized yet.
+bool NativeFallSplineActive(Player const* bot);
+// Falling as the core tracks it: the client-owned falling movement flags or
+// a running falling spline. A finalized fall spline keeps its falling
+// attribute until the next spline replaces it; that alone is not a fall.
+bool NativeFallInProgress(Player const* bot);
+// The fall spline finalized but the landing has not been reported yet
+// (MOVEMENTFLAG_FALLING still set, as MoveFall leaves it for the client).
+bool NativeFallLandingPending(Player const* bot);
+
+// Client movement reports at the bot's own current position through the
+// player's movement handler (after claiming the active mover like a client);
+// a passenger's report carries its current transport block, so neither
+// report boards, leaves or changes a transport. A standing heartbeat updates
+// Player's fall origin (m_lastFallZ) exactly as every client report does;
+// the landing report (MSG_MOVE_FALL_LAND) makes Player::HandleFall apply
+// native fall damage and clears the falling flags.
+bool ReportStandingPosition(Player* bot);
+bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs);
+
 BotActionArbitration::Outcome EnterVehicle(Player* bot,
     BotNativeAction::VehicleEnter const& action);
 BotActionArbitration::Outcome BoardTransport(Player* bot,

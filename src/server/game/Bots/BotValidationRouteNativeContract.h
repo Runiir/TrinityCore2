@@ -12,6 +12,7 @@
 // goes through the player's own opcode handlers; completion is observed, never
 // written.
 
+#include "Bots/BotValidationRouteNativeApproach.h"
 #include "Bots/BotValidationRouteNativeJson.h"
 #include "Bots/BotValidationRouteNativeTypes.h"
 
@@ -453,6 +454,95 @@ inline bool ReadPoint(Json const& object, std::string_view key, Point3& out)
     return true;
 }
 
+inline float HorizontalDistance(Point3 const& from, Point3 const& to)
+{
+    return std::hypot(to.X - from.X, to.Y - from.Y);
+}
+
+// The lawful final approach from the static navmesh onto the platform:
+//   surface_walk: {"mode", "start_point"}: a straight walk from the navmesh
+//     edge to the board point across the platform's own surface;
+//   ledge_drop: {"mode", "start_point", "step_off_point", "landing_z",
+//     "landing_tolerance_yards", "landing_surface", "min_health_after_fall_pct"}:
+//     walk off the lip at start_point to step_off_point and fall natively
+//     onto the floor at landing_z ("transport": this platform's own model,
+//     "static": static ground).
+inline ParseError ParseApproach(Json const& object, TransportContract const& transport,
+    ApproachContract& out)
+{
+    out = ApproachContract();
+    if (!object.IsObject())
+        return ParseError::Invalid("approach_not_object");
+    for (auto const& [key, value] : object.Members)
+        if (!KnownField(key, { "mode", "start_point", "step_off_point", "landing_z",
+                "landing_tolerance_yards", "landing_surface", "min_health_after_fall_pct" }))
+            return ParseError::Unknown("approach." + key);
+
+    namespace J = BotValidationRouteNativeJson;
+    std::string mode, surface;
+    if (!J::ReadString(object, "mode", mode)
+        || !J::ReadString(object, "landing_surface", surface)
+        || !J::ReadFloat(object, "landing_z", out.LandingZ)
+        || !J::ReadFloat(object, "landing_tolerance_yards", out.LandingToleranceYards)
+        || !J::ReadFloat(object, "min_health_after_fall_pct", out.MinHealthAfterFallPct)
+        || !ReadPoint(object, "start_point", out.StartPoint)
+        || !ReadPoint(object, "step_off_point", out.StepOffPoint))
+        return ParseError::Invalid("approach_field_type_or_range");
+    if (mode == "surface_walk")
+        out.Mode = ApproachMode::SurfaceWalk;
+    else if (mode == "ledge_drop")
+        out.Mode = ApproachMode::LedgeDrop;
+    else
+        return ParseError::Invalid("approach_mode_unknown");
+    if (!out.StartPoint.Valid)
+        return ParseError::Invalid("approach_start_point_missing");
+    // The member waits at the approach start: one unambiguous waiting spot.
+    if (transport.WaitPoint.Valid)
+        return ParseError::Invalid("approach_with_wait_point");
+
+    if (out.Mode == ApproachMode::SurfaceWalk)
+    {
+        for (char const* dropField : { "step_off_point", "landing_z", "landing_tolerance_yards",
+                "landing_surface", "min_health_after_fall_pct" })
+            if (object.Find(dropField))
+                return ParseError::Invalid(std::string("approach_field_unexpected:") + dropField);
+        float const length = HorizontalDistance(out.StartPoint, transport.BoardPoint);
+        if (!(length > 0.0f) || length + ApproachStartToleranceYards > MaxSurfaceWalkYards)
+            return ParseError::Invalid("approach_surface_walk_length_invalid");
+        // Flush floors: the straight walk may not climb or drop.
+        if (std::fabs(out.StartPoint.Z - transport.BoardPoint.Z) > 2.0f * transport.FloorToleranceYards)
+            return ParseError::Invalid("approach_surface_walk_not_level");
+        return {};
+    }
+
+    if (!out.StepOffPoint.Valid || !object.Find("landing_z"))
+        return ParseError::Invalid("approach_ledge_drop_shape");
+    float const step = HorizontalDistance(out.StartPoint, out.StepOffPoint);
+    if (!(step > 0.0f) || step + ApproachStartToleranceYards > MaxStepOffYards)
+        return ParseError::Invalid("approach_step_off_distance_invalid");
+    if (std::fabs(out.StepOffPoint.Z - out.StartPoint.Z) > transport.FloorToleranceYards)
+        return ParseError::Invalid("approach_step_off_not_level");
+    if (!(out.LandingToleranceYards > 0.0f && out.LandingToleranceYards <= 3.0f))
+        return ParseError::Invalid("approach_landing_tolerance_invalid");
+    if (surface.empty() || surface == "transport")
+        out.LandOnTransport = true;
+    else if (surface == "static")
+        out.LandOnTransport = false;
+    else
+        return ParseError::Invalid("approach_landing_surface_unknown");
+    if (!(out.MinHealthAfterFallPct >= 0.0f && out.MinHealthAfterFallPct <= 0.95f))
+        return ParseError::Invalid("approach_min_health_invalid");
+    float const height = out.StartPoint.Z - out.LandingZ;
+    if (height - out.LandingToleranceYards < MinLedgeDropYards)
+        return ParseError::Invalid("approach_ledge_drop_too_shallow");
+    // Even a full-health member must survive the worst declared fall with
+    // the declared margin (no auras, the default fall damage rate).
+    if (1.0f - NativeFallDamageFraction(height + out.LandingToleranceYards, 0.0f, 1.0f, false)
+        < out.MinHealthAfterFallPct)
+        return ParseError::Invalid("approach_ledge_drop_lethal");
+    return {};
+}
+
 inline ParseError ParseTransport(Json const& object, TransportContract& out)
 {
     out = TransportContract();
@@ -463,7 +553,7 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
                 "board_transport_z", "exit_stop_frame", "exit_transport_z",
                 "level_tolerance_yards", "wait_point", "board_point",
                 "disembark_point", "exit_point", "arrival_tolerance_yards",
-                "floor_tolerance_yards", "max_submissions", "timeout_ms" }))
+                "floor_tolerance_yards", "max_submissions", "timeout_ms", "approach" }))
             return ParseError::Unknown(key);
 
     namespace J = BotValidationRouteNativeJson;
@@ -514,6 +604,9 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
         return ParseError::Invalid("max_submissions_invalid");
     if (!out.TimeoutMs)
         return ParseError::Invalid("timeout_required");
+    if (Json const* approach = object.Find("approach"))
+        if (ParseError error = ParseApproach(*approach, out, out.Approach))
+            return error;
     out.Declared = true;
     return {};
 }

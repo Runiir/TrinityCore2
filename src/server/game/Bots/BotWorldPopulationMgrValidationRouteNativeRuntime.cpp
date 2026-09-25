@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteNativeRuntime.h"
 #include "Bots/BotValidationRouteNativeLogic.h"
+#include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteNativeFacts.h"
 
@@ -91,6 +92,20 @@ void SubmitHold(Input const& input, std::string const& reason)
     input.State->DecisionKernel.Submit(std::move(candidate));
 }
 
+// A native route motion replaced (or ended) the member's ordinary planned
+// path: drop that path's retained evidence and its movement lease.
+void ReleaseOrdinaryPath(BotWorldPopulationMgrValidationRouteNative::WorldBotState& state,
+    bool moving)
+{
+    state.ActivePathValid = false;
+    state.ActivePathPurposeValid = false;
+    state.ActivePathSegmentValid = false;
+    state.ActivePathTraversalMode.clear();
+    state.ActivePathTargetGuid.Clear();
+    state.MovementLease = {};
+    state.IsMoving = moving;
+}
+
 // End the member's current walk where it stands: releasing the movement
 // input, not a relocation. Used when a walk toward a platform would outrun
 // the platform's rest window, or to settle on the platform before boarding.
@@ -110,13 +125,7 @@ void SubmitStop(Input const& input, std::string const& reason)
         bot->StopMoving();
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();
-        state->ActivePathValid = false;
-        state->ActivePathPurposeValid = false;
-        state->ActivePathSegmentValid = false;
-        state->ActivePathTraversalMode.clear();
-        state->ActivePathTargetGuid.Clear();
-        state->MovementLease = {};
-        state->IsMoving = false;
+        ReleaseOrdinaryPath(*state, false);
         *situation = "native_route_interaction";
         *label = "native_route_" + reason;
         state->LastDecisionHandler = "native_route_interaction";
@@ -331,7 +340,12 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     observation.OnOtherTransportOrVehicle = (bot->GetTransport() && !observation.OnThisTransport)
         || bot->GetVehicle();
     observation.Moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
-    observation.Falling = bot->IsFalling();
+    // Unit::IsFalling() stays true after a finalized MoveFall spline until
+    // the next spline replaces it; only a running fall or the falling flags
+    // count here.
+    observation.Falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);
+    observation.FallSplineActive = BotValidationRouteBoardingAction::NativeFallSplineActive(bot);
+    observation.LandingPending = BotValidationRouteBoardingAction::NativeFallLandingPending(bot);
     observation.NowMs = input.NowMs;
     observation.StaticFloorUnderfoot = BotValidationRouteBoardingAction::StaticFloorUnderfoot(
         bot, contract.FloorToleranceYards);
@@ -352,7 +366,9 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     observation.DistanceToDisembark = distance(contract.DisembarkPoint);
     observation.DistanceToExit = distance(contract.ExitPoint);
     float const runSpeed = std::max(bot->GetSpeed(MOVE_RUN), 0.1f);
-    if (observation.ReadyToBoard && contract.BoardPoint.Valid)
+    ApproachContract const& approach = contract.Approach;
+    if (observation.ReadyToBoard && contract.BoardPoint.Valid
+        && approach.Mode == ApproachMode::None)
     {
         // Off the platform the walk follows the native path; on it, the
         // remaining distance is a straight step across its own surface.
@@ -361,6 +377,25 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         float const walk = onPlatform ? observation.DistanceToBoard
             : PathLengthTo(bot, contract.BoardPoint);
         observation.TravelToBoardMs = uint64(walk / runSpeed * 1000.0f);
+    }
+    if (!observation.StaticFloorUnderfoot && !observation.TransportFloorUnderfoot)
+        observation.FloorNear = BotTransportSurfaceMovement::FloorNear(bot, ResnapFloorBandYards);
+    observation.HealthPct = bot->GetMaxHealth()
+        ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 0.0f;
+    if (approach.Mode == ApproachMode::SurfaceWalk)
+    {
+        observation.DistanceToApproachStart = distance(approach.StartPoint);
+        // One straight walk across the platform's surface to the board point.
+        observation.ApproachTravelMs = WalkTimeMs(observation.DistanceToBoard, runSpeed);
+    }
+    else if (approach.Mode == ApproachMode::LedgeDrop)
+    {
+        observation.DistanceToApproachStart = distance(approach.StartPoint);
+        float const height = bot->GetPositionZ() - approach.LandingZ;
+        observation.ApproachTravelMs = WalkTimeMs(bot->GetExactDist2d(approach.StepOffPoint.X,
+            approach.StepOffPoint.Y), runSpeed) + NativeFallTimeMs(height);
+        observation.PredictedFallDamagePct =
+            BotTransportSurfaceMovement::PredictFallDamagePct(bot, height);
     }
 
     // Without the platform's collision model neither boarding nor the
@@ -372,6 +407,11 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         std::string("native_route_transport_") + TransportStepName(decision.Step)
             + ":" + decision.Reason,
         transport.Object, transport.Fact.PositionZ, contract.Entry);
+    // Like a player watching the platform or feeling the landing, an armed or
+    // in-flight approach observes again within ApproachFollowUpMs.
+    if (ApproachWantsFollowUp(contract, decision, member))
+        input.State->DecisionTimer = std::min<uint32>(input.State->DecisionTimer,
+            ApproachFollowUpMs);
 
     ObjectGuid const transportGuid = transport.Object
         ? transport.Object->GetGUID() : ObjectGuid::Empty;
@@ -397,6 +437,67 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
             }
         };
     };
+    // Final approach submissions: an accepted one advances the member's
+    // approach phase (and replaces its ordinary path); rejected ones count
+    // toward MaxSubmissions like boarding; every new outcome is recorded.
+    auto approachSubmission = [runtimePtr = &runtime, scope = input.Scope, guid,
+        fail = callbacks.Fail, record = callbacks.Record, state = input.State,
+        entry = contract.Entry](TransportStep step)
+    {
+        return [runtimePtr, scope, guid, fail, record, state, entry, step](
+            BotActionArbitration::Outcome const& outcome)
+        {
+            if (runtimePtr->Scope != scope)
+                return;
+            TransportMemberState& member = runtimePtr->TransportMembers[guid];
+            if (outcome.Result == BotActionArbitration::Disposition::Committed)
+            {
+                bool const completed = outcome.LifecyclePhase
+                    == BotActionArbitration::Phase::Completed;
+                member.Approach = ApproachPhaseAfter(step, completed);
+                ReleaseOrdinaryPath(*state, !completed && step != TransportStep::DropLand);
+            }
+            else if (Retried(outcome))
+                ++member.FailedSubmissions;
+            if (member.LastApproachOutcome != outcome.Reason)
+            {
+                member.LastApproachOutcome = outcome.Reason;
+                if (record)
+                    record("native_route_transport_approach_outcome:" + outcome.Reason,
+                        nullptr, float(member.FailedSubmissions), entry);
+            }
+            if (outcome.Result == BotActionArbitration::Disposition::Unsafe
+                && !runtimePtr->FailureRecorded)
+            {
+                runtimePtr->FailureRecorded = true;
+                if (fail)
+                    fail(outcome.Reason);
+            }
+        };
+    };
+    // Walks end at the board point on the platform's own surface, or at the
+    // disembark point over static ground; drops step off at the step-off point.
+    auto surfaceMove = [&contract, &approach, transportGuid](
+        BotNativeAction::TransportSurfaceMove::Stage stage, bool disembark = false)
+    {
+        BotNativeAction::TransportSurfaceMove move;
+        move.Transport = transportGuid;
+        move.Kind = stage;
+        Point3 const& target = disembark ? contract.DisembarkPoint
+            : stage == BotNativeAction::TransportSurfaceMove::Stage::Walk
+                ? contract.BoardPoint : approach.StepOffPoint;
+        move.X = target.X;
+        move.Y = target.Y;
+        move.Z = target.Z;
+        move.EndOnTransport = !disembark;
+        move.FloorToleranceYards = contract.FloorToleranceYards;
+        move.LandingZ = approach.LandingZ;
+        move.LandingToleranceYards = approach.LandingToleranceYards;
+        move.LandOnTransport = approach.LandOnTransport;
+        move.MinHealthAfterFallPct = approach.MinHealthAfterFallPct;
+        return move;
+    };
+    using SurfaceStage = BotNativeAction::TransportSurfaceMove::Stage;
     switch (decision.Step)
     {
         case TransportStep::Fail:
@@ -451,6 +552,43 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
                 BotNativeAction::Move{ contract.ExitPoint.X, contract.ExitPoint.Y,
                     contract.ExitPoint.Z, "native_transport_exit_path" },
                 "native_route_transport_exit_path");
+            break;
+        case TransportStep::MoveToApproachStart:
+            Submit(input, callbacks, "transport_approach_start", transportGuid,
+                BotActionArbitration::Priority::Mechanic, 4.0f,
+                BotNativeAction::Move{ approach.StartPoint.X, approach.StartPoint.Y,
+                    approach.StartPoint.Z, "native_transport_approach_start" },
+                "native_route_transport_approach_start");
+            break;
+        case TransportStep::SurfaceWalk:
+            Submit(input, callbacks, "transport_surface_walk", transportGuid,
+                BotActionArbitration::Priority::Mechanic, 6.0f,
+                surfaceMove(SurfaceStage::Walk), "native_route_transport_surface_walk",
+                approachSubmission(decision.Step));
+            break;
+        case TransportStep::DropStepOff:
+            Submit(input, callbacks, "transport_drop_step_off", transportGuid,
+                BotActionArbitration::Priority::Mechanic, 6.0f,
+                surfaceMove(SurfaceStage::StepOff), "native_route_transport_drop_step_off",
+                approachSubmission(decision.Step));
+            break;
+        case TransportStep::DropFall:
+            Submit(input, callbacks, "transport_drop_fall", transportGuid,
+                BotActionArbitration::Priority::Mechanic, 6.0f,
+                surfaceMove(SurfaceStage::Fall), "native_route_transport_drop_fall",
+                approachSubmission(decision.Step));
+            break;
+        case TransportStep::DropLand:
+            Submit(input, callbacks, "transport_drop_land", transportGuid,
+                BotActionArbitration::Priority::Mechanic, 6.0f,
+                surfaceMove(SurfaceStage::Land), "native_route_transport_drop_land",
+                approachSubmission(decision.Step));
+            break;
+        case TransportStep::DisembarkWalk:
+            Submit(input, callbacks, "transport_disembark_walk", transportGuid,
+                BotActionArbitration::Priority::Mechanic, 6.0f,
+                surfaceMove(SurfaceStage::Walk, true), "native_route_transport_disembark_walk",
+                approachSubmission(decision.Step));
             break;
     }
 }

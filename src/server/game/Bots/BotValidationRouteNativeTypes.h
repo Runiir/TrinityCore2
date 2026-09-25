@@ -132,6 +132,27 @@ struct Point3
     bool Valid = false;
 };
 
+// Lawful final approach onto a transport surface the static navmesh does
+// not reach (decided in BotValidationRouteNativeApproach.h and the route
+// logic, executed by BotTransportSurfaceMovement).
+enum class ApproachMode : std::uint8_t { None, SurfaceWalk, LedgeDrop };
+enum class ApproachPhase : std::uint8_t { Idle, Walking, SteppingOff, Falling, Landed };
+
+struct ApproachContract
+{
+    ApproachMode Mode = ApproachMode::None;
+    // On the static navmesh: where the member waits and the approach starts.
+    Point3 StartPoint;
+    // ledge_drop: past the lip, level with the start; the native fall starts
+    // there and lands on the floor at LandingZ.
+    Point3 StepOffPoint;
+    float LandingZ = 0.0f;
+    float LandingToleranceYards = 1.0f;
+    bool LandOnTransport = true;
+    // Health fraction left after the predicted native fall damage.
+    float MinHealthAfterFallPct = 0.2f;
+};
+
 // Elevators and other GAMEOBJECT_TYPE_TRANSPORT platforms.
 struct TransportContract
 {
@@ -162,6 +183,7 @@ struct TransportContract
     std::uint32_t TimeoutMs = 0;
     // Failed board/leave submissions allowed per member before the node fails.
     std::uint32_t MaxSubmissions = 5;
+    ApproachContract Approach;
 
     bool HasExit() const { return ExitStopFrame >= 0 || HasExitLevel; }
 };
@@ -220,6 +242,10 @@ struct TransportMemberState
     std::uint32_t FloorlessObservations = 0;
     std::uint64_t FloorlessSinceMs = 0;
     std::string LastReason;
+    ApproachPhase Approach = ApproachPhase::Idle;
+    // Re-snapping moves of a settled member with no verified floor.
+    std::uint32_t ResnapMoves = 0;
+    std::string LastApproachOutcome;
 };
 
 struct NodeRuntime

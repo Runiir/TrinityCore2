@@ -8,6 +8,7 @@
 #include "GameTime.h"
 #include "Map.h"
 #include "ModelIgnoreFlags.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Transport.h"
@@ -144,6 +145,64 @@ std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
         tolerance);
 }
 
+std::uint64_t TransportStationaryMs(GameObject const* transport)
+{
+    return transport ? RestRemainingAtLevelMs(transport, transport->GetPositionZ(),
+        BotValidationRouteNative::StationaryLevelToleranceYards) : 0;
+}
+
+bool NativeFallSplineActive(Player const* bot)
+{
+    return bot && bot->movespline->Initialized() && !bot->movespline->Finalized()
+        && bot->movespline->isFalling();
+}
+
+bool NativeFallInProgress(Player const* bot)
+{
+    return bot && (bot->HasUnitMovementFlag(MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR)
+        || NativeFallSplineActive(bot));
+}
+
+bool NativeFallLandingPending(Player const* bot)
+{
+    return bot && bot->HasUnitMovementFlag(MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR)
+        && bot->movespline->Initialized() && bot->movespline->Finalized()
+        && bot->movespline->isFalling();
+}
+
+// A passenger reports its current transport block, as a client standing on
+// a transport does, so the report never leaves or changes the transport.
+static MovementInfo CurrentStandingReport(Player* bot)
+{
+    MovementInfo info = CurrentPositionReport(bot);
+    if (bot->GetTransport())
+    {
+        info.transport = bot->m_movementInfo.transport;
+        info.transport.time = GameTime::GetGameTimeMS();
+    }
+    return info;
+}
+
+bool ReportStandingPosition(Player* bot)
+{
+    if (!bot || !bot->IsInWorld() || !EnsureActiveMover(bot))
+        return false;
+    MovementInfo report = CurrentStandingReport(bot);
+    report.jump.fallTime = 0;
+    bot->GetSession()->HandleMovementOpcode(MSG_MOVE_HEARTBEAT, report);
+    return true;
+}
+
+bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs)
+{
+    if (!bot || !bot->IsInWorld() || !EnsureActiveMover(bot))
+        return false;
+    MovementInfo report = CurrentStandingReport(bot);
+    report.jump.fallTime = fallTimeMs;
+    bot->GetSession()->HandleMovementOpcode(MSG_MOVE_FALL_LAND, report);
+    return true;
+}
+
 BotValidationRouteNative::TransportFact ObserveTransport(GameObject const* transport)
 {
     BotValidationRouteNative::TransportFact fact;
@@ -221,7 +280,9 @@ BotActionArbitration::Outcome BoardTransport(Player* bot,
         return current->GetTransportGUID() == object->GetGUID()
             ? Outcome::Committed("native_transport_already_aboard")
             : Outcome::Retryable("native_transport_on_other_transport");
-    if (!bot->IsAlive() || bot->GetVehicle() || bot->IsFlying() || bot->IsFalling())
+    // A finalized native fall keeps its spline's falling attribute until the
+    // next spline; only a running fall or the falling flags block boarding.
+    if (!bot->IsAlive() || bot->GetVehicle() || bot->IsFlying() || NativeFallInProgress(bot))
         return Outcome::Retryable("native_transport_board_state_invalid");
     if (BotIsMoving(bot))
         return Outcome::Retryable("native_transport_board_moving");
