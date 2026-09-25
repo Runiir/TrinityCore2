@@ -102,10 +102,11 @@ uint32 BotWorldPopulationMgr::GetActiveCohortCount() const
     return ActiveCohortCount();
 }
 
-bool BotWorldPopulationMgr::HasActiveCohortOtherThan(std::string const& cohortId) const
+bool BotWorldPopulationMgr::HasActiveShardCohort() const
 {
     for (auto const& [id, runtime] : _cohorts)
-        if (runtime && runtime->Active && id != cohortId)
+        if (runtime && runtime->Active && id != DefaultCohortId
+            && runtime->Purpose != CohortPurpose::Play)
             return true;
     return false;
 }

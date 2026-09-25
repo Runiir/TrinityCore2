@@ -21,7 +21,9 @@
     bool HasCohort(std::string const& cohortId) const;
     size_t GetCohortCount() const;
     uint32 GetActiveCohortCount() const;
-    bool HasActiveCohortOtherThan(std::string const& cohortId) const;
+    // A boss shard is running: an active cohort that is neither the default
+    // cohort nor a human play session (both keep their legacy commands).
+    bool HasActiveShardCohort() const;
     std::string ResolveGlobalCohortId() const;
     std::string GetCohortRegistryJson() const;
     std::string GetCohortIsolationContractJson();

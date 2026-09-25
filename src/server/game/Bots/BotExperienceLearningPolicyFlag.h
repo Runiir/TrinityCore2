@@ -2,6 +2,7 @@
 #define TRINITY_BOT_EXPERIENCE_LEARNING_POLICY_FLAG_H
 
 #include <atomic>
+#include <string>
 
 // A boolean config value read once per config load. Hot paths (every learned
 // score, every semantic event) call Get(), which reads the source only while
@@ -32,5 +33,16 @@ public:
 private:
     std::atomic<int> _state{ -1 };
 };
+
+// Reads an optional boolean key. ConfigMgr warns on every lookup of an absent
+// key, so presence is checked first: an absent key is false and silent.
+template <class Config>
+bool ReadOptionalConfigBool(Config& config, std::string const& key)
+{
+    for (std::string const& present : config.GetKeysByString(key))
+        if (present == key)
+            return config.GetBoolDefault(key, false);
+    return false;
+}
 
 #endif

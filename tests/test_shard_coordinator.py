@@ -73,6 +73,10 @@ class FakeWorld:
                 "raid_runtime": {"map_id": 669, "instance_id": state.get("instance", 0)}, "failure_reason": None}
 
     def __call__(self, command: str, timeout: int) -> tuple[str, int, bool]:
+        # Like ShardConsoleTransport: once a reply timed out the console is
+        # latched failed and nothing more reaches the worldserver.
+        if self.failed:
+            return "", 1, False
         with self._guard:
             self.in_flight += 1
             self.max_in_flight = max(self.max_in_flight, self.in_flight)
@@ -80,7 +84,10 @@ class FakeWorld:
             time.sleep(0.001)
             self.commands.append(command)
             self.timeouts.append((command, timeout))
-            return self.answer(command)
+            output, returncode, timed_out = self.answer(command)
+            if timed_out:
+                self.failed = True
+            return output, returncode, timed_out
         finally:
             with self._guard:
                 self.in_flight -= 1
@@ -419,7 +426,7 @@ def test_admission_failure_stops_what_was_admitted(tmp_path: Path) -> None:
     console = sc.SerializedConsole(world)
     summary = sc.ShardCoordinator(proof_plan(), console, tmp_path, scenario_dir=SCENARIOS,
                                   sleep=fast_watchdog()).run()
-    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert summary["terminal_reason"] == "setup_failed"
     assert "admits 1 active" in summary["error"]
     assert not any(command.startswith((".botauto create", ".botauto start")) for command in world.commands)
 
@@ -477,10 +484,13 @@ def test_one_failing_shard_never_stops_the_others(tmp_path: Path) -> None:
     summary = sc.ShardCoordinator(plan, sc.SerializedConsole(world), tmp_path, scenario_dir=SCENARIOS,
                                   watchdog=watchdog, sleep=fast_watchdog()).run()
     by_id = {row["cohort_id"]: row for row in summary["shards"]}
-    assert by_id["blackwing_descent_10n_maloriak_c0"]["error"] == "RuntimeError: synthetic watchdog fault"
+    assert by_id["blackwing_descent_10n_maloriak_c0"]["error"] == "watchdog RuntimeError: synthetic watchdog fault"
     assert by_id["blackwing_descent_10n_magmaw_c0"]["completion_reason"] == "semantic_progress_plateau_watchdog"
     assert ".botauto stop blackwing_descent_10n_maloriak_c0" in world.commands
     assert summary["teardown"]["verified"] is True
+    # A shard error never passes: distinct reason, non-zero exit.
+    assert summary["terminal_reason"] == "shard_error"
+    assert summary["shard_errors"] == {"blackwing_descent_10n_maloriak_c0": "watchdog RuntimeError: synthetic watchdog fault"}
 
 
 def test_interruption_closes_every_shard_transport(tmp_path: Path) -> None:
@@ -579,7 +589,14 @@ def test_start_reply_keeps_unscoped_profile_refusal(tmp_path: Path) -> None:
     assert '"unknown_profile"' in output and "unsolicited" not in output
     assert world.timeouts[-1] == (f".botauto start {spec.cohort_id} {MAGMAW}", 9)
     output, code, _ = transport(f".botauto status {spec.cohort_id}", 3600)
-    assert code == 0 and world.timeouts[-1][1] == 3600  # heartbeats keep their own budget
+    assert code == 0 and world.timeouts[-1][1] == 9  # every exchange is capped, never the emergency budget
+    capped = sc.ShardTransport(sc.SerializedConsole(world), spec, tmp_path, transition_timeout_sec=9,
+                               exchange_timeout_sec=180)
+    for verb in ("status", "diagnose", "trace", "combatlog"):
+        capped(f".botauto {verb} {spec.cohort_id}" + (" all" if verb in {"diagnose", "trace"} else ""), 3600)
+        assert world.timeouts[-1][1] == 180, verb
+    capped(f".botauto status {spec.cohort_id}", 30)
+    assert world.timeouts[-1][1] == 30  # a smaller watchdog budget still wins
     assert sc.ShardConsoleTransport.reply_marker(".botauto start c p").search(
         b'{"ok":false,"action":"botauto_profile","failure_reason":"unknown_profile"}')
 
@@ -589,12 +606,18 @@ def test_failed_seed_is_still_cleared(tmp_path: Path, failure: str) -> None:
     world = FakeWorld(lockout_failure=failure)
     summary = sc.ShardCoordinator(proof_plan(), sc.SerializedConsole(world), tmp_path,
                                   scenario_dir=SCENARIOS, sleep=fast_watchdog()).run()
-    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert summary["terminal_reason"] == "setup_failed"
     assert "lockout of blackwing_descent_10n_maloriak_c0 failed" in summary["error"]
     assert ".botauto lockout clear blackwing_descent_10n_maloriak_c0" in world.commands
     assert not any(command.startswith(".botauto start") for command in world.commands)
     receipt = json.loads((tmp_path / "shards" / "blackwing_descent_10n_maloriak_c0" / "lockout.json").read_text())
     assert receipt["state"] == "pending" and "failed" in receipt["error"]
+    # The seed reply is on record before readback: a leaked lockout is findable.
+    if failure == "wrong_bosses":
+        assert receipt["seed_reply"]["instance_id"] == 101 and receipt["seed_reply"]["map_id"] == 669
+    else:
+        assert receipt["seed_reply"]["ok"] is False
+        assert receipt["seed_reply"]["failure_reason"] == "prerequisites_unavailable"
     assert receipt["command"].startswith(".botauto lockout seed blackwing_descent_10n_maloriak_c0 ")
     assert summary["teardown"]["lockouts_cleared"]["blackwing_descent_10n_maloriak_c0"]["ok"] is True
 
@@ -605,32 +628,33 @@ def test_every_seeded_shard_is_cleared_when_a_later_seed_fails(tmp_path: Path) -
                                       "precompleted_boss_keys": ["magmaw"]})),
             sc.parse_shard(shard_row("blackwing_descent_10n_maloriak_c0", MALORIAK, MALORIAK_LOCKOUT)))
 
-    class SecondSeedFails(FakeWorld):
+    class SecondSeedRefused(FakeWorld):
         def answer(self, command: str) -> tuple[str, int, bool]:
             if command.startswith(".botauto lockout seed blackwing_descent_10n_maloriak_c0"):
-                return "partial reply without prompt", 1, True
+                return self.reply({"ok": False, "action": "botauto_lockout_seed",
+                                   "cohort_id": "blackwing_descent_10n_maloriak_c0", "instance_id": 0,
+                                   "map_id": 0, "bosses_done": [], "failure_reason": "lockout_exists"}), 0, False
             return super().answer(command)
 
-    world = SecondSeedFails()
+    world = SecondSeedRefused()
     summary = sc.ShardCoordinator(sc.ShardRunPlan(shards=rows), sc.SerializedConsole(world), tmp_path,
                                   scenario_dir=SCENARIOS, sleep=fast_watchdog()).run()
-    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert summary["terminal_reason"] == "setup_failed"
     cleared = [command for command in world.commands if command.startswith(".botauto lockout clear")]
     assert cleared == [".botauto lockout clear blackwing_descent_10n_nefarian_c0",
                        ".botauto lockout clear blackwing_descent_10n_maloriak_c0"]
 
 
 class LatchedTransport(FakeWorld):
-    """Latches failed (a console reply that never finished) after N exchanges."""
+    """One reply never completes after N exchanges; the base fake then latches."""
 
     def __init__(self, fail_after: int, **kwargs: Any):
         super().__init__(**kwargs)
         self.fail_after = fail_after
 
     def answer(self, command: str) -> tuple[str, int, bool]:
-        if self.failed or len(self.commands) > self.fail_after:
-            self.failed = True
-            return "", 1, True
+        if len(self.commands) > self.fail_after:
+            return "partial reply without prompt", 1, True
         return super().answer(command)
 
 
@@ -641,7 +665,15 @@ def test_latched_console_failure_is_infrastructure_loss(tmp_path: Path) -> None:
                                   sleep=fast_watchdog()).run()
     assert summary["terminal_reason"] == "infrastructure_loss"
     assert "console_transport_failed" in summary["infrastructure_failures"]
+    assert "teardown_unverified" in summary["infrastructure_failures"]
     assert summary["console"]["healthy"] is False
+    assert len(world.commands) == 13  # nothing reached the server after the latch
+    teardown = summary["teardown"]
+    assert teardown["verified"] is False and teardown["error"] == "cohort registry transport failed"
+    # Unknown state after the latch: every created cohort gets a (failed) stop
+    # and the seeded shard's clear is attempted and reported as not done.
+    assert teardown["stopped_by_teardown"] == ["blackwing_descent_10n_magmaw_c0", "blackwing_descent_10n_maloriak_c0"]
+    assert teardown["lockouts_cleared"]["blackwing_descent_10n_maloriak_c0"]["ok"] is False
 
 
 def test_worldserver_exit_is_infrastructure_loss(tmp_path: Path) -> None:
@@ -715,3 +747,110 @@ def test_attempt_finalization_docstring_is_accurate() -> None:
     doc = harness.AttemptFinalization.__doc__ or ""
     assert "byte-for-byte" not in doc
     assert "only this cohort's replies" in doc
+
+
+
+def test_prompt_between_profile_and_status_does_not_end_the_start() -> None:
+    """The CLI thread's readline prompt can land after an accepted profile line."""
+    marker = sc.ShardConsoleTransport.reply_marker(".botauto start c p")
+    accepted = b'TC>{"ok":true,"action":"botauto_profile","active_profile":"p","cohort_id":"c"}\nTC>'
+    found = marker.search(accepted)
+    assert found is None  # an accepted profile line never terminates the exchange
+    complete = accepted + b'{"ok":true,"action":"botauto_status","cohort_id":"c"}\nTC> '
+    found = marker.search(complete)
+    assert found and b"TC>" in complete[found.end():]
+    refused = b'{"ok":false,"action":"botauto_profile","failure_reason":"unknown_profile"}\nTC> '
+    assert marker.search(refused)
+    assert marker.search(b'{"ok":false,"action":"botauto_start","cohort_id":"c"}')
+
+
+def test_cohort_log_lines_skip_prompted_command_replies(tmp_path: Path) -> None:
+    log = tmp_path / "worldserver.console.log"
+    log.write_text(
+        'TC>{"ok":true,"action":"botauto_cohorts","cohorts":[{"cohort_id":"blackwing_descent_10n_magmaw_c0"}]}\n'
+        'TC> TC>{"ok":true,"action":"botauto_status","cohort_id":"blackwing_descent_10n_magmaw_c0"}\n'
+        "BotWorld run note cohort=blackwing_descent_10n_magmaw_c0 json={\"note\":1}\n")
+    assert sc.cohort_log_lines(log, "blackwing_descent_10n_magmaw_c0", set()) == [
+        "BotWorld run note cohort=blackwing_descent_10n_magmaw_c0 json={\"note\":1}\n"]
+
+
+def test_watchdog_interruption_tears_down_and_clears(tmp_path: Path) -> None:
+    world = FakeWorld()
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+
+    def watchdog(transport, command, *args, **kwargs):
+        if transport.spec.cohort_id.endswith("maloriak_c0"):
+            raise KeyboardInterrupt
+        return harness.run_transport_completion_watchdog(transport, command, *args, **kwargs)
+
+    coordinator = sc.ShardCoordinator(plan, sc.SerializedConsole(world), tmp_path, scenario_dir=SCENARIOS,
+                                      watchdog=watchdog, sleep=fast_watchdog())
+    with pytest.raises(KeyboardInterrupt):
+        coordinator.run()
+    summary = json.loads((tmp_path / "shard_run.json").read_text())
+    assert summary["terminal_reason"] == "interruption"
+    assert summary["teardown"]["verified"] is True
+    assert ".botauto lockout clear blackwing_descent_10n_maloriak_c0" in world.commands
+    assert summary["teardown"]["lockouts_cleared"]["blackwing_descent_10n_maloriak_c0"]["ok"] is True
+    assert summary["shard_errors"]["blackwing_descent_10n_maloriak_c0"] == "interrupted"
+    assert not any(cohort["active"] for cohort in world.cohorts.values())
+
+
+def test_interrupted_console_transport_returns_early(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+
+    log = tmp_path / "console.log"
+    log.write_bytes(b"")
+    with log.open("ab") as sink:
+        process = subprocess.Popen([sys.executable, "-c", "import sys, time; sys.stdin.readline(); time.sleep(30)"],
+                                   stdin=subprocess.PIPE, stdout=sink, stderr=sink)
+    try:
+        event = threading.Event()
+        transport = sc.ShardConsoleTransport(process, log)
+        transport.interrupted = event
+        threading.Timer(0.3, event.set).start()
+        started = time.monotonic()
+        output, code, timed_out = transport(".botauto status c", 600)
+        assert time.monotonic() - started < 5
+        assert (code, timed_out) == (1, False) and transport.failed
+        assert transport(".botauto status c", 600) == ("", 1, False)  # latched
+    finally:
+        process.kill()
+        process.wait()
+
+
+@pytest.mark.parametrize(("flags", "reason"), [
+    ({"infrastructure": True, "setup_failed": True, "shard_errors": True, "completed": False}, "infrastructure_loss"),
+    ({"infrastructure": False, "setup_failed": True, "shard_errors": False, "completed": False}, "setup_failed"),
+    ({"infrastructure": False, "setup_failed": False, "shard_errors": True, "completed": True}, "shard_error"),
+    ({"infrastructure": False, "setup_failed": False, "shard_errors": False, "completed": True}, "completed"),
+    ({"infrastructure": False, "setup_failed": False, "shard_errors": False, "completed": False}, "infrastructure_loss"),
+])
+def test_terminal_reason_precedence(flags: dict[str, bool], reason: str) -> None:
+    assert sc.terminal_reason(**flags) == reason
+
+
+def test_main_exit_code_follows_terminal_reason(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    plan_path = tmp_path / "plan.json"
+    plan_path.write_text(json.dumps({"schema": sc.RUN_PLAN_SCHEMA,
+                                     "shards": [shard_row("blackwing_descent_10n_magmaw_c0", MAGMAW)]}))
+    outside = Path("/tmp") / f"shard-main-{time.time_ns()}"
+    for reason in ("setup_failed", "shard_error", "interruption"):
+        monkeypatch.setattr(sc, "run_live", lambda plan, **kwargs: {"terminal_reason": reason, "shards": []})
+        assert sc.main(["--plan", str(plan_path), "--output-dir", str(outside)]) == 1
+
+
+def test_finalizer_exception_is_a_shard_error(tmp_path: Path) -> None:
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+
+    def finalizer(outcome):
+        if outcome.spec.cohort_id.endswith("magmaw_c0"):
+            raise OSError("disk full")
+        return outcome.watchdog_report or {}, 0
+
+    summary = sc.ShardCoordinator(plan, sc.SerializedConsole(FakeWorld()), tmp_path, scenario_dir=SCENARIOS,
+                                  finalizer=finalizer, sleep=fast_watchdog()).run()
+    assert summary["terminal_reason"] == "shard_error"
+    assert summary["shard_errors"] == {"blackwing_descent_10n_magmaw_c0": "finalize OSError: disk full"}
+    assert summary["teardown"]["verified"] is True

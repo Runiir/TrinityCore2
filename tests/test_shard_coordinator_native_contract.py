@@ -172,7 +172,7 @@ def test_process_wide_mutations_refused_while_shards_run() -> None:
     handlers = _handlers(_read(COMMANDS / "cs_botauto.cpp"))
     rotations = handlers["HandleAutoRotationsCommand"]
     guard = rotations.index('(tokens[0] == "reload" || tokens[0] == "rollback")')
-    assert "HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId)" in rotations[guard:guard + 200]
+    assert "HasActiveShardCohort()" in rotations[guard:guard + 200]
     assert "IsActive()" not in rotations  # host-world's always-on default cohort may still reload
     assert guard < rotations.index("ReloadDbProfiles()") and guard < rotations.index("RollbackDbProfiles()")
     assert "active_shard_cohorts_present" in rotations
@@ -183,8 +183,14 @@ def test_process_wide_mutations_refused_while_shards_run() -> None:
         assert call in body, name
         assert body.index(call) < body.index("ScopeCohortById(")
     refuse = _function(_read(COMMANDS / "cs_botauto.cpp"), "static bool RefuseWhileShardsActive(")
-    # Only non-default cohorts (boss shards) refuse; the default cohort alone never does.
-    assert "HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId)" in refuse
+    # Only boss shards refuse: never the default cohort, never a human play session.
+    assert "HasActiveShardCohort()" in refuse
+    cohort = _read(BOTS / "BotWorldPopulationMgrCohort.cpp")
+    shard = _function(cohort, "bool BotWorldPopulationMgr::HasActiveShardCohort() const")
+    assert "id != DefaultCohortId" in shard
+    assert "runtime->Purpose != CohortPurpose::Play" in shard
+    assert "runtime->Active" in shard
+    assert "HasActiveCohortOtherThan" not in _read(BOTS / "BotWorldPopulationMgrCohortScopeApi.h")
     assert "RefuseWhileCohortsActive" not in _read(COMMANDS / "cs_botauto.cpp")
     # Read-only heartbeat commands (.botexp summary/status) stay available.
     for name in ("HandleSummaryCommand", "HandleStatusCommand"):
@@ -194,10 +200,13 @@ def test_process_wide_mutations_refused_while_shards_run() -> None:
 def test_shard_isolation_is_read_once_per_config_load() -> None:
     """Hot paths never query ConfigMgr: an absent key warns on every lookup."""
     policy = _read(BOTS / "BotExperienceLearningPolicy.cpp")
-    lookups = [line for line in policy.splitlines() if "sConfigMgr->" in line]
+    lookups = [line for line in policy.splitlines() if "sConfigMgr" in line]
     reader = _function(policy, "bool ReadShardIsolationConfig()")
     assert lookups and all(line.strip() in reader for line in lookups)
-    assert "GetKeysByString(ShardIsolationKey)" in reader  # absent key: no "Missing name" warning
+    assert "ReadOptionalConfigBool(*sConfigMgr, ShardIsolationKey)" in reader
+    flag = _read(BOTS / "BotExperienceLearningPolicyFlag.h")
+    optional = _function(flag, "bool ReadOptionalConfigBool(")
+    assert optional.index("GetKeysByString(key)") < optional.index("GetBoolDefault(key, false)")
     for signature in ("bool BotExperienceLearningPolicy::ShardIsolationEnabled()",
                       "bool BotExperienceLearningPolicy::LearningEnabled(",
                       "bool BotExperienceLearningPolicy::GlobalMemoryFallbackAllowed(",
@@ -286,7 +295,6 @@ def test_inserted_ids_are_read_back_by_the_owning_bot() -> None:
 def test_learning_and_semantic_writes_freeze_under_shard_isolation() -> None:
     policy = _read(BOTS / "BotExperienceLearningPolicy.cpp")
     assert 'constexpr char const* ShardIsolationKey = "BotWorld.ShardIsolation";' in policy
-    assert "sConfigMgr->GetBoolDefault(ShardIsolationKey, false)" in policy
     scores = re.findall(r"BotLearnedScore BotExperienceLearningPolicy::(Score\w+)\(", policy)
     assert len(scores) == 7
     for name in scores:
@@ -406,3 +414,60 @@ def test_baiter_registry_clear_drops_only_the_stopped_cohort(tmp_path: Path) -> 
 ])
 def test_changed_native_modules_stay_below_the_size_limit(path: str) -> None:
     assert len(_read(ROOT / path).splitlines()) < 1000
+
+
+
+CONFIG_PROGRAM = r"""
+#include "Config.h"
+#include "Bots/BotExperienceLearningPolicyFlag.h"
+#include <cassert>
+#include <fstream>
+
+int g_warnings = 0;
+
+int main(int, char** argv)
+{
+    std::string error;
+    { std::ofstream(argv[1]) << "[worldserver]\nBotWorld.Enable = 1\nBotWorld.ShardIsolationNote = 1\n"; }
+    assert(sConfigMgr->LoadInitial(argv[1], {}, error));
+    for (int call = 0; call < 3; ++call)
+        assert(!ReadOptionalConfigBool(*sConfigMgr, "BotWorld.ShardIsolation"));
+    assert(g_warnings == 0);  // an absent key is off and silent
+    assert(!sConfigMgr->GetBoolDefault("BotWorld.ShardIsolation", false));
+    assert(g_warnings == 1);  // the direct lookup is what warned on every call
+    { std::ofstream(argv[1]) << "[worldserver]\nBotWorld.ShardIsolation = 1\n"; }
+    assert(sConfigMgr->Reload(error));
+    assert(ReadOptionalConfigBool(*sConfigMgr, "BotWorld.ShardIsolation"));
+    { std::ofstream(argv[1]) << "[worldserver]\nBotWorld.ShardIsolation = 0\n"; }
+    assert(sConfigMgr->Reload(error));
+    assert(!ReadOptionalConfigBool(*sConfigMgr, "BotWorld.ShardIsolation"));
+    assert(g_warnings == 1);
+    return 0;
+}
+"""
+STUB_LOG = """#pragma once
+extern int g_warnings;
+#define TC_LOG_WARN(filter, ...) (++g_warnings)
+#define TC_LOG_ERROR(filter, ...) (++g_warnings)
+#define TC_LOG_INFO(filter, ...) ((void)0)
+"""
+STUB_UTIL = """#pragma once
+#include <string>
+inline bool StringToBool(std::string const& value) { return value == "1" || value == "true" || value == "yes"; }
+"""
+
+
+def test_optional_config_bool_against_the_real_config_manager(tmp_path: Path) -> None:
+    """Links src/common/Configuration/Config.cpp with a counting log stub."""
+    stub = tmp_path / "stub"
+    stub.mkdir()
+    (stub / "Log.h").write_text(STUB_LOG, encoding="utf-8")
+    (stub / "Util.h").write_text(STUB_UTIL, encoding="utf-8")
+    source = tmp_path / "config_flag.cpp"
+    source.write_text(CONFIG_PROGRAM, encoding="utf-8")
+    binary = tmp_path / "config_flag"
+    subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", str(stub),
+                    "-I", str(ROOT / "src/common"), "-I", str(ROOT / "src/common/Configuration"),
+                    "-I", str(ROOT / "src/server/game"), str(source),
+                    str(ROOT / "src/common/Configuration/Config.cpp"), "-o", str(binary)], check=True, cwd=ROOT)
+    subprocess.run([str(binary), str(tmp_path / "worldserver.conf")], check=True, cwd=ROOT)

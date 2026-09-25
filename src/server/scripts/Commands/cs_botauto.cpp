@@ -230,13 +230,13 @@ private:
     }
 
     // Legacy botexp commands act on the default cohort and mutate process-wide
-    // state (runs, replays). While boss shards (any cohort other than the
-    // default) run, they are refused so no shard's cohort or evidence can be
-    // replaced by an unqualified command. The default cohort alone (the
-    // always-on `make host-world` autonomy) keeps today's behaviour.
+    // state (runs, replays). While boss shards run, they are refused so no
+    // shard's cohort or evidence can be replaced by an unqualified command.
+    // The default cohort (the always-on `make host-world` autonomy) and a
+    // human play session keep their pre-shard behaviour.
     static bool RefuseWhileShardsActive(ChatHandler* handler, char const* action)
     {
-        if (!sBotWorldPopulationMgr->HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId))
+        if (!sBotWorldPopulationMgr->HasActiveShardCohort())
             return false;
         SendAutoResult(handler, std::string("{\"ok\":false,\"action\":\"") + action
             + "\",\"active_cohort_count\":" + std::to_string(sBotWorldPopulationMgr->GetActiveCohortCount())
@@ -405,10 +405,10 @@ private:
         if (tokens.empty() || tokens[0] == "list")
             result = BotClassSpecActionProfileStore::DbProfilesJson();
         else if ((tokens[0] == "reload" || tokens[0] == "rollback")
-            && sBotWorldPopulationMgr->HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId))
+            && sBotWorldPopulationMgr->HasActiveShardCohort())
             // Rotations are one process-wide snapshot read live by every
             // cohort; replacing it mid-run would change shards in flight. The
-            // default cohort alone (host-world tuning) may still reload.
+            // default cohort (host-world tuning) and play sessions may reload.
             result = "{\"ok\":false,\"action\":\"botauto_rotations_" + tokens[0]
                 + "\",\"active_cohort_count\":" + std::to_string(sBotWorldPopulationMgr->GetActiveCohortCount())
                 + ",\"failure_reason\":\"active_shard_cohorts_present\"}";

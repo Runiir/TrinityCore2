@@ -224,12 +224,8 @@ BotCachedConfigFlag g_shardIsolation;
 
 bool ReadShardIsolationConfig()
 {
-    // An absent key is off. Checking presence first keeps ConfigMgr from
-    // logging "Missing name" for every config that never mentions the key.
-    for (std::string const& key : sConfigMgr->GetKeysByString(ShardIsolationKey))
-        if (key == ShardIsolationKey)
-            return sConfigMgr->GetBoolDefault(ShardIsolationKey, false);
-    return false;
+    // An absent key is off, without ConfigMgr's "Missing name" warning.
+    return ReadOptionalConfigBool(*sConfigMgr, ShardIsolationKey);
 }
 }
 
