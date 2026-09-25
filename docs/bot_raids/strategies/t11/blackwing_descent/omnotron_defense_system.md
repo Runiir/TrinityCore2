@@ -152,8 +152,13 @@ observed state and capability, never from a roster slot:
   (spell_proc 79729 has SpellTypeMask 0 and a no-damage hit still raises a
   proc), which is judged cheaper than a 39-41k Annihilator. Whether 4.4.2
   behaves the same is an open research item; stacks per interrupt are a live
-  signal. A taunt on a shielded construct likewise procs its shield natively
-  (Static Shock at the tank, Soaked In Poison, Converted Power).
+  signal. A taunt is the same for Arcanotron under Power Conversion (one
+  Converted Power stack) and procs nothing on the other shields: Unstable
+  Shield (79900, 91447-91449) and Poison Soaked Shell (79835, 91501-91503)
+  have TDB 434.22011 spell_proc rows with SpellTypeMask 1 (damage), which no
+  later update removes, so `CanSpellTriggerProcOnEvent` rejects a no-damage
+  hit before the Unstable Shield script's check runs. No Static Shock or
+  Soaked In Poison comes from a taunt.
 - **Dispels.** Poison dispellers (Cleanse, Remove Corruption; never a Bear Form
   tank) clear Soaked In Poison at 3+ stacks or below 50% health. Healers go
   first.
@@ -192,8 +197,7 @@ Not implemented, deliberately:
 
 Open research questions that do not change a material value (ledger
 `open_questions`): whether 4.4.2 Power Conversion procs on a non-damaging
-interrupt; what a taunt on a shielded construct procs in retail; whether DoTs
-can break the 10N Barrier.
+interrupt or taunt; whether DoTs can break the 10N Barrier.
 
 WCL extraction plan once the gate is cleared:
 

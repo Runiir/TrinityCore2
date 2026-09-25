@@ -229,15 +229,18 @@
     "repo_proc_and_absorb_rules": {
       "title": "Native proc eligibility, no-damage spell procs and absorb depletion",
       "paths": [
-        "src/server/game/Spells/SpellMgr.cpp:507-567 (CanSpellTriggerProcOnEvent)",
-        "src/server/game/Spells/SpellMgrProcs.cpp:186-192,259-345 (default proc entries: SpellTypeMask all)",
+        "src/server/game/Spells/SpellMgr.cpp:507-567 (CanSpellTriggerProcOnEvent; line 542 rejects a spell hit whose type is not in a non-zero SpellTypeMask)",
+        "src/server/game/Spells/SpellMgrProcs.cpp:36-180 (spell_proc rows are loaded as written; generated defaults only for spells without a row)",
         "src/server/game/Spells/Spell.cpp:2814-2826 (no-damage hit raises a NODAMAGE DamageInfo, PROC_SPELL_TYPE_NO_DMG_HEAL)",
         "src/server/game/Entities/Unit/Unit.cpp:1447,1511 (absorb depleted -> AuraRemoveFlags::ByEnemySpell), 3344,3426 (dispel/steal -> ByEnemySpell)",
-        "sql/updates/world/4.3.4/2025_06_20_00_world.sql:322-333 (spell_proc 79729 Cooldown 100; 91543-91545, 80011, 91504-91506 Cooldown 500; SpellTypeMask 0)"
+        "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql spell_proc rows (79900,0,0,0,0,0,0,1,...), (91447..91449 same), (79835,0,0,0,0,0,0,1,...), (91501..91503 same): SpellTypeMask 1 = PROC_SPELL_TYPE_DAMAGE",
+        "sql/updates/world/4.3.4/2025_06_20_00_world.sql:1 (DELETE) and :322-333 (INSERT (SpellId, Cooldown)): 79729 Cooldown 100, 91543-91545, 80011, 91504-91506 Cooldown 500, SpellTypeMask left 0; 79900/79835 and their variants are not deleted",
+        "sql/updates/world/4.3.4/2025_06_20_01_world.sql:104-111 (Cooldown updates on 79729 and 79900 rows only)"
       ],
       "revision": "a0b898210c",
       "accessed": "2026-09-25",
-      "authority": "current implementation; retail behaviour needs WCL observations"
+      "authority": "current implementation; retail behaviour needs WCL observations",
+      "claim": "Only Power Conversion (79729 and 91543-91545, SpellTypeMask 0) procs on a landed no-damage interrupt or taunt; Unstable Shield and Poison Soaked Shell keep SpellTypeMask 1 rows and proc only on damaging hits. Barrier depletion by any damage, and dispel/steal, remove it by enemy spell."
     }
   },
   "evidence_policy": {
@@ -684,7 +687,7 @@
         "25N": "native",
         "25H": "native"
       },
-      "value": "Power Conversion 79729, Unstable Shield 79900 and Poison Soaked Shell 79835 proc on taken melee/ranged swings and on taken melee-, ranged-, none- and magic-class spell hits (proc flags 139944), not on periodic ticks. A spell hit without damage still procs natively: it raises a NODAMAGE DamageInfo with PROC_SPELL_TYPE_NO_DMG_HEAL, spell_proc 79729 has SpellTypeMask 0 (all types), 79835 uses a generated entry (all types), and spell_omnotron_unstable_shield only requires a DamageInfo. So an interrupt or taunt that lands on a shielded construct gives a Converted Power stack, Soaked In Poison or a Static Shock. Barrier 79582 is an absorb: any damage including periodic ticks depletes it, and depletion (or a dispel/steal) removes it by enemy spell, which casts Backdraft 79617 on the raid.",
+      "value": "Power Conversion 79729, Unstable Shield 79900 and Poison Soaked Shell 79835 proc on taken melee/ranged swings and on taken melee-, ranged-, none- and magic-class spell hits (proc flags 139944), not on periodic ticks. A landed spell hit without damage raises a NODAMAGE DamageInfo with PROC_SPELL_TYPE_NO_DMG_HEAL. Power Conversion's spell_proc rows (79729, 91543-91545; re-inserted by 2025_06_20_00 with Cooldown only) have SpellTypeMask 0, so a no-damage interrupt or taunt on Arcanotron under Power Conversion gives one Converted Power stack. Unstable Shield (79900, 91447-91449) and Poison Soaked Shell (79835, 91501-91503) keep their TDB 434.22011 rows with SpellTypeMask 1 (damage), which no later update removes, so CanSpellTriggerProcOnEvent (SpellMgr.cpp:542) rejects a no-damage hit before the Unstable Shield script's CheckProc runs: a taunt or interrupt procs no Static Shock and no Soaked In Poison; damaging hits do. Barrier 79582 is an absorb: any damage including periodic ticks depletes it, and depletion (or a dispel/steal) removes it by enemy spell, which casts Backdraft 79617 on the raid.",
       "sources": [
         "repo_proc_and_absorb_rules",
         "repo_cpp",
@@ -692,7 +695,7 @@
       ],
       "evidence": "repository_observed",
       "status": "native_resolved; retail behaviour of no-damage procs open (research_completion power_conversion_no_damage_proc)",
-      "implementation_consequence": "Offense restriction keeps shielded constructs out of every bot's allowed set; an interrupt or taunt on one is widened for that single cast only. The rotation keeps interrupting Arcanotron under Power Conversion (one Converted Power stack against a 39-41k Annihilator). Damage focus leaves a construct alone well before its shield so DoTs expire first."
+      "implementation_consequence": "Offense restriction keeps shielded constructs out of every bot's allowed set; an interrupt or taunt on one is widened for that single cast only. The rotation keeps interrupting Arcanotron under Power Conversion (one Converted Power stack against a 39-41k Annihilator); a taunt costs a stack only on Arcanotron under Power Conversion. Damage focus leaves a construct alone well before its shield so DoTs expire first."
     }
   ],
   "timers": [
@@ -1417,7 +1420,7 @@
         "25H"
       ],
       "status": "open",
-      "known": "Natively every landed interrupt (and taunt) on Arcanotron under Power Conversion gives one Converted Power stack (spell_proc 79729 SpellTypeMask 0, NODAMAGE proc). Whether 4.4.2 Power Conversion procs on a non-damaging interrupt is not established; guides only say 'stop attacking'.",
+      "known": "Natively every landed interrupt or taunt on Arcanotron under Power Conversion gives one Converted Power stack (spell_proc 79729 SpellTypeMask 0, NODAMAGE proc). Unstable Shield and Poison Soaked Shell do not proc on no-damage hits (TDB spell_proc SpellTypeMask 1). Whether 4.4.2 Power Conversion procs on a non-damaging interrupt is not established; guides only say 'stop attacking'.",
       "next": "WCL: in a 10N kill, Converted Power (79735) applications within 0.5 s after a SPELL_INTERRUPT of 79710 while 79729 is up. Live: Converted Power stacks per interrupt (contract acceptance observation).",
       "source_refs": [
         "repo_proc_and_absorb_rules",
@@ -1454,8 +1457,7 @@
     "static_shock_center_attacker_or_construct"
   ],
   "open_questions": [
-    "power_conversion_no_damage_proc: does 4.4.2 Power Conversion (79729) grant Converted Power for a landed interrupt that deals no damage? Native: yes.",
-    "taunt_on_shielded_construct: a taunt on Electron under Unstable Shield procs Static Shock (6 yd) at the tank natively, and on Toxitron under Poison Soaked Shell applies Soaked In Poison; retail unobserved.",
+    "power_conversion_no_damage_proc: does 4.4.2 Power Conversion (79729) grant Converted Power for a landed interrupt or taunt that deals no damage? Native: yes (SpellTypeMask 0); Unstable Shield and Poison Soaked Shell natively do not proc on no-damage hits (SpellTypeMask 1).",
     "barrier_periodic_break: can remaining DoTs break Magmatron's Barrier on 10N (client absorb 300,000 vs Wowhead 900,000)?"
   ]
 }

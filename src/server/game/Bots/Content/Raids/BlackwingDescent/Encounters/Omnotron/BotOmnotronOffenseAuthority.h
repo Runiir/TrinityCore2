@@ -49,9 +49,10 @@ inline void ApplyOffenseRestriction(uint64 ownerGuid, OffenseRestriction const& 
 
 // Widens the restriction by exactly one target for the lifetime of this
 // object, then restores the tick's restriction. Use it around the native
-// cast of one interrupt or one taunt and nothing else. A hit under it still
-// procs the construct's shield natively, damaging or not (Converted Power,
-// Static Shock, Soaked In Poison); that cost is a live signal, not hidden.
+// cast of one interrupt or one taunt and nothing else. Of the four shields
+// only Power Conversion procs on such a no-damage hit (spell_proc 79729,
+// SpellTypeMask 0): one Converted Power stack, a live signal. Unstable Shield
+// and Poison Soaked Shell have SpellTypeMask 1 (damage) rows and do not proc.
 class SingleCastAllowance
 {
 public:

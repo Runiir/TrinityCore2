@@ -264,7 +264,7 @@
   "roles": {
     "tanks": [
       "two tanks own at most one active construct each; ownership follows the construct's victim, a new construct goes to the tank whose construct is gone or shutting down",
-      "taunt an owned construct that attacks anyone else (a single-cast allowance when it is shielded; the taunt procs its shield natively)",
+      "taunt an owned construct that attacks anyone else (a single-cast allowance when it is shielded; natively the taunt procs only Power Conversion, one Converted Power stack)",
       "stop attacking an owned construct while it is shielded and drag it 12 yd from the other active construct",
       "walk an owned construct out of a Power Generator (construct center >= 8.6 yd from it)",
       "a free tank waits next to the construct whose Recharging aura ends within 12 s"
@@ -378,7 +378,7 @@
     "route: bwd.omnotron.encounter completes with real_boss_kill_evidence on 42180 and native boss state 1 DONE; 0 boss-window deaths",
     "bots: Converted Power (79735) stacks gained per landed interrupt of 79710 while Power Conversion is up (expected about 1; 0 while it is down); none from damage",
     "bots: Backdraft 79617 count with the periodic damage absorbed by Barrier 79582 before each break, grouped by source (DoT spell, owner) and by opening vs later rotations",
-    "bots: Static Shock 79912 and Soaked In Poison 80011 caused by a taunt on a shielded construct (count per taunt)",
+    "bots: taunts on a shielded construct: Converted Power (79735) stacks only from taunts on Arcanotron under Power Conversion; zero Static Shock 79912 and zero Soaked In Poison 80011 from taunts or interrupts (their spell_proc rows require damage)",
     "bots: no area spell (Divine Storm, Blood Boil, Death and Decay, Fan of Knives, Hellfire, Living Bomb spread) hits a construct during its shield"
   ],
   "unresolved": [
