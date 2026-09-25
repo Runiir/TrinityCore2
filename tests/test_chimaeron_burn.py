@@ -312,7 +312,9 @@ static void TestEncounterLatchStore()
 // the boss's Feud aura with the given time left. With a Break cycle, Break
 // lands on the victim and Double Attack is applied every cycle (their shared
 // native timer); a doubled swing consumes it. Damage over time stops once the
-// boss is at or below DotStopPct (0 = never).
+// boss is at or below DotStopPct (0 = never); with DotTickMs it lands as one
+// DotTickPct tick per interval (a slow DoT such as Bane of Doom) instead of
+// 0.02% per step.
 struct ReplayConfig
 {
     uint64 GrowlReadyAfterMs = 0;
@@ -324,6 +326,8 @@ struct ReplayConfig
     bool HealersDown = false;
     uint64 BreakCycleMs = 0;
     float DotStopPct = 0.0f;
+    uint64 DotTickMs = 0;
+    float DotTickPct = 0.0f;
 };
 
 struct ReplayResult
@@ -364,6 +368,7 @@ static ReplayResult RunBurnReplay(ReplayConfig const& config)
     uint64 growlReadyAt = start + config.GrowlReadyAfterMs;
     uint64 nextSwingAt = start + 4000;
     uint64 nextBreakAt = start + config.BreakCycleMs;
+    uint64 nextTickAt = start + config.DotTickMs;
     std::map<uint32, int> breakStacks;
     auto violation = [&](char const* what, uint32 guid)
     {
@@ -464,7 +469,16 @@ static ReplayResult RunBurnReplay(ReplayConfig const& config)
         bool attacking = false;
         for (uint32 guid : { DK, DRUID, HUNTER, MAGE, RET, ROGUE, LOCK })
             attacking = attacking || !plans[guid].SuppressOffense;
-        float const dot = Boss(board).HealthPct > config.DotStopPct ? 0.02f : 0.0f;
+        float dot = Boss(board).HealthPct > config.DotStopPct ? 0.02f : 0.0f;
+        if (config.DotTickMs)
+        {
+            dot = 0.0f;
+            if (board.ObservedAtMs >= nextTickAt)
+            {
+                dot = config.DotTickPct;
+                nextTickAt += config.DotTickMs;
+            }
+        }
         float const drop = config.Adversarial ? 0.1f : (attacking ? 0.12f : dot);
         Boss(board).HealthPct -= drop;
         if (Boss(board).HealthPct <= C::MortalityHealthPct)
@@ -561,6 +575,22 @@ static void TestBurnReplayFromPostMassacre()
             longHold.FeralBreakStacks, noArm.FeralBreakStacks);
     CHECK(longHold.FeralBreakStacks <= noArm.FeralBreakStacks + 1);
     CHECK(longHold.MortalityAtMs > 30000);
+
+    // A slow DoT ticking every 9-15 s (Bane of Doom) from 20.7%, three ticks
+    // to Mortality before the hold cap: the drift window outlasts the tick and
+    // the arm stays sticky from 20.5%, so it never oscillates and the Feral is
+    // the Mortality victim (an 8 s window hands the boss back to the Break tank
+    // between ticks and the last tick lands on him).
+    for (uint64 tick : { 9000ull, 12000ull, 15000ull })
+    {
+        ReplayConfig slowDot;
+        slowDot.HealPct = 1.0f;
+        slowDot.StartPct = 20.7f;
+        slowDot.BreakCycleMs = 15000;
+        slowDot.DotTickMs = tick;
+        slowDot.DotTickPct = 0.25f;
+        CheckFeral(RunBurnReplay(slowDot), "slow dot ticks");
+    }
 }
 
 int main()

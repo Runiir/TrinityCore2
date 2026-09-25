@@ -20,8 +20,8 @@
 //   a bounded hold (two Massacre cycles, or fewer than two living healers).
 // - Last chance: damage the hold cannot stop (damage over time, pets) carries
 //   the boss to 21% unreleased. The handoff arms anyway (Feud does not block
-//   it); non-tanks keep waiting for the release. It is not sticky while held:
-//   once the boss stops losing health for a taunt cooldown the drift is over,
+//   it); non-tanks keep waiting for the release. Above 20.5% it is not sticky
+//   while held: once the boss stops losing health for 16 s the drift is over,
 //   the arm (and any handoff it produced) is dropped and the ordinary
 //   Break/Double Attack exchange resumes; a new drift at or below the line
 //   re-arms it.
@@ -72,8 +72,12 @@ constexpr float LastChanceHandoffPct = 21.0f;
 // One taunt cooldown (Dark Command, Growl, Hand of Reckoning, Taunt: 8 s).
 constexpr uint64 HandoffTimeoutMs = 8000;
 // The boss has not lost health for this long: the drift that armed the last
-// chance has stopped.
-constexpr uint64 DriftStoppedMs = 8000;
+// chance has stopped. Longer than the slowest roster damage-over-time tick
+// (Bane of Doom, 15 s), so a ticking DoT is never mistaken for a stop.
+constexpr uint64 DriftStoppedMs = 16000;
+// At or below this health the last-chance arm stays sticky: too close to
+// Mortality to hand the boss back.
+constexpr float StickyLastChancePct = 20.5f;
 // Two Massacre cycles (30 s repeat): a hold that long means readiness is out
 // of reach (healers out of mana, a tank kept under 80%).
 constexpr uint64 BurnHoldCapMs = 60000;
@@ -262,7 +266,8 @@ inline void UpdateEncounterLatches(Blackboard const& board, EncounterLatchModule
     {
         if (inWindow && drifting && boss.HealthPct <= LastChanceHandoffPct)
             module.Latch(LastChanceLatch);
-        else if (!drifting && module.Find(LastChanceLatch))
+        else if (!drifting && boss.HealthPct > StickyLastChancePct
+            && module.Find(LastChanceLatch))
         {
             // The drift stopped while held: give the boss back to the
             // ordinary exchange instead of parking every Break on the
