@@ -3,294 +3,1039 @@
   "ledger_schema": "cata_raid_value_timer_ledger_v1",
   "raid": "blackwing_descent",
   "boss_slug": "nefarian",
-  "modes": ["10N", "10H", "25N", "25H"],
+  "modes": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
   "fidelity_state": "fidelity_blocked",
   "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
   "unresolved_material_count": 10,
   "encounter": "nefarian",
   "instance": "blackwing_descent",
-  "purpose": "Sourced values, timers, random rules, difficulty deltas and lifecycle ledger; no live assertion.",
-  "scope": ["10N", "10H", "25N", "25H"],
-  "repository_revision_audited": "889d38cc9451c2b8104db142ce069593b4647a41",
-  "accessed": "2026-08-11",
-  "source_catalog": {
-    "wowhead_cata_classic": {
-      "title": "Nefarian Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
-      "publisher": "Wowhead",
-      "author": "Beanna",
-      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/nefarian-strategy",
-      "edition": "Patch 4.4.2",
-      "published_or_updated": "2024-06-10",
-      "scope": "Current Classic guide; no reliable client build/hotfix cutoff exposed"
-    },
-    "icy_veins_cata_classic": {
-      "title": "Nefarian Encounter Guide: Strategy, Abilities, Loot",
-      "publisher": "Icy Veins",
-      "author": "Abide",
-      "url": "https://www.icy-veins.com/cataclysm-classic/nefarian-encounter-guide-strategy-abilities-loot",
-      "published_or_updated": "2024-07-29",
-      "scope": "Independent Cataclysm Classic guide; exact 4.4.2 build metadata not stated"
-    },
-    "icy_veins_legacy_heroic": {
-      "title": "Nefarian DPS Strategy Guide (Heroic Mode included)",
-      "publisher": "Icy Veins",
-      "url": "https://www.icy-veins.com/wow/nefarian-dps-strategy",
-      "published_or_updated": "legacy page, approximately 14 years old (page metadata)",
-      "scope": "Historical Cataclysm strategy; target-count and platform reference only"
-    },
-    "warcraft_tavern_cata": {
-      "title": "Nefarian Raid Guide - Cataclysm Classic",
-      "publisher": "Warcraft Tavern",
-      "url": "https://www.warcrafttavern.com/cataclysm/guides/nefarian-raid-guide/",
-      "published_or_updated": "publication metadata not exposed",
-      "scope": "Qualitative Classic heroic Dominion/Cinders reference; exact counts not relied upon"
-    },
-    "repo_nefarians_end": {
-      "title": "Nefarian's End controller, Onyxia, adds and spell scripts",
-      "publisher": "repository",
-      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
-      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp",
-      "lines": "374-910, 912-1073, 1139-1286, 1288-1388, 1390-1622, 1724-2040",
-      "scope": "Current checkout implementation evidence, not retail proof"
-    },
-    "repo_instance_header_loader": {
-      "title": "Blackwing Descent instance mapping, IDs and loader",
-      "publisher": "repository",
-      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
-      "paths": [
-        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h:25-38,76-84,145-154,225-235",
-        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp:31-57,197-200,276-290,350-380,462-464,490-529",
-        "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp:75-83,307-315"
-      ],
-      "scope": "Current checkout lifecycle, availability and loader evidence"
-    },
-    "repo_historical_sql": {
-      "title": "Historical Nefarian creature templates and encounter registration",
-      "publisher": "repository SQL",
-      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
-      "paths": [
-        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql:3930-3932,12924,12933-12945",
-        "sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql:12",
-        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:462"
-      ],
-      "scope": "Historical base/difficulty templates and encounter row; no ScriptName binding found in searched SQL"
-    }
+  "purpose": "Sourced values, timers, lifecycle and completion inventory for Nefarian's End; source truth, repository behavior and bot tactic are separate fields. No live assertion.",
+  "scope": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
+  "repository_revision_audited": "1aedfb4f6cf2b453604d7c0163e8d22c97629aeb",
+  "historical_repository_claim_revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+  "retrieved_utc_date": "2026-09-25",
+  "fidelity_target": {
+    "build": "4.4.2.59185",
+    "locale": "enUS",
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "authority": "experiments/configs/cata_raid_acceptance_policy_v1.json fidelity_target"
   },
   "evidence_policy": {
-    "behavior_change": "Require two independent strategy sources or one credible strategy source plus repository confirmation.",
-    "repository_only": "Implementation evidence is recorded but not treated as external 4.4.2 truth.",
-    "fidelity_blocked": "Conflicting or unverified values must not become fixed bot timers or target counts."
+    "behavior_change": "two independent strategy sources, or one credible source plus repository confirmation; pinned addon releases count as independent timer sources",
+    "repository_only": "confirms implementation only",
+    "fidelity_blocked": "never a fixed bot schedule or a native constant change"
   },
+  "source_catalog": [
+    {
+      "id": "client_434_dbc_15595",
+      "title": "4.3.4 client DBC rows loaded by the worldserver (data/dbc/enUS)",
+      "accessed": "2026-09-25",
+      "authority": "execution client data",
+      "claim": "Spell, SpellEffect, SpellRadius, SpellCooldowns, SpellDifficulty, SpellTargetRestrictions, SpellPower rows for every Nefarian's End spell; hashes in the contract source_catalog."
+    },
+    {
+      "id": "client_442_59185_extract",
+      "title": "4.4.2.59185 client spell rows (wago.tools) and JournalEncounterSection for encounter 174",
+      "accessed": "2026-09-25",
+      "authority": "rank 1 reference client",
+      "claim": "Breath cone 60, Lightning Discharge front cone 60, Tail Lash -82, charge periods 1 s/2 s, damage rows per difficulty; Journal: breath and tail lash 60-degree cones, Lightning Discharge from the orbs along her sides."
+    },
+    {
+      "id": "bigwigs_cataclysm_v11_0_13",
+      "title": "BigWigs_Cataclysm Nefarian.lua at 650bab0",
+      "url": "https://github.com/BigWigsMods/BigWigs_Cataclysm/blob/650bab03981eb06b5fa6ded88e47c523caa3c7c3/BlackwingDescent/Nefarian.lua",
+      "file_sha256": "a903c83d34fe5c3d48dd4522f6b75fcf214dc55129d0ac20c1ce49f02cf2d83f",
+      "accessed": "2026-09-25",
+      "authority": "rank 3 pinned addon"
+    },
+    {
+      "id": "dbm_cataclysm_4b02efe",
+      "title": "DBM-Cataclysm Nefarian.lua at 4b02efe",
+      "url": "https://github.com/DeadlyBossMods/DBM-Cataclysm/tree/4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e",
+      "file_sha256": "5fb1bc95fc0b074f19c4815b40d3f31bfdb22cee7cd47728800076a4ede7a3d2",
+      "accessed": "2026-09-25",
+      "authority": "rank 3 pinned addon"
+    },
+    {
+      "id": "wowhead_cata_classic",
+      "title": "Nefarian Strategy Guide - Blackwing Descent Raid Cataclysm Classic (Beanna, updated 2024-06-10)",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/nefarian-strategy",
+      "accessed": "2026-09-25",
+      "authority": "rank 4 guide"
+    },
+    {
+      "id": "wowhead_cata_npc_pages",
+      "title": "Wowhead NPC pages 41376, 41270, 41948, 41918",
+      "url": "https://www.wowhead.com/cata/npc=41376",
+      "accessed": "2026-09-25",
+      "authority": "rank 4 database"
+    },
+    {
+      "id": "icy_veins_cata_classic",
+      "title": "Nefarian Encounter Guide: Strategy, Abilities, Loot (Abide, updated 2024-07-29)",
+      "url": "https://www.icy-veins.com/cataclysm-classic/nefarian-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-09-25",
+      "authority": "rank 4 guide"
+    },
+    {
+      "id": "repo_nefarians_end",
+      "title": "boss_nefarians_end*.cpp and boss_nefarians_end.h",
+      "revision": "1aedfb4f6cf2b453604d7c0163e8d22c97629aeb plus this round's split",
+      "accessed": "2026-09-25",
+      "authority": "repository implementation"
+    },
+    {
+      "id": "repo_spell_corrections",
+      "title": "SpellMgrCorrectionsPart04.cpp:424-481, SpellMgrCorrections.cpp:89-91",
+      "accessed": "2026-09-25",
+      "authority": "repository implementation"
+    },
+    {
+      "id": "repo_instance_header_loader",
+      "title": "blackwing_descent.h, instance_blackwing_descent.cpp, eastern_kingdoms_script_loader.cpp",
+      "accessed": "2026-09-25",
+      "authority": "repository implementation",
+      "claim": "Spawn group 402 availability, FAIL respawn after 30 s, boss/data identities, loader entry AddSC_boss_nefarians_end."
+    },
+    {
+      "id": "tdb_434_22011",
+      "title": "TDB 434.22011 world dump with sql/updates/world/4.3.4 deltas",
+      "accessed": "2026-09-25",
+      "authority": "repository data"
+    },
+    {
+      "id": "wcl_10n_pending",
+      "title": "Warcraft Logs Cataclysm Classic Nefarian's End 10N kill (not yet read)",
+      "url": "https://classic.warcraftlogs.com/zone/rankings/1023",
+      "accessed": "2026-09-25",
+      "authority": "rank 2 combat log",
+      "claim": "Blocked: human-verification interstitial on 2026-09-25. Plan: nefarian_wcl_dps_reference_v1.json."
+    },
+    {
+      "id": "package_t_platform_probe",
+      "title": "Round 2 package T: transport-surface movement and GO 207834 collision probe (commits a48d16b2c7, b83a36d6ad)",
+      "accessed": "2026-09-25",
+      "authority": "repository implementation",
+      "claim": "No static navmesh on the platform (lava navmesh z 3.0); centre floor -0.5..+0.1, ring +1.44 from r 32 to 60, pillar blocks r 36-44 with near-vertical sides; Walk/StepOff/Fall/Land only, no swim or climb; ledge drop lands on the ring at z 8.51."
+    }
+  ],
   "values": [
     {
-      "key": "reported_health",
+      "key": "health",
       "mode_values": {
-        "10N": {"onyxia": "7.0M", "nefarian": "28.5M", "prototype_each": "6.9M"},
-        "10H": {"onyxia": "9.9M", "nefarian": "54.4M", "prototype_each": "9.8M"},
-        "25N": {"onyxia": "24.7M", "nefarian": "99.6M", "prototype_each": "6.9M"},
-        "25H": {"onyxia": "34.8M", "nefarian": "179.3M", "prototype_each": "9.8M"}
+        "10N": {
+          "onyxia": 5582980,
+          "nefarian": 22761380,
+          "prototype": 1627290,
+          "bone_warrior": 38745000
+        },
+        "10H": {
+          "onyxia": 9877580,
+          "nefarian": 51363416,
+          "prototype": 2789640
+        },
+        "25N": {
+          "onyxia": 19755160,
+          "nefarian": 79707776,
+          "prototype": 5501790
+        },
+        "25H": {
+          "onyxia": 34786260,
+          "nefarian": 179342496,
+          "prototype": 9763740
+        }
       },
-      "sources": ["wowhead_cata_classic"],
-      "evidence": "guide_reported",
-      "status": "not_4_4_2_repository_verified",
-      "notes": "Use only as planning context; no reliable current SQL/DBC health audit was performed."
+      "unit": "hit points",
+      "source_refs": [
+        "wowhead_cata_npc_pages",
+        "tdb_434_22011",
+        "wowhead_cata_classic"
+      ],
+      "repository_observation": "HealthModifier x gt_npc_total_hp_exp3 equals the Wowhead NPC pages exactly (Nefarian 265 x 85892, Onyxia 65 x 85892, Prototype 21 x 77490 at level 85).",
+      "source_truth": "Wowhead guide reports about 1.25x for Onyxia and Nefarian normal and 6.9M prototypes; no WCL-derived max HP yet.",
+      "status": "conflict",
+      "implementation_consequence": "No health change; derive max HP from a matched WCL kill with derive_encounter_health."
     },
     {
-      "key": "three_phase_shape",
-      "mode_values": {"10N": "Onyxia/Nefarian, lava platforms, Nefarian", "10H": "same plus heroic controls", "25N": "same", "25H": "same plus heroic controls"},
-      "value": "phase 1 starts with Onyxia, phase 2 uses three platforms/prototypes, phase 3 returns to Nefarian",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository",
-      "status": "usable_for_event_contract"
+      "key": "melee_swing_at_damage_modifier_1",
+      "mode_values": {
+        "10N": {
+          "nefarian": [
+            4553,
+            6764
+          ],
+          "onyxia": [
+            4553,
+            6764
+          ],
+          "bone_warrior": [
+            5470,
+            8175
+          ]
+        }
+      },
+      "unit": "damage per swing before armor",
+      "source_refs": [
+        "tdb_434_22011"
+      ],
+      "repository_observation": "Every creature has DamageModifier 1 since sql/updates/world/4.3.4/2025_06_18_06_world.sql; Nefarian/Onyxia class 1 level 88 BaseAttackTime 1500, bone warrior class 4 level 85 BaseAttackTime 2000 BaseVariance 0.5. Old TDB DamageModifier was 90 (10N) and 6 (warrior) under the previous formula.",
+      "status": "unresolved",
+      "implementation_consequence": "Calibrate from WCL U samples (after_attacker_bonus_amount) before any staged DamageModifier."
     },
     {
-      "key": "children_of_deathwing",
-      "mode_values": {"10N": "within 50yd; +100% attack speed reported", "10H": "within 50yd; +100%", "25N": "within 50yd; +100%", "25H": "within 50yd; +100%"},
-      "value": "separate dragons beyond the 50yd trigger boundary",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_distance_check",
-      "status": "usable"
+      "key": "melee_reach",
+      "value": {
+        "nefarian": 22.83,
+        "onyxia": 20.83,
+        "prototype": 7.21,
+        "bone_warrior": 6.58
+      },
+      "unit": "yards centre to centre vs a player",
+      "source_refs": [
+        "tdb_434_22011"
+      ],
+      "repository_observation": "creature_model_info CombatReach 20/18/4.375/3.75 plus player reach 1.5 and the 4/3 allowance (Unit::GetMeleeRange).",
+      "status": "repository_observed",
+      "implementation_consequence": "A dragon only turns while its tank stays inside its reach; leading it requires leaving the reach."
     },
     {
-      "key": "onyxia_electrical_energy",
-      "mode_values": {"10N": "+1 every 2s reported; overload at 100", "10H": "+1 every 2s reported; overload at 100", "25N": "+1 every 2s reported; overload at 100", "25H": "+1 every 2s reported; overload at 100"},
-      "value": "Electrical Overload is a raid wipe; Wowhead reports approximately 1M Nature damage, while current ability table gives 855000-1045000",
-      "repository_baseline": {"charge_aura": "periodic aura; tick/max are spell-data dependent", "warnings": [50, 80], "power": "aura stacks minus one"},
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_aura",
-      "status": "wipe_gate_usable; tick/max/damage fidelity_blocked"
+      "key": "shadowflame_breath",
+      "mode_values": {
+        "10N": 35000,
+        "25N": 35000,
+        "10H": 54000,
+        "25H": 54000
+      },
+      "unit": "shadowflame per tick",
+      "source_refs": [
+        "client_442_59185_extract",
+        "client_434_dbc_15595",
+        "repo_spell_corrections",
+        "wowhead_cata_classic"
+      ],
+      "source_truth": "1 s cast, 0.5 s ticks for 1.5 s (3 ticks, 105k in 10N per Wowhead), 60-degree cone, 60 yd; refills bone warriors in the cone.",
+      "repository_observation": "SpellMgr sets the aura period to 1500 (one tick); no DBC cone angle, so the 90-degree default applies.",
+      "status": "conflict",
+      "implementation_consequence": "Bots treat the wider native 90-degree cone as the hazard; the tick count is a WCL question (breath_ticks view)."
+    },
+    {
+      "key": "tail_lash",
+      "mode_values": {
+        "10N": [
+          17499,
+          22500
+        ],
+        "25N": [
+          21874,
+          28125
+        ],
+        "10H": [
+          48999,
+          63000
+        ],
+        "25H": [
+          61249,
+          78750
+        ]
+      },
+      "unit": "physical, plus 2 s stun",
+      "source_refs": [
+        "client_442_59185_extract",
+        "client_434_dbc_15595"
+      ],
+      "source_truth": "instant, ConeDegrees -82 (82-degree rear cone), 60 yd; Journal text says 60 degrees",
+      "repository_observation": "same client row",
+      "status": "resolved",
+      "implementation_consequence": "Raid positions avoid the rear 82 degrees of each dragon."
+    },
+    {
+      "key": "lightning_discharge",
+      "mode_values": {
+        "10N": [
+          23400,
+          24600
+        ],
+        "25N": [
+          23400,
+          24600
+        ],
+        "10H": [
+          31200,
+          32800
+        ],
+        "25H": [
+          31200,
+          32800
+        ]
+      },
+      "unit": "nature per pulse",
+      "source_refs": [
+        "client_442_59185_extract",
+        "tdb_434_22011",
+        "wowhead_cata_classic",
+        "icy_veins_cata_classic"
+      ],
+      "source_truth": "5 s wind-up aura 78090, then 77832 pulses every 1 s for 5 s; Journal: from the orbs along her sides; Wowhead: tank turns her 90 degrees when the wings glow.",
+      "repository_observation": "spell_custom_attr gives 77833 CONE_BACK (90 degrees) and 77836 is a front cone (90 native, 60 in 4.4.2); both grant immunity and 77943 hits everyone else within 60 yd, i.e. the flanks.",
+      "status": "resolved",
+      "implementation_consequence": "Onyxia tank steps outward on the wind-up so her tail faces the raid (TankStep::Discharge)."
     },
     {
       "key": "electrocute",
-      "mode_values": {"10N": "at each 10% Nefarian health threshold", "10H": "at each 10% threshold", "25N": "at each 10% threshold", "25H": "at each 10% threshold"},
-      "value": "current guide summary reports 75000 normal/130000 heroic; ability table reports 128700-131300; local event is delayed 5s",
-      "repository_baseline": {"threshold_start": "90%", "decrement": "10 percentage points", "machine_casts": ["81198", "81272"], "local_onyxia_charge": "+17 stacks"},
-      "external_onyxia_charge": "+25 per Electrocute reported by Wowhead and Icy Veins",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "threshold_cross_source; charge/damage conflict",
-      "status": "threshold_usable; charge_and_damage_fidelity_blocked",
-      "notes": "Nefarian cannot die before phase 3 in the local DamageTaken hook."
-    },
-    {
-      "key": "onyxia_lightning_and_facing",
-      "mode_values": {"10N": "side cone; 31200-32800 table range", "10H": "32k report", "25N": "side cone", "25H": "32k report"},
-      "value": "Wowhead reports wings cue about 25s then discharge 5s later; local first event 22s and repeats 22s; rotate 90 degrees away from raid sides",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_event",
-      "status": "facing_event_usable; timer/damage fidelity_blocked",
-      "notes": "Local discharge script grants a 500ms immunity to avoid duplicate cone hits."
-    },
-    {
-      "key": "dragon_breath_and_tail",
-      "mode_values": {"10N": "breath 35k/0.5s x3 report; tail 25k report", "10H": "breath 54k total report; tail 70k report", "25N": "same reported spell shape", "25H": "same heroic reported spell shape"},
-      "value": "both dragons use frontal Shadowflame Breath and rear Tail Lash; face heads away and keep raid on wings",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_casts",
-      "status": "positioning_usable; numeric values patch-sensitive"
-    },
-    {
-      "key": "hail_of_bones",
-      "mode_values": {"10N": "six random impacts reported; two warriors each", "10H": "same with 50k heroic impact report", "25N": "same guide report", "25H": "same guide report"},
-      "value": "Wowhead reports six locations in first 30s, 10yd impact, 12 total warriors; local Nefarian casts Hail after Onyxia engagement",
-      "damage_report": {"normal": "25k", "heroic": "50k"},
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "strategy_sources_plus_repository_cast",
-      "status": "kiting_contract_usable; exact count/timing mode scaling blocked"
-    },
-    {
-      "key": "animated_bone_warrior",
-      "mode_values": {"10N": "39M HP report; energy -2%/s", "10H": "same", "25N": "same", "25H": "same"},
-      "value": "Empower every 4s, +200% damage and +15% movement per stack report; collapse at 0 energy after about 50s; breath or Shadowblaze restores 100 energy",
-      "repository_baseline": {"aggressive_after_spawn": "800ms", "collapse_threshold": "energy <=1", "collapse_state": "passive, threat cleared, not selectable, feign death", "respawn_on_breath_or_shadowblaze": true},
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_state_machine",
-      "status": "kite/reanimation_contract_usable; energy tick and coefficients blocked"
-    },
-    {
-      "key": "phase_two_platforms",
-      "mode_values": {"10N": "three fixed platforms", "10H": "three fixed platforms plus Cinders", "25N": "three fixed platforms", "25H": "three fixed platforms plus Cinders"},
-      "value": "lava leaves three safe platforms, one prototype per platform; teams need healer and interrupt",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_three_summons",
-      "status": "usable"
-    },
-    {
-      "key": "chromatic_prototype",
-      "mode_values": {"10N": "6.9M report", "10H": "9.8M report", "25N": "6.9M report", "25H": "9.8M report"},
-      "value": "three prototypes jump to fixed platforms; local readiness includes dummy nukes and Blast Nova",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "strategy_sources_plus_repository",
-      "status": "usable; health not verified"
+      "mode_values": {
+        "10N": [
+          72764,
+          74235
+        ],
+        "25N": [
+          72764,
+          74235
+        ],
+        "10H": [
+          128699,
+          131300
+        ],
+        "25H": [
+          128699,
+          131300
+        ]
+      },
+      "unit": "nature, whole raid",
+      "source_refs": [
+        "client_442_59185_extract",
+        "repo_nefarians_end",
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe"
+      ],
+      "source_truth": "every 10% of Nefarian's health, 5 s after the raid emote (both addons)",
+      "repository_observation": "DamageTaken schedules EVENT_ELECTROCUTE 5 s after each threshold",
+      "status": "resolved",
+      "implementation_consequence": "Phase 1 damage budget; healers top off."
     },
     {
       "key": "blast_nova",
-      "mode_values": {"10N": "interrupt; 40k report", "10H": "interrupt; 70k report", "25N": "interrupt; 40k report", "25H": "interrupt; 70k report"},
-      "value": "local first cast 3.5s after readiness and repeat 13s; Wowhead reports roughly 8s and Icy says constantly",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "source_conflict_with_repository_timer",
-      "status": "interrupt_event_usable; timer/damage fidelity_blocked"
+      "mode_values": {
+        "10N": {
+          "cast_ms": 4000,
+          "tick": [
+            34799,
+            45200
+          ]
+        },
+        "25N": {
+          "cast_ms": 4000,
+          "tick": [
+            34799,
+            45200
+          ]
+        },
+        "10H": {
+          "cast_ms": 1500,
+          "tick": [
+            60899,
+            79100
+          ]
+        },
+        "25H": {
+          "cast_ms": 1500,
+          "tick": [
+            60899,
+            79100
+          ]
+        }
+      },
+      "unit": "cast time and fire damage per 2 s tick for 30 s, room-wide",
+      "source_refs": [
+        "client_442_59185_extract",
+        "client_434_dbc_15595"
+      ],
+      "source_truth": "interruptible (silence prevention), 200 yd radius",
+      "repository_observation": "same rows",
+      "status": "resolved",
+      "implementation_consequence": "One 10-second interrupter per pillar suffices at the native 13 s repeat; the backup acts after 1.8 s of the 4 s cast or when the primary is gone."
     },
     {
       "key": "shadowflame_barrage",
-      "mode_values": {"10N": "20k report; 10 random targets report", "10H": "40k report", "25N": "same target description", "25H": "40k report"},
-      "value": "local first cast 2.5s into phase 2 and repeats 2.5s; Wowhead reports every 3s",
-      "table_damage_report": "36000-44000 Shadowflame",
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "source_conflict_with_repository_timer",
-      "status": "raid_damage_event_usable; timer/target/damage scaling blocked"
+      "mode_values": {
+        "10N": [
+          16199,
+          19800
+        ],
+        "25N": [
+          17999,
+          22000
+        ],
+        "10H": [
+          32399,
+          39600
+        ],
+        "25H": [
+          35999,
+          44000
+        ]
+      },
+      "unit": "shadowflame per target",
+      "source_refs": [
+        "client_442_59185_extract",
+        "repo_spell_corrections",
+        "wowhead_cata_classic"
+      ],
+      "source_truth": "2 s cast; Wowhead: 10 players every 3 s",
+      "repository_observation": "SpellMgr caps targets at 4 (10-player) / 8 (25-player); repeat 2.5 s",
+      "status": "conflict",
+      "implementation_consequence": "Healers per pillar; no bot tactic depends on the cap."
     },
     {
-      "key": "explosive_cinders",
-      "mode_values": {"10N": "absent", "10H": "heroic only", "25N": "absent", "25H": "heroic only"},
-      "value": "random debuff, periodic damage every 2s, expires/explodes after 8s and knocks nearby allies; local heroic phase-2 schedule is 2s then 15s",
-      "damage_report": "42750-47250 Fire on explosion",
-      "legacy_target_report": {"10H": "1 random every 20s", "25H": "3 random every 20s"},
-      "sources": ["icy_veins_cata_classic", "icy_veins_legacy_heroic", "warcraft_tavern_cata", "repo_nefarians_end"],
-      "evidence": "multiple_sources_plus_repository_aura",
-      "status": "heroic_response_usable; target count/cadence/radius blocked"
+      "key": "electrical_charge",
+      "value": {
+        "onyxia_period_ms": 3000,
+        "nefarian_period_ms": 2000,
+        "electrocute_increment": 17,
+        "max_stacks": 100
+      },
+      "source_refs": [
+        "client_442_59185_extract",
+        "repo_spell_corrections",
+        "repo_nefarians_end",
+        "wowhead_cata_classic",
+        "icy_veins_cata_classic"
+      ],
+      "source_truth": "client 78949 period 1 s, 95793 period 2 s; guides +25 per Electrocute, Wowhead +1 per 2 s",
+      "repository_observation": "SpellMgr raises Onyxia's period to 3 s; Electrocute adds 17",
+      "status": "conflict",
+      "implementation_consequence": "Bot budget reads the live alternate power, not a timer."
+    },
+    {
+      "key": "hail_of_bones",
+      "mode_values": {
+        "10N": 4,
+        "25N": 10,
+        "10H": 5,
+        "25H": 12
+      },
+      "unit": "bone warriors (24 s aura / tick period)",
+      "source_refs": [
+        "client_442_59185_extract",
+        "tdb_434_22011",
+        "wowhead_cata_classic"
+      ],
+      "source_truth": "one summon per 78684 impact (24-26.5k within 10 yd normal); Wowhead: 12 (6 x 2, no mode)",
+      "repository_observation": "impacts target the seven 42844 stalkers (conditions)",
+      "status": "conflict",
+      "implementation_consequence": "Controller assignment scales with the observed count."
+    },
+    {
+      "key": "bone_warrior_energy",
+      "value": {
+        "energy": 100,
+        "cost_per_1s_tick": 3,
+        "regen": "none"
+      },
+      "source_refs": [
+        "client_434_dbc_15595",
+        "wowhead_cata_classic"
+      ],
+      "source_truth": "Wowhead: 2% per second, collapse after 50 s",
+      "repository_observation": "Animate Bones 78123 SpellPower 3640 costs 3 energy per tick; Full Power No Regen 78120 stops regeneration: about 33 s",
+      "status": "conflict",
+      "implementation_consequence": "Controllers hold a warrior until it collapses; no fixed timer."
+    },
+    {
+      "key": "empower",
+      "mode_values": {
+        "10N": {
+          "damage_pct": 100,
+          "speed_pct": 10
+        },
+        "25N": {
+          "damage_pct": 100,
+          "speed_pct": 10
+        },
+        "10H": {
+          "damage_pct": 200,
+          "speed_pct": 15
+        },
+        "25H": {
+          "damage_pct": 200,
+          "speed_pct": 15
+        }
+      },
+      "unit": "per stack, one stack per 4 s",
+      "source_refs": [
+        "client_442_59185_extract",
+        "wowhead_cata_classic"
+      ],
+      "repository_observation": "Empowering Strikes 79329 trigger does not ignore caster auras, so a stunned warrior gains no stack",
+      "status": "resolved",
+      "implementation_consequence": "Stuns and Shackle Undead are preferred controls."
+    },
+    {
+      "key": "bone_warrior_immunities",
+      "value": "mechanic_immune_mask 8462871: charm, disorient, disarm, fear, sleep, knockout, polymorph, horror; not stun, root, snare, freeze or shackle",
+      "source_refs": [
+        "tdb_434_22011"
+      ],
+      "status": "repository_observed",
+      "implementation_consequence": "Shackle Undead, Hammer of Justice, Frost Nova, Concussive Shot, Frost Shock, Chains of Ice, Curse of Exhaustion."
     },
     {
       "key": "shadowblaze",
-      "mode_values": {"10N": "about 25s initial to 10s minimum report", "10H": "same plus Dominion", "25N": "same", "25H": "same plus Dominion"},
-      "value": "spark targets/location-valid area near Bone Warriors; fire spreads toward nearest player and covers room over time; current guide reports dissipation around 50s",
-      "repository_baseline": {"pre_start_ticks": "first at tick 1, then 6, then decrement toward 2", "placement": "local candidate offsets ±5yd; controller stalker validity", "collapsed_warrior_effect": "restore full power and reanimate"},
-      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"],
-      "evidence": "two_strategy_sources_plus_repository_location/state",
-      "status": "kite/location contract_usable; aura tick/coverage blocked"
+      "mode_values": {
+        "10N": 35000,
+        "25N": 35000,
+        "10H": 50000,
+        "25H": 50000
+      },
+      "unit": "shadowflame per 1 s tick within 4 yd",
+      "source_refs": [
+        "client_442_59185_extract",
+        "tdb_434_22011"
+      ],
+      "source_truth": "burn aura 6 s; reanimates bone warriors within 4 yd",
+      "repository_observation": "Brushfire Start targets one Animated Bone Warrior (conditions); spread direction is computed from the controller stalker",
+      "status": "resolved",
+      "implementation_consequence": "Stay 8 yd from any fire; keep the raid away from warrior piles."
     },
     {
-      "key": "dominion",
-      "mode_values": {"10N": "absent", "10H": "heroic control", "25N": "absent", "25H": "heroic control"},
-      "value": "mind control lasts 20s in current guide; controlled players move toward a portal, Siphon Power grants Stolen Power and Free Your Mind breaks control",
-      "repository_baseline": {"local_first": "13s after phase-1 engagement", "local_repeat": "15s", "local_max_targets": {"10H": 5, "25H": 2}, "portal_selection": "farthest portal per controlled player", "movement_velocity": 3.5},
-      "legacy_target_report": {"10H": 1, "25H": 5},
-      "sources": ["icy_veins_cata_classic", "icy_veins_legacy_heroic", "warcraft_tavern_cata", "repo_nefarians_end"],
-      "evidence": "control_mechanic_cross_source_plus_repository_portal_rule",
-      "status": "response/portal_rule_usable; target count and phase-3 repeat blocked"
+      "key": "platform_geometry",
+      "value": {
+        "origin": [
+          -107.213,
+          -224.62
+        ],
+        "orientation": 3.14159,
+        "raised_origin_z": 7.03378,
+        "lowered_origin_z": -6.86794,
+        "floor_local_z": -0.46235,
+        "pillar_top_local_z": 9.925069,
+        "ring_local_z": 1.44,
+        "ring_radius": [
+          32,
+          60
+        ],
+        "pillar_block_radius": [
+          36,
+          44
+        ]
+      },
+      "source_refs": [
+        "tdb_434_22011",
+        "repo_nefarians_end",
+        "package_t_platform_probe"
+      ],
+      "status": "repository_observed",
+      "implementation_consequence": "All bot destinations are transport-local and converted with the observed origin."
     },
     {
-      "key": "heroic_phase_transition",
-      "mode_values": {"10H": "first prototype death triggers local phase 3", "25H": "first prototype death triggers local phase 3"},
-      "value": "normal local transition waits for all 3 prototype deaths; heroic local transition schedules on first prototype death",
-      "sources": ["repo_nefarians_end", "icy_veins_cata_classic"],
-      "evidence": "repository_confirmed_delta; guide does not state this exact local trigger",
-      "status": "repository_observed_only; verify against 4.4.2 before behavior change"
+      "key": "magma",
+      "mode_values": {
+        "10N": {
+          "fire_per_second": 5000,
+          "stack_damage_taken": 250
+        },
+        "25N": {
+          "fire_per_second": 5000,
+          "stack_damage_taken": 250
+        },
+        "10H": {
+          "fire_per_second": 5000,
+          "stack_damage_taken": 2000
+        },
+        "25H": {
+          "fire_per_second": 5000,
+          "stack_damage_taken": 2000
+        }
+      },
+      "unit": "LiquidType 404 spell 81114 and stacking 81118/94073-94075 (99 stacks, 10 s)",
+      "source_refs": [
+        "client_434_dbc_15595",
+        "wowhead_cata_classic"
+      ],
+      "status": "resolved",
+      "implementation_consequence": "A raid that cannot leave the floor in phase 2 takes escalating magma damage until phase 3 raises the floor."
     }
   ],
   "timers": [
-    {"key": "nefarian_landing", "mode_values": {"10N": "about 30s guide", "10H": "about 30s guide", "25N": "about 30s guide", "25H": "about 30s guide"}, "repository_baseline": {"prepare_landing": "24s after Onyxia engaged; movement-dependent landing", "post_landing_engage": "2s"}, "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"], "evidence": "source_conflict_with_repository_movement", "status": "fidelity_blocked"},
-    {"key": "onyxia_local_events", "mode_values": {"10N": {"tail_first": "20s", "tail_repeat": "17-18s", "breath_first": "11-12s", "breath_repeat": "13-17s", "lightning_first": "22s", "lightning_repeat": "22s"}, "10H": "same local timers", "25N": "same local timers", "25H": "same local timers"}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "implementation_only"},
-    {"key": "nefarian_phase_one_local", "mode_values": {"10N": {"tail_first_after_engage": "18s", "tail_repeat": "5s", "breath_first": "9s", "breath_repeat": "9-10s"}, "10H": "same plus Dominion", "25N": "same", "25H": "same plus Dominion"}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "implementation_only"},
-    {"key": "phase_two_transition_local", "mode_values": {"10N": {"move_center": "2s", "lift_after_center": "1s", "summon_prototypes": "0.4s", "lower_elevator": "0.8s", "elevator_lowered": "9s"}, "10H": "same plus Cinders 2s", "25N": "same", "25H": "same plus Cinders 2s"}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "implementation_only"},
-    {"key": "prototype_local", "mode_values": {"10N": {"jump_after_move": "1.2s", "ready_after_jump": "5s", "dummy_nuke_first": "1s", "dummy_repeat": "1s", "blast_nova_first": "3.5s", "blast_nova_repeat": "13s"}, "10H": "same", "25N": "same", "25H": "same"}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "Blast_Nova_timer_fidelity_blocked"},
-    {"key": "phase_two_external", "mode_values": {"10N": {"blast_nova": "about 8s report", "barrage": "about 3s report"}, "10H": {"blast_nova": "about 8s report", "barrage": "about 3s report", "cinders": "8s expiry"}, "25N": {"blast_nova": "about 8s report", "barrage": "about 3s report"}, "25H": {"blast_nova": "about 8s report", "barrage": "about 3s report", "cinders": "8s expiry"}}, "sources": ["wowhead_cata_classic", "icy_veins_cata_classic"], "evidence": "guide_reported", "status": "fidelity_blocked_for_schedule"},
-    {"key": "phase_three_local", "mode_values": {"10N": {"say_phase_three": "14.7s", "prepare_landing": "15.5s", "post_landing_engage": "2s", "breath_first": "9s", "breath_repeat": "17-22s", "tail_first": "1s", "tail_repeat": "15-22s"}, "10H": "same plus local Dominion event history", "25N": "same", "25H": "same plus local Dominion event history"}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "implementation_only"},
-    {"key": "shadowblaze_external", "mode_values": {"10N": "about 25s initial, accelerates to 10s minimum", "10H": "same", "25N": "same", "25H": "same"}, "repository_baseline": "tick-count algorithm without aura tick duration", "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"], "evidence": "source_conflict_or_missing_tick_period", "status": "fidelity_blocked"},
-    {"key": "heroic_local", "mode_values": {"10H": {"dominion_first": "13s", "dominion_repeat": "15s", "cinders_first_phase_two": "2s", "cinders_repeat": "15s"}, "25H": {"dominion_first": "13s", "dominion_repeat": "15s", "cinders_first_phase_two": "2s", "cinders_repeat": "15s"}}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "phase_and_target_fidelity_blocked"},
-    {"key": "berserk", "mode_values": {"10N": "10m30s local", "10H": "10m30s local", "25N": "10m30s local", "25H": "10m30s local"}, "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "implementation_only; 4.4.2 confirmation unavailable"}
+    {
+      "key": "nefarian_landing",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "BigWigs 30 s, DBM 30 s",
+      "strategy_report": "30 s (Wowhead, Icy Veins)",
+      "repository_baseline": "prepare landing 24 s after Onyxia engages, then flight and MoveLand; engage 2 s after landing",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe",
+        "repo_nefarians_end"
+      ],
+      "status": "consistent_pending_wcl"
+    },
+    {
+      "key": "onyxia_lightning_discharge",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "BigWigs first 24 s, repeat 22 s, 5 s cast bar",
+      "repository_baseline": "22 s, repeat 22 s, 5 s wind-up then 5 pulses",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "repo_nefarians_end"
+      ],
+      "status": "consistent_pending_wcl"
+    },
+    {
+      "key": "tail_lash",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "BigWigs 12.1 s; DBM 10 s (comment 10-20, 18 most consistent)",
+      "strategy_report": "Wowhead about 15 s",
+      "repository_baseline": "Onyxia 20 s then 17-18 s; Nefarian phase 1 18 s then every 5 s; Nefarian phase 3 1 s then 15-22 s",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe",
+        "wowhead_cata_classic",
+        "repo_nefarians_end"
+      ],
+      "status": "conflict"
+    },
+    {
+      "key": "shadowflame_breath",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "BigWigs 12.1 s; DBM 12 s (12-20)",
+      "repository_baseline": "Onyxia 11-12 s then 13-17 s; Nefarian phase 1 9-10 s then 9-14 s; phase 3 9 s then 17-22 s",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe",
+        "repo_nefarians_end"
+      ],
+      "status": "consistent_pending_wcl"
+    },
+    {
+      "key": "blast_nova",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "no timer (interrupt counters only)",
+      "strategy_report": "Wowhead: attempts every 8 s",
+      "repository_baseline": "3.5 s after ready, repeat 13 s",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "wowhead_cata_classic",
+        "repo_nefarians_end"
+      ],
+      "status": "conflict"
+    },
+    {
+      "key": "phase_two_window",
+      "modes": [
+        "10N",
+        "25N"
+      ],
+      "addon_report": "DBM Shadowflame Barrage active timer 150 s",
+      "repository_baseline": "EVENT_ENTER_PHASE_THREE fallback after 150 s",
+      "source_refs": [
+        "dbm_cataclysm_4b02efe",
+        "repo_nefarians_end"
+      ],
+      "status": "resolved"
+    },
+    {
+      "key": "shadowblaze_spark",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "BigWigs first 10 s after the stage 3 yell, then 30/25/20/15, then 15 normal / 10 heroic; DBM first 12 s, -5 s per spark to a 15 s floor on normal and 10 s on heroic",
+      "repository_baseline": "5 s ticks: first at 5 s after the pre-start aura, then 30/25/20/15 s, then 15 s normal / 10 s heroic (floor repaired this round; was 10 s in every mode)",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe",
+        "repo_nefarians_end"
+      ],
+      "status": "resolved_repaired"
+    },
+    {
+      "key": "berserk",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "addon_report": "BigWigs 630 s all modes; DBM 630 s heroic only",
+      "repository_baseline": "10:30 after Onyxia engages, all modes",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe",
+        "repo_nefarians_end"
+      ],
+      "status": "conflict"
+    }
   ],
-  "random_rules": [
-    {"key": "hail_of_bones_locations", "value": "Wowhead reports six random locations; local spell data selects impact targets", "modes": ["10N", "10H", "25N", "25H"], "sources": ["wowhead_cata_classic", "repo_nefarians_end"], "evidence": "guide_plus_repository_cast", "status": "count_fidelity_blocked"},
-    {"key": "electrocute", "value": "health-threshold deterministic; no random raid target", "modes": ["10N", "10H", "25N", "25H"], "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"], "evidence": "cross_source_plus_repository", "status": "usable"},
-    {"key": "dominion_targets", "value": "random nearby humanoids; local max target cap 5 in 10H/2 in 25H; legacy guide reports 1/5", "modes": ["10H", "25H"], "sources": ["icy_veins_cata_classic", "icy_veins_legacy_heroic", "repo_nefarians_end"], "evidence": "source_conflict_with_repository_cap", "status": "fidelity_blocked"},
-    {"key": "dominion_portal", "value": "four stalkers are summoned per player; farthest portal is retained; controlled player is moved to it", "modes": ["10H", "25H"], "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "usable_control_rule"},
-    {"key": "explosive_cinders", "value": "random player(s) according to spell targeting; local C++ does not expose count or radius", "modes": ["10H", "25H"], "sources": ["icy_veins_cata_classic", "icy_veins_legacy_heroic", "warcraft_tavern_cata", "repo_nefarians_end"], "evidence": "multiple_source_target_conflict", "status": "fidelity_blocked"},
-    {"key": "shadowblaze_location", "value": "local spark uses validity/controller positions and nearest-player spread direction; not a fixed random player mark", "modes": ["10N", "10H", "25N", "25H"], "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_nefarians_end"], "evidence": "guides_plus_repository_location_logic", "status": "usable_location_response; exact spell targeting blocked"},
-    {"key": "platform_positions", "value": "three fixed summon/jump positions in repository; each receives one prototype", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "usable"}
+  "lifecycle": [
+    {
+      "key": "prerequisite",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "repository": "Spawn group 402 (Nefarius, orb, two stalkers) spawns only when Magmaw, Omnotron, Chimaeron, Atramedes and Maloriak are done; the shard seeds that lockout as diagnostic assistance.",
+      "status": "repository_observed"
+    },
+    {
+      "key": "engage",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "repository": "Orb gossip -> intro -> Onyxia reanimated at Nefarian's lift-off -> Onyxia Start Fight 2 pulls only players on the elevator transport; Onyxia JustEngagedWith sets IN_PROGRESS.",
+      "status": "repository_observed"
+    },
+    {
+      "key": "wipe_reset",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "repository": "Evade -> FAIL, elevator raised (or raised after the remaining lowering time), summons despawned, spawn group 402 despawned, Nefarian respawns after 30 s without the intro.",
+      "status": "repository_observed"
+    },
+    {
+      "key": "death_credit",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "repository": "Nefarian JustDied -> _JustDied (DONE, instance_encounters 1026 credit 41376).",
+      "status": "repository_observed"
+    },
+    {
+      "key": "save_load",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "repository": "Boss states persist; the intro-done flag is not written by WriteSaveDataMore, so a reload before the kill would need the orb again.",
+      "status": "repository_gap_low_priority"
+    }
   ],
-  "difficulty_scaling": [
-    {"key": "health", "values": {"10N": {"onyxia": "7.0M", "nefarian": "28.5M", "prototype": "6.9M"}, "10H": {"onyxia": "9.9M", "nefarian": "54.4M", "prototype": "9.8M"}, "25N": {"onyxia": "24.7M", "nefarian": "99.6M", "prototype": "6.9M"}, "25H": {"onyxia": "34.8M", "nefarian": "179.3M", "prototype": "9.8M"}}, "sources": ["wowhead_cata_classic"], "evidence": "guide_reported", "status": "not_4_4_2_verified"},
-    {"key": "heroic_mechanics", "values": {"10N": [], "10H": ["Dominion", "Explosive Cinders", "local first-prototype phase transition"], "25N": [], "25H": ["Dominion", "Explosive Cinders", "local first-prototype phase transition"]}, "sources": ["icy_veins_cata_classic", "repo_nefarians_end"], "evidence": "strategy_plus_repository", "status": "mechanic_presence_usable; exact target/timing blocked"},
-    {"key": "reported_damage_deltas", "values": {"tail_lash": "25k normal / 70k heroic summary; 61250-78750 table", "breath": "35k every 0.5s x3 normal / 54k heroic summary", "lightning_discharge": "25k normal / 32k heroic summary; 31200-32800 table", "hail": "25k normal / 50k heroic", "blast_nova": "40k normal / 70k heroic", "barrage": "20k normal / 40k heroic summary; 36000-44000 table", "electrocute": "75k normal / 130k heroic summary; 128700-131300 table", "cinders_explosion": "42750-47250", "shadowblaze": "50000 nearby report"}, "sources": ["wowhead_cata_classic", "icy_veins_cata_classic"], "evidence": "guide_reported", "status": "damage_values_fidelity_blocked"}
+  "native_audit": [
+    {
+      "key": "shadowblaze_spark_floor",
+      "location": "boss_nefarians_end_spells.cpp spell_nefarians_end_brushfire_pre_start_periodic",
+      "finding": "floor of 2 ticks (10 s) in every mode",
+      "evidence": "BigWigs and DBM floor 15 s on normal",
+      "action": "repaired: 3 ticks normal, 2 heroic"
+    },
+    {
+      "key": "orb_gossip_return",
+      "location": "boss_nefarians_end.cpp go_nefarians_end_orb_of_culmination::GossipSelect",
+      "finding": "returns false, so Player::OnGossipSelect runs after the orb despawns",
+      "evidence": "gossip_menu_option 11492/0 is OptionType 1 with no action menu: nothing further is sent",
+      "action": "no change (no observable effect)"
+    },
+    {
+      "key": "nefarian_phase_one_tail_lash",
+      "location": "boss_nefarians_end.cpp EVENT_TAIL_LASH phase 1 Repeat(5s)",
+      "finding": "every 5 s",
+      "evidence": "addons 10-20 s, Wowhead about 15 s; WCL cast timeline pending",
+      "action": "fidelity_blocked; repair after the WCL Nefarian 77827 intervals"
+    },
+    {
+      "key": "breath_tick_period",
+      "location": "SpellMgrCorrectionsPart04.cpp:424-433",
+      "finding": "one tick per breath",
+      "evidence": "4.3.4 and 4.4.2 client 0.5 s period (3 ticks); Wowhead 105k total",
+      "action": "fidelity_blocked; WCL breath_ticks view"
+    },
+    {
+      "key": "onyxia_charge_period",
+      "location": "SpellMgrCorrectionsPart04.cpp:435-439",
+      "finding": "3 s period",
+      "evidence": "client 1 s; Wowhead +1 per 2 s",
+      "action": "fidelity_blocked; WCL resources view"
+    },
+    {
+      "key": "default_cone_angle",
+      "location": "SpellMgrCorrections.cpp:89-91",
+      "finding": "90-degree cones for Breath and 77836",
+      "evidence": "4.4.2 client ConeDegrees 60",
+      "action": "fidelity_blocked; shared core rule, not a Nefarian script change"
+    }
   ],
-  "phase_reset_credit": [
-    {"key": "availability", "value": "instance spawns Nefarian group only after Magmaw, Omnotron, Chimaeron, Atramedes and Maloriak are DONE; DONE prevents respawn", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_instance_header_loader"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
-    {"key": "intro", "value": "Lord Victor Nefarius summons Nefarian, raises elevator and marks intro complete; intro state changes later appearance behavior", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end", "repo_instance_header_loader"], "evidence": "repository_observed", "status": "implementation_only"},
-    {"key": "start", "value": "Onyxia engagement sets IN_PROGRESS, worldstate, encounter frame; removes start aura and begins charge/timer events", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
-    {"key": "phase_one_transition", "value": "Onyxia death informs Nefarian; Nefarian removes phase-one auras, sets phase two and moves to elevator center", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
-    {"key": "phase_two_transition", "value": "normal waits for all three prototypes; heroic local handler transitions on first prototype death; surviving prototypes disengage/despawn during phase three setup", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end", "icy_veins_cata_classic"], "evidence": "repository_observed_delta", "status": "verify_4_4_2_before_scheduling"},
-    {"key": "fail", "value": "Nefarian evade restores/raises elevator, disengages actors, despawns summons, sets FAIL, removes Cinders/Dominion, despawns boss; instance respawns after 30s", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end", "repo_instance_header_loader"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
-    {"key": "done", "value": "Nefarian JustDied calls _JustDied, disengages frame and removes heroic auras; instance encounter row is 1026/41376", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_nefarians_end", "repo_instance_header_loader", "repo_historical_sql"], "evidence": "repository_plus_sql", "status": "usable_implementation_contract"},
-    {"key": "registration", "value": "boss 41376, Onyxia 41270, lightning machine 51089, prototypes 41948, Dominion stalker 43656 and related data map in instance; loader calls AddSC_boss_nefarians_end; no SQL ScriptName binding found", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_instance_header_loader", "repo_historical_sql"], "evidence": "repository_and_sql_audit", "status": "audit_complete"}
+  "research_completion": [
+    {
+      "key": "engage_and_prerequisite",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "complete",
+      "known": "Orb gossip, intro timeline, transport-only start fight, seeded predecessors.",
+      "next": "Live: bots become transport passengers before Onyxia's pulse.",
+      "source_refs": [
+        "repo_nefarians_end",
+        "tdb_434_22011"
+      ]
+    },
+    {
+      "key": "reset_wipe_credit",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "complete",
+      "known": "FAIL path, 30 s respawn, credit 1026.",
+      "next": "Live: native clear sets DONE.",
+      "source_refs": [
+        "repo_nefarians_end",
+        "repo_instance_header_loader"
+      ]
+    },
+    {
+      "key": "phase_transitions",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "complete",
+      "known": "Onyxia death -> phase 2; prototypes (three normal, one heroic) or 150 s -> phase 3.",
+      "next": "Live: observe 81582 and elevator z at each transition.",
+      "source_refs": [
+        "repo_nefarians_end",
+        "dbm_cataclysm_4b02efe"
+      ]
+    },
+    {
+      "key": "dragon_separation_and_facing",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "50 yd Children of Deathwing, reach 20.8/22.8, 60 yd cones.",
+      "next": "Live: measured separation and facing error from the duty/status receipt.",
+      "source_refs": [
+        "client_442_59185_extract",
+        "tdb_434_22011"
+      ]
+    },
+    {
+      "key": "lightning_discharge",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "complete",
+      "known": "Flank damage, front/back immunity, 5 s wind-up.",
+      "next": "Live: 77943 hits only outside the turn window.",
+      "source_refs": [
+        "client_442_59185_extract",
+        "tdb_434_22011",
+        "wowhead_cata_classic"
+      ]
+    },
+    {
+      "key": "electrocute_and_charge",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Thresholds, damage, native +17 and 3 s period.",
+      "next": "WCL: Onyxia resources pane or charge-driven outcome in a matched kill.",
+      "source_refs": [
+        "repo_nefarians_end",
+        "wowhead_cata_classic"
+      ]
+    },
+    {
+      "key": "bone_warriors",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Count by client periods, 38.7M health, immunities, 3 energy/s, Empower.",
+      "next": "WCL: warrior count and active duration in a 10N kill.",
+      "source_refs": [
+        "client_434_dbc_15595",
+        "tdb_434_22011",
+        "wowhead_cata_classic"
+      ]
+    },
+    {
+      "key": "platform_phase",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Pillar tops are transport-local with near-vertical sides; the movement layer walks, steps off and falls but cannot swim or climb; magma is LiquidType 404 (81114).",
+      "next": "Package T: a lawful pillar ascent (swim up through the magma to the pillar lip, as players do) and the magma surface height; live: magma damage on floor-bound bots.",
+      "source_refs": [
+        "repo_nefarians_end",
+        "wowhead_cata_classic",
+        "package_t_platform_probe",
+        "client_434_dbc_15595"
+      ]
+    },
+    {
+      "key": "shadowblaze",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "complete",
+      "known": "Spark on a bone warrior, 4 yd, schedule repaired.",
+      "next": "Live: spark intervals 30/25/20/15/15 on normal.",
+      "source_refs": [
+        "bigwigs_cataclysm_v11_0_13",
+        "dbm_cataclysm_4b02efe"
+      ]
+    },
+    {
+      "key": "damage_fidelity",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "blocked",
+      "known": "Native rolls at DamageModifier 1.",
+      "next": "WCL melee U samples for Nefarian, Onyxia and bone warriors.",
+      "source_refs": [
+        "tdb_434_22011",
+        "wcl_10n_pending"
+      ]
+    },
+    {
+      "key": "heroic_mechanics",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Dominion cap 5/2 targets, Cinders one target every 15 s, local heroic phase 3 after one prototype.",
+      "next": "WCL heroic kill; out of the 10N round.",
+      "source_refs": [
+        "repo_nefarians_end",
+        "bigwigs_cataclysm_v11_0_13"
+      ]
+    }
   ],
-  "conflicts": [
-    "Guide landing is about 30s; local Nefarian schedules prepare landing at 24s and relies on movement completion.",
-    "Guide Blast Nova is about 8s/constant; local prototype timer is 3.5s first and 13s repeat.",
-    "Wowhead/Icy report +25 Onyxia energy per Electrocute; local C++ adds 17 stacks.",
-    "Local Dominion cap is 5 in 10-player and 2 in 25-player; legacy strategy reports 1 and 5.",
-    "Guide Shadowblaze cadence is 25s decreasing to 10s; local code exposes tick counters but not aura tick period.",
-    "Current guide damage prose and ability-table ranges disagree for Tail Lash, Breath, Electrocute and Barrage; no mode coefficients are accepted as exact."
-  ],
+  "research_completion_policy": "Reference readiness requires sourced values or explicit proposal bounds, native comparison and specified acceptance observations. Native execution of those observations is a separate validation milestone.",
   "unresolved": [
-    "exact_4_4_2_client_build_and_hotfix_cutoff",
-    "onyxia_energy_tick_period_max_stack_and_overload_coefficients",
-    "electrocute_local_17_vs_external_25_charge_and_damage_scaling",
-    "landing_phase_and_platform_wall_clock_timers",
-    "blast_nova_barrage_cinders_target_counts_and_cadence",
-    "dominion_target_count_and_phase_three_repeat_behavior",
-    "shadowblaze_aura_tick_period_target_selection_and_room_coverage",
-    "all_mode_specific_health_damage_and_spell_coefficients",
-    "reliable_sql_scriptname_binding_for_boss_nefarians_end",
-    "berserk_4_4_2_confirmation"
+    {
+      "key": "wcl_10n_kill_references_and_timelines_pending",
+      "status": "fidelity_blocked",
+      "evidence_gap": "classic.warcraftlogs.com human-verification interstitial (2026-09-25); DPS references, cast timelines, breath ticks and melee samples not read."
+    },
+    {
+      "key": "creature_melee_damage_modifier_uncalibrated",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Nefarian 41376/51104-51106, Onyxia 41270/51116-51118 and Animated Bone Warrior 41918 run at DamageModifier 1; no matched U samples."
+    },
+    {
+      "key": "health_guide_vs_native_conflict",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Native equals Wowhead NPC pages; Wowhead guide is about 1.25x for Onyxia/Nefarian normal and 6.9M prototypes."
+    },
+    {
+      "key": "dragon_tail_lash_breath_cadence_and_cone_geometry",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Nefarian phase 1 Tail Lash every 5 s natively vs 10-20 s sources; breath one tick natively vs three; cones 90 natively vs 60 in 4.4.2."
+    },
+    {
+      "key": "onyxia_charge_rate_and_electrocute_increment",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Native 3 s period and +17; client 1 s period; guides +25 and +1 per 2 s."
+    },
+    {
+      "key": "blast_nova_and_barrage_cadence",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Native Blast Nova 3.5 s then 13 s vs Wowhead 8 s; Barrage 4 targets every 2.5 s vs Wowhead 10 every 3 s."
+    },
+    {
+      "key": "shadowblaze_spark_schedule_and_spread",
+      "status": "partial_repaired",
+      "evidence_gap": "Floor repaired from addons; first spark offset and spread direction (controller-stalker based) unverified against a combat log."
+    },
+    {
+      "key": "hail_of_bones_warrior_count_and_lifetime",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Client periods give 4 warriors in 10N vs Wowhead 12; native 33 s energy vs Wowhead 50 s."
+    },
+    {
+      "key": "pillar_access_and_magma_geometry",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Players swim up through the magma (Wowhead; the lip can block jumping); package T cannot swim or climb, so no lawful pillar ascent exists yet. Lava navmesh at z 3.0 and pillar tops at 3.06 lowered suggest the tops sit just above the magma; the exact surface height is unobserved."
+    },
+    {
+      "key": "heroic_dominion_cinders_and_phase_two_end",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Dominion cap 5/2 vs legacy 1/5; Cinders cadence 15 s native vs 22-25 s DBM; heroic phase 3 after one prototype (BigWigs) vs all three (Journal)."
+    }
   ]
 }

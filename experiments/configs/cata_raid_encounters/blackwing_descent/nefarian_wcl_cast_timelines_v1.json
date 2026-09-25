@@ -1,0 +1,24 @@
+{
+  "schema": "nefarian_wcl_cast_timelines_v1",
+  "encounter": "nefarian",
+  "mode": "10N",
+  "status": "pending_extraction",
+  "status_reason": "Blocked with the DPS reference by the classic.warcraftlogs.com human-verification interstitial (2026-09-25). No report was read.",
+  "reference_id": null,
+  "url": null,
+  "duration_sec": null,
+  "target_scope": "Onyxia, Nefarian and Chromatic Prototypes",
+  "source_note": "When extracted: completed Cast rows from the matched fight's Casts > Events view per DPS actor (Begin Cast rows excluded), same shape as magmaw_wcl_cast_timelines_v1.json (actor_id, class_spec, observed_dps, source_id, source_name, casts[{ability, t, target}]). Keep phase boundaries (Onyxia death, first prototype engage, Nefarian's phase 3 landing) as separate markers.",
+  "boss_timeline_wanted": [
+    "Nefarian Tail Lash 77827 intervals in phase 1 (native 5 s repeat) and phase 3 (native 15-22 s)",
+    "Onyxia Tail Lash 77827 (native 20 s then 17-18 s) and Shadowflame Breath 77826 (native 11-12 s then 13-17 s)",
+    "Lightning Discharge 78090 casts (native 22 s then 22 s) and the pulses that follow",
+    "Nefarian landing time after Onyxia engages (native 24 s prepare + flight; guides 30 s)",
+    "Electrocute 81272 hits vs Nefarian health thresholds (native 5 s after each 10%)",
+    "Blast Nova 80734 starts, interrupts and successful casts per prototype (native first 3.5 s after ready, repeat 13 s; Wowhead about 8 s)",
+    "Shadowflame Barrage 78621 cadence and targets per cast (native 2.5 s, 4 targets in 10N)",
+    "Shadowblaze Spark 81031 casts in phase 3 (native after this round: 5, 30, 25, 20, 15, then 15 s on normal)",
+    "Hail of Bones 78684 summons in phase 1 (client periods imply 4 warriors in 10N)"
+  ],
+  "actors": []
+}

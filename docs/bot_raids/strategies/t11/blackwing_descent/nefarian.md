@@ -1,218 +1,312 @@
-# Nefarian's End — research contract v2
+# Nefarian's End: research contract v3
 
-Scope: Cataclysm Classic 4.4.2, 10-player normal/heroic and 25-player
-normal/heroic. Planning only; this is not a live-fidelity claim. Every value
-below is either guide-reported, repository-observed, or explicitly
-`fidelity_blocked`. A blocked value must not become a fixed bot schedule.
+Scope: Blackwing Descent, Nefarian's End, Cataclysm Classic 4.4.2 (build 59185,
+hotfix cutoff 2025-02-20) as the fidelity target, run on the repository's 4.3.4
+(15595) server. Round 2 of the full-raid program focuses on 10N; all four modes
+stay in the packet. State: `fidelity_blocked`. The native script, client rows,
+pinned addons and guides are audited. Warcraft Logs (WCL) was not readable on
+2026-09-25: a human-verification page blocked every request, and an agent must not
+pass it. Every value that needs a combat log is listed as unresolved.
 
-## Bot contract
+Machine-readable packet:
+- contract: `experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json`
+- ledger: `experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json`
+- WCL extraction plans: `nefarian_wcl_dps_reference_v1.json` and `nefarian_wcl_cast_timelines_v1.json` in the same directory
+- raid target: `experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json`
 
-- Phase 1 starts on revived Onyxia. Keep Onyxia and Nefarian more than 50 yd
-  apart, face both breaths away from the raid, and keep the Animated Bone
-  Warriors away from breath cones. A third tank/kiter is needed when raid
-  size permits; do not kill the warriors as a default plan.
-- Track Onyxia's Electrical Energy and her lightning-facing cue. Stop or
-  redirect Nefarian damage before an Electrocute would overcharge Onyxia, and
-  rotate Onyxia so the Lightning Discharge side cones do not hit the raid.
-  Trigger raid defensives on the observed Electrocute event, not a guessed
-  damage value.
-- Phase 2 has three platforms. Assign each a healer, an interrupt-capable
-  player and damage; interrupt every Blast Nova. During heroic Explosive
-  Cinders, the marked player leaves the platform and returns only after the
-  aura expires. Nefarian's air damage continues during this phase.
-- Phase 3 is a Nefarian burn with an Animated Bone Warrior kite. Keep breath
-  and Shadowblaze Spark away from collapsed warriors; use slows/CC to buy kite
-  time and never treat an add reanimation as a harmless reset. Continue the
-  Electrocute defensive queue.
-- Heroic Dominion is an observed control state: use Siphon Power to gain
-  Stolen Power when safe, then Free Your Mind before reaching the portal. The
-  local target cap conflicts with legacy guide counts, so target count is not a
-  fixed contract.
+## 1. Lifecycle (native)
 
-## Common encounter shape
+- **Prerequisite.** Spawn group 402 holds Lord Victor Nefarius, the Orb of
+  Culmination and two stalkers. It spawns once Magmaw, Omnotron, Chimaeron, Atramedes
+  and Maloriak are done. The shard seeds that lockout; the seeding is diagnostic
+  assistance and never certifies those kills.
+- **Intro.** Gossip option 0 of menu 11492 on the orb (GO 203254, spawn 239510) runs
+  the intro:
+  - Nefarius summons Nefarian.
+  - 20.5 s: the elevator starts rising. GO 207834 takes 13.333 s to travel.
+  - 33 s: the intro is done.
+  - About 37 s: Nefarian lifts off and reanimates Onyxia.
+- **Engage.** Onyxia's Start Fight periodic (81516 → 81517, every 1 s) pulls into
+  combat only players who stand on the elevator transport (the script filters on
+  `GetTransGUID`). A bot that is not a passenger never starts the fight.
+- **Wipe.** Evade sets FAIL and raises the elevator, despawns the summons and spawn
+  group 402, and resummons Nefarian 30 s later without the intro. The intro flag is
+  not written to the instance save (low-priority gap).
+- **Kill.** Nefarian's death gives DONE and credit for encounter 1026 (41376).
 
-Wowhead and Icy Veins independently describe three phases: Onyxia first,
-Nefarian lands about 30 seconds later, then Onyxia's death raises the lava and
-leaves three platforms, followed by a Nefarian-only phase. The repository
-confirms the same phases, three Chromatic Prototypes, transport/elevator
-handling and the phase transition triggers.
+## 2. Phase graph
 
-The current guide reports these health values; they are not verified against a
-4.4.2 DBC or combat log in this checkout:
+Phase timers below are native (repository). Where the sources differ, the ledger has the
+conflict.
 
-| Mode | Onyxia | Nefarian | Each Chromatic Prototype |
-|---|---:|---:|---:|
-| 10N | 7.0M | 28.5M | 6.9M |
-| 10H | 9.9M | 54.4M | 9.8M |
-| 25N | 24.7M | 99.6M | 6.9M |
-| 25H | 34.8M | 179.3M | 9.8M |
+| Phase | Trigger | Native behaviour | What bots observe |
+|---|---|---|---|
+| Pre-engage | orb, intro | Onyxia feign-dead at the centre (29266) | Onyxia not in combat |
+| 1a Onyxia | start-fight pulse | Hail of Bones: 4 warriors in 10N (one per 6 s tick over 24 s, on the 42844 stalkers). Onyxia's Breath 11–12 s then 13–17 s, Tail Lash 20 s then 17–18 s, Lightning Discharge 22 s then 22 s. | Onyxia in combat, Nefarian flying |
+| 1b both dragons | landing 24 s after engage | Children of Deathwing: +100% attack speed while the dragons are within 50 yd. Nefarian's Breath 9–10 s then 9–14 s, Tail Lash 18 s then **every 5 s**. Electrocute 5 s after each 10% of Nefarian's health, +17 Onyxia charge. | Nefarian landed and attackable |
+| 2 platforms | Onyxia dies | Nefarian lifts off with 81582. Three Chromatic Prototypes jump onto the pillar tops. The elevator sinks for 13.333 s. Shadowflame Barrage every 2.5 s (4 targets in 10N). Blast Nova 3.5 s after the prototypes ready, then every 13 s (4 s cast, then a 30 s room-wide 2 s tick). Fallback to phase 3 after 150 s. | Onyxia's corpse, 81582, prototypes, elevator Z |
+| 3 Nefarian | third prototype dies (normal) | The elevator rises; Nefarian lands after about 15.5 s. Shadow of Cowardice punishes transport offset Z > 9.5 (pillar tops). Shadowblaze Spark on a bone warrior 5 s after engage, then 30/25/20/15 s, then 15 s (normal) or 10 s (heroic). Breath 9 s then 17–22 s, Tail Lash 1 s then 15–22 s. | 81582 gone, fires 42595/42596 |
 
-## Observable behavior and difficulty matrix
+## 3. Native geometry the bots rely on
 
-| Mode | Normal contract | Material delta / blocker |
-|---|---|---|
-| 10N | Onyxia → Nefarian landing; three platforms; three prototypes; bone kite; Electrocute every 10% | Guide-reported health above; exact 4.4.2 damage and local spell coefficients unresolved. |
-| 10H | Normal contract plus Dominion in phases 1/3 and Explosive Cinders in phase 2 | Local Dominion cap is 5 targets in 10-player; legacy strategy reports 1. Treat target count as `fidelity_blocked`. |
-| 25N | Same three phases and platform interrupt loop; allocate larger platform teams | Guide-reported health above; exact 25-player Hail, Barrage and Blast Nova target/damage scaling not fully exposed by the repository. |
-| 25H | Normal contract plus Dominion and Explosive Cinders | Local Dominion cap is 2 targets in 25-player; legacy strategy reports 5. Cinders count/range and heroic coefficients remain blocked. |
+- **Platform.** GO 207834 spawn 235179 is at (-107.213, -224.62), rotated by π. A
+  local offset (x, y) maps to world (-107.213 − x, -224.62 − y).
+  - Raised origin Z 7.03378, floor 6.57143.
+  - Lowered origin Z −6.86794, floor −7.33029.
+  - Package T probed the collision model:
+    - the centre floor is at local −0.5 to +0.1;
+    - the outer ring is at +1.44 from r 32 to r 60 (world 8.47 raised);
+    - pillar blocks sit at headings 0/120/240°, r 36–44, with near-vertical sides.
+  - No static navmesh covers the platform (the lava navmesh is at z 3.0), so every
+    move on it is a transport-surface walk.
+  - The ledge lip is at x −157.65. The lawful ledge drop lands on the ring at z 8.51,
+    for 34.9% of maximum health in fall damage.
+- **Magma.** LiquidType 404 "Blackwing Descent - Magma" casts 81114 on anything in it:
+  5000 fire per second, plus Magma 81118, which stacks +250 fire damage taken per
+  stack (99 stacks, 10 s) in normal.
+- **Pillar tops.** They are part of the transport. The native prototype jump
+  destinations are local (40.51, −0.06), (−20.47, −34.22) and (−20.44, 34.40), all at
+  local Z 9.925. The prototypes become passengers.
+- **Melee reach** (creature_model_info plus the player's reach): Nefarian 22.8 yd,
+  Onyxia 20.8, Chromatic Prototype 7.2, Animated Bone Warrior 6.6.
+  - A dragon only turns while its tank stays inside that reach.
+  - To move a dragon, its tank must leave the reach.
+  - A straight radial drag therefore cannot put the dragons 50 yd apart on this
+    platform. The tank has to lead its dragon around a run circle.
+- **Cones, all 60 yd.**
+  - Breath: native 90° front. The DBC has no cone angle, so the SpellMgr default
+    applies; the 4.4.2 client has 60°.
+  - Tail Lash: 82° rear. The Journal says 60°.
+  - Lightning Discharge: 77833 (CONE_BACK in spell_custom_attr) and 77836 (front) make
+    targets immune. Damage 77943 hits everyone else within 60 yd, so it lands on
+    Onyxia's flanks. This matches the Journal: "from the orbs along her sides".
+- **Bone warriors.**
+  - 38.7M health; not immune to stun, root, snare or Shackle Undead.
+  - Each Animate Bones tick costs 3 energy, with no regeneration: about 33 s of
+    activity.
+  - Empower: +100% damage and +10% speed per 4 s stack in normal. A stunned warrior
+    gains no stack.
+- **Shadowblaze.** Brushfire Start targets an Animated Bone Warrior (conditions).
+  Shadowblaze hits and reanimates within 4 yd.
 
-### Phase 1: Onyxia, Nefarian and warriors
+## 4. Sources compared
 
-Onyxia gains Electrical Energy over time. Wowhead reports +1 energy every 2
-seconds, a lethal Electrical Overload at 100 and approximately 1M Nature
-damage; Icy Veins confirms the 100-energy wipe but does not expose the tick
-rate. The local aura increments Onyxia's charge and warns at 50 and 80; its
-maximum stack comes from spell data, which was not audited here. Nefarian's
-health thresholds schedule Electrocute at 90, 80, … 10 percent. The local
-machine event is delayed 5 seconds and adds 17 Onyxia-charge stacks; both
-current guides report +25. Charge amount and exact spell coefficients are
-therefore blocked.
+| Claim | Native | 4.4.2 client / Journal | Pinned addons | Guides | Status |
+|---|---|---|---|---|---|
+| Health 10N (Ony/Nef/Proto) | 5.58M / 22.76M / 1.63M | — | — | Wowhead NPC pages: same values; Wowhead guide: 7.0M / 28.5M / 6.9M | conflict |
+| Breath | 1 tick (SpellMgr 1500 ms), 90° | 3 ticks at 0.5 s, 60° | 12 s CD | Wowhead: 35k ×3 | conflict |
+| Nefarian Tail Lash, phase 1 | every 5 s | −82° rear | BigWigs 12.1 s, DBM 10 s (10–20) | Wowhead ~15 s | conflict |
+| Onyxia charge | 1 per 3 s (SpellMgr) + 1 per 2 s from Nefarian, +17 per Electrocute | 78949 period 1 s | charge shown in the BigWigs infobox | +25 per Electrocute (both guides) | conflict |
+| Lightning Discharge | 22 s, 5 s wind-up, 5 pulses, flanks | flanks (Journal) | BigWigs 24/22 s, 5 s cast | turn her 90° at the wing glow | resolved |
+| Blast Nova | 3.5 s then 13 s, 4 s cast | 4 s cast, interruptible | counters only | Wowhead ~8 s | conflict |
+| Phase 2 window | 150 s fallback | — | DBM Barrage window 150 s | — | resolved |
+| Shadowblaze floor | was 10 s in every mode, now 15 s normal / 10 s heroic | — | BigWigs and DBM: 15 s normal, 10 s heroic | Wowhead 10 s (no mode) | resolved and repaired |
+| Hail of Bones 10N | 4 warriors | 6 s tick over 24 s | BigWigs counts summons | Wowhead 12 | conflict |
+| Berserk | 10:30, all modes | — | BigWigs all modes, DBM heroic only | — | conflict |
 
-The local Onyxia AI starts Tail Lash at 20s and Lightning Discharge at 22s,
-then repeats them in 17–18s and 22s ranges; Shadowflame Breath starts in
-11–12s and repeats in 13–17s. Wowhead instead describes roughly 15s Tail Lash
-and roughly 25s wings cue followed five seconds later by Lightning Discharge.
-Use cast/aura cues and not a timer-only facing policy. Children of Deathwing is
-applied when the two dragons are within 50 yd in the local spell script and
-raises attack speed by 100% in both strategy sources.
+## 5. Native audit
 
-Hail of Bones is cast while Nefarian is airborne. Wowhead reports six random
-impact locations in the first 30 seconds, two warriors per impact (12 total),
-10 yd impact damage, and warriors whose energy drains by 2% per second and
-collapses after about 50 seconds. The local AI confirms the warrior state
-machine: full-power/animate a warrior, make it aggressive after 800ms, and at
-energy ≤1 clear threat, become passive/not-selectable and feign death. Breath
-or Shadowblaze reanimates a collapsed warrior and restores full energy. Exact
-spawn count and tick period are not in the C++ and are guide-reported only.
+- **Repaired:** `spell_nefarians_end_brushfire_pre_start_periodic`. The Shadowblaze
+  Spark floor is now 3 ticks (15 s) on normal and 2 (10 s) on heroic, backed by both
+  pinned addons.
+- **Split:** the 2100-line `boss_nefarians_end.cpp` is now four files, split by
+  concern:
+  - `boss_nefarians_end.h`: the shared enums;
+  - `boss_nefarians_end.cpp`: Nefarian and Onyxia;
+  - `boss_nefarians_end_adds.cpp`: Nefarius, the orb, the bone warriors, the
+    prototypes and Shadowblaze;
+  - `boss_nefarians_end_spells.cpp`: the spell scripts.
 
-### Phase 2: lava, platforms and interrupts
+  Statements are unchanged except for the repair. `AddSC_boss_nefarians_end` calls the
+  two new registration functions, so the loader is unchanged. The two new `.cpp` files
+  need a CMake configure.
+- **Unchanged, no effect:** the orb's `GossipSelect` returns false. The option (menu
+  11492, option 0) is type 1 with no action menu, so the core sends nothing afterward.
+- **Fidelity-blocked, waiting on WCL** (see the ledger's `native_audit`):
+  - Nefarian's 5-second phase 1 Tail Lash;
+  - the breath tick period (SpellMgr);
+  - Onyxia's charge period (SpellMgr) and the +17 Electrocute increment;
+  - the 90° default cones.
+- **Instance, low priority:** the intro flag is not written to the save.
 
-Onyxia's death moves Nefarian to the elevator center, raises him and lowers
-the elevator; three prototypes jump to three fixed platforms. The local
-prototype casts a readiness sequence, then Blast Nova initially at 3.5s and
-every 13s. Wowhead reports approximately 8s; Icy Veins only says “constantly”.
-The local timing and the guide timing conflict, so the bot must interrupt cast
-events rather than predict them. Shadowflame Barrage is local-first at 2.5s
-and repeats 2.5s; Wowhead reports random targets every 3s. Phase 2 ends after
-all three prototypes die in normal; on heroic, the repository enters phase 3
-when the first prototype dies. This is an implementation-level heroic delta
-and should not be generalized beyond this checkout without a verified source.
+## 6. Bot strategy (canonical 10N composition)
 
-Heroic Explosive Cinders is local-first at 2s and repeats 15s during phase 2.
-Icy Veins reports a random player, periodic damage every 2s and an 8s
-explosion/knockback; an older Icy guide reports one 10-player or three
-25-player targets every 20s. Count and cadence are `fidelity_blocked`.
+The code is in
+`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/`, all header-only:
 
-### Phase 3: Shadowblaze and add control
+| File | Contents |
+|---|---|
+| `BotNefarianFacts.h` | observation and phase detection |
+| `BotNefarianGeometry.h` | platform frame and cones |
+| `BotNefarianCapabilities.h` | per-spec interrupt, taunt and control capabilities |
+| `BotNefarianDutyPlan.h` | duties by capability |
+| `BotNefarianLayout.h` | dragon ends and tank leading |
+| `BotNefarianTactics.h` | targets, interrupts, bone warrior control |
+| `BotNefarianMovement.h`, `BotNefarianPhaseMovement.h` | movement goals |
+| `BotNefarianNativeFacts.h`, `BotNefarianNativeObserver.h` | optional native cast-progress and transport observations |
+| `BotAdaptiveNefarianStrategy.h` | composition |
 
-After the prototype condition is met, the local controller raises the
-elevator, disengages surviving prototypes and lands Nefarian. Nefarian starts
-the Shadowblaze pre-start aura, then breath at 9s and Tail Lash at 1s. Local
-breath repeats in 17–22s and Tail Lash in 15–22s ranges. The current Wowhead
-guide reports Shadowblaze Spark at about 25s initially, accelerating to a
-10s minimum; fire spreads toward the nearest player and dissipates after about
-50s. The local pre-start aura uses tick counters (first trigger after one
-tick, then six, then decreasing to two) without exposing the aura tick period.
-Use observed sparks/patches; do not schedule the local counter as seconds.
+Spec selection: druid Feral tank and shaman Restoration. Two tanks, three healers, five
+DPS. Roster GUIDs 11005001-11005010.
 
-## Repository lifecycle and audit
+- **Duties.** They are chosen by capability each snapshot, never by roster slot.
+  - The Nefarian tank is the best living tank by capability: Blood DK, then Protection
+    Paladin, Protection Warrior, Feral. The Onyxia tank is the next tank.
+  - Each pillar gets one healer, then a ≤13 s interrupter wherever its healer has none.
+    The rest are balanced by head count and damage dealers.
+  - Canonical result:
+    - pillar 0: Holy Paladin, Rogue (Kick), Feral, Warlock;
+    - pillar 1: Disc Priest, Blood DK (Mind Freeze), Mage (backup Counterspell);
+    - pillar 2: Resto Shaman (backup Wind Shear), Ret (Rebuke), Hunter.
+  - The shackler is the first living priest. The controllers are the other living
+    non-tanks with a stun, snare or root, stuns first.
+- **Phase 1.**
+  - The Onyxia tank leads her out from the centre and around a 32-yard run circle to
+    her end, beside the Onyxia tank's pillar. It then holds tangentially ahead of her,
+    inside her reach, so she faces along the wall.
+  - The Nefarian tank does the same at the opposite end once Nefarian lands. The ends
+    are more than 50 yd apart.
+  - On Lightning Discharge's wind-up (78090) the Onyxia tank steps 5 yd outward. Onyxia
+    turns and her tail points at the raid, which is then in her back immunity cone.
+  - The raid holds a band between the dragons, on both dragons' inner wings. Any spot
+    in a front or rear cone is rotated to a safe one; Onyxia's rear is allowed during
+    her discharge.
+  - Damage (Electrocute budget):
+    1. Onyxia until 12%.
+    2. Then Nefarian down to 73%, while Onyxia's charge is below 60. That gives two
+       Electrocutes (+34 natively).
+    3. Then finish Onyxia.
+- **Bone warriors.**
+  - The shackler holds the most empowered free warrior with Shackle Undead, one at a
+    time.
+  - Controllers own warriors round-robin and reapply only when nothing holds the
+    warrior:
+    - Hammer of Justice: Holy and Ret;
+    - Concussive Shot: Hunter;
+    - Frost Shock: Shaman;
+    - Curse of Exhaustion: Warlock;
+    - Frost Nova: Mage.
+  - A non-tank chased by an unheld warrior kites around a ring.
+  - In phase 3 the free Feral tank taunts loose warriors and keeps them in a pen on the
+    wing away from the raid.
+- **Phase 2.**
+  - At Onyxia's death each bot heads to its pillar's foot. With a pillar ascent it
+    then goes to its slot on the pillar top once the floor moves; today (no ascent) it
+    holds the foot.
+  - Team DPS stays on the pillar's prototype. With no prototype left, offense is
+    suppressed, because any Nefarian damage triggers Electrocute.
+  - Each casting prototype has an ordered list of interrupters who can reach it now:
+    its pillar's primary, then its backup, then team members, then anyone else, by
+    cooldown. The first acts on the cast. The second acts after 1.8 s of the 4-second
+    cast when native cast progress is published.
+- **Phase 3.**
+  - Everyone stays on the pillars while the floor rises, then drops to the floor before
+    Nefarian lands (Shadow of Cowardice).
+  - The Nefarian tank holds him near the centre, facing the tank's pillar. The raid
+    takes the wing farther from fires and warrior piles.
+  - Everyone leaves any Shadowblaze fire by 12 yd and the front cone of a casting
+    breath.
 
-- `npc_nefarians_end_onyxia::JustEngagedWith` sets the instance
-  `IN_PROGRESS`, removes the pre-fight aura, adds the charge aura and starts
-  Onyxia events (`boss_nefarians_end.cpp:925-951`). Onyxia cannot die until
-  Nefarian has landed (`:1015-1020`).
-- Nefarian's `DamageTaken` prevents death outside phase 3, detects each 10%
-  threshold, and schedules the machine event after 5 seconds
-  (`boss_nefarians_end.cpp:534-549`).
-- Nefarian `JustDied` calls `_JustDied`, disengages its encounter frame and
-  removes Dominion/Cinders (`:453-460`). Onyxia death informs Nefarian and
-  despawns after 19s (`:960-967`).
-- Nefarian evade restores/raises the elevator as needed, disengages live
-  Onyxia/prototypes, despawns summons, sets `FAIL`, removes heroic auras and
-  despawns the boss (`:419-445`). Onyxia evade delegates to Nefarian
-  (`:953-958`).
-- The instance maps boss 41376 and related actors, forwards Dominion stalkers,
-  respawns Nefarian 30s after `FAIL`, and only spawns the Nefarian group after
-  the other five Blackwing Descent bosses are done
-  (`instance_blackwing_descent.cpp:31-57,197-200,276-290,462-464,520-529`).
-- The loader declares and calls `AddSC_boss_nefarians_end`
-  (`eastern_kingdoms_script_loader.cpp:75-83,307-315`). Historical SQL has
-  creature templates/difficulty entries and encounter row 1026/41376, but no
-  searched current or historical `ScriptName='boss_nefarians_end'` binding.
-  The AI is registered through the C++ loader/factory; do not infer a SQL
-  binding that is not present.
+## 7. Movement interface for package T
 
-## Target and control rules
+Every movement is a `SurfaceGoal`:
+- purpose;
+- `Floor` or `PillarTop`;
+- transport-local point and floor-aware Z (centre floor, then the ring at +1.44);
+- world point at the observed origin;
+- transport GUID and entry 207834;
+- arrival tolerance;
+- pillar index;
+- urgency.
 
-- `Children of Deathwing` checks sibling distance ≤50 yd; separate the dragons
-  beyond that boundary (`boss_nefarians_end.cpp:1515-1535`).
-- Nefarian's Electrocute trigger is deterministic by his health threshold, not
-  a random target. The lightning machine casts the visual and damage spell,
-  then modifies Onyxia's charge (`:791-801`).
-- Dominion summons four portal stalkers for each controlled player; the local
-  script keeps only the farthest portal for that player, moves the player at
-  3.5 velocity and instakills if the Dominion aura remains on arrival
-  (`:1845-1987`).
-- Shadowblaze chooses a nearby/location-valid spark through controller stalker
-  position and local ±5-yard candidate offsets; the spread direction is toward
-  the nearest player in the local implementation (`:1292-1387`). Do not treat
-  it as a raid-player random-target spell.
-- `Free Your Mind` removes the control aura and stops movement; Cinders
-  detonates only when its periodic aura expires (`:1990-2003,2023-2040`).
+The strategy submits the goal as `BotNativeAction::TransportSurfaceMove` (Walk,
+`EndOnTransport`) through the existing native-action candidate path
+(`BotNefarianSurfaceIntent.h`). An ordinary `Move` is used only while the elevator is
+unobserved.
 
-## Source metadata
+What package T provides and what is still needed:
+1. **Descent and boarding** (T, route rows through M). All ten bots must be passengers
+   before Onyxia's start-fight pulse. The first bot to board pulls her. The strategy only
+   runs on the encounter node, so the descent node should hand over as soon as Onyxia is
+   in combat.
+2. **Platform walk** (T, available). Straight walks on the stationary platform.
+   Destinations stay on the centre floor (r ≤ 28) or on the ring (r ≥ 32) and 9 yd clear
+   of the pillars. Walks are refused while the elevator moves.
+3. **Pillar ascent** (not supported: T can neither swim nor climb). Without it phase 2
+   holds each team at its pillar's foot (local r 26, about 18 yd from the prototype):
+   - Ranged members damage and interrupt from there. Only Counterspell and Wind Shear
+     reach, and melee interrupts cannot.
+   - The raid sinks into the magma.
 
-1. **Wowhead — “Nefarian Strategy Guide - Blackwing Descent Raid Cataclysm
-   Classic”.** Author Beanna; Patch 4.4.2; updated 2024-06-10; URL
-   <https://www.wowhead.com/cata/guide/raids/blackwing-descent/nefarian-strategy>;
-   accessed 2026-08-11. Supplies mode health, energy, 50-yard separation,
-   Hail/Bone, platform, Barrage, Electrocute, Shadowblaze and heroic summary
-   values. It does not expose a reliable client build or hotfix cutoff.
-2. **Icy Veins — “Nefarian Encounter Guide: Strategy, Abilities, Loot”.**
-   Author Abide; last updated 2024-07-29; URL
-   <https://www.icy-veins.com/cataclysm-classic/nefarian-encounter-guide-strategy-abilities-loot>;
-   accessed 2026-08-11. Independent Cataclysm Classic guide covering energy,
-   Electrocute charge, Dominion, Cinders, platform interrupts, Bone behavior
-   and Shadowblaze. Exact 4.4.2 build metadata is not stated.
-3. **Icy Veins — “Nefarian DPS Strategy Guide (Heroic Mode included)”.**
-   Legacy Cataclysm strategy page, page metadata approximately 14 years old;
-   URL <https://www.icy-veins.com/wow/nefarian-dps-strategy>;
-   accessed 2026-08-11. Used only for independent historical Dominion/Cinders
-   target counts and platform team guidance; not treated as Classic 4.4.2
-   tuning.
-4. **Warcraft Tavern — “Nefarian Raid Guide - Cataclysm Classic”.** Publisher
-   Warcraft Tavern; publication metadata not exposed; URL
-   <https://www.warcrafttavern.com/cataclysm/guides/nefarian-raid-guide/>;
-   accessed 2026-08-11. Used as an additional qualitative heroic Cinders/
-   Dominion reference; exact target count was not relied upon.
-5. **Repository C++ — Nefarian's End.** Revision
-   `889d38cc9451c2b8104db142ce069593b4647a41`; path
-   `src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp`;
-   accessed 2026-08-11. Relevant ranges: `374-910`, `912-1073`,
-   `1139-1286`, `1288-1388`, `1390-1622`, `1724-2040`.
-6. **Repository instance/header/loader.** Revision
-   `889d38cc9451c2b8104db142ce069593b4647a41`; paths
-   `blackwing_descent.h:25-38,76-84,145-154,225-235`,
-   `instance_blackwing_descent.cpp:31-57,197-200,276-290,350-380,462-464,490-529`,
-   `eastern_kingdoms_script_loader.cpp:75-83,307-315`; accessed 2026-08-11.
-7. **Historical DB evidence.** `sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql:3930-3932,12924,12933-12945`
-   (base/difficulty templates),
-   `sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql:12`
-   (Nefarian difficulty entries), and
-   `sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:462`
-   (encounter 1026); accessed 2026-08-11. No ScriptName binding was found in
-   the searched SQL.
+   A native kill needs this capability. `NativeFacts::PillarAscentSupported` switches the
+   strategy to pillar-top goals.
+4. **Ledge drop from a pillar top** (T, StepOff → Fall → Land from a raised part of the
+   same transport). Only needed once pillar ascent exists.
+5. **Placement observation.** The dispatch can publish transport offsets through
+   `BotNefarianNativeObserver.h`; the strategy uses them to recognise a bot on a pillar
+   top.
 
-## Unresolved fidelity blockers
+## 8. Encounter damage fidelity
 
-- Exact 4.4.2 client/build/hotfix cutoff and spell coefficients.
-- Onyxia charge tick period/max-stack representation, local +17 versus guide
-  +25 Electrocute charge, and exact Electrical Overload damage.
-- Local Nefarian landing/phase timers versus guide 30 seconds; Blast Nova
-  3.5/13s local versus approximately 8s guide; Barrage and Cinders cadence.
-- Mode-specific Hail/Bone/Barrage/Blast Nova target counts and damage.
-- Dominion target count (local cap 5/2 versus legacy report 1/5), whether local
-  Dominion repeats in phase 3, and Cinders target count/radius.
-- Shadowblaze aura tick period, exact spark target-selection spell behavior,
-  room-coverage timing and any current berserk interaction.
-- Reliable 4.4.2 SQL/DBC confirmation of every health, energy and damage value.
+Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). None is
+calibrated: that needs WCL `U` melee samples, which the extraction plan lists.
+
+| Creature | Class, level, attack time | Native swing at DM 1 | Status |
+|---|---|---|---|
+| Nefarian (41376 and difficulty entries) | 1, 88, 1500 ms | 4,553–6,764 | open |
+| Onyxia (41270 and difficulty entries) | 1, 88, 1500 ms | 4,553–6,764 | open |
+| Animated Bone Warrior (41918, one template for all modes) | 4, 85, 2000 ms, BaseVariance 0.5 | 5,470–8,175 | open |
+| Chromatic Prototype | PassiveAI, never swings | — | not applicable |
+| Lord Victor Nefarius | PassiveAI | — | not applicable |
+| Stalkers | — | — | not applicable |
+
+No staged SQL is written until a matched sample exists.
+
+## 9. Acceptance observations
+
+These are the contract's `acceptance_observations`: passengers before the pull,
+separation over 50 yd, no breath on non-tanks, two phase 1 Electrocutes, pillar tops
+reached, every Blast Nova interrupted, no phase 2 Nefarian damage, pillars left before
+landing, controlled bone warriors, no repeated Shadowblaze ticks, native clear with 0
+boss-window deaths.
+
+## 10. Unresolved (fidelity_blocked)
+
+1. The WCL 10N kill references and timelines are pending (human-verification gate).
+2. The creature melee DamageModifier is uncalibrated (Nefarian, Onyxia, bone warrior).
+3. The guide's health values conflict with native health.
+4. The dragons' Tail Lash and Breath cadence and cone geometry.
+5. Onyxia's charge rate and the Electrocute increment.
+6. Blast Nova and Barrage cadence.
+7. The Shadowblaze Spark schedule and spread (the floor is repaired; the first offset
+   and the spread are unverified).
+8. The Hail of Bones warrior count and lifetime.
+9. Pillar access and the magma level.
+10. Heroic Dominion, Cinders, and the end of phase 2.
+
+## Sources
+
+1. **Wowhead:** "Nefarian Strategy Guide - Blackwing Descent Raid Cataclysm Classic".
+   Beanna, patch 4.4.2, updated 2024-06-10.
+   <https://www.wowhead.com/cata/guide/raids/blackwing-descent/nefarian-strategy>,
+   accessed 2026-09-25.
+2. **Wowhead NPC pages** 41376, 41270, 41948 and 41918 (health tables):
+   <https://www.wowhead.com/cata/npc=41376>, accessed 2026-09-25.
+3. **Icy Veins:** "Nefarian Encounter Guide: Strategy, Abilities, Loot". Abide, updated
+   2024-07-29.
+   <https://www.icy-veins.com/cataclysm-classic/nefarian-encounter-guide-strategy-abilities-loot>,
+   accessed 2026-09-25.
+4. **BigWigs_Cataclysm** v11.0.13, commit 650bab03981eb06b5fa6ded88e47c523caa3c7c3,
+   `BlackwingDescent/Nefarian.lua`, sha256 `a903c83d…2d83f`.
+5. **DBM-Cataclysm** commit 4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e, Nefarian module,
+   sha256 `5fb1bc95…7a3d2`.
+6. **4.4.2.59185 client rows** (wago.tools, through
+   `tools.raid_program.extract_442_client_spell_rows`), including the Journal sections of
+   encounter 174.
+7. **4.3.4 client DBC** in `data/dbc/enUS`; hashes are in the contract.
+8. **Repository:**
+   - `boss_nefarians_end*.cpp` and `boss_nefarians_end.h`;
+   - `instance_blackwing_descent.cpp`;
+   - `SpellMgrCorrectionsPart04.cpp:424-481`, `SpellMgrCorrections.cpp:89-91`;
+   - TDB 434.22011 with the `sql/updates/world/4.3.4` deltas: creature_template,
+     creature_model_info, summon groups, spawn group 402, spell_custom_attr, conditions.

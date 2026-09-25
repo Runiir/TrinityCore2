@@ -1,0 +1,52 @@
+{
+  "schema": "nefarian_wcl_dps_reference_v1",
+  "encounter": "nefarian",
+  "mode": "10N",
+  "status": "pending_extraction",
+  "status_reason": "classic.warcraftlogs.com answered every request on 2026-09-25 with a 'Human Verification / I am a human and not a bot' interstitial (WebFetch: HTTP 403). An agent may not attest to being human, so no report page was read. No matched reference exists yet; nothing here is a measured value.",
+  "references": [],
+  "extraction_plan": {
+    "required_match": "Cataclysm Classic Blackwing Descent Nefarian's End (encounter 1026, boss 41376), 10-player Normal, a kill (not a wipe), post-4.2 tuning era, dated before or at the 2025-02-20T23:00:00Z hotfix cutoff where possible, verified on the fight page (boss, difficulty, size, date, duration, roster). Prefer a kill with all three phases observed and at least two Electrocutes in phase 1.",
+    "wanted_specs": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "beast_mastery_hunter",
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "demonology_warlock"
+    ],
+    "candidate_reports_to_open_first": [
+      {
+        "report": "Y8ajQ7dbmKMG1RZy",
+        "reason": "Same BWD 10N night as the matched Magmaw reference (fight 22); check its fight list for a Nefarian's End 10N kill.",
+        "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy"
+      },
+      {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "reason": "BWD 10N report of 2024-10-28 used for the Magmaw melee calibration (fight 22); check for a Nefarian's End 10N kill.",
+        "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ"
+      },
+      {
+        "report": "xAhkN2y9YP3KRmnJ",
+        "reason": "BWD 10N report behind the Magmaw short-fight context; check for a Nefarian's End 10N kill.",
+        "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ"
+      }
+    ],
+    "fallback_discovery": "WCL Cataclysm Classic zone rankings for Nefarian's End (encounter 1026), 10-player Normal: pick a kill whose roster covers Blood DK and Beast Mastery Hunter, then verify it on the fight page. A ranking row is a discovery index, not a reference.",
+    "views": {
+      "summary": "?fight=<id>&type=damage-done (per-actor DPS over the whole kill, duration, raid DPS, average item level); record per-phase splits with the phase filter when shown",
+      "casts": "?fight=<id>&type=casts&view=events (completed casts per DPS actor for the cast timeline file)",
+      "boss_casts": "?fight=<id>&type=casts&view=events&hostility=1 (Tail Lash 77827 by Nefarian and by Onyxia, Shadowflame Breath 77826, Lightning Discharge 78090, Hail of Bones 78679, Shadowflame Barrage 78621, Blast Nova 80734 starts and interrupts, Shadowblaze Spark 81031)",
+      "breath_ticks": "?fight=<id>&type=damage-taken&view=events&ability=77826 (ticks per breath: native 1, client 3)",
+      "electrocute": "?fight=<id>&type=damage-taken&view=events&ability=81272 (timestamps vs Nefarian health)",
+      "boss_melee": "?fight=<id>&type=damage-taken&view=events&by=ability&options=4098 filtered to ability 1 from Nefarian, from Onyxia and from Animated Bone Warrior (U, hit type) plus Scarlet Fever 81130 / Demoralizing Roar 99 / Shout 1160 / Vindication 26017 windows, and Children of Deathwing 78619/78620 uptime",
+      "health": "consecutive Nefarian, Onyxia and Chromatic Prototype damage events with health-bar percentages for derive_encounter_health",
+      "resources": "Onyxia's Electrical Charge alternate power over time, if the resources pane shows it (native rate question)"
+    }
+  },
+  "consumers": [
+    "experiments/configs/raid_targets/blackwing_descent_10n_nefarian.json (matched_reference_ids stays empty until a verified entry exists)",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json (unresolved: wcl_10n_kill_references_and_timelines_pending, creature_melee_damage_modifier_uncalibrated, health_guide_vs_native_conflict)"
+  ]
+}
