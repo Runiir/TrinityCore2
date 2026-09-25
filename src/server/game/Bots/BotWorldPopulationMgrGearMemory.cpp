@@ -255,7 +255,13 @@ bool BotWorldPopulationMgr::TrySmartGearDecision(WorldBotState& state, Player* b
     char const* lootDecision = evaluation.Upgrade ? "need_upgrade" : (evaluation.CanEquip || hasValue ? "greed_value" : "pass_invalid");
     char const* equipResult = "not_equipped";
 
-    if (evaluation.Upgrade && item)
+    // Two-spec loadouts carry the inactive spec's gear in a container bag on
+    // purpose; never swap it into the equipped set automatically.
+    bool const offSpecBagItem = item && bot->GetSpecsCount() > 1
+        && item->GetBagSlot() != INVENTORY_SLOT_BAG_0;
+    if (offSpecBagItem)
+        equipResult = "off_spec_bag_item_kept";
+    else if (evaluation.Upgrade && item)
     {
         uint16 equipDest = 0;
         InventoryResult canEquip = bot->CanEquipItem(NULL_SLOT, equipDest, item, true);
