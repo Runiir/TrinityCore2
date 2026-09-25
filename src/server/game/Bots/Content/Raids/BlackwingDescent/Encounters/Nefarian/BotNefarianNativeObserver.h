@@ -5,13 +5,18 @@
 // dispatch translation unit: it reads live units and spells and never
 // changes them.
 
+#include "Bots/BotSpellResolution.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeFacts.h"
 #include "GameObject.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Spell.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
+#include "Transport.h"
 
 namespace BotEncounter::Nefarian
 {
@@ -41,8 +46,34 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
 
     for (ActorSnapshot const& player : board.Players)
     {
-        Unit const* unit = ObjectAccessor::GetUnit(*observer, player.Guid);
-        if (!unit || !unit->GetTransport())
+        Player const* bot = ObjectAccessor::GetPlayer(*observer, player.Guid);
+        if (!bot || !bot->IsInWorld())
+            continue;
+        // Readiness of the spells the duties name: a spell the bot lacks is
+        // not ready; SpellHistory decides the rest.
+        for (uint32 spellId : { InterruptFor(player.ClassSpec).SpellId,
+                ControlFor(player.ClassSpec).SpellId,
+                TauntFor(player.ClassSpec).SpellId })
+        {
+            if (!spellId)
+                continue;
+            BotSpellResolution::Resolved const resolved =
+                BotSpellResolution::Resolve(bot, spellId);
+            bool const known = resolved.Effective
+                && (resolved.Effective != resolved.Requested || bot->HasSpell(spellId));
+            facts.Readiness.push_back({ player.Guid, spellId, known
+                && bot->GetSpellHistory()->IsReady(resolved.Effective) });
+        }
+        if (bot->movespline->Initialized() && !bot->movespline->Finalized())
+        {
+            G3D::Vector3 end = bot->movespline->FinalDestination();
+            if (bot->movespline->onTransport)
+                if (TransportBase const* carrier = bot->GetDirectTransport())
+                    carrier->CalculatePassengerPosition(end.x, end.y, end.z);
+            facts.Motion.push_back({ player.Guid, true, { end.x, end.y, end.z } });
+        }
+        Unit const* unit = bot;
+        if (!unit->GetTransport())
             continue;
         TransportPlacement placement;
         placement.Actor = player.Guid;

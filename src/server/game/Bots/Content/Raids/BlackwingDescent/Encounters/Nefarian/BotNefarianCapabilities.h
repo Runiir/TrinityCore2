@@ -101,6 +101,7 @@ struct ControlCapability
     float RangeYards = 0.0f;
     // Area spells centred on the caster (Frost Nova) need the warrior close.
     bool SelfCentred = false;
+    uint32 CooldownMs = 0; // client recovery or category cooldown
 
     bool Known() const { return SpellId != 0; }
 };
@@ -112,20 +113,34 @@ struct ControlCapability
 inline ControlCapability ControlFor(std::string_view spec)
 {
     if (SpecEndsWith(spec, "priest"))
-        return { 9484, ControlKind::Shackle, 30.0f, false }; // Shackle Undead
+        return { 9484, ControlKind::Shackle, 30.0f, false, 0 };      // Shackle Undead
     if (SpecEndsWith(spec, "hunter"))
-        return { 5116, ControlKind::Snare, 40.0f, false };   // Concussive Shot
+        return { 5116, ControlKind::Snare, 40.0f, false, 5000 };     // Concussive Shot
     if (SpecEndsWith(spec, "shaman"))
-        return { 8056, ControlKind::Snare, 25.0f, false };   // Frost Shock
+        return { 8056, ControlKind::Snare, 25.0f, false, 6000 };     // Frost Shock
     if (SpecEndsWith(spec, "warlock"))
-        return { 18223, ControlKind::Snare, 40.0f, false };  // Curse of Exhaustion
+        return { 18223, ControlKind::Snare, 40.0f, false, 0 };       // Curse of Exhaustion
     if (SpecEndsWith(spec, "death_knight"))
-        return { 45524, ControlKind::Snare, 20.0f, false };  // Chains of Ice
+        return { 45524, ControlKind::Snare, 20.0f, false, 0 };       // Chains of Ice
     if (SpecEndsWith(spec, "paladin"))
-        return { 853, ControlKind::Stun, 10.0f, false };     // Hammer of Justice
+        return { 853, ControlKind::Stun, 10.0f, false, 60000 };      // Hammer of Justice
     if (SpecEndsWith(spec, "mage"))
-        return { 122, ControlKind::Root, 10.0f, true };      // Frost Nova
+        return { 122, ControlKind::Root, 10.0f, true, 25000 };       // Frost Nova
     return {};
+}
+
+// Controller preference: a ready stun first (it also stops Empower stacks),
+// then a root, then snares that can be reapplied at once, then snares with a
+// cooldown. Lower is better.
+inline int ControlPreference(ControlCapability const& control)
+{
+    switch (control.Kind)
+    {
+        case ControlKind::Stun: return 0;
+        case ControlKind::Root: return 1;
+        case ControlKind::Snare: return control.CooldownMs == 0 ? 2 : 3;
+        default: return 9;
+    }
 }
 
 inline bool IsHealerSpec(std::string_view spec, std::string_view role)

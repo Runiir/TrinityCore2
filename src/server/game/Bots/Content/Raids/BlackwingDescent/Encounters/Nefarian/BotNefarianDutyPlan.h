@@ -200,7 +200,8 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
     }
 
     // Bone warrior control: one living shackler, then every other living
-    // non-tank with a stun, snare or root, stuns first.
+    // non-tank with a stun, snare or root, in ControlPreference order (stuns,
+    // roots, cooldown-free snares, then snares with a cooldown).
     for (ActorSnapshot const* member : members)
     {
         if (!member->Alive || plan.IsTank(member->Guid))
@@ -219,9 +220,7 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
     auto controlRank = [&board](ObjectGuid guid)
     {
         ActorSnapshot const* actor = board.FindActor(guid);
-        ControlKind const kind = actor ? ControlFor(actor->ClassSpec).Kind
-            : ControlKind::None;
-        return kind == ControlKind::Stun ? 0 : kind == ControlKind::Snare ? 1 : 2;
+        return actor ? ControlPreference(ControlFor(actor->ClassSpec)) : 9;
     };
     std::stable_sort(plan.Controllers.begin(), plan.Controllers.end(),
         [&controlRank](ObjectGuid left, ObjectGuid right)

@@ -1,46 +1,31 @@
 #ifndef TRINITY_BOT_NEFARIAN_SURFACE_INTENT_H
 #define TRINITY_BOT_NEFARIAN_SURFACE_INTENT_H
 
-// Turns a Nefarian SurfaceGoal into package T's transport-surface intent.
-// No static navmesh covers GO 207834, so ordinary Move intents are rejected
-// on the platform for the whole fight; every platform destination is a
-// BotNativeAction::TransportSurfaceMove executed by
-// BotTransportSurfaceMovement::Execute.
+// Turns one planned leg into package T's transport-surface walk. No static
+// navmesh covers GO 207834, so ordinary Move intents are rejected on the
+// platform for the whole fight; every platform leg is a
+// BotNativeAction::TransportSurfaceMove Walk executed by
+// BotTransportSurfaceMovement::Execute, which proves floor, collision and a
+// stationary platform before its single native side effect, accepts at most
+// MaxSurfaceWalkYards (12) and replaces a walk still in flight.
 
 #include "Bots/BotNativeActionIntent.h"
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianMovement.h"
+#include "Bots/BotEncounterBlackboard.h"
 
 namespace BotEncounter::Nefarian
 {
-constexpr float SurfaceWalkFloorToleranceYards = 0.6f;
-
-// One straight Walk that ends on the transport. The executor proves floor,
-// collision and a stationary platform before its single native side effect
-// and otherwise returns a typed Retryable/Unsafe reason; it never relocates
-// the bot. It cannot climb or swim, so a pillar-top goal is only reachable
-// from a raised part of the same transport.
 inline BotNativeAction::TransportSurfaceMove ToTransportSurfaceMove(
-    SurfaceGoal const& goal)
+    ObjectGuid transport, Vector3 const& world, float floorToleranceYards)
 {
     BotNativeAction::TransportSurfaceMove move;
-    move.Transport = goal.Transport;
+    move.Transport = transport;
     move.Kind = BotNativeAction::TransportSurfaceMove::Stage::Walk;
-    move.X = goal.World.X;
-    move.Y = goal.World.Y;
-    move.Z = goal.World.Z;
+    move.X = world.X;
+    move.Y = world.Y;
+    move.Z = world.Z;
     move.EndOnTransport = true;
-    move.FloorToleranceYards = SurfaceWalkFloorToleranceYards;
+    move.FloorToleranceYards = floorToleranceYards;
     return move;
-}
-
-// Platform goals use the transport-surface walk; an unobserved transport
-// (no GUID) falls back to the ordinary move.
-inline BotNativeAction::Intent PlatformMovementIntent(SurfaceGoal const& goal)
-{
-    if (!goal.Transport.IsEmpty())
-        return ToTransportSurfaceMove(goal);
-    return BotNativeAction::Move(goal.World.X, goal.World.Y, goal.World.Z,
-        MovePurposeName(goal.Purpose), goal.Urgent);
 }
 }
 

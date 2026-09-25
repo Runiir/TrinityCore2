@@ -94,16 +94,19 @@ inline bool InInterruptReach(ActorSnapshot const& member,
 
 // Who interrupts one casting prototype, in order: its pillar's primary and
 // backup, then its other team members, then anyone else in reach, shortest
-// cooldown first. Only members that can reach it now are listed.
+// cooldown first. Only members that can reach it now and whose interrupt is
+// ready (NativeFacts; unknown counts as ready) are listed.
 inline std::vector<ActorSnapshot const*> BlastNovaInterrupters(
     Blackboard const& board, DutyPlan const& plan,
-    ActorSnapshot const& prototype)
+    ActorSnapshot const& prototype, NativeFacts const* facts = nullptr)
 {
     int const pillar = PrototypePillar(prototype);
     std::vector<ActorSnapshot const*> order;
-    auto add = [&order, &prototype](ActorSnapshot const* member)
+    auto add = [&order, &prototype, facts](ActorSnapshot const* member)
     {
         if (member && InInterruptReach(*member, prototype)
+            && (!facts || facts->SpellReady(member->Guid,
+                InterruptFor(member->ClassSpec).SpellId))
             && std::find(order.begin(), order.end(), member) == order.end())
             order.push_back(member);
     };
@@ -153,7 +156,7 @@ inline InterruptDecision DecideBlastNovaInterrupt(Blackboard const& board,
             || !prototype->Cast->Interruptible)
             continue;
         std::vector<ActorSnapshot const*> const order =
-            BlastNovaInterrupters(board, plan, *prototype);
+            BlastNovaInterrupters(board, plan, *prototype, facts);
         CastProgress const* progress = facts
             ? facts->FindCast(prototype->Guid) : nullptr;
         bool const late = progress && progress->ElapsedMs() >= 1800;
@@ -227,11 +230,15 @@ inline ActorSnapshot const* ShackleCandidate(Blackboard const& board,
 }
 
 // Exactly one bot acts on a warrior per snapshot: the shackler on its
-// candidate, otherwise the first living controller in range, rotating from
-// controller i mod C for warrior i. Nobody controls a held warrior, and
-// nobody damages the shackler's candidate (Shackle Undead breaks on damage).
+// candidate, otherwise the first living controller that is in range and whose
+// control spell is ready (NativeFacts; unknown counts as ready), rotating from
+// controller i mod C for warrior i. A controller on cooldown is skipped, so a
+// 60 s Hammer of Justice hands the warrior to the next controller.  Nobody
+// controls a held warrior, and nobody damages the shackler's candidate
+// (Shackle Undead breaks on damage).
 inline ControlDecision DecideBoneWarriorControl(Blackboard const& board,
-    EncounterView const& view, DutyPlan const& plan, ActorSnapshot const& bot)
+    EncounterView const& view, DutyPlan const& plan, ActorSnapshot const& bot,
+    NativeFacts const* facts = nullptr)
 {
     ControlDecision decision;
     std::vector<ActorSnapshot const*> active;
@@ -243,11 +250,16 @@ inline ControlDecision DecideBoneWarriorControl(Blackboard const& board,
     ControlCapability const control = ControlFor(bot.ClassSpec);
     if (!control.Known())
         return decision;
+    auto ready = [facts](ActorSnapshot const& member)
+    {
+        return !facts || facts->SpellReady(member.Guid,
+            ControlFor(member.ClassSpec).SpellId);
+    };
     ActorSnapshot const* shackle = ShackleCandidate(board, active, plan);
 
     if (bot.Guid == plan.Shackler)
     {
-        if (shackle)
+        if (shackle && ready(bot))
         {
             decision.Target = shackle->Guid;
             decision.SpellId = control.SpellId;
@@ -273,7 +285,7 @@ inline ControlDecision DecideBoneWarriorControl(Blackboard const& board,
             std::size_t const candidate = (warrior + step) % controllers;
             ActorSnapshot const* member = board.FindActor(
                 plan.Controllers[candidate]);
-            if (member && InControlRange(*member, target))
+            if (member && InControlRange(*member, target) && ready(*member))
             {
                 designated = candidate;
                 break;

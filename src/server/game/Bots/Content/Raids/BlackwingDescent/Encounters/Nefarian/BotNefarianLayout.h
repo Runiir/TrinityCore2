@@ -4,21 +4,30 @@
 // Arena layout for Nefarian's End, derived from the duty plan: where each
 // dragon should end up and where the tanks lead them. Guides (Wowhead, Icy
 // Veins) put the dragons at opposite ends, angled along the walls, with the
-// raid on their wings. Natively a dragon stops at its melee reach (20.8 /
-// 22.8 yd) from its tank, so a radial drag cannot separate them by the
-// 50-yard Children of Deathwing range; the tank instead leads its dragon
-// around a run circle and holds tangentially ahead of it.
+// raid on their wings. Natively a chasing dragon stops at its melee reach
+// (Onyxia 20.8, Nefarian 22.8 yd) short of its tank, and only turns while
+// the tank stays inside that reach. So a tank:
+// - pulls: stands on the ring at r 52 beyond the dragon's end; the dragon
+//   chases out from the centre and stops at about r 29-31;
+// - holds: once the dragon is at r >= 27.5 within 15 degrees of its end,
+//   stands 7 yards from it, tangentially and 25 degrees outward, so the
+//   dragon faces along the wall with its tail away from the raid.
+// Opposite ends at r >= 27.5 are at least 2 * 27.5 * cos(15) = 53 yards
+// apart, beyond Children of Deathwing's 50 yards.
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianDutyPlan.h"
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianGeometry.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPath.h"
 
 namespace BotEncounter::Nefarian
 {
-// On the outer ring (r >= 32), clear of the rise and inside the pillar blocks.
-constexpr float TankRunRadius = 34.0f;
-constexpr float DragonGoalMinRadius = 22.0f;
-constexpr float DragonGoalAngleToleranceDeg = 12.0f;
+constexpr float TankPullRadius = 52.0f;
+constexpr float DragonHoldMinRadius = 27.5f;
+constexpr float DragonGoalAngleToleranceDeg = 15.0f;
 constexpr float DragonEndOffsetDeg = 30.0f;
+constexpr float TankHoldDistance = 7.0f;
+constexpr float TankHoldOutwardDeg = 25.0f;
+constexpr float TankDischargeDistance = 7.0f;
+constexpr float PullMirrorLimitDeg = 25.0f;
 
 struct ArenaLayout
 {
@@ -66,18 +75,10 @@ inline ArenaLayout BuildArenaLayout(DutyPlan const& plan)
     return layout;
 }
 
-// Angular lead on the run circle that keeps a chord just inside or just
-// outside a dragon's melee reach.
-inline float LeadAngle(float chord, float radius = TankRunRadius)
-{
-    float const half = std::min(0.99f, std::max(0.0f, chord * 0.5f / radius));
-    return 2.0f * std::asin(half);
-}
-
 enum class TankStep : uint8
 {
     LeadOut,   // dragon near the centre: pull it out toward its end
-    Orbit,     // lead it around the run circle
+    Pull,      // dragon short of its end or off its heading: pull again
     Hold,      // at its end: stand tangentially ahead (dragon only turns)
     Discharge  // Onyxia wind-up: stand outward so her tail faces the raid
 };
@@ -87,7 +88,7 @@ inline std::string_view TankStepName(TankStep step)
     switch (step)
     {
         case TankStep::LeadOut: return "lead_out";
-        case TankStep::Orbit: return "orbit";
+        case TankStep::Pull: return "pull";
         case TankStep::Hold: return "hold";
         case TankStep::Discharge: return "discharge_turn";
     }
@@ -100,19 +101,11 @@ struct TankSpot
     LocalPoint Point;
 };
 
-inline LocalPoint RunPoint(float angle)
+inline bool DragonAtEnd(LocalPoint dragon, float goalAngle)
 {
-    return Polar(angle, TankRunRadius);
-}
-
-// Pick the orbit/hold side whose point is clear of the pillars; prefer the
-// requested sign.
-inline float ClearSide(float dragonAngle, float lead, float preferred)
-{
-    for (float sign : { preferred, -preferred })
-        if (!NearPillar(RunPoint(dragonAngle + sign * lead)))
-            return sign;
-    return preferred;
+    return Length(dragon) >= DragonHoldMinRadius
+        && AngularGap(AngleOf(dragon), goalAngle)
+            <= DegToRad(DragonGoalAngleToleranceDeg);
 }
 
 inline TankSpot PlanTankSpot(LocalPoint dragon, float goalAngle, float reach,
@@ -120,32 +113,27 @@ inline TankSpot PlanTankSpot(LocalPoint dragon, float goalAngle, float reach,
 {
     TankSpot spot;
     float const radius = Length(dragon);
-    float const lead = LeadAngle(reach - 2.0f);
-    if (radius < 8.0f)
+    float const dragonAngle = radius < 1.0f ? goalAngle : AngleOf(dragon);
+    if (!DragonAtEnd(dragon, goalAngle))
     {
-        float const sign = ClearSide(goalAngle, lead, 1.0f);
-        spot.Step = TankStep::LeadOut;
-        spot.Point = RunPoint(goalAngle + sign * lead);
-        return spot;
-    }
-
-    float const dragonAngle = AngleOf(dragon);
-    float const error = NormalizeSigned(goalAngle - dragonAngle);
-    bool const atEnd = std::fabs(error)
-            <= DegToRad(DragonGoalAngleToleranceDeg)
-        && radius >= DragonGoalMinRadius;
-    if (!atEnd)
-    {
-        float const sign = error >= 0.0f ? 1.0f : -1.0f;
-        spot.Step = TankStep::Orbit;
-        spot.Point = RunPoint(dragonAngle + sign * (lead + DegToRad(4.0f)));
+        // A dragon off its heading is pulled past its end by the same angle,
+        // on a heading whose radial line clears the pillars.
+        float mirror = 0.0f;
+        if (radius >= 8.0f)
+            mirror = std::max(-DegToRad(PullMirrorLimitDeg),
+                std::min(DegToRad(PullMirrorLimitDeg),
+                    -NormalizeSigned(dragonAngle - goalAngle)));
+        float const pull = NearestRadialCrossing(goalAngle + mirror, goalAngle);
+        spot.Step = radius < 8.0f ? TankStep::LeadOut : TankStep::Pull;
+        spot.Point = Polar(pull, TankPullRadius);
         return spot;
     }
 
     if (dischargeTurn)
     {
-        LocalPoint const outward = Offset(dragon, dragonAngle, 5.0f);
-        if (Length(outward) <= MaxFloorRadius && !NearPillar(outward))
+        LocalPoint const outward = Offset(dragon, dragonAngle,
+            TankDischargeDistance);
+        if (OnFloorArea(outward))
         {
             spot.Step = TankStep::Discharge;
             spot.Point = outward;
@@ -153,10 +141,26 @@ inline TankSpot PlanTankSpot(LocalPoint dragon, float goalAngle, float reach,
         }
     }
 
-    float const holdLead = LeadAngle(reach - 7.0f);
-    float const sign = ClearSide(dragonAngle, holdLead, 1.0f);
     spot.Step = TankStep::Hold;
-    spot.Point = RunPoint(dragonAngle + sign * holdLead);
+    float const turn = Pi / 2.0f - DegToRad(TankHoldOutwardDeg);
+    std::optional<LocalPoint> fallback;
+    for (float sign : { 1.0f, -1.0f })
+    {
+        LocalPoint const raw = Offset(dragon, dragonAngle + sign * turn,
+            TankHoldDistance);
+        LocalPoint const point = SnapToStandingArea(raw);
+        if (Distance(point, dragon) > reach - 3.0f)
+            continue;
+        if (OnFloorArea(point))
+        {
+            spot.Point = point;
+            return spot;
+        }
+        if (!fallback)
+            fallback = point;
+    }
+    spot.Point = fallback ? *fallback
+        : Offset(dragon, dragonAngle, TankDischargeDistance);
     return spot;
 }
 

@@ -2,7 +2,8 @@
 #define TRINITY_BOT_NEFARIAN_NATIVE_FACTS_H
 
 // Native facts the shared blackboard does not carry yet: cast progress of the
-// Chromatic Prototypes and each bot's transport placement. The dispatch fills
+// Chromatic Prototypes, each bot's transport placement, its running spline
+// and the readiness of its interrupt and control spells. The dispatch fills
 // them from the live objects (BotNefarianNativeObserver.h) once per decision;
 // without them the strategy falls back to blackboard-only rules. Observation
 // only: nothing here changes a cast, a passenger or a position.
@@ -31,6 +32,24 @@ struct TransportPlacement
     Vector3 Offset; // transport-local position (GetTransOffsetX/Y/Z)
 };
 
+// A known spell that is ready now (SpellHistory::IsReady); a spell the bot
+// lacks is recorded as not ready.
+struct SpellReadiness
+{
+    ObjectGuid Actor;
+    uint32 SpellId = 0;
+    bool Ready = true;
+};
+
+// The bot's own movement: whether a spline is running and where it ends
+// (world frame), so the same leg is not re-submitted while in flight.
+struct MovementState
+{
+    ObjectGuid Actor;
+    bool Moving = false;
+    Vector3 Destination;
+};
+
 struct NativeFacts
 {
     std::vector<CastProgress> Casts;
@@ -39,6 +58,24 @@ struct NativeFacts
     // top (package T: not supported; it can neither swim nor climb). Without
     // it phase 2 holds each team at its pillar's foot.
     bool PillarAscentSupported = false;
+    std::vector<SpellReadiness> Readiness;
+    std::vector<MovementState> Motion;
+
+    // Unknown readiness counts as ready: native submission stays the judge.
+    bool SpellReady(ObjectGuid actor, uint32 spellId) const
+    {
+        for (SpellReadiness const& entry : Readiness)
+            if (entry.Actor == actor && entry.SpellId == spellId)
+                return entry.Ready;
+        return true;
+    }
+
+    MovementState const* FindMotion(ObjectGuid actor) const
+    {
+        auto itr = std::find_if(Motion.begin(), Motion.end(),
+            [actor](MovementState const& state) { return state.Actor == actor; });
+        return itr == Motion.end() ? nullptr : &*itr;
+    }
 
     CastProgress const* FindCast(ObjectGuid caster) const
     {

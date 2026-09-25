@@ -863,7 +863,7 @@
         "25H"
       ],
       "status": "partial",
-      "known": "50 yd Children of Deathwing, reach 20.8/22.8, 60 yd cones.",
+      "known": "50 yd Children of Deathwing, reach 20.8/22.8, 60 yd cones; chase model: a tank on the ring at r 52 pulls a dragon from the centre to r 29-31, and the hold gate (r >= 27.5, 15 degrees) keeps opposite dragons >= 53 yd apart (tests/test_nefarian_movement.py: 62 yd).",
       "next": "Live: measured separation and facing error from the duty/status receipt.",
       "source_refs": [
         "client_442_59185_extract",
@@ -930,7 +930,7 @@
       ],
       "status": "partial",
       "known": "Pillar tops are transport-local with near-vertical sides; the movement layer walks, steps off and falls but cannot swim or climb; magma is LiquidType 404 (81114).",
-      "next": "Package T: a lawful pillar ascent (swim up through the magma to the pillar lip, as players do) and the magma surface height; live: magma damage on floor-bound bots.",
+      "next": "Package T: a lawful pillar ascent (swim up through the magma to the pillar lip) and the magma surface height. Until then phase 2 is the typed capability blocker pillar_ascent_unsupported and the watchdog ends the run there (patch W1).",
       "source_refs": [
         "repo_nefarians_end",
         "wowhead_cata_classic",

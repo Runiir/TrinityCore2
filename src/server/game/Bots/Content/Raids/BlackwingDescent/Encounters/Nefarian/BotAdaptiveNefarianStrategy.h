@@ -9,9 +9,9 @@
 // only: no teleport, aura, damage or forced target is ever produced.
 //
 // The existing dispatch reads OwnsNode, DamageTarget, InterruptTarget and
-// Movement (a TransportSurfaceMove on the platform). Actions and
-// SuppressOffense need the dispatch patch named in
-// docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md.
+// Movement: one TransportSurfaceMove Walk leg of at most 9.5 yards on the
+// platform (BotNefarianPath.h). Actions, SuppressOffense, Blocked and
+// MovementHold need the dispatch patches in .git/round2_patches/nefarian/.
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
@@ -35,7 +35,14 @@ struct AdaptiveNefarianPlan
     bool SuppressOffense = false;
     std::string_view SuppressReason;
     std::optional<BotNativeAction::Candidate> Movement;
+    // The standing spot the legs lead to, and the leg submitted now.
     std::optional<Nefarian::SurfaceGoal> MovementSurface;
+    std::optional<Nefarian::PathLeg> MovementLeg;
+    // Why no leg was submitted although a goal exists (typed, for the trace).
+    std::string_view MovementHold;
+    // A capability the encounter needs and the runtime lacks, for example
+    // pillar_ascent_unsupported in phase 2 (see the dossier, section 7).
+    std::string_view Blocked;
     std::vector<BotNativeAction::Candidate> Actions;
 };
 
@@ -62,6 +69,7 @@ public:
             return plan;
         plan.OwnsNode = true;
         plan.Phase = view.CurrentPhase;
+        plan.Blocked = CapabilityBlocker(view.CurrentPhase, facts);
 
         DutyPlan const duty = BuildNefarianDutyPlan(board);
         ArenaLayout const layout = BuildArenaLayout(duty);
@@ -280,19 +288,25 @@ private:
         if (phase == Phase::PreEngage || duty.IsTank(bot.Guid))
             return;
         ControlDecision const control = DecideBoneWarriorControl(board, view, duty,
-            bot);
+            bot, facts);
         if (!control.Target.IsEmpty())
             plan.Actions.push_back(Cast(board, control.Reason, control.Target,
                 control.SpellId, Priority::Support,
                 control.SpellId == SpellShackleUndead ? 70.0f : 60.0f));
     }
 
-    static uint64 GoalGeneration(Nefarian::SurfaceGoal const& goal)
+    static uint64 LegGeneration(Nefarian::SurfaceGoal const& goal,
+        Nefarian::PathLeg const& leg)
     {
-        uint64 const x = uint64(uint16(int16(std::lround(goal.Local.X * 2.0f))));
-        uint64 const y = uint64(uint16(int16(std::lround(goal.Local.Y * 2.0f))));
+        uint64 const x = uint64(uint16(int16(std::lround(leg.To.X * 2.0f))));
+        uint64 const y = uint64(uint16(int16(std::lround(leg.To.Y * 2.0f))));
         return (uint64(goal.Purpose) << 40) | (uint64(goal.Target) << 32)
             | (x << 16) | y;
+    }
+
+    static bool Stunned(ActorSnapshot const& bot)
+    {
+        return Nefarian::HasAnyAura(bot, { 77827, 94128, 94129, 94130 });
     }
 
     static void ChooseMovement(AdaptiveNefarianPlan& plan,
@@ -334,40 +348,105 @@ private:
         }
         if (!goal)
             return;
+        plan.MovementSurface = goal;
 
-        if (goal->Target == Surface::Floor && fightOnFloor
-            && OnPillarTop(context))
+        LocalPoint const self = BotLocal(context);
+        bool const onTop = OnPillarTop(context);
+        if (onTop && goal->Target == Surface::Floor)
         {
+            // Leaving a pillar top is a 10-yard drop off a near-vertical side:
+            // StepOff/Fall/Land, not a walk. Not wired yet.
             goal->Purpose = MovePurpose::PillarDescent;
-            goal->Urgent = true;
-            priority = Priority::Mechanic;
-            utility = 320.0f;
-        }
-        else if (Distance(BotLocal(context), goal->Local)
-                <= goal->ArrivalToleranceYards
-            && (goal->Target == Surface::Floor) != OnPillarTop(context))
+            plan.MovementSurface = goal;
+            plan.Blocked = "pillar_descent_unsupported";
+            plan.MovementHold = "pillar_descent_unsupported";
             return;
+        }
+        if (goal->Target == Surface::Floor
+            && Distance(self, goal->Local) <= goal->ArrivalToleranceYards)
+            return;
+        if (context.View.Elevator.Guid.IsEmpty())
+        {
+            plan.MovementHold = "nefarian_elevator_unobserved";
+            return;
+        }
+        if (!onTop && !OnPlatformFloor(context))
+        {
+            plan.MovementHold = "nefarian_not_on_platform";
+            return;
+        }
+        if (Stunned(context.Bot))
+        {
+            plan.MovementHold = "nefarian_movement_stunned";
+            return;
+        }
+
+        std::optional<PathLeg> leg;
+        if (goal->Target == Surface::PillarTop)
+        {
+            // Only reached when the runtime declares a pillar ascent.
+            PathLeg ascent;
+            ascent.To = goal->Local;
+            ascent.LocalZ = goal->LocalZ;
+            ascent.FloorToleranceYards = RiseLegFloorTolerance;
+            ascent.Kind = "pillar_ascent";
+            if (onTop || Distance(self, goal->Local) <= MaxLegYards)
+                leg = ascent;
+            else
+                leg = NextLeg(self, BotLocalZ(context),
+                    PillarBase(uint8(std::max(goal->Pillar, 0)), 0));
+        }
+        else
+            leg = NextLeg(self, BotLocalZ(context), goal->Local);
+        if (!leg)
+        {
+            plan.MovementHold = "nefarian_no_surface_path";
+            return;
+        }
+        plan.MovementLeg = leg;
+        Vector3 const legWorld = LocalToWorld(leg->To, leg->LocalZ,
+            context.View.Elevator.OriginZ);
+
+        // The same leg is already running: do not relaunch it every decision.
+        if (context.Facts)
+            if (MovementState const* motion =
+                    context.Facts->FindMotion(context.Bot.Guid))
+                if (motion->Moving && Distance3(motion->Destination, legWorld)
+                        <= 1.0f)
+                {
+                    plan.MovementHold = "nefarian_leg_in_flight";
+                    return;
+                }
+
+        // Walks claim movement, GCD and cast: a formation spot far away is
+        // mechanic work, a small correction yields to the rotation.
+        if (goal->Purpose == MovePurpose::Formation
+            && Distance(self, goal->Local) > 5.0f)
+        {
+            priority = Priority::Mechanic;
+            utility = 200.0f;
+        }
 
         BotNativeAction::Candidate movement;
         movement.Id.ScopeKey = context.Board.CurrentScope.Key();
         movement.Id.Strategy = "adaptive_nefarian";
         movement.Id.Mechanic = std::string(MovePurposeName(goal->Purpose));
         movement.Id.Actor = context.Bot.Guid;
-        movement.Id.EventGeneration = GoalGeneration(*goal);
+        movement.Id.EventGeneration = LegGeneration(*goal, *leg);
         movement.ActionPriority = priority;
         movement.Utility = utility;
         movement.ExpiresAtMs = context.Board.ObservedAtMs + 1000;
-        // Everything happens on the GO 207834 surface: a transport-surface
-        // walk (package T), not an ordinary navmesh move.
-        movement.Action = PlatformMovementIntent(*goal);
+        movement.Action = ToTransportSurfaceMove(context.View.Elevator.Guid,
+            legWorld, leg->FloorToleranceYards);
         plan.Movement = std::move(movement);
-        plan.MovementSurface = goal;
     }
 };
 
-// Status receipt: the duty plan and phase a snapshot resolves to, or
-// {"applies":false} outside the encounter node.
-inline std::string BuildNefarianDutyPlanStatusJson(Blackboard const* board)
+// Status receipt: the duty plan, phase and capability blocker a snapshot
+// resolves to, or {"applies":false} outside the encounter node. "blocked" is
+// empty or a typed capability blocker (pillar_ascent_unsupported).
+inline std::string BuildNefarianDutyPlanStatusJson(Blackboard const* board,
+    Nefarian::NativeFacts const* facts = nullptr)
 {
     if (!board)
         return "{\"applies\":false}";
@@ -377,7 +456,10 @@ inline std::string BuildNefarianDutyPlanStatusJson(Blackboard const* board)
     std::string json = Nefarian::NefarianDutyPlanJson(
         Nefarian::BuildNefarianDutyPlan(*board));
     json.pop_back();
+    std::string_view const blocked =
+        Nefarian::CapabilityBlocker(view.CurrentPhase, facts);
     json += ",\"phase\":\"" + std::string(Nefarian::PhaseName(view.CurrentPhase))
+        + "\",\"blocked\":\"" + std::string(blocked)
         + "\",\"elevator_origin_z\":"
         + std::to_string(view.Elevator.Observed ? view.Elevator.OriginZ : 0.0f)
         + "}";

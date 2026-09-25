@@ -1,12 +1,12 @@
 #ifndef TRINITY_BOT_NEFARIAN_MOVEMENT_H
 #define TRINITY_BOT_NEFARIAN_MOVEMENT_H
 
-// Movement goals for Nefarian's End. Every goal is a destination on the
-// GO 207834 transport surface, published twice: as an ordinary world point
-// (BotNativeAction::Move, today's executor) and as a SurfaceGoal in the
-// transport frame for the transport-surface movement owned by package T
-// (boarding, pillar ascent, ledge drop). This file never manufactures a
-// position, a jump or a fall; it only chooses destinations.
+// Movement goals for Nefarian's End. Every goal is a standing spot on the
+// GO 207834 transport surface, expressed in the transport frame
+// (SurfaceGoal). The strategy walks to it in short legs (BotNefarianPath.h),
+// each submitted as package T's BotNativeAction::TransportSurfaceMove Walk
+// (BotNefarianSurfaceIntent.h). This file never manufactures a position, a
+// jump or a fall; it only chooses destinations.
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianLayout.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTactics.h"
@@ -84,17 +84,46 @@ inline LocalPoint BotLocal(MovementContext const& context)
     return WorldToLocal(context.Bot.Position);
 }
 
-// A bot stands on a pillar top when its transport offset (or, without the
-// native placement, its height over the observed origin) exceeds the native
-// Shadow of Cowardice threshold.
+// A bot stands on a pillar top only when its native transport placement says
+// so: a passenger of the elevator whose offset Z exceeds the native Shadow of
+// Cowardice threshold. Without a placement (no facts, or not a passenger, for
+// example in the magma over the lowered platform) it is not on a pillar top.
 inline bool OnPillarTop(MovementContext const& context)
+{
+    if (!context.Facts)
+        return false;
+    TransportPlacement const* placement =
+        context.Facts->FindPlacement(context.Bot.Guid);
+    return placement && placement->TransportEntry == ElevatorEntry
+        && placement->Offset.Z > PlatformFrame::CowardiceLocalZ;
+}
+
+// The bot's height in the platform frame, from its transport placement when
+// published, otherwise from the observed origin.
+inline float BotLocalZ(MovementContext const& context)
 {
     if (context.Facts)
         if (TransportPlacement const* placement =
                 context.Facts->FindPlacement(context.Bot.Guid))
-            return placement->Offset.Z > PlatformFrame::CowardiceLocalZ;
-    return context.Bot.Position.Z - context.View.Elevator.OriginZ
-        > PlatformFrame::CowardiceLocalZ - 1.5f;
+            return placement->Offset.Z;
+    return context.Bot.Position.Z - context.View.Elevator.OriginZ;
+}
+
+// Stands on the platform floor or ring (not on the ledge above, not in the
+// magma below, not on a pillar top). With native facts it must also be a
+// passenger of the elevator.
+inline bool OnPlatformFloor(MovementContext const& context)
+{
+    if (context.Facts)
+    {
+        TransportPlacement const* placement =
+            context.Facts->FindPlacement(context.Bot.Guid);
+        if (!placement || placement->TransportEntry != ElevatorEntry)
+            return false;
+    }
+    float const localZ = BotLocalZ(context);
+    return localZ > PlatformFrame::FloorLocalZ - 1.5f
+        && localZ < RingLocalZ + 2.0f;
 }
 
 inline SurfaceGoal MakeGoal(MovementContext const& context, MovePurpose purpose,
@@ -104,7 +133,9 @@ inline SurfaceGoal MakeGoal(MovementContext const& context, MovePurpose purpose,
     SurfaceGoal goal;
     goal.Purpose = purpose;
     goal.Target = surface;
-    goal.Local = local;
+    // Floor goals stand on the centre floor or the ring, clear of pillars.
+    goal.Local = surface == Surface::Floor ? SnapToStandingArea(local) : local;
+    local = goal.Local;
     goal.LocalZ = surface == Surface::Floor ? FloorLocalZAt(local)
         : SurfaceLocalZ(surface);
     goal.World = LocalToWorld(local, goal.LocalZ, context.View.Elevator.OriginZ);
@@ -208,7 +239,7 @@ inline std::optional<SurfaceGoal> BreathEscape(MovementContext const& context)
             ? 1.0f : -1.0f;
         float const out = pose.Facing + side * DegToRad(90.0f);
         std::optional<LocalPoint> const point = SafeNear(context, self, out,
-            12.0f, false);
+            9.0f, false);
         if (point)
             return MakeGoal(context, MovePurpose::BreathEscape, Surface::Floor,
                 *point, 2.0f, true);

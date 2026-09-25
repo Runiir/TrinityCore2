@@ -18,14 +18,20 @@ constexpr float TwoPi = 2.0f * Pi;
 // Platform model (package T's collision probe of GO 207834): the centre floor
 // sits at local z -0.5..+0.1 and rises to an outer ring at local +1.44 from
 // r 32 out to r 60; pillar blocks stand at headings 0/120/240 degrees between
-// r 36 and 44 with near-vertical sides. Destinations stay either on the
-// centre floor or on the ring, never on the rise between them.
-constexpr float MaxFloorRadius = 38.0f;
+// r 36 and 44 with near-vertical sides. No static navmesh covers any of it.
+// Standing spots lie on the centre floor (r <= 27) or on the ring
+// (33 <= r <= 57), never on the rise between them and never within 9 yards
+// of a pillar centre; paths keep 6 yards from a pillar centre (the block's
+// 4-yard half-depth, the body radius and a yard of margin).
 constexpr float CentreFloorMaxRadius = 28.0f;
 constexpr float RingInnerRadius = 32.0f;
+constexpr float InnerFloorLimit = 27.0f;
+constexpr float RingFloorLimit = 33.0f;
+constexpr float OuterFloorLimit = 57.0f;
 constexpr float RingLocalZ = 1.44f;
 constexpr float PillarBaseRadius = 26.0f;
 constexpr float PillarKeepOutRadius = 9.0f;
+constexpr float PillarPathClearance = 6.0f;
 
 enum class Surface : uint8
 {
@@ -178,9 +184,46 @@ inline bool NearPillar(LocalPoint point, float keepOut = PillarKeepOutRadius)
     return false;
 }
 
+inline bool OnCentreFloor(LocalPoint point)
+{
+    return Length(point) <= InnerFloorLimit;
+}
+
+inline bool OnRing(LocalPoint point)
+{
+    float const radius = Length(point);
+    return radius >= RingFloorLimit && radius <= OuterFloorLimit;
+}
+
+// A standing spot: centre floor or ring, clear of the pillars.
 inline bool OnFloorArea(LocalPoint point)
 {
-    return Length(point) <= MaxFloorRadius && !NearPillar(point);
+    return (OnCentreFloor(point) || OnRing(point)) && !NearPillar(point);
+}
+
+// Moves a destination off the rise (to the nearer side), inside the ring's
+// outer limit and out of a pillar's keep-out (radially, to the nearer side).
+inline LocalPoint SnapToStandingArea(LocalPoint point)
+{
+    float radius = Length(point);
+    float const angle = radius < 0.001f ? 0.0f : AngleOf(point);
+    if (radius > OuterFloorLimit)
+        radius = OuterFloorLimit;
+    if (radius > InnerFloorLimit && radius < RingFloorLimit)
+        radius = radius - InnerFloorLimit < RingFloorLimit - radius
+            ? InnerFloorLimit - 0.5f : RingFloorLimit + 0.5f;
+    LocalPoint snapped = Polar(angle, radius);
+    for (LocalPoint const& pillar : PillarCenters)
+    {
+        if (Distance(pillar, snapped) >= PillarKeepOutRadius)
+            continue;
+        float const inner = InnerFloorLimit - 0.5f;
+        float const outer = Length(pillar) + PillarKeepOutRadius + 0.5f;
+        radius = std::fabs(radius - inner) <= std::fabs(outer - radius)
+            ? inner : std::min(outer, OuterFloorLimit);
+        snapped = Polar(angle, radius);
+    }
+    return snapped;
 }
 
 // Pillar standing slots: the prototype stands on the pillar centre, so slots

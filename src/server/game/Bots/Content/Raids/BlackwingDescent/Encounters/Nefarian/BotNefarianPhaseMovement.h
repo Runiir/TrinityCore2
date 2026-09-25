@@ -9,6 +9,17 @@
 
 namespace BotEncounter::Nefarian
 {
+// Capability blocker of the current phase: phase 2 needs a lawful pillar
+// ascent, which the movement layer does not provide (it can neither swim nor
+// climb). Published on the plan and in the duty-plan status so the watchdog
+// can classify the run; the bots still hold the pillar feet meanwhile.
+inline std::string_view CapabilityBlocker(Phase phase, NativeFacts const* facts)
+{
+    if (PhaseWantsPillar(phase) && !(facts && facts->PillarAscentSupported))
+        return "pillar_ascent_unsupported";
+    return {};
+}
+
 inline std::optional<SurfaceGoal> PillarGoal(MovementContext const& context)
 {
     Phase const phase = context.View.CurrentPhase;
@@ -124,8 +135,8 @@ inline std::optional<SurfaceGoal> TankGoal(MovementContext const& context)
     float const raidSign = PhaseThreeWingSign(view, layout);
     LocalPoint const pen = Offset(centre,
         layout.NefarianGroundFacing - raidSign * Pi / 2.0f, 24.0f);
-    return MakeGoal(context, MovePurpose::WarriorPen, Surface::Floor,
-        ClampToRadius(pen, MaxFloorRadius - 2.0f), 3.0f, false);
+    return MakeGoal(context, MovePurpose::WarriorPen, Surface::Floor, pen, 3.0f,
+        false);
 }
 
 inline uint8 FormationSlot(Blackboard const& board, ObjectGuid guid)

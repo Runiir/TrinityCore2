@@ -26,9 +26,14 @@ Machine-readable packet:
   - 20.5 s: the elevator starts rising. GO 207834 takes 13.333 s to travel.
   - 33 s: the intro is done.
   - About 37 s: Nefarian lifts off and reanimates Onyxia.
-- **Engage.** Onyxia's Start Fight periodic (81516 → 81517, every 1 s) pulls into
-  combat only players who stand on the elevator transport (the script filters on
-  `GetTransGUID`). A bot that is not a passenger never starts the fight.
+- **Engage.** Onyxia's Start Fight periodic (81516 → 81517, every 1 s) targets only
+  players who stand on the elevator transport (the script filters on `GetTransGUID`).
+  The first such hit calls `DoZoneInCombat` for Onyxia, which engages every living
+  player in the instance, passenger or not. So the first passenger starts the fight for
+  everyone; bots still on the ledge are in combat too. Package T's ledge drop therefore
+  waits until every living member is at the lip (`transport_drop_waiting_for_cohort`),
+  and the descent node hands over to the encounter node as soon as boss index 5 is
+  IN_PROGRESS.
 - **Wipe.** Evade sets FAIL and raises the elevator, despawns the summons and spawn
   group 402, and resummons Nefarian 30 s later without the intro. The intro flag is
   not written to the instance save (low-priority gap).
@@ -70,9 +75,11 @@ conflict.
 - **Melee reach** (creature_model_info plus the player's reach): Nefarian 22.8 yd,
   Onyxia 20.8, Chromatic Prototype 7.2, Animated Bone Warrior 6.6.
   - A dragon only turns while its tank stays inside that reach.
-  - To move a dragon, its tank must leave the reach.
-  - A straight radial drag therefore cannot put the dragons 50 yd apart on this
-    platform. The tank has to lead its dragon around a run circle.
+  - To move a dragon, its tank must leave the reach; the chasing dragon stops at the
+    reach short of its tank.
+  - So a tank standing on the ring at r 52 beyond the dragon's end pulls the dragon out
+    to about r 29–31 (52 minus the reach). A tank inside r 34 cannot: its dragon stops
+    near r 13, and two such dragons stay within Children of Deathwing's 50 yd.
 - **Cones, all 60 yd.**
   - Breath: native 90° front. The DBC has no cone angle, so the SpellMgr default
     applies; the 4.4.2 client has 60°.
@@ -142,8 +149,10 @@ The code is in
 | `BotNefarianDutyPlan.h` | duties by capability |
 | `BotNefarianLayout.h` | dragon ends and tank leading |
 | `BotNefarianTactics.h` | targets, interrupts, bone warrior control |
-| `BotNefarianMovement.h`, `BotNefarianPhaseMovement.h` | movement goals |
-| `BotNefarianNativeFacts.h`, `BotNefarianNativeObserver.h` | optional native cast-progress and transport observations |
+| `BotNefarianMovement.h`, `BotNefarianPhaseMovement.h` | movement goals and the phase 2 capability blocker |
+| `BotNefarianPath.h` | leg planner on the platform surface |
+| `BotNefarianSurfaceIntent.h` | a leg as a `TransportSurfaceMove` Walk |
+| `BotNefarianNativeFacts.h`, `BotNefarianNativeObserver.h` | native cast progress, transport placement, running spline, spell readiness |
 | `BotAdaptiveNefarianStrategy.h` | composition |
 
 Spec selection: druid Feral tank and shaman Restoration. Two tanks, three healers, five
@@ -159,15 +168,28 @@ DPS. Roster GUIDs 11005001-11005010.
     - pillar 1: Disc Priest, Blood DK (Mind Freeze), Mage (backup Counterspell);
     - pillar 2: Resto Shaman (backup Wind Shear), Ret (Rebuke), Hunter.
   - The shackler is the first living priest. The controllers are the other living
-    non-tanks with a stun, snare or root, stuns first.
+    non-tanks with a stun, snare or root, ordered stuns, roots, cooldown-free snares,
+    then snares with a cooldown.
 - **Phase 1.**
-  - The Onyxia tank leads her out from the centre and around a 32-yard run circle to
-    her end, beside the Onyxia tank's pillar. It then holds tangentially ahead of her,
-    inside her reach, so she faces along the wall.
-  - The Nefarian tank does the same at the opposite end once Nefarian lands. The ends
-    are more than 50 yd apart.
-  - On Lightning Discharge's wind-up (78090) the Onyxia tank steps 5 yd outward. Onyxia
-    turns and her tail points at the raid, which is then in her back immunity cone.
+  - The ends: Onyxia's is 30° from her tank's pillar; Nefarian's is opposite it.
+  - **Pull.** The Onyxia tank walks to the ring at r 52 on a radially clear heading at
+    her end (a dragon off its heading is pulled past its end by the same angle, up to
+    25°). Onyxia chases out from the centre and stops at about r 31.
+  - **Hold.** Once the dragon is at r ≥ 27.5 within 15° of its end, the tank stands
+    7 yd from it, tangentially and 25° outward, inside its reach. The dragon only turns
+    and faces along the wall, with the raid (at the centre) on its flank.
+  - The Nefarian tank does the same at the opposite end once Nefarian lands. Opposite
+    ends at r ≥ 27.5 are at least 2 × 27.5 × cos 15° = 53 yd apart; the chase-model test
+    (`tests/test_nefarian_movement.py`) settles them at r 32 and r 30, 62 yd apart, from
+    both the board point and the ledge-drop landing.
+  - On Lightning Discharge's wind-up (78090) the Onyxia tank steps to 7 yd radially
+    outward of her. She turns and her tail points at the raid, which is then in her back
+    immunity cone.
+  - **Trade-off.** That back cone (90°, 60 yd) overlaps Onyxia's Tail Lash cone (82°,
+    60 yd): the raid avoids 5 Lightning Discharge pulses (23.4–24.6k each in 10N, about
+    120k per player) but risks one Tail Lash (17.5–22.5k and a 2 s stun) if her 17–18 s
+    lash lands in the 5 s window. The strategy accepts the lash risk; formation spots
+    avoid her rear cone except during a discharge.
   - The raid holds a band between the dragons, on both dragons' inner wings. Any spot
     in a front or rear cone is rotated to a safe one; Onyxia's rear is allowed during
     her discharge.
@@ -179,8 +201,11 @@ DPS. Roster GUIDs 11005001-11005010.
 - **Bone warriors.**
   - The shackler holds the most empowered free warrior with Shackle Undead, one at a
     time.
-  - Controllers own warriors round-robin and reapply only when nothing holds the
-    warrior:
+  - Exactly one controller acts on a warrior per decision: the first in rotation that
+    is in range and whose control spell is ready (the native observer reads
+    `SpellHistory`). A 60 s Hammer of Justice on cooldown hands the warrior to the next
+    controller, down to the cooldown-free Curse of Exhaustion. Nobody reapplies over a
+    held warrior or damages the shackler's candidate:
     - Hammer of Justice: Holy and Ret;
     - Concussive Shot: Hunter;
     - Frost Shock: Shaman;
@@ -191,8 +216,14 @@ DPS. Roster GUIDs 11005001-11005010.
     wing away from the raid.
 - **Phase 2.**
   - At Onyxia's death each bot heads to its pillar's foot. With a pillar ascent it
-    then goes to its slot on the pillar top once the floor moves; today (no ascent) it
-    holds the foot.
+    then goes to its slot on the pillar top once the floor moves.
+  - Today there is no ascent. Every plan carries `Blocked = pillar_ascent_unsupported`,
+    and so do the decision trace and the `nefarian_duty_plan` status (`"blocked"`). The
+    bots hold the pillar feet and sink with the floor into the magma. That is a known
+    capability limit, not a strategy failure: patch W1 makes the completion watchdog end
+    the diagnostic run at the first heartbeat that reports the blocker
+    (`encounter_capability_blocker_watchdog`), keeping everything captured through
+    phase 1.
   - Team DPS stays on the pillar's prototype. With no prototype left, offense is
     suppressed, because any Nefarian damage triggers Electrocute.
   - Each casting prototype has an ordered list of interrupters who can reach it now:
@@ -200,51 +231,55 @@ DPS. Roster GUIDs 11005001-11005010.
     cooldown. The first acts on the cast. The second acts after 1.8 s of the 4-second
     cast when native cast progress is published.
 - **Phase 3.**
-  - Everyone stays on the pillars while the floor rises, then drops to the floor before
-    Nefarian lands (Shadow of Cowardice).
+  - With a pillar ascent, everyone would stay on the pillars while the floor rises and
+    then drop before Nefarian lands (Shadow of Cowardice). The drop is a 10 yd fall off a
+    near-vertical side (StepOff, Fall, Land), not a walk; until it is wired, a bot on a
+    pillar top reports `pillar_descent_unsupported` and does not move. A pillar top is
+    recognised only from the bot's transport placement, never from its height alone.
   - The Nefarian tank holds him near the centre, facing the tank's pillar. The raid
     takes the wing farther from fires and warrior piles.
-  - Everyone leaves any Shadowblaze fire by 12 yd and the front cone of a casting
-    breath.
+  - Everyone leaves any Shadowblaze fire (4 yd radius) for a spot 12 yd from its
+    centre, and steps 9 yd out of the front cone of a casting breath.
 
-## 7. Movement interface for package T
+## 7. Movement on the platform (package T's transport-surface walk)
 
-Every movement is a `SurfaceGoal`:
-- purpose;
-- `Floor` or `PillarTop`;
-- transport-local point and floor-aware Z (centre floor, then the ring at +1.44);
-- world point at the observed origin;
-- transport GUID and entry 207834;
-- arrival tolerance;
-- pillar index;
-- urgency.
+No static navmesh covers GO 207834, so an ordinary `Move` is refused there for the whole
+fight. The strategy picks a standing spot (`SurfaceGoal`: purpose, `Floor` or
+`PillarTop`, transport-local point and Z, world point at the observed origin, elevator
+GUID, arrival tolerance, pillar, urgency) and walks to it in legs
+(`BotNefarianPath.h`), one per decision, each submitted as
+`BotNativeAction::TransportSurfaceMove` Walk with `EndOnTransport`:
+- A leg is at most 9.5 yd; the executor refuses anything over `MaxSurfaceWalkYards` (12).
+- Standing spots lie on the centre floor (r ≤ 27) or on the ring (33 ≤ r ≤ 57), at
+  least 9 yd from a pillar centre. Paths keep 6 yd from a pillar centre.
+- The rise between the centre floor and the ring (r 27–33) is not level, so it is
+  crossed only by a radial leg from r 26.5 to r 33.5, with a 0.9 yd floor tolerance.
+  Level legs keep the bot's own height with a 0.6 yd tolerance.
+- On the ring a leg is straight when it stays on the ring and clear of the pillars;
+  otherwise it follows a lane: r 33.5 inside the pillars or r 50 outside them. Lanes
+  change only on a heading whose radial line clears every pillar. This takes a bot from
+  the ledge-drop landing behind pillar 0 (local 49.2, 0) around the pillar.
+- The plan is recomputed every decision. A new Walk replaces one still running (T), and
+  a leg already in flight to the same end is not relaunched (`nefarian_leg_in_flight`).
+  Walks claim movement, GCD and cast: hazard escapes are Survival priority, tank and
+  pillar moves Mechanic, and a formation spot more than 5 yd away is Mechanic; small
+  corrections yield to the rotation.
+- Typed holds, recorded in the decision trace: `nefarian_elevator_unobserved` (never
+  an ordinary move instead), `nefarian_not_on_platform` (not a passenger of the
+  elevator), `nefarian_movement_stunned` (Tail Lash stun; wait it out),
+  `nefarian_no_surface_path`.
+- The planner converges between every pair of standing spots it was tested on (9,720
+  pairs), and the whole-raid simulation emits no leg over 9.5 yd, none through a
+  pillar and no non-radial rise crossing.
 
-The strategy submits the goal as `BotNativeAction::TransportSurfaceMove` (Walk,
-`EndOnTransport`) through the existing native-action candidate path
-(`BotNefarianSurfaceIntent.h`). An ordinary `Move` is used only while the elevator is
-unobserved.
-
-What package T provides and what is still needed:
-1. **Descent and boarding** (T, route rows through M). All ten bots must be passengers
-   before Onyxia's start-fight pulse. The first bot to board pulls her. The strategy only
-   runs on the encounter node, so the descent node should hand over as soon as Onyxia is
-   in combat.
-2. **Platform walk** (T, available). Straight walks on the stationary platform.
-   Destinations stay on the centre floor (r ≤ 28) or on the ring (r ≥ 32) and 9 yd clear
-   of the pillars. Walks are refused while the elevator moves.
-3. **Pillar ascent** (not supported: T can neither swim nor climb). Without it phase 2
-   holds each team at its pillar's foot (local r 26, about 18 yd from the prototype):
-   - Ranged members damage and interrupt from there. Only Counterspell and Wind Shear
-     reach, and melee interrupts cannot.
-   - The raid sinks into the magma.
-
-   A native kill needs this capability. `NativeFacts::PillarAscentSupported` switches the
-   strategy to pillar-top goals.
-4. **Ledge drop from a pillar top** (T, StepOff → Fall → Land from a raised part of the
-   same transport). Only needed once pillar ascent exists.
-5. **Placement observation.** The dispatch can publish transport offsets through
-   `BotNefarianNativeObserver.h`; the strategy uses them to recognise a bot on a pillar
-   top.
+Still needed from package T:
+1. **Pillar ascent** (not supported: T can neither swim nor climb). Players swim up
+   through the magma onto a pillar lip (Wowhead). Without it phase 2 is a typed blocker
+   (section 6). `NativeFacts::PillarAscentSupported` switches the strategy to pillar-top
+   goals once it exists.
+2. **Ledge drop from a pillar top** (StepOff → Fall → Land from a raised part of the same
+   transport; T's executor supports it, the strategy does not drive it yet). Only needed
+   once the ascent exists.
 
 ## 8. Encounter damage fidelity
 

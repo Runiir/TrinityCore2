@@ -5,7 +5,8 @@ src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian and
 exercises phase detection, the capability duty plan for the canonical 10N
 composition, platform geometry, the phase 1 Electrocute budget, Blast Nova
 interrupts, bone warrior control, tank leading and the movement goals handed
-to the transport-surface movement layer.
+to the transport-surface movement layer. PRELUDE (fixtures) is shared with
+tests/test_nefarian_movement.py.
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ def _compile_and_run(tmp_path: Path, program: str) -> None:
     subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
-PROGRAM = r'''
+PRELUDE = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
 #include <cstdio>
 #include <string>
@@ -46,18 +47,18 @@ using namespace BotEncounter::Nefarian;
 
 std::string ObjectGuid::ToString() const { return std::to_string(GetRawValue()); }
 
-static int failures = 0;
+[[maybe_unused]] static int failures = 0;
 #define CHECK(condition, message) do { if (!(condition)) { \
     std::fprintf(stderr, "FAIL line %d: %s\n", __LINE__, message); ++failures; } } while (0)
 
-static bool Near(float left, float right, float tolerance = 0.05f)
+[[maybe_unused]] static bool Near(float left, float right, float tolerance = 0.05f)
 {
     return std::fabs(left - right) <= tolerance;
 }
 
-static ObjectGuid Bot(uint32 slot) { return ObjectGuid(HighGuid::Player, uint32(30500 + slot)); }
+[[maybe_unused]] static ObjectGuid Bot(uint32 slot) { return ObjectGuid(HighGuid::Player, uint32(30500 + slot)); }
 
-static ActorSnapshot MakePlayer(uint32 slot, char const* role, char const* spec,
+[[maybe_unused]] static ActorSnapshot MakePlayer(uint32 slot, char const* role, char const* spec,
     LocalPoint at, float localZ = PlatformFrame::FloorLocalZ,
     float originZ = PlatformFrame::RaisedOriginZ)
 {
@@ -72,7 +73,7 @@ static ActorSnapshot MakePlayer(uint32 slot, char const* role, char const* spec,
     return actor;
 }
 
-static ActorSnapshot MakeCreature(uint32 entry, uint32 counter, LocalPoint at,
+[[maybe_unused]] static ActorSnapshot MakeCreature(uint32 entry, uint32 counter, LocalPoint at,
     float localFacing = 0.0f, float localZ = PlatformFrame::FloorLocalZ,
     float originZ = PlatformFrame::RaisedOriginZ)
 {
@@ -87,7 +88,7 @@ static ActorSnapshot MakeCreature(uint32 entry, uint32 counter, LocalPoint at,
     return actor;
 }
 
-static ActorSnapshot MakeElevator(float originZ)
+[[maybe_unused]] static ActorSnapshot MakeElevator(float originZ)
 {
     ActorSnapshot elevator;
     elevator.Guid = ObjectGuid(HighGuid::GameObject, ElevatorEntry, uint32(235179));
@@ -98,7 +99,7 @@ static ActorSnapshot MakeElevator(float originZ)
     return elevator;
 }
 
-static void AddAura(ActorSnapshot& actor, uint32 spellId, uint8 stacks = 1)
+[[maybe_unused]] static void AddAura(ActorSnapshot& actor, uint32 spellId, uint8 stacks = 1)
 {
     AuraSnapshot aura;
     aura.SpellId = spellId;
@@ -108,7 +109,7 @@ static void AddAura(ActorSnapshot& actor, uint32 spellId, uint8 stacks = 1)
 
 // Canonical composition (experiments/configs/raid_compositions/blackwing_descent_10n.json)
 // with the Nefarian spec selection: Feral tank and Restoration shaman.
-static Blackboard CanonicalBoard(float originZ = PlatformFrame::RaisedOriginZ)
+[[maybe_unused]] static Blackboard CanonicalBoard(float originZ = PlatformFrame::RaisedOriginZ)
 {
     Blackboard board;
     board.CurrentScope = Scope{ "blackwing_descent_10n_nefarian_c0", 3, 0, 5,
@@ -132,7 +133,7 @@ static Blackboard CanonicalBoard(float originZ = PlatformFrame::RaisedOriginZ)
     return board;
 }
 
-static ActorSnapshot& FindPlayer(Blackboard& board, uint32 slot)
+[[maybe_unused]] static ActorSnapshot& FindPlayer(Blackboard& board, uint32 slot)
 {
     for (ActorSnapshot& player : board.Players)
         if (player.Guid == Bot(slot))
@@ -140,6 +141,49 @@ static ActorSnapshot& FindPlayer(Blackboard& board, uint32 slot)
     return board.Players.front();
 }
 
+[[maybe_unused]] static void AddDragons(Blackboard& board, bool landed)
+{
+    ActorSnapshot onyxia = MakeCreature(OnyxiaEntry, 11, Polar(DegToRad(30.0f), 29.0f),
+        DegToRad(125.0f));
+    onyxia.InCombat = true;
+    onyxia.VictimGuid = Bot(2);
+    ActorSnapshot nefarian = MakeCreature(NefarianEntry, 12,
+        landed ? Polar(DegToRad(-150.0f), 29.0f) : LocalPoint{ 0.0f, 0.0f },
+        DegToRad(-55.0f), landed ? PlatformFrame::FloorLocalZ : 60.0f);
+    nefarian.Flying = !landed;
+    nefarian.InCombat = landed;
+    nefarian.VictimGuid = landed ? Bot(1) : ObjectGuid();
+    board.Summons.push_back(onyxia);
+    board.Summons.push_back(nefarian);
+}
+
+[[maybe_unused]] static Blackboard PlatformBoard(float originZ)
+{
+    Blackboard board = CanonicalBoard(originZ);
+    ActorSnapshot nefarian = MakeCreature(NefarianEntry, 12, { 0.0f, 0.0f }, 0.0f, 40.0f, originZ);
+    nefarian.Flying = true;
+    nefarian.InCombat = true;
+    AddAura(nefarian, SpellPhaseTwoHealthAura);
+    board.Summons.push_back(nefarian);
+    for (uint8 pillar = 0; pillar < 3; ++pillar)
+    {
+        ActorSnapshot prototype = MakeCreature(PrototypeEntry, 20 + pillar, PillarCenters[pillar],
+            0.0f, PlatformFrame::PillarTopLocalZ, originZ);
+        prototype.InCombat = true;
+        board.Summons.push_back(prototype);
+    }
+    // Pillar 1 team on its pillar top: disc priest, death knight, mage.
+    uint8 slot = 0;
+    for (uint32 member : { 7u, 1u, 4u })
+        FindPlayer(board, member).Position = LocalToWorld(PillarSlot(1, slot++),
+            PlatformFrame::PillarTopLocalZ, originZ);
+    return board;
+}
+
+'''
+
+
+PROGRAM = PRELUDE + r'''
 static void TestGeometry()
 {
     Vector3 const top = LocalToWorld(PillarCenters[0], PlatformFrame::PillarTopLocalZ,
@@ -182,17 +226,19 @@ static void TestDutyPlan()
         "{\"members\":[30505,30508,30502,30510],\"healer\":30505,\"interrupt\":30508,\"backup\":30505},"
         "{\"members\":[30507,30501,30504],\"healer\":30507,\"interrupt\":30501,\"backup\":30504},"
         "{\"members\":[30509,30506,30503],\"healer\":30509,\"interrupt\":30506,\"backup\":30509}],"
-        "\"controllers\":[30505,30506,30503,30509,30510,30504]}";
+        "\"controllers\":[30505,30506,30504,30510,30503,30509]}";
     CHECK(json == expected, json.c_str());
 
     ArenaLayout const layout = BuildArenaLayout(plan);
     CHECK(Near(layout.OnyxiaEndAngle, DegToRad(30.0f), 0.01f), "Onyxia's end beside pillar 0");
     CHECK(AngularGap(layout.NefarianEndAngle, PillarAngle(1)) < DegToRad(30.0f),
         "Nefarian's end beside his tank's pillar");
-    LocalPoint const onyxiaEnd = Polar(layout.OnyxiaEndAngle, 29.0f);
-    LocalPoint const nefarianEnd = Polar(layout.NefarianEndAngle, 29.0f);
-    CHECK(Distance(onyxiaEnd, nefarianEnd) > ChildrenOfDeathwingRange,
-        "the two ends are beyond Children of Deathwing range");
+    CHECK(Near(AngularGap(layout.OnyxiaEndAngle, layout.NefarianEndAngle), Pi, 0.01f),
+        "the dragons' ends are opposite (separation is proven by the chase model in "
+        "test_nefarian_movement.py)");
+    CHECK(Near(2.0f * DragonHoldMinRadius * std::cos(DegToRad(DragonGoalAngleToleranceDeg)),
+        53.1f, 0.1f) && 53.1f > ChildrenOfDeathwingRange,
+        "the hold gate keeps opposite dragons beyond 50 yards");
 
     // A dead member keeps its pillar; its duty moves to a living teammate.
     Blackboard withDead = CanonicalBoard();
@@ -207,22 +253,6 @@ static void TestDutyPlan()
     withHuman.ExternalPlayers.push_back(MakePlayer(40, "tank", "protection_paladin", { 0.0f, 5.0f }));
     CHECK(NefarianDutyPlanJson(BuildNefarianDutyPlan(withHuman)) == expected,
         "external players do not change the plan");
-}
-
-static void AddDragons(Blackboard& board, bool landed)
-{
-    ActorSnapshot onyxia = MakeCreature(OnyxiaEntry, 11, Polar(DegToRad(30.0f), 29.0f),
-        DegToRad(125.0f));
-    onyxia.InCombat = true;
-    onyxia.VictimGuid = Bot(2);
-    ActorSnapshot nefarian = MakeCreature(NefarianEntry, 12,
-        landed ? Polar(DegToRad(-150.0f), 29.0f) : LocalPoint{ 0.0f, 0.0f },
-        DegToRad(-55.0f), landed ? PlatformFrame::FloorLocalZ : 60.0f);
-    nefarian.Flying = !landed;
-    nefarian.InCombat = landed;
-    nefarian.VictimGuid = landed ? Bot(1) : ObjectGuid();
-    board.Summons.push_back(onyxia);
-    board.Summons.push_back(nefarian);
 }
 
 static void TestPhases()
@@ -317,29 +347,6 @@ static void TestPhaseOneTarget()
     AdaptiveNefarianPlan const healer = strategy.Propose(board, Bot(7), "healer");
     CHECK(healer.OwnsNode && healer.DamageTarget.IsEmpty() && !healer.SuppressOffense,
         "healers keep their native healing");
-}
-
-static Blackboard PlatformBoard(float originZ)
-{
-    Blackboard board = CanonicalBoard(originZ);
-    ActorSnapshot nefarian = MakeCreature(NefarianEntry, 12, { 0.0f, 0.0f }, 0.0f, 40.0f, originZ);
-    nefarian.Flying = true;
-    nefarian.InCombat = true;
-    AddAura(nefarian, SpellPhaseTwoHealthAura);
-    board.Summons.push_back(nefarian);
-    for (uint8 pillar = 0; pillar < 3; ++pillar)
-    {
-        ActorSnapshot prototype = MakeCreature(PrototypeEntry, 20 + pillar, PillarCenters[pillar],
-            0.0f, PlatformFrame::PillarTopLocalZ, originZ);
-        prototype.InCombat = true;
-        board.Summons.push_back(prototype);
-    }
-    // Pillar 1 team on its pillar top: disc priest, death knight, mage.
-    uint8 slot = 0;
-    for (uint32 member : { 7u, 1u, 4u })
-        FindPlayer(board, member).Position = LocalToWorld(PillarSlot(1, slot++),
-            PlatformFrame::PillarTopLocalZ, originZ);
-    return board;
 }
 
 static void TestInterrupts()
@@ -449,6 +456,25 @@ static void TestBoneWarriorControl()
     CHECK(DecideBoneWarriorControl(collapsed, collapsedView, noShacklerPlan,
         FindPlayer(collapsed, 5)).Target == second.Guid, "collapsed warriors are ignored");
 
+    // A controller whose spell is on cooldown hands the warrior on: Hammer of
+    // Justice (60 s) to the next stun, then the root, then a cooldown-free snare.
+    NativeFacts cooldowns;
+    cooldowns.Readiness.push_back({ Bot(5), 853, false });
+    CHECK(DecideBoneWarriorControl(board, view, plan, FindPlayer(board, 5), &cooldowns)
+        .Target.IsEmpty(), "holy paladin's Hammer of Justice is on cooldown");
+    ControlDecision const handed = DecideBoneWarriorControl(board, view, plan,
+        FindPlayer(board, 6), &cooldowns);
+    CHECK(handed.SpellId == 853 && handed.Target == first.Guid, "the ret takes warrior 1");
+    cooldowns.Readiness.push_back({ Bot(6), 853, false });
+    ControlDecision const rooted = DecideBoneWarriorControl(board, view, plan,
+        FindPlayer(board, 4), &cooldowns);
+    CHECK(rooted.SpellId == 122 && rooted.Target == first.Guid, "then the mage's Frost Nova");
+    cooldowns.Readiness.push_back({ Bot(4), 122, false });
+    ControlDecision const snared = DecideBoneWarriorControl(board, view, plan,
+        FindPlayer(board, 10), &cooldowns);
+    CHECK(snared.SpellId == 18223 && snared.Target == first.Guid,
+        "then the warlock's cooldown-free Curse of Exhaustion");
+
     // The chased hunter kites; tanks never kite.
     AdaptiveNefarianStrategy strategy;
     AdaptiveNefarianPlan const hunter = strategy.Propose(board, Bot(3), "dps");
@@ -462,29 +488,49 @@ static void TestTankSpots()
 {
     float const goal = DegToRad(30.0f);
     TankSpot const lead = PlanTankSpot({ 0.0f, 0.0f }, goal, OnyxiaMeleeReach, false);
-    CHECK(lead.Step == TankStep::LeadOut && Near(Length(lead.Point), TankRunRadius, 0.01f),
-        "lead the dragon out from the centre");
-    CHECK(!NearPillar(lead.Point), "lead point is clear of the pillars");
+    CHECK(lead.Step == TankStep::LeadOut && Near(Length(lead.Point), TankPullRadius, 0.01f)
+        && AngularGap(AngleOf(lead.Point), goal) < DegToRad(1.0f),
+        "pull the dragon out from the centre to the ring beyond its end");
+    CHECK(RadialClear(AngleOf(lead.Point)), "the pull heading clears the pillars");
 
-    LocalPoint const pulled = Polar(AngleOf(lead.Point), 12.0f);
-    TankSpot const orbit = PlanTankSpot(pulled, goal, OnyxiaMeleeReach, false);
-    CHECK(orbit.Step == TankStep::Orbit, "orbit toward the dragon's end");
-    CHECK(Distance(orbit.Point, pulled) > OnyxiaMeleeReach, "orbit point pulls the dragon");
+    TankSpot const shortEnd = PlanTankSpot(Polar(goal, 22.0f), goal, OnyxiaMeleeReach, false);
+    CHECK(shortEnd.Step == TankStep::Pull, "a dragon at r 22 is pulled again, never held");
+    TankSpot const offEnd = PlanTankSpot(Polar(goal + DegToRad(20.0f), 30.0f), goal,
+        OnyxiaMeleeReach, false);
+    CHECK(offEnd.Step == TankStep::Pull
+        && NormalizeSigned(AngleOf(offEnd.Point) - goal) < 0.0f,
+        "a dragon past its end is pulled back beyond it");
 
-    LocalPoint const atEnd = Polar(goal, 29.0f);
+    LocalPoint const atEnd = Polar(goal, 30.0f);
     TankSpot const hold = PlanTankSpot(atEnd, goal, OnyxiaMeleeReach, false);
     CHECK(hold.Step == TankStep::Hold && Distance(hold.Point, atEnd) < OnyxiaMeleeReach - 3.0f,
         "hold inside reach so the dragon only turns");
+    CHECK(OnFloorArea(hold.Point), "the hold spot is a ring standing spot");
     LocalPoint const toTank{ hold.Point.X - atEnd.X, hold.Point.Y - atEnd.Y };
-    float const tangential = std::fabs(NormalizeSigned(AngleOf(toTank) - goal));
-    CHECK(tangential > DegToRad(60.0f) && tangential < DegToRad(120.0f),
-        "held dragon faces along the wall");
+    float const offRadial = AngularGap(AngleOf(toTank), goal);
+    CHECK(offRadial > DegToRad(50.0f) && offRadial < DegToRad(80.0f),
+        "held dragon faces along the wall, turned slightly outward");
+    DragonPose const held{ atEnd, AngleOf(toTank) };
+    CHECK(!InRearCone(held, { 0.0f, 0.0f }) && !InFrontCone(held, { 0.0f, 0.0f }),
+        "the raid at the centre is on the held dragon's flank");
 
     TankSpot const turn = PlanTankSpot(atEnd, goal, OnyxiaMeleeReach, true);
-    CHECK(turn.Step == TankStep::Discharge && Near(Length(turn.Point), 34.0f, 0.1f),
+    CHECK(turn.Step == TankStep::Discharge && Near(Length(turn.Point), 37.0f, 0.1f),
         "Lightning Discharge: step outward so her tail faces the raid");
     DragonPose const turned{ atEnd, goal };
     CHECK(!InDischargeFlank(turned, { 0.0f, 0.0f }), "the raid at the centre is then in her back cone");
+}
+
+static TransportPlacement Placement(Blackboard const& board, uint32 slot, float localZ)
+{
+    ActorSnapshot const* bot = board.FindActor(Bot(slot));
+    LocalPoint const local = WorldToLocal(bot->Position);
+    TransportPlacement placement;
+    placement.Actor = Bot(slot);
+    placement.Transport = board.Interactables[0].Guid;
+    placement.TransportEntry = ElevatorEntry;
+    placement.Offset = { local.X, local.Y, localZ };
+    return placement;
 }
 
 static void TestPlatformMovement()
@@ -496,37 +542,69 @@ static void TestPlatformMovement()
     AdaptiveNefarianPlan const base = strategy.Propose(ascent, Bot(1), "tank");
     CHECK(base.Phase == Phase::PlatformAscent && base.MovementSurface
         && base.MovementSurface->Target == Surface::Floor
-        && base.MovementSurface->Pillar == 1, "floor still up: wait at the pillar's foot");
+        && base.MovementSurface->Pillar == 1, "floor still up: head for the pillar's foot");
+    CHECK(base.Blocked == "pillar_ascent_unsupported",
+        "phase 2 without a pillar ascent is a typed capability blocker");
+    CHECK(BuildNefarianDutyPlanStatusJson(&ascent).find(
+        "\"blocked\":\"pillar_ascent_unsupported\"") != std::string::npos,
+        "the duty-plan status publishes the blocker");
+    Blackboard both = CanonicalBoard();
+    AddDragons(both, true);
+    CHECK(strategy.Propose(both, Bot(1), "tank").Blocked.empty()
+        && BuildNefarianDutyPlanStatusJson(&both).find("\"blocked\":\"\"") != std::string::npos,
+        "phase 1 has no blocker");
+
+    auto const* baseWalk = base.Movement
+        ? std::get_if<BotNativeAction::TransportSurfaceMove>(&base.Movement->Action) : nullptr;
+    CHECK(baseWalk && baseWalk->EndOnTransport
+        && baseWalk->Kind == BotNativeAction::TransportSurfaceMove::Stage::Walk
+        && baseWalk->Transport == ascent.Interactables[0].Guid
+        && Distance(WorldToLocal({ baseWalk->X, baseWalk->Y, baseWalk->Z }),
+            WorldToLocal(FindPlayer(ascent, 1).Position)) <= MaxLegYards + 0.01f,
+        "platform movement is one short transport-surface walk");
 
     Blackboard sinking = ascent;
     sinking.Interactables = { MakeElevator(2.0f) };
     AdaptiveNefarianPlan const foot = strategy.Propose(sinking, Bot(1), "tank");
     CHECK(foot.MovementSurface && foot.MovementSurface->Purpose == MovePurpose::PillarFoot
-        && foot.MovementSurface->Target == Surface::Floor,
+        && foot.MovementSurface->Target == Surface::Floor && foot.Blocked == "pillar_ascent_unsupported",
         "without a pillar ascent the team holds the pillar's foot");
     NativeFacts ascentFacts;
     ascentFacts.PillarAscentSupported = true;
+    ascentFacts.Placements.push_back(Placement(sinking, 1, PlatformFrame::FloorLocalZ));
     AdaptiveNefarianPlan const top = strategy.Propose(sinking, Bot(1), "tank", &ascentFacts);
-    CHECK(top.MovementSurface && top.MovementSurface->Target == Surface::PillarTop
-        && top.MovementSurface->Urgent, "floor sinking: climb the pillar now");
+    CHECK(top.Blocked.empty() && top.MovementSurface
+        && top.MovementSurface->Target == Surface::PillarTop && top.MovementSurface->Urgent,
+        "with a declared ascent: climb the pillar now");
     Vector3 const expected = LocalToWorld(PillarSlot(1, 1), PlatformFrame::PillarTopLocalZ, 2.0f);
-    CHECK(top.Movement && Near(top.MovementSurface->World.Z, expected.Z)
+    CHECK(Near(top.MovementSurface->World.Z, expected.Z)
         && Near(top.MovementSurface->World.X, expected.X), "pillar top follows the platform");
-    auto const* walk = std::get_if<BotNativeAction::TransportSurfaceMove>(&top.Movement->Action);
-    CHECK(walk && Near(walk->X, expected.X) && Near(walk->Z, expected.Z) && walk->EndOnTransport
-        && walk->Transport == sinking.Interactables[0].Guid
-        && walk->Kind == BotNativeAction::TransportSurfaceMove::Stage::Walk,
-        "platform movement is a transport-surface walk");
-    Vector3 const ring = LocalToWorld({ 34.0f, 0.0f }, RingLocalZ, PlatformFrame::RaisedOriginZ);
-    CHECK(Near(FloorLocalZAt({ 34.0f, 0.0f }), RingLocalZ) && Near(ring.Z, 8.47378f, 0.01f),
-        "outer ring floor height (world 8.47 raised)");
+    CHECK(top.MovementLeg && Distance(top.MovementLeg->To,
+            WorldToLocal(FindPlayer(sinking, 1).Position)) <= MaxLegYards + 0.01f,
+        "the ascent is approached in short legs");
 
+    // Leaving a pillar top needs StepOff/Fall/Land: typed blocker, no walk.
     Blackboard landing = PlatformBoard(PlatformFrame::RaisedOriginZ);
     landing.Summons.resize(1);
-    AdaptiveNefarianPlan const down = strategy.Propose(landing, Bot(1), "tank");
+    NativeFacts onTop;
+    onTop.Placements.push_back(Placement(landing, 1, PlatformFrame::PillarTopLocalZ));
+    AdaptiveNefarianPlan const down = strategy.Propose(landing, Bot(1), "tank", &onTop);
     CHECK(down.Phase == Phase::NefarianLanding && down.MovementSurface
         && down.MovementSurface->Purpose == MovePurpose::PillarDescent
-        && down.MovementSurface->Target == Surface::Floor, "floor raised: leave the pillar");
+        && down.Blocked == "pillar_descent_unsupported"
+        && down.MovementHold == "pillar_descent_unsupported" && !down.Movement,
+        "pillar descent is a typed blocker until StepOff/Fall/Land is wired");
+    // Height alone never says "pillar top" (a bot in the magma over the
+    // lowered platform would look the same).
+    AdaptiveNefarianPlan const noFacts = strategy.Propose(landing, Bot(1), "tank");
+    CHECK(noFacts.Blocked.empty() && noFacts.MovementHold == "nefarian_not_on_platform"
+        && !noFacts.Movement, "without a placement the bot is not treated as on a pillar");
+
+    Blackboard unobserved = both;
+    unobserved.Interactables.clear();
+    AdaptiveNefarianPlan const hold = strategy.Propose(unobserved, Bot(4), "dps");
+    CHECK(!hold.Movement && hold.MovementHold == "nefarian_elevator_unobserved",
+        "an unobserved elevator never falls back to an ordinary move");
 
     Blackboard ground = landing;
     ground.Summons[0].Flying = false;
@@ -543,7 +621,24 @@ static void TestPlatformMovement()
     CHECK(escape.MovementSurface && escape.MovementSurface->Purpose == MovePurpose::FireEscape
         && Distance(escape.MovementSurface->Local, { 1.5f, 16.0f }) >= ShadowblazeRadius + 4.0f,
         "leave the Shadowblaze fire");
+    CHECK(escape.Movement && escape.Movement->ActionPriority
+        == BotActionArbitration::Priority::Survival, "the escape outranks casts");
     CHECK(escape.DamageTarget == ground.Summons[0].Guid, "phase 3 damage on Nefarian");
+
+    // The same leg already in flight is not relaunched every decision.
+    NativeFacts inFlight;
+    Vector3 const legEnd = LocalToWorld(escape.MovementLeg->To, escape.MovementLeg->LocalZ,
+        PlatformFrame::RaisedOriginZ);
+    inFlight.Motion.push_back({ Bot(4), true, legEnd });
+    inFlight.Placements.push_back(Placement(ground, 4, PlatformFrame::FloorLocalZ));
+    AdaptiveNefarianPlan const flying = strategy.Propose(ground, Bot(4), "dps", &inFlight);
+    CHECK(!flying.Movement && flying.MovementHold == "nefarian_leg_in_flight",
+        "a running walk to the same leg end is left alone");
+
+    Blackboard stunned = ground;
+    AddAura(FindPlayer(stunned, 4), 77827);
+    CHECK(strategy.Propose(stunned, Bot(4), "dps").MovementHold == "nefarian_movement_stunned",
+        "no walk while stunned by Tail Lash");
 }
 
 int main()
