@@ -111,12 +111,23 @@ from roster slots.
 
 - **Pull and tank.** Everyone targets the landed boss and the tank's threat
   takes him. On the ground the tank drags Atramedes to the anchor
-  (162, -224.5). He has 20 yd combat reach, so the tank stands 10 yd past the
-  anchor. Melee keep native maximum range (about 22 yd from his centre).
+  (150, -224.5), near the arena centre. From there every air relay station
+  (below) is also in spell range of the grounded boss. He has 20 yd combat
+  reach, so the tank stands 10 yd past the anchor. Melee keep native maximum
+  range (about 22 yd from his centre).
 - **Gongs** (native spellclick only, `BotAtramedesGongPolicy.h`):
   - The owner is the best ranged DPS (hunter, then mage, …) and the backup is
-    the next. The owner waits beside the shield nearest the anchor, which is
-    still inside spell reach of the boss.
+    the next.
+  - Owner standby, in two stages:
+    - Until this ground phase's Searing Flame is spent (or while the schedule
+      is unknown), it waits beside the shield nearest the anchor that is not a
+      relay shield (250130), still inside spell reach of the boss.
+    - After that, while the boss stays in spell range of it, it waits at the
+      first air relay station (`gong_owner_air_standby`). The next air phase's
+      first catch then has a relay in place from the flame's spawn.
+  - A ground strike by a player in reach of a non-relay shield uses that one:
+    the relay shields are the air phases' first catches. With only a relay
+    shield in reach, Searing Flame still strikes it.
   - The owner strikes as soon as Searing Flame starts, when anyone reaches
     90 Sound, or at 80 Sound unless Searing Flame is due within 15 s.
   - The backup acts when the owner is dead or kiting. No strike happens while
@@ -140,13 +151,15 @@ from roster slots.
         (peak 3 + 2 = 5 yd), so it is in contact at once.
       - One summoned farther out gets out and is caught again later.
     - A rescue fires when contact is within 1 s.
-    - A lone kiter (no relay in reach of any shield) also strikes at a shield
-      ahead when the flame would catch it before the next shield; the west
-      side has none for 105 yd. With a relay in reach, the relay strikes at
-      contact instead, so no shield is spent early.
-    - The strike goes to whoever stands beside the shield farthest from the
-      flame. The tank counts too when it is the kiter, since Atramedes has no
-      victim in the air.
+    - A lone kiter also strikes at a shield ahead when the flame would catch
+      it before the next shield; the west side has none for 105 yd. When the
+      owner or backup is in reach of its own station's shield, that relay
+      strikes at contact instead, so no shield is spent early. A passer-by
+      beside a shield does not count as a relay.
+    - The strike goes to whoever stands beside a shield in reach. A non-relay
+      shield comes first, then the shield farthest from the flame. The tank
+      counts too when it is the kiter, since Atramedes has no victim in the
+      air.
       - The kiter itself only strikes shields ahead of it.
       - Once the flame is on top of the kiter, any shield will do: a faster
         flame's predictive follow overshoots, so "behind" means nothing.
@@ -154,20 +167,30 @@ from roster slots.
       (`gong_approach`).
     - A 90-Sound emergency still strikes when contact is true but the rescue
       budget is spent.
-    - **Relays.** In the air, the gong owner waits at a relay station within
-      reach of a shield and in spell range of the hovering boss. The backup
-      waits at a second station only if one is in range.
+    - **Relays.** In the air, the gong owner and the backup wait at relay
+      stations within reach of a shield and in spell range of the hovering
+      boss.
       - Range: Spell::CheckRange is 3D, 40 + 1.5 + 20 = 61.5 yd from the hover
-        point (130.7, -226.6, 113.2).
-      - Stations stand 8 yd from their shield toward the hover point (8.2 yd
-        in 3D, inside click reach) and are held within 1 yd.
-      - On the native spawns only 250128's station is in range (59.0 yd). The
-        next, 250126, is 60.7 + 1 yd, so the backup spreads and casts.
-      - A kiting or redirect-running owner is skipped, so the backup takes
-        its station.
-      - With 3 or fewer shields left and no station in range, the owner guards
-        the shield nearest the hover point anyway (out of range) and holds it.
-        There, the rescue outweighs its damage.
+        point (130.7, -226.6, 113.2), less a 0.25 yd margin.
+      - Reach: the native spellclick reach is 12.5 yd in 3D (INTERACTION_DISTANCE
+        5 + player reach 1.5 + shield CombatReach 6, model 32469). The bots
+        use 11.5 yd.
+      - Stations stand 10 yd from their shield toward the hover point
+        (10.15 yd in 3D) and are held within 1 yd, so the whole hold area is
+        inside both limits. 10.5 yd plus the hold would leave the reach.
+      - Five native spawns have a station in range: 250128 (57.5 yd),
+        250126 (59.1), 250125 (59.5), 250122 (59.7) and 250129 (60.0).
+        250124 (60.5 + 1) misses the margin.
+      - The owner takes the station nearest the hover point. The backup takes
+        the in-range one farthest from the owner's (250129 while 250128
+        stands), so a strike far from the flame is at hand on either side.
+      - A kiting or redirect-running relay leaves its station empty. Only when
+        a single station is left does the other relay take it over.
+      - With 3 or fewer shields left, none with a station in range, and more
+        shields than the Searing Flame reserve, the owner guards the shield
+        nearest the hover point anyway (out of range). There, the rescue
+        outweighs its damage.
+      - Every station, in range or not, is held within the same 1 yd.
     - The striker keeps the air Resonating Clash aura (78168). Until the flame
       re-tracks it (2 s wait plus the flight to the shield) it already runs on
       along the ring (`air_redirect_run`). If two players still carry the 15 s
@@ -214,27 +237,50 @@ Acceptance observations are in the ledger, `acceptance_observations`:
 - nobody reaches 100 Sound;
 - 0 boss-window deaths.
 
-**Air-phase replay.** `tests/test_atramedes_strategy.py` replays a 31 s air
-phase for every target, the tank included. Model:
-- it starts from the ground formation at liftoff;
+**Air-phase replay.** `tests/test_atramedes_strategy.py` replays successive
+31 s air phases for every target, the tank included. Model:
+- each air phase follows a ground Searing Flame gonged by the strategy;
+- it starts from the ground formation at liftoff, after that Searing Flame;
 - the flame spawns on the target, as 78213 does, after the native takeoff
-  (7 s) or after 3 s, while the relays are still walking;
+  (7 s) or after 3 s, while the backup is still walking;
 - every bot follows its own plan at 7 yd/s, in 0.25 s steps;
 - strikes run their native effects;
 - the flame relaunches a predictive follow every 400 ms, and its breath ticks
   every 0.5 s.
 
-Results, at both the server cap of 10 stacks and an uncapped 99:
-- the first catch is struck at once (bound: 3 s, at most 2 s of breath);
-- every later catch is struck within 3 s, and the kiter is never in the
-  breath for more than 2 s at a time (worst seen: 2.5 s delay, 1.5 s of
-  breath);
-- 3 shields are spent per air phase.
+The phases:
+- Phase 1: ten shields less one Searing Flame, boss at 100%.
+- Phase 2: the shields left after phase 1, less one Searing Flame, boss at 60%.
+- Phase 3: three shields left, boss at 25% (no reserve). Covered by the three
+  shields farthest from the hover point (no station in range) for every
+  target, and by all 120 three-shield sets with the target rotating over the
+  roster.
 
-Solo runs (no living relay): the first catch takes up to 3.75 s (3.5 s of
-breath, bound 6 s), later catches up to 2.5 s. In two-shield stresses at 20%
-health the first catch is struck at once, and exposure comes only after the
-last shield is spent.
+Bounds for every phase: the first catch is struck within 3 s of contact, with
+at most 2 s (4 ticks) of breath before it, and one click at a time. In phases
+1–2, every later catch is also within 3 s, the kiter is never in the breath
+for more than 2 s at a time, and nobody nears 90 Sound.
+
+Results, at both the server cap of 10 stacks and an uncapped 99:
+
+| Phase | First catch (worst) | Later catches (worst) | Strikes | Shields left | Max Sound |
+|---|---|---|---|---|---|
+| 1 | at once, 0 ticks | 0 s | 2–3 | 6–7 | 9 |
+| 2 | at once, 0 ticks | 0.25 s, 0 ticks | 2–4 | 1–4 | 6 |
+| 3, farthest three | 1.5 s, 3 ticks (3 s spawn); at once (7 s) | — | 2–3 | 0–1 | 9 |
+| 3, all 120 sets | 1.5 s, 3 ticks (3 s spawn); at once (7 s) | — | ≤ 3 | — | — |
+
+Phases 2 and 3 only meet the bound because the ground Searing Flame and the
+air strikes prefer non-relay shields, and because the owner waits at its air
+station once the ground Searing Flame is spent. Without that, phase 2 started
+with no relay in place (first catch 5–6 s, 10–12 ticks).
+
+Solo runs (no living relay): the first catch takes up to 3.5 s (7 ticks,
+bound 6 s), later catches up to 2.25 s.
+
+An offline sweep, not part of the test, ran one- and two-shield sets at 25%
+for every target. With the native 7 s spawn every first catch met the bound.
+With the 3 s spawn, 20 of 550 runs took 5 ticks.
 
 **Open question: shields per air phase.** The historical guide reports one per
 air phase. A WCL count of Resonating Clash (78168) per air phase would tell

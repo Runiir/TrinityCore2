@@ -2,9 +2,11 @@
 #define TRINITY_BOT_ATRAMEDES_AIR_GONG_H
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesGongPolicy.h"
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <optional>
+#include <vector>
 
 // Air phase: the Roaring Flame Breath kite ring, the gong relays and the
 // rescue strike. A strike redirects the Reverberating Flame natively
@@ -36,12 +38,17 @@ inline constexpr Vector3 HoverPoint{ 130.655f, -226.637f, 113.21f };
 // reach. The relays are the best ranged damage dealers and must keep casting.
 inline constexpr float RangedEnvelope = 40.0f + 1.5f + BossCombatReach;
 // Relay stations stand this far from their shield toward the hover point
-// (3D about 8.2 yd from the shield: inside ShieldClickDistance) ...
-inline constexpr float RelayStationInset = 8.0f;
-// ... and are held within this, so the whole hold area stays in range.
+// (10.15 yd 3D from the shield; 10.5 plus the hold tolerance would leave the
+// 11.5 yd click reach) ...
+inline constexpr float RelayStationInset = 10.0f;
+// ... and are held within this. The whole hold area must stay inside both
+// the click reach (<= 11.14 yd 3D from the shield) and the spell envelope
+// less a small margin.
 inline constexpr float RelayStationTolerance = 1.0f;
+inline constexpr float RelayRangeMargin = 0.25f;
 // With this few shields left and none with a station in range, a relay still
-// guards the shield nearest the hover point: the rescue outweighs the damage.
+// guards the shield nearest the hover point, if the budget allows a strike:
+// the rescue outweighs the damage.
 inline constexpr std::size_t SparseShieldCount = 3;
 
 // Circling direction around the arena centre away from `chaser`, clockwise
@@ -249,14 +256,22 @@ inline Vector3 AirStationPoint(ShieldFact const& shield)
 inline bool StationInRange(Vector3 const& station)
 {
     return Geometry::Distance3d(station, HoverPoint) + RelayStationTolerance
-        <= RangedEnvelope;
+        <= RangedEnvelope - RelayRangeMargin;
 }
 
-// Shields whose relay station is in spell range of the hovering boss,
-// nearest the hover point first (on the native spawns: 250128 only, the
-// station 59.0 yd from the boss; the next, 250126, is 60.7 + 1 > 61.5).
-// When none is in range and SparseShieldCount or fewer shields are left, the
-// one nearest the hover point is guarded anyway (out of range).
+// ... and still click its shield.
+inline bool StationInReach(Vector3 const& station, ShieldFact const& shield)
+{
+    return Geometry::Distance3d(station, shield.Position) + RelayStationTolerance
+        <= ShieldClickDistance;
+}
+
+// Shields whose relay station is in spell range of the hovering boss and in
+// click reach of its shield, nearest the hover point first. On the native
+// spawns: 250128 (57.5 yd), 250126 (59.1), 250125 (59.5), 250122 (59.7) and
+// 250129 (60.0); 250124 (60.5 + 1) misses the margin. When none is in range,
+// SparseShieldCount or fewer shields are left and the budget still allows an
+// air rescue, the one nearest the hover point is guarded anyway.
 inline std::vector<ShieldFact> RelayShields(Facts const& facts)
 {
     std::vector<ShieldFact> shields = facts.Shields;
@@ -268,61 +283,118 @@ inline std::vector<ShieldFact> RelayShields(Facts const& facts)
         });
     std::vector<ShieldFact> inRange;
     for (ShieldFact const& shield : shields)
-        if (StationInRange(AirStationPoint(shield)))
+    {
+        Vector3 const station = AirStationPoint(shield);
+        if (StationInRange(station) && StationInReach(station, shield))
             inRange.push_back(shield);
-    if (inRange.empty() && !shields.empty() && shields.size() <= SparseShieldCount)
+    }
+    if (inRange.empty() && !shields.empty() && shields.size() <= SparseShieldCount
+        && shields.size() > SearingFlameReserve(facts).Total())
         inRange.push_back(shields.front());
     return inRange;
 }
 
-// Relay shield of `guid`: the gong owner, then the backup, take the in-range
-// relay shields in order. A relay that is the kiter or the redirect runner
-// is skipped, so the other one takes its shield.
+// The gong owner's ground shield: the one nearest the tank anchor that is
+// not an air relay shield, else the nearest at all.
+inline std::optional<ShieldFact> GroundDutyShield(Facts const& facts)
+{
+    std::vector<ShieldFact> const relays = RelayShields(facts);
+    std::optional<ShieldFact> best;
+    std::optional<ShieldFact> bestAny;
+    for (ShieldFact const& shield : facts.Shields)
+    {
+        float const distance = Geometry::Distance2d(shield.Position, TankAnchor);
+        auto nearer = [distance](std::optional<ShieldFact> const& current)
+        {
+            return !current || distance < Geometry::Distance2d(current->Position, TankAnchor);
+        };
+        if (nearer(bestAny))
+            bestAny = shield;
+        bool const relay = std::any_of(relays.begin(), relays.end(),
+            [&shield](ShieldFact const& candidate) { return candidate.Guid == shield.Guid; });
+        if (!relay && nearer(best))
+            best = shield;
+    }
+    return best ? best : bestAny;
+}
+
+// Relay shield of `guid`. The gong owner takes the station nearest the hover
+// point and the backup the in-range one farthest from the owner's, so a
+// strike far from the flame is at hand on either side of the room. A relay
+// that is the kiter or the redirect runner leaves its station empty; only
+// when there is a single station does the other relay take it over.
 inline std::optional<ShieldFact> AirRelayShieldFor(Blackboard const& board,
     Facts const& facts, DutyPlan const& duties, ObjectGuid guid)
 {
-    std::vector<ShieldFact> const shields = RelayShields(facts);
+    if (guid.IsEmpty() || (guid != duties.GongOwner && guid != duties.GongBackup))
+        return std::nullopt;
     ActorSnapshot const* runner = AirRedirectRunner(board, facts);
-    std::size_t next = 0;
-    for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup })
+    auto active = [&board, &facts, runner](ObjectGuid relay)
     {
-        if (!FindLivingPlayer(board, relay) || relay == facts.AirKiter
-            || (runner && runner->Guid == relay))
-            continue;
-        if (next >= shields.size())
-            return std::nullopt;
-        if (relay == guid)
-            return shields[next];
-        ++next;
+        return FindLivingPlayer(board, relay) && relay != facts.AirKiter
+            && !(runner && runner->Guid == relay);
+    };
+    if (!active(guid))
+        return std::nullopt;
+    std::vector<ShieldFact> const shields = RelayShields(facts);
+    if (shields.empty())
+        return std::nullopt;
+    if (guid == duties.GongOwner)
+        return shields.front();
+    // Backup.
+    if (shields.size() == 1)
+        return active(duties.GongOwner) ? std::nullopt
+            : std::optional<ShieldFact>(shields.front());
+    std::optional<ShieldFact> farthest;
+    float apart = 0.0f;
+    for (ShieldFact const& shield : shields)
+    {
+        float const distance = Geometry::Distance2d(shield.Position, shields.front().Position);
+        if (shield.Guid != shields.front().Guid && distance > apart)
+        {
+            apart = distance;
+            farthest = shield;
+        }
     }
-    return std::nullopt;
+    return farthest;
 }
 
-// Some bot other than the kiter already stands within reach of a shield.
+// An assigned relay stands in reach of its own station's shield: it will
+// strike at contact, so a lone-kiter early strike would only waste a shield.
 inline bool RelayInReach(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties)
 {
-    for (ActorSnapshot const& player : board.Players)
-    {
-        if (!player.Alive || player.Guid == facts.AirKiter || player.Guid == duties.Tank)
-            continue;
-        for (ShieldFact const& shield : facts.Shields)
-            if (Geometry::Distance3d(player.Position, shield.Position) <= ShieldClickDistance)
-                return true;
-    }
+    for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup })
+        if (ActorSnapshot const* player = FindLivingPlayer(board, relay))
+            if (std::optional<ShieldFact> const shield =
+                    AirRelayShieldFor(board, facts, duties, relay))
+                if (Geometry::Distance3d(player->Position, shield->Position)
+                    <= ShieldClickDistance)
+                    return true;
     return false;
 }
 
-// Best in-reach strike: the struck shield becomes the flame's next stop, so
-// the farther it is from the flame the longer the relief. The kiter (the
-// tank included: in the air Atramedes has no victim) may use shields ahead of
-// it; any other bot but the tank may relay from its own shield.
+// Best in-reach strike: a shield that is not a relay shield first (those few
+// in-range stations are every air phase's first catch), then the farthest
+// from the flame (the struck shield is the flame's next stop, so the longer
+// the relief). The kiter (the tank included: in the air Atramedes has no
+// victim) may use shields ahead of it; any other bot but the tank may relay
+// from its own shield.
 inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties, ActorSnapshot const* kiter, ActorSnapshot const* flame,
     GongDecision& decision)
 {
     int const direction = kiter ? AirKiteDirection(facts, *kiter) : -1;
     bool const anySide = kiter && FlameOnKiter(flame, *kiter);
+    std::vector<ShieldFact> const relays = RelayShields(facts);
+    auto isRelay = [&relays](ShieldFact const& shield)
+    {
+        return std::any_of(relays.begin(), relays.end(),
+            [&shield](ShieldFact const& relay) { return relay.Guid == shield.Guid; });
+    };
+    // Relay shields (stations in spell range) are few: a strike that can use
+    // another shield keeps them for the next air phase's first catch.
+    bool bestKeepsRelay = false;
     float bestFlameDistance = -1.0f;
     for (ActorSnapshot const& player : board.Players)
     {
@@ -335,10 +407,13 @@ inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
                 continue;
             if (isKiter && !anySide && !ShieldAhead(shield, *kiter, direction))
                 continue;
+            bool const keepsRelay = !isRelay(shield);
             float const flameDistance = flame
                 ? Geometry::Distance2d(flame->Position, shield.Position) : 0.0f;
-            if (flameDistance > bestFlameDistance)
+            if ((keepsRelay && !bestKeepsRelay)
+                || (keepsRelay == bestKeepsRelay && flameDistance > bestFlameDistance))
             {
+                bestKeepsRelay = keepsRelay;
                 bestFlameDistance = flameDistance;
                 decision.Clicker = player.Guid;
                 decision.Shield = shield;
@@ -410,13 +485,46 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
     return decision;
 }
 
+// A ground strike by a clicker in reach of a non-relay shield uses that one:
+// the in-range relay shields are what the next air phase's first catch needs.
+inline void KeepRelayShields(Blackboard const& board, Facts const& facts,
+    GongDecision& decision)
+{
+    ActorSnapshot const* clicker = FindLivingPlayer(board, decision.Clicker);
+    if (!clicker || !decision.Shield)
+        return;
+    std::vector<ShieldFact> const relays = RelayShields(facts);
+    auto isRelay = [&relays](ShieldFact const& shield)
+    {
+        return std::any_of(relays.begin(), relays.end(),
+            [&shield](ShieldFact const& relay) { return relay.Guid == shield.Guid; });
+    };
+    if (!isRelay(*decision.Shield))
+        return;
+    std::optional<ShieldFact> best;
+    for (ShieldFact const& shield : facts.Shields)
+    {
+        float const distance = Geometry::Distance3d(clicker->Position, shield.Position);
+        if (isRelay(shield) || distance > ShieldClickDistance)
+            continue;
+        if (!best || distance < Geometry::Distance3d(clicker->Position, best->Position))
+            best = shield;
+    }
+    if (best)
+        decision.Shield = best;
+}
+
 inline GongDecision DecideGong(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties)
 {
     if (!facts.Boss || facts.Shields.empty())
         return {};
     if (facts.CurrentPhase == Phase::Ground)
-        return DecideGroundGong(board, facts, duties);
+    {
+        GongDecision decision = DecideGroundGong(board, facts, duties);
+        KeepRelayShields(board, facts, decision);
+        return decision;
+    }
     if (facts.CurrentPhase == Phase::Air)
         return DecideAirGong(board, facts, duties);
     return {};

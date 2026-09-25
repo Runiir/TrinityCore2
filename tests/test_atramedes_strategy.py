@@ -300,6 +300,44 @@ static void TestSearingFlameGong()
     Boss(board).Cast.reset();
     assert(A::GroundGonger(board, A::BuildFacts(board), A::BuildDutyPlan(board))
         == PlayerGuid(Hunter));
+
+    // The ground strike keeps the in-range relay shields for the air: in
+    // reach of relay shield 250128 (nearest) and of 250130, the owner
+    // strikes 250130.
+    board = Board();
+    CastOnBoss(board, A::SearingFlameSpell);
+    Member(board, Hunter).Position = { 174.5f, -258.7f, 75.0f };
+    BotNativeAction::SpellClick const* kept = ClickOf(Plan(board, Hunter));
+    assert(kept && kept->Target == UnitGuid(42954, 250130));
+    // Only a relay shield in reach: it is struck (Searing Flame outranks it).
+    Member(board, Hunter).Position = { 166.0f, -259.0f, 75.0f };
+    BotNativeAction::SpellClick const* spent = ClickOf(Plan(board, Hunter));
+    assert(spent && spent->Target.GetCounter() == 250128);
+
+    // Standby: while this ground phase's Searing Flame is pending (or the
+    // schedule is unknown) the owner holds non-relay shield 250130; once it
+    // is spent (published schedule without its timer) the owner waits at the
+    // first air relay station, 250128's, and holds there.
+    board = Board();
+    Member(board, Hunter).Position = { 150.0f, -240.0f, 75.0f };
+    assert(Mechanic(Plan(board, Hunter)) == "gong_owner_standby");
+    AddTimer(Boss(board), A::TakeOffSpell, 60000);
+    AddTimer(Boss(board), A::SearingFlameSpell, 20000);
+    assert(Mechanic(Plan(board, Hunter)) == "gong_owner_standby");
+    Boss(board).MechanicTimers.pop_back();
+    AdaptiveAtramedesPlan airStandby = Plan(board, Hunter);
+    assert(Mechanic(airStandby) == "gong_owner_air_standby");
+    A::Facts const standbyFacts = A::BuildFacts(board);
+    std::vector<A::ShieldFact> const standbyRelays = A::RelayShields(standbyFacts);
+    assert(!standbyRelays.empty() && standbyRelays.front().Guid.GetCounter() == 250128);
+    Vector3 const airStation = A::AirStationPoint(standbyRelays.front());
+    assert(G::Distance2d({ MoveOf(airStandby)->X, MoveOf(airStandby)->Y, 75.0f },
+        airStation) < 0.1f);
+    Member(board, Hunter).Position = { airStation.X + 0.5f, airStation.Y, 75.0f };
+    assert(!MoveOf(Plan(board, Hunter)));
+    // The boss dragged out of spell range of the station: back to 250130.
+    Boss(board).Position = { 110.0f, -180.0f, 75.0f };
+    assert(Mechanic(Plan(board, Hunter)) == "gong_owner_standby");
 }
 
 static void TestSoundGongs()
@@ -481,53 +519,86 @@ static void TestAirPhaseTargetsAndSpread()
     assert(Mechanic(Plan(slack, Elemental)) == "air_phase_spread");
 
     // Relay stations must keep the relays (the best ranged damage dealers)
-    // casting at the hovering boss: Spell::CheckRange is 3D, 40 + 1.5 + 20 =
-    // 61.5 yd. On the native spawns only 250128's station is in range (59.0
-    // yd; the next, 250126, is 60.7 + 1 yd of hold tolerance > 61.5).
+    // casting at the hovering boss (Spell::CheckRange is 3D, 40 + 1.5 + 20 =
+    // 61.5 yd) and in click reach of their shield (native 5 + 1.5 + 6 = 12.5
+    // yd, used with 1 yd margin), over the whole 1 yd hold area. On the native
+    // spawns five stations qualify, nearest the hover point first.
+    assert(A::ShieldClickDistance <= 12.5f - 1.0f);
     A::DutyPlan const relayDuties = A::BuildDutyPlan(slack);
     assert(relayDuties.GongOwner == PlayerGuid(Hunter) && relayDuties.GongBackup == PlayerGuid(Mage));
     std::vector<A::ShieldFact> const relays = A::RelayShields(slackFacts);
-    assert(relays.size() == 1 && relays.front().Guid == UnitGuid(42960, 250128));
+    std::vector<uint32> relayIds;
+    for (A::ShieldFact const& relay : relays)
+        relayIds.push_back(relay.Guid.GetCounter());
+    assert((relayIds == std::vector<uint32>{ 250128, 250126, 250125, 250122, 250129 }));
     for (A::ShieldFact const& shield : slackFacts.Shields)
     {
         Vector3 const station = A::AirStationPoint(shield);
-        assert(G::Distance3d(station, shield.Position) <= A::ShieldClickDistance);
         bool const inRange = G::Distance3d(station, A::HoverPoint) + A::RelayStationTolerance
-            <= A::RangedEnvelope;
-        assert(inRange == (std::find_if(relays.begin(), relays.end(),
-            [&shield](A::ShieldFact const& relay) { return relay.Guid == shield.Guid; })
-            != relays.end()));
+            <= A::RangedEnvelope - A::RelayRangeMargin;
+        bool const inReach = G::Distance3d(station, shield.Position) + A::RelayStationTolerance
+            <= A::ShieldClickDistance;
+        assert(inReach);
+        assert((inRange && inReach) == (std::find(relayIds.begin(), relayIds.end(),
+            shield.Guid.GetCounter()) != relayIds.end()));
     }
+    // Owner at the station nearest the hover point (250128), backup at the
+    // in-range one farthest from it (250129, north-east).
     AdaptiveAtramedesPlan owner = Plan(slack, Hunter);
     assert(Mechanic(owner) == "air_relay_station");
     Vector3 const station{ MoveOf(owner)->X, MoveOf(owner)->Y, 75.0f };
     assert(G::Distance3d(station, A::HoverPoint) + A::RelayStationTolerance <= A::RangedEnvelope);
-    assert(G::Distance3d(station, relays.front().Position) <= A::ShieldClickDistance);
-    // The backup has no station in range: it spreads (and casts) instead.
-    assert(!A::AirRelayShieldFor(slack, slackFacts, relayDuties, PlayerGuid(Mage)));
-    assert(Mechanic(Plan(slack, Mage)).rfind("air_phase", 0) == 0
-        || !Plan(slack, Mage).Movement);
-    // A kiting owner is skipped: the backup takes its station.
+    assert(G::Distance3d(station, relays.front().Position) + A::RelayStationTolerance
+        <= A::ShieldClickDistance);
+    std::optional<A::ShieldFact> const backupShield = A::AirRelayShieldFor(slack, slackFacts,
+        relayDuties, PlayerGuid(Mage));
+    assert(backupShield && backupShield->Guid.GetCounter() == 250129);
+    assert(Mechanic(Plan(slack, Mage)) == "air_relay_station");
+    // A kiting owner leaves its station; the backup keeps its own (already
+    // there) while a second station exists ...
     ActorSnapshot& ownerKiter = Member(slack, Hunter);
     AddFlame(slack, ownerKiter, { ownerKiter.Position.X + 20.0f, ownerKiter.Position.Y, 75.0f }, 0);
     A::Facts const kiting = A::BuildFacts(slack);
     assert(kiting.AirKiter == PlayerGuid(Hunter));
-    std::optional<A::ShieldFact> const taken = A::AirRelayShieldFor(slack, kiting, relayDuties,
+    assert(!A::AirRelayShieldFor(slack, kiting, relayDuties, PlayerGuid(Hunter)));
+    std::optional<A::ShieldFact> const kept = A::AirRelayShieldFor(slack, kiting, relayDuties,
         PlayerGuid(Mage));
-    assert(taken && taken->Guid == relays.front().Guid);
-    assert(Mechanic(Plan(slack, Mage)) == "air_relay_station");
+    assert(kept && kept->Guid.GetCounter() == 250129);
+    // ... and takes the single station over when it is the only one.
+    Blackboard single = slack;
+    single.Interactables.erase(std::remove_if(single.Interactables.begin(),
+        single.Interactables.end(), [](ActorSnapshot const& shield)
+        {
+            uint32 const id = shield.Guid.GetCounter();
+            return id != 250128 && id != 250130 && id != 250131 && id != 250123;
+        }), single.Interactables.end());
+    A::Facts const singleFacts = A::BuildFacts(single);
+    assert(A::RelayShields(singleFacts).size() == 1);
+    std::optional<A::ShieldFact> const taken = A::AirRelayShieldFor(single, singleFacts,
+        relayDuties, PlayerGuid(Mage));
+    assert(taken && taken->Guid.GetCounter() == 250128);
 
-    // Sparse fallback: with 3 or fewer shields left and no station in range,
-    // the owner guards the shield nearest the hover point anyway (250130,
-    // 68.1 yd) and holds it against native range-closing.
+    // Sparse fallback: with 3 or fewer shields left, none in range and the
+    // budget still allowing an air rescue, the owner guards the shield
+    // nearest the hover point (250130) out of range.
     Blackboard sparse = AirBoard();
     KeepShields(sparse, 2);
     A::Facts const sparseFacts = A::BuildFacts(sparse);
+    assert(sparseFacts.Shields.size() > A::SearingFlameReserve(sparseFacts).Total());
     std::vector<A::ShieldFact> const fallback = A::RelayShields(sparseFacts);
     assert(fallback.size() == 1 && fallback.front().Guid == UnitGuid(42954, 250130));
-    assert(!A::StationInRange(A::AirStationPoint(fallback.front())));
-    Member(sparse, Hunter).Position = A::AirStationPoint(fallback.front());
+    Vector3 const guard = A::AirStationPoint(fallback.front());
+    assert(!A::StationInRange(guard));
+    Member(sparse, Hunter).Position = { guard.X + 3.0f, guard.Y, 75.0f };
     assert(Mechanic(Plan(sparse, Hunter)) == "air_relay_station_out_of_range");
+    // Held within tolerance like any station (no move every decision).
+    Member(sparse, Hunter).Position = guard;
+    assert(!Plan(sparse, Hunter).Movement);
+    // No fallback when the reserve forbids the strike it would guard.
+    KeepShields(sparse, 1);
+    A::Facts const reserved = A::BuildFacts(sparse);
+    assert(reserved.Shields.size() <= A::SearingFlameReserve(reserved).Total());
+    assert(A::RelayShields(reserved).empty());
 }
 
 static ActorSnapshot& AddFlame(Blackboard& board, ActorSnapshot& kiter, Vector3 at,
@@ -597,26 +668,36 @@ static void TestAirKiteAndRescue()
     assert(rescue.GongReason == "air_breath_rescue");
     assert(ClickOf(rescue) && ClickOf(rescue)->Target == UnitGuid(42956, 250122));
     assert(CountClicks(board) == 1);
-    // Farther from contact (15.6 yd, 4 stacks: 3.0 s), but the next shield
-    // ahead (250125) is 3.2 s away: strike now rather than be caught between.
+    // Farther from contact (15.6 yd, 5 stacks: 2.5 s), but the next shield
+    // ahead (250125) is 2.8 s from reach: strike now rather than be caught
+    // between shields.
     board.Summons.back().Position = { 100.0f, -259.0f, 75.0f };
-    board.Summons.back().Auras.back().Stacks = 4;
+    board.Summons.back().Auras.back().Stacks = 5;
     A::Facts const early = A::BuildFacts(board);
     float const earlyContact = A::FlameTimeToContact(board.Summons.back(), Member(board, Mage));
     assert(earlyContact > A::RescueLeadSeconds);
     assert(earlyContact < A::SecondsToNextShield(early, Member(board, Mage), early.Shields.front(), 1)
         + A::RescueLeadSeconds);
+    assert(!A::RelayInReach(board, early, A::BuildDutyPlan(board)));
     assert(ClickOf(Plan(board, Mage)) && CountClicks(board) == 1);
     // Slower (2 stacks: 4.6 s): the next shield is reachable, keep kiting.
     board.Summons.back().Auras.back().Stacks = 2;
     assert(CountClicks(board) == 0);
     assert(Mechanic(Plan(board, Mage)) == "roaring_flame_breath_kite");
-    // The early strike is only for a lone kiter: with a relay already in
-    // reach of a shield (the Warlock beside 250131) nothing is spent before
-    // contact; the relay strikes at contact instead.
-    board.Summons.back().Auras.back().Stacks = 4;
+    // A passer-by beside a shield (the Warlock at 250131) is not a relay and
+    // does not suppress the lone-kiter early strike ...
+    board.Summons.back().Auras.back().Stacks = 5;
     Member(board, Warlock).Position = { 180.0f, -197.0f, 75.0f };
-    assert(A::RelayInReach(board, A::BuildFacts(board), A::BuildDutyPlan(board)));
+    assert(!A::RelayInReach(board, A::BuildFacts(board), A::BuildDutyPlan(board)));
+    assert(CountClicks(board) == 1);
+    // ... but the gong owner at its assigned station does: it strikes at
+    // contact instead, so nothing is spent early.
+    A::DutyPlan const earlyDuties = A::BuildDutyPlan(board);
+    std::optional<A::ShieldFact> const ownerShield = A::AirRelayShieldFor(board,
+        A::BuildFacts(board), earlyDuties, PlayerGuid(Hunter));
+    assert(ownerShield);
+    Member(board, Hunter).Position = A::AirStationPoint(*ownerShield);
+    assert(A::RelayInReach(board, A::BuildFacts(board), earlyDuties));
     assert(CountClicks(board) == 0);
 
     // Two strikers still carry the 15 s air Resonating Clash aura: the one
@@ -643,6 +724,26 @@ static void TestAirKiteAndRescue()
     AdaptiveAtramedesPlan relay = Plan(board, Warlock);
     assert(ClickOf(relay) && ClickOf(relay)->Target == UnitGuid(42956, 250131));
     assert(CountClicks(board) == 1);
+
+    // A striker in reach of relay shield 250128 and of 250130 strikes 250130
+    // even though 250128 lies farther from the flame: the few in-range relay
+    // shields are the next air phase's first catches.
+    {
+        Blackboard keep = AirBoard();
+        for (ActorSnapshot& player : keep.Players)
+            player.Position = A::ArenaCenter;
+        Member(keep, Mage).Position = { 185.0f, -235.0f, 75.0f };
+        AddFlame(keep, Member(keep, Mage), { 185.0f, -241.0f, 75.0f }, 6);
+        Member(keep, Warlock).Position = { 174.5f, -258.7f, 75.0f };
+        A::Facts const keepFacts = A::BuildFacts(keep);
+        std::vector<A::ShieldFact> const keepRelays = A::RelayShields(keepFacts);
+        assert(std::any_of(keepRelays.begin(), keepRelays.end(),
+            [](A::ShieldFact const& shield) { return shield.Guid.GetCounter() == 250128; }));
+        AdaptiveAtramedesPlan keeper = Plan(keep, Warlock);
+        assert(keeper.GongReason == "air_breath_rescue");
+        assert(ClickOf(keeper) && ClickOf(keeper)->Target == UnitGuid(42954, 250130));
+        assert(CountClicks(keep) == 1);
+    }
 
     // Budget: in the air at full health one shield stays for the next ground
     // phase's Searing Flame, so the last shield is never spent on a rescue.
@@ -788,6 +889,7 @@ struct AirReplay
     int OtherTicks = 0;
     uint32 MaxSound = 0;
     bool DoubleClick = false;
+    std::vector<uint32> ShieldsLeft;
 };
 
 static void MoveBots(Blackboard& board, std::map<ObjectGuid, Vector3> const& destinations)
@@ -814,20 +916,72 @@ static void StepPlans(Blackboard& board)
     MoveBots(board, destinations);
 }
 
-static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDelayS,
-    bool solo = false, float seconds = 31.0f)
+static std::vector<uint32> AllShieldIds()
+{
+    std::vector<uint32> ids;
+    for (A::ShieldSpawn const& spawn : A::ShieldSpawns)
+        ids.push_back(spawn.SpawnId);
+    return ids;
+}
+
+static void KeepShieldIds(Blackboard& board, std::vector<uint32> const& shields)
+{
+    board.Interactables.erase(std::remove_if(board.Interactables.begin(), board.Interactables.end(),
+        [&shields](ActorSnapshot const& shield)
+        {
+            return std::find(shields.begin(), shields.end(), shield.Guid.GetCounter()) == shields.end();
+        }), board.Interactables.end());
+}
+
+// A ground phase's Searing Flame, played by the strategy: the ground
+// formation settles, Atramedes channels Searing Flame and the shield the
+// gong owner strikes is spent.
+static std::vector<uint32> AfterGroundSearing(std::vector<uint32> shields, float bossHealthPct)
 {
     Blackboard board = Board();
+    Boss(board).HealthPct = bossHealthPct;
+    Boss(board).Position = A::TankAnchor;
+    KeepShieldIds(board, shields);
+    for (int step = 0; step < 32; ++step)
+        StepPlans(board);
+    CastOnBoss(board, A::SearingFlameSpell);
+    for (int step = 0; step < 40; ++step)
+    {
+        for (ActorSnapshot const& player : board.Players)
+            if (BotNativeAction::SpellClick const* click = ClickOf(AdaptiveAtramedesStrategy().Propose(
+                    board, player.Guid, player.Role.c_str())))
+            {
+                shields.erase(std::find(shields.begin(), shields.end(), click->Target.GetCounter()));
+                return shields;
+            }
+        StepPlans(board);
+    }
+    assert(false && "Searing Flame never gonged");
+    return shields;
+}
+
+static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDelayS,
+    bool solo = false, std::vector<uint32> const& shields = AllShieldIds(),
+    float bossHealthPct = 100.0f, float seconds = 31.0f)
+{
+    Blackboard board = Board();
+    Boss(board).HealthPct = bossHealthPct;
+    KeepShieldIds(board, shields);
     // Solo: everyone else is dead, so no relay exists and the target must
     // reach a shield on its own.
     if (solo)
         for (ActorSnapshot& player : board.Players)
             if (player.Guid != PlayerGuid(targetSlot))
                 player.Alive = false;
-    // The ground formation (owner at its duty shield, ranged arc) at liftoff.
+    // The ground formation at liftoff, after this ground phase's Searing
+    // Flame (published schedule without its timer): the owner at its air
+    // standby, the ranged arc around the boss on the tank anchor.
+    Boss(board).Position = A::TankAnchor;
+    AddTimer(Boss(board), A::TakeOffSpell, 30000);
     for (int step = 0; step < 32; ++step)
         StepPlans(board);
     ActorSnapshot& liftoff = Boss(board);
+    liftoff.MechanicTimers.clear();
     liftoff.Position = A::HoverPoint;
     liftoff.Flying = true;
     liftoff.ReactAggressive = false;
@@ -1012,40 +1166,73 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
         for (ActorSnapshot const& player : board.Players)
             result.MaxSound = std::max(result.MaxSound, player.AlternatePower);
     }
+    for (ActorSnapshot const& shield : board.Interactables)
+        result.ShieldsLeft.push_back(shield.Guid.GetCounter());
     return result;
 }
 
-// Every target of a 31 s air phase, the tank included, from the ground
-// formation at liftoff with the flame spawned on the target after the native
-// takeoff (7 s) and after 3 s (relays still walking), at the server's
-// Building Speed cap (10) and an uncapped 99-stack stress. Bounds: the first
-// catch is struck within 3 s of contact with at most 2 s (4 ticks) of breath
-// before it; every later catch within 3 s and never more than 2 s of breath
-// at a time; nobody nears 90 Sound; 2-4 shields per air phase. The solo runs
-// (no living relay) bound the kiter's own run to a shield.
+// Every target of successive 31 s air phases, the tank included, from the
+// ground formation at liftoff with the flame spawned on the target after the
+// native takeoff (7 s) and after 3 s, at the server's Building Speed cap (10)
+// and an uncapped 99-stack stress. Each air phase follows a ground Searing
+// Flame gonged by the strategy.
+//   Phase 1: ten shields less one Searing Flame, boss at 100%.
+//   Phase 2: the shields left after phase 1 less one Searing Flame, boss 60%.
+//   Phase 3: three shields left, boss at 25% (no reserve): the three shields
+//            farthest from the hover point (no station in range) for every
+//            target, and every one of the 120 three-shield sets with the
+//            target rotating over the roster, at the server cap.
+// Bounds: the first catch of every phase is struck within 3 s of contact
+// with at most 2 s (4 ticks) of breath before it and one click at a time;
+// in phases 1-2 every later catch within 3 s and never more than 2 s of
+// breath at a time, and nobody nears 90 Sound. The solo runs (no living
+// relay) bound the kiter's own run to a shield.
 static void TestAirReplayFromEverySlot()
 {
     auto show = [](char const* kind, float cap, float delay, uint32 slot, AirReplay const& run)
     {
         std::printf("air replay %s cap=%.0f flame=%.0fs slot=%u contact=%.2f strike=%.2f"
-            " first=%.2f/%d steady=%.2f/%d strikes=%d kiterTicks=%d otherTicks=%d maxSound=%u\n",
-            kind, cap, delay, slot, run.FirstContactS, run.FirstStrikeS, run.FirstCatchDelayS,
-            run.FirstCatchTicks, run.WorstSteadyDelayS, run.MaxSteadyConsecutiveTicks,
-            run.Strikes, run.KiterTicks, run.OtherTicks, run.MaxSound);
+            " first=%.2f/%d steady=%.2f/%d strikes=%d kiterTicks=%d otherTicks=%d maxSound=%u"
+            " left=%zu\n", kind, cap, delay, slot, run.FirstContactS, run.FirstStrikeS,
+            run.FirstCatchDelayS, run.FirstCatchTicks, run.WorstSteadyDelayS,
+            run.MaxSteadyConsecutiveTicks, run.Strikes, run.KiterTicks, run.OtherTicks,
+            run.MaxSound, run.ShieldsLeft.size());
     };
+    auto firstCatchBound = [](AirReplay const& run)
+    {
+        assert(run.FirstContactS >= 0.0f && run.FirstStrikeS >= 0.0f);
+        assert(run.FirstCatchDelayS <= 3.0f && run.FirstCatchTicks <= 4);
+        assert(!run.DoubleClick);
+    };
+    std::vector<uint32> const beforePhase1 = AfterGroundSearing(AllShieldIds(), 100.0f);
+    // The ground Searing Flame keeps the in-range relay shields.
+    assert(beforePhase1.size() == 9);
+    assert(std::find(beforePhase1.begin(), beforePhase1.end(), 250130) == beforePhase1.end());
+    std::vector<uint32> const farthest{ 250123, 250127, 250131 };
     for (float cap : { float(A::BuildingSpeedMaxStacks), 99.0f })
         for (float delay : { 7.0f, 3.0f })
         {
             for (uint32 slot = Tank; slot <= Warlock; ++slot)
             {
-                AirReplay const run = ReplayAirPhase(slot, cap, delay);
-                show("raid", cap, delay, slot, run);
-                assert(run.FirstContactS >= 0.0f && run.FirstStrikeS >= 0.0f);
-                assert(run.FirstCatchDelayS <= 3.0f && run.FirstCatchTicks <= 4);
-                assert(run.WorstSteadyDelayS <= 3.0f && run.MaxSteadyConsecutiveTicks <= 4);
-                assert(run.MaxSound < A::SoundEmergency);
-                assert(!run.DoubleClick);
-                assert(run.Strikes >= 2 && run.Strikes <= 4);
+                AirReplay const first = ReplayAirPhase(slot, cap, delay, false, beforePhase1);
+                show("phase1", cap, delay, slot, first);
+                firstCatchBound(first);
+                assert(first.WorstSteadyDelayS <= 3.0f && first.MaxSteadyConsecutiveTicks <= 4);
+                assert(first.MaxSound < A::SoundEmergency);
+                assert(first.Strikes >= 2 && first.Strikes <= 4);
+
+                std::vector<uint32> const second = AfterGroundSearing(first.ShieldsLeft, 60.0f);
+                AirReplay const phase2 = ReplayAirPhase(slot, cap, delay, false, second, 60.0f);
+                show("phase2", cap, delay, slot, phase2);
+                firstCatchBound(phase2);
+                assert(phase2.WorstSteadyDelayS <= 3.0f && phase2.MaxSteadyConsecutiveTicks <= 4);
+                assert(phase2.MaxSound < A::SoundEmergency);
+                assert(phase2.Strikes >= 2 && phase2.Strikes <= 4);
+
+                AirReplay const phase3 = ReplayAirPhase(slot, cap, delay, false, farthest, 25.0f);
+                show("phase3", cap, delay, slot, phase3);
+                firstCatchBound(phase3);
+                assert(phase3.Strikes <= 3);
             }
             for (uint32 slot : { uint32(Tank), uint32(Rogue) })
             {
@@ -1058,6 +1245,21 @@ static void TestAirReplayFromEverySlot()
                 assert(run.Strikes <= 5);
             }
         }
+    std::vector<uint32> const all = AllShieldIds();
+    uint32 rotation = 0;
+    for (std::size_t a = 0; a < all.size(); ++a)
+        for (std::size_t b = a + 1; b < all.size(); ++b)
+            for (std::size_t c = b + 1; c < all.size(); ++c)
+                for (float delay : { 7.0f, 3.0f })
+                {
+                    uint32 const slot = Tank + rotation++ % 10;
+                    AirReplay const phase3 = ReplayAirPhase(slot,
+                        float(A::BuildingSpeedMaxStacks), delay, false,
+                        { all[a], all[b], all[c] }, 25.0f);
+                    firstCatchBound(phase3);
+                    assert(phase3.Strikes <= 3);
+                }
+    std::printf("air replay phase3 three-shield sets=%u\n", rotation / 2);
 }
 
 struct GroundKiteRun

@@ -77,12 +77,32 @@ inline std::optional<Vector3> AirSlot(Facts const& facts, DutyPlan const& duties
     return Geometry::PointAt(ArenaCenter, base, AirRingInner, ArenaCenter.Z);
 }
 
+// Ground standby of the gong owner. Until this ground phase's Searing Flame
+// is spent (or while the schedule is unknown): beside the shield nearest the
+// tank anchor that is not an air relay shield, so that strike keeps the few
+// in-range relay shields for the air. Afterwards, while the boss stays in
+// spell range: at the first air relay station, so the next air phase's first
+// catch has a relay in reach from the flame's spawn on.
 inline std::optional<MoveProposal> GongStandby(Facts const& facts,
     DutyPlan const& duties, ActorSnapshot const& self)
 {
-    std::optional<ShieldFact> shield;
-    if (self.Guid == duties.GongOwner)
-        shield = DutyShield(facts, 0);
+    if (self.Guid != duties.GongOwner)
+        return std::nullopt;
+    bool const searingPending = facts.SearingFlameChannel || facts.SearingFlameInMs
+        || !facts.GroundTimersPublished;
+    std::vector<ShieldFact> const relays = RelayShields(facts);
+    if (!searingPending && !relays.empty() && facts.Boss)
+    {
+        Vector3 const station = AirStationPoint(relays.front());
+        if (Geometry::Distance3d(station, facts.Boss->Position) + RelayStationTolerance
+                <= RangedEnvelope - RelayRangeMargin)
+        {
+            if (Geometry::Distance2d(station, self.Position) <= RelayStationTolerance)
+                return std::nullopt;
+            return Positioning(station, "gong_owner_air_standby", 320.0f);
+        }
+    }
+    std::optional<ShieldFact> const shield = GroundDutyShield(facts);
     if (!shield)
         return std::nullopt;
     Vector3 const stand = ShieldStandPoint(*shield);
@@ -124,13 +144,9 @@ inline std::optional<MoveProposal> FormationMove(Blackboard const& board,
                 AirRelayShieldFor(board, facts, duties, self.Guid))
         {
             Vector3 const station = AirStationPoint(*relay);
-            bool const inRange = StationInRange(station);
-            // In range: once there, native combat needs no movement. Out of
-            // range (sparse fallback): keep holding the station, so combat
-            // range-closing cannot pull the relay off its shield.
-            if (inRange && Geometry::Distance2d(station, self.Position) <= RelayStationTolerance)
+            if (Geometry::Distance2d(station, self.Position) <= RelayStationTolerance)
                 return std::nullopt;
-            return Positioning(station, inRange ? "air_relay_station"
+            return Positioning(station, StationInRange(station) ? "air_relay_station"
                 : "air_relay_station_out_of_range", 300.0f);
         }
         std::optional<Vector3> const slot = AirSlot(facts, duties, self);

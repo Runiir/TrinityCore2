@@ -66,9 +66,10 @@ inline constexpr float FlameBreathRadius = 5.0f;
 inline constexpr float SonicBreathHalfAngleRad = 7.5f * 3.14159265f / 180.0f;
 // creature_model_info 34547: CombatReach 20.
 inline constexpr float BossCombatReach = 20.0f;
-// Spellclick reach = INTERACTION_DISTANCE 5 + player reach 1.5 + shield
-// reach 6 (model 32469). Stay well inside it.
-inline constexpr float ShieldClickDistance = 9.0f;
+// Native spellclick reach (executor: IsWithinDistInMap(shield, 5), 3D with
+// both combat reaches) = INTERACTION_DISTANCE 5 + player reach 1.5 + shield
+// CombatReach 6 (creature_model_info 32469) = 12.5 yd. Keep 1 yd of margin.
+inline constexpr float ShieldClickDistance = 11.5f;
 
 struct ShieldSpawn
 {
@@ -96,9 +97,12 @@ inline constexpr std::array<ShieldSpawn, 10> ShieldSpawns = {{
 // Arena floor centre of the shield ring (spirit spawns 250132-250139 lie on
 // the same floor, z 74.99-75.05).
 inline constexpr Vector3 ArenaCenter{ 145.0f, -225.0f, 75.0f };
-// Ground-phase tank anchor: inside the ring, east of centre, so the two
-// east shields (250130, 250131) are ~35 yd from the boss centre.
-inline constexpr Vector3 TankAnchor{ 162.0f, -224.5f, 75.0f };
+// Ground-phase tank anchor, near the arena centre ("drag the boss toward the
+// door, into the big circular arena", Wowhead). From here every air relay
+// station (BotAtramedesAirGong.h) is also in spell range of the grounded
+// boss, so the gong owner can wait at its next air station through the
+// ground phase and be in place when Atramedes lifts off.
+inline constexpr Vector3 TankAnchor{ 150.0f, -224.5f, 75.0f };
 
 enum class Phase : uint8
 {
