@@ -16,9 +16,10 @@ contract:
 
 - **Data.** Per-raid facts live in data, never in code:
   - the prerequisite DAG, `experiments/configs/raid_prerequisites/<raid>.json`;
-  - one canonical composition, `experiments/configs/raid_compositions/<raid>_<size>.json`;
+  - one canonical composition, `experiments/configs/raid_compositions/<raid>_<size><diff>.json`
+    (for example `blackwing_descent_10n.json`), whose `full_raid` entry is the end-to-end cohort;
   - the scenario rows and runtime profiles;
-  - the route composition, `experiments/configs/raid_route_compositions/<raid>_<mode>.json`.
+  - the route composition, `experiments/configs/raid_route_compositions/<raid>_<size><diff>.json`.
 - **Naming.** A shard is cohort `<raid>_<size><diff>_<boss>_c<copy>`. Its pool
   tag, runtime profile and scenario ID are that cohort plus `_diagnostic`
   (`raid_shard_identity`). Copies duplicate characters with identical gear, and
@@ -38,6 +39,14 @@ contract:
   `dvc.yaml`. It applies the boss packets' patch requests to those files. The
   coordinator then reproduces DVC stages and rebinds the closure before the
   round's build.
+- **The e2e cohort.** `full_raid` gives the end-to-end cohort's own scenario row
+  (`route_scenario_id`), profile and pool tag. These must be one ID, as
+  shard_coordinator preflight requires. The composed full route
+  (`raid_route_compositions/<raid>_<size><diff>.json`) is its route template and
+  names every boss node the run must kill.
+- **Evidence.** Shard kills count only after `raid_workloop program ingest`
+  archives their run directories to DVC and records the evidence pointer. Every
+  run must use the round's worldserver binary.
 
 Use the live runner's [runtime asset preflight](../../../docs/bot_raids/runtime_asset_preflight.md).
 Let it derive the selected map; never substitute another boss's map to make a

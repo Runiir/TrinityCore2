@@ -29,6 +29,9 @@ ROUTE_COMPOSITIONS = CONFIG / 'raid_route_compositions'
 TARGETS = CONFIG / 'raid_targets'
 PROFILES = Path('dataset/bot_runtime_profiles/profiles.json')
 CONTENT_ROOT = Path('src/server/game/Bots/Content/Raids')
+# Existing shard-infrastructure test modules (the shards packet's focused tests).
+SHARD_TEST_GLOBS = ('test_raid_shard_*.py', 'test_raid_route_composer*.py', 'test_raid_prerequisites*.py',
+                    'test_raid_composition*.py')
 BLOCKS_RUN, BLOCKS_ACCEPTANCE = 'run', 'acceptance'
 # Owner priority when a unit has several missing inputs: the earliest blocks most.
 OWNER_ORDER = ('raid-encounter-implementation', 'raid-shard-architecture', 'raid-encounter-research',
@@ -180,9 +183,10 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
         raid_inputs.append(missing('prerequisite_graph', f'{prerequisite_path.as_posix()}: {failure}',
                                    'raid-shard-architecture', BLOCKS_RUN, path=prerequisite_path.as_posix()))
     elif doc.get('verification_level') != 'native_script_verified':
+        # The shards packet owns the prerequisite file, so it verifies it.
         raid_inputs.append(missing('prerequisite_graph_unverified', f"verification_level={doc.get('verification_level')}; "
                                    + '; '.join(map(str, doc.get('unverified') or []))[:600],
-                                   'raid-encounter-research', BLOCKS_ACCEPTANCE, path=prerequisite_path.as_posix()))
+                                   'raid-shard-architecture', BLOCKS_ACCEPTANCE, path=prerequisite_path.as_posix()))
     strategy_raid = (read_json(root, STRATEGIES).get('raids') or {}).get(raid) or {}
     strategy_rows = {str(row['boss_slug']): row for row in strategy_raid.get('bosses') or [] if row.get('boss_slug')}
     if not strategy_rows:
@@ -232,7 +236,9 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
     for unit in [*units, e2e]:
         unit['raid_run_blockers'] = blockers
         unit['ready_to_run'] = unit['ready_to_run'] and not blockers
-    return {'program_id': f'{raid}:{mode}', 'raid': raid, 'mode': mode, 'mode_token': token,
+    shard_tests = sorted({path.relative_to(root).as_posix() for pattern in SHARD_TEST_GLOBS
+                          for path in (root / 'tests').glob(pattern) if path.is_file()})
+    return {'program_id': f'{raid}:{mode}', 'raid': raid, 'mode': mode, 'mode_token': token, 'shard_tests': shard_tests,
             'size': int(mode[:-1]), 'name': doc.get('name') or raid, 'map_id': doc.get('map_id'),
             'prerequisites': prerequisite_path.as_posix(), 'composition': composition_path.as_posix() if composition_path else None,
             'raid_inputs': raid_inputs, 'units': units, 'excluded_bosses': excluded, 'e2e': e2e,
@@ -346,10 +352,18 @@ def _boss_files(raid, token, key, slug, strategy, source, target) -> dict:
 
 
 def _e2e_unit(root, raid, mode, token, composition, units, scenarios, profiles) -> dict:
+    """The end-to-end unit: the full-raid cohort's own identity, checked against the composed route.
+
+    Scenario, runtime profile and pool tag come from the composition's ``full_raid`` cohort
+    (``route_scenario_id``, ``runtime_profile_id``, ``pool_tag``; each defaults to ``cohort_id``)
+    and must be one id, as shard_coordinator.preflight requires. The route composition only
+    supplies the drift check and the boss nodes every e2e run must kill.
+    """
     inputs: list[dict] = []
     path = ROUTE_COMPOSITIONS / f'{raid}_{token}.json'
     route = read_json(root, path)
-    scenario_id, coverage = route.get('scenario_id'), {}
+    template, coverage = route.get('scenario_id'), {}
+    expected_nodes: list[str] = []
     if not route:
         inputs.append(missing('route_composition', f'author {path.as_posix()} (raid_route_composition_v1) from the '
                               'reviewed boss node sets', 'raid-shard-architecture', BLOCKS_RUN, path=path.as_posix()))
@@ -361,7 +375,7 @@ def _e2e_unit(root, raid, mode, token, composition, units, scenarios, profiles) 
             differences = drift(config, composed)
             if differences:
                 inputs.append(missing('route_materialization', f'{len(differences)} differences between the composed '
-                                      f'route and {scenario_id}; run raid_route_composer --check',
+                                      f'route and {template}; run raid_route_composer --check',
                                       'raid-shard-architecture', BLOCKS_RUN))
             kinds = {row['node_id']: row.get('kind') for row in composed.route}
             sets = {entry['id']: entry['node_ids'] for entry in composed.node_set_order}
@@ -372,20 +386,38 @@ def _e2e_unit(root, raid, mode, token, composition, units, scenarios, profiles) 
                 if not coverage[unit['boss_key']]:
                     inputs.append(missing('route_boss_rows', f"the composed route has no boss node for {unit['boss_key']}",
                                           'raid-shard-architecture', BLOCKS_RUN))
+            expected_nodes = sorted({node for nodes in coverage.values() for node in nodes})
         except (RaidRouteCompositionError, KeyError, TypeError, ValueError) as error:
             inputs.append(missing('route_composition', f'does not compose: {str(error)[:300]}', 'raid-shard-architecture', BLOCKS_RUN))
     full = composition.get('full_raid') if isinstance(composition.get('full_raid'), dict) else {}
-    profile = full.get('runtime_profile_id')
-    cohort = full.get('cohort_id') or ids.cohort_id(raid, mode, 'full', 0)
+    cohort = str(full.get('cohort_id') or ids.cohort_id(raid, mode, 'full', 0))
+    scenario = str(full.get('route_scenario_id') or cohort)
+    profile = str(full.get('runtime_profile_id') or cohort)
+    pool = str(full.get('pool_tag') or cohort)
     if not full:
         inputs.append(missing('e2e_roster', 'the composition declares no full_raid entry, so the end-to-end run has no '
                               'canonical-composition cohort, profile or spec selection', 'raid-shard-architecture', BLOCKS_RUN))
-    elif profile not in profiles:
-        inputs.append(missing('e2e_runtime_profile', f'no {PROFILES.as_posix()} profile {profile}', 'raid-shard-architecture', BLOCKS_RUN))
-    if scenario_id and scenario_id not in scenarios:
-        inputs.append(missing('e2e_runtime_scenario', f'no {ROUTES.as_posix()} row {scenario_id}', 'raid-shard-architecture', BLOCKS_RUN))
-    pool = full.get('pool_tag') or (profiles.get(profile) or {}).get('pool_tag_filter') or profile
+    else:
+        if len({scenario, profile, pool}) != 1:
+            inputs.append(missing('e2e_identity', f'full_raid scenario {scenario}, profile {profile} and pool {pool} must be '
+                                  'one id (shard_coordinator preflight)', 'raid-shard-architecture', BLOCKS_RUN))
+        if full.get('scenario_id') and template and full['scenario_id'] != template:
+            inputs.append(missing('e2e_route_template', f"full_raid.scenario_id {full['scenario_id']} is not the composed "
+                                  f'route {template}', 'raid-shard-architecture', BLOCKS_RUN))
+        row = scenarios.get(scenario)
+        if row is None:
+            inputs.append(missing('e2e_runtime_scenario', f'no {ROUTES.as_posix()} row {scenario} for the full-raid cohort',
+                                  'raid-shard-architecture', BLOCKS_RUN))
+        else:
+            present = {str(node.get('node_id')) for node in row.get('route') or [] if node.get('kind') == 'boss'}
+            absent = [node for node in expected_nodes if node not in present]
+            if absent:
+                inputs.append(missing('e2e_route_rows', f'{scenario} lacks composed boss nodes: ' + ', '.join(absent),
+                                      'raid-shard-architecture', BLOCKS_RUN))
+        if profile not in profiles:
+            inputs.append(missing('e2e_runtime_profile', f'no {PROFILES.as_posix()} profile {profile}',
+                                  'raid-shard-architecture', BLOCKS_RUN))
     return {'unit_id': f'raid:{raid}:{mode}:e2e', 'route_composition': path.as_posix() if route else None,
-            'scenario_id': scenario_id, 'cohort_id': cohort, 'runtime_profile_id': profile, 'pool_tag': pool,
-            'boss_nodes': coverage, 'missing_inputs': inputs,
-            'ready_to_run': not inputs, 'owner_skill': 'raid-shard-architecture' if inputs else None}
+            'route_template_scenario_id': template, 'scenario_id': scenario, 'cohort_id': cohort,
+            'runtime_profile_id': profile, 'pool_tag': pool, 'boss_nodes': coverage, 'expected_boss_nodes': expected_nodes,
+            'missing_inputs': inputs, 'ready_to_run': not inputs, 'owner_skill': 'raid-shard-architecture' if inputs else None}

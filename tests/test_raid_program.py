@@ -131,7 +131,7 @@ def test_bwd_program_is_created_from_real_data_files(tmp_path):
     assert lockouts['maloriak']['diagnostic_only_assistance'] and not lockouts['maloriak']['certifies_predecessors']
     assert lockouts['nefarian']['seed_boss_argument'] == 'magmaw,omnotron,chimaeron,atramedes,maloriak'
     assert all(lockout['seedable'] for lockout in lockouts.values())
-    assert discovery['e2e']['scenario_id'] == 'blackwing_descent_10n'
+    assert discovery['e2e']['route_template_scenario_id'] == 'blackwing_descent_10n'
     assert set(discovery['e2e']['boss_nodes']) == set(program['units'])
     for unit in discovery['units']:
         assert all({'input', 'detail', 'owner_skill', 'blocks'} <= set(item) for item in unit['missing_inputs'])
@@ -183,3 +183,89 @@ def test_missing_native_scripts_are_run_blocking_work():
     units = {unit['boss_key']: unit for unit in discover_program(REAL, 'dragon_soul', '10N')['units']}
     script = next(item for item in units['morchok']['missing_inputs'] if item['input'] == 'native_script')
     assert script['blocks'] == 'run' and script['owner_skill'] == 'raid-encounter-implementation'
+
+
+def _full_raid(repo: Path, **overrides) -> dict:
+    """Force a full_raid cohort (row and profile included) into the copied data; returns the entry."""
+    composition_path = repo / 'experiments/configs/raid_compositions/blackwing_descent_10n.json'
+    composition = json.loads(composition_path.read_text())
+    cohort = 'blackwing_descent_10n_full_c0'
+    full = {'scenario_id': 'blackwing_descent_10n', 'route_scenario_id': cohort, 'cohort_id': cohort,
+            'runtime_profile_id': cohort, 'pool_tag': cohort} | overrides
+    composition['full_raid'] = full
+    composition_path.write_text(json.dumps(composition))
+    scenarios_path = repo / 'experiments/configs/validation_scenarios_cata_001.json'
+    scenarios = json.loads(scenarios_path.read_text())
+    rows = [row for group in ('scenarios', 'diagnostic_scenarios') for row in scenarios.get(group) or []]
+    if not any(row['id'] == cohort for row in rows):
+        template = next(row for row in rows if row['id'] == 'blackwing_descent_10n')
+        scenarios.setdefault('diagnostic_scenarios', []).append(dict(template, id=cohort))
+        scenarios_path.write_text(json.dumps(scenarios))
+    profiles_path = repo / 'dataset/bot_runtime_profiles/profiles.json'
+    profiles = json.loads(profiles_path.read_text())
+    if not any(row.get('name') == cohort for row in profiles['profiles']):
+        profiles['profiles'].append({'name': cohort, 'pool_tag_filter': cohort})
+        profiles_path.write_text(json.dumps(profiles))
+    return full
+
+
+def test_e2e_identity_is_the_full_raid_cohort_row(tmp_path):
+    repo = real_copy(tmp_path)
+    _full_raid(repo)
+    e2e = discover_program(repo, 'blackwing_descent', '10N')['e2e']
+    cohort = 'blackwing_descent_10n_full_c0'
+    assert (e2e['scenario_id'], e2e['runtime_profile_id'], e2e['pool_tag'], e2e['cohort_id']) == (cohort,) * 4
+    assert e2e['route_template_scenario_id'] == 'blackwing_descent_10n'
+    assert len(e2e['expected_boss_nodes']) == 6
+    assert not [item for item in e2e['missing_inputs'] if item['input'].startswith('e2e_')]
+
+
+def test_e2e_identity_mismatch_is_a_typed_missing_input(tmp_path):
+    repo = real_copy(tmp_path)
+    _full_raid(repo, pool_tag='blackwing_descent_10n', scenario_id='other_route')
+    e2e = discover_program(repo, 'blackwing_descent', '10N')['e2e']
+    names = {item['input'] for item in e2e['missing_inputs']}
+    assert {'e2e_identity', 'e2e_route_template'} <= names and not e2e['ready_to_run']
+
+
+def test_e2e_cohort_row_must_hold_every_composed_boss_node(tmp_path):
+    repo = real_copy(tmp_path)
+    _full_raid(repo)
+    scenarios_path = repo / 'experiments/configs/validation_scenarios_cata_001.json'
+    scenarios = json.loads(scenarios_path.read_text())
+    for group in ('scenarios', 'diagnostic_scenarios'):
+        for row in scenarios.get(group) or []:
+            if row['id'] == 'blackwing_descent_10n_full_c0':
+                row['route'] = [node for node in row['route'] if node.get('node_id') != 'bwd.nefarian.encounter']
+    scenarios_path.write_text(json.dumps(scenarios))
+    e2e = discover_program(repo, 'blackwing_descent', '10N')['e2e']
+    rows = next(item for item in e2e['missing_inputs'] if item['input'] == 'e2e_route_rows')
+    assert 'bwd.nefarian.encounter' in rows['detail']
+
+
+def test_raid_level_inputs_are_routed_to_owning_packets():
+    discovery = discover_program(REAL, 'dragon_soul', '10N')
+    owners = {item['input']: item['owner_skill'] for item in discovery['raid_inputs']}
+    assert owners['prerequisite_graph_unverified'] == 'raid-shard-architecture'
+    assert owners.get('script_readiness_audit', 'raid-encounter-research') == 'raid-encounter-research'
+
+
+def test_shard_packet_tests_are_existing_modules():
+    tests = discover_program(REAL, 'blackwing_descent', '10N')['shard_tests']
+    assert tests and all((REAL / path).is_file() for path in tests)
+    assert 'tests/test_raid_shard_plan.py' in tests
+
+
+def test_skills_route_raid_requests_and_carry_the_agents_patch():
+    reference = (REAL / '.agents/skills/trinity-orchestrator/references/raid-program.md').read_text()
+    routing = reference.split('## AGENTS.md routing (applied by the coordinator)')[1]
+    for phrase in ('raid_workloop start', 'resume --program', 'resume --boss', 'one implementation agent per round',
+                   'parent_objective_complete', 'bwd'):
+        assert phrase in routing
+    for phrase in ('program ingest', '--failed-batch', 'e2e --failed', 'build --finish', '--replan', '--output-dir'):
+        assert phrase in reference
+    shard_skill = (REAL / '.agents/skills/raid-shard-architecture/SKILL.md').read_text()
+    assert 'raid_compositions/<raid>_<size><diff>.json' in shard_skill and '<raid>_<size>.json' not in shard_skill
+    orchestrator = (REAL / '.agents/skills/trinity-orchestrator/SKILL.md').read_text()
+    assert 'references/raid-program.md' in orchestrator
+    assert 'program ingest' in (REAL / '.agents/skills/raid-tuning-playbook/SKILL.md').read_text()

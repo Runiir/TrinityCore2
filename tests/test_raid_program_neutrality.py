@@ -97,3 +97,32 @@ def test_program_packet_cli_writes_the_worker_contract(repo, tmp_path_factory):
     assert packet['units'][0]['lockout']['seed_boss_argument'] == 'magmaw,omnotron,chimaeron,atramedes,maloriak'
     assert packet['handoff']['save_as'].startswith('artifacts/cata_raid_program/raid_programs/blackwing_descent_10n/round01/')
     assert any(path.endswith('/Encounters/Magmaw/**') for path in packet['forbidden_files'])
+
+
+def test_boss_resume_points_at_an_existing_raid_program(repo):
+    code, output = workloop(repo, 'resume', '--full')
+    assert code == 0 and 'raid_program' not in output
+    workloop(repo, 'start', 'implement bwd 10n bots')
+    code, output = workloop(repo, 'resume', '--boss', '--full')
+    assert code == 0 and output['encounter']['boss'] == 'magmaw'
+    assert output['raid_program'] == {'program_id': 'blackwing_descent:10N', 'stage': 'plan', 'round': 1,
+                                      'resume': 'pixi run python -m tools.raid_program.raid_workloop resume --program'}
+
+
+def test_a_broken_raid_program_module_cannot_break_boss_resume(repo, monkeypatch, capsys):
+    from tools.raid_program import raid_workloop
+    workloop(repo, 'start', 'implement bwd 10n bots')
+    monkeypatch.setitem(sys.modules, 'tools.raid_program.raid_program', None)  # every import of it now fails
+    monkeypatch.setattr(sys, 'argv', ['raid_workloop', '--root', str(repo), 'resume', '--boss', '--full'])
+    assert raid_workloop.main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output['encounter']['boss'] == 'magmaw' and 'raid_program' not in output
+    monkeypatch.setattr(sys, 'argv', ['raid_workloop', '--root', str(repo), 'start', 'implement magmaw 10n bots', '--full'])
+    assert raid_workloop.main() == 0, 'a boss-level start never needs the raid-program module'
+    assert json.loads(capsys.readouterr().out)['encounter']['boss'] == 'magmaw'
+
+
+def test_program_verbs_are_forwarded_with_their_own_help(repo):
+    completed = subprocess.run([sys.executable, '-m', 'tools.raid_program.raid_workloop', '--root', str(repo),
+                                'program', '--help'], cwd=REAL, text=True, capture_output=True)
+    assert completed.returncode == 0 and 'raid_workloop program' in completed.stdout and 'ingest' in completed.stdout

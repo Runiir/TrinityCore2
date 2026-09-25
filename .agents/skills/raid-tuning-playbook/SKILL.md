@@ -19,9 +19,11 @@ the measuring harness, not the goal.
    A raid-level request (`start "implement bwd 10n bots"`) runs this loop for
    every boss at once, in rounds ([raid program](../trinity-orchestrator/references/raid-program.md)):
    - Each boss packet is one pass of steps c–d for its boss.
-   - The round's shard runs replace `scoreboard run`. Ingest each boss's shard
-     directories under one round label, then judge and compare that label with
-     `scoreboard verdict` and `scoreboard show` as in steps e–g.
+   - The round's shard runs replace `scoreboard run`. `raid_workloop program ingest --label L`
+     archives each shard's evidence to DVC and records its kills under one round
+     label. A kill without an evidence pointer never counts. Then judge and
+     compare that label with `scoreboard verdict` and `scoreboard show` as in
+     steps e–g.
    - The finish line below applies to every boss unit. The end-to-end clear
      comes last.
 2. Open the target file `experiments/configs/raid_targets/<scenario>.json`

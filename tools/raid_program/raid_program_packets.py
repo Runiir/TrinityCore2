@@ -1,17 +1,22 @@
 """Worker packets and handoffs for one raid-program round.
 
-A round has one packet per open boss unit (``boss:<key>``) and, when shard
-inputs are missing or the end-to-end unit is due, one ``shards`` packet that
-owns the raid's shared shard data (composition, scenario rows, runtime
-profiles, route composition, prerequisite graph). Packets own disjoint files;
-anything else goes into the handoff as a patch request. Coordinator-only files
-(native runtime outside the boss's content directory, instance script, fidelity
-registry, CMake, skills, AGENTS.md and both state files) are never owned.
+A round has one packet per open boss unit (``boss:<key>``); a ``shards`` packet
+that owns the raid's shared shard data (composition, scenario rows, runtime
+profiles, route composition, prerequisite graph) when shard inputs are missing
+or the end-to-end unit is due; and a ``research`` packet for raid-level research
+inputs (strategy catalog, script-readiness audit). The audit is refreshed only
+once the end-to-end unit is due, because boss packets change native scripts.
+Packets own disjoint files; anything else goes into the handoff as a patch
+request. Coordinator-only files (native runtime outside the boss's content
+directory, instance script, fidelity registry, CMake, skills, AGENTS.md and both
+state files) are never owned. Globs are segment-aware: ``*`` stays inside one
+path segment and ``**`` spans any number of segments.
 """
 from __future__ import annotations
 
-import fnmatch
 import json
+import posixpath
+import re
 from pathlib import Path
 
 from tools.raid_program.development_graph import GraphError, STATE_PATH as BOSS_STATE_PATH
@@ -22,7 +27,10 @@ from tools.raid_program.scenario_catalog import READINESS, ROUTES, STRATEGIES
 PACKET_SCHEMA = 'raid_program_worker_packet_v1'
 HANDOFF_SCHEMA = 'raid_program_handoff_v1'
 SHARDS = 'shards'
+RESEARCH = 'research'
 SHARD_OWNER = 'raid-shard-architecture'
+RESEARCH_OWNER = 'raid-encounter-research'
+PATCH_TARGETS = (SHARDS, RESEARCH, 'coordinator')
 COORDINATOR_FILES = ['src/**', 'dep/**', 'cmake/**', '**/CMakeLists.txt', 'AGENTS.md', 'CLAUDE.md', '.agents/skills/**',
                      'experiments/configs/encounter_fidelity/**', READINESS.as_posix(), STRATEGIES.as_posix(),
                      BOSS_STATE_PATH.as_posix(), STATE_PATH.as_posix(), 'dvc.lock']
@@ -33,7 +41,7 @@ HANDOFF_FIELDS = {'packet_id': str, 'round': int, 'changed_files': list, 'new_fi
                   'patch_requests': list, 'validation_neutrality': str, 'risks': list, 'open_items': list,
                   'resolved_inputs': list}
 RULES = [
-    'Edit only owned_files; send every other change as an exact patch_request (to: shards or coordinator).',
+    'Edit only owned_files; send every other change as an exact patch_request (to: shards, research or coordinator).',
     'Never commit, stash, reset, checkout, build, run dvc repro/push, or start/stop a server.',
     'Use raid_workloop start --preview and program status read-only; never select or advance program or boss state.',
     'Keep CPU modest: focused tests only; prefix heavy commands with nice -n 10.',
@@ -44,8 +52,44 @@ RULES = [
 ]
 
 
+def _glob_regex(pattern: str) -> re.Pattern[str]:
+    out, index = [], 0
+    while index < len(pattern):
+        if pattern.startswith('**/', index):
+            out.append('(?:[^/]+/)*')
+            index += 3
+        elif pattern.startswith('**', index):
+            out.append('.*')
+            index += 2
+        elif pattern[index] == '*':
+            out.append('[^/]*')
+            index += 1
+        elif pattern[index] == '?':
+            out.append('[^/]')
+            index += 1
+        else:
+            out.append(re.escape(pattern[index]))
+            index += 1
+    return re.compile(''.join(out) + r'\Z')
+
+
+def glob_match(path: str, pattern: str) -> bool:
+    """Segment-aware glob: ``*`` and ``?`` never cross ``/``; ``**`` spans segments."""
+    return bool(_glob_regex(pattern).match(path))
+
+
 def matches(path: str, patterns: list[str]) -> bool:
-    return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
+    return any(glob_match(path, pattern) for pattern in patterns)
+
+
+def normalize_path(value) -> str:
+    """A repository-relative POSIX path, or GraphError (absolute, '..', '.', backslash, empty)."""
+    if not isinstance(value, str) or not value or '\\' in value or value.startswith('/'):
+        raise GraphError(f'handoff path must be repository-relative POSIX: {value!r}')
+    parts = value.split('/')
+    if any(part in ('', '.', '..') for part in parts) or posixpath.normpath(value) != value:
+        raise GraphError(f'handoff path must be normalized without . or ..: {value!r}')
+    return value
 
 
 def _shard_files(discovery: dict) -> list[str]:
@@ -53,6 +97,12 @@ def _shard_files(discovery: dict) -> list[str]:
     return [discovery.get('composition') or f'{COMPOSITIONS.as_posix()}/{raid}_{token}.json', ROUTES.as_posix(),
             PROFILES.as_posix(), f'{ROUTE_COMPOSITIONS.as_posix()}/{raid}_{token}.json',
             f'{PREREQUISITES.as_posix()}/{raid}.json', 'dvc.yaml', f'tests/test_raid_shard_{raid}_*.py']
+
+
+def _research_inputs(discovery: dict, e2e_due: bool) -> list[dict]:
+    """Raid-level research inputs; the script-readiness audit waits until no boss packet edits scripts."""
+    return [dict(item, unit='raid') for item in discovery['raid_inputs'] if item['owner_skill'] == RESEARCH_OWNER
+            and (e2e_due or item['input'] != 'script_readiness_audit')]
 
 
 def _shard_inputs(discovery: dict, e2e_due: bool, e2e_failure: dict | None = None) -> list[dict]:
@@ -115,8 +165,19 @@ def build_packets(discovery: dict, program: dict, bosses: list[str] | None, e2e_
                      'rows and runtime profiles, seeded-lockout prerequisite data, the composed full-raid route and '
                      'its roster binding. Apply boss packets\' patch requests to these files as they arrive.'),
             'owned_files': _shard_files(discovery),
-            'focused_tests': [f'pixi run python -m pytest -q tests/test_raid_shard_{raid}_*.py'],
+            'focused_tests': ['pixi run python -m pytest -q ' + ' '.join(discovery.get('shard_tests') or ['tests/test_raid_program.py'])],
             'inputs': shard_inputs, 'handoff': None}
+    research_inputs = _research_inputs(discovery, e2e_due)
+    if research_inputs:
+        packets[RESEARCH] = {
+            'packet_id': RESEARCH, 'units': [f"raid:{discovery['raid']}:{discovery['mode']}:raid"],
+            'owner_skill': RESEARCH_OWNER,
+            'task': ('Close the raid-level research inputs: audit every changed native script of this raid against its '
+                     'contract and refresh the script-readiness audit (source_tree_sha256), and add missing strategy '
+                     'catalog rows. Change no native script; route script defects to the coordinator.'),
+            'owned_files': [READINESS.as_posix(), STRATEGIES.as_posix()],
+            'focused_tests': ['pixi run python -m pytest -q tests/test_raid_workloop.py tests/test_raid_program.py'],
+            'inputs': research_inputs, 'handoff': None}
     if not packets:
         raise GraphError('no open unit needs a packet this round')
     overlaps = ownership_overlaps(packets)
@@ -125,17 +186,31 @@ def build_packets(discovery: dict, program: dict, bosses: list[str] | None, e2e_
     return packets
 
 
+def _probe(pattern: str) -> str:
+    """A concrete path the pattern matches: every wildcard becomes one letter segment or run."""
+    return re.sub(r'\*\*/?|\*|\?', lambda match: 'q/' if match.group(0) == '**/' else 'q', pattern)
+
+
 def ownership_overlaps(packets: dict[str, dict]) -> list[dict]:
+    """Pairs of packets whose owned patterns can name one file (identical, concrete or probe match)."""
     overlaps = []
     items = sorted(packets.items())
     for index, (left, first) in enumerate(items):
         for right, second in items[index + 1:]:
-            shared = [path for path in first['owned_files'] if path in second['owned_files']
-                      or ('*' not in path and matches(path, second['owned_files']))]
-            shared += [path for path in second['owned_files'] if '*' not in path and matches(path, first['owned_files'])]
+            shared = [path for path in first['owned_files']
+                      if path in second['owned_files'] or matches(_probe(path), second['owned_files'])]
+            shared += [path for path in second['owned_files'] if matches(_probe(path), first['owned_files'])]
             if shared:
                 overlaps.append({'packets': [left, right], 'files': sorted(set(shared))})
     return overlaps
+
+
+def changed_file_owners(packets: dict[str, dict], files: list[str]) -> dict:
+    """Owners of each changed file; a file two packets can own is a conflict."""
+    owners = {path: [key for key, row in sorted(packets.items()) if matches(path, row['owned_files'])] for path in files}
+    return {'owned': {path: names[0] for path, names in owners.items() if len(names) == 1},
+            'unowned': sorted(path for path, names in owners.items() if not names),
+            'conflicts': {path: names for path, names in owners.items() if len(names) > 1}}
 
 
 def worker_packet(root: Path, program: dict, discovery: dict, packet_id: str) -> dict:
@@ -155,6 +230,12 @@ def worker_packet(root: Path, program: dict, discovery: dict, packet_id: str) ->
             routes[SHARDS] = _shard_files(discovery)
         else:
             routes['coordinator'] = _shard_files(discovery) + routes['coordinator']
+    if packet_id != RESEARCH:
+        research_files = [READINESS.as_posix(), STRATEGIES.as_posix()]
+        if RESEARCH in packets:
+            routes[RESEARCH] = research_files
+        else:
+            routes['coordinator'] = research_files + routes['coordinator']
     return {
         'schema': PACKET_SCHEMA, 'program_id': program['program_id'], 'round': program['round'],
         'packet_id': packet_id, 'objective': program['objective'], 'owner_skill': packet['owner_skill'],
@@ -174,7 +255,7 @@ def worker_packet(root: Path, program: dict, discovery: dict, packet_id: str) ->
         'handoff': {'schema': HANDOFF_SCHEMA, 'save_as': f'{handoff_dir}/{packet_file(packet_id)}.handoff.json',
                     'required_fields': {name: kind.__name__ for name, kind in HANDOFF_FIELDS.items()},
                     'tests_item': {'command': 'str', 'result': 'str'},
-                    'patch_requests_item': {'to': 'shards|coordinator', 'file': 'str', 'patch': 'exact text'},
+                    'patch_requests_item': {'to': '|'.join(PATCH_TARGETS), 'file': 'str', 'patch': 'exact text'},
                     'resolved_inputs': 'names of this packet\'s inputs the change resolves',
                     'return': 'End your final message with this JSON object only.'},
     }
@@ -198,14 +279,15 @@ def validate_handoff(handoff: dict, packet: dict, round_number: int) -> None:
         raise GraphError('handoff fields missing or mistyped: ' + ', '.join(problems))
     if handoff['packet_id'] != packet['packet_id'] or handoff['round'] != round_number:
         raise GraphError('handoff names another packet or round')
-    outside = [path for path in handoff['changed_files'] + handoff['new_files']
-               if not isinstance(path, str) or not matches(path, packet['owned_files'])]
+    files = [normalize_path(path) for path in handoff['changed_files'] + handoff['new_files']]
+    outside = [path for path in files if not matches(path, packet['owned_files'])]
     if outside:
-        raise GraphError('handoff changed files outside its packet (send patch_requests instead): ' + ', '.join(map(str, outside)))
+        raise GraphError('handoff changed files outside its packet (send patch_requests instead): ' + ', '.join(outside))
     for test in handoff['tests']:
         if not isinstance(test, dict) or not isinstance(test.get('command'), str) or 'result' not in test:
             raise GraphError('each handoff test needs command and result')
     for request in handoff['patch_requests']:
-        if not isinstance(request, dict) or request.get('to') not in (SHARDS, 'coordinator') \
+        if not isinstance(request, dict) or request.get('to') not in PATCH_TARGETS \
                 or not isinstance(request.get('file'), str) or not isinstance(request.get('patch'), str):
-            raise GraphError('each patch_request needs to (shards|coordinator), file and patch')
+            raise GraphError('each patch_request needs to (' + '|'.join(PATCH_TARGETS) + '), file and patch')
+        normalize_path(request['file'])

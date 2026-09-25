@@ -1233,25 +1233,73 @@ def _parser() -> argparse.ArgumentParser:
     boss.add_argument("raid")
     boss.add_argument("boss")
     boss.add_argument("--mode", required=True)
-    from tools.raid_program.raid_program import add_parser as add_program_parser
-    add_program_parser(subparsers)
+    # Raid-program verbs are parsed by tools.raid_program.raid_program, imported only when used.
+    program = subparsers.add_parser("program", add_help=False,
+                                    help="Raid-program rounds after start \"implement <raid> <mode> bots\" (program --help)")
+    program.add_argument("program_args", nargs=argparse.REMAINDER)
     return parser
+
+
+def _program_focused(root: Path) -> bool:
+    """Only a raid-level start focuses plain resume on the program; any failure keeps the boss graph."""
+    try:
+        from tools.raid_program.raid_program_state import load
+        state, _ = load(root)
+    except Exception:  # noqa: BLE001 - a broken raid-program module must never break boss-level resume
+        return False
+    return bool(state) and state.get("focus") == "program"
 
 
 def _raid_program_output(args: argparse.Namespace, root: Path) -> dict[str, Any] | None:
     """Raid-level start/resume/program output; None keeps the unchanged boss-level path."""
-    from tools.raid_program import raid_program
     if args.command == "program":
-        return raid_program.command(root, args)
+        from tools.raid_program import raid_program
+        return raid_program.command(root, args.program_args)
     if args.command == "start":
+        try:
+            from tools.raid_program.raid_program_request import resolve_raid_request
+        except ImportError:
+            return None
+        if resolve_raid_request(root, args.request, args.mode) is None:
+            return None
+        from tools.raid_program import raid_program
         return raid_program.start_request(root, args.request, args.mode, args.preview, args.expect)
-    if args.command == "resume" and not args.boss and (args.program or raid_program.program_focused(root)):
+    if args.command == "resume" and not args.boss and (args.program or _program_focused(root)):
+        from tools.raid_program import raid_program
         return raid_program.resume(root)
     return None
 
 
+def _raid_program_pointer(root: Path) -> dict[str, Any] | None:
+    try:
+        from tools.raid_program.raid_program import boss_pointer
+        return boss_pointer(root)
+    except Exception:  # noqa: BLE001 - the pointer is informational
+        return None
+
+
+def _program_argv(argv: list[str]) -> list[str] | None:
+    """Arguments after the `program` command, verbatim (options such as --help included)."""
+    skip = False
+    for index, token in enumerate(argv):
+        if skip or token.startswith("--root="):
+            skip = False
+            continue
+        if token == "--root":
+            skip = True
+            continue
+        return argv[index + 1:] if token == "program" else None
+    return None
+
+
 def main() -> int:
-    args = _parser().parse_args()
+    argv = sys.argv[1:]
+    program_argv = _program_argv(argv)
+    if program_argv is None:
+        args = _parser().parse_args(argv)
+    else:
+        args, _ = _parser().parse_known_args(argv)
+        args.program_args = program_argv
     root = args.root.resolve()
     try:
         program_output = _raid_program_output(args, root)
@@ -1283,6 +1331,10 @@ def main() -> int:
     if args.command in {'start', 'resume', 'advance'} and not args.full and not output.get('read_only'):
         from tools.raid_program.evidence_task import progress_view
         output = progress_view(output, root)
+    if args.command == "resume":
+        pointer = _raid_program_pointer(root)
+        if pointer:
+            output = {**output, "raid_program": pointer}
     print(json.dumps(output, indent=2, sort_keys=True))
     return 0
 
