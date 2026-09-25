@@ -294,7 +294,7 @@
         "certifies_predecessors": false,
         "fixture_kind": "boss_shard_precompleted_predecessors"
       },
-      "start_position": { "map_id": 669, "x": 150.0, "y": -224.5, "z": 75.0, "o": 1.5708 },
+      "start_position": { "map_id": 669, "x": 140.0, "y": -224.5, "z": 75.0, "o": 1.5708 },
       "required_roles": { "tank": 2, "healer": 3, "dps": 5 },
       "route": [
         { "step": 1, "node_id": "bwd.atramedes.north_spirits", "kind": "trash", "node_kind": "trash_cluster", "label": "Atramedes north spirit pack", "x": 147.9184, "y": -189.2860, "z": 74.9906, "o": 0.0, "source_entry": 43125, "pack_target_entries": [43125, 43128, 43129, 43122], "expected_alive_count": 4, "cluster_radius_yards": 28.0, "source_guid": "spawn_group_435", "source_table": "spawn_group", "source_sql": "sql/old/4.3.4/world/20051_2020_09_22/2020_07_15_00_world.sql", "completion_policy": "cluster_clear_after_pull" },
@@ -341,7 +341,7 @@
     },
     {
       "id": "blackwing_descent_10n_nefarian_diagnostic",
-      "description": "Diagnostic-only Nefarian shard with all five predecessors pre-completed. Seeded lockouts keep the trash alive, so it starts at the Maloriak laboratory junction and clears the central-hall trash first (the laboratory patrol, Ivoroc and the north patrol, whose waypoint paths and wander reach the Orb of Culmination), then native Orb gossip, intro/elevator observation, player descent, and encounter.",
+      "description": "Diagnostic-only Nefarian shard with all five predecessors pre-completed. Seeded lockouts keep the trash alive, so it starts at the Maloriak laboratory junction and clears the central-hall trash first (the laboratory patrol, the north patrol, then Ivoroc: their waypoint paths and wander reach the Orb of Culmination), then native Orb gossip, intro/elevator observation, player descent, and encounter.",
       "instance": "Blackwing Descent",
       "map_id": 669,
       "recovery_entrance": { "area_trigger_id": 6581, "source_map_id": 0, "target_map_id": 669 },
@@ -499,7 +499,7 @@
         "certifies_predecessors": false,
         "fixture_kind": "raid_shard_seeded_lockout"
       },
-      "start_position": { "map_id": 669, "x": 150.0, "y": -224.5, "z": 75.0, "o": 1.5708 },
+      "start_position": { "map_id": 669, "x": 140.0, "y": -224.5, "z": 75.0, "o": 1.5708 },
       "required_roles": { "tank": 1, "healer": 2, "dps": 7 },
       "route": [
         { "step": 1, "node_id": "bwd.atramedes.north_spirits", "kind": "trash", "node_kind": "trash_cluster", "label": "Atramedes north spirit pack", "x": 147.9184, "y": -189.286, "z": 74.9906, "o": 0.0, "source_entry": 43125, "pack_target_entries": [43125, 43128, 43129, 43122], "expected_alive_count": 4, "cluster_radius_yards": 28.0, "source_guid": "spawn_group_435", "source_table": "spawn_group", "source_sql": "sql/old/4.3.4/world/20051_2020_09_22/2020_07_15_00_world.sql", "completion_policy": "cluster_clear_after_pull" },
@@ -549,7 +549,7 @@
     },
     {
       "id": "blackwing_descent_10n_nefarian_c0_diagnostic",
-      "description": "Canonical-composition Nefarian shard (cohort blackwing_descent_10n_nefarian_c0, blackwing_descent_10n_canonical_v1); route rows cloned from blackwing_descent_10n_nefarian_diagnostic with node IDs kept. Seeded predecessors are diagnostic assistance and never certify kills.",
+      "description": "Canonical-composition Nefarian shard (cohort blackwing_descent_10n_nefarian_c0, blackwing_descent_10n_canonical_v1); route rows cloned from blackwing_descent_10n_nefarian_diagnostic with node IDs kept: it starts at the Maloriak laboratory junction and clears the live central-hall trash (laboratory patrol, north patrol, Ivoroc) before the Orb of Culmination. Seeded predecessors are diagnostic assistance and never certify kills.",
       "instance": "Blackwing Descent",
       "map_id": 669,
       "recovery_entrance": { "area_trigger_id": 6581, "source_map_id": 0, "target_map_id": 669 },

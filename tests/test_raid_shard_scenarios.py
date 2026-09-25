@@ -306,8 +306,10 @@ def test_write_missing_appends_only_and_is_idempotent(tmp_path, plan):
         name: row for name, row in tracked.items() if name not in COHORTS}
     for cohort in COHORTS:
         assert [step["node_id"] for step in fresh[cohort]["route"]] == [step["node_id"] for step in tracked[cohort]["route"]]
-        assert {key: value for key, value in fresh[cohort].items() if key != "route"} == {
-            key: value for key, value in tracked[cohort].items() if key != "route"}
+        # Route rows and the free-text description may carry a boss fix (round 3: the Nefarian
+        # c0 description names the central-hall trash it clears); every identity field is equal.
+        assert {key: value for key, value in fresh[cohort].items() if key not in ("route", "description")} == {
+            key: value for key, value in tracked[cohort].items() if key not in ("route", "description")}
     assert profiles_path.read_text(encoding="utf-8") == PROFILES.read_text(encoding="utf-8")
     assert rows.main(argv + ["--check"]) == 0
     # The tracked files are a fixed point: nothing is left to add and nothing is rewritten.

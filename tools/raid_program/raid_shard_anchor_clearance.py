@@ -23,7 +23,8 @@ Ivoroc and 16 yd from two patrol turnarounds, none of them in the route). Every 
 aggro players (not a trigger, not non-attackable, not immune to players, not unselectable) and that is
 neither a pack/target entry of the anchor's node or a later node nor cleared by an earlier node must stay
 NON_TARGET_CLEARANCE_YARDS (native aggro 15 plus a 10 yd margin) away from the anchor. Its reach is its
-spawn, its waypoint path (a formation member follows its leader's path) and its random-movement radius,
+spawn, every segment of its waypoint loop (spawn to the first point, point to point, and the closing
+segment back to the first point; a formation member walks its leader's loop) and its random-movement radius,
 read from the TDB world dump (creature, creature_addon, waypoint_data, creature_formations,
 creature_template). An earlier node clears a spawn of one of its entries when the spawn is the node's
 source_guid, a member of that spawn's formation, or within the node's cluster radius.
@@ -31,7 +32,8 @@ source_guid, a member of that spawn's formation, or within the node's cluster ra
 A third, path-level rule samples the walk between consecutive route anchors (the start, then every node
 position) every PATH_SAMPLE_YARDS on the straight segment. No creature still alive on that walk (not
 cleared by an earlier node and not the destination node's own pack) may come within native aggro
-(PATH_AGGRO_YARDS) of it, counting its patrol path and wander. The rule runs on PATH_CHECK_MAPS only, where
+(PATH_AGGRO_YARDS: native aggro, plus the player's reach that Creature::CanStartAttack's distance check
+adds, plus half the sampling step) of it, counting its patrol segments and wander. The rule runs on PATH_CHECK_MAPS only, where
 consecutive anchors share a floor or a short ramp; segments into a transport or descent node are the
 transport's own movement and are skipped. Navmesh paths would replace the straight segments (round 4).
 
@@ -66,8 +68,12 @@ UNIT_FLAG_IMMUNE_TO_PC = 0x100
 UNIT_FLAG_NOT_SELECTABLE = 0x2000000
 CREATURE_FLAG_EXTRA_TRIGGER = 0x80
 MOVEMENT_RANDOM, MOVEMENT_WAYPOINT = 1, 2
-PATH_AGGRO_YARDS = NATIVE_AGGRO_MAX_YARDS
 PATH_SAMPLE_YARDS = 2.0
+# Creature::CanStartAttack compares with IsWithinDistInMap, which adds both object sizes: the creature's
+# cancels the `- CombatReach` of its aggro radius, the player's (1.5 yd) remains. Half the sampling step
+# covers the gap between samples.
+PLAYER_REACH_YARDS = 1.5
+PATH_AGGRO_YARDS = NATIVE_AGGRO_MAX_YARDS + PLAYER_REACH_YARDS + PATH_SAMPLE_YARDS / 2
 PATH_SKIP_KINDS = {"transport", "descent"}
 PATH_CHECK_MAPS = {
     669: "Blackwing Descent: consecutive anchors share a floor or a short ramp, so the straight segment "
@@ -111,19 +117,10 @@ EXEMPTIONS: tuple[Exemption, ...] = (
               "Stonecore east descent shelf regroup: the point is a Stonecore Flayer spawn itself (a second "
               "Flayer spawns 6.1 yd away). " + ACCEPTED_ROW_NOTE,
               ("stonecore_5n", "stonecore_5h")),
-    Exemption("start_position", 43122, (150.0, -224.5, 75.0),
-              "Round-3 Atramedes start (the proven-walkable bwd.atramedes.regroup floor point) is 27.4 yd from "
-              "the Spirit of Corehammer spawn: outside its native aggro radius (Creature::GetAttackDistance: "
-              "15 - CombatReach for level 85+ against level 85) but inside the 30 yd policy. Pending review: "
-              "(140.0, -224.5, 75.0) clears every spirit spawn by 32.8 yd once its navmesh is confirmed.",
-              ("blackwing_descent_10n_atramedes_diagnostic", "blackwing_descent_10n_atramedes_c0_diagnostic")),
-    Exemption("start_position", 43130, (150.0, -224.5, 75.0),
-              "Round-3 Atramedes start is 26.0 yd from the Spirit of Burningeye spawn; see Spirit of Corehammer.",
-              ("blackwing_descent_10n_atramedes_diagnostic", "blackwing_descent_10n_atramedes_c0_diagnostic")),
     Exemption("bwd.chimaeron.regroup", 43296, (-104.738, 20.592, 72.14094),
               "Chimaeron (43296) sleeps passive until Finkle Einhorn's gossip starts the encounter; the regroup, "
-              "wake-wait and encounter nodes stand at the boss by design (route_template of the accepted "
-              "Chimaeron shard)."),
+              "wake-wait and encounter nodes stand at the boss by design (the Chimaeron shard's route "
+              "template)."),
     Exemption("start_position", 43296, (-104.738, 20.592, 72.14094),
               "The Chimaeron shards start at the passive sleeping boss by design (see bwd.chimaeron.regroup).",
               ("blackwing_descent_10n_chimaeron_diagnostic", "blackwing_descent_10n_chimaeron_c0_diagnostic")),
@@ -177,6 +174,7 @@ class WorldSpawn:
     slack: float  # random-movement radius or formation follow distance
     leader: int
     unit_flags: int
+    segments: tuple[tuple[tuple[float, float, float], tuple[float, float, float]], ...] = ()  # its walked loop
 
 
 def _sql_values(line: str) -> list[list[str]]:
@@ -260,14 +258,28 @@ def load_world(path: Path = TDB_WORLD, maps: Iterable[int] = (669, 725)) -> dict
             return []
         return [point for _, point in sorted(paths.get(path_of[guid], []))]
 
+    def loop(start: tuple[float, float, float], points: list[tuple[float, float, float]]):
+        """The walked segments: start to the first waypoint, each leg, and the closing leg of the loop."""
+        if not points:
+            return []
+        legs = [(start, points[0])] + list(zip(points, points[1:]))
+        if len(points) > 1:
+            legs.append((points[-1], points[0]))
+        return legs
+
     spawns = []
     for guid, row in sorted(by_guid.items()):
         point = (float(row["position_x"]), float(row["position_y"]), float(row["position_z"]))
         leader, follow = formation.get(guid, (guid, 0.0))
         reach = [point] + walked(guid) + (walked(leader) if leader != guid else [])
+        leader_point = by_guid[leader] if leader in by_guid else row
+        segments = loop(point, walked(guid)) + (loop(
+            (float(leader_point["position_x"]), float(leader_point["position_y"]), float(leader_point["position_z"])),
+            walked(leader)) if leader != guid else [])
         slack = float(row["spawndist"]) if int(row["MovementType"]) == MOVEMENT_RANDOM else 0.0
         spawns.append(WorldSpawn(guid=guid, entry=int(row["id"]), map_id=int(row["map"]), point=point,
-                                 reach=tuple(reach), slack=max(slack, follow if leader != guid else 0.0),
+                                 reach=tuple(reach), segments=tuple(segments),
+                                 slack=max(slack, follow if leader != guid else 0.0),
                                  leader=leader, unit_flags=int(row["unit_flags"])))
     return {"spawns": spawns, "templates": templates, "source": str(path)}
 
@@ -290,9 +302,25 @@ def cleared_by(step: Mapping[str, Any], spawn: WorldSpawn) -> bool:
     return "x" in step and math.dist((float(step["x"]), float(step["y"]), float(step["z"])), spawn.point) <= radius
 
 
+def segment_distance(at: tuple[float, float, float], start: tuple[float, float, float],
+                     end: tuple[float, float, float]) -> float:
+    delta = [end[axis] - start[axis] for axis in range(3)]
+    length = sum(value * value for value in delta)
+    part = 0.0 if length <= 0.0 else max(0.0, min(1.0, sum((at[axis] - start[axis]) * delta[axis]
+                                                            for axis in range(3)) / length))
+    return math.dist(at, tuple(start[axis] + delta[axis] * part for axis in range(3)))
+
+
+def spawn_distance(at: tuple[float, float, float], spawn: WorldSpawn) -> float:
+    """Closest approach of the creature to a point: its spawn, waypoints and every walked segment, less wander."""
+    closest = min(math.dist(at, place) for place in spawn.reach)
+    for start, end in spawn.segments:
+        closest = min(closest, segment_distance(at, start, end))
+    return closest - spawn.slack
+
+
 def reach_distance(point: Mapping[str, Any], spawn: WorldSpawn) -> float:
-    at = (float(point["x"]), float(point["y"]), float(point["z"]))
-    return min(math.dist(at, place) for place in spawn.reach) - spawn.slack
+    return spawn_distance((float(point["x"]), float(point["y"]), float(point["z"])), spawn)
 
 
 def scenarios(config: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -465,7 +493,7 @@ def check_route_paths(config: Mapping[str, Any], world: Mapping[str, Any], hosti
             for spawn in candidates:
                 if cleared_by(destination, spawn) or any(cleared_by(step, spawn) for step in route[:index]):
                     continue
-                closest = min(math.dist(sample, place) for sample in samples for place in spawn.reach) - spawn.slack
+                closest = min(spawn_distance(sample, spawn) for sample in samples)
                 if closest >= yards:
                     continue
                 finding = {"rule": "route_path", "scenario_id": scenario_id, "from": source, "to": target,

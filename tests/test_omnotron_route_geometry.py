@@ -20,8 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = Path(os.environ.get("OMNOTRON_SCENARIOS_PATH",
                                 ROOT / "experiments/configs/validation_scenarios_cata_001.json"))
 # Golem Sentry (42800) spawns, TDB 434.22011 world.creature 250048/250049;
-# stationary (MovementType 0), level 85 elite, hostile. Base aggro range is
-# 20 yd at equal level; keep the approach well outside it.
+# stationary (MovementType 0), level 85 elite, hostile. Their aggro radius is at
+# most 15 yd against a level-85 bot (Creature::GetAttackDistance: 15 - CombatReach);
+# keep the approach well outside it.
 GOLEM_SENTRIES = ((-311.602, -347.373), (-338.622, -347.5))
 MINIMUM_SENTRY_DISTANCE = 35.0
 
@@ -56,7 +57,8 @@ def test_regroup_anchor_is_outside_golem_sentry_aggro(scenario_id: str) -> None:
             f"{scenario_id} bwd.omnotron.regroup at ({step['x']}, {step['y']}) is "
             f"{distance:.1f} yd from a Golem Sentry (next node's pack)")
         # Canonical cohorts spawn at their scenario start (use_saved_position).
-        # The legacy 301xx diagnostic start is frozen with its fixture.
+        # The legacy 301xx diagnostic start moved with them in round 3 (fixture
+        # regenerated); tools.raid_program.raid_shard_anchor_clearance checks it.
         if step.get("step") == 1 and scenario_id.endswith("_c0_diagnostic"):
             start = scenario["start_position"]
             start_distance = _sentry_distance(start["x"], start["y"])

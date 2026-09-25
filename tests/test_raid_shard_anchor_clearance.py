@@ -215,3 +215,28 @@ def test_a_walk_past_a_live_patrol_is_refused(hostile, world, order):
     report = clearance.check_route_paths({"scenarios": [full]}, world, hostile)
     walked_past = {(row["to"], row["guid"]) for row in report["path_violations"]}
     assert ("bwd.lower_hall.ivoroc", NORTH_PATROL) in walked_past  # its path turns 8 yd from Ivoroc
+
+
+def test_patrols_are_measured_to_their_walked_segments_including_the_closing_leg(world):
+    _needs_world(world)
+    north = next(spawn for spawn in world["spawns"] if spawn.guid == NORTH_PATROL)
+    waypoints = north.reach[1:]
+    assert north.segments[0] == (north.point, waypoints[0])
+    assert north.segments[-1] == (waypoints[-1], waypoints[0])  # the loop closes back to its first point
+    start, end = north.segments[-1]
+    middle = tuple((start[axis] + end[axis]) / 2 for axis in range(3))
+    assert clearance.spawn_distance(middle, north) < 0.01
+    assert min(clearance.math.dist(middle, place) for place in north.reach) > 5.0  # vertices alone miss it
+    # Creature::CanStartAttack adds the player's reach; half a sampling step covers the sample gap.
+    assert clearance.PATH_AGGRO_YARDS >= 15.0 + 1.5 + clearance.PATH_SAMPLE_YARDS / 2
+
+
+def test_the_atramedes_start_clears_every_spirit_without_an_exemption(creatures, hostile, world):
+    starts = {row["id"]: row["start_position"] for row in clearance.scenarios(CONFIG) if "atramedes" in row["id"]}
+    assert starts["blackwing_descent_10n_atramedes_c0_diagnostic"] == starts["blackwing_descent_10n_atramedes_diagnostic"]
+    assert (starts["blackwing_descent_10n_atramedes_c0_diagnostic"]["x"],
+            starts["blackwing_descent_10n_atramedes_c0_diagnostic"]["y"]) == (140.0, -224.5)
+    assert not any(row.anchor == "start_position" and row.entry in (43122, 43130) for row in clearance.EXEMPTIONS)
+    report = _check(CONFIG, creatures, hostile, world)
+    assert not [row for row in report["violations"] + report["exempted"]
+                if "atramedes" in row["scenario_id"] and row["anchor"] == "start_position"]

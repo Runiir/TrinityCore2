@@ -239,7 +239,8 @@ WCL extraction plan once the gate is cleared:
   250049 at (-338.622, -347.5) and 250048 at (-311.602, -347.373)) guard the
   corridor 50 yd north of the room; they are the `bwd.omnotron.sentries`
   trash node. The regroup anchor and a shard's start position must stay well
-  outside their 20 yd aggro. Round 2 batch 1 started the c0 cohort on sentry
+  outside their aggro (at most 15 yd against level-85 bots, 15 - CombatReach).
+  Round 2 batch 1 started the c0 cohort on sentry
   250049 and lost it to future-encounter contamination; the regroup anchor
   moves to observed ramp ground at (-340.36, -299.07, 206.88), 48.5 yd from
   the nearest sentry (`tests/test_omnotron_route_geometry.py`).

@@ -19,8 +19,11 @@ CONTRACTS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidConsumableCont
 GENERATED = ROOT / "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h"
 DBC = ROOT / "data/dbc/enUS"
 HEROISM, BLOODLUST = 32182, 2825
-# Specs whose runtime contract is still a pending shared patch (.git/round3_patches/m/R3M1_*).
-CONTRACT_PATCH_PENDING = {"beast_mastery_hunter"}
+# Specs whose native contract row is still a pending shared patch
+# (.git/round3_patches/maloriak/01_prepull_bm_hunter_contract.patch). Self-expiring: once the C++
+# contract table names the spec, the whitelist is empty and every roster spec must have its row.
+CONTRACT_PATCH_SPECS = {"beast_mastery_hunter"}
+CONTRACT_PATCH_PENDING = {spec for spec in CONTRACT_PATCH_SPECS if f'"{spec}"' not in CONTRACTS.read_text()}
 
 
 @pytest.fixture(scope="module")
@@ -64,6 +67,14 @@ def test_every_canonical_bot_carries_its_runtime_contract_consumables(plan):
             else:
                 missing_contract.add(bot["class_spec"])
     assert missing_contract <= CONTRACT_PATCH_PENDING
+
+
+def test_the_pending_contract_whitelist_expires_with_the_native_row():
+    source = CONTRACTS.read_text()
+    for spec in CONTRACT_PATCH_SPECS:
+        assert (spec in CONTRACT_PATCH_PENDING) is (f'"{spec}"' not in source)
+    if not CONTRACT_PATCH_PENDING:
+        assert set(rsp.CONTRACT_CONSUMABLE_ARCHETYPES) <= set(runtime_contracts())
 
 
 def test_the_fallback_table_mirrors_the_runtime_contract_archetypes():
