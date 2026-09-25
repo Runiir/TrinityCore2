@@ -1,6 +1,6 @@
 # Full-raid bots: parallel boss shards
 
-Status (2026-09-25): foundation round 1 is done. Seeded lockouts and parallel shards are
+Status (2026-09-25): foundation round 1 is done; round 2 is in progress. Seeded lockouts and parallel shards are
 proven live. Only Magmaw 10N has a real bot strategy; the other bosses start with the boss rounds.
 Goal: every boss of every Cataclysm raid is played by bots, then a full end-to-end
 clear (trash, bosses and interactions). Blackwing Descent 10N comes first; Bastion of
@@ -330,6 +330,110 @@ Deliver:
     (built at `72628abfb6`). They go into the next build.
   - Round rule learned: no agent edits while a build is in flight, because any worktree or
     HEAD change aborts it on provenance.
+
+## Round 2 (2026-09-25): every remaining boss in parallel, plus the raid-level workloop
+
+The user approved round 2 and asked for one agent per remaining boss. Eight
+implementation packages run at once. No agent runs live kills. After all eight land,
+the coordinator does one build, reproduces the DVC data, rebinds the closure and runs
+every BWD shard in parallel in one worldserver.
+
+### Packages and file ownership
+
+The round-1 rules still apply: edit only owned files, send changes to other files as
+`patch_requests`, and make no git writes, builds, servers or DVC writes.
+
+**R. Raid-level workloop.** Owns:
+- tools/raid_program/raid_workloop.py and new tools/raid_program/raid_program*.py;
+- the trinity-orchestrator, raid-tuning-playbook and raid-shard-architecture SKILL.md
+  files and their references (not the user's untracked `raid-shard-architecture/references/`);
+- tests.
+
+`AGENTS.md` changes go in as patch requests. Deliver `raid_workloop start "implement bwd
+10n bots"`, which selects a data-driven raid program:
+- one unit per boss shard, using the prerequisite DAG, the composition and the shard
+  cohort IDs;
+- a round state machine: parallel implementation, one build, parallel shard runs through
+  `shard_coordinator`, per-boss assessment;
+- an end-to-end acceptance unit.
+
+Also deliver `resume` and status readouts. Other raids resolve with their missing inputs
+listed. The boss-level flow (Magmaw's saved graph) must keep working.
+
+**T. Transport movement.** Owns:
+- the movement planner (BotWorldPopulationMgrMovementPlanner*.{h,cpp},
+  BotWorldPopulationMgrNativePath*.{h,cpp}, BotNativePathCheckpoint.h);
+- round-1 package D's transport code: BotWorldPopulationMgrValidationRouteBoardingAction.*,
+  BotWorldPopulationMgrValidationRouteNativeFacts.*, and the transport parts of
+  BotValidationRouteNative{Logic,Contract,Types}.h and
+  BotWorldPopulationMgrValidationRouteNativeRuntime.cpp;
+- BotWorldPopulationMgrValidationRouteTerminalArrival.*;
+- tests.
+
+Deliver lawful movement onto a transport surface that lies off the static navmesh, and
+a lawful ledge drop (walk off, native fall, fall damage) for the Nefarian platform. Fix
+the `floor_unverified` hold note. No teleports.
+
+**M. Canonical composition activation and Magmaw migration.** Owns:
+- experiments/configs/validation_scenarios_cata_001.json, dataset/bot_runtime_profiles/profiles.json
+  and dvc.yaml;
+- experiments/configs/raid_compositions/**;
+- tools/raid_program/shard_coordinator.py, tools/raid_program/raid_shard_*.py,
+  tools/raid_program/raid_loadout*.py and tools/bot_ml/build_validation_scenario_manifests.py;
+- the Magmaw content directory (Encounters/Magmaw/**) and the Magmaw raid target;
+- tests.
+
+Deliver:
+- the `raid_shard_provisioning` DVC stage;
+- runtime profiles and scenario rows for the canonical c0 cohort of all six BWD bosses;
+- shard_coordinator provisioning through the guarded apply path;
+- the Magmaw duty plan remapped from fixed slots to capabilities for the canonical
+  composition (baiters, chain riders, mushrooms, lust, pull tank);
+- C's two minor notes.
+
+Apply boss agents' patch requests for scenario rows and spec selections as they arrive.
+
+**Boss packages O (Omnotron), MA (Maloriak), AT (Atramedes), CH (Chimaeron), NE (Nefarian).**
+Each owns:
+- its `Content/Raids/BlackwingDescent/Encounters/<Boss>/**`;
+- its native script `src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_<boss>.cpp`;
+- its research files: `experiments/configs/cata_raid_encounters/blackwing_descent/<boss>_*`
+  (contract, ledger, new WCL reference and cast-timeline files) and its dossier
+  `docs/bot_raids/strategies/t11/blackwing_descent/<boss>.md`;
+- a new `experiments/configs/raid_targets/blackwing_descent_10n_<boss>.json`;
+- new staged SQL under `sql/custom/staged/world/` named for the boss;
+- new `tests/test_<boss>_*.py`.
+
+Patch requests go:
+- to M for its shard's scenario rows and the per-boss spec selection in the composition;
+- to the coordinator for `instance_blackwing_descent.cpp`, the strategy dispatch
+  (`BotWorldPopulationMgrUpdateBotKernelPreparation.cpp`, `BotWorldPopulationMgr.cpp`)
+  and `experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json`.
+
+Each boss agent delivers a live-attempt-ready shard:
+1. Research: follow the raid-encounter-research skill, including WCL references by
+   browser extraction.
+2. Native script: audit the script against it and fix it.
+3. Encounter damage fidelity: calibrate it (staged SQL plus a registry patch request).
+4. Raid target: write the target file.
+5. Strategy: replace the stub with a real strategy for the canonical composition,
+   following the raid-encounter-implementation skill.
+6. Tests.
+
+Boss notes:
+- Omnotron has no prerequisites and fights two tanks.
+- Maloriak, Atramedes and Chimaeron need Magmaw and Omnotron dead. Atramedes's dwarven
+  spirits and bell intro stay unseeded. Chimaeron needs the Finkle gossip.
+- Nefarian needs all five dead, the orb, and T's descent.
+
+### Coordination rules for round 2
+
+- Use `raid_workloop start --preview` or `raid_workloop boss ...` read-only. Only the
+  coordinator (and later R's raid program) selects or advances the saved graph.
+- Keep CPU load modest: focused tests only, and prefix heavy commands with `nice -n 10`.
+  The user keeps two CPUs free.
+- No edits after your handoff. The coordinator builds only after every agent has
+  finished, and any edit during a build aborts it.
 
 ## Later rounds
 
