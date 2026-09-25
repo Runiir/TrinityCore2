@@ -99,11 +99,11 @@ def test_full_route_order_node_ids_and_drift_repairs() -> None:
         "bwd.magmaw.encounter", "bwd.omnotron.regroup", "bwd.omnotron.sentries",
         "bwd.omnotron.encounter", "bwd.transit.lower_wing_elevator",
         "bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.maloriak.encounter",
+        "bwd.lower_hall.north_patrol", "bwd.lower_hall.ivoroc",
         "bwd.atramedes.north_spirits", "bwd.atramedes.south_spirits",
         "bwd.atramedes.regroup", "bwd.atramedes.bell_ready", "bwd.atramedes.bell",
         "bwd.atramedes.intro_wait", "bwd.atramedes.encounter", "bwd.chimaeron.regroup",
         "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter",
-        "bwd.lower_hall.ivoroc", "bwd.lower_hall.north_patrol",
         "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip", "bwd.nefarian.intro_wait",
         "bwd.nefarian.descent", "bwd.nefarian.encounter",
     ]

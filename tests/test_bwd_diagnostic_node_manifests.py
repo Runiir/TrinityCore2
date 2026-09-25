@@ -478,6 +478,10 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.maloriak.regroup",
         "bwd.maloriak.lab_trash",
         "bwd.maloriak.encounter",
+        # Round 3: the central-hall trash dies right after Maloriak, before the raid crosses
+        # the hall (the laboratory patrol already died at bwd.maloriak.lab_trash).
+        "bwd.lower_hall.north_patrol",
+        "bwd.lower_hall.ivoroc",
         "bwd.atramedes.north_spirits",
         "bwd.atramedes.south_spirits",
         "bwd.atramedes.regroup",
@@ -489,10 +493,6 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.chimaeron.finkle",
         "bwd.chimaeron.wake_wait",
         "bwd.chimaeron.encounter",
-        # Round 3: the central-hall trash whose paths reach the Orb (the laboratory
-        # patrol is already cleared at bwd.maloriak.lab_trash).
-        "bwd.lower_hall.ivoroc",
-        "bwd.lower_hall.north_patrol",
         "bwd.nefarian.orb_regroup",
         "bwd.nefarian.orb_gossip",
         "bwd.nefarian.intro_wait",
@@ -514,8 +514,8 @@ def test_each_bwd_diagnostic_shard_has_exact_local_membership_and_unique_profile
         "chimaeron": ["bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait", "bwd.chimaeron.encounter"],
         # Round 3: a seeded lockout keeps the central-hall trash alive, so the shard
         # starts at the Maloriak junction and clears it before the Orb.
-        "nefarian": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.lower_hall.ivoroc",
-                     "bwd.lower_hall.north_patrol", "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip",
+        "nefarian": ["bwd.maloriak.regroup", "bwd.maloriak.lab_trash", "bwd.lower_hall.north_patrol",
+                     "bwd.lower_hall.ivoroc", "bwd.nefarian.orb_regroup", "bwd.nefarian.orb_gossip",
                      "bwd.nefarian.intro_wait", "bwd.nefarian.descent", "bwd.nefarian.encounter"],
     }
     for boss, scenario_id in DIAGNOSTIC_IDS.items():
@@ -561,11 +561,12 @@ def test_diagnostic_prerequisites_are_explicitly_non_certifying():
 
 def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     routes = _routes(_manifests(), DIAGNOSTIC_IDS["nefarian"])
-    junction, lab_patrol, ivoroc, north_patrol, preparation, orb, intro, descent, boss = routes
+    junction, lab_patrol, north_patrol, ivoroc, preparation, orb, intro, descent, boss = routes
     # Round 3: the hall trash is cleared from the Maloriak junction before the Orb regroup.
     assert (junction["x"], junction["y"], junction["z"]) == (-110.0, -335.0, 67.73)
-    assert [(row["source_entry"], row["source_guid"]) for row in (lab_patrol, ivoroc, north_patrol)] == [
-        (42802, "250117"), (42767, "250108"), (42802, "250116")]
+    # The north patrol first: its path turns 8 yd from Ivoroc's spawn.
+    assert [(row["source_entry"], row["source_guid"]) for row in (lab_patrol, north_patrol, ivoroc)] == [
+        (42802, "250117"), (42802, "250116"), (42767, "250108")]
     assert north_patrol["pack_target_entries"] == [42802, 46083]
     assert preparation["source_entry"] == 203254
     assert (preparation["x"], preparation["y"], preparation["z"]) == (-27.84375, -224.4774, 63.30268)

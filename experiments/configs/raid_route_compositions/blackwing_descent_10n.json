@@ -71,6 +71,12 @@
       "source_scenario_id": "blackwing_descent_10n_maloriak_diagnostic"
     },
     {
+      "id": "lower_hall",
+      "source_scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
+      "node_ids": ["bwd.lower_hall.north_patrol", "bwd.lower_hall.ivoroc"],
+      "reason": "Full raid only: the raid crosses the central hall from Maloriak to Atramedes and Chimaeron. Ivoroc (guid 250108) wanders 10 yd above the Orb and the north patrol (guid 250116 with Mongrels 250120/250121) walks to 16 yd of it, so both are cleared as soon as Maloriak is dead (the laboratory patrol already dies at bwd.maloriak.lab_trash). The north patrol goes first: its path turns 8 yd from Ivoroc's spawn, so a fight at Ivoroc would draw it in. The rows are the Nefarian shard's own, so the Nefarian node set later emits them as duplicates; that shard keeps its junction, lab_trash, hall, Orb order."
+    },
+    {
       "id": "atramedes",
       "source_scenario_id": "blackwing_descent_10n_atramedes_diagnostic"
     },

@@ -28,6 +28,13 @@ read from the TDB world dump (creature, creature_addon, waypoint_data, creature_
 creature_template). An earlier node clears a spawn of one of its entries when the spawn is the node's
 source_guid, a member of that spawn's formation, or within the node's cluster radius.
 
+A third, path-level rule samples the walk between consecutive route anchors (the start, then every node
+position) every PATH_SAMPLE_YARDS on the straight segment. No creature still alive on that walk (not
+cleared by an earlier node and not the destination node's own pack) may come within native aggro
+(PATH_AGGRO_YARDS) of it, counting its patrol path and wander. The rule runs on PATH_CHECK_MAPS only, where
+consecutive anchors share a floor or a short ramp; segments into a transport or descent node are the
+transport's own movement and are skipped. Navmesh paths would replace the straight segments (round 4).
+
 An anchor may stand closer only with an explicit exemption (EXEMPTIONS) that names the node anchor,
 the creature entry and the reason, e.g. the Chimaeron nodes stand on the passive sleeping boss by design.
 Accepted rows (Magmaw, Stonecore) are never moved by this check; a finding there is exempted and reported.
@@ -59,6 +66,15 @@ UNIT_FLAG_IMMUNE_TO_PC = 0x100
 UNIT_FLAG_NOT_SELECTABLE = 0x2000000
 CREATURE_FLAG_EXTRA_TRIGGER = 0x80
 MOVEMENT_RANDOM, MOVEMENT_WAYPOINT = 1, 2
+PATH_AGGRO_YARDS = NATIVE_AGGRO_MAX_YARDS
+PATH_SAMPLE_YARDS = 2.0
+PATH_SKIP_KINDS = {"transport", "descent"}
+PATH_CHECK_MAPS = {
+    669: "Blackwing Descent: consecutive anchors share a floor or a short ramp, so the straight segment "
+         "approximates the walked path.",
+}
+PATH_UNCHECKED_NOTE = ("Straight segments do not approximate this map's route (Stonecore crosses levels and "
+                       "clears long corridors by cluster); navmesh paths are a round-4 item.")
 FACTION_TEMPLATE_FMT = "niiiiiiiiiiiii"
 FACTION_GROUP_PLAYER_MASKS = 1 | 2 | 4  # FACTION_GROUP_MASK_PLAYER, _ALLIANCE, _HORDE
 MIN_CLEARANCE_YARDS = 30.0
@@ -112,6 +128,20 @@ EXEMPTIONS: tuple[Exemption, ...] = (
               "The Chimaeron shards start at the passive sleeping boss by design (see bwd.chimaeron.regroup).",
               ("blackwing_descent_10n_chimaeron_diagnostic", "blackwing_descent_10n_chimaeron_c0_diagnostic")),
 )
+
+
+@dataclass(frozen=True)
+class PathExemption:
+    """A reviewed walk into `to_node` that may pass one creature entry closely, with the reason."""
+    to_node: str
+    entry: int
+    reason: str
+
+
+PATH_EXEMPTIONS: tuple[PathExemption, ...] = tuple(
+    PathExemption(node, 43296, "Chimaeron (43296) sleeps passive until Finkle Einhorn's gossip starts the "
+                               "encounter; the raid walks up to him by design.")
+    for node in ("bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait"))
 
 
 def anchor_key(node_id: str, field: str) -> str:
@@ -383,12 +413,76 @@ def check_anchor_clearance(config: Mapping[str, Any], mobs: Mapping[int, Mapping
                     exempted.append({**finding, "reason": exemption.reason})
     unused = [{**exemption.__dict__, "point": list(exemption.point), "scenarios": list(exemption.scenarios)}
               for exemption in exemptions if exemption not in used]
+    paths = check_route_paths(config, world, hostile_factions) if world is not None else {}
     return {"schema": "route_anchor_clearance_v1", "min_yards": min_yards, "anchors_checked": checked,
             "non_target_yards": non_target_yards if world is not None else None,
             "all_passed": not violations and not unused
-            and all(row["entry"] in KNOWN_TRUNCATED_ENTRIES for row in missing), "violations": violations, "exempted": exempted,
+            and all(row["entry"] in KNOWN_TRUNCATED_ENTRIES for row in missing)
+            and not paths.get("path_violations") and not paths.get("path_unused_exemptions"),
+            **paths, "violations": violations, "exempted": exempted,
             "unused_exemptions": unused, "truncated_spawn_lists": missing,
             "entries_without_db_spawn": sorted(no_spawn)}
+
+
+def route_points(scenario: Mapping[str, Any]) -> list[tuple[str, str, tuple[float, float, float]]]:
+    """(label, kind, point) of the start and every route node, in walking order."""
+    start = scenario.get("start_position") or {}
+    points = [("start_position", "start", (float(start["x"]), float(start["y"]), float(start["z"])))]
+    for step in scenario.get("route") or []:
+        label = str(step.get("node_id") or f"step{step.get('step')}")
+        points.append((label, str(step.get("kind") or ""), (float(step["x"]), float(step["y"]), float(step["z"]))))
+    return points
+
+
+def check_route_paths(config: Mapping[str, Any], world: Mapping[str, Any], hostile_factions: set[int], *,
+                      yards: float = PATH_AGGRO_YARDS,
+                      exemptions: Iterable[PathExemption] = PATH_EXEMPTIONS) -> dict[str, Any]:
+    exemptions = tuple(exemptions)
+    violations: list[dict[str, Any]] = []
+    exempted: list[dict[str, Any]] = []
+    unchecked: list[str] = []
+    used: set[PathExemption] = set()
+    segments = 0
+    for scenario in scenarios(config):
+        scenario_id = str(scenario.get("id"))
+        map_id = int(scenario.get("map_id") or 0)
+        if map_id not in PATH_CHECK_MAPS:
+            unchecked.append(scenario_id)
+            continue
+        route = list(scenario.get("route") or [])
+        candidates = [spawn for spawn in world["spawns"] if spawn.map_id == map_id
+                      and can_aggro_players(spawn, world["templates"].get(spawn.entry) or {}, hostile_factions)]
+        points = route_points(scenario)
+        for index in range(len(points) - 1):
+            (source, _, begin), (target, target_kind, end) = points[index], points[index + 1]
+            if target_kind in PATH_SKIP_KINDS:
+                continue
+            segments += 1
+            destination = route[index]
+            count = max(1, int(math.dist(begin, end) / PATH_SAMPLE_YARDS))
+            samples = [tuple(begin[axis] + (end[axis] - begin[axis]) * part / count for axis in range(3))
+                       for part in range(count + 1)]
+            for spawn in candidates:
+                if cleared_by(destination, spawn) or any(cleared_by(step, spawn) for step in route[:index]):
+                    continue
+                closest = min(math.dist(sample, place) for sample in samples for place in spawn.reach) - spawn.slack
+                if closest >= yards:
+                    continue
+                finding = {"rule": "route_path", "scenario_id": scenario_id, "from": source, "to": target,
+                           "entry": spawn.entry, "guid": spawn.guid,
+                           "name": (world["templates"].get(spawn.entry) or {}).get("name"),
+                           "yards": round(closest, 2)}
+                exemption = next((row for row in exemptions
+                                  if row.to_node == target and row.entry == spawn.entry), None)
+                if exemption is None:
+                    violations.append(finding)
+                else:
+                    used.add(exemption)
+                    exempted.append({**finding, "reason": exemption.reason})
+    unused = [row.__dict__ for row in exemptions if row not in used]
+    return {"path_yards": yards, "path_segments_checked": segments, "path_violations": violations,
+            "path_exempted": exempted, "path_unused_exemptions": unused,
+            "path_unchecked_scenarios": {"scenarios": unchecked, "reason": PATH_UNCHECKED_NOTE} if unchecked else {}}
 
 
 def main(argv: list[str] | None = None) -> int:

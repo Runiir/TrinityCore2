@@ -178,3 +178,40 @@ def test_world_reach_and_aggro_filters(world, hostile):
     lab_trash = _node(_scenario(CONFIG, "blackwing_descent_10n"), "bwd.maloriak.lab_trash")
     assert clearance.cleared_by(lab_trash, spawns[LAB_PATROL]) and clearance.cleared_by(lab_trash, spawns[250118])
     assert not clearance.cleared_by(lab_trash, north)
+
+
+def _full(config: dict, scenario_id: str = "blackwing_descent_10n") -> dict:
+    return _scenario(config, scenario_id)
+
+
+@pytest.mark.parametrize("scenario_id", ["blackwing_descent_10n", "blackwing_descent_10n_full_c0"])
+def test_the_full_route_clears_the_hall_before_crossing_it(creatures, hostile, world, scenario_id):
+    _needs_world(world)
+    nodes = [step["node_id"] for step in _full(CONFIG, scenario_id)["route"]]
+    maloriak = nodes.index("bwd.maloriak.encounter")
+    assert nodes[maloriak + 1:maloriak + 3] == ["bwd.lower_hall.north_patrol", "bwd.lower_hall.ivoroc"]
+    assert nodes.index("bwd.lower_hall.ivoroc") < nodes.index("bwd.atramedes.north_spirits")
+    report = _check(CONFIG, creatures, hostile, world)
+    assert report["path_violations"] == [] and report["path_segments_checked"] >= 100
+    assert {row["to"] for row in report["path_exempted"]} == {
+        "bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait"}
+    assert set(report["path_unchecked_scenarios"]["scenarios"]) == {"stonecore_5n", "stonecore_5h"}
+
+
+@pytest.mark.parametrize("order", ["ivoroc_first", "after_chimaeron"])
+def test_a_walk_past_a_live_patrol_is_refused(hostile, world, order):
+    _needs_world(world)
+    config = copy.deepcopy(CONFIG)
+    full = _full(config)
+    rows = full["route"]
+    hall = [row for row in rows if row["node_id"].startswith("bwd.lower_hall.")]
+    if order == "ivoroc_first":
+        first = rows.index(hall[0])
+        rows[first], rows[first + 1] = rows[first + 1], rows[first]
+    else:  # round-3 first cut: the hall nodes just before the Orb, Ivoroc first
+        rest = [row for row in rows if row not in hall]
+        orb = next(index for index, row in enumerate(rest) if row["node_id"] == "bwd.nefarian.orb_regroup")
+        full["route"] = rest[:orb] + list(reversed(hall)) + rest[orb:]
+    report = clearance.check_route_paths({"scenarios": [full]}, world, hostile)
+    walked_past = {(row["to"], row["guid"]) for row in report["path_violations"]}
+    assert ("bwd.lower_hall.ivoroc", NORTH_PATROL) in walked_past  # its path turns 8 yd from Ivoroc
