@@ -37,7 +37,10 @@
 //   - ranged and healers stand on a half circle 26 yd from the engaged pack,
 //     toward the arena centre: outside every Thunderclap (15 yd + 1.5 reach)
 //     and 13 yd apart, so Chain Lightning does not jump between them;
-//   - the tank and melee are left to native tanking and melee range.
+//   - everyone, the tank included, damages the kill-order target: on a trash
+//     route the shared group focus is the tank's own target, so the tank
+//     sets the order for the raid; positions of the tank and melee are left
+//     to native tanking and melee range.
 // The route keeps the pull, threat pickup and completion (OwnsNode stays
 // false); before the pack is engaged this plan is empty.
 namespace BotEncounter::Atramedes::Spirits
@@ -118,6 +121,18 @@ inline ActorSnapshot const* KillTarget(Pack const& pack, std::string_view node)
                 if (spirit->Entry == entry && spirit->Attackable)
                     return spirit;
     return nullptr;
+}
+
+// The pack's kill-order target for this snapshot, or empty (not a spirit
+// node, nothing engaged). The route's shared focus defers to it on the
+// spirit nodes (patch spirit_kill_order_focus.patch): the tank's native
+// target there is its area-threat choice, not the kill order.
+inline ObjectGuid OrderedKillTarget(Blackboard const& board)
+{
+    if (!IsSpiritNode(board.Route.NodeId))
+        return ObjectGuid();
+    ActorSnapshot const* target = KillTarget(BuildPack(board), board.Route.NodeId);
+    return target ? target->Guid : ObjectGuid();
 }
 
 // Ranged and healers (anyone neither tank nor melee) in GUID order, dead

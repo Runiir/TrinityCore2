@@ -17,8 +17,6 @@
 //   Sprint 2983              aura 31 +70%, 8 s,  cooldown 60 s, off the GCD
 //   Dash 1850                aura 31 +70%, 15 s, cooldown 180 s, Cat Form
 //   Stampeding Roar 77764    aura 31 +60%, 8 s,  cooldown 120 s, Cat Form
-//   Aspect of the Cheetah 5118 aura 31 +30%, until cancelled, Dazed (15571)
-//                            when struck: never taken inside the breath
 //   Blink 1953               effect 29 LEAP 20 yd forward, cooldown 15 s
 //   Disengage 781            effect 138 LEAP_BACK, 20 yd/s horizontal and
 //                            7.5 yd/s vertical: 2 x 7.5 / 19.29111 (server
@@ -28,19 +26,24 @@
 //                            Hypothermia 41425 (30 s) forbids a recast
 //                            (BotAtramedesIceBlock.h)
 //   Cat Form 768             instant shapeshift, needed by Dash and Roar
-// Ghost Wolf 2645 has a 2 s cast: it cannot help a kiter already chased and
-// is left out. Talents (Body and Soul, Speed of Light, ...) are not assumed.
+// Left out: Ghost Wolf 2645 has a 2 s cast, so it cannot help a kiter already
+// chased. Aspect of the Cheetah 5118 (+30%, Dazed 15571 when struck) would
+// fight the hunter's persistent Aspect of the Hawk self-buff
+// (BotPersistentSelfBuffContract.h), which is re-cast in combat: GCDs spent
+// back and forth, or a Dazed hunter without Hawk. Talents (Body and Soul,
+// Speed of Light, ...) are not assumed.
 //
 // Readiness is a runtime fact, never assumed: the snapshot publishes, for
 // each of these spells a bot knows, a player MechanicTimer {SpellId,
-// RemainingMs = cooldown left, 0 = ready} (Source GroupState). A spell with
-// no published timer counts as unknown and is never used.
+// RemainingMs = the longer of the cooldown left and, for a GCD-bound spell,
+// the global cooldown left; 0 = ready} (Source GroupState). A spell with no
+// published timer counts as unknown and is never used, so a strike held
+// back for an extension never waits on a cast the server would reject.
 namespace BotEncounter::Atramedes::Mobility
 {
 inline constexpr uint32 SprintSpell = 2983;
 inline constexpr uint32 DashSpell = 1850;
 inline constexpr uint32 StampedingRoarSpell = 77764;
-inline constexpr uint32 CheetahSpell = 5118;
 inline constexpr uint32 BlinkSpell = 1953;
 inline constexpr uint32 DisengageSpell = 781;
 inline constexpr uint32 IceBlockSpell = IceBlockAura;
@@ -62,18 +65,16 @@ struct Ability
     uint32 DurationMs = 0;
     uint32 CooldownMs = 0;
     uint32 RequiredForm = 0;
-    bool DazedWhenStruck = false;
     std::string_view Name;
 };
 
-inline constexpr std::array<Ability, 6> Abilities{{
-    { SprintSpell, Kind::Speed, 70.0f, 0.0f, 8000, 60000, 0, false, "sprint" },
-    { DashSpell, Kind::Speed, 70.0f, 0.0f, 15000, 180000, CatFormSpell, false, "dash" },
-    { StampedingRoarSpell, Kind::Speed, 60.0f, 0.0f, 8000, 120000, CatFormSpell, false,
+inline constexpr std::array<Ability, 5> Abilities{{
+    { SprintSpell, Kind::Speed, 70.0f, 0.0f, 8000, 60000, 0, "sprint" },
+    { DashSpell, Kind::Speed, 70.0f, 0.0f, 15000, 180000, CatFormSpell, "dash" },
+    { StampedingRoarSpell, Kind::Speed, 60.0f, 0.0f, 8000, 120000, CatFormSpell,
         "stampeding_roar" },
-    { CheetahSpell, Kind::Speed, 30.0f, 0.0f, 0, 1000, 0, true, "aspect_of_the_cheetah" },
-    { BlinkSpell, Kind::LeapForward, 0.0f, 20.0f, 0, 15000, 0, false, "blink" },
-    { DisengageSpell, Kind::LeapBack, 0.0f, 15.55f, 0, 25000, 0, false, "disengage" },
+    { BlinkSpell, Kind::LeapForward, 0.0f, 20.0f, 0, 15000, 0, "blink" },
+    { DisengageSpell, Kind::LeapBack, 0.0f, 15.55f, 0, 25000, 0, "disengage" },
 }};
 
 // Unbuffed run speed of a player.
@@ -175,7 +176,7 @@ inline float StaticCapabilityYards(std::string_view spec)
     if (has("druid"))
         return yards(DashSpell) + yards(StampedingRoarSpell);
     if (has("hunter"))
-        return yards(DisengageSpell) + yards(CheetahSpell);
+        return yards(DisengageSpell);
     if (has("mage"))
         return yards(BlinkSpell);
     return 0.0f;
@@ -196,11 +197,12 @@ inline bool AnyPublished(Blackboard const& board)
     return false;
 }
 
-// The kite extensions a player could use now: known, ready, the form
-// requirement met or Cat Form known, no faster speed buff already running,
-// and the Cheetah (Dazed when struck) never inside the breath. The choice
-// among them depends on the chase (KiteExtension, BotAtramedesAirGong.h).
-inline std::vector<Ability const*> ReadyAbilities(ActorSnapshot const& actor, bool inBreath)
+// The kite extensions a player could use now: known and ready (the
+// published readiness includes the global cooldown of a GCD-bound spell),
+// the required form active or its shapeshift ready too, and no faster speed
+// buff already running. The choice among them depends on the chase
+// (KiteExtension, BotAtramedesAirGong.h).
+inline std::vector<Ability const*> ReadyAbilities(ActorSnapshot const& actor)
 {
     std::vector<Ability const*> ready;
     float const running = RunSpeed(actor);
@@ -208,10 +210,11 @@ inline std::vector<Ability const*> ReadyAbilities(ActorSnapshot const& actor, bo
     {
         if (!Usable(actor, ability) || !Ready(actor, ability.SpellId))
             continue;
+        if (ability.RequiredForm && !FindAura(actor, ability.RequiredForm)
+            && !Ready(actor, ability.RequiredForm))
+            continue;
         if (ability.Type == Kind::Speed
             && BaseRunSpeed * (1.0f + ability.SpeedPct / 100.0f) <= running)
-            continue;
-        if (ability.DazedWhenStruck && inBreath)
             continue;
         ready.push_back(&ability);
     }

@@ -174,9 +174,12 @@ static void TestNothingBeforeThePull()
 static void TestNorthKillOrder()
 {
     Blackboard board = NorthBoard();
-    // The route keeps the node; the tank keeps native threat targeting.
+    // The route keeps the node. The tank's target is the kill-order spirit:
+    // on a trash route the shared group focus is the tank's own target
+    // (FindValidationRouteGroupFocusTarget), so this is what the raid hits.
     AdaptiveAtramedesPlan const tank = Plan(board, Tank, "tank");
-    assert(!tank.OwnsNode && tank.DamageTarget.IsEmpty() && !tank.Movement);
+    assert(!tank.OwnsNode && !tank.Movement);
+    assert(tank.DamageTarget == UnitGuid(S::Corehammer, 43));
     assert(tank.Duty == "spirit_tank");
     for (uint32 slot : { Balance, Hunter, Mage, Retribution, Rogue, Elemental, Warlock,
             HolyPaladin, Discipline })
@@ -185,10 +188,23 @@ static void TestNorthKillOrder()
     // before Shadowforge so Chain Lightning is never handed on.
     Spirit(board, S::Corehammer).Alive = false;
     assert(Plan(board, Mage).DamageTarget == UnitGuid(S::Anvilrage, 55));
+    assert(Plan(board, Tank, "tank").DamageTarget == UnitGuid(S::Anvilrage, 55));
     Spirit(board, S::Anvilrage).Alive = false;
     assert(Plan(board, Rogue).DamageTarget == UnitGuid(S::Moltenfist, 21));
+    assert(Plan(board, Tank, "tank").DamageTarget == UnitGuid(S::Moltenfist, 21));
     Spirit(board, S::Moltenfist).Alive = false;
     assert(Plan(board, Warlock).DamageTarget == UnitGuid(S::Shadowforge, 56));
+    assert(Plan(board, Tank, "tank").DamageTarget == UnitGuid(S::Shadowforge, 56));
+    // The route's shared focus defers to the same target
+    // (spirit_kill_order_focus.patch): empty off the spirit nodes and before
+    // the pull.
+    assert(S::OrderedKillTarget(board) == UnitGuid(S::Shadowforge, 56));
+    assert(S::OrderedKillTarget(NorthBoard(false)).IsEmpty());
+    {
+        Blackboard regroup = NorthBoard();
+        regroup.Route.NodeId = "bwd.atramedes.regroup";
+        assert(S::OrderedKillTarget(regroup).IsEmpty());
+    }
     // An unattackable spirit is skipped.
     board = NorthBoard();
     Spirit(board, S::Corehammer).Attackable = false;
@@ -199,6 +215,7 @@ static void TestSouthKillOrder()
 {
     Blackboard board = SouthBoard();
     assert(Plan(board, Mage).DamageTarget == UnitGuid(S::Angerforge, 63));
+    assert(Plan(board, Tank, "tank").DamageTarget == UnitGuid(S::Angerforge, 63));
     Spirit(board, S::Angerforge).Alive = false;
     assert(Plan(board, Mage).DamageTarget == UnitGuid(S::Thaurissan, 62));
     Spirit(board, S::Thaurissan).Alive = false;

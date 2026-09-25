@@ -18,8 +18,9 @@
 //           a mage with Ice Block ready stands in reach of a shield: the
 //           mage strikes instead of any other relay;
 //   bait    the mage struck (newest Resonating Clash 78168) and Ice Block is
-//           still ready: it holds still and stops casting while the flame
-//           waits 2 s, flies to the shield and comes for it;
+//           still ready: it holds still, still casting at the boss, while
+//           the flame waits 2 s, flies to the shield and comes for it (the
+//           survival Ice Block cast pre-empts the damage cast);
 //   ice     the flame tracking it is inside IceBlockTriggerYards: Ice Block
 //           (45438, 10 s, immune to every school, so no breath damage and no
 //           Sound); it stays in place for the whole block;

@@ -1,8 +1,7 @@
 """Pins the Atramedes air-phase mobility table to the 4.3.4 client data.
 
 BotAtramedesMobility.h models the canonical roster's kite extensions (Sprint,
-Dash, Stampeding Roar, Aspect of the Cheetah, Blink, Disengage) and Ice
-Block. Every speed, displacement, duration and cooldown there must be the
+Dash, Stampeding Roar, Blink, Disengage) and Ice Block. Every speed, displacement, duration and cooldown there must be the
 client row (Spell.dbc, SpellEffect.dbc, SpellDuration.dbc, SpellCooldowns.dbc,
 SpellRadius.dbc), not an invented number.
 """
@@ -72,13 +71,13 @@ def _abilities() -> list[dict]:
     constants = {name: int(value) for name, value in
                  re.findall(r"inline constexpr uint32 (\w+) = (\d+);", text)}
     rows = re.findall(
-        r"\{ (\w+), Kind::(\w+), ([\d.]+)f, ([\d.]+)f, (\d+), (\d+), (\w+), (true|false),",
+        r"\{ (\w+), Kind::(\w+), ([\d.]+)f, ([\d.]+)f, (\d+), (\d+), (\w+),",
         text)
-    assert len(rows) == 6
+    assert len(rows) == 5
     return [{"id": constants[spell], "kind": kind, "pct": float(pct), "yards": float(yards),
              "duration": int(duration), "cooldown": int(cooldown),
              "form": 0 if form == "0" else constants[form]}
-            for spell, kind, pct, yards, duration, cooldown, form, _ in rows]
+            for spell, kind, pct, yards, duration, cooldown, form in rows]
 
 
 def _duration_ms(client: dict, spell: int) -> int:
@@ -136,3 +135,11 @@ def test_ghost_wolf_has_a_cast_time_and_is_left_out(client: dict) -> None:
     cast_times = {_u32(row, 0): _i32(row, 1) for row in _wdbc("SpellCastTimes.dbc")}
     assert cast_times[_u32(ghost_wolf, 12)] == 2000
     assert all(ability["id"] != 2645 for ability in _abilities())
+
+
+def test_aspect_of_the_cheetah_is_left_out() -> None:
+    # It would fight the persistent Aspect of the Hawk self-buff, which the
+    # runtime re-casts in combat.
+    hawk = (ROOT / "src/server/game/Bots/BotPersistentSelfBuffContract.h").read_text(encoding="utf-8")
+    assert "aspect_of_the_hawk" in hawk
+    assert all(ability["id"] != 5118 for ability in _abilities())

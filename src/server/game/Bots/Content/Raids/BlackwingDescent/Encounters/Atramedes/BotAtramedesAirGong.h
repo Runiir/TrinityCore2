@@ -219,14 +219,12 @@ inline std::optional<Mobility::Extension> KiteExtension(ActorSnapshot const& fla
 {
     if (IsIced(kiter) || timeToContact > SpeedBuffLeadSeconds)
         return std::nullopt;
-    bool const inBreath = Geometry::Distance2d(flame.Position, kiter.Position)
-        <= FlameBreathRadius;
     if (timeToContact <= 0.0f && BuildingSpeedStacks(flame) > ExtensionGraceStacks
         && !FindAura(kiter, HypothermiaAura))
         return std::nullopt;
     Mobility::Ability const* best = nullptr;
     float bestContact = std::max(timeToContact, 0.0f) + ExtensionGainSeconds;
-    for (Mobility::Ability const* ability : Mobility::ReadyAbilities(kiter, inBreath))
+    for (Mobility::Ability const* ability : Mobility::ReadyAbilities(kiter))
     {
         if (ability->Type != Mobility::Kind::Speed && timeToContact > RescueLeadSeconds)
             continue;
@@ -455,18 +453,26 @@ inline std::optional<ShieldFact> AirRelayShieldFor(Blackboard const& board,
     return farthest;
 }
 
-// An assigned relay stands in reach of its own station's shield: it will
-// strike at contact, so a lone-kiter early strike would only waste a shield.
+// An assigned relay stands in reach of its own station's shield, or will
+// before `withinSeconds` (a relay still walking to its station at liftoff):
+// it will strike at contact, so a lone-kiter early strike would only waste a
+// shield.
 inline bool RelayInReach(Blackboard const& board, Facts const& facts,
-    DutyPlan const& duties)
+    DutyPlan const& duties, float withinSeconds = 0.0f)
 {
     for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup, duties.GongThird })
         if (ActorSnapshot const* player = FindLivingPlayer(board, relay))
             if (std::optional<ShieldFact> const shield =
                     AirRelayShieldFor(board, facts, duties, relay))
+            {
                 if (Geometry::Distance3d(player->Position, shield->Position)
                     <= ShieldClickDistance)
                     return true;
+                float const walk = Geometry::Distance2d(player->Position,
+                    AirStationPoint(*shield)) / Mobility::RunSpeed(*player);
+                if (walk + RescueLeadSeconds <= withinSeconds)
+                    return true;
+            }
     return false;
 }
 
@@ -578,10 +584,11 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
     // A lone kiter at a shield ahead strikes now if the flame would catch it
     // before the next one (the west side has none for 105 yd). With a relay
     // in reach the relay strikes at contact instead: no shield is spent early.
-    // A kiter with mobility left keeps running instead.
+    // A kiter with mobility left keeps running instead, and so does one whose
+    // relay reaches its station before the flame reaches it.
     if (kiter && flame && !iced && !contact && decision.Withheld.empty()
-        && Mobility::ReadyAbilities(*kiter, false).empty() && !IceBlockReady(*kiter)
-        && !RelayInReach(board, facts, duties))
+        && Mobility::ReadyAbilities(*kiter).empty() && !IceBlockReady(*kiter)
+        && !RelayInReach(board, facts, duties, timeToContact))
     {
         int const direction = AirKiteDirection(facts, *kiter);
         for (ShieldFact const& shield : facts.Shields)

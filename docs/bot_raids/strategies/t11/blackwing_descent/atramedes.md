@@ -137,7 +137,8 @@ conflict is recorded (ledger `conflicts`, source
    - When the rescue is due (the kiter can no longer outrun the flame) and a
      mage with Ice Block ready stands in reach of a shield, the mage strikes
      (`air_ice_block_rescue`).
-   - It then holds still and stops casting. Once the flame tracking it is
+   - It then holds still, still casting at the boss (the survival Ice Block
+     cast pre-empts the damage cast). Once the flame tracking it is
      within 8 yd, it casts Ice Block (45438) and stays for the whole 10 s.
    - On exit (Hypothermia, the flame still on it) it Blinks (1953) away,
      then kites.
@@ -153,8 +154,7 @@ conflict is recorded (ledger `conflicts`, source
    phase because they can outrun the laser longer, and maybe they can get
    2 gongs per phase, not 3." (`BotAtramedesMobility.h`)
    - The chased player spends its ready mobility before anyone strikes.
-     - Speed buffs from 4 s before contact: Sprint, Dash, Stampeding Roar,
-       Aspect of the Cheetah (never inside the breath, since it dazes).
+     - Speed buffs from 4 s before contact: Sprint, Dash, Stampeding Roar.
      - Leaps at contact: Blink, Disengage.
      - It picks whichever puts contact latest. The strike waits
        (`kiter_mobility_extension`).
@@ -168,12 +168,19 @@ conflict is recorded (ledger `conflicts`, source
      | Sprint | +70% speed | 8 s | 60 s |
      | Dash | +70% speed, Cat Form | 15 s | 180 s |
      | Stampeding Roar | +60% speed, Cat Form | 8 s | 120 s |
-     | Aspect of the Cheetah | +30% speed, dazed when struck | until cancelled | — |
      | Blink | 20 yd forward | — | 15 s |
      | Disengage | 15.55 yd back | — | 25 s |
      | Ice Block | immune to every school | 10 s | 300 s |
 
    - Ghost Wolf has a 2 s cast and is left out.
+   - Aspect of the Cheetah (+30%, dazed when struck) is left out: it would
+     fight the hunter's persistent Aspect of the Hawk self-buff
+     (`BotPersistentSelfBuffContract.h`), which the runtime re-casts in
+     combat.
+   - Readiness includes the global cooldown of a GCD-bound spell, and a spell
+     that needs Cat Form counts only while Cat Form is active or its
+     shapeshift is ready too. A strike held back for an extension therefore
+     never waits on a cast the server would reject.
    - Talents (Body and Soul, Speed of Light) are not assumed.
    - The target is 2 shields per air phase.
 7. Readiness is a runtime fact: the snapshot must publish each bot's
@@ -338,8 +345,11 @@ from roster slots.
     - South: Angerforge, Thaurissan, Burningeye, Ironstar. This order is
       provisional (no readable source yet). Execution Sentence (Ironstar) is
       never handed on.
-  - Every non-tank damages the kill-order target once the pack is engaged.
-    The tank and melee are left to native threat and melee range.
+  - Everyone, the tank included, damages the kill-order target once the
+    pack is engaged. On a trash route the shared group focus
+    (`FindValidationRouteGroupFocusTarget`) is the tank's own target, so the
+    tank's target puts the raid on the kill order. The tank's and the melee's
+    positions are left to native threat and melee range.
   - Ranged and healers stand on a half circle 26 yd from the engaged pack,
     toward the arena centre, 30° apart:
     - outside every Thunderclap (80649, 15 yd plus 1.5 yd reach), with a
@@ -416,13 +426,24 @@ Each variant also runs as a second air phase, from the shields left after
 its first one and a Searing Flame. That makes 116 runs.
 
 Results:
-- Every run spends 1–2 shields.
-- The first catch is within 3 s and 4 ticks.
+- With the native 7 s spawn, every run (58) spends 1–2 shields and meets the
+  exposure bounds. The first catch is within 3 s and 4 ticks, and no kiter is
+  in the breath for more than 2 s at a time.
+- With the 3 s stress spawn, 54 of 58 runs spend 2 shields and 4 spend 3.
+  All 4 have the hunter as the first target before the relays reach their
+  stations; since Aspect of the Cheetah was dropped, the hunter has only
+  Disengage. One of them keeps a mage in the breath for 3.75 s after its
+  Blink, before a relay is in reach.
 - Sound stays below 90; in the first phases it peaks at 9.
-- With Ice Block ready it is used exactly once per run: 18 of 20 runs by
-  the rescue strike, and 2 by the chased mage itself.
+- With Ice Block ready it is used at most once per run:
+  - 17 of 20 runs by the rescue strike;
+  - 2 by the chased mage itself;
+  - 1 not at all (3 s spawn: the mage was never in reach in time).
+  - With the 7 s spawn it is used in every run.
 - The iced mage gains no Sound, and with the 7 s spawn it always blinks out
   of the block.
+- Live acceptance is the exposure bound in the ledger, not the strike time:
+  extensions and the Ice Block delay the strike by design.
 
 Without mobility published, the older replay still spends 2–4 shields per
 phase.

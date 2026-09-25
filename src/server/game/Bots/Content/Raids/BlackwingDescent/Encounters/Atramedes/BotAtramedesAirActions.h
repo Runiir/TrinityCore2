@@ -93,24 +93,24 @@ inline std::optional<AirAbility> KiterAbility(Facts const& facts, ActorSnapshot 
     return ability;
 }
 
-// The Ice Block rescuer after its strike: hold still and stop casting while
-// the flame comes; block once the flame tracking it is close; stay blocked.
+// The Ice Block rescuer after its strike: hold still, still casting at the
+// boss, while the flame comes (the survival Ice Block cast pre-empts the
+// damage cast); block once the flame tracking it is close; stay blocked.
 inline std::optional<AirAbility> IceRescuerAbility(Blackboard const& board,
     Facts const& facts, ActorSnapshot const& self)
 {
     AirAbility ability;
     ability.Hold = true;
-    ability.SuppressOffense = true;
     if (IsIced(self))
     {
         ability.Mechanic = "ice_block_hold";
+        ability.SuppressOffense = true;
         ability.SuppressReason = "atramedes_ice_block";
         return ability;
     }
     if (!IceBaiting(board, facts, self))
         return std::nullopt;
     ability.Mechanic = "ice_block_bait";
-    ability.SuppressReason = "atramedes_ice_block_bait";
     if (facts.AirKiter == self.Guid && !facts.AirKiterUntracked)
         if (ActorSnapshot const* flame = KiterFlame(facts, self))
             if (Geometry::Distance2d(flame->Position, self.Position) <= IceBlockTriggerYards)

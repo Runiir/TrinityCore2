@@ -982,13 +982,12 @@ static std::vector<uint32> AfterGroundSearing(std::vector<uint32> shields, float
 namespace M = BotEncounter::Atramedes::Mobility;
 
 // The spells the canonical roster trains (4.3.4 DBC rows in
-// BotAtramedesMobility.h): hunter Disengage and Aspect of the Cheetah, mage
+// BotAtramedesMobility.h): hunter Disengage, mage
 // Blink and Ice Block, balance druid Cat Form, Dash and Stampeding Roar,
 // rogue Sprint. The others have none that helps a chased player.
 static void PublishMobility(Blackboard& board, ReplayOptions const& options)
 {
-    for (uint32 spell : { M::DisengageSpell, M::CheetahSpell })
-        AddTimer(Member(board, Hunter), spell, 0);
+    AddTimer(Member(board, Hunter), M::DisengageSpell, 0);
     AddTimer(Member(board, Mage), M::BlinkSpell, 0);
     AddTimer(Member(board, Mage), M::IceBlockSpell, options.IceBlockReady ? 0 : 200000);
     for (uint32 spell : { M::CatFormSpell, M::StampedingRoarSpell })
@@ -1548,6 +1547,17 @@ static void TestAirAbilities()
     AddFlame(board, Member(board, Balance), { 101.0f, -260.0f, 75.0f }, 4);
     AdaptiveAtramedesPlan shift = Plan(board, Balance);
     assert(castOf(shift) && castOf(shift)->SpellId == M::CatFormSpell);
+    // Readiness includes the global cooldown (published with the timers):
+    // with the shapeshift on the GCD, Dash is out of reach this tick and a
+    // strike held back for it would wait on a rejected cast.
+    {
+        Blackboard gcd = board;
+        for (MechanicTimerSnapshot& timer : Member(gcd, Balance).MechanicTimers)
+            if (timer.SpellId == M::CatFormSpell)
+                timer.RemainingMs = 1200;
+        assert(!castOf(Plan(gcd, Balance)));
+        assert(M::ReadyAbilities(Member(gcd, Balance)).empty());
+    }
     Member(board, Balance).Auras.push_back({ M::CatFormSpell, Member(board, Balance).Guid, 0, 0 });
     assert(castOf(Plan(board, Balance)) && castOf(Plan(board, Balance))->SpellId == M::DashSpell);
 
@@ -1592,7 +1602,8 @@ static void TestAirAbilities()
     assert(facts.AirKiter.IsEmpty());
     AdaptiveAtramedesPlan bait = Plan(board, Mage);
     assert(!bait.Movement && !bait.Interaction);
-    assert(bait.SuppressOffense && bait.SuppressReason == "atramedes_ice_block_bait");
+    // Still casting at the boss: the survival Ice Block pre-empts it later.
+    assert(!bait.SuppressOffense && bait.DamageTarget == Boss(board).Guid);
     // The flame has reached the shield and tracks the mage; 12 yd away: wait.
     ActorSnapshot& redirected = board.Summons.back();
     redirected.Position = G::PointAt(Member(board, Mage).Position, 0.0f, 12.0f, 75.0f);
@@ -1667,16 +1678,23 @@ static void TestAirAbilities()
 //   no mage: the mage dead, so no Ice Block and no Blink.
 // Each variant also runs as a second air phase, from the shields left after
 // its first one and a ground Searing Flame.
-// Bounds: at most 2 shields per 31 s air phase; the first catch within 3 s
-// of contact and 4 ticks; later catches within 3 s and 2 s of breath; nobody
-// near 90 Sound; one click at a time. With Ice Block ready it is used exactly
-// once (the rescue strike, or the chased mage itself), the iced mage gains
-// no Sound, and with the 7 s spawn the mage blinks out of the block.
+// Bounds: at most 2 shields per 31 s air phase with the native 7 s spawn;
+// with the 3 s stress spawn at most 3, and at least 90% of those runs at 2
+// (a hunter caught before the relays reach their stations has only
+// Disengage since Aspect of the Cheetah was dropped); the first catch
+// within 3 s of contact and 4 ticks; later catches within 3 s and 2 s of
+// breath (3 s spawn: 4 s and 4 s, when a chased mage with Blink spent has
+// no relay in reach yet); nobody near 90 Sound; one click at a time. With Ice Block ready it
+// is used at most once (the rescue strike, or the chased mage itself), the
+// iced mage gains no Sound, and with the 7 s spawn the mage blinks out of
+// the block (with the 3 s spawn it may not reach its station in time).
 static void TestAirMobilityReplay()
 {
     std::vector<uint32> const beforePhase1 = AfterGroundSearing(AllShieldIds(), 100.0f);
     int iceStrikes = 0;
     int runs = 0;
+    int stressRuns = 0;
+    int stressAtTwo = 0;
     for (int variant = 0; variant < 3; ++variant)
     {
         ReplayOptions options;
@@ -1700,18 +1718,29 @@ static void TestAirMobilityReplay()
                 for (AirReplay const* run : { &first, &next })
                 {
                     ++runs;
-                    assert(run->Strikes >= 1 && run->Strikes <= 2);
+                    assert(run->Strikes >= 1 && run->Strikes <= (delay >= 7.0f ? 2 : 3));
+                    if (delay < 7.0f)
+                    {
+                        ++stressRuns;
+                        stressAtTwo += run->Strikes <= 2;
+                    }
                     assert(!run->DoubleClick);
                     assert(run->FirstContactS >= 0.0f && run->FirstStrikeS >= 0.0f);
                     assert(run->FirstCatchDelayS <= 3.0f && run->FirstCatchTicks <= 4);
-                    assert(run->WorstSteadyDelayS <= 3.0f && run->MaxSteadyConsecutiveTicks <= 4);
+                    if (delay >= 7.0f)
+                        assert(run->WorstSteadyDelayS <= 3.0f && run->MaxSteadyConsecutiveTicks <= 4);
+                    else
+                        assert(run->WorstSteadyDelayS <= 4.0f && run->MaxSteadyConsecutiveTicks <= 8);
                     assert(run->MaxSound < A::SoundEmergency);
                     assert(run->MageSoundWhileIced == 0);
                 }
                 assert(next.IceBlocks == 0 && next.IceStrikes == 0);
                 if (variant == 0)
                 {
-                    assert(first.IceBlocks == 1 && first.IceStrikes <= 1);
+                    // Once at most; with the 7 s spawn always (with the 3 s
+                    // spawn the mage may not reach its station in time).
+                    assert(first.IceBlocks <= 1 && first.IceStrikes <= 1);
+                    assert(first.IceBlocks == 1 || delay < 7.0f);
                     assert(first.IceStrikes == 1 || slot == Mage || delay < 7.0f);
                     if (delay >= 7.0f)
                         assert(first.BlinkAfterIce);
@@ -1724,7 +1753,9 @@ static void TestAirMobilityReplay()
             }
     }
     assert(iceStrikes >= 15);
-    std::printf("air mobility replay runs=%d ice_strikes=%d\n", runs, iceStrikes);
+    assert(stressAtTwo * 10 >= stressRuns * 9);
+    std::printf("air mobility replay runs=%d ice_strikes=%d stress_at_two=%d/%d\n", runs,
+        iceStrikes, stressAtTwo, stressRuns);
 }
 
 struct GroundKiteRun
