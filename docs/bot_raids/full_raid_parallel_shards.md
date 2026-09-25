@@ -560,7 +560,9 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
 
 - **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
   descent (StepOff, Fall, Land). Phase 2 fails typed (`pillar_ascent_unsupported`)
-  until these exist.
+  until these exist. Pillar path clearance (7 yd) is safe for body radius up to 1.0 yd.
+  Derive it from the roster's largest radius before any Tauren (1.27 yd) joins the
+  Nefarian roster.
 - **Maloriak:** melee hold near a sphere parked by the boss (35-41% uptime in replay).
   The main tank should drag Maloriak at least 6 yd away from it.
 - **Shared code:** one table-driven kill-credit observer (replacing the Maloriak,
