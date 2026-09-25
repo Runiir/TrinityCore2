@@ -15,8 +15,9 @@ from tools.bot_ml.validate_validation_provisioning import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORLD = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
-HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+BOTS = ROOT / "src/server/game/Bots"
+HEADER = BOTS / "BotWorldPopulationMgr.h"
+BOT_STATE = BOTS / "BotWorldPopulationMgrBotState.h"
 INTENTS = ROOT / "src/server/game/Bots/BotNativeActionIntent.h"
 TARGETS = ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
 
@@ -39,9 +40,21 @@ def function_body(source: str, signature: str) -> str:
     raise AssertionError(f"unterminated function: {signature}")
 
 
+def definition(signature: str) -> str:
+    """Return the one definition of ``signature`` in the split Bots TUs.
+
+    BotWorldPopulationMgr.cpp was split by concern; TryEnsurePersistentCombatSetup
+    now lives in BotWorldPopulationMgrPersistentSetup.cpp, the calibration rows in
+    BotWorldPopulationMgrCalibrationRows.cpp, and so on.  Search every TU so a
+    later split cannot turn these contracts into vacuous substring misses.
+    """
+    owners = [path for path in sorted(BOTS.rglob("*.cpp")) if signature in read(path)]
+    assert len(owners) == 1, (signature, owners)
+    return function_body(read(owners[0]), signature)
+
+
 def test_rogue_poison_contract_uses_exact_live_items_spells_and_enchants() -> None:
-    setup = function_body(
-        read(WORLD),
+    setup = definition(
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
 
@@ -60,18 +73,17 @@ def test_rogue_poison_contract_uses_exact_live_items_spells_and_enchants() -> No
 
 
 def test_rogue_poison_setup_submits_native_item_use_then_observes_enchant() -> None:
-    world = read(WORLD)
     header = read(HEADER)
-    setup = function_body(
-        world,
+    setup = definition(
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
-    native = function_body(
-        world,
+    native = definition(
         "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent",
     )
 
-    assert "struct NativePoisonSetupReceipt" in header
+    # WorldBotState (and its receipts) moved out of the manager header.
+    assert '#include "Bots/BotWorldPopulationMgrBotState.h"' in header
+    assert "struct NativePoisonSetupReceipt" in read(BOT_STATE)
     assert "BotNativeAction::UseItem useItem" in setup
     assert "ExecuteNativeActionIntent(state, bot, useItem" in setup
     assert "NativeUseSubmittedAtMs = nowMs" in setup
@@ -90,9 +102,7 @@ def test_rogue_poison_setup_submits_native_item_use_then_observes_enchant() -> N
         "ExecuteNativeActionIntent(state, bot, useItem"
     )
 
-    finish = function_body(
-        world, "void BotWorldPopulationMgr::NotifyBotItemSpellFinished"
-    )
+    finish = definition("void BotWorldPopulationMgr::NotifyBotItemSpellFinished")
     assert "recordPoisonSetupFinish" in finish
     assert "receipt->RequiredSpellId != spellId" in finish
     assert "receipt->NativeUseSubmittedAtMs" in finish
@@ -119,12 +129,10 @@ def test_rogue_poison_setup_submits_native_item_use_then_observes_enchant() -> N
 
 
 def test_missing_poison_inputs_fail_setup_without_manufacturing_state() -> None:
-    setup = function_body(
-        read(WORLD),
+    setup = definition(
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
-    native = function_body(
-        read(WORLD),
+    native = definition(
         "BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent",
     )
 
@@ -144,9 +152,14 @@ def test_missing_poison_inputs_fail_setup_without_manufacturing_state() -> None:
 
 
 def test_poison_readiness_and_previous_window_receipts_are_fail_closed() -> None:
-    world = read(WORLD)
-    calibration = function_body(
-        world, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const"
+    # The per-bot calibration rows moved out of GetCombatCalibrationJson into
+    # AppendCombatCalibrationBotRowsJson; keep both halves of the contract.
+    report = definition(
+        "std::string BotWorldPopulationMgr::GetCombatCalibrationJson(bool includeBotDetails) const"
+    )
+    assert "AppendCombatCalibrationBotRowsJson(" in report
+    calibration = definition(
+        "void BotWorldPopulationMgr::AppendCombatCalibrationBotRowsJson("
     )
 
     assert "case CLASS_ROGUE:" in calibration
@@ -187,7 +200,11 @@ def test_poison_readiness_and_previous_window_receipts_are_fail_closed() -> None
     ):
         assert json_key in calibration
 
-    update = function_body(world, "void BotWorldPopulationMgr::Update(uint32 diff)")
+    # Update scopes each cohort and delegates to UpdateCohort, which owns the
+    # calibration pre-score gate.
+    assert "UpdateCohort(diff)" in definition(
+        "void BotWorldPopulationMgr::Update(uint32 diff)")
+    update = definition("void BotWorldPopulationMgr::UpdateCohort(uint32 diff)")
     assert 'CalibrationTargetSpec == "assassination_rogue"' in update
     assert 'CalibrationTargetSpec == "combat_rogue"' in update
     assert "calibrationState.RoguePoisonSetupRequired" in update
@@ -196,15 +213,11 @@ def test_poison_readiness_and_previous_window_receipts_are_fail_closed() -> None
         "ResetCalibrationScoredWindow()"
     )
 
-    readiness = function_body(
-        world, "bool BotWorldPopulationMgr::TryValidationRouteReadiness"
-    )
+    readiness = definition("bool BotWorldPopulationMgr::TryValidationRouteReadiness")
     assert "TryEnsurePersistentCombatSetup(state, bot, pullTarget)" in readiness
     assert 'result.Action = "validation_route_readiness_persistent_setup"' in readiness
 
-    reconciler = function_body(
-        world, "bool BotWorldPopulationMgr::IsNativePoisonSetupReady"
-    )
+    reconciler = definition("bool BotWorldPopulationMgr::IsNativePoisonSetupReady")
     assert "bot->GetItemByEntry(receipt.RequiredItemEntry)" not in reconciler
     assert "receipt.ItemAvailable" in reconciler
     assert "receipt.SpellAvailable" in reconciler
@@ -222,8 +235,7 @@ def test_poison_readiness_and_previous_window_receipts_are_fail_closed() -> None
 
 
 def test_consumed_last_poison_item_keeps_the_completed_setup_receipt() -> None:
-    setup = function_body(
-        read(WORLD),
+    setup = definition(
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
 
@@ -322,3 +334,40 @@ def test_applied_poison_inventory_readback_fails_closed() -> None:
             "owner_guid": 0, "count": 0,
         },
     }]
+
+
+def test_raid_rosters_apply_provisioned_poisons_out_of_combat_only() -> None:
+    """Round 3 (04_rogue_raid_poisons): r02-b1 rogues never applied poisons.
+
+    A raid roster carries both stacks, so persistent setup requires them there
+    too, but only at the out-of-combat readiness barrier: a three-second item
+    cast started mid-pull would suppress the whole rotation.  Outside
+    calibration a live exact enchant is the readiness fact, so the rogue does
+    not re-poison (and spend a stack) after every pull.
+    """
+    setup = definition(
+        "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
+    )
+    gate = setup[setup.index("bool const raidPoisonsProvisioned"):
+                 setup.index("state.RoguePoisonSetupRequired = roguePoisonSetup;")]
+    assert "Cohort().Raid.RaidInstance" in gate
+    assert "!Cohort().CalibrationActive && !bot->IsInCombat()" in gate
+    assert "bot->GetItemCount(43233) > 0 && bot->GetItemCount(43231) > 0" in gate
+    assert "(Cohort().CalibrationActive || raidPoisonsProvisioned)" in gate
+    assert 'profile.SpecTag == "assassination_rogue"' in gate
+    # The stacks the gate counts are exactly the contract's main/off hand items.
+    assert "EQUIPMENT_SLOT_MAINHAND, 43233, 2823, 7" in setup
+    assert "EQUIPMENT_SLOT_OFFHAND, 43231, 8679, 323" in setup
+
+    shortcut = setup.index(
+        "if (!Cohort().CalibrationActive\n"
+        "                && receipt.ObservedEnchantId == receipt.RequiredEnchantId")
+    assert setup.index("receipt.ObservedEnchantDurationMs = weapon") < shortcut
+    assert shortcut < setup.index("Item* poisonItem = bot->GetItemByEntry(")
+    assert (
+        "receipt.ObservedEnchantDurationMs >= PoisonRefreshThresholdMs)\n"
+        "                return false;" in setup
+    )
+    # Calibration keeps the fail-closed receipt chain: the shortcut is the only
+    # new early return and it is scoped away from calibration.
+    assert setup.count("!Cohort().CalibrationActive") == 2

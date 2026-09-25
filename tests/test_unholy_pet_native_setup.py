@@ -79,8 +79,12 @@ def test_native_pet_receipt_is_submit_finish_then_later_observation() -> None:
     setup = _function_body(
         world, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
+    semantic = SEMANTIC.read_text(encoding="utf-8")
+    # The public callback delegates to the internal receipt binder.
+    assert "NotifyBotSpellFinishedInternal(caster, spellId, success, true);" in _function_body(
+        semantic, "void BotWorldPopulationMgr::NotifyBotSpellFinished(")
     finished = _function_body(
-        SEMANTIC.read_text(encoding="utf-8"), "void BotWorldPopulationMgr::NotifyBotSpellFinished"
+        semantic, "void BotWorldPopulationMgr::NotifyBotSpellFinishedInternal("
     )
 
     assert "struct NativePersistentPetSetupReceipt" in header
@@ -93,9 +97,14 @@ def test_native_pet_receipt_is_submit_finish_then_later_observation() -> None:
     assert "petSetup.NativeCastFinishedAtMs = NowMs()" in finished
     assert "petSetup.NativeCastFinishedSuccessfully = success" in finished
     assert "petSetup.NativeCastObservedAtMs = nowMs" in setup
-    assert "NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok)" in SPELL.read_text(
+    # Spell::finish reports through the observation wrapper, which binds the
+    # same internal receipt path with the native spell identity.
+    assert "NotifyBotSpellFinishedWithObservation(\n            playerCaster, this, ok)" in SPELL.read_text(
         encoding="utf-8"
     )
+    observed = _function_body(
+        semantic, "void BotWorldPopulationMgr::NotifyBotSpellFinishedWithObservation(")
+    assert "NotifyBotSpellFinishedInternal(caster, spell->GetSpellInfo()->Id," in observed
 
 
 def test_unholy_native_pet_setup_never_manufactures_or_refills_state() -> None:

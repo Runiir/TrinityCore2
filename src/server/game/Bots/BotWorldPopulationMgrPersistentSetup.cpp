@@ -264,8 +264,16 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     // party may legitimately arrive with no consumable stack in the generated
     // roster; do not hold its rogue in persistent setup forever. Calibration
     // still remains fail-closed and requires the native item-use/finish/live
-    // enchant evidence before the scored window opens.
-    bool const roguePoisonSetup = Cohort().CalibrationActive && role == "dps"
+    // enchant evidence before the scored window opens. A raid roster is
+    // provisioned with both poison stacks (Deadly 43233, Instant 43231); r02-b1
+    // rogues never applied them, so no poison damage reached any shard. A
+    // three-second item cast is never started mid-pull: raid setup runs at the
+    // out-of-combat readiness barrier and must not suppress the rotation.
+    bool const raidPoisonsProvisioned = Cohort().Raid.RaidInstance
+        && !Cohort().CalibrationActive && !bot->IsInCombat()
+        && bot->GetItemCount(43233) > 0 && bot->GetItemCount(43231) > 0;
+    bool const roguePoisonSetup = (Cohort().CalibrationActive || raidPoisonsProvisioned)
+        && role == "dps"
         && (profile.SpecTag == "assassination_rogue"
             || profile.SpecTag == "combat_rogue");
     state.RoguePoisonSetupRequired = roguePoisonSetup;
@@ -740,6 +748,12 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
                 ? weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) : 0;
             receipt.ObservedEnchantDurationMs = weapon
                 ? weapon->GetEnchantmentDuration(TEMP_ENCHANTMENT_SLOT) : 0;
+            // Outside calibration the live exact enchant is the readiness
+            // fact; re-poisoning after every pull would only spend stacks.
+            if (!Cohort().CalibrationActive
+                && receipt.ObservedEnchantId == receipt.RequiredEnchantId
+                && receipt.ObservedEnchantDurationMs >= PoisonRefreshThresholdMs)
+                return false;
 
             Item* poisonItem = bot->GetItemByEntry(
                 receipt.RequiredItemEntry);

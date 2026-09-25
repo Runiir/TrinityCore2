@@ -2,6 +2,7 @@
 #include "Bots/BotBloodDecisionObservation.h"
 #include "Bots/BotFireCombustionObservation.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
+#include "Bots/BotRaidHealthRecoveryGate.h"
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotCombatMaskEvaluation.h"
@@ -20,6 +21,7 @@
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiersImpl.h"
+#include "Group.h"
 #include "Map.h"
 #include "Player.h"
 #include "SpellAuras.h"
@@ -122,6 +124,24 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 return true;
         return false;
     };
+    int8 livingGroupHealerCache = -1;
+    auto livingGroupHealer = [this, bot, &livingGroupHealerCache]() -> bool
+    {
+        if (livingGroupHealerCache < 0)
+        {
+            livingGroupHealerCache = 0;
+            if (Group* group = bot->GetGroup())
+                for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                    if (Player* member = itr->GetSource(); member && member != bot
+                        && member->IsAlive() && member->IsInMap(bot)
+                        && std::string(GetDungeonRole(member)) == "healer")
+                    {
+                        livingGroupHealerCache = 1;
+                        break;
+                    }
+        }
+        return livingGroupHealerCache == 1;
+    };
     auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
     {
         return BotSpellMinimumRange::Effective(bot, target,
@@ -144,8 +164,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         // An unset melee action maximum inherits native reach. The profile
         // range and raw DBC melee range are approach defaults, not explicit
         // action caps; clipping to them rejects legal large-hitbox attacks.
+        // A declared nominal 5-yard melee maximum is the same approach
+        // default: r02-b1 rejected Assassination Mutilate/Vendetta as
+        // max_range_exceeded at 5.4-7.5 yd (Magmaw 1831x each; zero Mutilate
+        // on the Maloriak lab patrol) while melee swings landed there.
         if (spellInfo->RangeEntry && (spellInfo->RangeEntry->Flags & SPELL_RANGE_MELEE)
-            && candidate.Profile.MaxRange <= 0.0f)
+            && candidate.Profile.MaxRange <= NOMINAL_MELEE_RANGE)
             return nativeMaxRange;
         // A profile maximum is a policy cap, never permission to extend the
         // native spell envelope.  Shadowflame exposed the distinction: its
@@ -658,6 +682,14 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (selfHealthPct < candidate.Profile.MinSelfHealthPct || selfHealthPct > candidate.Profile.MaxSelfHealthPct)
         {
             candidate.RejectReason = "self_health_gate";
+            continue;
+        }
+        if (BotRaidHealthRecoveryGate::Holds(Cohort().Raid.RaidInstance,
+                hasMechanicTag(candidate.Profile.MechanicTags,
+                    BotRaidHealthRecoveryGate::HealthRecoveryTag),
+                selfHealthPct, livingGroupHealer))
+        {
+            candidate.RejectReason = BotRaidHealthRecoveryGate::RejectReason;
             continue;
         }
         if (candidate.Profile.RequiredTargetAura && !actionTarget->HasAura(candidate.Profile.RequiredTargetAura))

@@ -22,6 +22,7 @@ def test_unset_melee_cap_uses_native_reach(tmp_path, rune_strike_caps=None):
 #include <algorithm>
 #include <cassert>
 #include <string>
+#include <vector>
 constexpr int SPELL_RANGE_MELEE=1;
 constexpr float NOMINAL_MELEE_RANGE=5;
 struct Range {int Flags=1;};
@@ -31,18 +32,24 @@ struct Player {float GetSpellMaxRangeForTarget(Unit*,SpellInfo const* s){return 
 float GetMeleeRange(Unit const* target) const NATIVE_MELEE_BODY
 float GetCombatReach()const{return 1.5;}
 bool IsWithinMeleeRange(Unit* target){return Distance<=GetMeleeRange(target);}float Distance=8;};
-struct SpellProfile {float MaxRange=0;bool RequiresMeleeRange=true;bool RequiresRangedRange=false;};
-struct BotActionCandidate {int ResolvedSpellId=49998;SpellProfile Profile;std::string RejectReason;};
+struct SpellProfile {float MaxRange=0;bool RequiresMeleeRange=true;bool RequiresRangedRange=false;std::string TargetSelector="enemy";};
+struct BotActionCandidate {int ResolvedSpellId=49998;int SpellId=49998;SpellProfile Profile;std::string RejectReason;};
+// Stubs for the admission slice's Elemental Spiritwalker's Grace gates.
+namespace BotElementalSpiritwalkersGrace {constexpr char const* MovementRejection="lava_burst_movement";
+constexpr char const* ElementalSpec="elemental_shaman";constexpr int SpiritwalkersGraceSpellId=79206;
+template<class T> bool HasMovementBlockedDamageOpportunity(T const&){return true;}}
+struct ProfileStub {float MaxRange=5;std::string SpecTag="retribution_paladin";};
 struct Manager {SpellInfo info;SpellInfo const* GetSpellInfo(int){return &info;}};
 Manager* sSpellMgr;
-struct Action {float MinRange=0;float MaxRange=5;};
+struct Action {float MinRange=0;float MaxRange=5;bool RangeRecoveryRequired=false;};
 int main(){Range r;Manager mgr{{&r}};sSpellMgr=&mgr;Player p;auto bot=&p;Unit u;
-auto target=&u;auto actionTarget=target;bool selfTarget=false;SpellProfile profile;profile.MaxRange=5;
+auto target=&u;auto actionTarget=target;bool selfTarget=false;ProfileStub profile;
 ''' + helper + r'''
 auto evaluate=[&](float cap,float distance,bool melee,float raw){
 r.Flags=melee?SPELL_RANGE_MELEE:0;mgr.info.Raw=raw;p.Distance=distance;
 BotActionCandidate candidate;candidate.Profile.MaxRange=cap;candidate.Profile.RequiresMeleeRange=melee;
-Action action;float minRange=0;
+Action action;float minRange=0;bool densityOnly=false;bool deferLavaBurstMovementRejection=false;
+std::vector<BotActionCandidate> candidates;
 for(int once=0;once<1;++once){
 ''' + admission + r'''
 }
@@ -52,7 +59,14 @@ return std::make_pair(candidate.RejectReason,action.MaxRange);
 };
 // Native legal at eight yards, outside the five-yard raw DBC default.
 auto implicit=evaluate(0,8,true,5);assert(implicit.first.empty());assert(implicit.second==bot->GetMeleeRange(target));
-auto explicitCap=evaluate(5,8,true,5);assert(explicitCap.first=="max_range_exceeded");assert(explicitCap.second==5);
+// A declared nominal five-yard melee maximum is the same approach default
+// (round 3, 03_melee_profile_native_reach): Mutilate and Crusader Strike at
+// 5.4-14 yd from a large boss centre are admitted at native reach.
+auto nominalCap=evaluate(5,8,true,5);assert(nominalCap.first.empty());assert(nominalCap.second==bot->GetMeleeRange(target));
+auto shortCap=evaluate(3,8,true,5);assert(shortCap.first.empty());assert(shortCap.second==bot->GetMeleeRange(target));
+auto nominalBeyondNative=evaluate(5,14,true,5);assert(nominalBeyondNative.first=="melee_range_required");
+// A melee maximum above nominal reach remains a policy cap.
+auto policyCap=evaluate(8,10,true,5);assert(policyCap.first=="max_range_exceeded");assert(policyCap.second==8);
 auto beyondNative=evaluate(0,14,true,5);assert(beyondNative.first=="melee_range_required");assert(beyondNative.second==bot->GetMeleeRange(target));
 auto ranged=evaluate(20,21,false,30);assert(ranged.first=="max_range_exceeded");assert(ranged.second==20);
 auto rangedDefault=evaluate(0,31,false,30);assert(rangedDefault.first=="max_range_exceeded");assert(rangedDefault.second==30);
@@ -62,9 +76,12 @@ auto nativeRangedCap=evaluate(60,42,false,30);assert(nativeRangedCap.first=="max
     program = program.replace("NATIVE_MELEE_BODY", native_melee_body)
     if rune_strike_caps is not None:
         old_cap, new_cap = rune_strike_caps
+        # Since the nominal-reach resolver rule, the old five-yard Rune Strike
+        # cap is admitted too; the migration stays an idempotent no-op fix.
         checks = f"""
         auto oldRuneStrike=evaluate({old_cap},8,true,5);
-        assert(oldRuneStrike.first=="max_range_exceeded");
+        assert(oldRuneStrike.first.empty());
+        assert(oldRuneStrike.second==bot->GetMeleeRange(target));
         auto newRuneStrike=evaluate({new_cap},8,true,5);
         assert(newRuneStrike.first.empty());
         assert(newRuneStrike.second==bot->GetMeleeRange(target));

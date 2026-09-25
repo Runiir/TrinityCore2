@@ -124,8 +124,11 @@ def test_warlock_pet_receipt_is_submit_finish_then_later_observation() -> None:
     setup = _function_body(
         source, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup"
     )
+    # The public callback delegates to the internal receipt binder.
+    assert "NotifyBotSpellFinishedInternal(caster, spellId, success, true);" in _function_body(
+        source, "void BotWorldPopulationMgr::NotifyBotSpellFinished(")
     finished = _function_body(
-        source, "void BotWorldPopulationMgr::NotifyBotSpellFinished"
+        source, "void BotWorldPopulationMgr::NotifyBotSpellFinishedInternal("
     )
 
     for field in (
@@ -154,8 +157,11 @@ def test_pre_score_resource_request_uses_one_real_native_resummon() -> None:
             "// Mana Gem creation is optional consumable preparation"
         )
     ]
+    # The public callback delegates to the internal receipt binder.
+    assert "NotifyBotSpellFinishedInternal(caster, spellId, success, true);" in _function_body(
+        source, "void BotWorldPopulationMgr::NotifyBotSpellFinished(")
     finished = _function_body(
-        source, "void BotWorldPopulationMgr::NotifyBotSpellFinished"
+        source, "void BotWorldPopulationMgr::NotifyBotSpellFinishedInternal("
     )
 
     assert "preScoreResummonPending" in native_pet
