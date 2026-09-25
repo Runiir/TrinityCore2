@@ -566,6 +566,11 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
 - **Shared code:** one table-driven kill-credit observer (replacing the Maloriak,
   Omnotron and Chimaeron copies, with Magmaw's strings kept byte-identical), one
   offense-suppression helper, and the arbitration replay's older Magmaw assertions.
+- **Atramedes:** the first live run must confirm that the Take Off timer (86915) reaches
+  the boss snapshot through `encounter_blackboard.patch`. Without it, the owner's air
+  standby starts late. Later minors: a ground duty shield that stays in range after
+  three ground phases, a nearer fallback when the backup is far from every shield, and
+  no elective 80-Sound gong that spends a relay shield.
 - **Harness lock:** `bot-live-validate --transport process` (scoreboard runs) should
   take `live_validation_lock` and refuse while any worldserver runs. Until then the
   coordinator runs one live thing at a time.
