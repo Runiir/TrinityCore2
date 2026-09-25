@@ -6,6 +6,20 @@ clear (trash, bosses and interactions). Blackwing Descent 10N comes first; Basti
 Twilight, Throne of the Four Winds, Firelands and Dragon Soul reuse everything here.
 Nothing in this document may be BWD-specific unless it lives in per-raid data.
 
+## Finish line (user, 2026-09-25)
+
+A fresh agent receives only a plain request such as `implement bwd 10n bots` and
+carries the whole raid to completion on its own: parallel boss shards, synchronized
+rounds with one build each, and the end-to-end clear with trash and interactions. The
+program stops once we are confident this works. BWD 10N is the canary; the other raids
+then run from the same prompt shape.
+
+This means every piece here must be reachable from the raid-level workloop and from
+the skills and AGENTS.md routing a fresh agent reads, with no knowledge carried over
+from the session that built it. Today `raid_workloop start "implement bwd 10n bots"`
+fails with `unknown or ambiguous boss/raid: bwd`: the workloop, AGENTS.md and the
+orchestrator skill are boss-level only.
+
 ## Decisions (user, 2026-09-25)
 
 - **Parallel boss shards.** Each boss is developed and run in its own lockout (its own
@@ -264,6 +278,15 @@ Deliver:
 
 ## Later rounds
 
+- **Raid-level workloop.** `raid_workloop start "implement <raid> <mode> bots"` selects
+  a raid program:
+  - one unit per boss shard, with its lockout, copy and composition from the round-1
+    tooling;
+  - round bookkeeping: parallel implementation, one shared build, parallel shard runs,
+    per-boss assessment;
+  - the end-to-end acceptance run.
+  AGENTS.md, the orchestrator skill and the playbook route a raid-level request there.
+  Acceptance is a clean-context agent completing BWD 10N from the plain prompt.
 - **Boss rounds.** One agent per remaining boss: research acceptance, native script
   audit, encounter damage fidelity, strategy, then tuning. Magmaw moves to the canonical
   composition.
