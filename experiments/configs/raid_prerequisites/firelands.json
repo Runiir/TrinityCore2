@@ -24,7 +24,7 @@
     "script": "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp",
     "header": "src/server/scripts/Kalimdor/Firelands/firelands.h",
     "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
-    "credit_entries": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): instance_encounters 1185-1206",
+    "credit_entries": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): instance_encounters 1185, 1197, 1200, 1203-1206",
     "spawns": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): database spawns of Beth'tilac 52498 and Baleroc 53494 (no group), Lord Rhyolith 52558 (manual spawn group 457) and Ragnaros 52409 (manual spawn group 458); no spawn and no summon group for Shannox 53691, Alysrazor 52530 or Majordomo 52571"
   },
   "bosses": [

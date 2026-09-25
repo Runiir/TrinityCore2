@@ -208,6 +208,26 @@ def test_symbol_line_citations_point_at_their_definitions() -> None:
     assert checked >= 20
 
 
+def _expand_ids(text: str) -> set[int]:
+    ids: set[int] = set()
+    for part in text.split(","):
+        low, _, high = part.strip().partition("-")
+        ids.update(range(int(low), int(high or low) + 1))
+    return ids
+
+
+def test_credit_citations_name_exactly_the_raids_encounter_rows() -> None:
+    """The instance_encounters rows cited per raid are exactly its DungeonEncounter IDs."""
+    for path in sorted(rp.PREREQUISITES_DIR.glob("*.json")):
+        doc = json.loads(path.read_text())
+        match = re.search(r"instance_encounters (\d+(?:-\d+)?(?:, \d+(?:-\d+)?)*)$", doc["sources"]["credit_entries"])
+        assert match, path.name
+        described = {row["dungeon_encounter_id"] for row in doc["bosses"]}
+        for row in doc["bosses"]:
+            described.update(row.get("dungeon_encounter_id_by_difficulty", {}).values())
+        assert _expand_ids(match.group(1)) == described, path.name
+
+
 def test_other_raid_gates_follow_their_scripts() -> None:
     assert rp.precompleted_bosses(rp.load("throne_of_the_four_winds"), "alakir", "10n") == ["conclave_of_wind"]
     assert rp.precompleted_bosses(rp.load("firelands"), "ragnaros", "25n") == ["majordomo_staghelm"]

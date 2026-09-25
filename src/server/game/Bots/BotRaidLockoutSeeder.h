@@ -66,11 +66,12 @@ std::string SeedLockout(std::string const& cohortId, std::string const& raid,
 // Live readback when the map is loaded, else from the database row.
 Readback ReadbackLockout(LockoutRecord const& record);
 
-// Removes the lockout: unloads the map, unbinds the recorded group, unloads
-// the save and deletes its rows. Every refusal (anyone inside, a foreign group
-// or an online player still bound) is checked before anything changes. The
-// instance id is never freed: a reused id would load this lockout's leftover
-// corpse and corpse_phases rows into a new instance.
+// Removes the lockout. Refuses on anyone inside, a foreign group, a
+// permanently bound online player, or an unaccounted save bind, all checked
+// before anything changes; releases non-permanent solo binds of online
+// players, then unbinds the recorded group, unloads the save and deletes its
+// rows. The instance id is never freed: a reused id would load this
+// lockout's leftover corpse and corpse_phases rows into a new instance.
 std::string ClearLockout(LockoutRecord const& record);
 
 // Makes sure the instance save of an idle lockout is in memory (the core
