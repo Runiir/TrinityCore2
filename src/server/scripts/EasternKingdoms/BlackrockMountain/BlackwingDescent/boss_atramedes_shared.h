@@ -168,8 +168,8 @@ enum Data
     DATA_IS_IN_AIR                          = 0,
     DATA_HAS_NOISY_PLAYER                   = 1,
     DATA_IS_IN_INTRO_PHASE                  = 2,
-    // True only while the scripted intro flight is still running (intro
-    // phase and the landing has not yet made Atramedes aggressive).
+    // True only during the scripted intro flight: from ACTION_START_INTRO
+    // (the bell summon) until the intro landing (POINT_LAND_INTRO).
     DATA_IS_IN_INTRO_FLIGHT                 = 3
 };
 

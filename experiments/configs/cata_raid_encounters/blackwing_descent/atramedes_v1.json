@@ -127,18 +127,22 @@
       "best_ranged_by_capability_hunter_then_mage",
       "stand_at_shield_nearest_anchor",
       "strike_on_searing_flame_channel_start",
-      "strike_on_any_sound_ge_90_or_ge_80_unless_searing_due_within_15s"
+      "strike_on_sound_ge_90_down_to_searing_reserve",
+      "strike_on_sound_ge_80_unless_searing_due_within_15s_keeping_one_spare_above_reserve"
     ],
     "gong_backup": [
       "second_ranged_by_capability",
       "acts_when_owner_dead_or_kiting"
     ],
     "sonic_breath_target": [
-      "circle_boss_at_28_42yd_away_from_raid_centroid"
+      "circle_boss_at_28_42yd_away_from_own_tracking_flames_marker",
+      "raid_centroid_only_breaks_the_summon_snapshot_tie",
+      "stop_when_breath_ends"
     ],
     "roaring_flame_breath_target": [
       "run_shield_ring_away_from_flame",
-      "self_gong_when_flame_within_11yd_and_shield_in_reach"
+      "rescue_when_flame_time_to_contact_le_1s_above_reserve",
+      "strike_only_shields_ahead_or_let_a_relay_at_a_farther_shield_strike"
     ],
     "raid": [
       "leave_sonic_breath_beam_backward_or_run_ahead_of_sweep",
@@ -171,8 +175,10 @@
     "air_gong_redirect_only_when_needed",
     "no_player_reaches_100_sound",
     "searing_flame_gonged_within_2s",
+    "melee_do_not_chase_flying_boss",
     "max_4_shields_per_10n_kill",
-    "melee_do_not_chase_flying_boss"
+    "searing_flame_shield_reserve_kept",
+    "sonic_breath_kite_never_reverses"
   ],
   "heroic_gates": [
     "nefarius_extra_ground_shield_destruction",

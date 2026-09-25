@@ -131,8 +131,18 @@ def test_intro_vertigo_asks_the_boss_ai_not_the_instance() -> None:
     assert "atramedes->AI()->GetData(DATA_IS_IN_INTRO_FLIGHT)" in vertigo
     assert "instance->GetData(DATA_IS_IN_INTRO_PHASE)" not in spells
     getter = function_body(boss, "uint32 GetData(uint32 type) const override")
-    assert "case DATA_IS_IN_INTRO_FLIGHT:" in getter
-    assert "me->HasReactState(REACT_PASSIVE)" in getter
+    flight = getter[getter.index("case DATA_IS_IN_INTRO_FLIGHT:"):]
+    flight = flight[:flight.index("return")+len("return uint8(_introFlight);")]
+    assert "return uint8(_introFlight);" in flight
+    # Phase 0 (PHASE_INTRO) matches every phase and REACT_PASSIVE also holds
+    # in the air and just after landing: neither may define the intro flight.
+    code = "\n".join(line for line in flight.splitlines()
+                     if not line.strip().startswith("//"))
+    assert "IsInPhase" not in code and "REACT_PASSIVE" not in code
+    assert "_introFlight(false)" in boss
+    assert "_introFlight = true;" in boss[boss.index("case ACTION_START_INTRO:"):][:200]
+    assert "_introFlight = false;" in boss[boss.index("case POINT_LAND_INTRO:"):][:120]
+    assert boss.count("_introFlight = true;") == 1
 
 
 def test_redirected_roaring_flame_restarts_at_initial_speed() -> None:

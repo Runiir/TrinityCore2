@@ -28,9 +28,11 @@ INCLUDES = [
 
 PROGRAM = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h"
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -109,6 +111,8 @@ static Blackboard Board()
     boss.Attackable = true;
     boss.Selectable = true;
     boss.VictimGuid = PlayerGuid(Tank);
+    boss.Health = boss.MaxHealth = 26111168;
+    boss.HealthPct = 100.0f;
     board.Hostiles.push_back(boss);
     for (A::ShieldSpawn const& spawn : A::ShieldSpawns)
     {
@@ -167,6 +171,41 @@ static void CastOnBoss(Blackboard& board, uint32 spellId)
     cast.SpellId = spellId;
     cast.Channeled = true;
     Boss(board).Cast = cast;
+}
+
+static void AddTimer(ActorSnapshot& boss, uint32 spellId, uint32 remainingMs)
+{
+    MechanicTimerSnapshot timer;
+    timer.SpellId = spellId;
+    timer.RemainingMs = remainingMs;
+    boss.MechanicTimers.push_back(timer);
+}
+
+// Keeps the last `count` shield spawns (250131, 250130, ... backwards), so
+// the gong owner's duty shield (250130) survives down to two.
+static void KeepShields(Blackboard& board, std::size_t count)
+{
+    std::size_t const size = board.Interactables.size();
+    if (count < size)
+        board.Interactables.erase(board.Interactables.begin(),
+            board.Interactables.begin() + std::ptrdiff_t(size - count));
+}
+
+// Moves `position` up to `step` yards toward `target` (the native movement
+// of one decision interval).
+static void Advance(Vector3& position, Vector3 const& target, float step)
+{
+    float const dx = target.X - position.X;
+    float const dy = target.Y - position.Y;
+    float const length = std::sqrt(dx * dx + dy * dy);
+    if (length <= step)
+    {
+        position.X = target.X;
+        position.Y = target.Y;
+        return;
+    }
+    position.X += dx / length * step;
+    position.Y += dy / length * step;
 }
 
 static uint32 CountClicks(Blackboard const& board)
@@ -230,7 +269,7 @@ static void TestSearingFlameGong()
     assert(CountClicks(board) == 1);
 
     // Vertigo already landed: never strike twice.
-    AddAura(Boss(board), A::VertigoAura, UnitGuid(42954, 250130));
+    AddAura(Boss(board), A::VertigoAuras.front(), UnitGuid(42954, 250130));
     assert(CountClicks(board) == 0);
 
     // Owner away from every shield: it runs back with survival priority.
@@ -262,16 +301,40 @@ static void TestSoundGongs()
     assert(Plan(board, Hunter).GongReason == "sound_emergency");
     assert(CountClicks(board) == 1);
 
+    // Shield budget. On the ground at full health without published timers
+    // two shields stay in reserve: this phase's Searing Flame (unknown counts
+    // as pending) and the next ground phase's.
+    assert(A::SearingFlameReserve(A::BuildFacts(board)) == 2);
+    KeepShields(board, 2);
+    assert(CountClicks(board) == 0);
+    assert(Plan(board, Hunter).GongReason == "sound_emergency_at_reserve");
+    CastOnBoss(board, A::SearingFlameSpell);
+    assert(Plan(board, Hunter).GongReason == "searing_flame");
+    assert(CountClicks(board) == 1);
+    // Published timers without a Searing Flame timer: this phase's is spent.
+    board = Board();
+    AddTimer(Boss(board), A::TakeOffSpell, 40000);
+    assert(A::SearingFlameReserve(A::BuildFacts(board)) == 1);
+    Boss(board).HealthPct = 45.0f;
+    assert(A::SearingFlameReserve(A::BuildFacts(board)) == 0);
+    AddTimer(Boss(board), A::SearingFlameSpell, 20000);
+    assert(A::SearingFlameReserve(A::BuildFacts(board)) == 1);
+
     board = Board();
     Member(board, Warlock).AlternatePower = 82;
-    MechanicTimerSnapshot timer;
-    timer.SpellId = A::SearingFlameSpell;
-    timer.RemainingMs = 10000;
-    Boss(board).MechanicTimers.push_back(timer);
+    AddTimer(Boss(board), A::TakeOffSpell, 60000);
+    AddTimer(Boss(board), A::SearingFlameSpell, 10000);
     // Searing Flame is due soon and its gong resets every bar anyway.
     assert(CountClicks(board) == 0);
-    Boss(board).MechanicTimers.front().RemainingMs = 30000;
+    Boss(board).MechanicTimers.back().RemainingMs = 30000;
     assert(Plan(board, Hunter).GongReason == "sound_high");
+    assert(CountClicks(board) == 1);
+    // An elective gong keeps one spare above the reserve (2 here).
+    KeepShields(board, 3);
+    assert(CountClicks(board) == 0);
+    assert(Plan(board, Hunter).GongReason == "sound_high_at_reserve");
+    Member(board, Warlock).AlternatePower = 91;
+    assert(Plan(board, Hunter).GongReason == "sound_emergency");
     assert(CountClicks(board) == 1);
 
     // No Sound Bar (max 0) reads as silence.
@@ -290,7 +353,7 @@ static void TestSonicBreathKiteAndBeam()
     ActorSnapshot flames = MakeUnit(A::TrackingFlamesEntry, 91, 171.0f, -251.0f, ActorKind::Summon);
     board.Summons.push_back(flames);
     AddAura(Member(board, Balance), A::TrackingAura, flames.Guid);
-    CastOnBoss(board, A::SonicBreathChannelSpell);
+    CastOnBoss(board, A::SonicBreathChannelSpells.front());
 
     AdaptiveAtramedesPlan kiter = Plan(board, Balance);
     assert(kiter.Duty == "sonic_breath_kiter");
@@ -400,14 +463,34 @@ static void TestAirPhaseTargetsAndSpread()
     assert(Mechanic(Plan(slack, Mage)) == "air_phase_spread");
 }
 
+static ActorSnapshot& AddFlame(Blackboard& board, ActorSnapshot& kiter, Vector3 at,
+    uint8 stacks)
+{
+    ActorSnapshot flame = MakeUnit(A::ReverberatingFlameEntry, 80, at.X, at.Y, ActorKind::Summon);
+    CastSnapshot channel;
+    channel.SpellId = A::TrackingAura;
+    channel.TargetGuid = kiter.Guid;
+    channel.Channeled = true;
+    flame.Cast = channel;
+    if (stacks)
+    {
+        AuraSnapshot speed;
+        speed.SpellId = 78218;
+        speed.CasterGuid = flame.Guid;
+        speed.Stacks = stacks;
+        flame.Auras.push_back(speed);
+    }
+    AddAura(kiter, A::TrackingAura, flame.Guid);
+    board.Summons.push_back(flame);
+    return board.Summons.back();
+}
+
 static void TestAirKiteAndRescue()
 {
     Blackboard board = AirBoard();
     ActorSnapshot& kiter = Member(board, Mage);
     kiter.Position = { 110.0f, -250.0f, 75.0f };
-    ActorSnapshot flame = MakeUnit(A::ReverberatingFlameEntry, 80, 95.0f, -225.0f, ActorKind::Summon);
-    board.Summons.push_back(flame);
-    AddAura(kiter, A::TrackingAura, flame.Guid);
+    AddFlame(board, kiter, { 95.0f, -225.0f, 75.0f }, 0);
 
     AdaptiveAtramedesPlan run = Plan(board, Mage);
     assert(run.Duty == "roaring_flame_breath_kiter");
@@ -415,29 +498,214 @@ static void TestAirKiteAndRescue()
     Vector3 const next{ MoveOf(run)->X, MoveOf(run)->Y, 75.0f };
     // The flame is clockwise-behind; the kiter continues counter-clockwise.
     assert(G::AngleDelta(G::Bearing(A::ArenaCenter, next),
-        G::Bearing(A::ArenaCenter, kiter.Position)) > 0.0f);
+        G::Bearing(A::ArenaCenter, Member(board, Mage).Position)) > 0.0f);
 
-    // Caught near a shield: the kiter strikes it itself.
-    board.Summons.back().Position = { 112.0f, -263.0f, 75.0f };
+    // The flame is summoned beside its target: while it is slower than a
+    // running player (0-1 Building Speed stacks) no shield is spent.
+    board = AirBoard();
     Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    ActorSnapshot& spawned = AddFlame(board, Member(board, Mage), { 107.5f, -269.0f, 75.0f }, 1);
+    assert(std::isinf(A::FlameTimeToContact(spawned, Member(board, Mage))));
+    assert(CountClicks(board) == 0);
+
+    // Accelerated (6 stacks, 11 yd/s) and 9 yd behind: contact within 1 s.
+    // With nobody else beside a shield (the gong owner has left its stand
+    // for its air slot), the kiter strikes the shield beside it, which lies
+    // ahead of it.
+    board = AirBoard();
+    Member(board, Hunter).Position = A::ArenaCenter;
+    Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    ActorSnapshot& fast = AddFlame(board, Member(board, Mage), { 104.5f, -263.8f, 75.0f }, 6);
+    assert(A::FlameTimeToContact(fast, Member(board, Mage)) < A::RescueLeadSeconds);
+    assert(A::AirKiteDirection(A::BuildFacts(board), Member(board, Mage)) == 1);
     AdaptiveAtramedesPlan rescue = Plan(board, Mage);
     assert(rescue.GongReason == "air_breath_rescue");
     assert(ClickOf(rescue) && ClickOf(rescue)->Target == UnitGuid(42956, 250122));
     assert(CountClicks(board) == 1);
+    // Farther from contact (15 yd, 4 stacks): keep kiting, no shield.
+    board.Summons.back().Position = { 100.0f, -259.0f, 75.0f };
+    board.Summons.back().Auras.back().Stacks = 4;
+    assert(A::FlameTimeToContact(board.Summons.back(), Member(board, Mage)) > A::RescueLeadSeconds);
+    assert(CountClicks(board) == 0);
 
-    // Caught away from every shield: a bot already beside one strikes the
-    // shield farthest from the flame; the kiter keeps running.
-    Member(board, Mage).Position = { 120.0f, -240.0f, 75.0f };
-    board.Summons.back().Position = { 118.0f, -236.0f, 75.0f };
+    // A relay striker beside a shield far from the flame beats the kiter's
+    // own shield: the flame's detour is longer.
+    board = AirBoard();
+    Member(board, Hunter).Position = A::ArenaCenter;
+    Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    AddFlame(board, Member(board, Mage), { 104.5f, -263.8f, 75.0f }, 6);
     Member(board, Warlock).Position = { 180.0f, -197.0f, 75.0f };
     assert(!ClickOf(Plan(board, Mage)));
     AdaptiveAtramedesPlan relay = Plan(board, Warlock);
     assert(ClickOf(relay) && ClickOf(relay)->Target == UnitGuid(42956, 250131));
     assert(CountClicks(board) == 1);
 
+    // Budget: in the air at full health one shield stays for the next ground
+    // phase's Searing Flame, so the last shield is never spent on a rescue.
+    KeepShields(board, 1);
+    assert(A::SearingFlameReserve(A::BuildFacts(board)) == 1);
+    assert(CountClicks(board) == 0);
+    assert(Plan(board, Mage).GongReason == "air_breath_rescue_at_reserve");
+    Boss(board).HealthPct = 25.0f;
+    assert(A::SearingFlameReserve(A::BuildFacts(board)) == 0);
+
+    // A shield behind the kiter (toward the flame) is never its rescue; with
+    // no other strike in reach it keeps running to the next shield ahead.
+    board = AirBoard();
+    Boss(board).HealthPct = 25.0f;
+    KeepShields(board, 0);
+    ActorSnapshot behind = MakeUnit(42956, 250199, 145.0f, -205.0f, ActorKind::Interactable);
+    behind.Selectable = true;
+    behind.Interactable = true;
+    board.Interactables.push_back(behind);
+    for (ActorSnapshot& player : board.Players)
+        player.Position = A::ArenaCenter;
+    // Kiter 25 degrees counter-clockwise past the shield (radius 20).
+    Vector3 const past = G::PointAt(A::ArenaCenter, 115.0f * G::Pi / 180.0f, 20.0f, 75.0f);
+    Member(board, Mage).Position = past;
+    Vector3 const chaser = G::PointAt(A::ArenaCenter, 104.0f * G::Pi / 180.0f, 20.0f, 75.0f);
+    AddFlame(board, Member(board, Mage), chaser, 6);
+    A::Facts const facts = A::BuildFacts(board);
+    assert(!A::ShieldAhead(facts.Shields.front(), Member(board, Mage),
+        A::AirKiteDirection(facts, Member(board, Mage))));
+    assert(Plan(board, Mage).GongReason == "air_breath_rescue");
+    assert(CountClicks(board) == 0);
+
+    // During a redirect the flame is interrupted: no Tracking channel and no
+    // Tracking aura, so nobody is the kiter and no second shield is spent.
+    board = AirBoard();
+    Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    ActorSnapshot& waiting = AddFlame(board, Member(board, Mage), { 108.0f, -270.0f, 75.0f }, 8);
+    waiting.Cast.reset();
+    Member(board, Mage).Auras.clear();
+    assert(A::BuildFacts(board).AirKiter.IsEmpty());
+    assert(CountClicks(board) == 0);
+
     // Other players keep clear of the flame.
+    board = AirBoard();
+    Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    AddFlame(board, Member(board, Mage), { 118.0f, -236.0f, 75.0f }, 0);
     Member(board, Elemental).Position = { 121.0f, -233.0f, 75.0f };
     assert(Mechanic(Plan(board, Elemental)) == "reverberating_flame_exit");
+}
+
+// Kites an air breath for `seconds` at 0.25 s steps: the kiter runs at
+// 7 yd/s, the flame follows at 5 yd/s. The kiter's bearing around the arena
+// centre must keep one direction.
+static void TestAirKiteKeepsDirection()
+{
+    Blackboard board = AirBoard();
+    Member(board, Mage).Position = { 110.0f, -250.0f, 75.0f };
+    AddFlame(board, Member(board, Mage), { 108.0f, -247.0f, 75.0f }, 0);
+    float previous = G::Bearing(A::ArenaCenter, Member(board, Mage).Position);
+    int direction = 0;
+    for (int step = 1; step <= 24; ++step)
+    {
+        ++board.Revision;
+        AdaptiveAtramedesPlan plan = Plan(board, Mage);
+        assert(Mechanic(plan) == "roaring_flame_breath_kite");
+        Advance(Member(board, Mage).Position, { MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f }, 1.75f);
+        Advance(board.Summons.back().Position, Member(board, Mage).Position, 1.25f);
+        float const bearing = G::Bearing(A::ArenaCenter, Member(board, Mage).Position);
+        float const delta = G::AngleDelta(bearing, previous);
+        int const sign = delta > 0.0f ? 1 : -1;
+        if (!direction)
+            direction = sign;
+        assert(sign == direction && std::fabs(delta) > 0.002f);
+        previous = bearing;
+    }
+}
+
+struct GroundKiteRun
+{
+    int Direction = 0;
+    int Reversals = 0;
+    float MinTickGapRad = 10.0f;
+};
+
+// Kites a Sonic Breath for 8 s (2 s cast + 6 s channel) at 0.25 s steps:
+// the kiter runs at 7 yd/s toward each proposed point, the Tracking Flames
+// (41879, 5 yd/s) follows it in a straight line from its summon point on the
+// kiter. Records bearing reversals around the boss and, at every channel
+// tick (t = 3..8 s), the angle between the beam and the kiter.
+static GroundKiteRun SimulateGroundKite(uint32 slot, Vector3 start)
+{
+    Blackboard board = Board();
+    Member(board, slot).Position = start;
+    ActorSnapshot marker = MakeUnit(A::TrackingFlamesEntry, 91, start.X, start.Y, ActorKind::Summon);
+    CastSnapshot channel;
+    channel.SpellId = A::TrackingAura;
+    channel.TargetGuid = PlayerGuid(slot);
+    channel.Channeled = true;
+    marker.Cast = channel;
+    board.Summons.push_back(marker);
+    AddAura(Member(board, slot), A::TrackingAura, marker.Guid);
+    CastOnBoss(board, 78098);
+    Vector3 const boss = Boss(board).Position;
+    GroundKiteRun run;
+    float previous = G::Bearing(boss, start);
+    for (int step = 1; step <= 32; ++step)
+    {
+        ++board.Revision;
+        board.ObservedAtMs += 250;
+        AdaptiveAtramedesPlan plan = Plan(board, slot);
+        assert(Mechanic(plan) == "sonic_breath_kite");
+        Vector3& self = Member(board, slot).Position;
+        Advance(self, { MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f }, 1.75f);
+        Advance(board.Summons.back().Position, self, 1.25f);
+        float const bearing = G::Bearing(boss, self);
+        float const delta = G::AngleDelta(bearing, previous);
+        int const sign = delta > 0.0f ? 1 : -1;
+        if (!run.Direction)
+            run.Direction = sign;
+        else if (sign != run.Direction)
+            ++run.Reversals;
+        previous = bearing;
+        if (step >= 12 && step % 4 == 0)
+            run.MinTickGapRad = std::min(run.MinTickGapRad, std::fabs(G::AngleDelta(
+                bearing, G::Bearing(boss, board.Summons.back().Position))));
+    }
+    return run;
+}
+
+static void TestSonicBreathKiteKeepsDirection()
+{
+    // The gong owner at its duty-shield stand point (the reviewer's case).
+    GroundKiteRun owner = SimulateGroundKite(Hunter, OwnerStand());
+    // A flank melee slot, 22 yd north of the boss.
+    GroundKiteRun flank = SimulateGroundKite(Rogue, { 172.0f, -202.5f, 75.0f });
+    // Exactly opposite the raid centroid, where "away from the raid" is a tie.
+    Blackboard board = Board();
+    std::optional<Vector3> const centroid = A::RaidCentroid(board, PlayerGuid(Elemental),
+        PlayerGuid(Tank));
+    Vector3 const boss = Boss(board).Position;
+    Vector3 const opposite = G::PointAt(boss, G::Bearing(*centroid, boss), 30.0f, 75.0f);
+    GroundKiteRun tie = SimulateGroundKite(Elemental, opposite);
+    for (GroundKiteRun const& run : { owner, flank, tie })
+    {
+        assert(run.Reversals == 0);
+        assert(run.MinTickGapRad > A::SonicBreathHalfAngleRad);
+    }
+
+    // The breath is over (no cast or channel): the tracked player stops.
+    Blackboard after = Board();
+    ActorSnapshot marker = MakeUnit(A::TrackingFlamesEntry, 92, 176.0f, -249.0f, ActorKind::Summon);
+    after.Summons.push_back(marker);
+    AddAura(Member(after, Balance), A::TrackingAura, marker.Guid);
+    assert(A::BuildFacts(after).GroundKiter == PlayerGuid(Balance));
+    assert(Mechanic(Plan(after, Balance)) != "sonic_breath_kite");
+}
+
+static void TestDifficultyVariants()
+{
+    // 25N/10H/25H spell IDs read the same as 10N.
+    Blackboard board = Board();
+    CastOnBoss(board, 92404);
+    assert(A::BuildFacts(board).SonicBreathActive);
+    CastOnBoss(board, A::SearingFlameSpell);
+    AddAura(Boss(board), 92390, UnitGuid(42954, 250130));
+    assert(A::BuildFacts(board).BossStunned);
+    assert(CountClicks(board) == 0);
 }
 
 static void TestFireTankAndArc()
@@ -491,6 +759,9 @@ int main()
     TestSonarPulseLanes();
     TestAirPhaseTargetsAndSpread();
     TestAirKiteAndRescue();
+    TestAirKiteKeepsDirection();
+    TestSonicBreathKiteKeepsDirection();
+    TestDifficultyVariants();
     TestFireTankAndArc();
     TestPurity();
     std::puts("atramedes strategy ok");

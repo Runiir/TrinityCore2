@@ -2,6 +2,7 @@
 #define TRINITY_BOT_ATRAMEDES_GEOMETRY_H
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFacts.h"
+#include <algorithm>
 #include <cmath>
 #include <optional>
 
@@ -67,6 +68,22 @@ inline Vector3 RadialExit(Vector3 const& hazard, Vector3 const& self,
     if (Distance2d(hazard, self) > 0.05f)
         bearing = Bearing(hazard, self);
     return PointAt(hazard, bearing, clearance, self.Z);
+}
+
+inline constexpr float CoincidentYards = 0.05f;
+
+// Circling direction (+1 counter-clockwise, -1 clockwise) around `center`
+// that keeps `self` ahead of `chaser`. A chaser that follows `self` in a
+// straight line always trails its bearing around `center`, so the answer
+// holds for the whole chase. 0 while the chaser is on top of `self`.
+inline int AwayFromChaser(Vector3 const& center, Vector3 const& self,
+    Vector3 const& chaser)
+{
+    float const radius = std::max(1.0f, Distance2d(center, self));
+    float const lead = AngleDelta(Bearing(center, self), Bearing(center, chaser));
+    if (std::fabs(lead) * radius <= CoincidentYards)
+        return 0;
+    return lead > 0.0f ? 1 : -1;
 }
 
 struct RayOffset

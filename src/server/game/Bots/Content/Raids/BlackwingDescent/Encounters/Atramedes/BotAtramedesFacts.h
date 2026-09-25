@@ -36,13 +36,24 @@ inline constexpr uint32 SonarBombMarkerEntry = 49623;
 inline constexpr std::array<uint32, 8> ShieldEntries = {
     41445, 42947, 42949, 42951, 42954, 42956, 42958, 42960 };
 
+// Spells without a SpellDifficulty row: one ID in every mode.
 inline constexpr uint32 SearingFlameSpell = 77840;
 inline constexpr uint32 SonicBreathSpell = 78075;
-inline constexpr uint32 SonicBreathChannelSpell = 78098;
 inline constexpr uint32 TakeOffSpell = 86915;
+// Channelled (SPELL_ATTR1_IS_CHANNELLED) by the breath marker on its target;
+// interrupting the marker ends it, so it names the current kiter only.
 inline constexpr uint32 TrackingAura = 78092;
-inline constexpr uint32 VertigoAura = 77717;
 inline constexpr uint32 NoisyAura = 78897;
+// Spells with a SpellDifficulty row (4.3.4 DBC): the facts match every
+// variant (10N, 25N, 10H, 25H) so a mode never reads as "absent". The
+// strategy's numeric tuning (thresholds, speeds) is 10N; heroic-only
+// mechanics (Obnoxious Fiend, Nefarius shield destruction) are not handled.
+inline constexpr std::array<uint32, 4> SonicBreathChannelSpells = {
+    78098, 92403, 92404, 92405 };                    // SpellDifficulty 3121
+inline constexpr std::array<uint32, 4> VertigoAuras = {
+    77717, 92389, 92390, 92391 };                    // SpellDifficulty 3120
+inline constexpr std::array<uint32, 4> BuildingSpeedAuras = {
+    78218, 92463, 92464, 92465 };                    // SpellDifficulty 3135
 
 inline constexpr float SonarPulseRadius = 5.0f;
 inline constexpr float SonarBombRadius = 6.0f;
@@ -106,6 +117,10 @@ struct Facts
     bool SearingFlameChannel = false;
     bool SonicBreathActive = false;
     bool BossStunned = false;
+    // The boss publishes its ground schedule (GetTimeUntilEncounterMechanic)
+    // and the blackboard carries it: liftoff is always scheduled on the
+    // ground, so its timer proves publication.
+    bool GroundTimersPublished = false;
     std::optional<uint32> SearingFlameInMs;
     std::vector<ShieldFact> Shields;
     std::vector<ActorSnapshot const*> SonarPulses;
@@ -130,6 +145,28 @@ inline AuraSnapshot const* FindAura(ActorSnapshot const& actor, uint32 spellId)
     auto itr = std::find_if(actor.Auras.begin(), actor.Auras.end(),
         [spellId](AuraSnapshot const& aura) { return aura.SpellId == spellId; });
     return itr == actor.Auras.end() ? nullptr : &*itr;
+}
+
+template <std::size_t N>
+inline bool IsAnyOf(std::array<uint32, N> const& ids, uint32 id)
+{
+    return std::find(ids.begin(), ids.end(), id) != ids.end();
+}
+
+template <std::size_t N>
+inline AuraSnapshot const* FindAnyAura(ActorSnapshot const& actor,
+    std::array<uint32, N> const& ids)
+{
+    auto itr = std::find_if(actor.Auras.begin(), actor.Auras.end(),
+        [&ids](AuraSnapshot const& aura) { return IsAnyOf(ids, aura.SpellId); });
+    return itr == actor.Auras.end() ? nullptr : &*itr;
+}
+
+// Building Speed stacks on a Reverberating Flame (+20% speed each, max 10).
+inline uint8 BuildingSpeedStacks(ActorSnapshot const& flame)
+{
+    AuraSnapshot const* aura = FindAnyAura(flame, BuildingSpeedAuras);
+    return aura ? std::min<uint8>(aura->Stacks ? aura->Stacks : 1, 10) : 0;
 }
 
 inline bool IsShieldEntry(uint32 entry)
@@ -172,12 +209,15 @@ inline Facts BuildFacts(Blackboard const& board)
     if (boss.Cast)
     {
         facts.SearingFlameChannel = boss.Cast->SpellId == SearingFlameSpell;
-        facts.SonicBreathActive = boss.Cast->SpellId == SonicBreathChannelSpell;
+        // 2 s cast, then the 6 s channel: both carry the same spell ID.
+        facts.SonicBreathActive = IsAnyOf(SonicBreathChannelSpells, boss.Cast->SpellId);
     }
-    facts.BossStunned = HasAura(boss, VertigoAura);
+    facts.BossStunned = FindAnyAura(boss, VertigoAuras) != nullptr;
     if (MechanicTimerSnapshot const* timer = boss.FindMechanicTimer(SearingFlameSpell))
         if (timer->RemainingMs != std::numeric_limits<uint32>::max())
             facts.SearingFlameInMs = timer->RemainingMs;
+    if (MechanicTimerSnapshot const* timer = boss.FindMechanicTimer(TakeOffSpell))
+        facts.GroundTimersPublished = timer->RemainingMs != std::numeric_limits<uint32>::max();
 
     auto collect = [&facts](std::vector<ActorSnapshot> const& actors)
     {
@@ -213,13 +253,19 @@ inline Facts BuildFacts(Blackboard const& board)
             return left.Guid < right.Guid;
         });
 
-    auto castBy = [](AuraSnapshot const& aura,
-        std::vector<ActorSnapshot const*> const& casters)
+    // A marker's own Tracking channel names its target; the target's aura
+    // (cast by that marker) is the same fact seen from the player side.
+    auto tracks = [](ActorSnapshot const& player,
+        std::vector<ActorSnapshot const*> const& markers)
     {
-        return std::any_of(casters.begin(), casters.end(),
-            [&aura](ActorSnapshot const* caster)
+        AuraSnapshot const* aura = FindAura(player, TrackingAura);
+        return std::any_of(markers.begin(), markers.end(),
+            [&player, aura](ActorSnapshot const* marker)
             {
-                return caster->Guid == aura.CasterGuid;
+                if (aura && aura->CasterGuid == marker->Guid)
+                    return true;
+                return marker->Cast && marker->Cast->SpellId == TrackingAura
+                    && marker->Cast->TargetGuid == player.Guid;
             });
     };
     for (ActorSnapshot const& player : board.Players)
@@ -234,19 +280,30 @@ inline Facts BuildFacts(Blackboard const& board)
             facts.MaxSound = sound;
             facts.LoudestPlayer = player.Guid;
         }
-        // Tracking (78092) is a channel from the breath marker to its target;
-        // only a live caster in this snapshot makes the player a kiter.
-        if (AuraSnapshot const* tracking = FindAura(player, TrackingAura))
-        {
-            if (castBy(*tracking, facts.ReverberatingFlames))
-                facts.AirKiter = player.Guid;
-            else if (castBy(*tracking, facts.TrackingFlames))
-                facts.GroundKiter = player.Guid;
-        }
+        // Only a live marker in this snapshot makes the player a kiter. A
+        // gong interrupts the Reverberating Flame, so during a redirect
+        // nobody is the air kiter until the flame re-tracks the striker.
+        if (tracks(player, facts.ReverberatingFlames))
+            facts.AirKiter = player.Guid;
+        else if (tracks(player, facts.TrackingFlames))
+            facts.GroundKiter = player.Guid;
     }
     if (facts.MaxSound == 0)
         facts.LoudestPlayer = ObjectGuid();
     return facts;
+}
+
+// The breath marker (Tracking Flames or Reverberating Flame) chasing `self`.
+inline ActorSnapshot const* MarkerOf(std::vector<ActorSnapshot const*> const& markers,
+    ActorSnapshot const& self)
+{
+    AuraSnapshot const* aura = FindAura(self, TrackingAura);
+    for (ActorSnapshot const* marker : markers)
+        if ((aura && aura->CasterGuid == marker->Guid)
+            || (marker->Cast && marker->Cast->SpellId == TrackingAura
+                && marker->Cast->TargetGuid == self.Guid))
+            return marker;
+    return nullptr;
 }
 }
 

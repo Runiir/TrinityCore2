@@ -86,7 +86,10 @@ Fire (heroic 29,250–30,750).
 2. The player Sound Bar and Noisy! are removed on evade and on death. Before,
    survivors carried their Sound into the next pull.
 3. A Vertigo during the intro flight now resumes the landing. Before, the script
-   asked the instance for an AI data id and always got 0.
+   asked the instance for an AI data id and always got 0. The intro flight is an
+   explicit flag, set at the bell summon and cleared at the intro landing:
+   `IsInPhase(PHASE_INTRO)` matches every phase, and `REACT_PASSIVE` also holds
+   in the air and for 800 ms after each landing.
 4. The landing removes the air Sonar Bomb trigger (92519), not the disk aura.
 5. A redirected Reverberating Flame restarts at its initial speed.
 6. `GetTimeUntilEncounterMechanic` publishes the native time to Searing Flame,
@@ -114,12 +117,37 @@ from roster slots.
     90 Sound, or at 80 Sound unless Searing Flame is due within 15 s.
   - The backup acts when the owner is dead or kiting. No strike happens while
     Atramedes is already stunned.
-  - Air: the kiter strikes a shield in reach when the flame comes within 11 yd.
-    Otherwise a bot already beside a shield strikes the one farthest from the
-    flame.
+  - **Budget.** Shields for the Searing Flames still expected stay in reserve.
+    That is this ground phase's Searing Flame (from the published timer;
+    unknown counts as pending), plus the next ground phase's while the boss is
+    above 50% health (on the ground) or 30% (in the air).
+    - Searing Flame may always use a shield.
+    - A 90-Sound emergency or an air rescue spends down to the reserve.
+    - An 80-Sound gong keeps one more spare.
+    - Why 50% and 30%: the next Searing Flame is at least 82 s (ground) or 51 s
+      (air) away. At a 150k raid-DPS floor that removes 47% or 29% of the native
+      10N health, so a boss below the threshold dies first.
+  - **Air rescue.** The Reverberating Flame runs 5 yd/s and gains 1 yd/s every
+    second (Building Speed, up to 10 stacks); an unbuffed kiter runs 7 yd/s.
+    - A rescue fires when the flame's 5 yd breath would reach the kiter within
+      1 s. A flame summoned beside its target is slower than the kiter for its
+      first seconds, so the air phase does not open with a gong.
+    - The strike goes to whoever stands beside the shield farthest from the
+      flame. A relay bot beats the kiter, because the flame's detour is longer.
+      The kiter itself only strikes shields ahead of it, never one behind it
+      toward the flame.
+    - Right after a gong the flame is interrupted, its Tracking channel ends and
+      nobody is the kiter, so a second shield is never spent on the same catch.
 - **Sonic Breath.**
-  - The tracked player circles the boss 28–42 yd out, away from the raid
-    centroid.
+  - The tracked player circles the boss 28–42 yd out while the breath is cast
+    or channelled. It runs away from the Tracking Flames marker.
+    - The marker chases it in a straight line, so the marker's bearing around
+      the boss always trails and the direction holds for the whole breath.
+    - Only on the summon snapshot, when the marker sits on the kiter, does the
+      raid side choose (away from the raid centroid).
+    - A breath simulation at 7 yd/s against the 5 yd/s marker never reverses,
+      and at every channel tick the beam is at least 12.6° from the kiter (the
+      cone's half-angle is 7.5°).
   - Others leave the beam backward, or run ahead of the sweep when the beam will
     reach them within its 8 s.
 - **Sound.** Everyone sidesteps Sonar Pulse lanes (5 yd, plus 1.5 yd at
@@ -131,7 +159,8 @@ from roster slots.
   - Air: one slot per player on a 10 yd-spaced ring around (145, -225), at
     17 yd or 25 yd. The outer slot is the alternate when a bomb marker is placed.
 - **Air.**
-  - The tracked player runs the ring of shield positions, away from the flame.
+  - The tracked player runs the ring of shield positions, away from the flame
+    (the same trailing-chaser rule, around the arena centre).
   - Melee and the tank cannot reach the flying boss. They hold their slot and
     ask for offense suppression.
   - Ranged keep casting within about 48 yd horizontally of him.
@@ -139,6 +168,11 @@ from roster slots.
 Acceptance observations are in the ledger, `acceptance_observations`: native
 clear after spirits and bell, every Searing Flame gonged within 2 s, nobody
 reaches 100 Sound, at most 4 shields, and 0 boss-window deaths.
+Shields used per air phase is also an open fidelity question. Under native
+speeds a flame at 5 yd/s gaining 1 yd/s per second catches a 7 yd/s kiter
+within about 6 s, so two or three rescues per air phase are expected. The
+historical guide reports one per air phase. A WCL count of Resonating Clash
+(78168) per air phase would tell whether the native flame speed is too high.
 
 ## Unresolved (fidelity_blocked)
 
@@ -147,7 +181,7 @@ roll at modifier 1: 4,553–6,764 per 1.5 s swing), `boss_health_10n`
 (native 26,111,168 vs Wowhead 32.6M), `ground_air_phase_timestamps`,
 `modulation_repeat_interval`, `breath_initial_target_rule`,
 `sonar_bomb_count_by_mode` (native 5 vs Wowhead 3),
-`breath_speed_scaling_with_sound`, `heroic_fiend_and_shield_destruction_cadence`.
+`breath_speed_scaling_with_sound` (which includes shields per air phase against the native flame speed), `heroic_fiend_and_shield_destruction_cadence`.
 
 ## Sources
 

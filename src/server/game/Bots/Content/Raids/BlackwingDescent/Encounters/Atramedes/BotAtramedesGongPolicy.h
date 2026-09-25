@@ -3,6 +3,8 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesDutyPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesGeometry.h"
+#include <cmath>
+#include <limits>
 #include <optional>
 #include <string_view>
 
@@ -10,6 +12,11 @@
 // itself is the native spellclick (npc_spellclick_spells 77709 plus
 // npc_atramedes_ancient_dwarven_shield::OnSpellClick); nothing here changes
 // Sound, Vertigo or the breath target.
+//
+// Budget: the ten shields are finite and Searing Flame must always find one.
+// Shields for the Searing Flames still expected stay in reserve; an
+// emergency or air rescue may spend down to the reserve, an elective
+// (80 Sound) gong keeps one more spare.
 namespace BotEncounter::Atramedes
 {
 // 100 Sound is Devastation (78868). Ninety leaves one Sonic Breath tick (+20).
@@ -18,17 +25,40 @@ inline constexpr uint32 SoundEmergency = 90;
 // and resets every bar) is due within SearingSoonMs.
 inline constexpr uint32 SoundHigh = 80;
 inline constexpr uint32 SearingSoonMs = 15000;
-// Air rescue: the Reverberating Flame damages within 5 yd and speeds up
-// every second; redirect it before it reaches the kiter.
-inline constexpr float AirRescueDistance = 11.0f;
 // Duty shields stand this far inside the shield toward the tank anchor.
 inline constexpr float ShieldStandInset = 4.0f;
+
+// Next-ground-phase Searing Flame reserve. The next ground phase's Searing
+// Flame comes at least 51 s after landing (native schedule), and the air
+// phase lasts at least 31 s, so it is >= 82 s away on the ground and >= 51 s
+// away in the air. At a 150k raid-DPS floor (the canonical 10N composition
+// measured 274-279k on Magmaw) and native 10N health 26,111,168 that removes
+// 47% or 29% of the boss's health: below these the boss dies first.
+inline constexpr float NextSearingHealthPctFromGround = 50.0f;
+inline constexpr float NextSearingHealthPctFromAir = 30.0f;
+
+// Air rescue by time to contact. Reverberating Flame: speed_run 0.714 of the
+// 7 yd/s base (5 yd/s), +20% of that per Building Speed stack, one stack per
+// second (78217 -> 78218, max 10); its breath (78353) reaches 5 yd.
+inline constexpr float FlameBaseSpeed = 5.0f;
+inline constexpr float FlameSpeedPerStack = 1.0f;
+inline constexpr uint8 FlameMaxStacks = 10;
+// Unbuffed player run speed; speed buffs only make the estimate cautious.
+inline constexpr float KiterSpeed = 7.0f;
+// Strike when contact is this close: the spellclick lands within one
+// decision tick and the flame stops at once (SetGUID interrupts and stops it).
+inline constexpr float RescueLeadSeconds = 1.0f;
+// A shield counts as ahead of the kiter unless it lies more than this far
+// behind it (toward the flame) around the arena centre.
+inline constexpr float AheadToleranceRad = 10.0f * Geometry::Pi / 180.0f;
 
 struct GongDecision
 {
     bool Required = false;
     bool Urgent = false;
     std::string_view Reason;
+    // Set when a gong would be wanted but the budget holds it back.
+    std::string_view Withheld;
     ObjectGuid Clicker;
     std::optional<ShieldFact> Shield;
 };
@@ -42,6 +72,28 @@ inline ActorSnapshot const* FindLivingPlayer(Blackboard const& board,
         if (player.Guid == guid)
             return player.Alive ? &player : nullptr;
     return nullptr;
+}
+
+// Shields to keep for the Searing Flames still expected: this ground phase's
+// (from the published timer; unknown counts as pending) and the next ground
+// phase's while the boss has enough health to reach it.
+inline uint32 SearingFlameReserve(Facts const& facts)
+{
+    if (!facts.Boss)
+        return 0;
+    uint32 reserve = 0;
+    float threshold = NextSearingHealthPctFromAir;
+    if (facts.CurrentPhase != Phase::Air)
+    {
+        threshold = NextSearingHealthPctFromGround;
+        bool const pending = facts.SearingFlameChannel || facts.SearingFlameInMs
+            || !facts.GroundTimersPublished;
+        if (pending)
+            ++reserve;
+    }
+    if (facts.Boss->HealthPct > threshold)
+        ++reserve;
+    return reserve;
 }
 
 // Available shields ordered by distance to the ground tank anchor (GUID
@@ -116,14 +168,34 @@ inline ObjectGuid GroundGonger(Blackboard const& board, Facts const& facts,
     return best;
 }
 
-inline ActorSnapshot const* NearestFlame(Facts const& facts, Vector3 const& from)
+// Air kite direction around the arena centre: away from the chasing flame,
+// clockwise while the flame still sits on the kiter.
+inline int AirKiteDirection(Facts const& facts, ActorSnapshot const& kiter)
 {
-    ActorSnapshot const* best = nullptr;
-    for (ActorSnapshot const* flame : facts.ReverberatingFlames)
-        if (!best || Geometry::Distance2d(from, flame->Position)
-            < Geometry::Distance2d(from, best->Position))
-            best = flame;
-    return best;
+    if (ActorSnapshot const* flame = MarkerOf(facts.ReverberatingFlames, kiter))
+        if (int const away = Geometry::AwayFromChaser(ArenaCenter, kiter.Position,
+                flame->Position))
+            return away;
+    return -1;
+}
+
+// Seconds until the flame's 5 yd breath reaches the kiter when the kiter
+// keeps running at KiterSpeed and the flame keeps gaining one stack a second.
+inline float FlameTimeToContact(ActorSnapshot const& flame, ActorSnapshot const& kiter)
+{
+    uint8 const stacks = BuildingSpeedStacks(flame);
+    float const gap = Geometry::Distance2d(flame.Position, kiter.Position)
+        - FlameBreathRadius;
+    float const closing = FlameBaseSpeed + FlameSpeedPerStack * float(stacks)
+        - KiterSpeed;
+    float const acceleration = stacks < FlameMaxStacks ? FlameSpeedPerStack : 0.0f;
+    if (gap <= 0.0f)
+        // Inside the breath: a slower flame is outrun, a faster one is not.
+        return closing >= 0.0f ? 0.0f : std::numeric_limits<float>::infinity();
+    if (acceleration <= 0.0f)
+        return closing > 0.0f ? gap / closing : std::numeric_limits<float>::infinity();
+    return (-closing + std::sqrt(closing * closing + 2.0f * acceleration * gap))
+        / acceleration;
 }
 
 inline GongDecision DecideGroundGong(Blackboard const& board, Facts const& facts,
@@ -132,13 +204,29 @@ inline GongDecision DecideGroundGong(Blackboard const& board, Facts const& facts
     GongDecision decision;
     if (facts.BossStunned)
         return decision;
+    std::size_t const available = facts.Shields.size();
+    std::size_t const reserve = SearingFlameReserve(facts);
     if (facts.SearingFlameChannel)
         decision.Reason = "searing_flame";
     else if (facts.MaxSound >= SoundEmergency)
+    {
+        if (available <= reserve)
+        {
+            decision.Withheld = "sound_emergency_at_reserve";
+            return decision;
+        }
         decision.Reason = "sound_emergency";
+    }
     else if (facts.MaxSound >= SoundHigh
         && !(facts.SearingFlameInMs && *facts.SearingFlameInMs <= SearingSoonMs))
+    {
+        if (available <= reserve + 1)
+        {
+            decision.Withheld = "sound_high_at_reserve";
+            return decision;
+        }
         decision.Reason = "sound_high";
+    }
     else
         return decision;
     decision.Required = true;
@@ -162,43 +250,36 @@ inline GongDecision DecideGroundGong(Blackboard const& board, Facts const& facts
     return decision;
 }
 
-inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
-    DutyPlan const& duties)
+// A shield is ahead of the kiter unless it lies behind it (toward the flame)
+// around the arena centre in the kite direction.
+inline bool ShieldAhead(ShieldFact const& shield, ActorSnapshot const& kiter,
+    int direction)
 {
-    GongDecision decision;
-    ActorSnapshot const* kiter = FindLivingPlayer(board, facts.AirKiter);
-    ActorSnapshot const* flame = kiter ? NearestFlame(facts, kiter->Position) : nullptr;
-    if (kiter && flame
-        && Geometry::Distance2d(kiter->Position, flame->Position) <= AirRescueDistance)
-        decision.Reason = "air_breath_rescue";
-    else if (facts.MaxSound >= SoundEmergency)
-        decision.Reason = "sound_emergency";
-    else
-        return decision;
-    decision.Required = true;
-    decision.Urgent = true;
+    float const offset = Geometry::AngleDelta(
+        Geometry::Bearing(ArenaCenter, shield.Position),
+        Geometry::Bearing(ArenaCenter, kiter.Position)) * float(direction);
+    return offset >= -AheadToleranceRad;
+}
 
-    // The struck shield becomes the breath's next stop and its striker the
-    // next kiter. Prefer the kiter itself (the breath returns to it at reset
-    // speed); otherwise a non-tank bot already in reach of a shield, using
-    // the shield farthest from the flame; otherwise the kiter or owner walks.
-    if (kiter)
-        if (std::optional<ShieldFact> const shield = NearestShield(facts, kiter->Position);
-            shield && Geometry::Distance3d(kiter->Position, shield->Position)
-                <= ShieldClickDistance)
-        {
-            decision.Clicker = kiter->Guid;
-            decision.Shield = shield;
-            return decision;
-        }
+// Best in-reach strike: the struck shield becomes the flame's next stop, so
+// the farther it is from the flame the longer the relief. The kiter may use
+// shields ahead of it; any other non-tank bot may relay from its own shield.
+inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties, ActorSnapshot const* kiter, ActorSnapshot const* flame,
+    GongDecision& decision)
+{
+    int const direction = kiter ? AirKiteDirection(facts, *kiter) : -1;
     float bestFlameDistance = -1.0f;
     for (ActorSnapshot const& player : board.Players)
     {
         if (!player.Alive || player.Guid == duties.Tank)
             continue;
+        bool const isKiter = kiter && player.Guid == kiter->Guid;
         for (ShieldFact const& shield : facts.Shields)
         {
             if (Geometry::Distance3d(player.Position, shield.Position) > ShieldClickDistance)
+                continue;
+            if (isKiter && !ShieldAhead(shield, *kiter, direction))
                 continue;
             float const flameDistance = flame
                 ? Geometry::Distance2d(flame->Position, shield.Position) : 0.0f;
@@ -210,11 +291,42 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
             }
         }
     }
-    if (!decision.Clicker.IsEmpty())
+}
+
+inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties)
+{
+    GongDecision decision;
+    std::size_t const available = facts.Shields.size();
+    std::size_t const reserve = SearingFlameReserve(facts);
+    ActorSnapshot const* kiter = FindLivingPlayer(board, facts.AirKiter);
+    ActorSnapshot const* flame = kiter ? MarkerOf(facts.ReverberatingFlames, *kiter) : nullptr;
+    bool const contact = kiter && flame
+        && FlameTimeToContact(*flame, *kiter) <= RescueLeadSeconds;
+    if (contact)
+        decision.Reason = "air_breath_rescue";
+    else if (facts.MaxSound >= SoundEmergency)
+        decision.Reason = "sound_emergency";
+    else
         return decision;
-    ActorSnapshot const* walker = kiter ? kiter
-        : FindLivingPlayer(board, GroundGonger(board, facts, duties));
-    if (walker)
+    if (available <= reserve)
+    {
+        decision.Withheld = contact ? "air_breath_rescue_at_reserve"
+            : "sound_emergency_at_reserve";
+        decision.Reason = {};
+        return decision;
+    }
+    decision.Required = true;
+    decision.Urgent = true;
+
+    ChooseAirStrike(board, facts, duties, kiter, flame, decision);
+    if (!decision.Clicker.IsEmpty() || contact)
+        // A rescue without a shield in reach waits: the kite route passes
+        // each shield inside spellclick reach, the next one ahead included.
+        return decision;
+    // A Sound emergency with nobody in reach: the ground gonger walks.
+    if (ActorSnapshot const* walker =
+            FindLivingPlayer(board, GroundGonger(board, facts, duties)))
     {
         decision.Clicker = walker->Guid;
         decision.Shield = NearestShield(facts, walker->Position);

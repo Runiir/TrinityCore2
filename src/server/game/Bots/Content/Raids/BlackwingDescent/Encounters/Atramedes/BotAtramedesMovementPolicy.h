@@ -84,18 +84,34 @@ inline int AwayDirection(Vector3 const& center, Vector3 const& self,
     return delta > 0.0f ? -1 : 1;
 }
 
-// Sonic Breath target: circle the boss outside the raid's side so the
-// lagging beam sweeps empty floor.
+// Sonic Breath kite direction around the boss. The Tracking Flames marker
+// follows the kiter in a straight line, so its bearing always trails the
+// kiter's: running away from it holds one direction for the whole breath.
+// Only while the marker still sits on the kiter (its summon snapshot) does
+// the raid side choose (away from the raid centroid, clockwise without one).
+inline int GroundKiteDirection(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties, ActorSnapshot const& kiter)
+{
+    Vector3 const& boss = facts.Boss->Position;
+    if (ActorSnapshot const* marker = MarkerOf(facts.TrackingFlames, kiter))
+        if (int const away = Geometry::AwayFromChaser(boss, kiter.Position,
+                marker->Position))
+            return away;
+    return AwayDirection(boss, kiter.Position,
+        RaidCentroid(board, kiter.Guid, duties.Tank));
+}
+
+// Sonic Breath target: circle the boss while the breath is cast or channelled
+// so the lagging beam trails behind on the floor already crossed.
 inline std::optional<MoveProposal> GroundKiteMove(Blackboard const& board,
     Facts const& facts, DutyPlan const& duties, ActorSnapshot const& self)
 {
-    if (self.Guid != facts.GroundKiter || !facts.Boss)
+    if (self.Guid != facts.GroundKiter || !facts.Boss || !facts.SonicBreathActive)
         return std::nullopt;
     Vector3 const& boss = facts.Boss->Position;
     float const radius = std::clamp(Geometry::Distance2d(boss, self.Position),
         GroundKiteMinRadius, GroundKiteMaxRadius);
-    int const direction = AwayDirection(boss, self.Position,
-        RaidCentroid(board, self.Guid, duties.Tank));
+    int const direction = GroundKiteDirection(board, facts, duties, self);
     return Survival(Geometry::TangentialStep(boss, self.Position, radius,
         KiteStep, direction), "sonic_breath_kite", 540.0f);
 }
@@ -104,25 +120,22 @@ inline std::optional<MoveProposal> GroundKiteMove(Blackboard const& board,
 // at the Tracking Flames and follows the kiter; those ahead of it within the
 // sweep horizon run on with the sweep, those at the beam step back behind it.
 inline std::optional<MoveProposal> SonicBreathBeamExit(Blackboard const& board,
-    Facts const& facts, ActorSnapshot const& self)
+    Facts const& facts, DutyPlan const& duties, ActorSnapshot const& self)
 {
-    if (!facts.Boss || facts.TrackingFlames.empty() || self.Guid == facts.GroundKiter)
+    if (!facts.Boss || !facts.SonicBreathActive || facts.TrackingFlames.empty()
+        || self.Guid == facts.GroundKiter)
         return std::nullopt;
     Vector3 const& boss = facts.Boss->Position;
     float const radius = Geometry::Distance2d(boss, self.Position);
     if (radius < 1.0f)
         return std::nullopt;
-    float const beam = Geometry::Bearing(boss, facts.TrackingFlames.front()->Position);
-    int sweep = -1;
-    if (ActorSnapshot const* kiter = FindLivingPlayer(board, facts.GroundKiter))
-    {
-        float const lead = Geometry::AngleDelta(Geometry::Bearing(boss, kiter->Position), beam);
-        if (std::fabs(lead) > 0.02f)
-            sweep = lead > 0.0f ? 1 : -1;
-        else
-            sweep = AwayDirection(boss, kiter->Position,
-                RaidCentroid(board, kiter->Guid, ObjectGuid()));
-    }
+    ActorSnapshot const* kiter = FindLivingPlayer(board, facts.GroundKiter);
+    ActorSnapshot const* marker = kiter ? MarkerOf(facts.TrackingFlames, *kiter) : nullptr;
+    if (!marker)
+        marker = facts.TrackingFlames.front();
+    float const beam = Geometry::Bearing(boss, marker->Position);
+    // The beam sweeps the way the kiter runs (the same rule the kiter uses).
+    int const sweep = kiter ? GroundKiteDirection(board, facts, duties, *kiter) : -1;
     float const offset = Geometry::AngleDelta(Geometry::Bearing(boss, self.Position), beam)
         * float(sweep);
     float const halfWidth = std::tan(SonicBreathHalfAngleRad) * radius + 1.0f
@@ -239,12 +252,8 @@ inline std::optional<MoveProposal> AirKiteMove(Facts const& facts,
 {
     if (self.Guid != facts.AirKiter)
         return std::nullopt;
-    ActorSnapshot const* flame = NearestFlame(facts, self.Position);
     float const selfBearing = Geometry::Bearing(ArenaCenter, self.Position);
-    int direction = -1;
-    if (flame)
-        direction = Geometry::AngleDelta(selfBearing,
-            Geometry::Bearing(ArenaCenter, flame->Position)) >= 0.0f ? 1 : -1;
+    int const direction = AirKiteDirection(facts, self);
     // Next ring waypoint at least KiteStep of arc ahead in `direction`.
     std::optional<Vector3> best;
     float bestAhead = 0.0f;

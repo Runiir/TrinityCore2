@@ -41,7 +41,7 @@ namespace BlackwingDescent::Atramedes
 {
 struct boss_atramedes : public BossAI
 {
-    boss_atramedes(Creature* creature) : BossAI(creature, DATA_ATRAMEDES) { }
+    boss_atramedes(Creature* creature) : BossAI(creature, DATA_ATRAMEDES), _introFlight(false) { }
 
     void Reset() override
     {
@@ -199,10 +199,11 @@ struct boss_atramedes : public BossAI
             case DATA_IS_IN_INTRO_PHASE:
                 return (uint8(events.IsInPhase(PHASE_INTRO)));
             case DATA_IS_IN_INTRO_FLIGHT:
-                // The instance summons the intro Atramedes passive and the
-                // intro landing makes him aggressive; a respawned (post-wipe)
-                // Atramedes is also in the intro phase but already grounded.
-                return (uint8(events.IsInPhase(PHASE_INTRO) && me->HasReactState(REACT_PASSIVE)));
+                // Only the scripted intro flight (ACTION_START_INTRO until the
+                // intro landing). events.IsInPhase(PHASE_INTRO) cannot tell:
+                // phase 0 matches every phase, and REACT_PASSIVE also holds in
+                // the air phase and for 800 ms after each landing.
+                return uint8(_introFlight);
         }
 
         return 0;
@@ -260,6 +261,7 @@ struct boss_atramedes : public BossAI
                 me->GetMotionMaster()->MoveLand(POINT_LAND_INTRO, IntroLandingPosition);
                 break;
             case POINT_LAND_INTRO:
+                _introFlight = false;
                 me->SetDisableGravity(false);
                 me->HandleEmoteCommand(EMOTE_ONESHOT_ROAR);
                 me->SetReactState(REACT_AGGRESSIVE);
@@ -295,6 +297,7 @@ struct boss_atramedes : public BossAI
         switch (action)
         {
             case ACTION_START_INTRO:
+                _introFlight = true;
                 me->GetMotionMaster()->MovePoint(POINT_CAST_ROARING_BREATH, IntroFlightPosition1, false);
                 break;
             default:
@@ -383,6 +386,7 @@ private:
     ObjectGuid _lastShieldUserGUID;
     ObjectGuid _lastUsedAncientDwarvenShieldGUID;
     ObjectGuid _reverberatingFlameGUID;
+    bool _introFlight;
 };
 
 struct npc_atramedes_ancient_dwarven_shield : public NullCreatureAI

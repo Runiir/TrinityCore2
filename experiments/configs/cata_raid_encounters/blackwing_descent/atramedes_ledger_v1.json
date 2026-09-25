@@ -909,7 +909,7 @@
     {
       "key": "breath_speed_scaling_with_sound",
       "status": "unresolved",
-      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed."
+      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed. Under native speeds (flame 5 yd/s + 1 yd/s per second, kiter 7 yd/s) a kiter is caught within about 6 s, so the strategy expects 2-3 air rescues per air phase where the historical guide reports one: count Resonating Clash 78168 per air phase in a WCL 10N kill."
     },
     {
       "key": "heroic_fiend_and_shield_destruction_cadence",
@@ -1124,6 +1124,12 @@
         "observation": "Reset does not clear noisy/shield GUIDs",
         "resolution": "not a defect: evade despawns Atramedes and the instance summons a new creature (fresh AI) after 30 s",
         "status": "resolved_no_change"
+      },
+      {
+        "key": "intro_flight_predicate",
+        "observation": "The first fix derived the intro flight from IsInPhase(PHASE_INTRO) && REACT_PASSIVE; phase 0 matches every phase and REACT_PASSIVE also holds in the air phase and for 800 ms after each landing",
+        "fix": "explicit _introFlight flag set by ACTION_START_INTRO and cleared at POINT_LAND_INTRO",
+        "status": "fixed"
       }
     ]
   },
@@ -1272,12 +1278,14 @@
         "10N"
       ],
       "status": "specified",
-      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor; Sonic Breath kiter circles away from the raid; air kiter runs the shield ring and self-gongs; spread 10 yd ring in the air; exits for beam/disks/bombs/fire/flame.",
-      "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100.",
+      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor; Sonic Breath kiter circles away from its Tracking Flames marker (the trailing marker keeps one direction; raid side only breaks the summon-snapshot tie); air kiter runs the shield ring away from the flame; shield budget reserves the expected Searing Flames (this ground phase's plus the next while boss > 50% on the ground / 30% in the air); air rescue on a 1 s time-to-contact estimate, strike at the in-reach shield farthest from the flame (kiter: shields ahead only); spread 10 yd ring in the air; exits for beam/disks/bombs/fire/flame.",
+      "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100, shields per air phase recorded.",
       "source_refs": [
-        "wowhead_442",
+        "client_442_spell_rows_20260925",
         "icy_cata_classic",
-        "icy_original"
+        "icy_original",
+        "tdb_bindings_20260925",
+        "wowhead_442"
       ]
     }
   ],
@@ -1287,9 +1295,10 @@
     "Every Searing Flame channel ends by a Resonating Clash within 2 s of its start (Vertigo on Atramedes).",
     "No player reaches 100 Sound (no Noisy! aura, no Devastation event).",
     "Tracking Flames target never shares the beam with another player for more than one tick.",
-    "Shields used per kill <= 4 at 10N; each use records clicker, reason and phase.",
+    "Shields used per kill <= 4 at 10N and never below the Searing Flame reserve before a Searing Flame; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue) and phase; withheld gongs record their *_at_reserve reason.",
     "Air phase: melee and tank do not path under the flying boss; Sonar Bomb hits per player <= 1 per air phase.",
-    "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442."
+    "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442.",
+    "Sonic Breath kiter: no bearing reversal around the boss during a breath; no 78100 tick on the kiter after the first channel second."
   ],
   "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"

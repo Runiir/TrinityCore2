@@ -33,7 +33,8 @@ struct AdaptiveAtramedesPlan
     ObjectGuid DamageTarget;
     std::optional<BotNativeAction::Candidate> Movement;
     std::optional<BotNativeAction::Candidate> Interaction;
-    // Diagnostics: the duty and gong reason behind this plan.
+    // Diagnostics: the duty and the gong reason (or why the shield budget
+    // withheld one) behind this plan.
     std::string_view Duty;
     std::string_view GongReason;
 };
@@ -77,6 +78,8 @@ public:
         GongDecision const gong = DecideGong(board, facts, duties);
         if (gong.Required)
             plan.GongReason = gong.Reason;
+        else if (!gong.Withheld.empty())
+            plan.GongReason = gong.Withheld;
         if (gong.Required && gong.Clicker == botGuid && gong.Shield)
         {
             if (Geometry::Distance3d(bot->Position, gong.Shield->Position)
@@ -108,7 +111,7 @@ public:
             return kite;
         if (std::optional<MoveProposal> kite = AirKiteMove(facts, self))
             return kite;
-        if (std::optional<MoveProposal> exit = SonicBreathBeamExit(board, facts, self))
+        if (std::optional<MoveProposal> exit = SonicBreathBeamExit(board, facts, duties, self))
             return exit;
         if (std::optional<MoveProposal> exit = FlameExit(facts, self))
             return exit;
