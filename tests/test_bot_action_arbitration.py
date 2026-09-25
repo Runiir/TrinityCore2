@@ -3048,7 +3048,10 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
     preparation = bot_source("BotWorldPopulationMgrUpdateBotKernelPreparation.cpp")
     runtime = bot_source("BotWorldPopulationMgrValidationRouteRuntime.cpp")
     manifest = bot_source("BotWorldPopulationMgrValidationRouteManifest.cpp")
-    source = "\n".join((native_action, preparation, runtime, manifest))
+    native_runtime = bot_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp")
+    contract = bot_source("BotValidationRouteNativeContract.h")
+    logic = bot_source("BotValidationRouteNativeLogic.h")
+    source = "\n".join((native_action, preparation, runtime, manifest, native_runtime))
     native = (ROOT / "src/server/game/Bots/BotNativeActionIntent.h").read_text(
         encoding="utf-8"
     )
@@ -3067,6 +3070,8 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
         preparation, "void BotWorldPopulationMgr::PrepareValidationKernel("
     )
     assert "AI()->DoAction" not in native_block
+    assert "AI()->DoAction" not in native_runtime
+    assert "NativeRoute::Run(nativeInput, nativeCallbacks).OwnsNode" in native_block
 
     for field in (
         "NativeInteractionAction",
@@ -3080,14 +3085,29 @@ def test_native_route_interactions_use_player_handlers_and_observed_postconditio
         assert field in header
         assert field in source
 
-    assert '"gameobject_selectable"' in native_block
-    assert '"boss_summoned"' in native_block
-    assert '"aura_present"' in native_block
-    assert '"creature_aggressive_with_victim"' in native_block
-    assert '"creature_grounded_aggressive_or_engaged"' in native_block
-    assert 'ValidationRouteTerminalReason =\n                        "native_postcondition"' in native_block
-    assert "intro_complete_and_elevator_ready" not in native_block
-    assert "player_in_nefarian_arena" not in native_block
+    # Every completion kind the parser accepts has an observed evaluator.
+    for kind, evaluator in (
+        ("gameobject_selectable", "GameObjectSelectable"),
+        ("gameobject_despawned", "GameObjectDespawned"),
+        ("boss_summoned", "BossSummoned"),
+        ("creature_summoned", "CreatureSummoned"),
+        ("aura_present", "AuraPresent"),
+        ("creature_aggressive_with_victim", "CreatureAggressiveWithVictim"),
+        ("creature_grounded_aggressive_or_engaged", "CreatureGroundedAggressiveOrEngaged"),
+        ("instance_boss_state", "InstanceBossState"),
+        ("on_transport", "OnTransport"),
+        ("vehicle_seated", "VehicleSeated"),
+        ("transport_at_stop", "TransportAtStop"),
+        ("any_of", "AnyOf"),
+        ("all_of", "AllOf"),
+    ):
+        assert f'"{kind}"' in contract
+        assert f"case CompletionKind::{evaluator}:" in logic
+    assert 'ValidationRouteTerminalReason =\n                                "native_postcondition"' in native_block
+    for retired in ("intro_complete_and_elevator_ready", "player_in_nefarian_arena"):
+        assert retired not in native_block
+        assert retired not in contract
+        assert retired not in logic
 
     route_adapter = bot_source(
         "BotWorldPopulationMgrUpdateBotKernelFallback.cpp"

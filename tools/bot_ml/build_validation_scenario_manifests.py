@@ -1000,6 +1000,7 @@ def build_manifests(
                 "mechanic_contract",
                 "interaction_contract",
                 "completion_contract",
+                "transport_contract",
             ):
                 contract = step.get(contract_name)
                 if contract:

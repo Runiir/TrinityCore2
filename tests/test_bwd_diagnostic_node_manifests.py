@@ -327,10 +327,14 @@ def test_compact_recovery_anchors_are_shared_and_bounded_in_both_drudge_routes()
         {"roster_slot": 10, "x": -316.0, "y": -123.0, "z": 214.0},
     ]
     scenarios = config["scenarios"] + config["diagnostic_scenarios"]
-    selected = [
-        next(row for row in scenarios if row["id"] == scenario_id)
-        for scenario_id in (CANONICAL_ID, DIAGNOSTIC_IDS["magmaw"])
-    ]
+    # Only the two-tank full raid runs the Drudge lanes; the accepted Magmaw
+    # shard is a single Blood tank and runs the pair as ordinary trash.
+    shard = next(row for row in scenarios if row["id"] == DIAGNOSTIC_IDS["magmaw"])
+    assert not any(
+        row.get("mechanic_profile") == "trash_two_tank_charge_lanes"
+        for row in shard["route"]
+    )
+    selected = [next(row for row in scenarios if row["id"] == CANONICAL_ID)]
     for scenario in selected:
         drudges = next(
             row for row in scenario["route"]
@@ -379,7 +383,7 @@ def test_compact_recovery_anchors_are_shared_and_bounded_in_both_drudge_routes()
 def test_slot_eight_seed_anchor_is_bound_in_canonical_and_magmaw_diagnostic_routes():
     config = _config()
     expected = {"roster_slot": 8, "x": -311.5, "y": -78.0, "z": 213.5}
-    for scenario_id in (CANONICAL_ID, DIAGNOSTIC_IDS["magmaw"]):
+    for scenario_id in (CANONICAL_ID,):
         scenario_pool = config["scenarios"] + config["diagnostic_scenarios"]
         scenario = next(row for row in scenario_pool if row["id"] == scenario_id)
         drudges = next(
@@ -397,10 +401,6 @@ def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack(
     config = _config()
     for scenario in [
         next(row for row in config["scenarios"] if row["id"] == CANONICAL_ID),
-        next(
-            row for row in config["diagnostic_scenarios"]
-            if row["id"] == DIAGNOSTIC_IDS["magmaw"]
-        ),
     ]:
         chain = next(
             row for row in scenario["route"] if row.get("source_entry") == 42649
@@ -464,13 +464,18 @@ def test_chainwielder_wait_anchor_and_pull_guard_are_outside_future_drudge_pack(
 
 def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
     routes = _routes(_manifests(), CANONICAL_ID)
+    # Composed by tools.raid_program.raid_route_composer from the shard node
+    # sets plus the full-raid-only lower-wing elevator.
     assert [row["route_node_id"] for row in routes] == [
         "bwd.entry.regroup",
         "bwd.magmaw.chainwielder",
         "bwd.magmaw.drudges",
         "bwd.magmaw.encounter",
+        "bwd.omnotron.regroup",
         "bwd.omnotron.sentries",
         "bwd.omnotron.encounter",
+        "bwd.transit.lower_wing_elevator",
+        "bwd.maloriak.regroup",
         "bwd.maloriak.lab_trash",
         "bwd.maloriak.encounter",
         "bwd.atramedes.north_spirits",
@@ -478,6 +483,7 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.atramedes.bell_ready",
         "bwd.atramedes.bell",
         "bwd.atramedes.intro_wait",
+        "bwd.atramedes.regroup",
         "bwd.atramedes.encounter",
         "bwd.chimaeron.regroup",
         "bwd.chimaeron.finkle",
@@ -489,7 +495,7 @@ def test_canonical_bwd_route_is_the_ordered_native_prerequisite_union():
         "bwd.nefarian.descent",
         "bwd.nefarian.encounter",
     ]
-    assert [row["step"] for row in routes] == list(range(1, 24))
+    assert [row["step"] for row in routes] == list(range(1, 28))
     assert all(row["diagnostic_only"] is False for row in routes)
     assert all(row["runtime_profile_id"] == CANONICAL_ID for row in routes)
 
@@ -548,13 +554,26 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     preparation, orb, intro, descent, boss = routes
     assert preparation["source_entry"] == 203254
     assert (preparation["x"], preparation["y"], preparation["z"]) == (-27.84375, -224.4774, 63.30268)
-    assert orb["interaction_contract"] == {"action": "gossip_select", "entry": 203254, "menu": 11492, "option": 0}
-    assert intro["completion_contract"]["kind"] == "intro_complete_and_elevator_ready"
-    assert descent["node_kind"] == "descent"
-    assert descent["descent_action"] == "native_walk_jump_or_fall"
-    assert descent["completion_contract"] == {"kind": "player_in_nefarian_arena"}
+    assert orb["interaction_contract"] == {
+        "action": "gossip_select", "entry": 203254, "spawn_id": 239510, "menu": 11492,
+        "option": 0, "owner_role": "dps", "max_attempts": 3, "retry_interval_ms": 3000,
+        "timeout_ms": 60000, "gather": True, "gather_radius_yards": 10.0,
+    }
+    assert orb["completion_contract"] == {"kind": "any_of", "contracts": [
+        {"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510},
+        {"kind": "creature_summoned", "entry": 41376},
+    ]}
+    assert intro["completion_contract"] == {"kind": "all_of", "contracts": [
+        {"kind": "transport_at_stop", "transport_entry": 207834, "stop_frame": 0},
+        {"kind": "creature_summoned", "entry": 41376},
+    ]}
+    assert descent["node_kind"] == "transport"
+    assert descent["descent_action"] == ""
+    assert descent["transport_contract"]["entry"] == 207834
+    assert descent["transport_contract"]["board_stop_frame"] == 0
+    assert "completion_contract" not in descent
     assert boss["label"] == "Nefarian"
-    assert [row["kind"] for row in routes] == ["regroup", "interaction", "interaction", "descent", "boss"]
+    assert [row["kind"] for row in routes] == ["regroup", "interaction", "interaction", "transport", "boss"]
 
 
 def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():
@@ -565,6 +584,13 @@ def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():
     assert atramedes["bwd.atramedes.bell"]["interaction_contract"] == {
         "action": "gameobject_use",
         "entry": 204276,
+        "spawn_id": 235153,
+        "owner_role": "dps",
+        "max_attempts": 3,
+        "retry_interval_ms": 3000,
+        "timeout_ms": 60000,
+        "gather": True,
+        "gather_radius_yards": 12.0,
     }
     assert atramedes["bwd.atramedes.intro_wait"]["completion_contract"]["kind"] == "creature_grounded_aggressive_or_engaged"
 
@@ -574,6 +600,10 @@ def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():
         "entry": 44202,
         "menus": [11812, 11834, 11835, 11836, 11837],
         "option": 0,
+        "owner_role": "dps",
+        "max_attempts": 3,
+        "retry_interval_ms": 3000,
+        "timeout_ms": 90000,
     }
     assert chimaeron["bwd.chimaeron.finkle"]["completion_contract"] == {
         "kind": "aura_present",

@@ -10,25 +10,30 @@ CONFIG = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
 BOSS_MECHANICS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp"
 
 
-def _magmaw_contracts() -> list[dict[str, object]]:
+def _magmaw_contracts() -> dict[str, dict[str, object]]:
     payload = json.loads(CONFIG.read_text(encoding="utf-8"))
-    return [
-        step["mechanic_contract"]
+    return {
+        scenario["id"]: step["mechanic_contract"]
         for scenario in payload["scenarios"] + payload["diagnostic_scenarios"]
         for step in scenario["route"]
         if step.get("node_id") == "bwd.magmaw.encounter"
-    ]
+    }
 
 
-def test_both_magmaw_routes_enable_the_native_sweltering_armor_swap() -> None:
+def test_two_tank_full_raid_enables_the_native_sweltering_armor_swap() -> None:
     contracts = _magmaw_contracts()
-    assert len(contracts) == 2
-    for contract in contracts:
-        assert contract["main_tank_roster_slot"] == 2
-        assert contract["off_tank_roster_slot"] == 1
-        assert contract["tank_swap_trigger"] == "debuff_stacks"
-        assert contract["tank_swap_aura_id"] == 78199
-        assert contract["tank_swap_aura_stacks"] == 1
+    assert set(contracts) == {
+        "blackwing_descent_10n", "blackwing_descent_10n_magmaw_diagnostic",
+    }
+    contract = contracts["blackwing_descent_10n"]
+    assert contract["main_tank_roster_slot"] == 2
+    assert contract["off_tank_roster_slot"] == 1
+    assert contract["tank_swap_trigger"] == "debuff_stacks"
+    assert contract["tank_swap_aura_id"] == 78199
+    assert contract["tank_swap_aura_stacks"] == 1
+    # The accepted Magmaw shard is a single Blood tank: no swap is declared.
+    shard = contracts["blackwing_descent_10n_magmaw_diagnostic"]
+    assert not any(key.startswith("tank_swap") or key.endswith("tank_roster_slot") for key in shard)
 
 
 def _production_debuff_gate(source: str) -> str:

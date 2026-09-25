@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 
+#include "Bots/BotValidationRouteNativeLogic.h"
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryTelemetry.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"
@@ -148,6 +149,9 @@ namespace BotWorldPopulationMgrRouteState
         std::string NativeCompletionKind;
         uint32 NativeCompletionEntry = 0;
         uint32 NativeCompletionSpellId = 0;
+        // Typed native interaction/completion/transport contracts and their
+        // route-scoped runtime state (owned by package D's route adapter).
+        BotValidationRouteNative::NodeContract NativeContract;
         uint32 JumpPadEntry = 0;
         std::string MovementLink = "none";
         std::string PlatformPolicy = "ground";
