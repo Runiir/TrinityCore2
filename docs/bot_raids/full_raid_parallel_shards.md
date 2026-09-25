@@ -534,8 +534,10 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
      branch, Omnotron's route authority, Chimaeron's route observation) with one
      table-driven observer, keeping Magmaw's key and reason strings byte-identical.
      Also factor out the offense-suppression near-copies.
-3. Fidelity registry entries: Atramedes (non-10N rows without a 10N ledger pointer),
-   Chimaeron, Nefarian, Omnotron and Maloriak.
+3. Done in 145b98826d: fidelity registry rows for all five bosses (83 rows appended) and
+   the Omnotron catalog count going to 10. Still to do: regenerate
+   `cata_raid_bwd_quantitative_resolution_audit_v1.json` (and the blocker total in its
+   test) from the round-2 ledgers, since the boss agents renamed their unresolved keys.
 4. Decide on the staged Atramedes SQL (Devastation targets the Noisy player).
 5. Configure CMake again (new TUs: `boss_atramedes_spells.cpp`,
    `boss_nefarians_end_{adds,spells}.cpp`, Chimaeron and Omnotron candidate TUs, and the
