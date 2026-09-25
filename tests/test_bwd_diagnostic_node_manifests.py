@@ -559,18 +559,21 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
         "option": 0, "owner_role": "dps", "max_attempts": 3, "retry_interval_ms": 3000,
         "timeout_ms": 60000, "gather": True, "gather_radius_yards": 10.0,
     }
-    assert orb["completion_contract"] == {"kind": "any_of", "contracts": [
+    # The orb despawn alone is weak proof: Nefarian's native summon is required.
+    assert orb["completion_contract"] == {"kind": "all_of", "contracts": [
         {"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510},
         {"kind": "creature_summoned", "entry": 41376},
     ]}
     assert intro["completion_contract"] == {"kind": "all_of", "contracts": [
         {"kind": "transport_at_stop", "transport_entry": 207834, "stop_frame": 0},
         {"kind": "creature_summoned", "entry": 41376},
-    ]}
+    ], "timeout_ms": 120000}
     assert descent["node_kind"] == "transport"
     assert descent["descent_action"] == ""
     assert descent["transport_contract"]["entry"] == 207834
     assert descent["transport_contract"]["board_stop_frame"] == 0
+    assert descent["transport_contract"]["board_point"] == [-132.2132, -224.6203, 6.5714]
+    assert descent["transport_contract"]["timeout_ms"] == 180000
     assert "completion_contract" not in descent
     assert boss["label"] == "Nefarian"
     assert [row["kind"] for row in routes] == ["regroup", "interaction", "interaction", "transport", "boss"]
@@ -593,6 +596,8 @@ def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():
         "gather_radius_yards": 12.0,
     }
     assert atramedes["bwd.atramedes.intro_wait"]["completion_contract"]["kind"] == "creature_grounded_aggressive_or_engaged"
+    assert atramedes["bwd.atramedes.intro_wait"]["completion_contract"]["timeout_ms"] == 120000
+    assert atramedes["bwd.atramedes.bell_ready"]["completion_contract"]["timeout_ms"] == 180000
 
     chimaeron = {row["route_node_id"]: row for row in _routes(manifests, DIAGNOSTIC_IDS["chimaeron"])}
     assert chimaeron["bwd.chimaeron.finkle"]["interaction_contract"] == {
@@ -611,6 +616,7 @@ def test_atramedes_and_chimaeron_prerequisites_are_native_interactions():
         "spell_id": 82705,
     }
     assert chimaeron["bwd.chimaeron.wake_wait"]["completion_contract"]["kind"] == "creature_aggressive_with_victim"
+    assert chimaeron["bwd.chimaeron.wake_wait"]["completion_contract"]["timeout_ms"] == 120000
 
 
 def test_declared_route_node_ids_are_strict_and_fail_closed():
