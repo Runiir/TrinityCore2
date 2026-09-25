@@ -25,7 +25,8 @@
 //     with a stun, every 19-23 s.
 //   Burden of the Crown 80718 (Corehammer): on its victim, +100% damage done
 //     and no power cost, a 13.9k self-hit on each hit (80722).
-//   Whirlwind 80652 (Burningeye), Avatar 80645 (Thaurissan; Angerforge's
+//   Whirlwind 80652 (Burningeye): 5 s, every second 80651 (56.5k physical,
+//     5 yd) around the spirit; Avatar 80645 (Thaurissan; Angerforge's
 //     Bestowal also grants Avatar in the native script), Stoneblood 80655
 //     (Angerforge), Shield of Light 80747 then Execution Sentence 80727 on
 //     the victim (Ironstar).
@@ -37,6 +38,9 @@
 //   - ranged and healers stand on a half circle 26 yd from the engaged pack,
 //     toward the arena centre: outside every Thunderclap (15 yd + 1.5 reach)
 //     and 13 yd apart, so Chain Lightning does not jump between them;
+//   - melee (not the tank) leave any spirit under Whirlwind (80652) to
+//     WhirlwindExitYards and come back when it ends (round 3: the rogue and
+//     the retribution paladin died to Whirlwind handed on to two spirits);
 //   - everyone, the tank included, damages the kill-order target: on a trash
 //     route the shared group focus is the tank's own target, so the tank
 //     sets the order for the raid; positions of the tank and melee are left
@@ -70,6 +74,11 @@ inline constexpr float StandoffTolerance = 4.0f;
 // Inside this of an engaged spirit the next Thunderclap lands: leave with
 // survival priority.
 inline constexpr float DangerRadius = ThunderclapRadius + PlayerCombatReach + 1.5f;
+// Whirlwind (80652) pulses 80651 every second, 5 yd around the spirit; melee
+// step out to this far from any whirlwinding spirit.
+inline constexpr uint32 WhirlwindAura = 80652;
+inline constexpr float WhirlwindRadius = 5.0f;
+inline constexpr float WhirlwindExitYards = WhirlwindRadius + PlayerCombatReach + 3.5f;
 
 inline bool IsSpiritNode(std::string_view node)
 {
@@ -168,6 +177,32 @@ inline float NearestSpiritDistance(Pack const& pack, Vector3 const& point)
     for (ActorSnapshot const* spirit : pack.Engaged)
         nearest = std::min(nearest, Geometry::Distance2d(spirit->Position, point));
     return nearest;
+}
+
+// Melee out of every whirlwinding spirit's reach: straight away from the
+// nearest one, to WhirlwindExitYards.
+inline std::optional<MoveProposal> WhirlwindExit(Pack const& pack, ActorSnapshot const& self)
+{
+    ActorSnapshot const* nearest = nullptr;
+    float nearestDistance = WhirlwindExitYards;
+    for (ActorSnapshot const* spirit : pack.Engaged)
+    {
+        if (!FindAura(*spirit, WhirlwindAura))
+            continue;
+        float const distance = Geometry::Distance2d(spirit->Position, self.Position);
+        if (distance < nearestDistance)
+        {
+            nearest = spirit;
+            nearestDistance = distance;
+        }
+    }
+    if (!nearest)
+        return std::nullopt;
+    float const bearing = nearestDistance > 0.1f
+        ? Geometry::Bearing(nearest->Position, self.Position)
+        : Geometry::Bearing(nearest->Position, ArenaCenter);
+    return Survival(Geometry::PointAt(nearest->Position, bearing, WhirlwindExitYards + 1.0f,
+        ArenaCenter.Z), "spirit_whirlwind_exit", 530.0f);
 }
 
 inline std::optional<MoveProposal> StandoffMove(Blackboard const& board, Pack const& pack,

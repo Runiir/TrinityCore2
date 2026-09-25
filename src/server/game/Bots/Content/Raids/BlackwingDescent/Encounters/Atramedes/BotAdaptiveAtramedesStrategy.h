@@ -179,10 +179,9 @@ public:
     }
 
     // Spirit packs: once the pack is engaged everyone, the tank included,
-    // hits the kill-order target. On a trash route the shared group focus
-    // (FindValidationRouteGroupFocusTarget) is the tank's own target, so the
-    // tank's damage target is what puts the raid on the kill order. Ranged
-    // and healers hold the standoff half circle.
+    // hits the kill-order target (the route's shared focus and the tank's
+    // area-threat target defer to it through the spirit patches). Melee leave
+    // a whirlwinding spirit; ranged and healers hold the standoff half circle.
     static AdaptiveAtramedesPlan ProposeSpirits(Blackboard const& board,
         ObjectGuid botGuid, std::string_view role)
     {
@@ -201,10 +200,11 @@ public:
         ActorSnapshot const* target = Spirits::KillTarget(pack, board.Route.NodeId);
         if (target)
             plan.DamageTarget = target->Guid;
-        if (tank || melee)
+        if (tank)
             return plan;
-        if (std::optional<MoveProposal> move = Spirits::StandoffMove(board, pack,
-                duties.Tank, *bot))
+        std::optional<MoveProposal> move = melee ? Spirits::WhirlwindExit(pack, *bot)
+            : Spirits::StandoffMove(board, pack, duties.Tank, *bot);
+        if (move)
             plan.Movement = MakeCandidate(board, move->Mechanic,
                 target ? target->Guid : pack.Engaged.front()->Guid,
                 move->ActionPriority, move->Utility,

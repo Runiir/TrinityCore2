@@ -305,6 +305,45 @@ static void TestStandoff()
     assert(!Plan(board, Balance).Movement && Plan(board, Balance).DamageTarget.IsEmpty());
 }
 
+// Round 3: Burningeye died second and his Whirlwind (80652, 5 s, 80651
+// every second in 5 yd, 56.5k) went to Thaurissan and Ironstar; the rogue
+// and the retribution paladin stood in it and died, and their long runback
+// stalled the route. Melee now step out of any whirlwinding spirit and come
+// back when it ends; the tank stays.
+static void TestWhirlwindExit()
+{
+    Blackboard board = SouthBoard();
+    ActorSnapshot& burningeye = Spirit(board, S::Burningeye);
+    for (uint32 slot : { Retribution, Rogue, Tank })
+        Member(board, slot).Position = { burningeye.Position.X + 2.0f, burningeye.Position.Y, 75.0f };
+    assert(!Plan(board, Rogue).Movement && !Plan(board, Retribution).Movement);
+    AuraSnapshot whirl;
+    whirl.SpellId = S::WhirlwindAura;
+    whirl.CasterGuid = burningeye.Guid;
+    whirl.ExpiresAtMs = board.ObservedAtMs + 5000;
+    burningeye.Auras.push_back(whirl);
+    for (uint32 slot : { Retribution, Rogue })
+    {
+        AdaptiveAtramedesPlan const plan = Plan(board, slot);
+        assert(Mechanic(plan) == "spirit_whirlwind_exit");
+        assert(plan.Movement->ActionPriority == BotActionArbitration::Priority::Survival);
+        Vector3 const out{ MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f };
+        // Outside 80651's 5 yd plus the player's 1.5 yd reach, with margin.
+        assert(G::Distance2d(out, burningeye.Position) >= S::WhirlwindExitYards);
+        assert(G::Distance2d(out, burningeye.Position) >= 5.0f + 1.5f + 2.0f);
+        // Still on the kill order.
+        assert(plan.DamageTarget == UnitGuid(S::Angerforge, 63));
+    }
+    // The tank holds the pack.
+    assert(!Plan(board, Tank, "tank").Movement);
+    // Already out of reach: no move; Whirlwind over: back to melee.
+    Member(board, Rogue).Position = { burningeye.Position.X + S::WhirlwindExitYards + 0.5f,
+        burningeye.Position.Y, 75.0f };
+    assert(!Plan(board, Rogue).Movement);
+    burningeye.Auras.clear();
+    assert(!Plan(board, Retribution).Movement);
+}
+
 static void TestStrayPull()
 {
     // A south spirit pulled during the north pack is danger and a target
@@ -326,6 +365,7 @@ int main()
     TestNorthKillOrder();
     TestSouthKillOrder();
     TestStandoff();
+    TestWhirlwindExit();
     TestStrayPull();
     std::puts("atramedes spirits ok");
     return 0;

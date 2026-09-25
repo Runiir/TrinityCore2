@@ -358,6 +358,21 @@ from roster slots.
     - 13.5 yd apart, above Chain Lightning's 12.5 yd jump;
     - at least 35 yd from the other pack.
   - The route keeps the pull, threat pickup and completion.
+  - Melee (not the tank) leave any spirit under Whirlwind (80652: 5 s,
+    80651 every second in 5 yd, 56.5k) to 10 yd, and come back when it
+    ends.
+  - Round 3 cleared both packs without a wipe.
+    - North: Thunderclap hit players 19 times (125 in round 2), mostly the
+      tank and melee. Chain Lightning was cast once, with no death.
+    - The first kill of each pack followed the order. The second did not:
+      Shadowforge in the north, Burningeye in the south. The tank's native
+      area-threat target drives the melee and the remembered route focus
+      (patch `spirit_kill_order_tank.patch`).
+    - Burningeye's Whirlwind went to two spirits and killed the rogue and
+      the retribution paladin.
+    - Their 438 yd runback from the lower-wing elevator is longer than the
+      server's 74-point path limit, so the route never advanced (request
+      `lower_wing_runback_path_request.md`).
   - Round 2 wiped here: the shard was provisioned on the pack centre, the
     ranged never left melee range, and Moltenfist died first. About eight
     players took every Thunderclap, both healers died at 45 s and 53 s, and
