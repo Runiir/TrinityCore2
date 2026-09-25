@@ -123,8 +123,8 @@ def resume(root: Path) -> dict:
         'raid_inputs': [{'input': item['input'], 'owner_skill': item['owner_skill'], 'blocks': item['blocks']}
                         for item in discovery['raid_inputs']],
         'pending_e2e_evidence': [{'round': row['round'], 'outcome': row['outcome'], 'root': row['evidence'].get('root'),
-                                  'error': row['evidence'].get('error'),
-                                  'retry': f'{WORKLOOP} program e2e --archive-pending'} for row in runs._pending(program)],
+                                  'error': row['evidence'].get('error'), 'retry': _evidence_retry(program, row, root)}
+                                 for row in runs._pending(program)],
         'changed_inputs_since_creation': changed,
         'build_policy': _policy(root),
         'finish_line': FINISH_LINE, 'rules': RULES,
@@ -137,6 +137,13 @@ def resume(root: Path) -> dict:
                       'reports parent_objective_complete. Stop only for an explicit user limit or a demonstrated '
                       'external blocker. This command is read-only.'),
     }
+
+
+def _evidence_retry(program: dict, row: dict, root: Path) -> str:
+    """--archive-pending while the /tmp root (or a completed archive) exists, else --evidence-lost."""
+    if Path(str(row['evidence'].get('root'))).exists() or runs.adopted_pointer(root, program['program_id'], row):
+        return f'{WORKLOOP} program e2e --archive-pending'
+    return f'{WORKLOOP} program e2e --evidence-lost <reason>'
 
 
 def _handoff_state(handoff: dict | None) -> str:
@@ -204,7 +211,7 @@ def next_step(root: Path, program: dict, discovery: dict, sha: str) -> tuple[str
     if stage == 'run':
         return _run_step(program, discovery, current, expect)
     if stage == 'e2e':
-        return _e2e_step(program, discovery, expect)
+        return _e2e_step(root, program, discovery, expect)
     return ('Parent objective accepted (parent_objective_complete): every boss unit and the end-to-end unit passed. '
             'Report the evidence.', [])
 
@@ -245,15 +252,19 @@ def _run_step(program: dict, discovery: dict, current: dict, expect: str) -> tup
             commands)
 
 
-def _e2e_step(program: dict, discovery: dict, expect: str) -> tuple[str, list[str]]:
+def _e2e_step(root: Path, program: dict, discovery: dict, expect: str) -> tuple[str, list[str]]:
     e2e = discovery['e2e']
-    pending = runs._pending(program)
-    if pending:
-        errors = [str((row.get('evidence') or {}).get('error')) for row in pending if (row.get('evidence') or {}).get('error')]
-        return ('End-to-end: the run is recorded but its evidence is not archived yet'
-                + (f" (last error: {errors[-1]})" if errors else '') + '. The unit is accepted, and the program '
-                'completes, only once the pointer is stored; retry the archive from the kept /tmp run root.',
-                [f'{WORKLOOP} program e2e --archive-pending'])
+    awaiting = runs.awaiting_evidence(program)
+    if awaiting:
+        error = (awaiting.get('evidence') or {}).get('error')
+        if _evidence_retry(program, awaiting, root).endswith('--archive-pending'):
+            return ('End-to-end: the clear is recorded but its evidence is not archived yet'
+                    + (f' (last error: {error})' if error else '') + '. The unit is accepted, and the program '
+                    'completes, only once the pointer is stored; retry the archive from the kept /tmp run root.',
+                    [f'{WORKLOOP} program e2e --archive-pending'])
+        return ('End-to-end: the clear\'s /tmp run root is gone and no completed archive exists, so its evidence is '
+                'lost. Record that; the unit reopens and the next round re-runs the full route.',
+                [f'{WORKLOOP} program e2e --evidence-lost <reason> {expect}'])
     if not e2e['ready_to_run'] or discovery['raid_inputs']:
         blockers = [item['input'] for item in e2e['missing_inputs'] + discovery['raid_inputs']]
         return ('End-to-end: the unit cannot run (' + ', '.join(blockers) + '). Leave the e2e stage so the next round '
@@ -349,6 +360,8 @@ def parser() -> argparse.ArgumentParser:
     e2e.add_argument('--shard-run', type=Path)
     e2e.add_argument('--failed', metavar='REASON')
     e2e.add_argument('--archive-pending', action='store_true', help='Retry archiving recorded e2e evidence')
+    e2e.add_argument('--evidence-lost', metavar='REASON',
+                     help='Close e2e evidence whose /tmp root is gone; a lost clear reopens the e2e unit')
     for writer in (plan, handoff, reopen, fix, build, run_plan, run, ingest, assess, e2e):
         writer.add_argument('--expect', help='state_sha256 from resume; rejects a stale writer')
     return result
@@ -392,8 +405,12 @@ def command(root: Path, argv: list[str]) -> dict:
         rounds.assess(root, args.label, expect)
     elif args.archive_pending:
         runs.archive_pending_e2e(root)
+    elif args.evidence_lost:
+        runs.evidence_lost(root, args.evidence_lost, expect)
     else:
         runs.record_e2e(root, args.shard_run, expect, args.failed)
-    if verb == 'e2e' and runs._pending(rounds.active(store.load(root)[0])):
-        extra['exit_status'] = 1  # recorded, but the evidence archive is pending: retry with --archive-pending
+    if verb == 'e2e':
+        results = rounds.active(store.load(root)[0])['e2e']['results']
+        if results and results[-1].get('run') and (results[-1].get('evidence') or {}).get('state') in runs.OPEN_EVIDENCE:
+            extra['exit_status'] = 1  # recorded, but its evidence archive is still open (see pending_e2e_evidence)
     return extra | {'resume': resume(root)} if extra else resume(root)

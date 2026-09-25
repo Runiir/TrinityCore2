@@ -48,7 +48,7 @@ def discovery() -> dict:
     e2e = {'unit_id': f'raid:{RAID}:{MODE}:e2e', 'route_composition': 'experiments/configs/raid_route_compositions/x.json',
            'route_template_scenario_id': f'{RAID}_10n', 'scenario_id': cohort, 'cohort_id': cohort,
            'runtime_profile_id': cohort, 'pool_tag': cohort,
-           'boss_nodes': {'alpha': ['bwd.alpha.encounter'], 'beta': ['bwd.beta.encounter']},
+           'boss_key': 'full', 'boss_nodes': {'alpha': ['bwd.alpha.encounter'], 'beta': ['bwd.beta.encounter']},
            'expected_boss_nodes': ['bwd.alpha.encounter', 'bwd.beta.encounter'],
            'missing_inputs': [], 'ready_to_run': True, 'owner_skill': None, 'raid_run_blockers': []}
     return {'program_id': f'{RAID}:{MODE}', 'raid': RAID, 'mode': MODE, 'mode_token': '10n', 'size': 10,
@@ -720,3 +720,156 @@ def test_e2e_archive_output_stays_off_stdout(world, capfd):
     captured = capfd.readouterr()
     assert captured.out == '' and 'cata_evidence_cleanup_v1' in captured.err
     assert program(root)['stage'] == 'complete'
+
+
+def e2e_failing_archive(root: Path, holder: dict) -> tuple[Path, str]:
+    """P3 setup: a clear whose archive failed, then its /tmp root is lost (tmpfs after a reboot)."""
+    e2e = to_e2e(root, holder)
+    holder['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, e2e)
+    shutil.rmtree(e2e.parent)
+    return e2e, sha(root)
+
+
+def test_p3_lost_root_has_a_typed_exit_that_reruns_the_full_route(world):
+    root = world['root']
+    e2e, before = e2e_failing_archive(root, world)
+    result = raid_program.command(root, ['e2e', '--archive-pending'])
+    evidence = program(root)['e2e']['results'][-1]['evidence']
+    assert result['exit_status'] == 1 and evidence['state'] == 'failed' and evidence['root_missing']
+    view = result['resume']
+    assert view['commands'][0].startswith('pixi run python -m tools.raid_program.raid_workloop program e2e --evidence-lost')
+    assert view['pending_e2e_evidence'][0]['retry'].endswith('--evidence-lost <reason>')
+    with pytest.raises(GraphError, match='awaiting its evidence archive'):
+        runs.record_e2e(root, e2e)
+    runs.evidence_lost(root, 'tmpfs cleared by a reboot')
+    state = program(root)
+    last = state['e2e']['results'][-1]
+    assert last['outcome'] == 'evidence_lost' and last['evidence']['state'] == 'lost'
+    assert state['e2e']['status'] == 'open' and state['stage'] == 'plan' and not raid_program.resume(root)['parent_objective_complete']
+    rounds.plan(root)
+    shards = rounds.current_round(program(root))['packets']['shards']
+    assert any(item['input'] == 'e2e_run' and 'evidence_lost' in item['detail'] for item in shards['inputs'])
+
+
+def test_failed_is_allowed_while_a_clear_awaits_evidence(world):
+    root = world['root']
+    e2e_failing_archive(root, world)
+    runs.record_e2e(root, None, failed_reason='abandon this attempt; the route is re-run next round')
+    state = program(root)
+    assert state['stage'] == 'plan' and state['e2e']['status'] == 'open'
+    assert [row['outcome'] for row in state['e2e']['results']] == ['clear', 'failed']
+
+
+def test_evidence_lost_is_refused_while_the_root_or_a_completed_archive_exists(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, e2e)
+    with pytest.raises(GraphError, match='still exists'):
+        runs.evidence_lost(root, 'too early')
+    result = program(root)['e2e']['results'][-1]
+    base = root / 'artifacts/cata_raid_program' / f"scoreboard_blackwing_descent_10n_e2e_r{result['round']:02d}-e2e"
+    pointer = Path(f'{base}.tar.gz.dvc')
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text('outs: []\n')
+    Path(f'{base}.publication.json').write_text(json.dumps({'dvc_pointer': str(pointer.relative_to(root))}))
+    shutil.rmtree(e2e.parent)  # the archive completed and deleted the root before its state update
+    with pytest.raises(GraphError, match='completed archive exists'):
+        runs.evidence_lost(root, 'wrong: the archive completed')
+    runs.archive_pending_e2e(root)
+    state = program(root)
+    evidence = state['e2e']['results'][-1]['evidence']
+    assert evidence['adopted'] and evidence['pointer'] == str(pointer.relative_to(root)) and state['stage'] == 'complete'
+
+
+def test_p4_a_program_switch_cannot_lose_the_pointer(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    other = copy.deepcopy(world['discovery']) | {'program_id': 'firelands:10N', 'raid': 'firelands'}
+
+    def switching(root, name, kill_id, sources):
+        with pytest.raises(GraphError, match='awaiting its evidence archive'):
+            rounds.select(root, other)  # select() refuses to leave a program awaiting evidence
+
+        def forced(state):  # a writer that switches anyway must still not lose the pointer
+            state['programs']['firelands:10N'] = rounds.new_program(other)
+            state['active_program'] = 'firelands:10N'
+            return state
+        store.update(root, forced)
+        shutil.rmtree(sources[0])
+        return {'pointer': f'artifacts/cata_raid_program/scoreboard_{name}_{kill_id}.tar.gz.dvc', 'error': None,
+                'paths': [str(source) for source in sources]}
+    runs.record_e2e(root, e2e, archive=switching)
+    state = store.load(root)[0]
+    bwd = state['programs'][f'{RAID}:{MODE}']
+    assert state['active_program'] == 'firelands:10N'
+    assert bwd['stage'] == 'complete' and bwd['e2e']['results'][-1]['evidence']['pointer']
+
+
+def test_p4_a_vanished_result_is_a_typed_error(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+
+    def dropping(root, name, kill_id, sources):
+        def drop(state):
+            state['programs'][f'{RAID}:{MODE}']['e2e']['results'].pop()
+            state['programs'][f'{RAID}:{MODE}']['e2e']['status'] = 'open'
+            return state
+        store.update(root, drop)
+        return {'pointer': 'artifacts/cata_raid_program/x.tar.gz.dvc', 'error': None, 'paths': []}
+    with pytest.raises(GraphError, match='vanished'):
+        runs.record_e2e(root, e2e, archive=dropping)
+
+
+def test_p5_an_old_failed_run_with_open_evidence_does_not_block_later_rounds(world):
+    root = world['root']
+    to_e2e(root, world)
+    failing = shard_run(root, 'e2e-fail', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter']}])
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, failing)
+    assert program(root)['e2e']['results'][-1]['evidence']['state'] == 'failed' and program(root)['stage'] == 'plan'
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, world, both())
+    assert program(root)['stage'] == 'e2e'
+    runs.record_e2e(root, None, failed_reason='plan not runnable this time')
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, world, both())
+    runs.run_plans(root)
+    fresh = shard_run(root, 'e2e-new', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter', 'bwd.beta.encounter']}])
+    runs.record_e2e(root, fresh)
+    assert program(root)['stage'] == 'complete'
+    assert raid_program.resume(root)['pending_e2e_evidence'][0]['outcome'] == 'failed', 'still listed for retry'
+
+
+def test_e2e_plan_matches_the_generated_full_raid_shard(world):
+    from tools.raid_program.shard_coordinator import ShardPlanError
+    root = world['root']
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, world, both())
+    generated = root / world['discovery']['generated_plan']
+    generated.parent.mkdir(parents=True, exist_ok=True)
+    full = f'{RAID}_10n_full_c0'
+    generated.write_text(json.dumps({'schema': 'raid_shard_plan_v1', 'shards': [
+        {'cohort_id': full, 'runtime_profile_id': full, 'scenario_id': full, 'pool_tag': full, 'boss_key': 'full',
+         'shard_kind': 'full_raid', 'lockout': {'precompleted_boss_keys': []}}]}))
+    plan = runs.run_plans(root)['plans'][0]
+    document = json.loads((root / plan['path']).read_text())
+    assert document['kind'] == 'e2e' and document['shards'][0]['boss_key'] == 'full'
+    stale = copy.deepcopy(document)
+    stale['shards'][0]['boss_key'] = 'e2e'
+    with pytest.raises(ShardPlanError, match=r"differs from its generated plan shard: \['boss_key'\]"):
+        runs.validate_document(root, stale)
+
+
+def test_voided_kills_without_evidence_do_not_fail_ingest(world):
+    from tools.raid_program.scoreboard import void_kill
+    root = world['root']
+    to_run(root)
+    runs.run_plans(root)
+    runs.record_run(root, shard_run(root, 'r1', both()))
+    world['archive_errors'].append('evidence lost before archive')
+    assert raid_program.command(root, ['ingest', '--label', 'round1'])['exit_status'] == 1
+    void_kill(root, f'{RAID}_10n_alpha', 'round1-r1-blackwing_descent_10n_alpha_c0', 'evidence lost; never counted')
+    again = raid_program.command(root, ['ingest', '--label', 'round1'])
+    assert 'exit_status' not in again and again['ingest']['voided'][0]['kill_id'] == 'round1-r1-blackwing_descent_10n_alpha_c0'

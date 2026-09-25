@@ -33,7 +33,10 @@ from tools.raid_program.development_graph import GraphError, utc_now
 
 RUN_PLAN_SCHEMA = 'raid_shard_run_plan_v1'
 RUN_SCHEMA = 'raid_shard_run_v1'
-E2E_KEY = 'e2e'
+E2E_KEY = 'e2e'  # the plan document kind; the shard's boss_key is the generated full-raid shard's
+FULL_RAID_KEY = 'full'  # raid_shard_plan.FULL_RAID_KEY, the fallback when the generated plan names none
+ARCHIVE_DIR = Path('artifacts/cata_raid_program')
+OPEN_EVIDENCE = ('pending', 'failed')
 PLAN_KEYS = ('batch', 'kind', 'path', 'sha256', 'cohorts')
 
 
@@ -84,7 +87,7 @@ def _documents(program: dict, discovery: dict) -> list[dict]:
              'raid_shard_plan': generated,
              'shards': [{'cohort_id': e2e['cohort_id'], 'runtime_profile_id': e2e['runtime_profile_id'],
                          'scenario_id': e2e['scenario_id'], 'pool_tag': e2e['pool_tag'], 'raid': program['raid'],
-                         'mode': token, 'boss_key': E2E_KEY, 'lockout': None}]}]
+                         'mode': token, 'boss_key': e2e.get('boss_key') or FULL_RAID_KEY, 'lockout': None}]}]
 
 
 @contextlib.contextmanager
@@ -255,23 +258,53 @@ def record_run(root: Path, path: Path | None, expected_sha256: str | None = None
 
 
 def _pending(program: dict) -> list[dict]:
+    """Every e2e result whose evidence is still to archive (pending or failed); lost and archived are closed."""
     return [result for result in program['e2e']['results']
-            if result.get('run') and (result.get('evidence') or {}).get('state') != 'archived']
+            if result.get('run') and (result.get('evidence') or {}).get('state') in OPEN_EVIDENCE]
+
+
+def awaiting_evidence(program: dict) -> dict | None:
+    """The current attempt's clear whose evidence is open: the only result that blocks a new e2e run."""
+    results = program['e2e']['results']
+    last = results[-1] if results else None
+    if (last and last['outcome'] == 'clear' and program['e2e']['status'] == 'evidence_pending'
+            and (last.get('evidence') or {}).get('state') in OPEN_EVIDENCE):
+        return last
+    return None
+
+
+def _kill_id(result: dict) -> str:
+    return f"r{result['round']:02d}-{result['run']['run_id']}"
+
+
+def adopted_pointer(root: Path, program_id: str, result: dict) -> str | None:
+    """A pointer left by an archive that completed (publication receipt written) before its state update."""
+    base = f"scoreboard_{program_id.replace(':', '_').lower()}_e2e_{_kill_id(result)}"
+    for receipt in sorted((root / ARCHIVE_DIR).glob(f'{base}*.publication.json')):
+        try:
+            pointer = json.loads(receipt.read_text(encoding='utf-8')).get('dvc_pointer')
+        except (OSError, json.JSONDecodeError):
+            continue
+        if pointer and (root / pointer).is_file():
+            return str(pointer)
+    return None
 
 
 def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None,
                failed_reason: str | None = None, archive=None) -> dict:
     """Record the end-to-end run first, then archive its root, then attach the pointer.
 
-    A failed run (or ``--failed``) opens the next round at once. A clear leaves the unit
-    ``evidence_pending`` in the e2e stage; it is accepted, and the program completes, only
-    when its evidence pointer is stored (here, or later by ``archive_pending_e2e``).
+    A failed run (or ``--failed``, always allowed) opens the next round at once. A clear leaves
+    the unit ``evidence_pending`` in the e2e stage; it is accepted, and the program completes,
+    only when its evidence pointer is stored (here, or later by ``archive_pending_e2e``). Only
+    that pending clear blocks another run; ``--evidence-lost`` releases it when its root is gone.
     """
     _, program, data = rounds.load_active(root)
     rounds.require(program, 'e2e')
     rounds.check_expected(data, expected_sha256)
-    if _pending(program):
-        raise GraphError('an e2e run is awaiting its evidence archive; run program e2e --archive-pending first')
+    if not failed_reason and awaiting_evidence(program):
+        raise GraphError('the last e2e clear is awaiting its evidence archive: program e2e --archive-pending, or '
+                         '--evidence-lost REASON when its /tmp root is gone, or --failed REASON')
     record = None
     if failed_reason:
         problems, killed = ['no_run:' + failed_reason], set()
@@ -307,9 +340,10 @@ def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None
     if record is not None:
         result['evidence'] = {'state': 'pending', 'pointer': None, 'error': None,
                               'root': str(Path(record['source_path']).parent)}
+    program_id = program['program_id']
 
     def reducer(state: dict) -> dict:  # step 1: the result is durable before any evidence is touched
-        target = rounds.active(state)
+        target = state['programs'][program_id]
         rounds.require(target, 'e2e')
         if record is not None:
             e2e_round(target)['runs'].append(record)
@@ -324,26 +358,45 @@ def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None
     state = store.update(root, reducer, expected_sha256)
     if record is None:
         return state
-    return _archive_result(root, record['sha256'], archive)
+    return _archive_result(root, program_id, record['sha256'], archive)
 
 
-def _archive_result(root: Path, run_sha256: str, archive=None) -> dict:
-    """Steps 2 and 3: archive the kept e2e root, then attach the pointer (no caller hash involved)."""
-    _, program, _ = rounds.load_active(root)
-    result = next((row for row in program['e2e']['results'] if (row.get('run') or {}).get('sha256') == run_sha256), None)
+def _find(program: dict, run_sha256: str) -> dict | None:
+    return next((row for row in program['e2e']['results'] if (row.get('run') or {}).get('sha256') == run_sha256), None)
+
+
+def _archive_result(root: Path, program_id: str, run_sha256: str, archive=None) -> dict:
+    """Steps 2 and 3: archive the kept e2e root (or adopt a completed archive), then attach the pointer.
+
+    The second update looks the result up in the program that recorded it and never uses the
+    caller's state hash, so a concurrent write (or a program switch) cannot lose the pointer.
+    """
+    state, _ = store.load(root)
+    program = (state or {}).get('programs', {}).get(program_id)
+    result = _find(program, run_sha256) if program else None
     if result is None:
-        raise GraphError('no recorded e2e result for run ' + run_sha256)
-    slug = program['program_id'].replace(':', '_').lower()
-    with stdout_to_stderr():
-        evidence = (archive or archive_evidence)(root, f'{slug}_e2e', f"r{result['round']:02d}-{result['run']['run_id']}",
-                                                 [Path(result['evidence']['root'])])
+        raise GraphError(f'no recorded e2e result for run {run_sha256} in {program_id}')
+    run_root = Path(result['evidence']['root'])
+    adopted = adopted_pointer(root, program_id, result)
+    if adopted:
+        evidence = {'pointer': adopted, 'error': None, 'paths': [str(run_root)], 'adopted': True}
+    elif not run_root.exists():
+        evidence = {'pointer': None, 'paths': [str(run_root)], 'root_missing': True,
+                    'error': f'the /tmp run root {run_root} is gone; record program e2e --evidence-lost REASON'}
+    else:
+        slug = program_id.replace(':', '_').lower()
+        with stdout_to_stderr():
+            evidence = (archive or archive_evidence)(root, f'{slug}_e2e', _kill_id(result), [run_root])
 
-    def reducer(state: dict) -> dict:
-        target = rounds.active(state)
-        row = next(item for item in target['e2e']['results'] if (item.get('run') or {}).get('sha256') == run_sha256)
+    def reducer(current: dict) -> dict:
+        target = current['programs'].get(program_id)
+        row = _find(target, run_sha256) if target else None
+        if row is None:
+            raise GraphError(f'the e2e result of run {run_sha256} vanished from {program_id} during its archive')
         row['evidence'] = row['evidence'] | {'state': 'archived' if evidence.get('pointer') else 'failed',
                                              'pointer': evidence.get('pointer'), 'error': evidence.get('error'),
-                                             'paths': evidence.get('paths') or []}
+                                             'paths': evidence.get('paths') or [], 'adopted': bool(evidence.get('adopted')),
+                                             'root_missing': bool(evidence.get('root_missing'))}
         accepted = (evidence.get('pointer') and row['outcome'] == 'clear' and target['stage'] == 'e2e'
                     and target['e2e']['status'] == 'evidence_pending' and row is target['e2e']['results'][-1])
         if accepted:
@@ -351,20 +404,53 @@ def _archive_result(root: Path, run_sha256: str, archive=None) -> dict:
             target['stage'] = 'complete'
         store.history(target, 'e2e_evidence', run=run_sha256, pointer=evidence.get('pointer'), error=evidence.get('error'),
                       completed=bool(accepted))
-        return state
+        return current
     return store.update(root, reducer)
 
 
 def archive_pending_e2e(root: Path, archive=None) -> dict:
-    """Retry every e2e result whose evidence is not archived, from its kept /tmp root."""
+    """Retry every open e2e evidence archive (or adopt a completed one) of the active program."""
     _, program, _ = rounds.load_active(root)
     pending = _pending(program)
     if not pending:
         raise GraphError('no e2e evidence is pending')
     state = None
     for result in pending:
-        state = _archive_result(root, result['run']['sha256'], archive)
+        state = _archive_result(root, program['program_id'], result['run']['sha256'], archive)
     return state
+
+
+def evidence_lost(root: Path, reason: str, expected_sha256: str | None = None) -> dict:
+    """Close open e2e evidence whose /tmp root is gone; a lost clear is not a pass and reopens the e2e unit."""
+    if not reason:
+        raise GraphError('--evidence-lost needs a reason')
+    _, program, data = rounds.load_active(root)
+    rounds.check_expected(data, expected_sha256)
+    pending = _pending(program)
+    if not pending:
+        raise GraphError('no e2e evidence is pending')
+    for result in pending:
+        if adopted_pointer(root, program['program_id'], result):
+            raise GraphError('a completed archive exists for this evidence; run program e2e --archive-pending to adopt it')
+        if Path(result['evidence']['root']).exists():
+            raise GraphError(f"the run root {result['evidence']['root']} still exists; run program e2e --archive-pending")
+    shas = {result['run']['sha256'] for result in pending}
+    program_id = program['program_id']
+
+    def reducer(state: dict) -> dict:
+        target = state['programs'][program_id]
+        blocking = awaiting_evidence(target)
+        for row in target['e2e']['results']:
+            if (row.get('run') or {}).get('sha256') in shas and (row.get('evidence') or {}).get('state') in OPEN_EVIDENCE:
+                row['evidence'] = row['evidence'] | {'state': 'lost', 'lost_reason': reason, 'lost_utc': utc_now()}
+                if row is blocking:  # a clear without evidence never passes: re-run the full route next round
+                    row['outcome'] = 'evidence_lost'
+                    row['problems'] = [*row.get('problems', []), 'evidence_lost:' + reason]
+                    target['e2e']['status'] = 'open'
+                    target['stage'], target['round'] = 'plan', target['round'] + 1
+        store.history(target, 'e2e_evidence_lost', runs=sorted(shas), reason=reason)
+        return state
+    return store.update(root, reducer, expected_sha256)
 
 
 def killed_nodes(run_dir: Path) -> set[str]:

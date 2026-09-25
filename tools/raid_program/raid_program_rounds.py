@@ -110,6 +110,9 @@ def select(root: Path, discovery: dict, expected_sha256: str | None = None) -> d
         if previous and state['active_program'] != key and previous['stage'] not in store.SWITCHABLE_STAGES:
             raise GraphError(f"program {state['active_program']} is mid-round ({previous['stage']}); finish the round "
                              'before selecting another raid program')
+        if previous and state['active_program'] != key and previous['e2e'].get('status') == 'evidence_pending':
+            raise GraphError(f"program {state['active_program']} has an e2e clear awaiting its evidence archive; run "
+                             'program e2e --archive-pending (or --evidence-lost REASON) before selecting another program')
         if key not in state['programs']:
             state['programs'][key] = new_program(discovery)
             store.history(state['programs'][key], 'created')

@@ -138,7 +138,13 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
       pointer is attached. The unit is accepted, and the program completes, only
       once that pointer is stored. If the archive fails, the command exits
       non-zero and `$W program e2e --archive-pending` retries from the kept `/tmp`
-      root.
+      root, or adopts an archive that completed before its state update.
+   5. If the root is gone (`/tmp` is tmpfs, so a reboot clears it) and no
+      completed archive exists, run `$W program e2e --evidence-lost <reason>`.
+      A clear without evidence never passes: the unit reopens and the next round
+      re-runs the full route. Only that pending clear blocks a new e2e run;
+      `--failed` is always allowed, and a program awaiting e2e evidence cannot be
+      switched away from.
 
    It passes only if every composed boss node dies natively on the round binary,
    with no raid-level input open. If the plan cannot run or produced no

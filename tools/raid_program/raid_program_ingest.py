@@ -87,7 +87,7 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
     archived = {(row['run_sha256'], row['cohort_id']) for row in holder.get('shard_evidence') or []}
     archive = archive or _archive
     slug = program['program_id'].replace(':', '_').lower()
-    added, shard_evidence, batch_evidence, errors = [], [], {}, []
+    added, shard_evidence, batch_evidence, errors, voided = [], [], {}, [], []
     for run in holder['runs']:
         if run.get('failed'):
             continue
@@ -107,7 +107,9 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
             if key in done:
                 scenario, kill_id = done[key]['scenario'], done[key]['kill_id']
                 recorded = next((row for row in load_records(root, scenario) if row['kill_id'] == kill_id), {})
-                if not recorded.get('evidence_dvc_pointer'):
+                if recorded.get('voided'):  # excluded with an audited reason: reported, never an exit error
+                    voided.append({'cohort_id': shard['cohort_id'], 'kill_id': kill_id, 'voided': recorded['voided']})
+                elif not recorded.get('evidence_dvc_pointer'):
                     errors.append({'cohort_id': shard['cohort_id'], 'kill_id': kill_id, 'error': 'evidence still not archived',
                                    'retry': f'pixi run python -m tools.raid_program.scoreboard archive-pending --scenario {scenario}'})
                 continue
@@ -131,7 +133,9 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
                 except (Exception, SystemExit) as failure:  # noqa: BLE001 - one shard's failure must not hide the others
                     errors.append({'cohort_id': shard['cohort_id'], 'error': f'{type(failure).__name__}: {failure}'})
                     continue
-            if not record.get('evidence_dvc_pointer'):
+            if record.get('voided'):
+                voided.append({'cohort_id': shard['cohort_id'], 'kill_id': kill_id, 'voided': record['voided']})
+            elif not record.get('evidence_dvc_pointer'):
                 errors.append({'cohort_id': shard['cohort_id'], 'kill_id': kill_id,
                                'error': 'evidence not archived: ' + str(record.get('archive_error')),
                                'retry': f'pixi run python -m tools.raid_program.scoreboard archive-pending --scenario {scenario}'})
@@ -163,7 +167,7 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
         return state
     store.update(root, reducer)
     return {'label': label, 'ingested': added, 'shard_evidence': shard_evidence, 'batch_evidence': batch_evidence,
-            'errors': errors,
+            'errors': errors, 'voided': voided,
             'next_action': ('Resolve every error, then run program ingest again with the same label '
                             '(recorded kills are adopted, not duplicated; archive failures retry with '
                             'scoreboard archive-pending)') if errors else 'Continue with the next batch run or program assess.'}

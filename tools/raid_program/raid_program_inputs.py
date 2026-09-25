@@ -226,7 +226,7 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
         generated_plan = (PROVISIONING / str(composition['composition_id']) / 'plan.json').as_posix()
         document = read_json(root, Path(generated_plan))
         if document.get('schema') == 'raid_shard_plan_v1':
-            generated = {str(row.get('scenario_id')) for row in document.get('shards') or [] if isinstance(row, dict)}
+            generated = {str(row.get('scenario_id')): row for row in document.get('shards') or [] if isinstance(row, dict)}
         else:
             raid_inputs.append(missing('generated_plan', f'{generated_plan} is missing or not a raid_shard_plan_v1: '
                                        'reproduce (or dvc pull) the raid_shard_provisioning stage', 'raid-shard-architecture',
@@ -254,6 +254,9 @@ def discover_program(root: Path, raid: str, mode: str) -> dict:
                                              f"{e2e['scenario_id']}; regenerate the raid_shard_provisioning stage",
                                              'raid-shard-architecture', BLOCKS_RUN, path=generated_plan))
         e2e['ready_to_run'] = False
+    # The run-plan row must repeat the generated full-raid shard's identity (shard_coordinator compares boss_key).
+    from tools.raid_program.raid_shard_plan import FULL_RAID_KEY
+    e2e['boss_key'] = str(((generated or {}).get(e2e['scenario_id']) or {}).get('boss_key') or FULL_RAID_KEY)
     if e2e.get('route_composition'):
         sources.append(Path(e2e['route_composition']))
     blockers = [item['input'] for item in raid_inputs if item['blocks'] == BLOCKS_RUN]
