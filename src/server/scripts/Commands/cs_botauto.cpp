@@ -225,6 +225,24 @@ private:
         return "";
     }
 
+    // Legacy botexp commands act on the default cohort and mutate process-wide
+    // state (runs, replays). While boss shards run, they are refused so no
+    // shard's cohort or evidence can be replaced by an unqualified command.
+    static bool RefuseWhileCohortsActive(ChatHandler* handler, char const* action,
+        bool allowDefaultOnly = false)
+    {
+        uint32 const active = sBotWorldPopulationMgr->GetActiveCohortCount();
+        bool const refused = allowDefaultOnly
+            ? sBotWorldPopulationMgr->HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId)
+            : active != 0;
+        if (!refused)
+            return false;
+        SendAutoResult(handler, std::string("{\"ok\":false,\"action\":\"") + action
+            + "\",\"active_cohort_count\":" + std::to_string(active)
+            + ",\"failure_reason\":\"active_cohorts_present\",\"hint\":\"use_cohort_qualified_botauto\"}");
+        return true;
+    }
+
     static bool HandleAutoCreateCommand(ChatHandler* handler, char const* args)
     {
         std::string cohortId = FirstArg(args);
@@ -245,10 +263,13 @@ private:
 
     static bool HandleStartCommand(ChatHandler* handler, char const* args)
     {
+        if (RefuseWhileCohortsActive(handler, "botexp_start"))
+            return false;
         std::string name = FirstArg(args);
         if (name.empty())
             name = "autonomous_zone_10";
 
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         if (!sBotWorldPopulationMgr->Start(name))
         {
             if (handler)
@@ -266,6 +287,11 @@ private:
 
     static bool HandleStopCommand(ChatHandler* handler, char const* /*args*/)
     {
+        // Stopping the default cohort is harmless alone; it never runs beside
+        // boss shards, whose stop is `.botauto stop <cohort>`.
+        if (RefuseWhileCohortsActive(handler, "botexp_stop", true))
+            return false;
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         sBotWorldPopulationMgr->Stop();
         if (handler)
             handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_stop\",\"failure_reason\":null}");
@@ -336,8 +362,10 @@ private:
 
     static bool HandleAutoProfilesCommand(ChatHandler* handler, char const* /*args*/)
     {
-        if (ResolveGlobalAutoCohort(handler, "botauto_profiles").empty())
+        std::string const cohortId = ResolveGlobalAutoCohort(handler, "botauto_profiles");
+        if (cohortId.empty())
             return false;
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(cohortId);
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetRuntimeProfilesJson().c_str());
         return true;
@@ -345,8 +373,10 @@ private:
 
     static bool HandleAutoProfileCommand(ChatHandler* handler, char const* args)
     {
-        if (ResolveGlobalAutoCohort(handler, "botauto_profile").empty())
+        std::string const cohortId = ResolveGlobalAutoCohort(handler, "botauto_profile");
+        if (cohortId.empty())
             return false;
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(cohortId);
         std::vector<std::string> tokens = Tokenize(args);
         std::string result;
         if (tokens.empty())
@@ -373,6 +403,12 @@ private:
         std::string result;
         if (tokens.empty() || tokens[0] == "list")
             result = BotClassSpecActionProfileStore::DbProfilesJson();
+        else if ((tokens[0] == "reload" || tokens[0] == "rollback") && sBotWorldPopulationMgr->IsActive())
+            // Rotations are one process-wide snapshot read live by every
+            // cohort; replacing it mid-run would change shards in flight.
+            result = "{\"ok\":false,\"action\":\"botauto_rotations_" + tokens[0]
+                + "\",\"active_cohort_count\":" + std::to_string(sBotWorldPopulationMgr->GetActiveCohortCount())
+                + ",\"failure_reason\":\"active_cohorts_present\"}";
         else if (tokens[0] == "reload")
             result = BotClassSpecActionProfileStore::ReloadDbProfiles();
         else if (tokens[0] == "rollback")
@@ -407,8 +443,10 @@ private:
 
     static bool HandleAutoSpawnCommand(ChatHandler* handler, char const* args)
     {
-        if (ResolveGlobalAutoCohort(handler, "botauto_spawn").empty())
+        std::string const cohortId = ResolveGlobalAutoCohort(handler, "botauto_spawn");
+        if (cohortId.empty())
             return false;
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(cohortId);
         std::vector<std::string> tokens = Tokenize(args);
         uint32 count = 1;
         if (!tokens.empty() && tokens[0].find_first_not_of("0123456789") == std::string::npos)
@@ -441,9 +479,11 @@ private:
             }
             return false;
         }
-        if (ResolveGlobalAutoCohort(handler, "botauto_despawn").empty())
+        std::string const cohortId = ResolveGlobalAutoCohort(handler, "botauto_despawn");
+        if (cohortId.empty())
             return false;
 
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(cohortId);
         sBotWorldPopulationMgr->StopAutonomy();
         if (handler)
             handler->PSendSysMessage("{\"ok\":true,\"action\":\"botauto_despawn\",\"scope\":\"all\",\"failure_reason\":null}");
@@ -452,8 +492,10 @@ private:
 
     static bool HandleAutoDebugCommand(ChatHandler* handler, char const* args)
     {
-        if (ResolveGlobalAutoCohort(handler, "botauto_debug").empty())
+        std::string const cohortId = ResolveGlobalAutoCohort(handler, "botauto_debug");
+        if (cohortId.empty())
             return false;
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(cohortId);
         std::vector<std::string> tokens = Tokenize(args);
         std::string selector = tokens.empty() ? "" : tokens[0];
         if (handler)
@@ -630,6 +672,7 @@ private:
 
     static bool HandleStatusCommand(ChatHandler* handler, char const* /*args*/)
     {
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
         return true;
@@ -637,6 +680,7 @@ private:
 
     static bool HandleSummaryCommand(ChatHandler* handler, char const* /*args*/)
     {
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetSummaryJson().c_str());
         return true;
@@ -670,6 +714,9 @@ private:
             }
         }
 
+        if (RefuseWhileCohortsActive(handler, "botexp_replay"))
+            return false;
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         std::string result = sBotWorldPopulationMgr->Replay(replayType, selector, brainVersion);
         if (handler)
             handler->PSendSysMessage("%s", result.c_str());
@@ -696,7 +743,10 @@ private:
             return false;
         }
 
+        if (RefuseWhileCohortsActive(handler, "botexp_comparebrain"))
+            return false;
         uint64 replayId = uint64(strtoull(tokens[1].c_str(), nullptr, 10));
+        auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         std::string result = sBotWorldPopulationMgr->CompareBrains(replayId, tokens[2], tokens[3]);
         if (handler)
             handler->PSendSysMessage("%s", result.c_str());

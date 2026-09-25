@@ -43,6 +43,8 @@ class SharedInstanceValidationError(RuntimeError):
     """A typed fail-closed fixture boundary."""
 
 
+# The isolation canary's subject/witness pair (fixture maximum_active_cohorts).
+CANARY_COHORTS = 2
 COMBAT_LOG_PERSPECTIVES = frozenset({
     "damage_done", "damage_taken", "healing_done", "healing_received",
     "friendly_damage_done",
@@ -159,7 +161,9 @@ def _registry(
         != expected_epoch
         or _integer(row.get("server_process_id"), "registry_process_id", 1)
         != expected_process_id
-        or _integer(row.get("max_active_cohorts"), "registry_capacity", 1) != 2
+        # The canary runs its two-cohort pair on a server that may admit more
+        # (six boss shards since full-raid round 1); it needs room for the pair.
+        or _integer(row.get("max_active_cohorts"), "registry_capacity", 1) < CANARY_COHORTS
     ):
         raise SharedInstanceValidationError("registry_identity_mismatch")
     cohorts = row.get("cohorts")
@@ -604,7 +608,7 @@ def _validate_inputs(
         raise SharedInstanceValidationError("fixture_schema_invalid")
     if fixture.get("boss_completion_eligible") is not False or fixture.get("training_eligible") is not False:
         raise SharedInstanceValidationError("fixture_scope_invalid")
-    if fixture.get("maximum_active_cohorts") != 2 or fixture.get("map_update_threads") != 1:
+    if fixture.get("maximum_active_cohorts") != CANARY_COHORTS or fixture.get("map_update_threads") != 1:
         raise SharedInstanceValidationError("fixture_capacity_invalid")
     if fixture.get("start_order") != ["witness", "subject"] or fixture.get("stop_order") != ["subject", "witness"]:
         raise SharedInstanceValidationError("fixture_order_invalid")

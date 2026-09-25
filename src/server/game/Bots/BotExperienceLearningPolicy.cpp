@@ -1,5 +1,6 @@
 #include "Bots/BotExperienceLearningPolicy.h"
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Config.h"
 #include "DatabaseEnv.h"
 #include "Player.h"
 #include "Unit.h"
@@ -204,7 +205,8 @@ float LocalDanger(Player const* bot, float x, float y, float z, BotExperienceLea
     if (!bot)
         return 0.0f;
 
-    char const* botFilter = config.AllowGlobalMemoryFallback ? "(bot_guid = %u OR bot_guid = 0)" : "bot_guid = %u";
+    char const* botFilter = BotExperienceLearningPolicy::GlobalMemoryFallbackAllowed(config)
+        ? "(bot_guid = %u OR bot_guid = 0)" : "bot_guid = %u";
     std::ostringstream query;
     query << "SELECT COALESCE(SUM(death_count * 2 + stuck_count + failure_count), 0) FROM bot_memory_danger_zones "
           << "WHERE " << botFilter << " AND map_id = %u "
@@ -212,6 +214,21 @@ float LocalDanger(Player const* bot, float x, float y, float z, BotExperienceLea
     QueryResult result = CharacterDatabase.PQuery(query.str().c_str(), bot->GetGUID().GetCounter(), bot->GetMapId(), x, y, z);
     return result ? result->Fetch()[0].GetFloat() : 0.0f;
 }
+}
+
+bool BotExperienceLearningPolicy::ShardIsolationEnabled()
+{
+    return sConfigMgr->GetBoolDefault("BotWorld.ShardIsolation", false);
+}
+
+bool BotExperienceLearningPolicy::LearningEnabled(BotExperienceLearningConfig const& config)
+{
+    return config.Enabled && !ShardIsolationEnabled();
+}
+
+bool BotExperienceLearningPolicy::GlobalMemoryFallbackAllowed(BotExperienceLearningConfig const& config)
+{
+    return config.AllowGlobalMemoryFallback && !ShardIsolationEnabled();
 }
 
 BotLearnedScore BotExperienceLearningPolicy::Disabled()
@@ -234,7 +251,7 @@ uint32 BotExperienceLearningPolicy::StableKey(std::string const& value)
 
 BotLearnedScore BotExperienceLearningPolicy::ScoreActivity(Player const* bot, BotProgressionActivity activity, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot)
+    if (!LearningEnabled(config) || !bot)
         return Disabled();
 
     char const* activityName = BotLongTermProgressionBrain::ToString(activity);
@@ -258,7 +275,7 @@ BotLearnedScore BotExperienceLearningPolicy::ScoreActivity(Player const* bot, Bo
 
 BotLearnedScore BotExperienceLearningPolicy::ScoreArea(Player const* bot, uint32 areaId, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot || !areaId)
+    if (!LearningEnabled(config) || !bot || !areaId)
         return Disabled();
 
     BotLearnedScore learned;
@@ -272,7 +289,7 @@ BotLearnedScore BotExperienceLearningPolicy::ScoreArea(Player const* bot, uint32
 
 BotLearnedScore BotExperienceLearningPolicy::ScorePoi(Player const* bot, uint64 /*poiId*/, float x, float y, float z, float staticScore, uint32 visitCount, uint32 successCount, uint32 failureCount, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot)
+    if (!LearningEnabled(config) || !bot)
         return Disabled();
 
     BotLearnedScore learned;
@@ -296,7 +313,7 @@ BotLearnedScore BotExperienceLearningPolicy::ScorePoi(Player const* bot, uint64 
 
 BotLearnedScore BotExperienceLearningPolicy::ScoreQuest(Player const* bot, uint32 questId, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot || !questId)
+    if (!LearningEnabled(config) || !bot || !questId)
         return Disabled();
 
     BotLearnedScore learned;
@@ -309,7 +326,7 @@ BotLearnedScore BotExperienceLearningPolicy::ScoreQuest(Player const* bot, uint3
 
 BotLearnedScore BotExperienceLearningPolicy::ScoreMob(Player const* bot, Unit const* target, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot || !target)
+    if (!LearningEnabled(config) || !bot || !target)
         return Disabled();
 
     BotLearnedScore learned;
@@ -331,7 +348,7 @@ BotLearnedScore BotExperienceLearningPolicy::ScoreMob(Player const* bot, Unit co
 
 BotLearnedScore BotExperienceLearningPolicy::ScorePath(Player const* bot, float fromX, float fromY, float toX, float toY, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot)
+    if (!LearningEnabled(config) || !bot)
         return Disabled();
 
     BotLearnedScore learned;
@@ -349,7 +366,7 @@ BotLearnedScore BotExperienceLearningPolicy::ScorePath(Player const* bot, float 
 
 BotLearnedScore BotExperienceLearningPolicy::ScoreRecoveryMode(Player const* bot, char const* mode, float x, float y, float z, uint32 recentDeathCount, BotExperienceLearningConfig const& config)
 {
-    if (!config.Enabled || !bot || !mode)
+    if (!LearningEnabled(config) || !bot || !mode)
         return Disabled();
 
     BotLearnedScore learned;

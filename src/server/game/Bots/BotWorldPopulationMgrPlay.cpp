@@ -188,102 +188,106 @@ std::string Context::Fill(BotWorldPopulationMgr& mgr, Player* leader)
     BotWorldPopulationMgr::CohortRuntime* cohort = mgr.FindCohort(CohortId);
     if (!cohort)
         return Result(action, false, "play_cohort_missing");
-    std::string const previous = mgr._selectedCohortId;
-    mgr._selectedCohortId = CohortId;
     cohort->Purpose = CohortPurpose::Play;
     cohort->Play = BotPlaySession();
-    auto abandon = [&mgr, cohort, &previous](std::string const& reason)
+    auto abandon = [cohort](std::string const& reason)
     {
         cohort->Purpose = CohortPurpose::Validation;
         cohort->Play = BotPlaySession();
         cohort->Play.LastEvent = "fill_failed:" + reason;
-        mgr._selectedCohortId = previous;
         return Result("fill", false, reason);
     };
 
-    // Load the trained roster of the scenario to choose which bots stay out.
-    std::string const selected = mgr.SelectRuntimeProfile(Scenario);
-    if (selected.find("\"ok\":true") == std::string::npos)
-        return abandon("play_profile_unavailable");
-    mgr.LoadConfig(Scenario, nullptr);
-    if (mgr.Party().ValidationRouteManifest.empty())
-        return abandon("play_route_manifest_missing");
-    std::vector<BotPlayRoster::TemplateSlot> roster;
-    for (auto const& identity : mgr.Party().ValidationRouteManifest.front().ExpectedRoster)
-        roster.push_back({ identity.RosterSlotId, identity.Role, identity.ClassSpec });
-
-    std::vector<BotPlayExternal> externals;
-    std::vector<std::string> roles;
-    for (Player* human : humans)
-    {
-        externals.push_back(Register(human, group, ""));
-        roles.push_back(externals.back().Role);
-    }
-    std::string failure;
-    std::vector<std::string> const slots = BotPlayRoster::ChooseExternalSlots(
-        roster, roles, BotPlayRoster::DisruptionOrder(Scenario), &failure);
-    if (slots.size() != humans.size())
-        return abandon(failure.empty() ? "play_slot_choice_failed" : failure);
-
     BotPlaySession& session = cohort->Play;
-    session.Active = true;
-    session.StartedAtMs = GameTime::GetGameTimeMS();
-    session.SessionId = "play-" + std::to_string(leader->GetGUID().GetCounter())
-        + "-" + std::to_string(GameTime::GetGameTime());
-    session.LeaderGuid = leader->GetGUID();
-    session.GroupGuid = group->GetGUID();
-    session.Scenario = Scenario;
-    for (size_t index = 0; index < externals.size(); ++index)
+    std::vector<BotPlayRoster::TemplateSlot> roster;
     {
-        externals[index].SlotId = slots[index];
-        session.ExternalSlotIds.insert(slots[index]);
-        session.Externals[externals[index].Guid.GetRawValue()] = externals[index];
+        // Every read and write of the play cohort's runtime happens inside its
+        // explicit scope; nothing else is ever selected implicitly.
+        BotWorldPopulationMgr::CohortScope scope = mgr.ScopeCohort(cohort);
+        // Load the trained roster of the scenario to choose which bots stay out.
+        std::string const selected = mgr.SelectRuntimeProfile(Scenario);
+        if (selected.find("\"ok\":true") == std::string::npos)
+            return abandon("play_profile_unavailable");
+        mgr.LoadConfig(Scenario, nullptr);
+        if (mgr.Party().ValidationRouteManifest.empty())
+            return abandon("play_route_manifest_missing");
+        for (auto const& identity : mgr.Party().ValidationRouteManifest.front().ExpectedRoster)
+            roster.push_back({ identity.RosterSlotId, identity.Role, identity.ClassSpec });
+
+        std::vector<BotPlayExternal> externals;
+        std::vector<std::string> roles;
+        for (Player* human : humans)
+        {
+            externals.push_back(Register(human, group, ""));
+            roles.push_back(externals.back().Role);
+        }
+        std::string failure;
+        std::vector<std::string> const slots = BotPlayRoster::ChooseExternalSlots(
+            roster, roles, BotPlayRoster::DisruptionOrder(Scenario), &failure);
+        if (slots.size() != humans.size())
+            return abandon(failure.empty() ? "play_slot_choice_failed" : failure);
+
+        session.Active = true;
+        session.StartedAtMs = GameTime::GetGameTimeMS();
+        session.SessionId = "play-" + std::to_string(leader->GetGUID().GetCounter())
+            + "-" + std::to_string(GameTime::GetGameTime());
+        session.LeaderGuid = leader->GetGUID();
+        session.GroupGuid = group->GetGUID();
+        session.Scenario = Scenario;
+        for (size_t index = 0; index < externals.size(); ++index)
+        {
+            externals[index].SlotId = slots[index];
+            session.ExternalSlotIds.insert(slots[index]);
+            session.Externals[externals[index].Guid.GetRawValue()] = externals[index];
+        }
+        session.LastEvent = "filling";
+        // Each human takes the subgroup of the trained slot it replaces, so the
+        // bots' trained subgroups stay at five members each.
+        for (size_t index = 0; index < roster.size(); ++index)
+            for (BotPlayExternal const& external : externals)
+                if (external.SlotId == roster[index].SlotId
+                    && group->GetMemberGroup(external.Guid) != uint8(index / MAXGROUPSIZE))
+                    group->ChangeMembersGroup(external.Guid, uint8(index / MAXGROUPSIZE));
     }
-    session.LastEvent = "filling";
-    // Each human takes the subgroup of the trained slot it replaces, so the
-    // bots' trained subgroups stay at five members each.
-    for (size_t index = 0; index < roster.size(); ++index)
-        for (BotPlayExternal const& external : externals)
-            if (external.SlotId == roster[index].SlotId
-                && group->GetMemberGroup(external.Guid) != uint8(index / MAXGROUPSIZE))
-                group->ChangeMembersGroup(external.Guid, uint8(index / MAXGROUPSIZE));
-    mgr._selectedCohortId = previous;
 
     TC_LOG_INFO("server", "BotWorld play fill session=%s leader=%s group=%s humans=%u",
         session.SessionId.c_str(), leader->GetName().c_str(),
         group->GetGUID().ToString().c_str(), uint32(humans.size()));
     bool const autonomyStarted = mgr.StartAutonomyForCohort(CohortId);
 
-    mgr._selectedCohortId = CohortId;
-    // StartAutonomy reports Cohort().Active, which a failed admission leaves
-    // set; success is an active admission of exactly the planned bots on the
-    // Magmaw scenario (a configured runtime profile must not replace it).
-    uint32 const expectedBots = uint32(roster.size() - session.ExternalSlotIds.size());
-    // Config.Name is renamed by an auto recording window; the selected
-    // profile and route scenario are the immutable identity.
-    bool const started = autonomyStarted
-        && mgr.Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
-        && mgr.Cohort().ValidationRaidAdmissionComplete
-        && mgr.Party().Bots.size() == expectedBots
-        && mgr.Cohort().SelectedProfileName == Scenario
-        && mgr.Cohort().Config.ValidationRouteScenarioId == Scenario;
+    bool started = false;
     std::ostringstream extra;
-    extra << ",\"session_id\":\"" << Escape(session.SessionId) << "\""
-          << ",\"bots\":" << mgr.Party().Bots.size()
-          << ",\"external_slots\":[";
-    bool first = true;
-    for (std::string const& slot : session.ExternalSlotIds)
+    std::string reason;
     {
-        extra << (first ? "" : ",") << '"' << Escape(slot) << '"';
-        first = false;
+        BotWorldPopulationMgr::CohortScope scope = mgr.ScopeCohort(cohort);
+        // StartAutonomy reports Cohort().Active, which a failed admission leaves
+        // set; success is an active admission of exactly the planned bots on the
+        // Magmaw scenario (a configured runtime profile must not replace it).
+        uint32 const expectedBots = uint32(roster.size() - session.ExternalSlotIds.size());
+        // Config.Name is renamed by an auto recording window; the selected
+        // profile and route scenario are the immutable identity.
+        started = autonomyStarted
+            && mgr.Cohort().ValidationAdmission == ValidationAdmissionPhase::Active
+            && mgr.Cohort().ValidationRaidAdmissionComplete
+            && mgr.Party().Bots.size() == expectedBots
+            && mgr.Cohort().SelectedProfileName == Scenario
+            && mgr.Cohort().Config.ValidationRouteScenarioId == Scenario;
+        extra << ",\"session_id\":\"" << Escape(session.SessionId) << "\""
+              << ",\"bots\":" << mgr.Party().Bots.size()
+              << ",\"external_slots\":[";
+        bool first = true;
+        for (std::string const& slot : session.ExternalSlotIds)
+        {
+            extra << (first ? "" : ",") << '"' << Escape(slot) << '"';
+            first = false;
+        }
+        extra << ']';
+        reason = !mgr.Cohort().ValidationAttemptFailureReason.empty()
+            ? mgr.Cohort().ValidationAttemptFailureReason
+            : mgr.Cohort().LastPopulationFailureReason;
+        if (reason.empty() && mgr.Cohort().SelectedProfileName != Scenario)
+            reason = "play_profile_replaced:" + mgr.Cohort().SelectedProfileName;
     }
-    extra << ']';
-    std::string reason = !mgr.Cohort().ValidationAttemptFailureReason.empty()
-        ? mgr.Cohort().ValidationAttemptFailureReason
-        : mgr.Cohort().LastPopulationFailureReason;
-    if (reason.empty() && mgr.Cohort().SelectedProfileName != Scenario)
-        reason = "play_profile_replaced:" + mgr.Cohort().SelectedProfileName;
-    mgr._selectedCohortId = previous;
     if (!started)
     {
         // Leave nothing half-started, so the leader can simply fill again.
@@ -311,8 +315,7 @@ std::string Context::Go(BotWorldPopulationMgr& mgr, Player* invoker)
                 && !group->IsAssistant(invoker->GetGUID())))
             return Result(action, false, "only_the_raid_leader_or_assistant_can_go");
     }
-    std::string const previous = mgr._selectedCohortId;
-    mgr._selectedCohortId = CohortId;
+    BotWorldPopulationMgr::CohortScope scope = mgr.ScopeCohort(cohort);
     uint64 const current = mgr.Party().ValidationRouteGeneration;
     cohort->Play.PermittedGeneration = std::max(cohort->Play.PermittedGeneration, current + 1);
     cohort->Play.LastEvent = "go";
@@ -320,7 +323,6 @@ std::string Context::Go(BotWorldPopulationMgr& mgr, Player* invoker)
     extra << ",\"route_generation\":" << current
           << ",\"permitted_generation\":" << cohort->Play.PermittedGeneration
           << ",\"node\":\"" << Escape(mgr.Cohort().Config.ValidationRouteNodeId) << "\"";
-    mgr._selectedCohortId = previous;
     return Result(action, true, "", extra.str());
 }
 
@@ -352,8 +354,7 @@ std::string Context::Status(BotWorldPopulationMgr& mgr)
     BotWorldPopulationMgr::CohortRuntime* cohort = mgr.FindCohort(CohortId);
     if (!cohort)
         return Result("status", false, "no_play_cohort");
-    std::string const previous = mgr._selectedCohortId;
-    mgr._selectedCohortId = CohortId;
+    BotWorldPopulationMgr::CohortScope scope = mgr.ScopeCohort(cohort);
     uint32 alive = 0;
     for (auto const& state : mgr.Party().Bots)
         if (Player* bot = mgr.GetLoadedBot(state))
@@ -375,7 +376,6 @@ std::string Context::Status(BotWorldPopulationMgr& mgr)
               ? mgr.Cohort().LastPopulationFailureReason
               : mgr.Cohort().ValidationAttemptFailureReason) << "\"";
     extra << StatusFieldsJson(mgr);
-    mgr._selectedCohortId = previous;
     return Result("status", true, "", extra.str());
 }
 

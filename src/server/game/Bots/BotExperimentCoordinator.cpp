@@ -7,9 +7,29 @@
 
 namespace
 {
-uint64 ReadSegmentLastInsertId()
+// The INSERT and a separate LAST_INSERT_ID() query may run on different
+// pooled connections, so the second would report another row. Segment rows
+// of one bot are written only by the thread that owns the bot's GUID lease,
+// one at a time: the newest row of this bot above the pre-insert high-water
+// mark, carrying the inserted identity, is the row just written, whichever
+// connection wrote it. A failed insert reads back 0, never an older row.
+uint64 ReadSegmentHighWaterId(uint32 botGuid)
 {
-    if (QueryResult result = CharacterDatabase.Query("SELECT LAST_INSERT_ID()"))
+    if (QueryResult result = CharacterDatabase.PQuery(
+            "SELECT MAX(id) FROM experiment_bot_segments WHERE bot_guid = %u", botGuid))
+        return result->Fetch()[0].GetUInt64();
+
+    return 0;
+}
+
+uint64 ReadOwnedSegmentId(uint32 botGuid, uint64 highWaterId, std::string const& escapedName,
+    std::string const& parentRunSql)
+{
+    if (QueryResult result = CharacterDatabase.PQuery(
+            "SELECT id FROM experiment_bot_segments WHERE bot_guid = %u AND id > " UI64FMTD
+            " AND experiment_name = '%s' AND parent_run_id <=> %s AND status = 'running'"
+            " ORDER BY id DESC LIMIT 1",
+            botGuid, highWaterId, escapedName.c_str(), parentRunSql.c_str()))
         return result->Fetch()[0].GetUInt64();
 
     return 0;
@@ -127,13 +147,14 @@ void BotExperimentCoordinator::StartSegment(Player* bot, BotExperimentDefinition
     std::string initialResult = Escape(eventType ? eventType : "");
     std::string trigger = Escape(triggerJson && *triggerJson ? triggerJson : "{}");
 
+    uint64 const highWaterId = ReadSegmentHighWaterId(bot->GetGUID().GetCounter());
     CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_segments (parent_run_id, experiment_name, trigger_event_id, clip_id, bot_guid, brain_version, status, result, started_at, map_id, zone_id, area_id, x, y, z, trigger_json, summary_json) "
         "VALUES (%s, '%s', %s, %s, %u, '%s', 'running', '%s', NOW(), %u, %u, %u, %f, %f, %f, '%s', '{}')",
         parentRunSql.c_str(), name.c_str(), triggerEventSql.c_str(), clipSql.c_str(), bot->GetGUID().GetCounter(), brain.c_str(), initialResult.c_str(),
         bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), trigger.c_str());
 
     BotExperimentSegment segment;
-    segment.Id = ReadSegmentLastInsertId();
+    segment.Id = ReadOwnedSegmentId(bot->GetGUID().GetCounter(), highWaterId, name, parentRunSql);
     segment.ParentRunId = _parentRunId;
     segment.TriggerEventId = triggerEventId;
     segment.ClipId = clipId;

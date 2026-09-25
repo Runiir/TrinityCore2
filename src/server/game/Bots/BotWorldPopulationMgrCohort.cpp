@@ -1,5 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotExperienceLearningPolicy.h"
 
+#include "Errors.h"
 #include "Group.h"
 #include "GroupMgr.h"
 #include "ObjectAccessor.h"
@@ -47,18 +49,21 @@ BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(BuildServerEpoch()
     _cohorts.emplace(runtime->Id, std::move(runtime));
 }
 
+// Cohort state exists only inside an explicit scope. A caller without one
+// has no cohort identity, and guessing (the former process-wide selected
+// cohort) would attribute one shard's work to another; stop loudly instead.
 BotWorldPopulationMgr::CohortRuntime& BotWorldPopulationMgr::Cohort()
 {
-    if (_scopedCohort)
-        return *_scopedCohort;
-    return *_cohorts.at(_selectedCohortId);
+    if (!_scopedCohort)
+        ABORT_MSG("BotWorld cohort state accessed without an explicit cohort scope");
+    return *_scopedCohort;
 }
 
 BotWorldPopulationMgr::CohortRuntime const& BotWorldPopulationMgr::Cohort() const
 {
-    if (_scopedCohort)
-        return *_scopedCohort;
-    return *_cohorts.at(_selectedCohortId);
+    if (!_scopedCohort)
+        ABORT_MSG("BotWorld cohort state accessed without an explicit cohort scope");
+    return *_scopedCohort;
 }
 
 BotWorldPopulationMgr::PartyRuntime& BotWorldPopulationMgr::Party()
@@ -83,15 +88,6 @@ BotWorldPopulationMgr::CohortRuntime const* BotWorldPopulationMgr::FindCohort(st
     return itr == _cohorts.end() ? nullptr : itr->second.get();
 }
 
-bool BotWorldPopulationMgr::SelectCohort(std::string const& cohortId)
-{
-    if (!FindCohort(cohortId))
-        return false;
-
-    _selectedCohortId = cohortId;
-    return true;
-}
-
 uint32 BotWorldPopulationMgr::ActiveCohortCount() const
 {
     uint32 count = 0;
@@ -99,6 +95,19 @@ uint32 BotWorldPopulationMgr::ActiveCohortCount() const
         if (runtime && runtime->Active)
             ++count;
     return count;
+}
+
+uint32 BotWorldPopulationMgr::GetActiveCohortCount() const
+{
+    return ActiveCohortCount();
+}
+
+bool BotWorldPopulationMgr::HasActiveCohortOtherThan(std::string const& cohortId) const
+{
+    for (auto const& [id, runtime] : _cohorts)
+        if (runtime && runtime->Active && id != cohortId)
+            return true;
+    return false;
 }
 
 std::string BotWorldPopulationMgr::CreateCohort(std::string const& cohortId)
@@ -144,6 +153,12 @@ std::string BotWorldPopulationMgr::GetCohortRegistryJson() const
          << ",\"server_process_id\":" << CurrentProcessId()
          << ",\"max_active_cohorts\":" << MaxActiveCohorts
          << ",\"active_cohort_count\":" << ActiveCohortCount()
+         << ",\"map_worker_threads\":" << MapWorkerThreadCount()
+         << ",\"concurrent_admission_open\":"
+         << (BotWorldCohortScope::AllowsConcurrentAdmission(ActiveCohortCount(),
+                MaxActiveCohorts, MapWorkerThreadCount()) ? "true" : "false")
+         << ",\"shard_isolation\":"
+         << (BotExperienceLearningPolicy::ShardIsolationEnabled() ? "true" : "false")
          << ",\"cohort_count\":" << _cohorts.size() << ",\"cohorts\":[";
     bool first = true;
     for (auto const& [id, runtime] : _cohorts)
@@ -205,7 +220,6 @@ std::string BotWorldPopulationMgr::GetCohortIsolationContractJson()
     first.Party.RoleByGuid[1] = "tank";
     second.Party.RoleByGuid[1] = "healer";
 
-    std::string previous = _selectedCohortId;
     uint32 syntheticGuid = std::numeric_limits<uint32>::max() - 1;
     {
         std::lock_guard<std::mutex> guard(_leaseMutex);
@@ -213,15 +227,23 @@ std::string BotWorldPopulationMgr::GetCohortIsolationContractJson()
     }
     first.RosterLeases.erase(syntheticGuid);
     second.RosterLeases.erase(syntheticGuid);
-    _selectedCohortId = ProbeA;
-    bool firstClaim = ClaimBotGuid(syntheticGuid, "tank");
-    _selectedCohortId = ProbeB;
-    bool secondClaimRejected = !ClaimBotGuid(syntheticGuid, "healer");
-    bool foreignReleaseRejected = !ReleaseBotGuid(syntheticGuid);
-    _selectedCohortId = ProbeA;
-    bool ownerReleaseAccepted = ReleaseBotGuid(syntheticGuid);
-
-    _selectedCohortId = previous;
+    bool firstClaim = false;
+    bool secondClaimRejected = false;
+    bool foreignReleaseRejected = false;
+    bool ownerReleaseAccepted = false;
+    {
+        CohortScope scope = ScopeCohort(&first);
+        firstClaim = ClaimBotGuid(syntheticGuid, "tank");
+    }
+    {
+        CohortScope scope = ScopeCohort(&second);
+        secondClaimRejected = !ClaimBotGuid(syntheticGuid, "healer");
+        foreignReleaseRejected = !ReleaseBotGuid(syntheticGuid);
+    }
+    {
+        CohortScope scope = ScopeCohort(&first);
+        ownerReleaseAccepted = ReleaseBotGuid(syntheticGuid);
+    }
 
     std::map<std::string, bool> checks = {
         { "atomic_guid_lease_conflict_rejected", firstClaim && secondClaimRejected },
@@ -241,10 +263,15 @@ std::string BotWorldPopulationMgr::GetCohortIsolationContractJson()
         { "combat_log_isolated", first.Party.CombatLogEventCount == 3 && second.Party.CombatLogEventCount == 5 },
         { "telemetry_isolated", !first.TelemetryBuffer.IsEnabled() && second.TelemetryBuffer.IsEnabled() },
         { "evidence_isolated", first.Party.ValidationRouteTerminalEvidence.size() == 1 && second.Party.ValidationRouteTerminalEvidence.empty() },
-        { "two_active_cohorts_supported", MaxActiveCohorts == 2 },
+        { "two_active_cohorts_supported", MaxActiveCohorts >= 2 },
+        { "shard_active_cohorts_supported", MaxActiveCohorts >= 6 },
         { "serial_map_worker_concurrency_guard",
             BotWorldCohortScope::AllowsConcurrentAdmission(1,
                 MaxActiveCohorts, 1)
+            && BotWorldCohortScope::AllowsConcurrentAdmission(
+                MaxActiveCohorts - 1, MaxActiveCohorts, 1)
+            && !BotWorldCohortScope::AllowsConcurrentAdmission(
+                MaxActiveCohorts, MaxActiveCohorts, 1)
             && !BotWorldCohortScope::AllowsConcurrentAdmission(1,
                 MaxActiveCohorts, 2) },
     };
@@ -394,8 +421,7 @@ bool BotWorldPopulationMgr::StartAutonomyForCohort(std::string const& cohortId, 
             MaxActiveCohorts, MapWorkerThreadCount()))
         return false;
 
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohort(runtime);
     bool reuseActiveAttempt = Cohort().Active
         && Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy
         && !overrideConfig && !Cohort().RuntimeProfileDirty;
@@ -414,17 +440,15 @@ bool BotWorldPopulationMgr::StartAutonomyForCohort(std::string const& cohortId, 
     bool started = StartAutonomy(overrideConfig);
     if (!started)
         ReleaseCohortLeases();
-    _selectedCohortId = previous;
     return started;
 }
 
 std::string BotWorldPopulationMgr::StopAutonomyForCohort(std::string const& cohortId)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_stop", cohortId);
 
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
     uint64 const serverEpoch = _serverEpoch;
     uint64 const attemptId = Cohort().AttemptId;
     std::string const raidBeforeCleanup = BuildRaidRuntimeJson();
@@ -444,54 +468,40 @@ std::string BotWorldPopulationMgr::StopAutonomyForCohort(std::string const& coho
          << ",\"raid_runtime_before_cleanup\":" << raidBeforeCleanup
          << ",\"post_cleanup\":{\"active\":false,\"bots\":0,\"lease_count\":0}"
          << ",\"failure_reason\":null}";
-    _selectedCohortId = previous;
     return json.str();
 }
 
 std::string BotWorldPopulationMgr::SelectRuntimeProfileForCohort(std::string const& cohortId, std::string const& name)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_profile", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = SelectRuntimeProfile(name);
-    _selectedCohortId = previous;
-    return result;
+    return SelectRuntimeProfile(name);
 }
 
 std::string BotWorldPopulationMgr::PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name,
     std::string const& poolTag, std::vector<std::string> const& classSpecs)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_prepare", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = PrepareValidationProfile(name, poolTag, classSpecs);
-    _selectedCohortId = previous;
-    return result;
+    return PrepareValidationProfile(name, poolTag, classSpecs);
 }
 
 std::string BotWorldPopulationMgr::GetStatusJsonForCohort(std::string const& cohortId) const
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_status", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = GetStatusJson();
-    _selectedCohortId = previous;
-    return result;
+    return GetStatusJson();
 }
 
 std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::string const& cohortId)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_readycheck", cohortId);
 
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
     RaidRuntime const& raid = Cohort().Raid;
     auto fail = [this, &cohortId](char const* reason)
     {
@@ -505,53 +515,21 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
     };
 
     if (!Cohort().Active || !raid.Active)
-    {
-        std::string result = fail("raid_runtime_inactive");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("raid_runtime_inactive");
     if (raid.ServerEpoch != _serverEpoch || raid.AttemptId == 0 || raid.AttemptId != Cohort().AttemptId)
-    {
-        std::string result = fail("raid_attempt_identity_mismatch");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("raid_attempt_identity_mismatch");
     if (!raid.RosterComplete || raid.ExpectedSize == 0 || raid.ActiveSize != raid.ExpectedSize)
-    {
-        std::string result = fail("exact_active_raid_roster_required");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("exact_active_raid_roster_required");
     if (raid.AliveSize != raid.ActiveSize)
-    {
-        std::string result = fail("all_raid_members_must_be_alive");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("all_raid_members_must_be_alive");
     if (!raid.UniqueLeases)
-    {
-        std::string result = fail("all_raid_leases_must_be_owned");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("all_raid_leases_must_be_owned");
     if (!raid.RosterCompositionValid)
-    {
-        std::string result = fail("exact_raid_composition_required");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("exact_raid_composition_required");
     if (!raid.DifficultyMatches)
-    {
-        std::string result = fail("live_raid_difficulty_mismatch");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("live_raid_difficulty_mismatch");
     if (raid.EncounterInProgress)
-    {
-        std::string result = fail("encounter_in_progress");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("encounter_in_progress");
     if (Cohort().Config.ValidationRouteBossRecovery == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
         && raid.NativeRecoveryHoldActive
         && raid.NativeRecoveryRouteGeneration == Party().ValidationRouteGeneration
@@ -563,29 +541,17 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
         bool const nativeResetObserved = raid.BossResetGeneration > raid.BossResetGenerationAtWipe
             || nativeHostileResetObserved;
         if (raid.NativeHostileActivityActive || !nativeResetObserved)
-        {
-            std::string result = fail(raid.NativeHostileActivityActive
+            return fail(raid.NativeHostileActivityActive
                 ? "native_recovery_hostile_activity"
                 : "native_recovery_reset_not_observed");
-            _selectedCohortId = previous;
-            return result;
-        }
     }
 
     Group* group = sGroupMgr->GetGroupByGUID(raid.GroupGuid.GetCounter());
     Player* leader = ObjectAccessor::FindPlayer(raid.LeaderGuid);
     if (!group || !leader || leader->GetGroup() != group || !group->IsLeader(leader->GetGUID()))
-    {
-        std::string result = fail("actual_raid_leader_group_unavailable");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("actual_raid_leader_group_unavailable");
     if (!group->isRaidGroup() || group->GetMembersCount() != raid.ExpectedSize)
-    {
-        std::string result = fail("native_raid_group_shape_mismatch");
-        _selectedCohortId = previous;
-        return result;
-    }
+        return fail("native_raid_group_shape_mismatch");
 
     for (auto const& [guid, slot] : raid.RosterByGuid)
     {
@@ -593,11 +559,7 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
         if (!member || !member->IsInWorld() || !member->IsAlive() || member->GetGroup() != group
             || member->GetMapId() != raid.MapId || member->GetInstanceId() != raid.InstanceId
             || !slot.Active || !slot.LeaseOwned || !LeaseOwnedByCurrentCohort(guid, slot.LeaseRoleSlot))
-        {
-            std::string result = fail("live_exact_raid_roster_revalidation_failed");
-            _selectedCohortId = previous;
-            return result;
-        }
+            return fail("live_exact_raid_roster_revalidation_failed");
     }
 
     RaidRuntime& mutableRaid = Cohort().Raid;
@@ -637,92 +599,63 @@ std::string BotWorldPopulationMgr::RequestNativeRaidReadyCheckForCohort(std::str
          << ",\"ready_check_complete\":" << (mutableRaid.NativeReadyCheckActionObserved ? "true" : "false")
          << ",\"raid_runtime\":" << BuildRaidRuntimeJson()
          << "}";
-    _selectedCohortId = previous;
     return json.str();
 }
 
 std::string BotWorldPopulationMgr::GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_diagnose", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = GetBotDiagnosisJson(selector);
-    _selectedCohortId = previous;
-    return result;
+    return GetBotDiagnosisJson(selector);
 }
 
 std::string BotWorldPopulationMgr::GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit, bool delta) const
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_trace", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = GetBotTraceJson(selector, limit, delta);
-    _selectedCohortId = previous;
-    return result;
+    return GetBotTraceJson(selector, limit, delta);
 }
 
 std::string BotWorldPopulationMgr::GetCombatLogJsonForCohort(std::string const& cohortId) const
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_combatlog", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = GetCombatLogJson();
-    _selectedCohortId = previous;
-    return result;
+    return GetCombatLogJson();
 }
 
 std::string BotWorldPopulationMgr::GetCombatLogDeltaJsonForCohort(
     std::string const& cohortId, uint64 cursor, uint32 limit) const
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_combatlog_delta", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = GetCombatLogDeltaJson(cursor, limit);
-    _selectedCohortId = previous;
-    return result;
+    return GetCombatLogDeltaJson(cursor, limit);
 }
 
 std::string BotWorldPopulationMgr::StartCombatCalibrationForCohort(std::string const& cohortId,
     std::string const& mode, std::string const& targetSpec, uint32 seed)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_calibrate_start", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = StartCombatCalibration(mode, targetSpec, seed);
-    _selectedCohortId = previous;
-    return result;
+    return StartCombatCalibration(mode, targetSpec, seed);
 }
 
 std::string BotWorldPopulationMgr::StopCombatCalibrationForCohort(std::string const& cohortId)
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_calibrate_stop", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = StopCombatCalibration();
-    _selectedCohortId = previous;
-    return result;
+    return StopCombatCalibration();
 }
 
 std::string BotWorldPopulationMgr::GetCombatCalibrationJsonForCohort(std::string const& cohortId, bool includeBotDetails) const
 {
-    if (!FindCohort(cohortId))
+    CohortScope scope = ScopeCohortById(cohortId);
+    if (!scope)
         return UnknownCohortJson("botauto_calibrate_status", cohortId);
-
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
-    std::string result = GetCombatCalibrationJson(includeBotDetails);
-    _selectedCohortId = previous;
-    return result;
+    return GetCombatCalibrationJson(includeBotDetails);
 }

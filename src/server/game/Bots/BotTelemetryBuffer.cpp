@@ -16,9 +16,26 @@ uint64 BotTelemetryNowMs()
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
 
-uint64 ReadTelemetryLastInsertId()
+// The INSERT and a separate LAST_INSERT_ID() query may run on different
+// pooled connections. Clip rows of one bot are written only by the thread that
+// owns the bot's GUID lease, one at a time: the newest open clip of this bot
+// above the pre-insert high-water mark, with the inserted run, is the row just
+// written. A failed insert reads back 0, never an older clip.
+uint64 ReadClipHighWaterId(uint32 botGuid)
 {
-    if (QueryResult result = CharacterDatabase.Query("SELECT LAST_INSERT_ID()"))
+    if (QueryResult result = CharacterDatabase.PQuery(
+            "SELECT MAX(id) FROM experiment_bot_clips WHERE bot_guid = %u", botGuid))
+        return result->Fetch()[0].GetUInt64();
+
+    return 0;
+}
+
+uint64 ReadOwnedClipId(uint32 botGuid, uint64 highWaterId, uint64 runId)
+{
+    if (QueryResult result = CharacterDatabase.PQuery(
+            "SELECT id FROM experiment_bot_clips WHERE bot_guid = %u AND id > " UI64FMTD
+            " AND run_id = " UI64FMTD " AND status = 'open' ORDER BY id DESC LIMIT 1",
+            botGuid, highWaterId, runId))
         return result->Fetch()[0].GetUInt64();
 
     return 0;
@@ -259,12 +276,13 @@ uint64 BotTelemetryBuffer::InsertClipRow(uint64 experimentId, uint64 runId, std:
     std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     canonical = Escape(canonical);
 
+    uint64 const highWaterId = ReadClipHighWaterId(clip.bot_guid.GetCounter());
     CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clips (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, trigger_type, importance_score, reason, brain_version, map_id, zone_id, area_id, x, y, z, started_at, ended_at, status, summary_json, canonical_event_json) "
         "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %f, '%s', '%s', %u, %u, %u, %f, %f, %f, FROM_UNIXTIME(" UI64FMTD " / 1000.0), NULL, 'open', '%s', '%s')",
         BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         experimentId, runId, clip.bot_guid.GetCounter(), trigger.c_str(), clip.importance_score, reason.c_str(), brain.c_str(),
         mapId, zoneId, areaId, x, y, z, clip.start_time_ms, summary.c_str(), canonical.c_str());
-    return ReadTelemetryLastInsertId();
+    return ReadOwnedClipId(clip.bot_guid.GetCounter(), highWaterId, runId);
 }
 
 void BotTelemetryBuffer::InsertFrameRows(uint64 experimentId, uint64 runId, std::string const& brainVersion, uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex)

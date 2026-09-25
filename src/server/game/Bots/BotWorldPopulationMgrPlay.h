@@ -46,7 +46,7 @@ struct Context
     static std::string Pull(BotWorldPopulationMgr& mgr, Player* invoker, bool cancel,
         uint32 seconds, std::string const& source);
 
-    // Lifecycle hooks, called only while a Play cohort is selected.
+    // Lifecycle hooks, called only while the play cohort is the scoped cohort.
     static bool IsExternalSlot(BotWorldPopulationMgr const& mgr, std::string const& slotId);
     static uint32 ExternalSlotCount(BotWorldPopulationMgr const& mgr);
     static uint32 ExpectedBotCount(BotWorldPopulationMgr const& mgr, uint32 declaredRosterSize);

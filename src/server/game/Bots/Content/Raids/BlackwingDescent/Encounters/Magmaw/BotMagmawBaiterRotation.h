@@ -446,6 +446,22 @@ public:
         Rotations().clear();
     }
 
+    // A stopped cohort's ledger is dropped so no later shard, attempt or
+    // Find() by scope key can observe it. Other cohorts are untouched.
+    static void ClearCohort(std::string_view cohortId)
+    {
+        std::lock_guard<std::mutex> lock(Mutex());
+        auto const itr = Rotations().find(std::string(cohortId));
+        if (itr != Rotations().end())
+            Rotations().erase(itr);
+    }
+
+    static std::size_t CohortCount()
+    {
+        std::lock_guard<std::mutex> lock(Mutex());
+        return Rotations().size();
+    }
+
 private:
     static MagmawBaiterRotation& Bind(Blackboard const& board)
     {

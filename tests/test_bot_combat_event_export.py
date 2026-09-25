@@ -25,7 +25,10 @@ def test_native_event_sequence_epoch_and_export_contract_is_bounded() -> None:
     combat_log = COMBAT_LOG.read_text(encoding="utf-8")
     status = STATUS.read_text(encoding="utf-8")
     cohort = COHORT.read_text(encoding="utf-8")
-    header = MGR_HEADER.read_text(encoding="utf-8")
+    # Cohort-qualified entry points live in the split cohort API header.
+    header = MGR_HEADER.read_text(encoding="utf-8") + (
+        BOT_DIR / "BotWorldPopulationMgrCohortScopeApi.h"
+    ).read_text(encoding="utf-8")
     commands = COMMANDS.read_text(encoding="utf-8")
     old_commands = COMMANDS_OLD.read_text(encoding="utf-8")
 

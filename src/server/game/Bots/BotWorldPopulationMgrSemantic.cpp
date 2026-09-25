@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotExperienceLearningPolicy.h"
 
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotWorldPopulationMgrConsumables.h"
@@ -528,6 +529,10 @@ void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* 
 {
     if (!Cohort().RunId || !Cohort().Config.UpdateSemanticOutcomeStats || !bot || !entityType || !entityKey)
         return;
+    // bot_semantic_outcome_stats is keyed by entity only; parallel shards
+    // would read each other's outcomes, so shard runs never write it.
+    if (BotExperienceLearningPolicy::ShardIsolationEnabled())
+        return;
 
     auto clampMetric = [](float value, float low, float high)
     {
@@ -577,7 +582,8 @@ void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* 
 
 void BotWorldPopulationMgr::UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* /*semanticJson*/)
 {
-    if (!Cohort().Config.UpdateSemanticOutcomeStats || !bot)
+    if (!Cohort().Config.UpdateSemanticOutcomeStats || !bot
+        || BotExperienceLearningPolicy::ShardIsolationEnabled())
         return;
 
     bool failed = EventLooksFailure(eventType, result);

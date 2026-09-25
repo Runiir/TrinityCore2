@@ -119,6 +119,17 @@ int main()
     assert(AllowsConcurrentAdmission(1, 2, 1));
     assert(!AllowsConcurrentAdmission(1, 2, 2));
     assert(!AllowsConcurrentAdmission(2, 2, 1));
+    // Six boss shards (full-raid round 1): every admission up to the sixth
+    // is open while map updates are serialized; none beyond it, and no second
+    // cohort ever with parallel map workers.
+    for (std::uint32_t active = 0; active < 6; ++active)
+    {
+        assert(AllowsConcurrentAdmission(active, 6, 1));
+        assert(AllowsConcurrentAdmission(active, 6, 0));
+        assert(active == 0 || !AllowsConcurrentAdmission(active, 6, 2));
+    }
+    assert(!AllowsConcurrentAdmission(6, 6, 1));
+    assert(!AllowsConcurrentAdmission(7, 6, 0));
     assert(MatchesPendingOwnership("a", 7, "a", 7));
     assert(!MatchesPendingOwnership("a", 7, "b", 7));
     assert(!MatchesPendingOwnership("a", 7, "a", 8));
@@ -174,7 +185,8 @@ def test_all_native_callbacks_bind_scope_before_cohort_access() -> None:
         "NotifyCombatHeal": "BotWorldPopulationMgrCombatNotifications.cpp",
         "PrepareCombatPeriodicOutcome": "BotWorldPopulationMgrCombatNotifications.cpp",
         "NotifyCombatDamage": "BotWorldPopulationMgrCombatNotifications.cpp",
-        "NotifyBotSpellFinished": "BotWorldPopulationMgrSemantic.cpp",
+        # NotifyBotSpellFinished delegates to the scoped internal callback.
+        "NotifyBotSpellFinishedInternal": "BotWorldPopulationMgrSemantic.cpp",
         "NotifyBotItemSpellFinished": "BotWorldPopulationMgrSemantic.cpp",
         "NotifyDragonwrathCopyProcAttempt": "BotWorldPopulationMgrDragonwrath.cpp",
     }
@@ -204,11 +216,14 @@ def test_scheduler_admission_shutdown_and_magmaw_wiring() -> None:
         encoding="utf-8"
     )
     cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
-    assert "MaxActiveCohorts = 2" in (
-        BOT_DIR / "BotWorldPopulationMgr.h"
-    ).read_text(encoding="utf-8")
+    api = (BOT_DIR / "BotWorldPopulationMgrCohortScopeApi.h").read_text(encoding="utf-8")
+    assert "static constexpr uint32 MaxActiveCohorts = 6;" in api
+    assert "MaxActiveCohorts" not in (BOT_DIR / "BotWorldPopulationMgr.h").read_text(encoding="utf-8")
     assert "AllowsConcurrentAdmission(activeCohorts" in cohort
-    assert "_selectedCohortId = previous;\n    return started;" in cohort
+    start = cohort.split("bool BotWorldPopulationMgr::StartAutonomyForCohort", 1)[1].split(
+        "std::string BotWorldPopulationMgr::StopAutonomyForCohort", 1)[0]
+    assert start.index("AllowsConcurrentAdmission(") < start.index("CohortScope scope = ScopeCohort(runtime);")
+    assert start.index("CohortScope scope = ScopeCohort(runtime);") < start.index("StartAutonomy(overrideConfig)")
     assert "FreezeActive(registeredCohorts" in update
     assert "ScopeCohort(runtime)" in update
     assert "void BotWorldPopulationMgr::UpdateCohort" in update
@@ -228,5 +243,6 @@ def test_scheduler_admission_shutdown_and_magmaw_wiring() -> None:
     assert "std::string const cohortId = Cohort().Id;" in magmaw
     header = (BOT_DIR / "BotWorldPopulationMgr.h").read_text(encoding="utf-8")
     assert "_runningCohortId" not in header + cohort + magmaw
+    assert "_selectedCohortId" not in header + cohort + update + lifecycle
     assert "BotWorldPopulationMgrCohortScope.cpp" in cmake
     assert "BotWorldPopulationMgrCohortScopeContract.cpp" in cmake

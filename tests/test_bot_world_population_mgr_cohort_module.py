@@ -14,7 +14,6 @@ COHORT_METHODS = (
     "BotWorldPopulationMgr::Cohort",
     "BotWorldPopulationMgr::Party",
     "BotWorldPopulationMgr::FindCohort",
-    "BotWorldPopulationMgr::SelectCohort",
     "BotWorldPopulationMgr::ClaimBotGuid",
     "BotWorldPopulationMgr::ReleaseBotGuid",
     "BotWorldPopulationMgr::StartAutonomyForCohort",
@@ -58,3 +57,15 @@ def test_cohort_module_preserves_native_ready_check_guards() -> None:
         "live_exact_raid_roster_revalidation_failed",
     ):
         assert f'fail("{guard}")' in module
+
+
+def test_cohort_module_has_no_process_wide_selection() -> None:
+    module = MODULE.read_text(encoding="utf-8")
+    # The former SelectCohort/_selectedCohortId fallback is gone: Cohort()
+    # needs an explicit scope and aborts without one.
+    assert "SelectCohort" not in module
+    assert "_selectedCohortId" not in module
+    cohort = module.split("BotWorldPopulationMgr::CohortRuntime& BotWorldPopulationMgr::Cohort()", 1)[1]
+    cohort = cohort.split("BotWorldPopulationMgr::PartyRuntime& BotWorldPopulationMgr::Party()", 1)[0]
+    assert cohort.count("ABORT_MSG(") == 2
+    assert "_cohorts.at(" not in cohort

@@ -88,7 +88,6 @@ struct AreaTriggerStruct;
 class BotWorldPopulationMgr
 {
 public:
-    static constexpr uint32 MaxActiveCohorts = 2;
     // Normal Magmaw validation windows retain roughly 8k landed events across
     // the route. Keep the bounded forensic ring large enough to preserve the
     // complete boss counterfactual without making the event stream unbounded.
@@ -96,66 +95,11 @@ public:
 
     static BotWorldPopulationMgr* instance();
 
-    std::string CreateCohort(std::string const& cohortId);
-    bool HasCohort(std::string const& cohortId) const;
-    size_t GetCohortCount() const;
-    std::string ResolveGlobalCohortId() const;
-    std::string GetCohortRegistryJson() const;
-    std::string GetCohortIsolationContractJson();
-    bool StartAutonomyForCohort(std::string const& cohortId, BotWorldExperimentConfig const* overrideConfig = nullptr);
-    std::string StopAutonomyForCohort(std::string const& cohortId);
-    std::string SelectRuntimeProfileForCohort(std::string const& cohortId, std::string const& name);
-    std::string PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name,
-        std::string const& poolTag = {}, std::vector<std::string> const& classSpecs = {});
-    std::string GetStatusJsonForCohort(std::string const& cohortId) const;
-    std::string RequestNativeRaidReadyCheckForCohort(std::string const& cohortId);
-    std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
-    std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit, bool delta = false) const;
-    std::string ApplyTraceTransportTestPressureForCohort(std::string const& cohortId, uint32 requestedCount);
-    std::string ArmChainwielderOwnerCheckpointForCohort(
-        std::string const& cohortId, uint32 actorGuid,
-        std::string const& sealSha256,
-        std::string const& sourceCommit);
-    std::string StartAutonomyHeldForCohort(
-        std::string const& cohortId, uint32 actorGuid,
-        std::string const& fixtureId,
-        std::string const& sealSha256,
-        std::string const& sourceCommit);
-    std::string ReleaseControllerRouteHoldForCohort(
-        std::string const& cohortId, uint32 actorGuid,
-        std::string const& sealSha256,
-        std::string const& sourceCommit);
-    std::string GetChainwielderOwnerCheckpointJsonForCohort(
-        std::string const& cohortId) const;
-    std::string ArmNativePathCheckpointForCohort(
-        std::string const& cohortId, uint32 actorGuid,
-        std::string const& caseId, std::string const& sealSha256,
-        std::string const& sourceCommit);
-    std::string GetNativePathCheckpointJsonForCohort(
-        std::string const& cohortId) const;
-    std::string ArmProfileCombatRangeCheckpointForCohort(
-        std::string const& cohortId, uint32 actorGuid, uint64 targetGuid,
-        std::string const& caseId, std::string const& sealSha256,
-        std::string const& sourceCommit);
-    std::string GetProfileCombatRangeCheckpointJsonForCohort(
-        std::string const& cohortId) const;
-    std::string ArmMagmawTransferLaneCheckpointForCohort(
-        std::string const& cohortId, uint32 actorGuid,
-        std::string const& caseId, std::string const& sealSha256,
-        std::string const& sourceCommit);
-    std::string GetMagmawTransferLaneCheckpointJsonForCohort(
-        std::string const& cohortId) const;
-    std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
-    std::string GetCombatLogDeltaJsonForCohort(std::string const& cohortId,
-        uint64 cursor, uint32 limit) const;
-    std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
-    std::string StopCombatCalibrationForCohort(std::string const& cohortId);
-    std::string GetCombatCalibrationJsonForCohort(std::string const& cohortId, bool includeBotDetails = true) const;
+#include "Bots/BotWorldPopulationMgrCohortScopeApi.h"
 
     void Update(uint32 diff);
     bool Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig = nullptr);
     void Stop();
-    bool StartAutonomy(BotWorldExperimentConfig const* overrideConfig = nullptr);
     void StopAutonomy();
     void Shutdown();
     bool SpawnAutonomyBots(uint32 count);
@@ -940,49 +884,24 @@ private:
         std::function<void(std::map<uint32, CalibrationMetrics> const&, bool)> const& writeBots) const;
 
 #include "Bots/BotWorldPopulationMgrRuntimeContracts.h"
-    class CohortScope final
-    {
-    public:
-        explicit CohortScope(CohortRuntime* runtime);
-        CohortRuntime const* Get() const;
-        explicit operator bool() const;
+#include "Bots/BotWorldPopulationMgrCohortScopeMembers.h"
+};
 
-    private:
-        BotWorldCohortScope::ScopedOverride<CohortRuntime> _scope;
-    };
+class BotWorldPopulationMgr::CohortScope final
+{
+public:
+    CohortScope(CohortScope&&) noexcept = default;
+    CohortScope(CohortScope const&) = delete;
+    CohortScope& operator=(CohortScope const&) = delete;
+    CohortScope& operator=(CohortScope&&) = delete;
+    explicit operator bool() const;
 
-    BotWorldPopulationMgr();
-    CohortRuntime& Cohort();
-    CohortRuntime const& Cohort() const;
-    PartyRuntime& Party();
-    PartyRuntime const& Party() const;
-    CohortRuntime* FindCohort(std::string const& cohortId);
-    CohortRuntime const* FindCohort(std::string const& cohortId) const;
-    bool SelectCohort(std::string const& cohortId);
-    uint32 ActiveCohortCount() const;
-    CohortScope ScopeCohort(CohortRuntime* runtime);
-    CohortScope ScopeCallbackCohort(Unit* first, Unit* second = nullptr);
-    CohortRuntime* ResolveCallbackCohort(Unit* first, Unit* second = nullptr);
-    BotWorldCohortScope::RuntimeIdentity RuntimeIdentityFor(
-        CohortRuntime const& runtime) const;
-    uint32 MapWorkerThreadCount() const;
-    void UpdateCohort(uint32 diff);
-    void ShutdownCohort();
-    bool ClaimBotGuid(uint32 guid, std::string const& roleSlot);
-    bool ReleaseBotGuid(uint32 guid);
-    void ReleaseCohortLeases();
-    bool LeaseOwnedByCurrentCohort(uint32 guid) const;
-    bool LeaseOwnedByCurrentCohort(uint32 guid, std::string const& roleSlot) const;
-    bool EligibleForDiagnosticCleanup(uint32 guid) const;
-    std::string UnknownCohortJson(char const* action, std::string const& cohortId) const;
+private:
+    friend class BotWorldPopulationMgr;
+    explicit CohortScope(CohortRuntime* runtime);
+    CohortRuntime const* Get() const;
 
-    uint64 _serverEpoch = 0;
-    std::map<std::string, std::unique_ptr<CohortRuntime>> _cohorts;
-    mutable std::string _selectedCohortId = "default";
-    static thread_local CohortRuntime* _scopedCohort;
-    mutable std::mutex _leaseMutex;
-    std::map<uint32, BotGuidLease> _guidLeases;
-
+    BotWorldCohortScope::ScopedOverride<CohortRuntime> _scope;
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()

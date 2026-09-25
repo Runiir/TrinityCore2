@@ -960,6 +960,10 @@ def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[s
 
 
 def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) -> list[dict[str, Any]]:
+    # One route-kind contract for the harness and the route catalog; imported
+    # here because canonical_route_catalog imports this module at load time.
+    from tools.raid_program.canonical_route_catalog import ALLOWED_ROUTE_KINDS
+
     route_path = scenario_dir / "validation_routes.jsonl"
     if not scenario_id or not route_path.exists():
         return []
@@ -968,7 +972,7 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
         if not line.strip():
             continue
         row = json.loads(line)
-        if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in {"trash", "boss", "travel", "regroup", "descent"} and bool(row.get("coordinates_valid", True)):
+        if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in ALLOWED_ROUTE_KINDS and bool(row.get("coordinates_valid", True)):
             rows.append(row)
     rows.sort(key=lambda row: int(row.get("step") or 0))
     for generation, row in enumerate(rows, 1):
@@ -7874,7 +7878,7 @@ def attempt_evidence_envelope(
     exact_party_id = canonical_sha256(party_spec_target) if party_spec_target else scenario_id
     scope_defaults = {
         "batch_id": str(args.output_dir.parent.resolve()),
-        "cohort_id": str(args.cohort_id) if args.transport == "session" else (",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector)),
+        "cohort_id": str(args.cohort_id) if args.transport in {"session", "shard"} else (",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector)),
         "composition_id": exact_party_id,
         "party_id": exact_party_id,
         "instance_id": scenario_id,
@@ -9194,6 +9198,94 @@ def _main() -> int:
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
+    stored_report, exit_code = finalize_attempt_report(
+        args,
+        AttemptFinalization(
+            output=output,
+            returncode=returncode,
+            timed_out=timed_out,
+            command=command,
+            watchdog_report=watchdog_report,
+            scenario_reports=scenario_reports,
+            validation_context=validation_context,
+            validation_route=validation_route,
+            validation_route_manifest=validation_route_manifest,
+            validation_route_manifest_path=validation_route_manifest_path,
+            config_autostart=config_autostart,
+            effective_config=effective_config,
+            pool_tag_filter=pool_tag_filter,
+            exact_party_specs=exact_party_specs,
+            send_start_command=send_start_command,
+            calibration_reference_preflight=calibration_reference_preflight,
+            validation_scenario_stage_preflight=validation_scenario_stage_preflight,
+            runtime_asset_closure=runtime_asset_closure,
+            preparation=preparation,
+            session_lifecycle=session_lifecycle,
+        ),
+    )
+    del stored_report
+    return exit_code
+
+
+@dataclass
+class AttemptFinalization:
+    """What one closed attempt produced, before its run directory is written.
+
+    ``_main`` and the shard coordinator (tools.raid_program.shard_coordinator)
+    finalize through the same code, so a shard's run directory is byte-for-byte
+    the same kind of evidence a single-cohort run writes.
+    """
+
+    output: str
+    returncode: int
+    timed_out: bool
+    command: list[str]
+    watchdog_report: dict[str, Any] | None
+    scenario_reports: dict[str, dict[str, Any]]
+    validation_context: dict[str, Any]
+    validation_route: dict[str, Any]
+    validation_route_manifest: dict[str, Any]
+    validation_route_manifest_path: Path | None
+    config_autostart: bool
+    effective_config: Path
+    pool_tag_filter: str
+    exact_party_specs: list[str]
+    send_start_command: bool
+    calibration_reference_preflight: dict[str, Any]
+    validation_scenario_stage_preflight: dict[str, Any]
+    runtime_asset_closure: dict[str, Any]
+    preparation: dict[str, Any]
+    session_lifecycle: dict[str, Any]
+
+
+def finalize_attempt_report(
+    args: argparse.Namespace,
+    attempt: AttemptFinalization,
+    *,
+    echo: bool = True,
+) -> tuple[dict[str, Any], int]:
+    """Write worldserver_output.log, combat artifacts and report.json; return (report, exit code)."""
+    output = attempt.output
+    returncode = attempt.returncode
+    timed_out = attempt.timed_out
+    command = attempt.command
+    watchdog_report = attempt.watchdog_report
+    scenario_reports = attempt.scenario_reports
+    validation_context = attempt.validation_context
+    validation_route = attempt.validation_route
+    validation_route_manifest = attempt.validation_route_manifest
+    validation_route_manifest_path = attempt.validation_route_manifest_path
+    config_autostart = attempt.config_autostart
+    effective_config = attempt.effective_config
+    pool_tag_filter = attempt.pool_tag_filter
+    exact_party_specs = attempt.exact_party_specs
+    send_start_command = attempt.send_start_command
+    calibration_reference_preflight = attempt.calibration_reference_preflight
+    validation_scenario_stage_preflight = attempt.validation_scenario_stage_preflight
+    runtime_asset_closure = attempt.runtime_asset_closure
+    preparation = attempt.preparation
+    session_lifecycle = attempt.session_lifecycle
+
     # Keep an incomplete combat-log transfer intact so a missing or malformed
     # sequence remains diagnosable. A successfully decoded export has its own
     # compact artifacts and may discard the transport-only base64 frames.
@@ -9393,10 +9485,11 @@ def _main() -> int:
         ):
             (args.output_dir / name).unlink(missing_ok=True)
     write_json(args.output_dir / "report.json", stored_report)
-    print(json.dumps(stored_report, indent=2, sort_keys=True))
+    if echo:
+        print(json.dumps(stored_report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)
     full_success = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
-    return 0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1
+    return stored_report, (0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1)
 
 
 def main() -> int:

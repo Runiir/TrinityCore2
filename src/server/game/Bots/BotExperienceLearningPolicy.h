@@ -46,6 +46,15 @@ public:
     static std::string ToJson(BotLearnedScore const& score);
     static uint32 StableKey(std::string const& value);
 
+    // BotWorld.ShardIsolation (default off): parallel boss shards share one
+    // worldserver and one character database. While on, learned scores are
+    // disabled, the bot_guid = 0 global-memory fallback is never read, and
+    // unkeyed semantic outcome statistics are not written, so no shard's
+    // decisions depend on another shard's run.
+    static bool ShardIsolationEnabled();
+    static bool LearningEnabled(BotExperienceLearningConfig const& config);
+    static bool GlobalMemoryFallbackAllowed(BotExperienceLearningConfig const& config);
+
 private:
     static BotLearnedScore Disabled();
 };

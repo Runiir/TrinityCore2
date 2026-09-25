@@ -3,6 +3,7 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBaiterRotation.h"
 
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -156,6 +157,7 @@ void BotWorldPopulationMgr::Stop()
     ReleaseCohortLeases();
     Party() = PartyRuntime();
     Cohort().Active = false;
+    ReleaseCohortEncounterState();
 }
 
 bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overrideConfig)
@@ -262,6 +264,7 @@ void BotWorldPopulationMgr::StopAutonomy()
     Cohort().Active = false;
     Cohort().RunId = 0;
     Cohort().ExperimentId = 0;
+    ReleaseCohortEncounterState();
 }
 
 void BotWorldPopulationMgr::Shutdown()
@@ -320,6 +323,15 @@ void BotWorldPopulationMgr::ShutdownCohort()
     Cohort().ExperimentId = 0;
     Cohort().Metrics.Active = false;
     Cohort().Metrics.ActiveBots = 0;
+    ReleaseCohortEncounterState();
+}
+
+void BotWorldPopulationMgr::ReleaseCohortEncounterState()
+{
+    // Encounter ledgers outside CohortRuntime are keyed by cohort ID and
+    // would otherwise outlive the attempt (and every stopped shard). Each new
+    // attempt rebinds them from its own snapshot.
+    BotEncounter::MagmawBaiterRotationRegistry::ClearCohort(Cohort().Id);
 }
 
 bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)

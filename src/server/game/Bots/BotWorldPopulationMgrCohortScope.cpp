@@ -80,6 +80,13 @@ BotWorldPopulationMgr::CohortScope BotWorldPopulationMgr::ScopeCohort(
     return CohortScope(runtime);
 }
 
+BotWorldPopulationMgr::CohortScope BotWorldPopulationMgr::ScopeCohortById(
+    std::string const& cohortId) const
+{
+    auto itr = _cohorts.find(cohortId);
+    return CohortScope(itr == _cohorts.end() ? nullptr : itr->second.get());
+}
+
 BotWorldCohortScope::RuntimeIdentity
 BotWorldPopulationMgr::RuntimeIdentityFor(CohortRuntime const& runtime) const
 {

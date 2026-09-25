@@ -24,9 +24,13 @@ def test_lifecycle_module_is_bounded_and_registered():
     assert len(text.splitlines()) <= 1000
     assert "BotWorldPopulationMgrLifecycle.cpp" in CMAKE.read_text()
     assert '#include "Bots/BotWorldPopulationMgr.h"' in text
+    # Cohort declarations live in the split cohort headers the class includes.
+    header = HEADER.read_text() + "".join(
+        (HEADER.parent / name).read_text()
+        for name in ("BotWorldPopulationMgrCohortScopeApi.h", "BotWorldPopulationMgrCohortScopeMembers.h"))
     for method in MOVED_METHODS:
         assert f"BotWorldPopulationMgr::{method}" in text
-        assert method in HEADER.read_text()
+        assert method in header
 
 
 def test_lifecycle_methods_are_not_left_in_monolith():
