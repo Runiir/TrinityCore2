@@ -319,6 +319,15 @@ Deliver:
     - coordinator: the drain timeout doubling, the dirty-console run status, and a vacuous
       test assertion;
     - A: the header wording about the map unload.
+  - Final re-review of the C and D second fixes (approved) left three minor notes:
+    - a provisioning plan built before `15104b10dd` passes the source-drift check silently,
+      so refuse plans without the new source records;
+    - the auto-learned spell baseline is a superset of what the core teaches (skill
+      ownership, rank rules). No current spec is affected; add an overlap test;
+    - `transport_member_floor_unverified` holds until the node timeout; fall through to a
+      re-snapping move instead.
+  - C's and D's second fixes (`15104b10dd`, `3ca8259e51`) are not in the round-1 binary
+    (built at `72628abfb6`). They go into the next build.
   - Round rule learned: no agent edits while a build is in flight, because any worktree or
     HEAD change aborts it on provenance.
 
