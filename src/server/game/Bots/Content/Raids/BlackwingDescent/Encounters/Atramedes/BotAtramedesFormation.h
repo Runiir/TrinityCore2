@@ -5,8 +5,8 @@
 #include <optional>
 
 // Standing positions: the gong owner's shield, the tank anchor drag, the
-// ranged/healer arc on the ground; in the air the relay stations of the gong
-// owner and backup and the spread ring for everyone else.
+// ranged/healer arc on the ground; in the air the relay stations (in reach of
+// a shield and in range of the hovering boss) and the spread ring.
 namespace BotEncounter::Atramedes
 {
 inline constexpr float RangedArcRadius = 32.0f;
@@ -109,37 +109,29 @@ inline std::optional<MoveProposal> TankAnchorDrag(Facts const& facts,
     return Positioning(target, "tank_anchor_drag", 300.0f);
 }
 
-// Air: the gong owner and backup wait at relay shields on opposite rows
-// (north, south), so a strike far from the flame is always within reach
-// while everyone else stands on the spread ring 17-25 yd from the centre.
-inline std::optional<MoveProposal> AirRelayStation(Facts const& facts,
-    DutyPlan const& duties, ActorSnapshot const& self)
-{
-    std::optional<ShieldFact> shield;
-    if (self.Guid == duties.GongOwner)
-        shield = AirRelayShield(facts, 0);
-    else if (self.Guid == duties.GongBackup)
-        shield = AirRelayShield(facts, 1);
-    if (!shield)
-        return std::nullopt;
-    Vector3 const station = AirStationPoint(*shield);
-    if (Geometry::Distance2d(station, self.Position) <= HoldSlotTolerance)
-        return std::nullopt;
-    return Positioning(station, "air_relay_station", 300.0f);
-}
-
-inline std::optional<MoveProposal> FormationMove(Facts const& facts,
-    DutyPlan const& duties, ActorSnapshot const& self, bool tank, bool melee)
+inline std::optional<MoveProposal> FormationMove(Blackboard const& board,
+    Facts const& facts, DutyPlan const& duties, ActorSnapshot const& self, bool tank,
+    bool melee)
 {
     if (facts.CurrentPhase == Phase::Air)
     {
         if (self.Guid == facts.AirKiter)
             return std::nullopt;
-        if (self.Guid == duties.GongOwner || self.Guid == duties.GongBackup)
+        // The gong owner (and the backup, when a second station is in range)
+        // waits at a relay station: in reach of a shield and in spell range
+        // of the hovering boss, so a strike is at hand without losing damage.
+        if (std::optional<ShieldFact> const relay =
+                AirRelayShieldFor(board, facts, duties, self.Guid))
         {
-            std::optional<MoveProposal> station = AirRelayStation(facts, duties, self);
-            if (station || AirRelayShield(facts, self.Guid == duties.GongOwner ? 0 : 1))
-                return station;
+            Vector3 const station = AirStationPoint(*relay);
+            bool const inRange = StationInRange(station);
+            // In range: once there, native combat needs no movement. Out of
+            // range (sparse fallback): keep holding the station, so combat
+            // range-closing cannot pull the relay off its shield.
+            if (inRange && Geometry::Distance2d(station, self.Position) <= RelayStationTolerance)
+                return std::nullopt;
+            return Positioning(station, inRange ? "air_relay_station"
+                : "air_relay_station_out_of_range", 300.0f);
         }
         std::optional<Vector3> const slot = AirSlot(facts, duties, self);
         // Healers keep slack so native healing movement can reach the kiter.

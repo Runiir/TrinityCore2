@@ -135,7 +135,7 @@ public:
         if (facts.CurrentPhase != Phase::Air)
             if (std::optional<MoveProposal> standby = GongStandby(facts, duties, self))
                 return standby;
-        return FormationMove(facts, duties, self, tank, melee);
+        return FormationMove(board, facts, duties, self, tank, melee);
     }
 
 private:

@@ -433,6 +433,9 @@ static Blackboard AirBoard()
     return board;
 }
 
+static ActorSnapshot& AddFlame(Blackboard& board, ActorSnapshot& kiter, Vector3 at,
+    uint8 stacks);
+
 static void TestAirPhaseTargetsAndSpread()
 {
     Blackboard board = AirBoard();
@@ -477,17 +480,54 @@ static void TestAirPhaseTargetsAndSpread()
     Member(slack, Elemental).Position = { elementalSlot.X + 8.0f, elementalSlot.Y, 75.0f };
     assert(Mechanic(Plan(slack, Elemental)) == "air_phase_spread");
 
-    // The gong owner and backup wait at relay shields on opposite rows
-    // (north row, south row) instead of the spread ring.
+    // Relay stations must keep the relays (the best ranged damage dealers)
+    // casting at the hovering boss: Spell::CheckRange is 3D, 40 + 1.5 + 20 =
+    // 61.5 yd. On the native spawns only 250128's station is in range (59.0
+    // yd; the next, 250126, is 60.7 + 1 yd of hold tolerance > 61.5).
     A::DutyPlan const relayDuties = A::BuildDutyPlan(slack);
     assert(relayDuties.GongOwner == PlayerGuid(Hunter) && relayDuties.GongBackup == PlayerGuid(Mage));
-    std::optional<A::ShieldFact> const north = A::AirRelayShield(slackFacts, 0);
-    std::optional<A::ShieldFact> const south = A::AirRelayShield(slackFacts, 1);
-    assert(north && south && north->Position.Y > A::ArenaCenter.Y && south->Position.Y < A::ArenaCenter.Y);
+    std::vector<A::ShieldFact> const relays = A::RelayShields(slackFacts);
+    assert(relays.size() == 1 && relays.front().Guid == UnitGuid(42960, 250128));
+    for (A::ShieldFact const& shield : slackFacts.Shields)
+    {
+        Vector3 const station = A::AirStationPoint(shield);
+        assert(G::Distance3d(station, shield.Position) <= A::ShieldClickDistance);
+        bool const inRange = G::Distance3d(station, A::HoverPoint) + A::RelayStationTolerance
+            <= A::RangedEnvelope;
+        assert(inRange == (std::find_if(relays.begin(), relays.end(),
+            [&shield](A::ShieldFact const& relay) { return relay.Guid == shield.Guid; })
+            != relays.end()));
+    }
     AdaptiveAtramedesPlan owner = Plan(slack, Hunter);
     assert(Mechanic(owner) == "air_relay_station");
     Vector3 const station{ MoveOf(owner)->X, MoveOf(owner)->Y, 75.0f };
-    assert(G::Distance3d(station, north->Position) <= A::ShieldClickDistance);
+    assert(G::Distance3d(station, A::HoverPoint) + A::RelayStationTolerance <= A::RangedEnvelope);
+    assert(G::Distance3d(station, relays.front().Position) <= A::ShieldClickDistance);
+    // The backup has no station in range: it spreads (and casts) instead.
+    assert(!A::AirRelayShieldFor(slack, slackFacts, relayDuties, PlayerGuid(Mage)));
+    assert(Mechanic(Plan(slack, Mage)).rfind("air_phase", 0) == 0
+        || !Plan(slack, Mage).Movement);
+    // A kiting owner is skipped: the backup takes its station.
+    ActorSnapshot& ownerKiter = Member(slack, Hunter);
+    AddFlame(slack, ownerKiter, { ownerKiter.Position.X + 20.0f, ownerKiter.Position.Y, 75.0f }, 0);
+    A::Facts const kiting = A::BuildFacts(slack);
+    assert(kiting.AirKiter == PlayerGuid(Hunter));
+    std::optional<A::ShieldFact> const taken = A::AirRelayShieldFor(slack, kiting, relayDuties,
+        PlayerGuid(Mage));
+    assert(taken && taken->Guid == relays.front().Guid);
+    assert(Mechanic(Plan(slack, Mage)) == "air_relay_station");
+
+    // Sparse fallback: with 3 or fewer shields left and no station in range,
+    // the owner guards the shield nearest the hover point anyway (250130,
+    // 68.1 yd) and holds it against native range-closing.
+    Blackboard sparse = AirBoard();
+    KeepShields(sparse, 2);
+    A::Facts const sparseFacts = A::BuildFacts(sparse);
+    std::vector<A::ShieldFact> const fallback = A::RelayShields(sparseFacts);
+    assert(fallback.size() == 1 && fallback.front().Guid == UnitGuid(42954, 250130));
+    assert(!A::StationInRange(A::AirStationPoint(fallback.front())));
+    Member(sparse, Hunter).Position = A::AirStationPoint(fallback.front());
+    assert(Mechanic(Plan(sparse, Hunter)) == "air_relay_station_out_of_range");
 }
 
 static ActorSnapshot& AddFlame(Blackboard& board, ActorSnapshot& kiter, Vector3 at,
@@ -571,6 +611,26 @@ static void TestAirKiteAndRescue()
     board.Summons.back().Auras.back().Stacks = 2;
     assert(CountClicks(board) == 0);
     assert(Mechanic(Plan(board, Mage)) == "roaring_flame_breath_kite");
+    // The early strike is only for a lone kiter: with a relay already in
+    // reach of a shield (the Warlock beside 250131) nothing is spent before
+    // contact; the relay strikes at contact instead.
+    board.Summons.back().Auras.back().Stacks = 4;
+    Member(board, Warlock).Position = { 180.0f, -197.0f, 75.0f };
+    assert(A::RelayInReach(board, A::BuildFacts(board), A::BuildDutyPlan(board)));
+    assert(CountClicks(board) == 0);
+
+    // Two strikers still carry the 15 s air Resonating Clash aura: the one
+    // whose aura expires last struck last and is the flame's next target.
+    board = AirBoard();
+    board.Summons.push_back(MakeUnit(A::ReverberatingFlameEntry, 81, 120.0f, -240.0f,
+        ActorKind::Summon));
+    Member(board, Balance).Auras.push_back({ A::AirClashAura, UnitGuid(42956, 250122), 0, 9000 });
+    Member(board, Warlock).Auras.push_back({ A::AirClashAura, UnitGuid(42954, 250130), 0, 17000 });
+    A::Facts const redirect = A::BuildFacts(board);
+    assert(redirect.AirKiter.IsEmpty());
+    assert(A::AirRedirectRunner(board, redirect)->Guid == PlayerGuid(Warlock));
+    assert(Mechanic(Plan(board, Warlock)) == "air_redirect_run");
+    assert(Mechanic(Plan(board, Balance)) != "air_redirect_run");
 
     // A relay striker beside a shield far from the flame beats the kiter's
     // own shield: the flame's detour is longer.
@@ -704,20 +764,26 @@ static void TestAirKiteKeepsDirection()
     }
 }
 
-// Native-follow replay of one air phase. Every bot follows its own plan at
-// 7 yd/s (0.25 s decision steps); spellclicks execute the native effects
-// (shield used, 78168 on the striker, every Sound bar to 0, the flame
-// interrupted: 2 s wait, flight to the struck shield, Building Speed reset,
-// then Tracking on the striker). The flame relaunches a predictive follow
-// every 400 ms at 5 yd/s + 1 per Building Speed stack (one a second up to
-// `stackCap`) and its 5 yd breath ticks every 0.5 s (+3 Sound).
+// Native-follow replay of one air phase from the ground formation at liftoff.
+// Every bot follows its own plan at 7 yd/s (0.25 s decision steps). At
+// liftoff Atramedes is put at his hover point; the bots walk to their air
+// positions until the flame spawns ON the target (78213 summons at its
+// position) `flameDelayS` later (the native takeoff takes about 7 s).
+// Spellclicks execute the native effects (shield used, 78168 on the striker,
+// every Sound bar to 0, the flame interrupted: 2 s wait, flight to the struck
+// shield, Building Speed reset, then Tracking on the striker). The flame
+// relaunches a predictive follow every 400 ms at 5 yd/s + 1 per Building
+// Speed stack (one a second up to `stackCap`) and its 5 yd breath ticks every
+// 0.5 s (+3 Sound).
 struct AirReplay
 {
     float FirstContactS = -1.0f;
     float FirstStrikeS = -1.0f;
-    float WorstStrikeDelayS = 0.0f;
+    float FirstCatchDelayS = 0.0f;
+    int FirstCatchTicks = 0;
+    float WorstSteadyDelayS = 0.0f;
+    int MaxSteadyConsecutiveTicks = 0;
     int Strikes = 0;
-    int MaxConsecutiveKiterTicks = 0;
     int KiterTicks = 0;
     int OtherTicks = 0;
     uint32 MaxSound = 0;
@@ -734,30 +800,43 @@ static void MoveBots(Blackboard& board, std::map<ObjectGuid, Vector3> const& des
     }
 }
 
-static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, bool solo = false,
-    float seconds = 31.0f)
+// One decision step without a flame: every bot moves along its plan.
+static void StepPlans(Blackboard& board)
 {
-    Blackboard board = AirBoard();
+    ++board.Revision;
+    board.ObservedAtMs += 250;
+    std::map<ObjectGuid, Vector3> destinations;
+    for (ActorSnapshot const& player : board.Players)
+        if (player.Alive)
+            if (BotNativeAction::Move const* move = MoveOf(AdaptiveAtramedesStrategy().Propose(
+                    board, player.Guid, player.Role.c_str())))
+                destinations[player.Guid] = { move->X, move->Y, 75.0f };
+    MoveBots(board, destinations);
+}
+
+static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDelayS,
+    bool solo = false, float seconds = 31.0f)
+{
+    Blackboard board = Board();
     // Solo: everyone else is dead, so no relay exists and the target must
     // reach a shield on its own.
     if (solo)
         for (ActorSnapshot& player : board.Players)
             if (player.Guid != PlayerGuid(targetSlot))
                 player.Alive = false;
-    // Settle the air formation (relay stations, spread ring) before the breath.
-    for (int step = 0; step < 40; ++step)
-    {
-        std::map<ObjectGuid, Vector3> destinations;
-        for (ActorSnapshot const& player : board.Players)
-            if (BotNativeAction::Move const* move = MoveOf(AdaptiveAtramedesStrategy().Propose(
-                    board, player.Guid, player.Role.c_str())))
-                destinations[player.Guid] = { move->X, move->Y, 75.0f };
-        MoveBots(board, destinations);
-    }
+    // The ground formation (owner at its duty shield, ranged arc) at liftoff.
+    for (int step = 0; step < 32; ++step)
+        StepPlans(board);
+    ActorSnapshot& liftoff = Boss(board);
+    liftoff.Position = A::HoverPoint;
+    liftoff.Flying = true;
+    liftoff.ReactAggressive = false;
+    liftoff.VictimGuid = ObjectGuid();
+    for (float t = 0.25f; t <= flameDelayS + 0.001f; t += 0.25f)
+        StepPlans(board);
+
     ActorSnapshot& target = Member(board, targetSlot);
-    Vector3 const spawn = G::PointAt(target.Position, G::Bearing(target.Position, A::ArenaCenter),
-        3.0f, 75.0f);
-    AddFlame(board, target, spawn, 0);
+    AddFlame(board, target, target.Position, 0);
     board.Summons.back().Auras.push_back({ 78218, board.Summons.back().Guid, 0, 0 });
     ObjectGuid const flameGuid = board.Summons.back().Guid;
     auto flame = [&board, flameGuid]() -> ActorSnapshot&
@@ -834,7 +913,15 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, bool solo = f
                     [](AuraSnapshot const& aura) { return aura.SpellId == A::TrackingAura; }),
                     player.Auras.end());
             }
-            AddAura(Member(board, clicker.GetCounter()), A::AirClashAura, clicked);
+            ActorSnapshot& striker = Member(board, clicker.GetCounter());
+            striker.Auras.erase(std::remove_if(striker.Auras.begin(), striker.Auras.end(),
+                [](AuraSnapshot const& aura) { return aura.SpellId == A::AirClashAura; }),
+                striker.Auras.end());
+            AuraSnapshot clash;
+            clash.SpellId = A::AirClashAura;
+            clash.CasterGuid = clicked;
+            clash.ExpiresAtMs = board.ObservedAtMs + 15000;
+            striker.Auras.push_back(clash);
             clashUntil[clicker] = t + 15.0f;
             flame().Cast.reset();
             tracked.Clear();
@@ -842,10 +929,14 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, bool solo = f
             toShield = true;
             waitUntil = t + 2.0f;
             ++result.Strikes;
+            float const delay = contactOpen >= 0.0f ? t - contactOpen : 0.0f;
             if (result.FirstStrikeS < 0.0f)
+            {
                 result.FirstStrikeS = t;
-            if (contactOpen >= 0.0f)
-                result.WorstStrikeDelayS = std::max(result.WorstStrikeDelayS, t - contactOpen);
+                result.FirstCatchDelayS = delay;
+            }
+            else
+                result.WorstSteadyDelayS = std::max(result.WorstSteadyDelayS, delay);
             contactOpen = -1.0f;
         }
         MoveBots(board, destinations);
@@ -907,12 +998,16 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, bool solo = f
                 {
                     kiterHit = true;
                     ++result.KiterTicks;
+                    if (result.FirstStrikeS < 0.0f)
+                        ++result.FirstCatchTicks;
                 }
                 else
                     ++result.OtherTicks;
             }
             consecutive = kiterHit ? consecutive + 1 : 0;
-            result.MaxConsecutiveKiterTicks = std::max(result.MaxConsecutiveKiterTicks, consecutive);
+            if (result.FirstStrikeS >= 0.0f)
+                result.MaxSteadyConsecutiveTicks = std::max(result.MaxSteadyConsecutiveTicks,
+                    consecutive);
         }
         for (ActorSnapshot const& player : board.Players)
             result.MaxSound = std::max(result.MaxSound, player.AlternatePower);
@@ -920,43 +1015,49 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, bool solo = f
     return result;
 }
 
-// Every target of a 31 s air phase, the tank included, with the server's
-// Building Speed cap (10) and an uncapped 99-stack stress: every catch is
-// struck within 3 s of contact, the kiter is never in the breath for more
-// than 2 s at a time, nobody nears 90 Sound, and 2-4 shields are spent. The
-// solo runs (no living relay) bound the kiter's own run to a shield.
+// Every target of a 31 s air phase, the tank included, from the ground
+// formation at liftoff with the flame spawned on the target after the native
+// takeoff (7 s) and after 3 s (relays still walking), at the server's
+// Building Speed cap (10) and an uncapped 99-stack stress. Bounds: the first
+// catch is struck within 3 s of contact with at most 2 s (4 ticks) of breath
+// before it; every later catch within 3 s and never more than 2 s of breath
+// at a time; nobody nears 90 Sound; 2-4 shields per air phase. The solo runs
+// (no living relay) bound the kiter's own run to a shield.
 static void TestAirReplayFromEverySlot()
 {
-    auto show = [](char const* kind, float cap, uint32 slot, AirReplay const& run)
+    auto show = [](char const* kind, float cap, float delay, uint32 slot, AirReplay const& run)
     {
-        std::printf("air replay %s cap=%.0f slot=%u contact=%.2f strike=%.2f worst=%.2f"
-            " strikes=%d maxRun=%d kiterTicks=%d otherTicks=%d maxSound=%u\n", kind, cap,
-            slot, run.FirstContactS, run.FirstStrikeS, run.WorstStrikeDelayS, run.Strikes,
-            run.MaxConsecutiveKiterTicks, run.KiterTicks, run.OtherTicks, run.MaxSound);
+        std::printf("air replay %s cap=%.0f flame=%.0fs slot=%u contact=%.2f strike=%.2f"
+            " first=%.2f/%d steady=%.2f/%d strikes=%d kiterTicks=%d otherTicks=%d maxSound=%u\n",
+            kind, cap, delay, slot, run.FirstContactS, run.FirstStrikeS, run.FirstCatchDelayS,
+            run.FirstCatchTicks, run.WorstSteadyDelayS, run.MaxSteadyConsecutiveTicks,
+            run.Strikes, run.KiterTicks, run.OtherTicks, run.MaxSound);
     };
     for (float cap : { float(A::BuildingSpeedMaxStacks), 99.0f })
-    {
-        for (uint32 slot = Tank; slot <= Warlock; ++slot)
+        for (float delay : { 7.0f, 3.0f })
         {
-            AirReplay const run = ReplayAirPhase(slot, cap);
-            show("raid", cap, slot, run);
-            assert(run.FirstContactS >= 0.0f && run.FirstStrikeS >= 0.0f);
-            assert(run.WorstStrikeDelayS <= 3.0f);
-            assert(run.MaxConsecutiveKiterTicks <= 4);
-            assert(run.MaxSound < A::SoundEmergency);
-            assert(!run.DoubleClick);
-            assert(run.Strikes >= 2 && run.Strikes <= 4);
+            for (uint32 slot = Tank; slot <= Warlock; ++slot)
+            {
+                AirReplay const run = ReplayAirPhase(slot, cap, delay);
+                show("raid", cap, delay, slot, run);
+                assert(run.FirstContactS >= 0.0f && run.FirstStrikeS >= 0.0f);
+                assert(run.FirstCatchDelayS <= 3.0f && run.FirstCatchTicks <= 4);
+                assert(run.WorstSteadyDelayS <= 3.0f && run.MaxSteadyConsecutiveTicks <= 4);
+                assert(run.MaxSound < A::SoundEmergency);
+                assert(!run.DoubleClick);
+                assert(run.Strikes >= 2 && run.Strikes <= 4);
+            }
+            for (uint32 slot : { uint32(Tank), uint32(Rogue) })
+            {
+                AirReplay const run = ReplayAirPhase(slot, cap, delay, true);
+                show("solo", cap, delay, slot, run);
+                assert(run.FirstStrikeS >= 0.0f && run.FirstCatchDelayS <= 6.0f);
+                assert(run.FirstCatchTicks <= 12);
+                assert(run.WorstSteadyDelayS <= 4.5f && run.MaxSteadyConsecutiveTicks <= 4);
+                assert(run.MaxSound < A::SoundEmergency);
+                assert(run.Strikes <= 5);
+            }
         }
-        for (uint32 slot : { uint32(Tank), uint32(Rogue) })
-        {
-            AirReplay const run = ReplayAirPhase(slot, cap, true);
-            show("solo", cap, slot, run);
-            assert(run.FirstStrikeS >= 0.0f && run.WorstStrikeDelayS <= 4.5f);
-            assert(run.MaxConsecutiveKiterTicks <= 4);
-            assert(run.MaxSound < A::SoundEmergency);
-            assert(run.Strikes <= 5);
-        }
-    }
 }
 
 struct GroundKiteRun

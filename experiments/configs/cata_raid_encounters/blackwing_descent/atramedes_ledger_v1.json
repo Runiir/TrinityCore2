@@ -1300,7 +1300,7 @@
         "10N"
       ],
       "status": "specified",
-      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor on the ground and owner/backup at north/south relay shields in the air; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check) or at a shield ahead when the next shield is out of time; strike at the in-reach shield farthest from the flame (tank eligible as kiter); the striker (78168) runs on during the redirect. Replay: every target struck within 3 s of contact, 2-4 shields per 31 s air phase.",
+      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor on the ground; in the air the owner (backup if a second one is in range) at a relay station in reach of a shield and in 3D spell range (61.5 yd) of the hover point, sparse-shield fallback out of range; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check); early strike at a shield only for a lone kiter; strike at the in-reach shield farthest from the flame (tank eligible as kiter); the latest striker (78168) runs on during the redirect. Replay from liftoff: first catch struck at once, later catches within 3 s, 3 shields per 31 s air phase.",
       "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100, shields per air phase recorded.",
       "source_refs": [
         "client_442_spell_rows_20260925",
@@ -1321,7 +1321,8 @@
     "Air phase: melee and tank do not path under the flying boss; Sonar Bomb hits per player <= 1 per air phase.",
     "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442.",
     "Sonic Breath kiter: no bearing reversal around the boss during a breath; no 78100 tick on the kiter after the first channel second.",
-    "Air rescue: every catch struck within 3 s of the first 1 s time-to-contact estimate; no kiter in the Roaring Flame Breath for more than 2 s at a time."
+    "Air rescue, first catch of an air phase: struck within 3 s of the first 1 s time-to-contact estimate with at most 2 s of Roaring Flame Breath before it. Later catches (steady state, while shields remain): struck within 3 s and no kiter in the breath for more than 2 s at a time.",
+    "Air relay: the gong owner (and the backup when a second station is in range) holds a station in reach of a shield and within 61.5 yd (3D) of the hover point, so its casts keep landing; on the native spawns only 250128's station qualifies."
   ],
   "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"

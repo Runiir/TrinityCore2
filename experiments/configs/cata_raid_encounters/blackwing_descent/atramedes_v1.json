@@ -126,14 +126,14 @@
     "gong_owner": [
       "best_ranged_by_capability_hunter_then_mage",
       "ground_stand_at_shield_nearest_anchor",
-      "air_stand_at_north_relay_shield",
+      "air_stand_at_relay_station_in_reach_and_in_61_5yd_spell_range",
       "strike_on_searing_flame_channel_start",
       "strike_on_sound_ge_90_down_to_current_phase_searing_reserve",
       "strike_on_sound_ge_80_unless_searing_due_within_15s_keeping_one_spare_above_full_reserve"
     ],
     "gong_backup": [
       "second_ranged_by_capability",
-      "air_stand_at_south_relay_shield",
+      "air_relay_station_only_if_a_second_is_in_range_or_owner_kiting",
       "strikes_when_owner_dead_or_kiting"
     ],
     "sonic_breath_target": [

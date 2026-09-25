@@ -139,9 +139,11 @@ from roster slots.
       - A target summoned within 3 yd never gets out of the 5 yd breath
         (peak 3 + 2 = 5 yd), so it is in contact at once.
       - One summoned farther out gets out and is caught again later.
-    - A rescue fires when contact is within 1 s. It also fires at a shield
-      ahead when the flame would catch the kiter before the next shield: the
-      west side has none for 105 yd.
+    - A rescue fires when contact is within 1 s.
+    - A lone kiter (no relay in reach of any shield) also strikes at a shield
+      ahead when the flame would catch it before the next shield; the west
+      side has none for 105 yd. With a relay in reach, the relay strikes at
+      contact instead, so no shield is spent early.
     - The strike goes to whoever stands beside the shield farthest from the
       flame. The tank counts too when it is the kiter, since Atramedes has no
       victim in the air.
@@ -152,12 +154,25 @@ from roster slots.
       (`gong_approach`).
     - A 90-Sound emergency still strikes when contact is true but the rescue
       budget is spent.
-    - Relays: in the air the gong owner and backup wait at relay shields on
-      opposite rows (north, south). A strike far from the flame is therefore
-      always within reach.
+    - **Relays.** In the air, the gong owner waits at a relay station within
+      reach of a shield and in spell range of the hovering boss. The backup
+      waits at a second station only if one is in range.
+      - Range: Spell::CheckRange is 3D, 40 + 1.5 + 20 = 61.5 yd from the hover
+        point (130.7, -226.6, 113.2).
+      - Stations stand 8 yd from their shield toward the hover point (8.2 yd
+        in 3D, inside click reach) and are held within 1 yd.
+      - On the native spawns only 250128's station is in range (59.0 yd). The
+        next, 250126, is 60.7 + 1 yd, so the backup spreads and casts.
+      - A kiting or redirect-running owner is skipped, so the backup takes
+        its station.
+      - With 3 or fewer shields left and no station in range, the owner guards
+        the shield nearest the hover point anyway (out of range) and holds it.
+        There, the rescue outweighs its damage.
     - The striker keeps the air Resonating Clash aura (78168). Until the flame
       re-tracks it (2 s wait plus the flight to the shield) it already runs on
-      along the ring (`air_redirect_run`).
+      along the ring (`air_redirect_run`). If two players still carry the 15 s
+      aura, the one whose aura expires last struck last and is the one that
+      runs.
     - During the redirect the flame is interrupted and nobody is the kiter, so
       a second shield is never spent on the same catch.
 - **Sonic Breath.**
@@ -201,18 +216,25 @@ Acceptance observations are in the ledger, `acceptance_observations`:
 
 **Air-phase replay.** `tests/test_atramedes_strategy.py` replays a 31 s air
 phase for every target, the tank included. Model:
+- it starts from the ground formation at liftoff;
+- the flame spawns on the target, as 78213 does, after the native takeoff
+  (7 s) or after 3 s, while the relays are still walking;
 - every bot follows its own plan at 7 yd/s, in 0.25 s steps;
 - strikes run their native effects;
 - the flame relaunches a predictive follow every 400 ms, and its breath ticks
   every 0.5 s.
 
 Results, at both the server cap of 10 stacks and an uncapped 99:
-- every catch is struck within 3 s of contact;
-- the kiter never stays in the breath for more than 2 s at a time;
-- 2–4 shields are spent per air phase.
+- the first catch is struck at once (bound: 3 s, at most 2 s of breath);
+- every later catch is struck within 3 s, and the kiter is never in the
+  breath for more than 2 s at a time (worst seen: 2.5 s delay, 1.5 s of
+  breath);
+- 3 shields are spent per air phase.
 
-Solo runs, with no living relay, bound the kiter's own run to a shield to
-4.5 s.
+Solo runs (no living relay): the first catch takes up to 3.75 s (3.5 s of
+breath, bound 6 s), later catches up to 2.5 s. In two-shield stresses at 20%
+health the first catch is struck at once, and exposure comes only after the
+last shield is spent.
 
 **Open question: shields per air phase.** The historical guide reports one per
 air phase. A WCL count of Resonating Clash (78168) per air phase would tell
