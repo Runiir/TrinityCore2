@@ -1,6 +1,7 @@
 # Full-raid bots: parallel boss shards
 
-Status (2026-09-25): foundation round 1 is in progress. Only Magmaw 10N is implemented.
+Status (2026-09-25): foundation round 1 is done. Seeded lockouts and parallel shards are
+proven live. Only Magmaw 10N has a real bot strategy; the other bosses start with the boss rounds.
 Goal: every boss of every Cataclysm raid is played by bots, then a full end-to-end
 clear (trash, bosses and interactions). Blackwing Descent 10N comes first; Bastion of
 Twilight, Throne of the Four Winds, Firelands and Dragon Soul reuse everything here.
@@ -275,6 +276,51 @@ Deliver:
 
    Distinct instance IDs, separate run directories and records, and no cross-cohort
    attribution.
+
+## Round 1 results (2026-09-25)
+
+- **Packages:**
+  - A, seeded lockouts: `dae6c1a7bb`, `d9843cddb9`, `18d0d47865`, `3dea9d6dc2`.
+  - B, parallel cohorts and the shard coordinator: `1734c60404`, `c05f8e3772`, `db90d5289f`,
+    `72628abfb6`.
+  - C, compositions, copies and loadouts: `a63f7ef57a`, `2658d41c59`, `15104b10dd`.
+  - D, route interactions, transports and the composer: `38b67b22ea`, `b1bcaccdb5`,
+    `3ca8259e51`.
+
+  Each package has coordinator wiring commits and at least two independent review passes.
+- **Build and data:**
+  - Builds now use the `host10` policy (10 jobs, two CPUs left free).
+  - Data are reproduced and the closure rebound in `6ed2ad9077`.
+- **Magmaw smoke** (`smoke-r1-6ed2ad9`): native clear, 0 deaths, 100.8 s kill, 279.7k party
+  DPS. The single-cohort accepted scenario is unchanged.
+- **Two-shard proof** in one worldserver (plan `experiments/configs/shard_runs/bwd_10n_round1_proof_v1.json`,
+  evidence `artifacts/cata_raid_program/round1_two_shard_proof_20260925.tar.gz.dvc`):
+  - **Magmaw c0**, fresh instance 4: the full route completed, 273.7k party DPS (learning off
+    under shard isolation).
+  - **Maloriak c0**, seeded instance 1:
+    - Magmaw and Omnotron done (states `[3,3,5,5,5,5]`, mask 36, diagnostic-only assistance);
+    - admitted into the seeded instance, reached its regroup area and cleared 2 trash packs
+      with 0 deaths;
+    - then stopped on the progress-plateau watchdog, because its strategy is still a stub.
+  - **Isolation:** distinct instance IDs, 0 cross-cohort replies, 0 foreign payloads, and the
+    seeded instance was entered.
+  - **Teardown:** verified, with the lockout cleared.
+- **Open from round 1:**
+  - **Transport movement support.** The Nefarian ledge-to-platform drop and the lower-wing
+    elevator lip are off the static navmesh, so those transport nodes fail with a typed
+    reason on their timeouts. They need a lawful jump/fall and platform-surface movement
+    design.
+  - **Magmaw to the canonical composition.** Move Magmaw over: runtime profiles, route
+    rows, the `raid_shard_provisioning` DVC stage, and a closure rebind.
+  - **LAST_INSERT_ID readers.** Run, activity and replay IDs still rely on
+    `MapUpdate.Threads = 1`; convert them before raising the thread count.
+  - **Catalog error.** The demonology_warlock profile lists 33697 (the shaman's Blood Fury).
+  - **Minor review notes:**
+    - coordinator: the drain timeout doubling, the dirty-console run status, and a vacuous
+      test assertion;
+    - A: the header wording about the map unload.
+  - Round rule learned: no agent edits while a build is in flight, because any worktree or
+    HEAD change aborts it on provenance.
 
 ## Later rounds
 

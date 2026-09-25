@@ -1,0 +1,15 @@
+{
+  "schema": "raid_shard_run_plan_v1",
+  "watchdog": {"heartbeat_sec": 30, "no_progress_window_sec": 180, "max_repeated_decisions": 20,
+               "max_death_loops": 3, "emergency_timeout_sec": 5400, "transition_timeout_sec": 180},
+  "shards": [
+    {"cohort_id": "blackwing_descent_10n_magmaw_c0",
+     "runtime_profile_id": "blackwing_descent_10n_magmaw_diagnostic",
+     "raid": "blackwing_descent", "mode": "10N", "boss_key": "magmaw", "lockout": null},
+    {"cohort_id": "blackwing_descent_10n_maloriak_c0",
+     "runtime_profile_id": "blackwing_descent_10n_maloriak_diagnostic",
+     "raid": "blackwing_descent", "mode": "10N", "boss_key": "maloriak",
+     "lockout": {"raid": "blackwing_descent", "difficulty": "10N",
+                 "precompleted_boss_keys": ["magmaw", "omnotron"]}}
+  ]
+}
