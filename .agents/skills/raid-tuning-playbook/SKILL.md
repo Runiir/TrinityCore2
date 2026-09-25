@@ -1,6 +1,6 @@
 ---
 name: raid-tuning-playbook
-description: The measure-change-measure loop that raises raid-bot kill DPS to Warcraft Logs parity. Use for every "implement/tune <boss> <mode> bots" request after startup, and whenever you choose, test, measure, keep or revert a bot change. Defines the finish line, the DPS metric, every threshold, the noise rule and the risk tiers.
+description: The measure-change-measure loop that raises raid-bot kill DPS to Warcraft Logs parity. Use for every "implement/tune <boss> <mode> bots" request after startup, for every boss unit of an "implement <raid> <mode> bots" raid program, and whenever you choose, test, measure, keep or revert a bot change. Defines the finish line, the DPS metric, every threshold, the noise rule and the risk tiers.
 ---
 
 # Raid tuning playbook
@@ -16,6 +16,14 @@ the measuring harness, not the goal.
    (for example `start "implement magmaw 10n bots"`). To continue the selected
    scenario, run `... raid_workloop resume`. Startup checks, graph commands and
    reviewer mechanics are in [trinity-orchestrator](../trinity-orchestrator/SKILL.md).
+   A raid-level request (`start "implement bwd 10n bots"`) runs this loop for
+   every boss at once, in rounds ([raid program](../trinity-orchestrator/references/raid-program.md)):
+   - Each boss packet is one pass of steps c–d for its boss.
+   - The round's shard runs replace `scoreboard run`. Ingest each boss's shard
+     directories under one round label, then judge and compare that label with
+     `scoreboard verdict` and `scoreboard show` as in steps e–g.
+   - The finish line below applies to every boss unit. The end-to-end clear
+     comes last.
 2. Open the target file `experiments/configs/raid_targets/<scenario>.json`
    (schema `raid_target_v1`), for example `blackwing_descent_10n_magmaw.json`.
    It lists each actor, its spec, its matched WCL reference and the finish line.
@@ -200,8 +208,10 @@ trash).
   with typed terminal reasons: clear, stall, repeated decisions, death loop,
   infrastructure loss or interruption. There is no 300-second raid success
   timer; reaching an emergency wall-clock cap is a failure.
-- **Builds.** Never build while a worldserver runs. Build only through
-  `workflow_build run`. Documentation and progress commits need no rebuild.
+- **Builds.** Never build while a worldserver runs, and never edit while a build
+  runs. Build only through `workflow_build run`, or `raid_workloop program build`
+  for a raid program round. Both use queued_build's default policy and take the
+  job count from it. Documentation and progress commits need no rebuild.
 - **Source size.** C/C++ files stay below 1,000 lines; see AGENTS.md for the hook.
 - **Storage.** Python runs through Pixi, code and configuration live in Git,
   generated data lives in DVC, and as little as possible stays on disk.
@@ -211,5 +221,8 @@ trash).
   reviewer in separate sessions. Model advisors (Jev, Laya) are not part of the
   workflow.
 
-Stop only when `scoreboard verdict` passes every actor, the user limits or stops
-the task, or a demonstrated external blocker prevents all remaining work.
+Stop only when one of these holds:
+- `scoreboard verdict` passes every actor (for a raid program: every boss unit
+  and the end-to-end unit are accepted);
+- the user limits or stops the task;
+- a demonstrated external blocker prevents all remaining work.

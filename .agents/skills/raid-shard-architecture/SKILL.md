@@ -1,11 +1,43 @@
 ---
 name: raid-shard-architecture
-description: Design and coordinate isolated TrinityCore raid-boss experiments and their canonical full-raid composition. Use for per-boss route manifests, runtime profiles, bot pools, frozen rosters, predecessor instance saves, server preparation, parallel shard orchestration, or promotion from boss shards to sequential full-raid validation. Do not use for a read-only live babysitter handoff.
+description: Design and coordinate isolated TrinityCore raid-boss experiments and their canonical full-raid composition. Use for per-boss route manifests, runtime profiles, bot pools, frozen rosters, seeded predecessor lockouts, server preparation, parallel shard orchestration, the shards packet of a raid program, or promotion from boss shards to the end-to-end full-raid clear. Do not use for a read-only live babysitter handoff.
 ---
 
 # Raid Shard Architecture
 
 Build every boss shard as an isolated, executable slice of the canonical raid. Treat identity mismatches as failures, not recoverable defaults.
+
+## Raid programs
+
+A raid-level request (`implement bwd 10n bots`) runs every boss shard in parallel
+rounds. The round procedure is in the orchestrator's
+[raid program](../trinity-orchestrator/references/raid-program.md). The shard
+contract:
+
+- **Data.** Per-raid facts live in data, never in code:
+  - the prerequisite DAG, `experiments/configs/raid_prerequisites/<raid>.json`;
+  - one canonical composition, `experiments/configs/raid_compositions/<raid>_<size>.json`;
+  - the scenario rows and runtime profiles;
+  - the route composition, `experiments/configs/raid_route_compositions/<raid>_<mode>.json`.
+- **Naming.** A shard is cohort `<raid>_<size><diff>_<boss>_c<copy>`. Its pool
+  tag, runtime profile and scenario ID are that cohort plus `_diagnostic`
+  (`raid_shard_identity`). Copies duplicate characters with identical gear, and
+  bots switch spec per boss before login.
+- **Seeded lockouts.** A shard's lockout marks exactly the transitive
+  predecessors done (`.botauto lockout seed|status|clear`, `raid_prerequisites`).
+  Readback must match before any bot acts. A seeded lockout is
+  `diagnostic_only_assistance`: it never certifies a predecessor kill, and the
+  end-to-end run uses a fresh instance.
+- **Running shards.** Every ready shard runs in one worldserver through
+  `tools.raid_program.shard_coordinator`, from the plans that
+  `raid_workloop program run-plan` writes. The coordinator is the only stdin
+  owner. Each shard keeps its own instance, group, pool, run directory and
+  records.
+- **The `shards` packet.** It owns the shared shard data: composition and spec
+  selections, scenario rows, profiles, prerequisite data, route composition and
+  `dvc.yaml`. It applies the boss packets' patch requests to those files. The
+  coordinator then reproduces DVC stages and rebinds the closure before the
+  round's build.
 
 Use the live runner's [runtime asset preflight](../../../docs/bot_raids/runtime_asset_preflight.md).
 Let it derive the selected map; never substitute another boss's map to make a
@@ -300,6 +332,8 @@ canonical glyph identity and compares it after actions start.
 
 The coordinator owns builds, including resource policy and degraded retries; see
 the orchestrator's [engineering and runtime rules](../trinity-orchestrator/references/engineering-and-runtime.md).
+A raid program round has exactly one build (`raid_workloop program build`).
+No agent edits while it runs.
 
 ## Start and hand off a live shard
 

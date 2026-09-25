@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
@@ -1212,8 +1213,11 @@ def _parser() -> argparse.ArgumentParser:
     subparsers.add_parser("status")
     resume = subparsers.add_parser("resume", help="Read saved task, remaining actors and next step without launching anything")
     resume.add_argument('--full', action='store_true', help='Explicit full graph projection for machine consumers')
-    start = subparsers.add_parser("start", help="Select or initialize a boss/difficulty; preserve existing progress")
-    start.add_argument("request", help="For example: implement magmaw 25hc bots")
+    focus = resume.add_mutually_exclusive_group()
+    focus.add_argument('--program', action='store_true', help='Resume the selected raid program')
+    focus.add_argument('--boss', action='store_true', help='Resume the boss-level graph even when a raid program is focused')
+    start = subparsers.add_parser("start", help="Select or initialize a boss/difficulty or a raid program; preserve existing progress")
+    start.add_argument("request", help="For example: implement magmaw 25hc bots, or implement bwd 10n bots")
     start.add_argument("--mode", help="Explicit mode when request contains only the boss name")
     start.add_argument("--raid", help="Canonical raid slug to disambiguate a boss")
     start.add_argument("--preview", action="store_true", help="Resolve catalogs without changing active progress")
@@ -1229,16 +1233,41 @@ def _parser() -> argparse.ArgumentParser:
     boss.add_argument("raid")
     boss.add_argument("boss")
     boss.add_argument("--mode", required=True)
+    from tools.raid_program.raid_program import add_parser as add_program_parser
+    add_program_parser(subparsers)
     return parser
+
+
+def _raid_program_output(args: argparse.Namespace, root: Path) -> dict[str, Any] | None:
+    """Raid-level start/resume/program output; None keeps the unchanged boss-level path."""
+    from tools.raid_program import raid_program
+    if args.command == "program":
+        return raid_program.command(root, args)
+    if args.command == "start":
+        return raid_program.start_request(root, args.request, args.mode, args.preview, args.expect)
+    if args.command == "resume" and not args.boss and (args.program or raid_program.program_focused(root)):
+        return raid_program.resume(root)
+    return None
 
 
 def main() -> int:
     args = _parser().parse_args()
     root = args.root.resolve()
     try:
+        program_output = _raid_program_output(args, root)
+        if program_output is not None:
+            print(json.dumps(program_output, indent=2, sort_keys=True))
+            return 0
         if args.command == "start":
             from tools.raid_program.scenario_bootstrap import start
             output = start(root, args.request, args.mode, args.raid, args.preview, args.expect)
+            if not args.preview:
+                # A boss-level selection makes plain `resume` continue the boss graph again.
+                from tools.raid_program.raid_program_state import set_focus
+                try:
+                    set_focus(root, "boss")
+                except (OSError, ValueError) as exc:
+                    print(json.dumps({"raid_program_focus_warning": str(exc)}), file=sys.stderr)
         elif args.command in {"resume", "advance"}:
             from tools.raid_program.development_graph import advance, resume
             output = resume(root) if args.command == "resume" else advance(root, _load_json(args.event), args.expect)

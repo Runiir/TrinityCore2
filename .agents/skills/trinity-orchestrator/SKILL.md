@@ -1,27 +1,37 @@
 ---
 name: trinity-orchestrator
-description: Own broad requests such as implement boss bots through diagnosis, repair workers, builds and live validation. Use for encounter-wide implementation and optimization, not only explicit orchestration requests.
+description: Own broad requests such as implement boss bots (implement magmaw 10n bots) or implement raid bots (implement bwd 10n bots) through diagnosis, repair workers, builds and live validation. Use for encounter-wide and raid-wide implementation and optimization, not only explicit orchestration requests.
 ---
 
 # Trinity orchestrator
 
-The primary agent owns the user's encounter objective; a specialist result is an
-intermediate step, not completion. The tuning loop, finish line, thresholds and
-risk tiers are in [raid-tuning-playbook](../raid-tuning-playbook/SKILL.md). This
-skill covers startup, the saved graph, workers and review.
+The primary agent owns the user's encounter or raid objective. A specialist
+result is an intermediate step, not completion. The tuning loop, finish line,
+thresholds and risk tiers are in [raid-tuning-playbook](../raid-tuning-playbook/SKILL.md).
+This skill covers startup, the saved graph, workers and review.
+
+A raid-level request names a raid and a mode but no boss (`implement bwd 10n bots`,
+`implement ds 25hc bots`). `raid_workloop start` then selects a raid program:
+parallel boss shards in seeded lockouts, one build per round, then the end-to-end
+clear. Follow [raid program](references/raid-program.md).
 
 ## Startup and continuation
 
 Inspect `git worktree list --porcelain`, use the checkout holding `master`, and
 verify it matches the saved `coordinator_worktree`. Preserve unrelated dirty
 work; do not build an old or detached checkout or copy task state between
-worktrees. Run `raid_workloop start "<request>"` for a named boss and mode, or
-`raid_workloop resume` to continue (read-only); `start --preview` resolves a
-request without selecting it. Read the returned
-`unit.next_action`, `owner_skill` and `latest_assessment`, then execute the
-returned step. After every transition execute the next step. Before a final
-reply run `resume`; continue while the parent objective is open. After context
-compaction, run `resume` once instead of rereading skills and old receipts.
+worktrees. Run `raid_workloop start "<request>"` for a named boss or raid and a
+mode, or `raid_workloop resume` to continue (read-only). `start --preview`
+resolves a request without selecting it.
+
+- For a boss, read the returned `unit.next_action`, `owner_skill` and
+  `latest_assessment`.
+- For a raid program, read `next_action` and `commands`.
+
+Then execute the returned step, and after every transition execute the next one.
+Before a final reply, run `resume` and continue while the parent objective is
+open. After context compaction, run `resume` once instead of rereading skills and
+old receipts.
 
 ## Saved graph commands
 
@@ -55,9 +65,11 @@ query or route the missing observation. Full evidence stays on disk or in DVC.
 
 ## Workers and review
 
-Work directly by default. Delegate one bounded implementation when useful;
-several implementation workers need explicit user authorization and disjoint
-file ownership. Workers do not launch nested agents. A worker packet names one
+Work directly by default. Delegate one bounded implementation when useful.
+Several implementation workers need explicit user authorization and disjoint
+file ownership. A raid-level request authorizes one worker per round packet,
+and `raid_workloop program packet` supplies the ownership. Workers do not launch
+nested agents. A worker packet names one
 mechanism, owned files plus affected callers and tests, forbidden changes, one
 focused command and the expected metric; see the
 [bounded work-unit contract](../raid-performance-loop/references/bounded-work-unit-contract.md).

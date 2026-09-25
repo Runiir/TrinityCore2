@@ -72,16 +72,19 @@ pixi run python -m tools.raid_program.queued_build status --compact
 The compact status is sufficient for deciding whether a build is active; the full
 status is historical context. Batch the current work-unit code and independent
 review before one coordinator-owned build. Workers do not each launch builds.
-New builds default to `cata_raid_build_resource_policy_host10_v1.json`: 10 of the
-12 logical CPUs (the user keeps two free for desktop use), one shared heavyweight
-lease, and one linker. `host12_v1` stays valid for verifying its old receipts. Load average is only a
-diagnostic; memory reserve, PSI, swap growth, and disk space can stop an unsafe
-build. If 12 jobs are unsafe, retain that receipt and derive a bounded lower-memory
-retry rather than silently restoring the old four-job policy.
-If that retry also fails, stop and return the exact build phase and guard samples.
+New builds default to `cata_raid_build_resource_policy_host8_v1.json`
+(`queued_build.DEFAULT_POLICY_RELATIVE`): 8 of the 12 logical CPUs (the user
+keeps four free), one shared heavyweight lease, and one linker. Take the job
+count from the policy's `parallelism.maximum_compiler_jobs`, never from a
+literal. `host10_v1` and `host12_v1` stay valid only for verifying their old
+receipts. Load average is only a diagnostic; memory reserve, PSI, swap growth,
+and disk space can stop an unsafe build. If the policy's job count is unsafe,
+retain that receipt and derive a bounded lower-memory retry rather than
+silently restoring an old policy. If that retry also fails, stop and return the
+exact build phase and guard samples.
 
 When verifying or reusing a binary, pass the exact policy in its receipt; never
-relabel an old build as host12. A new policy requires its own configure lineage.
+relabel an old build under a newer policy. A new policy requires its own configure lineage.
 Do not guess CLI defaults or `-j` syntax. Policy-bound configuration comes from
 `queued_build.expected_build_configuration(policy)`, with `-S . -B build` and
 the policy's generator. Retain the successful argv and reuse it on resumes. Before
