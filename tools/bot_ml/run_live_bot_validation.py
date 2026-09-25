@@ -62,9 +62,9 @@ try:
     from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from .live_validation_terminal_signals import (
         CONTAMINATION_COMPLETION_REASON,
-        PREPULL_FAILURE_LABEL_PREFIX,
         HeartbeatSignals,
         drain_terminal_trace,
+        is_prepull_failure_label,
         prepull_consumables_failure,
         prepull_failure_label,
     )
@@ -112,9 +112,9 @@ except ImportError:
     from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from live_validation_terminal_signals import (
         CONTAMINATION_COMPLETION_REASON,
-        PREPULL_FAILURE_LABEL_PREFIX,
         HeartbeatSignals,
         drain_terminal_trace,
+        is_prepull_failure_label,
         prepull_consumables_failure,
         prepull_failure_label,
     )
@@ -3717,7 +3717,10 @@ def should_defer_active_combat_bot_diagnosis(
     if report.get("completion_reason") != "machine_failure_predicate":
         return False
     labels = report.get("failure_labels")
-    if not isinstance(labels, (list, tuple)) or not labels:
+    if not isinstance(labels, (list, tuple)):
+        return False
+    labels = [label for label in labels if not is_prepull_failure_label(label)]
+    if not labels:
         return False
     if any(label != "bot_diagnosis_error" for label in labels):
         return False
@@ -5078,14 +5081,20 @@ def live_evidence(
     )
     validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
     validation_route_actions += sum(count for action, count in legacy_diagnosis_action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
-    # The trace is the newest delta window (up to 128 rows per bot), which a
-    # long pre-pull or hold drains of route actions.  The watchdog loop's
-    # ledger keeps the attempt's cumulative count.
-    validation_route_actions_window = validation_route_actions
-    if signals is not None:
-        validation_route_actions = max(
-            validation_route_actions, signals.route_actions.observe(entries)
-        )
+    # ``validation_route_actions`` is the newest delta window (up to 128 rows
+    # per bot) and stays the count every label predicate uses.  The watchdog
+    # loop's ledger adds the attempt's cumulative count separately; it only
+    # keeps a native boss kill from reading as a dead route while the idle
+    # raid waits for the manifest to complete.
+    validation_route_actions_cumulative = max(
+        validation_route_actions,
+        signals.route_actions.observe(entries) if signals is not None else 0,
+    )
+    current_route_node_id = str(status_route.get("node_id") or "")
+    current_route_generation = int(status_route.get("generation") or 0)
+    current_route_boss_killed = bool(current_route_node_id) and (
+        current_route_node_id, current_route_generation
+    ) in {(row["route_node_id"], row["route_generation"]) for row in real_boss_kill_evidence}
     trash_route_actions = (
         action_counts.get("trash_action", 0)
         + action_counts.get("validation_route_trash_action", 0)
@@ -5241,7 +5250,8 @@ def live_evidence(
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
-        "validation_route_actions_window": validation_route_actions_window,
+        "validation_route_actions_cumulative": validation_route_actions_cumulative,
+        "current_route_boss_killed": current_route_boss_killed,
         "prepull_consumables_failure": prepull_consumables_failure(status),
         "near_wipe_death_loop_events": near_wipe_death_loop_events,
         "near_wipe_death_loop": signals.near_wipes.receipt() if signals is not None else {},
@@ -5291,12 +5301,6 @@ def validation_failure_labels(
         # Certification must quarantine this attempt; the watchdog loop turns
         # contamination that persists past its grace into a typed terminal.
         labels.append("validation_route_future_encounter_contamination")
-    prepull_failure = evidence.get("prepull_consumables_failure")
-    if isinstance(prepull_failure, dict) and prepull_failure and not native_clear:
-        # The native pre-pull gate returned Terminal for this scope: surface it
-        # on this heartbeat instead of waiting for the stalled bots to earn a
-        # diagnosis error.  The loop's PrepullWatchdog owns the terminal edge.
-        labels.append(prepull_failure_label(prepull_failure))
     if timed_out:
         labels.append("worldserver_timeout")
     if returncode != 0:
@@ -5364,7 +5368,18 @@ def validation_failure_labels(
 
     if bot_not_loaded_diagnoses > 0:
         labels.append("bot_lifecycle_not_loaded")
-    elif error_diagnoses > 0 and not route_diagnosis_progress and not native_clear:
+    elif (
+        error_diagnoses > 0
+        and not route_diagnosis_progress
+        and not native_clear
+        and not (
+            # The current node's boss died natively and the drained window
+            # holds no route action: diagnoses describe the idle raid waiting
+            # for the manifest to complete (round-2 Magmaw batch heartbeat 25).
+            bool(evidence.get("current_route_boss_killed"))
+            and int(evidence.get("validation_route_actions_cumulative") or 0) > 0
+        )
+    ):
         labels.append("bot_diagnosis_error")
 
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0:
@@ -5410,6 +5425,13 @@ def validation_failure_labels(
         and int(evidence.get("gear_upgrades") or 0) <= 0
     ):
         labels.append("no_progress_observed")
+    prepull_failure = evidence.get("prepull_consumables_failure")
+    if isinstance(prepull_failure, dict) and prepull_failure and not native_clear:
+        # Advisory and last: the native pre-pull gate returned Terminal for
+        # this scope, surfaced on the heartbeat that reports it.  It never
+        # ends the run by itself (the boss can still engage natively); the
+        # semantic no-progress and plateau clocks end a stuck pre-pull.
+        labels.append(prepull_failure_label(prepull_failure))
 
     unique: list[str] = []
     for label in labels:
@@ -5434,7 +5456,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "trash_pulls": int(evidence.get("trash_pulls") or 0),
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
-        "validation_route_actions_window": int(evidence.get("validation_route_actions_window") or 0),
+        "validation_route_actions_cumulative": int(evidence.get("validation_route_actions_cumulative") or 0),
         "validation_route_terminal_evidence": len(evidence.get("route_terminal_evidence") or []),
         "validation_route_contamination_evidence": len(evidence.get("contamination_evidence") or []),
         "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
@@ -5933,14 +5955,11 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
     if route_motion_progress:
         nonterminal.add("validation_route_assist_focus_loop")
     progress_total = int(state.get("progress_total") or 0)
+    # A failed pre-pull gate is advisory: Magmaw engages natively despite it.
+    failure_labels = [label for label in failure_labels if not is_prepull_failure_label(label)]
     if progress_total <= 0 and not route_motion_progress:
         return failure_labels
-    # A failed pre-pull gate is surfaced at once but becomes terminal only in
-    # the watchdog loop (PrepullWatchdog): Magmaw engages natively despite it.
-    return [
-        label for label in failure_labels
-        if label not in nonterminal and not str(label).startswith(PREPULL_FAILURE_LABEL_PREFIX)
-    ]
+    return [label for label in failure_labels if label not in nonterminal]
 
 
 def completion_reason(
@@ -7003,11 +7022,6 @@ def run_transport_completion_watchdog(
         if raid_terminal:
             finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
             return fail()
-        # Contamination or a failed pre-pull gate held past its grace.
-        signal_terminal = signals.terminal(report, heartbeat_index)
-        if signal_terminal:
-            finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
-            return fail()
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
         semantic_progress_plateau = (
             last_progress_total >= 0
@@ -7046,6 +7060,12 @@ def run_transport_completion_watchdog(
             return fail()
         if observed_native_manifest_clear(report) or report["acceptable_final_evidence"]:
             return finish(0, False)
+        # After the clear check: contamination the raid lost to and is
+        # fighting again (the evidence list itself only grows).
+        signal_terminal = signals.terminal(report, heartbeat_index)
+        if signal_terminal:
+            finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
+            return fail()
         if report["completion_reason"] in {
             "repeated_decision_watchdog",
             "death_loop_watchdog",
@@ -7496,12 +7516,6 @@ def run_worldserver_completion_watchdog(
                 finalize_raid_terminal_watchdog(output_dir, report, raid_terminal)
                 terminal_failure = True
                 break
-            # Contamination or a failed pre-pull gate held past its grace.
-            signal_terminal = signals.terminal(report, heartbeat_index)
-            if signal_terminal:
-                finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
-                terminal_failure = True
-                break
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
             semantic_progress_plateau = (
                 last_progress_total >= 0
@@ -7530,6 +7544,13 @@ def run_worldserver_completion_watchdog(
             ):
                 break
             if observed_native_manifest_clear(report) or report["acceptable_final_evidence"]:
+                break
+            # After the clear check: contamination the raid lost to and is
+            # fighting again (the evidence list itself only grows).
+            signal_terminal = signals.terminal(report, heartbeat_index)
+            if signal_terminal:
+                finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
+                terminal_failure = True
                 break
             if report["completion_reason"] in {
                 "repeated_decision_watchdog",

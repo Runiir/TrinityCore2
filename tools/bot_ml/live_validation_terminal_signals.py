@@ -8,20 +8,30 @@ describes the last window, not the attempt.  One watchdog loop owns one
 
 * ``RouteActionLedger``: the cumulative validation-route action count,
   deduplicated by (bot, sequence, timestamp) across delta windows, light
-  tails and drains.  A long pre-pull hold drains the 128-row window of route
-  actions; the ledger keeps the attempt's count.
+  tails and drains.  It is reported as ``validation_route_actions_cumulative``
+  and never replaces the window count in the label predicates.
 * ``NearWipeTracker``: large alive-count drops, death bursts or new native
   wipes within one route node.  Repeated near-wipes on one node are a death
   loop even when no bot trace records ``repeated_death``.  A node change
   resets the count, and so do kills on a non-boss node (recovered trash
-  deaths are progress); boss-window near-wipes always count.
-* ``ContaminationWatchdog``: future-encounter contamination that persists for
-  ``grace_heartbeats`` consecutive heartbeats becomes a typed terminal.
-* ``PrepullWatchdog``: a failed native pre-pull consumables gate is labelled
-  on the heartbeat that reports it and becomes terminal when it still holds
-  an unengaged pull on the next heartbeat.
-* ``drain_terminal_trace``: after a terminal failure, drain every bot's
-  pending delta rows (bounded) so the failing bot's last decisions survive.
+  deaths are progress); boss-window near-wipes count, except on the heartbeat
+  that carries the boss kill or the manifest completion.
+* ``ContaminationWatchdog``: ``validation_route.contamination_evidence`` only
+  grows during an attempt (the runtime clears it only on a config load), so
+  its presence is not persistence.  Contamination is terminal only when a
+  contaminating creature is again the raid's native hostile activity after
+  the raid has had a near-wipe or wipe since the contamination was recorded:
+  the raid lost to it and it is fighting again.  A patrol the runtime guards
+  and transfers, or that dies, never qualifies.
+* ``drain_terminal_trace``: after a terminal failure, drain the oldest
+  pending delta rows (bounded) and capture every bot's newest rows with one
+  non-delta tail, so the failing bot's last decisions survive.
+
+A failed native pre-pull consumables gate is only a label here
+(``raid_prepull_consumables_failed:<reason>``): bosses can engage natively
+despite it (round-2 Magmaw batch: failed from heartbeat 8, engaged at 18,
+killed at 22), so the semantic no-progress and plateau clocks end a pre-pull
+that is really stuck.
 """
 from __future__ import annotations
 
@@ -46,8 +56,12 @@ CONTAMINATION_GRACE_HEARTBEATS = 2
 CONTAMINATION_COMPLETION_REASON = "future_encounter_contamination_watchdog"
 CONTAMINATION_LABEL = "validation_route_future_encounter_contamination"
 PREPULL_FAILURE_LABEL_PREFIX = "raid_prepull_consumables_failed:"
-PREPULL_GRACE_HEARTBEATS = 2
 TERMINAL_TRACE_DRAIN_FILE = "terminal_trace_drain.jsonl.gz"
+# The budget is checked before each delta call; one call may still take up to
+# the cleanup step cap (live_validation_cleanup.CLEANUP_STEP_MAX_SEC, 180 s),
+# and the final tail is one more call.  Worst case: about
+# TERMINAL_TRACE_DRAIN_BUDGET_SEC + 2 * CLEANUP_STEP_MAX_SEC, always inside the
+# shared cleanup budget, which reserves time for ``.botauto stop``.
 TERMINAL_TRACE_DRAIN_BUDGET_SEC = 10.0
 TERMINAL_TRACE_DRAIN_MAX_CALLS = 6
 
@@ -99,6 +113,25 @@ def prepull_failure_label(failure: Mapping[str, Any]) -> str:
     return PREPULL_FAILURE_LABEL_PREFIX + str(failure.get("failure_reason") or "unknown")
 
 
+def is_prepull_failure_label(label: Any) -> bool:
+    return str(label).startswith(PREPULL_FAILURE_LABEL_PREFIX)
+
+
+def _route_scope_settled(status: Mapping[str, Any], node_id: str, generation: int) -> bool:
+    """The route's current node already has its boss death or the manifest completed."""
+    route = _mapping(status.get("validation_route"))
+    if route.get("manifest_complete") is True:
+        return True
+    for row in route.get("boss_death_evidence") or []:
+        row = _mapping(row)
+        if (
+            str(row.get("route_node_id") or "") == node_id
+            and (_int(row.get("route_generation")) or 0) == generation
+        ):
+            return True
+    return False
+
+
 @dataclass
 class RouteActionLedger:
     """Cumulative validation-route actions across drained trace windows."""
@@ -135,6 +168,7 @@ class NearWipeTracker:
     route_generation: int = 0
     route_kind: str = ""
     episodes: int = 0
+    total_episodes: int = 0
     down: bool = False
     observed: bool = False
     wipe_generation: int = 0
@@ -167,7 +201,12 @@ class NearWipeTracker:
         deaths = _int(status.get("deaths"))
         drop_at, recovered_at = self.thresholds(expected)
         scope = (node_id, generation)
-        if self.observed and scope != (self.route_node_id, self.route_generation):
+        if not self.observed:
+            # Baselines come from the first observation: a wipe generation or
+            # death count carried in from before the watchdog is not a burst.
+            self.wipe_generation = wipe_generation
+            self.deaths = deaths
+        elif scope != (self.route_node_id, self.route_generation):
             # The route advanced: the previous node's deaths are not a loop here.
             self.episodes = 0
             self.down = alive < recovered_at
@@ -187,8 +226,12 @@ class NearWipeTracker:
             and deaths - self.deaths >= expected - drop_at
         )
         near_wipe = alive <= drop_at
-        if not self.down and (near_wipe or new_wipe or death_burst):
+        # The kill pull can lose half the raid and still clear: the heartbeat
+        # that carries the boss death or the manifest completion is progress.
+        settled = _route_scope_settled(status, node_id, generation)
+        if not self.down and not settled and (near_wipe or new_wipe or death_burst):
             self.episodes += 1
+            self.total_episodes += 1
             self.kills_at_last_episode = kills
             self.history.append({
                 "route_node_id": node_id,
@@ -220,6 +263,7 @@ class NearWipeTracker:
             "route_generation": self.route_generation,
             "route_kind": self.route_kind,
             "episodes": self.episodes,
+            "total_episodes": self.total_episodes,
             "down": self.down,
             "alive": self.last_alive,
             "expected": self.expected,
@@ -231,85 +275,72 @@ class NearWipeTracker:
 
 @dataclass
 class ContaminationWatchdog:
-    """Future-encounter contamination for ``grace_heartbeats`` in a row is terminal."""
+    """Contamination the raid lost to and is fighting again is terminal.
 
-    grace_heartbeats: int = CONTAMINATION_GRACE_HEARTBEATS
-    consecutive: int = 0
+    The native evidence list is sticky, so the watchdog keys on behaviour: a
+    contaminating creature (by GUID, or by entry when the row has no GUID) is
+    the raid's native hostile activity on this heartbeat, and the near-wipe
+    tracker has counted an episode since the contamination was first seen.
+    A native clear is never terminal here (the loop also checks it first).
+    """
+
     first_heartbeat_index: int = 0
+    episodes_at_first: int | None = None
+    _episodes_before: int = 0
 
-    def observe(self, report: Mapping[str, Any], heartbeat_index: int) -> dict[str, Any] | None:
-        evidence = _mapping(_mapping(report).get("evidence"))
+    def observe(
+        self,
+        report: Mapping[str, Any],
+        heartbeat_index: int,
+        near_wipes: NearWipeTracker | None = None,
+    ) -> dict[str, Any] | None:
+        report = _mapping(report)
+        evidence = _mapping(report.get("evidence"))
+        episodes = near_wipes.total_episodes if near_wipes is not None else 0
+        # ``near_wipes`` already observed this heartbeat's status; the value
+        # it had before this heartbeat is the baseline at first contamination.
+        episodes_before, self._episodes_before = self._episodes_before, episodes
+        status = _mapping(report.get("status"))
+        # The report's evidence keeps only scopes; the native status rows carry
+        # the contaminating creature's GUID and entry.
         rows = [
-            {key: row.get(key) for key in ("route_node_id", "route_generation") if key in row}
-            for row in evidence.get("contamination_evidence") or []
+            _mapping(row)
+            for row in _mapping(status.get("validation_route")).get("contamination_evidence") or []
             if isinstance(row, Mapping)
-        ]
+        ] or [_mapping(row) for row in evidence.get("contamination_evidence") or [] if isinstance(row, Mapping)]
         if not rows:
-            # The native observer cleared it: the grace restarts.
-            self.consecutive = 0
-            self.first_heartbeat_index = 0
             return None
-        if self.consecutive == 0:
+        if self.episodes_at_first is None:
+            self.episodes_at_first = episodes_before
             self.first_heartbeat_index = int(heartbeat_index)
-        self.consecutive += 1
-        if self.consecutive < max(1, int(self.grace_heartbeats)):
+        if bool(evidence.get("manifest_completion_evidence")) and bool(evidence.get("real_boss_kill_evidence")):
+            return None
+        runtime = _mapping(status.get("raid_runtime"))
+        if runtime.get("native_hostile_activity_active") is not True:
+            return None
+        active_guid = str(runtime.get("native_hostile_activity_guid") or "")
+        active_entry = _int(runtime.get("native_hostile_activity_entry")) or 0
+        engaged = next((
+            row for row in rows
+            if (str(row.get("target_id") or "") and str(row.get("target_id")) == active_guid)
+            or (not row.get("target_id") and active_entry and (_int(row.get("target_entry")) or 0) == active_entry)
+        ), None)
+        episodes_since = episodes - int(self.episodes_at_first)
+        if engaged is None or episodes_since <= 0:
             return None
         return {
             "kind": "future_encounter_contamination",
             "completion_reason": CONTAMINATION_COMPLETION_REASON,
             "failure_reason": CONTAMINATION_LABEL,
-            "consecutive_heartbeats": self.consecutive,
-            "grace_heartbeats": int(self.grace_heartbeats),
+            "rule": "contaminating_creature_reengaged_after_near_wipe",
             "first_observed_heartbeat_index": self.first_heartbeat_index,
-            "contamination_evidence": rows[:8],
-        }
-
-
-@dataclass
-class PrepullWatchdog:
-    """A failed pre-pull gate that holds the pull for ``grace_heartbeats`` is terminal.
-
-    The label is on the first heartbeat; the terminal waits one more because
-    some bosses engage natively despite the gate (the round-2 Magmaw smoke
-    cleared with ``failed=true``).  An engaged encounter or a native clear
-    resets the count.
-    """
-
-    grace_heartbeats: int = PREPULL_GRACE_HEARTBEATS
-    consecutive: int = 0
-    first_heartbeat_index: int = 0
-
-    def observe(self, report: Mapping[str, Any], heartbeat_index: int) -> dict[str, Any] | None:
-        report = _mapping(report)
-        evidence = _mapping(report.get("evidence"))
-        failure = _mapping(evidence.get("prepull_consumables_failure"))
-        runtime = _mapping(_mapping(report.get("status")).get("raid_runtime"))
-        engaged = (
-            runtime.get("encounter_in_progress") is True
-            or str(runtime.get("wipe_state") or "") == "engaged"
-        )
-        native_clear = bool(evidence.get("manifest_completion_evidence")) and bool(
-            evidence.get("real_boss_kill_evidence"))
-        if not failure or engaged or native_clear:
-            self.consecutive = 0
-            self.first_heartbeat_index = 0
-            return None
-        if self.consecutive == 0:
-            self.first_heartbeat_index = int(heartbeat_index)
-        self.consecutive += 1
-        if self.consecutive < max(1, int(self.grace_heartbeats)):
-            return None
-        return {
-            "kind": "raid_prepull_consumables_failed",
-            "completion_reason": "machine_failure_predicate",
-            "failure_reason": prepull_failure_label(failure),
-            "native_failure_reason": str(failure.get("failure_reason") or ""),
-            "attempt_id": int(failure.get("attempt_id") or 0),
-            "wipe_generation": int(failure.get("wipe_generation") or 0),
-            "route_generation": int(failure.get("route_generation") or 0),
-            "consecutive_heartbeats": self.consecutive,
-            "grace_heartbeats": int(self.grace_heartbeats),
-            "first_observed_heartbeat_index": self.first_heartbeat_index,
+            "near_wipe_episodes_since_contamination": episodes_since,
+            "engaged_target_entry": _int(engaged.get("target_entry")) or 0,
+            "engaged_target_id": str(engaged.get("target_id") or ""),
+            "contamination_evidence": [
+                {key: row.get(key) for key in ("route_node_id", "route_generation", "target_entry") if key in row}
+                for row in rows[:8]
+            ],
         }
 
 
@@ -320,13 +351,10 @@ class HeartbeatSignals:
     route_actions: RouteActionLedger = field(default_factory=RouteActionLedger)
     near_wipes: NearWipeTracker = field(default_factory=NearWipeTracker)
     contamination: ContaminationWatchdog = field(default_factory=ContaminationWatchdog)
-    prepull: PrepullWatchdog = field(default_factory=PrepullWatchdog)
 
     def terminal(self, report: Mapping[str, Any], heartbeat_index: int) -> dict[str, Any] | None:
-        """The first stateful terminal of this heartbeat, if any."""
-        contamination = self.contamination.observe(report, heartbeat_index)
-        prepull = self.prepull.observe(report, heartbeat_index)
-        return contamination or prepull
+        """The stateful terminal of this heartbeat, if any (after the clear check)."""
+        return self.contamination.observe(report, heartbeat_index, self.near_wipes)
 
 
 def terminal_drain_command(heartbeat_commands: Sequence[str]) -> str:
@@ -335,6 +363,70 @@ def terminal_drain_command(heartbeat_commands: Sequence[str]) -> str:
         if tokens[:2] == [".botauto", "trace"] and tokens[-1:] == ["delta"]:
             return command
     return ""
+
+
+def terminal_tail_command(delta_command: str) -> str:
+    """The non-delta form: the newest N rows per bot, cursor untouched."""
+    tokens = command_tokens(delta_command)
+    return " ".join(tokens[:-1]) if tokens[-1:] == ["delta"] else delta_command
+
+
+@dataclass
+class _DrainCapture:
+    """Rows and per-bot receipts across the drain and tail calls."""
+
+    path: Path
+    seen: set[tuple[int, int, int]] = field(default_factory=set)
+    rows: int = 0
+    bots: dict[int, dict[str, Any]] = field(default_factory=dict)
+    write_failed: bool = False
+
+    def add(self, payloads: list[dict[str, Any]], *, call: int, source: str) -> dict[int, int]:
+        pending: dict[int, int] = {}
+        lines: list[str] = []
+        for payload in payloads:
+            for bot in payload.get("bots") or []:
+                if not isinstance(bot, Mapping):
+                    continue
+                guid = _int(bot.get("bot_guid")) or 0
+                receipt = self.bots.setdefault(guid, {
+                    "bot_guid": guid, "bot_name": bot.get("bot_name"),
+                    "newest_retained_sequence": 0, "last_captured_sequence": 0,
+                })
+                newest = _int(bot.get("newest_retained_sequence"))
+                if newest is not None:
+                    receipt["newest_retained_sequence"] = max(receipt["newest_retained_sequence"], newest)
+                if source == "delta":
+                    pending[guid] = max(0, _int(bot.get("pending_entry_count")) or 0)
+                    receipt["delta_pending_after"] = pending[guid]
+                for entry in bot.get("entries") or []:
+                    if not isinstance(entry, Mapping):
+                        continue
+                    key = (guid, _int(entry.get("sequence")) or 0, _int(entry.get("timestamp_ms")) or 0)
+                    if key in self.seen:
+                        continue
+                    self.seen.add(key)
+                    lines.append(json.dumps(
+                        {"drain_call": call, "source": source, "bot_guid": guid,
+                         "bot_name": bot.get("bot_name"), "entry": entry},
+                        sort_keys=True, separators=(",", ":"),
+                    ))
+                    if key[1] >= int(receipt["last_captured_sequence"] or 0):
+                        receipt.update({
+                            "last_captured_sequence": key[1],
+                            "action": entry.get("action") or entry.get("situation"),
+                            "result": entry.get("result"),
+                            "route_node_id": entry.get("route_node_id"),
+                        })
+        if lines and not self.write_failed:
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                with gzip.open(self.path, "at", encoding="utf-8") as handle:
+                    handle.write("\n".join(lines) + "\n")
+                self.rows += len(lines)
+            except OSError:
+                self.write_failed = True
+        return pending
 
 
 def drain_terminal_trace(
@@ -348,25 +440,32 @@ def drain_terminal_trace(
     max_calls: int = TERMINAL_TRACE_DRAIN_MAX_CALLS,
     clock: Callable[[], float] = time.monotonic,
 ) -> str:
-    """Drain every bot's pending delta rows after a terminal failure.
+    """Capture every bot's pending and newest decisions after a terminal failure.
 
-    Repeats the configured ``.botauto trace <cohort> <selector> <n> delta``
-    until every bot reports ``pending_entry_count == 0``, ``max_calls`` calls
-    were sent, or ``budget_sec`` elapsed.  Rows go to
-    ``terminal_trace_drain.jsonl.gz`` (never the bounded console buffer); the
-    returned cleanup receipt carries each bot's last drained decision.
+    A delta export returns the OLDEST pending rows; round-2 backlogs reached
+    1665-2390 rows per bot, so a bounded delta drain rarely reaches the end.
+    This therefore (1) repeats the configured ``.botauto trace <cohort>
+    <selector> <n> delta`` until every bot reports ``pending_entry_count ==
+    0``, ``max_calls`` calls were sent or ``budget_sec`` elapsed, then (2)
+    always sends the non-delta ``.botauto trace <cohort> <selector> <n>``,
+    which returns each bot's newest ``n`` rows: the failing bot's last
+    decisions.  Rows go to ``terminal_trace_drain.jsonl.gz`` (never the
+    bounded console buffer).  The receipt states per bot whether the newest
+    retained sequence was captured and how much delta backlog remains.
+
+    The budget is checked between calls, and one call can take up to the
+    cleanup step cap (``CLEANUP_STEP_MAX_SEC``, 180 s), so the worst case is
+    about ``budget_sec`` plus two step caps, inside the shared cleanup budget.
     """
     command = terminal_drain_command(heartbeat_commands)
     if not command:
         return ""
+    tail = terminal_tail_command(command)
     started = clock()
+    capture = _DrainCapture(Path(output_dir) / TERMINAL_TRACE_DRAIN_FILE)
     calls = 0
-    drained_rows = 0
     pending: dict[int, int] = {}
-    last_entries: dict[int, dict[str, Any]] = {}
-    seen: set[tuple[int, int, int]] = set()
-    stop_reason = "budget_exhausted"
-    path = Path(output_dir) / TERMINAL_TRACE_DRAIN_FILE
+    delta_stop = "budget_exhausted"
     while calls < max(1, int(max_calls)):
         if calls and clock() - started >= budget_sec:
             break
@@ -375,65 +474,50 @@ def drain_terminal_trace(
         if observe is not None:
             observe(command, output or "")
         if not ok:
-            stop_reason = "transport_unavailable"
+            delta_stop = "transport_unavailable"
             break
         payloads = [row for row in parse(output or "") if row.get("action") == "botauto_trace"]
         if not payloads:
-            stop_reason = "no_trace_payload"
+            delta_stop = "no_trace_payload"
             break
-        pending = {}
-        lines: list[str] = []
-        for payload in payloads:
-            for bot in payload.get("bots") or []:
-                if not isinstance(bot, Mapping):
-                    continue
-                guid = _int(bot.get("bot_guid")) or 0
-                pending[guid] = max(0, _int(bot.get("pending_entry_count")) or 0)
-                for entry in bot.get("entries") or []:
-                    if not isinstance(entry, Mapping):
-                        continue
-                    key = (guid, _int(entry.get("sequence")) or 0, _int(entry.get("timestamp_ms")) or 0)
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    lines.append(json.dumps(
-                        {"drain_call": calls, "bot_guid": guid, "bot_name": bot.get("bot_name"), "entry": entry},
-                        sort_keys=True, separators=(",", ":"),
-                    ))
-                    previous = last_entries.get(guid)
-                    if previous is None or key[1] >= int(previous.get("sequence") or 0):
-                        last_entries[guid] = {
-                            "bot_guid": guid,
-                            "bot_name": bot.get("bot_name"),
-                            "sequence": key[1],
-                            "action": entry.get("action") or entry.get("situation"),
-                            "result": entry.get("result"),
-                            "route_node_id": entry.get("route_node_id"),
-                        }
-        if lines:
-            try:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                with gzip.open(path, "at", encoding="utf-8") as handle:
-                    handle.write("\n".join(lines) + "\n")
-                drained_rows += len(lines)
-            except OSError:
-                stop_reason = "write_failed"
-                break
+        pending = capture.add(payloads, call=calls, source="delta")
         if all(value <= 0 for value in pending.values()):
-            stop_reason = "pending_zero"
+            delta_stop = "pending_zero"
             break
-    complete = stop_reason == "pending_zero"
+    else:
+        delta_stop = "max_calls"
+    tail_captured = False
+    if delta_stop != "transport_unavailable":
+        output, ok = run(tail)
+        if observe is not None:
+            observe(tail, output or "")
+        payloads = [row for row in parse(output or "") if row.get("action") == "botauto_trace"] if ok else []
+        if payloads:
+            capture.add(payloads, call=calls + 1, source="tail")
+            tail_captured = True
+    bots = [capture.bots[guid] for guid in sorted(capture.bots)]
+    for receipt in bots:
+        newest = int(receipt.get("newest_retained_sequence") or 0)
+        receipt["newest_captured"] = bool(newest) and int(receipt.get("last_captured_sequence") or 0) >= newest
+    newest_captured = bool(bots) and all(receipt["newest_captured"] for receipt in bots)
+    backlog_drained = delta_stop == "pending_zero"
     return cleanup_step_receipt(
-        command, returncode=0, timed_out=stop_reason == "budget_exhausted", completed=complete,
+        command, returncode=0, timed_out=delta_stop in {"budget_exhausted", "max_calls"},
+        completed=newest_captured and not capture.write_failed,
         extra={
             "purpose": "terminal_trace_drain",
-            "stop_reason": stop_reason,
-            "drain_calls": calls,
-            "drained_rows": drained_rows,
+            "delta_stop_reason": delta_stop,
+            "delta_backlog_drained": backlog_drained,
+            "delta_calls": calls,
+            "tail_command": tail,
+            "tail_captured": tail_captured,
+            "newest_captured": newest_captured,
+            "captured_rows": capture.rows,
+            "write_failed": capture.write_failed,
             "elapsed_ms": int(max(0.0, clock() - started) * 1000),
-            "pending_after": sum(pending.values()),
-            "bots_pending": sorted(guid for guid, value in pending.items() if value > 0),
-            "path": TERMINAL_TRACE_DRAIN_FILE if drained_rows else "",
-            "last_decisions": [last_entries[guid] for guid in sorted(last_entries)],
+            "delta_pending_after": sum(pending.values()),
+            "bots_with_delta_backlog": sorted(guid for guid, value in pending.items() if value > 0),
+            "path": TERMINAL_TRACE_DRAIN_FILE if capture.rows else "",
+            "bots": bots,
         },
     )
