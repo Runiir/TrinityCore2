@@ -1,0 +1,201 @@
+{
+  "schema": "raid_target_v1",
+  "scenario": "blackwing_descent_10n_chimaeron",
+  "purpose": "Numeric finish line for Chimaeron 10N bots on the canonical composition: per-actor kill DPS at WCL parity over a batch of native kills in a seeded lockout (Magmaw and Omnotron done).",
+  "validation_scenario_id": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+  "encounter_route_node_id": "bwd.chimaeron.encounter",
+  "composition": "experiments/configs/raid_compositions/blackwing_descent_10n.json",
+  "shard": {
+    "cohort_id": "blackwing_descent_10n_chimaeron_c0",
+    "runtime_profile_id": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+    "pool_tag": "blackwing_descent_10n_chimaeron_c0_diagnostic",
+    "lockout": {
+      "raid": "blackwing_descent",
+      "difficulty": "10N",
+      "precompleted_boss_keys": [
+        "magmaw",
+        "omnotron"
+      ],
+      "assistance": "diagnostic_only_assistance; a seeded lockout never certifies a natural clear"
+    },
+    "spec_selection": {
+      "druid": "feral_druid_tank",
+      "shaman": "restoration_shaman"
+    },
+    "route_template_scenario_id": "blackwing_descent_10n_chimaeron_diagnostic"
+  },
+  "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_dps_reference_v1.json",
+  "wcl_cast_timelines": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_wcl_cast_timelines_v1.json",
+  "matched_reference_ids": [],
+  "unmatched_reference_notes": {},
+  "reference_status": {
+    "state": "no_matched_wcl_reference",
+    "reason": "Warcraft Logs extraction blocked by a human-verification gate on 2026-09-25; see the manifest's planned_extraction.",
+    "wowsims_fallback_available": [
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "demonology_warlock"
+    ],
+    "no_reference_until_wcl": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "beast_mastery_hunter"
+    ],
+    "healers_without_dps_target": [
+      "holy_paladin",
+      "discipline_priest",
+      "restoration_shaman"
+    ]
+  },
+  "declared_gaps": [
+    "No matched WCL 10N Chimaeron kill yet: every actor is judged against the WoWSims fallback or has no reference.",
+    "Blood DK, Feral tank and BM Hunter have neither a matched WCL reference nor a verified WoWSims fallback (status no_reference).",
+    "Encounter damage fidelity is open: creature 43296 DamageModifier is the upstream value 1 (see creature_damage_calibration_v1 patch request).",
+    "Native 10N health 20,699,972 conflicts with the guide's 25.9M; kill duration comparisons wait for the WCL health derivation.",
+    "Phase-two (Mortality) tank deaths are Blizzlike once melee is calibrated; the 0 boss-window death rule may need a Mortality exception, decided with WCL death data.",
+    "scoreboard run's single-scenario argv cannot seed the lockout; runs go through shard_coordinator and are added with scoreboard ingest."
+  ],
+  "kills_per_measurement": 3,
+  "kills_per_batch": 5,
+  "actor_dps_ratio": 0.95,
+  "actor_dps_metric": "Per actor: mean encounter_window_dps over the label's counted native-clear kills divided by the median actor_dps of the matched references for the same spec. target_dps is that WCL median; the actor passes when ratio >= actor_dps_ratio.",
+  "party_dps_ratio": 0.95,
+  "party_dps_gating": false,
+  "party_dps_metric": "Mean encounter_window_party_dps over counted native-clear kills divided by the median raid_dps of the matched references. Reported, not gating.",
+  "clear_rule": {
+    "native_clear": true,
+    "completion_reason": "validation_route_manifest_complete",
+    "basis": "report.json native_gameplay_outcome.native_clear and completion_reason. The harness exit code is informational: diagnostic route runs exit 1 (all_passed=false) even on a clean native clear."
+  },
+  "max_boss_window_deaths": 0,
+  "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count. Unknown counts never pass.",
+  "roles_without_dps_target": [
+    "healer"
+  ],
+  "healer_status": "Healers have no DPS target; their status follows the encounter status.",
+  "fallback_reference": {
+    "source": "wowsims",
+    "promotion_index": "experiments/configs/wowsims_cata_dps_reference_promotion_index_v1.json",
+    "ratio": 0.9,
+    "applies_when": "the spec has no matched WCL reference",
+    "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
+  },
+  "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
+  "roster": {
+    "11002001": {
+      "name": "Bwchinba",
+      "spec": "blood_death_knight",
+      "role": "tank",
+      "character_key": "death_knight"
+    },
+    "11002002": {
+      "name": "Bwchinbb",
+      "spec": "feral_druid_tank",
+      "role": "tank",
+      "character_key": "druid"
+    },
+    "11002003": {
+      "name": "Bwchinbc",
+      "spec": "beast_mastery_hunter",
+      "role": "dps",
+      "character_key": "hunter"
+    },
+    "11002004": {
+      "name": "Bwchinbd",
+      "spec": "fire_mage",
+      "role": "dps",
+      "character_key": "mage"
+    },
+    "11002005": {
+      "name": "Bwchinbe",
+      "spec": "holy_paladin",
+      "role": "healer",
+      "character_key": "paladin_holy"
+    },
+    "11002006": {
+      "name": "Bwchinbf",
+      "spec": "retribution_paladin",
+      "role": "dps",
+      "character_key": "paladin_ret"
+    },
+    "11002007": {
+      "name": "Bwchinbg",
+      "spec": "discipline_priest",
+      "role": "healer",
+      "character_key": "priest"
+    },
+    "11002008": {
+      "name": "Bwchinbh",
+      "spec": "assassination_rogue",
+      "role": "dps",
+      "character_key": "rogue"
+    },
+    "11002009": {
+      "name": "Bwchinbi",
+      "spec": "restoration_shaman",
+      "role": "healer",
+      "character_key": "shaman"
+    },
+    "11002010": {
+      "name": "Bwchinbj",
+      "spec": "demonology_warlock",
+      "role": "dps",
+      "character_key": "warlock"
+    }
+  },
+  "roster_policy": "Canonical composition copy 0 (tools.raid_program.raid_shard_identity: raid 1, 10N, boss 2, copy 0, slots 1-10). Specs follow the composition's Chimaeron spec_selection. A counted clear missing any expected actor fails the encounter with roster_incomplete.",
+  "counting_rules": {
+    "label": "A label is one build and one batch: run refuses a label that already has kills and runs a pinned copy /tmp/worldserver-<sha12>.",
+    "counted": "A kill counts unless it is voided, interrupted, an infrastructure_failure, has no evidence pointer (no_evidence), is a clear whose post-processing failed (postprocess_error), was recorded without report.json measurement_validity (no_measurement_validity), or has valid_for_dps false (stalled_boss_window).",
+    "measurement_validity": "Copied per kill from report.json measurement_validity for the encounter window (valid flag, reasons, stalled sec, stall fraction, max stall). Kills recorded before harness commit d2393eb5a1 have none: their boss windows lost 11-21% to heartbeat freezes and are never compared with new kills. A clear with valid_for_dps false is excluded; a wipe is excluded only when a stall overlapped the boss window, so trash wipes still fail the label.",
+    "damage_reconciliation": "Killed-hostile damage vs max HP from combat_analysis.json (mismatch_count, unlogged_health_loss). Shown, never excludes a kill.",
+    "infrastructure_failure": "report.json missing or unreadable, or the run never reached the encounter route node and no bot died. Not counted and not a gameplay failure.",
+    "mixed_builds": "Counted kills with different worldserver_sha256 (mixed_binaries) or source_commit (mixed_commits) fail the encounter."
+  },
+  "status_rules": {
+    "encounter": "fail if any counted kill is not a native clear, lacks encounter data, has more than max_boss_window_deaths boss-window deaths or an unknown count, or the counted kills mix binaries/commits or miss a roster actor; otherwise insufficient_kills below kills_per_measurement counted native clears; otherwise pass.",
+    "actor": "no_reference without a matched spec reference; insufficient_kills below kills_per_measurement; fail (below_target) under actor_dps_ratio; fail (encounter_failed) at target while the encounter is not pass; otherwise pass.",
+    "overall": "pass only if the encounter passes and every non-healer actor passes."
+  },
+  "noise_rule": {
+    "min_kills_per_label": 3,
+    "test": "two-sided Welch t-test at alpha 0.05 over counted native-clear kills",
+    "statistic": "t = (mean1 - mean2) / sqrt(sd1^2 / n1 + sd2^2 / n2), sample standard deviations (n - 1)",
+    "degrees_of_freedom": "Welch-Satterthwaite: (a + b)^2 / (a^2 / (n1 - 1) + b^2 / (n2 - 1)) with a = sd1^2 / n1, b = sd2^2 / n2",
+    "critical_value": "t_crit = Student t quantile 0.975 at df (scipy.stats.t.ppf)",
+    "improved": "t > t_crit",
+    "regressed": "t < -t_crit",
+    "within_noise": "otherwise; with zero spread on both sides any nonzero delta is improved or regressed",
+    "insufficient_kills": "either label has fewer than min_kills_per_label counted native-clear kills",
+    "applies_to": "each actor's encounter_window_dps and the party encounter_window_party_dps",
+    "keep_rule": "Keep a change (candidate vs baseline) only when all four conditions hold and each label has kills_per_batch counted native clears; `show --min-kills N` overrides the batch size and the decision line says so. A failed condition means revert; otherwise an unjudged condition or a short batch means insufficient_kills. (a) Every kill recorded under the candidate label is a native clear, except infrastructure failures, interrupted runs and voided kills; a counted native clear without encounter data is unjudged. (b) Boss-window deaths per counted kill did not increase; an unknown count is unjudged, and recovered trash deaths never gate. (c) Neither the party nor any non-healer actor is regressed under the per-row two-sided 95% Welch t. (d) The point estimate is non-negative: with --actor A, actor A's mean DPS, otherwise the party mean DPS, is at least the baseline mean. Keep also requires the change's mechanism to be visible in the candidate kills (ranked gaps, evidence_view), which the tool cannot check.",
+    "batch_rule": "keep/revert batches use kills_per_batch counted native clears per label; kills_per_measurement stays the finish-line minimum"
+  },
+  "run_plan": {
+    "runner": "shard_coordinator",
+    "default_worldserver": "build/src/server/worldserver/worldserver",
+    "output_dir_pattern": "/tmp/scoreboard-{label}-k{kill}-{timestamp}",
+    "duration_policy": "completion-watchdog: stop on native clear, no-progress stall, repeated decisions, death loops or infrastructure loss. There is no success timer.",
+    "shard_plan_status": "pending_round2_plan: the coordinator's round-2 shard run plan (raid_shard_run_plan_v1) lists this cohort with lockout magmaw,omnotron",
+    "argv_template": [
+      "pixi",
+      "run",
+      "python",
+      "-m",
+      "tools.raid_program.shard_coordinator",
+      "--plan",
+      "{shard_plan}",
+      "--shard",
+      "blackwing_descent_10n_chimaeron_c0",
+      "--worldserver",
+      "{worldserver}",
+      "--config",
+      "trinity-worldserver-test.conf",
+      "--output-dir",
+      "{output_dir}"
+    ],
+    "ingest": "pixi run python -m tools.raid_program.scoreboard ingest --scenario blackwing_descent_10n_chimaeron --label <label> --run-dir <shard run dir>"
+  }
+}

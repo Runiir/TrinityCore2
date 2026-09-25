@@ -3,144 +3,143 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
-#include <algorithm>
-#include <cmath>
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronDutyPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFormation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronTankSwap.h"
+
 #include <optional>
 #include <string>
 #include <string_view>
 
 namespace BotEncounter
 {
+// One bot's proposal for one blackboard revision. The encounter script owns
+// every native fact; this plan only ranks lawful player actions:
+// - Movement: formation slot (prewake staging, mixture spread, outage stack);
+// - Action: an ordinary native cast (taunt exchange, raid cooldown, absorb,
+//   Bloodlust) of a spell the bot knows;
+// - PriorityHealTarget: the floor/urgency assignment for this healer;
+// - SuppressOffense: hold damage while the boss sleeps and in the burn window.
 struct AdaptiveChimaeronPlan
 {
     bool OwnsNode = false;
     bool HealingDisabled = false;
+    bool SuppressOffense = false;
+    std::string SuppressReason;
     ObjectGuid DamageTarget;
     ObjectGuid PriorityHealTarget;
     std::optional<BotNativeAction::Candidate> Movement;
+    std::optional<BotNativeAction::Candidate> Action;
+    Chimaeron::Phase EncounterPhase = Chimaeron::Phase::None;
+    std::string Duty;
 };
 
 class AdaptiveChimaeronStrategy
 {
 public:
-    static constexpr uint32 BossEntry = 43296;
+    static constexpr uint32 BossEntry = Chimaeron::BossEntry;
 
     AdaptiveChimaeronPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role) const
     {
+        using namespace Chimaeron;
         AdaptiveChimaeronPlan plan;
-        if (board.Route.NodeId != "bwd.chimaeron.encounter")
+        Observation const observation = Observe(board, botGuid);
+        plan.EncounterPhase = observation.CurrentPhase;
+        if (observation.CurrentPhase == Phase::None)
             return plan;
-        ActorSnapshot const* bot = board.FindActor(botGuid);
-        ActorSnapshot const* boss = Find(board, BossEntry);
-        if (!bot || !bot->Alive || !boss)
+        ActorSnapshot const& boss = *observation.Boss;
+        ActorSnapshot const& bot = *observation.Bot;
+        Duties const duties = BuildDuties(board, botGuid, role);
+        plan.Duty = DutyName(duties, botGuid);
+
+        if (observation.CurrentPhase == Phase::Prewake)
+        {
+            // The route owns these nodes (arrival, Finkle's gossip, the wake
+            // wait) and their completions. Nobody may pull the sleeping boss
+            // before the Bile-O-Tron is active; once the wake wait starts the
+            // raid stages so the Break tank is the nearest player.
+            plan.SuppressOffense = true;
+            plan.SuppressReason = "prewake_boss_asleep";
+            if (board.Route.NodeId == WakeWaitNode)
+                if (std::optional<Point> slot = PrewakeSlot(duties, ToPoint(boss.Position), botGuid))
+                    plan.Movement = ProposeMove(board, bot, *slot, SpreadTolerance,
+                        "prewake_stage", boss.Guid, 300.0f);
             return plan;
+        }
+
         plan.OwnsNode = true;
-        plan.DamageTarget = boss->Guid;
-        plan.HealingDisabled = HasAura(*boss, 82934)
-            || HasAura(*bot, 82890);
+        plan.DamageTarget = boss.Guid;
+        plan.HealingDisabled = observation.CurrentPhase == Phase::Mortality
+            || HasAura(bot, MortalityRaidSpell);
 
         if (role == "healer" && !plan.HealingDisabled)
+            plan.PriorityHealTarget = SelectPriorityHealTarget(board, observation,
+                duties, botGuid);
+
+        if (BurnHold(board, observation, duties))
         {
-            if (HasAura(*boss, 88826) && !boss->VictimGuid.IsEmpty())
-                plan.PriorityHealTarget = boss->VictimGuid;
-            else
-            {
-                ActorSnapshot const* floorTarget = nullptr;
-                for (ActorSnapshot const& player : board.Players)
-                    if (player.Alive && HasAura(player, 82705)
-                        && player.Health < 12000
-                        && (!floorTarget || player.Health < floorTarget->Health))
-                        floorTarget = &player;
-                if (floorTarget)
-                    plan.PriorityHealTarget = floorTarget->Guid;
-            }
+            plan.SuppressOffense = true;
+            plan.SuppressReason = "burn_hold_before_mortality";
         }
 
-        if (HasAura(*boss, 88872))
-        {
-            float const stackX = boss->Position.X
-                - std::cos(boss->Facing) * 8.0f;
-            float const stackY = boss->Position.Y
-                - std::sin(boss->Facing) * 8.0f;
-            if (Distance2d(bot->Position, { stackX, stackY,
-                    boss->Position.Z }) > 5.0f)
-                plan.Movement = Move(board, *bot, stackX, stackY,
-                    "feud_rear_stack", boss->Guid,
-                    BotActionArbitration::Priority::Mechanic);
-        }
-        else
-        {
-            ActorSnapshot const* nearest = nullptr;
-            float nearestDistance = 0.0f;
-            for (ActorSnapshot const& player : board.Players)
-                if (player.Alive && player.Guid != botGuid)
-                {
-                    float const distance = Distance2d(bot->Position,
-                        player.Position);
-                    if (!nearest || distance < nearestDistance)
-                    {
-                        nearest = &player;
-                        nearestDistance = distance;
-                    }
-                }
-            if (nearest && nearestDistance < 7.0f)
-            {
-                float dx = bot->Position.X - nearest->Position.X;
-                float dy = bot->Position.Y - nearest->Position.Y;
-                float length = std::sqrt(dx * dx + dy * dy);
-                if (length < 0.01f)
-                {
-                    dx = std::cos(bot->Facing);
-                    dy = std::sin(bot->Facing);
-                    length = 1.0f;
-                }
-                plan.Movement = Move(board, *bot,
-                    nearest->Position.X + dx / length * 9.0f,
-                    nearest->Position.Y + dy / length * 9.0f,
-                    "caustic_slime_spread", nearest->Guid,
-                    BotActionArbitration::Priority::Mechanic);
-            }
-        }
+        Point const centre = FormationCentre(board, boss);
+        if (observation.CurrentPhase == Phase::Outage)
+            plan.Movement = ProposeMove(board, bot, StackSlot(board, centre, botGuid),
+                StackTolerance, "outage_slime_stack", boss.Guid, 320.0f);
+        else if (observation.CurrentPhase == Phase::Mixture)
+            if (std::optional<Point> slot = SpreadSlot(duties, centre, botGuid))
+                plan.Movement = ProposeMove(board, bot, *slot, SpreadTolerance,
+                    "mixture_slime_spread", boss.Guid, 250.0f);
+
+        if (std::optional<TauntDecision> taunt = DecideTaunt(board, observation, duties, botGuid))
+            plan.Action = ProposeCast(board, boss.Guid, taunt->SpellId, taunt->Reason, 400.0f);
+        else if (std::optional<CastDecision> cast = DecideSupportCast(board, observation,
+                duties, botGuid))
+            plan.Action = ProposeCast(board, cast->Target, cast->SpellId, cast->Reason, 350.0f);
         return plan;
     }
 
 private:
-    static bool HasAura(ActorSnapshot const& actor, uint32 spellId)
+    static BotNativeAction::CandidateIdentity Identity(Blackboard const& board,
+        std::string_view mechanic, ObjectGuid actor)
     {
-        return std::any_of(actor.Auras.begin(), actor.Auras.end(),
-            [spellId](AuraSnapshot const& aura) { return aura.SpellId == spellId; });
+        BotNativeAction::CandidateIdentity id;
+        id.ScopeKey = board.CurrentScope.Key();
+        id.Strategy = "adaptive_chimaeron";
+        id.Mechanic = std::string(mechanic);
+        id.Actor = actor;
+        id.EventGeneration = board.Revision;
+        return id;
     }
 
-    static ActorSnapshot const* Find(Blackboard const& board, uint32 entry)
+    static std::optional<BotNativeAction::Candidate> ProposeMove(Blackboard const& board,
+        ActorSnapshot const& bot, Chimaeron::Point slot, float tolerance,
+        std::string_view mechanic, ObjectGuid actor, float utility)
     {
-        for (ActorSnapshot const& actor : board.Hostiles)
-            if (actor.Alive && actor.Entry == entry)
-                return &actor;
-        return nullptr;
+        if (Chimaeron::Distance(Chimaeron::ToPoint(bot.Position), slot) <= tolerance)
+            return std::nullopt;
+        BotNativeAction::Candidate candidate;
+        candidate.Id = Identity(board, mechanic, actor);
+        candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        candidate.Utility = utility;
+        candidate.ExpiresAtMs = board.ObservedAtMs + 750;
+        candidate.Action = BotNativeAction::Move{ slot.X, slot.Y, bot.Position.Z };
+        return candidate;
     }
 
-    static float Distance2d(Vector3 const& left, Vector3 const& right)
-    {
-        float const dx = left.X - right.X;
-        float const dy = left.Y - right.Y;
-        return std::sqrt(dx * dx + dy * dy);
-    }
-
-    static BotNativeAction::Candidate Move(Blackboard const& board,
-        ActorSnapshot const& bot, float x, float y, std::string mechanic,
-        ObjectGuid actor, BotActionArbitration::Priority priority)
+    static BotNativeAction::Candidate ProposeCast(Blackboard const& board,
+        ObjectGuid target, uint32 spellId, std::string_view mechanic, float utility)
     {
         BotNativeAction::Candidate candidate;
-        candidate.Id.ScopeKey = board.CurrentScope.Key();
-        candidate.Id.Strategy = "adaptive_chimaeron";
-        candidate.Id.Mechanic = std::move(mechanic);
-        candidate.Id.Actor = actor;
-        candidate.Id.EventGeneration = board.Revision;
-        candidate.ActionPriority = priority;
-        candidate.Utility = 250.0f;
+        candidate.Id = Identity(board, mechanic, target);
+        candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        candidate.Utility = utility;
         candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-        candidate.Action = BotNativeAction::Move{ x, y, bot.Position.Z };
+        candidate.Action = BotNativeAction::CastSpell{ target, spellId };
         return candidate;
     }
 };

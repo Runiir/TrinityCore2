@@ -1,0 +1,50 @@
+{
+  "schema": "chimaeron_wcl_dps_reference_v1",
+  "encounter": "chimaeron",
+  "mode": "10N",
+  "extraction_status": "blocked_wcl_human_verification",
+  "extraction_attempt": {
+    "date": "2026-09-25",
+    "observation": "classic.warcraftlogs.com redirected every shared preview tab to /human-challenge ('One Quick Check ... I am a human and not a bot'); WebFetch returned HTTP 403. No agent attestation was made; the coordinator asked the user to pass the check once."
+  },
+  "references": [],
+  "planned_extraction": {
+    "candidate_reports": [
+      {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "why": "10N raid night of the calibrated Magmaw melee sample; open its Chimaeron kill"
+      },
+      {
+        "report": "Y8ajQ7dbmKMG1RZy",
+        "why": "10N raid night of the matched Magmaw DPS reference"
+      },
+      {
+        "report": "xAhkN2y9YP3KRmnJ",
+        "why": "second Magmaw 10N reference night"
+      }
+    ],
+    "fallback": "Chimaeron 10-player normal rankings; verify date and mode after opening the report",
+    "fields_per_reference": [
+      "id",
+      "url",
+      "mode",
+      "duration_sec",
+      "raid_dps",
+      "average_item_level",
+      "target_scope",
+      "reference_class",
+      "actor_dps (per canonical spec)",
+      "limitations"
+    ],
+    "canonical_specs_needed": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "beast_mastery_hunter",
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "demonology_warlock"
+    ],
+    "matching_rule": "Same mode (10N) and a kill that reaches Mortality; prefer rosters with two tanks and three healers. A spec absent from every matched kill keeps the WoWSims fallback (0.90) or no_reference."
+  }
+}

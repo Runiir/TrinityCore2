@@ -1,0 +1,9 @@
+{
+  "schema": "chimaeron_wcl_cast_timelines_v1",
+  "encounter": "chimaeron",
+  "mode": "10N",
+  "reference_id": null,
+  "extraction_status": "blocked_wcl_human_verification",
+  "source_note": "Completed Cast rows from WCL Events pages (Begin Cast excluded), one actor per canonical spec, plus the boss's Massacre/Break/Double Attack/Feud/Mortality events for cadence. Empty until the Warcraft Logs gate clears.",
+  "actors": []
+}

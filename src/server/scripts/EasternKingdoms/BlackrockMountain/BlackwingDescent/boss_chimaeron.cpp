@@ -21,6 +21,8 @@
 #include "Containers.h"
 #include "GridNotifiers.h"
 #include "ScriptedCreature.h"
+#include "Spell.h"
+#include "SpellInfo.h"
 #include "SpellScript.h"
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
@@ -28,6 +30,7 @@
 #include "MotionMaster.h"
 #include "Map.h"
 #include "blackwing_descent.h"
+#include <limits>
 
 namespace BlackwingDescent::Chimaeron
 {
@@ -128,23 +131,61 @@ enum GossipMenuMisc
 
 Position const LordVictorNefariusSummonPosition = { -113.8229f, 45.86111f, 80.36481f, 4.817109f };
 
+// Massacre event cadence (EVENT_MASSACRE repeat). A remaining time above it
+// can only be an overdue event whose uint32 subtraction wrapped.
+constexpr uint32 MassacreRepeatMs = 30000;
+
 struct boss_chimaeron : public BossAI
 {
-    boss_chimaeron(Creature* creature) : BossAI(creature, DATA_CHIMAERON),  _isInFeud(false)
+    boss_chimaeron(Creature* creature) : BossAI(creature, DATA_CHIMAERON)
     {
         Initialize();
     }
 
+    // Helper state must not survive an evade: a creature respawned in
+    // compatibility mode keeps its AI object and only calls Reset().
     void Initialize()
     {
         me->SetReactState(REACT_PASSIVE);
         _knockOutChance = 40;
+        _killedPlayerCount = 0;
+        _isInFeud = false;
     }
 
     void Reset() override
     {
         _Reset();
+        Initialize();
+        SetMortalityTauntImmunity(false);
         events.SetPhase(PHASE_ASLEEP);
+    }
+
+    // Client Mortality (82934/95524): "rendering him immune to Taunt effects".
+    // The aura's mechanic-immunity misc value 477 is generically mapped to
+    // movement/control immunity (SpellInfo::_LoadImmunityInfo), not taunt, so
+    // the encounter applies the taunt immunity itself while Mortality lasts.
+    void SetMortalityTauntImmunity(bool apply)
+    {
+        me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, apply);
+        me->ApplySpellImmune(0, IMMUNITY_STATE, SPELL_AURA_MOD_TAUNT, apply);
+    }
+
+    // Read-only observation for bot arbitration: time until the next
+    // Massacre cast starts, 0 while it is being cast or overdue. No value
+    // outside phase one, where Massacre is not scheduled.
+    uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override
+    {
+        if (spellId != SPELL_MASSACRE || !events.IsInPhase(PHASE_1))
+            return std::numeric_limits<uint32>::max();
+
+        if (Spell const* spell = me->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            if (spell->GetSpellInfo() && spell->GetSpellInfo()->Id == SPELL_MASSACRE)
+                return 0;
+
+        uint32 const remaining = events.GetTimeUntilEvent(EVENT_MASSACRE);
+        if (remaining == std::numeric_limits<uint32>::max())
+            return remaining;
+        return remaining > MassacreRepeatMs ? 0 : remaining;
     }
 
     void JustEngagedWith(Unit* who) override
@@ -152,6 +193,7 @@ struct boss_chimaeron : public BossAI
         BossAI::JustEngagedWith(who);
         instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
         instance->DoUpdateWorldState(WORLD_STATE_ID_FULL_OF_SOUND_AND_FURY, 0);
+        _killedPlayerCount = 0;
         me->SetReactState(REACT_AGGRESSIVE);
         events.SetPhase(PHASE_1);
         events.ScheduleEvent(EVENT_CAUSTIC_SLIME, 5s, 0, PHASE_1);
@@ -172,6 +214,7 @@ struct boss_chimaeron : public BossAI
         _EnterEvadeMode();
         instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
         me->RemoveAllAuras();
+        SetMortalityTauntImmunity(false);
 
         if (Creature* bileOTron = instance->GetCreature(DATA_BILE_O_TRON_800))
             bileOTron->DespawnOrUnsummon(0ms, 30s);
@@ -228,6 +271,7 @@ struct boss_chimaeron : public BossAI
             events.ScheduleEvent(EVENT_DOUBLE_ATTACK, 1ms, 0, PHASE_2);
             DoCastAOE(SPELL_MORTALITY_1, true);
             DoCastSelf(SPELL_MORTALITY_2, true);
+            SetMortalityTauntImmunity(true);
 
             if (IsHeroic())
                 if (Creature* nefarius = instance->GetCreature(DATA_LORD_VICTOR_NEFARIUS_GENERIC))
@@ -372,9 +416,9 @@ struct boss_chimaeron : public BossAI
         DoMeleeAttackIfReady();
     }
 private:
-    uint8 _knockOutChance;
-    uint8 _killedPlayerCount;
-    bool _isInFeud;
+    uint8 _knockOutChance = 40;
+    uint8 _killedPlayerCount = 0;
+    bool _isInFeud = false;
 };
 
 struct npc_chimaeron_finkle_einhorn : public ScriptedAI
@@ -516,16 +560,41 @@ private:
 
 class spell_chimaeron_caustic_slime_targeting : public SpellScript
 {
+    // Patch 4.0.6 hotfix (Blizzard, 2011-02-09): "Chimaeron no longer casts
+    // Caustic Slime on targets who are affected by Break. Chimaeron now casts
+    // Caustic Slime on a tank target if there are not enough players present
+    // without Break." The current victim stays excluded (repository behavior);
+    // Break-affected players only fill a shortfall.
     void FilterTargets(std::list<WorldObject*>& targets)
     {
         if (targets.empty())
             return;
 
-        targets.remove_if(Trinity::Predicates::IsVictimOf(GetCaster()));
+        Unit* caster = GetCaster();
+        targets.remove_if(Trinity::Predicates::IsVictimOf(caster));
 
-        uint8 size = GetCaster()->GetMap()->Is25ManRaid() ? 4 : 2;
+        std::list<WorldObject*> breakTargets;
+        for (auto itr = targets.begin(); itr != targets.end();)
+        {
+            Unit const* unit = (*itr)->ToUnit();
+            if (unit && unit->HasAura(SPELL_BREAK))
+            {
+                breakTargets.push_back(*itr);
+                itr = targets.erase(itr);
+            }
+            else
+                ++itr;
+        }
+
+        std::size_t const size = caster->GetMap()->Is25ManRaid() ? 4 : 2;
         if (targets.size() > size)
             Trinity::Containers::RandomResize(targets, size);
+        else if (targets.size() < size && !breakTargets.empty())
+        {
+            if (breakTargets.size() > size - targets.size())
+                Trinity::Containers::RandomResize(breakTargets, size - targets.size());
+            targets.splice(targets.end(), breakTargets);
+        }
     }
 
     void HandleDummyEffect(SpellEffIndex effIndex)
