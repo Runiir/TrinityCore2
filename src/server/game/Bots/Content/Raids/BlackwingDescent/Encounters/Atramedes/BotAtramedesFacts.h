@@ -64,8 +64,18 @@ inline constexpr float SonarBombRadius = 6.0f;
 inline constexpr float FirePatchRadius = 3.0f;
 inline constexpr float FlameBreathRadius = 5.0f;
 inline constexpr float SonicBreathHalfAngleRad = 7.5f * 3.14159265f / 180.0f;
-// creature_model_info 34547: CombatReach 20.
+// TDB 434.22011: creature_template 41442 modelid1 34547, scale 1;
+// creature_model_info 34547: BoundingRadius 2, CombatReach 20. The large
+// "hitbox" is the combat reach (user raid experience, 2026-09-25).
 inline constexpr float BossCombatReach = 20.0f;
+// Unit::GetMeleeRange: attacker reach (1.5 for players) + target reach +
+// 4/3, compared with the 3D centre-to-centre distance. Melee holds a slot
+// just inside it, leaving room to sidestep a Sonar Pulse without leaving
+// melee range (user raid experience, 2026-09-25: "melee should stay at max
+// melee range as much as possible to have the chance to dodge the rings").
+inline constexpr float PlayerCombatReach = 1.5f;
+inline constexpr float MeleeRangeYards = PlayerCombatReach + BossCombatReach + 4.0f / 3.0f;
+inline constexpr float MeleeSlotRadius = MeleeRangeYards - 1.25f;
 // Native spellclick reach (executor: IsWithinDistInMap(shield, 5), 3D with
 // both combat reaches) = INTERACTION_DISTANCE 5 + player reach 1.5 + shield
 // CombatReach 6 (creature_model_info 32469) = 12.5 yd. Keep 1 yd of margin.
@@ -138,6 +148,10 @@ struct Facts
     std::vector<ActorSnapshot const*> BombMarkers;
     ObjectGuid GroundKiter;
     ObjectGuid AirKiter;
+    // The air kiter known only as the target the flame keeps following (no
+    // Tracking aura, see UntrackedAirKiter) and that flame.
+    bool AirKiterUntracked = false;
+    ActorSnapshot const* AirKiterFlame = nullptr;
     uint32 MaxSound = 0;
     ObjectGuid LoudestPlayer;
 };
@@ -202,6 +216,54 @@ inline ActorSnapshot const* FindBoss(Blackboard const& board)
         if (actor.Alive && actor.Entry == BossEntry)
             return &actor;
     return nullptr;
+}
+
+// Ice Block (45438) grants immunity to every school with
+// SPELL_ATTR1_DISPEL_AURAS_ON_IMMUNITY, so it strips the physical Tracking
+// aura (78092) and ends the flame's Tracking channel. The flame AI
+// (npc_atramedes_reverberating_flame) keeps its MoveFollow and target and
+// only re-acquires a dead or missing target: the flame stays on the iced
+// mage and still follows it after the block, with no Tracking fact left.
+// Without a Tracking target, a player under Ice Block or Hypothermia (41425)
+// is the target of the flame nearest it, unless a newer air striker (a later
+// Resonating Clash 78168) has taken the flame since.
+inline constexpr uint32 IceBlockAura = 45438;
+inline constexpr uint32 HypothermiaAura = 41425;
+inline constexpr float UntrackedFollowRadius = 45.0f;
+
+inline void UntrackedAirKiter(Blackboard const& board, Facts& facts)
+{
+    ActorSnapshot const* newestStriker = nullptr;
+    uint64 newestExpiry = 0;
+    for (ActorSnapshot const& player : board.Players)
+        if (player.Alive)
+            if (AuraSnapshot const* clash = FindAura(player, AirClashAura))
+                if (!newestStriker || clash->ExpiresAtMs > newestExpiry)
+                {
+                    newestStriker = &player;
+                    newestExpiry = clash->ExpiresAtMs;
+                }
+    float bestDistance = UntrackedFollowRadius;
+    for (ActorSnapshot const& player : board.Players)
+    {
+        if (!player.Alive || (!FindAura(player, IceBlockAura)
+                && !FindAura(player, HypothermiaAura))
+            || (newestStriker && newestStriker->Guid != player.Guid))
+            continue;
+        for (ActorSnapshot const* flame : facts.ReverberatingFlames)
+        {
+            float const dx = flame->Position.X - player.Position.X;
+            float const dy = flame->Position.Y - player.Position.Y;
+            float const distance = std::sqrt(dx * dx + dy * dy);
+            if (distance <= bestDistance)
+            {
+                bestDistance = distance;
+                facts.AirKiter = player.Guid;
+                facts.AirKiterUntracked = true;
+                facts.AirKiterFlame = flame;
+            }
+        }
+    }
 }
 
 inline Facts BuildFacts(Blackboard const& board)
@@ -307,7 +369,20 @@ inline Facts BuildFacts(Blackboard const& board)
     }
     if (facts.MaxSound == 0)
         facts.LoudestPlayer = ObjectGuid();
+    if (facts.CurrentPhase == Phase::Air && facts.AirKiter.IsEmpty())
+        UntrackedAirKiter(board, facts);
     return facts;
+}
+
+// The Reverberating Flame chasing the air kiter `self`: its Tracking marker,
+// or the flame it is known to follow without one (UntrackedAirKiter).
+inline ActorSnapshot const* MarkerOf(std::vector<ActorSnapshot const*> const& markers,
+    ActorSnapshot const& self);
+inline ActorSnapshot const* KiterFlame(Facts const& facts, ActorSnapshot const& self)
+{
+    if (facts.AirKiterUntracked && self.Guid == facts.AirKiter)
+        return facts.AirKiterFlame;
+    return MarkerOf(facts.ReverberatingFlames, self);
 }
 
 // The breath marker (Tracking Flames or Reverberating Flame) chasing `self`.

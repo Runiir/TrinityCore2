@@ -3,7 +3,9 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirActions.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFormation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSpirits.h"
 #include <optional>
 #include <string>
 #include <string_view>
@@ -17,10 +19,18 @@
 //      the ground, Roaring Flame Breath along the shield ring in the air);
 //   3. leave the Sonic Breath beam, Reverberating Flame, Sonar Bomb markers,
 //      fire patches and Sonar Pulse disk lanes (all of them add Sound);
-//   4. gong-owner standby at its shield, tank anchor drag, ranged arc on the
-//      ground and the spread ring in the air.
+//   4. gong-owner standby at its shield, tank anchor drag, melee at maximum
+//      melee range and the ranged arc on the ground, the relay stations
+//      (owner, backup and the most mobile third gonger) and the spread ring
+//      in the air.
+// In the air the chased player first spends its mobility (a speed buff,
+// Blink, Disengage) or, as a mage, its Ice Block; a mage with Ice Block
+// ready takes the rescue strike, baits the flame and blocks it
+// (BotAtramedesAirActions.h, user raid experience 2026-09-25).
 // Damage: everyone hits Atramedes; in the air melee and the tank cannot reach
 // him and ask the runtime to suppress offense instead of chasing.
+// The two spirit packs before the bell get a kill order and a ranged
+// standoff (BotAtramedesSpirits.h) without owning those route nodes.
 namespace BotEncounter
 {
 struct AdaptiveAtramedesPlan
@@ -49,6 +59,8 @@ public:
         std::string_view role) const
     {
         using namespace Atramedes;
+        if (Spirits::IsSpiritNode(board.Route.NodeId))
+            return ProposeSpirits(board, botGuid, role);
         AdaptiveAtramedesPlan plan;
         if (board.Route.NodeId != EncounterNode)
             return plan;
@@ -80,7 +92,32 @@ public:
             plan.GongReason = gong.Reason;
         else if (!gong.Withheld.empty())
             plan.GongReason = gong.Withheld;
-        if (gong.Required && gong.Clicker == botGuid && gong.Shield)
+        // Air abilities: the Ice Block rescuer's bait and block, the chased
+        // player's own extension or Ice Block.
+        std::optional<AirAbility> ability;
+        if (facts.CurrentPhase == Phase::Air)
+        {
+            ability = IceRescuerAbility(board, facts, *bot);
+            if (!ability)
+                ability = KiterAbility(facts, *bot, gong.Withheld);
+        }
+        if (ability)
+        {
+            if (ability->Cast)
+                plan.Interaction = MakeCandidate(board, ability->Mechanic,
+                    facts.Boss->Guid, BotActionArbitration::Priority::Survival, 560.0f,
+                    *ability->Cast);
+            if (ability->SuppressOffense)
+            {
+                plan.SuppressOffense = true;
+                plan.SuppressReason = ability->SuppressReason;
+                plan.DamageTarget = ObjectGuid();
+            }
+            if (ability->Hold)
+                return plan;
+        }
+
+        if (!ability && gong.Required && gong.Clicker == botGuid && gong.Shield)
         {
             if (Geometry::Distance3d(bot->Position, gong.Shield->Position)
                 <= ShieldClickDistance)
@@ -102,6 +139,9 @@ public:
 
         if (!move)
             move = SelectMovement(board, facts, duties, *bot, tank, melee);
+        // Beside an instant self-buff the kite step leaves the cast lanes free.
+        if (move && ability && ability->KeepKiting)
+            move->PreemptCasting = false;
         if (move)
             plan.Movement = MakeCandidate(board, move->Mechanic, facts.Boss->Guid,
                 move->ActionPriority, move->Utility,
@@ -130,12 +170,44 @@ public:
             return exit;
         if (std::optional<MoveProposal> exit = FirePatchExit(facts, self))
             return exit;
-        if (std::optional<MoveProposal> exit = SonarPulseExit(facts, self))
+        if (std::optional<MoveProposal> exit = SonarPulseExit(facts, self, melee))
             return exit;
         if (facts.CurrentPhase != Phase::Air)
             if (std::optional<MoveProposal> standby = GongStandby(facts, duties, self))
                 return standby;
         return FormationMove(board, facts, duties, self, tank, melee);
+    }
+
+    // Spirit packs: every non-tank hits the kill-order target once the pack
+    // is engaged; ranged and healers hold the standoff half circle.
+    static AdaptiveAtramedesPlan ProposeSpirits(Blackboard const& board,
+        ObjectGuid botGuid, std::string_view role)
+    {
+        using namespace Atramedes;
+        AdaptiveAtramedesPlan plan;
+        ActorSnapshot const* bot = board.FindActor(botGuid);
+        if (!bot || !bot->Alive)
+            return plan;
+        Spirits::Pack const pack = Spirits::BuildPack(board);
+        if (pack.Engaged.empty())
+            return plan;
+        DutyPlan const duties = BuildDutyPlan(board);
+        bool const tank = botGuid == duties.Tank || IsTank(*bot) || role == "tank";
+        bool const melee = !tank && IsMelee(*bot);
+        plan.Duty = tank ? "spirit_tank" : melee ? "spirit_melee" : "spirit_ranged";
+        ActorSnapshot const* target = Spirits::KillTarget(pack, board.Route.NodeId);
+        if (!tank && target)
+            plan.DamageTarget = target->Guid;
+        if (tank || melee)
+            return plan;
+        if (std::optional<MoveProposal> move = Spirits::StandoffMove(board, pack,
+                duties.Tank, *bot))
+            plan.Movement = MakeCandidate(board, move->Mechanic,
+                target ? target->Guid : pack.Engaged.front()->Guid,
+                move->ActionPriority, move->Utility,
+                BotNativeAction::Move(move->Destination.X, move->Destination.Y,
+                    move->Destination.Z, move->Mechanic, move->PreemptCasting));
+        return plan;
     }
 
 private:

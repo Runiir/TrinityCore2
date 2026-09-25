@@ -4,9 +4,10 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMovementPolicy.h"
 #include <optional>
 
-// Standing positions: the gong owner's shield, the tank anchor drag, the
-// ranged/healer arc on the ground; in the air the relay stations (in reach of
-// a shield and in range of the hovering boss) and the spread ring.
+// Standing positions: the gong owner's shield, the tank anchor drag, melee
+// at maximum melee range behind the boss and the ranged/healer arc on the
+// ground; in the air the relay stations (in reach of a shield and, for the
+// ranged ones, in range of the hovering boss) and the spread ring.
 namespace BotEncounter::Atramedes
 {
 inline constexpr float RangedArcRadius = 32.0f;
@@ -18,6 +19,10 @@ inline constexpr float HealerAirTolerance = 12.0f;
 inline constexpr float AirRingInner = 17.0f;
 inline constexpr float AirRingOuter = 25.0f;
 inline constexpr float TankAnchorTolerance = 14.0f;
+// Melee slots behind the boss (away from the tank), this far apart, held
+// within MeleeSlotTolerance.
+inline constexpr float MeleeSpacingRad = 20.0f * Geometry::Pi / 180.0f;
+inline constexpr float MeleeSlotTolerance = 1.5f;
 inline constexpr float TankDragOvershoot = 10.0f;
 
 inline std::optional<std::size_t> IndexOf(std::vector<ObjectGuid> const& order,
@@ -129,6 +134,31 @@ inline std::optional<MoveProposal> TankAnchorDrag(Facts const& facts,
     return Positioning(target, "tank_anchor_drag", 300.0f);
 }
 
+// Ground melee slot: MeleeSlotRadius from the boss centre (just inside melee
+// range), behind him as seen from the tank, melee in GUID order (dead
+// included, so slots do not shift).
+inline std::optional<Vector3> MeleeSlot(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties, ActorSnapshot const& self)
+{
+    if (!facts.Boss)
+        return std::nullopt;
+    std::vector<ObjectGuid> order;
+    for (ActorSnapshot const& player : board.Players)
+        if (IsMelee(player) && player.Guid != duties.Tank)
+            order.push_back(player.Guid);
+    std::sort(order.begin(), order.end());
+    std::optional<std::size_t> const index = IndexOf(order, self.Guid);
+    if (!index)
+        return std::nullopt;
+    Vector3 const& boss = facts.Boss->Position;
+    float behind = Geometry::Bearing(ArenaCenter, boss);
+    if (ActorSnapshot const* tank = FindLivingPlayer(board, duties.Tank))
+        if (Geometry::Distance2d(tank->Position, boss) > 1.0f)
+            behind = Geometry::Bearing(tank->Position, boss);
+    float const offset = (float(*index) - float(order.size() - 1) / 2.0f) * MeleeSpacingRad;
+    return Geometry::PointAt(boss, behind + offset, MeleeSlotRadius, ArenaCenter.Z);
+}
+
 inline std::optional<MoveProposal> FormationMove(Blackboard const& board,
     Facts const& facts, DutyPlan const& duties, ActorSnapshot const& self, bool tank,
     bool melee)
@@ -167,7 +197,12 @@ inline std::optional<MoveProposal> FormationMove(Blackboard const& board,
     if (tank)
         return TankAnchorDrag(facts, self);
     if (melee)
-        return std::nullopt;
+    {
+        std::optional<Vector3> const slot = MeleeSlot(board, facts, duties, self);
+        if (!slot || Geometry::Distance2d(*slot, self.Position) <= MeleeSlotTolerance)
+            return std::nullopt;
+        return Positioning(*slot, "melee_max_range", 250.0f);
+    }
     std::optional<std::size_t> const index = IndexOf(duties.RangedOrder, self.Guid);
     if (!index)
         return std::nullopt;

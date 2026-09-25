@@ -1,7 +1,7 @@
 #ifndef TRINITY_BOT_ATRAMEDES_AIR_GONG_H
 #define TRINITY_BOT_ATRAMEDES_AIR_GONG_H
 
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesGongPolicy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesIceBlock.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -19,11 +19,25 @@ namespace BotEncounter::Atramedes
 // (BuildingSpeedMaxStacks); its breath (78353) reaches 5 yd every 0.5 s.
 inline constexpr float FlameBaseSpeed = 5.0f;
 inline constexpr float FlameSpeedPerStack = 1.0f;
-// Unbuffed player run speed; speed buffs only make the estimate cautious.
-inline constexpr float KiterSpeed = 7.0f;
+// Unbuffed player run speed; a running speed buff (Sprint, Dash, ...) is read
+// from the kiter's auras (Mobility::RunSpeed).
+inline constexpr float KiterSpeed = Mobility::BaseRunSpeed;
 // Strike when contact is this close: the spellclick lands within one
 // decision tick and the flame stops at once (SetGUID interrupts and stops it).
 inline constexpr float RescueLeadSeconds = 1.0f;
+// A kite extension is only worth taking when it pushes contact at least this
+// much later (and past the rescue lead).
+inline constexpr float ExtensionGainSeconds = 0.5f;
+// Speed buffs gain over their whole duration, so a chased player takes one
+// once contact is this close; leaps (Blink, Disengage) wait for contact.
+inline constexpr float SpeedBuffLeadSeconds = 4.0f;
+// Inside the breath, an extension may still be tried while the flame has at
+// most this many Building Speed stacks (it has just spawned on or re-tracked
+// the kiter): a failed cast then costs at most 2 s of breath.
+inline constexpr uint8 ExtensionGraceStacks = 1;
+// Striker ranking: yards of ready mobility and flame distance add up; keeping
+// an in-range relay shield for a later first catch is worth this much.
+inline constexpr float RelayKeepBonusYards = 15.0f;
 // A shield counts as ahead of the kiter unless it lies more than this far
 // behind it (toward the flame) around the arena centre.
 inline constexpr float AheadToleranceRad = 10.0f * Geometry::Pi / 180.0f;
@@ -62,7 +76,7 @@ inline int RingDirectionAwayFrom(Vector3 const& self, Vector3 const& chaser)
 // Air kite direction: away from the flame chasing the kiter.
 inline int AirKiteDirection(Facts const& facts, ActorSnapshot const& kiter)
 {
-    if (ActorSnapshot const* flame = MarkerOf(facts.ReverberatingFlames, kiter))
+    if (ActorSnapshot const* flame = KiterFlame(facts, kiter))
         return RingDirectionAwayFrom(kiter.Position, flame->Position);
     return -1;
 }
@@ -148,16 +162,18 @@ inline std::optional<Vector3> NextRingWaypoint(Vector3 const& self, int directio
 }
 
 // Seconds until the flame's breath (5 yd) reaches the kiter, with the kiter
-// running at KiterSpeed and the flame gaining one stack a second until the
-// cap. Separation d(t) = d0 + c t - a t^2 / 2. A kiter already inside the
-// breath that cannot get out before the flame accelerates past it is in
-// contact now; one that gets out is caught again at the later root.
-inline float FlameTimeToContact(ActorSnapshot const& flame, ActorSnapshot const& kiter)
+// running at `speed` from `extraYards` farther away and the flame gaining one
+// stack a second until the cap. Separation d(t) = d0 + c t - a t^2 / 2. A
+// kiter already inside the breath that cannot get out before the flame
+// accelerates past it is in contact now; one that gets out is caught again
+// at the later root.
+inline float FlameTimeToContact(ActorSnapshot const& flame, ActorSnapshot const& kiter,
+    float speed, float extraYards = 0.0f)
 {
     constexpr float never = std::numeric_limits<float>::infinity();
     uint8 const stacks = BuildingSpeedStacks(flame);
-    float const d0 = Geometry::Distance2d(flame.Position, kiter.Position);
-    float const c = KiterSpeed - (FlameBaseSpeed + FlameSpeedPerStack * float(stacks));
+    float const d0 = Geometry::Distance2d(flame.Position, kiter.Position) + extraYards;
+    float const c = speed - (FlameBaseSpeed + FlameSpeedPerStack * float(stacks));
     float const a = stacks < BuildingSpeedMaxStacks ? FlameSpeedPerStack : 0.0f;
     float const reach = FlameBreathRadius;
     if (d0 <= reach)
@@ -173,6 +189,57 @@ inline float FlameTimeToContact(ActorSnapshot const& flame, ActorSnapshot const&
     if (a <= 0.0f)
         return c >= 0.0f ? never : (d0 - reach) / -c;
     return (c + std::sqrt(c * c + 2.0f * a * (d0 - reach))) / a;
+}
+
+// At the kiter's current run speed (a running Sprint or Dash included).
+inline float FlameTimeToContact(ActorSnapshot const& flame, ActorSnapshot const& kiter)
+{
+    return FlameTimeToContact(flame, kiter, Mobility::RunSpeed(kiter));
+}
+
+// Contact time once `extension` is used: a speed buff runs the kiter faster,
+// a leap (Blink, Disengage) puts its yards between it and the flame.
+inline float TimeToContactAfter(ActorSnapshot const& flame, ActorSnapshot const& kiter,
+    Mobility::Ability const& extension)
+{
+    if (extension.Type == Mobility::Kind::Speed)
+        return FlameTimeToContact(flame, kiter, std::max(Mobility::RunSpeed(kiter),
+            Mobility::BaseRunSpeed * (1.0f + extension.SpeedPct / 100.0f)));
+    return FlameTimeToContact(flame, kiter, Mobility::RunSpeed(kiter), extension.Yards);
+}
+
+// The chased player's next kite extension (user raid experience,
+// 2026-09-25: mobile players "can outrun the laser longer"): among the ready
+// abilities, the one that puts contact latest. Speed buffs from
+// SpeedBuffLeadSeconds, leaps only at contact. Inside the breath (contact
+// now) only right after the flame took the kiter (ExtensionGraceStacks) or
+// right out of Ice Block (Hypothermia), so a failed cast costs at most 2 s.
+inline std::optional<Mobility::Extension> KiteExtension(ActorSnapshot const& flame,
+    ActorSnapshot const& kiter, float timeToContact)
+{
+    if (IsIced(kiter) || timeToContact > SpeedBuffLeadSeconds)
+        return std::nullopt;
+    bool const inBreath = Geometry::Distance2d(flame.Position, kiter.Position)
+        <= FlameBreathRadius;
+    if (timeToContact <= 0.0f && BuildingSpeedStacks(flame) > ExtensionGraceStacks
+        && !FindAura(kiter, HypothermiaAura))
+        return std::nullopt;
+    Mobility::Ability const* best = nullptr;
+    float bestContact = std::max(timeToContact, 0.0f) + ExtensionGainSeconds;
+    for (Mobility::Ability const* ability : Mobility::ReadyAbilities(kiter, inBreath))
+    {
+        if (ability->Type != Mobility::Kind::Speed && timeToContact > RescueLeadSeconds)
+            continue;
+        float const contact = TimeToContactAfter(flame, kiter, *ability);
+        if (contact > bestContact && contact > RescueLeadSeconds + ExtensionGainSeconds)
+        {
+            best = ability;
+            bestContact = contact;
+        }
+    }
+    if (!best)
+        return std::nullopt;
+    return Mobility::ExtensionFor(kiter, *best);
 }
 
 // A shield is ahead of the kiter unless it lies behind it (toward the flame)
@@ -221,7 +288,7 @@ inline float SecondsToNextShield(Facts const& facts, ActorSnapshot const& kiter,
         return std::numeric_limits<float>::infinity();
     float const distance = Geometry::Distance2d(kiter.Position, next->Position)
         - (ShieldClickDistance - 1.0f);
-    return std::max(0.0f, distance) / KiterSpeed;
+    return std::max(0.0f, distance) / Mobility::RunSpeed(kiter);
 }
 
 inline std::optional<ShieldFact> NearestAheadShield(Facts const& facts,
@@ -320,13 +387,17 @@ inline std::optional<ShieldFact> GroundDutyShield(Facts const& facts)
 
 // Relay shield of `guid`. The gong owner takes the station nearest the hover
 // point and the backup the in-range one farthest from the owner's, so a
-// strike far from the flame is at hand on either side of the room. A relay
-// that is the kiter or the redirect runner leaves its station empty; only
-// when there is a single station does the other relay take it over.
+// strike far from the flame is at hand on either side of the room. The third
+// gonger takes the shield farthest from both (a melee third, which cannot
+// reach the flying boss anyway, any shield; a ranged one an in-range
+// station). A relay that is the kiter or the redirect runner leaves its
+// station empty; only when there is a single station does the backup take
+// the owner's over.
 inline std::optional<ShieldFact> AirRelayShieldFor(Blackboard const& board,
     Facts const& facts, DutyPlan const& duties, ObjectGuid guid)
 {
-    if (guid.IsEmpty() || (guid != duties.GongOwner && guid != duties.GongBackup))
+    if (guid.IsEmpty() || (guid != duties.GongOwner && guid != duties.GongBackup
+            && guid != duties.GongThird))
         return std::nullopt;
     ActorSnapshot const* runner = AirRedirectRunner(board, facts);
     auto active = [&board, &facts, runner](ObjectGuid relay)
@@ -337,6 +408,31 @@ inline std::optional<ShieldFact> AirRelayShieldFor(Blackboard const& board,
     if (!active(guid))
         return std::nullopt;
     std::vector<ShieldFact> const shields = RelayShields(facts);
+    if (guid == duties.GongThird)
+    {
+        ActorSnapshot const* third = FindLivingPlayer(board, guid);
+        std::vector<ShieldFact> const& pool = IsMelee(*third) ? facts.Shields : shields;
+        std::vector<ShieldFact> taken;
+        for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup })
+            if (std::optional<ShieldFact> const other =
+                    AirRelayShieldFor(board, facts, duties, relay))
+                taken.push_back(*other);
+        std::optional<ShieldFact> best;
+        float bestApart = -1.0f;
+        for (ShieldFact const& shield : pool)
+        {
+            float apart = std::numeric_limits<float>::max();
+            for (ShieldFact const& other : taken)
+                apart = std::min(apart, other.Guid == shield.Guid ? -1.0f
+                    : Geometry::Distance2d(shield.Position, other.Position));
+            if (apart > bestApart)
+            {
+                bestApart = apart;
+                best = shield;
+            }
+        }
+        return bestApart >= 0.0f ? best : std::nullopt;
+    }
     if (shields.empty())
         return std::nullopt;
     if (guid == duties.GongOwner)
@@ -364,7 +460,7 @@ inline std::optional<ShieldFact> AirRelayShieldFor(Blackboard const& board,
 inline bool RelayInReach(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties)
 {
-    for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup })
+    for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup, duties.GongThird })
         if (ActorSnapshot const* player = FindLivingPlayer(board, relay))
             if (std::optional<ShieldFact> const shield =
                     AirRelayShieldFor(board, facts, duties, relay))
@@ -374,12 +470,13 @@ inline bool RelayInReach(Blackboard const& board, Facts const& facts,
     return false;
 }
 
-// Best in-reach strike: a shield that is not a relay shield first (those few
-// in-range stations are every air phase's first catch), then the farthest
-// from the flame (the struck shield is the flame's next stop, so the longer
-// the relief). The kiter (the tank included: in the air Atramedes has no
-// victim) may use shields ahead of it; any other bot but the tank may relay
-// from its own shield.
+// Best in-reach strike. The striker is the flame's next target, so its ready
+// mobility (yards a kite extension adds) counts, as does the struck shield's
+// distance from the flame (its next stop: the longer the relief), and a
+// shield that is not an in-range relay shield (those few stations are every
+// air phase's first catch) earns RelayKeepBonusYards. The kiter (the tank
+// included: in the air Atramedes has no victim) may use shields ahead of it;
+// any other bot but the tank may relay from its own shield.
 inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
     DutyPlan const& duties, ActorSnapshot const* kiter, ActorSnapshot const* flame,
     GongDecision& decision)
@@ -392,34 +489,61 @@ inline void ChooseAirStrike(Blackboard const& board, Facts const& facts,
         return std::any_of(relays.begin(), relays.end(),
             [&shield](ShieldFact const& relay) { return relay.Guid == shield.Guid; });
     };
-    // Relay shields (stations in spell range) are few: a strike that can use
-    // another shield keeps them for the next air phase's first catch.
-    bool bestKeepsRelay = false;
-    float bestFlameDistance = -1.0f;
+    float bestScore = -1.0f;
     for (ActorSnapshot const& player : board.Players)
     {
         bool const isKiter = kiter && player.Guid == kiter->Guid;
-        if (!player.Alive || (player.Guid == duties.Tank && !isKiter))
+        if (!player.Alive || IsIced(player) || (player.Guid == duties.Tank && !isKiter))
             continue;
+        float const mobility = Mobility::ReadyYards(player);
         for (ShieldFact const& shield : facts.Shields)
         {
             if (Geometry::Distance3d(player.Position, shield.Position) > ShieldClickDistance)
                 continue;
             if (isKiter && !anySide && !ShieldAhead(shield, *kiter, direction))
                 continue;
-            bool const keepsRelay = !isRelay(shield);
             float const flameDistance = flame
                 ? Geometry::Distance2d(flame->Position, shield.Position) : 0.0f;
-            if ((keepsRelay && !bestKeepsRelay)
-                || (keepsRelay == bestKeepsRelay && flameDistance > bestFlameDistance))
+            float const score = mobility + flameDistance
+                + (isRelay(shield) ? 0.0f : RelayKeepBonusYards);
+            if (score > bestScore)
             {
-                bestKeepsRelay = keepsRelay;
-                bestFlameDistance = flameDistance;
+                bestScore = score;
                 decision.Clicker = player.Guid;
                 decision.Shield = shield;
             }
         }
     }
+}
+
+// The Ice Block rescue: a mage with Ice Block ready, not the kiter, in reach
+// of a shield strikes, taking the flame on itself. Its shield: a non-relay
+// one when it can, then the farthest from the flame.
+inline bool ChooseIceBlockStrike(Blackboard const& board, Facts const& facts,
+    DutyPlan const& duties, ActorSnapshot const* kiter, ActorSnapshot const* flame,
+    GongDecision& decision)
+{
+    ActorSnapshot const* mage = IceMage(board, duties);
+    if (!mage || (kiter && mage->Guid == kiter->Guid))
+        return false;
+    std::vector<ShieldFact> const relays = RelayShields(facts);
+    float bestScore = -1.0f;
+    for (ShieldFact const& shield : facts.Shields)
+    {
+        if (Geometry::Distance3d(mage->Position, shield.Position) > ShieldClickDistance)
+            continue;
+        bool const relay = std::any_of(relays.begin(), relays.end(),
+            [&shield](ShieldFact const& other) { return other.Guid == shield.Guid; });
+        float const score = (flame ? Geometry::Distance2d(flame->Position, shield.Position)
+            : 0.0f) + (relay ? 0.0f : RelayKeepBonusYards);
+        if (score > bestScore)
+        {
+            bestScore = score;
+            decision.Clicker = mage->Guid;
+            decision.Shield = shield;
+        }
+    }
+    return bestScore >= 0.0f;
 }
 
 inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
@@ -429,14 +553,35 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
     std::size_t const available = facts.Shields.size();
     ShieldReserve const reserve = SearingFlameReserve(facts);
     ActorSnapshot const* kiter = FindLivingPlayer(board, facts.AirKiter);
-    ActorSnapshot const* flame = kiter ? MarkerOf(facts.ReverberatingFlames, *kiter) : nullptr;
-    float const timeToContact = kiter && flame
+    ActorSnapshot const* flame = kiter ? KiterFlame(facts, *kiter) : nullptr;
+    // An iced kiter is immune to the breath: nothing to rescue.
+    bool const iced = kiter && IsIced(*kiter);
+    float const timeToContact = kiter && flame && !iced
         ? FlameTimeToContact(*flame, *kiter) : std::numeric_limits<float>::infinity();
     bool contact = timeToContact <= RescueLeadSeconds;
+    // A chased mage with Ice Block ready blocks the breath itself (after its
+    // own rescue strike, or when the flame spawned on it): the once-a-fight
+    // play, and no shield for this catch.
+    std::optional<Mobility::Extension> extension;
+    if (contact && IceBlockReady(*kiter))
+    {
+        contact = false;
+        decision.Withheld = "kiter_ice_block";
+    }
+    // Otherwise the chased player uses its mobility before anyone strikes,
+    // so the catch (and the shield) comes as late as the flame allows.
+    else if (contact && (extension = KiteExtension(*flame, *kiter, timeToContact)))
+    {
+        contact = false;
+        decision.Withheld = "kiter_mobility_extension";
+    }
     // A lone kiter at a shield ahead strikes now if the flame would catch it
     // before the next one (the west side has none for 105 yd). With a relay
     // in reach the relay strikes at contact instead: no shield is spent early.
-    if (kiter && flame && !contact && !RelayInReach(board, facts, duties))
+    // A kiter with mobility left keeps running instead.
+    if (kiter && flame && !iced && !contact && decision.Withheld.empty()
+        && Mobility::ReadyAbilities(*kiter, false).empty() && !IceBlockReady(*kiter)
+        && !RelayInReach(board, facts, duties))
     {
         int const direction = AirKiteDirection(facts, *kiter);
         for (ShieldFact const& shield : facts.Shields)
@@ -460,9 +605,17 @@ inline GongDecision DecideAirGong(Blackboard const& board, Facts const& facts,
         return decision;
     }
     decision.Reason = rescue ? "air_breath_rescue" : "sound_emergency";
+    decision.Withheld = {};
     decision.Required = true;
     decision.Urgent = true;
 
+    // The mage Ice Block play first while it is available, then the ranked
+    // strike (user raid experience, 2026-09-25).
+    if (rescue && ChooseIceBlockStrike(board, facts, duties, kiter, flame, decision))
+    {
+        decision.Reason = "air_ice_block_rescue";
+        return decision;
+    }
     ChooseAirStrike(board, facts, duties, kiter, flame, decision);
     if (!decision.Clicker.IsEmpty())
         return decision;

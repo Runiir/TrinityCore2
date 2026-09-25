@@ -102,6 +102,101 @@ Fire (heroic 29,250–30,750).
    restricts Devastation to Noisy! holders. Before, it hit the whole raid.
    Wowhead and Icy Veins both describe a hit on the 100-Sound player only.
 
+## User raid experience (2026-09-25, authoritative)
+
+The user, an experienced raider, gave these tactics. They are the plan;
+where native data or earlier sources differ, the tactic stays and the
+conflict is recorded (ledger `conflicts`, source
+`user_raid_experience_20260925`).
+
+1. "Atramedes should have a very large hitbox, and melee should stay at max
+   melee range as much as possible to have the chance to dodge the rings."
+   - TDB: creature_template 41442 uses model 34547 at scale 1, and
+     creature_model_info 34547 has BoundingRadius 2 and CombatReach 20.
+     Unit::GetMeleeRange is 1.5 + 20 + 4/3 = 22.83 yd (3D, centre to
+     centre).
+   - Melee hold slots at 21.58 yd behind the boss (as seen from the tank),
+     20° apart.
+   - A Sonar Pulse disk heading at a melee player in melee range is dodged by
+     stepping around the boss at the same distance, until the lane is 8 yd
+     to the side (about an 8 yd arc). The player stays in melee range.
+2. "One designated ranged is on bell duty, usually a hunter": the gong owner
+   is the BM hunter (unchanged).
+3. "In the air phase you can have 3 players assigned to gongs: the hunter,
+   maybe the mage, and another very fast player."
+   - The owner (hunter) and backup (mage) keep their relay stations.
+   - The third gonger is the most mobile remaining player, ranked on
+     capability: the yards its known mobility spells add over 8 s, melee
+     first on ties.
+   - In the canonical roster that is the balance druid (Dash and Stampeding
+     Roar through Cat Form), then the rogue (Sprint).
+   - It takes the shield farthest from the other two stations. A melee third
+     may use any shield, since it cannot hit the flying boss anyway.
+4. The mage Ice Block play (`BotAtramedesIceBlock.h`,
+   `BotAtramedesAirActions.h`):
+   - When the rescue is due (the kiter can no longer outrun the flame) and a
+     mage with Ice Block ready stands in reach of a shield, the mage strikes
+     (`air_ice_block_rescue`).
+   - It then holds still and stops casting. Once the flame tracking it is
+     within 8 yd, it casts Ice Block (45438) and stays for the whole 10 s.
+   - On exit (Hypothermia, the flame still on it) it Blinks (1953) away,
+     then kites.
+   - A chased mage with Ice Block ready blocks by itself (`kiter_ice_block`),
+     without a shield.
+   - Readiness comes only from the published cooldown (300 s) and the
+     absence of Hypothermia, so the play runs once per fight.
+   - Nitro Boots is not modelled: bots have no engineering.
+5. "If we don't have a mage we just kite as much as possible, then gong":
+   the time-to-contact rescue remains the fallback, including after the
+   Ice Block is spent.
+6. Addendum: "People who have mobility spells are better at gongs in the air
+   phase because they can outrun the laser longer, and maybe they can get
+   2 gongs per phase, not 3." (`BotAtramedesMobility.h`)
+   - The chased player spends its ready mobility before anyone strikes.
+     - Speed buffs from 4 s before contact: Sprint, Dash, Stampeding Roar,
+       Aspect of the Cheetah (never inside the breath, since it dazes).
+     - Leaps at contact: Blink, Disengage.
+     - It picks whichever puts contact latest. The strike waits
+       (`kiter_mobility_extension`).
+   - Strikers are ranked by their ready mobility too, since the striker is
+     the flame's next target.
+   - Every speed, displacement, duration and cooldown is the 4.3.4 client
+     row, pinned by `tests/test_atramedes_mobility_data.py`:
+
+     | Spell | Effect | Duration | Cooldown |
+     |---|---|---|---|
+     | Sprint | +70% speed | 8 s | 60 s |
+     | Dash | +70% speed, Cat Form | 15 s | 180 s |
+     | Stampeding Roar | +60% speed, Cat Form | 8 s | 120 s |
+     | Aspect of the Cheetah | +30% speed, dazed when struck | until cancelled | — |
+     | Blink | 20 yd forward | — | 15 s |
+     | Disengage | 15.55 yd back | — | 25 s |
+     | Ice Block | immune to every school | 10 s | 300 s |
+
+   - Ghost Wolf has a 2 s cast and is left out.
+   - Talents (Body and Soul, Speed of Light) are not assumed.
+   - The target is 2 shields per air phase.
+7. Readiness is a runtime fact: the snapshot must publish each bot's
+   cooldowns for these spells as player MechanicTimers (patch request
+   `player_spell_timers.patch`). Until then, no extension and no Ice Block
+   play happen, and the strategy behaves as before.
+
+**Native-data conflicts:**
+- **Ice Block and the flame.**
+  - In 4.3.4 Ice Block is immune to every school and has
+    SPELL_ATTR1_DISPEL_AURAS_ON_IMMUNITY. It strips the physical Tracking
+    aura (78092) and ends the flame's Tracking channel.
+  - The flame AI keeps its MoveFollow and target and only re-acquires a
+    dead or missing target, so the flame stays on the iced mage.
+  - The breath hit (78353, fire) does no damage and adds no Sound while the
+    mage is iced.
+  - The flame does not "finish" on its own; it despawns at landing. After the
+    block it still follows the mage, with no Tracking fact. The facts
+    therefore follow it to the player under Ice Block or Hypothermia, and a
+    second strike follows if more than about 2 s of the air phase remain.
+- **Ghost Wolf.** It has a 2 s cast (left out).
+- **Nitro Boots.** Not modelled.
+
 ## 10N bot strategy (canonical composition: 1 tank, 2 healers, 7 DPS)
 
 Roster: Blood DK (tank); Balance, BM Hunter, Fire Mage, Retribution,
@@ -113,8 +208,9 @@ from roster slots.
   takes him. On the ground the tank drags Atramedes to the anchor
   (150, -224.5), near the arena centre. From there every air relay station
   (below) is also in spell range of the grounded boss. He has 20 yd combat
-  reach, so the tank stands 10 yd past the anchor. Melee keep native maximum
-  range (about 22 yd from his centre).
+  reach, so the tank stands 10 yd past the anchor. Melee hold slots at
+  21.58 yd from his centre (melee range 22.83), behind him, and sidestep
+  Sonar Pulse around him at that distance.
 - **Gongs** (native spellclick only, `BotAtramedesGongPolicy.h`):
   - The owner is the best ranged DPS (hunter, then mage, …) and the backup is
     the next.
@@ -230,6 +326,33 @@ from roster slots.
     ask for offense suppression.
   - Ranged keep casting within about 48 yd horizontally of him.
 
+- **Spirit packs** (route nodes `bwd.atramedes.north_spirits` and
+  `south_spirits`, `BotAtramedesSpirits.h`). Each group of four aggroes
+  together (creature_formations groupAI 3) and respawns 30 s after a reset.
+  A dying spirit hands its ability to the others (Bestowal).
+  - Kill order: the ability least harmful to hand on dies first.
+    - North: Corehammer, Anvilrage, Moltenfist, Shadowforge. Icy Veins puts
+      Corehammer first: Burden of the Crown, 80718, gives +100% damage done
+      and no power cost to whoever carries it. Chain Lightning (Shadowforge)
+      is never handed on.
+    - South: Angerforge, Thaurissan, Burningeye, Ironstar. This order is
+      provisional (no readable source yet). Execution Sentence (Ironstar) is
+      never handed on.
+  - Every non-tank damages the kill-order target once the pack is engaged.
+    The tank and melee are left to native threat and melee range.
+  - Ranged and healers stand on a half circle 26 yd from the engaged pack,
+    toward the arena centre, 30° apart:
+    - outside every Thunderclap (80649, 15 yd plus 1.5 yd reach), with a
+      survival exit when inside 18 yd;
+    - within 38 yd of every spirit;
+    - 13.5 yd apart, above Chain Lightning's 12.5 yd jump;
+    - at least 35 yd from the other pack.
+  - The route keeps the pull, threat pickup and completion.
+  - Round 2 wiped here: the shard was provisioned on the pack centre, the
+    ranged never left melee range, and Moltenfist died first. About eight
+    players took every Thunderclap, both healers died at 45 s and 53 s, and
+    the raid wiped at 63 s.
+
 Acceptance observations are in the ledger, `acceptance_observations`:
 - a native clear after the spirits and bell;
 - every Searing Flame gonged within 2 s;
@@ -282,8 +405,30 @@ An offline sweep, not part of the test, ran one- and two-shield sets at 25%
 for every target. With the native 7 s spawn every first catch met the bound.
 With the 3 s spawn, 20 of 550 runs took 5 ticks.
 
+**Mobility and Ice Block replay** (`TestAirMobilityReplay`). This replay runs
+the canonical roster with its mobility published. It covers every target,
+spawn delays of 7 s and 3 s, the server stack cap, and three variants:
+- Ice Block ready (the fight's first air phase);
+- Ice Block and Dash on cooldown (a later air phase);
+- no mage.
+
+Each variant also runs as a second air phase, from the shields left after
+its first one and a Searing Flame. That makes 116 runs.
+
+Results:
+- Every run spends 1–2 shields.
+- The first catch is within 3 s and 4 ticks.
+- Sound stays below 90; in the first phases it peaks at 9.
+- With Ice Block ready it is used exactly once per run: 18 of 20 runs by
+  the rescue strike, and 2 by the chased mage itself.
+- The iced mage gains no Sound, and with the 7 s spawn it always blinks out
+  of the block.
+
+Without mobility published, the older replay still spends 2–4 shields per
+phase.
+
 **Open question: shields per air phase.** The historical guide reports one per
-air phase. A WCL count of Resonating Clash (78168) per air phase would tell
+air phase; the user's target is 2. A WCL count of Resonating Clash (78168) per air phase would tell
 whether the native flame speed is too high.
 
 ## Unresolved (fidelity_blocked)

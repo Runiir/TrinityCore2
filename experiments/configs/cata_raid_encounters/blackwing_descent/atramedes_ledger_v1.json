@@ -233,6 +233,29 @@
       "accessed": "2026-09-25",
       "full_csv_sha256": "c6f9dd9b7579ff4dbbeb781122ce09f5fd8b7a168191cd56a0c1ceb76d78c6d7",
       "claim": "78218 CumulativeAura 99 (IDs 5642, 6878 diff 4, 6879 diff 5, 223593 diff 2) and 10 (6880 diff 6)."
+    },
+    "user_raid_experience_20260925": {
+      "title": "Atramedes tactics from the user's raid experience",
+      "publisher": "the user (experienced raider), relayed by the coordinator",
+      "accessed": "2026-09-25",
+      "used_for": [
+        "melee_max_range",
+        "gong_owner_hunter",
+        "air_gong_team_of_three",
+        "mage_ice_block_rescue",
+        "kite_then_gong_fallback",
+        "mobility_extends_air_kite",
+        "two_gongs_per_air_phase_target"
+      ],
+      "reliability": "authoritative_plan_per_coordinator; native data conflicts recorded under conflicts",
+      "claims": [
+        "Atramedes has a very large hitbox; melee stay at max melee range to have room to dodge the Sonar Pulse rings.",
+        "One ranged on bell duty, usually a hunter (mobile): the gongs on Searing Flame and in the air phase.",
+        "In the air phase up to 3 players on gongs: the hunter, maybe the mage, and another very fast player (druid in cat form with Dash or Stampeding Roar, shaman with Ghost Wolf, rogue with Sprint).",
+        "Mage: after the first acquire-target, wait until the targeted player can no longer outrun it, click; when the flame reaches the mage, Ice Block and wait the full duration in place; on exit Blink (and Nitro Boots with engineering); by then the acquire target is usually done; once per fight (Ice Block cooldown).",
+        "Without a mage: kite as long as possible, then gong.",
+        "Players with mobility spells are better at air gongs because they outrun the laser longer; maybe 2 gongs per air phase, not 3."
+      ]
     }
   },
   "mode_matrix": {
@@ -884,6 +907,39 @@
       "server_spellmgr_correction": "10_all_modes",
       "guides": "speeds_up_until_it_catches_the_target",
       "resolution": "runtime_uses_correction_10;strategy_replay_passes_at_10_and_at_99"
+    },
+    {
+      "key": "ice_block_versus_flame_tracking",
+      "user_raid_experience_20260925": "mage clicks, the flame moves onto the mage, Ice Block, wait the full duration; by then the acquire target is usually done",
+      "dbc_434_execution": "Ice Block 45438: 10 s, SCHOOL_IMMUNITY misc 1 and 126, SPELL_ATTR1_DISPEL_AURAS_ON_IMMUNITY; Tracking 78092 is physical and not unaffected by invulnerability, so the block strips it and ends the flame's Tracking channel; breath hit 78353 (fire) is not unaffected by invulnerability: no damage and no Sound while iced",
+      "local_cpp": "npc_atramedes_reverberating_flame keeps MoveFollow and its target and re-acquires only a dead or missing target; it does not re-target on its own and despawns at landing (31 s after liftoff): after the block the flame still follows the mage, with no Tracking aura left",
+      "resolution": "technique kept; the facts follow the flame to a player under Ice Block or Hypothermia (UntrackedAirKiter); after the block the mage blinks and kites, and a second strike follows if the air phase has more than about 2 s left"
+    },
+    {
+      "key": "ghost_wolf_as_air_mobility",
+      "user_raid_experience_20260925": "a shaman with Ghost Wolf as a very fast gonger",
+      "dbc_434_execution": "Ghost Wolf 2645 has a 2000 ms cast (SpellCastTimes) and +30% speed",
+      "resolution": "left out of the kite extensions (a chased player cannot stand for 2 s); the canonical roster's third gonger is the balance druid (Dash and Stampeding Roar, Cat Form) ahead of the rogue (Sprint)"
+    },
+    {
+      "key": "nitro_boots",
+      "user_raid_experience_20260925": "Blink and Nitro Boots with engineering after the Ice Block",
+      "local_cpp": "bots have no engineering cooldowns (calibration summary engineering_cooldowns false)",
+      "resolution": "not modelled"
+    },
+    {
+      "key": "atramedes_hitbox",
+      "user_raid_experience_20260925": "very large hitbox",
+      "current_tdb": "creature_template 41442 modelid1 34547, scale 1; creature_model_info 34547 BoundingRadius 2, CombatReach 20",
+      "local_cpp": "Unit::GetMeleeRange = 1.5 + 20 + 4/3 = 22.83 yd, 3D centre to centre",
+      "resolution": "agrees through the combat reach; melee slots at 21.58 yd behind the boss"
+    },
+    {
+      "key": "shields_per_air_phase",
+      "user_raid_experience_20260925": "maybe 2 gongs per air phase, not 3",
+      "icy_original": "one shield per air phase",
+      "earlier_replay": "2-4 per 31 s air phase without mobility or Ice Block",
+      "resolution": "target 2; with the roster's mobility published the replay spends exactly 2 in every run (Ice Block ready, on cooldown, or no mage)"
     }
   ],
   "unresolved": [
@@ -1300,13 +1356,14 @@
         "10N"
       ],
       "status": "specified",
-      "known": "Tank 1 (anchor 150,-224.5); gong owner on the ground at the non-relay shield nearest the anchor (250130) until this phase's Searing Flame is spent, then at its first air relay station while the boss is in spell range; ground strikes prefer a non-relay shield in reach; in the air the owner and the backup at relay stations 10 yd from their shield toward the hover point, inside the 11.5 yd click reach (native 12.5) and in 3D spell range (61.5 yd less 0.25) with a 1 yd hold (five native stations: 250128, 250126, 250125, 250122, 250129; owner nearest the hover point, backup farthest from the owner's), sparse-shield fallback out of range only with <= 3 shields and more than the Searing Flame reserve; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check); early strike at a shield only for a lone kiter; strike at an in-reach non-relay shield first, then the one farthest from the flame (tank eligible as kiter); the lone-kiter early strike is suppressed only by an assigned relay in reach of its station's shield; the latest striker (78168) runs on during the redirect. Replay of successive air phases, each after a strategy-gonged ground Searing Flame (flame spawn 7 s and 3 s after liftoff, stack cap 10 and 99): phase 1 (9 shields, 100%) and phase 2 (phase-1 leftovers less one, 60%) first catch at once, later catches within 0.25 s, 2-4 strikes; phase 3 with three shields left (25%: the farthest three for every target and all 120 three-shield sets) first catch within 1.5 s and 3 ticks.",
+      "known": "Tank 1 (anchor 150,-224.5); gong owner on the ground at the non-relay shield nearest the anchor (250130) until this phase's Searing Flame is spent, then at its first air relay station while the boss is in spell range; ground strikes prefer a non-relay shield in reach; in the air the owner and the backup at relay stations 10 yd from their shield toward the hover point, inside the 11.5 yd click reach (native 12.5) and in 3D spell range (61.5 yd less 0.25) with a 1 yd hold (five native stations: 250128, 250126, 250125, 250122, 250129; owner nearest the hover point, backup farthest from the owner's), sparse-shield fallback out of range only with <= 3 shields and more than the Searing Flame reserve; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check); early strike at a shield only for a lone kiter; strike at an in-reach non-relay shield first, then the one farthest from the flame (tank eligible as kiter); the lone-kiter early strike is suppressed only by an assigned relay in reach of its station's shield; the latest striker (78168) runs on during the redirect. Replay of successive air phases, each after a strategy-gonged ground Searing Flame (flame spawn 7 s and 3 s after liftoff, stack cap 10 and 99): phase 1 (9 shields, 100%) and phase 2 (phase-1 leftovers less one, 60%) first catch at once, later catches within 0.25 s, 2-4 strikes; phase 3 with three shields left (25%: the farthest three for every target and all 120 three-shield sets) first catch within 1.5 s and 3 ticks. User raid experience (2026-09-25, authoritative): melee hold slots at maximum melee range (21.58 yd, melee range 22.83 from CombatReach 20) behind the boss and dodge Sonar Pulse around the boss at that distance; the hunter owns the gongs; the air gong team is the hunter, the mage and the most mobile other player (by capability; balance druid, then rogue); the chased player spends its mobility (Sprint, Dash, Stampeding Roar, Aspect of the Cheetah from 4 s before contact; Blink, Disengage at contact) before anyone strikes; the mage with Ice Block ready takes the rescue strike, holds still, blocks when the flame is within 8 yd, waits the block and blinks out; a chased mage blocks by itself; readiness only from published cooldowns (player MechanicTimers), never assumed. Replay: 2 shields per 31 s air phase in every run with mobility published.",
       "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100, shields per air phase recorded.",
       "source_refs": [
         "client_442_spell_rows_20260925",
         "icy_cata_classic",
         "icy_original",
         "tdb_bindings_20260925",
+        "user_raid_experience_20260925",
         "wowhead_442"
       ]
     }
@@ -1317,12 +1374,14 @@
     "Every Searing Flame channel ends by a Resonating Clash within 2 s of its start (Vertigo on Atramedes).",
     "No player reaches 100 Sound (no Noisy! aura, no Devastation event).",
     "Tracking Flames target never shares the beam with another player for more than one tick.",
-    "Shield use follows the reserve rule: no Searing Flame without an available shield and no 90-Sound emergency withheld while more shields remain than this phase's Searing Flame needs; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue) and phase; withheld gongs record their *_at_reserve reason. Expected spend under native flame speed: 1 per ground phase plus 2-4 per air phase.",
+    "Shield use follows the reserve rule: no Searing Flame without an available shield and no 90-Sound emergency withheld while more shields remain than this phase's Searing Flame needs; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue) and phase; withheld gongs record their *_at_reserve reason. Expected spend: 1 per ground phase plus at most 2 per air phase (user raid experience, 2026-09-25); the mage Ice Block rescue (air_ice_block_rescue) used once per fight while Ice Block is ready.",
     "Air phase: melee and tank do not path under the flying boss; Sonar Bomb hits per player <= 1 per air phase.",
     "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442.",
     "Sonic Breath kiter: no bearing reversal around the boss during a breath; no 78100 tick on the kiter after the first channel second.",
     "Air rescue, first catch of an air phase: struck within 3 s of the first 1 s time-to-contact estimate with at most 2 s of Roaring Flame Breath before it. Later catches (steady state, while shields remain): struck within 3 s and no kiter in the breath for more than 2 s at a time.",
-    "Air relay: the gong owner and the backup hold stations in click reach (11.5 yd) of a shield and within 61.5 yd (3D) of the hover point, so their casts keep landing; on the native spawns 250128, 250126, 250125, 250122 and 250129 qualify. Every air phase's first catch is struck within 3 s of contact with at most 2 s of breath, including the second and third air phases."
+    "Air relay: the gong owner and the backup hold stations in click reach (11.5 yd) of a shield and within 61.5 yd (3D) of the hover point, so their casts keep landing; on the native spawns 250128, 250126, 250125, 250122 and 250129 qualify. Every air phase's first catch is struck within 3 s of contact with at most 2 s of breath, including the second and third air phases.",
+    "Spirit packs (bwd.atramedes.north_spirits, south_spirits): after the first 5 s of combat no ranged or healer within 18 yd of an engaged spirit (Thunderclap 80649 hits only the tank and melee); kill order in the combat log Corehammer, Anvilrage, Moltenfist, Shadowforge (north) and Angerforge, Thaurissan, Burningeye, Ironstar (south); Chain Lightning 80646 at most 2 targets per cast; no death; both packs cleared and the Ancient Bell becomes selectable (8 spirits dead).",
+    "Air tactics (user raid experience, 2026-09-25): at most 2 shields per air phase; each chased player with a ready kite extension uses it before a strike (event kiter_mobility_extension, the spell cast); the Ice Block rescue strike, the Ice Block cast within 8 yd of the tracking flame, no Sound on the iced mage, then Blink; melee within 22.83 yd of Atramedes' centre on the ground outside dodges and no Sonar Pulse hit on melee at max range."
   ],
   "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"

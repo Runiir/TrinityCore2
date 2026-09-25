@@ -154,10 +154,25 @@ inline std::optional<MoveProposal> SonicBreathBeamExit(Blackboard const& board,
         KiteStep, sweep), "sonic_breath_run_ahead", 515.0f);
 }
 
+// A melee player in melee range steps around the boss at its own distance
+// (at most the melee slot radius) until the lane is `clearance` to its side:
+// it dodges the disk and stays in melee range.
+inline Vector3 MeleeLaneExit(Vector3 const& boss, float heading, Vector3 const& self,
+    float clearance)
+{
+    Geometry::RayOffset const offset = Geometry::OffsetFromRay(boss, heading, self);
+    float const radius = std::clamp(Geometry::Distance2d(boss, self),
+        clearance + 1.5f, MeleeSlotRadius);
+    float const angle = std::asin(std::min(1.0f, (clearance + 0.5f) / radius));
+    return Geometry::PointAt(boss, heading + float(offset.Side) * angle, radius,
+        self.Z);
+}
+
 // Sonar Pulse disks leave the boss centre and travel straight out; step
-// sideways out of the lane of any disk still heading toward `self`.
+// sideways out of the lane of any disk still heading toward `self` (melee in
+// melee range around the boss, see MeleeLaneExit).
 inline std::optional<MoveProposal> SonarPulseExit(Facts const& facts,
-    ActorSnapshot const& self)
+    ActorSnapshot const& self, bool melee = false)
 {
     if (!facts.Boss)
         return std::nullopt;
@@ -185,8 +200,12 @@ inline std::optional<MoveProposal> SonarPulseExit(Facts const& facts,
         if (!best || offset.Along < bestAlong)
         {
             bestAlong = offset.Along;
-            best = Survival(Geometry::LateralExit(disk->Position, heading,
-                self.Position, clearance), "sonar_pulse_exit", 480.0f);
+            bool const inMelee = melee
+                && Geometry::Distance2d(boss, self.Position) <= MeleeRangeYards;
+            best = Survival(inMelee
+                ? MeleeLaneExit(boss, heading, self.Position, clearance)
+                : Geometry::LateralExit(disk->Position, heading, self.Position, clearance),
+                inMelee ? "sonar_pulse_melee_exit" : "sonar_pulse_exit", 480.0f);
         }
     }
     return best;

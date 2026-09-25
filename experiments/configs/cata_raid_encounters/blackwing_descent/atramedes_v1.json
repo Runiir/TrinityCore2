@@ -137,7 +137,8 @@
       "second_ranged_by_capability",
       "air_relay_station_farthest_from_owner_station_when_two_are_in_range",
       "takes_owner_station_only_when_it_is_the_single_one_and_owner_kiting",
-      "strikes_when_owner_dead_or_kiting"
+      "strikes_when_owner_dead_or_kiting",
+      "mage_with_published_ready_ice_block_takes_the_air_rescue_strike_holds_still_blocks_within_8yd_of_the_tracking_flame_waits_10s_then_blinks"
     ],
     "sonic_breath_target": [
       "circle_boss_at_28_42yd_away_from_own_tracking_flames_marker",
@@ -149,7 +150,10 @@
       "rescue_on_time_to_contact_le_1s_or_at_a_shield_when_next_shield_is_out_of_time",
       "strike_shields_ahead_any_side_once_flame_is_on_top",
       "run_on_after_striking_until_retracked",
-      "tank_eligible"
+      "tank_eligible",
+      "spend_ready_mobility_before_any_strike_speed_buffs_from_4s_before_contact_leaps_at_contact",
+      "chased_mage_with_ready_ice_block_blocks_itself",
+      "readiness_only_from_published_cooldowns"
     ],
     "raid": [
       "leave_sonic_breath_beam_backward_or_run_ahead_of_sweep",
@@ -165,8 +169,13 @@
     ],
     "dps": [
       "ranged_arc_32yd",
-      "melee_native_max_range",
-      "melee_offense_suppressed_in_air"
+      "melee_slot_21_58yd_behind_boss_inside_22_83yd_melee_range",
+      "melee_offense_suppressed_in_air",
+      "melee_dodge_sonar_pulse_around_boss_at_same_distance"
+    ],
+    "gong_third": [
+      "most_mobile_remaining_player_by_capability_melee_first_on_ties",
+      "air_station_farthest_from_owner_and_backup_melee_any_shield_ranged_in_range_only"
     ]
   },
   "gates": [
@@ -231,5 +240,8 @@
   "script_readiness": {
     "classification": "source_present_static_gaps_fixed_live_pending",
     "audited_revision_file": "atramedes_ledger_v1.json native_audit"
-  }
+  },
+  "tactics_sources": [
+    "user_raid_experience_20260925"
+  ]
 }

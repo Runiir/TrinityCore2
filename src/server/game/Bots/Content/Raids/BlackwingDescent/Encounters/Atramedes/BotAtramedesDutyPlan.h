@@ -1,8 +1,9 @@
 #ifndef TRINITY_BOT_ATRAMEDES_DUTY_PLAN_H
 #define TRINITY_BOT_ATRAMEDES_DUTY_PLAN_H
 
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMobility.h"
 #include <array>
+#include <cmath>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -63,6 +64,11 @@ struct DutyPlan
     ObjectGuid Tank;
     ObjectGuid GongOwner;
     ObjectGuid GongBackup;
+    // Third air gonger (user raid experience, 2026-09-25: "the hunter, maybe
+    // the mage, and another very fast player"): the most mobile remaining
+    // player, melee first at equal capability (they cannot reach the flying
+    // boss anyway), then GUID.
+    ObjectGuid GongThird;
     // Every roster member in GUID order, dead or alive, so formation and air
     // ring slots do not shift when someone dies.
     std::vector<ObjectGuid> RosterOrder;
@@ -113,6 +119,27 @@ inline DutyPlan BuildDutyPlan(Blackboard const& board)
     if (gongers.size() > 1)
         plan.GongBackup = gongers[1]->Guid;
 
+    bool const published = Mobility::AnyPublished(board);
+    float bestYards = 0.0f;
+    bool bestMelee = false;
+    for (ActorSnapshot const* player : roster)
+    {
+        if (!player->Alive || player->Guid == plan.Tank || IsTank(*player)
+            || player->Guid == plan.GongOwner || player->Guid == plan.GongBackup)
+            continue;
+        float const yards = Mobility::GongCapabilityYards(*player, published);
+        bool const melee = IsMelee(*player);
+        if (yards <= 0.0f)
+            continue;
+        if (plan.GongThird.IsEmpty() || yards > bestYards + 0.01f
+            || (std::abs(yards - bestYards) <= 0.01f && melee && !bestMelee))
+        {
+            plan.GongThird = player->Guid;
+            bestYards = yards;
+            bestMelee = melee;
+        }
+    }
+
     for (ActorSnapshot const* player : roster)
         if (player->Guid != plan.Tank && player->Guid != plan.GongOwner
             && !IsTank(*player) && !IsMelee(*player))
@@ -129,6 +156,7 @@ inline std::string DutyPlanJson(DutyPlan const& plan)
         json << ",\"tank\":" << plan.Tank.GetCounter()
              << ",\"gong_owner\":" << plan.GongOwner.GetCounter()
              << ",\"gong_backup\":" << plan.GongBackup.GetCounter()
+             << ",\"gong_third\":" << plan.GongThird.GetCounter()
              << ",\"ranged_order\":[";
         for (std::size_t index = 0; index < plan.RangedOrder.size(); ++index)
             json << (index ? "," : "") << plan.RangedOrder[index].GetCounter();

@@ -876,8 +876,26 @@ static void TestAirKiteKeepsDirection()
 // relaunches a predictive follow every 400 ms at 5 yd/s + 1 per Building
 // Speed stack (one a second up to `stackCap`) and its 5 yd breath ticks every
 // 0.5 s (+3 Sound).
+// Replay variants (user raid experience, 2026-09-25): the canonical roster's
+// mobility published as spell timers (all ready), the mage's Ice Block ready
+// or on its cooldown, or no mage at all.
+struct ReplayOptions
+{
+    bool Mobility = false;
+    bool IceBlockReady = true;
+    bool NoMage = false;
+    // A later air phase (about 124 s after the previous one): Dash (180 s)
+    // is still cooling down.
+    uint32 DashRemainingMs = 0;
+};
+
 struct AirReplay
 {
+    int IceStrikes = 0;
+    int IceBlocks = 0;
+    int Extensions = 0;
+    bool BlinkAfterIce = false;
+    uint32 MageSoundWhileIced = 0;
     float FirstContactS = -1.0f;
     float FirstStrikeS = -1.0f;
     float FirstCatchDelayS = 0.0f;
@@ -890,6 +908,7 @@ struct AirReplay
     uint32 MaxSound = 0;
     bool DoubleClick = false;
     std::vector<uint32> ShieldsLeft;
+    std::vector<std::string> StrikeReasons;
 };
 
 static void MoveBots(Blackboard& board, std::map<ObjectGuid, Vector3> const& destinations)
@@ -960,13 +979,63 @@ static std::vector<uint32> AfterGroundSearing(std::vector<uint32> shields, float
     return shields;
 }
 
+namespace M = BotEncounter::Atramedes::Mobility;
+
+// The spells the canonical roster trains (4.3.4 DBC rows in
+// BotAtramedesMobility.h): hunter Disengage and Aspect of the Cheetah, mage
+// Blink and Ice Block, balance druid Cat Form, Dash and Stampeding Roar,
+// rogue Sprint. The others have none that helps a chased player.
+static void PublishMobility(Blackboard& board, ReplayOptions const& options)
+{
+    for (uint32 spell : { M::DisengageSpell, M::CheetahSpell })
+        AddTimer(Member(board, Hunter), spell, 0);
+    AddTimer(Member(board, Mage), M::BlinkSpell, 0);
+    AddTimer(Member(board, Mage), M::IceBlockSpell, options.IceBlockReady ? 0 : 200000);
+    for (uint32 spell : { M::CatFormSpell, M::StampedingRoarSpell })
+        AddTimer(Member(board, Balance), spell, 0);
+    AddTimer(Member(board, Balance), M::DashSpell, options.DashRemainingMs);
+    AddTimer(Member(board, Rogue), M::SprintSpell, 0);
+}
+
+static MechanicTimerSnapshot* TimerOf(ActorSnapshot& actor, uint32 spellId)
+{
+    for (MechanicTimerSnapshot& timer : actor.MechanicTimers)
+        if (timer.SpellId == spellId)
+            return &timer;
+    return nullptr;
+}
+
+static BotNativeAction::CastSpell const* CastOf(AdaptiveAtramedesPlan const& plan)
+{
+    return plan.Interaction ? std::get_if<BotNativeAction::CastSpell>(&plan.Interaction->Action)
+        : nullptr;
+}
+
+static BotNativeAction::DirectionalMobility const* LeapOf(AdaptiveAtramedesPlan const& plan)
+{
+    return plan.Interaction
+        ? std::get_if<BotNativeAction::DirectionalMobility>(&plan.Interaction->Action)
+        : nullptr;
+}
+
+static void EraseAura(ActorSnapshot& actor, uint32 spellId)
+{
+    actor.Auras.erase(std::remove_if(actor.Auras.begin(), actor.Auras.end(),
+        [spellId](AuraSnapshot const& aura) { return aura.SpellId == spellId; }),
+        actor.Auras.end());
+}
+
 static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDelayS,
     bool solo = false, std::vector<uint32> const& shields = AllShieldIds(),
-    float bossHealthPct = 100.0f, float seconds = 31.0f)
+    float bossHealthPct = 100.0f, float seconds = 31.0f, ReplayOptions const& options = {})
 {
     Blackboard board = Board();
     Boss(board).HealthPct = bossHealthPct;
     KeepShieldIds(board, shields);
+    if (options.Mobility)
+        PublishMobility(board, options);
+    if (options.NoMage)
+        Member(board, Mage).Alive = false;
     // Solo: everyone else is dead, so no relay exists and the target must
     // reach a shield on its own.
     if (solo)
@@ -1013,6 +1082,7 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
     std::map<ObjectGuid, Vector3> previous;
     std::map<ObjectGuid, float> clashUntil;
     float contactOpen = -1.0f;
+    uint32 mageSoundAtIce = 0;
     int consecutive = 0;
     AirReplay result;
     for (float t = 0.25f; t <= seconds + 0.001f; t += 0.25f)
@@ -1023,17 +1093,36 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
             previous[player.Guid] = player.Position;
         A::Facts const facts = A::BuildFacts(board);
         if (ActorSnapshot const* kiter = A::FindLivingPlayer(board, facts.AirKiter))
-            if (ActorSnapshot const* marker = A::MarkerOf(facts.ReverberatingFlames, *kiter))
-                if (A::FlameTimeToContact(*marker, *kiter) <= A::RescueLeadSeconds)
+            if (ActorSnapshot const* marker = A::KiterFlame(facts, *kiter))
+            {
+                float const ttc = A::IsIced(*kiter) ? std::numeric_limits<float>::infinity()
+                    : A::FlameTimeToContact(*marker, *kiter);
+                if (ttc <= A::RescueLeadSeconds)
                 {
                     if (contactOpen < 0.0f)
                         contactOpen = t;
                     if (result.FirstContactS < 0.0f)
                         result.FirstContactS = t;
                 }
+                // Out of reach again (a kite extension, an Ice Block): the
+                // catch is over without a strike.
+                else if (ttc > A::RescueLeadSeconds + 1.0f)
+                    contactOpen = -1.0f;
+            }
+        if (ActorSnapshot const* mage = A::FindLivingPlayer(board, PlayerGuid(Mage)))
+        {
+            if (A::FindAura(*mage, A::IceBlockAura))
+                result.MageSoundWhileIced = std::max(result.MageSoundWhileIced,
+                    mage->AlternatePower - std::min(mage->AlternatePower, mageSoundAtIce));
+            else
+                mageSoundAtIce = mage->AlternatePower;
+        }
         std::map<ObjectGuid, Vector3> destinations;
+        std::vector<std::pair<ObjectGuid, uint32>> casts;
+        std::vector<std::pair<ObjectGuid, BotNativeAction::DirectionalMobility>> leaps;
         ObjectGuid clicker;
         ObjectGuid clicked;
+        std::string clickReason;
         for (ActorSnapshot const& player : board.Players)
         {
             if (!player.Alive)
@@ -1048,9 +1137,15 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
                 {
                     clicker = player.Guid;
                     clicked = click->Target;
+                    clickReason = std::string(plan.GongReason);
                 }
+                continue;
             }
-            else if (BotNativeAction::Move const* move = MoveOf(plan))
+            if (BotNativeAction::CastSpell const* cast = CastOf(plan))
+                casts.emplace_back(player.Guid, cast->SpellId);
+            if (BotNativeAction::DirectionalMobility const* leap = LeapOf(plan))
+                leaps.emplace_back(player.Guid, *leap);
+            if (BotNativeAction::Move const* move = MoveOf(plan))
                 destinations[player.Guid] = { move->X, move->Y, 75.0f };
         }
         if (!clicker.IsEmpty())
@@ -1077,6 +1172,9 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
             clash.ExpiresAtMs = board.ObservedAtMs + 15000;
             striker.Auras.push_back(clash);
             clashUntil[clicker] = t + 15.0f;
+            result.StrikeReasons.push_back(clickReason);
+            if (clickReason == "air_ice_block_rescue")
+                ++result.IceStrikes;
             flame().Cast.reset();
             tracked.Clear();
             nextTarget = clicker;
@@ -1093,7 +1191,81 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
                 result.WorstSteadyDelayS = std::max(result.WorstSteadyDelayS, delay);
             contactOpen = -1.0f;
         }
-        MoveBots(board, destinations);
+        // Native player casts: known and off cooldown, the form a spell needs.
+        for (auto const& [guid, spellId] : casts)
+        {
+            ActorSnapshot& caster = Member(board, guid.GetCounter());
+            MechanicTimerSnapshot* timer = TimerOf(caster, spellId);
+            if (!timer || timer->RemainingMs > 0)
+                continue;
+            if (spellId == M::IceBlockSpell)
+            {
+                if (A::FindAura(caster, A::HypothermiaAura))
+                    continue;
+                // Immunity with SPELL_ATTR1_DISPEL_AURAS_ON_IMMUNITY strips
+                // the physical Tracking aura and ends the flame's channel;
+                // the flame keeps following (MoveFollow).
+                EraseAura(caster, A::TrackingAura);
+                if (tracked == caster.Guid)
+                    flame().Cast.reset();
+                caster.Auras.push_back({ A::IceBlockAura, caster.Guid, 0, board.ObservedAtMs + 10000 });
+                caster.Auras.push_back({ A::HypothermiaAura, caster.Guid, 0, board.ObservedAtMs + 30000 });
+                timer->RemainingMs = 300000;
+                ++result.IceBlocks;
+                continue;
+            }
+            if (spellId == M::CatFormSpell)
+            {
+                if (!A::FindAura(caster, M::CatFormSpell))
+                    caster.Auras.push_back({ M::CatFormSpell, caster.Guid, 0, 0 });
+                continue;
+            }
+            M::Ability const* ability = M::Find(spellId);
+            if (!ability || ability->Type != M::Kind::Speed
+                || (ability->RequiredForm && !A::FindAura(caster, ability->RequiredForm)))
+                continue;
+            caster.Auras.push_back({ spellId, caster.Guid, 0,
+                ability->DurationMs ? board.ObservedAtMs + ability->DurationMs : 0 });
+            timer->RemainingMs = ability->CooldownMs;
+            ++result.Extensions;
+        }
+        for (auto const& [guid, leap] : leaps)
+        {
+            ActorSnapshot& caster = Member(board, guid.GetCounter());
+            MechanicTimerSnapshot* timer = TimerOf(caster, leap.SpellId);
+            M::Ability const* ability = M::Find(leap.SpellId);
+            if (!timer || timer->RemainingMs > 0 || !ability || A::FindAura(caster, A::IceBlockAura))
+                continue;
+            float const dx = leap.X - caster.Position.X;
+            float const dy = leap.Y - caster.Position.Y;
+            float const length = std::max(0.01f, std::sqrt(dx * dx + dy * dy));
+            caster.Position.X += dx / length * ability->Yards;
+            caster.Position.Y += dy / length * ability->Yards;
+            timer->RemainingMs = ability->CooldownMs;
+            ++result.Extensions;
+            if (leap.SpellId == M::BlinkSpell && A::FindAura(caster, A::HypothermiaAura))
+                result.BlinkAfterIce = true;
+            destinations.erase(guid);
+        }
+        // Run speed from the auras; an iced player does not move.
+        for (ActorSnapshot& player : board.Players)
+        {
+            auto itr = destinations.find(player.Guid);
+            if (player.Alive && itr != destinations.end()
+                && !A::FindAura(player, A::IceBlockAura))
+                Advance(player.Position, itr->second, M::RunSpeed(player) * 0.25f);
+        }
+        for (ActorSnapshot& player : board.Players)
+        {
+            for (MechanicTimerSnapshot& timer : player.MechanicTimers)
+                timer.RemainingMs = timer.RemainingMs > 250 ? timer.RemainingMs - 250 : 0;
+            player.Auras.erase(std::remove_if(player.Auras.begin(), player.Auras.end(),
+                [&board](AuraSnapshot const& aura)
+                {
+                    return aura.SpellId != A::AirClashAura && aura.ExpiresAtMs
+                        && aura.ExpiresAtMs <= board.ObservedAtMs;
+                }), player.Auras.end());
+        }
         for (auto& [guid, until] : clashUntil)
             if (until <= t)
                 for (ActorSnapshot& player : board.Players)
@@ -1113,12 +1285,16 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
                 stacks = 0.0f;
                 tracked = nextTarget;
                 ActorSnapshot& next = Member(board, tracked.GetCounter());
-                CastSnapshot channel;
-                channel.SpellId = A::TrackingAura;
-                channel.TargetGuid = tracked;
-                channel.Channeled = true;
-                flame().Cast = channel;
-                AddAura(next, A::TrackingAura, flameGuid);
+                // An iced target is immune to Tracking: the flame only follows.
+                if (!A::FindAura(next, A::IceBlockAura))
+                {
+                    CastSnapshot channel;
+                    channel.SpellId = A::TrackingAura;
+                    channel.TargetGuid = tracked;
+                    channel.Channeled = true;
+                    flame().Cast = channel;
+                    AddAura(next, A::TrackingAura, flameGuid);
+                }
                 aim = next.Position;
                 nextRelaunch = t;
             }
@@ -1146,6 +1322,9 @@ static AirReplay ReplayAirPhase(uint32 targetSlot, float stackCap, float flameDe
             for (ActorSnapshot& player : board.Players)
             {
                 if (!player.Alive || G::Distance2d(player.Position, flame().Position) > A::FlameBreathRadius)
+                    continue;
+                // Ice Block: immune to the fire damage and its Sound energize.
+                if (A::FindAura(player, A::IceBlockAura))
                     continue;
                 player.AlternatePower = std::min<uint32>(100, player.AlternatePower + 3);
                 if (player.Guid == tracked)
@@ -1260,6 +1439,292 @@ static void TestAirReplayFromEverySlot()
                     assert(phase3.Strikes <= 3);
                 }
     std::printf("air replay phase3 three-shield sets=%u\n", rotation / 2);
+}
+
+// The user's air tactics (user raid experience, 2026-09-25) decision by
+// decision: the third gonger by mobility, the chased player's extensions,
+// and the mage Ice Block play. Spell readiness is only what the snapshot
+// publishes (player MechanicTimers); nothing is assumed.
+static void TestAirAbilities()
+{
+    using BotNativeAction::CastSpell;
+    using BotNativeAction::DirectionalMobility;
+    auto castOf = [](AdaptiveAtramedesPlan const& plan) -> CastSpell const*
+    {
+        return plan.Interaction ? std::get_if<CastSpell>(&plan.Interaction->Action) : nullptr;
+    };
+    auto leapOf = [](AdaptiveAtramedesPlan const& plan) -> DirectionalMobility const*
+    {
+        return plan.Interaction ? std::get_if<DirectionalMobility>(&plan.Interaction->Action)
+            : nullptr;
+    };
+
+    // Third gonger: from the spec table while nothing is published (the
+    // balance druid, Dash and Stampeding Roar, before the rogue's Sprint),
+    // then from the published spells.
+    Blackboard board = AirBoard();
+    A::DutyPlan duties = A::BuildDutyPlan(board);
+    assert(duties.GongOwner == PlayerGuid(Hunter) && duties.GongBackup == PlayerGuid(Mage));
+    assert(duties.GongThird == PlayerGuid(Balance));
+    AddTimer(Member(board, Rogue), M::SprintSpell, 45000);
+    assert(A::BuildDutyPlan(board).GongThird == PlayerGuid(Rogue));
+    // Dash without Cat Form is unusable; with it, Dash (70%, 8 s scored)
+    // ties Sprint and the melee rogue keeps the duty; Stampeding Roar too
+    // puts the druid ahead.
+    AddTimer(Member(board, Balance), M::DashSpell, 0);
+    assert(A::BuildDutyPlan(board).GongThird == PlayerGuid(Rogue));
+    AddTimer(Member(board, Balance), M::CatFormSpell, 0);
+    assert(A::BuildDutyPlan(board).GongThird == PlayerGuid(Rogue));
+    AddTimer(Member(board, Balance), M::StampedingRoarSpell, 90000);
+    assert(A::BuildDutyPlan(board).GongThird == PlayerGuid(Balance));
+    // The third takes a station far from the owner's and the backup's.
+    duties = A::BuildDutyPlan(board);
+    A::Facts facts = A::BuildFacts(board);
+    std::optional<A::ShieldFact> const third = A::AirRelayShieldFor(board, facts, duties,
+        duties.GongThird);
+    assert(third);
+    for (ObjectGuid relay : { duties.GongOwner, duties.GongBackup })
+    {
+        std::optional<A::ShieldFact> const other = A::AirRelayShieldFor(board, facts, duties, relay);
+        assert(other && other->Guid != third->Guid
+            && G::Distance2d(other->Position, third->Position) > 30.0f);
+    }
+
+    // A chased rogue with Sprint ready: 3 s from contact it sprints (speed
+    // buffs gain over their whole 8 s) while kiting on; a speed buff never
+    // pre-empts the kite's movement lane.
+    board = AirBoard();
+    for (ActorSnapshot& player : board.Players)
+        player.Position = A::ArenaCenter;
+    Member(board, Rogue).Position = { 110.0f, -271.0f, 75.0f };
+    AddTimer(Member(board, Rogue), M::SprintSpell, 0);
+    AddFlame(board, Member(board, Rogue), { 101.0f, -260.0f, 75.0f }, 4);
+    facts = A::BuildFacts(board);
+    float const approach = A::FlameTimeToContact(*A::KiterFlame(facts, Member(board, Rogue)),
+        Member(board, Rogue));
+    assert(approach > A::RescueLeadSeconds && approach <= A::SpeedBuffLeadSeconds);
+    AdaptiveAtramedesPlan sprint = Plan(board, Rogue);
+    assert(castOf(sprint) && castOf(sprint)->SpellId == M::SprintSpell);
+    assert(Mechanic(sprint) == "roaring_flame_breath_kite" && !MoveOf(sprint)->PreemptCasting);
+    assert(CountClicks(board) == 0);
+    // Sprint running: faster, contact later, nothing more to cast.
+    Member(board, Rogue).Auras.push_back({ M::SprintSpell, Member(board, Rogue).Guid, 0, 0 });
+    Member(board, Rogue).MechanicTimers.back().RemainingMs = 60000;
+    assert(A::FlameTimeToContact(*A::KiterFlame(A::BuildFacts(board), Member(board, Rogue)),
+        Member(board, Rogue)) > approach);
+    assert(!Plan(board, Rogue).Interaction);
+
+    // A chased mage whose Ice Block is not published: Blink only at contact
+    // (a leap waits), and the strike is held back for it.
+    board = AirBoard();
+    for (ActorSnapshot& player : board.Players)
+        player.Position = A::ArenaCenter;
+    Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    AddTimer(Member(board, Mage), M::BlinkSpell, 0);
+    AddFlame(board, Member(board, Mage), { 101.0f, -260.0f, 75.0f }, 4);
+    assert(!Plan(board, Mage).Interaction);
+    board.Summons.back().Position = { 104.5f, -263.8f, 75.0f };
+    board.Summons.back().Auras.back().Stacks = 6;
+    facts = A::BuildFacts(board);
+    assert(A::FlameTimeToContact(*A::KiterFlame(facts, Member(board, Mage)),
+        Member(board, Mage)) <= A::RescueLeadSeconds);
+    A::GongDecision const held = A::DecideGong(board, facts, A::BuildDutyPlan(board));
+    assert(!held.Required && held.Withheld == "kiter_mobility_extension");
+    AdaptiveAtramedesPlan blink = Plan(board, Mage);
+    assert(leapOf(blink) && leapOf(blink)->SpellId == M::BlinkSpell);
+    assert(leapOf(blink)->Facing == BotNativeAction::DirectionalMobilityFacing::Forward);
+    assert(!blink.Movement && CountClicks(board) == 0);
+    // Blink spent: the rescue strikes.
+    Member(board, Mage).MechanicTimers.back().RemainingMs = 15000;
+    assert(CountClicks(board) == 1);
+
+    // A druid out of Cat Form shifts first, then Dashes.
+    board = AirBoard();
+    for (ActorSnapshot& player : board.Players)
+        player.Position = A::ArenaCenter;
+    Member(board, Balance).Position = { 110.0f, -271.0f, 75.0f };
+    for (uint32 spell : { M::CatFormSpell, M::DashSpell })
+        AddTimer(Member(board, Balance), spell, 0);
+    AddFlame(board, Member(board, Balance), { 101.0f, -260.0f, 75.0f }, 4);
+    AdaptiveAtramedesPlan shift = Plan(board, Balance);
+    assert(castOf(shift) && castOf(shift)->SpellId == M::CatFormSpell);
+    Member(board, Balance).Auras.push_back({ M::CatFormSpell, Member(board, Balance).Guid, 0, 0 });
+    assert(castOf(Plan(board, Balance)) && castOf(Plan(board, Balance))->SpellId == M::DashSpell);
+
+    // The Ice Block rescue. The mage (the gong backup) at its relay station
+    // with Ice Block published ready takes the strike at contact.
+    board = AirBoard();
+    for (ActorSnapshot& player : board.Players)
+        player.Position = A::ArenaCenter;
+    AddTimer(Member(board, Mage), M::IceBlockSpell, 0);
+    AddTimer(Member(board, Mage), M::BlinkSpell, 0);
+    duties = A::BuildDutyPlan(board);
+    std::optional<A::ShieldFact> const station = A::AirRelayShieldFor(board,
+        A::BuildFacts(board), duties, PlayerGuid(Mage));
+    assert(station);
+    Member(board, Mage).Position = A::AirStationPoint(*station);
+    Member(board, Warlock).Position = { 110.0f, -271.0f, 75.0f };
+    AddFlame(board, Member(board, Warlock), { 104.5f, -263.8f, 75.0f }, 6);
+    facts = A::BuildFacts(board);
+    A::GongDecision const ice = A::DecideGong(board, facts, duties);
+    assert(ice.Required && ice.Reason == "air_ice_block_rescue");
+    assert(ice.Clicker == PlayerGuid(Mage));
+    assert(ClickOf(Plan(board, Mage)) && CountClicks(board) == 1);
+    // Not assumed: without its published timer, or under Hypothermia, the
+    // rescue is the ranked strike.
+    {
+        Blackboard unknown = board;
+        Member(unknown, Mage).MechanicTimers.clear();
+        assert(A::DecideGong(unknown, A::BuildFacts(unknown), duties).Reason == "air_breath_rescue");
+        Blackboard cold = board;
+        AddAura(Member(cold, Mage), A::HypothermiaAura, PlayerGuid(Mage));
+        assert(A::DecideGong(cold, A::BuildFacts(cold), duties).Reason == "air_breath_rescue");
+    }
+
+    // Bait: the mage struck (newest Resonating Clash) and the flame is being
+    // redirected: it holds still and stops casting, no Ice Block yet.
+    board.Summons.back().Cast.reset();
+    for (ActorSnapshot& player : board.Players)
+        A::FindAura(player, A::TrackingAura) ? (void)player.Auras.clear() : (void)0;
+    Member(board, Mage).Auras.push_back({ A::AirClashAura, station->Guid, 0,
+        board.ObservedAtMs + 15000 });
+    facts = A::BuildFacts(board);
+    assert(facts.AirKiter.IsEmpty());
+    AdaptiveAtramedesPlan bait = Plan(board, Mage);
+    assert(!bait.Movement && !bait.Interaction);
+    assert(bait.SuppressOffense && bait.SuppressReason == "atramedes_ice_block_bait");
+    // The flame has reached the shield and tracks the mage; 12 yd away: wait.
+    ActorSnapshot& redirected = board.Summons.back();
+    redirected.Position = G::PointAt(Member(board, Mage).Position, 0.0f, 12.0f, 75.0f);
+    CastSnapshot channel;
+    channel.SpellId = A::TrackingAura;
+    channel.TargetGuid = PlayerGuid(Mage);
+    channel.Channeled = true;
+    redirected.Cast = channel;
+    redirected.Auras.back().Stacks = 0;
+    assert(A::BuildFacts(board).AirKiter == PlayerGuid(Mage));
+    assert(!Plan(board, Mage).Interaction && !Plan(board, Mage).Movement);
+    assert(CountClicks(board) == 0);
+    // Close: Ice Block.
+    redirected.Position = G::PointAt(Member(board, Mage).Position, 0.0f, 7.0f, 75.0f);
+    AdaptiveAtramedesPlan block = Plan(board, Mage);
+    assert(castOf(block) && castOf(block)->SpellId == M::IceBlockSpell && !block.Movement);
+    assert(block.Interaction->ActionPriority == BotActionArbitration::Priority::Survival);
+
+    // Iced: the block removed Tracking and ended the channel; the flame still
+    // follows the mage (UntrackedAirKiter). Nobody strikes, the mage holds.
+    redirected.Cast.reset();
+    redirected.Position = Member(board, Mage).Position;
+    Member(board, Mage).Auras.push_back({ A::IceBlockAura, PlayerGuid(Mage), 0, board.ObservedAtMs + 10000 });
+    Member(board, Mage).Auras.push_back({ A::HypothermiaAura, PlayerGuid(Mage), 0, board.ObservedAtMs + 30000 });
+    Member(board, Mage).MechanicTimers.front().RemainingMs = 300000;
+    facts = A::BuildFacts(board);
+    assert(facts.AirKiter == PlayerGuid(Mage) && facts.AirKiterUntracked);
+    assert(A::KiterFlame(facts, Member(board, Mage)) == &board.Summons.back());
+    assert(!A::DecideGong(board, facts, A::BuildDutyPlan(board)).Required);
+    AdaptiveAtramedesPlan iced = Plan(board, Mage);
+    assert(!iced.Movement && !iced.Interaction && iced.SuppressOffense);
+    assert(CountClicks(board) == 0);
+
+    // Out of the block with the flame (10 stacks) on it: Blink away at once,
+    // and the strike is held back for it.
+    Member(board, Mage).Auras.erase(std::remove_if(Member(board, Mage).Auras.begin(),
+        Member(board, Mage).Auras.end(), [](AuraSnapshot const& aura)
+        {
+            return aura.SpellId == A::IceBlockAura || aura.SpellId == A::AirClashAura;
+        }), Member(board, Mage).Auras.end());
+    redirected.Auras.back().Stacks = 10;
+    facts = A::BuildFacts(board);
+    assert(facts.AirKiter == PlayerGuid(Mage) && facts.AirKiterUntracked);
+    assert(A::DecideGong(board, facts, A::BuildDutyPlan(board)).Withheld == "kiter_mobility_extension");
+    AdaptiveAtramedesPlan out = Plan(board, Mage);
+    assert(leapOf(out) && leapOf(out)->SpellId == M::BlinkSpell);
+    // A newer striker has the flame: the mage is no longer its target.
+    Member(board, Warlock).Auras.push_back({ A::AirClashAura, station->Guid, 0,
+        board.ObservedAtMs + 15000 });
+    assert(A::BuildFacts(board).AirKiter.IsEmpty());
+
+    // The chased mage itself with Ice Block ready: it blocks, no shield.
+    board = AirBoard();
+    for (ActorSnapshot& player : board.Players)
+        player.Position = A::ArenaCenter;
+    Member(board, Mage).Position = { 110.0f, -271.0f, 75.0f };
+    AddTimer(Member(board, Mage), M::IceBlockSpell, 0);
+    AddTimer(Member(board, Mage), M::BlinkSpell, 0);
+    AddFlame(board, Member(board, Mage), { 107.0f, -271.0f, 75.0f }, 0);
+    A::GongDecision const self = A::DecideGong(board, A::BuildFacts(board), A::BuildDutyPlan(board));
+    assert(!self.Required && self.Withheld == "kiter_ice_block");
+    AdaptiveAtramedesPlan selfBlock = Plan(board, Mage);
+    assert(castOf(selfBlock) && castOf(selfBlock)->SpellId == M::IceBlockSpell);
+    assert(!selfBlock.Movement && CountClicks(board) == 0);
+}
+
+// The user's air tactics (user raid experience, 2026-09-25) on the canonical
+// roster with its mobility published as spell timers: every target, the
+// flame spawned 7 s and 3 s after liftoff, the server stack cap.
+//   ice:     the mage's Ice Block ready (the fight's first air phase);
+//   no ice:  Ice Block and Dash cooling down (a later air phase);
+//   no mage: the mage dead, so no Ice Block and no Blink.
+// Each variant also runs as a second air phase, from the shields left after
+// its first one and a ground Searing Flame.
+// Bounds: at most 2 shields per 31 s air phase; the first catch within 3 s
+// of contact and 4 ticks; later catches within 3 s and 2 s of breath; nobody
+// near 90 Sound; one click at a time. With Ice Block ready it is used exactly
+// once (the rescue strike, or the chased mage itself), the iced mage gains
+// no Sound, and with the 7 s spawn the mage blinks out of the block.
+static void TestAirMobilityReplay()
+{
+    std::vector<uint32> const beforePhase1 = AfterGroundSearing(AllShieldIds(), 100.0f);
+    int iceStrikes = 0;
+    int runs = 0;
+    for (int variant = 0; variant < 3; ++variant)
+    {
+        ReplayOptions options;
+        options.Mobility = true;
+        options.IceBlockReady = variant == 0;
+        options.NoMage = variant == 2;
+        options.DashRemainingMs = variant == 1 ? 56000 : 0;
+        for (float delay : { 7.0f, 3.0f })
+            for (uint32 slot = Tank; slot <= Warlock; ++slot)
+            {
+                if (options.NoMage && slot == Mage)
+                    continue;
+                AirReplay const first = ReplayAirPhase(slot, float(A::BuildingSpeedMaxStacks),
+                    delay, false, beforePhase1, 100.0f, 31.0f, options);
+                ReplayOptions later = options;
+                later.IceBlockReady = false;
+                later.DashRemainingMs = 56000;
+                std::vector<uint32> const second = AfterGroundSearing(first.ShieldsLeft, 60.0f);
+                AirReplay const next = ReplayAirPhase(slot, float(A::BuildingSpeedMaxStacks),
+                    delay, false, second, 60.0f, 31.0f, later);
+                for (AirReplay const* run : { &first, &next })
+                {
+                    ++runs;
+                    assert(run->Strikes >= 1 && run->Strikes <= 2);
+                    assert(!run->DoubleClick);
+                    assert(run->FirstContactS >= 0.0f && run->FirstStrikeS >= 0.0f);
+                    assert(run->FirstCatchDelayS <= 3.0f && run->FirstCatchTicks <= 4);
+                    assert(run->WorstSteadyDelayS <= 3.0f && run->MaxSteadyConsecutiveTicks <= 4);
+                    assert(run->MaxSound < A::SoundEmergency);
+                    assert(run->MageSoundWhileIced == 0);
+                }
+                assert(next.IceBlocks == 0 && next.IceStrikes == 0);
+                if (variant == 0)
+                {
+                    assert(first.IceBlocks == 1 && first.IceStrikes <= 1);
+                    assert(first.IceStrikes == 1 || slot == Mage || delay < 7.0f);
+                    if (delay >= 7.0f)
+                        assert(first.BlinkAfterIce);
+                    iceStrikes += first.IceStrikes;
+                }
+                else
+                    assert(first.IceBlocks == 0 && first.IceStrikes == 0);
+                // The chased players use their mobility.
+                assert(first.Extensions + next.Extensions >= 1);
+            }
+    }
+    assert(iceStrikes >= 15);
+    std::printf("air mobility replay runs=%d ice_strikes=%d\n", runs, iceStrikes);
 }
 
 struct GroundKiteRun
@@ -1381,8 +1846,57 @@ static void TestFireTankAndArc()
     assert(Mechanic(arc) == "ranged_arc");
     assert(arc.Movement->ActionPriority == BotActionArbitration::Priority::Mechanic);
     assert(!MoveOf(arc)->PreemptCasting);
-    // Melee keep native melee positioning on the ground.
+    // Melee hold a slot at maximum melee range (TestMeleeMaxRange).
+    assert(Mechanic(Plan(board, Rogue)) == "melee_max_range");
+}
+
+// Melee at maximum range (user raid experience, 2026-09-25): Atramedes'
+// combat reach is 20 (creature_model_info 34547), so melee range is
+// 1.5 + 20 + 4/3 = 22.83 yd centre to centre. The slots stand 1.25 yd
+// inside it, behind the boss, and a Sonar Pulse is dodged around the boss at
+// the same distance, still in melee range.
+static void TestMeleeMaxRange()
+{
+    assert(std::fabs(A::MeleeRangeYards - 22.8333f) < 0.001f);
+    Blackboard board = Board();
+    Vector3 const boss = Boss(board).Position;
+    for (uint32 slot : { Retribution, Rogue })
+    {
+        AdaptiveAtramedesPlan const plan = Plan(board, slot);
+        assert(Mechanic(plan) == "melee_max_range");
+        assert(plan.Movement->ActionPriority == BotActionArbitration::Priority::Mechanic);
+        Vector3 const at{ MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f };
+        float const range = G::Distance2d(boss, at);
+        assert(range > A::MeleeRangeYards - 1.5f && range < A::MeleeRangeYards - 1.0f);
+        // Behind the boss as seen from the tank (the tank is west of him).
+        assert(at.X > boss.X);
+        Member(board, slot).Position = at;
+    }
+    assert(G::Distance2d(Member(board, Retribution).Position, Member(board, Rogue).Position) > 6.0f);
+    // At the slot: hold.
     assert(!Plan(board, Rogue).Movement);
+
+    // A disk leaving the boss straight at the rogue: it steps around the boss
+    // at its own distance, out of the lane and still in melee range.
+    Vector3 const rogue = Member(board, Rogue).Position;
+    float const lane = G::Bearing(boss, rogue);
+    Vector3 const disk = G::PointAt(boss, lane, 4.0f, 75.0f);
+    board.Summons.push_back(MakeUnit(A::SonarPulseEntry, 72, disk.X, disk.Y, ActorKind::Summon));
+    AdaptiveAtramedesPlan const dodge = Plan(board, Rogue);
+    assert(Mechanic(dodge) == "sonar_pulse_melee_exit");
+    assert(dodge.Movement->ActionPriority == BotActionArbitration::Priority::Survival);
+    Vector3 const exit{ MoveOf(dodge)->X, MoveOf(dodge)->Y, 75.0f };
+    assert(G::Distance2d(boss, exit) <= A::MeleeRangeYards - 1.0f);
+    G::RayOffset const cleared = G::OffsetFromRay(disk, lane, exit);
+    assert(cleared.Lateral >= A::SonarPulseRadius + A::HazardMargin);
+    // The step is short: an arc of about 8 yd, not a run out of range.
+    assert(G::Distance2d(rogue, exit) < 10.0f);
+    // A ranged player in the same lane side-steps straight (no melee range
+    // to keep), and a melee player already out of melee range does too.
+    Member(board, Elemental).Position = G::PointAt(boss, lane, 30.0f, 75.0f);
+    assert(Mechanic(Plan(board, Elemental)) == "sonar_pulse_exit");
+    Member(board, Rogue).Position = G::PointAt(boss, lane, 30.0f, 75.0f);
+    assert(Mechanic(Plan(board, Rogue)) == "sonar_pulse_exit");
 }
 
 static void TestPurity()
@@ -1412,6 +1926,9 @@ int main()
     TestDifficultyVariants();
     TestAirReplayFromEverySlot();
     TestFireTankAndArc();
+    TestMeleeMaxRange();
+    TestAirAbilities();
+    TestAirMobilityReplay();
     TestPurity();
     std::puts("atramedes strategy ok");
     return 0;
