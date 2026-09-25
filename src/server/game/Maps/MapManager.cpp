@@ -33,7 +33,8 @@
 #include <numeric>
 
 MapManager::MapManager()
-    : _freeInstanceIds(std::make_unique<InstanceIds>()), _nextInstanceId(0), _scheduledScripts(0)
+    : _freeInstanceIds(std::make_unique<InstanceIds>()), _freedInstanceIds(std::make_unique<InstanceIds>()),
+    _nextInstanceId(0), _scheduledScripts(0)
 {
     i_gridCleanUpDelay = sWorld->getIntConfig(CONFIG_INTERVAL_GRIDCLEAN);
     i_timer.SetInterval(sWorld->getIntConfig(CONFIG_INTERVAL_MAPUPDATE));
@@ -516,12 +517,19 @@ void MapManager::FreeInstanceId(uint32 instanceId)
     // If freed instance id is lower than the next id available for new instances, use the freed one instead
     _nextInstanceId = std::min(instanceId, _nextInstanceId);
     _freeInstanceIds->set(instanceId, true);
-    _freedInstanceIds.insert(instanceId);
+    if (instanceId >= _freedInstanceIds->size())
+        _freedInstanceIds->resize(size_t(instanceId) + 1, false);
+    _freedInstanceIds->set(instanceId, true);
 }
 
 bool MapManager::WasInstanceIdFreed(uint32 instanceId) const
 {
-    return _freedInstanceIds.count(instanceId) != 0;
+    return instanceId < _freedInstanceIds->size() && _freedInstanceIds->test(instanceId);
+}
+
+size_t MapManager::GetInstanceIdCapacity() const
+{
+    return _freeInstanceIds->size();
 }
 
 // hack to allow conditions to access what faction owns the map (these worldstates should not be set on these maps)

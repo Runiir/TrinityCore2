@@ -154,8 +154,11 @@ def test_seed_plan_refusals() -> None:
         rp.seed_plan(doc, "10n", ["maloriak"])
     with pytest.raises(rp.PrerequisiteError, match="unknown_boss:onyxia"):
         rp.seed_plan(doc, "10n", ["onyxia"])
-    with pytest.raises(rp.PrerequisiteError, match="boss_dead_spawns_unverified:morchok"):
-        rp.seed_plan(rp.load("dragon_soul"), "10n", ["morchok"])
+    with pytest.raises(rp.PrerequisiteError, match="boss_dead_spawns_unverified:warlord_zonozz"):
+        rp.seed_plan(rp.load("dragon_soul"), "10n", ["warlord_zonozz"])
+    with pytest.raises(rp.PrerequisiteError, match="boss_dead_spawns_unverified:shannox"):
+        rp.seed_plan(rp.load("firelands"), "10n", ["shannox"])
+    assert rp.seed_plan(rp.load("dragon_soul"), "10n", ["morchok"])["dead_db_spawns"] == [("morchok", 55265)]
     bot = rp.load("bastion_of_twilight")
     with pytest.raises(rp.PrerequisiteError, match="boss_not_available_on_difficulty:sinestra"):
         rp.precompleted_bosses(bot, "sinestra", "10n")
@@ -190,6 +193,19 @@ def test_spawn_split_matches_the_native_scripts() -> None:
     for raid in NATIVE_SCRIPTS:
         for row in rp.load(raid)["bosses"]:
             assert not set(row["dead_db_spawn_entries"] or []) & set(row["summoned_entries"]), (raid, row["key"])
+
+
+def test_symbol_line_citations_point_at_their_definitions() -> None:
+    """Every "<file>:<line> SYMBOL = value" citation matches that source line."""
+    sources = {path.name: path for path in SCRIPTS.rglob("*") if path.suffix in (".h", ".cpp")}
+    pattern = re.compile(r"(\w+\.(?:h|cpp)):(\d+) ((?:BOSS|DATA|NPC|GO)_\w+) = (\d+)")
+    checked = 0
+    for path in sorted(rp.PREREQUISITES_DIR.glob("*.json")):
+        for name, line, symbol, value in pattern.findall(path.read_text()):
+            source_line = sources[name].read_text().splitlines()[int(line) - 1]
+            assert re.search(rf"\b{symbol}\s*=\s*{value}\b", source_line), (path.name, name, line, symbol)
+            checked += 1
+    assert checked >= 20
 
 
 def test_other_raid_gates_follow_their_scripts() -> None:

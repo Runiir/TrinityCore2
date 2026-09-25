@@ -24,8 +24,9 @@
     "script": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
     "header": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
     "dbc": "data/dbc/enUS/DungeonEncounter.dbc (4.3.4, fmt niixisxx)",
-    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:458-463 (history only; the live world DB was not reachable)",
-    "save_format": "src/server/game/Instances/InstanceScript.cpp:514-538 (header chars and spaces, uint32 states and spaces, WriteSaveDataMore)"
+    "credit_entries": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): instance_encounters 1022-1027",
+    "save_format": "src/server/game/Instances/InstanceScript.cpp:514-538 (header chars and spaces, uint32 states and spaces, WriteSaveDataMore)",
+    "spawns": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): database spawns of Magmaw 41570, Omnotron controller 42186, Chimaeron 43296 and Maloriak 41378 (no spawn group); no spawn of Atramedes 41442, Nefarian 41376 or Onyxia 41270; golems summoned by 42186 and Onyxia by 41376 (creature_summon_groups); Lord Victor Nefarius 41379 in manual spawn group 402"
   },
   "bosses": [
     {
@@ -45,7 +46,7 @@
       "summoned_entries": [],
       "sources": [
         "blackwing_descent.h:33 DATA_MAGMAW = 0",
-        "blackwing_descent.h:83 BOSS_MAGMAW = 41570",
+        "blackwing_descent.h:90 BOSS_MAGMAW = 41570",
         "boss_magmaw.cpp:270 BossAI _JustDied (the boss dies)"
       ]
     },
@@ -55,7 +56,7 @@
       "boss_index": 1,
       "creature_entry": 42186,
       "credit_entry": 42180,
-      "credit_type": "spell_cast",
+      "credit_type": "kill",
       "dungeon_encounter_id": 1027,
       "dungeon_encounter_bit": 5,
       "predecessors": [],
@@ -69,11 +70,11 @@
       ],
       "sources": [
         "blackwing_descent.h:34 DATA_OMNOTRON_DEFENSE_SYSTEM = 1",
-        "blackwing_descent.h:84 BOSS_OMNOTRON = 42186 (the controller; 42166 is Arcanotron, a golem)",
+        "blackwing_descent.h:91 BOSS_OMNOTRON = 42186 (the controller; 42166 is Arcanotron, a golem)",
         "boss_omnotron_defense_system.cpp:239-244 the controller summons the four golems only while the encounter is not DONE",
         "boss_omnotron_defense_system.cpp:337-345 ACTION_FINISH_ENCOUNTER calls _JustDied on the controller, which does not kill it; the golems are summons"
       ],
-      "notes": "credit_entry 42180 with credit_type spell_cast is the TDB05 history row and looks wrong (42180 is Toxitron's creature entry); the seeder sets the completed-encounter bit from DungeonEncounter.dbc and reports the live credit entry in its readback.",
+      "notes": "The live kill credit is Toxitron (42180), the golem whose death ends the encounter; the seeder sets the completed-encounter bit from DungeonEncounter.dbc.",
       "spawn_notes": "The controller 42186 survives a natural clear; the four golems are summoned by it (boss_omnotron_defense_system.cpp:239-244) and must have no ungated database spawn."
     },
     {
@@ -96,7 +97,7 @@
       "summoned_entries": [],
       "sources": [
         "blackwing_descent.h:35 DATA_CHIMAERON = 2",
-        "blackwing_descent.h:85 BOSS_CHIMAERON = 43296",
+        "blackwing_descent.h:92 BOSS_CHIMAERON = 43296",
         "instance_blackwing_descent.cpp:69-74 inner chamber door 205830 is a PASSAGE door of both Magmaw and Omnotron",
         "instance_blackwing_descent.cpp:215-218 the door is opened on creation only when Magmaw and Omnotron are DONE",
         "boss_chimaeron.cpp:191 _JustDied"
@@ -124,7 +125,7 @@
       ],
       "sources": [
         "blackwing_descent.h:36 DATA_ATRAMEDES = 3",
-        "blackwing_descent.h:86 BOSS_ATRAMEDES = 41442",
+        "blackwing_descent.h:93 BOSS_ATRAMEDES = 41442",
         "instance_blackwing_descent.cpp:69-74,215-218 inner chamber door",
         "instance_blackwing_descent.cpp:298-316 the intro state becomes DONE when all 8 dwarven spirits die",
         "instance_blackwing_descent.cpp:333-348,458-461,494-495 Atramedes is summoned by the instance script, so a natural kill needs the intro DONE",
@@ -152,7 +153,7 @@
       "summoned_entries": [],
       "sources": [
         "blackwing_descent.h:37 DATA_MALORIAK = 4",
-        "blackwing_descent.h:87 BOSS_MALORIAK = 41378",
+        "blackwing_descent.h:94 BOSS_MALORIAK = 41378",
         "instance_blackwing_descent.cpp:69-74,215-218 inner chamber door",
         "boss_maloriak.cpp:295 _JustDied"
       ]
@@ -181,7 +182,7 @@
       ],
       "sources": [
         "blackwing_descent.h:38 DATA_NEFARIANS_END = 5",
-        "blackwing_descent.h:88 BOSS_NEFARIAN = 41376",
+        "blackwing_descent.h:95 BOSS_NEFARIAN = 41376",
         "instance_blackwing_descent.cpp:520-530 IsNefarianAvailable needs the other five DONE",
         "instance_blackwing_descent.cpp:287-289,503-504 spawn group 402 is spawned only then",
         "boss_nefarians_end.cpp:455 _JustDied; boss_nefarians_end.cpp:1087 Nefarian is summoned"
@@ -218,10 +219,6 @@
       ]
     }
   ],
-  "unverified": [
-    "credit_entry values come from TDB05 SQL history; the live world instance_encounters rows were not readable offline",
-    "omnotron credit_entry 42180 (spell_cast) looks like a data error; the completed-encounter bit is taken from DungeonEncounter.dbc instead",
-    "whether Magmaw, Chimaeron and Maloriak are database spawns and the golems, Atramedes, Nefarian and Onyxia are not (outside manual spawn groups); both are checked at seed time against the loaded world data"
-  ],
+  "unverified": [],
   "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }

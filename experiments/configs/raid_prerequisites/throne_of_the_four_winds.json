@@ -24,7 +24,8 @@
     "script": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
     "header": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/throne_of_the_four_winds.h",
     "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
-    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:469-470 (history only)"
+    "credit_entries": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): instance_encounters 1034-1035",
+    "spawns": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): database spawns of Anshal 45870, Nezir 45871, Rohash 45872 and Al'Akir 46753, none in a spawn group"
   },
   "bosses": [
     {
@@ -80,9 +81,6 @@
   ],
   "save_extras": [],
   "readback_doors": [],
-  "unverified": [
-    "credit_entry values are TDB05 history",
-    "the dead and summoned entry split is checked at seed time against the loaded world data, not offline"
-  ],
+  "unverified": [],
   "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }

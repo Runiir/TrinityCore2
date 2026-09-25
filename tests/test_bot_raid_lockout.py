@@ -474,8 +474,15 @@ def test_lockout_ids_are_never_freed_and_clear_refuses_before_unbinding() -> Non
     assert "FreeInstanceId(" not in seeder
     clear = seeder[seeder.index("std::string ClearLockout("):seeder.index("std::string ReadbackJson(")]
     first_change = min(clear.index("UnloadEmptyInstance("), clear.index("UnbindInstance("))
-    for refusal in ("lockout_map_has_players", "lockout_bound_by_foreign_group", "lockout_bound_by_online_player"):
+    for refusal in ("lockout_map_has_players", "lockout_bound_by_foreign_group", "lockout_bound_by_online_player",
+                    "lockout_bound_by_unlisted_player"):
         assert clear.index(refusal) < first_change, refusal
+    # Permanent online binds refuse; solo non-permanent ones are released in
+    # the change phase so a clear works once the cohort stopped.
+    refusal = clear.index('"lockout_bound_by_online_player:"')
+    assert "if (bind->perm)" in clear[clear.rindex("\n", 0, refusal - 80):refusal]
+    release = clear.index("for (ObjectGuid const& guid : transientBinds)")
+    assert first_change < release and "UnbindInstance(record.MapId, difficulty, true)" in clear[release:release + 250]
     assert clear.index("UnloadEmptyInstance(") < clear.index("UnbindInstance(")
     # Refusals after the first unbind would leave a half-cleared lockout.
     assert not re.search(r'return "[^"]', clear[clear.index("UnbindInstance("):])

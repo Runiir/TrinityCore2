@@ -43,8 +43,9 @@ struct LockoutRecord
     uint64 SeededAtUnix = 0;
     // Admission: the planned raid leader whose seed group binds to the save,
     // and the group that did bind. Both 0 while the lockout is idle. The
-    // group bind is in memory only (Group::BindToInstance with load = true),
-    // like this registry; the players' own permanent binds are native rows.
+    // seeder's own bind writes no group_instance row (load = true), but the
+    // core may: see BindArmedSeedGroup. The players' permanent binds are
+    // native character_instance rows.
     uint32 ArmedLeaderGuid = 0;
     uint32 BoundGroupGuid = 0;
 };

@@ -142,9 +142,17 @@ void BindArmedSeedGroup(uint32 leaderGuid, Group* seed, uint32 placementMapId)
         return;
     }
 
-    // load = true: permanent in memory without a group_instance row, so no
-    // async write can outlive a rollback. The lockout registry is in memory
-    // too; bots entering through this bind get native permanent player binds.
+    // load = true: this call writes no group_instance row. That does not
+    // mean the group has none: on a re-admission the leader still holds its
+    // permanent player bind (the pool reset keeps it), and Group::Create has
+    // already copied it through ConvertLeaderInstancesToGroup, which queues an
+    // async REPLACE INTO group_instance for this same save; this call is then
+    // a no-op. ReleaseBoundGroup's synchronous delete can run before that
+    // write lands and leave the row behind. Such a row is harmless: group
+    // binds are read only at startup (GroupMgr::LoadGroups), the next pool
+    // reset deletes the group row itself so startup then drops the orphan,
+    // and a clear deletes every group_instance row of the instance
+    // synchronously.
     seed->BindToInstance(save, true, true);
     Registry::SetBoundGroup(record.CohortId, seed->GetGUID().GetCounter());
     TC_LOG_INFO("server", "BotRaidLockout seed group bound cohort=%s leader=%u group=%s instance=%u map=%u difficulty=%u permanent=1",

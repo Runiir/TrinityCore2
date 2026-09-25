@@ -24,25 +24,29 @@
     "script": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
     "header": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
     "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
-    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:607-614 (history only)"
+    "credit_entries": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): instance_encounters 1291-1299",
+    "spawns": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): Morchok 55265 is the only database-spawned boss on map 967; Zon'ozz 55308, Yor'sahj 55312, Hagara 55689, Ultraxion 55294, Blackhorn 56427 and Madness 56173 have no spawn"
   },
   "bosses": [
     {
       "key": "morchok",
       "name": "Morchok",
       "boss_index": 0,
-      "creature_entry": null,
+      "creature_entry": 55265,
       "credit_entry": 55265,
       "credit_type": "kill",
       "dungeon_encounter_id": 1292,
       "dungeon_encounter_bit": 1,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_db_spawn_entries": null,
+      "dead_db_spawn_entries": [
+        55265
+      ],
       "summoned_entries": [],
       "sources": [
         "dragon_soul.h:35"
-      ]
+      ],
+      "notes": "Only the database spawn is verified; Morchok has no native boss script, so no natural kill can set his state today."
     },
     {
       "key": "warlord_zonozz",
@@ -169,10 +173,9 @@
   "save_extras": [],
   "readback_doors": [],
   "unverified": [
-    "bosses 0-6 have no native script and no creature entry in source; their dead spawns are unknown, so the seeder refuses to mark them done",
+    "bosses 1-6 have no native script and no database spawn; their dead spawns are unknown, so the seeder refuses to mark them done",
     "Madness of Deathwing despawns rather than dying; its database respawn behaviour is unverified",
-    "the native script gates nothing; retail order is not encoded",
-    "the dead and summoned entry split is checked at seed time against the loaded world data, not offline"
+    "the native script gates nothing; retail order is not encoded"
   ],
   "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }

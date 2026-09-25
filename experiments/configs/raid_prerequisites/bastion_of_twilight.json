@@ -24,8 +24,9 @@
     "script": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
     "header": "src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h",
     "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
-    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:464-467,513-514 (history only)",
-    "encounter_count": "bastion_of_twilight.h:28-29 and instance_bastion_of_twilight.cpp:92: 4 bosses on normal, 5 on heroic"
+    "credit_entries": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): instance_encounters 1028-1032, 1082-1083",
+    "encounter_count": "bastion_of_twilight.h:28-29 and instance_bastion_of_twilight.cpp:92: 4 bosses on normal, 5 on heroic",
+    "spawns": "live world DB (trinity-cata-db, read-only SELECTs on creature, spawn_group, spawn_group_template, creature_summon_groups and instance_encounters, 2026-09-25): database spawns of Halfus 44600, Valiona 45992, Theralion 45993, the council controller 43691, Cho'gall 43324 and Sinestra 45213 (spawn mask 12, heroic only), none in a spawn group; no spawn of the council members or Elementium Monstrosity"
   },
   "bosses": [
     {
@@ -162,7 +163,7 @@
         "bastion_of_twilight.h:94 BOSS_SINESTRA = 45213"
       ],
       "predecessor_basis": "retail_layout_unverified",
-      "notes": "No Sinestra boss script exists in src; the predecessor and the dead spawn come from retail layout and TDB kill credit (25H credit creature 49744), not from a native script."
+      "notes": "No Sinestra boss script exists in src; the predecessor comes from retail layout. Her database spawn (spawn mask 12, heroic only) and kill credit (45213, 25H 49744) are verified in the live world DB."
     }
   ],
   "save_extras": [],
@@ -200,9 +201,7 @@
   ],
   "unverified": [
     "the linear order follows the PASSAGE exit doors by name; door positions were not checked against the world DB",
-    "Sinestra has no native script; her predecessor, dead spawn and credit are retail/TDB knowledge",
-    "credit_entry values are TDB05 history",
-    "the dead and summoned entry split is checked at seed time against the loaded world data, not offline"
+    "Sinestra has no native script; her predecessor is retail knowledge"
   ],
   "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }

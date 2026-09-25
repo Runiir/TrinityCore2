@@ -38,7 +38,6 @@ namespace BotRaidLockout
 namespace
 {
 constexpr size_t MaxDefinitionBytes = 1024 * 1024;
-constexpr uint32 MaxInstanceIdAttempts = 64;
 // Creature::setDeathState stores this for a dungeon boss without respawn
 // delay: "never respawn in this instance". A seeded lockout uses it for every
 // dead boss spawn; the weekly raid reset deletes it with the instance.
@@ -149,33 +148,40 @@ std::vector<SpawnFact> MapCreatureSpawns(uint32 mapId)
 
 // The core's allocator only, never SQL. Ids are plentiful, so any id that is
 // not clean is skipped and stays reserved (it is never freed back):
-// - held: a map, save, lockout or `instance` row still uses it;
 // - freed earlier in this process: InstanceSaveManager::_ResetInstance frees
 //   an id right after queueing the async delete of its rows, which could
 //   remove the rows written here. If such a delete ever lands anyway, every
-//   readback fails closed with seeded_lockout_db_row_missing.
+//   readback fails closed with seeded_lockout_db_row_missing;
+// - held: a map, save, lockout or `instance` row still uses it.
+// Each GenerateInstanceId consumes one free slot of the id bitset, so the
+// loop ends within the bitset's size: past its free slots it only hands out
+// ids that never existed.
 uint32 AllocateInstanceId(uint32 mapId, std::string& failure)
 {
-    for (uint32 attempt = 0; attempt < MaxInstanceIdAttempts; ++attempt)
+    size_t const bound = sMapMgr->GetInstanceIdCapacity() + 1;
+    uint32 skippedFreed = 0;
+    uint32 skippedHeld = 0;
+    for (size_t attempt = 0; attempt <= bound; ++attempt)
     {
         uint32 const id = sMapMgr->GenerateInstanceId();
         if (!id || id == std::numeric_limits<uint32>::max())
-        {
-            failure = "instance_id_exhausted";
-            return 0;
-        }
+            break;
         DbRow row;
-        char const* skip = nullptr;
-        if (sMapMgr->FindMap(mapId, id) || sInstanceSaveMgr->GetInstanceSave(id)
+        if (sMapMgr->WasInstanceIdFreed(id))
+            ++skippedFreed;
+        else if (sMapMgr->FindMap(mapId, id) || sInstanceSaveMgr->GetInstanceSave(id)
             || Registry::HasInstance(id) || ReadDbRow(id, row))
-            skip = "in_use";
-        else if (sMapMgr->WasInstanceIdFreed(id))
-            skip = "freed_in_this_process";
-        if (!skip)
+            ++skippedHeld;
+        else
+        {
+            if (skippedFreed || skippedHeld)
+                TC_LOG_INFO("server", "BotRaidLockout instance id %u after skipping freed=%u held=%u (kept reserved)",
+                    id, skippedFreed, skippedHeld);
             return id;
-        TC_LOG_ERROR("server", "BotRaidLockout skipped instance id %u reason=%s (kept reserved)", id, skip);
+        }
     }
-    failure = "instance_id_unavailable";
+    TC_LOG_ERROR("server", "BotRaidLockout no clean instance id: skipped freed=%u held=%u", skippedFreed, skippedHeld);
+    failure = "instance_id_exhausted";
     return 0;
 }
 
@@ -470,6 +476,11 @@ std::string ClearLockout(LockoutRecord const& record)
             if (InstanceGroupBind* bind = group->GetBoundInstance(difficulty, record.MapId))
                 if (bind->save && bind->save->GetInstanceId() == record.InstanceId)
                     recordedGroup = group;
+    // Online players bound to the lockout. A non-permanent bind (a game
+    // master or human who entered solo to watch) is released below; a
+    // permanent one belongs to a real lockout holder and refuses the clear.
+    // Offline binds are rows only and are deleted with the lockout.
+    std::vector<ObjectGuid> transientBinds;
     // Binds hold the save, so without a loaded save nothing online is bound.
     if (InstanceSave* save = sInstanceSaveMgr->GetInstanceSave(record.InstanceId))
     {
@@ -477,24 +488,28 @@ std::string ClearLockout(LockoutRecord const& record)
             return "lockout_bound_by_foreign_group";
         if (save->GetPlayerCount())
         {
-            std::string bound = "unknown";
             std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
             for (auto const& [guid, player] : ObjectAccessor::GetPlayers())
                 if (player)
                     if (InstancePlayerBind* bind = player->GetBoundInstance(record.MapId, difficulty, true))
                         if (bind->save && bind->save->GetInstanceId() == record.InstanceId)
                         {
-                            bound = std::to_string(guid.GetCounter());
-                            break;
+                            if (bind->perm)
+                                return "lockout_bound_by_online_player:" + std::to_string(guid.GetCounter());
+                            transientBinds.push_back(guid);
                         }
-            return "lockout_bound_by_online_player:" + bound;
         }
+        if (save->GetPlayerCount() != transientBinds.size())
+            return "lockout_bound_by_unlisted_player";
     }
 
     // Changes. With the checks above none of these can refuse; the map goes
     // first, so even an unexpected refusal leaves every bind intact.
     if (!sMapMgr->UnloadEmptyInstance(record.MapId, record.InstanceId))
         return "lockout_map_unload_refused";
+    for (ObjectGuid const& guid : transientBinds)
+        if (Player* player = ObjectAccessor::FindConnectedPlayer(guid))
+            player->UnbindInstance(record.MapId, difficulty, true);
     if (recordedGroup)
         recordedGroup->UnbindInstance(record.MapId, record.Difficulty, true);
     if (sInstanceSaveMgr->GetInstanceSave(record.InstanceId))
@@ -503,11 +518,11 @@ std::string ClearLockout(LockoutRecord const& record)
         TC_LOG_ERROR("server", "BotRaidLockout clear left an unbound save in memory instance=%u (its id is never reused)",
             record.InstanceId);
 
-    // Offline binds are rows only. The instance id is not freed: corpses and
-    // corpse_phases rows keyed by it would load into a reused instance.
+    // The instance id is not freed: corpses and corpse_phases rows keyed by it
+    // would load into a reused instance.
     DeleteRowsSync(record.InstanceId);
-    TC_LOG_INFO("server", "BotRaidLockout cleared cohort=%s raid=%s map=%u instance=%u",
-        record.CohortId.c_str(), record.Raid.c_str(), record.MapId, record.InstanceId);
+    TC_LOG_INFO("server", "BotRaidLockout cleared cohort=%s raid=%s map=%u instance=%u released_solo_binds=%zu",
+        record.CohortId.c_str(), record.Raid.c_str(), record.MapId, record.InstanceId, transientBinds.size());
     return "";
 }
 
