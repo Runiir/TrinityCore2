@@ -442,15 +442,21 @@ Boss notes:
   - **Riders with an exit.** With an approach and an exit, a rider crosses the car to
     `disembark_point` in one checked walk and leaves over static ground there.
   - **Cohort barrier (ledge_drop).** Nobody steps off until every living route member
-    is at the lip and healthy enough for the fall, or already dropping or aboard
-    (`transport_drop_waiting_for_cohort`). A timeout names the member holding it
+    is at the lip on a verified floor and healthy enough for the fall, or already
+    dropping or aboard (`transport_drop_waiting_for_cohort`). A member on a floor-probe
+    miss re-snaps first. A timeout names the member holding it
     (`native_transport_timeout:waiting_for_cohort:<guid>`).
   - **`completion_override`.** An optional `instance_boss_state` contract (or
-    `any_of`/`all_of` of them; no `timeout_ms`, no exit) that also completes the node,
-    for example `bwd.nefarian.descent` once boss index 5 is `in_progress`. It waits for
-    members mid-walk, mid-step, mid-fall or landed but unboarded. A living member that
-    is neither aboard nor in flight 2 s after it first holds fails the node
-    (`transport_completion_override_member_not_aboard:<guid>`).
+    `any_of`/`all_of` of them; no `timeout_ms`, no exit), for example on
+    `bwd.nefarian.descent` with boss index 5 `in_progress`. It is a fail-fast guard,
+    not an early completion: the node still completes only when every member is
+    aboard, and the barrier makes everyone drop together. The guard arms once the boss
+    state holds with a member aboard (a stale state with nobody aboard, or one that
+    stops holding, disarms it). Armed, it waits for members mid-walk, mid-step,
+    mid-fall or landed but unboarded, and fails the node when a living member is
+    neither aboard nor in flight 2 s after arming
+    (`transport_completion_override_member_not_aboard:<guid>`). Without a resolved
+    platform it reports `transport_missing` or `transport_ambiguous`.
   - **Walk supervision.** A walk or step in flight is stopped and re-planned when its
     generator is suspended, when the member leaves a 1.25 yd corridor around the
     declared line, or when the rest no longer covers the rest of the walk plus 250 ms.

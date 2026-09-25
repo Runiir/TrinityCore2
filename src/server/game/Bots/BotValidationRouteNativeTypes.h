@@ -184,8 +184,9 @@ struct TransportContract
     // Failed board/leave submissions allowed per member before the node fails.
     std::uint32_t MaxSubmissions = 5;
     ApproachContract Approach;
-    // Observed instance_boss_state (or any_of/all_of of them) that also
-    // completes the node once no member is mid-approach or mid-fall.
+    // Observed instance_boss_state (or any_of/all_of): a fail-fast guard, not
+    // a completion. Once it holds with a member aboard, one neither aboard
+    // nor in flight fails the node after a grace.
     CompletionContract CompletionOverride;
 
     bool HasExit() const { return ExitStopFrame >= 0 || HasExitLevel; }
@@ -267,7 +268,7 @@ struct NodeRuntime
     bool CompletionRecorded = false;
     bool FailureRecorded = false;
     std::string LastDiagnostic;
-    // When the transport's completion override first held (0: not yet).
+    // When the completion-override guard armed (0: disarmed).
     std::uint64_t OverrideSatisfiedAtMs = 0;
 
     void Enter(RuntimeScope const& scope, std::uint64_t nowMs)

@@ -259,28 +259,39 @@ def test_runtime_submits_typed_approach_intents_with_bounded_observers() -> None
         assert marker in transport, marker
 
 
-def test_completion_override_hands_over_only_with_every_member_aboard() -> None:
+def test_completion_override_is_a_fail_fast_guard_never_an_early_completion() -> None:
     runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
     verdict = _function(runtime, "void RefreshVerdict(")
     assert "node.Transport.CompletionOverride.Declared)" in verdict
     assert "Facts::EvaluateCompletion(node.Transport.CompletionOverride," in verdict
     assert verdict.index("TransportNodeDone(") < verdict.index("node.Transport.CompletionOverride.Declared")
-    # The pure handover decision (replayed in the approach tests) decides; a
-    # member left behind past the grace fails the node typed, with its GUID.
-    assert "HandoverDecision const handover = DecideOverrideHandover(" in verdict
-    assert "runtime.OverrideSatisfiedAtMs = input.NowMs;" in verdict
-    assert "if (handover.Step == HandoverStep::HandOver)" in verdict
-    assert "FailOnce(runtime, callbacks,\n                    handover.Reason + \":\" + std::to_string(handover.Member));" in verdict
+    guard = verdict[verdict.index("node.Transport.CompletionOverride.Declared"):]
+    # The pure guard (replayed in the approach tests) decides; it never sets
+    # the node satisfied, and a member left behind past the grace fails the
+    # node typed, with its GUID.
+    assert "satisfied = true" not in guard
+    assert "OverrideGuardDecision const guard = DecideOverrideGuard(" in guard
+    assert "early.Satisfied, runtime.OverrideSatisfiedAtMs, input.NowMs);" in guard
+    assert "FailOnce(runtime, callbacks,\n                    guard.Reason + \":\" + std::to_string(guard.Member));" in guard
+    # No platform resolved: report the transport, never the members.
+    assert "if (!transport.Object)" in guard
+    assert 'reason = transport.Fact.Ambiguous ? "transport_ambiguous" : "transport_missing";' in guard
+    assert "runtime.OverrideSatisfiedAtMs = 0;" in guard
     views = _function(runtime, "std::vector<ApproachMemberView> ApproachMemberViews(")
     for marker in ("view.Aboard = Facts::OnTransport(bot, transport);",
                    "view.Falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);",
                    "view.OnRouteInstance = member.OnRouteInstance && bot->IsInWorld();",
-                   "BotTransportSurfaceMovement::PredictFallDamagePct(bot,"):
+                   "BotTransportSurfaceMovement::PredictFallDamagePct(bot,",
+                   # (c) the barrier's start test includes the edge-floor proof.
+                   "view.AtStart = approach.StartPoint.Valid && AtApproachStart(",
+                   "BotValidationRouteBoardingAction::StaticFloorUnderfoot(bot,\n                contract.FloorToleranceYards));"):
         assert marker in views, marker
     run = _function(runtime, "Result Run(")
     assert "RefreshVerdict(input, callbacks, node, election, evaluator);\n    if (runtime.FailureRecorded)\n        return result;" in run
-    # A timed-out ledge drop names the member its cohort barrier waits for.
+    # A timed-out ledge drop names the member its cohort barrier waits for,
+    # judged only against a resolved platform.
     assert '"native_transport_timeout:waiting_for_cohort:" + std::to_string(holder)' in run
+    assert "if (GameObject const* platform = Facts::ResolveTransport(input.Bot," in run
 
 
 def test_nothing_in_the_approach_path_refuses_or_aborts_in_combat() -> None:

@@ -342,8 +342,12 @@ std::vector<ApproachMemberView> ApproachMemberViews(Input const& input,
         if (state != runtime.TransportMembers.end())
             view.Phase = state->second.Approach;
         view.Falling = BotValidationRouteBoardingAction::NativeFallInProgress(bot);
-        view.AtStart = approach.StartPoint.Valid && bot->GetExactDist(approach.StartPoint.X,
-            approach.StartPoint.Y, approach.StartPoint.Z) <= startTolerance;
+        // At the start and on a verified floor there (a probe miss holds the
+        // cohort while that member re-snaps).
+        view.AtStart = approach.StartPoint.Valid && AtApproachStart(
+            bot->GetExactDist(approach.StartPoint.X, approach.StartPoint.Y, approach.StartPoint.Z),
+            startTolerance, BotValidationRouteBoardingAction::StaticFloorUnderfoot(bot,
+                contract.FloorToleranceYards));
         view.FallMarginOk = true;
         if (approach.Mode == ApproachMode::LedgeDrop && bot->GetMaxHealth())
             view.FallMarginOk = float(bot->GetHealth()) / float(bot->GetMaxHealth())
@@ -709,32 +713,34 @@ void RefreshVerdict(Input const& input, Callbacks const& callbacks, NodeContract
             node.Transport.Entry, node.Transport.SpawnId);
         satisfied = evaluator && TransportNodeDone(input, node, transport, reason);
     }
-    // An observed native boss state (for example an encounter that engaged
-    // while members were still boarding) also completes a transport node, but
-    // never hands a member over mid-walk, mid-step, mid-fall or unboarded.
+    // The completion override is a fail-fast guard, never an early
+    // completion: once an observed boss state holds (the encounter engaged)
+    // with a member aboard, a member neither aboard nor in flight fails the
+    // node after a grace instead of waiting out its timeout.
     if (!satisfied && evaluator && node.Transport.Declared
         && node.Transport.CompletionOverride.Declared)
     {
         Verdict const early = Facts::EvaluateCompletion(node.Transport.CompletionOverride,
             evaluator, input.Members, election.Owner, runtime.Completion);
-        if (early.Satisfied)
+        Facts::TransportTarget const transport = Facts::ResolveTransport(evaluator,
+            node.Transport.Entry, node.Transport.SpawnId);
+        if (!transport.Object)
         {
-            if (!runtime.OverrideSatisfiedAtMs)
-                runtime.OverrideSatisfiedAtMs = input.NowMs;
-            Facts::TransportTarget const transport = Facts::ResolveTransport(evaluator,
-                node.Transport.Entry, node.Transport.SpawnId);
-            HandoverDecision const handover = DecideOverrideHandover(
+            // No platform to be aboard: report it as it is, never as members.
+            runtime.OverrideSatisfiedAtMs = 0;
+            if (early.Satisfied)
+                reason = transport.Fact.Ambiguous ? "transport_ambiguous" : "transport_missing";
+        }
+        else
+        {
+            OverrideGuardDecision const guard = DecideOverrideGuard(
                 ApproachMemberViews(input, runtime, transport.Object, node.Transport),
-                runtime.OverrideSatisfiedAtMs, input.NowMs);
-            reason = handover.Reason;
-            if (handover.Step == HandoverStep::HandOver)
-            {
-                satisfied = true;
-                reason = handover.Reason + ":" + early.Reason;
-            }
-            else if (handover.Step == HandoverStep::Fail)
+                early.Satisfied, runtime.OverrideSatisfiedAtMs, input.NowMs);
+            if (guard.Step == OverrideGuardStep::Wait)
+                reason = guard.Reason;
+            else if (guard.Step == OverrideGuardStep::Fail)
                 FailOnce(runtime, callbacks,
-                    handover.Reason + ":" + std::to_string(handover.Member));
+                    guard.Reason + ":" + std::to_string(guard.Member));
         }
     }
     runtime.VerdictValid = true;
@@ -800,12 +806,14 @@ Result Run(Input const& input, Callbacks const& callbacks)
     }
     if (TimedOut(node.Transport.TimeoutMs, runtime, input.NowMs))
     {
-        // Name the member a ledge drop's cohort barrier is still waiting for.
+        // Name the member a ledge drop's cohort barrier is still waiting for
+        // (only against a resolved platform: without one nobody is aboard).
         std::uint64_t holder = 0;
         if (node.Transport.Approach.Mode == ApproachMode::LedgeDrop)
-            holder = CohortBarrierHolder(ApproachMemberViews(input, runtime,
-                Facts::ResolveTransport(input.Bot, node.Transport.Entry,
-                    node.Transport.SpawnId).Object, node.Transport));
+            if (GameObject const* platform = Facts::ResolveTransport(input.Bot,
+                    node.Transport.Entry, node.Transport.SpawnId).Object)
+                holder = CohortBarrierHolder(ApproachMemberViews(input, runtime, platform,
+                    node.Transport));
         FailOnce(runtime, callbacks, holder
             ? "native_transport_timeout:waiting_for_cohort:" + std::to_string(holder)
             : std::string("native_transport_timeout"));

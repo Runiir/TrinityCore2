@@ -753,34 +753,60 @@ static std::vector<ApproachMemberView> Raid()
 int main()
 {
     std::vector<ApproachMemberView> members = Raid();
-    // Override first held at t = 10 s: wait for the member for the grace...
-    HandoverDecision d = DecideOverrideHandover(members, 10000, 10000);
-    CHECK(d.Step == HandoverStep::Wait && d.Member == 7);
+    // The guard arms when the override holds with someone aboard (t = 10 s):
+    // wait for the member for the grace...
+    std::uint64_t armed = 0;
+    OverrideGuardDecision d = DecideOverrideGuard(members, true, armed, 10000);
+    CHECK(armed == 10000 && d.Step == OverrideGuardStep::Wait && d.Member == 7);
     CHECK(d.Reason == "transport_completion_override_waiting_for_member");
-    d = DecideOverrideHandover(members, 10000, 10000 + ApproachHandoverGraceMs - 1);
-    CHECK(d.Step == HandoverStep::Wait);
-    // ...then fail typed instead of handing over with a member on the ledge.
-    d = DecideOverrideHandover(members, 10000, 10000 + ApproachHandoverGraceMs);
-    CHECK(d.Step == HandoverStep::Fail && d.Member == 7);
+    d = DecideOverrideGuard(members, true, armed, 10000 + ApproachHandoverGraceMs - 1);
+    CHECK(d.Step == OverrideGuardStep::Wait && armed == 10000);
+    // ...then fail typed instead of leaving the member on the ledge.
+    d = DecideOverrideGuard(members, true, armed, 10000 + ApproachHandoverGraceMs);
+    CHECK(d.Step == OverrideGuardStep::Fail && d.Member == 7);
     CHECK(d.Reason == "transport_completion_override_member_not_aboard");
     // A member already dropping is waited for, past the grace too.
     members[6].Phase = ApproachPhase::SteppingOff;
-    d = DecideOverrideHandover(members, 10000, 60000);
-    CHECK(d.Step == HandoverStep::Wait && d.Reason == "transport_completion_override_waiting_in_flight");
+    d = DecideOverrideGuard(members, true, armed, 60000);
+    CHECK(d.Step == OverrideGuardStep::Wait && d.Reason == "transport_completion_override_waiting_in_flight");
     members[6].Phase = ApproachPhase::Falling; members[6].Falling = true;
-    CHECK(DecideOverrideHandover(members, 10000, 60000).Step == HandoverStep::Wait);
+    CHECK(DecideOverrideGuard(members, true, armed, 60000).Step == OverrideGuardStep::Wait);
     // Landed but not yet boarded: still in flight.
     members[6].Phase = ApproachPhase::Landed; members[6].Falling = false;
-    CHECK(DecideOverrideHandover(members, 10000, 60000).Step == HandoverStep::Wait);
-    // Everyone aboard: hand over.
+    CHECK(DecideOverrideGuard(members, true, armed, 60000).Step == OverrideGuardStep::Wait);
+    // Everyone aboard: nothing to guard. The guard never completes the node;
+    // the ordinary everyone-aboard completion does.
     members[6].Aboard = true; members[6].Phase = ApproachPhase::Idle;
-    d = DecideOverrideHandover(members, 10000, 10000);
-    CHECK(d.Step == HandoverStep::HandOver && d.Member == 0);
+    d = DecideOverrideGuard(members, true, armed, 10000);
+    CHECK(d.Step == OverrideGuardStep::AllAboard && d.Member == 0);
     // Dead members never hold it; a living member off the route instance does.
     members[2].Alive = false; members[2].Aboard = false;
-    CHECK(DecideOverrideHandover(members, 10000, 10000).Step == HandoverStep::HandOver);
+    CHECK(DecideOverrideGuard(members, true, armed, 10000).Step == OverrideGuardStep::AllAboard);
     members[3].Aboard = false; members[3].OnRouteInstance = false;
-    CHECK(DecideOverrideHandover(members, 10000, 10000 + ApproachHandoverGraceMs).Step == HandoverStep::Fail);
+    CHECK(DecideOverrideGuard(members, true, armed, 10000 + ApproachHandoverGraceMs).Step
+        == OverrideGuardStep::Fail);
+
+    // (a) The override stops holding (the fight reset): the guard disarms and
+    // the grace restarts from the next time it holds.
+    std::vector<ApproachMemberView> reset = Raid();
+    std::uint64_t since = 0;
+    DecideOverrideGuard(reset, true, since, 5000);
+    CHECK(since == 5000);
+    CHECK(DecideOverrideGuard(reset, false, since, 6000).Step == OverrideGuardStep::Off && since == 0);
+    CHECK(DecideOverrideGuard(reset, true, since, 9000).Step == OverrideGuardStep::Wait && since == 9000);
+    CHECK(DecideOverrideGuard(reset, true, since, 9000 + ApproachHandoverGraceMs - 1).Step
+        == OverrideGuardStep::Wait);
+    // A stale boss state at node entry with nobody aboard yet (everyone still
+    // walking to the lip) does not arm the guard or start its grace.
+    std::vector<ApproachMemberView> walking = Raid();
+    for (ApproachMemberView& member : walking)
+    {
+        member.Aboard = false; member.AtStart = false;
+    }
+    std::uint64_t stale = 0;
+    for (std::uint64_t now : { 1000u, 30000u, 90000u })
+        CHECK(DecideOverrideGuard(walking, true, stale, now).Step == OverrideGuardStep::Off);
+    CHECK(stale == 0);
 
     // Root cause: with the cohort barrier the low-health member holds the
     // whole cohort at the lip (out of combat: it regenerates and the healers
@@ -811,6 +837,56 @@ int main()
     TransportContract ride;
     CHECK(Transport(R"({"entry": 203716, "board_transport_z": 186.551, "exit_transport_z": 73.8806, "board_point": [-247.349, -224.605, 190.028], "exit_point": [-224.0, -224.605, 76.8211], "timeout_ms": 240000, "completion_override": {"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"}})", ride).Detail
         == "completion_override_with_exit");
+    return failures ? 1 : 0;
+}
+""")
+
+
+def test_floor_probe_miss_at_the_lip_holds_the_cohort_while_it_resnaps(tmp_path: Path) -> None:
+    """Review (c): a member within the start tolerance but with no verified
+    floor there must hold the barrier and re-snap before the others drop."""
+    _compile_and_run(tmp_path, PRELUDE + r"""
+int main()
+{
+    // The view: at the start only within the tolerance and on a verified floor.
+    CHECK(AtApproachStart(0.4f, 1.0f, true));
+    CHECK(!AtApproachStart(0.4f, 1.0f, false));
+    CHECK(!AtApproachStart(1.2f, 1.0f, true));
+
+    std::vector<ApproachMemberView> lip;
+    for (std::uint64_t guid = 1; guid <= 10; ++guid)
+    {
+        ApproachMemberView member;
+        member.Guid = guid; member.Alive = true; member.OnRouteInstance = true;
+        member.FallMarginOk = true;
+        member.AtStart = AtApproachStart(0.4f, 1.0f, guid != 4);
+        lip.push_back(member);
+    }
+    CHECK(CohortBarrierHolder(lip) == 4);
+
+    TransportContract platform;
+    CHECK(!Transport(Nefarian, platform));
+    // Everyone else waits at the lip, watching closely.
+    TransportMemberState other;
+    TransportMemberObservation o;
+    o.Alive = true; o.TransportPresent = true; o.StaticFloorUnderfoot = true;
+    o.DistanceToApproachStart = 0.4f; o.ReadyToBoard = true; o.RestRemainingMs = UnboundedRestMs;
+    o.CohortAtApproachStart = CohortBarrierHolder(lip) == 0;
+    TransportDecision d = DecideTransportStep(platform, o, other);
+    CHECK(d.Reason == "transport_drop_waiting_for_cohort" && ApproachWantsFollowUp(platform, d, other));
+    // Member 4 (settled, no floor verified, a floor near) re-snaps with an
+    // ordinary navmesh move to the approach start...
+    TransportMemberState miss;
+    TransportMemberObservation m = o;
+    m.StaticFloorUnderfoot = false; m.FloorNear = true;
+    d = DecideTransportStep(platform, m, miss);
+    CHECK(d.Step == TransportStep::MoveToApproachStart
+        && d.Reason == "transport_member_floor_unverified_resnap");
+    // ...and once its floor is verified the barrier releases everyone.
+    lip[3].AtStart = AtApproachStart(0.3f, 1.0f, true);
+    CHECK(CohortBarrierHolder(lip) == 0);
+    o.CohortAtApproachStart = true;
+    CHECK(DecideTransportStep(platform, o, other).Step == TransportStep::DropStepOff);
     return failures ? 1 : 0;
 }
 """)

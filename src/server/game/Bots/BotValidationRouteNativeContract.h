@@ -622,8 +622,9 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
     if (Json const* approach = object.Find("approach"))
         if (ParseError error = ParseApproach(*approach, out, out.Approach))
             return error;
-    // An observed native boss state may also complete the node (for example
-    // an encounter that engages while members are still boarding).
+    // An observed native boss state arms a fail-fast guard (never an early
+    // completion): once the encounter engaged with a member aboard, a member
+    // neither aboard nor in flight fails the node after a grace.
     if (Json const* early = object.Find("completion_override"))
     {
         if (ParseError error = ParseCompletion(*early, out.CompletionOverride))
@@ -633,7 +634,7 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
             return ParseError::Invalid("completion_override_kind_unsupported");
         if (out.CompletionOverride.TimeoutMs)
             return ParseError::Invalid("completion_override_timeout_unsupported");
-        // It hands over boarded members; a ride to an exit is never cut short.
+        // It guards boarding nodes only: a ride to an exit is not boarding.
         if (out.HasExit())
             return ParseError::Invalid("completion_override_with_exit");
     }

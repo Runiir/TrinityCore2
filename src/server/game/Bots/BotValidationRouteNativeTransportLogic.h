@@ -311,6 +311,14 @@ struct ApproachMemberView
     bool FallMarginOk = false;
 };
 
+// A member counts as at the approach start only within the start tolerance
+// and on a verified floor there: a floor-probe miss holds the cohort while
+// that member re-snaps, instead of letting the others drop without it.
+inline bool AtApproachStart(float distanceToStart, float tolerance, bool floorUnderfoot)
+{
+    return distanceToStart <= tolerance && floorUnderfoot;
+}
+
 // Ledge drops start together, and only once every member can drop: the first
 // living member that is not in the route instance, not at the approach start,
 // or not healthy enough to drop from there holds the barrier (0: none). A
@@ -334,26 +342,41 @@ inline std::uint64_t CohortBarrierHolder(std::vector<ApproachMemberView> const& 
     return 0;
 }
 
-enum class HandoverStep : std::uint8_t { Wait, HandOver, Fail };
+// The completion override is a fail-fast guard, never an early completion:
+// the node still completes only when every member is aboard (the cohort
+// barrier makes them drop together, so no early handover is needed).
+enum class OverrideGuardStep : std::uint8_t { Off, Wait, AllAboard, Fail };
 
-struct HandoverDecision
+struct OverrideGuardDecision
 {
-    HandoverStep Step = HandoverStep::Wait;
+    OverrideGuardStep Step = OverrideGuardStep::Off;
     std::string Reason;
-    // The member that holds the handover (or fails it).
+    // The member the guard waits for (or fails on).
     std::uint64_t Member = 0;
 };
 
-// Once a completion override holds (an observed boss state), the node hands
-// over only when every living member is aboard. A member mid-walk, mid-step,
-// mid-fall or landed but unboarded is waited for (it finishes in seconds;
-// the node timeout bounds it). A living member neither aboard nor in flight
-// (held at the lip, off the route instance) gets ApproachHandoverGraceMs to
-// start; after that the node fails typed rather than leaving it behind with
-// nothing to drive its approach.
-inline HandoverDecision DecideOverrideHandover(std::vector<ApproachMemberView> const& members,
-    std::uint64_t overrideSinceMs, std::uint64_t nowMs)
+// The guard arms once the override holds (an observed boss state, the
+// encounter engaged) and some living member is aboard, the passenger who can
+// have engaged it; a stale boss state with nobody aboard, or one that stops
+// holding, disarms and resets the grace. Armed, it waits for members mid-
+// walk, mid-step, mid-fall or landed but unboarded (seconds; the node timeout
+// bounds them). A living member neither aboard nor in flight (held at the
+// lip, off the route instance) gets ApproachHandoverGraceMs to start; then
+// the node fails typed instead of waiting out its timeout with nothing left
+// to drive that member's approach.
+inline OverrideGuardDecision DecideOverrideGuard(std::vector<ApproachMemberView> const& members,
+    bool overrideHolds, std::uint64_t& armedSinceMs, std::uint64_t nowMs)
 {
+    bool anyAboard = false;
+    for (ApproachMemberView const& member : members)
+        anyAboard = anyAboard || (member.Alive && member.Aboard);
+    if (!overrideHolds || !anyAboard)
+    {
+        armedSinceMs = 0;
+        return { OverrideGuardStep::Off, "", 0 };
+    }
+    if (!armedSinceMs)
+        armedSinceMs = nowMs;
     std::uint64_t notAboard = 0;
     for (ApproachMemberView const& member : members)
     {
@@ -361,16 +384,18 @@ inline HandoverDecision DecideOverrideHandover(std::vector<ApproachMemberView> c
             continue;
         if (member.Falling || (member.OnRouteInstance && !member.Aboard
                 && ApproachPhaseInFlight(member.Phase)))
-            return { HandoverStep::Wait, "transport_completion_override_waiting_in_flight",
+            return { OverrideGuardStep::Wait, "transport_completion_override_waiting_in_flight",
                 member.Guid };
         if (!member.Aboard && !notAboard)
             notAboard = member.Guid;
     }
     if (!notAboard)
-        return { HandoverStep::HandOver, "transport_completion_override", 0 };
-    if (nowMs >= overrideSinceMs + ApproachHandoverGraceMs)
-        return { HandoverStep::Fail, "transport_completion_override_member_not_aboard", notAboard };
-    return { HandoverStep::Wait, "transport_completion_override_waiting_for_member", notAboard };
+        return { OverrideGuardStep::AllAboard, "", 0 };
+    if (nowMs >= armedSinceMs + ApproachHandoverGraceMs)
+        return { OverrideGuardStep::Fail, "transport_completion_override_member_not_aboard",
+            notAboard };
+    return { OverrideGuardStep::Wait, "transport_completion_override_waiting_for_member",
+        notAboard };
 }
 
 // A ledge drop in flight belongs to gravity until its landing is reported:
