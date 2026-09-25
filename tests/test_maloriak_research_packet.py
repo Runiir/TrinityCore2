@@ -169,3 +169,24 @@ def test_route_rows_patch_moves_the_regroup_off_the_patrol() -> None:
     assert distance(leader, patrol_far_end) > trash["cluster_radius_yards"]
     assert set(patch["apply_to_scenarios"]) >= {
         "blackwing_descent_10n_maloriak_diagnostic", "blackwing_descent_10n_maloriak_c0_diagnostic"}
+
+
+def test_fix_pass_research_items_are_recorded() -> None:
+    ledger = load(LEDGER)
+    quotes = {(row["key"], row["source_ref"]) for row in ledger["verbatim_quotes"]}
+    assert ("vial_order_random_first", "icy_cata_classic") in quotes
+    assert ("vial_order_random_first", "icy_original") in quotes
+    assert ("shadow_imbued_taunt", "icy_cata_classic") in quotes
+    items = {row["key"]: row for row in ledger["native_fidelity_items"]}
+    assert items["biting_chill_target_selection"]["status"] == "open"
+    assert "10-yd spell range" in items["biting_chill_target_selection"]["native"]
+    assert "mask 1614" in items["shadow_imbued_taunt_immunity"]["native"]
+    conflicts = {row["key"] for row in ledger["conflicts"]}
+    assert {"green_duration", "biting_chill_target_selection"} <= conflicts
+    parity = ledger["source_catalog"]["dbc_434_parity_20260925"]
+    assert any("88 identical" in claim for claim in parity["claims"])
+    reset = next(row for row in ledger["phase_reset_credit"] if row["key"] == "reset")
+    assert "Default Group" in reset["behavior"] and "always Blue" in reset["behavior"]
+    blockers = {row["key"]: row for row in ledger["unresolved"]}
+    assert "parity is closed" in blockers["exact_spell_coefficients_and_target_counts_by_mode"]["evidence_gap"]
+    assert "counters did not survive" in blockers["AI_object_reconstruction_and_custom_counter_reset_after_evade"]["evidence_gap"]

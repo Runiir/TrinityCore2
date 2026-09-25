@@ -43,7 +43,9 @@ constexpr uint32 DebilitatingSlimeSpell = 77615;
 constexpr uint32 BitingChillSpell = 77760;
 constexpr uint32 MagmaJetsCastSpell = 78194;
 constexpr uint32 ThrowGreenBottleSpell = 77937;
-// Client-difficulty variants of the player debuffs (10N, 25N, 10H, 25H).
+// SpellDifficulty.dbc variants (10N, 25N, 10H, 25H): the server remaps a
+// creature cast to its difficulty's id, so the observed aura id varies.
+constexpr std::array<uint32, 4> RemedySpells{ 77912, 92965, 92966, 92967 }; // 3267
 constexpr std::array<uint32, 4> ConsumingFlamesSpells{ 77786, 92971, 92972, 92973 };
 constexpr std::array<uint32, 4> FlashFreezeStunSpells{ 77699, 92978, 92979, 92980 };
 
@@ -238,8 +240,10 @@ inline Observation Observe(Blackboard const& board)
     }
     observation.MagmaJetsCasting = boss.Cast
         && boss.Cast->SpellId == MagmaJetsCastSpell;
-    observation.RemedyElapsedMs = ElapsedAuraMs(boss, RemedySpell,
-        RemedyDurationMs, board.ObservedAtMs);
+    for (uint32 remedySpell : RemedySpells)
+        if (!observation.RemedyElapsedMs)
+            observation.RemedyElapsedMs = ElapsedAuraMs(boss, remedySpell,
+                RemedyDurationMs, board.ObservedAtMs);
     observation.SlimeWindow = HasAura(boss, DebilitatingSlimeSpell);
 
     for (std::vector<ActorSnapshot> const* actors : { &board.Hostiles, &board.Summons })

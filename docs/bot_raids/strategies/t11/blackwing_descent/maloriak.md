@@ -20,7 +20,10 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
   handle about nine at a time; the historical guide releases nine per cycle and interrupts the
   first cast. Interrupt the rest. At 25% Maloriak releases the whole remaining reserve anyway.
 - Vial order. Normal: random Red or Blue, then the other color, then Green. Heroic: Black first
-  and again after each Green.
+  and again after each Green. Two independent sources say so verbatim: "On normal difficulty, he
+  will either start with Red Vial or Blue Vial, followed by whichever of those he did not use
+  first; after those two he will use Green Vial." (Icy Veins, 2024) and "The Red and Blue phases
+  can come in any order" (Icy Veins, 2012).
 - Red: stand in front of the boss, inside the Scorching Blast cone, which splits its damage among
   everyone hit. A Consuming Flames target leaves the cone.
 - Blue: spread at least 5 yards apart. Ranged damage dealers break Flash Freeze blocks; everyone
@@ -78,6 +81,13 @@ Player interrupts (client): Kick, Rebuke, Pummel and Mind Freeze 5 yd / 10 s; Wi
 Counterspell 40 yd / 24 s; Skull Bash 13 yd / 60 s base. Dispels: Spellsteal 40 yd, Purge 30 yd, Dispel
 Magic 30 yd, Tranquilizing Shot 35 yd.
 
+The runtime 4.3.4 DBC matches these rows. Of 102 difficulty-0 SpellEffect rows, the only
+Maloriak differences are radius indices: the 50,000-yd self radii of the vial throws and imbues,
+and Growth Catalyst's second radius (both builds keep its 10-yd first radius). Difficulty
+variants from SpellDifficulty.dbc: Remedy 77912 becomes 92965 / 92966 / 92967 (25N / 10H / 25H),
+Scorching Blast 92968-92970, Consuming Flames 92971-92973, Flash Freeze 92978-92980. Arcane Storm
+77896, Release Aberrations 77569 and Magma Jets 78194 have none.
+
 ## Native script audit (repository)
 
 Files: `boss_maloriak.cpp` (creature AIs), `boss_maloriak_spells.cpp` (spell scripts, split out of
@@ -87,22 +97,36 @@ Classification: `source_present_ready_for_diagnostic_shard`, still `fidelity_blo
 
 Repaired:
 
-1. **Counters survived a wipe.** `Creature::Respawn` reuses the AI and only calls `Reset()`
-   (`Creature.cpp` 2052-2053), while `Reset()` never cleared `_currentVial`, `_usedVialsCount` or
-   `_releasedAberrationsCount`. The constructor also started from Red, so the first normal vial
-   was always Blue. `Reset()` now starts every attempt at the cycle start. `SelectNextVial` and
-   `AdvanceUsedVials` reproduce the original order exactly and are replay-tested.
+1. **The first normal vial was always Blue.** The constructor started from Red, and the
+   transition from Red is Blue. It now starts at the cycle start, so the first vial is the random
+   Red/Blue branch both guides describe. `SelectNextVial` and `AdvanceUsedVials` reproduce the
+   original transitions exactly and are replay-tested. The counters could not survive a wipe on
+   this spawn: Maloriak (250112) has no spawn_group row, so it is in the Default Group without
+   compatibility mode, and `_DespawnAtEvade` respawns a new Creature with a new AI. `Reset()`
+   restarts the cycle and the release reserve anyway, for a compatibility-mode spawn, where
+   `Creature::Respawn` only calls `Reset()` on the same AI.
 2. **Phase two leaked vial events.** The walk, drink, imbue, green slime and attack events carry no
    phase mask. A 25% crossing during a cauldron visit could still re-apply a colored imbue after
    Drink All Bottles, or slime the room in the nuke phase. Phase two now cancels those events at
    the 25% crossing, stops a cauldron walk already in progress and ignores late cauldron arrivals.
 3. **Observation.** `GetTimeUntilEncounterMechanic` publishes the native EventMap time to Arcane
    Storm, Release Aberrations, Remedy, the Red and Blue abilities, the phase-two abilities and the
-   next vial. It returns 0 while the cast runs. It is read-only; wiring it into the blackboard is a
-   coordinator patch.
+   next vial. It returns 0 while the cast runs. It is read-only (the shared
+   `TimeUntilScheduledEvent` helper, replayed against the production EventMap). Wiring it into the
+   blackboard is a coordinator patch.
 
 Patch requested: `SpellMgrCorrectionsPart04.cpp` assigns Biting Chill EFFECT_0 `TargetA` twice. The
 second assignment was meant for `TargetB`.
+
+Open native fidelity items (recorded, not changed):
+
+- **Biting Chill targets.** The script picks a random target within 60 yd, but the spell's cast
+  range is 10 yd, so a ranged pick fails and only melee-range picks land. The 2012 guide says one
+  melee-range target in 10-man and two in 25-man. Wowhead says three random raid members. Count
+  the live targets before changing the filter.
+- **Shadow Imbued and taunts (heroic).** Icy Veins says "Maloriak will gain Shadow Imbued, making
+  him immune to taunts." The native aura (92716, mechanic mask 1614) grants no taunt immunity. The
+  bot follows the guide and never taunts under it.
 
 Left unchanged (unresolved; no authoritative value):
 
@@ -136,8 +160,10 @@ Proposed rows, checked on the pinned 669 navmesh:
   cluster radius 40 yd (the southern half of the patrol, away from Ivoroc);
 - the boss row unchanged.
 
-Maimgor 250109 hovers 34-37 yd from both approach paths and is not pulled. Both fixes are patch
-requests: the rows go to package M, the route observer to the coordinator.
+Maimgor 250109 hovers 34-37 yd from both approach paths and is not pulled. M applied the rows
+(2def03047e). The kill-credit observer is a Maloriak candidate
+(`world.validation_route_maloriak_observation`, reasons `maloriak_route_observation_*`) submitted
+by `SubmitMaloriakKernelCandidates`, so adaptive Magmaw's observer stays untouched.
 
 ## Bot tactic (`Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h`)
 
@@ -148,7 +174,7 @@ Duties are chosen by capability from the observed roster, never by roster slot.
 | Main tank | Blood DK | lease, else Blood DK > Prot Paladin > Prot Warrior > Feral; taunts back an aggressive boss, not under Shadow Imbued |
 | Off-tank | Feral (bear) | picks up and taunts loose Aberrations, Prime Subjects and Vile Swills; holds them at an add spot ≥ 20 yd from the boss |
 | Arcane Storm | Retribution (lowest-GUID melee 10 s interrupt) | the owner at the cast; the second short interrupter after 0.8 s of channel; everyone capable after 2 s |
-| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live) |
+| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting |
 | Remedy | Mage (Spellsteal) | Shaman Purge after 1.5 s, Hunter and Priest after 3 s |
 | Raid haste | Elemental Shaman (else a Mage) | in phase two |
 | Flash Freeze | ranged damage dealers | break the nearest block; others leave the 5-yard shatter |
@@ -162,14 +188,30 @@ clamped to the room floor:
 - Red: rows in front inside the cone, melee at ±25° beside the tank, Consuming Flames targets
   behind;
 - Blue, Dark and phase two: a fan behind the boss at 18 yd, 40° apart, and melee behind at ±50°
-  (a third melee straight behind at 8 yd). A chilled player, and anyone whose slot lies near an
-  ice block, keeps its hazard-exit position;
+  (a third melee straight behind at 8 yd). A chilled player keeps its isolation position;
 - Green and the vial transitions: no formation.
 
 Hazards preempt formations: Absolute Zero (7 yd) and jet fire (4.5 yd), each exiting from the
 nearest source and rotating the exit until it clears every other sphere and fire; the tank's
 Magma Jets sidestep (8 yd perpendicular); shatter clearance; and Biting Chill isolation (not for
 tanks, who hold the boss and the adds).
+
+The Magma Jets sidestep point comes from the boss facing, the tank's projection on the jet line
+and the side it already stands on. None of these change while the tank sidesteps, so every tick of
+one cast proposes the same point.
+
+A formation slot never sits inside a hazard. Each hazard gets a clearance of its trigger radius
+plus 2 yd: Absolute Zero 9 yd, jet fire 6.5 yd, an ice block 9 yd. A slot inside a clearance
+shifts along its arc to the nearest clear point:
+
+- the Red cone within ±30° of the front; the back arc outside the front ±70°;
+- ranged may also move 5 or 10 yd out or 5 yd in, and keep 5 yd from the other ranged slots.
+
+When no ring point is clear, a melee damage dealer holds offense (`melee_ring_hazard_hold`)
+rather than chasing back into the hazard. So a bot that just evaded is never sent back.
+
+The add spot stays on the side the off-tank holds until the boss comes within 15 yd of it
+(20 yd to pick a side).
 
 One spot healer, the lowest-GUID healer, focuses frozen, Consuming Flames and Biting Chill players
 below 85%. It yields to the ordinary lowest-health scan while a tank is under 50%, or when another
@@ -219,9 +261,12 @@ lists the reports and views. No value is staged until then (registry entries are
 
 - Maloriak-specific hotfix carryover to the 2025-02-20 cutoff.
 - Live and WCL vial and ability cadence in all modes.
-- Runtime 4.3.4 DBC parity with the client rows, and the Biting Chill target defect.
+- Biting Chill target counts (native 60 yd pick vs 10 yd range; guides disagree) and the SpellMgr
+  target patch.
+- The Green-phase length: 21 s plus a 15 s transition (2012 guide), the next vial 30 s after the
+  15 s slime (2024 guide), or 40 s after the Green imbue (native).
 - Normal health (native vs Wowhead 4.4.2) and the enrage timer.
 - Heroic Prime Subject Fixate and Rend.
-- A live wipe/re-pull observation of the repaired Reset.
+- A live observation of a random first vial, including after a wipe and re-pull.
 - A live read-back of the historical script bindings and `spell_custom_attr`.
 - Melee calibration (Maloriak, Aberration, Prime Subject) from matched WCL U samples.

@@ -4,6 +4,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakDuties.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFormation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakGeometry.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakPlan.h"
 
@@ -38,14 +39,15 @@ public:
     static constexpr std::size_t OverflowBurnCount = 6;
     static constexpr float CleanupBeforePhaseTwoPct = 30.0f;
 
-    // Hazard radii come from client rows: Absolute Zero trigger 3 yd and
-    // explosion 5 yd, Magma Jets fire 3 yd, Shatter 5 yd, Biting Chill 3 yd.
-    static constexpr float AbsoluteZeroDanger = 7.0f;
+    // Hazard radii come from client rows (BotMaloriakFormation.h): Absolute
+    // Zero trigger 3 yd and explosion 5 yd, Magma Jets fire 3 yd, Shatter
+    // 5 yd, Biting Chill 3 yd.
+    static constexpr float AbsoluteZeroDanger = Maloriak::AbsoluteZeroDanger;
     static constexpr float AbsoluteZeroExit = 11.0f;
-    static constexpr float MagmaFireDanger = 4.5f;
+    static constexpr float MagmaFireDanger = Maloriak::MagmaFireDanger;
     static constexpr float MagmaFireExit = 7.5f;
-    static constexpr float ShatterDanger = 5.5f;
-    static constexpr float ShatterExit = 8.0f;
+    static constexpr float ShatterDanger = Maloriak::ShatterDanger;
+    static constexpr float ShatterExit = Maloriak::ShatterExit;
     static constexpr float BitingChillDanger = 6.0f;
     static constexpr float BitingChillExit = 8.0f;
     static constexpr float MagmaJetsSidestep = 8.0f;
@@ -109,7 +111,7 @@ public:
             Maloriak::FindPlayer(board, tanks.MainTank));
         bool const mainTank = botGuid == tanks.MainTank;
         plan.Movement = ProposeHazard(board, observation, *bot, mainTank,
-            botRole == "tank", frame);
+            botRole == "tank");
 
         if (mainTank)
             SelectMainTank(boss, botGuid, plan);
@@ -120,7 +122,7 @@ public:
             SelectDamageTarget(observation, *bot, botRole, plan);
             if (!plan.Movement)
                 plan.Movement = ProposeFormation(board, observation, *bot,
-                    botRole, frame, plan.DamageTarget == boss.Guid);
+                    botRole, frame, plan);
         }
         return plan;
     }
@@ -210,7 +212,7 @@ private:
         plan.SuppressReason = "prepull_pull_owner_wait";
         plan.Duty = "prepull_stage";
         Vector3 const destination = botRole == "tank"
-            ? Maloriak::AddAnchorFor(boss.Position)
+            ? Maloriak::AddAnchorFor(boss.Position, &bot.Position)
             : Maloriak::StagingSlot(IndexIn(staged, bot.Guid), staged.size());
         if (Maloriak::Distance2d(bot.Position, destination) > StagingTolerance)
             plan.Movement = BuildMove(board, destination, "prepull_stage",
@@ -358,6 +360,48 @@ private:
         return Maloriak::AwayFromPoint(bot, source, exitDistance);
     }
 
+    // Magma Jets (78194, 2 s cast) spawn fire along the boss facing, which
+    // the script turns to the victim before the cast. The sidestep target is
+    // latched per cast without state: it is derived from quantities that do
+    // not change while the tank sidesteps (the boss position and facing, the
+    // tank's projection on the jet line and the side it already stands on),
+    // so every tick of the same cast proposes the same point.
+    static std::optional<Vector3> MagmaJetsSidestepPoint(
+        Maloriak::Observation const& observation, ActorSnapshot const& bot)
+    {
+        ActorSnapshot const& boss = *observation.Boss;
+        float const ux = std::cos(boss.Facing);
+        float const uy = std::sin(boss.Facing);
+        float const dx = bot.Position.X - boss.Position.X;
+        float const dy = bot.Position.Y - boss.Position.Y;
+        float const along = std::max(1.0f, dx * ux + dy * uy);
+        float const lateral = -dx * uy + dy * ux;
+        if (std::fabs(lateral) >= MagmaJetsSidestep - 1.0f)
+            return std::nullopt;
+        auto point = [&](float side)
+        {
+            return Maloriak::ClampToRoom({ boss.Position.X + ux * along
+                    - uy * side * MagmaJetsSidestep,
+                boss.Position.Y + uy * along + ux * side * MagmaJetsSidestep,
+                bot.Position.Z });
+        };
+        float side = lateral >= 0.0f ? 1.0f : -1.0f;
+        if (std::fabs(lateral) < 0.5f)
+        {
+            // On the line: the side with fewer burning jets, left on a tie.
+            auto burning = [&observation](Vector3 const& at)
+            {
+                return std::count_if(observation.MagmaJetFires.begin(),
+                    observation.MagmaJetFires.end(), [&at](ActorSnapshot const* fire)
+                    {
+                        return Maloriak::Distance2d(at, fire->Position) < 10.0f;
+                    });
+            };
+            side = burning(point(-1.0f)) < burning(point(1.0f)) ? -1.0f : 1.0f;
+        }
+        return point(side);
+    }
+
     static ActorSnapshot const* NearestWithin(
         std::vector<ActorSnapshot const*> const& actors, ActorSnapshot const& bot,
         float radius)
@@ -378,8 +422,7 @@ private:
 
     static std::optional<BotNativeAction::Candidate> ProposeHazard(
         Blackboard const& board, Maloriak::Observation const& observation,
-        ActorSnapshot const& bot, bool mainTank, bool tank,
-        Maloriak::BossFrame const& frame)
+        ActorSnapshot const& bot, bool mainTank, bool tank)
     {
         using BotActionArbitration::Priority;
         if (ActorSnapshot const* sphere = NearestWithin(observation.AbsoluteZeros,
@@ -393,25 +436,10 @@ private:
                 MagmaFireExit), "magma_jet_fire_evade", fire->Guid,
                 Priority::Survival, 470.0f, true);
         if (mainTank && observation.MagmaJetsCasting)
-        {
-            // The jet line runs from Maloriak through the tank; step
-            // sideways to the side with fewer burning jets.
-            Vector3 const left{ bot.Position.X + frame.Vx() * MagmaJetsSidestep,
-                bot.Position.Y + frame.Vy() * MagmaJetsSidestep, bot.Position.Z };
-            Vector3 const right{ bot.Position.X - frame.Vx() * MagmaJetsSidestep,
-                bot.Position.Y - frame.Vy() * MagmaJetsSidestep, bot.Position.Z };
-            auto burning = [&observation](Vector3 const& point)
-            {
-                return std::count_if(observation.MagmaJetFires.begin(),
-                    observation.MagmaJetFires.end(), [&point](ActorSnapshot const* fire)
-                    {
-                        return Maloriak::Distance2d(point, fire->Position) < 10.0f;
-                    });
-            };
-            return BuildMove(board, Maloriak::ClampToRoom(burning(right) < burning(left)
-                ? right : left), "magma_jets_sidestep", observation.Boss->Guid,
-                Priority::Survival, 460.0f, true);
-        }
+            if (std::optional<Vector3> const sidestep =
+                    MagmaJetsSidestepPoint(observation, bot))
+                return BuildMove(board, *sidestep, "magma_jets_sidestep",
+                    observation.Boss->Guid, Priority::Survival, 460.0f, true);
         for (ActorSnapshot const* block : observation.FlashFreezeBlocks)
             if (Maloriak::Distance2d(bot.Position, block->Position) < ShatterDanger)
                 return BuildMove(board, Maloriak::AwayFromPoint(bot, block->Position,
@@ -446,8 +474,11 @@ private:
     {
         plan.DamageTarget = boss.Guid;
         plan.Duty = "main_tank";
-        // Shadow Imbued (heroic Dark phase) makes Maloriak immune to taunt;
-        // a passive boss (vial walk, phase change) has no victim to take.
+        // Icy Veins (Cataclysm Classic, 2024-07-29): "Maloriak will gain
+        // Shadow Imbued, making him immune to taunts." The native aura 92716
+        // (aura 147, mechanic mask 1614) grants no taunt immunity; the ledger
+        // keeps that gap open and the bot follows the guide. A passive boss
+        // (vial walk, phase change) has no victim to take.
         if (boss.ReactAggressive && !boss.VictimGuid.IsEmpty()
             && boss.VictimGuid != botGuid
             && !Maloriak::HasAura(boss, Maloriak::ShadowImbuedSpell))
@@ -483,7 +514,8 @@ private:
                 plan.SuppressOffense = true;
                 plan.SuppressReason = "off_tank_add_spot_wait";
                 plan.Duty = "off_tank_add_spot_wait";
-                Vector3 const anchor = Maloriak::AddAnchorFor(observation.Boss->Position);
+                Vector3 const anchor = Maloriak::AddAnchorFor(
+                    observation.Boss->Position, &bot.Position);
                 if (!plan.Movement
                     && Maloriak::Distance2d(bot.Position, anchor) > AddAnchorTolerance)
                     plan.Movement = BuildMove(board, anchor, "off_tank_add_anchor",
@@ -533,7 +565,8 @@ private:
                 focus = add;
         plan.DamageTarget = focus->Guid;
         plan.Duty = "off_tank_hold";
-        Vector3 const anchor = Maloriak::AddAnchorFor(observation.Boss->Position);
+        Vector3 const anchor = Maloriak::AddAnchorFor(observation.Boss->Position,
+            &bot.Position);
         if (!plan.Movement
             && Maloriak::Distance2d(bot.Position, anchor) > AddAnchorTolerance)
             plan.Movement = BuildMove(board, anchor, "off_tank_add_anchor",
@@ -599,17 +632,20 @@ private:
     // Flames targets; Blue, Dark and phase two spread behind. Green and the
     // vial transitions leave ordinary combat movement alone. A bot whose
     // target is not the boss (adds, ice blocks) keeps native combat movement.
+    // Slots inside a hazard clearance (Absolute Zero, jet fire, ice block)
+    // shift along their arc; melee with no clear ring point hold offense
+    // instead of chasing back into the hazard.
     static std::optional<BotNativeAction::Candidate> ProposeFormation(
         Blackboard const& board, Maloriak::Observation const& observation,
         ActorSnapshot const& bot, std::string_view botRole,
-        Maloriak::BossFrame const& frame, bool bossTarget)
+        Maloriak::BossFrame const& frame, AdaptiveMaloriakPlan& plan)
     {
         // A passive boss is walking to the cauldron or changing phase: its
         // facing points at the cauldron, not at the tank, so no formation.
-        if (!bossTarget || !observation.Boss->ReactAggressive)
+        if (plan.DamageTarget != observation.Boss->Guid
+            || !observation.Boss->ReactAggressive)
             return std::nullopt;
-        // A chilled player and anyone whose slot is near an ice block keep
-        // the position their hazard exit gave them until the block breaks.
+        // A chilled player keeps the position its isolation gave it.
         if (Maloriak::HasAura(bot, Maloriak::BitingChillSpell))
             return std::nullopt;
         bool const melee = botRole == "dps" && Maloriak::IsMeleeSpec(bot.ClassSpec);
@@ -617,8 +653,21 @@ private:
         std::size_t const index = IndexIn(group, bot.Guid);
         if (index == group.size())
             return std::nullopt;
+        auto slotFor = [&](std::size_t slotIndex) -> Vector3
+        {
+            switch (observation.CurrentPhase)
+            {
+                case Maloriak::Phase::Red:
+                    return melee ? Maloriak::FrontMeleeSlot(frame, slotIndex)
+                        : Maloriak::FrontStackSlot(frame, slotIndex);
+                default:
+                    return melee ? Maloriak::BackMeleeSlot(frame, slotIndex)
+                        : Maloriak::BackRangedSlot(frame, slotIndex, group.size());
+            }
+        };
         Vector3 destination;
         std::string_view mechanic;
+        Maloriak::SlotArc arc = Maloriak::SlotArc::Back;
         switch (observation.CurrentPhase)
         {
             case Maloriak::Phase::Red:
@@ -629,16 +678,15 @@ private:
                 }
                 else
                 {
-                    destination = melee ? Maloriak::FrontMeleeSlot(frame, index)
-                        : Maloriak::FrontStackSlot(frame, index);
+                    destination = slotFor(index);
                     mechanic = "red_cone_stack";
+                    arc = Maloriak::SlotArc::FrontCone;
                 }
                 break;
             case Maloriak::Phase::Blue:
             case Maloriak::Phase::Black:
             case Maloriak::Phase::PhaseTwo:
-                destination = melee ? Maloriak::BackMeleeSlot(frame, index)
-                    : Maloriak::BackRangedSlot(frame, index, group.size());
+                destination = slotFor(index);
                 mechanic = observation.CurrentPhase == Maloriak::Phase::Blue
                     ? "blue_spread"
                     : observation.CurrentPhase == Maloriak::Phase::Black
@@ -647,9 +695,31 @@ private:
             default:
                 return std::nullopt;
         }
-        for (ActorSnapshot const* block : observation.FlashFreezeBlocks)
-            if (Maloriak::Distance2d(destination, block->Position) < ShatterExit + 1.0f)
+
+        std::vector<Maloriak::FormationHazard> const hazards =
+            Maloriak::CollectFormationHazards(observation);
+        if (!hazards.empty() && !Maloriak::ClearOfHazards(destination, hazards))
+        {
+            if (melee && Maloriak::MeleeRingBlocked(frame, arc, hazards))
+            {
+                plan.SuppressOffense = true;
+                plan.SuppressReason = "melee_ring_hazard_hold";
+                plan.Duty = "melee_ring_hazard_hold";
                 return std::nullopt;
+            }
+            std::vector<Vector3> others;
+            if (!melee)
+                for (std::size_t other = 0; other < group.size(); ++other)
+                    if (other != index)
+                        others.push_back(slotFor(other));
+            std::optional<Vector3> const shifted = Maloriak::SafeFormationSlot(
+                frame, destination, arc, melee ? 30.0f : 10.0f,
+                melee ? 180.0f : 40.0f, hazards, others,
+                melee ? 0.0f : Maloriak::SpreadYards, !melee);
+            if (!shifted)
+                return std::nullopt;
+            destination = *shifted;
+        }
         float const tolerance = melee ? MeleeSlotTolerance : RangedSlotTolerance;
         if (Maloriak::Distance2d(bot.Position, destination) <= tolerance)
             return std::nullopt;

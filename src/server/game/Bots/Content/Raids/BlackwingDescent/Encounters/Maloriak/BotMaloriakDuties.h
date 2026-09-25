@@ -241,7 +241,11 @@ inline std::vector<ObjectGuid> ArcaneStormInterrupters(
 
 // Release Aberrations interrupts use the second and third short
 // interrupters, so the Arcane Storm owner keeps its cooldown for the next
-// storm (the native timers are 15.5-17 s and 17-18 s apart).
+// storm (the native timers are 15.5-17 s and 17-18 s apart). With a single
+// short interrupter the long pool takes the release; the storm owner never
+// does, because the storm has no other reliable interrupter. When the storm
+// owner comes from the long pool (no short interrupter), the next long one
+// takes the release.
 inline std::vector<ObjectGuid> ReleaseInterrupters(InterruptPools const& pools)
 {
     std::vector<ObjectGuid> assigned;
@@ -250,9 +254,12 @@ inline std::vector<ObjectGuid> ReleaseInterrupters(InterruptPools const& pools)
     else if (pools.Short.size() == 2)
         assigned = { pools.Short[1] };
     else if (pools.Short.size() == 1)
-        assigned = { pools.Short[0] };
-    else if (!pools.Long.empty())
-        assigned = { pools.Long.front() };
+    {
+        if (!pools.Long.empty())
+            assigned = { pools.Long.front() };
+    }
+    else if (pools.Long.size() >= 2)
+        assigned = { pools.Long[1] };
     return assigned;
 }
 
@@ -262,13 +269,23 @@ inline std::vector<ObjectGuid> ReleaseInterrupters(InterruptPools const& pools)
 // reserve is released at 25% anyway, so a release is admitted by default.
 constexpr std::size_t ReleaseInterruptActiveThreshold = 6;
 
+// Shared by the strategy (blackboard counts) and the dispatch, which
+// revalidates with native counts right before spending an interrupt.
+inline bool ReleaseAdmittedCounts(std::size_t loose, std::size_t reserve,
+    bool darkPhaseWithSwills)
+{
+    if (!reserve)
+        return true;
+    if (darkPhaseWithSwills)
+        return false;
+    return loose < ReleaseInterruptActiveThreshold;
+}
+
 inline bool ReleaseAdmitted(Observation const& observation)
 {
-    if (!observation.ReserveAberrations)
-        return true;
-    if (observation.CurrentPhase == Phase::Black && !observation.VileSwills.empty())
-        return false;
-    return observation.ActiveAberrations.size() < ReleaseInterruptActiveThreshold;
+    return ReleaseAdmittedCounts(observation.ActiveAberrations.size(),
+        observation.ReserveAberrations,
+        observation.CurrentPhase == Phase::Black && !observation.VileSwills.empty());
 }
 
 // Remedy (10 s self heal, magic) is removed at once: the first dispeller

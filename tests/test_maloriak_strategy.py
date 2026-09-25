@@ -547,6 +547,163 @@ int main()
         CHECK(Dist(M::AddAnchorWest, { -105.79f, -462.58f, 73.5f }) > 20.0f);
     }
 
+    // Review 2d52afc3f4 (major 1): formation never returns a bot into a
+    // hazard it just evaded. Phase two, raid spread behind the boss.
+    {
+        auto phaseTwo = []()
+        {
+            Blackboard board = Canonical();
+            Boss(board).HealthPct = 20.0f;
+            Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+            return board;
+        };
+        auto frameOf = [](Blackboard const& board)
+        {
+            return M::ResolveFrame(board.Hostiles.front(), &board.Players[DK]);
+        };
+        auto melee = [](Blackboard const& board)
+        {
+            std::vector<ActorSnapshot const*> group;
+            for (ActorSnapshot const& player : board.Players)
+                if (player.Role == "dps" && M::IsMeleeSpec(player.ClassSpec))
+                    group.push_back(&player);
+            std::sort(group.begin(), group.end(), [](ActorSnapshot const* a, ActorSnapshot const* b)
+            { return a->Guid.GetRawValue() < b->Guid.GetRawValue(); });
+            return group;
+        };
+
+        // A sphere sitting on the rogue's back melee slot, 3.5 yd from the
+        // boss: every ring point is within 9 yd of it. The rogue, already at
+        // its 11-yd exit point, holds (no formation move, offense held).
+        Blackboard board = phaseTwo();
+        std::vector<ActorSnapshot const*> const group = melee(board);
+        std::size_t rogueIndex = 0;
+        while (group[rogueIndex]->Guid != G(ROGUE))
+            ++rogueIndex;
+        Vector3 const rogueSlot = M::BackMeleeSlot(frameOf(board), rogueIndex);
+        board.Summons.push_back(Add(41961, 820, rogueSlot.X, rogueSlot.Y, false, 100.0f));
+        Vector3 const sphere = board.Summons.back().Position;
+        board.Players[ROGUE].Position = { sphere.X + 11.0f, sphere.Y, 73.6f };
+        AdaptiveMaloriakPlan const hold = Plan(board, ROGUE);
+        CHECK(!hold.Movement);
+        CHECK(hold.SuppressOffense && std::string(hold.SuppressReason) == "melee_ring_hazard_hold");
+        // Inside the danger radius the hazard exit still wins.
+        board.Players[ROGUE].Position = { sphere.X + 2.0f, sphere.Y, 73.6f };
+        AdaptiveMaloriakPlan const evade = Plan(board, ROGUE);
+        CHECK(evade.Movement && evade.Movement->Id.Mechanic == "absolute_zero_evade");
+        CHECK(Dist(Destination(evade), sphere) >= 10.9f);
+
+        // A sphere 6.5 yd from the boss leaves the far side of the ring clear:
+        // the rogue shifts there instead of holding.
+        Blackboard far = phaseTwo();
+        M::BossFrame const farFrame = frameOf(far);
+        Vector3 const nearSlot = M::FramePolar(farFrame, 6.5f, M::Pi + 50.0f * M::Pi / 180.0f);
+        far.Summons.push_back(Add(41961, 821, nearSlot.X, nearSlot.Y, false, 100.0f));
+        far.Players[ROGUE].Position = { nearSlot.X + 12.0f, nearSlot.Y + 12.0f, 73.6f };
+        AdaptiveMaloriakPlan const shifted = Plan(far, ROGUE);
+        CHECK(!shifted.SuppressOffense);
+        CHECK(shifted.Movement && shifted.Movement->Id.Mechanic == "phase_two_spread");
+        CHECK(Dist(Destination(shifted), far.Summons.back().Position) >= 9.0f);
+
+        // Ranged: a sphere on the mage's fan slot; the mage at its exit
+        // point gets either no move or a shifted fan point clear of the
+        // sphere and 5 yd from every other ranged slot.
+        Blackboard ranged = phaseTwo();
+        M::BossFrame const rangedFrame = frameOf(ranged);
+        std::vector<ActorSnapshot const*> casters;
+        for (ActorSnapshot const& player : ranged.Players)
+            if (player.Role != "tank" && !(player.Role == "dps" && M::IsMeleeSpec(player.ClassSpec)))
+                casters.push_back(&player);
+        std::sort(casters.begin(), casters.end(), [](ActorSnapshot const* a, ActorSnapshot const* b)
+        { return a->Guid.GetRawValue() < b->Guid.GetRawValue(); });
+        std::size_t mageIndex = 0;
+        while (casters[mageIndex]->Guid != G(MAGE))
+            ++mageIndex;
+        Vector3 const mageSlot = M::BackRangedSlot(rangedFrame, mageIndex, casters.size());
+        ranged.Summons.push_back(Add(41961, 822, mageSlot.X, mageSlot.Y, false, 100.0f));
+        ranged.Players[MAGE].Position = { mageSlot.X, mageSlot.Y - 11.0f, 73.6f };
+        AdaptiveMaloriakPlan const fan = Plan(ranged, MAGE);
+        CHECK(fan.Movement.has_value());  // an 18-yd fan has room to shift
+        if (fan.Movement)
+        {
+            CHECK(Dist(Destination(fan), mageSlot) >= 9.0f);
+            for (std::size_t other = 0; other < casters.size(); ++other)
+                if (other != mageIndex)
+                    CHECK(Dist(Destination(fan), M::BackRangedSlot(rangedFrame, other, casters.size())) >= 5.0f);
+        }
+        CHECK(!fan.SuppressOffense);
+
+        // Jet fire on the warlock's slot: same rule with the 6.5-yd clearance.
+        Blackboard fire = phaseTwo();
+        std::size_t lockIndex = 0;
+        while (casters[lockIndex]->Guid != G(LOCK))
+            ++lockIndex;
+        Vector3 const lockSlot = M::BackRangedSlot(frameOf(fire), lockIndex, casters.size());
+        fire.Summons.push_back(Add(41901, 823, lockSlot.X, lockSlot.Y, false, 100.0f));
+        fire.Players[LOCK].Position = { lockSlot.X + 7.5f, lockSlot.Y, 73.6f };
+        AdaptiveMaloriakPlan const jet = Plan(fire, LOCK);
+        CHECK(jet.Movement.has_value());
+        CHECK(!jet.Movement || Dist(Destination(jet), lockSlot) >= 6.5f);
+        // Standing on the shifted point: nothing more to do.
+        fire.Players[LOCK].Position = Destination(jet);
+        CHECK(!Plan(fire, LOCK).Movement);
+    }
+
+    // Review minor 6: the Magma Jets sidestep point is the same on every
+    // tick of one cast while the tank walks to it.
+    {
+        Blackboard board = Canonical();
+        Boss(board).HealthPct = 20.0f;
+        Boss(board).Auras.push_back({ 95663, Boss(board).Guid, 1, 0 });
+        Boss(board).Cast = CastSnapshot{ 78194, G(DK), board.ObservedAtMs, false, false };
+        Vector3 const first = Destination(Plan(board, DK));
+        for (float fraction : { 0.25f, 0.5f, 0.75f })
+        {
+            Vector3 const start{ -105.8f, -452.0f, 73.6f };
+            board.Players[DK].Position = { start.X + (first.X - start.X) * fraction,
+                start.Y + (first.Y - start.Y) * fraction, 73.6f };
+            board.ObservedAtMs += 100;
+            board.Hostiles.front().Cast->ObservedAtMs = board.ObservedAtMs;
+            AdaptiveMaloriakPlan const step = Plan(board, DK);
+            CHECK(step.Movement && Dist(Destination(step), first) < 0.05f);
+        }
+        board.Players[DK].Position = first;
+        CHECK(!Plan(board, DK).Movement);
+    }
+
+    // Review minor 6: add-spot hysteresis.
+    {
+        Vector3 const boss17{ M::AddAnchorWest.X + 17.0f, M::AddAnchorWest.Y, 73.6f };
+        CHECK(Dist(M::AddAnchorFor(boss17), M::AddAnchorEast) < 0.01f);
+        CHECK(Dist(M::AddAnchorFor(boss17, &M::AddAnchorWest), M::AddAnchorWest) < 0.01f);
+        CHECK(Dist(M::AddAnchorFor(boss17, &M::AddAnchorEast), M::AddAnchorEast) < 0.01f);
+        Vector3 const boss12{ M::AddAnchorWest.X + 12.0f, M::AddAnchorWest.Y, 73.6f };
+        CHECK(Dist(M::AddAnchorFor(boss12, &M::AddAnchorWest), M::AddAnchorEast) < 0.01f);
+        Vector3 const middle{ -105.0f, -420.0f, 73.6f };
+        CHECK(Dist(M::AddAnchorFor(boss17, &middle), M::AddAnchorEast) < 0.01f);
+    }
+
+    // Review minor 3: one short interrupter keeps Arcane Storm; the long
+    // pool (Counterspell) takes Release Aberrations.
+    {
+        M::InterruptPools pools;
+        pools.Short = { G(RET) };
+        pools.Long = { G(MAGE) };
+        CHECK(M::ReleaseInterrupters(pools) == std::vector<ObjectGuid>{ G(MAGE) });
+        pools.Long.clear();
+        CHECK(M::ReleaseInterrupters(pools).empty());
+        pools.Short.clear();
+        pools.Long = { G(MAGE), G(FERAL) };
+        CHECK(M::ReleaseInterrupters(pools) == std::vector<ObjectGuid>{ G(FERAL) });
+    }
+
+    // Review minor 4: Remedy difficulty variants (SpellDifficulty 3267).
+    {
+        Blackboard board = Canonical();
+        Boss(board).Auras.push_back({ 92966, Boss(board).Guid, 1, board.ObservedAtMs + 9500 });
+        CHECK(Plan(board, MAGE).DispelTarget == Boss(board).Guid);
+    }
+
     return failures == 0 ? 0 : 1;
 }
 '''
@@ -580,3 +737,28 @@ def test_maloriak_strategy_headers_stay_small_and_lawful() -> None:
         for forbidden in ("Player*", "Creature*", "NearTeleportTo", "TeleportTo",
                           "CastSpell(", "AddAura(", "SetHealth("):
             assert forbidden not in text, (path.name, forbidden)
+
+
+def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
+    folder = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak"
+    module = (folder / "BotWorldPopulationMgrMaloriakCandidates.cpp").read_text(encoding="utf-8")
+    assert "void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(" in module
+    # Kill credit with Maloriak-specific identities (Magmaw's observer untouched).
+    assert '"world.validation_route_maloriak_observation"' in module
+    assert "RememberValidationRouteBossEngagement(creature)" in module
+    assert '"adaptive_maloriak_route_observation_recorded"' in module
+    assert "magmaw_route_observation" not in module
+    # Interrupts: ended, uninterruptible or admitted releases are skipped.
+    assert "FindCurrentSpellBySpellId(castSpellId)" in module
+    assert "CanBeInterrupted(caster)" in module
+    assert "NativeReleaseAdmitted(caster)" in module
+    assert "ReleaseAdmittedCounts(loose, reserve," in module
+    # Remedy: every difficulty variant, offensive priest dispel 527 (not 528).
+    assert "Maloriak::RemedySpells" in module
+    assert "30449u, 370u, 19801u, 527u };" in module and " 528u" not in module
+    timers = (folder / "BotMaloriakNativeTimers.cpp").read_text(encoding="utf-8")
+    assert "Maloriak::PublishedMechanicSpells" in timers
+    assert "GetTimeUntilEncounterMechanic(spellId)" in timers
+    assert "snapshot.Route.NodeId != Maloriak::EncounterNode" in timers
+    for path in folder.glob("*.cpp"):
+        assert len(path.read_text(encoding="utf-8").splitlines()) < 1000, path.name

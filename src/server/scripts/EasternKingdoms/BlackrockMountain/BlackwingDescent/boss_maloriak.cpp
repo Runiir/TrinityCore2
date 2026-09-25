@@ -164,6 +164,9 @@ bool IsVialMechanicSpell(uint32 spellId, uint8 vial)
 
 struct boss_maloriak : public BossAI
 {
+    // VIAL_GREEN is the cycle start: the first normal vial is the random
+    // Red/Blue branch and heroic starts with Black. The former VIAL_RED start
+    // made the first normal vial always Blue.
     boss_maloriak(Creature* creature) : BossAI(creature, DATA_MALORIAK),
         _currentVial(VIAL_GREEN), _usedVialsCount(0), _vialsPerCycle(IsHeroic() ? 3 : 2), _releasedAberrationsCount(0),
         _vialSequenceActive(false) { }
@@ -172,11 +175,12 @@ struct boss_maloriak : public BossAI
     {
         _Reset();
         me->MakeInterruptable(false);
-        // A respawn after evade reuses this AI object (Creature::Respawn only
-        // calls Reset), so every attempt must start a fresh vial cycle and a
-        // full 18-creature release reserve. VIAL_GREEN is the cycle start:
-        // the first normal vial is the random Red/Blue branch, heroic starts
-        // with Black.
+        // Defensive. Maloriak's spawn (250112) has no spawn_group row, so it
+        // is in the Default Group without compatibility mode and
+        // _DespawnAtEvade respawns a new Creature with a new AI. Only a
+        // compatibility-mode respawn (Creature::Respawn calls Reset on the
+        // same AI) would otherwise keep the failed attempt's vial cycle and
+        // release reserve.
         _currentVial = VIAL_GREEN;
         _usedVialsCount = 0;
         _releasedAberrationsCount = 0;
@@ -370,10 +374,7 @@ struct boss_maloriak : public BossAI
         bool const phaseTwo = events.IsInPhase(PHASE_TWO);
         auto untilEvent = [this](uint32 eventId) -> uint32
         {
-            uint32 const at = events.GetNextEventTime(eventId);
-            if (!at)
-                return Unscheduled;
-            return at <= events.GetTimer() ? 0 : at - events.GetTimer();
+            return TimeUntilScheduledEvent(events, eventId);
         };
         auto casting = [this](uint32 castSpellId)
         {

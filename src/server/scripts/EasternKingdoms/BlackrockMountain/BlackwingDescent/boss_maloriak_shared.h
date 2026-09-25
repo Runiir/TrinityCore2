@@ -19,6 +19,7 @@
 #define DEF_BOSS_MALORIAK_SHARED_H
 
 #include "Define.h"
+#include <limits>
 
 // Identifiers shared by the Maloriak creature AIs (boss_maloriak.cpp) and
 // its spell scripts (boss_maloriak_spells.cpp).
@@ -154,6 +155,19 @@ constexpr uint8 SelectNextVial(uint8 current, uint8 usedVials,
 constexpr uint8 AdvanceUsedVials(uint8 usedVials, uint8 vialsPerCycle)
 {
     return usedVials < vialsPerCycle ? usedVials + 1 : 0;
+}
+
+// Read-only EventMap query behind GetTimeUntilEncounterMechanic: the
+// remaining time of the next scheduled eventId, 0 when it is due or overdue
+// (UpdateAI holds due events while Maloriak casts), and uint32 max when it
+// is not scheduled. GetNextEventTime returns the absolute due time, or 0.
+template <typename EventMapT>
+uint32 TimeUntilScheduledEvent(EventMapT const& events, uint32 eventId)
+{
+    uint32 const at = events.GetNextEventTime(eventId);
+    if (!at)
+        return std::numeric_limits<uint32>::max();
+    return at <= events.GetTimer() ? 0 : at - events.GetTimer();
 }
 }
 

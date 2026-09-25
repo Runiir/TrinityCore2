@@ -29,6 +29,9 @@ constexpr float StagingSpacing = 4.0f;
 constexpr Vector3 AddAnchorWest{ -130.0f, -434.0f, RoomFloorZ };
 constexpr Vector3 AddAnchorEast{ -81.0f, -434.0f, RoomFloorZ };
 constexpr float AddAnchorBossClearance = 20.0f;
+// The side the holder already uses is kept until the boss comes within
+// 15 yards of it, so a boss drifting around 20 yards does not flip it.
+constexpr float AddAnchorHysteresis = 5.0f;
 
 // Red: Scorching Blast is a 60-yard frontal cone (client ConeDegrees 70)
 // split among targets, so the raid stands in front, close to the boss-tank
@@ -152,10 +155,31 @@ inline Vector3 StagingSlot(std::size_t index, std::size_t count)
     return { StagingCenterX + offset, StagingY, RoomFloorZ };
 }
 
-inline Vector3 AddAnchorFor(Vector3 const& bossPosition)
+// A holder this close to an anchor is using that side.
+constexpr float AddAnchorHeldRadius = 12.0f;
+
+// West unless the boss stands within 20 yards of it. A holder (the
+// off-tank) standing at one side keeps it while the boss stays 15 yards or
+// more from it.
+inline Vector3 AddAnchorFor(Vector3 const& bossPosition,
+    Vector3 const* holder = nullptr)
 {
-    return Distance2d(bossPosition, AddAnchorWest) < AddAnchorBossClearance
+    Vector3 const preferred =
+        Distance2d(bossPosition, AddAnchorWest) < AddAnchorBossClearance
         ? AddAnchorEast : AddAnchorWest;
+    if (!holder)
+        return preferred;
+    bool const atWest = Distance2d(*holder, AddAnchorWest) <= AddAnchorHeldRadius;
+    bool const atEast = Distance2d(*holder, AddAnchorEast) <= AddAnchorHeldRadius;
+    if (atWest == atEast)
+        return preferred;
+    Vector3 const current = atWest ? AddAnchorWest : AddAnchorEast;
+    Vector3 const other = atWest ? AddAnchorEast : AddAnchorWest;
+    if (Distance2d(bossPosition, current)
+        >= AddAnchorBossClearance - AddAnchorHysteresis)
+        return current;
+    return Distance2d(bossPosition, other) > Distance2d(bossPosition, current)
+        ? other : current;
 }
 
 // A point exitDistance yards from danger on the far side of the actor; the

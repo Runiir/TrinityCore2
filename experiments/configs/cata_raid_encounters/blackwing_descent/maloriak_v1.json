@@ -150,13 +150,15 @@
     "heroic_prime_fixate_target_persistence_unconfirmed"
   ],
   "known_behavior_summary": [
-    "Normal order is random Red/Blue, the other color, then Green; Heroic prepends Black and repeats it after each Green. Reset now starts every attempt at the cycle start (before 2026-09-25 the first normal vial was always Blue and counters survived evade).",
+    "Normal order is random Red/Blue, the other color, then Green; Heroic prepends Black and repeats it after each Green (two independent verbatim sources in the ledger). The constructor now starts at the cycle start, so the first normal vial is random (it was always Blue); Maloriak respawns with a new AI after a wipe (Default Group), and Reset() also restarts the cycle defensively.",
     "Release Aberrations selects up to three non-drowned chamber creatures per successful cast and has an 18-creature reserve (six successful casts); interrupted casts do not count.",
     "The native AI schedules Release Aberrations in Red, Blue and Green; guides describe Red/Green or throughout phase one, so the bot uses a quota (nine loose at most) rather than a color rule.",
     "DamageTaken enters phase two at 25% in every mode, cancels any unfinished cauldron visit, releases all remaining minions (two Prime Subjects included) and drinks all bottles.",
     "The boss publishes read-only mechanic timers (GetTimeUntilEncounterMechanic) for the bot blackboard; publication into the blackboard is a coordinator patch.",
     "Scorching Blast damage is split among targets by spell_custom_attr (77679, SHARE_DAMAGE).",
-    "SpellMgrCorrectionsPart04.cpp overwrites Biting Chill EFFECT_0 TargetA twice (TargetB intended); patch requested."
+    "SpellMgrCorrectionsPart04.cpp overwrites Biting Chill EFFECT_0 TargetA twice (TargetB intended); patch requested.",
+    "Biting Chill picks a random target within 60 yd but has a 10-yd cast range, so ranged picks fail natively (open native fidelity item; live target counts pending).",
+    "Runtime 4.3.4 DBC rows match the 4.4.2 client rows for every Maloriak spell apart from radius indices (ledger dbc_434_parity_20260925)."
   ],
   "unresolved": [
     "exact_442_client_build_and_hotfix_cutoff",
@@ -175,7 +177,9 @@
     "current_Icy_Veins_six_minute_enrage_wording_vs_historical_7m_normal_12m_heroic",
     "current_Icy_Veins_red_green_release_description_vs_local_all_color_release_schedule",
     "native_normal_health_19.76M_and_68.7M_vs_Wowhead_4.4.2_24.7M_and_86.6M",
-    "historical_guide_Biting_Chill_one_melee_target_10N_vs_native_random_target_within_60yd"
+    "historical_guide_Biting_Chill_one_melee_target_10N_vs_native_random_target_within_60yd",
+    "green_duration_historical_21s_plus_15s_vs_current_guide_30s_after_slime_vs_native_40s",
+    "biting_chill_native_60yd_pick_vs_10yd_cast_range_vs_guides_1_melee_or_3_random"
   ],
   "client_reference": {
     "extract": "maloriak_ledger_v1.json source_catalog.client_442_59185_maloriak_rows_20260925",
@@ -190,7 +194,7 @@
     "basis": "gt_npc_total_hp_exp3[88] 85892 x HealthModifier; normal modes conflict with the Wowhead 4.4.2 page (24.7M / 86.6M)"
   },
   "native_repairs_20260925": [
-    "reset_counters",
+    "first_vial_and_defensive_reset",
     "phase_two_vial_leak",
     "mechanic_timer_observation",
     "module_size_split"
@@ -207,9 +211,9 @@
   "unresolved_status": {
     "exact_442_client_build_and_hotfix_cutoff": "build and cutoff pinned, Maloriak client rows extracted; Maloriak-specific hotfix carryover unproven",
     "live_timer_and_cauldron_movement_confirmation_all_modes": "native schedule published; no live or WCL cadence (WCL gated 2026-09-25)",
-    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "client base points resolved; runtime DBC parity, Biting Chill target defect and WCL sample compatibility open",
+    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "client base points resolved and runtime DBC parity closed (radius indices only); target counts (Biting Chill), the SpellMgr target patch and WCL sample compatibility open",
     "normal_health_and_enrage_due_current_vs_historical_guide_conflict": "native normal health matches the 2012 guide, conflicts with the 4.4.2 Wowhead page; enrage absent",
     "heroic_prime_subject_fixate_implementation": "no spell data",
-    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "answered from source (Respawn reuses the AI) and repaired in Reset; live wipe/re-pull observation pending"
+    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "answered from source: the Default Group respawn builds a new AI, so counters never survived; Reset is defensive; the random first vial awaits a live observation"
   }
 }

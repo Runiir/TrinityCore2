@@ -168,3 +168,73 @@ def test_spell_scripts_keep_their_names_and_registration_path() -> None:
         "boss_maloriak", "npc_maloriak_flash_freeze", "npc_maloriak_experiment",
         "npc_maloriak_magma_jet", "npc_maloriak_lord_victor_nefarius", "npc_maloriak_vile_swill",
     }
+
+
+def test_mechanic_timer_helper_matches_eventmap_semantics(tmp_path: Path) -> None:
+    """TimeUntilScheduledEvent against the production EventMap: remaining time,
+    0 when due or held by a cast, uint32 max when unscheduled or cancelled;
+    and why phase two must cancel the unphased vial events explicitly."""
+    source = tmp_path / "timers.cpp"
+    binary = tmp_path / "timers"
+    source.write_text(
+        r'''
+#include "boss_maloriak_shared.h"
+#include "EventMap.h"
+#include <cstdio>
+#include <limits>
+
+uint32 urand(uint32 min, uint32) { return min; }
+
+using namespace BlackwingDescent::Maloriak;
+
+int main()
+{
+    int failures = 0;
+    auto expect = [&failures](bool ok, char const* label) { if (!ok) { std::puts(label); ++failures; } };
+    constexpr uint32 Unscheduled = std::numeric_limits<uint32>::max();
+    enum { EVENT_A = 1, EVENT_B = 2, EVENT_VIAL = 3 };
+    EventMap events;
+    events.SetPhase(1);
+    events.ScheduleEvent(EVENT_A, 15s, 0, 1);
+    expect(TimeUntilScheduledEvent(events, EVENT_A) == 15000, "fresh event");
+    expect(TimeUntilScheduledEvent(events, EVENT_B) == Unscheduled, "unscheduled");
+    events.Update(10000);
+    expect(TimeUntilScheduledEvent(events, EVENT_A) == 5000, "after 10 s");
+    // A cast holds UpdateAI's ExecuteEvent: the event stays due, never wraps.
+    events.Update(7000);
+    expect(TimeUntilScheduledEvent(events, EVENT_A) == 0, "overdue while casting");
+    expect(events.ExecuteEvent() == EVENT_A, "executes once released");
+    expect(TimeUntilScheduledEvent(events, EVENT_A) == Unscheduled, "consumed");
+    // Unphased vial steps still execute after SetPhase(2); only an explicit
+    // CancelEvent (CancelVialVisitEvents) stops them.
+    events.ScheduleEvent(EVENT_VIAL, 1s);
+    events.SetPhase(2);
+    events.Update(1000);
+    expect(events.ExecuteEvent() == EVENT_VIAL, "unphased event survives phase two");
+    events.ScheduleEvent(EVENT_VIAL, 1s);
+    events.CancelEvent(EVENT_VIAL);
+    expect(TimeUntilScheduledEvent(events, EVENT_VIAL) == Unscheduled, "cancelled");
+    events.Update(2000);
+    expect(events.ExecuteEvent() == 0, "cancelled event never runs");
+    return failures;
+}
+''',
+        encoding="utf-8",
+    )
+    command = [
+        "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
+        "-I", str(SCRIPTS), "-I", str(ROOT / "src/common"), "-I", str(ROOT / "src/common/Utilities"),
+        str(source), str(ROOT / "src/common/Utilities/EventMap.cpp"), "-o", str(binary),
+    ]
+    subprocess.run(command, check=True, cwd=ROOT)
+    result = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout
+    boss = text(BOSS)
+    assert "return TimeUntilScheduledEvent(events, eventId);" in boss
+
+
+def test_reset_comment_states_the_real_respawn_path() -> None:
+    boss = text(BOSS)
+    reset = function_body(boss, "void Reset() override")
+    assert "Default Group without compatibility mode" in reset
+    assert "The former VIAL_RED start" in boss

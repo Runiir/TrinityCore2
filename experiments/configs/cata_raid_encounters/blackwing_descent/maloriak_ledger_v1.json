@@ -230,6 +230,28 @@
       "path": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp (Biting Chill 77760, Growth Catalyst 77987, Release Aberrations 77569, Release All Minions 77991, Debilitating Slime 77615)",
       "accessed": "2026-09-25",
       "reliability": "repository_confirmation"
+    },
+    "repo_spawn_groups": {
+      "title": "Maloriak spawn and spawn-group membership",
+      "publisher": "repository database dump",
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql (creature 250112, spawn_group, spawn_group_template)",
+      "accessed": "2026-09-25",
+      "claim": "Maloriak's spawn 250112 has no spawn_group row, so it belongs to spawn group 0 'Default Group' (flags 1, no SPAWNGROUP_FLAG_COMPATIBILITY_MODE; group 1 'Legacy Group' has flags 3). Without compatibility mode, BossAI::_DespawnAtEvade despawns the creature and the respawn builds a new Creature and AI (Creature.cpp m_respawnCompatibilityMode).",
+      "reliability": "repository_confirmation; independent review 2026-09-25 agrees"
+    },
+    "dbc_434_parity_20260925": {
+      "title": "4.4.2 client rows versus the runtime 4.3.4 DBC (data/dbc/enUS)",
+      "publisher": "repository client data",
+      "accessed": "2026-09-25",
+      "method": "SpellEffect.dbc (27-field WDBC rows) keyed by SpellID and EffectIndex against the difficulty-0 SpellEffect rows of client_442_59185_maloriak_rows_20260925, comparing Effect, EffectAura, EffectAuraPeriod, EffectBasePoints, both misc values, EffectTriggerSpell, both implicit targets and both radius indices; SpellDifficulty.dbc read for the variant ids.",
+      "claims": [
+        "102 difficulty-0 rows: 88 identical; 1 absent locally (Devour Magic effect 2); 13 differ.",
+        "Every Maloriak encounter difference is a radius index only: the throw bottles 77925/77932/77937/92831 have a 50000-yd TargetB radius in 4.4.2 and none in 4.3.4; the self auras 78895/78896/92917/95663 have a 50000-yd TargetA radius in 4.3.4 only; Growth Catalyst 77987 effect 0 has a 10-yd TargetB radius in 4.4.2 and none in 4.3.4 (TargetA radius 10 yd in both).",
+        "The other differences are player spells (Bloodlust/Heroism/Time Warp effect 2 misc 126 vs 0, Devour Magic effect 1).",
+        "SpellDifficulty variants (10N, 25N, 10H, 25H): 3266 Arcane Storm tick 77908/92961-92963, 3267 Remedy 77912/92965-92967, 3268 Scorching Blast 77679/92968-92970, 3269 Consuming Flames 77786/92971-92973, 3270 Biting Chill tick 77763/92975-92977, 3271 Flash Freeze 77699/92978-92980, 3279 Acid Nova 78225/93011-93013, 3280 Magma Jets 78095/93014-93016, 3284 Magma Jets tick 78124/93038-93040, 3285 Absolute Zero 78208/93041-93043, 3569 Shatter 77715/95655-95657, 3901 Growth Catalyst 77987/101440-101442. Arcane Storm 77896, Release Aberrations 77569 and Magma Jets 78194 have no variant.",
+        "SpellMisc (73 rows) identical apart from the same radii per the independent review of 2026-09-25 (not re-derived here)."
+      ],
+      "reliability": "primary_client_data_comparison"
     }
   },
   "mode_matrix": {
@@ -1002,9 +1024,9 @@
   "phase_reset_credit": [
     {
       "key": "reset",
-      "behavior": "Creature::Respawn (Creature.cpp 2052-2053) only calls AI()->Reset(); the AI object is not rebuilt after _DespawnAtEvade. Before 2026-09-25 Reset() left _currentVial, _usedVialsCount and _releasedAberrationsCount from the failed attempt (first vial could be Green, the release reserve could start exhausted) and the constructor started at VIAL_RED, so the first normal vial was always Blue. Reset() now starts a fresh cycle (VIAL_GREEN sentinel, counters 0).",
-      "source": "local_cpp: boss_maloriak.cpp Reset; src/server/game/Entities/Creature/Creature.cpp Respawn",
-      "confidence": "repository_fact_repaired; live wipe/re-pull observation pending"
+      "behavior": "Maloriak's spawn 250112 is in the Default Group without compatibility mode, so _DespawnAtEvade respawns a new Creature with a new AI: the vial and release counters did not survive a wipe on this spawn. The behavior change of 2026-09-25 is the constructor start value: VIAL_GREEN makes the first normal vial the random Red/Blue branch (sources: verbatim_quotes vial_order_random_first); the former VIAL_RED start made it always Blue. Reset() now also restarts the cycle and the reserve, which matters only for a compatibility-mode spawn (Creature::Respawn calls AI()->Reset() on the same AI, Creature.cpp 2052-2053).",
+      "source": "local_cpp: boss_maloriak.cpp constructor and Reset; repo_spawn_groups; src/server/game/Entities/Creature/Creature.cpp Respawn",
+      "confidence": "repository_fact; first-vial change live observation pending"
     },
     {
       "key": "evade_cleanup",
@@ -1074,6 +1096,20 @@
       "wowhead": "throughout_phase_one",
       "local": "scheduled_Red_Blue_Green",
       "resolution": "quota_policy_must_not_depend_on_color_only"
+    },
+    {
+      "key": "green_duration",
+      "icy_original": "21 s Green phase then a 15 s transition (36 s)",
+      "icy_cata_classic": "next vial 30 s after the 15 s Debilitating Slime wears off (about 45 s)",
+      "local": "EVENT_FACE_TO_CAULDRON 40 s after the Green imbue",
+      "resolution": "unresolved; measure the Green-throw to next-throw interval in a WCL kill"
+    },
+    {
+      "key": "biting_chill_target_selection",
+      "icy_original": "1 melee-range target (10-man), 2 (25-man)",
+      "wowhead": "3 random raid members",
+      "local": "random target within 60 yd, cast range 10 yd (ranged picks fail)",
+      "resolution": "unresolved; live and WCL target counts"
     }
   ],
   "unresolved": [
@@ -1090,7 +1126,7 @@
     {
       "key": "exact_spell_coefficients_and_target_counts_by_mode",
       "status": "fidelity_blocked",
-      "evidence_gap": "Base points, radii, cones and durations per difficulty are resolved from 4.4.2 client rows; runtime 4.3.4 DBC parity, the Biting Chill SpellMgr target defect and WCL sample compatibility remain open."
+      "evidence_gap": "Base points, radii, cones and durations per difficulty come from the 4.4.2 client rows, and runtime 4.3.4 DBC parity is closed (dbc_434_parity_20260925: only radius-index differences). Open: target counts per mode (Biting Chill native_fidelity_items.biting_chill_target_selection, live counts pending), the SpellMgr target patch, and WCL sample compatibility."
     },
     {
       "key": "normal_health_and_enrage_values",
@@ -1105,7 +1141,7 @@
     {
       "key": "AI_object_reconstruction_and_custom_counter_reset_after_evade",
       "status": "fidelity_blocked",
-      "evidence_gap": "Source resolved (Creature::Respawn reuses the AI and calls Reset) and repaired in boss_maloriak.cpp Reset; the live wipe/re-pull observation (fresh random first vial, full release reserve) is still pending."
+      "evidence_gap": "Resolved from source for this spawn (repo_spawn_groups): the Default Group respawn builds a new Creature and AI, so counters did not survive a wipe; Reset() is defensive. The real 10N change is the random first vial (formerly always Blue). Still open: a live wipe/re-pull observation (first vial random Red/Blue, releases available again)."
     },
     {
       "key": "whether_historical_custom_SQL_pack_is_applied_to_current_database",
@@ -1127,10 +1163,10 @@
     "script_readiness": "source_present_ready_for_diagnostic_shard (fidelity_blocked)",
     "repaired": [
       {
-        "key": "reset_counters",
-        "file": "boss_maloriak.cpp Reset",
-        "defect": "vial/release counters survived evade; first normal vial always Blue",
-        "fix": "Reset starts from VIAL_GREEN with zero counters; SelectNextVial/AdvanceUsedVials in boss_maloriak_shared.h replicate the original order exactly",
+        "key": "first_vial_and_reset",
+        "file": "boss_maloriak.cpp constructor and Reset",
+        "defect": "the constructor started at VIAL_RED, so the first normal vial was always Blue (both Icy Veins pages: random Red/Blue first). The feared counter survival after a wipe does not happen on this spawn (Default Group, new AI on respawn).",
+        "fix": "the constructor and Reset start from VIAL_GREEN with zero counters (Reset is defensive for compatibility-mode spawns); SelectNextVial/AdvanceUsedVials replicate the original transitions exactly",
         "test": "tests/test_maloriak_native_script.py::test_vial_order_matches_the_researched_cycles"
       },
       {
@@ -1153,6 +1189,13 @@
         "defect": "over the 1,000-line module limit",
         "fix": "spell scripts moved unchanged; AddSC_boss_maloriak registers them, loader unchanged",
         "test": "tests/test_maloriak_native_script.py::test_spell_scripts_keep_their_names_and_registration_path"
+      },
+      {
+        "key": "mechanic_timer_helper",
+        "file": "boss_maloriak_shared.h TimeUntilScheduledEvent",
+        "defect": "none (refactor)",
+        "fix": "the EventMap query behind GetTimeUntilEncounterMechanic is a shared helper, replayed against the production EventMap",
+        "test": "tests/test_maloriak_native_script.py::test_mechanic_timer_helper_matches_eventmap_semantics"
       }
     ],
     "patch_requested": [
@@ -1173,7 +1216,7 @@
   },
   "route_and_shard_20260925": {
     "round1_plateau_root_cause": "The shard started on the Mongrel 250119 spawn, which is also the regroup and trash anchor. The patrol (Slayer 250117 with Mongrels 250118/250119) was engaged at the regroup; the future-encounter guard forbade offense against the next node entry 42803 while the node could not complete, so the cohort killed the unlisted Slayer and then stayed in combat with the guarded Mongrels until the 180 s plateau.",
-    "second_blocker": "Adaptive owners suppress the generic route objective; only adaptive Magmaw records native boss engagement (BotWorldPopulationMgrUpdateBotKernelFallback.cpp observeAdaptiveMagmawRoute -> RememberValidationRouteBossEngagement). Without it NotifyCreatureDeath rejects the Maloriak kill (ValidationRouteEngagedBossGuid empty), so a native clear would never complete the route. Patch requested.",
+    "second_blocker": "Adaptive owners suppress the generic route objective; only adaptive Magmaw records native boss engagement (BotWorldPopulationMgrUpdateBotKernelFallback.cpp observeAdaptiveMagmawRoute -> RememberValidationRouteBossEngagement). Without it NotifyCreatureDeath rejects the Maloriak kill (ValidationRouteEngagedBossGuid empty), so a native clear would never complete the route. Fix: SubmitMaloriakKernelCandidates submits its own route observation (world.validation_route_maloriak_observation) that calls RememberValidationRouteBossEngagement; adaptive Magmaw's observer is untouched. Wiring is in .git/round2_patches/maloriak/maloriak_dispatch.patch.",
     "proposed_rows": {
       "regroup_and_start": [
         -110.0,
@@ -1198,7 +1241,8 @@
       "navmesh_669_probe_20260925",
       "round1_two_shard_proof_20260925",
       "current_tdb"
-    ]
+    ],
+    "applied": "Route rows applied by package M in 2def03047e."
   },
   "bot_tactic_mapping_20260925": {
     "strategy": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h",
@@ -1271,6 +1315,21 @@
           "icy_cata_classic",
           "icy_original"
         ]
+      },
+      {
+        "mechanic": "formation_vs_hazards",
+        "tactic": "formation slots within Absolute Zero 9 yd, jet fire 6.5 yd or an ice block 9 yd shift along their arc (ranged also 5-10 yd out or 5 yd in, keeping 5 yd spread); melee with no clear ring point hold offense (melee_ring_hazard_hold) instead of chasing back; the Magma Jets sidestep is derived from the boss facing and the tank side, so it is stable through the cast; the add spot keeps its side until the boss comes within 15 yd",
+        "source_refs": [
+          "client_442_59185_maloriak_rows_20260925"
+        ]
+      },
+      {
+        "mechanic": "release_interrupt_owner",
+        "tactic": "with a single short interrupter the Arcane Storm owner never takes Release Aberrations (the long pool does); the dispatch revalidates admission with native Aberration counts before interrupting",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original"
+        ]
       }
     ]
   },
@@ -1284,7 +1343,7 @@
         "25H"
       ],
       "status": "resolved_native_live_pending",
-      "known": "BossAI engage/death; DATA_MALORIAK credit; Reset now restarts the vial cycle and release reserve.",
+      "known": "BossAI engage/death; DATA_MALORIAK credit; the Default Group respawn builds a new AI; the first normal vial is now random Red/Blue (formerly always Blue); Reset is defensive.",
       "next": "Observe one wipe and re-pull: first vial random Red/Blue, releases available again.",
       "source_refs": [
         "local_cpp",
@@ -1383,8 +1442,8 @@
         "25H"
       ],
       "status": "partial",
-      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native targeting excludes the victim and players attacked by an Aberration.",
-      "next": "Resolve the Biting Chill SpellMgr defect and observe target counts per mode.",
+      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native Flash Freeze targeting excludes the victim and players attacked by an Aberration; Biting Chill picks within 60 yd but has a 10-yd cast range.",
+      "next": "Live and WCL: Biting Chill target counts per Blue phase (native_fidelity_items.biting_chill_target_selection); apply the SpellMgr target patch.",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "repo_spellmgr_corrections",
@@ -1401,7 +1460,7 @@
       ],
       "status": "partial",
       "known": "Debilitating Slime +100% taken 15 s, knockback 30 yd.",
-      "next": "Observe catalyst removal and kill timing of released adds.",
+      "next": "Observe catalyst removal, kill timing of released adds, and the Green-to-next-vial interval (conflicts.green_duration).",
       "source_refs": [
         "client_442_59185_maloriak_rows_20260925",
         "icy_cata_classic"
@@ -1477,5 +1536,70 @@
     "Blue: no chained Flash Freeze (one frozen player per cast); blocks broken within 5 s.",
     "Phase two: no Magma Jets hits on non-tanks, no Absolute Zero explosion hits, raid haste inside the first 10 s after 25%.",
     "Native clear with zero boss-window deaths; the route completes (validation_route_manifest_complete)."
+  ],
+  "verbatim_quotes": [
+    {
+      "key": "vial_order_random_first",
+      "source_ref": "icy_cata_classic",
+      "quote": "On normal difficulty, he will either start with Red Vial or Blue Vial, followed by whichever of those he did not use first; after those two he will use Green Vial."
+    },
+    {
+      "key": "vial_order_random_first",
+      "source_ref": "icy_original",
+      "quote": "The Red and Blue phases can come in any order, so the cycle is always either of: Blue Phase, Red Phase, then Green Phase; Red Phase, Blue Phase, then Green Phase."
+    },
+    {
+      "key": "shadow_imbued_taunt",
+      "source_ref": "icy_cata_classic",
+      "quote": "Maloriak will gain Shadow Imbued, making him immune to taunts."
+    },
+    {
+      "key": "biting_chill_targets",
+      "source_ref": "icy_original",
+      "quote": "Biting Chill is only cast at raid members in melee range of Maloriak (1 raid member in 10-man difficulty and 2 in 25-man difficulty) and deals Frost damage to the affected player and nearby allies every second for 10 seconds."
+    },
+    {
+      "key": "green_duration",
+      "source_ref": "icy_original",
+      "quote": "21 seconds: Green Phase;"
+    },
+    {
+      "key": "green_duration",
+      "source_ref": "icy_cata_classic",
+      "quote": "30 seconds after Debilitating Slime wears off Maloriak will drink from the cauldron again, starting with Dark Magic if you are on heroic difficulty, or Red or Blue if you are on normal difficulty."
+    },
+    {
+      "key": "vial_cadence",
+      "source_ref": "icy_cata_classic",
+      "quote": "Maloriak will drink a different vial from his cauldron every 40 seconds, gaining different abilities depending on which vial was thrown in the cauldron first."
+    }
+  ],
+  "verbatim_quotes_note": "Re-read 2026-09-25 from the public pages (HTTP 200), rendered text with links flattened. The random first Red/Blue vial therefore has two independent sources (2012 and 2024 authors).",
+  "native_fidelity_items": [
+    {
+      "key": "biting_chill_target_selection",
+      "status": "open",
+      "native": "EVENT_BITING_CHILL picks SelectTarget(SELECT_TARGET_RANDOM, 0, 60.0f, true) but 77760 has a 10-yd spell range (client and 4.3.4 SpellMisc range 0-10), so a ranged pick fails the cast and only melee-range picks land.",
+      "sources": [
+        "icy_original (verbatim_quotes biting_chill_targets: 1 melee-range target in 10-man, 2 in 25-man)",
+        "wowhead_442 (three random raid members, 2026-08-11 claim)"
+      ],
+      "next": "Live: count Biting Chill applications and their targets per Blue phase (combat log) before choosing a native target filter; do not change the script until the target count is settled."
+    },
+    {
+      "key": "shadow_imbued_taunt_immunity",
+      "status": "open",
+      "native": "92716 Shadow Imbued is aura 147 (mechanic immunity mask 1614: charm, disorient, disarm, grip, silence, sleep); taunt is not a mechanic, so a taunt lands natively.",
+      "sources": [
+        "icy_cata_classic (verbatim_quotes shadow_imbued_taunt)"
+      ],
+      "next": "Heroic only: confirm with a heroic WCL log whether taunts land in the Dark phase; the bot follows the guide and never taunts under Shadow Imbued."
+    },
+    {
+      "key": "biting_chill_spellmgr_target",
+      "status": "patch_requested",
+      "native": "SpellMgrCorrectionsPart04.cpp overwrites 77760 EFFECT_0 TargetA twice; the review confirmed TargetB is intended (DBC).",
+      "next": "Apply maloriak_biting_chill_spellfix.patch."
+    }
   ]
 }
