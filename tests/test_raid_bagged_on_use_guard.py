@@ -36,3 +36,39 @@ def test_on_use_lookup_rejects_unequipped_equippable_items(path):
 @pytest.mark.parametrize("path", FILES)
 def test_guard_files_stay_below_the_module_size_limit(path):
     assert len((ROOT / path).read_text(encoding="utf-8").splitlines()) < 1000
+
+
+GEAR_MEMORY = "src/server/game/Bots/BotWorldPopulationMgrGearMemory.cpp"
+
+
+def _function(text: str, signature: str) -> str:
+    start = text.index(signature)
+    return text[start:text.index("\n}\n", start)]
+
+
+def test_two_spec_gear_evaluation_never_considers_container_bags():
+    text = (ROOT / GEAR_MEMORY).read_text(encoding="utf-8")
+    helper = _function(text, "BotGearUpgradeEvaluation EvaluateLoadoutSafeGearUpgrade(Player* bot)")
+    # Single-spec characters keep the unchanged all-bags evaluation.
+    assert "if (!bot || bot->GetSpecsCount() <= 1)\n        return BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);" in helper
+    # Two-spec characters consider only the backpack: no container bag is ever read.
+    assert "for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)" in helper
+    assert "GetBagByPos" not in helper and "INVENTORY_SLOT_BAG_START" not in helper
+    assert "CanEquipItem(NULL_SLOT, equipDest, item, false) != EQUIP_ERR_OK" in helper
+    assert "EvaluateGearTemplate(bot, item->GetTemplate())" in helper
+    assert "candidate.PowerDelta <= best.PowerDelta" in helper
+
+
+def test_both_gear_paths_use_the_loadout_safe_evaluation():
+    text = (ROOT / GEAR_MEMORY).read_text(encoding="utf-8")
+    decision = _function(text, "bool BotWorldPopulationMgr::TrySmartGearDecision(")
+    assert "BotGearUpgradeEvaluation evaluation = EvaluateLoadoutSafeGearUpgrade(bot);" in decision
+    assert "BotLongTermProgressionBrain::EvaluateGearUpgrade(" not in decision
+    # The equip guard stays as a second line of defence.
+    assert "bool const offSpecBagItem = item && bot->GetSpecsCount() > 1" in decision
+    assert decision.index("if (offSpecBagItem)") < decision.index("bot->EquipItem(")
+    record = _function(text, "void BotWorldPopulationMgr::RecordGearEvaluation(")
+    assert "candidate.Bag >= INVENTORY_SLOT_BAG_START && candidate.Bag < INVENTORY_SLOT_BAG_END" in record
+    assert "bot->GetSpecsCount() > 1 && bagged\n        ? EvaluateLoadoutSafeGearUpgrade(bot) : candidate;" in record
+    assert record.index("EvaluateLoadoutSafeGearUpgrade") < record.index("if (!Cohort().RunId")
+    assert len(text.splitlines()) < 1000

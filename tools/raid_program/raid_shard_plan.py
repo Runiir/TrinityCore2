@@ -35,6 +35,10 @@ PLAN_SCHEMA = "raid_shard_plan_v1"
 PREREQUISITE_SCHEMA = "raid_prerequisites_v1"
 PREREQUISITES_DIR = REPO_ROOT / "experiments/configs/raid_prerequisites"
 PROVISIONING_CONFIG = REPO_ROOT / "experiments/configs/validation_provisioning_cata_001.json"
+GEAR_PROFILES = REPO_ROOT / "dataset/validation_gear_profiles/profiles.json"
+TRAINERS = REPO_ROOT / "dataset/world_knowledge/trainers.jsonl"
+ACTION_PROFILES = REPO_ROOT / "experiments/configs/cata_434_action_profiles.json"
+WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 SCENARIO_CONFIG = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001.json"
 ACTION_PROFILE_MANIFEST = "experiments/configs/cata_434_action_profiles.json"
 LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
@@ -463,7 +467,9 @@ def validate_shard_plan(plan: dict[str, Any], name_validators: ids.NameValidator
 
 def load_plan_inputs(composition_path: Path, prerequisites_dir: Path = PREREQUISITES_DIR,
                      provisioning_config: Path = PROVISIONING_CONFIG,
-                     scenario_config: Path = SCENARIO_CONFIG) -> tuple[dict, dict, dict, dict, dict]:
+                     scenario_config: Path = SCENARIO_CONFIG,
+                     gear_profiles: Path = GEAR_PROFILES,
+                     trainers: Path = TRAINERS) -> tuple[dict, dict, dict, dict, dict]:
     composition = read_json(composition_path)
     prerequisite_file = prerequisites_path(str(composition["raid"]), prerequisites_dir)
     if not prerequisite_file.is_file():
@@ -480,6 +486,14 @@ def load_plan_inputs(composition_path: Path, prerequisites_dir: Path = PREREQUIS
     }
     if Path(scenario_config).is_file():
         sources["scenario_starts"] = {"path": relative(scenario_config), "sha256": sha256_file(scenario_config)}
+    # Materialization inputs: the spellbook baseline (class trainers), the
+    # action-profile spells and both gear layers. A plan is later refused if
+    # any of them drifted (raid_loadout_sql.check_plan_sources).
+    for name, path in (("trainers", trainers), ("action_profiles", ACTION_PROFILES),
+                       ("gear_profiles", gear_profiles), ("wowsims_gear_profiles", WOWSIMS_GEAR_PROFILES)):
+        if not Path(path).is_file():
+            raise ShardPlanError(f"plan_source_missing:{name}:{relative(Path(path))}")
+        sources[name] = {"path": relative(Path(path)), "sha256": sha256_file(Path(path))}
     return composition, prerequisites, defaults, scenario_starts(scenario_config), sources
 
 
@@ -490,7 +504,8 @@ def main() -> int:
     parser.add_argument("--prerequisites-dir", type=Path, default=PREREQUISITES_DIR)
     parser.add_argument("--provisioning-config", type=Path, default=PROVISIONING_CONFIG)
     parser.add_argument("--scenario-config", type=Path, default=SCENARIO_CONFIG)
-    parser.add_argument("--gear-profiles", type=Path, default=REPO_ROOT / "dataset/validation_gear_profiles/profiles.json")
+    parser.add_argument("--gear-profiles", type=Path, default=GEAR_PROFILES)
+    parser.add_argument("--trainers", type=Path, default=TRAINERS)
     parser.add_argument("--dbc-dir", type=Path, default=REPO_ROOT / "data/dbc/enUS")
     parser.add_argument("--copies", type=int)
     parser.add_argument("--output-dir", type=Path, default=REPO_ROOT / "dataset/raid_shard_provisioning")
@@ -503,12 +518,14 @@ def main() -> int:
     summaries = []
     for path in paths:
         composition, prerequisites, defaults, starts, sources = load_plan_inputs(
-            path, args.prerequisites_dir, args.provisioning_config, args.scenario_config)
+            path, args.prerequisites_dir, args.provisioning_config, args.scenario_config,
+            args.gear_profiles, args.trainers)
         plan = build_shard_plan(composition, prerequisites, copies=args.copies, starts=starts,
                                 provisioning_defaults=defaults, sources=sources)
         validate_shard_plan(plan, ids.load_name_validators(args.dbc_dir))
         summaries.append(write_plan_outputs(plan, args.gear_profiles, args.dbc_dir,
-                                            None if args.check else args.output_dir / plan["composition_id"]))
+                                            None if args.check else args.output_dir / plan["composition_id"],
+                                            trainers_path=args.trainers))
     print(json.dumps(summaries, indent=2, sort_keys=True))
     return 0
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import re
 from collections import Counter
@@ -299,3 +300,40 @@ def test_off_spec_bag_has_a_retained_player_acquisition_record():
     assert any(source["source_type"] == bag["acquisition"]["source_type"]
                and source["source_entry"] == bag["acquisition"]["source_entry"]
                and not source.get("reference") for source in row["sources"])
+
+
+def test_plan_sources_record_every_materialization_input():
+    from tools.raid_program.raid_shard_plan import PREREQUISITES_DIR, load_plan_inputs
+    if not (PREREQUISITES_DIR / "blackwing_descent.json").is_file():
+        pytest.skip("package-A prerequisite file not present")
+    _composition, _prerequisites, _defaults, _starts, sources = load_plan_inputs(
+        ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json")
+    for name, path in (("trainers", "dataset/world_knowledge/trainers.jsonl"),
+                       ("action_profiles", "experiments/configs/cata_434_action_profiles.json"),
+                       ("gear_profiles", "dataset/validation_gear_profiles/profiles.json"),
+                       ("wowsims_gear_profiles", "experiments/configs/wowsims_cata_p4_gear_profiles.json")):
+        assert sources[name]["path"] == path
+        assert sources[name]["sha256"] == hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+
+
+def test_drifted_plan_sources_are_refused(tmp_path):
+    from tools.raid_program.raid_loadout_sql import RaidShardSqlError, materialization_inputs, write_plan_outputs
+    plan = _plan()
+    inputs = materialization_inputs(GEAR, ROOT / "dataset/world_knowledge/trainers.jsonl")
+    plan["sources"] = {name: {"sha256": sha} for name, sha in inputs.items()}
+    plan["sources"]["spec_catalog"] = {"path": "experiments/configs/all_spec_targets_cata_p4_v1.json"}
+    summary = write_plan_outputs(plan, GEAR, DBC, tmp_path)
+    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    assert manifest["materialization_inputs"] == inputs
+    assert manifest["sources"]["trainers"]["sha256"] == inputs["trainers"]
+    assert summary["shard_count"] == 6
+    drifted = copy.deepcopy(plan)
+    drifted["sources"]["trainers"]["sha256"] = "0" * 64
+    with pytest.raises(RaidShardSqlError, match="plan_source_drift:trainers"):
+        prepare_config(drifted, GEAR, DBC, [MAGMAW])
+
+
+def test_generated_sql_warns_that_direct_application_bypasses_the_preflight(config):
+    head = build_raid_shard_character_sql(config, DBC, _plan()).splitlines()[:6]
+    assert any("applying this file directly bypasses tools.raid_program.raid_shard_preflight" in line for line in head)
+    assert any("--attest-no-worldserver-running" in line for line in head)

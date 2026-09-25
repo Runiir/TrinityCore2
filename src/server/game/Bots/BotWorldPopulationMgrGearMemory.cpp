@@ -63,6 +63,37 @@ std::string WorldPolicyVersion(BotPolicyModelConfig const& config, std::string c
 {
     return config.Enabled && !config.Version.empty() ? config.Version : brainVersion;
 }
+
+// A two-spec loadout keeps the inactive spec's gear in a container bag on
+// purpose. Its considered items skip container bags, so a bagged off-spec
+// item never becomes the best upgrade or hides a backpack upgrade; this is
+// BotLongTermProgressionBrain::EvaluateGearUpgrade restricted to the backpack.
+BotGearUpgradeEvaluation EvaluateLoadoutSafeGearUpgrade(Player* bot)
+{
+    if (!bot || bot->GetSpecsCount() <= 1)
+        return BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);
+
+    BotGearUpgradeEvaluation best;
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+    {
+        Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        if (!item)
+            continue;
+
+        uint16 equipDest = 0;
+        if (bot->CanEquipItem(NULL_SLOT, equipDest, item, false) != EQUIP_ERR_OK)
+            continue;
+
+        BotGearUpgradeEvaluation candidate = BotLongTermProgressionBrain::EvaluateGearTemplate(bot, item->GetTemplate());
+        if (!candidate.ItemId || candidate.PowerDelta <= best.PowerDelta)
+            continue;
+
+        candidate.Bag = INVENTORY_SLOT_BAG_0;
+        candidate.Slot = slot;
+        best = candidate;
+    }
+    return best;
+}
 }
 
 void BotWorldPopulationMgr::RecordActivityStart(WorldBotState& state, Player* bot)
@@ -119,8 +150,14 @@ void BotWorldPopulationMgr::RecordActivityStop(WorldBotState const& state, Playe
     }
 }
 
-void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson)
+void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& candidate, char const* rawJson, char const* semanticJson)
 {
+    // The legacy loot path (UpdateBotLegacy) evaluates all bags; when its best
+    // item sits in a container bag of a two-spec loadout, re-evaluate the
+    // backpack so the bagged off-spec set is never recorded as an upgrade.
+    bool const bagged = candidate.Bag >= INVENTORY_SLOT_BAG_START && candidate.Bag < INVENTORY_SLOT_BAG_END;
+    BotGearUpgradeEvaluation const evaluation = bot && bot->GetSpecsCount() > 1 && bagged
+        ? EvaluateLoadoutSafeGearUpgrade(bot) : candidate;
     if (!Cohort().RunId || !bot || !evaluation.Upgrade)
         return;
 
@@ -203,7 +240,7 @@ bool BotWorldPopulationMgr::TrySmartGearDecision(WorldBotState& state, Player* b
         return false;
 
     state.NextGearDecisionMs = NowMs() + 30000;
-    BotGearUpgradeEvaluation evaluation = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);
+    BotGearUpgradeEvaluation evaluation = EvaluateLoadoutSafeGearUpgrade(bot);
     std::string lootSourceType = "inventory";
     uint32 lootSourceEntry = 0;
     float lootSourceDistance = 0.0f;

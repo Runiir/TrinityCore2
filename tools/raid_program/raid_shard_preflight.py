@@ -5,28 +5,36 @@ The plan's fixed identities sit above the core's MAX+1 allocators
 auth.account: AUTO_INCREMENT). A write is admitted only when it cannot
 collide now or later:
 
-1. Ownership: no row inside the plan's reservation (per table, the span of
-   IDs the plan uses) belongs to anything but the plan row expected at that
-   exact ID, and no plan name/username exists at another ID. Items are keyed
-   by the owning character's block, the same block the human tool uses.
+1. Ownership: no row at an exact plan identity (character GUID or name,
+   account ID or username, hunter pet ID) and no item inside a plan
+   character's item block belongs to anything but the expected plan row.
+   Items are keyed by the owning character's block, the same block the human
+   tool uses. Rows in the gaps of the reservation (IDs the plan does not use,
+   e.g. core-created rows above an older, smaller anchor) are harmless and
+   ignored, so growing a plan needs no manual deletes.
 2. Allocator: after the apply every allocator must stand above the
-   reservation. That holds when the plan's anchor rows (the highest ID of
-   every table, all in one anchor cohort) are already present, when the apply
-   writes the anchor cohort first, or when rows above the reservation already
-   exist. Otherwise the next allocator ID lies at or below the reservation top
-   and could later enter an unwritten block, so the apply is refused.
+   reservation (per table, the span of IDs the plan uses). That holds when
+   the plan's anchor rows (the highest ID of every table, all in one anchor
+   cohort) are already present, when the apply writes the anchor cohort
+   first, or when rows above the reservation already exist. Otherwise the
+   next allocator ID lies at or below the reservation top and could later
+   enter an unwritten block, so the apply is refused.
 3. No plan character is online.
 
 The in-memory allocators of a running worldserver are invisible to SQL, so an
-apply also requires the operator to attest that no worldserver is running.
-Every cohort is written in its own transaction whose SQL guards repeat
-checks 1-3 for that cohort before its first write.
+apply requires `--attest-no-worldserver-running` and is refused while
+`pgrep -x worldserver` finds a process. It is also refused unless the auth
+and characters databases share one server (host, port and user), because each
+cohort transaction writes both. Every cohort is written in its own
+transaction whose SQL guards repeat checks 1-3 for that cohort before its
+first write.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence
 
@@ -155,10 +163,15 @@ def fetch_preflight_facts(query_characters: Query, query_auth: Query, reservatio
 
 
 def _expected_owner(reservation: dict[str, Any], table: str, row_id: int) -> Any:
+    """The plan owner of an exact plan identity; None for a gap ID the plan does not use."""
     if table == "items":
         owner = ids.item_block_owner(row_id)
         return owner if owner in reservation["item_blocks"] else None
     return reservation[table].get(row_id)
+
+
+def _in_plan_item_block(reservation: dict[str, Any], item: int) -> bool:
+    return ids.item_block_owner(item) in reservation["item_blocks"]
 
 
 def evaluate_preflight(plan: dict[str, Any], facts: dict[str, Any],
@@ -179,11 +192,10 @@ def evaluate_preflight(plan: dict[str, Any], facts: dict[str, Any],
         by_owner = {value: key for key, value in reservation[table].items()} if table in ("characters", "accounts") else {}
         for row in rows:
             row_id, owner = int(row["id"]), row["owner"]
-            if span[0] <= row_id <= span[1]:
-                expected = _expected_owner(reservation, table, row_id)
-                if expected is None or owner != expected:
-                    refusals.append({"check": "foreign_row_in_reservation", "table": table, "id": row_id,
-                                     "owner": owner, "expected_owner": expected})
+            expected = _expected_owner(reservation, table, row_id)
+            if expected is not None and owner != expected:
+                refusals.append({"check": "foreign_row_at_plan_identity", "table": table, "id": row_id,
+                                 "owner": owner, "expected_owner": expected})
             if owner in by_owner and by_owner[owner] != row_id:
                 refusals.append({"check": "plan_identity_at_foreign_id", "table": table, "id": row_id,
                                  "owner": owner, "expected_id": by_owner[owner]})
@@ -198,12 +210,14 @@ def evaluate_preflight(plan: dict[str, Any], facts: dict[str, Any],
                              "remedy": f"apply the anchor cohort {reservation['anchor_scenario_id']} first"})
     items = facts.get("items") or {}
     for row in items.get("inventory_rows") or []:
-        if row["guid"] != ids.item_block_owner(row["item"]):
+        if _in_plan_item_block(reservation, row["item"]) and row["guid"] != ids.item_block_owner(row["item"]):
             refusals.append({"check": "foreign_inventory_reference", "item": row["item"], "character": row["guid"]})
     for row in items.get("foreign_references") or []:
-        refusals.append({"check": "item_referenced_outside_inventory", **row})
+        if _in_plan_item_block(reservation, row["item"]):
+            refusals.append({"check": "item_referenced_outside_inventory", **row})
     for pet_id in (facts.get("pets") or {}).get("orphan_spell_pet_ids") or []:
-        refusals.append({"check": "orphan_pet_spell_in_reservation", "pet_id": pet_id})
+        if int(pet_id) in reservation["pets"]:
+            refusals.append({"check": "orphan_pet_spell_at_plan_pet", "pet_id": pet_id})
     selected_guids = {guid for scenario in selected for guid, _name in reservation["cohorts"][scenario]["characters"]}
     for row in (facts.get("characters") or {}).get("rows") or []:
         if row.get("online") and int(row["id"]) in selected_guids:
@@ -220,6 +234,38 @@ def order_cohorts(reservation: dict[str, Any], scenario_ids: Iterable[str]) -> l
     selected = list(scenario_ids) or list(reservation["cohorts"])
     anchor = reservation["anchor_scenario_id"]
     return ([anchor] if anchor in selected else []) + [sid for sid in selected if sid != anchor]
+
+
+def worldserver_processes() -> dict[str, Any]:
+    """`pgrep -x worldserver`: exit 0 lists processes, exit 1 finds none, anything else is unknown."""
+    try:
+        result = subprocess.run(["pgrep", "-x", "worldserver"], capture_output=True, text=True, timeout=10, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"command": "pgrep -x worldserver", "returncode": None, "pids": [], "error": str(exc)}
+    return {"command": "pgrep -x worldserver", "returncode": result.returncode,
+            "pids": [int(pid) for pid in result.stdout.split() if pid.isdigit()],
+            "error": result.stderr.strip() or None}
+
+
+def server_identity(url: str) -> dict[str, Any]:
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    return {"host": parsed.hostname, "port": parsed.port or 3306, "user": parsed.username}
+
+
+def apply_refusals(attested: bool, pgrep: dict[str, Any], character_url: str, auth_url: str) -> list[dict[str, Any]]:
+    """Why an --apply must not run; empty when it may."""
+    refusals: list[dict[str, Any]] = []
+    if not attested:
+        refusals.append({"check": "apply_requires_no_worldserver_attestation"})
+    if pgrep.get("returncode") != 1:
+        refusals.append({"check": "worldserver_process_running_or_unknown", "pgrep": pgrep})
+    characters, auth = server_identity(character_url), server_identity(auth_url)
+    if characters != auth:
+        refusals.append({"check": "auth_and_characters_on_different_servers",
+                         "characters": characters, "auth": auth})
+    return refusals
 
 
 def _database_name(url: str) -> str:
@@ -263,6 +309,7 @@ def main() -> int:
     parser.add_argument("--worldserver-conf", type=Path, default=Path("trinity-worldserver-test.conf"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
     parser.add_argument("--dbc-dir", type=Path, default=Path("data/dbc/enUS"))
+    parser.add_argument("--trainers", type=Path, default=Path("dataset/world_knowledge/trainers.jsonl"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--attest-no-worldserver-running", action="store_true")
@@ -287,13 +334,18 @@ def main() -> int:
     report = evaluate_preflight(plan, fetch_preflight_facts(reader(character_url), reader(auth_url), reservation),
                                 args.scenario_id)
     report["applied"] = None
+    pgrep = worldserver_processes()
+    report["attested_no_worldserver"] = bool(args.attest_no_worldserver_running)
+    report["worldserver_pgrep"] = pgrep
+    report["database_servers"] = {"characters": server_identity(character_url), "auth": server_identity(auth_url)}
     if args.apply:
-        if not args.attest_no_worldserver_running:
+        blocked = apply_refusals(bool(args.attest_no_worldserver_running), pgrep, character_url, auth_url)
+        if blocked:
             report["passed"] = False
-            report["refusals"].append({"check": "apply_requires_no_worldserver_attestation"})
+            report["refusals"].extend(blocked)
         elif report["passed"]:
             statements = cohort_statements(plan, order_cohorts(reservation, args.scenario_id),
-                                           args.gear_profiles, args.dbc_dir)
+                                           args.gear_profiles, args.dbc_dir, args.trainers)
             connection = connect_mysql(character_url)
             try:
                 report["applied"] = execute_cohort_transactions(
