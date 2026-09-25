@@ -77,6 +77,7 @@ stages:
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/validation_profile_manifests.py
     - tools/raid_program/bwd_shard_fixtures.py
+    - tools/raid_program/raid_shard_contract.py
     - experiments/configs/validation_provisioning_cata_001.json
     - experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
     - experiments/configs/all_spec_targets_cata_p4_v1.json
@@ -484,6 +485,7 @@ stages:
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/validation_profile_manifests.py
     - tools/raid_program/bwd_shard_fixtures.py
+    - tools/raid_program/raid_shard_contract.py
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
     - experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
