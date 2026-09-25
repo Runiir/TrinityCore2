@@ -33,7 +33,13 @@ bool TransportFloorUnderfoot(Player const* bot, GameObject const* transport,
 std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
     float tolerance);
 
-// How long the platform keeps its current height (the same rule as above).
+// Whether the platform's TransportAnimation path never moves sideways or
+// turns (its X/Y keys and rotation keys are constant): only then is its
+// stationarity judged from the height keys below.
+bool TransportAnimatesOnlyVertically(GameObject const* transport);
+
+// How long the platform keeps its current height (the same rule as above);
+// zero for a platform that also moves sideways or turns.
 std::uint64_t TransportStationaryMs(GameObject const* transport);
 
 // A MotionMaster::MoveFall spline that has not finalized yet.
@@ -52,7 +58,8 @@ bool NativeFallLandingPending(Player const* bot);
 // report boards, leaves or changes a transport. A standing heartbeat updates
 // Player's fall origin (m_lastFallZ) exactly as every client report does;
 // the landing report (MSG_MOVE_FALL_LAND) makes Player::HandleFall apply
-// native fall damage and clears the falling flags.
+// native fall damage and clears the falling flags. Both return false unless
+// the handler actually applied the report.
 bool ReportStandingPosition(Player* bot);
 bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs);
 

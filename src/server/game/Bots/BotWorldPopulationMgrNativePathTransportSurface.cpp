@@ -9,6 +9,7 @@
 #include "ModelIgnoreFlags.h"
 #include "MotionMaster.h"
 #include "Movement/Spline/MoveSpline.h"
+#include "Movement/Spline/MoveSplineInit.h"
 #include "Player.h"
 #include "SharedDefines.h"
 #include "SpellAuraDefines.h"
@@ -78,10 +79,37 @@ struct SegmentProbe
     bool CollisionFree = false;
 };
 
+float BodyRadius(Player const* bot)
+{
+    return std::max(bot->GetFloatValue(UNIT_FIELD_BOUNDINGRADIUS),
+        Route::PlayerBoundingRadiusYards);
+}
+
+// The body's sweep along the segment: line of sight through static geometry
+// and every collidable gameobject on the centre line and both sides at the
+// collision radius, from the knee to 0.9 of the collision height at most
+// BodySweepLiftStepYards apart (a rail or a pillar corner beside the centre
+// line blocks it).
+bool BodySweepClear(Player const* bot, G3D::Vector3 const& from, G3D::Vector3 const& to)
+{
+    Map* map = bot->GetMap();
+    PhaseShift const& phase = bot->GetPhaseShift();
+    float const length = std::hypot(to.x - from.x, to.y - from.y);
+    float const radius = BodyRadius(bot);
+    float const sideX = length > 0.0f ? -(to.y - from.y) / length * radius : 0.0f;
+    float const sideY = length > 0.0f ? (to.x - from.x) / length * radius : 0.0f;
+    for (float const lift : Route::BodySweepLifts(bot->GetCollisionHeight()))
+        for (float const side : { 0.0f, 1.0f, -1.0f })
+            if (!map->isInLineOfSight(phase, from.x + side * sideX, from.y + side * sideY,
+                    from.z + lift, to.x + side * sideX, to.y + side * sideY, to.z + lift,
+                    LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
+                return false;
+    return true;
+}
+
 // Floor samples every SurfaceSampleStepYards along the straight segment, at
-// the segment's own linearly interpolated height (the height the point
-// spline moves at), plus line of sight along it at knee, waist and head
-// height through static geometry and every collidable gameobject.
+// the segment's own linearly interpolated height (the height the spline
+// moves at), plus the body's sweep along it.
 SegmentProbe ProbeSegment(Player const* bot, GameObject const* transport,
     G3D::Vector3 const& from, G3D::Vector3 const& to, float tolerance)
 {
@@ -103,12 +131,7 @@ SegmentProbe ProbeSegment(Player const* bot, GameObject const* transport,
             tolerance);
         probe.Samples.push_back(sample);
     }
-    float const height = std::max(bot->GetCollisionHeight(), 1.0f);
-    probe.CollisionFree = true;
-    for (float const lift : { std::max(0.6f, 0.3f * height), 0.6f * height, 0.9f * height })
-        if (!map->isInLineOfSight(phase, from.x, from.y, from.z + lift, to.x, to.y,
-                to.z + lift, LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
-            probe.CollisionFree = false;
+    probe.CollisionFree = BodySweepClear(bot, from, to);
     return probe;
 }
 
@@ -127,11 +150,23 @@ Route::LedgeDropProbe ProbeLedgeDrop(Player* bot, GameObject const* transport,
     probe.StepLengthYards = step.Length;
     probe.StepZ = stepOff.z;
     probe.StepCollisionFree = step.CollisionFree;
+    // Past the lip the ground must fall away at once: any floor within a
+    // walkable step-down under an unsupported sample makes it a slope.
+    for (std::size_t i = 0; i < probe.Step.size(); ++i)
+    {
+        if (probe.Step[i].Supported())
+            continue;
+        float const t = step.Length > 0.0f ? probe.Step[i].Along / step.Length : 0.0f;
+        G3D::Vector3 const point = from + (stepOff - from) * t;
+        float const below = map->GetHeight(phase, point.x, point.y, point.z, true,
+            Route::MinLedgeDropYards);
+        probe.Step[i].ShallowFloorBelow = below > INVALID_HEIGHT
+            && below > point.z - Route::MinLedgeDropYards;
+    }
 
     // The whole body clears the lip: no floor under the centre or the
     // collision radius around it within a walkable step-down.
-    float const radius = std::max(bot->GetFloatValue(UNIT_FIELD_BOUNDINGRADIUS),
-        Route::PlayerBoundingRadiusYards);
+    float const radius = BodyRadius(bot);
     for (int32 i = -1; i < 8; ++i)
     {
         float const angle = float(i) * Pi / 4.0f;
@@ -154,6 +189,8 @@ Route::LedgeDropProbe ProbeLedgeDrop(Player* bot, GameObject const* transport,
         probe.LandingOnTransport = TransportFloorAt(bot, transport, stepOff.x, stepOff.y,
                 landing, tolerance)
             && !(staticFloor > INVALID_HEIGHT && staticFloor >= landing - tolerance);
+        probe.LandingOnStatic = staticFloor > INVALID_HEIGHT
+            && std::fabs(staticFloor - landing) <= tolerance;
         probe.LandingInLiquid = map->IsInWater(phase, stepOff.x, stepOff.y, landing + 0.1f);
         probe.PredictedDamagePct = BotTransportSurfaceMovement::PredictFallDamagePct(bot,
             from.z - landing);
@@ -180,8 +217,35 @@ void AbandonMovementPreventingCast(Player* bot)
         bot->InterruptNonMeleeSpells(false);
 }
 
-// The ordinary point generator owns the active slot and its spline ends at
-// the requested world point (a passenger's spline is transport-local).
+// One straight spline in a movement generator that ends as soon as its
+// spline is stopped or replaced: GenericMovementGenerator::Reset is a no-op
+// and its Update ends on a finalized spline. PointMovementGenerator instead
+// keeps UNIT_STATE_ROAMING_MOVE through a stun or root and re-launches its
+// line from wherever the member then is (also after a fear or knockback
+// expires), which would walk an unchecked line. A passenger's spline is
+// transport-local (MoveSplineInit transforms it).
+void LaunchCheckedLine(Player* bot, G3D::Vector3 const& destination)
+{
+    Movement::MoveSplineInit init(bot);
+    init.MoveTo(destination.x, destination.y, destination.z, false);
+    bot->GetMotionMaster()->LaunchMoveSpline(std::move(init), 0, MOTION_SLOT_ACTIVE,
+        POINT_MOTION_TYPE);
+}
+
+// A finished MoveFall spline keeps its falling attribute (Unit::IsFalling)
+// until another spline replaces it. Turning in place, as Unit::SetFacingTo
+// does (with the passenger transform kept), replaces it with a zero-length
+// spline, so shared code reads the landed member as grounded.
+void SettleAfterLanding(Player* bot)
+{
+    Movement::MoveSplineInit init(bot);
+    init.MoveTo(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), false);
+    init.SetFacing(bot->GetOrientation());
+    init.Launch();
+}
+
+// The checked line owns the active slot and its spline ends at the requested
+// world point (a passenger's spline is transport-local).
 bool PointSplineLaunched(Player const* bot, G3D::Vector3 const& destination)
 {
     if (!bot->movespline->Initialized() || bot->movespline->Finalized()
@@ -201,17 +265,22 @@ Outcome ExecuteWalk(Player* bot, GameObject* transport, TransportSurfaceMove con
         return Outcome::Retryable("native_surface_walk_on_other_transport");
     if (Boarding::NativeFallInProgress(bot) || bot->IsFlying())
         return Outcome::Retryable("native_surface_walk_airborne");
-    if (BotMoving(bot))
-        return Outcome::Retryable("native_surface_walk_moving");
     if (bot->HasUnitState(UNIT_STATE_NOT_MOVE))
         return Outcome::Retryable("native_surface_walk_immobilized");
+    // A controlled effect (fear, knockback, jump) owns the member: a walk
+    // queued beneath it would start later from wherever the effect leaves
+    // it, unchecked.
+    if (bot->GetMotionMaster()->GetMotionSlot(MOTION_SLOT_CONTROLLED))
+        return Outcome::Retryable("native_surface_walk_controlled_motion");
+    // A new walk may replace a running one (a player changes direction): it
+    // is checked, and its spline starts, from where the member is now.
 
     G3D::Vector3 const from(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
     G3D::Vector3 const to(action.X, action.Y, action.Z);
     SegmentProbe const probe = ProbeSegment(bot, transport, from, to,
         action.FloorToleranceYards);
     Route::ApproachVerdict const verdict = Route::ValidateSurfaceWalk(probe.Samples,
-        probe.Length, probe.CollisionFree, action.EndOnTransport);
+        probe.Length, probe.CollisionFree, action.EndOnTransport, bot->GetTransport() != nullptr);
     if (!verdict.Ok)
         return Outcome::Retryable("native_" + verdict.Reason);
     // The platform keeps still for the whole walk and the boarding after it.
@@ -220,7 +289,7 @@ Outcome ExecuteWalk(Player* bot, GameObject* transport, TransportSurfaceMove con
         return Outcome::Retryable("native_surface_walk_transport_moving");
 
     AbandonMovementPreventingCast(bot);
-    bot->GetMotionMaster()->MovePoint(0, to.x, to.y, to.z, false);
+    LaunchCheckedLine(bot, to);
     return PointSplineLaunched(bot, to)
         ? Outcome::Submitted("native_surface_walk_submitted")
         : Outcome::Retryable("native_surface_walk_not_launched");
@@ -235,7 +304,7 @@ Outcome ExecuteStepOff(Player* bot, GameObject* transport, TransportSurfaceMove 
         return Outcome::Retryable("native_ledge_drop_on_other_transport");
     if (Boarding::NativeFallInProgress(bot) || bot->IsFlying())
         return Outcome::Retryable("native_ledge_drop_airborne");
-    if (BotMoving(bot))
+    if (BotMoving(bot) || bot->GetMotionMaster()->GetMotionSlot(MOTION_SLOT_CONTROLLED))
         return Outcome::Retryable("native_ledge_drop_moving");
     if (bot->HasUnitState(UNIT_STATE_NOT_MOVE))
         return Outcome::Retryable("native_ledge_drop_immobilized");
@@ -293,12 +362,28 @@ Outcome ExecuteStepOff(Player* bot, GameObject* transport, TransportSurfaceMove 
     // Stand at the lip like a client: the report sets Player::m_lastFallZ
     // to the height the fall starts from, as every client packet does.
     if (!Boarding::ReportStandingPosition(bot))
-        return Outcome::Unsafe("native_ledge_drop_active_mover_unavailable");
+        return Outcome::Unsafe("native_ledge_drop_position_report_not_applied");
     AbandonMovementPreventingCast(bot);
-    bot->GetMotionMaster()->MovePoint(0, chosen.x, chosen.y, chosen.z, false);
+    LaunchCheckedLine(bot, chosen);
     return PointSplineLaunched(bot, chosen)
         ? Outcome::Submitted("native_ledge_drop_step_off_submitted")
         : Outcome::Retryable("native_ledge_drop_step_off_not_launched");
+}
+
+// MotionMaster::MoveFall from where the member is now; a fall continued
+// after a landing without floor is progress of the same drop. A root or stun
+// holds a unit where it is (MoveFall declines): nothing was submitted and
+// nothing failed, so that is not a counted rejection.
+Outcome LaunchNativeFall(Player* bot, bool fallingOn)
+{
+    bot->GetMotionMaster()->MoveFall();
+    if (Boarding::NativeFallSplineActive(bot)
+        && bot->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE)
+        return fallingOn ? Outcome::Progressed("native_ledge_drop_fell_again")
+            : Outcome::Submitted("native_ledge_drop_fall_submitted");
+    if (bot->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_STUNNED))
+        return Outcome::NotApplicable("native_ledge_drop_fall_held_by_root");
+    return Outcome::Retryable("native_ledge_drop_fall_not_launched");
 }
 
 // Gravity does not wait for the platform: a stationary member over the void
@@ -308,20 +393,23 @@ Outcome ExecuteFall(Player* bot)
 {
     if (Boarding::NativeFallSplineActive(bot))
         return Outcome::Submitted("native_ledge_drop_fall_in_progress");
+    // Another spline (a knockback arc, say) still owns the member: gravity
+    // resumes when it ends. Not a failed submission.
     if (bot->movespline->Initialized() && !bot->movespline->Finalized())
-        return Outcome::Retryable("native_ledge_drop_step_still_running");
+        return Outcome::NotApplicable("native_ledge_drop_fall_waiting_for_motion");
     // MoveFall's own grounding rule: its floor is already under the feet.
     float const floor = bot->GetMapHeight(bot->GetPositionX(), bot->GetPositionY(),
         bot->GetPositionZ(), true, MAX_FALL_DISTANCE);
     if (floor > INVALID_HEIGHT && std::fabs(bot->GetPositionZ() - floor) < 0.1f)
         return Outcome::Committed("native_ledge_drop_already_grounded");
 
-    bot->GetMotionMaster()->MoveFall();
-    if (Boarding::NativeFallSplineActive(bot)
-        && bot->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE)
-        return Outcome::Submitted("native_ledge_drop_fall_submitted");
-    return Outcome::Retryable(bot->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_STUNNED)
-        ? "native_ledge_drop_fall_rooted" : "native_ledge_drop_fall_not_launched");
+    // No generator may resume a line through the air after the fall.
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    // The fall starts here: the client's standing report sets the fall origin
+    // (also when encounter code falls without a step-off first).
+    if (!Boarding::ReportStandingPosition(bot))
+        return Outcome::Unsafe("native_ledge_drop_position_report_not_applied");
+    return LaunchNativeFall(bot, false);
 }
 
 Outcome ExecuteLand(Player* bot, GameObject const* transport, TransportSurfaceMove const& action)
@@ -337,19 +425,28 @@ Outcome ExecuteLand(Player* bot, GameObject const* transport, TransportSurfaceMo
             carrier->CalculatePassengerPosition(end.x, end.y, end.z);
     if ((end - position).length() > EndpointToleranceYards)
         return Outcome::Retryable("native_ledge_drop_land_not_at_fall_end");
+    // The floor the fall aimed at may have moved away during it (a platform
+    // leaving its stop). With no floor under the feet the member keeps
+    // falling from here; the landing is reported only onto a verified floor,
+    // and continuing a fall is never a failed submission.
     bool modelAvailable = false;
     bool const onTransport = transport && Boarding::TransportFloorUnderfoot(bot, transport,
         action.FloorToleranceYards, modelAvailable);
-    if (!onTransport && !Boarding::StaticFloorUnderfoot(bot, action.FloorToleranceYards))
-        return Outcome::Retryable("native_ledge_drop_land_no_floor");
+    float const floor = bot->GetMapHeight(bot->GetPositionX(), bot->GetPositionY(),
+        bot->GetPositionZ(), true, MAX_FALL_DISTANCE);
+    bool const onFloor = onTransport || Boarding::StaticFloorUnderfoot(bot, action.FloorToleranceYards)
+        || (floor > INVALID_HEIGHT && std::fabs(bot->GetPositionZ() - floor) <= action.FloorToleranceYards);
+    if (!onFloor)
+        return LaunchNativeFall(bot, true);
 
     // The client's own landing report: Player::HandleFall applies native fall
     // damage from the reported fall origin and the falling flags clear.
     if (!Boarding::ReportFallLanding(bot, uint32(std::max(0, bot->movespline->Duration()))))
-        return Outcome::Unsafe("native_ledge_drop_active_mover_unavailable");
-    return Boarding::NativeFallInProgress(bot)
-        ? Outcome::Retryable("native_ledge_drop_landing_not_observed")
-        : Outcome::Submitted("native_ledge_drop_landed");
+        return Outcome::Unsafe("native_ledge_drop_position_report_not_applied");
+    if (Boarding::NativeFallInProgress(bot))
+        return Outcome::Retryable("native_ledge_drop_landing_not_observed");
+    SettleAfterLanding(bot);
+    return Outcome::Submitted("native_ledge_drop_landed");
 }
 }
 
@@ -373,6 +470,10 @@ BotActionArbitration::Outcome Execute(Player* bot, TransportSurfaceMove const& a
         return Outcome::Unsafe("native_surface_move_transport_invalid");
     if (!ModelAvailable(transport))
         return Outcome::Unsafe("native_transport_model_unavailable");
+    // Stationarity is judged from the animation's height keys: only a
+    // platform whose path never moves sideways or turns qualifies.
+    if (!Boarding::TransportAnimatesOnlyVertically(transport))
+        return Outcome::Unsafe("native_surface_move_transport_not_vertical");
     if (action.Kind == TransportSurfaceMove::Stage::StepOff)
         return ExecuteStepOff(bot, transport, action);
     return ExecuteWalk(bot, transport, action);

@@ -52,6 +52,14 @@ constexpr std::uint32_t ApproachFollowUpMs = 100;
 constexpr std::uint64_t ApproachBoardLatencyMs = 250;
 // A platform is stationary while its origin stays within this of its height.
 constexpr float StationaryLevelToleranceYards = 0.75f;
+// Body sweep of a straight walk: line-of-sight rays along the centre line
+// and both sides at the collision radius, at heights from the knee up to
+// 0.9 of the collision height at most this far apart.
+constexpr float BodySweepFirstLiftYards = 0.5f;
+constexpr float BodySweepLiftStepYards = 0.35f;
+// A walk or step in flight stays inside this corridor around its declared
+// line (the approach start tolerance plus one floor sample).
+constexpr float ApproachCorridorYards = ApproachStartToleranceYards + SurfaceSampleStepYards;
 
 // Movement::gravity, Movement::terminalVelocity (MovementUtil.cpp).
 constexpr float NativeGravity = 19.29110527038574f;
@@ -92,6 +100,34 @@ inline std::uint64_t WalkTimeMs(float yards, float speed)
     return std::uint64_t(yards / std::max(speed, 0.1f) * 1000.0f);
 }
 
+// Heights above the segment at which the body sweep casts its rays.
+inline std::vector<float> BodySweepLifts(float collisionHeight)
+{
+    float const top = 0.9f * std::max(collisionHeight, 1.0f);
+    std::vector<float> lifts;
+    for (float lift = BodySweepFirstLiftYards; lift < top; lift += BodySweepLiftStepYards)
+        lifts.push_back(lift);
+    lifts.push_back(top);
+    return lifts;
+}
+
+// Whether (x, y) lies within `lateral` yards of the declared line from
+// `from` toward `to`, between `lateral` before `from` and `reach` yards
+// along it (reach defaults to the line's own length).
+inline bool OnApproachCorridor(Point3 const& from, Point3 const& to, float x, float y,
+    float lateral, float reach = -1.0f)
+{
+    float const dx = to.X - from.X;
+    float const dy = to.Y - from.Y;
+    float const length = std::hypot(dx, dy);
+    if (!from.Valid || !to.Valid || !(length > 0.0f))
+        return false;
+    float const along = ((x - from.X) * dx + (y - from.Y) * dy) / length;
+    float const across = std::fabs((y - from.Y) * dx - (x - from.X) * dy) / length;
+    float const end = reach >= 0.0f ? reach : length;
+    return across <= lateral && along >= -lateral && along <= end + lateral;
+}
+
 // One floor sample along a straight segment: a floor lies within the floor
 // tolerance of the segment's own height at this point.
 struct SurfaceSample
@@ -101,6 +137,9 @@ struct SurfaceSample
     bool StaticFloor = false;
     // This transport's own collision model, not merely its bounding box.
     bool TransportFloor = false;
+    // Ledge probes only: some floor lies below the segment within a
+    // walkable step-down (MinLedgeDropYards) although not within tolerance.
+    bool ShallowFloorBelow = false;
 
     bool Supported() const { return StaticFloor || TransportFloor; }
 };
@@ -113,15 +152,19 @@ struct ApproachVerdict
 
 // A straight walk is lawful only where a client could walk it: every sample
 // is floor-supported except a seam no wider than the player's collision
-// radius, and nothing blocks the way. A boarding walk ends on the
-// transport's own surface, not over a closer static floor.
+// radius, and nothing blocks the body's sweep. A boarding walk ends on the
+// transport's own surface, not over a closer static floor; any other walk
+// starts on it (a passenger, or on its floor), so the seam never makes a
+// static-to-static walk off the navmesh.
 inline ApproachVerdict ValidateSurfaceWalk(std::vector<SurfaceSample> const& samples,
-    float lengthYards, bool collisionFree, bool endOnTransport)
+    float lengthYards, bool collisionFree, bool endOnTransport, bool passenger = false)
 {
     if (!(lengthYards > 0.0f) || lengthYards > MaxSurfaceWalkYards)
         return { false, "surface_walk_length_invalid" };
     if (samples.size() < 2)
         return { false, "surface_walk_unsampled" };
+    if (!endOnTransport && !passenger && !samples.front().TransportFloor)
+        return { false, "surface_walk_not_on_transport" };
     if (!collisionFree)
         return { false, "surface_walk_blocked" };
     if (!samples.front().Supported())
@@ -157,8 +200,10 @@ struct LedgeDropProbe
     // The floor MotionMaster::MoveFall will land on from the step-off point.
     bool LandingFound = false;
     float LandingZ = 0.0f;
-    // That floor is this transport's own model with no static floor as high.
+    // That floor is this transport's own model with no static floor as high,
+    // or static ground within the landing tolerance (not another gameobject).
     bool LandingOnTransport = false;
+    bool LandingOnStatic = false;
     bool LandingInLiquid = false;
     float HealthPct = 0.0f;
     float PredictedDamagePct = 0.0f;
@@ -171,12 +216,18 @@ inline ApproachVerdict ValidateLedgeDrop(ApproachContract const& contract,
         return { false, "ledge_drop_step_length_invalid" };
     if (probe.Step.size() < 2 || !probe.Step.front().Supported())
         return { false, "ledge_drop_edge_unsupported" };
-    // A ledge: floor under the first part of the step, then none at all.
+    // A ledge: floor under the first part of the step, then none at all. A
+    // sloped or stepped lip (floor within a walkable step-down past the edge)
+    // is native pathing's, never a level walk through the air above it.
     bool leftFloor = false;
     for (SurfaceSample const& sample : probe.Step)
     {
         if (!sample.Supported())
+        {
+            if (sample.ShallowFloorBelow)
+                return { false, "ledge_drop_lip_not_a_clean_drop" };
             leftFloor = true;
+        }
         else if (leftFloor)
             return { false, "ledge_drop_step_profile_not_a_ledge" };
     }
@@ -194,7 +245,7 @@ inline ApproachVerdict ValidateLedgeDrop(ApproachContract const& contract,
         return { false, "ledge_drop_landing_height_mismatch" };
     if (probe.LandingInLiquid)
         return { false, "ledge_drop_lands_in_liquid" };
-    if (probe.LandingOnTransport != contract.LandOnTransport)
+    if (contract.LandOnTransport ? !probe.LandingOnTransport : !probe.LandingOnStatic)
         return { false, "ledge_drop_landing_surface_mismatch" };
     if (probe.HealthPct - probe.PredictedDamagePct < contract.MinHealthAfterFallPct)
         return { false, "ledge_drop_health_margin_low" };

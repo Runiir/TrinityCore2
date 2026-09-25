@@ -8,6 +8,7 @@
 #include "GameObject.h"
 #include "GossipDef.h"
 #include "MotionMaster.h"
+#include "Movement/Spline/MoveSpline.h"
 #include "PathGenerator.h"
 #include "Player.h"
 #include "Transport.h"
@@ -317,6 +318,46 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
         "native_route_interaction_submitted", std::move(observe));
 }
 
+// Ledge drops start together: every living member is in the route instance
+// and at the approach start, already past it (dropping, landed) or aboard.
+bool CohortAtApproachStart(Input const& input, NodeRuntime const& runtime,
+    GameObject const* transport, ApproachContract const& approach, float tolerance)
+{
+    for (MemberInput const& member : input.Members)
+    {
+        if (!member.Bot || !member.Bot->IsAlive())
+            continue;
+        if (!member.OnRouteInstance || !member.Bot->IsInWorld())
+            return false;
+        if (Facts::OnTransport(member.Bot, transport))
+            continue;
+        auto const state = runtime.TransportMembers.find(member.Bot->GetGUID().GetRawValue());
+        if (state != runtime.TransportMembers.end() && state->second.Approach != ApproachPhase::Idle)
+            continue;
+        if (member.Bot->GetExactDist(approach.StartPoint.X, approach.StartPoint.Y,
+                approach.StartPoint.Z) > tolerance)
+            return false;
+    }
+    return true;
+}
+
+// A member still walking or stepping onto the platform, falling, or landed
+// but not yet boarded: the node must not hand it over mid-motion.
+bool ApproachStillInFlight(Input const& input, NodeRuntime const& runtime)
+{
+    for (MemberInput const& member : input.Members)
+    {
+        if (!member.Bot || !member.Bot->IsAlive() || !member.OnRouteInstance)
+            continue;
+        if (BotValidationRouteBoardingAction::NativeFallInProgress(member.Bot))
+            return true;
+        auto const state = runtime.TransportMembers.find(member.Bot->GetGUID().GetRawValue());
+        if (state != runtime.TransportMembers.end() && ApproachInFlight(state->second))
+            return true;
+    }
+    return false;
+}
+
 void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& node,
     Facts::TransportTarget const& transport)
 {
@@ -387,6 +428,8 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         observation.DistanceToApproachStart = distance(approach.StartPoint);
         // One straight walk across the platform's surface to the board point.
         observation.ApproachTravelMs = WalkTimeMs(observation.DistanceToBoard, runSpeed);
+        observation.OffApproachCorridor = !OnApproachCorridor(approach.StartPoint,
+            contract.BoardPoint, bot->GetPositionX(), bot->GetPositionY(), ApproachCorridorYards);
     }
     else if (approach.Mode == ApproachMode::LedgeDrop)
     {
@@ -396,7 +439,16 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
             approach.StepOffPoint.Y), runSpeed) + NativeFallTimeMs(height);
         observation.PredictedFallDamagePct =
             BotTransportSurfaceMovement::PredictFallDamagePct(bot, height);
+        observation.OffApproachCorridor = !OnApproachCorridor(approach.StartPoint,
+            approach.StepOffPoint, bot->GetPositionX(), bot->GetPositionY(), ApproachCorridorYards,
+            MaxStepOffYards + ApproachStartToleranceYards);
+        observation.CohortAtApproachStart = CohortAtApproachStart(input, runtime, transport.Object,
+            approach, std::min(contract.ArrivalToleranceYards, ApproachStartToleranceYards));
     }
+    // A movement generator waiting to resume with no spline would walk an
+    // unchecked line once its stun or root ends.
+    observation.MotionSuspended = bot->movespline->Finalized()
+        && bot->HasUnitState(UNIT_STATE_ROAMING_MOVE);
 
     // Without the platform's collision model neither boarding nor the
     // stranded-member check can be proven: stop instead of guessing.
@@ -454,8 +506,12 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
             {
                 bool const completed = outcome.LifecyclePhase
                     == BotActionArbitration::Phase::Completed;
-                member.Approach = ApproachPhaseAfter(step, completed);
-                ReleaseOrdinaryPath(*state, !completed && step != TransportStep::DropLand);
+                // A landing without floor falls on (Progressed), uncounted.
+                bool const fellAgain = step == TransportStep::DropLand
+                    && outcome.LifecyclePhase == BotActionArbitration::Phase::Progressed;
+                member.Approach = ApproachPhaseAfter(step, completed, fellAgain);
+                ReleaseOrdinaryPath(*state,
+                    fellAgain || (!completed && step != TransportStep::DropLand));
             }
             else if (Retried(outcome))
                 ++member.FailedSubmissions;
@@ -655,6 +711,22 @@ void RefreshVerdict(Input const& input, NodeContract& node, OwnerElection const&
         Facts::TransportTarget const transport = Facts::ResolveTransport(evaluator,
             node.Transport.Entry, node.Transport.SpawnId);
         satisfied = evaluator && TransportNodeDone(input, node, transport, reason);
+    }
+    // An observed native boss state (for example an encounter that engaged
+    // while members were still boarding) also completes a transport node, but
+    // never hands a member over mid-walk, mid-step, mid-fall or unboarded.
+    if (!satisfied && evaluator && node.Transport.Declared
+        && node.Transport.CompletionOverride.Declared)
+    {
+        Verdict const early = Facts::EvaluateCompletion(node.Transport.CompletionOverride,
+            evaluator, input.Members, election.Owner, runtime.Completion);
+        if (early.Satisfied && ApproachStillInFlight(input, runtime))
+            reason = "transport_completion_override_waiting_in_flight";
+        else if (early.Satisfied)
+        {
+            satisfied = true;
+            reason = "transport_completion_override:" + early.Reason;
+        }
     }
     runtime.VerdictValid = true;
     runtime.VerdictTick = input.Tick;

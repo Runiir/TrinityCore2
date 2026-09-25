@@ -184,6 +184,9 @@ struct TransportContract
     // Failed board/leave submissions allowed per member before the node fails.
     std::uint32_t MaxSubmissions = 5;
     ApproachContract Approach;
+    // Observed instance_boss_state (or any_of/all_of of them) that also
+    // completes the node once no member is mid-approach or mid-fall.
+    CompletionContract CompletionOverride;
 
     bool HasExit() const { return ExitStopFrame >= 0 || HasExitLevel; }
 };

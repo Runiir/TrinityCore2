@@ -65,22 +65,39 @@ def test_modules_stay_below_the_size_limit_and_pure_headers_stay_pure() -> None:
 def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     executor = _code(_source("BotWorldPopulationMgrNativePathTransportSurface.cpp"))
     walk = _function(executor, "Outcome ExecuteWalk(")
-    # Proof first: floor samples on the straight segment, line of sight at
-    # three heights, the platform staying put; then one straight point spline.
+    # Proof first: floor samples on the straight segment, the body's sweep,
+    # the platform staying put; then one checked straight line.
     assert walk.index("ValidateSurfaceWalk(") < walk.index("TransportStationaryMs(transport)") \
-        < walk.index("MovePoint(0, to.x, to.y, to.z, false)")
+        < walk.index("LaunchCheckedLine(bot, to);")
     assert "PointSplineLaunched(bot, to)" in walk
+    # A new walk may replace a running one (checked from where the member is
+    # now), never one queued under a controlled effect, a fall or a root.
+    assert "native_surface_walk_moving" not in walk
+    assert "GetMotionSlot(MOTION_SLOT_CONTROLLED)" in walk
+    assert '"native_surface_walk_controlled_motion"' in walk
+    assert "bot->GetTransport() != nullptr);" in walk
+    # Review blocker: the checked line runs in a generator that ends when its
+    # spline is stopped or replaced (GenericMovementGenerator), never in the
+    # resumable PointMovementGenerator (MotionMaster::MovePoint).
+    line = _function(executor, "void LaunchCheckedLine(")
+    assert "init.MoveTo(destination.x, destination.y, destination.z, false);" in line
+    assert "LaunchMoveSpline(std::move(init), 0, MOTION_SLOT_ACTIVE,\n        POINT_MOTION_TYPE);" in line
+    assert "MovePoint(" not in executor
     probe = _function(executor, "SegmentProbe ProbeSegment(")
     assert "GetStaticHeight(" in _function(executor, "bool StaticFloorAt(")
     assert "transport->m_model->intersectRay(" in _function(executor, "bool TransportFloorAt(")
-    assert "LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing" in probe
-    assert "0.3f * height), 0.6f * height, 0.9f * height" in probe
+    assert "probe.CollisionFree = BodySweepClear(bot, from, to);" in probe
+    sweep = _function(executor, "bool BodySweepClear(")
+    assert "Route::BodySweepLifts(bot->GetCollisionHeight())" in sweep
+    assert "for (float const side : { 0.0f, 1.0f, -1.0f })" in sweep
+    assert "LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing" in sweep
 
     step = _function(executor, "Outcome ExecuteStepOff(")
     # The lip, landing, liquid and health are proven before the standing
     # report (Player::m_lastFallZ) and only then does the level step start.
     assert step.index("ValidateLedgeDrop(") < step.index("ReportStandingPosition(bot)") \
-        < step.index("MovePoint(0, chosen.x, chosen.y, chosen.z, false)")
+        < step.index("LaunchCheckedLine(bot, chosen);")
+    assert '"native_ledge_drop_position_report_not_applied"' in step
     assert "StepOffCandidateAdvances(verdict.Reason)" in step
     # A passenger may drop only from this transport (a pillar top) and the
     # platform keeps still for the step, the native fall and the boarding.
@@ -98,16 +115,40 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
     assert "bot->GetMapHeight(stepOff.x, stepOff.y, stepOff.z, true,\n        MAX_FALL_DISTANCE)" in drop
     assert "IsInWater(phase, stepOff.x, stepOff.y, landing + 0.1f)" in drop
     assert "PredictFallDamagePct(bot,\n            from.z - landing)" in drop
+    # A sloped lip is flagged under every unsupported sample; a static
+    # landing is static ground within tolerance of the landing height.
+    assert "probe.Step[i].ShallowFloorBelow = below > INVALID_HEIGHT" in drop
+    assert "probe.LandingOnStatic = staticFloor > INVALID_HEIGHT\n            && std::fabs(staticFloor - landing) <= tolerance;" in drop
 
     fall = _function(executor, "Outcome ExecuteFall(")
-    assert "bot->GetMotionMaster()->MoveFall();" in fall
-    assert "MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE" in fall
+    # Nothing may resume a line through the air after the fall, and the fall
+    # origin is reported right before MoveFall (also without a step-off).
+    assert fall.index("Clear(MOTION_SLOT_ACTIVE)") < fall.index("ReportStandingPosition(bot)") \
+        < fall.index("LaunchNativeFall(bot, false)")
+    assert '"native_ledge_drop_fall_waiting_for_motion"' in fall
+    launch = _function(executor, "Outcome LaunchNativeFall(")
+    assert "bot->GetMotionMaster()->MoveFall();" in launch
+    assert "MOTION_SLOT_CONTROLLED) == EFFECT_MOTION_TYPE" in launch
+    # A root holds the member where it is: not a counted rejection.
+    assert 'Outcome::NotApplicable("native_ledge_drop_fall_held_by_root")' in launch
+    assert 'Outcome::Progressed("native_ledge_drop_fell_again")' in launch
     land = _function(executor, "Outcome ExecuteLand(")
     assert land.index("NativeFallLandingPending(bot)") < land.index("ReportFallLanding(")
-    assert "native_ledge_drop_land_no_floor" in land
+    # No floor under the feet: fall on (uncounted); report only onto a floor.
+    assert land.index("return LaunchNativeFall(bot, true);") < land.index("ReportFallLanding(")
+    assert "native_ledge_drop_land_no_floor" not in land
+    # After the report a zero-length turn replaces the finished fall spline,
+    # so Unit::IsFalling() reads the landed member as grounded.
+    assert land.index("ReportFallLanding(") < land.index("SettleAfterLanding(bot);")
+    settle = _function(executor, "void SettleAfterLanding(")
+    assert "init.MoveTo(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), false);" in settle
+    assert "init.SetFacing(bot->GetOrientation());" in settle
+    assert "DisableTransportPathTransformations" not in settle
     # Gravity never waits for the transport: Fall resolves no transport.
     execute = _function(executor, "BotActionArbitration::Outcome Execute(")
     assert execute.index("Stage::Fall)\n        return ExecuteFall(bot);") < execute.index("ResolveTransport(")
+    # Walks and step-offs only on a platform that moves vertically.
+    assert '"native_surface_move_transport_not_vertical"' in execute
 
     # Native fall damage rules as Player::HandleFall applies them.
     predict = _function(executor, "float PredictFallDamagePct(")
@@ -122,9 +163,12 @@ def test_executor_launches_only_native_movement_after_its_proofs() -> None:
         "SetCanFly(", "SetHover(", "EnvironmentalDamage(", "HandleFall(", "SetHealth(",
         "ModifyHealth(", "DealDamage(", "MoveJump", "MoveKnockback", "UpdateGroundPositionZ",
         "UpdateAllowedPositionZ", "RemoveUnitMovementFlag(", "AddUnitMovementFlag(",
-        "MoveSplineInit", "HandleMovementOpcode(",
+        "HandleMovementOpcode(", "SetFacingTo(", "SetFallInformation", "m_lastFallZ",
+        "IsInCombat(",
     ):
         assert forbidden not in executor, forbidden
+    # Exactly two splines are built here: the checked line and the landing turn.
+    assert executor.count("Movement::MoveSplineInit init(bot);") == 2
 
 
 def test_boarding_reports_are_client_packets_at_the_current_position() -> None:
@@ -146,6 +190,21 @@ def test_boarding_reports_are_client_packets_at_the_current_position() -> None:
     board = _function(boarding, "BotActionArbitration::Outcome BoardTransport(")
     assert "NativeFallInProgress(bot)" in board and "IsFalling()" not in board
     assert "->GetMotionMaster(" not in boarding
+    # The handler returns silently in several cases: a report counts only
+    # when the mover's movement info now carries it.
+    applied = _function(boarding, "static bool ReportApplied(")
+    for marker in ("now.time == report.time", "!now.HasMovementFlag(MOVEMENTFLAG_MASK_MOVING)",
+                   "now.transport.guid == report.transport.guid",
+                   "now.pos.GetExactDist(&report.pos) < 0.01f"):
+        assert marker in applied, marker
+    for report in (standing, landing):
+        assert "return ReportApplied(bot, report);" in report
+    # Stationarity from height keys only when the animation never moves
+    # sideways or turns.
+    vertical = _function(boarding, "bool TransportAnimatesOnlyVertically(")
+    assert "animation->Path" in vertical and "animation->Rotations" in vertical
+    stationary = _function(boarding, "std::uint64_t TransportStationaryMs(")
+    assert "if (!TransportAnimatesOnlyVertically(transport))\n        return 0;" in stationary
 
 
 def test_runtime_submits_typed_approach_intents_with_bounded_observers() -> None:
@@ -180,13 +239,55 @@ def test_runtime_submits_typed_approach_intents_with_bounded_observers() -> None
     observer = transport[transport.index("auto approachSubmission"):transport.index("auto surfaceMove")]
     assert "[&]" not in observer and "[=]" not in observer
     assert "return [runtimePtr, scope, guid, fail, record, state, entry, step](" in observer
-    assert "member.Approach = ApproachPhaseAfter(step, completed);" in observer
+    assert "member.Approach = ApproachPhaseAfter(step, completed, fellAgain);" in observer
+    assert "&& outcome.LifecyclePhase == BotActionArbitration::Phase::Progressed;" in observer
     assert "++member.FailedSubmissions;" in observer
     assert "runtimePtr->FailureRecorded = true;" in observer
-    assert "ReleaseOrdinaryPath(*state, " in observer
+    assert "ReleaseOrdinaryPath(*state,\n                    fellAgain || (!completed && step != TransportStep::DropLand));" in observer
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "Relocate(", "UpdatePosition(",
                       "MoveFall(", "MovePoint(", "SetFall(", "HandleMovementOpcode("):
         assert forbidden not in runtime, forbidden
+    # Supervision of a walk or step in flight and the drop's cohort barrier.
+    for marker in (
+        "observation.MotionSuspended = bot->movespline->Finalized()\n        && bot->HasUnitState(UNIT_STATE_ROAMING_MOVE);",
+        "observation.OffApproachCorridor = !OnApproachCorridor(approach.StartPoint,\n            contract.BoardPoint,",
+        "observation.CohortAtApproachStart = CohortAtApproachStart(input, runtime, transport.Object,",
+    ):
+        assert marker in transport, marker
+
+
+def test_completion_override_hands_over_only_without_members_in_flight() -> None:
+    runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
+    verdict = _function(runtime, "void RefreshVerdict(")
+    assert "node.Transport.CompletionOverride.Declared)" in verdict
+    assert "Facts::EvaluateCompletion(node.Transport.CompletionOverride," in verdict
+    assert verdict.index("TransportNodeDone(") < verdict.index("node.Transport.CompletionOverride.Declared")
+    assert "early.Satisfied && ApproachStillInFlight(input, runtime)" in verdict
+    assert '"transport_completion_override_waiting_in_flight"' in verdict
+    assert '"transport_completion_override:" + early.Reason' in verdict
+    in_flight = _function(runtime, "bool ApproachStillInFlight(")
+    assert "BotValidationRouteBoardingAction::NativeFallInProgress(member.Bot)" in in_flight
+    assert "ApproachInFlight(state->second)" in in_flight
+    cohort = _function(runtime, "bool CohortAtApproachStart(")
+    assert "if (!member.OnRouteInstance || !member.Bot->IsInWorld())\n            return false;" in cohort
+    assert "Facts::OnTransport(member.Bot, transport)" in cohort
+
+
+def test_nothing_in_the_approach_path_refuses_or_aborts_in_combat() -> None:
+    """DoZoneInCombat puts every player in the map in combat when Onyxia's
+    start-fight pulse hits: the descent, drop, boarding and handover run in
+    combat, so none of them may test combat state."""
+    runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
+    for name in ("void RunTransport(", "bool CohortAtApproachStart(",
+                 "bool ApproachStillInFlight(", "bool TransportNodeDone(", "void RefreshVerdict("):
+        assert "Combat" not in _function(runtime, name), name
+    for source in ("BotWorldPopulationMgrNativePathTransportSurface.cpp",
+                   "BotValidationRouteNativeTransportLogic.h", "BotValidationRouteNativeApproach.h"):
+        assert "Combat" not in _code(_source(source)), source
+    boarding = _code(_source("BotWorldPopulationMgrValidationRouteBoardingAction.cpp"))
+    for name in ("BotActionArbitration::Outcome BoardTransport(",
+                 "BotActionArbitration::Outcome LeaveTransport("):
+        assert "Combat" not in _function(boarding, name), name
 
 
 def test_intent_and_dispatch_wiring_patch_applied() -> None:
@@ -197,7 +298,11 @@ def test_intent_and_dispatch_wiring_patch_applied() -> None:
     native = _source("BotWorldPopulationMgrNativeAction.cpp")
     assert "struct TransportSurfaceMove\n{\n    enum class Stage : uint8 { Walk, StepOff, Fall, Land };" in intents
     assert "TransportBoard, TransportLeave, TransportSurfaceMove>;" in intents
-    assert "|| std::is_same_v<T, TransportSurfaceMove>)\n            return Uses(Resource::Movement);" in intents
+    # Walk and StepOff abandon a movement-preventing cast, so they claim the
+    # cast lanes; Fall and Land claim movement only.
+    resources = intents[intents.index("if constexpr (std::is_same_v<T, TransportSurfaceMove>)"):]
+    resources = resources[:resources.index("if constexpr (std::is_same_v<T, CombatResApproach>)")]
+    assert "return action.Kind == TransportSurfaceMove::Stage::Walk\n                    || action.Kind == TransportSurfaceMove::Stage::StepOff\n                ? Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast)\n                : Uses(Resource::Movement);" in resources
     assert '#include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"' in native
     assert "std::is_same_v<T, BotNativeAction::TransportSurfaceMove>)\n        {\n            return BotTransportSurfaceMovement::Execute(bot, action);" in native
     cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")

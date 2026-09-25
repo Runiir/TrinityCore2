@@ -454,6 +454,20 @@ inline bool ReadPoint(Json const& object, std::string_view key, Point3& out)
     return true;
 }
 
+// Only native boss-state observations (alone or composed) may complete a
+// transport node early.
+inline bool BossStateOnly(CompletionContract const& contract)
+{
+    if (contract.Kind == CompletionKind::InstanceBossState)
+        return true;
+    if (contract.Kind != CompletionKind::AnyOf && contract.Kind != CompletionKind::AllOf)
+        return false;
+    for (CompletionContract const& child : contract.Children)
+        if (!BossStateOnly(child))
+            return false;
+    return true;
+}
+
 inline float HorizontalDistance(Point3 const& from, Point3 const& to)
 {
     return std::hypot(to.X - from.X, to.Y - from.Y);
@@ -553,7 +567,8 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
                 "board_transport_z", "exit_stop_frame", "exit_transport_z",
                 "level_tolerance_yards", "wait_point", "board_point",
                 "disembark_point", "exit_point", "arrival_tolerance_yards",
-                "floor_tolerance_yards", "max_submissions", "timeout_ms", "approach" }))
+                "floor_tolerance_yards", "max_submissions", "timeout_ms", "approach",
+                "completion_override" }))
             return ParseError::Unknown(key);
 
     namespace J = BotValidationRouteNativeJson;
@@ -607,6 +622,18 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
     if (Json const* approach = object.Find("approach"))
         if (ParseError error = ParseApproach(*approach, out, out.Approach))
             return error;
+    // An observed native boss state may also complete the node (for example
+    // an encounter that engages while members are still boarding).
+    if (Json const* early = object.Find("completion_override"))
+    {
+        if (ParseError error = ParseCompletion(*early, out.CompletionOverride))
+            return error.Kind == ParseError::Code::UnknownField ? error
+                : ParseError::Invalid("completion_override:" + error.Detail);
+        if (!BossStateOnly(out.CompletionOverride))
+            return ParseError::Invalid("completion_override_kind_unsupported");
+        if (out.CompletionOverride.TimeoutMs)
+            return ParseError::Invalid("completion_override_timeout_unsupported");
+    }
     out.Declared = true;
     return {};
 }

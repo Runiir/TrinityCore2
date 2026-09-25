@@ -242,6 +242,14 @@ struct TransportMemberObservation
     float HealthPct = 1.0f;
     // Native fall damage predicted for the declared drop from here.
     float PredictedFallDamagePct = 0.0f;
+    // Supervision of a walk or step in flight: a movement generator is
+    // waiting to resume with no spline (UNIT_STATE_ROAMING_MOVE left set), or
+    // the member left the corridor around the declared line (displaced).
+    bool MotionSuspended = false;
+    bool OffApproachCorridor = false;
+    // Ledge drops start together: every living route member is at the
+    // approach start, already past it (dropping or landed), or aboard.
+    bool CohortAtApproachStart = false;
 };
 
 struct TransportDecision
@@ -259,6 +267,31 @@ inline bool RestWindowCovers(std::uint64_t restRemainingMs, std::uint64_t travel
         || restRemainingMs >= travelMs + ApproachBoardLatencyMs + BoardWindowMarginMs;
 }
 
+// A walk in flight continues only while the rest still covers what is left
+// of it plus the boarding report (the launch margin may be spent).
+inline bool RestStillCoversWalk(std::uint64_t restRemainingMs, std::uint64_t travelMs)
+{
+    return restRemainingMs == UnboundedRestMs
+        || restRemainingMs >= travelMs + ApproachBoardLatencyMs;
+}
+
+// The member's own walk or step still runs as launched: moving, not
+// suspended, inside its corridor.
+inline bool ApproachMotionIntact(TransportMemberObservation const& observation)
+{
+    return observation.Moving && !observation.MotionSuspended
+        && !observation.OffApproachCorridor;
+}
+
+// A member whose approach has left the ground or not yet boarded after it.
+inline bool ApproachInFlight(TransportMemberState const& state)
+{
+    return state.Approach == ApproachPhase::Walking
+        || state.Approach == ApproachPhase::SteppingOff
+        || state.Approach == ApproachPhase::Falling
+        || state.Approach == ApproachPhase::Landed;
+}
+
 // A ledge drop in flight belongs to gravity until its landing is reported:
 // nothing else may move, stop, re-snap or strand the member meanwhile.
 inline bool DecideDropInFlight(TransportContract const& contract,
@@ -270,18 +303,26 @@ inline bool DecideDropInFlight(TransportContract const& contract,
     switch (state.Approach)
     {
         case ApproachPhase::SteppingOff:
-            if (observation.Moving)
+            if (ApproachMotionIntact(observation))
             {
                 out = { TransportStep::Hold, "transport_drop_stepping_off" };
                 return true;
             }
-            // The step ended on a floor: it never left the ledge.
+            // The step ended, was interrupted or displaced while still over a
+            // floor: it never left the ledge. End any motion left behind (a
+            // resumable generator would walk an unchecked line) and re-plan.
             if (observation.StaticFloorUnderfoot || observation.TransportFloorUnderfoot)
             {
                 state.Approach = ApproachPhase::Idle;
+                if (observation.Moving)
+                {
+                    out = { TransportStep::Stop, "transport_drop_step_motion_lost" };
+                    return true;
+                }
                 return false;
             }
-            // Stationary with no floor after the step: gravity takes over now.
+            // No floor after the step, however it ended: gravity takes over now
+            // (the fall clears whatever motion is left in the active slot).
             out = { TransportStep::DropFall, "transport_drop_fall" };
             return true;
         case ApproachPhase::Falling:
@@ -352,12 +393,18 @@ inline TransportDecision DecideApproach(TransportContract const& contract,
         return { TransportStep::Hold, "transport_drop_edge_floor_unverified" };
     if (observation.HealthPct - observation.PredictedFallDamagePct < approach.MinHealthAfterFallPct)
         return { TransportStep::Hold, "transport_drop_health_low" };
+    // The cohort drops together, so the first passenger (who may start the
+    // encounter) is never ahead of members still walking to the lip.
+    if (!observation.CohortAtApproachStart)
+        return { TransportStep::Hold, "transport_drop_waiting_for_cohort" };
     return { TransportStep::DropStepOff, "transport_drop_step_off" };
 }
 
 // Phase after an approach submission the executor accepted. A fall that
-// found the member already grounded (Completed) has landed.
-inline ApproachPhase ApproachPhaseAfter(TransportStep step, bool completed)
+// found the member already grounded (Completed) has landed; a landing that
+// found no floor under the feet fell again (Progressed) and is still falling.
+inline ApproachPhase ApproachPhaseAfter(TransportStep step, bool completed,
+    bool fellAgain = false)
 {
     switch (step)
     {
@@ -365,7 +412,8 @@ inline ApproachPhase ApproachPhaseAfter(TransportStep step, bool completed)
         case TransportStep::DropStepOff: return ApproachPhase::SteppingOff;
         case TransportStep::DropFall:
             return completed ? ApproachPhase::Landed : ApproachPhase::Falling;
-        case TransportStep::DropLand: return ApproachPhase::Landed;
+        case TransportStep::DropLand:
+            return fellAgain ? ApproachPhase::Falling : ApproachPhase::Landed;
         default: return ApproachPhase::Idle;
     }
 }
@@ -397,9 +445,10 @@ inline bool ApproachWantsFollowUp(TransportContract const& contract,
         case TransportStep::HoldAboard:
             return contract.HasExit();
         case TransportStep::Hold:
-            return contract.BoardStopFrame < 0
-                && (decision.Reason == "transport_waiting"
-                    || decision.Reason == "transport_rest_window_too_short");
+            return decision.Reason == "transport_drop_waiting_for_cohort"
+                || (contract.BoardStopFrame < 0
+                    && (decision.Reason == "transport_waiting"
+                        || decision.Reason == "transport_rest_window_too_short"));
         default:
             return false;
     }
@@ -505,21 +554,32 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
     // walk that reached the platform stops and boards before it moves on.
     if (onPlatformFloor)
     {
-        // A proven straight walk across the surface finishes at its board
-        // point (inside the rest window it was admitted for) and boards there.
-        if (observation.Moving && state.Approach == ApproachPhase::Walking)
-            return { TransportStep::Hold, "transport_approach_walking" };
+        // First contact with the platform's own surface: stop there and board
+        // at once, so the member is unboarded on it for as short as possible.
         if (observation.Moving)
             return { TransportStep::Stop, "transport_board_stop_on_platform" };
         return { TransportStep::Board, "transport_board_ready" };
     }
 
-    // A committed surface walk runs until it reaches the platform's surface
-    // (then stop and board, above); it is never retreated or re-planned.
+    // A surface walk in flight runs only as launched. Suspended, displaced or
+    // outrun by the rest window, it is stopped (clearing the active slot, so
+    // no generator resumes an unchecked line) and re-planned from scratch.
     if (state.Approach == ApproachPhase::Walking)
     {
         if (observation.Moving)
+        {
+            if (!ApproachMotionIntact(observation))
+            {
+                state.Approach = ApproachPhase::Idle;
+                return { TransportStep::Stop, "transport_approach_motion_lost" };
+            }
+            if (!RestStillCoversWalk(observation.RestRemainingMs, observation.ApproachTravelMs))
+            {
+                state.Approach = ApproachPhase::Idle;
+                return { TransportStep::Stop, "transport_approach_rest_lost" };
+            }
             return { TransportStep::Hold, "transport_approach_walking" };
+        }
         state.Approach = ApproachPhase::Idle;
     }
     if (contract.Approach.Mode != ApproachMode::None)

@@ -145,10 +145,48 @@ std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
         tolerance);
 }
 
+bool TransportAnimatesOnlyVertically(GameObject const* transport)
+{
+    if (!transport)
+        return false;
+    TransportAnimation const* animation =
+        sTransportMgr->GetTransportAnimInfo(transport->GetEntry());
+    // Without an animation GameObjectType::Transport never moves.
+    if (!animation)
+        return true;
+    TransportAnimationEntry const* firstNode = nullptr;
+    for (auto const& [time, node] : animation->Path)
+    {
+        if (!node)
+            continue;
+        if (!firstNode)
+            firstNode = node;
+        else if (std::fabs(node->Pos.X - firstNode->Pos.X) > 1e-3f
+            || std::fabs(node->Pos.Y - firstNode->Pos.Y) > 1e-3f)
+            return false;
+    }
+    TransportRotationEntry const* firstRotation = nullptr;
+    for (auto const& [time, rotation] : animation->Rotations)
+    {
+        if (!rotation)
+            continue;
+        if (!firstRotation)
+            firstRotation = rotation;
+        else if (std::fabs(rotation->X - firstRotation->X) > 1e-4f
+            || std::fabs(rotation->Y - firstRotation->Y) > 1e-4f
+            || std::fabs(rotation->Z - firstRotation->Z) > 1e-4f
+            || std::fabs(rotation->W - firstRotation->W) > 1e-4f)
+            return false;
+    }
+    return true;
+}
+
 std::uint64_t TransportStationaryMs(GameObject const* transport)
 {
-    return transport ? RestRemainingAtLevelMs(transport, transport->GetPositionZ(),
-        BotValidationRouteNative::StationaryLevelToleranceYards) : 0;
+    if (!TransportAnimatesOnlyVertically(transport))
+        return 0;
+    return RestRemainingAtLevelMs(transport, transport->GetPositionZ(),
+        BotValidationRouteNative::StationaryLevelToleranceYards);
 }
 
 bool NativeFallSplineActive(Player const* bot)
@@ -183,6 +221,19 @@ static MovementInfo CurrentStandingReport(Player* bot)
     return info;
 }
 
+// The movement handler returns silently in several cases (a teleport in
+// progress, a transport offset beyond 75 yd, a position a grid away): a
+// report counts only when the mover's movement info now carries it. Bot
+// sessions never answer time sync, so the handler stamps the report with
+// GameTime::GetGameTimeMS(), the time it was built with.
+static bool ReportApplied(Player const* bot, MovementInfo const& report)
+{
+    MovementInfo const& now = bot->m_movementInfo;
+    return now.time == report.time && !now.HasMovementFlag(MOVEMENTFLAG_MASK_MOVING)
+        && now.transport.guid == report.transport.guid
+        && now.pos.GetExactDist(&report.pos) < 0.01f;
+}
+
 bool ReportStandingPosition(Player* bot)
 {
     if (!bot || !bot->IsInWorld() || !EnsureActiveMover(bot))
@@ -190,7 +241,7 @@ bool ReportStandingPosition(Player* bot)
     MovementInfo report = CurrentStandingReport(bot);
     report.jump.fallTime = 0;
     bot->GetSession()->HandleMovementOpcode(MSG_MOVE_HEARTBEAT, report);
-    return true;
+    return ReportApplied(bot, report);
 }
 
 bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs)
@@ -200,7 +251,7 @@ bool ReportFallLanding(Player* bot, std::uint32_t fallTimeMs)
     MovementInfo report = CurrentStandingReport(bot);
     report.jump.fallTime = fallTimeMs;
     bot->GetSession()->HandleMovementOpcode(MSG_MOVE_FALL_LAND, report);
-    return true;
+    return ReportApplied(bot, report);
 }
 
 BotValidationRouteNative::TransportFact ObserveTransport(GameObject const* transport)

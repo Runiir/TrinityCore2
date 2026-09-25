@@ -182,6 +182,10 @@ int main()
     // static floor inside its bounding box.
     CHECK(ValidateSurfaceWalk(Samples({ 's', 'b', 'b' }), 0.5f, true, true).Reason == "surface_walk_end_not_on_transport");
     CHECK(ValidateSurfaceWalk(Samples({ 't', 'b', 's' }), 0.5f, true, false).Ok);
+    // The seam never makes a static-to-static walk off the navmesh: a walk
+    // that does not end on the transport starts on it (or is a passenger's).
+    CHECK(ValidateSurfaceWalk(Samples({ 's', 's', 's' }), 0.5f, true, false).Reason == "surface_walk_not_on_transport");
+    CHECK(ValidateSurfaceWalk(Samples({ 's', 's', 's' }), 0.5f, true, false, true).Ok);
     CHECK(ValidateSurfaceWalk(elevator, 3.5f, false, true).Reason == "surface_walk_blocked");
     CHECK(ValidateSurfaceWalk(elevator, 12.5f, true, true).Reason == "surface_walk_length_invalid");
     CHECK(ValidateSurfaceWalk(Samples({ 't' }), 0.1f, true, true).Reason == "surface_walk_unsampled");
@@ -237,6 +241,19 @@ int main()
     CHECK(reason([](LedgeDropProbe& p) { p.LandingZ = -5.4f; }) == "ledge_drop_landing_height_mismatch");
     CHECK(reason([](LedgeDropProbe& p) { p.LandingInLiquid = true; }) == "ledge_drop_lands_in_liquid");
     CHECK(reason([](LedgeDropProbe& p) { p.LandingOnTransport = false; }) == "ledge_drop_landing_surface_mismatch");
+    // A sloped or stepped lip is native pathing's, never a level walk in the
+    // air above it (final, not a reason to walk further out).
+    std::string const slope = reason([](LedgeDropProbe& p) { p.Step[6].ShallowFloorBelow = true; });
+    CHECK(slope == "ledge_drop_lip_not_a_clean_drop" && !StepOffCandidateAdvances(slope));
+    // A static landing is static ground within the landing tolerance, never
+    // another gameobject's floor.
+    ApproachContract onGround = drop;
+    onGround.LandOnTransport = false;
+    LedgeDropProbe ground = NefarianProbe();
+    ground.LandingOnTransport = false;
+    CHECK(ValidateLedgeDrop(onGround, ground).Reason == "ledge_drop_landing_surface_mismatch");
+    ground.LandingOnStatic = true;
+    CHECK(ValidateLedgeDrop(onGround, ground).Ok);
     CHECK(reason([](LedgeDropProbe& p) { p.LandingZ = 39.0f; }) == "ledge_drop_too_shallow");
     // Health after the native fall damage must keep the declared margin.
     CHECK(reason([](LedgeDropProbe& p) { p.HealthPct = 0.54f; }) == "ledge_drop_health_margin_low");
@@ -285,18 +302,18 @@ int main()
     CHECK(d.Step == TransportStep::SurfaceWalk && d.Reason == "transport_approach_surface_walk");
     state.Approach = ApproachPhaseAfter(d.Step, false);
     CHECK(state.Approach == ApproachPhase::Walking);
-    // Mid-walk over the corridor lip, even as the rest shrinks: never
-    // retreated, stopped or re-planned.
-    o.Moving = true; o.RestRemainingMs = 200; o.DistanceToBoard = 2.9f;
+    // Mid-walk over the corridor lip while the rest still covers the rest of
+    // the walk and the boarding report: keep walking.
+    o.Moving = true; o.RestRemainingMs = 1600; o.ApproachTravelMs = 400; o.DistanceToBoard = 2.9f;
     d = DecideTransportStep(ride, o, state);
     CHECK(d.Step == TransportStep::Hold && d.Reason == "transport_approach_walking" && ApproachWantsFollowUp(ride, d, state));
     // Across the seam for one sample: still walking, never a stranding.
     o.StaticFloorUnderfoot = false;
     CHECK(DecideTransportStep(ride, o, state).Reason == "transport_approach_walking");
-    // On the platform's own surface the proven walk finishes at its board
-    // point (inside the admitted window), then boards there (D's proof).
+    // First contact with the platform's own surface: stop there and board at
+    // once (D's proof), so the member is unboarded on it as briefly as possible.
     o.TransportFloorUnderfoot = true;
-    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_approach_walking");
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_board_stop_on_platform");
     CHECK(state.PlatformFloorSeen);
     o.Moving = false;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Board);
@@ -382,6 +399,12 @@ int main()
     o.HealthPct = 0.5f; o.PredictedFallDamagePct = 0.349f;
     CHECK(DecideTransportStep(platform, o, state).Reason == "transport_drop_health_low");
     o.HealthPct = 1.0f;
+    // The cohort drops together: wait (watching closely) until every living
+    // member is at the lip, dropping, landed or aboard.
+    d = DecideTransportStep(platform, o, state);
+    CHECK(d.Step == TransportStep::Hold && d.Reason == "transport_drop_waiting_for_cohort");
+    CHECK(ApproachWantsFollowUp(platform, d, state));
+    o.CohortAtApproachStart = true;
     d = DecideTransportStep(platform, o, state);
     CHECK(d.Step == TransportStep::DropStepOff && ApproachWantsFollowUp(platform, d, state));
     state.Approach = ApproachPhaseAfter(d.Step, false);
@@ -424,6 +447,7 @@ int main()
     TransportMemberObservation i;
     i.Alive = true; i.TransportPresent = true; i.StaticFloorUnderfoot = true;
     i.DistanceToApproachStart = 0.5f; i.ReadyToBoard = true; i.RestRemainingMs = UnboundedRestMs;
+    i.CohortAtApproachStart = true;
     CHECK(DecideTransportStep(platform, i, interrupted).Step == TransportStep::DropStepOff);
     CHECK(interrupted.Approach == ApproachPhase::Idle);
     // A fall MoveFall found already grounded (Completed) counts as landed.
@@ -496,6 +520,212 @@ int main()
 ''')
 
 
+
+def test_interrupted_or_displaced_walk_is_stopped_and_replanned(tmp_path: Path) -> None:
+    """Review blocker: a stun, root or knockback must never let a generator
+    resume an unchecked straight line (the cyclic elevator leaves meanwhile)."""
+    _compile_and_run(tmp_path, PRELUDE + r"""
+static TransportMemberObservation Walking()
+{
+    TransportMemberObservation o;
+    o.Alive = true; o.TransportPresent = true; o.StaticFloorUnderfoot = true;
+    o.ReadyToBoard = true; o.RestRemainingMs = 1100; o.ApproachTravelMs = 300;
+    o.DistanceToApproachStart = 1.5f; o.DistanceToBoard = 2.1f; o.Moving = true;
+    return o;
+}
+
+int main()
+{
+    TransportContract ride;
+    CHECK(!Transport(Elevator, ride));
+
+    // Launched with ~1.1 s of rest left, then stunned: a generator that kept
+    // UNIT_STATE_ROAMING_MOVE with no spline (Moving stays true) would resume
+    // the line into the empty shaft. Stop it (clearing the active slot) and
+    // re-plan from scratch.
+    TransportMemberState stunned;
+    stunned.Approach = ApproachPhase::Walking;
+    TransportMemberObservation o = Walking();
+    o.MotionSuspended = true;
+    TransportDecision d = DecideTransportStep(ride, o, stunned);
+    CHECK(d.Step == TransportStep::Stop && d.Reason == "transport_approach_motion_lost");
+    CHECK(stunned.Approach == ApproachPhase::Idle);
+    // Stun over, the car gone: back to the approach start, never the old line.
+    o = Walking(); o.Moving = false; o.ReadyToBoard = false; o.RestRemainingMs = 0;
+    CHECK(DecideTransportStep(ride, o, stunned).Step == TransportStep::MoveToApproachStart);
+
+    // Knocked out of the walk's corridor while still moving: stop, re-plan.
+    TransportMemberState knocked;
+    knocked.Approach = ApproachPhase::Walking;
+    o = Walking(); o.OffApproachCorridor = true;
+    CHECK(DecideTransportStep(ride, o, knocked).Reason == "transport_approach_motion_lost");
+
+    // A delay spent the launch margin: the rest no longer covers what is
+    // left of the walk plus the boarding report. Stop on the corridor floor.
+    TransportMemberState delayed;
+    delayed.Approach = ApproachPhase::Walking;
+    o = Walking(); o.RestRemainingMs = 540;
+    CHECK(DecideTransportStep(ride, o, delayed).Reason == "transport_approach_rest_lost");
+    CHECK(!RestStillCoversWalk(549, 300) && RestStillCoversWalk(550, 300));
+    // The car already left: no rest at all.
+    TransportMemberState gone;
+    gone.Approach = ApproachPhase::Walking;
+    o = Walking(); o.ReadyToBoard = false; o.RestRemainingMs = 0;
+    CHECK(DecideTransportStep(ride, o, gone).Reason == "transport_approach_rest_lost");
+    // Intact and covered: keep walking.
+    TransportMemberState fine;
+    fine.Approach = ApproachPhase::Walking;
+    o = Walking();
+    CHECK(DecideTransportStep(ride, o, fine).Reason == "transport_approach_walking");
+    // Already on the car's own surface when it goes wrong: stop and board at
+    // once instead of leaving the member unboarded on it.
+    TransportMemberState onCar;
+    onCar.Approach = ApproachPhase::Walking;
+    o = Walking(); o.MotionSuspended = true; o.StaticFloorUnderfoot = false; o.TransportFloorUnderfoot = true;
+    CHECK(DecideTransportStep(ride, o, onCar).Reason == "transport_board_stop_on_platform");
+
+    // Ledge drop: a step interrupted or displaced over the ledge floor is
+    // stopped and re-planned; over the void, gravity takes over whatever
+    // became of the step (the fall clears the active slot first).
+    TransportContract platform;
+    CHECK(!Transport(Nefarian, platform));
+    TransportMemberState step;
+    step.Approach = ApproachPhase::SteppingOff;
+    TransportMemberObservation l;
+    l.Alive = true; l.TransportPresent = true; l.StaticFloorUnderfoot = true; l.Moving = true;
+    l.MotionSuspended = true;
+    d = DecideTransportStep(platform, l, step);
+    CHECK(d.Step == TransportStep::Stop && d.Reason == "transport_drop_step_motion_lost");
+    CHECK(step.Approach == ApproachPhase::Idle);
+    TransportMemberState overVoid;
+    overVoid.Approach = ApproachPhase::SteppingOff;
+    l.StaticFloorUnderfoot = false; l.OffApproachCorridor = true; l.MotionSuspended = false;
+    CHECK(DecideTransportStep(platform, l, overVoid).Step == TransportStep::DropFall);
+    return failures ? 1 : 0;
+}
+""")
+
+
+def test_landing_without_floor_falls_again_uncounted(tmp_path: Path) -> None:
+    _compile_and_run(tmp_path, PRELUDE + r"""
+int main()
+{
+    TransportContract platform;
+    CHECK(!Transport(Nefarian, platform));
+    TransportMemberState state;
+    state.Approach = ApproachPhase::Falling;
+    TransportMemberObservation o;
+    o.Alive = true; o.TransportPresent = true; o.Falling = true; o.Moving = true;
+    o.LandingPending = true;
+    // The fall spline ended but its floor moved away: the landing stage runs
+    // MoveFall again (Progressed); the member is falling again, not landed,
+    // and nothing counts toward max_submissions (only Retryable/Unsafe do).
+    CHECK(DecideTransportStep(platform, o, state).Step == TransportStep::DropLand);
+    CHECK(ApproachPhaseAfter(TransportStep::DropLand, false, true) == ApproachPhase::Falling);
+    CHECK(ApproachPhaseAfter(TransportStep::DropLand, false, false) == ApproachPhase::Landed);
+    state.Approach = ApproachPhaseAfter(TransportStep::DropLand, false, true);
+    o.LandingPending = false; o.FallSplineActive = true;
+    CHECK(DecideTransportStep(platform, o, state).Reason == "transport_drop_falling");
+    CHECK(state.FailedSubmissions == 0);
+    return failures ? 1 : 0;
+}
+""")
+
+
+def test_completion_override_accepts_only_boss_states(tmp_path: Path) -> None:
+    _compile_and_run(tmp_path, PRELUDE + r"""
+static std::string Parse(char const* early)
+{
+    std::string text = std::string(R"({"entry": 207834, "board_stop_frame": 0, "board_point": [-132.2132, -224.6203, 6.5714], "timeout_ms": 180000, "completion_override": )") + early + "}";
+    TransportContract out;
+    Json value;
+    ParseObjectText(text, value);
+    ParseError error = ParseTransport(value, out);
+    return error ? error.Detail : std::string("accepted");
+}
+
+int main()
+{
+    CHECK(Parse(R"({"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"})") == "accepted");
+    CHECK(Parse(R"({"kind": "any_of", "contracts": [{"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"}, {"kind": "instance_boss_state", "boss_index": 5, "boss_state": "done"}]})") == "accepted");
+    CHECK(Parse(R"({"kind": "creature_summoned", "entry": 41376})") == "completion_override_kind_unsupported");
+    CHECK(Parse(R"({"kind": "any_of", "contracts": [{"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"}, {"kind": "on_transport", "transport_entry": 207834}]})") == "completion_override_kind_unsupported");
+    CHECK(Parse(R"({"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress", "timeout_ms": 1000})") == "completion_override_timeout_unsupported");
+    CHECK(Parse(R"({"kind": "instance_boss_state", "boss_index": 5, "boss_state": "engaged"})") == "completion_override:boss_state_shape");
+    CHECK(Parse(R"({"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress", "extra": 1})") == "extra");
+
+    TransportContract nefarian;
+    CHECK(!Transport(R"({"entry": 207834, "board_stop_frame": 0, "board_point": [-132.2132, -224.6203, 6.5714], "timeout_ms": 180000, "completion_override": {"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"}})", nefarian));
+    CHECK(nefarian.CompletionOverride.Declared && nefarian.CompletionOverride.Kind == CompletionKind::InstanceBossState);
+    CHECK(nefarian.CompletionOverride.BossIndex == 5 && nefarian.CompletionOverride.BossState == 1);
+
+    // The override is evaluated from native boss state only...
+    struct Boss final : FactSource
+    {
+        std::uint32_t State = 0;
+        std::vector<ActorFact> Creatures(std::uint32_t, std::uint64_t) const override { return {}; }
+        ObjectQuery GameObjects(std::uint32_t, std::uint64_t) const override { return {}; }
+        bool BossState(std::uint32_t index, std::uint32_t& state) const override { state = State; return index == 5; }
+        std::vector<MemberFact> Members() const override { return {}; }
+        TransportFact Transport(std::uint32_t, std::uint64_t) const override { return {}; }
+    } boss;
+    CompletionMemory memory;
+    CHECK(!EvaluateCompletion(nefarian.CompletionOverride, boss, memory).Satisfied);
+    boss.State = 1;
+    CHECK(EvaluateCompletion(nefarian.CompletionOverride, boss, memory).Satisfied);
+    // ...and never hands over a member mid-walk, mid-step, mid-fall or landed
+    // but not yet boarded (the runtime also checks the falling flags).
+    TransportMemberState member;
+    CHECK(!ApproachInFlight(member));
+    for (ApproachPhase phase : { ApproachPhase::Walking, ApproachPhase::SteppingOff,
+             ApproachPhase::Falling, ApproachPhase::Landed })
+    {
+        member.Approach = phase;
+        CHECK(ApproachInFlight(member));
+    }
+    return failures ? 1 : 0;
+}
+""")
+
+
+def test_body_sweep_heights_and_approach_corridor(tmp_path: Path) -> None:
+    _compile_and_run(tmp_path, PRELUDE + r"""
+int main()
+{
+    // A 2.03 yd tall body: rays at 0.5, 0.85, 1.2, 1.55 and 1.827 yd (three
+    // lines each: centre and both sides at the collision radius), so a rail
+    // at 0.8-1.1 yd cannot slip between them.
+    std::vector<float> const lifts = BodySweepLifts(2.03128f);
+    CHECK(lifts.size() == 5 && std::fabs(lifts.front() - 0.5f) < 1e-4f);
+    CHECK(std::fabs(lifts.back() - 0.9f * 2.03128f) < 1e-4f);
+    for (std::size_t i = 1; i < lifts.size(); ++i)
+        CHECK(lifts[i] - lifts[i - 1] <= BodySweepLiftStepYards + 1e-4f);
+    bool railCovered = false;
+    for (float lift : lifts)
+        railCovered = railCovered || (lift >= 0.8f && lift <= 1.1f);
+    CHECK(railCovered);
+    // Tiny or unknown models still sweep from the knee up.
+    CHECK(BodySweepLifts(0.0f).front() == 0.5f);
+
+    // Elevator walk corridor: start (-251, -224.605) -> board (-247.349, -224.605).
+    Point3 const start{ -251.0f, -224.605f, 190.163f, true };
+    Point3 const board{ -247.349f, -224.605f, 190.028f, true };
+    CHECK(OnApproachCorridor(start, board, -249.0f, -224.605f, ApproachCorridorYards));
+    CHECK(OnApproachCorridor(start, board, -249.0f, -225.8f, ApproachCorridorYards));
+    CHECK(!OnApproachCorridor(start, board, -249.0f, -226.0f, ApproachCorridorYards));
+    CHECK(!OnApproachCorridor(start, board, -245.9f, -224.605f, ApproachCorridorYards));
+    CHECK(!OnApproachCorridor(start, board, -252.4f, -224.605f, ApproachCorridorYards));
+    // A ledge drop's corridor reaches MaxStepOffYards + start tolerance out.
+    Point3 const lip{ -158.8f, -224.62f, 41.3544f, true };
+    Point3 const stepOff{ -156.4f, -224.62f, 41.3544f, true };
+    CHECK(OnApproachCorridor(lip, stepOff, -154.2f, -224.62f, ApproachCorridorYards,
+        MaxStepOffYards + ApproachStartToleranceYards));
+    CHECK(!OnApproachCorridor(lip, stepOff, -152.4f, -224.62f, ApproachCorridorYards,
+        MaxStepOffYards + ApproachStartToleranceYards));
+    return failures ? 1 : 0;
+}
+""")
+
 # Patch request to agent M (validation_scenarios_cata_001.json), applied here
 # in memory so the exact rows it produces are proven to parse: every
 # bwd.transit.lower_wing_elevator and bwd.nefarian.descent row, in every
@@ -509,6 +739,11 @@ NEFARIAN_APPROACH = {
 }
 
 
+# Round-2 fix pass: the descent hands over to the encounter once Nefarian's
+# End (boss index 5) is in progress and no member is mid-approach.
+NEFARIAN_COMPLETION_OVERRIDE = {"kind": "instance_boss_state", "boss_index": 5, "boss_state": "in_progress"}
+
+
 def apply_approach_patch(row: dict) -> dict:
     contract = dict(row["transport_contract"])
     if row["node_id"] == "bwd.transit.lower_wing_elevator":
@@ -518,6 +753,7 @@ def apply_approach_patch(row: dict) -> dict:
     elif row["node_id"] == "bwd.nefarian.descent":
         contract.pop("wait_point", None)
         contract["approach"] = NEFARIAN_APPROACH
+        contract["completion_override"] = NEFARIAN_COMPLETION_OVERRIDE
     return dict(row, transport_contract=contract)
 
 
@@ -535,8 +771,12 @@ def test_patched_scenario_rows_parse_as_approach_contracts(tmp_path: Path) -> No
                 literal = json.dumps(json.dumps(patched))
                 mode = ("ApproachMode::SurfaceWalk" if row["node_id"] == "bwd.transit.lower_wing_elevator"
                         else "ApproachMode::LedgeDrop")
+                override_check = ("CHECK(t.CompletionOverride.Declared && t.CompletionOverride.BossIndex == 5);"
+                                  if row["node_id"] == "bwd.nefarian.descent"
+                                  else "CHECK(!t.CompletionOverride.Declared);")
                 body.append("{ TransportContract t; CHECK(!Transport(" + literal + ", t)); "
-                            f"CHECK(t.Approach.Mode == {mode}); CHECK(!t.WaitPoint.Valid); }}")
+                            f"CHECK(t.Approach.Mode == {mode}); CHECK(!t.WaitPoint.Valid); "
+                            + override_check + " }")
     assert len(body) >= 3
     _compile_and_run(tmp_path, PRELUDE + "int main()\n{\n" + "\n".join(body)
                      + "\n    return failures ? 1 : 0;\n}\n")
