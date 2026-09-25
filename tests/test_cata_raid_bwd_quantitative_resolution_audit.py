@@ -38,14 +38,14 @@ def ledger_keys(ledger: dict) -> set[str]:
     return keys
 
 
-def test_bwd_quantitative_resolution_audit_reconciles_all_52_ledger_blockers() -> None:
+def test_bwd_quantitative_resolution_audit_reconciles_all_53_ledger_blockers() -> None:
     report = load(REPORT)
     bosses = report["bosses"]
     assert {boss["boss_slug"] for boss in bosses} == EXPECTED
 
     findings = [finding for boss in bosses for finding in boss["blockers"]]
-    assert len(findings) == report["scope"]["blocker_count"] == 52
-    assert len({(boss["boss_slug"], finding["key"]) for boss in bosses for finding in boss["blockers"]}) == 52
+    assert len(findings) == report["scope"]["blocker_count"] == 53
+    assert len({(boss["boss_slug"], finding["key"]) for boss in bosses for finding in boss["blockers"]}) == 53
 
     for boss in bosses:
         slug = boss["boss_slug"]
@@ -62,17 +62,24 @@ def test_bwd_quantitative_resolution_audit_reconciles_all_52_ledger_blockers() -
             assert finding["evidence_refs"]
             for evidence_ref in finding["evidence_refs"]:
                 assert evidence_ref in report["evidence_catalog"]
+            assert finding["ledger_status"]
+            assert finding["ledger_refs"][0].startswith(boss["ledger_path"] + ":unresolved[")
+            assert finding["ledger_refs"][0].endswith(finding["key"] + "]") or finding["ledger_refs"][0].endswith(
+                "=" + finding["key"]
+            )
 
     counts = Counter(finding["resolution_class"] for finding in findings)
     assert counts == {
-        "resolvable_from_official_cutoff_docs": 6,
+        "resolvable_from_official_cutoff_docs": 3,
         "resolvable_from_client_rows": 3,
-        "resolvable_from_server_db_source": 6,
-        "still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence": 37,
+        "resolvable_from_server_db_source": 3,
+        "still_requires_exact_4.4.2_logs_or_authoritative_hotfix_evidence": 44,
     }
-    assert report["resolution_counts"]["total_blockers"] == 52
+    assert report["resolution_counts"]["total_blockers"] == 53
     for key, count in counts.items():
         assert report["resolution_counts"][key] == count
+    assert report["resolution_counts"]["external_evidence_required"] == 44
+    assert report["resolution_counts"]["partial_repository_or_client_resolutions"] == 9
 
 
 def test_bwd_quantitative_resolution_audit_pins_identity_and_fails_closed() -> None:
