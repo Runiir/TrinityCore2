@@ -470,6 +470,40 @@ Boss notes:
 - No edits after your handoff. The coordinator builds only after every agent has
   finished, and any edit during a build aborts it.
 
+### Round 2 integration checklist (coordinator)
+
+The full handoffs, with patch texts, are in `.git/round2_patches/<package>/handoff.md`.
+
+1. Land every package's review fixes and re-reviews first.
+2. Shared dispatch files, applied in this order by one owner:
+   - Atramedes patches P1-P6, then the Chimaeron dispatch patch with `patch -p1`.
+     Hand-merge `EncounterBlackboard.cpp` hunk 1 (both constant blocks stay) and
+     `UpdateContext.h`.
+   - Then Nefarian R1-R5, then the Omnotron and Maloriak requests.
+   - Split `BotWorldPopulationMgrUpdateBotKernelCandidates.cpp` first. It is at 966
+     lines after Atramedes. Move the per-boss offense-suppression near-copies
+     (Magmaw, Omnotron, Atramedes) into one shared helper TU.
+   - The arbitration replay (`tests/test_bot_action_arbitration.py`) must get past the
+     older Magmaw `pillar_bait_switch` assertion so the Atramedes and Chimaeron sections
+     run. Also land Atramedes' `arbitration_test.patch` and Nefarian's arbitration
+     patch.
+3. Fidelity registry entries: Atramedes (non-10N rows without a 10N ledger pointer),
+   Chimaeron, Nefarian, Omnotron and Maloriak.
+4. Decide on the staged Atramedes SQL (Devastation targets the Noisy player).
+5. Configure CMake again (new TUs: `boss_atramedes_spells.cpp`,
+   `boss_nefarians_end_{adds,spells}.cpp`, Chimaeron and Omnotron candidate TUs, and the
+   Maloriak and Omnotron spell splits). Master does not compile until the Chimaeron
+   dispatch lands, because `ChimaeronCandidates.cpp` needs it.
+6. Focused tests, then ONE build (host8, fresh configure ticket, no agent edits).
+7. DVC: repro `validation_provisioning`, `validation_provisioning_verify`,
+   `validation_scenarios` and `raid_shard_provisioning` (now with the `full_c0`
+   cohort), push, rebind the closure manifest, commit.
+8. Magmaw smoke on the canonical roster, then the six BWD c0 shards in parallel through
+   the raid program (`program run-plan`, `shard_coordinator`, `program run`,
+   `program ingest`, `program assess`).
+9. Apply the AGENTS.md routing text (end of `references/raid-program.md`) and the
+   `development_graph.md` note after R's re-review approves.
+
 ## Later rounds
 
 - **Raid-level workloop.** `raid_workloop start "implement <raid> <mode> bots"` selects
