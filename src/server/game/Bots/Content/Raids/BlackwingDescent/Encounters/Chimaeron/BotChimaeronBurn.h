@@ -20,7 +20,11 @@
 //   a bounded hold (two Massacre cycles, or fewer than two living healers).
 // - Last chance: damage the hold cannot stop (damage over time, pets) carries
 //   the boss to 21% unreleased. The handoff arms anyway (Feud does not block
-//   it); non-tanks keep waiting for the release.
+//   it); non-tanks keep waiting for the release. It is not sticky while held:
+//   once the boss stops losing health for a taunt cooldown the drift is over,
+//   the arm (and any handoff it produced) is dropped and the ordinary
+//   Break/Double Attack exchange resumes; a new drift at or below the line
+//   re-arms it.
 // - Armed: the Double Attack tank taunts first and holds the boss into
 //   Mortality; the Break tank stops taunting and stands down. Non-tanks are
 //   released once the handoff lands, or after one taunt cooldown. If that
@@ -37,6 +41,9 @@ constexpr std::string_view HoldStartedLatch = "burn_hold_started";
 // Value: BurnReleaseReason.
 constexpr std::string_view BurnReleasedLatch = "burn_released";
 constexpr std::string_view LastChanceLatch = "burn_last_chance";
+// Value: boss health (thousandths of a percent) at its latest observed drop;
+// SetAtMs: time of that drop.
+constexpr std::string_view BossHealthDropLatch = "burn_boss_health_drop";
 constexpr std::string_view HandoffDoneLatch = "mortality_handoff_done";
 constexpr std::string_view HandoffTimedOutLatch = "mortality_handoff_timed_out";
 constexpr std::string_view PainSuppressionActiveLatch = "pain_suppression_active";
@@ -64,6 +71,9 @@ constexpr float MortalityHandoffPct = 21.5f;
 constexpr float LastChanceHandoffPct = 21.0f;
 // One taunt cooldown (Dark Command, Growl, Hand of Reckoning, Taunt: 8 s).
 constexpr uint64 HandoffTimeoutMs = 8000;
+// The boss has not lost health for this long: the drift that armed the last
+// chance has stopped.
+constexpr uint64 DriftStoppedMs = 8000;
 // Two Massacre cycles (30 s repeat): a hold that long means readiness is out
 // of reach (healers out of mana, a tank kept under 80%).
 constexpr uint64 BurnHoldCapMs = 60000;
@@ -239,8 +249,29 @@ inline void UpdateEncounterLatches(Blackboard const& board, EncounterLatchModule
         if (BurnReleaseReason const reason = ReleaseReason(board, observation, duties, module);
             reason != BurnReleaseReason::None)
             module.Latch(BurnReleasedLatch, uint64(reason));
-    if (!module.Find(BurnReleasedLatch) && inWindow && boss.HealthPct <= LastChanceHandoffPct)
-        module.Latch(LastChanceLatch);
+    uint64 const healthMark = uint64(std::max(0.0f, boss.HealthPct) * 1000.0f);
+    if (EncounterLatch const* drop = module.Find(BossHealthDropLatch);
+        !drop || healthMark < drop->Value)
+    {
+        module.Clear(BossHealthDropLatch);
+        module.Latch(BossHealthDropLatch, healthMark);
+    }
+    bool const drifting = module.NowMs()
+        < module.Find(BossHealthDropLatch)->SetAtMs + DriftStoppedMs;
+    if (!module.Find(BurnReleasedLatch))
+    {
+        if (inWindow && drifting && boss.HealthPct <= LastChanceHandoffPct)
+            module.Latch(LastChanceLatch);
+        else if (!drifting && module.Find(LastChanceLatch))
+        {
+            // The drift stopped while held: give the boss back to the
+            // ordinary exchange instead of parking every Break on the
+            // Double Attack tank for the rest of the hold.
+            module.Clear(LastChanceLatch);
+            module.Clear(HandoffDoneLatch);
+            module.Clear(HandoffTimedOutLatch);
+        }
+    }
 
     EncounterLatch const* released = module.Find(BurnReleasedLatch);
     EncounterLatch const* lastChance = module.Find(LastChanceLatch);

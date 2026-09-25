@@ -309,7 +309,10 @@ static void TestEncounterLatchStore()
 // boss swings every 4 s unless Feud pacifies him, and the boss loses 0.12% per
 // step when anybody attacks, else 0.02% (damage over time). The adversarial
 // walk drops 0.1% every step regardless. Outage clears the mixture; Feud sets
-// the boss's Feud aura with the given time left.
+// the boss's Feud aura with the given time left. With a Break cycle, Break
+// lands on the victim and Double Attack is applied every cycle (their shared
+// native timer); a doubled swing consumes it. Damage over time stops once the
+// boss is at or below DotStopPct (0 = never).
 struct ReplayConfig
 {
     uint64 GrowlReadyAfterMs = 0;
@@ -319,6 +322,8 @@ struct ReplayConfig
     bool Outage = false;
     uint64 FeudLeftMs = 0;
     bool HealersDown = false;
+    uint64 BreakCycleMs = 0;
+    float DotStopPct = 0.0f;
 };
 
 struct ReplayResult
@@ -327,6 +332,8 @@ struct ReplayResult
     ObjectGuid VictimAtMortality;
     uint64 MortalityAtMs = 0;
     int Violations = 0;
+    int FeralBreakStacks = 0;
+    int BreakTankBreakStacks = 0;
 };
 
 static void Heal(ActorSnapshot& member, float pct)
@@ -356,6 +363,8 @@ static ReplayResult RunBurnReplay(ReplayConfig const& config)
     EncounterLatchStore store;
     uint64 growlReadyAt = start + config.GrowlReadyAfterMs;
     uint64 nextSwingAt = start + 4000;
+    uint64 nextBreakAt = start + config.BreakCycleMs;
+    std::map<uint32, int> breakStacks;
     auto violation = [&](char const* what, uint32 guid)
     {
         ++result.Violations;
@@ -365,10 +374,14 @@ static ReplayResult RunBurnReplay(ReplayConfig const& config)
     for (int step = 0; step < 400; ++step)
     {
         Publish(board, store, 250);
-        if (!Boss(board).Auras.empty() && Boss(board).Auras.front().SpellId == C::FeudSpell
-            && Boss(board).Auras.front().ExpiresAtMs <= board.ObservedAtMs)
-            Boss(board).Auras.clear();
-        bool const feud = !Boss(board).Auras.empty();
+        auto& bossAuras = Boss(board).Auras;
+        bossAuras.erase(std::remove_if(bossAuras.begin(), bossAuras.end(),
+            [&board](AuraSnapshot const& aura)
+            {
+                return aura.SpellId == C::FeudSpell && aura.ExpiresAtMs <= board.ObservedAtMs;
+            }), bossAuras.end());
+        bool const feud = std::any_of(bossAuras.begin(), bossAuras.end(),
+            [](AuraSnapshot const& aura) { return aura.SpellId == C::FeudSpell; });
         bool const released = Latched(store, C::BurnReleasedLatch) != nullptr;
         bool const armed = released || Latched(store, C::LastChanceLatch);
         bool const settled = Latched(store, C::HandoffDoneLatch)
@@ -421,23 +434,46 @@ static ReplayResult RunBurnReplay(ReplayConfig const& config)
         }
         if (CastOf(plans[DK]) == 56222)
             Boss(board).VictimGuid = G(DK);
+        auto doubleAttack = [&board]()
+        {
+            auto& auras = Boss(board).Auras;
+            return std::find_if(auras.begin(), auras.end(), [](AuraSnapshot const& aura)
+                { return aura.SpellId == C::DoubleAttackSpell; });
+        };
+        if (config.BreakCycleMs && board.ObservedAtMs >= nextBreakAt)
+        {
+            int& stacks = breakStacks[Boss(board).VictimGuid.GetCounter()];
+            stacks = std::min(4, stacks + 1);
+            if (doubleAttack() == Boss(board).Auras.end())
+                Boss(board).Auras.push_back({ C::DoubleAttackSpell, Boss(board).Guid, 1, 0 });
+            nextBreakAt += config.BreakCycleMs;
+        }
         if (!feud && board.ObservedAtMs >= nextSwingAt)
         {
+            float damage = 25.0f;
+            if (auto itr = doubleAttack(); itr != Boss(board).Auras.end())
+            {
+                Boss(board).Auras.erase(itr);
+                damage = 50.0f;
+            }
             ActorSnapshot& victim = P(board, Boss(board).VictimGuid.GetCounter());
-            victim.HealthPct = std::max(1.0f, victim.HealthPct - 25.0f);
+            victim.HealthPct = std::max(1.0f, victim.HealthPct - damage);
             victim.Health = uint64(victim.HealthPct * float(victim.MaxHealth) / 100.0f);
             nextSwingAt += 4000;
         }
         bool attacking = false;
         for (uint32 guid : { DK, DRUID, HUNTER, MAGE, RET, ROGUE, LOCK })
             attacking = attacking || !plans[guid].SuppressOffense;
-        float const drop = config.Adversarial ? 0.1f : (attacking ? 0.12f : 0.02f);
+        float const dot = Boss(board).HealthPct > config.DotStopPct ? 0.02f : 0.0f;
+        float const drop = config.Adversarial ? 0.1f : (attacking ? 0.12f : dot);
         Boss(board).HealthPct -= drop;
         if (Boss(board).HealthPct <= C::MortalityHealthPct)
         {
             result.MortalityReached = true;
             result.VictimAtMortality = Boss(board).VictimGuid;
             result.MortalityAtMs = board.ObservedAtMs - start;
+            result.FeralBreakStacks = breakStacks[DRUID];
+            result.BreakTankBreakStacks = breakStacks[DK];
             break;
         }
     }
@@ -503,6 +539,28 @@ static void TestBurnReplayFromPostMassacre()
     ReplayResult const margin = RunBurnReplay(spent);
     CheckFeral(margin, "spent growl at the line");
     CHECK(margin.MortalityAtMs > spent.GrowlReadyAfterMs);
+
+    // A long hold whose damage over time crosses the line and then stops
+    // (21.4% down to 20.9%, Break and Double Attack every 15 s, slow healing):
+    // once the drift stops the last-chance arm is dropped and the Break tank
+    // holds Break again, so the Feral enters Mortality with at most one more
+    // Break stack than in the control whose drift stops above the line.
+    ReplayConfig armed;
+    armed.HealPct = 1.0f;
+    armed.StartPct = 21.4f;
+    armed.DotStopPct = 20.9f;
+    armed.BreakCycleMs = 15000;
+    ReplayConfig control = armed;
+    control.DotStopPct = 21.1f;
+    ReplayResult const longHold = RunBurnReplay(armed);
+    ReplayResult const noArm = RunBurnReplay(control);
+    CheckFeral(longHold, "long armed hold");
+    CheckFeral(noArm, "long hold control");
+    if (longHold.FeralBreakStacks > noArm.FeralBreakStacks + 1)
+        std::fprintf(stderr, "long hold: feral stacks %d vs control %d\n",
+            longHold.FeralBreakStacks, noArm.FeralBreakStacks);
+    CHECK(longHold.FeralBreakStacks <= noArm.FeralBreakStacks + 1);
+    CHECK(longHold.MortalityAtMs > 30000);
 }
 
 int main()

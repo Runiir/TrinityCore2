@@ -165,7 +165,9 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - last chance: if damage the hold cannot stop (damage over time, pets) carries the boss to 21%
     unreleased, the handoff arms anyway while the non-tanks keep waiting for the release. The 1%
     margin is about 12.5 s of the hold's residual damage, longer than the 8 s taunt cooldown, so a
-    taunt just spent on a Double Attack soak is back before 20%;
+    taunt just spent on a Double Attack soak is back before 20%. The arm is not sticky while held:
+    if the boss stops losing health for 8 s, the drift is over, the arm and its handoff are dropped
+    and the Break tank takes Break again; a new drift at or below the line re-arms it;
   - once armed (release, last chance, hold cap or healers down) the Double Attack tank taunts first,
     even during Feud (taunting the pacified boss is harmless and sets the victim his melee resumes
     on), and holds the boss into Mortality; the Break tank stops taunting and stands down while the
