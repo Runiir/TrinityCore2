@@ -20,6 +20,7 @@ inline constexpr float FlamethrowerMarginDeg = 8.0f;
 inline constexpr float BombKiteDistance = 16.0f;
 inline constexpr float GeneratorExitDistance = 15.0f;
 inline constexpr float ShieldSeparationDistance = 12.0f;
+inline constexpr float ShieldSeparationMinimumGain = 4.0f;
 inline constexpr float GeneratorApproachRange = 30.0f;
 inline constexpr uint64 MovementIntentLifetimeMs = 750;
 
@@ -395,6 +396,41 @@ inline std::optional<BotNativeAction::Candidate> ProposeConductorClearance(
         BotActionArbitration::Priority::Survival, 290.0f);
 }
 
+// Where a tank drags its shielded construct away from the other active one.
+// The construct follows its tank, so the tank's destination stands in for the
+// construct's. Sample points around the tank (tangential ones included, so a
+// tank on the arena rim can still slide sideways), skip hazards, and move only
+// for a real gain: a destination clamped next to the tank would otherwise be
+// re-proposed every tick without separating anything.
+inline std::optional<Vector3> ShieldSeparationPoint(EncounterFacts const& facts,
+    ActorSnapshot const& bot, ConstructFact const& own, ConstructFact const& other)
+{
+    float const current = PlanarDistance(own.Actor->Position, other.Actor->Position);
+    std::optional<Vector3> best;
+    float bestScore = -1000.0f;
+    for (float radius : { 6.0f, 9.0f, 12.0f })
+        for (int step = 0; step < 16; ++step)
+        {
+            float const angle = float(step) * Geometry::Pi / 8.0f;
+            Vector3 const point = Geometry::ClampToArena(bot.Position,
+                Geometry::Offset(bot.Position, { std::cos(angle), std::sin(angle), 0.0f },
+                    radius));
+            if (HazardDepth(facts, point) > 0.0f)
+                continue;
+            float const separation = PlanarDistance(point, other.Actor->Position);
+            if (separation - current < ShieldSeparationMinimumGain)
+                continue;
+            float const score = std::min(separation, ShieldSeparationDistance + 4.0f)
+                - 0.2f * PlanarDistance(bot.Position, point);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = point;
+            }
+        }
+    return best;
+}
+
 // Tanks: pull the owned construct out of a Power Generator, drag a shielded
 // construct away from the other one, or wait next to the recharging one.
 inline std::optional<BotNativeAction::Candidate> ProposeTankPosition(
@@ -420,11 +456,14 @@ inline std::optional<BotNativeAction::Candidate> ProposeTankPosition(
                 if (&other != own && other.Fighting()
                     && PlanarDistance(other.Actor->Position, own->Actor->Position)
                         < ShieldSeparationDistance)
-                    return MoveCandidate(board, bot, Geometry::ClampToArena(bot.Position,
-                        Geometry::Offset(bot.Position, Geometry::Direction(
-                            other.Actor->Position, own->Actor->Position, bot.Facing),
-                            ShieldSeparationDistance)), "tank_shield_separation",
+                {
+                    std::optional<Vector3> const point =
+                        ShieldSeparationPoint(facts, bot, *own, other);
+                    if (!point)
+                        return std::nullopt;
+                    return MoveCandidate(board, bot, *point, "tank_shield_separation",
                         own->Actor->Guid, BotActionArbitration::Priority::Mechanic, 240.0f);
+                }
         return std::nullopt;
     }
     ConstructFact const* next = facts.Find(tank->Standby);

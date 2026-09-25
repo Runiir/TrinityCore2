@@ -264,13 +264,13 @@
   "roles": {
     "tanks": [
       "two tanks own at most one active construct each; ownership follows the construct's victim, a new construct goes to the tank whose construct is gone or shutting down",
-      "taunt an owned construct that attacks anyone else",
+      "taunt an owned construct that attacks anyone else (a single-cast allowance when it is shielded; the taunt procs its shield natively)",
       "stop attacking an owned construct while it is shielded and drag it 12 yd from the other active construct",
       "walk an owned construct out of a Power Generator (construct center >= 8.6 yd from it)",
       "a free tank waits next to the construct whose Recharging aura ends within 12 s"
     ],
     "interrupt": [
-      "interrupt every Arcane Annihilator (79710) with a rotation by capability: in-range melee 10 s interrupts, then ranged, then tanks, then long cooldowns; a backup acts 450 ms into the cast"
+      "interrupt every Arcane Annihilator (79710) with a rotation by capability: in-range melee 10 s interrupts, then ranged, then tanks, then long cooldowns; a backup acts 450 ms into the cast; under Power Conversion the interrupt still lands and procs one Converted Power stack natively; the restriction is widened for that single cast only"
     ],
     "dispel": [
       "poison dispellers (Cleanse 4987, Remove Corruption 2782; not a Bear Form tank) clear Soaked In Poison at 3+ stacks or below 50% health"
@@ -280,7 +280,7 @@
       "stand in the Power Generator when it is clear of hazards"
     ],
     "raid": [
-      "damage the newest active unshielded construct; never damage a shielded or shield-casting construct",
+      "damage an active construct whose shield is spent this activation, else the newest active unshielded one; never damage a shielded or shield-casting construct (every construct entry is restricted per bot and only unshielded active constructs are allowed)",
       "Lightning Conductor carrier keeps more than 8 yd from everyone; others keep out of its 8 yd",
       "Acquiring Target player leads the Flamethrower cone away; everyone else leaves the 25 degree Magmatron-to-target cone",
       "fixated player kites its Poison Bomb away from everyone",
@@ -363,7 +363,9 @@
       "player role and class_spec"
     ],
     "owns_node": "only while a construct is engaged; the validation route approaches and pulls",
-    "timers_used": "none"
+    "timers_used": "none",
+    "offense_authority": "BotOmnotronOffenseAuthority.h: per bot, all four construct entries are restricted and only the plan's active unshielded constructs are allowed (direct casts refused, area spells refused beside a restricted construct); interrupts and taunts on a shielded construct run under a SingleCastAllowance that is restored right after the cast.",
+    "damage_focus": "A construct whose one shield of this activation was observed and has ended (BotOmnotronShieldLedger.h) is preferred; else the newest active unshielded construct. At steady state a construct receives no damage from ~16 s after activation until its shield ends, so DoTs (up to 21 s) expire before the shield; only the opening construct carries fresh DoTs into its shield."
   },
   "acceptance_observations": [
     "native: 78740 applied on a new construct every 45 +- 2 s on 10N; each shield cast once per activation ~50 s after it",
@@ -373,7 +375,11 @@
     "bots: Arcane Annihilator interrupted (SPELL_INTERRUPT) on >= 80% of casts; no two interrupts on the same cast",
     "bots: Lightning Conductor 79889 hits 0 players other than rare edge cases; Flamethrower 79504 hits only the marked player",
     "bots: each active construct's victim is a tank for >= 95% of its active time after the first 3 s",
-    "route: bwd.omnotron.encounter completes with real_boss_kill_evidence on 42180 and native boss state 1 DONE; 0 boss-window deaths"
+    "route: bwd.omnotron.encounter completes with real_boss_kill_evidence on 42180 and native boss state 1 DONE; 0 boss-window deaths",
+    "bots: Converted Power (79735) stacks gained per landed interrupt of 79710 while Power Conversion is up (expected about 1; 0 while it is down); none from damage",
+    "bots: Backdraft 79617 count with the periodic damage absorbed by Barrier 79582 before each break, grouped by source (DoT spell, owner) and by opening vs later rotations",
+    "bots: Static Shock 79912 and Soaked In Poison 80011 caused by a taunt on a shielded construct (count per taunt)",
+    "bots: no area spell (Divine Storm, Blood Boil, Death and Decay, Fan of Knives, Hellfire, Living Bomb spread) hits a construct during its shield"
   ],
   "unresolved": [
     "wcl_matched_10n_kill_references",

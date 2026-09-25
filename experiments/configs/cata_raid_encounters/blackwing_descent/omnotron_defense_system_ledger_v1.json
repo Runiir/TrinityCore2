@@ -225,6 +225,19 @@
       "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
       "accessed": "2026-09-25",
       "claim": "Every WCL page redirected to /human-challenge ('One Quick Check'). Per coordinator instruction no agent attests to being human; WCL-dependent claims stay open until the user clears the gate."
+    },
+    "repo_proc_and_absorb_rules": {
+      "title": "Native proc eligibility, no-damage spell procs and absorb depletion",
+      "paths": [
+        "src/server/game/Spells/SpellMgr.cpp:507-567 (CanSpellTriggerProcOnEvent)",
+        "src/server/game/Spells/SpellMgrProcs.cpp:186-192,259-345 (default proc entries: SpellTypeMask all)",
+        "src/server/game/Spells/Spell.cpp:2814-2826 (no-damage hit raises a NODAMAGE DamageInfo, PROC_SPELL_TYPE_NO_DMG_HEAL)",
+        "src/server/game/Entities/Unit/Unit.cpp:1447,1511 (absorb depleted -> AuraRemoveFlags::ByEnemySpell), 3344,3426 (dispel/steal -> ByEnemySpell)",
+        "sql/updates/world/4.3.4/2025_06_20_00_world.sql:322-333 (spell_proc 79729 Cooldown 100; 91543-91545, 80011, 91504-91506 Cooldown 500; SpellTypeMask 0)"
+      ],
+      "revision": "a0b898210c",
+      "accessed": "2026-09-25",
+      "authority": "current implementation; retail behaviour needs WCL observations"
     }
   },
   "evidence_policy": {
@@ -662,6 +675,24 @@
       "evidence": "addon_plus_guide",
       "status": "resolved_for_normal",
       "notes": "The native script has no berserk in any mode; heroic berserk is single-source."
+    },
+    {
+      "key": "shield_procs_and_barrier_absorb_native",
+      "modes": {
+        "10N": "native",
+        "10H": "native",
+        "25N": "native",
+        "25H": "native"
+      },
+      "value": "Power Conversion 79729, Unstable Shield 79900 and Poison Soaked Shell 79835 proc on taken melee/ranged swings and on taken melee-, ranged-, none- and magic-class spell hits (proc flags 139944), not on periodic ticks. A spell hit without damage still procs natively: it raises a NODAMAGE DamageInfo with PROC_SPELL_TYPE_NO_DMG_HEAL, spell_proc 79729 has SpellTypeMask 0 (all types), 79835 uses a generated entry (all types), and spell_omnotron_unstable_shield only requires a DamageInfo. So an interrupt or taunt that lands on a shielded construct gives a Converted Power stack, Soaked In Poison or a Static Shock. Barrier 79582 is an absorb: any damage including periodic ticks depletes it, and depletion (or a dispel/steal) removes it by enemy spell, which casts Backdraft 79617 on the raid.",
+      "sources": [
+        "repo_proc_and_absorb_rules",
+        "repo_cpp",
+        "client_442_59185_omnotron"
+      ],
+      "evidence": "repository_observed",
+      "status": "native_resolved; retail behaviour of no-damage procs open (research_completion power_conversion_no_damage_proc)",
+      "implementation_consequence": "Offense restriction keeps shielded constructs out of every bot's allowed set; an interrupt or taunt on one is widened for that single cast only. The rotation keeps interrupting Arcanotron under Power Conversion (one Converted Power stack against a 39-41k Annihilator). Damage focus leaves a construct alone well before its shield so DoTs expire first."
     }
   ],
   "timers": [
@@ -1376,6 +1407,37 @@
         "guiaswow_heroic_legacy",
         "repo_cpp"
       ]
+    },
+    {
+      "key": "power_conversion_no_damage_proc",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "open",
+      "known": "Natively every landed interrupt (and taunt) on Arcanotron under Power Conversion gives one Converted Power stack (spell_proc 79729 SpellTypeMask 0, NODAMAGE proc). Whether 4.4.2 Power Conversion procs on a non-damaging interrupt is not established; guides only say 'stop attacking'.",
+      "next": "WCL: in a 10N kill, Converted Power (79735) applications within 0.5 s after a SPELL_INTERRUPT of 79710 while 79729 is up. Live: Converted Power stacks per interrupt (contract acceptance observation).",
+      "source_refs": [
+        "repo_proc_and_absorb_rules",
+        "wowhead_cata_classic",
+        "wcl_human_verification_gate_20260925"
+      ]
+    },
+    {
+      "key": "barrier_periodic_break",
+      "modes": [
+        "10N"
+      ],
+      "status": "partial",
+      "known": "Barrier absorbs periodic damage and breaks into Backdraft (native). With the client's 300,000 absorb (Wowhead: 900,000), DoTs left on Magmatron can break it. The bots leave each construct alone from ~16 s after its activation until its shield ends, except the opening construct, which is alone for 45 s.",
+      "next": "Live: Backdraft 79617 casts and the periodic damage absorbed by 79582 before each, grouped by opening vs later rotations. WCL: absorbed amounts on 79582.",
+      "source_refs": [
+        "repo_proc_and_absorb_rules",
+        "client_442_59185_omnotron",
+        "wowhead_cata_classic"
+      ]
     }
   ],
   "research_completion_policy": "Reference readiness requires sourced values or explicit proposal bounds, native comparison and specified acceptance observations. WCL-dependent claims stay blocked while the WCL human-verification gate is up; they are listed with the exact reports to extract.",
@@ -1390,5 +1452,10 @@
     "heroic_nefarius_selection_order_and_cadence",
     "heroic_poison_bomb_count_and_non_10n_scaling",
     "static_shock_center_attacker_or_construct"
+  ],
+  "open_questions": [
+    "power_conversion_no_damage_proc: does 4.4.2 Power Conversion (79729) grant Converted Power for a landed interrupt that deals no damage? Native: yes.",
+    "taunt_on_shielded_construct: a taunt on Electron under Unstable Shield procs Static Shock (6 yd) at the tank natively, and on Toxitron under Poison Soaked Shell applies Soaked In Poison; retail unobserved.",
+    "barrier_periodic_break: can remaining DoTs break Magmatron's Barrier on 10N (client absorb 300,000 vs Wowhead 900,000)?"
   ]
 }

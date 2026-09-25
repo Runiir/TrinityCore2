@@ -16,9 +16,10 @@
 // pull the validation route approaches and pulls the patrolling construct.
 //
 // Per bot and snapshot it proposes:
-// - DamageTarget: the newest active, unshielded construct (the older one
-//   shields first), a Poison Bomb that is safe to kill for ranged damage
-//   dealers, or the construct a tank owns;
+// - DamageTarget: an active construct whose shield is spent this activation,
+//   else the newest active unshielded one (so DoTs age out before a shield),
+//   a Poison Bomb that is safe to kill for ranged damage dealers, or the
+//   construct a tank owns;
 // - SuppressOffense: when every active construct is shielded, and for a tank
 //   whose own construct is shielded (it keeps holding it);
 // - TankTarget: the construct a tank must hold (taunt if it is on anyone else);
@@ -43,7 +44,8 @@ struct AdaptiveOmnotronPlan
     ObjectGuid DispelTarget;
     // Constructs this bot may damage (active, no shield or shield cast). The
     // runtime restricts every other construct entry for this bot, which also
-    // keeps area spells away from a shielded construct.
+    // keeps area spells away from a shielded construct. Never widened for an
+    // interrupt or taunt: those get a single-cast allowance at submission.
     std::vector<ObjectGuid> OffenseAllowed;
     std::optional<BotNativeAction::Candidate> Movement;
 };
@@ -90,21 +92,11 @@ public:
                 && duty.Interrupt.CastAgeMs >= O::InterruptBackupDelayMs))
             plan.InterruptTarget = duty.Interrupt.Caster;
         plan.InterruptCastOrdinal = duty.Interrupt.Ordinal;
-        // Interrupts and taunts deal no damage, so a shielded construct stays
-        // reachable for exactly those casts: the rotation's interrupter keeps
-        // Arcanotron under Power Conversion, and a tank keeps its own
-        // construct while it attacks someone else. The runtime restriction
-        // would otherwise refuse both casts.
-        auto allow = [&plan](ObjectGuid guid)
-        {
-            if (!guid.IsEmpty() && std::find(plan.OffenseAllowed.begin(),
-                    plan.OffenseAllowed.end(), guid) == plan.OffenseAllowed.end())
-                plan.OffenseAllowed.push_back(guid);
-        };
-        allow(plan.InterruptTarget);
-        if (O::ConstructFact const* own = facts.Find(plan.TankTarget);
-            own && own->Actor->VictimGuid != botGuid)
-            allow(plan.TankTarget);
+        // OffenseAllowed stays exactly the active unshielded constructs. An
+        // interrupt or taunt on a shielded construct is widened for that one
+        // native cast by the runtime (SingleCastAllowance); an allowed GUID
+        // here would open every offense path of this bot, area spells beside
+        // the shielded construct included.
         plan.DispelTarget = duty.DispelTargetFor(botGuid);
         plan.Movement = ProposeMovement(board, facts, duty, *bot, effectiveRole);
         return plan;

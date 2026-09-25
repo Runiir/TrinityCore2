@@ -118,20 +118,42 @@ observed state and capability, never from a roster slot:
 - **Tanks.** A tank owns the active construct whose victim it is. A new
   construct goes to the tank whose construct is gone or shutting down. The
   owner taunts its construct if it attacks anyone else. While its construct is
-  shielded, the owner stops attacking and drags it 12 yd from the other
-  construct. It walks the construct out of a Power Generator. A tank without a
+  shielded, the owner stops attacking and drags it away from the other
+  construct: it samples points around itself (sideways ones too, so a tank on
+  the arena rim can slide) and moves only for at least 4 yd more separation.
+  It walks the construct out of a Power Generator. A tank without a
   construct waits next to the construct whose Recharging aura ends within
-  12 s.
-- **Damage.** The focus is the newest active construct without a shield or
-  shield cast. The older construct therefore shields first, and DoTs age out
-  before its Barrier. If every active construct is shielded, offense is
-  suppressed.
+  12 s and does not attack meanwhile.
+- **Damage.** The focus is an active construct whose one shield of this
+  activation has been seen and has ended (it cannot shield again before it
+  shuts down); otherwise the newest active construct without a shield or
+  shield cast. If every active construct is shielded, offense is suppressed.
+  Why: Barrier is an absorb, periodic damage depletes it, and depletion counts
+  as removal by an enemy spell, which casts Backdraft on the raid. DoTs last up
+  to 21 s. With "newest first" alone, the older construct was the focus until
+  the newer one activated, only 5 s before its own shield, so its DoTs ticked
+  into the shield every rotation. With the spent-shield preference each
+  construct is left alone from ~16 s after its activation until its shield
+  ends. Only the opening construct, alone for 45 s, still carries fresh DoTs
+  into its shield; Backdraft breaks by periodic damage are a live signal.
+- **Offense restriction.** Per bot, all four construct entries are restricted
+  and only the active unshielded constructs are allowed, so no direct cast
+  lands on a shielded construct and no area spell (Divine Storm, Blood Boil,
+  Death and Decay, Fan of Knives) is cast beside one. An interrupt or a taunt
+  on a shielded construct is widened for that single native cast and the
+  restriction is restored right after it; it never enters the allowed set.
 - **Interrupts.** The Arcane Annihilator rotation goes by class/spec and
   reach: in-range melee 10 s interrupts (Rebuke, Kick), then ranged (Wind
   Shear 15 s, Counterspell 24 s), then tanks (Mind Freeze), then long
   cooldowns (Skull Bash 60 s). A player with a personal movement debuff comes
   last. A per-cohort ledger counts casts: one primary per cast and one backup
-  450 ms in.
+  450 ms in. Under Power Conversion the rotation keeps interrupting: natively
+  every interrupt that lands procs one Converted Power stack, damaging or not
+  (spell_proc 79729 has SpellTypeMask 0 and a no-damage hit still raises a
+  proc), which is judged cheaper than a 39-41k Annihilator. Whether 4.4.2
+  behaves the same is an open research item; stacks per interrupt are a live
+  signal. A taunt on a shielded construct likewise procs its shield natively
+  (Static Shock at the tank, Soaked In Poison, Converted Power).
 - **Dispels.** Poison dispellers (Cleanse, Remove Corruption; never a Bear Form
   tank) clear Soaked In Poison at 3+ stacks or below 50% health. Healers go
   first.
@@ -168,6 +190,11 @@ Not implemented, deliberately:
    against client 1; other modes' health and damage.
 10. `static_shock_center_attacker_or_construct`.
 
+Open research questions that do not change a material value (ledger
+`open_questions`): whether 4.4.2 Power Conversion procs on a non-damaging
+interrupt; what a taunt on a shielded construct procs in retail; whether DoTs
+can break the 10N Barrier.
+
 WCL extraction plan once the gate is cleared:
 
 - **Reports.** Start from the BWD 10N reports already used for Magmaw:
@@ -183,7 +210,8 @@ WCL extraction plan once the gate is cleared:
     Power Generator windows (+50%);
   - 79879 hit sequences;
   - 80092 events after bomb deaths;
-  - absorbs on 79582;
+  - absorbs on 79582 and any Backdraft 79617;
+  - Converted Power 79735 applications right after SPELL_INTERRUPT of 79710;
   - resource-bar health samples for `derive_encounter_health`.
 
 ## Repository and database audit

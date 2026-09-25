@@ -183,7 +183,15 @@ def test_runtime_candidate_attempts_capture_only_live_context() -> None:
     assert len(captures) == 5
     for capture in captures:
         assert "&context" in capture and not re.search(r"(?:\[|,)\s*&\s*(?:,|\])", capture)
-    assert "SetCurrentEncounterRestrictions" in source
+    assert "ApplyOffenseRestriction" in source
+    # Interrupts and taunts widen the restriction for their one cast only.
+    for marker in ("native_interrupt_submitted", "native_taunt_submitted"):
+        attempt = source[:source.index(marker)]
+        attempt = attempt[attempt.rindex("Attempt ="):]
+        assert "SingleCastAllowance" in attempt
+    assert source.count("std::optional<BotEncounter::Omnotron::SingleCastAllowance>") == 2
+    authority = (CONTENT / "BotOmnotronOffenseAuthority.h").read_text(encoding="utf-8")
+    assert "SetCurrentEncounterRestrictions" in authority
     assert len(source.splitlines()) < 1000
 
 
@@ -214,3 +222,11 @@ def test_damage_calibration_registry_patch_is_schema_valid_and_honest() -> None:
     assert bosses_10n == {"42166", "42178", "42179", "42180", "42186"}
     assert all(creatures[entry]["template_at_audit"]["base_attack_time_ms"] == 1500
                for entry in ("42166", "42178", "42179", "42180"))
+    # Every Poison Bomb and Chemical Cloud difficulty entry has its own row.
+    for entry, mode in (("49121", "25N"), ("49122", "10H"), ("49123", "25H")):
+        row = creatures[entry]
+        assert row["status"] == "open" and row["mode"] == mode and row["base_entry"] == 42897
+        assert "ledger" not in row
+    for entry, mode in (("49118", "25N"), ("49119", "10H"), ("49120", "25H")):
+        row = creatures[entry]
+        assert row["status"] == "not_applicable" and row["mode"] == mode and row["base_entry"] == 42934

@@ -4,6 +4,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronCapabilities.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronInterruptLedger.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronShieldLedger.h"
 #include <algorithm>
 #include <sstream>
 #include <string>
@@ -56,6 +57,8 @@ struct DutyPlan
     std::vector<TankDuty> Tanks;
     ObjectGuid DamageFocus;
     ObjectGuid DamageFallback;
+    // Active constructs whose one shield of this activation has come and gone.
+    std::vector<ObjectGuid> ShieldSpent;
     ObjectGuid BombTarget;
     InterruptDuty Interrupt;
     std::vector<DispelDuty> Dispels;
@@ -182,9 +185,20 @@ inline void AssignTanks(Blackboard const& board, EncounterFacts const& facts,
             }
 }
 
+// Damage focus, in order:
+// 1. an active construct whose shield of this activation is spent: it cannot
+//    shield again before it shuts down;
+// 2. otherwise the newest active unshielded construct.
+// At steady state this leaves each construct alone from ~16 s after its
+// activation until its own shield ends, so damage over time applied to it
+// (up to 21 s) has expired before its shield (Barrier absorbs periodic damage
+// and breaks into Backdraft). Only the opening construct, alone for 45 s,
+// still carries fresh DoTs into its shield. Shielded or shield-casting
+// constructs are never chosen.
 inline void ChooseDamageTargets(Blackboard const& board,
-    EncounterFacts const& facts, DutyPlan& plan)
+    EncounterFacts const& facts, LedgerMode mode, DutyPlan& plan)
 {
+    ConstructFact const* spent = nullptr;
     ConstructFact const* focus = nullptr;
     ConstructFact const* fallback = nullptr;
     auto newer = [](ConstructFact const* left, ConstructFact const& right)
@@ -195,13 +209,23 @@ inline void ChooseDamageTargets(Blackboard const& board,
     };
     for (ConstructFact const& fact : facts.Constructs)
     {
+        ShieldLedger::Sample const sample{ fact.Actor->Guid, fact.Active,
+            fact.Shielded(), fact.ActivatedExpiresAtMs };
+        ShieldObservation const shield = mode == LedgerMode::Observe
+            ? ShieldLedger::Observe(board, sample) : ShieldLedger::Peek(board, sample);
         if (!fact.Active || fact.Shielded())
             continue;
+        if (shield.Spent())
+            plan.ShieldSpent.push_back(fact.Actor->Guid);
+        if (fact.Fighting() && shield.Spent() && newer(spent, fact))
+            spent = &fact;
         if (fact.Fighting() && newer(focus, fact))
             focus = &fact;
         if (newer(fallback, fact))
             fallback = &fact;
     }
+    if (spent)
+        focus = spent;
     plan.DamageFocus = focus ? focus->Actor->Guid : ObjectGuid{};
     plan.DamageFallback = fallback ? fallback->Actor->Guid : ObjectGuid{};
 
@@ -276,10 +300,12 @@ inline void AssignInterrupts(Blackboard const& board,
             InterruptFor(player.ClassSpec);
         if (!capability)
             continue;
-        // Silencing Shot deals weapon damage, which would feed Power
-        // Conversion; every other executor interrupt deals none.
-        if (capability->SpellId == 34490 && arcanotron->Shielded())
-            continue;
+        // Under Power Conversion every interrupt that lands procs a Converted
+        // Power stack, damaging or not: spell_proc 79729 has SpellTypeMask 0
+        // (all types) and a no-damage spell hit still raises a NODAMAGE proc
+        // (Spell.cpp TargetInfo). The rotation keeps interrupting (one stack
+        // against a 39-41k Annihilator); stacks per interrupt are a live
+        // signal and the retail behaviour an open research question.
         // Melee-range interrupts (5 yd) reach the server's melee range
         // (combat reaches plus 4/3 yd); longer ones (Skull Bash 13 yd, ranged)
         // add the construct's combat reach. Half a yard of slack.
@@ -367,7 +393,7 @@ inline DutyPlan BuildDutyPlan(Blackboard const& board, EncounterFacts const& fac
         if (player.Alive && HasPersonalMovementDuty(player, facts))
             plan.MovementDuty.push_back(player.Guid);
     Detail::AssignTanks(board, facts, plan);
-    Detail::ChooseDamageTargets(board, facts, plan);
+    Detail::ChooseDamageTargets(board, facts, mode, plan);
     Detail::AssignInterrupts(board, facts, mode, plan);
     Detail::AssignDispels(board, facts, plan);
     return plan;
@@ -394,7 +420,9 @@ inline std::string DutyPlanJson(DutyPlan const& plan)
                  << plan.Tanks[index].Tank.GetCounter() << ",\"construct\":"
                  << plan.Tanks[index].Construct.GetCounter() << ",\"standby\":"
                  << plan.Tanks[index].Standby.GetCounter() << '}';
-        json << "],\"damage_focus\":" << plan.DamageFocus.GetCounter()
+        json << ']';
+        list("shield_spent", plan.ShieldSpent);
+        json << ",\"damage_focus\":" << plan.DamageFocus.GetCounter()
              << ",\"damage_fallback\":" << plan.DamageFallback.GetCounter()
              << ",\"bomb_target\":" << plan.BombTarget.GetCounter()
              << ",\"interrupt\":{\"caster\":" << plan.Interrupt.Caster.GetCounter()

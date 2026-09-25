@@ -189,6 +189,10 @@ int main()
     AdaptiveOmnotronPlan idle = strategy.Propose(allShielded, G(40004), "dps");
     CHECK(idle.SuppressOffense && idle.SuppressReason == "all_constructs_shielded");
 
+    // The shield ledger saw Magmatron's Barrier above; start the next
+    // scenarios from a fresh ledger.
+    O::ShieldLedger::ResetForTests();
+
     // Handover: Electron shuts down, a new Toxitron attacks a healer. The DK
     // (free) owns Toxitron and must take it; the druid keeps Magmatron.
     Blackboard handover = board;
@@ -217,8 +221,9 @@ int main()
     AdaptiveOmnotronPlan assist = strategy.Propose(early, G(40002), "tank");
     CHECK(!assist.SuppressOffense && assist.DamageTarget == early.Summons[0].Guid);
 
-    // A shielded construct that turned on someone else stays tauntable for
-    // its owner (the taunt deals no damage); other bots still may not hit it.
+    // A shielded construct that turned on someone else stays the owner's
+    // TankTarget; the runtime taunts it under a single-cast allowance, so it
+    // never enters any bot's OffenseAllowed (area spells stay refused).
     Blackboard stray = barrier;
     stray.Revision = 72;
     stray.Summons[1].VictimGuid = G(40007);
@@ -230,11 +235,12 @@ int main()
     AdaptiveOmnotronPlan druidStray = strategy.Propose(stray, G(40002), "tank");
     CHECK(druidStray.TankTarget == magmatron.Guid && druidStray.SuppressOffense);
     CHECK(std::find(druidStray.OffenseAllowed.begin(), druidStray.OffenseAllowed.end(),
-        magmatron.Guid) != druidStray.OffenseAllowed.end());
+        magmatron.Guid) == druidStray.OffenseAllowed.end());
     CHECK(std::find(other.OffenseAllowed.begin(), other.OffenseAllowed.end(),
         magmatron.Guid) == other.OffenseAllowed.end());
     CHECK(owner.TankTarget == electron.Guid);
 
+    O::ShieldLedger::ResetForTests();
     // Power Generator under the DK's construct: the DK walks it out; ranged
     // damage dealers stack in the field.
     Blackboard field = board;
@@ -319,27 +325,25 @@ int main()
     O::DutyPlan duty = O::BuildDutyPlan(conductor, O::Observe(conductor), O::LedgerMode::Peek);
     CHECK(!duty.Interrupt.Pool.empty() && duty.Interrupt.Pool.back() == G(40006));
 
-    // Under Power Conversion the interrupter may still target Arcanotron.
+    // Under Power Conversion the rotation still interrupts Arcanotron, but
+    // Arcanotron never enters OffenseAllowed: the interrupt alone is widened
+    // at submission (see the restriction replay test).
     Blackboard converted = ArcanotronBoard(9, now + 7500, true);
     converted.Summons[0].Auras.push_back({ 79729, converted.Summons[0].Guid, 1, now + 17500 });
     AdaptiveOmnotronPlan convertedPlan = strategy.Propose(converted, G(40009), "dps");
     AdaptiveOmnotronPlan convertedIdle = strategy.Propose(converted, G(40010), "dps");
     CHECK(convertedIdle.OffenseAllowed.empty() && convertedIdle.SuppressOffense);
-    CHECK(convertedPlan.InterruptTarget == converted.Summons[0].Guid
-        ? convertedPlan.OffenseAllowed.size() == 1 : convertedPlan.OffenseAllowed.empty());
-
+    CHECK(convertedPlan.InterruptTarget == converted.Summons[0].Guid);
+    CHECK(convertedPlan.OffenseAllowed.empty() && convertedPlan.SuppressOffense);
     CHECK(convertedPlan.InterruptCastOrdinal >= 2);
+    // Every landed interrupt procs Converted Power alike (spell_proc 79729
+    // SpellTypeMask 0), so no interrupt is excluded under the shield.
     Blackboard marks = converted;
     marks.Revision = 10;
     marks.Players[2].ClassSpec = "marksmanship_hunter";
     O::DutyPlan const marksDuty = O::BuildDutyPlan(marks, O::Observe(marks), O::LedgerMode::Peek);
     CHECK(std::find(marksDuty.Interrupt.Pool.begin(), marksDuty.Interrupt.Pool.end(), G(40003))
-        == marksDuty.Interrupt.Pool.end());
-    marks.Summons[0].Auras.clear();
-    marks.Summons[0].Auras.push_back({ 78740, marks.Summons[0].Guid, 1, now + 60000 });
-    O::DutyPlan const openDuty = O::BuildDutyPlan(marks, O::Observe(marks), O::LedgerMode::Peek);
-    CHECK(std::find(openDuty.Interrupt.Pool.begin(), openDuty.Interrupt.Pool.end(), G(40003))
-        != openDuty.Interrupt.Pool.end());
+        != marksDuty.Interrupt.Pool.end());
 
     // Not interruptible: no duty.
     Blackboard locked = ArcanotronBoard(6, now + 8000, true);
@@ -489,6 +493,217 @@ int main()
     return failures ? 1 : 0;
 }
 '''
+    assert _compile_and_run(tmp_path, program).strip() == "ok"
+
+
+def test_omnotron_focus_prefers_a_spent_shield_and_tank_separation_slides(tmp_path: Path) -> None:
+    program = PRELUDE + r"""
+int main()
+{
+    O::ShieldLedger::ResetForTests();
+    AdaptiveOmnotronStrategy strategy;
+    uint64 const now = 4000000;
+    auto pair = [&](uint64 revision)
+    {
+        Blackboard board = Board("spent", revision, now + revision * 100);
+        board.Summons = {
+            Construct(O::ElectronEntry, 1, 0.0f, 0.0f, G(40001), now + 30000),
+            Construct(O::MagmatronEntry, 2, 8.0f, 0.0f, G(40002), now + 75000) };
+        return board;
+    };
+    ObjectGuid const electron = pair(1).Summons[0].Guid;
+    ObjectGuid const magmatron = pair(1).Summons[1].Guid;
+
+    // Neither construct has shielded yet: the newest one is the focus.
+    CHECK(strategy.Propose(pair(1), G(40004), "dps").DamageTarget == magmatron);
+    // Electron shields: focus stays on Magmatron.
+    Blackboard shielded = pair(2);
+    shielded.Summons[0].Auras.push_back({ 79900, electron, 1, now + 12000 });
+    CHECK(strategy.Propose(shielded, G(40004), "dps").DamageTarget == magmatron);
+    // Electron's shield is gone: it cannot shield again this activation, so
+    // it becomes the focus and Magmatron is left alone before its own shield.
+    Blackboard spent = pair(3);
+    AdaptiveOmnotronPlan mage = strategy.Propose(spent, G(40004), "dps");
+    CHECK(mage.DamageTarget == electron);
+    O::DutyPlan const duty = O::BuildDutyPlan(spent, O::Observe(spent), O::LedgerMode::Peek);
+    CHECK(duty.ShieldSpent.size() == 1 && duty.ShieldSpent[0] == electron);
+    CHECK(O::BuildOmnotronDutyPlanStatusJson(&spent).find("\"shield_spent\":[" + std::to_string(electron.GetCounter()) + "]") != std::string::npos);
+    // Shutting down: focus returns to the newest construct.
+    Blackboard shutting = pair(4);
+    shutting.Summons[0].Cast = CastSnapshot{ 78746, ObjectGuid{}, now, false, false };
+    CHECK(strategy.Propose(shutting, G(40004), "dps").DamageTarget == magmatron);
+    // Inactive, then activated again 90 s later: the spent mark is gone.
+    Blackboard inactive = pair(5);
+    inactive.Summons[0] = Inactive(O::ElectronEntry, 1, 0.0f, 0.0f);
+    strategy.Propose(inactive, G(40004), "dps");
+    Blackboard again = pair(6);
+    again.Summons[0].Auras.back().ExpiresAtMs = now + 120000;
+    CHECK(strategy.Propose(again, G(40004), "dps").DamageTarget == electron);  // now the newest
+    O::DutyPlan const fresh = O::BuildDutyPlan(again, O::Observe(again), O::LedgerMode::Peek);
+    CHECK(fresh.ShieldSpent.empty());
+    // A status Peek never marks anything.
+    Blackboard peekOnly = pair(7);
+    peekOnly.CurrentScope.CohortId = "peek-only";
+    peekOnly.Summons[1].Auras.push_back({ 79582, magmatron, 1, now + 10000 });
+    O::BuildOmnotronDutyPlanStatusJson(&peekOnly);
+    peekOnly.Summons[1].Auras.pop_back();
+    peekOnly.Revision = 8;
+    CHECK(O::BuildDutyPlan(peekOnly, O::Observe(peekOnly), O::LedgerMode::Peek).ShieldSpent.empty());
+
+    // Shield separation on the arena rim: the old straight push clamped to a
+    // point beside the tank; the new one slides for a real gain or holds.
+    Blackboard rim = pair(9);
+    rim.CurrentScope.CohortId = "rim";
+    rim.Players[1].Position = { CX + 19.5f, CY, CZ };
+    rim.Summons[1].Position = { CX + 17.0f, CY, CZ };
+    rim.Summons[0].Position = { CX + 9.0f, CY, CZ };
+    rim.Summons[1].Auras.push_back({ 79582, magmatron, 1, now + 10000 });
+    AdaptiveOmnotronPlan druid = strategy.Propose(rim, G(40002), "tank");
+    CHECK(druid.Movement && druid.Movement->Id.Mechanic == "tank_shield_separation");
+    if (BotNativeAction::Move const* move = MoveOf(druid))
+    {
+        float const before = std::hypot(rim.Summons[1].Position.X - rim.Summons[0].Position.X,
+            rim.Summons[1].Position.Y - rim.Summons[0].Position.Y);
+        CHECK(Dist(move->X, move->Y, rim.Summons[0].Position) >= before + O::ShieldSeparationMinimumGain);
+        CHECK(std::hypot(move->X - CX, move->Y - CY) <= O::ArenaRadius + 0.01f);
+        CHECK(Dist(move->X, move->Y, rim.Players[1].Position) >= 3.0f);
+    }
+    // Already far apart: no proposal at all.
+    Blackboard apart = rim;
+    apart.Revision = 10;
+    apart.Summons[0].Position = { CX - 10.0f, CY, CZ };
+    CHECK(!strategy.Propose(apart, G(40002), "tank").Movement);
+
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+"""
+    assert _compile_and_run(tmp_path, program).strip() == "ok"
+
+
+def test_omnotron_interrupt_ledger_is_scoped_per_cohort_and_wipe(tmp_path: Path) -> None:
+    program = PRELUDE + r"""
+int main()
+{
+    O::InterruptLedger::ResetForTests();
+    ObjectGuid const caster = ObjectGuid(HighGuid::Unit, O::ArcanotronEntry, uint32(4));
+    auto board = [](char const* cohort, uint32 wipe, uint64 revision, uint64 now)
+    {
+        Blackboard b = Board(cohort, revision, now);
+        b.CurrentScope.WipeGeneration = wipe;
+        return b;
+    };
+    uint64 const now = 5000000;
+    // Shard A sees three casts, shard B one, on the same caster GUID.
+    uint64 revision = 1;
+    for (int cast = 0; cast < 3; ++cast)
+    {
+        O::InterruptLedger::Observe(board("shard-a", 0, revision, now + revision), caster, true);
+        ++revision;
+        O::InterruptLedger::Observe(board("shard-a", 0, revision, now + revision), caster, false);
+        ++revision;
+    }
+    O::InterruptCastObservation const b1 =
+        O::InterruptLedger::Observe(board("shard-b", 0, 1, now), caster, true);
+    CHECK(b1.Ordinal == 1);
+    O::InterruptCastObservation const a4 =
+        O::InterruptLedger::Observe(board("shard-a", 0, revision, now + revision), caster, true);
+    CHECK(a4.Ordinal == 4);
+    // Same cast observed again (same or later revision): no new ordinal.
+    CHECK(O::InterruptLedger::Observe(board("shard-a", 0, revision + 1, now + revision + 1), caster, true).Ordinal == 4);
+    // An older revision never rewinds or advances.
+    CHECK(O::InterruptLedger::Observe(board("shard-a", 0, 1, now + 1), caster, false).Ordinal == 4);
+    // A wipe starts a new generation: the rotation restarts at 1.
+    CHECK(O::InterruptLedger::Observe(board("shard-a", 1, revision + 2, now + revision + 2), caster, true).Ordinal == 1);
+    // Peek never changes a count.
+    CHECK(O::InterruptLedger::Peek(board("shard-b", 0, 9, now + 9), caster, true).Ordinal == 1);
+    CHECK(O::InterruptLedger::Peek(board("shard-b", 0, 9, now + 9), caster, false).Ordinal == 1);
+    CHECK(O::InterruptLedger::Observe(board("shard-b", 0, 10, now + 10), caster, true).Ordinal == 1);
+    // Idle entries age out.
+    uint64 const later = now + O::InterruptLedger::IdleExpiryMs + 100000;
+    CHECK(O::InterruptLedger::Observe(board("shard-c", 0, 1, later), caster, true).Ordinal == 1);
+    CHECK(O::InterruptLedger::Peek(board("shard-b", 0, 11, later), caster, false).Ordinal == 0);
+
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+"""
+    assert _compile_and_run(tmp_path, program).strip() == "ok"
+
+
+def test_omnotron_restriction_replay_scopes_the_single_cast_allowance(tmp_path: Path) -> None:
+    program = PRELUDE.replace(
+        '#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"',
+        '#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"\n'
+        '#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronOffenseAuthority.h"') + r"""
+static bool Protected(uint64 owner, ActorSnapshot const& unit)
+{
+    return BotRaidAreaAuthority::IsProtectedEncounterTarget(owner, unit.Entry, 0,
+        unit.Guid.GetRawValue());
+}
+
+int main()
+{
+    O::InterruptLedger::ResetForTests();
+    O::ShieldLedger::ResetForTests();
+    AdaptiveOmnotronStrategy strategy;
+    uint64 const now = 6000000;
+    // Arcanotron under Power Conversion casts Annihilator; Toxitron is the
+    // other active construct. The Ret paladin is the primary interrupter.
+    Blackboard board = Board("replay", 1, now);
+    ActorSnapshot arcanotron = Construct(O::ArcanotronEntry, 4, 0.0f, 0.0f, G(40001), now + 30000);
+    arcanotron.Auras.push_back({ 79729, arcanotron.Guid, 1, now + 9000 });
+    arcanotron.Cast = CastSnapshot{ 79710, G(40004), now, false, true };
+    ActorSnapshot toxitron = Construct(O::ToxitronEntry, 3, 10.0f, 0.0f, G(40002), now + 75000);
+    ActorSnapshot bomb = Unit(O::PoisonBombEntry, 30, 16.0f, 10.0f);
+    board.Summons = { arcanotron, toxitron, bomb };
+    AdaptiveOmnotronPlan ret = strategy.Propose(board, G(40006), "dps");
+    CHECK(ret.InterruptTarget == arcanotron.Guid);
+    CHECK(ret.OffenseAllowed.size() == 1 && ret.OffenseAllowed[0] == toxitron.Guid);
+
+    // Tick restriction built from the plan, as SubmitAdaptiveOmnotronRouteAuthority applies it.
+    uint64 const owner = G(40006).GetRawValue();
+    uint64 const bystander = G(40008).GetRawValue();
+    O::OffenseRestriction const restriction = O::BuildOffenseRestriction(ret.OffenseAllowed);
+    CHECK(restriction.Entries.size() == 4 && restriction.AllowedGuids.size() == 1);
+    O::ApplyOffenseRestriction(owner, restriction);
+    O::ApplyOffenseRestriction(bystander, O::BuildOffenseRestriction(
+        strategy.Propose(board, G(40008), "dps").OffenseAllowed));
+    CHECK(Protected(owner, arcanotron));       // shielded: every offense path refused
+    CHECK(!Protected(owner, toxitron));        // unshielded focus allowed
+    CHECK(!Protected(owner, bomb));            // bombs are never restricted
+    CHECK(BotRaidAreaAuthority::HasProtectedEncounterEntries(owner));
+
+    {
+        // The interrupt Attempt: exactly one cast under the allowance.
+        O::SingleCastAllowance allowance(owner, restriction, arcanotron.Guid);
+        CHECK(allowance.Widened());
+        CHECK(!Protected(owner, arcanotron));
+        CHECK(Protected(bystander, arcanotron));  // other bots keep the restriction
+        // An allowance for an already allowed target changes nothing.
+        O::SingleCastAllowance noop(owner, restriction, toxitron.Guid);
+        CHECK(!noop.Widened());
+    }
+    CHECK(Protected(owner, arcanotron));       // restored right after the cast
+    CHECK(!Protected(owner, toxitron));
+
+    // Once the shield ends, Arcanotron is allowed by the plan itself.
+    Blackboard after = board;
+    after.Revision = 2;
+    after.Summons[0].Auras.pop_back();
+    AdaptiveOmnotronPlan retAfter = strategy.Propose(after, G(40006), "dps");
+    O::ApplyOffenseRestriction(owner, O::BuildOffenseRestriction(retAfter.OffenseAllowed));
+    CHECK(!Protected(owner, after.Summons[0]));
+
+    // Leaving the node (no restriction set) keeps nothing restricted.
+    BotRaidAreaAuthority::SetCurrentEncounterRestrictions(owner, {}, {});
+    CHECK(!Protected(owner, arcanotron));
+    BotRaidAreaAuthority::SetCurrentEncounterRestrictions(bystander, {}, {});
+
+    std::printf("ok\n");
+    return failures ? 1 : 0;
+}
+"""
     assert _compile_and_run(tmp_path, program).strip() == "ok"
 
 

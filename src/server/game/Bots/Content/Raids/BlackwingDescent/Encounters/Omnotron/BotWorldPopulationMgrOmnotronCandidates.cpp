@@ -1,9 +1,9 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotNativeActionIntent.h"
-#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronOffenseAuthority.h"
 
 #include "CharmInfo.h"
 #include "Creature.h"
@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "Unit.h"
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -22,6 +23,13 @@
 // (movement, autoattack stop, pet follow, interrupt, taunt, dispel) that the
 // core validates again. Attempts run after this function returns, so they
 // capture only `this`, the live context and values.
+//
+// Blocks moved from BotWorldPopulationMgrUpdateBotKernelCandidates.cpp, with
+// three changes: the suppress candidate reports the plan's suppress reason as
+// its Action; the interrupt key carries the Arcane Annihilator cast ordinal
+// (one candidate identity per cast) and the attempt tries each known
+// interrupt until one is submitted; interrupts and taunts on a shielded
+// construct run under a SingleCastAllowance.
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
 
@@ -115,17 +123,27 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
             if (!caster || !caster->IsAlive())
                 return BotActionArbitration::Outcome::NotApplicable(
                     "interrupt_caster_stale");
-            // Try every known interrupt: a Feral druid knows both Skull Bash
-            // forms but only the one for its current form can be cast.
             bool submitted = false;
-            for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
-                    96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
-                if (context.Bot->HasSpell(spellId)
-                    && TryCastCombatSpell(context.Bot, caster, spellId))
-                {
-                    submitted = true;
-                    break;
-                }
+            {
+                // Arcanotron under Power Conversion is restricted for this
+                // bot; widen the restriction for this one interrupt only.
+                std::optional<BotEncounter::Omnotron::SingleCastAllowance> allowance;
+                if (context.AdaptiveOmnotronOwnsNode)
+                    allowance.emplace(context.Bot->GetGUID().GetRawValue(),
+                        BotEncounter::Omnotron::BuildOffenseRestriction(
+                            context.AdaptiveOmnotronOffenseAllowedGuids),
+                        caster->GetGUID());
+                // Try every known interrupt: a Feral druid knows both Skull
+                // Bash forms but only the one for its current form can be cast.
+                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
+                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
+                    if (context.Bot->HasSpell(spellId)
+                        && TryCastCombatSpell(context.Bot, caster, spellId))
+                    {
+                        submitted = true;
+                        break;
+                    }
+            }
             if (!submitted)
                 return BotActionArbitration::Outcome::Retryable(
                     "native_interrupt_retryable");
@@ -174,7 +192,19 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronCandidates(
             if (!tauntSpell || !context.Bot->HasSpell(tauntSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "native_taunt_unavailable");
-            if (!TryCastCombatSpell(context.Bot, golem, tauntSpell))
+            bool submitted = false;
+            {
+                // A shielded construct is restricted for this bot; widen the
+                // restriction for this one taunt only.
+                std::optional<BotEncounter::Omnotron::SingleCastAllowance> allowance;
+                if (context.AdaptiveOmnotronOwnsNode)
+                    allowance.emplace(context.Bot->GetGUID().GetRawValue(),
+                        BotEncounter::Omnotron::BuildOffenseRestriction(
+                            context.AdaptiveOmnotronOffenseAllowedGuids),
+                        golem->GetGUID());
+                submitted = TryCastCombatSpell(context.Bot, golem, tauntSpell);
+            }
+            if (!submitted)
                 return BotActionArbitration::Outcome::Retryable(
                     "native_taunt_retryable");
             context.Situation = "adaptive_omnotron";
@@ -243,18 +273,10 @@ void BotWorldPopulationMgr::SubmitAdaptiveOmnotronRouteAuthority(
     BotUpdateContext& context)
 {
     if (context.AdaptiveOmnotronOwnsNode)
-    {
-        std::vector<uint64> allowed;
-        for (ObjectGuid guid : context.AdaptiveOmnotronOffenseAllowedGuids)
-            allowed.push_back(guid.GetRawValue());
-        BotRaidAreaAuthority::SetCurrentEncounterRestrictions(
+        BotEncounter::Omnotron::ApplyOffenseRestriction(
             context.Bot->GetGUID().GetRawValue(),
-            { BotEncounter::Omnotron::ArcanotronEntry,
-                BotEncounter::Omnotron::MagmatronEntry,
-                BotEncounter::Omnotron::ElectronEntry,
-                BotEncounter::Omnotron::ToxitronEntry },
-            allowed);
-    }
+            BotEncounter::Omnotron::BuildOffenseRestriction(
+                context.AdaptiveOmnotronOffenseAllowedGuids));
 
     auto observe = [this, &context]() -> BotActionArbitration::Outcome
     {
