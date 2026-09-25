@@ -318,13 +318,19 @@ private:
         bool success, ObjectGuid castItemGuid, uint32 castItemEntry);
     void SubmitMagmawBloodlustCandidate(BotUpdateContext& context);
     void SubmitMagmawMangleDefensiveCandidate(BotUpdateContext& context);
+    void SubmitAdaptiveChimaeronCandidates(BotUpdateContext& context);
+    void SubmitAdaptiveChimaeronRouteObservation(BotUpdateContext& context);
+    void SubmitAdaptiveOmnotronCandidates(BotUpdateContext& context);
+    void SubmitAdaptiveOmnotronRouteAuthority(BotUpdateContext& context);
     void SubmitAdaptiveKernelCandidates(BotUpdateContext& context);
     void SubmitAdaptiveTankSwapCandidate(BotUpdateContext& context);
     void SubmitAfflictionPetAttackCandidate(BotUpdateContext& context);
+    void SubmitMaloriakKernelCandidates(BotUpdateContext& context);
     void SubmitValidationKernelFallbackCandidates(BotUpdateContext& context);
     bool RunLegacyBotDecision(BotUpdateContext& context);
     bool RunBotDecisionKernel(BotUpdateContext& context);
     void AlignDecisionTimerToSpellQueue(BotUpdateContext& context);
+    void SubmitAdaptiveNefarianCandidates(BotUpdateContext& context);
     BotActionArbitration::Outcome ScheduleProfileCombatWait(WorldBotState& state,
         Player* bot, ResolvedCombatAction const& action, BotActionResult result,
         BotActionArbitration::Outcome outcome);

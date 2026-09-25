@@ -4,6 +4,7 @@ import json
 
 from tools.bot_ml.run_live_bot_validation import (
     command_script,
+    final_evidence_rejections,
     native_gameplay_outcome,
     raid_terminal_watchdog_failure,
     run_transport_completion_watchdog,
@@ -196,6 +197,100 @@ def test_action_gate_requires_exact_botauto_status_identity() -> None:
     report["status"]["action"] = "botauto_status"
     report["status"]["raid_runtime"]["attempt_id"] = 8
     assert raid_terminal_watchdog_failure(report) is None
+
+
+def _nefarian_blocked_report(
+    plan: dict | None = None, *, node_id: str = "bwd.nefarian.encounter"
+) -> dict:
+    report = _report({})
+    status = report["status"]
+    status["validation_route"] = {
+        "enabled": True,
+        "node_id": node_id,
+        "kind": "boss",
+        "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    }
+    status["magmaw_duty_plan"] = {"applies": False}
+    status["nefarian_duty_plan"] = plan if plan is not None else {
+        "applies": True,
+        "phase": "platform_hold",
+        "blocked": "pillar_ascent_unsupported",
+        "elevator_origin_z": -6.86794,
+    }
+    return report
+
+
+def test_encounter_capability_blocker_is_immediately_typed_terminal() -> None:
+    terminal = raid_terminal_watchdog_failure(_nefarian_blocked_report())
+
+    assert terminal == {
+        "kind": "encounter_capability_blocker",
+        "completion_reason": "encounter_capability_blocker_watchdog",
+        "failure_reason": "pillar_ascent_unsupported",
+        "encounter_status_field": "nefarian_duty_plan",
+        "encounter_phase": "platform_hold",
+        "route_node_id": "bwd.nefarian.encounter",
+        "attempt_id": 7,
+        "server_epoch": 41,
+        "scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+    }
+
+
+def test_capability_blocker_requires_an_applying_plan_with_a_reason() -> None:
+    for plan in (
+        {"applies": False, "phase": "platform_hold",
+         "blocked": "pillar_ascent_unsupported"},
+        {"applies": "true", "phase": "platform_hold",
+         "blocked": "pillar_ascent_unsupported"},
+        {"applies": True, "phase": "ground", "blocked": ""},
+        {"applies": True, "phase": "ground"},
+    ):
+        assert raid_terminal_watchdog_failure(_nefarian_blocked_report(plan)) is None
+
+
+def test_capability_blocker_requires_exact_botauto_status_identity() -> None:
+    report = _nefarian_blocked_report()
+    report["status"]["action"] = "botauto_diagnose"
+    assert raid_terminal_watchdog_failure(report) is None
+
+    report = _nefarian_blocked_report()
+    report["status"]["raid_runtime"]["attempt_id"] = 8
+    assert raid_terminal_watchdog_failure(report) is None
+
+    report = _nefarian_blocked_report()
+    report["expected_cohort_id"] = "other"
+    assert raid_terminal_watchdog_failure(report) is None
+
+
+def test_another_bosss_duty_plan_never_terminalizes() -> None:
+    # The route is on Magmaw: Nefarian's plan is not this encounter's.
+    report = _nefarian_blocked_report(node_id="bwd.magmaw.encounter")
+    assert raid_terminal_watchdog_failure(report) is None
+
+    # The route is on Nefarian: a blocked plan of another boss is ignored.
+    report = _nefarian_blocked_report({"applies": True, "phase": "ground", "blocked": ""})
+    report["status"]["magmaw_duty_plan"] = {
+        "applies": True,
+        "blocked": "hypothetical_magmaw_blocker",
+    }
+    assert raid_terminal_watchdog_failure(report) is None
+
+    # Not a boss node (the descent or a regroup).
+    report = _nefarian_blocked_report(node_id="bwd.nefarian.descent")
+    report["status"]["validation_route"]["kind"] = "transport"
+    assert raid_terminal_watchdog_failure(report) is None
+
+
+def test_capability_blocker_completion_is_not_final_evidence() -> None:
+    rejections = final_evidence_rejections(
+        all_passed=False,
+        returncode=0,
+        timed_out=False,
+        failure_labels=["pillar_ascent_unsupported"],
+        evidence={},
+        completion="encounter_capability_blocker_watchdog",
+    )
+    assert "watchdog_failure_is_not_final_evidence" in rejections
 
 
 def test_same_profile_concurrent_cohort_group_or_instance_cannot_terminalize() -> None:
@@ -545,3 +640,59 @@ def test_attached_transport_terminal_preserves_cleanup(tmp_path) -> None:
     assert any(command.startswith(".botauto combatlog") for command in commands)
     assert any(command.startswith(".botauto stop") for command in commands)
     assert not any(command.startswith("server ") for command in commands)
+
+
+def test_attached_transport_capability_blocker_terminal(tmp_path) -> None:
+    status_payload = _nefarian_blocked_report()["status"]
+    commands: list[str] = []
+
+    def execute(command: str, _timeout: int) -> tuple[str, int, bool]:
+        commands.append(command)
+        if command.startswith(".botauto status"):
+            payload = status_payload
+        elif command.startswith(".botauto diagnose"):
+            payload = {"ok": True, "action": "botauto_diagnose",
+                       "diagnosis_schema_version": 1, "bots": []}
+        elif command.startswith(".botauto trace"):
+            payload = {"ok": True, "action": "botauto_trace",
+                       "trace_schema_version": 1, "entries": []}
+        elif command.startswith(".botauto combatlog"):
+            payload = {"ok": True, "action": "botauto_combatlog", "events": []}
+        else:
+            payload = {"ok": True, "action": "botauto_stop"}
+        return json.dumps(payload) + "\n", 0, False
+
+    output_dir = tmp_path / "transport"
+    _output, returncode, timed_out, _command = run_transport_completion_watchdog(
+        execute,
+        ["attached"],
+        None,
+        command_script(selector="all", trace_limit=5, start=False, stop=True,
+                       exit_server=False),
+        output_dir,
+        {},
+        {"scenario_id": "blackwing_descent_10n_magmaw_diagnostic"},
+        heartbeat_sec=1,
+        no_progress_window_sec=180,
+        validation_route_manifest={
+            "schema": "bot_live_validation_route_manifest_v1",
+            "route_count": 4,
+        },
+        sleep=lambda _seconds: None,
+    )
+
+    report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
+    heartbeat = json.loads(
+        (output_dir / "heartbeat_events.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+    )
+    assert returncode == 0
+    assert timed_out is False
+    assert report["completion_reason"] == "encounter_capability_blocker_watchdog"
+    assert report["failure_reason"] == "pillar_ascent_unsupported"
+    assert report["acceptable_final_evidence"] is False
+    assert "watchdog_failure_is_not_final_evidence" in report["final_evidence_rejections"]
+    assert heartbeat["completion_reason"] == "encounter_capability_blocker_watchdog"
+    assert any(command.startswith(".botauto diagnose") for command in commands)
+    assert any(command.startswith(".botauto stop") for command in commands)

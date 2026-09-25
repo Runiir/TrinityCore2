@@ -114,7 +114,7 @@
       "selection_status": "accepted",
       "rationale": "One tank: Atramedes is a single-target fight with no tank swap and Sonic Breath never targets his current victim (spell_atramedes_sonic_breath removes it), so the Blood DK tanks alone and the druid stays Balance. Two healers (Holy Paladin, Discipline Priest): Modulation (31.2-32.8k Shadow in 10N, no Sound) is the only unavoidable raid damage, and Searing Flame is gonged at its start. The shaman stays Elemental for 19/20 buff coverage and a seventh damage dealer. Wowhead's 10-player recommendation is 1 tank, 2 healers, 7 DPS.",
       "duty_plan": {
-        "tank": "main-tank lease or the role tank (Blood DK); drags Atramedes to the ground anchor (162, -224.5)",
+        "tank": "main-tank lease or the role tank (Blood DK); drags Atramedes to the ground anchor (150, -224.5)",
         "gong_owner": "best ranged damage dealer by gong rank (Beast Mastery Hunter), beside the shield nearest the anchor",
         "gong_backup": "next ranged by gong rank (Fire Mage); strikes when the owner is dead or kiting",
         "sonic_breath_kite": "whoever carries Tracking from Tracking Flames circles the boss 28-42 yd out, away from the raid",

@@ -2008,7 +2008,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert all(row["recovery_entrance_target_map_id"] == 725 for row in heroic_entrance_rows)
     assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is True and row["source_entry"] == 41570 for row in routes)
     bwd_boss_entries = {row["source_entry"] for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss"}
-    assert {41570, 42166, 41378, 41442, 43296, 41376}.issubset(bwd_boss_entries)
+    assert {41570, 42180, 41378, 41442, 43296, 41376}.issubset(bwd_boss_entries)
     assert 49801 not in bwd_boss_entries
     assert 48964 not in bwd_boss_entries
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
@@ -2028,7 +2028,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     azil = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "High Priestess Azil")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
     assert atramedes["expected_bot_count"] == 10
-    assert omnotron["source_entry"] == 42166
+    # Toxitron 42180 is the credit creature (instance_encounters 1027); the four constructs stay alternates.
+    assert omnotron["source_entry"] == 42180
     assert omnotron["alternate_target_entries"] == [42166, 42178, 42179, 42180]
     assert omnotron["activation_action_entry"] == 0
     assert omnotron["activation_action_id"] == 0
@@ -2259,7 +2260,7 @@ def test_validation_route_bosses_are_scripted_encounter_targets():
         ("stonecore_5n", "Ozruk"): (42188, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_ozruk", "src/server/scripts/Maelstrom/Stonecore/boss_ozruk.cpp", "boss_ozruk"),
         ("stonecore_5n", "High Priestess Azil"): (42333, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_high_priestess_azil", "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess_azil.cpp", "boss_high_priestess_azil"),
         ("blackwing_descent_10n", "Magmaw"): (41570, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_magmaw", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp", "boss_magmaw"),
-        ("blackwing_descent_10n", "Omnotron Defense System"): (42166, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_omnotron_defense_system", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp", "boss_omnotron_defense_system"),
+        ("blackwing_descent_10n", "Omnotron Defense System"): (42180, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_omnotron_defense_system", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp", "boss_omnotron_defense_system"),
         ("blackwing_descent_10n", "Maloriak"): (41378, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_maloriak", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp", "boss_maloriak"),
         ("blackwing_descent_10n", "Atramedes"): (41442, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_atramedes", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp", "boss_atramedes"),
         ("blackwing_descent_10n", "Chimaeron"): (43296, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_chimaeron", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp", "boss_chimaeron"),

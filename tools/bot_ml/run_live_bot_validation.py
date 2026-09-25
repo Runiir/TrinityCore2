@@ -5670,7 +5670,55 @@ def raid_terminal_watchdog_failure(
             "server_epoch": server_epoch,
             "scenario_id": receipt_scenario_id,
         }
+    blocker = encounter_capability_blocker(status)
+    if blocker:
+        return {
+            "kind": "encounter_capability_blocker",
+            "completion_reason": "encounter_capability_blocker_watchdog",
+            "failure_reason": blocker["blocked"],
+            "encounter_status_field": blocker["field"],
+            "encounter_phase": blocker["phase"],
+            "route_node_id": blocker["node_id"],
+            "attempt_id": attempt_id,
+            "server_epoch": server_epoch,
+            "scenario_id": receipt_scenario_id,
+        }
     return None
+
+
+def encounter_capability_blocker(status: Mapping[str, Any]) -> dict[str, str] | None:
+    """A typed capability blocker from the current encounter's duty plan.
+
+    An encounter strategy may publish ``<boss>_duty_plan`` in botauto status
+    with ``applies`` and a non-empty ``blocked`` reason when the encounter has
+    reached a phase the runtime cannot perform lawfully (Nefarian's End phase
+    2 without a pillar ascent: ``nefarian_duty_plan.blocked ==
+    "pillar_ascent_unsupported"``). That is a known limit, not a strategy
+    failure, so the run stops at this heartbeat instead of waiting out the
+    no-progress window. Only the plan of the boss whose encounter node the
+    route is on counts (``bwd.nefarian.encounter`` binds
+    ``nefarian_duty_plan``); another boss's plan never terminates the run.
+    """
+    route = status.get("validation_route")
+    if not isinstance(route, Mapping) or str(route.get("kind") or "") != "boss":
+        return None
+    node_id = str(route.get("node_id") or "")
+    parts = node_id.split(".")
+    if len(parts) < 2 or not parts[1]:
+        return None
+    field = f"{parts[1]}_duty_plan"
+    plan = status.get(field)
+    if not isinstance(plan, Mapping) or plan.get("applies") is not True:
+        return None
+    blocked = str(plan.get("blocked") or "").strip()
+    if not blocked:
+        return None
+    return {
+        "blocked": blocked,
+        "field": field,
+        "phase": str(plan.get("phase") or ""),
+        "node_id": node_id,
+    }
 
 
 def apply_raid_terminal_watchdog(
@@ -5898,6 +5946,7 @@ def final_evidence_rejections(
         "death_loop_watchdog",
         "calibration_pre_scoring_blocker_watchdog",
         "cohort_action_gate_failure_watchdog",
+        "encounter_capability_blocker_watchdog",
     }:
         rejections.append("watchdog_failure_is_not_final_evidence")
     if evidence.get("forbidden_completion_assists"):

@@ -1,6 +1,8 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotEncounterBlackboard.h"
+#include "Bots/BotEncounterLatches.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronBurn.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
@@ -9,6 +11,7 @@
 #include "Bots/BotWorldPopulationMgrEncounterHazards.h"
 #include "Bots/BotValidationRouteNativeLogic.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakNativeTimers.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -97,6 +100,12 @@ std::optional<BotEncounter::ConfiguredCombatRange> ObserveConfiguredCombatRange(
 constexpr uint32 MagmawEntry = BotMagmawLifecycleIdentity::BossEntry;
 constexpr uint32 MagmawBossId = BotMagmawLifecycleIdentity::BossId;
 constexpr uint32 MagmawMassiveCrashSpell = 88253;
+constexpr uint32 AtramedesEntry = 41442;
+// Searing Flame, Sonic Breath and Take Off Anim Kit: the ground-phase
+// schedule boss_atramedes publishes through GetTimeUntilEncounterMechanic.
+constexpr uint32 AtramedesMechanicTimerSpells[] = { 77840, 78075, 86915 };
+constexpr uint32 ChimaeronEntry = 43296;
+constexpr uint32 ChimaeronMassacreSpell = 82848;
 
 BotEncounter::NativeEncounterState ToNativeEncounterState(
     EncounterState state)
@@ -191,6 +200,41 @@ void AppendNativeMechanicTimers(BotEncounter::RouteView const& route,
         return;
 
     actor.MechanicTimers.push_back({ MagmawMassiveCrashSpell, remainingMs,
+        remainingMs == 0, BotEncounter::FactSource::NativeInstanceState });
+}
+
+void AppendAtramedesMechanicTimers(BotEncounter::RouteView const& route,
+    Creature const& creature, BotEncounter::ActorSnapshot& actor)
+{
+    if (route.NodeId != "bwd.atramedes.encounter"
+        || creature.GetEntry() != AtramedesEntry || !creature.IsAIEnabled())
+        return;
+
+    for (uint32 spellId : AtramedesMechanicTimerSpells)
+    {
+        uint32 const remainingMs =
+            creature.AI()->GetTimeUntilEncounterMechanic(spellId);
+        if (remainingMs == std::numeric_limits<uint32>::max())
+            continue;
+        actor.MechanicTimers.push_back({ spellId, remainingMs,
+            remainingMs == 0, BotEncounter::FactSource::NativeInstanceState });
+    }
+}
+
+// Chimaeron publishes the time to his next Massacre cast (0 while it is cast
+// or overdue); the strategy reads it for the burn window.
+void AppendChimaeronMechanicTimers(BotEncounter::RouteView const& route,
+    Creature const& creature, BotEncounter::ActorSnapshot& actor)
+{
+    if (route.NodeId != "bwd.chimaeron.encounter"
+        || creature.GetEntry() != ChimaeronEntry || !creature.IsAIEnabled())
+        return;
+
+    uint32 const remainingMs = creature.AI()->GetTimeUntilEncounterMechanic(
+        ChimaeronMassacreSpell);
+    if (remainingMs == std::numeric_limits<uint32>::max())
+        return;
+    actor.MechanicTimers.push_back({ ChimaeronMassacreSpell, remainingMs,
         remainingMs == 0, BotEncounter::FactSource::NativeInstanceState });
 }
 }
@@ -375,7 +419,11 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
             break;
         }
         if (Creature* creature = unit->ToCreature())
+        {
             AppendNativeMechanicTimers(snapshot->Route, *creature, actor);
+            AppendAtramedesMechanicTimers(snapshot->Route, *creature, actor);
+            AppendChimaeronMechanicTimers(snapshot->Route, *creature, actor);
+        }
         return actor;
     };
 
@@ -507,6 +555,7 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     std::sort(snapshot->Hostiles.begin(), snapshot->Hostiles.end(), actorOrder);
     std::sort(snapshot->Summons.begin(), snapshot->Summons.end(), actorOrder);
     std::sort(snapshot->Interactables.begin(), snapshot->Interactables.end(), actorOrder);
+    BotEncounter::AppendMaloriakMechanicTimers(*snapshot, *observer);
 
     // Generic hazards are observed into snapshot geometry rather than being
     // inferred from the route's single enrolled source. Route-specific
@@ -517,6 +566,20 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
     Cohort().MagmawFacts = BotEncounter::MagmawFactsCache::ForSnapshot(
         Cohort().MagmawFacts, *snapshot);
     ReconcileMagmawTransferLaneTaskShadow(*snapshot);
+
+    // Cohort encounter latches: one update per publication, from this
+    // snapshot only, so every bot reads the same latches on this revision.
+    // Encounter modules are dispatched by route node, each in its own
+    // sub-store (BotEncounterLatches.h).
+    if (!Cohort().EncounterLatches)
+        Cohort().EncounterLatches = std::make_shared<BotEncounter::EncounterLatchStore>();
+    Cohort().EncounterLatches->BeginPublication(BotEncounter::EncounterLatchScopeKey(
+            snapshot->CurrentScope.Key(), snapshot->CurrentScope.ServerEpoch,
+            snapshot->CurrentScope.EncounterEpoch),
+        snapshot->Revision, nowMs);
+    if (snapshot->Route.NodeId == BotEncounter::Chimaeron::EncounterNode)
+        BotEncounter::Chimaeron::UpdateEncounterLatches(*snapshot,
+            Cohort().EncounterLatches->Module(BotEncounter::Chimaeron::LatchModule));
     Cohort().EncounterSnapshot = std::move(snapshot);
     Cohort().EncounterSnapshotNextRefreshMs = nowMs + 100;
 }

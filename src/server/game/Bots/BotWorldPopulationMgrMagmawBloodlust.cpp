@@ -14,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -44,7 +45,7 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
     if (!cohort || !cohort->EncounterSnapshot
         || cohort->Config.ValidationRouteNodeId != EncounterNode
         || cohort->Config.ValidationRouteKind != "boss"
-        || cohort->Config.ValidationRouteScenarioId != DiagnosticScenario)
+        || !IsMagmawBloodlustScenario(cohort->Config.ValidationRouteScenarioId))
         return;
 
     RaidRuntime* const raid = &cohort->Raid;
@@ -56,7 +57,7 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         || !raid->UniqueLeases || raid->ExpectedSize != 10
         || raid->ActiveSize != 10
         || raid->RosterByGuid.size() != 10
-        || raid->AdmissionScenarioId != DiagnosticScenario)
+        || !IsMagmawBloodlustScenario(raid->AdmissionScenarioId))
         return;
 
     Player* const originalBot = context.Bot;
@@ -72,7 +73,9 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         auto const& expectedRoster = party->ValidationRouteManifest.front().ExpectedRoster;
         if (expectedRoster.size() != 10 || raid->RosterByGuid.size() != expectedRoster.size())
             return std::nullopt;
-        ObjectGuid owner;
+        // The owner is a capability, not a slot: the single DPS Elemental,
+        // else the single DPS shaman, else the single shaman of the roster.
+        std::vector<BotEncounter::MagmawDutyCapabilities::BloodlustCandidate<ObjectGuid>> candidates;
         std::set<std::string> seenSlots;
         std::set<uint32> seenGuids;
         for (auto const& expected : expectedRoster)
@@ -96,15 +99,10 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
                 });
             if (member == raid->RosterByGuid.end())
                 return std::nullopt;
-            if (member->second.ClassSpec == ElementalShamanSpec)
-            {
-                if (!owner.IsEmpty())
-                    return std::nullopt;
-                owner = member->second.Guid;
-            }
+            candidates.push_back({ member->second.Guid, member->second.Role,
+                member->second.ClassSpec });
         }
-        return owner.IsEmpty() ? std::nullopt
-            : std::optional<ObjectGuid>(owner);
+        return BotEncounter::MagmawDutyCapabilities::SelectBloodlustOwner(candidates);
     };
 
     std::optional<ObjectGuid> const owner = exactRosterAndOwner();
@@ -159,7 +157,8 @@ void BotWorldPopulationMgr::SubmitMagmawBloodlustCandidate(
         auto const ownerRow = raid->RosterByGuid.find(ownerGuid.GetCounter());
         if (ownerRow == raid->RosterByGuid.end()
             || ownerRow->second.Guid != ownerGuid
-            || ownerRow->second.ClassSpec != ElementalShamanSpec
+            || !BotEncounter::MagmawDutyCapabilities::IsBloodlustCaster(
+                ownerRow->second.ClassSpec)
             || !ownerRow->second.Active || !ownerRow->second.LeaseOwned)
             return "magmaw_bloodlust_stale_context_owner";
         return nullptr;

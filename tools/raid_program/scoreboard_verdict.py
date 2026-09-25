@@ -19,7 +19,7 @@ from typing import Any
 from tools.raid_program.scoreboard_core import (
     VERDICT_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, default_label, exclusion_reason,
     fallback_index_path, file_sha256, healer_roles, label_kills, load_records, load_target, mean_sd,
-    party_reference_dps, reference_targets, roster, target_path,
+    party_reference_dps, reference_targets, roster, target_for_records, target_path,
 )
 
 BASIS_TEXT = {"wcl": "WCL", "wowsims_fallback": "WoWSims fallback"}
@@ -152,6 +152,7 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         label, source = default_label(root, scenario, records)
         print(f"verdict label: {label} ({source})", file=sys.stderr)
     all_kills = label_kills(records, label)
+    target = target_for_records(root, target, all_kills)
     kills = counted_kills(all_kills)
     clears = clear_kills(all_kills)
     required = int(target["kills_per_measurement"])
@@ -231,6 +232,7 @@ def evaluate_target(root: Path, scenario: str, label: str | None = None) -> dict
         "actor_dps_ratio": minimum,
         "target_path": str(target_path(root, scenario).relative_to(root)),
         "target_sha256": file_sha256(target_path(root, scenario)),
+        **({"roster_variant": target["roster_variant"]} if target.get("roster_variant") else {}),
         "wcl_manifest_sha256": file_sha256(root / target["wcl_reference_manifest"]),
         "wcl_timelines_sha256": file_sha256(root / target["wcl_cast_timelines"]) if target.get("wcl_cast_timelines") else None,
         "fallback_index_sha256": file_sha256(index) if index is not None and index.exists() else None,

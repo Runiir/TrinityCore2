@@ -104,6 +104,12 @@ def check_inputs(root: Path, g: dict, verdict: dict) -> None:
     target_file = root / pointer['path']
     if not target_file.is_file() or verdict.get('target_sha256') != graph.digest(target_file.read_bytes()):
         raise graph.GraphError('raid target changed since the verdict (target_sha256)')
+    variant = verdict.get('roster_variant')
+    if variant is not None:
+        sidecar = root / str((variant or {}).get('path') or '')
+        if (not isinstance(variant, dict) or not variant.get('path') or not sidecar.is_file()
+                or variant.get('sha256') != graph.digest(sidecar.read_bytes())):
+            raise graph.GraphError('raid target roster variant changed since the verdict (roster_variant)')
     target = graph.read(target_file)
     for field, key in (('wcl_manifest_sha256', 'wcl_reference_manifest'), ('wcl_timelines_sha256', 'wcl_cast_timelines')):
         path = target.get(key)

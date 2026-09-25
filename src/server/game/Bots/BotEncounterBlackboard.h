@@ -12,6 +12,10 @@
 
 namespace BotEncounter
 {
+// Cohort latch store (BotEncounterLatches.h), held by BotWorldPopulationMgr's
+// cohort runtime; declared here to keep the manager class under its line budget.
+class EncounterLatchStore;
+
 struct Scope
 {
     std::string CohortId;

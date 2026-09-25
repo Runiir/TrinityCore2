@@ -6,6 +6,7 @@
 #include "Bots/BotWorldTraceExportCursor.h"
 #include "Bots/BotWorldTickRecorder.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -21,6 +22,7 @@
 #include "Pet.h"
 #include "Player.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
 #include "Quests/QuestDef.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -161,9 +163,15 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"magmaw_duty_plan\":"
          << BotEncounter::BuildMagmawDutyPlanStatusJson(
                 Cohort().EncounterSnapshot.get())
+         << ",\"omnotron_duty_plan\":"
+         << BotEncounter::Omnotron::BuildOmnotronDutyPlanStatusJson(
+                Cohort().EncounterSnapshot.get())
          << ",\"magmaw_transfer_lane_task_authority\":"
          << (Cohort().Config.MagmawTransferLaneTaskAuthority
                 ? "true" : "false")
+         << ",\"nefarian_duty_plan\":"
+         << BotEncounter::BuildNefarianDutyPlanStatusJson(
+                Cohort().EncounterSnapshot.get())
          << ",\"segment_counts\":" << Cohort().ExperimentCoordinator.GetCountsJson()
          << ",\"validation_route\":{\"enabled\":" << (Cohort().Config.ValidationRouteEnable ? "true" : "false")
          << ",\"manifest_path\":\"" << JsonEscape(Cohort().Config.ValidationRouteManifestPath) << "\""

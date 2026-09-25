@@ -28,9 +28,26 @@ TDB = ROOT / "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_0
 
 # World DB rows (TDB 434.22011; no later sql/updates touch them). The live
 # spawn z of the Onyxia platform is -6.86794: the 2016 sql/old row (+6.867935)
-# was superseded. Summon data agrees: Onyxia (creature_summon_groups 41376,
-# group 0) stands at -7.330293 on the lowered platform and group 1 at 6.571427
-# on the raised one, both 0.46235 below the origin.
+# was superseded. The platform floor is not flat: its collision model
+# (displayId 10363, Blackwingv2_Elevator_Onyxia_Transport.wmo.vmo) is flat at
+# local z -0.546 to r 21.2, rises on a 10-degree ramp and is 1.439 from r 32.4
+# (sampled with the model's sha256 in NEFARIAN_FLOOR_PROFILE). Onyxia's summon
+# (creature_summon_groups 41376 group 0, -7.330293 on the lowered platform)
+# stands 0.084 above the flat centre; the board point, transport-local (25, 0),
+# is on the ramp.
+NEFARIAN_FLOOR_PROFILE = (
+    Path(__file__).resolve().parents[1]
+    / "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_platform_floor_profile_v1.json"
+)
+
+
+def _nefarian_floor_at(local_x: float) -> float:
+    """Model floor (local z) on heading 0 at radius local_x."""
+    profile = json.loads(NEFARIAN_FLOOR_PROFILE.read_text(encoding="utf-8"))
+    return profile["floor_local_z"][profile["headings_deg"].index(0)][
+        profile["radii"].index(local_x)]
+
+
 TRANSPORTS = {
     207834: {
         "template": b"(207834,11,10363,'Doodad_BlackWingV2_Elevator_Onyxia01','','','',1,13333,",
@@ -41,7 +58,7 @@ TRANSPORTS = {
         "display_id": 10363,
         "scale": 1.0,
         "stop_frame_times": [13333],
-        "floor_offset": -7.330293 - -6.86794,
+        "floor_offset": _nefarian_floor_at(25.0),
     },
     203716: {
         "template": b"(203716,11,10407,'Blackwing Descent Elevator','','','',1,0,",
@@ -162,8 +179,10 @@ def test_nefarian_ready_frame_is_the_raised_platform() -> None:
     keys = _animation(207834)
     raised = TRANSPORTS[207834]["stationary"][2] + _offset_at(keys, 13333)
     assert raised == pytest.approx(7.03378, abs=1e-3)
-    # Nefarian lands on the raised platform surface in phase one.
-    assert raised + TRANSPORTS[207834]["floor_offset"] == pytest.approx(6.571427, abs=1e-3)
+    # The board point stands on the raised platform's model floor (the ramp at
+    # local r 25); Onyxia's summon height is 0.084 above the flat centre.
+    assert raised + TRANSPORTS[207834]["floor_offset"] == pytest.approx(7.1075, abs=1e-3)
+    assert (-7.330293 - -6.86794) - _nefarian_floor_at(0.0) == pytest.approx(0.084, abs=1e-3)
 
 
 def test_lower_wing_elevator_exit_level_is_the_animation_bottom() -> None:

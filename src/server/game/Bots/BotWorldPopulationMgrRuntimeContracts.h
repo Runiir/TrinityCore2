@@ -502,6 +502,9 @@
         uint64 EncounterSnapshotRevision = 0;
         uint64 EncounterSnapshotNextRefreshMs = 0;
         std::shared_ptr<BotEncounter::Blackboard const> EncounterSnapshot;
+        // Cohort-scoped encounter latches (BotEncounterLatches.h), updated by
+        // the snapshot publisher once per revision; bots read View().
+        std::shared_ptr<BotEncounter::EncounterLatchStore> EncounterLatches;
         // Incomplete here by design: encounter facts stay out of the manager
         // header and are reduced only by the snapshot publisher.
         std::shared_ptr<BotEncounter::MagmawFactsCache const> MagmawFacts;

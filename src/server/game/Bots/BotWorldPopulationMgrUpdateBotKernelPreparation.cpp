@@ -9,6 +9,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneAuthority.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeObserver.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h"
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotClassSpecActionProfile.h"
@@ -493,10 +494,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     Cohort().EncounterSnapshot->FindActor(
                         context.Bot->GetGUID()))
             {
-                uint32 const spellId = actor->ClassSpec == "fire_mage"
-                    ? 1953u : (actor->ClassSpec == "marksmanship_hunter"
-                        || actor->ClassSpec == "survival_hunter")
-                    ? 781u : 0u;
+                // Bait-lane escapes by capability: Blink for the Fire Mage,
+                // Disengage for every Hunter spec (BotMagmawDutyCapabilities.h).
+                uint32 const spellId = BotEncounter::MagmawDutyCapabilities::
+                    BaitMobilitySpell(actor->ClassSpec);
                 if (spellId)
                     if (SpellInfo const* info = sSpellMgr->GetSpellInfo(spellId))
                         magmawMobility =
@@ -644,6 +645,14 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.AdaptiveOmnotronOwnsNode = omnotronPlan.OwnsNode;
             context.AdaptiveOmnotronSuppressOffense = omnotronPlan.SuppressOffense;
             context.AdaptiveOmnotronInterruptTargetGuid = omnotronPlan.InterruptTarget;
+            context.AdaptiveOmnotronInterruptOrdinal = omnotronPlan.InterruptCastOrdinal;
+            context.AdaptiveOmnotronTankTargetGuid = omnotronPlan.TankTarget;
+            context.AdaptiveOmnotronDispelTargetGuid = omnotronPlan.DispelTarget;
+            context.AdaptiveOmnotronOffenseAllowedGuids =
+                std::move(omnotronPlan.OffenseAllowed);
+            if (!omnotronPlan.SuppressReason.empty())
+                context.AdaptiveOmnotronSuppressReason =
+                    std::string(omnotronPlan.SuppressReason);
             context.AdaptiveOmnotronMovement = std::move(omnotronPlan.Movement);
             if (!omnotronPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
@@ -660,9 +669,10 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                 maloriakStrategy.Propose(*Cohort().EncounterSnapshot,
                     context.Bot->GetGUID(), GetDungeonRole(context.Bot));
             context.AdaptiveMaloriakOwnsNode = maloriakPlan.OwnsNode;
-            context.AdaptiveMaloriakInterruptTargetGuid = maloriakPlan.InterruptTarget;
-            context.AdaptiveMaloriakDispelTargetGuid = maloriakPlan.DispelTarget;
-            context.AdaptiveMaloriakMovement = std::move(maloriakPlan.Movement);
+            context.AdaptiveMaloriakPriorityHealTargetGuid =
+                maloriakPlan.PriorityHealTarget;
+            context.AdaptiveMaloriak =
+                std::make_shared<BotEncounter::AdaptiveMaloriakPlan const>(maloriakPlan);
             if (!maloriakPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
                         maloriakPlan.DamageTarget);
@@ -676,12 +686,17 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             BotEncounter::AdaptiveChimaeronStrategy chimaeronStrategy;
             BotEncounter::AdaptiveChimaeronPlan chimaeronPlan =
                 chimaeronStrategy.Propose(*Cohort().EncounterSnapshot,
-                    context.Bot->GetGUID(), GetDungeonRole(context.Bot));
+                    context.Bot->GetGUID(), GetDungeonRole(context.Bot),
+                    Cohort().EncounterLatches ? &Cohort().EncounterLatches->View()
+                        : nullptr);
             context.AdaptiveChimaeronOwnsNode = chimaeronPlan.OwnsNode;
             context.AdaptiveChimaeronHealingDisabled = chimaeronPlan.HealingDisabled;
             context.AdaptiveChimaeronPriorityHealTargetGuid =
                 chimaeronPlan.PriorityHealTarget;
             context.AdaptiveChimaeronMovement = std::move(chimaeronPlan.Movement);
+            context.AdaptiveChimaeronAction = std::move(chimaeronPlan.Action);
+            context.AdaptiveChimaeronSuppressOffense = chimaeronPlan.SuppressOffense;
+            context.AdaptiveChimaeronSuppressReason = chimaeronPlan.SuppressReason;
             if (!chimaeronPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
                         chimaeronPlan.DamageTarget);
@@ -699,6 +714,9 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
             context.AdaptiveAtramedesOwnsNode = atramedesPlan.OwnsNode;
             context.AdaptiveAtramedesMovement = std::move(atramedesPlan.Movement);
             context.AdaptiveAtramedesInteraction = std::move(atramedesPlan.Interaction);
+            context.AdaptiveAtramedesSuppressOffense = atramedesPlan.SuppressOffense;
+            context.AdaptiveAtramedesSuppressReason =
+                std::string(atramedesPlan.SuppressReason);
             if (!atramedesPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,
                         atramedesPlan.DamageTarget);
@@ -709,12 +727,26 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     context.State.TargetGuid = atramedesPlan.DamageTarget;
                 }
 
+            // Native cast progress, transport placement, running spline and
+            // spell readiness for the Nefarian's End strategy (observation
+            // only; empty outside bwd.nefarian.encounter).
+            BotEncounter::Nefarian::NativeFacts const nefarianFacts =
+                BotEncounter::Nefarian::ObserveNativeFacts(context.Bot,
+                    *Cohort().EncounterSnapshot);
             BotEncounter::AdaptiveNefarianStrategy nefarianStrategy;
             BotEncounter::AdaptiveNefarianPlan nefarianPlan =
                 nefarianStrategy.Propose(*Cohort().EncounterSnapshot,
-                    context.Bot->GetGUID(), GetDungeonRole(context.Bot));
+                    context.Bot->GetGUID(), GetDungeonRole(context.Bot),
+                    &nefarianFacts);
             context.AdaptiveNefarianOwnsNode = nefarianPlan.OwnsNode;
             context.AdaptiveNefarianInterruptTargetGuid = nefarianPlan.InterruptTarget;
+            context.AdaptiveNefarianSuppressOffense = nefarianPlan.SuppressOffense;
+            context.AdaptiveNefarianSuppressReason =
+                std::string(nefarianPlan.SuppressReason);
+            context.AdaptiveNefarianBlocked = std::string(nefarianPlan.Blocked);
+            context.AdaptiveNefarianMovementHold =
+                std::string(nefarianPlan.MovementHold);
+            context.AdaptiveNefarianActions = std::move(nefarianPlan.Actions);
             context.AdaptiveNefarianMovement = std::move(nefarianPlan.Movement);
             if (!nefarianPlan.DamageTarget.IsEmpty())
                 if (Unit* adaptiveTarget = ObjectAccessor::GetUnit(*context.Bot,

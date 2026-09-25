@@ -45,6 +45,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         SubmitAdaptiveTankSwapCandidate(context);
         SubmitMagmawBloodlustCandidate(context);
         SubmitMagmawMangleDefensiveCandidate(context);
+        SubmitAdaptiveChimaeronCandidates(context);
         bool const typedDrudgeValidationRoute =
             Cohort().Config.ValidationRouteMechanicProfile
                 == "trash_two_tank_charge_lanes";
@@ -281,222 +282,9 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(suppress));
         }
 
-        if (context.AdaptiveOmnotronMovement
-            && context.AdaptiveOmnotronMovement->ExpiresAtMs > context.DecisionNowMs)
-        {
-            BotActionArbitration::Candidate movement;
-            movement.Key = context.AdaptiveOmnotronMovement->Id.Key();
-            movement.Source = context.AdaptiveOmnotronMovement->Id.Strategy;
-            movement.ActionPriority = context.AdaptiveOmnotronMovement->ActionPriority;
-            movement.UtilityScore = context.AdaptiveOmnotronMovement->Utility;
-            movement.RequiredResources = context.AdaptiveOmnotronMovement->Resources();
-            movement.ExpiresAtMs = context.AdaptiveOmnotronMovement->ExpiresAtMs;
-            movement.Attempt = [this, &context,
-                intent = BotNativeAction::WithMovementReason(
-                context.AdaptiveOmnotronMovement->Action,
-                context.AdaptiveOmnotronMovement->Id.Mechanic)]()
-            {
-                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
-                    context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,
-                    BotMovementArbitration::Priority::Hazard);
-                if (outcome.Result == BotActionArbitration::Disposition::Committed)
-                {
-                    context.Situation = "adaptive_omnotron";
-                    context.Action = "omnotron_hazard_movement";
-                    context.State.LastDecisionHandler = "adaptive_omnotron";
-                }
-                return outcome;
-            };
-            context.State.DecisionKernel.Submit(std::move(movement));
-        }
+        SubmitAdaptiveOmnotronCandidates(context);
 
-        if (context.AdaptiveOmnotronSuppressOffense)
-        {
-            BotActionArbitration::Candidate suppress;
-            suppress.Key = "adaptive_omnotron:shield_suppress:"
-                + std::to_string(Party().ValidationRouteGeneration);
-            suppress.Source = "adaptive_omnotron";
-            suppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
-            suppress.UtilityScore = 100.0f;
-            suppress.RequiredResources = BotActionArbitration::Uses(
-                BotActionArbitration::Resource::Pet);
-            suppress.Attempt = [this, &context]()
-            {
-                bool const submitted = SubmitMeleeAutoAttackIntent(context.State,
-                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
-                    BotMeleeAutoAttack::Owner::Mechanic,
-                    BotActionArbitration::Priority::Mechanic,
-                    "adaptive_omnotron_shield_suppress");
-                if (Pet* pet = context.Bot->GetPet(); pet && pet->GetCharmInfo())
-                    ExecuteNativeActionIntent(context.State, context.Bot,
-                        BotNativeAction::PetCommand{ pet->GetGUID(),
-                            context.Bot->GetGUID(), COMMAND_FOLLOW },
-                        BotMovementArbitration::Owner::Mechanic,
-                        BotMovementArbitration::Priority::Mechanic);
-                context.State.TargetGuid.Clear();
-                context.Target = nullptr;
-                context.Situation = "adaptive_omnotron";
-                context.Action = "shield_damage_suppressed";
-                context.State.LastDecisionHandler = "adaptive_omnotron";
-                return submitted
-                    ? BotActionArbitration::Outcome::Committed(
-                        "melee_autoattack_suppression_submitted")
-                    : BotActionArbitration::Outcome::Retryable(
-                        "melee_autoattack_suppression_rejected");
-            };
-            context.State.DecisionKernel.Submit(std::move(suppress));
-        }
-
-        if (!context.AdaptiveOmnotronInterruptTargetGuid.IsEmpty())
-        {
-            BotActionArbitration::Candidate interrupt;
-            interrupt.Key = "adaptive_omnotron:arcane_annihilator:"
-                + std::to_string(context.AdaptiveOmnotronInterruptTargetGuid.GetRawValue());
-            interrupt.Source = "adaptive_omnotron";
-            interrupt.ActionPriority = BotActionArbitration::Priority::Interrupt;
-            interrupt.UtilityScore = 90.0f;
-            interrupt.RequiredResources = BotActionArbitration::Uses(
-                BotActionArbitration::Resource::GlobalCooldown,
-                BotActionArbitration::Resource::Cast,
-                BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [this, &context,
-                adaptiveOmnotronInterruptTargetGuid = context.AdaptiveOmnotronInterruptTargetGuid]()
-            {
-                Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
-                    adaptiveOmnotronInterruptTargetGuid);
-                if (!caster || !caster->IsAlive())
-                    return BotActionArbitration::Outcome::NotApplicable(
-                        "interrupt_caster_stale");
-                uint32 interruptSpell = 0;
-                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
-                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
-                    if (context.Bot->HasSpell(spellId))
-                    {
-                        interruptSpell = spellId;
-                        break;
-                    }
-                if (!interruptSpell
-                    || !TryCastCombatSpell(context.Bot, caster, interruptSpell))
-                    return BotActionArbitration::Outcome::Retryable(
-                        "native_interrupt_retryable");
-                context.Situation = "adaptive_omnotron";
-                context.Action = "arcane_annihilator_interrupt";
-                context.State.LastDecisionHandler = "adaptive_omnotron";
-                return BotActionArbitration::Outcome::Started(
-                    "native_interrupt_submitted");
-            };
-            context.State.DecisionKernel.Submit(std::move(interrupt));
-        }
-
-        if (context.AdaptiveMaloriakMovement
-            && context.AdaptiveMaloriakMovement->ExpiresAtMs > context.DecisionNowMs)
-        {
-            BotActionArbitration::Candidate movement;
-            movement.Key = context.AdaptiveMaloriakMovement->Id.Key();
-            movement.Source = context.AdaptiveMaloriakMovement->Id.Strategy;
-            movement.ActionPriority = context.AdaptiveMaloriakMovement->ActionPriority;
-            movement.UtilityScore = context.AdaptiveMaloriakMovement->Utility;
-            movement.RequiredResources = context.AdaptiveMaloriakMovement->Resources();
-            movement.ExpiresAtMs = context.AdaptiveMaloriakMovement->ExpiresAtMs;
-            movement.Attempt = [this, &context,
-                intent = BotNativeAction::WithMovementReason(
-                context.AdaptiveMaloriakMovement->Action,
-                context.AdaptiveMaloriakMovement->Id.Mechanic)]()
-            {
-                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
-                    context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,
-                    BotMovementArbitration::Priority::Hazard);
-                if (outcome.Result == BotActionArbitration::Disposition::Committed)
-                {
-                    context.Situation = "adaptive_maloriak";
-                    context.Action = "maloriak_mechanic_movement";
-                    context.State.LastDecisionHandler = "adaptive_maloriak";
-                }
-                return outcome;
-            };
-            context.State.DecisionKernel.Submit(std::move(movement));
-        }
-
-        if (!context.AdaptiveMaloriakInterruptTargetGuid.IsEmpty())
-        {
-            BotActionArbitration::Candidate interrupt;
-            interrupt.Key = "adaptive_maloriak:arcane_storm:"
-                + std::to_string(context.AdaptiveMaloriakInterruptTargetGuid.GetRawValue());
-            interrupt.Source = "adaptive_maloriak";
-            interrupt.ActionPriority = BotActionArbitration::Priority::Interrupt;
-            interrupt.UtilityScore = 95.0f;
-            interrupt.RequiredResources = BotActionArbitration::Uses(
-                BotActionArbitration::Resource::GlobalCooldown,
-                BotActionArbitration::Resource::Cast,
-                BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [this, &context,
-                adaptiveMaloriakInterruptTargetGuid = context.AdaptiveMaloriakInterruptTargetGuid]()
-            {
-                Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
-                    adaptiveMaloriakInterruptTargetGuid);
-                if (!caster || !caster->IsAlive())
-                    return BotActionArbitration::Outcome::NotApplicable(
-                        "interrupt_caster_stale");
-                uint32 interruptSpell = 0;
-                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
-                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
-                    if (context.Bot->HasSpell(spellId))
-                    {
-                        interruptSpell = spellId;
-                        break;
-                    }
-                if (!interruptSpell
-                    || !TryCastCombatSpell(context.Bot, caster, interruptSpell))
-                    return BotActionArbitration::Outcome::Retryable(
-                        "native_interrupt_retryable");
-                context.Situation = "adaptive_maloriak";
-                context.Action = "arcane_storm_interrupt";
-                context.State.LastDecisionHandler = "adaptive_maloriak";
-                return BotActionArbitration::Outcome::Started(
-                    "native_interrupt_submitted");
-            };
-            context.State.DecisionKernel.Submit(std::move(interrupt));
-        }
-
-        if (!context.AdaptiveMaloriakDispelTargetGuid.IsEmpty())
-        {
-            BotActionArbitration::Candidate dispel;
-            dispel.Key = "adaptive_maloriak:remedy:"
-                + std::to_string(context.AdaptiveMaloriakDispelTargetGuid.GetRawValue());
-            dispel.Source = "adaptive_maloriak";
-            dispel.ActionPriority = BotActionArbitration::Priority::Interrupt;
-            dispel.UtilityScore = 85.0f;
-            dispel.RequiredResources = BotActionArbitration::Uses(
-                BotActionArbitration::Resource::GlobalCooldown,
-                BotActionArbitration::Resource::Cast,
-                BotActionArbitration::Resource::Target);
-            dispel.Attempt = [this, &context,
-                adaptiveMaloriakDispelTargetGuid = context.AdaptiveMaloriakDispelTargetGuid]()
-            {
-                Unit* auraTarget = ObjectAccessor::GetUnit(*context.Bot,
-                    adaptiveMaloriakDispelTargetGuid);
-                if (!auraTarget || !auraTarget->IsAlive())
-                    return BotActionArbitration::Outcome::NotApplicable(
-                        "dispel_target_stale");
-                uint32 dispelSpell = 0;
-                for (uint32 spellId : { 370u, 30449u, 528u, 19801u })
-                    if (context.Bot->HasSpell(spellId))
-                    {
-                        dispelSpell = spellId;
-                        break;
-                    }
-                if (!dispelSpell
-                    || !TryCastCombatSpell(context.Bot, auraTarget, dispelSpell))
-                    return BotActionArbitration::Outcome::Retryable(
-                        "native_dispel_retryable");
-                context.Situation = "adaptive_maloriak";
-                context.Action = "remedy_native_dispel";
-                context.State.LastDecisionHandler = "adaptive_maloriak";
-                return BotActionArbitration::Outcome::Started(
-                    "native_dispel_submitted");
-            };
-            context.State.DecisionKernel.Submit(std::move(dispel));
-        }
+        SubmitMaloriakKernelCandidates(context);
 
         if (context.AdaptiveChimaeronMovement
             && context.AdaptiveChimaeronMovement->ExpiresAtMs > context.DecisionNowMs)
@@ -558,85 +346,67 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
             context.State.DecisionKernel.Submit(std::move(candidate));
         };
         if (context.AdaptiveAtramedesMovement)
+        {
+            // Survival moves (kites, hazard exits, urgent gong approach) take
+            // the hazard lane; standby, drag and formation moves only the
+            // mechanic lane so native combat movement is not leased away.
+            bool const survival = context.AdaptiveAtramedesMovement->ActionPriority
+                >= BotActionArbitration::Priority::Survival;
             submitAtramedesCandidate(*context.AdaptiveAtramedesMovement,
-                "atramedes_hazard_movement",
-                BotMovementArbitration::Owner::Hazard,
-                BotMovementArbitration::Priority::Hazard);
+                survival ? "atramedes_hazard_movement" : "atramedes_position_movement",
+                survival ? BotMovementArbitration::Owner::Hazard
+                    : BotMovementArbitration::Owner::Mechanic,
+                survival ? BotMovementArbitration::Priority::Hazard
+                    : BotMovementArbitration::Priority::Mechanic);
+        }
         if (context.AdaptiveAtramedesInteraction)
             submitAtramedesCandidate(*context.AdaptiveAtramedesInteraction,
                 "atramedes_native_gong",
                 BotMovementArbitration::Owner::Mechanic,
                 BotMovementArbitration::Priority::Mechanic);
-
-        if (context.AdaptiveNefarianMovement
-            && context.AdaptiveNefarianMovement->ExpiresAtMs > context.DecisionNowMs)
+        if (context.AdaptiveAtramedesSuppressOffense)
         {
-            BotActionArbitration::Candidate movement;
-            movement.Key = context.AdaptiveNefarianMovement->Id.Key();
-            movement.Source = context.AdaptiveNefarianMovement->Id.Strategy;
-            movement.ActionPriority = context.AdaptiveNefarianMovement->ActionPriority;
-            movement.UtilityScore = context.AdaptiveNefarianMovement->Utility;
-            movement.RequiredResources = context.AdaptiveNefarianMovement->Resources();
-            movement.ExpiresAtMs = context.AdaptiveNefarianMovement->ExpiresAtMs;
-            movement.Attempt = [this, &context,
-                intent = BotNativeAction::WithMovementReason(
-                context.AdaptiveNefarianMovement->Action,
-                context.AdaptiveNefarianMovement->Id.Mechanic)]()
+            // Melee and the tank cannot reach Atramedes in the air: drop the
+            // target and melee intent instead of chasing under him.
+            BotActionArbitration::Candidate suppress;
+            suppress.Key = "adaptive_atramedes:"
+                + context.AdaptiveAtramedesSuppressReason + ":"
+                + std::to_string(Party().ValidationRouteGeneration);
+            suppress.Source = "adaptive_atramedes";
+            suppress.ActionPriority = BotActionArbitration::Priority::Mechanic;
+            suppress.UtilityScore = 100.0f;
+            suppress.RequiredResources = BotActionArbitration::Uses(
+                BotActionArbitration::Resource::Pet);
+            suppress.Attempt = [this, &context]()
             {
-                BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(
-                    context.State, context.Bot, intent, BotMovementArbitration::Owner::Hazard,
-                    BotMovementArbitration::Priority::Hazard);
-                if (outcome.Result == BotActionArbitration::Disposition::Committed)
-                {
-                    context.Situation = "adaptive_nefarian";
-                    context.Action = "nefarian_mechanic_movement";
-                    context.State.LastDecisionHandler = "adaptive_nefarian";
-                }
-                return outcome;
+                std::string const intentReason =
+                    "adaptive_" + context.AdaptiveAtramedesSuppressReason;
+                bool const submitted = SubmitMeleeAutoAttackIntent(context.State,
+                    BotMeleeAutoAttack::Kind::Suppress, ObjectGuid::Empty,
+                    BotMeleeAutoAttack::Owner::Mechanic,
+                    BotActionArbitration::Priority::Mechanic,
+                    intentReason.c_str());
+                if (Pet* pet = context.Bot->GetPet(); pet && pet->GetCharmInfo())
+                    ExecuteNativeActionIntent(context.State, context.Bot,
+                        BotNativeAction::PetCommand{ pet->GetGUID(),
+                            context.Bot->GetGUID(), COMMAND_FOLLOW },
+                        BotMovementArbitration::Owner::Mechanic,
+                        BotMovementArbitration::Priority::Mechanic);
+                context.State.TargetGuid.Clear();
+                context.Target = nullptr;
+                context.Situation = "adaptive_atramedes";
+                context.Action = "air_phase_offense_suppressed";
+                context.State.LastDecisionHandler = "adaptive_atramedes";
+                return submitted
+                    ? BotActionArbitration::Outcome::Committed(
+                        "melee_autoattack_suppression_submitted")
+                    : BotActionArbitration::Outcome::Retryable(
+                        "melee_autoattack_suppression_rejected");
             };
-            context.State.DecisionKernel.Submit(std::move(movement));
+            context.State.DecisionKernel.Submit(std::move(suppress));
         }
 
-        if (!context.AdaptiveNefarianInterruptTargetGuid.IsEmpty())
-        {
-            BotActionArbitration::Candidate interrupt;
-            interrupt.Key = "adaptive_nefarian:blast_nova:"
-                + std::to_string(context.AdaptiveNefarianInterruptTargetGuid.GetRawValue());
-            interrupt.Source = "adaptive_nefarian";
-            interrupt.ActionPriority = BotActionArbitration::Priority::Interrupt;
-            interrupt.UtilityScore = 100.0f;
-            interrupt.RequiredResources = BotActionArbitration::Uses(
-                BotActionArbitration::Resource::GlobalCooldown,
-                BotActionArbitration::Resource::Cast,
-                BotActionArbitration::Resource::Target);
-            interrupt.Attempt = [this, &context,
-                adaptiveNefarianInterruptTargetGuid = context.AdaptiveNefarianInterruptTargetGuid]()
-            {
-                Unit* caster = ObjectAccessor::GetUnit(*context.Bot,
-                    adaptiveNefarianInterruptTargetGuid);
-                if (!caster || !caster->IsAlive())
-                    return BotActionArbitration::Outcome::NotApplicable(
-                        "interrupt_caster_stale");
-                uint32 interruptSpell = 0;
-                for (uint32 spellId : { 6552u, 1766u, 2139u, 57994u,
-                        96231u, 47528u, 80964u, 80965u, 15487u, 34490u })
-                    if (context.Bot->HasSpell(spellId))
-                    {
-                        interruptSpell = spellId;
-                        break;
-                    }
-                if (!interruptSpell
-                    || !TryCastCombatSpell(context.Bot, caster, interruptSpell))
-                    return BotActionArbitration::Outcome::Retryable(
-                        "native_interrupt_retryable");
-                context.Situation = "adaptive_nefarian";
-                context.Action = "blast_nova_interrupt";
-                context.State.LastDecisionHandler = "adaptive_nefarian";
-                return BotActionArbitration::Outcome::Started(
-                    "native_interrupt_submitted");
-            };
-            context.State.DecisionKernel.Submit(std::move(interrupt));
-        }
+        SubmitAdaptiveNefarianCandidates(context);
 
         if (!context.AdaptiveDrudgeTankTargetGuid.IsEmpty()
             && (!typedDrudgeValidationRoute
@@ -779,6 +549,8 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
                 context.AdaptiveMagmawPriorityHealTargetGuid;
             if (healTargetGuid.IsEmpty())
                 healTargetGuid = context.AdaptiveChimaeronPriorityHealTargetGuid;
+            if (healTargetGuid.IsEmpty())
+                healTargetGuid = context.AdaptiveMaloriakPriorityHealTargetGuid;
             float lowestHealth = 94.0f;
             if (!healTargetGuid.IsEmpty())
                 if (BotEncounter::ActorSnapshot const* priority =

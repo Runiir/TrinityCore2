@@ -26,7 +26,7 @@ from typing import Any
 from tools.raid_program.play_mode_guard import refuse_play
 from tools.raid_program.scoreboard_core import (
     KILL_SCHEMA, RNG_ATTACHMENT_SCHEMA, append_record, file_sha256, healer_roles, label_kills, legacy_kill_id,
-    load_records, load_target, roster, spec_targets, utc_now,
+    load_records, load_target, roster, spec_targets, target_for_records, utc_now,
 )
 
 SUMMARY_SCHEMA = "magmaw_spell_queue_run_summary_v1"
@@ -142,7 +142,7 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
     """Convert one run summary into the compact per-kill scoreboard line. Specs come from the target roster."""
     refuse_play(summary, f"scoreboard record {kill_id}")
     node = target["encounter_route_node_id"]
-    expected = roster(target)
+    expected = roster(target_for_records(root, target, [summary]))
     encounter = summary.get("encounter")
     actors = []
     for actor in summary.get("actors") or []:

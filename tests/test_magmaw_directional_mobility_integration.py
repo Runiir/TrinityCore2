@@ -328,12 +328,13 @@ def test_magmaw_runtime_join_uses_native_cooldown_and_two_candidates() -> None:
     assert "parasite_directional_mobility" in adapter
 
 
-def test_native_preparation_selects_disengage_for_both_hunter_specs(tmp_path):
+def test_native_preparation_selects_disengage_for_every_hunter_spec(tmp_path):
     text = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp").read_text()
-    start = text.index('                uint32 const spellId = actor->ClassSpec == "fire_mage"')
+    start = text.index('                uint32 const spellId = BotEncounter::MagmawDutyCapabilities::')
     gate = text[start:text.index('                if (spellId)', start)]
     source = tmp_path / "native_mobility_spell.cpp"
-    source.write_text('#include <string>\n#include <cassert>\nusing uint32=unsigned;\nstruct Actor { std::string ClassSpec; };\nunsigned select(Actor const* actor) {\n' + gate + 'return spellId;}\nint main(){Actor a{"survival_hunter"};assert(select(&a)==781);a.ClassSpec="marksmanship_hunter";assert(select(&a)==781);a.ClassSpec="fire_mage";assert(select(&a)==1953);a.ClassSpec="balance_druid";assert(select(&a)==0);}')
+    source.write_text('#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"\n#include <string>\n#include <cassert>\nstruct Actor { std::string ClassSpec; };\nunsigned select(Actor const* actor) {\n' + gate + 'return spellId;}\nint main(){Actor a{"survival_hunter"};assert(select(&a)==781);a.ClassSpec="marksmanship_hunter";assert(select(&a)==781);a.ClassSpec="beast_mastery_hunter";assert(select(&a)==781);a.ClassSpec="fire_mage";assert(select(&a)==1953);a.ClassSpec="arcane_mage";assert(select(&a)==0);a.ClassSpec="balance_druid";assert(select(&a)==0);}')
     binary = source.with_suffix('')
-    subprocess.run(['c++', '-std=c++17', str(source), '-o', str(binary)], check=True)
+    subprocess.run(['c++', '-std=c++17', '-I', str(ROOT / 'src/server/game'), '-I', str(ROOT / 'src/common'),
+                    str(source), '-o', str(binary)], check=True)
     subprocess.run([str(binary)], check=True)

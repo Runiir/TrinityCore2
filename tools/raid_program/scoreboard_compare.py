@@ -16,7 +16,7 @@ from typing import Any
 
 from tools.raid_program.scoreboard_core import (
     COMPARISON_SCHEMA, actor_identity, actor_rows, clear_kills, counted_kills, exclusion_reason, healer_roles,
-    kills_per_batch, label_kills, load_records, load_target, mean_sd, roster,
+    kills_per_batch, label_kills, load_records, load_target, mean_sd, roster, target_for_records,
 )
 
 MIN_KILLS = 3
@@ -165,6 +165,7 @@ def compare_labels(root: Path, scenario: str, new_label: str, old_label: str,
     records = load_records(Path(root), scenario)
     min_kills = int((target.get("noise_rule") or {}).get("min_kills_per_label", MIN_KILLS))
     new_kills, old_kills = label_kills(records, new_label), label_kills(records, old_label)
+    target = target_for_records(Path(root), target, new_kills + old_kills)
     new_counted, old_counted = counted_kills(new_kills), counted_kills(old_kills)
     new_clears, old_clears = clear_kills(new_kills), clear_kills(old_kills)
     basis = COUNTED_CLEAR_BASIS

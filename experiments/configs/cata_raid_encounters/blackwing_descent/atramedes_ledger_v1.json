@@ -1126,8 +1126,8 @@
       {
         "key": "devastation_targets_raid",
         "observation": "78868 has no target restriction in the DB; with any Noisy player it hits the whole raid",
-        "fix": "staged conditions (sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql)",
-        "status": "staged"
+        "fix": "conditions promoted to the world updater (sql/custom/world/2026_09_25_40_atramedes_devastation_noisy_target.sql)",
+        "status": "promoted"
       },
       {
         "key": "mechanic_timer_publication",
@@ -1231,7 +1231,7 @@
       ],
       "status": "partial",
       "known": "Guides: the 100-Sound player; DB: whole raid.",
-      "next": "Apply the staged condition; a WCL death log with Devastation would confirm single-target.",
+      "next": "The world updater applies the condition at the next worldserver start; a WCL death log with Devastation would confirm single-target.",
       "source_refs": [
         "wowhead_442",
         "icy_cata_classic",

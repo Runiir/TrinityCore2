@@ -112,6 +112,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawCoordinatorAssignments.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotWorldPopulationMgrMagmawMangleDefensive.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotWorldPopulationMgrOmnotronCandidates.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTask.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneTaskRunner.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneMovementObservation.cpp
@@ -131,6 +132,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrUpdateBotDecision.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrUpdateBotKernelPreparation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrUpdateBotKernelCandidates.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotWorldPopulationMgrNefarianCandidates.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrUpdateBotKernelFallback.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrUpdateBotLegacy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgrUpdateBotFinalization.cpp

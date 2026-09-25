@@ -574,7 +574,7 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     assert descent["descent_action"] == ""
     assert descent["transport_contract"]["entry"] == 207834
     assert descent["transport_contract"]["board_stop_frame"] == 0
-    assert descent["transport_contract"]["board_point"] == [-132.2132, -224.6203, 6.5714]
+    assert descent["transport_contract"]["board_point"] == [-132.2132, -224.6203, 7.1075]
     assert descent["transport_contract"]["timeout_ms"] == 180000
     assert "completion_contract" not in descent
     assert boss["label"] == "Nefarian"

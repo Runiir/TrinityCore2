@@ -24,6 +24,9 @@ VERDICT_SCHEMA = "raid_target_verdict_v1"
 COMPARISON_SCHEMA = "raid_label_comparison_v1"
 BASELINE_SCHEMA = "raid_scoreboard_baseline_v1"
 TARGET_DIR = "experiments/configs/raid_targets"
+# Sidecars of raid targets: other rosters a target judges without changing its bytes (verdicts pin them).
+ROSTER_VARIANTS_SCHEMA = "raid_target_roster_variants_v1"
+ROSTER_VARIANTS_DIR = "experiments/configs/raid_target_roster_variants"
 SCOREBOARD_DIR = "artifacts/cata_raid_program/scoreboard"
 PROMOTED_RECEIPT_MIRROR = "experiments/configs/wowsims_promoted_generation_receipts"
 EVIDENCE_DIR = "artifacts/cata_raid_program"
@@ -100,6 +103,37 @@ def healer_roles(target: dict[str, Any]) -> set[str]:
 def roster(target: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Expected actors: actor id -> {spec, role, name}."""
     return {str(actor_id): row for actor_id, row in (target.get("roster") or {}).items()}
+
+
+def roster_variants_path(root: Path, scenario: str) -> Path:
+    return Path(root) / ROSTER_VARIANTS_DIR / f"{scenario}.json"
+
+
+def target_for_records(root: Path, target: dict[str, Any], records: list[dict[str, Any]]) -> dict[str, Any]:
+    """The target as it judges these kill records.
+
+    A target's sidecar (ROSTER_VARIANTS_DIR/<scenario>.json, raid_target_roster_variants_v1) may declare
+    roster variants. When every record is a shard run of one variant's validation scenario (the record's
+    shard_identity.scenario_id), that variant's roster replaces the top-level roster, and `roster_variant`
+    pins the sidecar (path, sha256) for the verdict; otherwise (legacy runs, no records, mixed scenarios)
+    the target is returned unchanged. The target file itself never changes, so accepted verdicts keep
+    their target_sha256.
+    """
+    scenario = target.get("scenario")
+    path = roster_variants_path(root, str(scenario)) if scenario else None
+    if path is None or not path.is_file():
+        return target
+    sidecar = json.loads(path.read_text())
+    if sidecar.get("schema") != ROSTER_VARIANTS_SCHEMA or sidecar.get("target_scenario") != scenario:
+        raise ValueError(f"{path} is not a {ROSTER_VARIANTS_SCHEMA} sidecar of {scenario}")
+    scenarios = {str(((record or {}).get("shard_identity") or {}).get("scenario_id") or "") for record in records}
+    for variant in sidecar.get("variants") or []:
+        variant_id = str(variant.get("validation_scenario_id") or "")
+        if variant_id and scenarios == {variant_id}:
+            return {**target, "roster": variant["roster"], "validation_scenario_id": variant_id,
+                    "roster_variant": {"path": path.relative_to(root).as_posix(), "sha256": file_sha256(path),
+                                       "validation_scenario_id": variant_id}}
+    return target
 
 
 def _matched_references(root: Path, target: dict[str, Any]) -> list[dict[str, Any]]:

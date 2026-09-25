@@ -217,6 +217,8 @@ void BotWorldPopulationMgr::SubmitValidationKernelFallbackCandidates(
             BotActionArbitration::Resource::None);
         magmawObservation.Attempt = observeAdaptiveMagmawRoute;
         context.State.DecisionKernel.Submit(std::move(magmawObservation));
+        SubmitAdaptiveChimaeronRouteObservation(context);
+        SubmitAdaptiveOmnotronRouteAuthority(context);
 
         auto runRoute = [this, &context, routeAttempt, routeOwnerReason,
             routeActionIsMovementOnly, typedDrudgeValidationRoute]()

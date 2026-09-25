@@ -56,8 +56,10 @@ def test_exact_magmaw_10n_roster_is_the_admitted_diagnostic_roster() -> None:
     source = text(MODULE)
     assert "ValidationRouteManifest.front().ExpectedRoster" in source
     assert 'DiagnosticScenario =\n    "blackwing_descent_10n_magmaw_diagnostic"' in text(HELPER)
-    assert 'ValidationRouteScenarioId != DiagnosticScenario' in source
-    assert 'AdmissionScenarioId != DiagnosticScenario' in source
+    # The accepted shard and every canonical-composition Magmaw copy (c<N>).
+    assert '!IsMagmawBloodlustScenario(cohort->Config.ValidationRouteScenarioId)' in source
+    assert '!IsMagmawBloodlustScenario(raid->AdmissionScenarioId)' in source
+    assert "MagmawDutyCapabilities::SelectBloodlustOwner(candidates)" in source
 
 
 def test_first_exposed_head_and_all_raid_lockouts_are_pure_observations() -> None:
@@ -255,6 +257,12 @@ def test_production_candidate_roster_gate_uses_declared_composition(tmp_path):
     start = module.index("    auto exactRosterAndOwner =")
     end = module.index("\n    std::optional<ObjectGuid> const owner", start)
     gate = module[start:end]
+    # The attempt path re-checks the owner row before casting (stale-context guard).
+    guard_start = module.index("        auto const ownerRow = raid->RosterByGuid.find(ownerGuid.GetCounter());")
+    guard_end = module.index("        return nullptr;", guard_start)
+    owner_guard = module[guard_start:guard_end]
+    assert "ElementalShamanSpec" not in owner_guard
+    assert "MagmawDutyCapabilities::IsBloodlustCaster(" in owner_guard
     fixture = json.loads((ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json").read_text())
     bots = fixture["shards"][0]["bots"]
     members = ",".join("{" + ",".join((json.dumps(bot["canonical_roster_slot_id"]), json.dumps(bot["role"]), json.dumps(bot["class_spec"]), str(bot["character_guid"]))) + "}" for bot in bots)
@@ -267,9 +275,10 @@ def test_production_candidate_roster_gate_uses_declared_composition(tmp_path):
 #include <set>
 #include <string>
 #include <vector>
-using uint32 = std::uint32_t;
-constexpr char ElementalShamanSpec[]="elemental_shaman";
-struct ObjectGuid { uint32 Value=0; bool IsEmpty() const { return !Value; } uint32 GetCounter() const { return Value; } };
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
+struct ObjectGuid { uint32 Value=0; bool IsEmpty() const { return !Value; } uint32 GetCounter() const { return Value; }
+  bool operator==(ObjectGuid const& other) const { return Value==other.Value; }
+  bool operator!=(ObjectGuid const& other) const { return Value!=other.Value; } };
 struct RaidRosterSlot { std::string RosterSlotId,Role,ClassSpec; ObjectGuid Guid; bool Active=true,LeaseOwned=true; };
 struct Identity { std::string RosterSlotId,Role,ClassSpec; uint32 Guid; };
 struct Node { std::vector<Identity> ExpectedRoster; };
@@ -279,6 +288,16 @@ std::optional<ObjectGuid> candidateOwner(Raid* raid, Party* party) {
 '''+gate+r'''
  return exactRosterAndOwner();
 }
+char const* ownerContextReason(Raid* raid, ObjectGuid ownerGuid) {
+'''+owner_guard+r'''
+ return nullptr;
+}
+// The candidate's owner, then the Attempt's stale-context owner check: nullptr casts.
+char const* attemptOwnerReason(Raid* raid, Party* party) {
+ auto owner=candidateOwner(raid,party);
+ if (!owner) return "no_owner";
+ return ownerContextReason(raid,*owner);
+}
 int main() {
  Party party; Raid raid;
  party.ValidationRouteManifest.push_back({{'''+members+r'''}});
@@ -286,6 +305,7 @@ int main() {
    raid.RosterByGuid.emplace(row.Guid,RaidRosterSlot{row.RosterSlotId,row.Role,row.ClassSpec,{row.Guid}});
  auto owner=candidateOwner(&raid,&party);
  assert(owner && owner->Value==30010);
+ assert(attemptOwnerReason(&raid,&party)==nullptr);  // the accepted Elemental owner
  raid.RosterByGuid.at(30001).Role="tank";
  assert(!candidateOwner(&raid,&party));
  raid.RosterByGuid.at(30001).Role="dps";
@@ -299,6 +319,30 @@ int main() {
  party.ValidationRouteManifest.front().ExpectedRoster[0]=valid[1];
  assert(!candidateOwner(&raid,&party));
  party.ValidationRouteManifest.front().ExpectedRoster=valid;
+ // A Restoration Shaman is the single shaman of a three-healer roster: it owns Bloodlust.
+ party.ValidationRouteManifest.front().ExpectedRoster[9].Role="healer";
+ party.ValidationRouteManifest.front().ExpectedRoster[9].ClassSpec="restoration_shaman";
+ raid.RosterByGuid.at(30010).Role="healer";
+ raid.RosterByGuid.at(30010).ClassSpec="restoration_shaman";
+ assert(candidateOwner(&raid,&party) && candidateOwner(&raid,&party)->Value==30010);
+ // ... and the Attempt path accepts it (the guard once required elemental_shaman).
+ assert(attemptOwnerReason(&raid,&party)==nullptr);
+ raid.RosterByGuid.at(30010).Active=false;
+ assert(std::string(ownerContextReason(&raid,{30010}))=="magmaw_bloodlust_stale_context_owner");
+ raid.RosterByGuid.at(30010).Active=true;
+ raid.RosterByGuid.at(30010).ClassSpec="holy_paladin";
+ assert(std::string(ownerContextReason(&raid,{30010}))=="magmaw_bloodlust_stale_context_owner");
+ raid.RosterByGuid.at(30010).ClassSpec="restoration_shaman";
+ assert(std::string(ownerContextReason(&raid,{30009}))=="magmaw_bloodlust_stale_context_owner");
+ party.ValidationRouteManifest.front().ExpectedRoster=valid;
+ raid.RosterByGuid.at(30010).Role="dps";
+ raid.RosterByGuid.at(30010).ClassSpec="elemental_shaman";
+ // Two shamans of one tier leave Bloodlust unowned.
+ party.ValidationRouteManifest.front().ExpectedRoster[0].ClassSpec="elemental_shaman";
+ raid.RosterByGuid.at(30001).ClassSpec="elemental_shaman";
+ assert(!candidateOwner(&raid,&party));
+ party.ValidationRouteManifest.front().ExpectedRoster=valid;
+ raid.RosterByGuid.at(30001).ClassSpec="balance_druid";
  // Existing two-tank declarations remain supported.
  party.ValidationRouteManifest.front().ExpectedRoster[0].Role="tank";
  party.ValidationRouteManifest.front().ExpectedRoster[0].ClassSpec="protection_paladin";
@@ -312,5 +356,6 @@ int main() {
     source = tmp_path / "candidate_roster.cpp"
     source.write_text(program)
     binary = tmp_path / "candidate_roster"
-    subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(source), "-o", str(binary)], check=True, capture_output=True)
+    subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", str(ROOT / "src/server/game"),
+                    "-I", str(ROOT / "src/common"), str(source), "-o", str(binary)], check=True, capture_output=True)
     subprocess.run([str(binary)], check=True, capture_output=True)

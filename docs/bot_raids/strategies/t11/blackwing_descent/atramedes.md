@@ -98,7 +98,7 @@ Fire (heroic 29,250–30,750).
 5. A redirected Reverberating Flame restarts at its initial speed.
 6. `GetTimeUntilEncounterMechanic` publishes the native time to Searing Flame,
    Sonic Breath and liftoff. It covers the ground phase only.
-7. Staged, DB-side: `sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql`
+7. DB-side, promoted to the world updater (applied at worldserver start): `sql/custom/world/2026_09_25_40_atramedes_devastation_noisy_target.sql`
    restricts Devastation to Noisy! holders. Before, it hit the whole raid.
    Wowhead and Icy Veins both describe a hit on the 100-Sound player only.
 

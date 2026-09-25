@@ -48,7 +48,7 @@
     "sql/updates/world/4.3.4/2025_06_18_06_world.sql",
     "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
     "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql",
-    "sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql"
+    "sql/custom/world/2026_09_25_40_atramedes_devastation_noisy_target.sql"
   ],
   "mode_matrix": {
     "10N": {

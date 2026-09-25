@@ -7,7 +7,7 @@ from typing import Any
 from tools.raid_program.scoreboard_compare import batch_shortfall, compare_labels
 from tools.raid_program.scoreboard_core import (
     actor_rows, clear_kills, detectable_delta, exclusion_reason, kills_per_batch, label_kills, latest_label,
-    load_baseline, load_records, load_target, mean_sd,
+    load_baseline, load_records, load_target, mean_sd, target_for_records,
 )
 
 RNG_PRIMARY_SIDE = {"massive_crash": "raid_wide"}  # side whose share is compared between labels
@@ -180,6 +180,8 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     vs = baseline if auto_vs else vs
     verdict = evaluate_target(root, scenario, label)
     kills = label_kills(records, label)
+    # A canonical-composition label shows its own roster (the verdict judges it the same way).
+    target = target_for_records(root, target, kills)
     rows = actor_rows(clear_kills(kills))
     comparison = compare_labels(root, scenario, label, vs, targeted_actor, batch_kills) if vs else None
     old_kills = label_kills(records, vs) if vs else []
@@ -189,7 +191,8 @@ def render(root: Path, scenario: str, label: str | None = None, vs: str | None =
     fallback = target.get("fallback_reference") or {}
     out = [f"scoreboard {scenario} label={label} baseline={baseline or 'unset'} counted={verdict['kills']} of "
            f"{len(kills)} clears={encounter['clears']}" + (f"  vs {vs}" if vs else "")
-           + (" (the baseline; pass --vs to override)" if auto_vs else ""),
+           + (" (the baseline; pass --vs to override)" if auto_vs else "")
+           + (f"  roster={target['roster_variant']['validation_scenario_id']}" if target.get("roster_variant") else ""),
            f"target: actor DPS >= {target['actor_dps_ratio']} x median WCL of {', '.join(target['matched_reference_ids'])}"
            + (f" (no WCL: >= {fallback['ratio']} x WoWSims)" if fallback else "") + "; "
            f"{target['kills_per_measurement']} kills per measurement; max {target['max_boss_window_deaths']} boss-window deaths"]

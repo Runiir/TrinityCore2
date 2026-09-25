@@ -24,7 +24,7 @@ WCL_CASTS = BWD / "atramedes_wcl_cast_timelines_v1.json"
 TARGET = ROOT / "experiments/configs/raid_targets/blackwing_descent_10n_atramedes.json"
 CATALOG = ROOT / "experiments/configs/cata_raid_strategy_catalog_v1.json"
 DOSSIER = ROOT / "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"
-SQL = ROOT / "sql/custom/staged/world/2026_09_25_40_atramedes_devastation_noisy_target.sql"
+SQL = ROOT / "sql/custom/world/2026_09_25_40_atramedes_devastation_noisy_target.sql"
 COMPOSITION = ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json"
 PREREQUISITES = ROOT / "experiments/configs/raid_prerequisites/blackwing_descent.json"
 
@@ -61,7 +61,7 @@ def test_ledger_resolves_client_values_and_records_the_native_audit() -> None:
     assert audit["module_size"] == "fixed"
     assert audit["sound_bar_persists_after_attempt"] == "fixed"
     assert audit["intro_vertigo_resume"] == "fixed"
-    assert audit["devastation_targets_raid"] == "staged"
+    assert audit["devastation_targets_raid"] == "promoted"
     completion = {row["key"]: row["status"] for row in ledger["research_completion"]}
     assert completion["wcl_dps_references"] == "blocked"
     assert completion["boss_melee_damage_modifier_10n"] == "blocked"

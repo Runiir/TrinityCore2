@@ -389,7 +389,7 @@ void SpellMgrCorrections::ApplyPart04()
     ApplySpellFix({ 77760 }, [](SpellInfo* spellInfo)
     {
         spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(TARGET_UNIT_TARGET_ENEMY);
-        spellInfo->Effects[EFFECT_0].TargetA = SpellImplicitTargetInfo(0);
+        spellInfo->Effects[EFFECT_0].TargetB = SpellImplicitTargetInfo(0);
     });
 
     // Growth Catalyst

@@ -1187,8 +1187,22 @@ int main()
     assert(!healerPillarPlan.Movement.has_value()
         || healerPillarPlan.Movement->Id.Mechanic != "pillar_bait_switch");
 
+    // The Magmaw baiter rotation (BotMagmawBaiterRotation.h, DPS-064) keeps
+    // one ledger per cohort and latches the first roster it observes in a
+    // scope, as a live attempt does: it never re-reads its mage or hunter
+    // mid-attempt. Every scenario below that builds a different roster is a
+    // new attempt of this replay's single cohort, so it starts from a
+    // released ledger, as BotWorldPopulationMgrLifecycle.cpp releases a
+    // stopped cohort's. Same-roster scenarios (fixedBaiters above) keep it.
+    auto const newMagmawAttempt = [](BotEncounter::Blackboard const& board)
+    {
+        BotEncounter::MagmawBaiterRotationRegistry::ClearCohort(
+            board.CurrentScope.CohortId);
+    };
+
     // A missing preferred class does not silently promote another DPS into
     // the two-person bait team.
+    newMagmawAttempt(magmawRangedPillar);
     BotEncounter::Blackboard noMarksRoster = magmawRangedPillar;
     noMarksRoster.Players[2].ClassSpec = "fire_mage";
     noMarksRoster.Players[3].ClassSpec = "elemental_shaman";
@@ -1200,6 +1214,7 @@ int main()
     // With the frozen five-DPS roster, one Marks hunter and one Fire mage own
     // the mobile bait lane. Affliction, Elemental, and the second Fire mage
     // remain on the boss unless their own position becomes lethal.
+    newMagmawAttempt(magmawRangedPillar);
     BotEncounter::Blackboard mobileBaiters = magmawRangedPillar;
     BotEncounter::MagmawLaneTransitionState mobileTransition;
     BotEncounter::ActorSnapshot secondFire = dps;
@@ -1317,6 +1332,7 @@ int main()
     // Mangle warning stages every movable actor, including the off tank, at
     // the midpoint before the side telegraph. The tank already in Mangle does
     // not receive an impossible movement request.
+    newMagmawAttempt(magmawStage);
     BotEncounter::Blackboard mangleSafety = magmawStage;
     mangleSafety.NativeBossState = "in_progress";
     mangleSafety.Hostiles.front().InCombat = true;
@@ -1736,6 +1752,7 @@ int main()
     // warning. It wins over the closer parasite, a retained parasite escape,
     // pincer commitment, and a simultaneous retained Pillar for the fixed
     // baiter. The explicit non-baiter support actor makes the same choice.
+    newMagmawAttempt(magmawPincerPreposition);
     BotEncounter::Blackboard immediateCrash = magmawPincerPreposition;
     immediateCrash.Players[0].ClassSpec = "marksmanship_hunter";
     immediateCrash.Players[1].ClassSpec = "fire_mage";
@@ -1843,6 +1860,7 @@ int main()
 
     // A real lit Crash is the active lethal footprint. It wins over the closer
     // parasite during the open-pincer window and over simultaneous Pillars.
+    newMagmawAttempt(magmawHookApproach);
     BotEncounter::Blackboard magmawPincerHazards = magmawHookApproach;
     magmawPincerHazards.Players[1].Position.Y = -8.0f;
     BotEncounter::ActorSnapshot competingCrash = immediateCrashActor;
@@ -2007,36 +2025,60 @@ int main()
     gong.Guid = ObjectGuid(HighGuid::Unit, uint32(41445), uint32(94));
     gong.Selectable = true;
     gong.Interactable = true;
-    gong.Position = floorTarget.Position;
+    gong.Position = conductorBot.Position;
+    atramedesBoss.InCombat = true;
+    atramedesBoss.ReactAggressive = true;
     atramedes.Hostiles = { atramedesBoss };
     atramedes.Interactables = { gong };
     atramedes.Players = { floorTarget, tankB, conductorBot };
     BotEncounter::AdaptiveAtramedesStrategy atramedesStrategy;
-    auto atramedesPlan = atramedesStrategy.Propose(
+    // Searing Flame is struck by the gong owner chosen by capability (the
+    // fire mage), never by the tank or the lowest GUID.
+    auto atramedesTankPlan = atramedesStrategy.Propose(
         atramedes, floorTarget.Guid, "tank");
+    assert(atramedesTankPlan.OwnsNode);
+    assert(!atramedesTankPlan.Interaction.has_value());
+    auto atramedesPlan = atramedesStrategy.Propose(
+        atramedes, conductorBot.Guid, "dps");
     assert(atramedesPlan.OwnsNode);
     assert(atramedesPlan.Interaction.has_value());
+    assert(atramedesPlan.Interaction->Resources() == Uses(Resource::Interaction));
 
     BotEncounter::Blackboard nefarian = atramedes;
     nefarian.Route.NodeId = "bwd.nefarian.encounter";
     nefarian.Hostiles.clear();
     nefarian.Summons.clear();
+    nefarian.Interactables.clear();
     BotEncounter::ActorSnapshot nefarianBoss = sourceA;
     nefarianBoss.Entry = 41376;
     nefarianBoss.Guid = ObjectGuid(HighGuid::Unit, uint32(41376), uint32(95));
+    nefarianBoss.Flying = true;
     nefarianBoss.Auras.push_back({81582, ObjectGuid{}, 1, 0});
     BotEncounter::ActorSnapshot prototype = sourceB;
     prototype.Entry = 41948;
     prototype.Guid = ObjectGuid(HighGuid::Unit, uint32(41948), uint32(96));
+    prototype.InCombat = true;
+    prototype.Position = BotEncounter::Nefarian::LocalToWorld(
+        BotEncounter::Nefarian::PillarCenters[0],
+        BotEncounter::Nefarian::PlatformFrame::PillarTopLocalZ,
+        BotEncounter::Nefarian::PlatformFrame::LoweredOriginZ);
     prototype.Cast = BotEncounter::CastSnapshot{
         80734, floorTarget.Guid, 4, false, true };
     nefarian.Hostiles = { nefarianBoss, prototype };
+    BotEncounter::ActorSnapshot nefarianTank = floorTarget;
+    nefarianTank.ClassSpec = "blood_death_knight";
+    nefarianTank.Position = BotEncounter::Nefarian::LocalToWorld(
+        BotEncounter::Nefarian::PillarSlot(0, 0),
+        BotEncounter::Nefarian::PlatformFrame::PillarTopLocalZ,
+        BotEncounter::Nefarian::PlatformFrame::LoweredOriginZ);
+    nefarian.Players = { nefarianTank, tankB, conductorBot };
     BotEncounter::AdaptiveNefarianStrategy nefarianStrategy;
     auto nefarianPlan = nefarianStrategy.Propose(
-        nefarian, floorTarget.Guid, "tank");
+        nefarian, nefarianTank.Guid, "tank");
     assert(nefarianPlan.OwnsNode);
     assert(nefarianPlan.DamageTarget == prototype.Guid);
     assert(nefarianPlan.InterruptTarget == prototype.Guid);
+    assert(nefarianPlan.Blocked == "pillar_ascent_unsupported");
 }
 ''',
         encoding="utf-8",
@@ -2719,7 +2761,13 @@ int main()
     assert(magePlan.Movement->Id.EventGeneration == transition.TransitionId);
     assert(firstMove->IntentReason == "parasite_contact_evade");
     Vector3 const firstDestination{ firstMove->X, firstMove->Y, firstMove->Z };
-    Vector3 const support{ 0.0f, -22.0f, 210.0f };
+    // The support anchor of ResolveRangedAnchors: boss + room-side direction
+    // x SupportStackDistance, (0, -8). The lane endpoints keep StackSeparation
+    // from it. The former fixed point (0, -22) cleared only the old 24-yard
+    // lateral offset; 0701e8025a moved the endpoints to the accepted 30/18
+    // lane at the 35-yard native ranged ceiling, (+-18, -30).
+    Vector3 const support{ 0.0f,
+        -AdaptiveMagmawStrategy::SupportStackDistance, 210.0f };
     assert(Distance(firstDestination, support)
         >= MagmawParasitePolicy::StackSeparation);
     assert(Distance(firstDestination, board.Hostiles[1].Position)
