@@ -1,0 +1,133 @@
+{
+  "schema": "raid_prerequisites_v1",
+  "raid": "firelands",
+  "name": "Firelands",
+  "map_id": 720,
+  "script_name": "instance_firelands",
+  "script_header": "FL",
+  "initial_boss_state": "not_started",
+  "initial_boss_state_source": "instance_firelands.cpp:123-127 Create() calls InstanceScript::Create(), which sets NOT_STARTED",
+  "difficulties": ["10n", "25n", "10h", "25h"],
+  "encounter_count": {"10n": 7, "25n": 7, "10h": 7, "25h": 7},
+  "verification_level": "native_script_audit_partial",
+  "sources": {
+    "script": "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp",
+    "header": "src/server/scripts/Kalimdor/Firelands/firelands.h",
+    "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
+    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:586-599 with sql/old/4.3.4/world/21071_2022_01_09/2021_10_30_00_world.sql:186 and sql/updates/world/4.3.4/2022_02_02_00_world.sql:836"
+  },
+  "bosses": [
+    {
+      "key": "bethtilac",
+      "name": "Beth'tilac",
+      "boss_index": 0,
+      "creature_entry": 52498,
+      "credit_entry": 52498,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1197,
+      "dungeon_encounter_bit": 1,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [52498],
+      "sources": ["firelands.h:35 DATA_BETHTILAC = 0", "firelands.h:65 BOSS_BETHTILAC = 52498"],
+      "notes": "No native boss AI exists; the dead spawn follows the kill credit."
+    },
+    {
+      "key": "lord_rhyolith",
+      "name": "Lord Rhyolith",
+      "boss_index": 1,
+      "creature_entry": 52558,
+      "credit_entry": 53772,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1204,
+      "dungeon_encounter_bit": 4,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [52558],
+      "sources": ["firelands.h:36 DATA_LORD_RHYOLITH = 1", "firelands.h:64 BOSS_LORD_RHYOLITH = 52558", "boss_lord_rhyolith.cpp:296-300 BossAI::JustDied"]
+    },
+    {
+      "key": "shannox",
+      "name": "Shannox",
+      "boss_index": 2,
+      "creature_entry": 53691,
+      "credit_entry": 53691,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1205,
+      "dungeon_encounter_bit": 5,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [53691],
+      "sources": ["firelands.h:37 DATA_SHANNOX = 2", "firelands.h:63 BOSS_SHANNOX = 53691", "boss_shannox.cpp:96 _JustDied"]
+    },
+    {
+      "key": "alysrazor",
+      "name": "Alysrazor",
+      "boss_index": 3,
+      "creature_entry": 52530,
+      "credit_entry": 52530,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1206,
+      "dungeon_encounter_bit": 6,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [52530],
+      "sources": ["firelands.h:38 DATA_ALYSRAZOR = 3", "firelands.h:66 BOSS_ALYSRAZOR = 52530"],
+      "notes": "No native boss AI exists; the dead spawn follows the kill credit."
+    },
+    {
+      "key": "baleroc",
+      "name": "Baleroc",
+      "boss_index": 4,
+      "creature_entry": 53494,
+      "credit_entry": 53494,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1200,
+      "dungeon_encounter_bit": 2,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [53494],
+      "sources": ["firelands.h:39 DATA_BALEROC = 4", "firelands.h:67 BOSS_BALEROC = 53494", "boss_baleroc.cpp:172 _JustDied", "instance_firelands.cpp:62 Baleroc's firewall door is commented out"]
+    },
+    {
+      "key": "majordomo_staghelm",
+      "name": "Majordomo Staghelm",
+      "boss_index": 5,
+      "creature_entry": 52571,
+      "credit_entry": 52571,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1185,
+      "dungeon_encounter_bit": 0,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [],
+      "sources": ["firelands.h:40 DATA_MAJORDOMO_STAGHELM = 5", "firelands.h:68 BOSS_MAJORDOMO_STAGHELM = 52571", "instance_firelands.cpp:123-134 the instance script summons Majordomo on Create and on Load unless he is DONE"],
+      "notes": "Majordomo is a summon, so a natural kill leaves no database respawn row."
+    },
+    {
+      "key": "ragnaros",
+      "name": "Ragnaros",
+      "boss_index": 6,
+      "creature_entry": 52409,
+      "credit_entry": 102237,
+      "credit_type": "spell_cast",
+      "dungeon_encounter_id": 1203,
+      "dungeon_encounter_bit": 3,
+      "predecessors": ["majordomo_staghelm"],
+      "extra_save_values": {},
+      "dead_spawn_entries": [],
+      "sources": ["firelands.h:41 DATA_RAGNAROS = 6", "firelands.h:69 BOSS_RAGNAROS = 52409", "instance_firelands.cpp:60-64 GO_MAJORDOMO_FIREWALL 208906 is Majordomo's PASSAGE door", "firelands.cpp:34-35 spawn group 458 spawns only while Ragnaros is not DONE", "boss_ragnaros_firelands.cpp:924-927 victory sets DONE and the group inactive"],
+      "predecessor_basis": "door_passage_by_name",
+      "notes": "dead_spawn_entries is empty: on normal Ragnaros submerges instead of dying and spawn group 458 stays inactive once he is DONE."
+    }
+  ],
+  "save_extras": [],
+  "readback_doors": [
+    {"entry": 208906, "name": "Majordomo firewall", "open_when_done": ["majordomo_staghelm"], "sources": ["instance_firelands.cpp:60-64"]}
+  ],
+  "unverified": [
+    "the native script gates no boss except Ragnaros (behind Majordomo's PASSAGE firewall); retail access rules for Baleroc and Majordomo are not enforced by the script and are not encoded",
+    "Beth'tilac and Alysrazor have no native boss AI",
+    "credit_entry values are TDB history"
+  ]
+}

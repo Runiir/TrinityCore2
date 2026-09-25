@@ -244,6 +244,45 @@ Map* MapManager::FindMap(uint32 mapId, uint32 instanceId) const
     return FindMap_i(mapId, instanceId);
 }
 
+InstanceMap* MapManager::LoadInstanceForSave(InstanceSave* save, TeamId team)
+{
+    if (!save)
+        return nullptr;
+
+    MapEntry const* entry = sMapStore.LookupEntry(save->GetMapId());
+    if (!entry || !entry->IsDungeon())
+        return nullptr;
+
+    std::unique_lock<std::shared_mutex> lock(_mapsLock);
+    if (Map* existing = FindMap_i(save->GetMapId(), save->GetInstanceId()))
+        return existing->ToInstanceMap();
+
+    // Same as the saved-bind branch of CreateMap: the save selects the
+    // instance id and difficulty, and CreateInstanceData(true) loads it.
+    InstanceMap* map = CreateInstance(save->GetMapId(), save->GetInstanceId(), save, save->GetDifficulty(), team);
+    i_maps[{ map->GetId(), map->GetInstanceId() }] = map;
+    return map;
+}
+
+bool MapManager::UnloadEmptyInstance(uint32 mapId, uint32 instanceId)
+{
+    Map* map = FindMap(mapId, instanceId);
+    if (!map)
+        return true;
+
+    if (!map->IsDungeon() || map->HavePlayers())
+        return false;
+
+    // Like Update: destroy outside _mapsLock (unloading may look maps up),
+    // then drop the entry. Both run on the world thread between map updates.
+    if (!DestroyMap(map))
+        return false;
+
+    std::unique_lock<std::shared_mutex> lock(_mapsLock);
+    i_maps.erase({ mapId, instanceId });
+    return true;
+}
+
 /*
 Map::EnterState MapManager::PlayerCannotEnter(uint32 mapid, Player* player, bool loginCheck)
 {

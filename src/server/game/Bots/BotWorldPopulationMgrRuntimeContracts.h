@@ -454,6 +454,26 @@
         std::set<uint32> AccountNameLookupAttempted;
     };
 
+    // The seeded raid lockout a cohort's admission bound to (BotRaidLockout*,
+    // `.botauto lockout seed`). Diagnostic assistance only: it never certifies
+    // a natural clear. Stays default (not attached) for fresh-instance cohorts.
+    struct SeededLockoutRuntime
+    {
+        bool Attached = false;
+        bool Admitted = false;
+        bool DiagnosticOnlyAssistance = false;
+        std::string Raid;
+        uint32 InstanceId = 0;
+        uint32 MapId = 0;
+        uint8 Difficulty = 0;
+        std::vector<std::string> BossesDone;
+        uint32 CompletedEncounterMask = 0;
+        uint64 AttemptId = 0;
+        uint32 BoundGroupGuid = 0;
+        std::vector<uint8> AdmittedBossStates;
+        std::string AdmissionFailure;
+    };
+
     struct CohortRuntime
     {
         std::string Id;
@@ -473,6 +493,7 @@
         // are never certifying (BotCohortPurpose.h).
         CohortPurpose Purpose = CohortPurpose::Validation;
         BotPlaySession Play;
+        SeededLockoutRuntime SeededLockout;
         uint64 ExperimentId = 0;
         uint64 RunId = 0;
         uint32 ElapsedMs = 0;

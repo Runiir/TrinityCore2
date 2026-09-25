@@ -3,6 +3,7 @@
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotRaidLockoutCohortContext.h"
 
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -412,6 +413,17 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
         return;
     }
 
+    // Seeded raid lockout (`.botauto lockout seed`): read the idle lockout
+    // back and arm the planned leader, whose seed group then binds to it
+    // permanently. Returns "" at once for a cohort without a lockout.
+    std::string const seededLockoutFailure = BotRaidLockout::CohortContext::ArmAdmission(*this,
+        routeStart.BotStartMapId, validationRaidSpawnPlan.empty() ? 0 : validationRaidSpawnPlan.front().Guid);
+    if (!seededLockoutFailure.empty())
+    {
+        terminalFailure(seededLockoutFailure);
+        return;
+    }
+
     PartyRuntime const partyBeforeAdmission = Party();
     RaidRuntime const raidBeforeAdmission = Cohort().Raid;
     BotWorldStatus const metricsBeforeAdmission = Cohort().Metrics;
@@ -422,6 +434,7 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
         &metricsBeforeAdmission, &failedSpawnGuidsBeforeAdmission,
         &claimedGuids, &spawnedGuids, &terminalFailure](std::string const& reason)
     {
+        BotRaidLockout::CohortContext::DisarmAdmission(*this);
         FlushPendingDecisionFingerprintMemory();
         for (auto itr = spawnedGuids.rbegin(); itr != spawnedGuids.rend(); ++itr)
         {
@@ -635,6 +648,16 @@ std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
     if (!exactNativeGroup)
     {
         rollbackAdmission("validation_raid_admission_exact_group_or_alive_state_failed");
+        return;
+    }
+
+    // Seeded lockout readback before any bot acts: every member is in the
+    // seeded instance through the permanent group bind, and the live
+    // InstanceScript still holds exactly the seeded boss set. "" otherwise.
+    std::string const seededLockoutReadback = BotRaidLockout::CohortContext::VerifyAdmission(*this);
+    if (!seededLockoutReadback.empty())
+    {
+        rollbackAdmission(seededLockoutReadback);
         return;
     }
 

@@ -1,0 +1,36 @@
+{
+  "schema": "raid_prerequisites_v1",
+  "raid": "dragon_soul",
+  "name": "Dragon Soul",
+  "map_id": 967,
+  "script_name": "instance_dragon_soul",
+  "script_header": "DS",
+  "initial_boss_state": "not_started",
+  "initial_boss_state_source": "instance_dragon_soul.cpp has no Create() override; InstanceScript::Create() sets NOT_STARTED",
+  "difficulties": ["10n", "25n", "10h", "25h"],
+  "encounter_count": {"10n": 8, "25n": 8, "10h": 8, "25h": 8},
+  "verification_level": "native_script_indices_only",
+  "sources": {
+    "script": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+    "header": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+    "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
+    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:607-614 (history only)"
+  },
+  "bosses": [
+    {"key": "morchok", "name": "Morchok", "boss_index": 0, "creature_entry": null, "credit_entry": 55265, "credit_type": "kill", "dungeon_encounter_id": 1292, "dungeon_encounter_bit": 1, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:35"]},
+    {"key": "warlord_zonozz", "name": "Warlord Zon'ozz", "boss_index": 1, "creature_entry": null, "credit_entry": 55308, "credit_type": "kill", "dungeon_encounter_id": 1294, "dungeon_encounter_bit": 2, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:36"]},
+    {"key": "yorsahj", "name": "Yor'sahj the Unsleeping", "boss_index": 2, "creature_entry": null, "credit_entry": 55312, "credit_type": "kill", "dungeon_encounter_id": 1295, "dungeon_encounter_bit": 3, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:37"]},
+    {"key": "hagara", "name": "Hagara the Stormbinder", "boss_index": 3, "creature_entry": null, "credit_entry": 55689, "credit_type": "kill", "dungeon_encounter_id": 1296, "dungeon_encounter_bit": 4, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:38"]},
+    {"key": "ultraxion", "name": "Ultraxion", "boss_index": 4, "creature_entry": null, "credit_entry": 55294, "credit_type": "kill", "dungeon_encounter_id": 1297, "dungeon_encounter_bit": 5, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:39"]},
+    {"key": "warmaster_blackhorn", "name": "Warmaster Blackhorn", "boss_index": 5, "creature_entry": null, "credit_entry": 56427, "credit_type": "kill", "dungeon_encounter_id": 1298, "dungeon_encounter_bit": 6, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:40"]},
+    {"key": "spine_of_deathwing", "name": "Spine of Deathwing", "boss_index": 6, "creature_entry": null, "credit_entry": 104574, "credit_type": "spell_cast", "dungeon_encounter_id": 1291, "dungeon_encounter_bit": 0, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:41"]},
+    {"key": "madness_of_deathwing", "name": "Madness of Deathwing", "boss_index": 7, "creature_entry": 56173, "credit_entry": 111533, "credit_type": "spell_cast", "dungeon_encounter_id": 1299, "dungeon_encounter_bit": 7, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": null, "sources": ["dragon_soul.h:42 DATA_MADNESS_OF_DEATHWING = 7", "dragon_soul.h:57 BOSS_MADNESS_OF_DEATHWING = 56173", "boss_madness_of_deathwing.cpp:1021 DONE is set by the script"]}
+  ],
+  "save_extras": [],
+  "readback_doors": [],
+  "unverified": [
+    "bosses 0-6 have no native script and no creature entry in source; their dead spawns are unknown, so the seeder refuses to mark them done",
+    "Madness of Deathwing despawns rather than dying; its database respawn behaviour is unverified",
+    "the native script gates nothing; retail order is not encoded"
+  ]
+}

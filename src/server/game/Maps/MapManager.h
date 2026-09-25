@@ -51,6 +51,13 @@ class TC_GAME_API MapManager
         Map* CreateMap(uint32 mapId, Player* player, uint32 loginInstanceId = 0);
         Map* FindMap(uint32 mapId, uint32 instanceId) const;
 
+        // Seeded bot raid lockouts (Bots/BotRaidLockoutSeeder.cpp). Loads the
+        // map of an existing instance save through the same CreateInstance
+        // path CreateMap takes for a saved bind, without a player; and unloads
+        // an instance map again while nobody is inside. World thread only.
+        InstanceMap* LoadInstanceForSave(InstanceSave* save, TeamId team);
+        bool UnloadEmptyInstance(uint32 mapId, uint32 instanceId);
+
         void Initialize();
         void Update(uint32 diff);
 

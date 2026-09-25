@@ -1,0 +1,54 @@
+{
+  "schema": "raid_prerequisites_v1",
+  "raid": "throne_of_the_four_winds",
+  "name": "Throne of the Four Winds",
+  "map_id": 754,
+  "script_name": "instance_throne_of_the_four_winds",
+  "script_header": "TOTFW",
+  "initial_boss_state": "not_started",
+  "initial_boss_state_source": "instance_throne_of_the_four_winds.cpp has no Create() override; InstanceScript::Create() sets NOT_STARTED",
+  "difficulties": ["10n", "25n", "10h", "25h"],
+  "encounter_count": {"10n": 2, "25n": 2, "10h": 2, "25h": 2},
+  "verification_level": "native_script_audit_partial",
+  "sources": {
+    "script": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
+    "header": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/throne_of_the_four_winds.h",
+    "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
+    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:469-470 (history only)"
+  },
+  "bosses": [
+    {
+      "key": "conclave_of_wind",
+      "name": "Conclave of Wind",
+      "boss_index": 0,
+      "creature_entry": 45870,
+      "credit_entry": 88835,
+      "credit_type": "spell_cast",
+      "dungeon_encounter_id": 1035,
+      "dungeon_encounter_bit": 1,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [45870, 45871, 45872],
+      "sources": ["throne_of_the_four_winds.h:33 DATA_CONCLAVE_OF_WIND = 0", "throne_of_the_four_winds.h:55-57 Anshal 45870, Nezir 45871, Rohash 45872", "boss_conclave_of_wind.cpp:201-203 all three KillSelf; 285-287,533-535,776-778 _JustDied"],
+      "notes": "creature_entry is Anshal; all three share BossAI(DATA_CONCLAVE_OF_WIND)."
+    },
+    {
+      "key": "alakir",
+      "name": "Al'Akir",
+      "boss_index": 1,
+      "creature_entry": 46753,
+      "credit_entry": 46753,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1034,
+      "dungeon_encounter_bit": 0,
+      "predecessors": ["conclave_of_wind"],
+      "extra_save_values": {},
+      "dead_spawn_entries": [46753],
+      "sources": ["throne_of_the_four_winds.h:34 DATA_ALAKIR = 1", "throne_of_the_four_winds.h:58 BOSS_ALAKIR = 46753", "instance_throne_of_the_four_winds.cpp:86-88 Al'Akir is IMMUNE_TO_PC until the Conclave is DONE", "instance_throne_of_the_four_winds.cpp:203-209 the flag is removed when the Conclave becomes DONE", "boss_alakir.cpp:363-365 _JustDied"],
+      "predecessor_basis": "script_immune_flag"
+    }
+  ],
+  "save_extras": [],
+  "readback_doors": [],
+  "unverified": ["credit_entry values are TDB05 history"]
+}

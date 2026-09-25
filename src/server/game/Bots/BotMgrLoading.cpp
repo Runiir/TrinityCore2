@@ -1,5 +1,6 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotRaidAreaAuthority.h"
+#include "Bots/BotRaidLockoutRegistry.h"
 #include "Chat.h"
 #include "Config.h"
 #include "DataStores/DBCStores.h"
@@ -213,6 +214,10 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
                         _seedRaidGroupsByLeader[guid] = seed->GetGUID().GetCounter();
                         TC_LOG_INFO("server", "PlayerBot raid seed group created leader=%s group=%s map=%u",
                             guid.ToString().c_str(), seed->GetGUID().ToString().c_str(), placement->MapId);
+                        // A cohort with a seeded lockout armed this leader:
+                        // bind the group permanently before the entry below,
+                        // so CreateMap uses the seeded save. No-op otherwise.
+                        BotRaidLockout::BindArmedSeedGroup(guid.GetCounter(), seed, placement->MapId);
                     }
                     else
                     {

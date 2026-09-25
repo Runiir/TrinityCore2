@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
+#include "Bots/BotRaidLockoutCohortContext.h"
 
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -418,8 +419,23 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
 
     CharacterDatabase.DirectExecute(("UPDATE `character_bot_pool` p SET p.`in_use` = 0 WHERE " + poolPredicate).c_str());
     CharacterDatabase.DirectExecute(("UPDATE `characters` c JOIN `character_bot_pool` p ON p.`guid` = c.`guid` SET c.`online` = 0 WHERE " + poolPredicate).c_str());
-    CharacterDatabase.DirectExecute(("DELETE FROM `character_instance` WHERE `guid` IN (" + guidSelect + ")").c_str());
-    CharacterDatabase.DirectExecute(("DELETE gi FROM `group_instance` gi JOIN `groups` g ON g.`guid` = gi.`guid` WHERE g.`leaderGuid` IN (" + guidSelect + ") OR g.`guid` IN (SELECT gm.`guid` FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + "))").c_str());
+    // A seeded lockout (`.botauto lockout seed`) keeps its own binds; every
+    // other bind of the pool is cleared. Without a lockout both statements
+    // are the unchanged fresh-instance reset.
+    uint32 const keepSeededInstanceId = BotRaidLockout::CohortContext::ResetKeepInstanceId(*this);
+    if (!keepSeededInstanceId)
+    {
+        CharacterDatabase.DirectExecute(("DELETE FROM `character_instance` WHERE `guid` IN (" + guidSelect + ")").c_str());
+        CharacterDatabase.DirectExecute(("DELETE gi FROM `group_instance` gi JOIN `groups` g ON g.`guid` = gi.`guid` WHERE g.`leaderGuid` IN (" + guidSelect + ") OR g.`guid` IN (SELECT gm.`guid` FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + "))").c_str());
+    }
+    else
+    {
+        std::string const keep = std::to_string(keepSeededInstanceId);
+        CharacterDatabase.DirectExecute(("DELETE FROM `character_instance` WHERE `guid` IN (" + guidSelect + ") AND `instance` <> " + keep).c_str());
+        CharacterDatabase.DirectExecute(("DELETE gi FROM `group_instance` gi JOIN `groups` g ON g.`guid` = gi.`guid` WHERE (g.`leaderGuid` IN (" + guidSelect + ") OR g.`guid` IN (SELECT gm.`guid` FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + "))) AND gi.`instance` <> " + keep).c_str());
+        TC_LOG_INFO("server", "BotWorld validation prepare reset kept seeded lockout binds cohort=%s instance=%u",
+            Cohort().Id.c_str(), keepSeededInstanceId);
+    }
     CharacterDatabase.DirectExecute(("DELETE gm FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + ") OR gm.`guid` IN (SELECT g.`guid` FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + "))").c_str());
     CharacterDatabase.DirectExecute(("DELETE g FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + ")").c_str());
     CharacterDatabase.DirectExecute(("DELETE pc FROM `pet_spell_cooldown` pc JOIN `character_pet` cp ON cp.`id` = pc.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());

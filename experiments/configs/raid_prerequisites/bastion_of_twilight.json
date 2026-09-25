@@ -1,0 +1,112 @@
+{
+  "schema": "raid_prerequisites_v1",
+  "raid": "bastion_of_twilight",
+  "name": "The Bastion of Twilight",
+  "map_id": 671,
+  "script_name": "instance_bastion_of_twilight",
+  "script_header": "BoT",
+  "initial_boss_state": "not_started",
+  "initial_boss_state_source": "instance_bastion_of_twilight.cpp has no Create() override; InstanceScript::Create() sets NOT_STARTED",
+  "difficulties": ["10n", "25n", "10h", "25h"],
+  "encounter_count": {"10n": 4, "25n": 4, "10h": 5, "25h": 5},
+  "verification_level": "native_script_audit_partial",
+  "sources": {
+    "script": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
+    "header": "src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h",
+    "dbc": "data/dbc/enUS/DungeonEncounter.dbc",
+    "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:464-467,513-514 (history only)",
+    "encounter_count": "bastion_of_twilight.h:28-29 and instance_bastion_of_twilight.cpp:92: 4 bosses on normal, 5 on heroic"
+  },
+  "bosses": [
+    {
+      "key": "halfus_wyrmbreaker",
+      "name": "Halfus Wyrmbreaker",
+      "boss_index": 0,
+      "creature_entry": 44600,
+      "credit_entry": 44600,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1030,
+      "dungeon_encounter_bit": 2,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_spawn_entries": [44600],
+      "sources": ["bastion_of_twilight.h:34 DATA_HALFUS_WYRMBREAKER = 0", "bastion_of_twilight.h:85 BOSS_HALFUS_WYRMBREAKER = 44600", "boss_halfus_wyrmbreaker.cpp:177-179 _JustDied"]
+    },
+    {
+      "key": "theralion_and_valiona",
+      "name": "Theralion and Valiona",
+      "boss_index": 1,
+      "creature_entry": 45992,
+      "credit_entry": 45992,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1032,
+      "dungeon_encounter_bit": 4,
+      "predecessors": ["halfus_wyrmbreaker"],
+      "extra_save_values": {},
+      "dead_spawn_entries": [45992, 45993],
+      "sources": ["bastion_of_twilight.h:35 DATA_THERALION_AND_VALIONA = 1", "bastion_of_twilight.h:86-87 Theralion 45993, Valiona 45992", "boss_theralion_and_valiona.cpp:260-268,498-506 both die through _JustDied", "instance_bastion_of_twilight.cpp:62-68 GO_HALFUS_EXIT 205223 is Halfus's PASSAGE door"],
+      "predecessor_basis": "door_passage_by_name",
+      "notes": "creature_entry is Valiona, the TDB kill-credit creature; the boss index has no single creature."
+    },
+    {
+      "key": "ascendant_council",
+      "name": "Ascendant Council",
+      "boss_index": 2,
+      "creature_entry": 43691,
+      "credit_entry": 43735,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1028,
+      "dungeon_encounter_bit": 0,
+      "predecessors": ["theralion_and_valiona"],
+      "extra_save_values": {},
+      "dead_spawn_entries": [],
+      "sources": ["bastion_of_twilight.h:36 DATA_ASCENDANT_COUNCIL = 2", "boss_ascendant_council.cpp:317 the controller 43691 is BossAI(DATA_ASCENDANT_COUNCIL)", "boss_ascendant_council.cpp:321-327,470-477 the controller summons the four members while the council is not DONE", "boss_ascendant_council.cpp:453-458 ACTION_FINISH_ENCOUNTER sets DONE without killing the controller", "instance_bastion_of_twilight.cpp:62-68 GO_DRAGON_SIBLINGS_DOOR_EXIT 205225 is the PASSAGE door of Theralion and Valiona"],
+      "predecessor_basis": "door_passage_by_name",
+      "notes": "dead_spawn_entries is empty: members and Elementium Monstrosity are summons, the controller survives a natural clear."
+    },
+    {
+      "key": "chogall",
+      "name": "Cho'gall",
+      "boss_index": 3,
+      "creature_entry": 43324,
+      "credit_entry": 43324,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1029,
+      "dungeon_encounter_bit": 1,
+      "predecessors": ["ascendant_council"],
+      "extra_save_values": {},
+      "dead_spawn_entries": [43324],
+      "sources": ["bastion_of_twilight.h:37 DATA_CHOGALL = 3", "bastion_of_twilight.h:93 BOSS_CHOGALL = 43324", "boss_chogall.cpp:345-347 _JustDied", "instance_bastion_of_twilight.cpp:62-68 GO_ASCENDANT_COUNCIL_EXIT 205227 is the council's PASSAGE door"],
+      "predecessor_basis": "door_passage_by_name"
+    },
+    {
+      "key": "sinestra",
+      "name": "Sinestra",
+      "boss_index": 4,
+      "creature_entry": 45213,
+      "credit_entry": 45213,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1082,
+      "dungeon_encounter_id_by_difficulty": {"10h": 1082, "25h": 1083},
+      "dungeon_encounter_bit": 3,
+      "predecessors": ["chogall"],
+      "extra_save_values": {},
+      "dead_spawn_entries": [45213],
+      "difficulties": ["10h", "25h"],
+      "sources": ["bastion_of_twilight.h:38 DATA_SINESTRA = 4, heroic only (instance_bastion_of_twilight.cpp:92)", "bastion_of_twilight.h:94 BOSS_SINESTRA = 45213"],
+      "predecessor_basis": "retail_layout_unverified",
+      "notes": "No Sinestra boss script exists in src; the predecessor and the dead spawn come from retail layout and TDB kill credit (25H credit creature 49744), not from a native script."
+    }
+  ],
+  "save_extras": [],
+  "readback_doors": [
+    {"entry": 205223, "name": "Halfus exit", "open_when_done": ["halfus_wyrmbreaker"], "sources": ["instance_bastion_of_twilight.cpp:62-68"]},
+    {"entry": 205225, "name": "Dragon siblings exit", "open_when_done": ["theralion_and_valiona"], "sources": ["instance_bastion_of_twilight.cpp:62-68"]},
+    {"entry": 205227, "name": "Ascendant Council exit", "open_when_done": ["ascendant_council"], "sources": ["instance_bastion_of_twilight.cpp:62-68"]}
+  ],
+  "unverified": [
+    "the linear order follows the PASSAGE exit doors by name; door positions were not checked against the world DB",
+    "Sinestra has no native script; her predecessor, dead spawn and credit are retail/TDB knowledge",
+    "credit_entry values are TDB05 history"
+  ]
+}
