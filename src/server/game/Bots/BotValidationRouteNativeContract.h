@@ -1,8 +1,10 @@
 #ifndef TRINITY_BOT_VALIDATION_ROUTE_NATIVE_CONTRACT_H
 #define TRINITY_BOT_VALIDATION_ROUTE_NATIVE_CONTRACT_H
 
-// Typed, fail-closed route contracts for native interactions, observed
-// completions and transports. Pure data + parsing: no server dependencies.
+// Fail-closed parsers for native route contracts (interaction, observed
+// completion, transport). No server dependencies; the data types live in
+// BotValidationRouteNativeTypes.h. Included only by the manifest loader and
+// tests.
 //
 // A contract only declares what a player would do (use an object, pick a
 // gossip option, click a vehicle, stand in an area trigger, step onto an
@@ -11,6 +13,7 @@
 // written.
 
 #include "Bots/BotValidationRouteNativeJson.h"
+#include "Bots/BotValidationRouteNativeTypes.h"
 
 #include <algorithm>
 #include <cmath>
@@ -44,6 +47,9 @@ struct ParseError
     }
 };
 
+// Native INTERACTION_DISTANCE (ObjectDefines.h).
+constexpr float MaxInteractionRangeYards = 5.0f;
+
 inline bool KnownField(std::string_view key, std::initializer_list<std::string_view> allowed)
 {
     return std::find(allowed.begin(), allowed.end(), key) != allowed.end();
@@ -52,54 +58,6 @@ inline bool KnownField(std::string_view key, std::initializer_list<std::string_v
 // ---------------------------------------------------------------------------
 // Interaction
 // ---------------------------------------------------------------------------
-enum class InteractionAction : std::uint8_t
-{
-    None,
-    GameObjectUse,
-    GossipSelect,
-    GossipSelectSequence,
-    SpellClick,
-    VehicleEnter,
-    AreaTrigger
-};
-
-enum class TargetType : std::uint8_t { None, Any, GameObject, Creature };
-
-struct InteractionContract
-{
-    bool Declared = false;
-    InteractionAction Action = InteractionAction::None;
-    std::string ActionName;
-    TargetType Target = TargetType::None;
-    std::uint32_t Entry = 0;
-    std::uint64_t SpawnId = 0;
-    std::vector<std::uint32_t> Menus;
-    std::uint32_t Option = 0;
-    // Vehicle seat index; -1 lets the native spellclick choose.
-    std::int32_t Seat = -1;
-    std::uint32_t AreaTriggerId = 0;
-    // Owner selection. When none is declared the lowest living GUID owns the
-    // interaction (the historical behaviour, kept for neutrality).
-    std::string OwnerRole;
-    std::uint32_t OwnerRosterSlot = 0;
-    std::uint32_t BackupRosterSlot = 0;
-    std::uint32_t TimeoutMs = 0;
-    std::uint32_t MaxAttempts = 0;
-    std::uint32_t RetryIntervalMs = 0;
-    bool Gather = false;
-    float GatherRadiusYards = 0.0f;
-    // 0 means the native INTERACTION_DISTANCE.
-    float RangeYards = 0.0f;
-
-    bool IsGossip() const
-    {
-        return Action == InteractionAction::GossipSelect
-            || Action == InteractionAction::GossipSelectSequence;
-    }
-
-    bool LegacyOwner() const { return OwnerRole.empty() && !OwnerRosterSlot; }
-};
-
 inline InteractionAction InteractionActionFromName(std::string_view name)
 {
     if (name == "gameobject_use") return InteractionAction::GameObjectUse;
@@ -253,9 +211,19 @@ inline ParseError ParseInteraction(Json const& object, InteractionContract& out)
     }
     else if (object.Find("gather_radius_yards"))
         return ParseError::Invalid("gather_radius_without_gather");
-    if (object.Find("range_yards")
-        && !(out.RangeYards > 0.0f && out.RangeYards <= 30.0f))
-        return ParseError::Invalid("range_invalid");
+    if (object.Find("range_yards"))
+    {
+        // Gameobjects always use the native IsAtInteractDistance reach; a
+        // creature range may only tighten INTERACTION_DISTANCE (5 yd).
+        if (out.Target == TargetType::GameObject || out.Target == TargetType::None)
+            return ParseError::Invalid("range_not_supported_for_target");
+        if (!(out.RangeYards > 0.0f && out.RangeYards <= MaxInteractionRangeYards))
+            return ParseError::Invalid("range_invalid");
+    }
+    if (!out.TimeoutMs)
+        return ParseError::Invalid("timeout_required");
+    if (object.Find("retry_interval_ms") && !out.MaxAttempts)
+        return ParseError::Invalid("retry_interval_without_max_attempts");
 
     out.Declared = true;
     return {};
@@ -264,26 +232,6 @@ inline ParseError ParseInteraction(Json const& object, InteractionContract& out)
 // ---------------------------------------------------------------------------
 // Completion
 // ---------------------------------------------------------------------------
-enum class CompletionKind : std::uint8_t
-{
-    None,
-    GameObjectSelectable,
-    GameObjectDespawned,
-    BossSummoned,
-    CreatureSummoned,
-    AuraPresent,
-    CreatureAggressiveWithVictim,
-    CreatureGroundedAggressiveOrEngaged,
-    InstanceBossState,
-    OnTransport,
-    VehicleSeated,
-    TransportAtStop,
-    AnyOf,
-    AllOf
-};
-
-enum class MemberScope : std::uint8_t { All, Any, Owner };
-
 // Matches EncounterState in Instances/InstanceScript.h.
 inline bool BossStateFromName(std::string_view name, std::uint32_t& state)
 {
@@ -316,37 +264,6 @@ inline CompletionKind CompletionKindFromName(std::string_view name)
     return CompletionKind::None;
 }
 
-struct CompletionContract
-{
-    bool Declared = false;
-    CompletionKind Kind = CompletionKind::None;
-    std::string KindName;
-    std::uint32_t Entry = 0;
-    std::uint64_t SpawnId = 0;
-    std::uint32_t SpellId = 0;
-    std::int32_t BossIndex = -1;
-    std::uint32_t BossState = 0;
-    std::uint32_t TransportEntry = 0;
-    std::uint64_t TransportSpawnId = 0;
-    std::int32_t StopFrame = -1;
-    std::uint32_t VehicleEntry = 0;
-    std::int32_t Seat = -1;
-    MemberScope Scope = MemberScope::All;
-    // gameobject_despawned only completes after the object was observed
-    // spawned in the same route scope, so an absent (never spawned or out of
-    // range) object cannot satisfy it vacuously.
-    bool RequireObservedPresent = true;
-    std::vector<CompletionContract> Children;
-
-    bool UsesOwnerScope() const
-    {
-        if (Scope == MemberScope::Owner)
-            return true;
-        return std::any_of(Children.begin(), Children.end(),
-            [](CompletionContract const& child) { return child.UsesOwnerScope(); });
-    }
-};
-
 inline ParseError ParseCompletion(Json const& object, CompletionContract& out, int depth = 0)
 {
     out = CompletionContract();
@@ -356,12 +273,12 @@ inline ParseError ParseCompletion(Json const& object, CompletionContract& out, i
         if (!KnownField(key, { "kind", "entry", "spawn_id", "spell_id",
                 "boss_index", "boss_state", "transport_entry",
                 "transport_spawn_id", "stop_frame", "vehicle_entry", "seat",
-                "scope", "contracts", "require_observed_present" }))
+                "scope", "contracts", "require_observed_present", "timeout_ms" }))
             return ParseError::Unknown(key);
 
     namespace J = BotValidationRouteNativeJson;
     std::uint64_t entry = 0, spawnId = 0, spell = 0, transportEntry = 0;
-    std::uint64_t transportSpawn = 0, vehicleEntry = 0;
+    std::uint64_t transportSpawn = 0, vehicleEntry = 0, timeout = 0;
     std::int64_t bossIndex = -1, stopFrame = -1, seat = -1;
     std::string bossState, scope;
     if (!J::ReadString(object, "kind", out.KindName)
@@ -376,8 +293,17 @@ inline ParseError ParseCompletion(Json const& object, CompletionContract& out, i
         || !J::ReadUnsigned(object, "vehicle_entry", vehicleEntry, 0xFFFFFFFFull)
         || !J::ReadSigned(object, "seat", seat, -1, 7)
         || !J::ReadString(object, "scope", scope)
-        || !J::ReadBool(object, "require_observed_present", out.RequireObservedPresent))
+        || !J::ReadBool(object, "require_observed_present", out.RequireObservedPresent)
+        || !J::ReadUnsigned(object, "timeout_ms", timeout, 1800000))
         return ParseError::Invalid("field_type_or_range");
+    if (object.Find("timeout_ms"))
+    {
+        if (depth != 0)
+            return ParseError::Invalid("timeout_only_top_level");
+        if (!timeout)
+            return ParseError::Invalid("timeout_invalid");
+        out.TimeoutMs = std::uint32_t(timeout);
+    }
 
     out.Kind = CompletionKindFromName(out.KindName);
     out.Entry = std::uint32_t(entry);
@@ -397,7 +323,7 @@ inline ParseError ParseCompletion(Json const& object, CompletionContract& out, i
         -> ParseError
     {
         for (auto const& [key, value] : object.Members)
-            if (key != "kind" && !KnownField(key, allowed))
+            if (key != "kind" && key != "timeout_ms" && !KnownField(key, allowed))
                 return ParseError::Invalid("field_unexpected:" + key);
         return {};
     };
@@ -413,8 +339,10 @@ inline ParseError ParseCompletion(Json const& object, CompletionContract& out, i
         case CompletionKind::GameObjectDespawned:
             if (ParseError error = onlyFields({ "entry", "spawn_id", "require_observed_present" }))
                 return error;
-            if (!objectTarget)
-                return ParseError::Invalid("target_missing");
+            // Absence is only authoritative in the route instance's spawn-id
+            // store; an entry-only search cannot tell despawned from unseen.
+            if (!out.SpawnId)
+                return ParseError::Invalid("despawn_requires_spawn_id");
             break;
         case CompletionKind::BossSummoned:
         case CompletionKind::CreatureSummoned:
@@ -498,42 +426,6 @@ inline ParseError ParseCompletion(Json const& object, CompletionContract& out, i
 // ---------------------------------------------------------------------------
 // Transport (elevators and other GAMEOBJECT_TYPE_TRANSPORT platforms)
 // ---------------------------------------------------------------------------
-struct Point3
-{
-    float X = 0.0f;
-    float Y = 0.0f;
-    float Z = 0.0f;
-    bool Valid = false;
-};
-
-struct TransportContract
-{
-    bool Declared = false;
-    std::uint32_t Entry = 0;
-    std::uint64_t SpawnId = 0;
-    // Boarding readiness: either a native stop frame (GoState 25 + frame and
-    // arrival time reached) or the platform's world Z (cycling elevators).
-    std::int32_t BoardStopFrame = -1;
-    bool HasBoardLevel = false;
-    float BoardTransportZ = 0.0f;
-    // Optional ride destination. Without it, being aboard completes the node.
-    std::int32_t ExitStopFrame = -1;
-    bool HasExitLevel = false;
-    float ExitTransportZ = 0.0f;
-    float LevelToleranceYards = 0.75f;
-    Point3 WaitPoint;
-    Point3 BoardPoint;
-    // Optional point on the platform, over static ground at the exit level,
-    // to stand on before leaving when the boarding spot is not over ground.
-    Point3 DisembarkPoint;
-    Point3 ExitPoint;
-    float ArrivalToleranceYards = 1.5f;
-    float FootprintMarginYards = 0.5f;
-    std::uint32_t TimeoutMs = 0;
-
-    bool HasExit() const { return ExitStopFrame >= 0 || HasExitLevel; }
-};
-
 inline bool ReadPoint(Json const& object, std::string_view key, Point3& out)
 {
     Json const* value = object.Find(key);
@@ -562,11 +454,11 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
                 "board_transport_z", "exit_stop_frame", "exit_transport_z",
                 "level_tolerance_yards", "wait_point", "board_point",
                 "disembark_point", "exit_point", "arrival_tolerance_yards",
-                "footprint_margin_yards", "timeout_ms" }))
+                "floor_tolerance_yards", "max_submissions", "timeout_ms" }))
             return ParseError::Unknown(key);
 
     namespace J = BotValidationRouteNativeJson;
-    std::uint64_t entry = 0, spawnId = 0, timeout = 0;
+    std::uint64_t entry = 0, spawnId = 0, timeout = 0, submissions = out.MaxSubmissions;
     std::int64_t boardFrame = -1, exitFrame = -1;
     if (!J::ReadUnsigned(object, "entry", entry, 0xFFFFFFFFull)
         || !J::ReadUnsigned(object, "spawn_id", spawnId, 0xFFFFFFFFFFFFull)
@@ -577,7 +469,8 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
         || !J::ReadFloat(object, "exit_transport_z", out.ExitTransportZ)
         || !J::ReadFloat(object, "level_tolerance_yards", out.LevelToleranceYards)
         || !J::ReadFloat(object, "arrival_tolerance_yards", out.ArrivalToleranceYards)
-        || !J::ReadFloat(object, "footprint_margin_yards", out.FootprintMarginYards)
+        || !J::ReadFloat(object, "floor_tolerance_yards", out.FloorToleranceYards)
+        || !J::ReadUnsigned(object, "max_submissions", submissions, 50)
         || !ReadPoint(object, "wait_point", out.WaitPoint)
         || !ReadPoint(object, "board_point", out.BoardPoint)
         || !ReadPoint(object, "disembark_point", out.DisembarkPoint)
@@ -587,6 +480,7 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
     out.Entry = std::uint32_t(entry);
     out.SpawnId = spawnId;
     out.TimeoutMs = std::uint32_t(timeout);
+    out.MaxSubmissions = std::uint32_t(submissions);
     out.BoardStopFrame = std::int32_t(boardFrame);
     out.ExitStopFrame = std::int32_t(exitFrame);
     out.HasBoardLevel = object.Find("board_transport_z") != nullptr;
@@ -605,8 +499,12 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
         return ParseError::Invalid("exit_shape");
     if (!(out.LevelToleranceYards > 0.0f && out.LevelToleranceYards <= 10.0f)
         || !(out.ArrivalToleranceYards > 0.0f && out.ArrivalToleranceYards <= 10.0f)
-        || !(out.FootprintMarginYards >= 0.0f && out.FootprintMarginYards <= 5.0f))
+        || !(out.FloorToleranceYards > 0.0f && out.FloorToleranceYards <= 2.0f))
         return ParseError::Invalid("tolerance_invalid");
+    if (!out.MaxSubmissions)
+        return ParseError::Invalid("max_submissions_invalid");
+    if (!out.TimeoutMs)
+        return ParseError::Invalid("timeout_required");
     out.Declared = true;
     return {};
 }
@@ -634,6 +532,10 @@ inline ParseError ValidateNodeShape(std::string_view kind,
         return ParseError::Invalid("interaction_contract_requires_interaction_kind");
     if (kind == "interaction" && !interaction.Declared && !completion.Declared)
         return ParseError::Invalid("interaction_kind_requires_contract");
+    // An interaction proves nothing by itself: its node completes only on an
+    // observed native postcondition.
+    if (interaction.Declared && !completion.Declared)
+        return ParseError::Invalid("interaction_requires_completion");
     if (completion.Declared && completion.UsesOwnerScope() && !interaction.Declared)
         return ParseError::Invalid("owner_scope_requires_interaction");
     return {};

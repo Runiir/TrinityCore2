@@ -5,7 +5,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
-#include "Bots/BotValidationRouteNativeLogic.h"
+#include "Bots/BotValidationRouteNativeTypes.h"
 #include "Bots/BotWorldPopulationMgrBotState.h"
 
 #include <cstdint>
@@ -18,9 +18,10 @@ class Player;
 class WorldObject;
 
 // Server adapter for native route contracts (interaction, observed completion
-// and transport). It observes the world, runs the pure decision logic and
-// submits typed native intents into the bot's decision kernel. Manager-owned
-// effects (event recording, terminalization, attempt failure) are callbacks.
+// and transport). Completion is evaluated once per cohort observation tick by
+// one evaluator in the route's original instance; each bot then submits only
+// player-opcode intents into its own decision kernel. Manager-owned effects
+// (event recording, terminalization, attempt failure) are callbacks.
 namespace BotWorldPopulationMgrValidationRouteNative
 {
 using WorldBotState = BotWorldPopulationMgrBotState::WorldBotState;
@@ -29,6 +30,13 @@ struct RosterMember
 {
     std::uint32_t Slot = 0;
     std::string Role;
+};
+
+struct MemberInput
+{
+    Player* Bot = nullptr;
+    // On the route map, in the cohort's original instance.
+    bool OnRouteInstance = false;
 };
 
 struct Callbacks
@@ -40,7 +48,7 @@ struct Callbacks
         float value, std::uint32_t entry)> Record;
     // Native postcondition observed: terminalize every cohort member once.
     std::function<void(std::string const& label, WorldObject* evidence)> Complete;
-    // Bounded contract exhausted (timeout): fail the attempt once.
+    // Bounded contract exhausted (timeout, attempts, stranded): fail once.
     std::function<void(std::string const& reason)> Fail;
 };
 
@@ -55,12 +63,14 @@ struct Input
     float AnchorX = 0.0f;
     float AnchorY = 0.0f;
     float AnchorZ = 0.0f;
-    // Loaded cohort bots on the current map (the node's participants).
-    std::vector<Player*> Members;
+    // Every loaded cohort member, on any map.
+    std::vector<MemberInput> Members;
     // Raw GUID -> frozen roster slot (1-based) and role.
     std::map<std::uint64_t, RosterMember> Roster;
     BotValidationRouteNative::RuntimeScope Scope;
     std::uint64_t NowMs = 0;
+    // Cohort observation tick (encounter snapshot revision).
+    std::uint64_t Tick = 0;
     bool CompletionAlreadyRecorded = false;
 };
 

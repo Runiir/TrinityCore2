@@ -31,6 +31,7 @@ def _compile_and_run(tmp_path: Path, program: str) -> str:
 
 
 PRELUDE = r'''
+#include "Bots/BotValidationRouteNativeContract.h"
 #include "Bots/BotValidationRouteNativeLogic.h"
 #include <cstdio>
 #include <cstdlib>
@@ -86,12 +87,14 @@ struct FakeFacts final : FactSource
                 out.push_back(fact);
         return out;
     }
-    std::vector<ActorFact> GameObjects(std::uint32_t entry, std::uint64_t spawnId) const override
+    bool AbsenceAuthoritative = true;
+    ObjectQuery GameObjects(std::uint32_t entry, std::uint64_t spawnId) const override
     {
-        std::vector<ActorFact> out;
+        ObjectQuery out;
         for (ActorFact const& fact : ObjectFacts)
             if ((!entry || fact.Entry == entry) && (!spawnId || fact.SpawnId == spawnId))
-                out.push_back(fact);
+                out.Facts.push_back(fact);
+        out.AbsenceAuthoritative = AbsenceAuthoritative && spawnId;
         return out;
     }
     bool BossState(std::uint32_t index, std::uint32_t& state) const override
@@ -107,22 +110,24 @@ struct FakeFacts final : FactSource
 '''
 
 
-def test_legacy_bwd_contract_shapes_parse_identically(tmp_path: Path) -> None:
+def test_bwd_contract_shapes_parse_with_required_bounds(tmp_path: Path) -> None:
     _compile_and_run(tmp_path, PRELUDE + r'''
 int main()
 {
     InteractionContract bell;
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 204276})", bell));
+    // Every declared interaction must be bounded in time.
+    CHECK(Interaction(R"({"action": "gameobject_use", "entry": 204276})", bell).Detail == "timeout_required");
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 204276, "spawn_id": 235153, "owner_role": "dps", "max_attempts": 3, "retry_interval_ms": 3000, "timeout_ms": 60000, "gather": true, "gather_radius_yards": 12.0})", bell));
     CHECK(bell.Declared && bell.Action == InteractionAction::GameObjectUse);
-    CHECK(bell.Target == TargetType::GameObject && bell.Entry == 204276);
-    CHECK(bell.LegacyOwner() && !bell.TimeoutMs && !bell.MaxAttempts && !bell.Gather);
+    CHECK(bell.Target == TargetType::GameObject && bell.Entry == 204276 && bell.SpawnId == 235153);
+    CHECK(bell.TimeoutMs == 60000 && bell.MaxAttempts == 3 && bell.Gather);
 
     InteractionContract finkle;
-    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834, 11835, 11836, 11837], "option": 0})", finkle));
+    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834, 11835, 11836, 11837], "option": 0, "timeout_ms": 90000})", finkle));
     CHECK(finkle.Menus.size() == 5 && finkle.Menus.front() == 11812 && finkle.Target == TargetType::Any);
 
     InteractionContract orb;
-    CHECK(!Interaction(R"({"action": "gossip_select", "entry": 203254, "menu": 11492, "option": 0})", orb));
+    CHECK(!Interaction(R"({"action": "gossip_select", "entry": 203254, "menu": 11492, "option": 0, "timeout_ms": 60000})", orb));
     CHECK(orb.Menus.size() == 1 && orb.Menus.front() == 11492 && orb.Option == 0);
 
     for (char const* text : {
@@ -131,12 +136,35 @@ int main()
         R"({"kind": "creature_summoned", "entry": 41376})",
         R"({"kind": "aura_present", "entry": 44418, "spell_id": 82705})",
         R"({"kind": "creature_aggressive_with_victim", "entry": 43296})",
-        R"({"kind": "creature_grounded_aggressive_or_engaged", "entry": 41442})" })
+        R"({"kind": "creature_grounded_aggressive_or_engaged", "entry": 41442, "timeout_ms": 120000})" })
     {
         CompletionContract completion;
         CHECK(!Completion(text, completion));
         CHECK(completion.Declared);
     }
+    CompletionContract bounded;
+    CHECK(!Completion(R"({"kind": "all_of", "contracts": [{"kind": "creature_summoned", "entry": 41376}], "timeout_ms": 120000})", bounded));
+    CHECK(bounded.TimeoutMs == 120000 && bounded.Children.front().TimeoutMs == 0);
+    return failures ? 1 : 0;
+}
+''')
+
+
+def test_interaction_only_nodes_never_complete(tmp_path: Path) -> None:
+    """MAJOR 1: an interaction proves nothing without an observed completion."""
+
+    _compile_and_run(tmp_path, PRELUDE + r'''
+int main()
+{
+    InteractionContract interaction;
+    CompletionContract none;
+    TransportContract noTransport;
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "timeout_ms": 1000})", interaction));
+    CHECK(ValidateNodeShape("interaction", interaction, none, noTransport).Detail
+        == "interaction_requires_completion");
+    CompletionContract completion;
+    CHECK(!Completion(R"({"kind": "creature_summoned", "entry": 2})", completion));
+    CHECK(!ValidateNodeShape("interaction", interaction, completion, noTransport));
     return failures ? 1 : 0;
 }
 ''')
@@ -162,6 +190,10 @@ int main()
     CHECK(Invalid(Completion(R"({"kind": "any_of", "contracts": []})", completion), "composite_shape"));
     CHECK(Invalid(Completion(R"({"kind": "any_of", "contracts": [{"kind": "player_in_nefarian_arena"}]})", completion), "child:kind_unknown"));
     CHECK(Invalid(Completion(R"({"kind": "on_transport", "transport_entry": 1, "scope": "some"})", completion), "scope_unknown"));
+    // Absence is only authoritative in the route instance's spawn-id store.
+    CHECK(Invalid(Completion(R"({"kind": "gameobject_despawned", "entry": 203254})", completion), "despawn_requires_spawn_id"));
+    CHECK(Invalid(Completion(R"({"kind": "any_of", "contracts": [{"kind": "creature_summoned", "entry": 1, "timeout_ms": 5}]})", completion), "child:timeout_only_top_level"));
+    CHECK(Invalid(Completion(R"({"kind": "creature_summoned", "entry": 1, "timeout_ms": 0})", completion), "timeout_invalid"));
 
     InteractionContract interaction;
     CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "menu": 2})", interaction).Kind == ParseError::Code::Invalid);
@@ -178,7 +210,12 @@ int main()
     CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "owner_role": "dps", "owner_roster_slot": 3})", interaction).Detail == "owner_ambiguous");
     CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "backup_roster_slot": 3})", interaction).Detail == "backup_without_owner");
     CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "owner_roster_slot": 3, "backup_roster_slot": 3})", interaction).Detail == "backup_equals_owner");
-    CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "gather": true})", interaction).Detail == "gather_radius_invalid");
+    CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "gather": true, "timeout_ms": 1})", interaction).Detail == "gather_radius_invalid");
+    // Gameobjects use the native reach rule; creature ranges only tighten 5 yd.
+    CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "range_yards": 3.0, "timeout_ms": 1})", interaction).Detail == "range_not_supported_for_target");
+    CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "range_yards": 6.0, "timeout_ms": 1})", interaction).Detail == "range_invalid");
+    CHECK(!Interaction(R"({"action": "spellclick", "entry": 1, "range_yards": 4.0, "timeout_ms": 1})", interaction));
+    CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "retry_interval_ms": 10, "timeout_ms": 1})", interaction).Detail == "retry_interval_without_max_attempts");
 
     TransportContract transport;
     CHECK(Transport(R"({"entry": 1, "board_point": [1, 2, 3]})", transport).Detail == "board_readiness_ambiguous");
@@ -187,15 +224,19 @@ int main()
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2]})", transport).Detail == "field_type_or_range");
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "exit_stop_frame": 1})", transport).Detail == "exit_shape");
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "disembark_point": [1, 2, 3]})", transport).Detail == "exit_shape");
+    CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3]})", transport).Detail == "timeout_required");
+    CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "max_submissions": 0})", transport).Detail == "max_submissions_invalid");
+    CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "floor_tolerance_yards": 3.0})", transport).Detail == "tolerance_invalid");
+    CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "footprint_margin_yards": 0.5})", transport).Kind == ParseError::Code::UnknownField);
 
     InteractionContract none;
     CompletionContract noCompletion;
     TransportContract noTransport;
     CHECK(ValidateNodeShape("transport", none, noCompletion, noTransport).Detail == "transport_kind_requires_transport_contract");
-    CHECK(!Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3]})", transport));
+    CHECK(!Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1})", transport));
     CHECK(ValidateNodeShape("descent", none, noCompletion, transport).Detail == "transport_contract_requires_transport_kind");
     CHECK(ValidateNodeShape("interaction", none, noCompletion, noTransport).Detail == "interaction_kind_requires_contract");
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1})", interaction));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "timeout_ms": 1})", interaction));
     CHECK(ValidateNodeShape("boss", interaction, noCompletion, noTransport).Detail == "interaction_contract_requires_interaction_kind");
     CHECK(!Completion(R"({"kind": "vehicle_seated", "vehicle_entry": 1, "scope": "owner"})", completion));
     CHECK(ValidateNodeShape("interaction", none, completion, noTransport).Detail == "owner_scope_requires_interaction");
@@ -218,18 +259,18 @@ int main()
         { 10, true, "healer", 3 },
     };
     InteractionContract legacy;
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1})", legacy));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "timeout_ms": 1})", legacy));
     // Historical default: the lowest living GUID owns the interaction.
     CHECK(ElectOwner(legacy, members).Owner == 10);
 
     InteractionContract byRole;
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "owner_role": "dps"})", byRole));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "owner_role": "dps", "timeout_ms": 1})", byRole));
     CHECK(ElectOwner(byRole, members).Owner == 20);
     members[1].Alive = false;
     CHECK(ElectOwner(byRole, members).Owner == 30);
 
     InteractionContract bySlot;
-    CHECK(!Interaction(R"({"action": "spellclick", "entry": 5, "owner_roster_slot": 6, "backup_roster_slot": 1})", bySlot));
+    CHECK(!Interaction(R"({"action": "spellclick", "entry": 5, "owner_roster_slot": 6, "backup_roster_slot": 1, "timeout_ms": 1})", bySlot));
     OwnerElection election = ElectOwner(bySlot, members);
     CHECK(election.Owner == 40 && election.UsedBackup && election.Reason == "backup_roster_slot");
     members[1].Alive = true;
@@ -240,15 +281,17 @@ int main()
     CHECK(ElectOwner(bySlot, members).Reason == "interaction_owner_unavailable");
 
     InteractionContract bounded;
-    CHECK(!Interaction(R"({"action": "vehicle_enter", "entry": 5, "seat": 2, "max_attempts": 2, "retry_interval_ms": 1000, "timeout_ms": 5000, "gather": true, "gather_radius_yards": 8.0, "range_yards": 6.0})", bounded));
-    CHECK(bounded.Seat == 2 && bounded.Gather && bounded.GatherRadiusYards == 8.0f && bounded.RangeYards == 6.0f);
+    CHECK(!Interaction(R"({"action": "vehicle_enter", "entry": 5, "seat": 2, "max_attempts": 2, "retry_interval_ms": 1000, "timeout_ms": 5000, "gather": true, "gather_radius_yards": 8.0, "range_yards": 4.5})", bounded));
+    CHECK(bounded.Seat == 2 && bounded.Gather && bounded.GatherRadiusYards == 8.0f && bounded.RangeYards == 4.5f);
     AttemptState attempts;
     CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 1000) == AttemptGate::Allowed);
     RecordAttempt(attempts, 1000);
     CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 1500) == AttemptGate::RetryWait);
     CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 2000) == AttemptGate::Allowed);
     RecordAttempt(attempts, 2000);
-    CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 3500) == AttemptGate::AttemptsExhausted);
+    // The last attempt keeps its full retry interval before exhaustion fails.
+    CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 2500) == AttemptGate::RetryWait);
+    CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 3000) == AttemptGate::AttemptsExhausted);
     CHECK(EvaluateAttemptGate(bounded, attempts, 1000, 6000) == AttemptGate::TimedOut);
 
     InteractionObservation observation;
@@ -262,22 +305,30 @@ int main()
     InteractionDecision decision = DecideInteraction(bounded, observation, AttemptGate::Allowed);
     CHECK(decision.Step == InteractionStep::VehicleEnter && decision.CountsAsAttempt);
     CHECK(DecideInteraction(bounded, observation, AttemptGate::RetryWait).Step == InteractionStep::Hold);
-    CHECK(DecideInteraction(bounded, observation, AttemptGate::TimedOut).Reason == "native_interaction_timeout");
+    decision = DecideInteraction(bounded, observation, AttemptGate::TimedOut);
+    CHECK(decision.Step == InteractionStep::Fail && decision.Reason == "native_interaction_timeout");
+    decision = DecideInteraction(bounded, observation, AttemptGate::AttemptsExhausted);
+    CHECK(decision.Step == InteractionStep::Fail && decision.Reason == "native_interaction_attempts_exhausted");
 
     InteractionContract gossip;
-    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834], "option": 0})", gossip));
+    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834], "option": 0, "max_attempts": 1, "timeout_ms": 1000})", gossip));
     CHECK(DecideInteraction(gossip, observation, AttemptGate::Allowed).Step == InteractionStep::GossipOpen);
     observation.GossipBoundToTarget = true;
     observation.CurrentGossipMenu = 11834;
     decision = DecideInteraction(gossip, observation, AttemptGate::AttemptsExhausted);
-    // Continuing an open dialogue is not a new attempt.
+    // Continuing the dialogue the last attempt opened is not a new attempt.
     CHECK(decision.Step == InteractionStep::GossipSelect && !decision.CountsAsAttempt);
     observation.CurrentGossipMenu = 99999;
-    CHECK(DecideInteraction(gossip, observation, AttemptGate::AttemptsExhausted).Step == InteractionStep::Hold);
+    CHECK(DecideInteraction(gossip, observation, AttemptGate::AttemptsExhausted).Step == InteractionStep::Fail);
+    CHECK(DecideInteraction(gossip, observation, AttemptGate::RetryWait).Step == InteractionStep::Hold);
 
     InteractionContract trigger;
-    CHECK(!Interaction(R"({"action": "area_trigger", "area_trigger_id": 6581})", trigger));
+    CHECK(!Interaction(R"({"action": "area_trigger", "area_trigger_id": 6581, "timeout_ms": 1})", trigger));
     InteractionObservation outside;
+    // An unresolved trigger never produces a move (no walk toward 0,0,0).
+    decision = DecideInteraction(trigger, outside, AttemptGate::Allowed);
+    CHECK(decision.Step == InteractionStep::Hold && decision.Reason == "native_interaction_area_trigger_invalid");
+    outside.TargetResolved = true;
     CHECK(DecideInteraction(trigger, outside, AttemptGate::Allowed).Step == InteractionStep::Approach);
     outside.InRange = true;
     CHECK(DecideInteraction(trigger, outside, AttemptGate::Allowed).Step == InteractionStep::AreaTrigger);
@@ -301,15 +352,27 @@ int main()
     facts.ObjectFacts[0].Selectable = facts.ObjectFacts[0].Interactable = true;
     CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
 
-    // Despawn only after the object was observed spawned in this scope.
+    // Despawn only after the object was observed spawned in this scope, and
+    // only when absence is proven by the route instance's spawn-id store.
     CHECK(!Completion(R"({"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510})", contract));
     facts.ObjectFacts.clear();
     CHECK(EvaluateCompletion(contract, facts, memory).Reason == "gameobject_never_observed_spawned");
     ActorFact orb; orb.Entry = 203254; orb.SpawnId = 239510; orb.Spawned = true;
     facts.ObjectFacts = { orb };
     CHECK(!EvaluateCompletion(contract, facts, memory).Satisfied);
-    facts.ObjectFacts[0].Spawned = false;
+    // An evaluator that cannot prove absence (grid unloaded, wrong map)
+    // sees "unknown", never "despawned".
+    facts.ObjectFacts.clear();
+    facts.AbsenceAuthoritative = false;
+    CHECK(EvaluateCompletion(contract, facts, memory).Reason == "gameobject_absence_unknown");
+    facts.AbsenceAuthoritative = true;
     CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
+    facts.ObjectFacts = { orb };
+    facts.ObjectFacts[0].Spawned = false;
+    facts.AbsenceAuthoritative = false;
+    // Present but unspawned (respawn timer) is known despawned.
+    CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
+    facts.AbsenceAuthoritative = true;
 
     ActorFact nefarian; nefarian.Entry = 41376; nefarian.Alive = true; nefarian.Flying = true;
     CHECK(!Completion(R"({"kind": "creature_summoned", "entry": 41376})", contract));
@@ -351,8 +414,8 @@ int main()
     facts.TransportState.ArrivedAtStop = true;
     CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
 
-    MemberFact a; a.Guid = 1; a.Alive = true;
-    MemberFact b; b.Guid = 2; b.Alive = true; b.Owner = true;
+    MemberFact a; a.Guid = 1; a.Alive = true; a.OnRouteInstance = true;
+    MemberFact b; b.Guid = 2; b.Alive = true; b.Owner = true; b.OnRouteInstance = true;
     MemberFact dead; dead.Guid = 3;
     facts.MemberFacts = { a, b, dead };
     CHECK(!Completion(R"({"kind": "on_transport", "transport_entry": 207834})", contract));
@@ -361,6 +424,14 @@ int main()
     CHECK(EvaluateCompletion(contract, facts, memory).Reason == "members_pending:1/2");
     facts.MemberFacts[1].OnTransport = true; facts.MemberFacts[1].TransportEntry = 207834;
     CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
+    // A living member elsewhere (corpse run, other map) blocks "all".
+    MemberFact away; away.Guid = 4; away.Alive = true;
+    facts.MemberFacts.push_back(away);
+    CHECK(EvaluateCompletion(contract, facts, memory).Reason == "members_off_route_map");
+    CHECK(!Completion(R"({"kind": "on_transport", "transport_entry": 207834, "scope": "any"})", contract));
+    CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
+    facts.MemberFacts.pop_back();
+    CHECK(!Completion(R"({"kind": "on_transport", "transport_entry": 207834})", contract));
     facts.TransportState.Ambiguous = true;
     CHECK(EvaluateCompletion(contract, facts, memory).Reason == "transport_ambiguous");
     facts.TransportState.Ambiguous = false;
@@ -374,17 +445,20 @@ int main()
     CHECK(!Completion(R"({"kind": "vehicle_seated", "vehicle_entry": 900, "scope": "any"})", contract));
     CHECK(EvaluateCompletion(contract, facts, memory).Satisfied);
 
-    // Composite: the orb completes on its despawn or on Nefarian's summon.
+    // Composite: the orb needs its despawn and Nefarian's native summon; the
+    // despawn alone happens even when Nefarius cannot start the intro.
     FakeFacts orbFacts;
     CompletionMemory orbMemory;
-    CHECK(!Completion(R"({"kind": "any_of", "contracts": [{"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510}, {"kind": "creature_summoned", "entry": 41376}]})", contract));
+    CHECK(!Completion(R"({"kind": "all_of", "contracts": [{"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510}, {"kind": "creature_summoned", "entry": 41376}]})", contract));
     orbFacts.ObjectFacts = { orb };
     orbFacts.ObjectFacts[0].Spawned = true;
     CHECK(!EvaluateCompletion(contract, orbFacts, orbMemory).Satisfied);
+    orbFacts.ObjectFacts.clear();
+    CHECK(!EvaluateCompletion(contract, orbFacts, orbMemory).Satisfied);
     orbFacts.CreatureFacts = { nefarian };
     CHECK(EvaluateCompletion(contract, orbFacts, orbMemory).Satisfied);
+    CHECK(!Completion(R"({"kind": "any_of", "contracts": [{"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510}, {"kind": "creature_summoned", "entry": 41376}]})", contract));
     orbFacts.CreatureFacts.clear();
-    orbFacts.ObjectFacts[0].Spawned = false;
     CHECK(EvaluateCompletion(contract, orbFacts, orbMemory).Satisfied);
     CHECK(!Completion(R"({"kind": "all_of", "contracts": [{"kind": "transport_at_stop", "transport_entry": 207834, "stop_frame": 0}, {"kind": "creature_summoned", "entry": 41376}]})", contract));
     CHECK(!EvaluateCompletion(contract, orbFacts, orbMemory).Satisfied);
@@ -393,48 +467,72 @@ int main()
 ''')
 
 
-def test_transport_boarding_phases_and_footprint(tmp_path: Path) -> None:
+def test_transport_boarding_phases_floors_and_rest_window(tmp_path: Path) -> None:
     _compile_and_run(tmp_path, PRELUDE + r'''
+static TransportTimeline LowerWingElevator()
+{
+    // TransportAnimation.dbc rows for GO 203716 (TotalTime 17367 ms).
+    TransportTimeline timeline;
+    timeline.PeriodMs = 17367;
+    timeline.ZKeys = { { 0, 0.0f }, { 1733, 0.0f }, { 1800, -0.072564f }, { 1833, -0.072564f },
+        { 8567, -112.67043f }, { 8633, -112.57608f }, { 8667, -112.67043f }, { 10400, -112.67043f },
+        { 10467, -112.59728f }, { 10533, -112.67043f }, { 17267, 0.0f }, { 17300, -0.048267f },
+        { 17367, 0.0f } };
+    return timeline;
+}
+
 int main()
 {
-    // BWD lower-wing elevator geometry: display 10407 box, spawn at z 186.5513.
-    LocalBox box{ -12.57f, -12.57f, -1.83f, 12.36f, 12.57f, 3.48f, true };
-    TransportFact top; top.Present = true; top.Entry = 203716;
-    top.PositionX = -241.349f; top.PositionY = -224.6053f; top.PositionZ = 186.5513f;
-    Point3 const boardLocal = LocalOffset(-250.35f, -224.6053f, 190.154f, top);
-    CHECK(std::fabs(boardLocal.X + 9.001f) < 0.01f && std::fabs(boardLocal.Z - 3.6027f) < 0.01f);
-    CHECK(InsideFootprint(boardLocal, box, 0.5f));
-    CHECK(!InsideFootprint(LocalOffset(-256.35f, -224.6053f, 190.163f, top), box, 0.5f));
-    // Rotation: a transport facing pi maps world +x to local -x.
-    TransportFact arena; arena.Present = true; arena.PositionX = -107.2f; arena.PositionY = -224.6f; arena.PositionZ = 7.0f; arena.Orientation = 3.14159265f;
-    Point3 const arenaLocal = LocalOffset(-150.0f, -224.6f, 6.6f, arena);
-    CHECK(std::fabs(arenaLocal.X - 42.8f) < 0.01f && std::fabs(arenaLocal.Y) < 0.01f);
-    CHECK(!InsideFootprint({ 80.0f, 0.0f, 0.0f, true }, { -90, -90, -9, 90, 90, 9, true }, 0.5f));
+    // Local frame: a transport facing pi maps world +x to local -x.
+    TransportFact arena; arena.Present = true; arena.PositionX = -107.213f; arena.PositionY = -224.62f;
+    arena.PositionZ = 7.03378f; arena.Orientation = 3.14159265f;
+    Point3 const arenaLocal = LocalOffset(-132.2132f, -224.6203f, 6.5714f, arena);
+    CHECK(std::fabs(arenaLocal.X - 25.0f) < 0.01f && std::fabs(arenaLocal.Y) < 0.01f);
+    CHECK(InsideBox(arenaLocal, { -71.31f, -71.31f, -8.69f, 71.3f, 71.31f, 9.95f, true }, 0.0f));
+
+    // Rest window: arrival at the top leaves ~2 s; mid-descent leaves none.
+    TransportTimeline const timeline = LowerWingElevator();
+    std::uint64_t const atArrival = RestRemainingMs(timeline, 17267, 0.0f, 0.75f);
+    CHECK(atArrival >= 1900 && atArrival <= 2050);
+    CHECK(RestRemainingMs(timeline, 1000, 0.0f, 0.75f) <= 900);
+    CHECK(RestRemainingMs(timeline, 5000, 0.0f, 0.75f) == 0);
+    CHECK(RestRemainingMs(timeline, 9500, -112.67043f, 0.75f) >= 900);
 
     TransportContract ride;
-    CHECK(!Transport(R"({"entry": 203716, "spawn_id": 235178, "board_transport_z": 186.5513, "exit_transport_z": 73.8809, "level_tolerance_yards": 0.75, "wait_point": [-256.35, -224.6053, 190.163], "board_point": [-250.35, -224.6053, 190.154], "disembark_point": [-241.35, -224.6053, 77.2], "exit_point": [-224.0, -224.6053, 76.8211], "timeout_ms": 240000})", ride));
-    CHECK(ride.HasExit() && ride.DisembarkPoint.Valid);
+    CHECK(!Transport(R"({"entry": 203716, "spawn_id": 235178, "board_transport_z": 186.551, "exit_transport_z": 73.8806, "level_tolerance_yards": 0.75, "wait_point": [-256.35, -224.605, 190.163], "board_point": [-247.349, -224.605, 190.031], "disembark_point": [-241.349, -224.605, 77.361], "exit_point": [-224.0, -224.605, 76.8211], "floor_tolerance_yards": 0.5, "timeout_ms": 240000})", ride));
+    CHECK(ride.HasExit() && ride.DisembarkPoint.Valid && ride.MaxSubmissions == 5);
+    TransportFact top; top.Present = true; top.Entry = 203716; top.PositionZ = 186.551f;
     CHECK(TransportReadyToBoard(ride, top) && !TransportAtExit(ride, top));
     TransportFact bottom = top; bottom.PositionZ = 73.9f;
     CHECK(!TransportReadyToBoard(ride, bottom) && TransportAtExit(ride, bottom));
 
     TransportMemberState state;
     TransportMemberObservation o;
-    o.Alive = true; o.TransportPresent = true;
+    o.Alive = true; o.TransportPresent = true; o.StaticFloorUnderfoot = true;
     o.DistanceToWait = 20.0f; o.DistanceToBoard = 25.0f; o.DistanceToExit = 120.0f;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::MoveToWait);
-    o.DistanceToWait = 0.5f;
+    o.DistanceToWait = 0.5f; o.DistanceToBoard = 9.0f;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Hold);
-    o.ReadyToBoard = true;
+    // Ready, but the remaining rest cannot cover the walk: hold.
+    o.ReadyToBoard = true; o.RestRemainingMs = 900; o.TravelToBoardMs = 1300;
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_rest_window_too_short");
+    o.RestRemainingMs = 1973;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::MoveToBoard);
-    o.InsideFootprint = true; o.DistanceToBoard = 0.4f; o.Moving = true;
+    // At the board point on static ground inside the model box: never board.
+    o.DistanceToBoard = 0.4f;
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_board_point_not_on_platform_floor");
+    // On the platform's own surface, still over a closer static floor: no.
+    o.TransportFloorUnderfoot = true;
+    CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Blocked);
+    o.StaticFloorUnderfoot = false; o.Moving = true;
     CHECK(DecideTransportStep(ride, o, state).Reason == "transport_board_settling");
     o.Moving = false;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Board);
-    // Platform left before boarding: never stand in the empty shaft footprint.
-    o.ReadyToBoard = false;
-    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_not_ready_clear_footprint");
-    o.ReadyToBoard = true;
+    // The platform left while the member waited on it: fail, never walk on air.
+    o.ReadyToBoard = false; o.TransportFloorUnderfoot = false;
+    TransportDecision stranded = DecideTransportStep(ride, o, state);
+    CHECK(stranded.Step == TransportStep::Fail && stranded.Reason == "transport_member_stranded_without_floor");
+    o.ReadyToBoard = true; o.TransportFloorUnderfoot = true;
     o.OnThisTransport = true;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::HoldAboard);
     CHECK(state.Boarded);
@@ -443,15 +541,18 @@ int main()
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::MoveToDisembark);
     o.StaticFloorUnderfoot = true;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Leave);
-    o.OnThisTransport = false; o.InsideFootprint = false;
+    o.OnThisTransport = false; o.TransportFloorUnderfoot = false;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::MoveToExit);
     o.DistanceToExit = 1.0f;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Done);
     CHECK(MemberTransportDone(ride, false, true, 1.0f));
     CHECK(!MemberTransportDone(ride, true, true, 1.0f));
+    // Repeated rejected submissions are bounded.
+    state.FailedSubmissions = ride.MaxSubmissions;
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_submissions_exhausted");
 
     TransportContract board;
-    CHECK(!Transport(R"({"entry": 207834, "board_stop_frame": 0, "wait_point": [-158.4, -223.467, 41.3544], "board_point": [-150.0, -224.6, 6.6], "arrival_tolerance_yards": 3.0})", board));
+    CHECK(!Transport(R"({"entry": 207834, "board_stop_frame": 0, "wait_point": [-158.4, -223.467, 41.3544], "board_point": [-132.2132, -224.6203, 6.5714], "arrival_tolerance_yards": 3.0, "timeout_ms": 180000})", board));
     TransportMemberState boardState;
     TransportMemberObservation b;
     b.Alive = true; b.TransportPresent = true; b.OnThisTransport = true;
@@ -461,6 +562,10 @@ int main()
     CHECK(DecideTransportStep(board, b, boardState).Reason == "transport_ambiguous");
     b.TransportAmbiguous = false; b.OnOtherTransportOrVehicle = true;
     CHECK(DecideTransportStep(board, b, boardState).Reason == "transport_member_on_other_transport");
+    // Script-held stop frames have an unbounded rest window.
+    b.OnOtherTransportOrVehicle = false; b.StaticFloorUnderfoot = true; b.ReadyToBoard = true;
+    b.RestRemainingMs = UnboundedRestMs; b.TravelToBoardMs = 60000; b.DistanceToBoard = 40.0f;
+    CHECK(DecideTransportStep(board, b, boardState).Step == TransportStep::MoveToBoard);
     return failures ? 1 : 0;
 }
 ''')
@@ -476,12 +581,14 @@ int main()
     runtime.Enter({ 1, 0, 3 }, 2000);
     CHECK(runtime.Attempt.Attempts == 1 && runtime.StartedAtMs == 1000);
     // A wipe (new wipe generation) is a new scope: attempts and timers reset.
+    runtime.VerdictValid = true; runtime.VerdictSatisfied = true;
     runtime.Enter({ 1, 1, 3 }, 5000);
     CHECK(runtime.Attempt.Attempts == 0 && runtime.StartedAtMs == 5000);
+    CHECK(!runtime.VerdictValid && !runtime.VerdictSatisfied);
 
     NodeContract node;
-    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [1], "option": 0})", node.Interaction));
-    CHECK(!Completion(R"({"kind": "any_of", "contracts": [{"kind": "gameobject_despawned", "entry": 203254}, {"kind": "aura_present", "entry": 44418, "spell_id": 82705}]})", node.Completion));
+    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [1], "option": 0, "timeout_ms": 1})", node.Interaction));
+    CHECK(!Completion(R"({"kind": "any_of", "contracts": [{"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510}, {"kind": "aura_present", "entry": 44418, "spell_id": 82705}]})", node.Completion));
     std::vector<std::uint32_t> entries = ObservedCreatureEntries(node);
     CHECK(entries.size() == 2 && entries[0] == 44202 && entries[1] == 44418);
     NodeContract empty;
@@ -543,3 +650,21 @@ def test_legacy_regex_kind_matches_top_level_kind_for_accepted_magmaw_rows() -> 
         assert pattern.search(text).group(1) == row["kind"]
         checked += 1
     assert checked == 4
+
+
+def test_route_state_includes_only_the_data_only_contract_types(tmp_path: Path) -> None:
+    """RouteState.h reaches ~180 TUs: it may include only the small data header."""
+
+    bots = ROOT / "src/server/game/Bots"
+    route_state = (bots / "BotWorldPopulationMgrRouteState.h").read_text(encoding="utf-8")
+    assert '#include "Bots/BotValidationRouteNativeTypes.h"' in route_state
+    for heavy in ("BotValidationRouteNativeLogic.h", "BotValidationRouteNativeContract.h",
+                  "BotValidationRouteNativeJson.h"):
+        assert heavy not in route_state
+    types = (bots / "BotValidationRouteNativeTypes.h").read_text(encoding="utf-8")
+    assert len(types.splitlines()) < 300
+    includes = re.findall(r'#include [<"]([^>"]+)[>"]', types)
+    assert includes and all("/" not in name and not name.endswith(".h") for name in includes)
+    for logic in ("ElectOwner", "DecideInteraction", "EvaluateCompletion", "DecideTransportStep", "Parse"):
+        assert logic not in re.sub(r"//.*", "", types)
+    _compile_and_run(tmp_path, '#include "Bots/BotValidationRouteNativeTypes.h"\nint main() { return BotValidationRouteNative::NodeContract().Declared() ? 1 : 0; }\n')

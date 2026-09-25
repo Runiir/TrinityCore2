@@ -239,10 +239,15 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     nativeInput.AnchorX = routeNode.NavigationAnchorX;
                     nativeInput.AnchorY = routeNode.NavigationAnchorY;
                     nativeInput.AnchorZ = routeNode.NavigationAnchorZ;
+                    // Every loaded member counts, wherever it is; only those
+                    // in the route's original instance can observe or act.
                     for (WorldBotState const& cohortState : Party().Bots)
                         if (Player* member = GetLoadedBot(cohortState); member
-                            && member->IsInWorld() && member->GetMap() == context.Bot->GetMap())
-                            nativeInput.Members.push_back(member);
+                            && member->IsInWorld())
+                            nativeInput.Members.push_back({ member,
+                                member->GetMapId() == routeNode.MapId
+                                    && IsValidationCohortMemberInOriginalInstance(
+                                        cohortState, member) });
                     for (auto const& roster : Cohort().Raid.RosterByGuid)
                         if (roster.second.Active && roster.second.LeaseOwned)
                             nativeInput.Roster[roster.second.Guid.GetRawValue()] =
@@ -251,6 +256,7 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                         uint64(Cohort().Raid.WipeGeneration),
                         Party().ValidationRouteGeneration };
                     nativeInput.NowMs = context.DecisionNowMs;
+                    nativeInput.Tick = blackboard.Revision;
                     nativeInput.CompletionAlreadyRecorded =
                         std::any_of(Party().Bots.begin(), Party().Bots.end(),
                             [this](WorldBotState const& cohortState)

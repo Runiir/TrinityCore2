@@ -132,11 +132,12 @@ struct ReleaseSpirit { };
 struct ReclaimCorpse { ObjectGuid Corpse; };
 // Boarding or leaving an elevator platform (GAMEOBJECT_TYPE_TRANSPORT) is a
 // movement report, never a position change. The executor first proves the
-// bot already stands inside the platform footprint (board) or over static
-// ground (leave), then submits the heartbeat a client sends at that exact
-// position and observes the server's own passenger bookkeeping.
-struct TransportBoard { ObjectGuid Transport; float FootprintMarginYards = 0.5f; };
-struct TransportLeave { ObjectGuid Transport; };
+// bot already stands on the platform's own collision surface with no closer
+// static floor (board) or over static ground (leave), then submits the
+// heartbeat a client sends at that exact position and observes the server's
+// own passenger bookkeeping.
+struct TransportBoard { ObjectGuid Transport; float FloorToleranceYards = 0.5f; };
+struct TransportLeave { ObjectGuid Transport; float FloorToleranceYards = 0.5f; };
 
 using Intent = std::variant<CastSpell, Move, DirectionalMobility,
     CombatResApproach,

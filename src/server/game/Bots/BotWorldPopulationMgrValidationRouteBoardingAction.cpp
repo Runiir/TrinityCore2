@@ -4,15 +4,21 @@
 #include "DataStores/DBCStores.h"
 #include "GameClient.h"
 #include "GameObject.h"
+#include "GameObjectModel.h"
 #include "GameTime.h"
 #include "Map.h"
+#include "ModelIgnoreFlags.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Transport.h"
+#include "TransportMgr.h"
 #include "Vehicle.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Server/Packets/MovementPackets.h"
+
+#include <G3D/Ray.h>
+#include <G3D/Vector3.h>
 
 #include <cmath>
 
@@ -46,6 +52,13 @@ bool EnsureActiveMover(Player* bot)
 
 // The heartbeat reports exactly the bot's current world position. Only the
 // transport block differs between boarding and leaving.
+//
+// Bot sessions never answer SMSG_TIME_SYNC_REQ, so their clock delta stays 0
+// and WorldSession::HandleMovementOpcode logs one "computed movement time
+// using clockDelta is erronous" warning per report before falling back to
+// GameTime::GetGameTimeMS() (the value reported here). That fallback is the
+// correct server time; the warning is expected and bounded by
+// TransportContract::MaxSubmissions per member and node.
 MovementInfo CurrentPositionReport(Player* bot)
 {
     MovementInfo info = bot->m_movementInfo;
@@ -70,25 +83,55 @@ GameObject* ResolveTransport(Player* bot, ObjectGuid guid)
 
 namespace BotValidationRouteBoardingAction
 {
-bool DisplayFootprint(GameObject const* transport,
-    BotValidationRouteNative::LocalBox& box)
+bool StaticFloorUnderfoot(Player const* bot, float tolerance)
 {
-    box = BotValidationRouteNative::LocalBox();
-    if (!transport)
+    Map* map = bot ? bot->GetMap() : nullptr;
+    if (!map)
         return false;
-    GameObjectDisplayInfoEntry const* display =
-        sGameObjectDisplayInfoStore.LookupEntry(transport->GetDisplayId());
-    if (!display)
+    float const floor = map->GetStaticHeight(bot->GetPhaseShift(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ() + tolerance,
+        true, 2.0f * tolerance + 0.5f);
+    return floor > INVALID_HEIGHT && std::fabs(bot->GetPositionZ() - floor) <= tolerance;
+}
+
+bool TransportFloorUnderfoot(Player const* bot, GameObject const* transport,
+    float tolerance, bool& modelAvailable)
+{
+    modelAvailable = transport && transport->m_model
+        && transport->m_model->isCollisionEnabled();
+    if (!bot || !modelAvailable)
         return false;
-    float const scale = transport->GetObjectScale() > 0.0f ? transport->GetObjectScale() : 1.0f;
-    box.MinX = display->GeoBoxMin.X * scale;
-    box.MinY = display->GeoBoxMin.Y * scale;
-    box.MinZ = display->GeoBoxMin.Z * scale;
-    box.MaxX = display->GeoBoxMax.X * scale;
-    box.MaxY = display->GeoBoxMax.Y * scale;
-    box.MaxZ = display->GeoBoxMax.Z * scale;
-    box.Valid = box.MaxX > box.MinX && box.MaxY > box.MinY && box.MaxZ >= box.MinZ;
-    return box.Valid;
+    G3D::Vector3 const origin(bot->GetPositionX(), bot->GetPositionY(),
+        bot->GetPositionZ() + tolerance);
+    float distance = 2.0f * tolerance;
+    return transport->m_model->intersectRay(
+        G3D::Ray::fromOriginAndDirection(origin, G3D::Vector3(0.0f, 0.0f, -1.0f)),
+        distance, true, bot->GetPhaseShift(), VMAP::ModelIgnoreFlags::Nothing);
+}
+
+std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
+    float tolerance)
+{
+    using namespace BotValidationRouteNative;
+    if (!transport || std::fabs(transport->GetPositionZ() - levelZ) > tolerance)
+        return 0;
+    GameObjectTemplate const* info = transport->GetGOInfo();
+    // Stop-frame transports only move when a script changes their state.
+    if (info && info->transport.Timeto2ndfloor > 0)
+        return UnboundedRestMs;
+    TransportAnimation const* animation =
+        sTransportMgr->GetTransportAnimInfo(transport->GetEntry());
+    if (!animation || !animation->TotalTime)
+        return 0;
+    TransportTimeline timeline;
+    timeline.PeriodMs = animation->TotalTime;
+    for (auto const& [time, node] : animation->Path)
+        if (node)
+            timeline.ZKeys.emplace_back(time, node->Pos.Z);
+    // Cycling transports advance as game time modulo their period.
+    std::uint32_t const progress = GameTime::GetGameTimeMS() % timeline.PeriodMs;
+    return RestRemainingMs(timeline, progress, levelZ - transport->GetStationaryZ(),
+        tolerance);
 }
 
 BotValidationRouteNative::TransportFact ObserveTransport(GameObject const* transport)
@@ -108,6 +151,7 @@ BotValidationRouteNative::TransportFact ObserveTransport(GameObject const* trans
     fact.PositionY = transport->GetPositionY();
     fact.PositionZ = transport->GetPositionZ();
     fact.Orientation = transport->GetOrientation();
+    fact.StationaryZ = transport->GetStationaryZ();
     return fact;
 }
 
@@ -172,20 +216,25 @@ BotActionArbitration::Outcome BoardTransport(Player* bot,
     if (BotIsMoving(bot))
         return Outcome::Retryable("native_transport_board_moving");
 
-    BotValidationRouteNative::LocalBox box;
-    if (!DisplayFootprint(object, box))
-        return Outcome::Unsafe("native_transport_footprint_unknown");
+    // The bot must already stand on this platform's own surface: boarding
+    // reports the current position and never moves the bot onto it. Static
+    // ground that merely lies inside the model's bounding box is not enough,
+    // and a closer static floor means the bot is not standing on the platform.
+    bool modelAvailable = false;
+    bool const onPlatform = TransportFloorUnderfoot(bot, object,
+        action.FloorToleranceYards, modelAvailable);
+    if (!modelAvailable)
+        return Outcome::Unsafe("native_transport_model_unavailable");
+    if (!onPlatform)
+        return Outcome::Retryable("native_transport_board_no_platform_floor");
+    if (StaticFloorUnderfoot(bot, action.FloorToleranceYards))
+        return Outcome::Retryable("native_transport_board_static_floor_underfoot");
     TransportBase* transport = object->ToTransportBase();
     float x = bot->GetPositionX();
     float y = bot->GetPositionY();
     float z = bot->GetPositionZ();
     float o = bot->GetOrientation();
     transport->CalculatePassengerOffset(x, y, z, &o);
-    // The bot must already stand on the platform: boarding reports the
-    // current position, it never moves the bot onto the transport.
-    if (!BotValidationRouteNative::InsideFootprint({ x, y, z, true }, box,
-            action.FootprintMarginYards))
-        return Outcome::Retryable("native_transport_board_outside_footprint");
     if (!EnsureActiveMover(bot))
         return Outcome::Unsafe("native_transport_active_mover_unavailable");
 
@@ -212,12 +261,7 @@ BotActionArbitration::Outcome LeaveTransport(Player* bot,
 
     // Leave only where static ground is directly underfoot, so the report
     // cannot leave the bot standing in the air once the platform moves on.
-    Map* map = bot->GetMap();
-    float const staticFloor = map->GetStaticHeight(bot->GetPhaseShift(),
-        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ() + 1.0f,
-        true, 4.0f);
-    if (staticFloor <= INVALID_HEIGHT
-        || std::fabs(bot->GetPositionZ() - staticFloor) > 1.5f)
+    if (!StaticFloorUnderfoot(bot, action.FloorToleranceYards))
         return Outcome::Retryable("native_transport_leave_no_static_floor");
     if (!EnsureActiveMover(bot))
         return Outcome::Unsafe("native_transport_active_mover_unavailable");

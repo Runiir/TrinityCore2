@@ -4,15 +4,16 @@
 // Pure decision logic for native route contracts: owner election, bounded
 // attempts, observed completion evaluation and transport boarding phases.
 // The server adapter supplies observations; nothing here touches game state.
+// Included only by the route runtime, the encounter observer and tests.
 
-#include "Bots/BotValidationRouteNativeContract.h"
+#include "Bots/BotValidationRouteNativeTypes.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <map>
+#include <limits>
 #include <string>
-#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace BotValidationRouteNative
@@ -23,6 +24,7 @@ namespace BotValidationRouteNative
 struct MemberView
 {
     std::uint64_t Guid = 0;
+    // Alive and in the route's original instance.
     bool Alive = false;
     std::string Role;
     // 1-based frozen roster slot; 0 when the member has no roster slot.
@@ -89,12 +91,6 @@ inline OwnerElection ElectOwner(InteractionContract const& contract,
 // ---------------------------------------------------------------------------
 // Bounded attempts
 // ---------------------------------------------------------------------------
-struct AttemptState
-{
-    std::uint64_t LastSubmitAtMs = 0;
-    std::uint32_t Attempts = 0;
-};
-
 enum class AttemptGate : std::uint8_t { Allowed, RetryWait, AttemptsExhausted, TimedOut };
 
 inline char const* AttemptGateName(AttemptGate gate)
@@ -109,19 +105,22 @@ inline char const* AttemptGateName(AttemptGate gate)
     return "unknown";
 }
 
+// Exhaustion is reported only after the last attempt has had its full retry
+// interval to produce the native postcondition.
 inline AttemptGate EvaluateAttemptGate(InteractionContract const& contract,
     AttemptState const& state, std::uint64_t startedAtMs, std::uint64_t nowMs)
 {
     if (contract.TimeoutMs && nowMs >= startedAtMs + contract.TimeoutMs)
         return AttemptGate::TimedOut;
+    bool const retryWindowOpen = contract.RetryIntervalMs && state.Attempts
+        && nowMs < state.LastSubmitAtMs + contract.RetryIntervalMs;
     if (contract.MaxAttempts && state.Attempts >= contract.MaxAttempts)
-        return AttemptGate::AttemptsExhausted;
-    if (contract.RetryIntervalMs && state.Attempts
-        && nowMs < state.LastSubmitAtMs + contract.RetryIntervalMs)
-        return AttemptGate::RetryWait;
-    return AttemptGate::Allowed;
+        return retryWindowOpen ? AttemptGate::RetryWait : AttemptGate::AttemptsExhausted;
+    return retryWindowOpen ? AttemptGate::RetryWait : AttemptGate::Allowed;
 }
 
+// Every native submission counts, whether the handler accepted it or the
+// executor rejected it (Retryable/Unsafe): repeated rejections exhaust too.
 inline void RecordAttempt(AttemptState& state, std::uint64_t nowMs)
 {
     ++state.Attempts;
@@ -134,6 +133,7 @@ inline void RecordAttempt(AttemptState& state, std::uint64_t nowMs)
 enum class InteractionStep : std::uint8_t
 {
     Hold,
+    Fail,
     Approach,
     Use,
     GossipOpen,
@@ -145,6 +145,7 @@ enum class InteractionStep : std::uint8_t
 
 struct InteractionObservation
 {
+    // For area triggers: the trigger exists on the route map.
     bool TargetResolved = false;
     bool TargetAmbiguous = false;
     bool InRange = false;
@@ -165,14 +166,26 @@ inline InteractionDecision DecideInteraction(InteractionContract const& contract
     InteractionObservation const& observation, AttemptGate gate)
 {
     if (gate == AttemptGate::TimedOut)
-        return { InteractionStep::Hold, false, AttemptGateName(gate) };
-    if (contract.Action != InteractionAction::AreaTrigger)
+        return { InteractionStep::Fail, false, AttemptGateName(gate) };
+    if (contract.Action == InteractionAction::AreaTrigger)
+    {
+        if (!observation.TargetResolved)
+            return { InteractionStep::Hold, false, "native_interaction_area_trigger_invalid" };
+    }
+    else
     {
         if (observation.TargetAmbiguous)
             return { InteractionStep::Hold, false, "native_interaction_target_ambiguous" };
         if (!observation.TargetResolved)
             return { InteractionStep::Hold, false, "native_interaction_target_missing" };
     }
+    // Continuing an open dialogue is part of the attempt that opened it.
+    if (contract.IsGossip() && observation.InRange && observation.GossipBoundToTarget
+        && std::find(contract.Menus.begin(), contract.Menus.end(),
+            observation.CurrentGossipMenu) != contract.Menus.end())
+        return { InteractionStep::GossipSelect, false, "native_gossip_select" };
+    if (gate == AttemptGate::AttemptsExhausted)
+        return { InteractionStep::Fail, false, AttemptGateName(gate) };
     if (!observation.InRange)
         return { InteractionStep::Approach, false, "native_interaction_approach" };
 
@@ -194,16 +207,8 @@ inline InteractionDecision DecideInteraction(InteractionContract const& contract
             break;
         case InteractionAction::GossipSelect:
         case InteractionAction::GossipSelectSequence:
-        {
-            bool const configuredMenu = observation.GossipBoundToTarget
-                && std::find(contract.Menus.begin(), contract.Menus.end(),
-                    observation.CurrentGossipMenu) != contract.Menus.end();
-            // Continuing an open dialogue is part of the current attempt.
-            if (configuredMenu)
-                return { InteractionStep::GossipSelect, false, "native_gossip_select" };
             commit.Step = InteractionStep::GossipOpen;
             break;
-        }
         case InteractionAction::None:
             return { InteractionStep::Hold, false, "native_interaction_action_unknown" };
     }
@@ -231,10 +236,20 @@ struct ActorFact
     std::vector<std::uint32_t> AuraIds;
 };
 
+struct ObjectQuery
+{
+    std::vector<ActorFact> Facts;
+    // True only when the lookup was the route instance's spawn-id store with
+    // the spawn's grid loaded: then "not found" means "not in the world".
+    bool AbsenceAuthoritative = false;
+};
+
 struct MemberFact
 {
     std::uint64_t Guid = 0;
     bool Alive = false;
+    // On the route map, in the route's original instance.
+    bool OnRouteInstance = false;
     bool Owner = false;
     bool OnTransport = false;
     std::uint32_t TransportEntry = 0;
@@ -256,9 +271,10 @@ struct TransportFact
     float PositionY = 0.0f;
     float PositionZ = 0.0f;
     float Orientation = 0.0f;
+    float StationaryZ = 0.0f;
 };
 
-// GOState values (SharedDefines.h): 25 + frame means "stop at frame".
+// GOState values (SharedDefines.h): 25 + n means "stop at stop frame n".
 constexpr std::uint32_t GoStateTransportStopped = 25;
 
 class FactSource
@@ -266,27 +282,11 @@ class FactSource
 public:
     virtual ~FactSource() = default;
     virtual std::vector<ActorFact> Creatures(std::uint32_t entry, std::uint64_t spawnId) const = 0;
-    virtual std::vector<ActorFact> GameObjects(std::uint32_t entry, std::uint64_t spawnId) const = 0;
+    virtual ObjectQuery GameObjects(std::uint32_t entry, std::uint64_t spawnId) const = 0;
     virtual bool BossState(std::uint32_t index, std::uint32_t& state) const = 0;
+    // Every living cohort member, wherever it is.
     virtual std::vector<MemberFact> Members() const = 0;
     virtual TransportFact Transport(std::uint32_t entry, std::uint64_t spawnId) const = 0;
-};
-
-struct CompletionMemory
-{
-    std::vector<std::string> ObservedPresent;
-
-    bool Seen(std::string const& key) const
-    {
-        return std::find(ObservedPresent.begin(), ObservedPresent.end(), key)
-            != ObservedPresent.end();
-    }
-
-    void Remember(std::string const& key)
-    {
-        if (!Seen(key))
-            ObservedPresent.push_back(key);
-    }
 };
 
 struct Verdict
@@ -325,12 +325,18 @@ inline Verdict EvaluateCompletion(CompletionContract const& contract,
     };
     auto members = [&facts, &contract](auto predicate) -> Verdict
     {
-        std::vector<MemberFact> const all = facts.Members();
         std::uint32_t considered = 0, satisfied = 0;
-        for (MemberFact const& member : all)
+        for (MemberFact const& member : facts.Members())
         {
             if (!member.Alive)
                 continue;
+            if (!member.OnRouteInstance)
+            {
+                // "All" means every living member; one elsewhere blocks it.
+                if (contract.Scope == MemberScope::All)
+                    return { false, "members_off_route_map" };
+                continue;
+            }
             if (contract.Scope == MemberScope::Owner && !member.Owner)
                 continue;
             ++considered;
@@ -347,7 +353,7 @@ inline Verdict EvaluateCompletion(CompletionContract const& contract,
     {
         case CompletionKind::GameObjectSelectable:
         {
-            for (ActorFact const& object : facts.GameObjects(contract.Entry, contract.SpawnId))
+            for (ActorFact const& object : facts.GameObjects(contract.Entry, contract.SpawnId).Facts)
                 if (object.Spawned && object.Selectable && object.Interactable)
                     return verdict(true, "gameobject_selectable");
             return verdict(false, "gameobject_not_selectable");
@@ -356,14 +362,19 @@ inline Verdict EvaluateCompletion(CompletionContract const& contract,
         {
             std::string const key = "go:" + std::to_string(contract.Entry) + ":"
                 + std::to_string(contract.SpawnId);
+            ObjectQuery const query = facts.GameObjects(contract.Entry, contract.SpawnId);
             bool spawned = false;
-            for (ActorFact const& object : facts.GameObjects(contract.Entry, contract.SpawnId))
+            for (ActorFact const& object : query.Facts)
                 spawned = spawned || object.Spawned;
             if (spawned)
             {
                 memory.Remember(key);
                 return verdict(false, "gameobject_still_spawned");
             }
+            // Not found is unknown unless the route instance's spawn store
+            // says so; a present-but-unspawned object is known despawned.
+            if (query.Facts.empty() && !query.AbsenceAuthoritative)
+                return verdict(false, "gameobject_absence_unknown");
             if (contract.RequireObservedPresent && !memory.Seen(key))
                 return verdict(false, "gameobject_never_observed_spawned");
             return verdict(true, "gameobject_despawned");
@@ -451,7 +462,7 @@ inline Verdict EvaluateCompletion(CompletionContract const& contract,
 }
 
 // ---------------------------------------------------------------------------
-// Transport geometry and phases
+// Transport geometry and timeline
 // ---------------------------------------------------------------------------
 struct LocalBox
 {
@@ -459,9 +470,6 @@ struct LocalBox
     float MaxX = 0.0f, MaxY = 0.0f, MaxZ = 0.0f;
     bool Valid = false;
 };
-
-// Largest passenger offset the native movement handler accepts.
-constexpr float MaxTransportOffset = 75.0f;
 
 // World point to transport-local offset (rotation about Z by -orientation),
 // matching TransportBase::CalculatePassengerOffset.
@@ -474,16 +482,58 @@ inline Point3 LocalOffset(float x, float y, float z, TransportFact const& transp
     return { dx * c + dy * s, dy * c - dx * s, z - transport.PositionZ, true };
 }
 
-inline bool InsideFootprint(Point3 const& local, LocalBox const& box, float margin)
+inline bool InsideBox(Point3 const& local, LocalBox const& box, float margin)
 {
-    if (!local.Valid || !box.Valid)
-        return false;
-    if (std::fabs(local.X) > MaxTransportOffset || std::fabs(local.Y) > MaxTransportOffset
-        || std::fabs(local.Z) > MaxTransportOffset)
-        return false;
-    return local.X >= box.MinX - margin && local.X <= box.MaxX + margin
+    return local.Valid && box.Valid
+        && local.X >= box.MinX - margin && local.X <= box.MaxX + margin
         && local.Y >= box.MinY - margin && local.Y <= box.MaxY + margin
         && local.Z >= box.MinZ - margin && local.Z <= box.MaxZ + margin;
+}
+
+// TransportAnimation Z keyframes (time ms -> offset from the stationary
+// origin) of a continuously cycling transport.
+struct TransportTimeline
+{
+    std::vector<std::pair<std::uint32_t, float>> ZKeys;
+    std::uint32_t PeriodMs = 0;
+
+    float OffsetAt(std::uint32_t timeMs) const
+    {
+        if (ZKeys.empty())
+            return 0.0f;
+        if (timeMs <= ZKeys.front().first)
+            return ZKeys.front().second;
+        for (std::size_t i = 1; i < ZKeys.size(); ++i)
+            if (timeMs <= ZKeys[i].first)
+            {
+                auto const& [t0, z0] = ZKeys[i - 1];
+                auto const& [t1, z1] = ZKeys[i];
+                float const f = t1 > t0 ? float(timeMs - t0) / float(t1 - t0) : 1.0f;
+                return z0 + (z1 - z0) * f;
+            }
+        return ZKeys.back().second;
+    }
+};
+
+constexpr std::uint64_t UnboundedRestMs = std::numeric_limits<std::uint64_t>::max();
+
+// Milliseconds the platform keeps its origin within `tolerance` of
+// `levelOffset` from `progressMs` on (0 when not at the level now).
+inline std::uint64_t RestRemainingMs(TransportTimeline const& timeline,
+    std::uint32_t progressMs, float levelOffset, float tolerance, std::uint32_t stepMs = 25)
+{
+    if (!timeline.PeriodMs || timeline.ZKeys.empty())
+        return 0;
+    auto atLevel = [&](std::uint32_t t)
+    {
+        return std::fabs(timeline.OffsetAt(t % timeline.PeriodMs) - levelOffset) <= tolerance;
+    };
+    if (!atLevel(progressMs))
+        return 0;
+    for (std::uint32_t elapsed = stepMs; elapsed <= timeline.PeriodMs; elapsed += stepMs)
+        if (!atLevel(progressMs + elapsed))
+            return elapsed - stepMs;
+    return UnboundedRestMs;
 }
 
 inline bool TransportReadyToBoard(TransportContract const& contract, TransportFact const& fact)
@@ -502,6 +552,9 @@ inline bool TransportAtExit(TransportContract const& contract, TransportFact con
         : TransportAtLevel(fact, contract.ExitTransportZ, contract.LevelToleranceYards);
 }
 
+// ---------------------------------------------------------------------------
+// Transport member phases
+// ---------------------------------------------------------------------------
 enum class TransportStep : std::uint8_t
 {
     Hold,
@@ -513,7 +566,8 @@ enum class TransportStep : std::uint8_t
     Leave,
     MoveToExit,
     Done,
-    Blocked
+    Blocked,
+    Fail
 };
 
 inline char const* TransportStepName(TransportStep step)
@@ -530,18 +584,13 @@ inline char const* TransportStepName(TransportStep step)
         case TransportStep::MoveToExit: return "move_to_exit";
         case TransportStep::Done: return "done";
         case TransportStep::Blocked: return "blocked";
+        case TransportStep::Fail: return "fail";
     }
     return "unknown";
 }
 
-struct TransportMemberState
-{
-    bool Boarded = false;
-    bool Left = false;
-    std::uint32_t BoardSubmissions = 0;
-    std::uint32_t LeaveSubmissions = 0;
-    std::string LastReason;
-};
+// Margin between the planned walk and the end of a platform's rest window.
+constexpr std::uint64_t BoardWindowMarginMs = 300;
 
 struct TransportMemberObservation
 {
@@ -552,10 +601,15 @@ struct TransportMemberObservation
     bool AtExit = false;
     bool OnThisTransport = false;
     bool OnOtherTransportOrVehicle = false;
-    bool InsideFootprint = false;
     bool Moving = false;
-    // Static (non-transport) ground directly under the member.
+    // Floors directly underfoot, within the contract's floor tolerance.
     bool StaticFloorUnderfoot = false;
+    // This transport's own model surface (not merely its bounding box).
+    bool TransportFloorUnderfoot = false;
+    // Remaining rest of the platform at the boarding level, and the walk
+    // time to the board point (UnboundedRestMs for script-held stop frames).
+    std::uint64_t RestRemainingMs = 0;
+    std::uint64_t TravelToBoardMs = 0;
     float DistanceToWait = 0.0f;
     float DistanceToBoard = 0.0f;
     float DistanceToDisembark = 0.0f;
@@ -581,6 +635,8 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
         return { TransportStep::Blocked, "transport_missing" };
     if (observation.OnOtherTransportOrVehicle && !observation.OnThisTransport)
         return { TransportStep::Blocked, "transport_member_on_other_transport" };
+    if (state.FailedSubmissions >= contract.MaxSubmissions)
+        return { TransportStep::Fail, "transport_submissions_exhausted" };
 
     if (observation.OnThisTransport)
     {
@@ -605,6 +661,11 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
         return { TransportStep::Leave, "transport_exit_level_reached" };
     }
 
+    // Not a passenger: the member must stand on some floor. A member left
+    // standing where the platform used to be can never be walked on lawfully.
+    if (!observation.StaticFloorUnderfoot && !observation.TransportFloorUnderfoot)
+        return { TransportStep::Fail, "transport_member_stranded_without_floor" };
+
     if (state.Boarded && contract.HasExit())
     {
         state.Left = true;
@@ -615,21 +676,24 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
 
     if (!observation.ReadyToBoard)
     {
-        // Never stand where the platform will arrive while it is away.
-        if (observation.InsideFootprint && contract.WaitPoint.Valid)
-            return { TransportStep::MoveToWait, "transport_not_ready_clear_footprint" };
         if (contract.WaitPoint.Valid
             && observation.DistanceToWait > contract.ArrivalToleranceYards)
             return { TransportStep::MoveToWait, "transport_wait_path" };
         return { TransportStep::Hold, "transport_waiting" };
     }
-    if (observation.InsideFootprint
-        && observation.DistanceToBoard <= contract.ArrivalToleranceYards)
+    if (observation.DistanceToBoard <= contract.ArrivalToleranceYards)
     {
+        // Board only from this platform's own surface, never from static
+        // ground that merely lies inside the model's bounding box.
+        if (!observation.TransportFloorUnderfoot || observation.StaticFloorUnderfoot)
+            return { TransportStep::Blocked, "transport_board_point_not_on_platform_floor" };
         if (observation.Moving)
             return { TransportStep::Hold, "transport_board_settling" };
         return { TransportStep::Board, "transport_board_ready" };
     }
+    if (observation.RestRemainingMs != UnboundedRestMs
+        && observation.RestRemainingMs < observation.TravelToBoardMs + BoardWindowMarginMs)
+        return { TransportStep::Hold, "transport_rest_window_too_short" };
     return { TransportStep::MoveToBoard, "transport_board_path" };
 }
 
@@ -644,60 +708,8 @@ inline bool MemberTransportDone(TransportContract const& contract,
 }
 
 // ---------------------------------------------------------------------------
-// Per-node aggregate stored on the manifest node
+// Observation scope
 // ---------------------------------------------------------------------------
-struct RuntimeScope
-{
-    std::uint64_t AttemptId = 0;
-    std::uint64_t WipeGeneration = 0;
-    std::uint64_t RouteGeneration = 0;
-
-    bool operator==(RuntimeScope const& other) const
-    {
-        return std::tie(AttemptId, WipeGeneration, RouteGeneration)
-            == std::tie(other.AttemptId, other.WipeGeneration, other.RouteGeneration);
-    }
-    bool operator!=(RuntimeScope const& other) const { return !(*this == other); }
-};
-
-struct NodeRuntime
-{
-    RuntimeScope Scope;
-    bool Started = false;
-    std::uint64_t StartedAtMs = 0;
-    AttemptState Attempt;
-    CompletionMemory Completion;
-    std::map<std::uint64_t, TransportMemberState> TransportMembers;
-    bool CompletionRecorded = false;
-    bool FailureRecorded = false;
-    std::string LastDiagnostic;
-
-    // Reset on any change of attempt, wipe or route generation.
-    void Enter(RuntimeScope const& scope, std::uint64_t nowMs)
-    {
-        if (Started && Scope == scope)
-            return;
-        *this = NodeRuntime();
-        Scope = scope;
-        Started = true;
-        StartedAtMs = nowMs;
-    }
-};
-
-struct NodeContract
-{
-    InteractionContract Interaction;
-    CompletionContract Completion;
-    TransportContract Transport;
-    NodeRuntime Runtime;
-
-    bool Declared() const
-    {
-        return Interaction.Declared || Completion.Declared || Transport.Declared;
-    }
-};
-
-// Creature entries the encounter observer must keep visible for this node.
 inline void CollectObservedCreatureEntries(CompletionContract const& completion,
     std::vector<std::uint32_t>& entries)
 {
@@ -717,6 +729,7 @@ inline void CollectObservedCreatureEntries(CompletionContract const& completion,
         CollectObservedCreatureEntries(child, entries);
 }
 
+// Creature entries the encounter observer must keep visible for this node.
 inline std::vector<std::uint32_t> ObservedCreatureEntries(NodeContract const& node)
 {
     std::vector<std::uint32_t> entries;

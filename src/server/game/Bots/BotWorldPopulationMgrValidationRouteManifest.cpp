@@ -1,6 +1,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Cryptography/CryptoHash.h"
+#include "DataStores/DBCStores.h"
 #include "Util.h"
 
 #include <algorithm>
@@ -15,7 +16,7 @@
 #include <vector>
 
 #include "Bots/BotWorldPopulationMgrValidationRouteManifestFields.h"
-#include "Bots/BotValidationRouteNativeLogic.h"
+#include "Bots/BotValidationRouteNativeContract.h"
 
 using namespace BotValidationRouteManifestFields;
 
@@ -371,6 +372,21 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.NativeCompletionEntry = node.NativeContract.Completion.Entry;
         node.NativeCompletionSpellId = node.NativeContract.Completion.SpellId;
         node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
+        // A declared area trigger must exist on the route map; never walk
+        // toward an unresolved trigger position.
+        if (node.NativeContract.Interaction.Declared
+            && node.NativeContract.Interaction.Action
+                == BotValidationRouteNative::InteractionAction::AreaTrigger)
+        {
+            AreaTriggerEntry const* trigger = sAreaTriggerStore.LookupEntry(
+                node.NativeContract.Interaction.AreaTriggerId);
+            if (!trigger || trigger->ContinentID != node.MapId)
+            {
+                Party().ValidationRouteManifestLoadError =
+                    "native_interaction_contract_invalid:area_trigger_not_on_route_map";
+                return;
+            }
+        }
         node.RecoveryEntranceAreaTriggerId = uint32(std::max(0,
             readInt(routeJson, "recovery_entrance_area_trigger_id")));
         node.RecoveryEntranceSourceMapId = uint32(std::max(0,

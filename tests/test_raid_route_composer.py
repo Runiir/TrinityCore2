@@ -146,8 +146,10 @@ def test_native_bwd_prerequisites_use_generic_contracts() -> None:
     by_id = {row["node_id"]: row for row in _scenario(_config(), FULL)["route"]}
     orb = by_id["bwd.nefarian.orb_gossip"]
     assert orb["interaction_contract"]["owner_role"] == "dps"
+    # The orb's despawn alone is weak proof (GossipSelect despawns it even
+    # when Nefarius cannot start the intro): Nefarian's summon is required.
     assert orb["completion_contract"] == {
-        "kind": "any_of",
+        "kind": "all_of",
         "contracts": [
             {"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510},
             {"kind": "creature_summoned", "entry": 41376},
@@ -155,7 +157,15 @@ def test_native_bwd_prerequisites_use_generic_contracts() -> None:
     }
     intro = by_id["bwd.nefarian.intro_wait"]["completion_contract"]
     assert intro["kind"] == "all_of"
+    assert intro["timeout_ms"] == 120000
     assert {"kind": "transport_at_stop", "transport_entry": 207834, "stop_frame": 0} in intro["contracts"]
+    # Every declared contract is bounded in time.
+    for row in by_id.values():
+        for field in ("interaction_contract", "transport_contract"):
+            if field in row:
+                assert row[field]["timeout_ms"] > 0, (row["node_id"], field)
+        if "completion_contract" in row and "interaction_contract" not in row and "transport_contract" not in row:
+            assert row["completion_contract"]["timeout_ms"] > 0, row["node_id"]
 
     descent = by_id["bwd.nefarian.descent"]
     assert descent["kind"] == "transport"

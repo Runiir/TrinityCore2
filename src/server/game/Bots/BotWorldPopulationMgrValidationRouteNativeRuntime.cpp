@@ -1,13 +1,11 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteNativeRuntime.h"
+#include "Bots/BotValidationRouteNativeLogic.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteNativeFacts.h"
 
-#include "Creature.h"
 #include "DataStores/DBCStores.h"
 #include "GameObject.h"
 #include "GossipDef.h"
-#include "InstanceScript.h"
-#include "Map.h"
-#include "ObjectAccessor.h"
 #include "Player.h"
 #include "Transport.h"
 
@@ -20,255 +18,15 @@ namespace
 using namespace BotValidationRouteNative;
 using BotWorldPopulationMgrValidationRouteNative::Callbacks;
 using BotWorldPopulationMgrValidationRouteNative::Input;
+using BotWorldPopulationMgrValidationRouteNative::MemberInput;
+namespace Facts = BotWorldPopulationMgrValidationRouteNative::Facts;
 
-// Native interaction and transport targets are resolved around the acting
-// bot; spawn IDs are resolved map-wide.
-constexpr float TargetSearchRadius = 250.0f;
-
-ActorFact FromSnapshot(BotEncounter::ActorSnapshot const& actor)
-{
-    ActorFact fact;
-    fact.Entry = actor.Entry;
-    fact.Alive = actor.Alive;
-    fact.Spawned = actor.Alive;
-    fact.Selectable = actor.Selectable;
-    fact.Interactable = actor.Interactable;
-    fact.ReactAggressive = actor.ReactAggressive;
-    fact.InCombat = actor.InCombat;
-    fact.Flying = actor.Flying;
-    fact.HasVictim = !actor.VictimGuid.IsEmpty();
-    for (BotEncounter::AuraSnapshot const& aura : actor.Auras)
-        fact.AuraIds.push_back(aura.SpellId);
-    return fact;
-}
-
-ActorFact FromCreature(Creature const* creature)
-{
-    ActorFact fact;
-    fact.Entry = creature->GetEntry();
-    fact.SpawnId = creature->GetSpawnId();
-    fact.Alive = creature->IsAlive();
-    fact.Spawned = creature->IsInWorld();
-    fact.Selectable = !creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-    fact.Interactable = creature->GetUInt32Value(UNIT_NPC_FLAGS) != 0;
-    fact.ReactAggressive = creature->GetReactState() == REACT_AGGRESSIVE;
-    fact.InCombat = creature->IsInCombat();
-    fact.Flying = creature->IsFlying();
-    fact.HasVictim = creature->GetVictim() != nullptr;
-    for (auto const& applied : creature->GetAppliedAuras())
-        fact.AuraIds.push_back(applied.first);
-    return fact;
-}
-
-ActorFact FromGameObject(GameObject const* object)
-{
-    ActorFact fact;
-    fact.Entry = object->GetEntry();
-    fact.SpawnId = object->GetSpawnId();
-    fact.Spawned = object->isSpawned();
-    fact.Alive = fact.Spawned;
-    fact.Selectable = fact.Spawned
-        && !object->HasFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
-    fact.Interactable = fact.Selectable;
-    return fact;
-}
-
-std::vector<GameObject*> FindGameObjects(Player* bot, uint32 entry, uint64 spawnId)
-{
-    std::vector<GameObject*> found;
-    Map* map = bot->GetMap();
-    if (!map)
-        return found;
-    if (spawnId)
-    {
-        auto bounds = map->GetGameObjectBySpawnIdStore().equal_range(
-            ObjectGuid::LowType(spawnId));
-        for (auto itr = bounds.first; itr != bounds.second; ++itr)
-            if (GameObject* object = itr->second; object && object->IsInWorld()
-                && (!entry || object->GetEntry() == entry))
-                found.push_back(object);
-        return found;
-    }
-    std::vector<GameObject*> objects;
-    bot->GetGameObjectListWithEntryInGrid(objects, entry, TargetSearchRadius);
-    for (GameObject* object : objects)
-        if (object && object->IsInWorld())
-            found.push_back(object);
-    return found;
-}
-
-std::vector<Creature*> FindCreatures(Player* bot, uint32 entry, uint64 spawnId)
-{
-    std::vector<Creature*> found;
-    Map* map = bot->GetMap();
-    if (!map)
-        return found;
-    if (spawnId)
-    {
-        auto bounds = map->GetCreatureBySpawnIdStore().equal_range(
-            ObjectGuid::LowType(spawnId));
-        for (auto itr = bounds.first; itr != bounds.second; ++itr)
-            if (Creature* creature = itr->second; creature && creature->IsInWorld()
-                && (!entry || creature->GetEntry() == entry))
-                found.push_back(creature);
-        return found;
-    }
-    std::vector<Creature*> creatures;
-    bot->GetCreatureListWithEntryInGrid(creatures, entry, TargetSearchRadius);
-    for (Creature* creature : creatures)
-        if (creature && creature->IsInWorld() && creature->IsAlive())
-            found.push_back(creature);
-    return found;
-}
-
-struct ResolvedTarget
-{
-    WorldObject* Object = nullptr;
-    bool Ambiguous = false;
-};
-
-ResolvedTarget ResolveInteractionTarget(Player* bot, InteractionContract const& contract)
-{
-    ResolvedTarget resolved;
-    std::vector<WorldObject*> candidates;
-    if (contract.Target == TargetType::GameObject || contract.Target == TargetType::Any)
-        for (GameObject* object : FindGameObjects(bot, contract.Entry, contract.SpawnId))
-            if (object->isSpawned())
-                candidates.push_back(object);
-    if (contract.Target == TargetType::Creature || contract.Target == TargetType::Any)
-        for (Creature* creature : FindCreatures(bot, contract.Entry, contract.SpawnId))
-            if (creature->IsAlive())
-                candidates.push_back(creature);
-    // A declared target must name exactly one live object; never guess.
-    resolved.Ambiguous = candidates.size() > 1;
-    if (candidates.size() == 1)
-        resolved.Object = candidates.front();
-    return resolved;
-}
-
-struct TransportTarget
-{
-    GameObject* Object = nullptr;
-    TransportFact Fact;
-};
-
-TransportTarget ResolveTransport(Player* bot, uint32 entry, uint64 spawnId)
-{
-    TransportTarget target;
-    std::vector<GameObject*> transports;
-    for (GameObject* object : FindGameObjects(bot, entry, spawnId))
-        if (object->GetGoType() == GAMEOBJECT_TYPE_TRANSPORT && object->ToTransportBase())
-            transports.push_back(object);
-    if (transports.size() > 1)
-    {
-        target.Fact.Present = true;
-        target.Fact.Ambiguous = true;
-        return target;
-    }
-    if (transports.empty())
-        return target;
-    target.Object = transports.front();
-    target.Fact = BotValidationRouteBoardingAction::ObserveTransport(target.Object);
-    return target;
-}
-
-bool OnTransport(Player const* member, GameObject const* transport)
-{
-    TransportBase const* current = member ? member->GetTransport() : nullptr;
-    return current && transport && current->GetTransportGUID() == transport->GetGUID();
-}
-
-class ServerFacts final : public FactSource
-{
-public:
-    ServerFacts(Input const& input, uint64 owner) : _input(input), _owner(owner) { }
-
-    std::vector<ActorFact> Creatures(uint32 entry, uint64 spawnId) const override
-    {
-        std::vector<ActorFact> facts;
-        if (spawnId)
-        {
-            for (Creature* creature : FindCreatures(_input.Bot, entry, spawnId))
-                facts.push_back(FromCreature(creature));
-            return facts;
-        }
-        // Entry-based creature facts come from the shared encounter
-        // observation, the same view every strategy reads.
-        auto add = [&facts, entry](std::vector<BotEncounter::ActorSnapshot> const& actors)
-        {
-            for (BotEncounter::ActorSnapshot const& actor : actors)
-                if (actor.Entry == entry && !actor.Guid.IsGameObject())
-                    facts.push_back(FromSnapshot(actor));
-        };
-        add(_input.Board->Hostiles);
-        add(_input.Board->Summons);
-        add(_input.Board->Interactables);
-        return facts;
-    }
-
-    std::vector<ActorFact> GameObjects(uint32 entry, uint64 spawnId) const override
-    {
-        std::vector<ActorFact> facts;
-        for (GameObject* object : FindGameObjects(_input.Bot, entry, spawnId))
-            facts.push_back(FromGameObject(object));
-        return facts;
-    }
-
-    bool BossState(uint32 index, uint32& state) const override
-    {
-        InstanceScript const* instance = _input.Bot->GetInstanceScript();
-        if (!instance || index >= instance->GetEncounterCount())
-            return false;
-        state = uint32(instance->GetBossState(index));
-        return true;
-    }
-
-    std::vector<MemberFact> Members() const override
-    {
-        std::vector<MemberFact> facts;
-        Map* map = _input.Bot->GetMap();
-        for (Player* member : _input.Members)
-        {
-            if (!member || !member->IsInWorld())
-                continue;
-            MemberFact fact;
-            fact.Guid = member->GetGUID().GetRawValue();
-            fact.Alive = member->IsAlive();
-            fact.Owner = fact.Guid == _owner;
-            if (TransportBase const* transport = member->GetTransport())
-            {
-                fact.OnTransport = true;
-                if (GameObject const* object = map
-                        ? map->GetGameObject(transport->GetTransportGUID()) : nullptr)
-                {
-                    fact.TransportEntry = object->GetEntry();
-                    fact.TransportSpawnId = object->GetSpawnId();
-                }
-            }
-            if (Unit const* vehicle = member->GetVehicleBase())
-            {
-                fact.VehicleEntry = vehicle->GetEntry();
-                fact.Seat = member->GetTransSeat();
-            }
-            facts.push_back(fact);
-        }
-        return facts;
-    }
-
-    TransportFact Transport(uint32 entry, uint64 spawnId) const override
-    {
-        return ResolveTransport(_input.Bot, entry, spawnId).Fact;
-    }
-
-private:
-    Input const& _input;
-    uint64 _owner;
-};
+using OutcomeObserver = std::function<void(BotActionArbitration::Outcome const&)>;
 
 void Submit(Input const& input, Callbacks const& callbacks, std::string const& mechanic,
     ObjectGuid actor, BotActionArbitration::Priority priority, float utility,
     BotNativeAction::Intent intent, std::string actionLabel,
-    std::function<void()> onCommitted = {})
+    OutcomeObserver observe = {})
 {
     BotNativeAction::Candidate native;
     native.Id.ScopeKey = input.Board->CurrentScope.Key();
@@ -290,7 +48,7 @@ void Submit(Input const& input, Callbacks const& callbacks, std::string const& m
     candidate.ExpiresAtMs = native.ExpiresAtMs;
     candidate.Attempt = [execute = callbacks.Execute, action = native.Action,
         situation = input.Situation, label = input.Action, state = input.State,
-        actionLabel = std::move(actionLabel), onCommitted = std::move(onCommitted)]()
+        actionLabel = std::move(actionLabel), observe = std::move(observe)]()
     {
         BotActionArbitration::Outcome outcome = execute(action,
             BotMovementArbitration::Owner::Route,
@@ -300,20 +58,20 @@ void Submit(Input const& input, Callbacks const& callbacks, std::string const& m
             *situation = "native_route_interaction";
             *label = actionLabel;
             state->LastDecisionHandler = "native_route_interaction";
-            if (onCommitted)
-                onCommitted();
         }
+        if (observe)
+            observe(outcome);
         return outcome;
     };
     input.State->DecisionKernel.Submit(std::move(candidate));
 }
 
-// Keep the member where it is (on a platform, or at the boarding wait point)
+// Keep the member where it is (aboard a platform, at a wait point, or blocked)
 // by owning the movement lane without issuing any movement.
 void SubmitHold(Input const& input, std::string const& reason)
 {
     BotActionArbitration::Candidate candidate;
-    candidate.Key = input.Board->CurrentScope.Key() + ":native_route_transport_hold";
+    candidate.Key = input.Board->CurrentScope.Key() + ":native_route_hold";
     candidate.Source = "native_route_interaction";
     candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
     candidate.UtilityScore = 1.0f;
@@ -341,21 +99,36 @@ void RecordOnChange(Callbacks const& callbacks, std::string& last,
         callbacks.Record(reason, target, value, entry);
 }
 
+void FailOnce(NodeRuntime& runtime, Callbacks const& callbacks, std::string const& reason)
+{
+    if (runtime.FailureRecorded)
+        return;
+    runtime.FailureRecorded = true;
+    if (callbacks.Fail)
+        callbacks.Fail(reason);
+}
+
+bool Retried(BotActionArbitration::Outcome const& outcome)
+{
+    return outcome.Result == BotActionArbitration::Disposition::Retryable
+        || outcome.Result == BotActionArbitration::Disposition::Unsafe;
+}
+
 std::vector<MemberView> MemberViews(Input const& input)
 {
     std::vector<MemberView> views;
-    for (BotEncounter::ActorSnapshot const& player : input.Board->Players)
+    for (MemberInput const& member : input.Members)
     {
+        if (!member.Bot)
+            continue;
         MemberView view;
-        view.Guid = player.Guid.GetRawValue();
-        view.Alive = player.Alive;
-        view.Role = player.Role;
+        view.Guid = member.Bot->GetGUID().GetRawValue();
+        view.Alive = member.OnRouteInstance && member.Bot->IsAlive();
         auto roster = input.Roster.find(view.Guid);
         if (roster != input.Roster.end())
         {
             view.RosterSlot = roster->second.Slot;
-            if (!roster->second.Role.empty())
-                view.Role = roster->second.Role;
+            view.Role = roster->second.Role;
         }
         views.push_back(std::move(view));
     }
@@ -369,16 +142,6 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
     NodeRuntime& runtime = node.Runtime;
     Player* bot = input.Bot;
     uint64 const self = bot->GetGUID().GetRawValue();
-    AttemptGate const gate = EvaluateAttemptGate(contract, runtime.Attempt,
-        runtime.StartedAtMs, input.NowMs);
-    if (gate == AttemptGate::TimedOut && !runtime.FailureRecorded)
-    {
-        runtime.FailureRecorded = true;
-        if (callbacks.Fail)
-            callbacks.Fail(AttemptGateName(gate));
-        return;
-    }
-
     if (!election.Owner)
         RecordOnChange(callbacks, runtime.LastDiagnostic, election.Reason, nullptr, 0.0f, 0);
     if (election.Owner != self)
@@ -412,7 +175,7 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
     }
     else
     {
-        ResolvedTarget const resolved = ResolveInteractionTarget(bot, contract);
+        Facts::ResolvedTarget const resolved = Facts::ResolveInteractionTarget(bot, contract);
         target = resolved.Object;
         observation.TargetAmbiguous = resolved.Ambiguous;
         observation.TargetResolved = target != nullptr;
@@ -421,12 +184,13 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
             targetX = target->GetPositionX();
             targetY = target->GetPositionY();
             targetZ = target->GetPositionZ();
-            float const range = contract.RangeYards > 0.0f
-                ? contract.RangeYards : INTERACTION_DISTANCE;
-            GameObject const* object = target->ToGameObject();
-            observation.InRange = object && contract.RangeYards <= 0.0f
-                ? object->IsAtInteractDistance(bot)
-                : bot->IsWithinDistInMap(target, range);
+            // Gameobjects always use the native reach rule; a declared range
+            // can only tighten the creature interaction distance.
+            if (GameObject const* object = target->ToGameObject())
+                observation.InRange = object->IsAtInteractDistance(bot);
+            else
+                observation.InRange = bot->IsWithinDistInMap(target, contract.RangeYards > 0.0f
+                    ? std::min(contract.RangeYards, INTERACTION_DISTANCE) : INTERACTION_DISTANCE);
             observation.CurrentGossipMenu =
                 bot->PlayerTalkClass->GetGossipMenu().GetMenuId();
             observation.GossipBoundToTarget =
@@ -434,6 +198,8 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
         }
     }
 
+    AttemptGate const gate = EvaluateAttemptGate(contract, runtime.Attempt,
+        runtime.StartedAtMs, input.NowMs);
     InteractionDecision const decision = DecideInteraction(contract, observation, gate);
     RecordOnChange(callbacks, runtime.LastDiagnostic, decision.Reason, target,
         float(runtime.Attempt.Attempts), contract.Entry);
@@ -443,6 +209,9 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
     switch (decision.Step)
     {
         case InteractionStep::Hold:
+            return;
+        case InteractionStep::Fail:
+            FailOnce(runtime, callbacks, decision.Reason);
             return;
         case InteractionStep::Approach:
             intent = BotNativeAction::Move{ targetX, targetY, targetZ,
@@ -468,35 +237,56 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
             intent = BotNativeAction::AreaTrigger{ contract.AreaTriggerId };
             break;
     }
-    std::function<void()> onCommitted;
+    OutcomeObserver observe;
     if (decision.CountsAsAttempt)
-        onCommitted = [attempt = &runtime.Attempt, now = input.NowMs]()
+        // Accepted and rejected submissions both count toward exhaustion.
+        observe = [runtimePtr = &runtime, scope = input.Scope, now = input.NowMs](
+            BotActionArbitration::Outcome const& outcome)
         {
-            RecordAttempt(*attempt, now);
+            if (runtimePtr->Scope != scope)
+                return;
+            if (outcome.Result == BotActionArbitration::Disposition::Committed
+                || Retried(outcome))
+                RecordAttempt(runtimePtr->Attempt, now);
         };
     Submit(input, callbacks, contract.ActionName, targetGuid,
         BotActionArbitration::Priority::Mechanic, 6.0f, std::move(intent),
-        "native_route_interaction_submitted", std::move(onCommitted));
+        "native_route_interaction_submitted", std::move(observe));
 }
 
 void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& node,
-    TransportTarget const& transport)
+    Facts::TransportTarget const& transport)
 {
     TransportContract const& contract = node.Transport;
+    NodeRuntime& runtime = node.Runtime;
     Player* bot = input.Bot;
-    TransportMemberState& member =
-        node.Runtime.TransportMembers[bot->GetGUID().GetRawValue()];
+    // Dead members belong to the native death/recovery flow, not the ride.
+    if (!bot->IsAlive())
+        return;
+    uint64 const guid = bot->GetGUID().GetRawValue();
+    TransportMemberState& member = runtime.TransportMembers[guid];
 
+    bool modelAvailable = true;
     TransportMemberObservation observation;
     observation.Alive = bot->IsAlive();
     observation.TransportPresent = transport.Fact.Present;
     observation.TransportAmbiguous = transport.Fact.Ambiguous;
     observation.ReadyToBoard = TransportReadyToBoard(contract, transport.Fact);
     observation.AtExit = TransportAtExit(contract, transport.Fact);
-    observation.OnThisTransport = OnTransport(bot, transport.Object);
+    observation.OnThisTransport = Facts::OnTransport(bot, transport.Object);
     observation.OnOtherTransportOrVehicle = (bot->GetTransport() && !observation.OnThisTransport)
         || bot->GetVehicle();
     observation.Moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+    observation.StaticFloorUnderfoot = BotValidationRouteBoardingAction::StaticFloorUnderfoot(
+        bot, contract.FloorToleranceYards);
+    if (transport.Object)
+        observation.TransportFloorUnderfoot =
+            BotValidationRouteBoardingAction::TransportFloorUnderfoot(bot, transport.Object,
+                contract.FloorToleranceYards, modelAvailable);
+    if (observation.ReadyToBoard && transport.Object)
+        observation.RestRemainingMs = contract.BoardStopFrame >= 0 ? UnboundedRestMs
+            : BotValidationRouteBoardingAction::RestRemainingAtLevelMs(transport.Object,
+                contract.BoardTransportZ, contract.LevelToleranceYards);
     auto distance = [bot](Point3 const& point)
     {
         return point.Valid ? bot->GetExactDist(point.X, point.Y, point.Z) : 0.0f;
@@ -505,29 +295,13 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     observation.DistanceToBoard = distance(contract.BoardPoint);
     observation.DistanceToDisembark = distance(contract.DisembarkPoint);
     observation.DistanceToExit = distance(contract.ExitPoint);
-    if (Map* map = bot->GetMap())
-    {
-        float const staticFloor = map->GetStaticHeight(bot->GetPhaseShift(),
-            bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ() + 1.0f,
-            true, 4.0f);
-        observation.StaticFloorUnderfoot = staticFloor > INVALID_HEIGHT
-            && std::fabs(bot->GetPositionZ() - staticFloor) <= 1.5f;
-    }
+    float const runSpeed = std::max(bot->GetSpeed(MOVE_RUN), 0.1f);
+    observation.TravelToBoardMs = uint64(observation.DistanceToBoard / runSpeed * 1000.0f);
 
-    LocalBox box;
-    bool const footprintKnown = transport.Object
-        && BotValidationRouteBoardingAction::DisplayFootprint(transport.Object, box);
-    if (transport.Object && footprintKnown)
-    {
-        float x = bot->GetPositionX(), y = bot->GetPositionY(), z = bot->GetPositionZ();
-        float o = bot->GetOrientation();
-        transport.Object->ToTransportBase()->CalculatePassengerOffset(x, y, z, &o);
-        observation.InsideFootprint = InsideFootprint({ x, y, z, true }, box,
-            contract.FootprintMarginYards);
-    }
-
-    TransportDecision decision = transport.Object && !footprintKnown
-        ? TransportDecision{ TransportStep::Blocked, "transport_footprint_unknown" }
+    // Without the platform's collision model neither boarding nor the
+    // stranded-member check can be proven: stop instead of guessing.
+    TransportDecision decision = transport.Object && !modelAvailable
+        ? TransportDecision{ TransportStep::Fail, "transport_model_unavailable" }
         : DecideTransportStep(contract, observation, member);
     RecordOnChange(callbacks, member.LastReason,
         std::string("native_route_transport_") + TransportStepName(decision.Step)
@@ -536,14 +310,38 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
 
     ObjectGuid const transportGuid = transport.Object
         ? transport.Object->GetGUID() : ObjectGuid::Empty;
+    auto countSubmission = [runtimePtr = &runtime, scope = input.Scope, guid,
+        fail = callbacks.Fail](bool boarding)
+    {
+        return [runtimePtr, scope, guid, fail, boarding](
+            BotActionArbitration::Outcome const& outcome)
+        {
+            if (runtimePtr->Scope != scope)
+                return;
+            TransportMemberState& state = runtimePtr->TransportMembers[guid];
+            if (outcome.Result == BotActionArbitration::Disposition::Committed)
+                ++(boarding ? state.BoardSubmissions : state.LeaveSubmissions);
+            else if (Retried(outcome))
+                ++state.FailedSubmissions;
+            if (outcome.Result == BotActionArbitration::Disposition::Unsafe
+                && !runtimePtr->FailureRecorded)
+            {
+                runtimePtr->FailureRecorded = true;
+                if (fail)
+                    fail(outcome.Reason);
+            }
+        };
+    };
     switch (decision.Step)
     {
+        case TransportStep::Fail:
+            FailOnce(runtime, callbacks, decision.Reason);
+            break;
         case TransportStep::Hold:
         case TransportStep::HoldAboard:
         case TransportStep::Done:
-            SubmitHold(input, decision.Reason);
-            break;
         case TransportStep::Blocked:
+            SubmitHold(input, decision.Reason);
             break;
         case TransportStep::MoveToWait:
             Submit(input, callbacks, "transport_wait", transportGuid,
@@ -562,10 +360,8 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         case TransportStep::Board:
             Submit(input, callbacks, "transport_board", transportGuid,
                 BotActionArbitration::Priority::Mechanic, 6.0f,
-                BotNativeAction::TransportBoard{ transportGuid,
-                    contract.FootprintMarginYards },
-                "native_route_transport_board",
-                [&member]() { ++member.BoardSubmissions; });
+                BotNativeAction::TransportBoard{ transportGuid, contract.FloorToleranceYards },
+                "native_route_transport_board", countSubmission(true));
             break;
         case TransportStep::MoveToDisembark:
             Submit(input, callbacks, "transport_disembark_path", transportGuid,
@@ -578,9 +374,8 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         case TransportStep::Leave:
             Submit(input, callbacks, "transport_leave", transportGuid,
                 BotActionArbitration::Priority::Mechanic, 6.0f,
-                BotNativeAction::TransportLeave{ transportGuid },
-                "native_route_transport_leave",
-                [&member]() { ++member.LeaveSubmissions; });
+                BotNativeAction::TransportLeave{ transportGuid, contract.FloorToleranceYards },
+                "native_route_transport_leave", countSubmission(false));
             break;
         case TransportStep::MoveToExit:
             Submit(input, callbacks, "transport_exit_path", transportGuid,
@@ -592,28 +387,76 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     }
 }
 
-bool TransportNodeDone(Input const& input, NodeContract& node, TransportTarget const& transport)
+// Every living cohort member, wherever it is, must have ridden (or boarded).
+bool TransportNodeDone(Input const& input, NodeContract& node,
+    Facts::TransportTarget const& transport, std::string& reason)
 {
     if (!transport.Object)
-        return false;
-    uint32 living = 0;
-    for (Player* member : input.Members)
     {
+        reason = transport.Fact.Ambiguous ? "transport_ambiguous" : "transport_missing";
+        return false;
+    }
+    uint32 living = 0;
+    for (MemberInput const& input_member : input.Members)
+    {
+        Player* member = input_member.Bot;
         if (!member || !member->IsInWorld() || !member->IsAlive())
             continue;
         ++living;
+        if (!input_member.OnRouteInstance || member->GetMap() != transport.Object->GetMap())
+        {
+            reason = "transport_member_off_route_map";
+            return false;
+        }
         TransportMemberState& state =
             node.Runtime.TransportMembers[member->GetGUID().GetRawValue()];
-        bool const aboard = OnTransport(member, transport.Object);
+        bool const aboard = Facts::OnTransport(member, transport.Object);
         if (aboard)
             state.Boarded = true;
         Point3 const& exit = node.Transport.ExitPoint;
         float const exitDistance = exit.Valid
             ? member->GetExactDist(exit.X, exit.Y, exit.Z) : 0.0f;
         if (!MemberTransportDone(node.Transport, aboard, state.Boarded, exitDistance))
+        {
+            reason = "transport_members_pending";
             return false;
+        }
     }
+    reason = living ? "transport_route_complete" : "transport_no_living_members";
     return living > 0;
+}
+
+// Completion is evaluated once per cohort observation tick.
+void RefreshVerdict(Input const& input, NodeContract& node, OwnerElection const& election,
+    Player* evaluator)
+{
+    NodeRuntime& runtime = node.Runtime;
+    if (runtime.VerdictValid && runtime.VerdictTick == input.Tick)
+        return;
+    bool satisfied = node.Completion.Declared || node.Transport.Declared;
+    std::string reason = satisfied ? "" : "native_contract_without_completion";
+    if (node.Completion.Declared)
+    {
+        Verdict const verdict = Facts::EvaluateCompletion(node.Completion, evaluator,
+            input.Members, election.Owner, runtime.Completion);
+        satisfied = satisfied && verdict.Satisfied;
+        reason = verdict.Reason;
+    }
+    if (node.Transport.Declared && satisfied)
+    {
+        Facts::TransportTarget const transport = Facts::ResolveTransport(evaluator,
+            node.Transport.Entry, node.Transport.SpawnId);
+        satisfied = evaluator && TransportNodeDone(input, node, transport, reason);
+    }
+    runtime.VerdictValid = true;
+    runtime.VerdictTick = input.Tick;
+    runtime.VerdictSatisfied = satisfied;
+    runtime.VerdictReason = reason;
+}
+
+bool TimedOut(std::uint32_t timeoutMs, NodeRuntime const& runtime, std::uint64_t nowMs)
+{
+    return timeoutMs && nowMs >= runtime.StartedAtMs + timeoutMs;
 }
 }
 
@@ -628,61 +471,59 @@ Result Run(Input const& input, Callbacks const& callbacks)
     result.OwnsNode = true;
 
     NodeContract& node = *input.Node;
-    node.Runtime.Enter(input.Scope, input.NowMs);
+    NodeRuntime& runtime = node.Runtime;
+    runtime.Enter(input.Scope, input.NowMs);
+    if (runtime.FailureRecorded)
+        return result;
 
+    auto const acting = std::find_if(input.Members.begin(), input.Members.end(),
+        [&input](MemberInput const& member) { return member.Bot == input.Bot; });
+    bool const actingOnRoute = acting != input.Members.end() && acting->OnRouteInstance;
+    Player* const evaluator = Facts::SelectEvaluator(input.Members);
     OwnerElection const election = node.Interaction.Declared
         ? ElectOwner(node.Interaction, MemberViews(input)) : OwnerElection();
-    ServerFacts const facts(input, election.Owner);
 
-    TransportTarget transport;
-    if (node.Transport.Declared)
-        transport = ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId);
-
-    bool completionSatisfied = true;
-    std::string completionLabel = node.Completion.KindName;
-    if (node.Completion.Declared)
-    {
-        Verdict const verdict = EvaluateCompletion(node.Completion, facts,
-            node.Runtime.Completion);
-        completionSatisfied = verdict.Satisfied;
-    }
-    if (node.Transport.Declared)
-    {
-        completionSatisfied = completionSatisfied
-            && TransportNodeDone(input, node, transport);
-        if (completionLabel.empty())
-            completionLabel = "transport_route_complete";
-    }
-
-    if (completionSatisfied)
+    RefreshVerdict(input, node, election, evaluator);
+    if (runtime.VerdictSatisfied)
     {
         result.Satisfied = true;
-        if (!input.CompletionAlreadyRecorded && !node.Runtime.CompletionRecorded)
+        if (!input.CompletionAlreadyRecorded && !runtime.CompletionRecorded)
         {
-            node.Runtime.CompletionRecorded = true;
+            runtime.CompletionRecorded = true;
             if (callbacks.Complete)
-                callbacks.Complete(completionLabel, transport.Object);
+                callbacks.Complete(node.Completion.Declared ? node.Completion.KindName
+                    : runtime.VerdictReason, nullptr);
         }
         // Boarded members stay aboard until the next node takes over.
-        if (node.Transport.Declared)
-            RunTransport(input, callbacks, node, transport);
+        if (node.Transport.Declared && actingOnRoute)
+            RunTransport(input, callbacks,
+                node, Facts::ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId));
         return result;
     }
 
-    if (node.Transport.Declared)
+    // Every declared contract is bounded in time.
+    if (TimedOut(node.Interaction.TimeoutMs, runtime, input.NowMs))
     {
-        if (node.Transport.TimeoutMs
-            && input.NowMs >= node.Runtime.StartedAtMs + node.Transport.TimeoutMs
-            && !node.Runtime.FailureRecorded)
-        {
-            node.Runtime.FailureRecorded = true;
-            if (callbacks.Fail)
-                callbacks.Fail("native_transport_timeout");
-            return result;
-        }
-        RunTransport(input, callbacks, node, transport);
+        FailOnce(runtime, callbacks, "native_interaction_timeout");
+        return result;
     }
-    if (node.Interaction.Declared)
+    if (TimedOut(node.Transport.TimeoutMs, runtime, input.NowMs))
+    {
+        FailOnce(runtime, callbacks, "native_transport_timeout");
+        return result;
+    }
+    if (TimedOut(node.Completion.TimeoutMs, runtime, input.NowMs))
+    {
+        FailOnce(runtime, callbacks, "native_completion_timeout");
+        return result;
+    }
+    if (!actingOnRoute)
+        return result;
+
+    if (node.Transport.Declared)
+        RunTransport(input, callbacks, node,
+            Facts::ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId));
+    if (node.Interaction.Declared && !runtime.FailureRecorded)
         RunInteraction(input, callbacks, node, election);
     return result;
 }

@@ -1,7 +1,7 @@
 #ifndef TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 #define TRINITY_BOT_WORLD_POPULATION_MGR_ROUTE_STATE_H
 
-#include "Bots/BotValidationRouteNativeLogic.h"
+#include "Bots/BotValidationRouteNativeTypes.h"
 #include "Bots/BotWorldPopulationMgrConfig.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeRecoveryTelemetry.h"
 #include "Bots/Content/Raids/BlackwingDescent/Trash/Drudge/BotRaidDrudgeReseparationReceipt.h"

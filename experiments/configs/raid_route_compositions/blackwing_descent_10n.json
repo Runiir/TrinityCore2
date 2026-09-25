@@ -13,7 +13,7 @@
     },
     {
       "id": "lower_wing_transit",
-      "reason": "Full-raid only: the lower wing is reached from the entrance hall by the continuously cycling Blackwing Descent Elevator (GO 203716, spawn 235178; TransportAnimation.dbc drops 112.67 yd, ~1.8 s rest at the top and ~2 s at the bottom per 17.4 s cycle). Seeded lower-wing shards start below and never ride it.",
+      "reason": "Full-raid only: the lower wing is reached from the entrance hall by the continuously cycling Blackwing Descent Elevator (GO 203716, spawn 235178; TransportAnimation.dbc drops 112.6704 yd, ~2.0 s at the top and ~2.0 s at the bottom per 17.4 s cycle). Seeded lower-wing shards start below and never ride it.",
       "rows": [
         {
           "node_id": "bwd.transit.lower_wing_elevator",
@@ -21,7 +21,7 @@
           "node_kind": "transport",
           "label": "Blackwing Descent lower-wing elevator",
           "x": -224.0,
-          "y": -224.6053,
+          "y": -224.605,
           "z": 76.8211,
           "o": 0.0,
           "source_entry": 203716,
@@ -32,33 +32,34 @@
           "transport_contract": {
             "entry": 203716,
             "spawn_id": 235178,
-            "board_transport_z": 186.5513,
-            "exit_transport_z": 73.8809,
+            "board_transport_z": 186.551,
+            "exit_transport_z": 73.8806,
             "level_tolerance_yards": 0.75,
             "wait_point": [
               -256.35,
-              -224.6053,
+              -224.605,
               190.163
             ],
             "board_point": [
-              -250.35,
-              -224.6053,
-              190.154
+              -247.349,
+              -224.605,
+              190.028
             ],
             "disembark_point": [
-              -241.35,
-              -224.6053,
-              77.2
+              -241.349,
+              -224.605,
+              77.358
             ],
             "exit_point": [
               -224.0,
-              -224.6053,
+              -224.605,
               76.8211
             ],
             "arrival_tolerance_yards": 1.5,
-            "footprint_margin_yards": 0.5,
+            "floor_tolerance_yards": 0.5,
             "timeout_ms": 240000
-          }
+          },
+          "board_point_derivation": "GO 203716 spawn 235178 stationary (-241.349, -224.605, 186.551, o=0) in TDB 434.22011; no stop frames (template Timeto2ndfloor 0): cycles over TransportAnimation.dbc TotalTime with z offset 0 at the top and -112.6704 at the bottom (exit origin z 73.8806); display 10407 GeoBox z [-1.83, 3.4773] puts the platform top at origin + 3.4773; board point = origin + (-6, 0) at 190.028 (static corridor floor ends at local x -9); disembark = bottom origin + (0, 0) at 77.358"
         }
       ]
     },
