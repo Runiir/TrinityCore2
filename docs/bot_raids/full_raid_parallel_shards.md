@@ -513,19 +513,18 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
    - The Chimaeron dispatch patch with `patch -p1`. `UpdateContext.h` takes fuzz 1.
      Hand-merge `EncounterBlackboard.cpp`: both constant blocks stay, and the
      Chimaeron timer call goes after the Atramedes call.
-   - Nefarian R1-R5 and W1 (anchored away from Omnotron's hunks).
+   - Omnotron right after Chimaeron: run
+     `.git/round2_patches/omnotron/apply_omnotron_dispatch.py <tree>`. It anchors
+     after Chimaeron's declarations and route observation. `KernelCandidates.cpp`
+     goes from 967 to 862 lines.
+   - Nefarian R1-R5 and W1 (R3 brings `KernelCandidates.cpp` to 915; Nefarian may move
+     its block into its own TU).
    - M's MP1 and MP2 (MP2 carries the Bloodlust owner fix).
-   - Omnotron's diffs. Hand-merge `BotWorldPopulationMgr.h` (Omnotron declarations
-     after Chimaeron's), `KernelFallback.cpp`
-     (`SubmitAdaptiveOmnotronRouteAuthority` after
-     `SubmitAdaptiveChimaeronRouteObservation`, both after
-     `ConfigureValidationRouteCombatAuthority`) and the `Status.cpp` include (next to
-     Nefarian's).
    - Maloriak's dispatch patch. Hand-merge the `BotWorldPopulationMgr.h` declaration,
-     the candidates call site and the timer function.
-   - Line counts stay under 1,000 at every step. `KernelCandidates.cpp` peaks at 992
-     after Nefarian R3, drops to 887 after Omnotron moves its blocks out, then to 779
-     after Maloriak does. No split is needed first.
+     the candidates call site and the timer function (about 807 lines after).
+   - Never stage an intermediate tree. Applying Nefarian R3 before Omnotron's
+     extraction takes `KernelCandidates.cpp` to 1,020 lines, which the module-size
+     hook rejects. Land the whole merge in one commit.
    - The arbitration replay (`tests/test_bot_action_arbitration.py`) must get past the
      older Magmaw `pillar_bait_switch` and `StackSeparation` assertions, so the
      Atramedes, Chimaeron, Omnotron, Maloriak and Nefarian sections run. Also land
