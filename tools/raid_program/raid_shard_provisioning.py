@@ -4,12 +4,15 @@ The shard coordinator calls `provision_plan_cohorts` from `before_launch`: under
 the shared owner lock, before its worldserver starts. It reuses the collision
 proof of tools.raid_program.raid_shard_preflight unchanged:
 
-1. the plan's materialization sources must be recorded and current;
+1. the plan's materialization sources must be recorded and current (the
+   coordinator first runs `verify_source_plan`: every recorded source file and
+   the written outputs against manifest.json);
 2. a read-only preflight over the plan's reservation. When the plan's anchor
    cohort (the highest ID of every table) is neither selected nor present, the
    core allocators could later enter an unwritten block, so the anchor cohort
    joins the apply set and is written first;
-3. the apply refusals: no `worldserver` process (pgrep) and auth/characters on
+3. the apply refusals: no worldserver process, renamed copies included
+   (raid_shard_preflight.worldserver_processes), and auth/characters on
    one database server. The attestation is the caller's: the coordinator has not
    launched its server yet and holds the owner lock;
 4. one transaction per cohort, anchor first (execute_cohort_transactions);
@@ -22,6 +25,7 @@ The legacy 110-character validation provisioning is not touched here.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -56,6 +60,45 @@ def load_source_plan(path: Path) -> dict[str, Any]:
     if plan.get("schema") != PLAN_SCHEMA:
         raise RaidShardProvisioningError(f"source_plan_schema:{plan.get('schema')}", {"plan": str(path)})
     return plan
+
+
+def verify_source_plan(plan_path: Path, *, gear_profiles: Path, dbc_dir: Path = DEFAULT_DBC_DIR,
+                       trainers: Path = DEFAULT_TRAINERS, root: Path = REPO_ROOT) -> dict[str, Any]:
+    """Refuse a generated plan that is not the current, complete DVC output.
+
+    Every recorded source (composition, prerequisites, scenario starts, spec
+    catalog and the materialization inputs) must still hash as recorded, and the
+    plan directory's written files must equal a regeneration from the plan and
+    the output hashes of its manifest.json. A stale or hand-written plan.json
+    without its manifest is refused before any preflight or apply.
+    """
+    from tools.raid_program.raid_loadout_sql import RaidShardSqlError, check_plan_sources, verify_plan_outputs
+
+    plan_path = Path(plan_path)
+    plan = load_source_plan(plan_path)
+    evidence: dict[str, Any] = {"plan": str(plan_path)}
+    try:
+        evidence["materialization_inputs"] = check_plan_sources(plan, gear_profiles, trainers)
+    except RaidShardSqlError as error:
+        raise RaidShardProvisioningError(str(error), evidence) from error
+    drift = []
+    for name, row in sorted((plan.get("sources") or {}).items()):
+        if name in evidence["materialization_inputs"] or not isinstance(row, dict) or "path" not in row:
+            continue
+        path = Path(row["path"]) if Path(row["path"]).is_absolute() else Path(root) / row["path"]
+        actual = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+        if actual != row.get("sha256"):
+            drift.append(name)
+    if drift:
+        raise RaidShardProvisioningError(f"plan_source_drift:{','.join(drift)}", evidence)
+    failures, outputs = verify_plan_outputs(plan, plan_path.parent, gear_profiles, dbc_dir, trainers)
+    evidence["outputs"] = outputs
+    if failures:
+        evidence["failures"] = failures
+        checks = sorted({str(row["check"]) for row in failures})
+        raise RaidShardProvisioningError(f"plan_outputs_unverified:{','.join(checks)}", evidence)
+    evidence["verified"] = True
+    return evidence
 
 
 def plan_shards(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:

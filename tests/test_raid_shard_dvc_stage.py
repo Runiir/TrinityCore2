@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STAGES = yaml.safe_load((ROOT / "dvc.yaml").read_text(encoding="utf-8"))["stages"]
 PLAN = "dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json"
 REPORT = "dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/report.json"
+OUTPUT = "dataset/raid_shard_provisioning"
 
 
 def _argv(stage: str) -> list[str]:
@@ -64,6 +65,49 @@ def test_every_imported_tools_module_is_a_stage_dependency():
     assert missing == []
 
 
+def test_repository_files_read_by_imported_modules_are_stage_dependencies():
+    """Data files the imported modules read by constant path (e.g. the socket trainer SQL) are deps."""
+    from tools.bot_ml import wowsims_gear_binding
+
+    deps = STAGES["raid_shard_provisioning"]["deps"]
+    for path in (wowsims_gear_binding.SOCKET_TRAINER_PATH,
+                 "sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql"):
+        assert path in deps, path
+
+
+def test_the_stage_opens_only_dependency_files(tmp_path):
+    """Run the stage in --check mode under an open() audit hook: every repository file it reads is a dep."""
+    if not (ROOT / "dataset/world_knowledge/trainers.jsonl").is_file() or not (ROOT / "data/dbc/enUS/Item-sparse.db2").is_file():
+        pytest.skip("trainers or client DBCs not hydrated")
+    argv = _argv("raid_shard_provisioning")
+    argv[argv.index("--output-dir") + 1] = str(tmp_path / "out")
+    program = ("import json, os, runpy, sys\n"
+               "root = os.getcwd()\n"
+               "opened = set()\n"
+               "def hook(event, args):\n"
+               "    if event == 'open' and args and isinstance(args[0], (str, bytes, os.PathLike)):\n"
+               "        path = os.path.abspath(os.fsdecode(args[0]))\n"
+               "        if path.startswith(root + os.sep):\n"
+               "            opened.add(os.path.relpath(path, root))\n"
+               "sys.addaudithook(hook)\n"
+               "sys.argv = ['raid_shard_plan', *sys.argv[1:]]\n"
+               "try:\n"
+               "    runpy.run_module('tools.raid_program.raid_shard_plan', run_name='__main__')\n"
+               "except SystemExit as exit:\n"
+               "    assert not exit.code, exit.code\n"
+               "print('OPENED' + json.dumps(sorted(opened)))\n")
+    result = subprocess.run([sys.executable, "-c", program, *argv[3:], "--check"], cwd=ROOT, check=True,
+                            capture_output=True, text=True)
+    opened = json.loads(result.stdout.rsplit("OPENED", 1)[1])
+    deps = STAGES["raid_shard_provisioning"]["deps"]
+    uncovered = [path for path in opened
+                 if "__pycache__" not in path and not path.startswith(".pixi/")
+                 and not path.endswith("/__init__.py")
+                 and not any(path == dep or path.startswith(dep.rstrip("/") + "/") for dep in deps)]
+    assert uncovered == []
+    assert "sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql" in opened
+
+
 def test_every_stage_dependency_exists_or_is_an_upstream_output():
     outputs = {out if isinstance(out, str) else next(iter(out)) for stage in STAGES.values()
                for out in stage.get("outs") or []}
@@ -74,16 +118,34 @@ def test_every_stage_dependency_exists_or_is_an_upstream_output():
         assert upstream or (ROOT / dep).exists(), dep
 
 
-def test_validation_scenarios_reads_the_generated_plan_and_its_readiness_report():
+def test_validation_scenarios_reads_every_generated_plan_and_its_readiness_report():
     argv = _argv("validation_scenarios")
-    assert _option(argv, "--raid-shard-plan") == [PLAN]
+    # Every composition's plan, not one hard-coded composition (review minor 8).
+    assert _option(argv, "--raid-shard-plan") == []
+    assert _option(argv, "--raid-shard-provisioning-dir") == [OUTPUT]
     deps = set(STAGES["validation_scenarios"]["deps"])
-    assert {PLAN, REPORT} <= deps
+    assert OUTPUT in deps and not {PLAN, REPORT} & deps
+    assert STAGES["raid_shard_provisioning"]["outs"] == [OUTPUT]
     composition = json.loads((ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json").read_text())
     assert Path(PLAN).parent.name == composition["composition_id"]
     # The legacy inputs are unchanged.
     for legacy in ("--provisioning-report", "--provisioning-verification", "--bwd-diagnostic-shard-fixture"):
         assert len(_option(argv, legacy)) == 1
+
+
+def test_the_provisioning_dir_option_reads_every_composition_plan(tmp_path):
+    from tools.bot_ml.build_validation_scenario_manifests import raid_shard_plan_paths
+
+    for name in ("b_composition", "a_composition"):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "plan.json").write_text("{}")
+    (tmp_path / "notes").mkdir()
+    explicit = tmp_path / "b_composition" / "plan.json"
+    assert raid_shard_plan_paths([explicit], [tmp_path]) == [explicit, tmp_path / "a_composition" / "plan.json"]
+    with pytest.raises(SystemExit, match="no <composition>/plan.json"):
+        raid_shard_plan_paths([], [tmp_path / "notes"])
+    with pytest.raises(SystemExit, match="is not a directory"):
+        raid_shard_plan_paths([], [tmp_path / "absent"])
 
 
 def test_provisioning_stage_runs_in_check_mode_without_writing(tmp_path):

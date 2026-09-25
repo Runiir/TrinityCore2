@@ -203,7 +203,12 @@ def test_run_plan_and_package_c_plan_parse(tmp_path: Path) -> None:
     with pytest.raises(sc.ShardPlanError, match="--shard"):
         sc.load_run_plan(source)
     picked = sc.load_run_plan(source, select=["blackwing_descent_10n_nefarian_c1"])
-    assert picked.shards[0].lockout.seed_argument == "none" and picked.shards[0].seeded
+    # A generated shard without predecessors is a fresh instance (review minor 4), not a seeded "none".
+    assert picked.shards[0].lockout is None and not picked.shards[0].seeded
+    seeded = {**row, "lockout": {**row["lockout"], "precompleted_boss_keys": ["magmaw"], "seed_boss_argument": "magmaw"}}
+    source.write_text(json.dumps({"schema": sc.SOURCE_PLAN_SCHEMA, "shards": [seeded]}))
+    picked = sc.load_run_plan(source, select=["blackwing_descent_10n_nefarian_c1"])
+    assert picked.shards[0].lockout.seed_argument == "magmaw" and picked.shards[0].seeded
 
 
 @pytest.mark.parametrize(("rows", "message"), [

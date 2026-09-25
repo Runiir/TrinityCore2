@@ -1156,6 +1156,22 @@ def build_manifests(
     }
 
 
+def raid_shard_plan_paths(plans: Sequence[Path], directories: Sequence[Path]) -> list[Path]:
+    """Explicit plans, then every composition plan of each provisioning directory, once each, in path order."""
+    found = list(plans)
+    for directory in directories:
+        if not Path(directory).is_dir():
+            raise SystemExit(f"--raid-shard-provisioning-dir {directory} is not a directory")
+        generated = sorted(Path(directory).glob("*/plan.json"))
+        if not generated:
+            raise SystemExit(f"--raid-shard-provisioning-dir {directory} has no <composition>/plan.json")
+        found += generated
+    unique: dict[Path, Path] = {}
+    for path in found:
+        unique.setdefault(Path(path).resolve(), Path(path))
+    return list(unique.values())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build Stonecore/BWD validation route and mechanic manifests.")
     parser.add_argument("--config", type=Path, default=Path("experiments/configs/validation_scenarios_cata_001.json"))
@@ -1166,10 +1182,14 @@ def main() -> int:
                         help="Optional raid_shard_plan_v1 plan.json whose shard rosters bind diagnostic scenarios. "
                              "Its sibling report.json (raid_shard_provisioning_report_v1), when present, supplies "
                              "the cohorts' provisioning readiness.")
+    parser.add_argument("--raid-shard-provisioning-dir", type=Path, action="append", default=[],
+                        help="Output directory of the raid_shard_provisioning DVC stage: every <composition>/plan.json "
+                             "in it is read as if passed with --raid-shard-plan.")
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_scenarios"))
     args = parser.parse_args()
 
-    plans = [load_json(path) for path in args.raid_shard_plan]
+    plan_paths = raid_shard_plan_paths(args.raid_shard_plan, args.raid_shard_provisioning_dir)
+    plans = [load_json(path) for path in plan_paths]
     if any(plan.get("schema") != "raid_shard_plan_v1" for plan in plans):
         raise SystemExit("--raid-shard-plan must name raid_shard_plan_v1 plan.json files")
     manifests = build_manifests(
@@ -1178,7 +1198,7 @@ def main() -> int:
         load_json(args.provisioning_verification),
         load_json(args.bwd_diagnostic_shard_fixture),
         plans,
-        [load_json(path.parent / "report.json") for path in args.raid_shard_plan if (path.parent / "report.json").is_file()],
+        [load_json(path.parent / "report.json") for path in plan_paths if (path.parent / "report.json").is_file()],
     )
     counts: dict[str, int] = {}
     hashes: dict[str, str] = {}

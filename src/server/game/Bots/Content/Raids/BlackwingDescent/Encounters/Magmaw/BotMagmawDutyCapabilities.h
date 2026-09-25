@@ -23,9 +23,9 @@
 //  - chain (pincer) riders: non-baiter DPS without a stationary duty first
 //    (BotAdaptiveMagmawStrategyHook.h), so the mushroom caster rides last;
 //  - mushrooms: the Wild Mushroom duty caster, IsMushroomCaster;
-//  - Bloodlust: one shaman, SelectBloodlustOwner;
-//  - tank swap: the second tank of a two-tank snapshot (none with one tank);
-//  - battle res: Rebirth or Raise Ally casters, IsBattleResCaster.
+//  - Bloodlust: one shaman, SelectBloodlustOwner.
+// Tank swaps and battle resurrections are not Magmaw duties: the generic
+// runtime owns them (route mechanic contract, combat-res reconciler).
 namespace BotEncounter::MagmawDutyCapabilities
 {
 constexpr uint32 BlinkSpell = 1953;
@@ -83,14 +83,6 @@ inline bool Contains(std::string_view classSpec, std::string_view token)
 inline bool IsBloodlustCaster(std::string_view classSpec)
 {
     return Contains(classSpec, "shaman");
-}
-
-// Combat resurrection in 4.3.4: Rebirth 20484 (druid), Raise Ally 61999
-// (death knight). The runtime reconciler still checks the spell, cooldown,
-// power, range and path (BotWorldPopulationMgrCombatRes.cpp).
-inline bool IsBattleResCaster(std::string_view classSpec)
-{
-    return Contains(classSpec, "druid") || Contains(classSpec, "death_knight");
 }
 
 // One member of a roster view for the Bloodlust owner rule. Templated on the

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -329,5 +330,90 @@ def test_pgrep_probe_reports_the_exit_status(monkeypatch):
 
     calls = []
     monkeypatch.setattr(subprocess, "run", lambda args, **kwargs: calls.append(args) or Result())
+    monkeypatch.setattr(raid_shard_preflight, "proc_worldserver_pids", lambda proc: (set(), None))
     assert raid_shard_preflight.worldserver_processes()["returncode"] == 1
-    assert calls == [["pgrep", "-x", "worldserver"]]
+    assert calls == [["pgrep", "-x", "worldserver.*"]]
+    # An incomplete inventory is unknown, never "none running".
+    monkeypatch.setattr(raid_shard_preflight, "proc_worldserver_pids", lambda proc: (set(), "proc_scan_failed:x"))
+    assert raid_shard_preflight.worldserver_processes()["returncode"] is None
+    Result.returncode = 2
+    monkeypatch.setattr(raid_shard_preflight, "proc_worldserver_pids", lambda proc: (set(), None))
+    assert raid_shard_preflight.worldserver_processes()["returncode"] is None
+    monkeypatch.setattr(raid_shard_preflight, "proc_worldserver_pids", lambda proc: ({4242}, None))
+    assert raid_shard_preflight.worldserver_processes() == {
+        "command": raid_shard_preflight.WORLDSERVER_INVENTORY, "returncode": 0, "pids": [4242],
+        "error": "pgrep_returncode:2:"}
+
+
+@pytest.mark.parametrize("name,match", [
+    ("/home/u/trinity-cata/build/src/server/worldserver/worldserver", True),
+    ("/tmp/worldserver-0123456789ab", True), ("/tmp/worldserver-0123456789ab (deleted)", True),
+    ("worldserver-012\n", True), ("worldserver.pinned", True),
+    ("/usr/bin/python3", False), ("authserver", False), ("/tmp/ws-0123456789ab", False)])
+def test_worldserver_names_include_renamed_copies(name, match):
+    from tools.raid_program.raid_shard_preflight import is_worldserver_name
+    assert is_worldserver_name(name) is match
+
+
+def test_proc_scan_reads_executable_comm_and_argv0(tmp_path):
+    from tools.raid_program.raid_shard_preflight import proc_worldserver_pids
+
+    proc = tmp_path / "proc"
+    for pid, comm, argv0 in ((11, "worldserver-abc\n", "/tmp/worldserver-abcdef012345"),
+                             (12, "python3\n", "/tmp/worldserver-abcdef012345"),  # renamed comm, argv0 kept
+                             (13, "bash\n", "/bin/bash"), (14, "kworker\n", "")):
+        (proc / str(pid)).mkdir(parents=True)
+        (proc / str(pid) / "comm").write_text(comm)
+        (proc / str(pid) / "cmdline").write_bytes(argv0.encode() + b"\0--config\0x.conf\0")
+    (proc / "15").mkdir()
+    (proc / "15" / "exe").symlink_to("/tmp/worldserver-feedbeef0000")  # comm and cmdline unreadable
+    (proc / "self").mkdir()
+    assert proc_worldserver_pids(proc) == ({11, 12, 15}, None)
+    assert proc_worldserver_pids(tmp_path / "absent")[1].startswith("proc_scan_failed:")
+
+
+def renamed_worldserver(folder):
+    """A running copy of a real binary named like scoreboard_run's /tmp/worldserver-<sha12> pin."""
+    import os
+    import shutil
+    import subprocess
+    import sys
+    import time
+
+    binary = folder / "worldserver-0123456789ab"
+    shutil.copyfile(os.path.realpath(sys.executable), binary)
+    binary.chmod(0o700)
+    process = subprocess.Popen([str(binary), "-c", "import time; time.sleep(60)"],
+                               env={**os.environ, "PYTHONHOME": sys.base_prefix})
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        comm = (Path(f"/proc/{process.pid}/comm").read_text().strip()
+                if Path(f"/proc/{process.pid}/comm").exists() else "")
+        if comm.startswith("worldserver"):
+            return process
+        time.sleep(0.05)
+    process.kill()
+    pytest.skip("renamed interpreter copy did not start")
+
+
+def test_a_renamed_worldserver_binary_blocks_apply(tmp_path):
+    import subprocess
+    from tools.raid_program import raid_shard_preflight
+
+    process = renamed_worldserver(tmp_path)
+    try:
+        # The exact-name probe this replaces misses it.
+        exact = subprocess.run(["pgrep", "-x", "worldserver"], capture_output=True, text=True).stdout.split()
+        assert str(process.pid) not in exact
+        found = raid_shard_preflight.worldserver_processes()
+        assert found["returncode"] == 0 and process.pid in found["pids"]
+        # Each method finds it on its own.
+        assert process.pid in raid_shard_preflight.proc_worldserver_pids()[0]
+        assert process.pid in raid_shard_preflight.worldserver_processes(proc=tmp_path / "empty_proc")["pids"]
+        assert process.pid in raid_shard_preflight.worldserver_processes(pgrep=("false",))["pids"]
+        refusals = raid_shard_preflight.apply_refusals(True, found, "mysql://t:x@db:3306/characters",
+                                                      "mysql://t:x@db:3306/auth")
+        assert [row["check"] for row in refusals] == ["worldserver_process_running_or_unknown"]
+    finally:
+        process.kill()
+        process.wait()

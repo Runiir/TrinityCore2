@@ -31,20 +31,14 @@ struct MagmawDutyPlan
     // else the single DPS shaman, else the single shaman; SelectBloodlustOwner).
     // The runtime adds scenario and admission gates before any cast.
     ObjectGuid BloodlustOwner;
-    // The second living tank by raw GUID when two or more tanks live: the
-    // taunt owner of a two-tank swap (the mechanic contract decides whether
-    // one is declared). Empty with one tank, as on the accepted shard.
-    ObjectGuid TankSwapOwner;
-    // Living members that can cast a combat resurrection (Rebirth, Raise
-    // Ally), by raw GUID; the runtime reconciler picks the caster per death.
-    std::vector<ObjectGuid> BattleResCasters;
+    // No tank-swap or battle-res owner here: the generic runtime owns both
+    // (the route mechanic contract's tank swap, the combat-res reconciler),
+    // and the status receipt stays byte-identical for the accepted roster.
 };
 
 MagmawDutyPlan BuildMagmawDutyPlan(Blackboard const& board);
 // The status receipt (unchanged field set; kill evidence and play mode read it).
 std::string MagmawDutyPlanJson(MagmawDutyPlan const& plan);
-// The receipt plus the capability-only duties (tank swap, battle res).
-std::string MagmawDutyPlanCapabilityJson(MagmawDutyPlan const& plan);
 // Status field: the plan of a Magmaw encounter snapshot, or
 // {"applies":false} for any other snapshot or none.
 std::string BuildMagmawDutyPlanStatusJson(Blackboard const* board);

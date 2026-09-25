@@ -131,8 +131,7 @@ def test_owned_startup_failure_is_closed_and_attributed(tmp_path, monkeypatch):
     from tools.raid_program import shared_instance_console as module
 
     monkeypatch.setattr(module, "live_validation_lock", lambda *_: nullcontext())
-    monkeypatch.setattr(module.subprocess, "run", lambda *_args, **_kwargs:
-                        subprocess.CompletedProcess([], 1))
+    monkeypatch.setattr(module, "worldserver_processes", lambda: {"returncode": 1, "pids": [], "error": None})
     binary = tmp_path / "fake-server"
     binary.write_text(f"#!{sys.executable}\nraise SystemExit(2)\n")
     binary.chmod(0o700)
@@ -152,14 +151,34 @@ def test_existing_worldserver_blocks_provisioning(tmp_path, monkeypatch):
     from tools.raid_program import shared_instance_console as module
 
     monkeypatch.setattr(module, "live_validation_lock", lambda *_: nullcontext())
-    monkeypatch.setattr(module.subprocess, "run", lambda *_args, **_kwargs:
-                        subprocess.CompletedProcess([], 0))
-    with pytest.raises(RuntimeError, match="worldserver already exists"):
-        with module.owned_console(repository=tmp_path, source=tmp_path,
-                                  binary=tmp_path / "unused", config=tmp_path / "unused",
-                                  output_dir=tmp_path,
-                                  before_launch=lambda: pytest.fail("foreign server was provisioned")):
-            pytest.fail("foreign server was admitted")
+    for inventory in ({"returncode": 0, "pids": [7], "error": None},
+                      {"returncode": None, "pids": [], "error": "proc_scan_failed:x"}):
+        monkeypatch.setattr(module, "worldserver_processes", lambda inventory=inventory: inventory)
+        with pytest.raises(RuntimeError, match="worldserver already exists"):
+            with module.owned_console(repository=tmp_path, source=tmp_path,
+                                      binary=tmp_path / "unused", config=tmp_path / "unused",
+                                      output_dir=tmp_path,
+                                      before_launch=lambda: pytest.fail("foreign server was provisioned")):
+                pytest.fail("foreign server was admitted")
+
+
+def test_a_renamed_worldserver_binary_blocks_the_owned_console(tmp_path, monkeypatch):
+    """scoreboard_run pins /tmp/worldserver-<sha12>: its comm is not exactly `worldserver`."""
+    from tests.test_raid_shard_preflight import renamed_worldserver
+    from tools.raid_program import shared_instance_console as module
+
+    monkeypatch.setattr(module, "live_validation_lock", lambda *_: nullcontext())
+    process = renamed_worldserver(tmp_path)
+    try:
+        with pytest.raises(RuntimeError, match=rf"worldserver already exists.*{process.pid}"):
+            with module.owned_console(repository=tmp_path, source=tmp_path,
+                                      binary=tmp_path / "unused", config=tmp_path / "unused",
+                                      output_dir=tmp_path / "out",
+                                      before_launch=lambda: pytest.fail("databases written beside a running server")):
+                pytest.fail("second worldserver admitted")
+    finally:
+        process.kill()
+        process.wait()
 
 
 def test_executed_inode_rejects_binary_replacement_even_if_path_restored(tmp_path):

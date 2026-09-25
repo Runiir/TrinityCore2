@@ -152,11 +152,8 @@ int main()
     std::string json = BuildMagmawDutyPlanStatusJson(&board);
     if (json != receipt)
         return Fail("accepted receipt changed", json);
-    // Capability-only duties: one tank (no swap), Rebirth from both druids, Raise Ally from the DK.
-    json = MagmawDutyPlanCapabilityJson(BuildMagmawDutyPlan(board));
-    if (json != receipt.substr(0, receipt.size() - 1)
-            + ",\"tank_swap_owner\":0,\"battle_res_casters\":[30001,30002,30003]}}")
-        return Fail("capability receipt", json);
+    if (MagmawDutyPlanJson(BuildMagmawDutyPlan(board)) != receipt)
+        return Fail("plan receipt", json);
     // The accepted alternation: {expected_history}
     std::string const history = Waves(board, 2);  // two completed waves, three assignments
     if (history != "{expected_history}")
@@ -190,13 +187,12 @@ def test_canonical_magmaw_shard_has_an_owner_for_every_duty(tmp_path, canonical)
     receipt = ('{\\"applies\\":true,\\"revision\\":21,'
                f'\\"pull_tank\\":{guid["death_knight"]},\\"bait_mage\\":{guid["mage"]},\\"bait_hunter\\":{guid["hunter"]},'
                f'\\"hook_riders\\":[{guid["paladin_ret"]},{guid["rogue"]}],\\"mushroom_owners\\":[{guid["druid"]}],'
-               f'\\"bloodlust_owner\\":{guid["shaman"]},\\"tank_swap_owner\\":0,'
-               f'\\"battle_res_casters\\":[{guid["death_knight"]},{guid["druid"]}]}}')
+               f'\\"bloodlust_owner\\":{guid["shaman"]}}}')
     _run(tmp_path, rf'''
 int main()
 {{
     Blackboard const board = Board("canonical-c0", {_players(_plan_rows(shard))});
-    std::string const json = MagmawDutyPlanCapabilityJson(BuildMagmawDutyPlan(board));
+    std::string const json = BuildMagmawDutyPlanStatusJson(&board);
     if (json != "{receipt}")
         return Fail("canonical plan", json);
     // IsPillarBaiter needs both lanes: the Beast Mastery Hunter now holds the Disengage lane.
@@ -218,7 +214,7 @@ int main()
 
 
 def test_three_healer_and_two_tank_variants_keep_owners(tmp_path, canonical):
-    """Resto shaman (three healers) still owns Bloodlust; a Feral second tank owns the tank swap."""
+    """Resto shaman (three healers) still owns Bloodlust; a second (Feral) tank changes no Magmaw duty."""
     magmaw = canonical["blackwing_descent_10n_magmaw_c0"]
     resto = [(guid, "healer", "restoration_shaman") if spec == "elemental_shaman" else (guid, role, spec)
              for guid, role, spec in _plan_rows(magmaw)]
@@ -232,12 +228,11 @@ int main()
     MagmawDutyPlan const three = BuildMagmawDutyPlan(Board("three-healer", {_players(resto)}));
     if (three.BloodlustOwner.GetCounter() != {guid["shaman"]} || three.HookRiders.size() != 2
         || three.HookRiders[0].GetCounter() != {guid["paladin_ret"]} || three.HookRiders[1].GetCounter() != {guid["rogue"]})
-        return Fail("three healers", MagmawDutyPlanCapabilityJson(three));
+        return Fail("three healers", MagmawDutyPlanJson(three));
     MagmawDutyPlan const two = BuildMagmawDutyPlan(Board("two-tank", {_players(_plan_rows(full))}));
     if (two.PullTank.GetCounter() != {full_guid["death_knight"]}
-        || two.TankSwapOwner.GetCounter() != {full_guid["druid"]}
         || !two.MushroomOwners.empty() || two.BloodlustOwner.GetCounter() != {full_guid["shaman"]})
-        return Fail("two tanks", MagmawDutyPlanCapabilityJson(two));
+        return Fail("two tanks", MagmawDutyPlanJson(two));
     // Ambiguous or absent shamans leave Bloodlust unowned.
     using Candidate = MagmawBloodlust::BloodlustCandidate;
     ObjectGuid const a(HighGuid::Player, uint32(1)), b(HighGuid::Player, uint32(2));
@@ -285,6 +280,11 @@ def test_duty_selectors_name_no_fixed_spec_outside_the_capability_header():
         text = (ROOT / MAGMAW / name).read_text(encoding="utf-8")
         for literal in literals:
             assert literal not in text, (name, literal)
+    # Duties without a consumer are not published (review minor 5): the status receipt keeps its field set.
+    for name in ("BotMagmawDutyPlan.h", "BotMagmawDutyPlan.cpp", "BotMagmawDutyCapabilities.h"):
+        text = (ROOT / MAGMAW / name).read_text(encoding="utf-8")
+        for dead in ("TankSwapOwner", "BattleResCasters", "MagmawDutyPlanCapabilityJson", "IsBattleResCaster"):
+            assert dead not in text, (name, dead)
     for name in ("BotMagmawDutyCapabilities.h", "BotMagmawBloodlust.h", "BotMagmawDutyPlan.cpp",
                  "BotMagmawCoordinatorAssignments.cpp", "BotMagmawBaiterRotation.h"):
         assert len((ROOT / MAGMAW / name).read_text(encoding="utf-8").splitlines()) < 1000

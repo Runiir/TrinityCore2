@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -61,10 +62,15 @@ class ShardPlanError(ValueError):
 
 
 def relative(path: Path) -> str:
-    try:
-        return Path(path).resolve().relative_to(REPO_ROOT).as_posix()
-    except ValueError:
+    """Repository-relative path, computed lexically.
+
+    Symlinks are not followed, so a DVC cache link or a linked dataset/ keeps
+    its repository path instead of becoming the absolute cache path.
+    """
+    text = os.path.relpath(os.path.abspath(path), REPO_ROOT)
+    if text == ".." or text.startswith("../") or os.path.isabs(text):
         return str(path)
+    return Path(text).as_posix()
 
 
 def prerequisites_path(raid: str, directory: Path = PREREQUISITES_DIR) -> Path:

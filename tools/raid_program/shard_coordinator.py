@@ -257,6 +257,16 @@ def check_against_source_plan(plan: ShardRunPlan, source: Mapping[str, Mapping[s
             raise ShardPlanError(f"{spec.cohort_id} differs from its generated plan shard: {problems}")
 
 
+def fresh_source_lockout(row: Any) -> Any:
+    """A generated shard without predecessors runs in a fresh instance, not a seeded 'none' lockout."""
+    if not isinstance(row, Mapping) or not isinstance(row.get("lockout"), Mapping):
+        return row
+    lockout = row["lockout"]
+    if lockout.get("precompleted_boss_keys", lockout.get("bosses_done")):
+        return row
+    return {**row, "lockout": None}
+
+
 def load_run_plan(path: Path, *, select: Sequence[str] = (),
                   watchdog: Mapping[str, Any] | None = None) -> ShardRunPlan:
     """Read a raid_shard_run_plan_v1, or pick shards from package C's raid_shard_plan_v1.
@@ -271,6 +281,8 @@ def load_run_plan(path: Path, *, select: Sequence[str] = (),
     rows = payload.get("shards")
     if not isinstance(rows, list):
         raise ShardPlanError("plan has no shards list")
+    if schema == SOURCE_PLAN_SCHEMA:
+        rows = [fresh_source_lockout(row) for row in rows]
     shards = [parse_shard(row) for row in rows]
     if select:
         by_id = {shard.cohort_id: shard for shard in shards}
@@ -1132,7 +1144,9 @@ class ShardCoordinator:
                     infrastructure=bool(infrastructure), setup_failed=setup_failed,
                     shard_errors=bool(shard_errors), completed=completed)
             summary["shards"] = [outcome.summary() for outcome in self.outcomes]
-            summary["ingest"] = [ingest_command(outcome) for outcome in self.outcomes]
+            commands = [(outcome.spec.cohort_id, ingest_command(outcome)) for outcome in self.outcomes]
+            summary["ingest"] = [command for _, command in commands if command is not None]
+            summary["ingest_by_end_to_end_recorder"] = [cohort for cohort, command in commands if command is None]
             summary["closed_utc"] = datetime.now(timezone.utc).isoformat()
             harness.write_json(self.run_root / "shard_run.json", summary)
         return summary
@@ -1172,32 +1186,56 @@ def terminal_reason(*, infrastructure: bool, setup_failed: bool, shard_errors: b
 
 
 RAID_TARGETS_DIR = REPO_ROOT / "experiments/configs/raid_targets"
+# Sidecars (raid_target_roster_variants_v1) that let a target judge another
+# roster without changing the accepted target's bytes (its verdicts pin them).
+RAID_TARGET_VARIANTS_DIR = REPO_ROOT / "experiments/configs/raid_target_roster_variants"
+# Full-raid cohorts are recorded by the end-to-end clear recorder, not a boss scoreboard.
+FULL_RAID_COHORT_RE = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*_(?:10|25)[nh]_full_c[0-9]+")
 
 
-def raid_target_scenario(spec: ShardSpec, targets_dir: Path = RAID_TARGETS_DIR) -> str:
+def _json_rows(folder: Path) -> list[tuple[Path, dict[str, Any]]]:
+    rows = []
+    for path in sorted(Path(folder).glob("*.json")) if Path(folder).is_dir() else []:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(payload, dict):
+            rows.append((path, payload))
+    return rows
+
+
+def raid_target_scenario(spec: ShardSpec, targets_dir: Path = RAID_TARGETS_DIR,
+                         variants_dir: Path = RAID_TARGET_VARIANTS_DIR) -> str:
     """The boss's raid-target scenario `<raid>_<size><diff>_<boss>` that records this shard.
 
-    The one raid target naming the shard's validation scenario (its own
-    `validation_scenario_id` or a roster variant's) wins, since a boss key and
-    its target name can differ (cohort ..._omnotron_c0 -> target
+    The one raid target naming the shard's validation scenario wins, either as
+    its own `validation_scenario_id` or through a roster-variant sidecar, since
+    a boss key and its target name can differ (cohort ..._omnotron_c0 -> target
     ..._omnotron_defense_system). Otherwise it is the cohort ID without its copy
     (e.g. blackwing_descent_10n_maloriak_c3 -> blackwing_descent_10n_maloriak).
     """
-    matches = []
-    for path in sorted(Path(targets_dir).glob("*.json")) if Path(targets_dir).is_dir() else []:
-        try:
-            target = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        variants = (target.get("roster_variants") or {}).get("variants") or []
-        scenarios = {target.get("validation_scenario_id")} | {row.get("validation_scenario_id") for row in variants}
-        if spec.scenario_id in scenarios:
-            matches.append(str(target.get("scenario") or path.stem))
-    return matches[0] if len(matches) == 1 else re.sub(r"_c[0-9]+$", "", spec.cohort_id)
+    matches = {str(target.get("scenario") or path.stem) for path, target in _json_rows(targets_dir)
+               if target.get("validation_scenario_id") == spec.scenario_id}
+    for path, sidecar in _json_rows(variants_dir):
+        if any(isinstance(row, dict) and row.get("validation_scenario_id") == spec.scenario_id
+               for row in sidecar.get("variants") or []):
+            matches.add(str(sidecar.get("target_scenario") or path.stem))
+    return next(iter(matches)) if len(matches) == 1 else re.sub(r"_c[0-9]+$", "", spec.cohort_id)
 
 
-def ingest_command(outcome: ShardOutcome) -> list[str]:
-    """The scoreboard command that records this shard under its boss's raid target."""
+def is_full_raid_shard(spec: ShardSpec) -> bool:
+    return bool(FULL_RAID_COHORT_RE.fullmatch(spec.cohort_id))
+
+
+def ingest_command(outcome: ShardOutcome) -> list[str] | None:
+    """The scoreboard command that records this shard under its boss's raid target.
+
+    None for a full-raid cohort: its clear is recorded by the end-to-end recorder
+    (package R), and no boss raid target exists for it.
+    """
+    if is_full_raid_shard(outcome.spec):
+        return None
     scenario = raid_target_scenario(outcome.spec)
     return ["pixi", "run", "python", "-m", "tools.raid_program.scoreboard", "ingest",
             "--scenario", scenario, "--label", "<label>", "--run-dir", str(outcome.shard_dir)]
@@ -1234,14 +1272,17 @@ def provision_plan_shards(plan: ShardRunPlan, specs: Sequence[ShardSpec], *, con
                           gear_profiles: Path, apply: bool) -> dict[str, Any]:
     """Plan cohorts: the guarded preflight and apply path (one transaction per cohort, anchor first)."""
     from tools.bot_ml.extract_world_knowledge import database_url_from_worldserver_conf
-    from tools.raid_program.raid_shard_provisioning import provision_plan_cohorts
+    from tools.raid_program.raid_shard_provisioning import provision_plan_cohorts, verify_source_plan
 
     assert plan.source_plan is not None
-    return provision_plan_cohorts(
+    # A stale or hand-written plan.json is refused before any database read or write.
+    verification = verify_source_plan(plan.source_plan, gear_profiles=gear_profiles)
+    result = provision_plan_cohorts(
         plan.source_plan, [spec.scenario_id for spec in specs],
         character_url=database_url_from_worldserver_conf(config, "CharacterDatabaseInfo"),
         auth_url=database_url_from_worldserver_conf(config, "LoginDatabaseInfo"),
         gear_profiles=gear_profiles, apply=apply, output=root / "raid_shard_provisioning.json")
+    return {**result, "source_plan_verification": {key: verification[key] for key in ("plan", "verified")}}
 
 
 def prepare_databases(plan: ShardRunPlan, *, config: Path, run_root: Path, provisioning_config: Path,
@@ -1431,6 +1472,24 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
     return summary
 
 
+def dry_run_source_check(plan: ShardRunPlan, planned: Sequence[ShardSpec], *,
+                         gear_profiles: Path) -> tuple[bool | None, str | None]:
+    """(verified, refusal) of the generated plan behind the plan shards; (None, None) without any."""
+    from tools.raid_program.raid_shard_provisioning import RaidShardProvisioningError, verify_source_plan
+
+    if plan.source_plan is None:
+        return None, None
+    if not Path(plan.source_plan).is_file():
+        return False, f"source_plan_missing: reproduce the raid_shard_provisioning DVC stage ({plan.source_plan})"
+    if not planned:
+        return None, None
+    try:
+        verify_source_plan(plan.source_plan, gear_profiles=gear_profiles)
+    except (RaidShardProvisioningError, OSError, ValueError) as error:
+        return False, str(error)
+    return True, None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     parser.add_argument("--plan", type=Path, required=True,
@@ -1453,15 +1512,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.dry_run:
         source = source_plan_shards(plan.source_plan)
         planned = plan.plan_backed(source)
+        verified, refusal = dry_run_source_check(plan, planned, gear_profiles=args.gear_profiles.resolve())
         print(json.dumps({"schema": RUN_SCHEMA, "dry_run": True, "config_overrides": dict(SHARD_CONFIG_OVERRIDES),
                           "source_plan": str(plan.source_plan) if plan.source_plan else None,
                           "source_plan_present": source is not None,
+                          "source_plan_verified": verified, "source_plan_refusal": refusal,
                           "shards": [{"cohort_id": spec.cohort_id, "profile": spec.profile,
                                       "lockout": spec.lockout.seed_argument if spec.lockout else "fresh",
                                       "provisioning": "raid_shard_plan" if spec in planned else "legacy_validation",
                                       "script": shard_script(spec, plan.watchdog).splitlines()}
                                      for spec in plan.shards]}, indent=2))
-        return 0
+        return 1 if refusal else 0
     output = args.output_dir.resolve()
     if output.is_relative_to(REPO_ROOT):
         raise SystemExit("--output-dir must be outside the source tree (evidence is archived with DVC)")

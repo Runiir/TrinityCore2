@@ -540,6 +540,7 @@ stages:
     - experiments/configs/cata_434_action_profiles.json
     - experiments/configs/cata_434_combat_loot_profiles.json
     - sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql
+    - sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql
     - dataset/validation_gear_profiles
     - dataset/world_knowledge/trainers.jsonl
     - data/dbc/enUS/SkillLineAbility.dbc
@@ -565,8 +566,7 @@ stages:
       dataset/validation_provisioning_verification/report.json
       --bwd-diagnostic-shard-fixture
       experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
-      --raid-shard-plan
-      dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json
+      --raid-shard-provisioning-dir dataset/raid_shard_provisioning
       --output-dir dataset/validation_scenarios
     deps:
     - tools/bot_ml/build_validation_scenario_manifests.py
@@ -576,8 +576,7 @@ stages:
     - sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
     - dataset/validation_provisioning/report.json
     - dataset/validation_provisioning_verification/report.json
-    - dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/plan.json
-    - dataset/raid_shard_provisioning/blackwing_descent_10n_canonical_v1/report.json
+    - dataset/raid_shard_provisioning
     outs:
     - dataset/validation_scenarios:
         persist: true

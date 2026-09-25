@@ -294,3 +294,22 @@ def test_full_raid_contract_drift_fails_plan_validation():
         mutate(drifted["shards"][-1])
         with pytest.raises(ShardPlanError):
             validate_shard_plan(drifted)
+
+
+def test_source_paths_are_lexical_so_symlinked_inputs_keep_their_repository_path(tmp_path, monkeypatch):
+    """A DVC cache link or a linked dataset/ must not turn into an absolute cache path in plan.json."""
+    from tools.raid_program import raid_shard_plan
+
+    repo, cache = tmp_path / "repo", tmp_path / "cache"
+    (repo / "dataset").mkdir(parents=True)
+    cache.mkdir()
+    (cache / "ab12").write_text("{}")
+    (repo / "dataset" / "profiles.json").symlink_to(cache / "ab12")
+    (repo / "linked").symlink_to(cache, target_is_directory=True)
+    monkeypatch.setattr(raid_shard_plan, "REPO_ROOT", repo)
+    assert raid_shard_plan.relative(repo / "dataset" / "profiles.json") == "dataset/profiles.json"
+    assert raid_shard_plan.relative(repo / "linked" / "ab12") == "linked/ab12"
+    assert raid_shard_plan.relative(repo / "dataset" / ".." / "dataset" / "profiles.json") == "dataset/profiles.json"
+    assert raid_shard_plan.relative(cache / "ab12") == str(cache / "ab12")  # outside the repository: unchanged
+    monkeypatch.chdir(repo)
+    assert raid_shard_plan.relative(Path("dataset/profiles.json")) == "dataset/profiles.json"

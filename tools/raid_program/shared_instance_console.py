@@ -11,6 +11,7 @@ import time
 from typing import Any, Callable, Iterator
 
 from tools.bot_ml.live_validation_session import live_validation_lock
+from tools.raid_program.raid_shard_preflight import worldserver_processes
 from tools.raid_program.shared_instance_fixture import sha256
 
 
@@ -102,10 +103,12 @@ def owned_console(*, repository: Path, source: Path, binary: Path, config: Path,
     """Launch once under the shared owner lock; always close only this PID group."""
     output_dir.mkdir(parents=True, exist_ok=True)
     with live_validation_lock(repository, "shared-instance-isolation"):
-        # Admission never replaces, kills, or attaches to an unrelated server.
-        existing = subprocess.run(["pgrep", "-x", "worldserver"], capture_output=True)
-        if existing.returncode != 1:
-            raise RuntimeError("worldserver already exists or process inventory unavailable")
+        # Admission never replaces, kills, or attaches to an unrelated server,
+        # including a renamed copy (scoreboard_run pins /tmp/worldserver-<sha12>).
+        existing = worldserver_processes()
+        if existing["returncode"] != 1:
+            raise RuntimeError("worldserver already exists or process inventory unavailable: "
+                               f"pids={existing['pids']} error={existing['error']}")
         if before_launch is not None:
             before_launch()
         with (output_dir / "worldserver.console.log").open("xb") as log:

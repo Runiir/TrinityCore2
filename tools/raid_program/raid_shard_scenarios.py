@@ -24,9 +24,18 @@ Where each boss's rows live, for patch requests from boss agents: the scenario
 object whose `id` is the cohort's scenario ID (e.g.
 `blackwing_descent_10n_maloriak_c0_diagnostic`), its `route` list (one row per
 node, `node_id` is the stable key) and its `mechanic_profiles`. A cloned row is
-authoritative once committed: a boss agent's change edits that row only, never
-the legacy template, so the accepted legacy shards stay byte-identical.
-`validate_raid_shard_scenarios` checks the identity every row must keep.
+authoritative once committed: a boss agent's change edits that row. A forwarded
+boss fix may also edit the legacy template when the legacy row itself is wrong
+(round 2 moved the legacy Maloriak diagnostic start and route and the Omnotron
+diagnostic encounter, and the full route with them); such an edit then needs
+validation_provisioning reproduced for the moved legacy characters. Byte
+neutrality is pinned only for the accepted Magmaw and Stonecore rows and their
+provisioning SQL. `validate_raid_shard_scenarios` checks the identity every row
+must keep.
+
+The start position of a row is checked against its source, never against
+itself: the plan's `start_position_source` when that is another row, else the
+row's own explicit `start_position_source`, else its route template.
 
     pixi run python -m tools.raid_program.raid_shard_scenarios --check
     pixi run python -m tools.raid_program.raid_shard_scenarios --write-missing
@@ -259,6 +268,24 @@ def _slot_references(route: list[dict[str, Any]]) -> list[tuple[str, int]]:
     return references
 
 
+def start_reference(shard: dict[str, Any], row: dict[str, Any],
+                    scenarios: dict[str, dict[str, Any]]) -> tuple[str | None, dict[str, Any] | None]:
+    """(source scenario ID, start) a cohort row's start must equal; (None, None) when the source is absent.
+
+    The plan copies a row's start from the row itself once the row exists
+    (raid_shard_plan `start_position_source`), so comparing the two would pass
+    any start. Then the reference is the row's explicit `start_position_source`
+    or its route template.
+    """
+    planned = str(shard.get("start_position_source") or "")
+    if planned and planned != str(shard["scenario_id"]):
+        return planned, shard.get("start_position")
+    source = str(row.get("start_position_source") or shard.get("route_template_scenario_id") or "")
+    if source == str(shard["scenario_id"]) or source not in scenarios:
+        return None, None
+    return source, scenarios[source].get("start_position")
+
+
 def validate_raid_shard_scenarios(plan: dict[str, Any], config: dict[str, Any],
                                   profiles: dict[str, Any] | None = None,
                                   fixture: dict[str, Any] | None = None,
@@ -300,8 +327,13 @@ def validate_raid_shard_scenarios(plan: dict[str, Any], config: dict[str, Any],
         for field, value in expected.items():
             if row.get(field) != value:
                 fail("scenario_identity", field=field, expected=value, actual=row.get(field))
-        if shard.get("start_position") and row.get("start_position") != shard["start_position"]:
-            fail("scenario_start_position", expected=shard["start_position"], actual=row.get("start_position"))
+        start_source, expected_start = start_reference(shard, row, scenarios)
+        if start_source is None:
+            fail("scenario_start_position_source_missing",
+                 source=row.get("start_position_source") or shard.get("route_template_scenario_id"))
+        elif expected_start and row.get("start_position") != expected_start:
+            fail("scenario_start_position", source=start_source, expected=expected_start,
+                 actual=row.get("start_position"))
         template = scenarios.get(str(shard.get("route_template_scenario_id") or ""))
         route = row.get("route") or []
         node_ids = [str(step.get("node_id") or "") for step in route]

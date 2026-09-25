@@ -23,7 +23,9 @@ collide now or later:
 
 The in-memory allocators of a running worldserver are invisible to SQL, so an
 apply requires `--attest-no-worldserver-running` and is refused while
-`pgrep -x worldserver` finds a process. It is also refused unless the auth
+any worldserver process runs, including renamed copies such as the
+`/tmp/worldserver-<sha12>` pin of scoreboard_run (`worldserver_processes`:
+`pgrep -x 'worldserver.*'` plus a /proc executable scan). It is also refused unless the auth
 and characters databases share one server (host, port and user), because each
 cohort transaction writes both. Every cohort is written in its own
 transaction whose SQL guards repeat checks 1-3 for that cohort before its
@@ -34,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence
@@ -236,15 +239,66 @@ def order_cohorts(reservation: dict[str, Any], scenario_ids: Iterable[str]) -> l
     return ([anchor] if anchor in selected else []) + [sid for sid in selected if sid != anchor]
 
 
-def worldserver_processes() -> dict[str, Any]:
-    """`pgrep -x worldserver`: exit 0 lists processes, exit 1 finds none, anything else is unknown."""
+WORLDSERVER_PGREP = ["pgrep", "-x", "worldserver.*"]
+WORLDSERVER_INVENTORY = "pgrep -x 'worldserver.*' + /proc/<pid>/{exe,comm,cmdline[0]} basename prefix 'worldserver'"
+
+
+def is_worldserver_name(name: str) -> bool:
+    """A worldserver binary or a renamed copy of it (worldserver-<sha12>, worldserver.pinned, ...)."""
+    base = os.path.basename(name.strip().removesuffix(" (deleted)"))
+    return base.startswith("worldserver")
+
+
+def proc_worldserver_pids(proc: Path = Path("/proc")) -> tuple[set[int], str | None]:
+    """PIDs whose executable, comm or argv[0] names a worldserver; an unreadable /proc is an error."""
+    found: set[int] = set()
     try:
-        result = subprocess.run(["pgrep", "-x", "worldserver"], capture_output=True, text=True, timeout=10, check=False)
+        entries = [entry for entry in proc.iterdir() if entry.name.isdigit()]
+    except OSError as exc:
+        return found, f"proc_scan_failed:{exc}"
+    for entry in entries:
+        names = []
+        try:
+            names.append(os.readlink(entry / "exe"))
+        except OSError:
+            pass  # another user's process or a kernel thread: comm and cmdline remain readable
+        for name, reader in (("comm", lambda path: path.read_text(errors="replace")),
+                             ("cmdline", lambda path: path.read_bytes().split(b"\0", 1)[0].decode(errors="replace"))):
+            try:
+                names.append(reader(entry / name))
+            except OSError:
+                continue
+        if any(value and is_worldserver_name(value) for value in names):
+            found.add(int(entry.name))
+    return found, None
+
+
+def worldserver_processes(proc: Path = Path("/proc"),
+                          pgrep: Sequence[str] = tuple(WORLDSERVER_PGREP)) -> dict[str, Any]:
+    """Every running worldserver, renamed copies included.
+
+    returncode 1 means none was found by both `pgrep -x 'worldserver.*'` (the
+    comm, which keeps the first 15 bytes of a renamed binary's name) and the
+    /proc scan; 0 means at least one PID was found; None means the inventory is
+    incomplete (either method failed) and nothing was found.
+    """
+    pids: set[int] = set()
+    errors: list[str] = []
+    try:
+        result = subprocess.run(list(pgrep), capture_output=True, text=True, timeout=10, check=False)
+        pids |= {int(pid) for pid in result.stdout.split() if pid.isdigit()}
+        if result.returncode not in (0, 1):
+            errors.append(f"pgrep_returncode:{result.returncode}:{result.stderr.strip()}")
     except (OSError, subprocess.SubprocessError) as exc:
-        return {"command": "pgrep -x worldserver", "returncode": None, "pids": [], "error": str(exc)}
-    return {"command": "pgrep -x worldserver", "returncode": result.returncode,
-            "pids": [int(pid) for pid in result.stdout.split() if pid.isdigit()],
-            "error": result.stderr.strip() or None}
+        errors.append(f"pgrep_failed:{exc}")
+    scanned, error = proc_worldserver_pids(Path(proc))
+    pids |= scanned
+    if error:
+        errors.append(error)
+    pids.discard(os.getpid())
+    returncode = 0 if pids else (None if errors else 1)
+    return {"command": WORLDSERVER_INVENTORY, "returncode": returncode, "pids": sorted(pids),
+            "error": "; ".join(errors) or None}
 
 
 def server_identity(url: str) -> dict[str, Any]:

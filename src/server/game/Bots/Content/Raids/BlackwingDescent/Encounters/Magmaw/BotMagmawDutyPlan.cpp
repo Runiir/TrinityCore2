@@ -5,7 +5,6 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
 
-#include <algorithm>
 #include <optional>
 #include <sstream>
 
@@ -35,7 +34,6 @@ struct MagmawDutyPlanBuilder
         for (std::size_t index = 0; index < hookUsers.size() && index < 2; ++index)
             plan.HookRiders.push_back(hookUsers[index]);
 
-        std::vector<ObjectGuid> livingTanks;
         for (ActorSnapshot const& member : board.Players)
         {
             if (plan.PullTank.IsEmpty()
@@ -44,25 +42,7 @@ struct MagmawDutyPlanBuilder
                 plan.PullTank = member.Guid;
             if (MagmawDutyCapabilities::IsMushroomCaster(member.ClassSpec))
                 plan.MushroomOwners.push_back(member.Guid);
-            if (member.Alive && member.Role == "tank")
-                livingTanks.push_back(member.Guid);
-            if (member.Alive
-                && MagmawDutyCapabilities::IsBattleResCaster(member.ClassSpec))
-                plan.BattleResCasters.push_back(member.Guid);
         }
-        auto byRawGuid = [](ObjectGuid left, ObjectGuid right)
-        {
-            return left.GetRawValue() < right.GetRawValue();
-        };
-        std::sort(livingTanks.begin(), livingTanks.end(), byRawGuid);
-        std::sort(plan.BattleResCasters.begin(), plan.BattleResCasters.end(),
-            byRawGuid);
-        for (ObjectGuid tank : livingTanks)
-            if (tank != plan.PullTank)
-            {
-                plan.TankSwapOwner = tank;
-                break;
-            }
 
         if (std::optional<ObjectGuid> const owner =
                 MagmawBloodlust::FindBloodlustOwner(board))
@@ -99,21 +79,6 @@ std::string MagmawDutyPlanJson(MagmawDutyPlan const& plan)
     }
     json << '}';
     return json.str();
-}
-
-std::string MagmawDutyPlanCapabilityJson(MagmawDutyPlan const& plan)
-{
-    std::string json = MagmawDutyPlanJson(plan);
-    if (!plan.Applies)
-        return json;
-    std::ostringstream extra;
-    extra << ",\"tank_swap_owner\":" << plan.TankSwapOwner.GetCounter()
-          << ",\"battle_res_casters\":[";
-    for (std::size_t index = 0; index < plan.BattleResCasters.size(); ++index)
-        extra << (index ? "," : "") << plan.BattleResCasters[index].GetCounter();
-    extra << ']';
-    json.insert(json.size() - 1, extra.str());
-    return json;
 }
 
 std::string BuildMagmawDutyPlanStatusJson(Blackboard const* board)

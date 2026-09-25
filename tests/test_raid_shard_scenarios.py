@@ -213,6 +213,40 @@ def test_row_identity_drift_fails_closed(plan, mutate, check):
     assert check in {row["check"] for row in report["failures"]}
 
 
+@pytest.mark.parametrize("cohort", [*C0, FULL])
+def test_a_moved_start_is_checked_against_the_template_not_itself(plan, cohort):
+    """The plan copies a row's start from the row itself, so the reference is the route template (minor 8)."""
+    shard = next(row for row in plan["shards"] if row["scenario_id"] == cohort)
+    assert shard["start_position_source"] == cohort  # the self-copy that made the old check vacuous
+    config = _read(CONFIG)
+    scenarios = rows.configured_scenarios(config)
+    row = scenarios[cohort]
+    assert row["start_position"] == scenarios[shard["route_template_scenario_id"]]["start_position"]
+    row["start_position"] = {**row["start_position"], "x": row["start_position"]["x"] + 25.0}
+    moved = {**shard, "start_position": row["start_position"]}  # a plan regenerated from the moved row
+    report = rows.validate_raid_shard_scenarios({**plan, "shards": [moved]}, config, require_all=False)
+    (failure,) = [failure for failure in report["failures"] if failure["check"] == "scenario_start_position"]
+    assert failure["source"] == shard["route_template_scenario_id"]
+    # An explicit source must exist and carry the same start.
+    row["start_position_source"] = "blackwing_descent_10n_absent"
+    report = rows.validate_raid_shard_scenarios({**plan, "shards": [moved]}, config, require_all=False)
+    assert "scenario_start_position_source_missing" in {failure["check"] for failure in report["failures"]}
+    row["start_position_source"] = cohort
+    report = rows.validate_raid_shard_scenarios({**plan, "shards": [moved]}, config, require_all=False)
+    assert "scenario_start_position_source_missing" in {failure["check"] for failure in report["failures"]}
+
+
+def test_a_plan_start_from_the_template_is_compared_directly(plan):
+    shard = next(row for row in plan["shards"] if row["cohort_id"] == "blackwing_descent_10n_magmaw_c0")
+    template = shard["route_template_scenario_id"]
+    config = _read(CONFIG)
+    row = rows.configured_scenarios(config)[shard["scenario_id"]]
+    planned = {**shard, "start_position_source": template, "start_position": {**row["start_position"], "z": 1.0}}
+    report = rows.validate_raid_shard_scenarios({**plan, "shards": [planned]}, config, require_all=False)
+    assert {"check": "scenario_start_position", "source": template}.items() <= next(
+        failure for failure in report["failures"] if failure["check"] == "scenario_start_position").items()
+
+
 @pytest.mark.parametrize("mutate", [
     lambda row: row.update(diagnostic_only=True),
     lambda row: row.update(roster_identity=[]),
