@@ -800,3 +800,15 @@ def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
     assert "snapshot.Route.NodeId != Maloriak::EncounterNode" in timers
     for path in folder.glob("*.cpp"):
         assert len(path.read_text(encoding="utf-8").splitlines()) < 1000, path.name
+
+
+def test_raid_prepot_stage_waits_for_the_maloriak_pull_gate() -> None:
+    """Round 3: the shared prepot stage reads the adaptive Maloriak plan, so no
+    25 s potion is spent while the raid is dead, healing or still staging."""
+    consumables = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidConsumables.cpp").read_text(encoding="utf-8")
+    stage = consumables.index("bool const prepotStageReady = PrepotStageReady(")
+    call = consumables.index("TryRaidPrepullConsumables(", stage)
+    wiring = consumables[stage:call]
+    assert "context.AdaptiveMagmawSuppressReason" in wiring
+    assert "maloriak->SuppressReason" in wiring
+    assert "context.AdaptiveMaloriak.get()" in consumables[:call]

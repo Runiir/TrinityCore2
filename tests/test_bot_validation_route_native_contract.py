@@ -343,6 +343,70 @@ int main()
 ''')
 
 
+def test_interaction_approach_stops_on_the_walkable_floor_within_reach(tmp_path: Path) -> None:
+    # Round 2 live evidence (blackwing_descent_10n_chimaeron_c0): Finkle
+    # Einhorn stands on a soapbox gameobject 1.585 yd above the navmesh, so
+    # the planner rejected his own position (route_destination_endpoint_mismatch,
+    # vertical 1.585 > 1.5) for 90 s. The control points are that run's
+    # complete native path from the regroup anchor.
+    _compile_and_run(tmp_path, PRELUDE + r"""
+#include <cmath>
+static float Horizontal(Point3 const& a, Point3 const& b) { return std::hypot(a.X - b.X, a.Y - b.Y); }
+static float Exact(Point3 const& a, Point3 const& b) { return std::sqrt(std::pow(a.X - b.X, 2.0f) + std::pow(a.Y - b.Y, 2.0f) + std::pow(a.Z - b.Z, 2.0f)); }
+static bool Same(Point3 const& a, Point3 const& b) { return a.X == b.X && a.Y == b.Y && a.Z == b.Z && a.Valid == b.Valid; }
+int main()
+{
+    Point3 const finkle{ -114.389f, 43.1875f, 73.9476f, true };
+    std::vector<Point3> const path = {
+        { -104.737999f, 20.5919991f, 72.1409378f, true },
+        { -106.309166f, 24.2705078f, 72.3622437f, true },
+        { -107.880333f, 27.9490185f, 72.3622284f, true },
+        { -109.4515f, 31.6275291f, 72.3622437f, true },
+        { -111.022667f, 35.3060379f, 72.3622437f, true },
+        { -112.593834f, 38.9845467f, 72.3622437f, true },
+        { -114.165001f, 42.6630554f, 72.3622437f, true },
+        { -114.389f, 43.1875f, 72.3622437f, true },
+    };
+    // The raw target is not a destination the path can end at.
+    CHECK(std::fabs(path.back().Z - finkle.Z) > 1.5f);
+    Point3 stand = SelectInteractionApproachPoint(finkle, path, 5.0f);
+    CHECK(stand.Valid && !Same(stand, finkle));
+    CHECK(std::fabs(Horizontal(stand, finkle) - InteractionStandOffYards) < 0.01f);
+    CHECK(std::fabs(stand.Z - 72.3622437f) < 0.01f);
+    CHECK(Exact(stand, finkle) <= 5.0f);
+    // On the path's last straight leg toward the target (the bot's side).
+    CHECK(stand.Y < finkle.Y && stand.Y > path[5].Y);
+    // A declared tighter range still admits it (2.96 yd), a tighter one keeps the target.
+    CHECK(!Same(SelectInteractionApproachPoint(finkle, path, 3.0f), finkle));
+    CHECK(Same(SelectInteractionApproachPoint(finkle, path, 2.9f), finkle));
+
+    // A target on the floor: the owner still stops short of it.
+    Point3 const onFloor{ -114.389f, 43.1875f, 72.3622437f, true };
+    stand = SelectInteractionApproachPoint(onFloor, path, 5.0f);
+    CHECK(std::fabs(Horizontal(stand, onFloor) - InteractionStandOffYards) < 0.01f);
+
+    // No complete native path: the target is kept (the planner reports why).
+    CHECK(Same(SelectInteractionApproachPoint(finkle, {}, 5.0f), finkle));
+    CHECK(Same(SelectInteractionApproachPoint(finkle, { path.front() }, 5.0f), finkle));
+
+    // The path stops 4 yd out (a railing): its end serves when within reach.
+    Point3 const railing{ -114.389f, 47.1875f, 73.9476f, true };
+    CHECK(Same(SelectInteractionApproachPoint(railing, path, 5.0f), path.back()));
+    Point3 const beyond{ -114.389f, 48.0875f, 73.9476f, true };
+    CHECK(Same(SelectInteractionApproachPoint(beyond, path, 5.0f), beyond));
+
+    // A target on a balcony 8 yd above the floor is not reached from below.
+    Point3 const balcony{ -114.389f, 43.1875f, 80.3622f, true };
+    CHECK(Same(SelectInteractionApproachPoint(balcony, path, 5.0f), balcony));
+
+    // A path that starts inside the stand-off keeps the target.
+    std::vector<Point3> const close = { { -114.389f, 41.1875f, 72.3622f, true }, path.back() };
+    CHECK(Same(SelectInteractionApproachPoint(balcony, close, 5.0f), balcony));
+    return failures ? 1 : 0;
+}
+""")
+
+
 def test_every_completion_kind_is_evaluated(tmp_path: Path) -> None:
     _compile_and_run(tmp_path, PRELUDE + r'''
 int main()

@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
+#include "Bots/BotValidationRouteNativeFallSpline.h"
 
 #include "Creature.h"
 #include "DataStores/DBCStores.h"
@@ -191,8 +192,7 @@ std::uint64_t TransportStationaryMs(GameObject const* transport)
 
 bool NativeFallSplineActive(Player const* bot)
 {
-    return bot && bot->movespline->Initialized() && !bot->movespline->Finalized()
-        && bot->movespline->isFalling();
+    return bot && BotValidationRouteNativeFall::SplineActive(*bot->movespline);
 }
 
 bool NativeFallInProgress(Player const* bot)
@@ -201,11 +201,15 @@ bool NativeFallInProgress(Player const* bot)
         || NativeFallSplineActive(bot));
 }
 
+// The falling flags still set with no spline running (the fall finished, or a
+// stop mid-air cleared it: a stun, a root or a cast path's StopMoving) mean
+// the landing is owed: the landing step either finds a floor and reports it
+// (native fall damage from the unchanged fall origin) or falls on from here.
 bool NativeFallLandingPending(Player const* bot)
 {
-    return bot && bot->HasUnitMovementFlag(MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR)
-        && bot->movespline->Initialized() && bot->movespline->Finalized()
-        && bot->movespline->isFalling();
+    return bot && BotValidationRouteNativeFall::LandingPending(
+        bot->HasUnitMovementFlag(MOVEMENTFLAG_FALLING | MOVEMENTFLAG_FALLING_FAR),
+        *bot->movespline);
 }
 
 // A passenger reports its current transport block, as a client standing on

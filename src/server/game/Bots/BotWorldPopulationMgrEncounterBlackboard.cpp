@@ -12,6 +12,7 @@
 #include "Bots/BotValidationRouteNativeLogic.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawFacts.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakNativeTimers.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesMobility.h"
 
 #include "CellImpl.h"
 #include "Creature.h"
@@ -21,7 +22,9 @@
 #include "Map.h"
 #include "Player.h"
 #include "Spell.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Unit.h"
 #include "UnitAI.h"
 
@@ -219,6 +222,35 @@ void AppendAtramedesMechanicTimers(BotEncounter::RouteView const& route,
         actor.MechanicTimers.push_back({ spellId, remainingMs,
             remainingMs == 0, BotEncounter::FactSource::NativeInstanceState });
     }
+}
+
+// Atramedes air phase: for each spell a bot knows, the time until it can be
+// cast (0 = now): the longer of its cooldown and, for a GCD-bound spell, the
+// global cooldown. BotAtramedesMobility.h reads these as player
+// MechanicTimers; a spell without a timer is never used, and a strike held
+// back for an extension never waits on a cast the server would reject.
+void AppendAtramedesPlayerSpellTimers(BotEncounter::RouteView const& route,
+    Player* bot, BotEncounter::ActorSnapshot& actor)
+{
+    if (route.NodeId != "bwd.atramedes.encounter")
+        return;
+    namespace Mobility = BotEncounter::Atramedes::Mobility;
+    auto publish = [bot, &actor](uint32 spellId)
+    {
+        SpellInfo const* info = sSpellMgr->GetSpellInfo(spellId);
+        if (!info || !bot->HasSpell(spellId))
+            return;
+        SpellHistory const* history = bot->GetSpellHistory();
+        uint32 remainingMs = history->GetRemainingCooldown(info);
+        if (info->StartRecoveryCategory && history->HasGlobalCooldown(info))
+            remainingMs = std::max(remainingMs, history->GetRemainingGlobalCooldown(info));
+        actor.MechanicTimers.push_back({ spellId, remainingMs, false,
+            BotEncounter::FactSource::GroupState });
+    };
+    for (Mobility::Ability const& ability : Mobility::Abilities)
+        publish(ability.SpellId);
+    publish(Mobility::IceBlockSpell);
+    publish(Mobility::CatFormSpell);
 }
 
 // Chimaeron publishes the time to his next Massacre cast (0 while it is cast
@@ -439,6 +471,7 @@ void BotWorldPopulationMgr::PublishEncounterBlackboard(uint64 nowMs)
             ? roster->second.Role : GetDungeonRole(bot);
         player.ClassSpec = roster != Cohort().Raid.RosterByGuid.end()
             ? roster->second.ClassSpec : GetBotClassSpec(bot);
+        AppendAtramedesPlayerSpellTimers(snapshot->Route, bot, player);
         Unit const* damageTarget = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
         BotClassSpecActionProfile const profile =
             BotClassSpecActionProfileStore::Build(bot, player.Role.c_str());

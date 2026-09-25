@@ -22,9 +22,15 @@ void BotWorldPopulationMgr::RecordNoProfileActionRejections(Player* bot,
     // the full-window native reasons that made every candidate in this
     // resolution invalid, so a canary can distinguish a bad DB gate from a
     // shared arbitration or movement problem without replaying the tail trace.
+    // Raid trash nodes are aggregated too: round 2's starved rotations (Beast
+    // Mastery enemy_count_too_high, Retribution and Assassination melee caps)
+    // showed up on trash packs, where only diagnose snapshots carried them.
+    // The key is per route node, actor, spell and reason, so volume is bounded.
     if (bot
         && Cohort().Active && Cohort().Config.ValidationRouteEnable
-        && Cohort().Config.ValidationRouteKind == "boss"
+        && (Cohort().Config.ValidationRouteKind == "boss"
+            || (Cohort().Config.ValidationRouteKind == "trash"
+                && Cohort().Raid.RaidInstance))
         && Party().ValidationRouteGeneration)
     {
         uint32 const botKey = bot->GetGUID().GetCounter();

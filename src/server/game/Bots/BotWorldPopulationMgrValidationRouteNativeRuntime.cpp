@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgrValidationRouteNativeRuntime.h"
 #include "Bots/BotValidationRouteNativeLogic.h"
+#include "Bots/BotWorldPopulationMgrValidationRouteNativeRecovery.h"
 #include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteNativeFacts.h"
@@ -71,16 +72,20 @@ void Submit(Input const& input, Callbacks const& callbacks, std::string const& m
 }
 
 // Keep the member where it is (aboard a platform, at a wait point, or blocked)
-// by owning the movement lane without issuing any movement.
-void SubmitHold(Input const& input, std::string const& reason)
+// by owning the movement lane without issuing any movement. A walk, step or
+// fall in flight also owns the cast lanes (ApproachHoldOwnsCasting), ahead of
+// any heal or rotation at the same priority.
+void SubmitHold(Input const& input, std::string const& reason, bool ownsCasting = false)
 {
     BotActionArbitration::Candidate candidate;
     candidate.Key = input.Board->CurrentScope.Key() + ":native_route_hold";
     candidate.Source = "native_route_interaction";
     candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
-    candidate.UtilityScore = 1.0f;
-    candidate.RequiredResources = BotActionArbitration::Uses(
-        BotActionArbitration::Resource::Movement);
+    candidate.UtilityScore = ownsCasting ? 6.0f : 1.0f;
+    candidate.RequiredResources = ownsCasting
+        ? BotActionArbitration::Uses(BotActionArbitration::Resource::Movement,
+            BotActionArbitration::Resource::GlobalCooldown, BotActionArbitration::Resource::Cast)
+        : BotActionArbitration::Uses(BotActionArbitration::Resource::Movement);
     candidate.ExpiresAtMs = input.NowMs + 500;
     candidate.Attempt = [reason, situation = input.Situation, label = input.Action,
         state = input.State]()
@@ -151,6 +156,21 @@ float PathLengthTo(Player* bot, Point3 const& target)
     G3D::Vector3 const end(target.X, target.Y, target.Z);
     length += (end - points.back()).length();
     return std::max(length, straight);
+}
+
+// The owner's walk toward a creature or gameobject: a point on the complete
+// native path, short of the target and within its reach (see
+// SelectInteractionApproachPoint). Without a complete path the target's own
+// position is kept and the movement planner reports why.
+Point3 InteractionApproachPoint(Player* bot, Point3 const& target, float reachYards)
+{
+    std::vector<Point3> points;
+    PathGenerator path(bot);
+    if (path.CalculatePath(target.X, target.Y, target.Z, false)
+        && path.GetPathType() == PATHFIND_NORMAL)
+        for (G3D::Vector3 const& point : path.GetPath())
+            points.push_back({ point.x, point.y, point.z, true });
+    return SelectInteractionApproachPoint(target, points, reachYards);
 }
 
 void RecordOnChange(Callbacks const& callbacks, std::string& last,
@@ -278,9 +298,31 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
             FailOnce(runtime, callbacks, decision.Reason);
             return;
         case InteractionStep::Approach:
-            intent = BotNativeAction::Move{ targetX, targetY, targetZ,
+        {
+            // Area triggers keep their own centre; creatures and gameobjects
+            // are reached from the walkable floor short of them, within the
+            // same reach the in-range observation uses (never beyond 5 yd).
+            Point3 destination{ targetX, targetY, targetZ, true };
+            if (target)
+            {
+                float reach = INTERACTION_DISTANCE;
+                if (GameObject const* object = target->ToGameObject())
+                    reach = std::min(object->GetInteractionDistance(), INTERACTION_DISTANCE);
+                else if (contract.RangeYards > 0.0f)
+                    reach = std::min(contract.RangeYards, INTERACTION_DISTANCE);
+                destination = InteractionApproachPoint(bot, destination, reach);
+                // A gameobject is used from where its native check admits the
+                // player: keep its own position when the stand point is not.
+                if (GameObject const* object = target->ToGameObject())
+                    if (!object->IsAtInteractDistance(
+                            Position(destination.X, destination.Y, destination.Z),
+                            object->GetInteractionDistance()))
+                        destination = Point3{ targetX, targetY, targetZ, true };
+            }
+            intent = BotNativeAction::Move{ destination.X, destination.Y, destination.Z,
                 "native_interaction_approach" };
             break;
+        }
         case InteractionStep::Use:
             intent = BotNativeAction::GameObjectUse{ targetGuid };
             break;
@@ -318,6 +360,18 @@ void RunInteraction(Input const& input, Callbacks const& callbacks,
         "native_route_interaction_submitted", std::move(observe));
 }
 
+// How far the member stands from its approach start: from the start point,
+// or for a ledge drop from the line toward the step-off point (a step cut
+// short on the lip steps off again from there).
+float ApproachStartDistance(Player const* bot, ApproachContract const& approach)
+{
+    if (approach.Mode == ApproachMode::LedgeDrop)
+        return DistanceToApproachLine(approach.StartPoint, approach.StepOffPoint,
+            bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+    return bot->GetExactDist(approach.StartPoint.X, approach.StartPoint.Y,
+        approach.StartPoint.Z);
+}
+
 // Every loaded cohort member as the node-level approach rules see it: the
 // ledge-drop barrier, the completion override's handover and the typed
 // timeout all read the same views.
@@ -345,8 +399,8 @@ std::vector<ApproachMemberView> ApproachMemberViews(Input const& input,
         // At the start and on a verified floor there (a probe miss holds the
         // cohort while that member re-snaps).
         view.AtStart = approach.StartPoint.Valid && AtApproachStart(
-            bot->GetExactDist(approach.StartPoint.X, approach.StartPoint.Y, approach.StartPoint.Z),
-            startTolerance, BotValidationRouteBoardingAction::StaticFloorUnderfoot(bot,
+            ApproachStartDistance(bot, approach), startTolerance,
+            BotValidationRouteBoardingAction::StaticFloorUnderfoot(bot,
                 contract.FloorToleranceYards));
         view.FallMarginOk = true;
         if (approach.Mode == ApproachMode::LedgeDrop && bot->GetMaxHealth())
@@ -359,11 +413,12 @@ std::vector<ApproachMemberView> ApproachMemberViews(Input const& input,
     return views;
 }
 
-void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& node,
+// One member's step of a transport contract: the node's own, or a recovery
+// ride's (each with its own runtime state).
+void RunTransport(Input const& input, Callbacks const& callbacks,
+    TransportContract const& contract, NodeRuntime& runtime,
     Facts::TransportTarget const& transport)
 {
-    TransportContract const& contract = node.Transport;
-    NodeRuntime& runtime = node.Runtime;
     Player* bot = input.Bot;
     // Dead members belong to the native death/recovery flow, not the ride.
     if (!bot->IsAlive())
@@ -434,7 +489,7 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     }
     else if (approach.Mode == ApproachMode::LedgeDrop)
     {
-        observation.DistanceToApproachStart = distance(approach.StartPoint);
+        observation.DistanceToApproachStart = ApproachStartDistance(bot, approach);
         float const height = bot->GetPositionZ() - approach.LandingZ;
         observation.ApproachTravelMs = WalkTimeMs(bot->GetExactDist2d(approach.StepOffPoint.X,
             approach.StepOffPoint.Y), runSpeed) + NativeFallTimeMs(height);
@@ -450,6 +505,9 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     // unchecked line once its stun or root ends.
     observation.MotionSuspended = bot->movespline->Finalized()
         && bot->HasUnitState(UNIT_STATE_ROAMING_MOVE);
+    // The executor's own refusals for a member it does not control.
+    observation.MemberNotFree = bot->HasUnitState(UNIT_STATE_NOT_MOVE)
+        || bot->GetMotionMaster()->GetMotionSlot(MOTION_SLOT_CONTROLLED);
 
     // Without the platform's collision model neither boarding nor the
     // stranded-member check can be proven: stop instead of guessing.
@@ -468,10 +526,19 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
 
     ObjectGuid const transportGuid = transport.Object
         ? transport.Object->GetGUID() : ObjectGuid::Empty;
-    auto countSubmission = [runtimePtr = &runtime, scope = input.Scope, guid,
-        fail = callbacks.Fail](bool boarding)
+    // A refused submission counts at most once per SubmissionRejectionWindowMs
+    // (CountRejectedSubmission); every counted one is recorded by reason.
+    auto countRejection = [record = callbacks.Record, entry = contract.Entry,
+        nowMs = input.NowMs](TransportMemberState& state, std::string const& reason)
     {
-        return [runtimePtr, scope, guid, fail, boarding](
+        if (CountRejectedSubmission(state, nowMs, reason) && record)
+            record("native_route_transport_rejection_counted:" + reason, nullptr,
+                float(state.FailedSubmissions), entry);
+    };
+    auto countSubmission = [runtimePtr = &runtime, scope = input.Scope, guid,
+        fail = callbacks.Fail, countRejection](bool boarding)
+    {
+        return [runtimePtr, scope, guid, fail, countRejection, boarding](
             BotActionArbitration::Outcome const& outcome)
         {
             if (runtimePtr->Scope != scope)
@@ -480,7 +547,7 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
             if (outcome.Result == BotActionArbitration::Disposition::Committed)
                 ++(boarding ? state.BoardSubmissions : state.LeaveSubmissions);
             else if (Retried(outcome))
-                ++state.FailedSubmissions;
+                countRejection(state, outcome.Reason);
             if (outcome.Result == BotActionArbitration::Disposition::Unsafe
                 && !runtimePtr->FailureRecorded)
             {
@@ -495,9 +562,9 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     // toward MaxSubmissions like boarding; every new outcome is recorded.
     auto approachSubmission = [runtimePtr = &runtime, scope = input.Scope, guid,
         fail = callbacks.Fail, record = callbacks.Record, state = input.State,
-        entry = contract.Entry](TransportStep step)
+        entry = contract.Entry, countRejection](TransportStep step)
     {
-        return [runtimePtr, scope, guid, fail, record, state, entry, step](
+        return [runtimePtr, scope, guid, fail, record, state, entry, countRejection, step](
             BotActionArbitration::Outcome const& outcome)
         {
             if (runtimePtr->Scope != scope)
@@ -515,7 +582,7 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
                     fellAgain || (!completed && step != TransportStep::DropLand));
             }
             else if (Retried(outcome))
-                ++member.FailedSubmissions;
+                countRejection(member, outcome.Reason);
             if (member.LastApproachOutcome != outcome.Reason)
             {
                 member.LastApproachOutcome = outcome.Reason;
@@ -558,7 +625,10 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     switch (decision.Step)
     {
         case TransportStep::Fail:
-            FailOnce(runtime, callbacks, decision.Reason);
+            // Exhaustion names the member and the executor's last refusal.
+            FailOnce(runtime, callbacks, decision.Reason == "transport_submissions_exhausted"
+                ? decision.Reason + ":" + member.LastRejection + ":" + std::to_string(guid)
+                : decision.Reason);
             break;
         case TransportStep::Stop:
             SubmitStop(input, decision.Reason);
@@ -567,7 +637,7 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
         case TransportStep::HoldAboard:
         case TransportStep::Done:
         case TransportStep::Blocked:
-            SubmitHold(input, decision.Reason);
+            SubmitHold(input, decision.Reason, ApproachHoldOwnsCasting(decision));
             break;
         case TransportStep::MoveToWait:
             Submit(input, callbacks, "transport_wait", transportGuid,
@@ -763,9 +833,28 @@ Result Run(Input const& input, Callbacks const& callbacks)
     if (!input.Bot || !input.State || !input.Board || !input.Node
         || !input.Situation || !input.Action || !input.Node->Declared())
         return result;
-    result.OwnsNode = true;
 
     NodeContract& node = *input.Node;
+    // A recovery ride owns the node while it runs; a node without contracts
+    // of its own is otherwise left to the ordinary route adapters.
+    if (!node.Recovery.empty())
+    {
+        RecoveryOps ops;
+        ops.Ride = [&input](Callbacks const& ridden, TransportContract const& ride,
+            NodeRuntime& rideRuntime, Facts::TransportTarget const& platform)
+        {
+            RunTransport(input, ridden, ride, rideRuntime, platform);
+        };
+        ops.Hold = [&input](std::string const& reason) { SubmitHold(input, reason); };
+        if (RunRecovery(input, callbacks, node, ops))
+        {
+            result.OwnsNode = true;
+            return result;
+        }
+    }
+    if (!node.Interaction.Declared && !node.Completion.Declared && !node.Transport.Declared)
+        return result;
+    result.OwnsNode = true;
     NodeRuntime& runtime = node.Runtime;
     runtime.Enter(input.Scope, input.NowMs);
     if (runtime.FailureRecorded)
@@ -793,8 +882,8 @@ Result Run(Input const& input, Callbacks const& callbacks)
         }
         // Boarded members stay aboard until the next node takes over.
         if (node.Transport.Declared && actingOnRoute)
-            RunTransport(input, callbacks,
-                node, Facts::ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId));
+            RunTransport(input, callbacks, node.Transport, runtime,
+                Facts::ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId));
         return result;
     }
 
@@ -828,7 +917,7 @@ Result Run(Input const& input, Callbacks const& callbacks)
         return result;
 
     if (node.Transport.Declared)
-        RunTransport(input, callbacks, node,
+        RunTransport(input, callbacks, node.Transport, runtime,
             Facts::ResolveTransport(input.Bot, node.Transport.Entry, node.Transport.SpawnId));
     if (node.Interaction.Declared && !runtime.FailureRecorded)
         RunInteraction(input, callbacks, node, election);

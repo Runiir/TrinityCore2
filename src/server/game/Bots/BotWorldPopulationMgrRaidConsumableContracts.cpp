@@ -55,9 +55,14 @@ BuildGeneratedContracts()
     return result;
 }
 
-std::array<Contract, 9> const& FallbackContracts()
+std::array<Contract, 10> const& FallbackContracts()
 {
-    static std::array<Contract, 9> const contracts = {{
+    // Beast Mastery has no WoWSims calibration fixture, but the canonical BWD
+    // roster fields it; without a row every raid prepull fails closed on
+    // raid_prepull_unknown_spec_contract_beast_mastery_hunter (round 3). It
+    // uses the same Agility set as the generated Marksmanship and Survival
+    // hunter rows.
+    static std::array<Contract, 10> const contracts = {{
         StrengthContract("blood_death_knight"),
         StrengthContract("protection_paladin"),
         IntellectContract("holy_paladin"),
@@ -67,6 +72,7 @@ std::array<Contract, 9> const& FallbackContracts()
         IntellectContract("holy_priest"),
         AgilityContract("feral_druid_tank"),
         StrengthContract("frost_death_knight"),
+        AgilityContract("beast_mastery_hunter"),
     }};
     return contracts;
 }

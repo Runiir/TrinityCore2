@@ -377,28 +377,20 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         // A transport's readiness must match how its template moves: stop
         // frames (GoState 25 + n) only for templates with stop times, origin
         // heights only for continuously cycling templates.
-        if (node.NativeContract.Transport.Declared)
+        auto transportTemplateError = [&node](NativeRoute::TransportContract const& transport)
+            -> char const*
         {
-            auto const& transport = node.NativeContract.Transport;
             uint32 entry = transport.Entry;
             if (GameObjectData const* data = transport.SpawnId
                     ? sObjectMgr->GetGameObjectData(ObjectGuid::LowType(transport.SpawnId)) : nullptr)
             {
                 if ((entry && data->id != entry) || data->mapId != node.MapId)
-                {
-                    Party().ValidationRouteManifestLoadError =
-                        "native_transport_contract_invalid:spawn_mismatch";
-                    return;
-                }
+                    return "spawn_mismatch";
                 entry = data->id;
             }
             GameObjectTemplate const* goInfo = entry ? sObjectMgr->GetGameObjectTemplate(entry) : nullptr;
             if (!goInfo || goInfo->type != GAMEOBJECT_TYPE_TRANSPORT)
-            {
-                Party().ValidationRouteManifestLoadError =
-                    "native_transport_contract_invalid:not_a_transport";
-                return;
-            }
+                return "not_a_transport";
             int32 stopFrames = 0;
             for (uint32 stopTime : { goInfo->transport.Timeto2ndfloor, goInfo->transport.Timeto3rdfloor,
                     goInfo->transport.Timeto4thfloor, goInfo->transport.Timeto5thfloor })
@@ -407,16 +399,47 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                     break;
                 ++stopFrames;
             }
-            bool const levelOnStopFrames = stopFrames > 0
-                && (transport.HasBoardLevel || transport.HasExitLevel);
-            bool const frameOnCycling = transport.BoardStopFrame >= stopFrames
-                || transport.ExitStopFrame >= stopFrames;
-            if (levelOnStopFrames || frameOnCycling)
+            if (stopFrames > 0 && (transport.HasBoardLevel || transport.HasExitLevel))
+                return "level_readiness_on_stop_frame_transport";
+            if (transport.BoardStopFrame >= stopFrames || transport.ExitStopFrame >= stopFrames)
+                return "stop_frame_not_in_template";
+            return nullptr;
+        };
+        if (node.NativeContract.Transport.Declared)
+            if (char const* error = transportTemplateError(node.NativeContract.Transport))
             {
-                Party().ValidationRouteManifestLoadError = levelOnStopFrames
-                    ? "native_transport_contract_invalid:level_readiness_on_stop_frame_transport"
-                    : "native_transport_contract_invalid:stop_frame_not_in_template";
+                Party().ValidationRouteManifestLoadError =
+                    std::string("native_transport_contract_invalid:") + error;
                 return;
+            }
+        // Recovery rides (row field recovery_transport): the unchanged
+        // contracts of rides between this node and where a wipe's runback
+        // leaves the party, checked against their templates like any ride.
+        if (std::string const recoveryText = ExtractJsonArrayField(routeJson, "recovery_transport");
+            !recoveryText.empty())
+        {
+            NativeRoute::Json recovery;
+            NativeRoute::ParseError error = NativeRoute::ParseArrayText(recoveryText, recovery);
+            if (!error)
+                error = NativeRoute::ParseRecoveryTransports(recovery, node.NativeContract.Recovery);
+            if (error)
+            {
+                Party().ValidationRouteManifestLoadError =
+                    std::string(error.Kind == NativeRoute::ParseError::Code::UnknownField
+                        ? "native_recovery_transport_unknown_field:"
+                        : "native_recovery_transport_invalid:") + error.Detail;
+                return;
+            }
+            for (NativeRoute::RecoveryTransit const& transit : node.NativeContract.Recovery)
+            {
+                char const* templateError = transit.NodeId == node.NodeId ? "self_reference"
+                    : transportTemplateError(transit.Transport);
+                if (templateError)
+                {
+                    Party().ValidationRouteManifestLoadError =
+                        "native_recovery_transport_invalid:" + transit.NodeId + ":" + templateError;
+                    return;
+                }
             }
         }
         // A declared area trigger must exist on the route map; never walk
@@ -470,6 +493,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.ScriptedEventEntries = ExtractJsonUIntArrayField(routeJson, "scripted_event_entries");
         node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");
         ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);
+        ExtractJsonBoolField(routeJson, "prepull_setup_gate", node.PrepullSetupGate);
         node.HazardSourceEntry = uint32(std::max(0, readInt(routeJson, "hazard_source_entry")));
         node.HazardDetectionSpellId = uint32(std::max(0, readInt(routeJson, "hazard_detection_spell_id")));
         node.HazardDamageSpellId = uint32(std::max(0, readInt(routeJson, "hazard_damage_spell_id")));

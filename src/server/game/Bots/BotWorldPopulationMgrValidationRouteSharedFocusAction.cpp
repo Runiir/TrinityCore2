@@ -5,9 +5,11 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrPolicyHelpers.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesSpirits.h"
 
 #include "Creature.h"
 #include "Map.h"
+#include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
@@ -156,6 +158,15 @@ bool ObjectiveContext::RunSharedFocusAction(
             action = "validation_route_hold_anchor";
             return true;
         }
+
+        // A spirit pack's kill order (a dying Atramedes spirit hands its
+        // ability to the others) outranks the tank's area-threat focus.
+        if (Cohort().EncounterSnapshot)
+            if (ObjectGuid const ordered = BotEncounter::Atramedes::Spirits::OrderedKillTarget(
+                    *Cohort().EncounterSnapshot); !ordered.IsEmpty())
+                if (Unit* kill = ObjectAccessor::GetUnit(*bot, ordered); kill
+                    && kill->IsAlive() && kill->IsInCombat() && bot->IsValidAttackTarget(kill))
+                    focusTarget = kill;
 
         target = focusTarget;
         state.TargetGuid = target->GetGUID();

@@ -164,6 +164,9 @@ namespace BotWorldPopulationMgrRouteState
         uint32 RecoveryEntranceAreaTriggerId = 0;
         uint32 RecoveryEntranceSourceMapId = 0;
         uint32 RecoveryEntranceTargetMapId = 0;
+        // Opt-in to the prepull setup gate (row field prepull_setup_gate):
+        // composition/canonical scenarios only (BotValidationRoutePrepull.h).
+        bool PrepullSetupGate = false;
         float X = 0.0f;
         float Y = 0.0f;
         float Z = 0.0f;

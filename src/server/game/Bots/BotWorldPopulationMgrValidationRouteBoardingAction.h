@@ -48,8 +48,9 @@ bool NativeFallSplineActive(Player const* bot);
 // a running falling spline. A finalized fall spline keeps its falling
 // attribute until the next spline replaces it; that alone is not a fall.
 bool NativeFallInProgress(Player const* bot);
-// The fall spline finalized but the landing has not been reported yet
-// (MOVEMENTFLAG_FALLING still set, as MoveFall leaves it for the client).
+// No spline runs but the landing has not been reported yet
+// (MOVEMENTFLAG_FALLING still set, as MoveFall leaves it for the client):
+// the fall spline finalized, or a stop replaced it mid-air.
 bool NativeFallLandingPending(Player const* bot);
 
 // Client movement reports at the bot's own current position through the

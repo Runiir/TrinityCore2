@@ -189,7 +189,9 @@ def test_boarding_reports_are_client_packets_at_the_current_position() -> None:
     assert "MovementInfo info = CurrentPositionReport(bot);" in keep
     assert "info.transport = bot->m_movementInfo.transport;" in keep
     # A finalized fall spline keeps isFalling(); it is not a fall.
-    assert "!bot->movespline->Finalized()\n        && bot->movespline->isFalling()" in boarding
+    assert "BotValidationRouteNativeFall::SplineActive(*bot->movespline)" in boarding
+    fall = _source("BotValidationRouteNativeFallSpline.h")
+    assert "return spline.Initialized() && !spline.Finalized() && spline.isFalling();" in fall
     board = _function(boarding, "BotActionArbitration::Outcome BoardTransport(")
     assert "NativeFallInProgress(bot)" in board and "IsFalling()" not in board
     assert "->GetMotionMaster(" not in boarding
@@ -241,10 +243,10 @@ def test_runtime_submits_typed_approach_intents_with_bounded_observers() -> None
     # rejections toward MaxSubmissions and fails the node once on Unsafe.
     observer = transport[transport.index("auto approachSubmission"):transport.index("auto surfaceMove")]
     assert "[&]" not in observer and "[=]" not in observer
-    assert "return [runtimePtr, scope, guid, fail, record, state, entry, step](" in observer
+    assert "return [runtimePtr, scope, guid, fail, record, state, entry, countRejection, step](" in observer
     assert "member.Approach = ApproachPhaseAfter(step, completed, fellAgain);" in observer
     assert "&& outcome.LifecyclePhase == BotActionArbitration::Phase::Progressed;" in observer
-    assert "++member.FailedSubmissions;" in observer
+    assert "countRejection(member, outcome.Reason);" in observer
     assert "runtimePtr->FailureRecorded = true;" in observer
     assert "ReleaseOrdinaryPath(*state,\n                    fellAgain || (!completed && step != TransportStep::DropLand));" in observer
     for forbidden in ("TeleportTo(", "NearTeleportTo(", "Relocate(", "UpdatePosition(",
@@ -319,12 +321,58 @@ def test_intent_and_dispatch_wiring_patch_applied() -> None:
     native = _source("BotWorldPopulationMgrNativeAction.cpp")
     assert "struct TransportSurfaceMove\n{\n    enum class Stage : uint8 { Walk, StepOff, Fall, Land };" in intents
     assert "TransportBoard, TransportLeave, TransportSurfaceMove>;" in intents
-    # Walk and StepOff abandon a movement-preventing cast, so they claim the
-    # cast lanes; Fall and Land claim movement only.
+    # Every stage claims the cast lanes (round 3): Walk and StepOff abandon a
+    # movement-preventing cast, and no cast-time spell may stop a fall.
     resources = intents[intents.index("if constexpr (std::is_same_v<T, TransportSurfaceMove>)"):]
     resources = resources[:resources.index("if constexpr (std::is_same_v<T, CombatResApproach>)")]
-    assert "return action.Kind == TransportSurfaceMove::Stage::Walk\n                    || action.Kind == TransportSurfaceMove::Stage::StepOff\n                ? Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast)\n                : Uses(Resource::Movement);" in resources
+    assert "return Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast);" in resources
     assert '#include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"' in native
     assert "std::is_same_v<T, BotNativeAction::TransportSurfaceMove>)\n        {\n            return BotTransportSurfaceMovement::Execute(bot, action);" in native
     cmake = (ROOT / "src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
     assert "Bots/BotWorldPopulationMgrNativePathTransportSurface.cpp" in cmake
+
+
+def test_round3_in_flight_approach_owns_casting_and_names_its_refusals() -> None:
+    # Round 2 live evidence (blackwing_descent_10n_nefarian_c0): the holy
+    # paladin's own heal (TryCastFriendlySpell stops movement before a
+    # cast-time spell) cut its step off the lip 0.42 yd short; the member
+    # re-walked to the start, and five refused step-offs within about a
+    # second exhausted the node with no reason in the failure.
+    runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
+    transport = runtime[runtime.index("void RunTransport("):runtime.index("bool TransportNodeDone(")]
+    # A walk, step or fall in flight also owns the cast lanes, ahead of heals.
+    hold = runtime[runtime.index("void SubmitHold("):runtime.index("void ReleaseOrdinaryPath(")]
+    assert "candidate.UtilityScore = ownsCasting ? 6.0f : 1.0f;" in hold
+    assert "BotActionArbitration::Resource::GlobalCooldown, BotActionArbitration::Resource::Cast)" in hold
+    assert "SubmitHold(input, decision.Reason, ApproachHoldOwnsCasting(decision));" in transport
+    intent = _code(_source("BotNativeActionIntent.h"))
+    surface = intent[intent.index("if constexpr (std::is_same_v<T, TransportSurfaceMove>)"):]
+    surface = surface[:surface.index("if constexpr (std::is_same_v<T, CombatResApproach>)")]
+    assert "return Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast);" in surface
+    assert "Stage::Fall" not in surface and "Stage::Land" not in surface
+    # Refusals count at most once per window, each counted one is recorded,
+    # and exhaustion names the last refusal and the member.
+    assert "if (CountRejectedSubmission(state, nowMs, reason) && record)" in transport
+    assert '"native_route_transport_rejection_counted:" + reason' in transport
+    assert "countRejection(state, outcome.Reason);" in transport
+    assert "countRejection(member, outcome.Reason);" in transport
+    assert "++state.FailedSubmissions;" not in transport and "++member.FailedSubmissions;" not in transport
+    assert '? decision.Reason + ":" + member.LastRejection + ":" + std::to_string(guid)' in transport
+    # The executor's refusals for a member it does not control are observed.
+    assert "observation.MemberNotFree = bot->HasUnitState(UNIT_STATE_NOT_MOVE)\n        || bot->GetMotionMaster()->GetMotionSlot(MOTION_SLOT_CONTROLLED);" in transport
+    # A step cut short on the lip is at the approach start: the observation
+    # and the cohort barrier measure from the same declared line.
+    assert "return DistanceToApproachLine(approach.StartPoint, approach.StepOffPoint," in runtime
+    assert "observation.DistanceToApproachStart = ApproachStartDistance(bot, approach);" in transport
+    views = runtime[runtime.index("std::vector<ApproachMemberView> ApproachMemberViews("):runtime.index("void RunTransport(")]
+    assert "ApproachStartDistance(bot, approach), startTolerance," in views
+    # A fall stopped mid-air is still a landing owed: the landing step falls
+    # on from there (fall origin unchanged) or reports it.
+    boarding = _code(_source("BotWorldPopulationMgrValidationRouteBoardingAction.cpp"))
+    pending = boarding[boarding.index("bool NativeFallLandingPending("):]
+    pending = pending[:pending.index("}") + 1]
+    # A stop mid-air clears the spline (not Initialized): still owed.
+    assert "BotValidationRouteNativeFall::LandingPending(" in pending
+    assert "return fallingFlags && (!spline.Initialized() || spline.Finalized());" in _source(
+        "BotValidationRouteNativeFallSpline.h")
+    assert "isFalling()" not in pending

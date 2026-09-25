@@ -67,6 +67,9 @@ struct ObjectiveContext
         ObjectiveCallbacks callbacks);
 
     bool Run();
+    // Raid staging node: finish persistent setup before counting as arrived.
+    bool HoldForPrepullSetup();
+    std::string PrepullMissingSetup() const;
     bool RunTrashThreatControl(TrashThreatControl& trashThreatControl,
         TrashThreatControlCallbacks const& callbacks);
     bool RunTrashIntervention(TrashThreatControl& trashThreatControl,

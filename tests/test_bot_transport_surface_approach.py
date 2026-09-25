@@ -891,6 +891,153 @@ int main()
 }
 """)
 
+def test_nefarian_round2_healer_step_cut_short_steps_off_again_from_the_lip(tmp_path: Path) -> None:
+    """Round 2 live evidence (blackwing_descent_10n_nefarian_c0, bot
+    11005005, holy paladin): its step toward the lip (from -158.973,
+    -224.837) stopped at (-157.653, -224.726, 41.065), still over the ledge
+    floor 41.108, when its own heal stopped it to cast Holy Light (landed at
+    49.182 s from that point). 1.188 yd from the start point, it walked back
+    around to the start, and the others had boarded and engaged before it
+    could drop. On the declared line it now counts as at the start."""
+    _compile_and_run(tmp_path, PRELUDE + r"""
+int main()
+{
+    TransportContract platform;
+    CHECK(!Transport(Nefarian, platform));
+    Point3 const& start = platform.Approach.StartPoint;
+    Point3 const& stepOff = platform.Approach.StepOffPoint;
+    // Where the heal stopped it: 1.19 yd from the start point, 0.31 yd from
+    // the declared line; where the walk back settled: 0.51 yd from the start.
+    Point3 const cut{ -157.653f, -224.726f, 41.065f, true };
+    float const pointDistance = std::sqrt(std::pow(cut.X - start.X, 2.0f)
+        + std::pow(cut.Y - start.Y, 2.0f) + std::pow(cut.Z - start.Z, 2.0f));
+    CHECK(pointDistance > ApproachStartToleranceYards);
+    float const lineDistance = DistanceToApproachLine(start, stepOff, cut.X, cut.Y, cut.Z);
+    CHECK(std::fabs(lineDistance - 0.308f) < 0.01f);
+    CHECK(std::fabs(DistanceToApproachLine(start, stepOff, -159.174f, -224.543f, 41.01f)
+        - 0.514f) < 0.01f);
+    // Beyond either end the line is as far as its end point; off it, laterally.
+    CHECK(std::fabs(DistanceToApproachLine(start, stepOff, -160.8f, -224.62f, 41.3544f) - 2.0f) < 1e-3f);
+    CHECK(std::fabs(DistanceToApproachLine(start, stepOff, -157.6f, -222.62f, 41.3544f) - 2.0f) < 1e-3f);
+    Point3 invalid = stepOff;
+    invalid.Valid = false;
+    CHECK(std::fabs(DistanceToApproachLine(start, invalid, cut.X, cut.Y, cut.Z) - pointDistance) < 1e-3f);
+
+    // The replay: stepping off, then stopped over the floor by the cast.
+    TransportMemberState healer;
+    healer.Approach = ApproachPhase::SteppingOff;
+    TransportMemberObservation o;
+    o.Alive = true; o.TransportPresent = true; o.ReadyToBoard = true;
+    o.RestRemainingMs = UnboundedRestMs; o.StaticFloorUnderfoot = true;
+    o.HealthPct = 0.84f; o.PredictedFallDamagePct = 0.343f;
+    o.CohortAtApproachStart = true;
+    o.DistanceToApproachStart = pointDistance;
+    // Measured from the start point (round 2) it walked back around...
+    TransportMemberState before = healer;
+    CHECK(DecideTransportStep(platform, o, before).Step == TransportStep::MoveToApproachStart);
+    // ...measured from the declared line it steps off again from the lip.
+    o.DistanceToApproachStart = lineDistance;
+    TransportDecision d = DecideTransportStep(platform, o, healer);
+    CHECK(d.Step == TransportStep::DropStepOff && healer.Approach == ApproachPhase::Idle);
+    CHECK(ApproachWantsFollowUp(platform, d, healer));
+    return failures ? 1 : 0;
+}
+""")
+
+
+def test_in_flight_holds_own_casting_and_refusals_count_once_per_window(tmp_path: Path) -> None:
+    """A walk, step or fall in flight also owns the cast lanes (a cast-time
+    heal stops the member first); a member the executor does not control
+    waits instead of spending submissions; refusals at the 100 ms approach
+    cadence count once per SubmissionRejectionWindowMs, so exhaustion takes
+    seconds of persistent refusal and names the last one."""
+    _compile_and_run(tmp_path, PRELUDE + r"""
+int main()
+{
+    TransportContract platform;
+    CHECK(!Transport(Nefarian, platform));
+    for (char const* reason : { "transport_drop_stepping_off", "transport_drop_falling",
+             "transport_approach_walking" })
+        CHECK(ApproachHoldOwnsCasting({ TransportStep::Hold, reason }));
+    for (char const* reason : { "transport_drop_waiting_for_cohort", "transport_waiting",
+             "transport_approach_member_not_free" })
+        CHECK(!ApproachHoldOwnsCasting({ TransportStep::Hold, reason }));
+    CHECK(!ApproachHoldOwnsCasting({ TransportStep::HoldAboard, "transport_riding" }));
+    CHECK(!ApproachHoldOwnsCasting({ TransportStep::Done, "transport_boarded" }));
+
+    // Stepping off with the step intact: the hold that owns casting.
+    TransportMemberState stepping;
+    stepping.Approach = ApproachPhase::SteppingOff;
+    TransportMemberObservation o;
+    o.Alive = true; o.TransportPresent = true; o.ReadyToBoard = true;
+    o.RestRemainingMs = UnboundedRestMs; o.StaticFloorUnderfoot = true;
+    o.HealthPct = 0.95f; o.PredictedFallDamagePct = 0.343f;
+    o.CohortAtApproachStart = true; o.DistanceToApproachStart = 0.3f;
+    TransportMemberObservation moving = o;
+    moving.Moving = true;
+    CHECK(ApproachHoldOwnsCasting(DecideTransportStep(platform, moving, stepping)));
+    // Falling: the fall spline running is a hold that owns casting too.
+    TransportMemberState falling;
+    falling.Approach = ApproachPhase::Falling;
+    TransportMemberObservation air = o;
+    air.StaticFloorUnderfoot = false; air.Falling = true; air.FallSplineActive = true;
+    CHECK(ApproachHoldOwnsCasting(DecideTransportStep(platform, air, falling)));
+    // A fall a stop cut short mid-air: the falling flags remain, no spline
+    // runs, so the landing is owed; the landing step falls on from there.
+    air.FallSplineActive = false; air.LandingPending = true;
+    TransportDecision d = DecideTransportStep(platform, air, falling);
+    CHECK(d.Step == TransportStep::DropLand && falling.Approach == ApproachPhase::Falling);
+
+    // Stunned, rooted or effect-moved at the lip: wait, promptly, uncounted.
+    TransportMemberState held;
+    TransportMemberObservation stunned = o;
+    stunned.MemberNotFree = true;
+    d = DecideTransportStep(platform, stunned, held);
+    CHECK(d.Step == TransportStep::Hold && d.Reason == "transport_approach_member_not_free");
+    CHECK(ApproachWantsFollowUp(platform, d, held) && held.FailedSubmissions == 0);
+    CHECK(DecideTransportStep(platform, o, held).Step == TransportStep::DropStepOff);
+    // A fear or knockback is neither pathed against nor stopped: far from the
+    // start, mid-step over the floor, or mid-walk, the effect runs its course.
+    TransportMemberObservation feared = stunned;
+    feared.Moving = true; feared.DistanceToApproachStart = 5.0f;
+    d = DecideTransportStep(platform, feared, held);
+    CHECK(d.Step == TransportStep::Hold && d.Reason == "transport_approach_member_not_free");
+    TransportMemberState knocked;
+    knocked.Approach = ApproachPhase::SteppingOff;
+    feared.OffApproachCorridor = true; feared.DistanceToApproachStart = 0.8f;
+    d = DecideTransportStep(platform, feared, knocked);
+    CHECK(d.Step == TransportStep::Hold && knocked.Approach == ApproachPhase::Idle);
+    TransportContract elevator;
+    CHECK(!Transport(Elevator, elevator));
+    TransportMemberState walker;
+    walker.Approach = ApproachPhase::Walking;
+    d = DecideTransportStep(elevator, feared, walker);
+    CHECK(d.Step == TransportStep::Hold && d.Reason == "transport_approach_member_not_free"
+        && walker.Approach == ApproachPhase::Idle);
+
+    // Five refusals within 0.8 s (the round 2 exhaustion) count once...
+    TransportMemberState member;
+    std::uint64_t now = 50450;
+    for (int i = 0; i < 5; ++i, now += 100)
+        CountRejectedSubmission(member, now, i < 4 ? "native_ledge_drop_moving"
+            : "native_ledge_drop_immobilized");
+    CHECK(member.FailedSubmissions == 1);
+    CHECK(member.LastRejection == "native_ledge_drop_immobilized");
+    CHECK(DecideTransportStep(platform, o, member).Step == TransportStep::DropStepOff);
+    // ...persistent refusal still exhausts, after seconds, not half a second.
+    std::uint64_t const first = 50450;
+    for (std::uint64_t t = first + 100; t <= first + 3900; t += 100)
+        CountRejectedSubmission(member, t, "native_ledge_drop_moving");
+    CHECK(member.FailedSubmissions == 4);
+    CHECK(CountRejectedSubmission(member, first + 4000, "native_ledge_drop_moving"));
+    CHECK(member.FailedSubmissions == platform.MaxSubmissions);
+    CHECK(DecideTransportStep(platform, o, member).Reason == "transport_submissions_exhausted");
+    CHECK(member.LastRejection == "native_ledge_drop_moving");
+    return failures ? 1 : 0;
+}
+""")
+
+
 # Patch request to agent M (validation_scenarios_cata_001.json), applied here
 # in memory so the exact rows it produces are proven to parse: every
 # bwd.transit.lower_wing_elevator and bwd.nefarian.descent row, in every

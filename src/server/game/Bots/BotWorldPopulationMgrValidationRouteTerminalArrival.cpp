@@ -2,13 +2,17 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/BotPersistentSelfBuffContract.h"
+#include "Bots/BotValidationRoutePrepull.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 
 #include "Creature.h"
 #include "MotionMaster.h"
+#include "Pet.h"
 #include "Player.h"
 #include "Unit.h"
 
@@ -37,6 +41,92 @@ ObjectiveContext::ObjectiveContext(BotWorldPopulationMgr& manager,
       RouteAnchorZ(routeAnchorZ), RouteAnchorReason(routeAnchorReason),
       RouteDistance(routeDistance), Callbacks(std::move(callbacks))
 {
+}
+
+// What a member's persistent setup still lacks, named for a typed failure:
+// its permanent pet, raid poisons, presence, or the first missing self buff.
+std::string ObjectiveContext::PrepullMissingSetup() const
+{
+    WorldBotState::NativePersistentPetSetupReceipt const& pet = State.PersistentPetSetup;
+    if (pet.RequiredSummonSpellId)
+    {
+        Pet const* live = Bot->GetPet();
+        if (!live || !live->IsAlive() || live->GetEntry() != pet.RequiredEntry)
+            return "pet:" + std::to_string(pet.RequiredSummonSpellId);
+    }
+    if (State.RoguePoisonSetupRequired
+        && (!Manager.IsNativePoisonSetupReady(Bot, State.RogueMainhandPoisonSetup)
+            || !Manager.IsNativePoisonSetupReady(Bot, State.RogueOffhandPoisonSetup)))
+        return "rogue_poison";
+    if (State.RequiredPresenceSetupAuraId && !Bot->HasAura(State.RequiredPresenceSetupAuraId))
+        return "presence:" + std::to_string(State.RequiredPresenceSetupSpellId);
+    std::string const role = Manager.GetDungeonRole(Bot);
+    std::string const spec = BotClassSpecActionProfileStore::Build(Bot, role.c_str()).SpecTag;
+    for (auto const& buff : BotPersistentSelfBuffContract::Buffs)
+        if (BotPersistentSelfBuffContract::Matches(buff, Bot->getClass(), role, spec)
+            && Bot->HasSpell(buff.SpellId) && !Bot->HasAura(buff.AuraId)
+            && !(buff.AlternateAuraId && Bot->HasAura(buff.AlternateAuraId)))
+            return buff.Name;
+    return "persistent_setup";
+}
+
+// A raid route's staging node (the first regroup or travel node before any
+// pull) of a scenario that opted in: an arrived member, out of combat here,
+// finishes its own persistent setup before it counts as arrived, so the first
+// pull never starts unprepared. True while it is still setting up (or after a
+// typed timeout).
+bool ObjectiveContext::HoldForPrepullSetup()
+{
+    namespace Prepull = BotValidationRoutePrepull;
+    auto& party = Manager.Party();
+    if (!Manager.Cohort().Raid.RaidInstance
+        || !Prepull::GateApplies(party.ValidationRouteManifest, party.ValidationRouteManifestIndex)
+        || party.ValidationRouteManifest[party.ValidationRouteManifestIndex].NodeId
+            != Manager.Cohort().Config.ValidationRouteNodeId)
+        return false;
+    uint64 const generation = party.ValidationRouteGeneration;
+    if (State.ValidationPrepullSetupGeneration != generation)
+    {
+        State.ValidationPrepullSetupGeneration = generation;
+        State.ValidationPrepullSetupSinceMs = 0;
+    }
+    uint64 const nowMs = NowMs();
+    bool const pending = Manager.TryEnsurePersistentCombatSetup(State, Bot, nullptr);
+    std::string const raw = Manager.BuildRawJson(Bot, nullptr);
+    std::string const semantic = Manager.BuildSemanticJson(Bot, nullptr,
+        "validation_route_prepull_setup", &Power, Stage, Activity);
+    if (pending && !State.ValidationPrepullSetupSinceMs)
+    {
+        State.ValidationPrepullSetupSinceMs = nowMs;
+        Manager.RecordEvent(State, Bot, "validation_route_prepull_setup", nullptr,
+            "persistent_setup_pending", raw.c_str(), semantic.c_str(), 0.0f,
+            Manager.Cohort().Config.ValidationRouteTargetEntry);
+    }
+    switch (Prepull::DecideSetup(pending, State.ValidationPrepullSetupSinceMs, nowMs))
+    {
+        case Prepull::SetupStep::Ready:
+            if (State.ValidationPrepullSetupSinceMs)
+                Manager.RecordEvent(State, Bot, "validation_route_prepull_setup", nullptr,
+                    "persistent_setup_ready", raw.c_str(), semantic.c_str(),
+                    float(nowMs - State.ValidationPrepullSetupSinceMs) / 1000.0f,
+                    Manager.Cohort().Config.ValidationRouteTargetEntry);
+            State.ValidationPrepullSetupSinceMs = 0;
+            return false;
+        case Prepull::SetupStep::Timeout:
+            Manager.FailValidationAttemptOnce(State, Bot,
+                Prepull::TimeoutReason(Bot->GetGUID().GetRawValue(), PrepullMissingSetup()),
+                generation);
+            Situation = "validation_route_regroup";
+            Action = "validation_route_prepull_setup_timeout";
+            Target = nullptr;
+            return true;
+        case Prepull::SetupStep::Wait:
+            break;
+    }
+    Situation = "validation_route_regroup";
+    Action = "validation_route_prepull_setup";
+    Target = nullptr;
+    return true;
 }
 
 bool ObjectiveContext::Run()
@@ -226,7 +316,11 @@ bool ObjectiveContext::Run()
     // before marking arrival; otherwise mobs can evade back across a one-way
     // descent and poison the following trash ledger with unreachable survivors.
     if (arrivalCombatActive)
+    {
         Callbacks.EnrollEngagedPackMembers();
+        // A pulled group fights as before; the setup wait restarts after.
+        State.ValidationPrepullSetupSinceMs = 0;
+    }
     if (ArrivalRoute && !arrivalCombatActive)
     {
         Manager.SubmitMeleeAutoAttackIntent(State,
@@ -347,6 +441,8 @@ bool ObjectiveContext::Run()
         if (CanonicalRouteDistance <= RouteArrivalRadius
             && std::fabs(Bot->GetPositionZ() - Manager.Cohort().Config.ValidationRouteZ) <= 4.0f)
         {
+            if (HoldForPrepullSetup())
+                return true;
             State.ValidationRouteTerminalState = true;
             State.ValidationRouteTerminalAtMs = NowMs();
             State.ValidationRouteTerminalGeneration = Manager.Party().ValidationRouteGeneration;

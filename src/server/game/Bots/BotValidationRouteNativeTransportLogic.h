@@ -235,8 +235,9 @@ struct TransportMemberObservation
     // Final approach. Straight walk (and native fall) time from here.
     float DistanceToApproachStart = 0.0f;
     std::uint64_t ApproachTravelMs = 0;
-    // MoveFall's falling spline is running / has finalized while the
-    // landing is not reported yet (MOVEMENTFLAG_FALLING still set).
+    // MoveFall's falling spline is running / the falling flags remain with
+    // no spline running (the fall ended, or a stop cut it short mid-air)
+    // while the landing is not reported yet.
     bool FallSplineActive = false;
     bool LandingPending = false;
     float HealthPct = 1.0f;
@@ -250,6 +251,9 @@ struct TransportMemberObservation
     // Ledge drops start together: every living route member is at the
     // approach start, already past it (dropping or landed), or aboard.
     bool CohortAtApproachStart = false;
+    // Held where it stands (stun, root, distract) or moved by a controlled
+    // effect (fear, knockback, a fall): no walk or step can start now.
+    bool MemberNotFree = false;
 };
 
 struct TransportDecision
@@ -420,7 +424,8 @@ inline bool DecideDropInFlight(TransportContract const& contract,
             if (observation.StaticFloorUnderfoot || observation.TransportFloorUnderfoot)
             {
                 state.Approach = ApproachPhase::Idle;
-                if (observation.Moving)
+                // A controlled effect that displaced it runs its course.
+                if (observation.Moving && !observation.MemberNotFree)
                 {
                     out = { TransportStep::Stop, "transport_drop_step_motion_lost" };
                     return true;
@@ -483,6 +488,11 @@ inline TransportDecision DecideApproach(TransportContract const& contract,
         return approach.LandOnTransport
             ? TransportDecision{ TransportStep::Fail, "transport_drop_landed_off_platform" }
             : TransportDecision{ TransportStep::MoveToBoard, "transport_drop_landed_board_path" };
+    // A stunned, rooted or effect-moved member (fear, knockback) is neither
+    // pathed, stopped nor stepped off: the executor would refuse, and a stop
+    // would cut the effect short. Wait it out without spending submissions.
+    if (observation.MemberNotFree)
+        return { TransportStep::Hold, "transport_approach_member_not_free" };
     float const startTolerance =
         std::min(contract.ArrivalToleranceYards, ApproachStartToleranceYards);
     if (observation.DistanceToApproachStart > startTolerance)
@@ -552,6 +562,7 @@ inline bool ApproachWantsFollowUp(TransportContract const& contract,
             return contract.HasExit();
         case TransportStep::Hold:
             return decision.Reason == "transport_drop_waiting_for_cohort"
+                || decision.Reason == "transport_approach_member_not_free"
                 || (contract.BoardStopFrame < 0
                     && (decision.Reason == "transport_waiting"
                         || decision.Reason == "transport_rest_window_too_short"));
@@ -677,7 +688,9 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
             if (!ApproachMotionIntact(observation))
             {
                 state.Approach = ApproachPhase::Idle;
-                return { TransportStep::Stop, "transport_approach_motion_lost" };
+                return observation.MemberNotFree
+                    ? TransportDecision{ TransportStep::Hold, "transport_approach_member_not_free" }
+                    : TransportDecision{ TransportStep::Stop, "transport_approach_motion_lost" };
             }
             if (!RestStillCoversWalk(observation.RestRemainingMs, observation.ApproachTravelMs))
             {
@@ -715,6 +728,32 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
         return { TransportStep::Hold, "transport_rest_window_too_short" };
     }
     return { TransportStep::MoveToBoard, "transport_board_path" };
+}
+
+// A walk, step or fall in flight owns the member's casting as well as its
+// movement: a cast-time spell started meanwhile stops the member where it is
+// (the bots' cast paths stop movement before a cast), cutting a step short on
+// the lip or freezing a fall mid-air. A player finishes the step and the fall
+// first; the hold claims the cast lanes for those few seconds.
+inline bool ApproachHoldOwnsCasting(TransportDecision const& decision)
+{
+    return decision.Step == TransportStep::Hold
+        && (decision.Reason == "transport_drop_stepping_off"
+            || decision.Reason == "transport_drop_falling"
+            || decision.Reason == "transport_approach_walking");
+}
+
+// A rejected submission always names the member's last rejection; it counts
+// toward MaxSubmissions at most once per SubmissionRejectionWindowMs.
+inline bool CountRejectedSubmission(TransportMemberState& state, std::uint64_t nowMs,
+    std::string const& reason)
+{
+    state.LastRejection = reason;
+    if (nowMs < state.NextCountedRejectionMs)
+        return false;
+    state.NextCountedRejectionMs = nowMs + SubmissionRejectionWindowMs;
+    ++state.FailedSubmissions;
+    return true;
 }
 
 // Node-level completion for one living member.

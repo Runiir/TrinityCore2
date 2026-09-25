@@ -1,4 +1,5 @@
 #include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
+#include "Bots/BotValidationRouteNativeFallSpline.h"
 #include "Bots/BotValidationRouteNativeApproach.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 
@@ -424,13 +425,19 @@ Outcome ExecuteLand(Player* bot, GameObject const* transport, TransportSurfaceMo
         return Outcome::Committed("native_ledge_drop_landing_already_reported");
     if (!Boarding::NativeFallLandingPending(bot))
         return Outcome::Retryable("native_ledge_drop_land_fall_running");
-    G3D::Vector3 const position(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-    G3D::Vector3 end = bot->movespline->FinalDestination();
-    if (bot->movespline->onTransport)
-        if (TransportBase const* carrier = bot->GetDirectTransport())
-            carrier->CalculatePassengerPosition(end.x, end.y, end.z);
-    if ((end - position).length() > EndpointToleranceYards)
-        return Outcome::Retryable("native_ledge_drop_land_not_at_fall_end");
+    // A finished fall spline ends where the member is; a stop mid-air cleared
+    // the spline (no end to compare), and the member is where it stopped.
+    if (BotValidationRouteNativeFall::EndpointKnown(*bot->movespline))
+    {
+        G3D::Vector3 const position(bot->GetPositionX(), bot->GetPositionY(),
+            bot->GetPositionZ());
+        G3D::Vector3 end = bot->movespline->FinalDestination();
+        if (bot->movespline->onTransport)
+            if (TransportBase const* carrier = bot->GetDirectTransport())
+                carrier->CalculatePassengerPosition(end.x, end.y, end.z);
+        if ((end - position).length() > EndpointToleranceYards)
+            return Outcome::Retryable("native_ledge_drop_land_not_at_fall_end");
+    }
     // The floor the fall aimed at may have moved away during it (a platform
     // leaving its stop). With no floor under the feet the member keeps
     // falling from here; the landing is reported only onto a verified floor,
@@ -447,7 +454,8 @@ Outcome ExecuteLand(Player* bot, GameObject const* transport, TransportSurfaceMo
 
     // The client's own landing report: Player::HandleFall applies native fall
     // damage from the reported fall origin and the falling flags clear.
-    if (!Boarding::ReportFallLanding(bot, uint32(std::max(0, bot->movespline->Duration()))))
+    if (!Boarding::ReportFallLanding(bot,
+            uint32(BotValidationRouteNativeFall::ReportedFallTimeMs(*bot->movespline))))
         return Outcome::Unsafe("native_ledge_drop_position_report_not_applied");
     if (Boarding::NativeFallInProgress(bot))
         return Outcome::Retryable("native_ledge_drop_landing_not_observed");

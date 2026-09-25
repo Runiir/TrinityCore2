@@ -14,6 +14,7 @@
 
 #include "Bots/BotValidationRouteNativeApproach.h"
 #include "Bots/BotValidationRouteNativeJson.h"
+#include "Bots/BotValidationRouteNativeRecovery.h"
 #include "Bots/BotValidationRouteNativeTypes.h"
 
 #include <algorithm>
@@ -639,6 +640,82 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
             return ParseError::Invalid("completion_override_with_exit");
     }
     out.Declared = true;
+    return {};
+}
+
+// ---------------------------------------------------------------------------
+// Recovery rides
+// ---------------------------------------------------------------------------
+// Route node IDs: the same pattern the scenario builder enforces.
+inline bool ValidNodeId(std::string_view id)
+{
+    if (id.size() < 3 || id.size() > 96)
+        return false;
+    for (std::size_t i = 0; i < id.size(); ++i)
+    {
+        char const c = id[i];
+        bool const alnum = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
+        if (!alnum && (i == 0 || (c != '_' && c != '.' && c != '-')))
+            return false;
+    }
+    return true;
+}
+
+// A row's recovery_transport: [{"node_id", "contract"}] in route order, each
+// the unchanged transport contract of a ride between two levels that lies
+// between this node and where a wipe's runback leaves the party. The
+// contract sits under "contract", never "transport_contract", so the row
+// reader never mistakes it for the row's own transport contract.
+inline ParseError ParseRecoveryTransports(Json const& array, std::vector<RecoveryTransit>& out)
+{
+    out.clear();
+    if (!array.IsArray())
+        return ParseError::Invalid("recovery_transport_not_array");
+    if (array.Items.empty() || array.Items.size() > MaxRecoveryTransits)
+        return ParseError::Invalid("recovery_transport_count");
+    for (Json const& item : array.Items)
+    {
+        if (!item.IsObject())
+            return ParseError::Invalid("recovery_transport_not_object");
+        for (auto const& [key, value] : item.Members)
+            if (!KnownField(key, { "node_id", "contract" }))
+                return ParseError::Unknown("recovery_transport." + key);
+        Json const* id = item.Find("node_id");
+        Json const* contract = item.Find("contract");
+        if (!id || !id->IsString() || !ValidNodeId(id->Text))
+            return ParseError::Invalid("recovery_transport_node_id");
+        if (!contract)
+            return ParseError::Invalid("recovery_transport_contract_missing");
+        for (RecoveryTransit const& earlier : out)
+            if (earlier.NodeId == id->Text)
+                return ParseError::Invalid("recovery_transport_duplicate:" + id->Text);
+        RecoveryTransit transit;
+        transit.NodeId = id->Text;
+        if (ParseError error = ParseTransport(*contract, transit.Transport))
+            return error.Kind == ParseError::Code::UnknownField
+                ? ParseError::Unknown("recovery_transport." + error.Detail)
+                : ParseError::Invalid("recovery_transport:" + error.Detail);
+        // A recovery ride carries the party between two levels: it has an
+        // exit, and its two ends are unambiguous.
+        float boardZ = 0.0f;
+        float exitZ = 0.0f;
+        if (!transit.Transport.HasExit())
+            return ParseError::Invalid("recovery_transport_requires_exit");
+        if (!RecoveryLevels(transit.Transport, boardZ, exitZ)
+            || !(std::fabs(boardZ - exitZ) >= MinRecoveryLevelSeparationYards))
+            return ParseError::Invalid("recovery_transport_levels_not_separated");
+        out.push_back(std::move(transit));
+    }
+    return {};
+}
+
+inline ParseError ParseArrayText(std::string_view text, Json& out)
+{
+    std::string error;
+    if (!BotValidationRouteNativeJson::Parse(text, out, error))
+        return ParseError::Invalid(error);
+    if (!out.IsArray())
+        return ParseError::Invalid("not_array");
     return {};
 }
 

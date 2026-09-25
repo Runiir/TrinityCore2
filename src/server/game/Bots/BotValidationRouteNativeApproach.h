@@ -68,6 +68,12 @@ constexpr std::uint64_t ApproachHandoverGraceMs = 2000;
 // A walk or step in flight stays inside this corridor around its declared
 // line (the approach start tolerance plus one floor sample).
 constexpr float ApproachCorridorYards = ApproachStartToleranceYards + SurfaceSampleStepYards;
+// A rejected approach or boarding submission counts toward MaxSubmissions
+// at most once per this window. Armed approaches observe every
+// ApproachFollowUpMs, so without it five rejections of a passing condition
+// (a stun, a cast, a settling spline) would exhaust a member in half a
+// second; with it only seconds of persistent refusal do.
+constexpr std::uint64_t SubmissionRejectionWindowMs = 1000;
 
 // Movement::gravity, Movement::terminalVelocity (MovementUtil.cpp).
 constexpr float NativeGravity = 19.29110527038574f;
@@ -134,6 +140,28 @@ inline bool OnApproachCorridor(Point3 const& from, Point3 const& to, float x, fl
     float const across = std::fabs((y - from.Y) * dx - (x - from.X) * dy) / length;
     float const end = reach >= 0.0f ? reach : length;
     return across <= lateral && along >= -lateral && along <= end + lateral;
+}
+
+// 3D distance from (x, y, z) to the declared ledge-drop line, from the
+// approach start to the step-off point. A member whose step off the lip was
+// cut short (it stopped still over the ledge floor, on that line) is as much
+// at the approach start as one standing on the start point, and steps off
+// again from where it stands instead of walking back around to the start.
+inline float DistanceToApproachLine(Point3 const& start, Point3 const& end,
+    float x, float y, float z)
+{
+    float const dx = end.X - start.X;
+    float const dy = end.Y - start.Y;
+    float const dz = end.Z - start.Z;
+    float const lengthSq = dx * dx + dy * dy + dz * dz;
+    float t = 0.0f;
+    if (end.Valid && lengthSq > 0.0f)
+        t = std::clamp(((x - start.X) * dx + (y - start.Y) * dy + (z - start.Z) * dz)
+            / lengthSq, 0.0f, 1.0f);
+    float const px = start.X + dx * t - x;
+    float const py = start.Y + dy * t - y;
+    float const pz = start.Z + dz * t - z;
+    return std::sqrt(px * px + py * py + pz * pz);
 }
 
 // One floor sample along a straight segment: a floor lies within the floor

@@ -3,6 +3,7 @@
 #include "Bots/BotWorldPopulationMgrRaidConsumables.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakPlan.h"
 
 #include "GameTime.h"
 #include "Item.h"
@@ -103,11 +104,16 @@ void BotWorldPopulationMgr::SubmitRaidPrepullConsumableCandidate(
         // Durable setup can run while Magmaw formation is moving.  The short
         // pre-pot must wait until formation and health staging are complete;
         // otherwise its aura can expire while those independent gates still
-        // suppress the pull.
+        // suppress the pull.  Adaptive Maloriak publishes the same pull-gate
+        // reasons on every holder (round 3).
+        BotEncounter::AdaptiveMaloriakPlan const* maloriak =
+            context.AdaptiveMaloriak.get();
         bool const prepotStageReady = PrepotStageReady(
-            context.AdaptiveMagmawOwnsNode,
-            context.AdaptiveMagmawSuppressOffense,
-            context.AdaptiveMagmawSuppressReason);
+                context.AdaptiveMagmawOwnsNode,
+                context.AdaptiveMagmawSuppressOffense,
+                context.AdaptiveMagmawSuppressReason)
+            && (!maloriak || PrepotStageReady(maloriak->OwnsNode,
+                maloriak->SuppressOffense, maloriak->SuppressReason));
         BotActionArbitration::Outcome outcome =
             context.Manager.TryRaidPrepullConsumables(
                 context.State, context.Bot, context.Target,

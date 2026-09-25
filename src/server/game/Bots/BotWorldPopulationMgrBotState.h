@@ -429,6 +429,13 @@ namespace BotWorldPopulationMgrBotState
         uint64 ValidationRouteGeneration = 0;
         uint64 ValidationRouteTerminalGeneration = 0;
         std::string ValidationRouteTerminalReason;
+        // Prepull setup gate (BotValidationRoutePrepull.h): when this member
+        // began finishing its persistent setup at a raid route's staging
+        // anchor, out of combat (0: not waiting), and in which generation.
+        uint64 ValidationPrepullSetupSinceMs = 0;
+        uint64 ValidationPrepullSetupGeneration = 0;
+        // Dead since, while a gated staging node waits for this member.
+        uint64 ValidationPrepullDeadSinceMs = 0;
         // Per-player observations for typed, ordinary-movement descents. A
         // cohort may advance only after every member independently departs,
         // lands alive and grounded, and proves a native path onward.

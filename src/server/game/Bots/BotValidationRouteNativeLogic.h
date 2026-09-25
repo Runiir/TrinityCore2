@@ -221,6 +221,69 @@ inline InteractionDecision DecideInteraction(InteractionContract const& contract
 }
 
 // ---------------------------------------------------------------------------
+// Interaction approach point
+// ---------------------------------------------------------------------------
+// Horizontal distance the owner keeps from the target's position: clear of a
+// small prop the target stands on, and well inside every native reach
+// (INTERACTION_DISTANCE is 5 yd before both combat reaches are added).
+constexpr float InteractionStandOffYards = 2.5f;
+
+// Where the owner walks to reach a creature or gameobject. The native path to
+// the target's position ends on the walkable floor, which is not the
+// target's own height when it stands on a prop the navmesh leaves out
+// (Finkle Einhorn stands 1.6 yd above the chamber floor on a soapbox
+// gameobject). The movement planner only admits a destination its path ends
+// at, so asking for the target's own position is rejected on every tick.
+// The owner walks along that complete native path instead: to its first
+// point InteractionStandOffYards from the target (horizontally), or to its
+// end when it stops farther out, and only when the target is within
+// `reachYards` of that point in exact 3D distance (stricter than the native
+// check, which adds both combat reaches). Otherwise, and when the path
+// already starts inside the stand-off, the target's position is kept.
+inline Point3 SelectInteractionApproachPoint(Point3 const& target,
+    std::vector<Point3> const& completePath, float reachYards)
+{
+    if (!target.Valid || completePath.size() < 2)
+        return target;
+    auto horizontal = [&target](Point3 const& point)
+    {
+        return std::hypot(point.X - target.X, point.Y - target.Y);
+    };
+    if (horizontal(completePath.front()) <= InteractionStandOffYards)
+        return target;
+
+    Point3 stand = completePath.back();
+    for (std::size_t i = 1; i < completePath.size(); ++i)
+    {
+        Point3 const& from = completePath[i - 1];
+        Point3 const& to = completePath[i];
+        if (horizontal(to) > InteractionStandOffYards)
+            continue;
+        // `from` is outside the stand-off circle and `to` inside it: the
+        // smaller root is where this leg first crosses the circle.
+        float const dx = to.X - from.X;
+        float const dy = to.Y - from.Y;
+        float const fx = from.X - target.X;
+        float const fy = from.Y - target.Y;
+        float const a = dx * dx + dy * dy;
+        float const b = 2.0f * (fx * dx + fy * dy);
+        float const c = fx * fx + fy * fy
+            - InteractionStandOffYards * InteractionStandOffYards;
+        float const discriminant = b * b - 4.0f * a * c;
+        float t = 1.0f;
+        if (a > 0.0f && discriminant >= 0.0f)
+            t = std::clamp((-b - std::sqrt(discriminant)) / (2.0f * a), 0.0f, 1.0f);
+        stand = { from.X + dx * t, from.Y + dy * t, from.Z + (to.Z - from.Z) * t, true };
+        break;
+    }
+    stand.Valid = true;
+    float const dx = stand.X - target.X;
+    float const dy = stand.Y - target.Y;
+    float const dz = stand.Z - target.Z;
+    return std::sqrt(dx * dx + dy * dy + dz * dz) <= reachYards ? stand : target;
+}
+
+// ---------------------------------------------------------------------------
 // Completion evaluation
 // ---------------------------------------------------------------------------
 struct ActorFact

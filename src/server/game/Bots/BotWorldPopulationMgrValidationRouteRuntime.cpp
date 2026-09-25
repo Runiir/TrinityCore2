@@ -51,6 +51,7 @@ InitialRouteBindingDecision AdmitCanonicalInitialRouteBinding(
 #ifndef BOT_CONTROLLER_ROUTE_HOLD_BOOTSTRAP_ADAPTER_ONLY
 
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotValidationRoutePrepull.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
 #include "Bots/BotWorldPopulationMgrMovementPlannerDiagnostics.h"
 #include "Bots/BotWorldPopulationMgrValidationCohortReadiness.h"
@@ -627,6 +628,66 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
         uint32 loadedParticipants = 0;
         bool allLoadedArrived = true;
         float arrivalRadius = 18.0f;
+        // An opted-in raid route's staging node advances only once every
+        // member counts as arrived, which it does only after finishing its
+        // persistent setup at the anchor (ObjectiveContext::HoldForPrepullSetup).
+        bool const prepullGate = Cohort().Raid.RaidInstance
+            && BotValidationRoutePrepull::GateApplies(Party().ValidationRouteManifest,
+                Party().ValidationRouteManifestIndex);
+        if (prepullGate)
+        {
+            // A member that stays dead would hold the staging node until the
+            // generic progress plateau: name it once it has been dead out of
+            // combat, with someone alive and no native wipe recovery pending,
+            // for BotValidationRoutePrepull::DeadMemberGraceMs.
+            bool anyAlive = false;
+            bool anyInCombat = false;
+            for (WorldBotState const& member : Party().Bots)
+                if (Player* loaded = GetLoadedBot(member); loaded && loaded->IsAlive())
+                {
+                    anyAlive = true;
+                    anyInCombat = anyInCombat || loaded->IsInCombat();
+                }
+            uint64 const nowMs = NowMs();
+            bool const recoveryPending = IsNativeRaidRecoveryEvidencePending();
+            for (WorldBotState& member : Party().Bots)
+            {
+                Player* loaded = GetLoadedBot(member);
+                if (!loaded || loaded->IsAlive())
+                {
+                    member.ValidationPrepullDeadSinceMs = 0;
+                    continue;
+                }
+                // A released ghost running back (the known recovery episode)
+                // is recovering, not blocking: its runback never counts.
+                BotWorldPopulationMgrValidationRoute::ValidationCohortRecoveryObservation recovery;
+                recovery.Alive = false;
+                recovery.Ghost = loaded->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST);
+                recovery.ReleaseRequested = member.NativeReleaseRequested;
+                recovery.NativeCorpseAuthority = HasNativeRaidCorpseAuthority(member, loaded);
+                recovery.EpisodeStartedMs = member.NativeRecoveryEpisodeStartedMs;
+                recovery.EpisodeAttemptId = member.NativeRecoveryEpisodeAttemptId;
+                recovery.EpisodeRouteGeneration = member.NativeRecoveryEpisodeRouteGeneration;
+                recovery.EpisodeWipeGeneration = member.NativeRecoveryEpisodeWipeGeneration;
+                recovery.EpisodeDeathOrdinal = member.NativeRecoveryEpisodeDeathOrdinal;
+                recovery.EpisodePhase = member.NativeRecoveryEpisodePhase;
+                recovery.AttemptId = Cohort().AttemptId;
+                recovery.RouteGeneration = Party().ValidationRouteGeneration;
+                recovery.WipeGeneration = Cohort().Raid.WipeGeneration;
+                recovery.DeathOrdinal = member.RecentDeathCount;
+                member.ValidationPrepullDeadSinceMs = BotValidationRoutePrepull::DeadMemberClock(
+                    BotWorldPopulationMgrValidationRoute::IsKnownValidationRecovery(recovery),
+                    member.ValidationPrepullDeadSinceMs, nowMs);
+                if (BotValidationRoutePrepull::DeadMemberBlocks(anyAlive, anyInCombat,
+                        recoveryPending, member.ValidationPrepullDeadSinceMs, nowMs))
+                {
+                    FailValidationAttemptOnce(member, loaded,
+                        BotValidationRoutePrepull::DeadMemberReason(loaded->GetGUID().GetRawValue()),
+                        Party().ValidationRouteGeneration);
+                    return false;
+                }
+            }
+        }
         for (WorldBotState const& state : Party().Bots)
         {
             Player* loadedBot = GetLoadedBot(state);
@@ -636,6 +697,13 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
             ++loadedParticipants;
             if (!loadedBot->IsInWorld() || !loadedBot->IsAlive() || !IsValidationCohortMemberInOriginalInstance(state, loadedBot)
                 || loadedBot->IsInCombat() || loadedBot->GetVictim() || !loadedBot->getAttackers().empty())
+            {
+                allLoadedArrived = false;
+                break;
+            }
+            if (prepullGate && !(state.ValidationRouteTerminalState
+                    && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration
+                    && state.ValidationRouteTerminalReason == "arrival"))
             {
                 allLoadedArrived = false;
                 break;

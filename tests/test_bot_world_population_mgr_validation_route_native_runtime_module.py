@@ -94,9 +94,11 @@ def test_every_declared_contract_is_bounded() -> None:
         assert reason in runtime, reason
     # Accepted and rejected submissions both count toward exhaustion.
     assert "|| Retried(outcome))\n                RecordAttempt(runtimePtr->Attempt, now);" in runtime
-    assert "++state.FailedSubmissions;" in runtime
+    # Transport refusals count once per window (CountRejectedSubmission).
+    assert "countRejection(state, outcome.Reason);" in runtime
+    assert "++state.FailedSubmissions;" in _code(_source("BotValidationRouteNativeTransportLogic.h"))
     assert "case InteractionStep::Fail:\n            FailOnce(runtime, callbacks, decision.Reason);" in runtime
-    assert "case TransportStep::Fail:\n            FailOnce(runtime, callbacks, decision.Reason);" in runtime
+    assert 'case TransportStep::Fail:\n            \n            FailOnce(runtime, callbacks, decision.Reason == "transport_submissions_exhausted"' in runtime
 
 
 def test_native_runtime_submits_only_player_intents() -> None:
@@ -219,13 +221,40 @@ def test_rest_window_gate_stops_the_walk_and_uses_the_native_path_length() -> No
         assert forbidden not in runtime, forbidden
 
 
+def test_interaction_approach_walks_the_native_path_short_of_the_target() -> None:
+    # A creature or gameobject above the navmesh (Finkle Einhorn on his
+    # soapbox) is approached along the complete native path, never by asking
+    # the planner for the target's own position; area triggers keep their centre.
+    runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
+    assert "path.GetPathType() == PATHFIND_NORMAL" in runtime
+    assert "return SelectInteractionApproachPoint(target, points, reachYards);" in runtime
+    assert "reach = std::min(object->GetInteractionDistance(), INTERACTION_DISTANCE);" in runtime
+    assert "reach = std::min(contract.RangeYards, INTERACTION_DISTANCE);" in runtime
+    assert "destination = InteractionApproachPoint(bot, destination, reach);" in runtime
+    assert "intent = BotNativeAction::Move{ destination.X, destination.Y, destination.Z," in runtime
+    assert "BotNativeAction::Move{ targetX, targetY, targetZ," not in runtime
+    # A gameobject's stand point counts only where its native interaction
+    # check (GameObject::IsAtInteractDistance) admits it; else its position.
+    approach = runtime[runtime.index("destination = InteractionApproachPoint(bot, destination, reach);"):]
+    approach = approach[:approach.index("intent = BotNativeAction::Move{ destination.X")]
+    assert "if (GameObject const* object = target->ToGameObject())" in approach
+    assert ("if (!object->IsAtInteractDistance(\n                            Position(destination.X, destination.Y, destination.Z),"
+            "\n                            object->GetInteractionDistance()))") in approach
+    assert "destination = Point3{ targetX, targetY, targetZ, true };" in approach
+    for forbidden in ("Relocate(", "NearTeleportTo(", "TeleportTo(", "UpdatePosition("):
+        assert forbidden not in runtime, forbidden
+
+
 def test_manifest_rejects_transport_readiness_that_mismatches_the_template() -> None:
     manifest = _source("BotWorldPopulationMgrValidationRouteManifest.cpp")
+    # One template check for the node's own transport and each recovery ride.
     for marker in (
         "sObjectMgr->GetGameObjectTemplate(entry)",
-        '"native_transport_contract_invalid:level_readiness_on_stop_frame_transport"',
-        '"native_transport_contract_invalid:stop_frame_not_in_template"',
-        '"native_transport_contract_invalid:not_a_transport"',
-        '"native_transport_contract_invalid:spawn_mismatch"',
+        'return "level_readiness_on_stop_frame_transport";',
+        'return "stop_frame_not_in_template";',
+        'return "not_a_transport";',
+        'return "spawn_mismatch";',
+        'std::string("native_transport_contract_invalid:") + error;',
+        '"native_recovery_transport_invalid:" + transit.NodeId + ":" + templateError;',
     ):
         assert marker in manifest, marker

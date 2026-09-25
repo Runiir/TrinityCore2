@@ -190,3 +190,39 @@ def test_fix_pass_research_items_are_recorded() -> None:
     blockers = {row["key"]: row for row in ledger["unresolved"]}
     assert "parity is closed" in blockers["exact_spell_coefficients_and_target_counts_by_mode"]["evidence_gap"]
     assert "counters did not survive" in blockers["AI_object_reconstruction_and_custom_counter_reset_after_evade"]["evidence_gap"]
+
+
+def test_every_roster_spec_has_a_raid_prepull_consumable_contract(tmp_path: Path) -> None:
+    """Round 3: the raid prepull fails the whole raid closed on the first
+    roster spec without a native contract. Run r02-b1 stopped Maloriak (and
+    Magmaw after its kill) on raid_prepull_unknown_spec_contract_beast_mastery_hunter."""
+    import subprocess
+
+    specs = {row["spec"] for row in load(TARGET)["roster"].values()}
+    specs |= {spec for character in load(COMPOSITION)["characters"] for spec in character["specs"]}
+    program = tmp_path / "prepull_contracts.cpp"
+    program.write_text(
+        '#include "Bots/BotWorldPopulationMgrRaidConsumables.h"\n'
+        "#include <cstdio>\n"
+        "int main(int argc, char** argv)\n"
+        "{\n"
+        "    int missing = 0;\n"
+        "    for (int index = 1; index < argc; ++index)\n"
+        "        if (!BotWorldPopulationMgrRaidConsumables::FindContract(argv[index]))\n"
+        "        {\n"
+        '            std::printf("missing %s\\n", argv[index]);\n'
+        "            ++missing;\n"
+        "        }\n"
+        "    return missing;\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    binary = tmp_path / "prepull_contracts"
+    subprocess.run(
+        ["c++", "-std=c++17", "-I", str(ROOT / "src/server/game"), str(program),
+         str(ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidConsumableContracts.cpp"),
+         "-o", str(binary)],
+        check=True,
+    )
+    result = subprocess.run([str(binary), *sorted(specs)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stdout

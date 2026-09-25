@@ -215,12 +215,11 @@ inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent
             return Uses(Resource::Movement);
         if constexpr (std::is_same_v<T, TransportSurfaceMove>)
             // Walking and stepping off abandon a cast that forbids movement
-            // (as a player who starts walking does), so they own the cast
-            // lanes for that tick; a fall and a landing report do not.
-            return action.Kind == TransportSurfaceMove::Stage::Walk
-                    || action.Kind == TransportSurfaceMove::Stage::StepOff
-                ? Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast)
-                : Uses(Resource::Movement);
+            // (as a player who starts walking does). Every stage owns the
+            // cast lanes for its tick: a cast-time spell started beside it
+            // would stop the member (the bots' cast paths stop movement
+            // first), cutting the step short or freezing the fall mid-air.
+            return Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast);
         if constexpr (std::is_same_v<T, CombatResApproach>)
             // Approaching only submits native movement.  It observes the
             // reserved target but does not retarget or consume spell/GCD

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import re
@@ -530,6 +531,73 @@ def route_coordinate_status(step: dict[str, Any]) -> tuple[bool, str]:
     return True, ""
 
 
+# Recovery rides (route row field recovery_transport, consumed by the native
+# route runtime): a node that lies across a ride between two levels (an
+# elevator the route took, or would have taken) carries that ride's unchanged
+# transport contract. When a wipe's runback leaves living members at the
+# ride's boarding end, the runtime runs the ride again before the node. The
+# rides come from the scenario's own route and from its composed parent route
+# (a diagnostic shard's `diagnostic_parent_scenario_id`), so seeded shards that
+# start below a ride recover exactly like the full route. The contract sits
+# under "contract": the runtime's row reader finds "transport_contract" by text.
+RECOVERY_MIN_LEVEL_SEPARATION_YARDS = 8.0  # MinRecoveryLevelSeparationYards
+
+
+def ride_levels(contract: dict[str, Any]) -> tuple[float, float] | None:
+    """(boarding level, exit level) of a transport contract that is a ride."""
+    if not isinstance(contract, dict):
+        return None
+    if "exit_transport_z" not in contract and "exit_stop_frame" not in contract:
+        return None
+    approach = contract.get("approach") if isinstance(contract.get("approach"), dict) else {}
+    board = approach.get("start_point") or contract.get("wait_point") or contract.get("board_point")
+    exit_point = contract.get("exit_point") or contract.get("disembark_point")
+    if not board or not exit_point:
+        return None
+    levels = float(board[2]), float(exit_point[2])
+    if abs(levels[0] - levels[1]) < RECOVERY_MIN_LEVEL_SEPARATION_YARDS:
+        return None
+    return levels
+
+
+def recovery_rides(*routes: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Ride rows of the given routes in route order, once per node ID."""
+    rides: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for route in routes:
+        for step in route or []:
+            node_id = str(step.get("node_id") or "")
+            contract = step.get("transport_contract")
+            if node_id and node_id not in seen and ride_levels(contract) is not None:
+                seen.add(node_id)
+                rides.append({"node_id": node_id, "contract": contract})
+    return rides
+
+
+def recovery_transport(step: dict[str, Any], rides: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The rides a route row lies across: its navigation anchor is nearer the
+    ride's exit level than its boarding level (never the ride's own row)."""
+    anchor = step.get("navigation_anchor") if isinstance(step.get("navigation_anchor"), dict) else step
+    anchor_z = float(anchor.get("z") or 0.0)
+    across = []
+    for ride in rides:
+        if ride["node_id"] == str(step.get("node_id") or ""):
+            continue
+        board_z, exit_z = ride_levels(ride["contract"])  # type: ignore[misc]
+        if abs(anchor_z - exit_z) <= abs(anchor_z - board_z):
+            across.append({"node_id": ride["node_id"], "contract": copy.deepcopy(ride["contract"])})
+    return across
+
+
+def prepull_setup_gate(scenario: dict[str, Any]) -> bool:
+    """Whether a scenario's rows opt into the runtime's prepull setup gate
+    (BotValidationRoutePrepull.h): composition/canonical scenarios only (a
+    `composition_id`: the c0 shards and the full_c0 cohort). Legacy and
+    accepted scenarios (the accepted Magmaw diagnostic) and dungeons keep their
+    exact timing."""
+    return bool(scenario.get("composition_id"))
+
+
 def route_navigation_anchor_status(step: dict[str, Any]) -> tuple[bool, str]:
     anchor = step.get("navigation_anchor")
     if anchor is None:
@@ -749,6 +817,11 @@ def build_manifests(
         for row in configured_scenarios
         if isinstance(row, dict) and row.get("id")
     }
+    configured_by_id = {
+        str(row.get("id") or ""): row
+        for row in configured_scenarios
+        if isinstance(row, dict) and row.get("id")
+    }
     diagnostic_rosters = diagnostic_rosters_by_scenario(diagnostic_fixture, raid_shard_plans)
     # A plan's end-to-end cohort is an ordinary (non-diagnostic) scenario whose
     # roster also comes from the plan; legacy scenarios never appear in a plan.
@@ -848,6 +921,8 @@ def build_manifests(
         }
         scenario_row["scenario_hash"] = stable_hash(scenario_row)[:16]
         scenarios.append(scenario_row)
+        parent_route = (configured_by_id.get(diagnostic_metadata["parent_scenario_id"] or "") or {}).get("route") or []
+        rides = recovery_rides(route_steps, parent_route)
 
         for step in route_steps:
             coordinates_valid, coordinate_missing_reason = route_coordinate_status(step)
@@ -1051,6 +1126,11 @@ def build_manifests(
                 contract = step.get(contract_name)
                 if contract:
                     route[contract_name] = contract
+            across = recovery_transport(step, rides)
+            if across:
+                route["recovery_transport"] = across
+            if prepull_setup_gate(scenario):
+                route["prepull_setup_gate"] = True
             patrol_combat_anchor = step.get("patrol_combat_anchor")
             if patrol_combat_anchor:
                 route["patrol_combat_anchor"] = {

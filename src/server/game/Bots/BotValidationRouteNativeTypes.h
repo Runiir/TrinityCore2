@@ -132,20 +132,17 @@ struct Point3
     bool Valid = false;
 };
 
-// Lawful final approach onto a transport surface the static navmesh does
-// not reach (decided in BotValidationRouteNativeApproach.h and the route
-// logic, executed by BotTransportSurfaceMovement).
+// Lawful final approach onto a transport surface the static navmesh does not
+// reach (BotValidationRouteNativeApproach.h, BotTransportSurfaceMovement).
 enum class ApproachMode : std::uint8_t { None, SurfaceWalk, LedgeDrop };
 enum class ApproachPhase : std::uint8_t { Idle, Walking, SteppingOff, Falling, Landed };
 
 struct ApproachContract
 {
     ApproachMode Mode = ApproachMode::None;
-    // On the static navmesh: where the member waits and the approach starts.
-    Point3 StartPoint;
-    // ledge_drop: past the lip, level with the start; the native fall starts
-    // there and lands on the floor at LandingZ.
-    Point3 StepOffPoint;
+    // Where the member waits on the static navmesh and the approach starts;
+    // ledge_drop: past the lip, level with it, where the native fall starts.
+    Point3 StartPoint, StepOffPoint;
     float LandingZ = 0.0f;
     float LandingToleranceYards = 1.0f;
     bool LandOnTransport = true;
@@ -159,9 +156,8 @@ struct TransportContract
     bool Declared = false;
     std::uint32_t Entry = 0;
     std::uint64_t SpawnId = 0;
-    // Boarding readiness: a native stop frame (index n = GoState 25 + n, with
-    // its arrival time reached) or the platform origin's world Z for
-    // continuously cycling elevators.
+    // Boarding readiness: a native stop frame (index n = GoState 25 + n, its
+    // arrival time reached) or the origin's world Z of a cycling elevator.
     std::int32_t BoardStopFrame = -1;
     bool HasBoardLevel = false;
     float BoardTransportZ = 0.0f;
@@ -170,23 +166,18 @@ struct TransportContract
     bool HasExitLevel = false;
     float ExitTransportZ = 0.0f;
     float LevelToleranceYards = 0.75f;
-    Point3 WaitPoint;
-    Point3 BoardPoint;
-    // Optional point on the platform, over static ground at the exit level,
-    // to stand on before leaving when the boarding spot is not over ground.
-    Point3 DisembarkPoint;
-    Point3 ExitPoint;
+    Point3 WaitPoint, BoardPoint;
+    // Optional: a point on the platform over static ground at the exit level
+    // (stood on before leaving), and the exit point.
+    Point3 DisembarkPoint, ExitPoint;
     float ArrivalToleranceYards = 1.5f;
-    // Maximum distance between the bot's feet and the floor it stands on;
-    // at most 1 yd, well below the 1.6 yd navmesh step height.
+    // Feet-to-floor distance allowed; at most 1 yd (navmesh step 1.6 yd).
     float FloorToleranceYards = 0.5f;
-    std::uint32_t TimeoutMs = 0;
-    // Failed board/leave submissions allowed per member before the node fails.
-    std::uint32_t MaxSubmissions = 5;
+    // Bound in time, and refused submissions allowed per member.
+    std::uint32_t TimeoutMs = 0, MaxSubmissions = 5;
     ApproachContract Approach;
-    // Observed instance_boss_state (or any_of/all_of): a fail-fast guard, not
-    // a completion. Once it holds with a member aboard, one neither aboard
-    // nor in flight fails the node after a grace.
+    // instance_boss_state (or any_of/all_of): a fail-fast guard, never a
+    // completion; armed with a member aboard, it fails one left behind.
     CompletionContract CompletionOverride;
 
     bool HasExit() const { return ExitStopFrame >= 0 || HasExitLevel; }
@@ -235,20 +226,18 @@ struct CompletionMemory
 
 struct TransportMemberState
 {
-    bool Boarded = false;
-    bool Left = false;
-    std::uint32_t BoardSubmissions = 0;
-    std::uint32_t LeaveSubmissions = 0;
-    std::uint32_t FailedSubmissions = 0;
-    // The last floor this member stood on was this platform's own surface.
+    bool Boarded = false, Left = false;
+    std::uint32_t BoardSubmissions = 0, LeaveSubmissions = 0, FailedSubmissions = 0;
+    // A rejection counts at most once per window; the last one names a failure.
+    std::uint64_t NextCountedRejectionMs = 0;
+    std::string LastRejection;
+    // Last floor stood on was this platform's; stationary floorless samples.
     bool PlatformFloorSeen = false;
-    // Consecutive stationary observations with no floor at all since then.
     std::uint32_t FloorlessObservations = 0;
     std::uint64_t FloorlessSinceMs = 0;
     std::string LastReason;
     ApproachPhase Approach = ApproachPhase::Idle;
-    // Re-snapping moves of a settled member with no verified floor.
-    std::uint32_t ResnapMoves = 0;
+    std::uint32_t ResnapMoves = 0; // re-snaps without a verified floor
     std::string LastApproachOutcome;
 };
 
@@ -268,8 +257,7 @@ struct NodeRuntime
     bool CompletionRecorded = false;
     bool FailureRecorded = false;
     std::string LastDiagnostic;
-    // When the completion-override guard armed (0: disarmed).
-    std::uint64_t OverrideSatisfiedAtMs = 0;
+    std::uint64_t OverrideSatisfiedAtMs = 0; // override guard armed at (0: off)
 
     void Enter(RuntimeScope const& scope, std::uint64_t nowMs)
     {
@@ -282,16 +270,28 @@ struct NodeRuntime
     }
 };
 
+// A ride the route took (or would take) to this node's side, run first when
+// living members are back on its boarding side (row field recovery_transport).
+struct RecoveryTransit
+{
+    std::string NodeId;
+    TransportContract Transport;
+    NodeRuntime Runtime; // started while some member needs the ride
+};
+
 struct NodeContract
 {
     InteractionContract Interaction;
     CompletionContract Completion;
     TransportContract Transport;
     NodeRuntime Runtime;
+    // Recovery rides, in route order, before this node's own contracts.
+    std::vector<RecoveryTransit> Recovery;
 
     bool Declared() const
     {
-        return Interaction.Declared || Completion.Declared || Transport.Declared;
+        return Interaction.Declared || Completion.Declared || Transport.Declared
+            || !Recovery.empty();
     }
 };
 }
