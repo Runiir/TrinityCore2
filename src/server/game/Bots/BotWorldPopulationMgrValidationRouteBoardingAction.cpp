@@ -83,15 +83,21 @@ GameObject* ResolveTransport(Player* bot, ObjectGuid guid)
 
 namespace BotValidationRouteBoardingAction
 {
+// Floors are probed from just above the feet straight down: a surface above
+// the feet (a ledge or step the bot is not standing on) never counts.
+constexpr float FloorProbeLiftYards = 0.1f;
+
 bool StaticFloorUnderfoot(Player const* bot, float tolerance)
 {
     Map* map = bot ? bot->GetMap() : nullptr;
     if (!map)
         return false;
+    float const feet = bot->GetPositionZ();
     float const floor = map->GetStaticHeight(bot->GetPhaseShift(),
-        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ() + tolerance,
-        true, 2.0f * tolerance + 0.5f);
-    return floor > INVALID_HEIGHT && std::fabs(bot->GetPositionZ() - floor) <= tolerance;
+        bot->GetPositionX(), bot->GetPositionY(), feet + FloorProbeLiftYards,
+        true, FloorProbeLiftYards + tolerance);
+    return floor > INVALID_HEIGHT && floor <= feet + FloorProbeLiftYards
+        && feet - floor <= tolerance;
 }
 
 bool TransportFloorUnderfoot(Player const* bot, GameObject const* transport,
@@ -102,8 +108,8 @@ bool TransportFloorUnderfoot(Player const* bot, GameObject const* transport,
     if (!bot || !modelAvailable)
         return false;
     G3D::Vector3 const origin(bot->GetPositionX(), bot->GetPositionY(),
-        bot->GetPositionZ() + tolerance);
-    float distance = 2.0f * tolerance;
+        bot->GetPositionZ() + FloorProbeLiftYards);
+    float distance = FloorProbeLiftYards + tolerance;
     return transport->m_model->intersectRay(
         G3D::Ray::fromOriginAndDirection(origin, G3D::Vector3(0.0f, 0.0f, -1.0f)),
         distance, true, bot->GetPhaseShift(), VMAP::ModelIgnoreFlags::Nothing);
@@ -116,9 +122,13 @@ std::uint64_t RestRemainingAtLevelMs(GameObject const* transport, float levelZ,
     if (!transport || std::fabs(transport->GetPositionZ() - levelZ) > tolerance)
         return 0;
     GameObjectTemplate const* info = transport->GetGOInfo();
-    // Stop-frame transports only move when a script changes their state.
+    // Stop-frame transports only move when a script changes their state:
+    // the rest is unbounded once a stop state is set and its arrival time
+    // (GAMEOBJECT_LEVEL) has passed; while travelling there is no rest.
     if (info && info->transport.Timeto2ndfloor > 0)
-        return UnboundedRestMs;
+        return transport->GetGoState() >= GO_STATE_TRANSPORT_STOPPED
+            && GameTime::GetGameTimeMS() >= transport->GetUInt32Value(GAMEOBJECT_LEVEL)
+            ? UnboundedRestMs : 0;
     TransportAnimation const* animation =
         sTransportMgr->GetTransportAnimInfo(transport->GetEntry());
     if (!animation || !animation->TotalTime)

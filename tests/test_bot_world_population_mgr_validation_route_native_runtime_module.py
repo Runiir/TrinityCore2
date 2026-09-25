@@ -60,6 +60,8 @@ def test_kernel_preparation_delegates_native_contracts_to_the_adapter() -> None:
     # Every loaded member counts; only those in the original instance act.
     assert "IsValidationCohortMemberInOriginalInstance(\n                                        cohortState, member)" in preparation
     assert "member->GetMap() == context.Bot->GetMap()" not in preparation
+    assert "if (Player* member = GetLoadedBot(cohortState))\n" in preparation
+    assert "member->IsInWorld()\n                                    && member->GetMapId() == routeNode.MapId" in preparation
     assert "nativeInput.Tick = blackboard.Revision;" in preparation
 
 
@@ -74,7 +76,10 @@ def test_completion_is_evaluated_once_per_tick_from_the_route_instance() -> None
     assert "bool satisfied = node.Completion.Declared || node.Transport.Declared;" in runtime
     # Absence is only authoritative in the route instance's spawn-id store.
     assert "data->mapId == map->GetId() && map->IsGridLoaded(data->spawnPoint)" in facts
-    assert "fact.OnRouteInstance = input.OnRouteInstance && map && member->GetMap() == map;" in facts
+    # A loaded member mid-teleport (not in the world) counts as off-route.
+    assert "fact.OnRouteInstance = input.OnRouteInstance && member->IsInWorld()\n                && map && member->GetMap() == map;" in facts
+    assert "if (!member || !member->IsInWorld())" not in facts
+    assert "if (!member->IsInWorld() || !input_member.OnRouteInstance" in runtime
     assert '"no_evaluator_in_route_instance"' in facts
     for forbidden in ("Blackboard", "Board->"):
         assert forbidden not in facts, forbidden
@@ -132,9 +137,15 @@ def test_boarding_executor_reports_positions_through_native_handlers() -> None:
     assert '"native_transport_board_static_floor_underfoot"' in boarding
     assert '"native_transport_model_unavailable"' in boarding
     assert "native_transport_leave_no_static_floor" in boarding
-    # Cycling transports: remaining rest from the TransportAnimation timeline.
+    # Cycling transports: remaining rest from the TransportAnimation timeline;
+    # stop-frame transports rest unbounded only once arrived at a stop.
     assert "sTransportMgr->GetTransportAnimInfo(transport->GetEntry())" in boarding
     assert "GameTime::GetGameTimeMS() % timeline.PeriodMs" in boarding
+    assert "transport->GetGoState() >= GO_STATE_TRANSPORT_STOPPED\n            && GameTime::GetGameTimeMS() >= transport->GetUInt32Value(GAMEOBJECT_LEVEL)" in boarding
+    # Floors are probed from feet + 0.1 yd straight down the tolerance.
+    assert "constexpr float FloorProbeLiftYards = 0.1f;" in boarding
+    assert "float distance = FloorProbeLiftYards + tolerance;" in boarding
+    assert "feet - floor <= tolerance" in boarding
     # The clock-delta warning of bot sessions is documented, not suppressed.
     assert "clockDelta is erronous" in _source("BotWorldPopulationMgrValidationRouteBoardingAction.cpp")
     assert "boarded->GetTransportGUID() == object->GetGUID()" in boarding
@@ -191,3 +202,26 @@ def test_blackboard_keeps_contract_named_creatures_observable() -> None:
     blackboard = _source("BotWorldPopulationMgrEncounterBlackboard.cpp")
     assert "BotValidationRouteNative::ObservedCreatureEntries(routeNode.NativeContract)" in blackboard
     assert "std::binary_search(nativeRouteObservedEntries.begin()," in blackboard
+
+
+def test_rest_window_gate_stops_the_walk_and_uses_the_native_path_length() -> None:
+    runtime = _code(_source("BotWorldPopulationMgrValidationRouteNativeRuntime.cpp"))
+    assert "case TransportStep::Stop:\n            SubmitStop(input, decision.Reason);" in runtime
+    assert "bot->StopMoving();" in runtime
+    assert "PathGenerator path(bot);" in runtime
+    assert ": PathLengthTo(bot, contract.BoardPoint);" in runtime
+    assert "observation.Falling = bot->IsFalling();" in runtime
+    for forbidden in ("Relocate(", "NearTeleportTo(", "TeleportTo(", "UpdatePosition("):
+        assert forbidden not in runtime, forbidden
+
+
+def test_manifest_rejects_transport_readiness_that_mismatches_the_template() -> None:
+    manifest = _source("BotWorldPopulationMgrValidationRouteManifest.cpp")
+    for marker in (
+        "sObjectMgr->GetGameObjectTemplate(entry)",
+        '"native_transport_contract_invalid:level_readiness_on_stop_frame_transport"',
+        '"native_transport_contract_invalid:stop_frame_not_in_template"',
+        '"native_transport_contract_invalid:not_a_transport"',
+        '"native_transport_contract_invalid:spawn_mismatch"',
+    ):
+        assert marker in manifest, marker

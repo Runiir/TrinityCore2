@@ -150,15 +150,21 @@ public:
         for (MemberInput const& input : _members)
         {
             Player* member = input.Bot;
-            if (!member || !member->IsInWorld())
+            if (!member)
                 continue;
             MemberFact fact;
             fact.Guid = member->GetGUID().GetRawValue();
             fact.Alive = member->IsAlive();
-            fact.OnRouteInstance = input.OnRouteInstance && map && member->GetMap() == map;
+            // A loaded member mid-teleport (not in the world) is off the route.
+            fact.OnRouteInstance = input.OnRouteInstance && member->IsInWorld()
+                && map && member->GetMap() == map;
             fact.Owner = fact.Guid == _owner;
-            if (TransportBase const* transport = member->GetTransport();
-                transport && fact.OnRouteInstance)
+            if (!fact.OnRouteInstance)
+            {
+                facts.push_back(fact);
+                continue;
+            }
+            if (TransportBase const* transport = member->GetTransport())
             {
                 fact.OnTransport = true;
                 if (GameObject const* object = map->GetGameObject(transport->GetTransportGUID()))

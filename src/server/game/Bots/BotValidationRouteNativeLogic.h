@@ -558,6 +558,7 @@ inline bool TransportAtExit(TransportContract const& contract, TransportFact con
 enum class TransportStep : std::uint8_t
 {
     Hold,
+    Stop,
     MoveToWait,
     MoveToBoard,
     Board,
@@ -575,6 +576,7 @@ inline char const* TransportStepName(TransportStep step)
     switch (step)
     {
         case TransportStep::Hold: return "hold";
+        case TransportStep::Stop: return "stop";
         case TransportStep::MoveToWait: return "move_to_wait";
         case TransportStep::MoveToBoard: return "move_to_board";
         case TransportStep::Board: return "board";
@@ -591,6 +593,11 @@ inline char const* TransportStepName(TransportStep step)
 
 // Margin between the planned walk and the end of a platform's rest window.
 constexpr std::uint64_t BoardWindowMarginMs = 300;
+// A member that stood on the platform is stranded only after it has been
+// stationary (not walking, not falling) with no floor at all for this many
+// consecutive observations spanning at least this long.
+constexpr std::uint32_t StrandedConfirmObservations = 3;
+constexpr std::uint64_t StrandedConfirmMs = 400;
 
 struct TransportMemberObservation
 {
@@ -602,12 +609,15 @@ struct TransportMemberObservation
     bool OnThisTransport = false;
     bool OnOtherTransportOrVehicle = false;
     bool Moving = false;
+    bool Falling = false;
+    std::uint64_t NowMs = 0;
     // Floors directly underfoot, within the contract's floor tolerance.
     bool StaticFloorUnderfoot = false;
     // This transport's own model surface (not merely its bounding box).
     bool TransportFloorUnderfoot = false;
-    // Remaining rest of the platform at the boarding level, and the walk
-    // time to the board point (UnboundedRestMs for script-held stop frames).
+    // Remaining rest of the platform at the boarding level (UnboundedRestMs
+    // for an arrived script-held stop frame), and the estimated walk time to
+    // the board point along the native path.
     std::uint64_t RestRemainingMs = 0;
     std::uint64_t TravelToBoardMs = 0;
     float DistanceToWait = 0.0f;
@@ -640,6 +650,8 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
 
     if (observation.OnThisTransport)
     {
+        state.FloorlessObservations = 0;
+        state.FloorlessSinceMs = 0;
         if (!contract.HasExit())
             return { TransportStep::Done, "transport_boarded" };
         if (!observation.AtExit)
@@ -661,10 +673,33 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
         return { TransportStep::Leave, "transport_exit_level_reached" };
     }
 
-    // Not a passenger: the member must stand on some floor. A member left
-    // standing where the platform used to be can never be walked on lawfully.
-    if (!observation.StaticFloorUnderfoot && !observation.TransportFloorUnderfoot)
-        return { TransportStep::Fail, "transport_member_stranded_without_floor" };
+    // Not a passenger. Track the floor it stands on: only a member whose
+    // last floor was this platform, and who has since been stationary with
+    // no floor at all for a confirmed period, is stranded. A walking or
+    // falling member may briefly sit above the vmap floor between path points.
+    bool const onPlatformFloor = observation.TransportFloorUnderfoot
+        && !observation.StaticFloorUnderfoot;
+    bool const floorless = !observation.StaticFloorUnderfoot
+        && !observation.TransportFloorUnderfoot;
+    if (observation.StaticFloorUnderfoot)
+        state.PlatformFloorSeen = false;
+    else if (onPlatformFloor)
+        state.PlatformFloorSeen = true;
+    bool const settled = !observation.Moving && !observation.Falling;
+    if (floorless && settled && state.PlatformFloorSeen)
+    {
+        if (!state.FloorlessObservations)
+            state.FloorlessSinceMs = observation.NowMs;
+        ++state.FloorlessObservations;
+        if (state.FloorlessObservations >= StrandedConfirmObservations
+            && observation.NowMs >= state.FloorlessSinceMs + StrandedConfirmMs)
+            return { TransportStep::Fail, "transport_member_stranded_without_floor" };
+        return { TransportStep::Hold, "transport_member_floor_lost_confirming" };
+    }
+    state.FloorlessObservations = 0;
+    state.FloorlessSinceMs = 0;
+    if (floorless && settled)
+        return { TransportStep::Hold, "transport_member_floor_unverified" };
 
     if (state.Boarded && contract.HasExit())
     {
@@ -674,26 +709,41 @@ inline TransportDecision DecideTransportStep(TransportContract const& contract,
         return { TransportStep::MoveToExit, "transport_exit_path" };
     }
 
+    bool const windowShort = observation.RestRemainingMs != UnboundedRestMs
+        && observation.RestRemainingMs < observation.TravelToBoardMs + BoardWindowMarginMs;
+    // Standing on this platform's own surface: board from here. The board
+    // point is only the navigation target; the floor proves the stance, so a
+    // walk that reached the platform stops and boards before it moves on.
+    if (onPlatformFloor)
+    {
+        if (observation.Moving)
+            return { TransportStep::Stop, "transport_board_stop_on_platform" };
+        return { TransportStep::Board, "transport_board_ready" };
+    }
+
     if (!observation.ReadyToBoard)
     {
         if (contract.WaitPoint.Valid
             && observation.DistanceToWait > contract.ArrivalToleranceYards)
             return { TransportStep::MoveToWait, "transport_wait_path" };
+        if (observation.Moving)
+            return { TransportStep::Stop, "transport_not_ready_stop" };
         return { TransportStep::Hold, "transport_waiting" };
     }
+    // Board only from this platform's own surface, never from static ground
+    // that merely lies inside the model's bounding box.
     if (observation.DistanceToBoard <= contract.ArrivalToleranceYards)
+        return { TransportStep::Blocked, "transport_board_point_not_on_platform_floor" };
+    if (windowShort)
     {
-        // Board only from this platform's own surface, never from static
-        // ground that merely lies inside the model's bounding box.
-        if (!observation.TransportFloorUnderfoot || observation.StaticFloorUnderfoot)
-            return { TransportStep::Blocked, "transport_board_point_not_on_platform_floor" };
+        // Never let a walk toward the platform outrun its rest window.
         if (observation.Moving)
-            return { TransportStep::Hold, "transport_board_settling" };
-        return { TransportStep::Board, "transport_board_ready" };
-    }
-    if (observation.RestRemainingMs != UnboundedRestMs
-        && observation.RestRemainingMs < observation.TravelToBoardMs + BoardWindowMarginMs)
+            return contract.WaitPoint.Valid
+                && observation.DistanceToWait > contract.ArrivalToleranceYards
+                ? TransportDecision{ TransportStep::MoveToWait, "transport_rest_window_short_retreat" }
+                : TransportDecision{ TransportStep::Stop, "transport_rest_window_short_stop" };
         return { TransportStep::Hold, "transport_rest_window_too_short" };
+    }
     return { TransportStep::MoveToBoard, "transport_board_path" };
 }
 

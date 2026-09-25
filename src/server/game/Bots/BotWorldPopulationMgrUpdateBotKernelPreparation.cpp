@@ -239,13 +239,14 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     nativeInput.AnchorX = routeNode.NavigationAnchorX;
                     nativeInput.AnchorY = routeNode.NavigationAnchorY;
                     nativeInput.AnchorZ = routeNode.NavigationAnchorZ;
-                    // Every loaded member counts, wherever it is; only those
-                    // in the route's original instance can observe or act.
+                    // Every loaded member counts, wherever it is (including one
+                    // mid-teleport, not yet in the world); only those in the
+                    // route's original instance can observe or act.
                     for (WorldBotState const& cohortState : Party().Bots)
-                        if (Player* member = GetLoadedBot(cohortState); member
-                            && member->IsInWorld())
+                        if (Player* member = GetLoadedBot(cohortState))
                             nativeInput.Members.push_back({ member,
-                                member->GetMapId() == routeNode.MapId
+                                member->IsInWorld()
+                                    && member->GetMapId() == routeNode.MapId
                                     && IsValidationCohortMemberInOriginalInstance(
                                         cohortState, member) });
                     for (auto const& roster : Cohort().Raid.RosterByGuid)

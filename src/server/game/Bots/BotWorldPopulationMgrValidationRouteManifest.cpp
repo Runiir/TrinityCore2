@@ -2,6 +2,8 @@
 
 #include "Cryptography/CryptoHash.h"
 #include "DataStores/DBCStores.h"
+#include "GameObjectData.h"
+#include "ObjectMgr.h"
 #include "Util.h"
 
 #include <algorithm>
@@ -372,6 +374,51 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.NativeCompletionEntry = node.NativeContract.Completion.Entry;
         node.NativeCompletionSpellId = node.NativeContract.Completion.SpellId;
         node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
+        // A transport's readiness must match how its template moves: stop
+        // frames (GoState 25 + n) only for templates with stop times, origin
+        // heights only for continuously cycling templates.
+        if (node.NativeContract.Transport.Declared)
+        {
+            auto const& transport = node.NativeContract.Transport;
+            uint32 entry = transport.Entry;
+            if (GameObjectData const* data = transport.SpawnId
+                    ? sObjectMgr->GetGameObjectData(ObjectGuid::LowType(transport.SpawnId)) : nullptr)
+            {
+                if ((entry && data->id != entry) || data->mapId != node.MapId)
+                {
+                    Party().ValidationRouteManifestLoadError =
+                        "native_transport_contract_invalid:spawn_mismatch";
+                    return;
+                }
+                entry = data->id;
+            }
+            GameObjectTemplate const* goInfo = entry ? sObjectMgr->GetGameObjectTemplate(entry) : nullptr;
+            if (!goInfo || goInfo->type != GAMEOBJECT_TYPE_TRANSPORT)
+            {
+                Party().ValidationRouteManifestLoadError =
+                    "native_transport_contract_invalid:not_a_transport";
+                return;
+            }
+            int32 stopFrames = 0;
+            for (uint32 stopTime : { goInfo->transport.Timeto2ndfloor, goInfo->transport.Timeto3rdfloor,
+                    goInfo->transport.Timeto4thfloor, goInfo->transport.Timeto5thfloor })
+            {
+                if (!stopTime)
+                    break;
+                ++stopFrames;
+            }
+            bool const levelOnStopFrames = stopFrames > 0
+                && (transport.HasBoardLevel || transport.HasExitLevel);
+            bool const frameOnCycling = transport.BoardStopFrame >= stopFrames
+                || transport.ExitStopFrame >= stopFrames;
+            if (levelOnStopFrames || frameOnCycling)
+            {
+                Party().ValidationRouteManifestLoadError = levelOnStopFrames
+                    ? "native_transport_contract_invalid:level_readiness_on_stop_frame_transport"
+                    : "native_transport_contract_invalid:stop_frame_not_in_template";
+                return;
+            }
+        }
         // A declared area trigger must exist on the route map; never walk
         // toward an unresolved trigger position.
         if (node.NativeContract.Interaction.Declared

@@ -6,6 +6,8 @@
 #include "DataStores/DBCStores.h"
 #include "GameObject.h"
 #include "GossipDef.h"
+#include "MotionMaster.h"
+#include "PathGenerator.h"
 #include "Player.h"
 #include "Transport.h"
 
@@ -87,6 +89,58 @@ void SubmitHold(Input const& input, std::string const& reason)
         return BotActionArbitration::Outcome::Progressed(reason);
     };
     input.State->DecisionKernel.Submit(std::move(candidate));
+}
+
+// End the member's current walk where it stands: releasing the movement
+// input, not a relocation. Used when a walk toward a platform would outrun
+// the platform's rest window, or to settle on the platform before boarding.
+void SubmitStop(Input const& input, std::string const& reason)
+{
+    BotActionArbitration::Candidate candidate;
+    candidate.Key = input.Board->CurrentScope.Key() + ":native_route_stop";
+    candidate.Source = "native_route_interaction";
+    candidate.ActionPriority = BotActionArbitration::Priority::Mechanic;
+    candidate.UtilityScore = 5.0f;
+    candidate.RequiredResources = BotActionArbitration::Uses(
+        BotActionArbitration::Resource::Movement);
+    candidate.ExpiresAtMs = input.NowMs + 500;
+    candidate.Attempt = [reason, bot = input.Bot, situation = input.Situation,
+        label = input.Action, state = input.State]()
+    {
+        bot->StopMoving();
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MoveIdle();
+        state->ActivePathValid = false;
+        state->ActivePathPurposeValid = false;
+        state->ActivePathSegmentValid = false;
+        state->ActivePathTraversalMode.clear();
+        state->ActivePathTargetGuid.Clear();
+        state->MovementLease = {};
+        state->IsMoving = false;
+        *situation = "native_route_interaction";
+        *label = "native_route_" + reason;
+        state->LastDecisionHandler = "native_route_interaction";
+        return BotActionArbitration::Outcome::Committed(reason);
+    };
+    input.State->DecisionKernel.Submit(std::move(candidate));
+}
+
+// Walk length to `target` along the native path (never shorter than the
+// straight line); an incomplete path adds its last leg to the target.
+float PathLengthTo(Player* bot, Point3 const& target)
+{
+    float const straight = bot->GetExactDist(target.X, target.Y, target.Z);
+    PathGenerator path(bot);
+    if (!path.CalculatePath(target.X, target.Y, target.Z)
+        || (path.GetPathType() & PATHFIND_NOPATH) || path.GetPath().size() < 2)
+        return straight;
+    float length = 0.0f;
+    auto const& points = path.GetPath();
+    for (std::size_t i = 1; i < points.size(); ++i)
+        length += (points[i] - points[i - 1]).length();
+    G3D::Vector3 const end(target.X, target.Y, target.Z);
+    length += (end - points.back()).length();
+    return std::max(length, straight);
 }
 
 void RecordOnChange(Callbacks const& callbacks, std::string& last,
@@ -277,6 +331,8 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     observation.OnOtherTransportOrVehicle = (bot->GetTransport() && !observation.OnThisTransport)
         || bot->GetVehicle();
     observation.Moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+    observation.Falling = bot->IsFalling();
+    observation.NowMs = input.NowMs;
     observation.StaticFloorUnderfoot = BotValidationRouteBoardingAction::StaticFloorUnderfoot(
         bot, contract.FloorToleranceYards);
     if (transport.Object)
@@ -296,7 +352,16 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     observation.DistanceToDisembark = distance(contract.DisembarkPoint);
     observation.DistanceToExit = distance(contract.ExitPoint);
     float const runSpeed = std::max(bot->GetSpeed(MOVE_RUN), 0.1f);
-    observation.TravelToBoardMs = uint64(observation.DistanceToBoard / runSpeed * 1000.0f);
+    if (observation.ReadyToBoard && contract.BoardPoint.Valid)
+    {
+        // Off the platform the walk follows the native path; on it, the
+        // remaining distance is a straight step across its own surface.
+        bool const onPlatform = observation.TransportFloorUnderfoot
+            && !observation.StaticFloorUnderfoot;
+        float const walk = onPlatform ? observation.DistanceToBoard
+            : PathLengthTo(bot, contract.BoardPoint);
+        observation.TravelToBoardMs = uint64(walk / runSpeed * 1000.0f);
+    }
 
     // Without the platform's collision model neither boarding nor the
     // stranded-member check can be proven: stop instead of guessing.
@@ -336,6 +401,9 @@ void RunTransport(Input const& input, Callbacks const& callbacks, NodeContract& 
     {
         case TransportStep::Fail:
             FailOnce(runtime, callbacks, decision.Reason);
+            break;
+        case TransportStep::Stop:
+            SubmitStop(input, decision.Reason);
             break;
         case TransportStep::Hold:
         case TransportStep::HoldAboard:
@@ -400,10 +468,12 @@ bool TransportNodeDone(Input const& input, NodeContract& node,
     for (MemberInput const& input_member : input.Members)
     {
         Player* member = input_member.Bot;
-        if (!member || !member->IsInWorld() || !member->IsAlive())
+        if (!member || !member->IsAlive())
             continue;
         ++living;
-        if (!input_member.OnRouteInstance || member->GetMap() != transport.Object->GetMap())
+        // A member mid-teleport (loaded, not in the world) is off the route.
+        if (!member->IsInWorld() || !input_member.OnRouteInstance
+            || member->GetMap() != transport.Object->GetMap())
         {
             reason = "transport_member_off_route_map";
             return false;

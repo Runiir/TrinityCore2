@@ -49,6 +49,8 @@ struct InteractionContract
     std::uint32_t BackupRosterSlot = 0;
     // Required: every declared interaction is bounded in time.
     std::uint32_t TimeoutMs = 0;
+    // Required: every interaction commits native requests, so attempts are
+    // bounded and each one gets a settle window before the next.
     std::uint32_t MaxAttempts = 0;
     std::uint32_t RetryIntervalMs = 0;
     bool Gather = false;
@@ -154,7 +156,8 @@ struct TransportContract
     Point3 DisembarkPoint;
     Point3 ExitPoint;
     float ArrivalToleranceYards = 1.5f;
-    // Maximum distance between the bot and the platform floor it stands on.
+    // Maximum distance between the bot's feet and the floor it stands on;
+    // at most 1 yd, well below the 1.6 yd navmesh step height.
     float FloorToleranceYards = 0.5f;
     std::uint32_t TimeoutMs = 0;
     // Failed board/leave submissions allowed per member before the node fails.
@@ -211,6 +214,11 @@ struct TransportMemberState
     std::uint32_t BoardSubmissions = 0;
     std::uint32_t LeaveSubmissions = 0;
     std::uint32_t FailedSubmissions = 0;
+    // The last floor this member stood on was this platform's own surface.
+    bool PlatformFloorSeen = false;
+    // Consecutive stationary observations with no floor at all since then.
+    std::uint32_t FloorlessObservations = 0;
+    std::uint64_t FloorlessSinceMs = 0;
     std::string LastReason;
 };
 

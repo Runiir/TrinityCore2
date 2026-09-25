@@ -49,6 +49,10 @@ struct ParseError
 
 // Native INTERACTION_DISTANCE (ObjectDefines.h).
 constexpr float MaxInteractionRangeYards = 5.0f;
+// Shortest settle window after a committed interaction attempt.
+constexpr std::uint32_t MinRetryIntervalMs = 500;
+// Floor tolerance cap, well below the 1.6 yd navmesh step height.
+constexpr float MaxFloorToleranceYards = 1.0f;
 
 inline bool KnownField(std::string_view key, std::initializer_list<std::string_view> allowed)
 {
@@ -222,8 +226,13 @@ inline ParseError ParseInteraction(Json const& object, InteractionContract& out)
     }
     if (!out.TimeoutMs)
         return ParseError::Invalid("timeout_required");
-    if (object.Find("retry_interval_ms") && !out.MaxAttempts)
-        return ParseError::Invalid("retry_interval_without_max_attempts");
+    // Every action commits a native request: bound the attempts and give
+    // each one (including the last) a settle window, so nothing is
+    // resubmitted every decision tick.
+    if (!out.MaxAttempts)
+        return ParseError::Invalid("max_attempts_required");
+    if (out.RetryIntervalMs < MinRetryIntervalMs)
+        return ParseError::Invalid("retry_interval_required");
 
     out.Declared = true;
     return {};
@@ -499,7 +508,7 @@ inline ParseError ParseTransport(Json const& object, TransportContract& out)
         return ParseError::Invalid("exit_shape");
     if (!(out.LevelToleranceYards > 0.0f && out.LevelToleranceYards <= 10.0f)
         || !(out.ArrivalToleranceYards > 0.0f && out.ArrivalToleranceYards <= 10.0f)
-        || !(out.FloorToleranceYards > 0.0f && out.FloorToleranceYards <= 2.0f))
+        || !(out.FloorToleranceYards > 0.0f && out.FloorToleranceYards <= MaxFloorToleranceYards))
         return ParseError::Invalid("tolerance_invalid");
     if (!out.MaxSubmissions)
         return ParseError::Invalid("max_submissions_invalid");

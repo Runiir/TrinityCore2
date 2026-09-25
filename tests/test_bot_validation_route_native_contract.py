@@ -123,11 +123,11 @@ int main()
     CHECK(bell.TimeoutMs == 60000 && bell.MaxAttempts == 3 && bell.Gather);
 
     InteractionContract finkle;
-    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834, 11835, 11836, 11837], "option": 0, "timeout_ms": 90000})", finkle));
+    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834, 11835, 11836, 11837], "option": 0, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 90000})", finkle));
     CHECK(finkle.Menus.size() == 5 && finkle.Menus.front() == 11812 && finkle.Target == TargetType::Any);
 
     InteractionContract orb;
-    CHECK(!Interaction(R"({"action": "gossip_select", "entry": 203254, "menu": 11492, "option": 0, "timeout_ms": 60000})", orb));
+    CHECK(!Interaction(R"({"action": "gossip_select", "entry": 203254, "menu": 11492, "option": 0, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 60000})", orb));
     CHECK(orb.Menus.size() == 1 && orb.Menus.front() == 11492 && orb.Option == 0);
 
     for (char const* text : {
@@ -159,7 +159,7 @@ int main()
     InteractionContract interaction;
     CompletionContract none;
     TransportContract noTransport;
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "timeout_ms": 1000})", interaction));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1000})", interaction));
     CHECK(ValidateNodeShape("interaction", interaction, none, noTransport).Detail
         == "interaction_requires_completion");
     CompletionContract completion;
@@ -214,8 +214,12 @@ int main()
     // Gameobjects use the native reach rule; creature ranges only tighten 5 yd.
     CHECK(Interaction(R"({"action": "gameobject_use", "entry": 1, "range_yards": 3.0, "timeout_ms": 1})", interaction).Detail == "range_not_supported_for_target");
     CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "range_yards": 6.0, "timeout_ms": 1})", interaction).Detail == "range_invalid");
-    CHECK(!Interaction(R"({"action": "spellclick", "entry": 1, "range_yards": 4.0, "timeout_ms": 1})", interaction));
-    CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "retry_interval_ms": 10, "timeout_ms": 1})", interaction).Detail == "retry_interval_without_max_attempts");
+    CHECK(!Interaction(R"({"action": "spellclick", "entry": 1, "range_yards": 4.0, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", interaction));
+    // Every interaction commits native requests: attempts are bounded and
+    // each one (including the last) gets a settle window.
+    CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "timeout_ms": 1})", interaction).Detail == "max_attempts_required");
+    CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "max_attempts": 2, "timeout_ms": 1})", interaction).Detail == "retry_interval_required");
+    CHECK(Interaction(R"({"action": "spellclick", "entry": 1, "max_attempts": 2, "retry_interval_ms": 10, "timeout_ms": 1})", interaction).Detail == "retry_interval_required");
 
     TransportContract transport;
     CHECK(Transport(R"({"entry": 1, "board_point": [1, 2, 3]})", transport).Detail == "board_readiness_ambiguous");
@@ -227,6 +231,8 @@ int main()
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3]})", transport).Detail == "timeout_required");
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "max_submissions": 0})", transport).Detail == "max_submissions_invalid");
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "floor_tolerance_yards": 3.0})", transport).Detail == "tolerance_invalid");
+    // Floor tolerance stays well below the 1.6 yd navmesh step height.
+    CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "floor_tolerance_yards": 1.5})", transport).Detail == "tolerance_invalid");
     CHECK(Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1, "footprint_margin_yards": 0.5})", transport).Kind == ParseError::Code::UnknownField);
 
     InteractionContract none;
@@ -236,7 +242,7 @@ int main()
     CHECK(!Transport(R"({"entry": 1, "board_stop_frame": 0, "board_point": [1, 2, 3], "timeout_ms": 1})", transport));
     CHECK(ValidateNodeShape("descent", none, noCompletion, transport).Detail == "transport_contract_requires_transport_kind");
     CHECK(ValidateNodeShape("interaction", none, noCompletion, noTransport).Detail == "interaction_kind_requires_contract");
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "timeout_ms": 1})", interaction));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", interaction));
     CHECK(ValidateNodeShape("boss", interaction, noCompletion, noTransport).Detail == "interaction_contract_requires_interaction_kind");
     CHECK(!Completion(R"({"kind": "vehicle_seated", "vehicle_entry": 1, "scope": "owner"})", completion));
     CHECK(ValidateNodeShape("interaction", none, completion, noTransport).Detail == "owner_scope_requires_interaction");
@@ -259,18 +265,18 @@ int main()
         { 10, true, "healer", 3 },
     };
     InteractionContract legacy;
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "timeout_ms": 1})", legacy));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", legacy));
     // Historical default: the lowest living GUID owns the interaction.
     CHECK(ElectOwner(legacy, members).Owner == 10);
 
     InteractionContract byRole;
-    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "owner_role": "dps", "timeout_ms": 1})", byRole));
+    CHECK(!Interaction(R"({"action": "gameobject_use", "entry": 1, "owner_role": "dps", "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", byRole));
     CHECK(ElectOwner(byRole, members).Owner == 20);
     members[1].Alive = false;
     CHECK(ElectOwner(byRole, members).Owner == 30);
 
     InteractionContract bySlot;
-    CHECK(!Interaction(R"({"action": "spellclick", "entry": 5, "owner_roster_slot": 6, "backup_roster_slot": 1, "timeout_ms": 1})", bySlot));
+    CHECK(!Interaction(R"({"action": "spellclick", "entry": 5, "owner_roster_slot": 6, "backup_roster_slot": 1, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", bySlot));
     OwnerElection election = ElectOwner(bySlot, members);
     CHECK(election.Owner == 40 && election.UsedBackup && election.Reason == "backup_roster_slot");
     members[1].Alive = true;
@@ -311,7 +317,7 @@ int main()
     CHECK(decision.Step == InteractionStep::Fail && decision.Reason == "native_interaction_attempts_exhausted");
 
     InteractionContract gossip;
-    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834], "option": 0, "max_attempts": 1, "timeout_ms": 1000})", gossip));
+    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [11812, 11834], "option": 0, "max_attempts": 1, "retry_interval_ms": 1000, "timeout_ms": 1000})", gossip));
     CHECK(DecideInteraction(gossip, observation, AttemptGate::Allowed).Step == InteractionStep::GossipOpen);
     observation.GossipBoundToTarget = true;
     observation.CurrentGossipMenu = 11834;
@@ -323,7 +329,7 @@ int main()
     CHECK(DecideInteraction(gossip, observation, AttemptGate::RetryWait).Step == InteractionStep::Hold);
 
     InteractionContract trigger;
-    CHECK(!Interaction(R"({"action": "area_trigger", "area_trigger_id": 6581, "timeout_ms": 1})", trigger));
+    CHECK(!Interaction(R"({"action": "area_trigger", "area_trigger_id": 6581, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", trigger));
     InteractionObservation outside;
     // An unresolved trigger never produces a move (no walk toward 0,0,0).
     decision = DecideInteraction(trigger, outside, AttemptGate::Allowed);
@@ -524,12 +530,19 @@ int main()
     // On the platform's own surface, still over a closer static floor: no.
     o.TransportFloorUnderfoot = true;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Blocked);
+    // On the platform's own surface, still walking: stop there, then board.
     o.StaticFloorUnderfoot = false; o.Moving = true;
-    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_board_settling");
+    CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Stop);
+    CHECK(state.PlatformFloorSeen);
     o.Moving = false;
     CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Board);
-    // The platform left while the member waited on it: fail, never walk on air.
+    // The platform left while the member stood on it: confirmed, then fail.
     o.ReadyToBoard = false; o.TransportFloorUnderfoot = false;
+    o.NowMs = 10000;
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_member_floor_lost_confirming");
+    o.NowMs = 10250;
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_member_floor_lost_confirming");
+    o.NowMs = 10500;
     TransportDecision stranded = DecideTransportStep(ride, o, state);
     CHECK(stranded.Step == TransportStep::Fail && stranded.Reason == "transport_member_stranded_without_floor");
     o.ReadyToBoard = true; o.TransportFloorUnderfoot = true;
@@ -587,7 +600,7 @@ int main()
     CHECK(!runtime.VerdictValid && !runtime.VerdictSatisfied);
 
     NodeContract node;
-    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [1], "option": 0, "timeout_ms": 1})", node.Interaction));
+    CHECK(!Interaction(R"({"action": "gossip_select_sequence", "entry": 44202, "menus": [1], "option": 0, "max_attempts": 3, "retry_interval_ms": 1000, "timeout_ms": 1})", node.Interaction));
     CHECK(!Completion(R"({"kind": "any_of", "contracts": [{"kind": "gameobject_despawned", "entry": 203254, "spawn_id": 239510}, {"kind": "aura_present", "entry": 44418, "spell_id": 82705}]})", node.Completion));
     std::vector<std::uint32_t> entries = ObservedCreatureEntries(node);
     CHECK(entries.size() == 2 && entries[0] == 44202 && entries[1] == 44418);
@@ -668,3 +681,122 @@ def test_route_state_includes_only_the_data_only_contract_types(tmp_path: Path) 
     for logic in ("ElectOwner", "DecideInteraction", "EvaluateCompletion", "DecideTransportStep", "Parse"):
         assert logic not in re.sub(r"//.*", "", types)
     _compile_and_run(tmp_path, '#include "Bots/BotValidationRouteNativeTypes.h"\nint main() { return BotValidationRouteNative::NodeContract().Declared() ? 1 : 0; }\n')
+
+
+def test_stranded_check_ignores_walking_members_and_confirms_real_strandings(tmp_path: Path) -> None:
+    _compile_and_run(tmp_path, PRELUDE + r'''
+int main()
+{
+    TransportContract ride;
+    CHECK(!Transport(R"({"entry": 203716, "board_transport_z": 186.551, "exit_transport_z": 73.8806, "wait_point": [-256.35, -224.605, 190.163], "board_point": [-247.349, -224.605, 190.028], "exit_point": [-224.0, -224.605, 76.8211], "timeout_ms": 240000})", ride));
+
+    // A member walking its spline toward the wait point may sit above the
+    // vmap floor between path points: never a stranding.
+    TransportMemberState walker;
+    TransportMemberObservation w;
+    w.Alive = true; w.TransportPresent = true; w.Moving = true;
+    w.DistanceToWait = 12.0f; w.DistanceToBoard = 20.0f;
+    for (std::uint64_t now = 0; now <= 3000; now += 250)
+    {
+        w.NowMs = now;
+        TransportDecision decision = DecideTransportStep(ride, w, walker);
+        CHECK(decision.Step == TransportStep::MoveToWait);
+    }
+    CHECK(walker.FloorlessObservations == 0 && !walker.PlatformFloorSeen);
+    // Even after it stood on the platform, walking or falling is not a stranding.
+    walker.PlatformFloorSeen = true;
+    for (std::uint64_t now = 0; now <= 3000; now += 250)
+    {
+        w.NowMs = now;
+        w.Falling = now % 500 == 0;
+        w.Moving = !w.Falling;
+        CHECK(DecideTransportStep(ride, w, walker).Step != TransportStep::Fail);
+    }
+    // Stationary and floorless without ever having stood on the platform:
+    // diagnostic hold, never a failure.
+    TransportMemberState unverified;
+    TransportMemberObservation u;
+    u.Alive = true; u.TransportPresent = true;
+    for (std::uint64_t now = 0; now <= 3000; now += 250)
+    {
+        u.NowMs = now;
+        TransportDecision decision = DecideTransportStep(ride, u, unverified);
+        CHECK(decision.Step == TransportStep::Hold && decision.Reason == "transport_member_floor_unverified");
+    }
+    // Walking off the platform onto static ground clears the latch.
+    TransportMemberState cleared;
+    TransportMemberObservation c;
+    c.Alive = true; c.TransportPresent = true; c.TransportFloorUnderfoot = true;
+    DecideTransportStep(ride, c, cleared);
+    CHECK(cleared.PlatformFloorSeen);
+    c.TransportFloorUnderfoot = false; c.StaticFloorUnderfoot = true;
+    DecideTransportStep(ride, c, cleared);
+    CHECK(!cleared.PlatformFloorSeen);
+
+    // Truly stranded: stood on the platform, now stationary with no floor.
+    TransportMemberState stranded;
+    TransportMemberObservation s;
+    s.Alive = true; s.TransportPresent = true; s.TransportFloorUnderfoot = true;
+    s.DistanceToBoard = 0.2f; s.NowMs = 1000;
+    CHECK(DecideTransportStep(ride, s, stranded).Step == TransportStep::Board);
+    s.TransportFloorUnderfoot = false;
+    // Three quick observations are not enough time.
+    for (std::uint64_t now : { 1100u, 1150u, 1200u })
+    {
+        s.NowMs = now;
+        CHECK(DecideTransportStep(ride, s, stranded).Step == TransportStep::Hold);
+    }
+    // Any movement in between restarts the confirmation.
+    s.Moving = true; s.NowMs = 1300;
+    CHECK(DecideTransportStep(ride, s, stranded).Step != TransportStep::Fail);
+    CHECK(stranded.FloorlessObservations == 0);
+    s.Moving = false;
+    for (std::uint64_t now : { 2000u, 2200u })
+    {
+        s.NowMs = now;
+        CHECK(DecideTransportStep(ride, s, stranded).Step == TransportStep::Hold);
+    }
+    s.NowMs = 2450;
+    TransportDecision fail = DecideTransportStep(ride, s, stranded);
+    CHECK(fail.Step == TransportStep::Fail && fail.Reason == "transport_member_stranded_without_floor");
+    return failures ? 1 : 0;
+}
+''')
+
+
+def test_rest_window_gate_stops_or_retreats_a_running_walk(tmp_path: Path) -> None:
+    _compile_and_run(tmp_path, PRELUDE + r'''
+int main()
+{
+    TransportContract ride;
+    CHECK(!Transport(R"({"entry": 203716, "board_transport_z": 186.551, "exit_transport_z": 73.8806, "wait_point": [-256.35, -224.605, 190.163], "board_point": [-247.349, -224.605, 190.028], "exit_point": [-224.0, -224.605, 76.8211], "timeout_ms": 240000})", ride));
+    TransportMemberState state;
+    TransportMemberObservation o;
+    o.Alive = true; o.TransportPresent = true; o.StaticFloorUnderfoot = true;
+    o.ReadyToBoard = true; o.Moving = true;
+    o.DistanceToWait = 4.0f; o.DistanceToBoard = 5.0f;
+    o.RestRemainingMs = 1000; o.TravelToBoardMs = 900;
+    // Mid-walk off the platform: retreat to the wait point.
+    TransportDecision decision = DecideTransportStep(ride, o, state);
+    CHECK(decision.Step == TransportStep::MoveToWait && decision.Reason == "transport_rest_window_short_retreat");
+    // Already at the wait point: stop the running spline instead of holding.
+    o.DistanceToWait = 0.5f;
+    decision = DecideTransportStep(ride, o, state);
+    CHECK(decision.Step == TransportStep::Stop && decision.Reason == "transport_rest_window_short_stop");
+    // Standing still: hold.
+    o.Moving = false;
+    CHECK(DecideTransportStep(ride, o, state).Reason == "transport_rest_window_too_short");
+    // Already over the platform's own surface: stop there and board.
+    o.Moving = true; o.StaticFloorUnderfoot = false; o.TransportFloorUnderfoot = true;
+    CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Stop);
+    o.Moving = false;
+    CHECK(DecideTransportStep(ride, o, state).Step == TransportStep::Board);
+    // Not ready while still walking at the wait point: stop.
+    TransportMemberState idle;
+    TransportMemberObservation n;
+    n.Alive = true; n.TransportPresent = true; n.StaticFloorUnderfoot = true;
+    n.Moving = true; n.DistanceToWait = 0.5f;
+    CHECK(DecideTransportStep(ride, n, idle).Step == TransportStep::Stop);
+    return failures ? 1 : 0;
+}
+''')
