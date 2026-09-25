@@ -542,9 +542,12 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
    Maloriak and Omnotron spell splits). Master does not compile until the Chimaeron
    dispatch lands, because `ChimaeronCandidates.cpp` needs it.
 6. Focused tests, then ONE build (host8, fresh configure ticket, no agent edits).
-7. DVC: repro `validation_provisioning`, `validation_provisioning_verify`,
-   `validation_scenarios` and `raid_shard_provisioning` (now with the `full_c0`
-   cohort), push, rebind the closure manifest, commit.
+7. DVC: apply MP4-MP6, delete the stale untracked `dataset/raid_shard_provisioning`,
+   then `dvc repro validation_scenarios`. That also runs `validation_provisioning`,
+   `validation_provisioning_verify` and `raid_shard_provisioning` (now with
+   `full_c0`). Push, then rebind the closure manifest (`validation_routes` and
+   `runtime_profile_source`) and commit. The steps are in
+   `.git/round2_patches/m/handoff_fix_pass.md`.
 8. Magmaw smoke on the canonical roster, then the six BWD c0 shards in parallel through
    the raid program (`program run-plan`, `shard_coordinator`, `program run`,
    `program ingest`, `program assess`).
@@ -561,6 +564,11 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
 - **Shared code:** one table-driven kill-credit observer (replacing the Maloriak,
   Omnotron and Chimaeron copies, with Magmaw's strings kept byte-identical), one
   offense-suppression helper, and the arbitration replay's older Magmaw assertions.
+- **Harness lock:** `bot-live-validate --transport process` (scoreboard runs) should
+  take `live_validation_lock` and refuse while any worldserver runs. Until then the
+  coordinator runs one live thing at a time.
+- **Chimaeron:** if live traces show long armed holds near 20%, publish the native
+  Break/Double Attack timer so the Death Knight takes each Break while the arm holds.
 - **Evidence:** WCL references, cast timelines and melee samples for every boss once
   the site's human check is passed. Damage fidelity stays open until then.
 
