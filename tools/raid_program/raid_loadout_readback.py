@@ -26,6 +26,7 @@ from tools.raid_program.raid_loadout import (
 
 MODIFIER_OFFSETS = (0, *SOCKET_ENCHANTMENT_FIELD_OFFSETS, BONUS_ENCHANTMENT_FIELD_OFFSET,
                     PRISMATIC_ENCHANTMENT_FIELD_OFFSET, 24)
+GLYPH_SLOTS = 9
 INVENTORY_FIELDS = ("bag", "slot", "item_id", "count")
 
 
@@ -124,17 +125,29 @@ def loadout_readback_failures(bot: dict[str, Any], observed: dict[str, Any],
             fail("loadout_talent_group_spells", talent_group=group,
                  missing=sorted(set(expected_talents.get(group, [])) - set(actual_talents.get(group, []))),
                  unexpected=sorted(set(actual_talents.get(group, [])) - set(expected_talents.get(group, []))))
-    expected_glyphs = {group: slots for group, slots in expected_glyph_rows(bot).items() if any(slots)}
-    actual_glyphs = {int(group): list(slots) for group, slots in (observed.get("glyphs") or {}).items()}
-    for group in sorted(set(expected_glyphs) | set(actual_glyphs)):
-        if expected_glyphs.get(group) != actual_glyphs.get(group):
-            fail("loadout_glyph_group", talent_group=group, expected=expected_glyphs.get(group),
-                 actual=actual_glyphs.get(group))
+    # Player::_SaveGlyphs writes one row per group below talentGroupsCount,
+    # all zeros when a group has no glyphs; a missing row therefore equals
+    # nine zeros. Rows at or above the count are ignored by _LoadGlyphs.
+    zeros = [0] * GLYPH_SLOTS
+    expected_glyphs = expected_glyph_rows(bot)
+    actual_glyphs = {int(group): [int(value or 0) for value in slots]
+                     for group, slots in (observed.get("glyphs") or {}).items()}
+    for group in range(int(loadout["talent_groups_count"])):
+        want = list(expected_glyphs.get(group, zeros))
+        have = actual_glyphs.get(group, zeros)
+        if want != have:
+            fail("loadout_glyph_group", talent_group=group, expected=want, actual=have)
+    beyond = sorted(group for group in actual_glyphs if group >= int(loadout["talent_groups_count"]))
+    if beyond:
+        fail("loadout_glyph_group_beyond_count", talent_groups=beyond)
     known = set(observed.get("known_spells") or [])
     missing_spells = sorted(set(loadout["known_spell_ids"]) - known)
     if missing_spells:
         fail("loadout_known_spells_missing", missing=missing_spells)
-    leaked = sorted(set(loadout["inactive_only_specialization_spell_ids"]) & known)
+    switch_missing = sorted(set(loadout.get("dual_spec_switch_spell_ids") or []) - known)
+    if switch_missing:
+        fail("loadout_dual_spec_switch_spells_missing", missing=switch_missing)
+    leaked = sorted(set(loadout["inactive_only_spell_ids"]) & known)
     if leaked:
         fail("loadout_inactive_group_spells_known", spells=leaked)
     expected_rows = {row["item_guid"]: row for row in expected_inventory(bot, default_consumables, gem_mapping, dbc_dir)}

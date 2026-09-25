@@ -2,10 +2,19 @@
 
 The legacy writer (`build_validation_provisioning.build_character_insert_sql`)
 stays byte-identical for the accepted rosters. This writer reuses its cleanup
-preamble, account SQL and every value helper, and differs only where a
-loadout requires it: two talent groups, two glyph groups, a pre-login active
-group, explicit per-character item GUIDs, and a container bag holding the
-off-spec gear (character_inventory rows whose `bag` is the bag item GUID).
+preamble, account rows and every value helper, and differs where a loadout
+requires it: two talent groups, two glyph groups, a pre-login active group,
+the dual-spec switch spells, explicit per-character item GUIDs, and a
+container bag holding the off-spec gear (character_inventory rows whose `bag`
+is the bag item GUID).
+
+Each cohort is one transaction: guards that abort before the first write
+(ERROR 1242) when a foreign row occupies a cohort identity, a plan character
+is online, or (for every cohort but the anchor) the plan's anchor rows are
+missing and no row lies above the reservation; then the scoped cleanup,
+guarded account rows and plain INSERTs (no upsert can take over a foreign
+pet). The anchor cohort is written first. `raid_shard_preflight` runs the same
+checks over the whole reservation before any cohort is attempted.
 """
 
 from __future__ import annotations
@@ -35,6 +44,7 @@ from tools.raid_program.raid_loadout import (
     materialize_config,
 )
 from tools.raid_program.raid_shard_contract import validate_native_consumable_slots
+from tools.raid_program.raid_shard_preflight import order_cohorts, plan_reservation
 
 CHARACTER_INSERT_MARKER = "INSERT INTO `characters`.`characters` "
 REPORT_SCHEMA = "raid_shard_provisioning_report_v1"
@@ -156,14 +166,13 @@ def bot_rows(config: dict[str, Any], scenario: dict[str, Any], slot: int, bot: d
             "INSERT INTO `characters`.`character_pet` "
             "(`id`, `entry`, `owner`, `modelid`, `CreatedBySpell`, `PetType`, `level`, `exp`, `Reactstate`, `name`, `renamed`, `active`, `slot`, `curhealth`, `curmana`, `savetime`, `abdata`) "
             f"SELECT {pet_id}, {int(pet['entry'])}, c.`guid`, {int(pet.get('modelid', 0))}, {int(pet.get('created_by_spell', 0))}, 1, {int(pet.get('level', bot.get('level', 85)))}, 0, {int(pet.get('react_state', 1))}, {sql_quote(str(pet['name']))}, 1, {int(pet.get('active', 1))}, {int(pet.get('slot', 0))}, {int(pet.get('health', 100000))}, {int(pet.get('mana', 0))}, UNIX_TIMESTAMP(), {sql_quote(actionbar)} "
-            f"{_select(name)} "
-            "ON DUPLICATE KEY UPDATE `entry` = VALUES(`entry`), `owner` = VALUES(`owner`), `modelid` = VALUES(`modelid`), `PetType` = VALUES(`PetType`), `level` = VALUES(`level`), `Reactstate` = VALUES(`Reactstate`), `name` = VALUES(`name`), `active` = VALUES(`active`), `slot` = VALUES(`slot`), `curhealth` = VALUES(`curhealth`), `curmana` = VALUES(`curmana`), `savetime` = VALUES(`savetime`), `abdata` = VALUES(`abdata`);")
+            f"{_select(name)};")
         for pet_spell in pet.get("spells", []):
             spell_id, active = ((int(pet_spell["id"]), int(pet_spell.get("active", 1))) if isinstance(pet_spell, dict)
                                 else (int(pet_spell), 1))
             lines.append(
                 "INSERT INTO `characters`.`pet_spell` (`guid`, `spell`, `active`) "
-                f"VALUES ({pet_id}, {spell_id}, {active}) ON DUPLICATE KEY UPDATE `active` = VALUES(`active`);")
+                f"VALUES ({pet_id}, {spell_id}, {active});")
     for group, glyphs in sorted(expected_glyph_rows(bot).items()):
         if not any(glyphs):
             continue
@@ -181,18 +190,120 @@ def bot_rows(config: dict[str, Any], scenario: dict[str, Any], slot: int, bot: d
     return lines
 
 
-def build_raid_shard_character_sql(config: dict[str, Any], dbc_dir: Path,
+def _abort_guard(name: str, violation_sql: str) -> str:
+    # SET forces evaluation; a two-row subquery raises ERROR 1242 exactly when
+    # the violation holds, which stops the batch before the cohort's writes.
+    return (f"SET @raid_shard_abort_{name} = (SELECT 1 FROM (SELECT 1 AS `a` UNION ALL SELECT 2) `abort_guard` "
+            f"WHERE {violation_sql});")
+
+
+def _pairs(rows: Sequence[Sequence[Any]]) -> str:
+    return ", ".join(f"({int(key)}, {sql_quote(value) if isinstance(value, str) else int(value)})" for key, value in rows)
+
+
+def _ints(values: Sequence[int]) -> str:
+    return ", ".join(str(int(value)) for value in values)
+
+
+def cohort_guards(reservation: dict[str, Any], scenario_id: str) -> list[str]:
+    """Abort the cohort transaction before any write when a collision is possible."""
+    cohort = reservation["cohorts"][scenario_id]
+    guids = [guid for guid, _name in cohort["characters"]]
+    names = [name for _guid, name in cohort["characters"]]
+    accounts = [account for account, _username in cohort["accounts"]]
+    usernames = [username for _account, username in cohort["accounts"]]
+    blocks = cohort["item_blocks"]
+    span = [min(block[1] for block in blocks), max(block[2] for block in blocks)]
+    in_blocks = lambda column, owner: " OR ".join(
+        f"(`{column}` BETWEEN {lo} AND {hi} AND `{owner}` <> {guid})" for guid, lo, hi in blocks)
+    guards = [
+        _abort_guard("foreign_character", "EXISTS (SELECT 1 FROM `characters`.`characters` WHERE "
+                     f"(`guid` IN ({_ints(guids)}) OR `name` IN ({', '.join(map(sql_quote, names))})) "
+                     f"AND (`guid`, `name`) NOT IN ({_pairs(cohort['characters'])}))"),
+        _abort_guard("character_online", "EXISTS (SELECT 1 FROM `characters`.`characters` WHERE "
+                     f"`guid` IN ({_ints(guids)}) AND `online` <> 0)"),
+        _abort_guard("foreign_account", "EXISTS (SELECT 1 FROM `auth`.`account` WHERE "
+                     f"(`id` IN ({_ints(accounts)}) OR `username` IN ({', '.join(map(sql_quote, usernames))})) "
+                     f"AND (`id`, `username`) NOT IN ({_pairs(cohort['accounts'])}))"),
+        _abort_guard("foreign_item", f"EXISTS (SELECT 1 FROM `characters`.`item_instance` WHERE {in_blocks('guid', 'owner_guid')})"),
+        _abort_guard("foreign_inventory", f"EXISTS (SELECT 1 FROM `characters`.`character_inventory` WHERE {in_blocks('item', 'guid')})"),
+    ]
+    guards += [_abort_guard(f"item_in_{table}", f"EXISTS (SELECT 1 FROM `characters`.`{table}` WHERE "
+                            f"`{column}` BETWEEN {span[0]} AND {span[1]})")
+               for table, column in (("mail_items", "item_guid"), ("auctionhouse", "itemguid"),
+                                     ("guild_bank_item", "item_guid"))]
+    if cohort["pets"]:
+        pet_ids = [pet for pet, _owner in cohort["pets"]]
+        guards += [
+            _abort_guard("foreign_pet", "EXISTS (SELECT 1 FROM `characters`.`character_pet` WHERE "
+                         f"`id` IN ({_ints(pet_ids)}) AND (`id`, `owner`) NOT IN ({_pairs(cohort['pets'])}))"),
+            _abort_guard("orphan_pet_spell", "EXISTS (SELECT 1 FROM `characters`.`pet_spell` ps LEFT JOIN "
+                         "`characters`.`character_pet` cp ON cp.`id` = ps.`guid` "
+                         f"WHERE ps.`guid` IN ({_ints(pet_ids)}) AND cp.`id` IS NULL)"),
+        ]
+    if scenario_id != reservation["anchor_scenario_id"]:
+        spans, anchors = reservation["spans"], reservation["anchors"]
+        tables = {"characters": ("`characters`.`characters`", "guid", "name"),
+                  "accounts": ("`auth`.`account`", "id", "username"),
+                  "items": ("`characters`.`item_instance`", "guid", "owner_guid"),
+                  "pets": ("`characters`.`character_pet`", "id", "owner")}
+        anchored = []
+        for table, (qualified, column, owner) in tables.items():
+            if table not in anchors:
+                continue
+            anchor = anchors[table]
+            value = sql_quote(anchor["owner"]) if isinstance(anchor["owner"], str) else int(anchor["owner"])
+            anchored.append(f"(EXISTS (SELECT 1 FROM {qualified} WHERE `{column}` = {anchor['id']} AND `{owner}` = {value}) "
+                            f"OR EXISTS (SELECT 1 FROM {qualified} WHERE `{column}` > {spans[table][1]}))")
+        guards.append(_abort_guard("allocator_can_enter_reservation", "NOT (" + " AND ".join(anchored) + ")"))
+    return guards
+
+
+def _account_rows(config: dict[str, Any], scenario: dict[str, Any]) -> list[str]:
+    """The legacy account rows; the foreign_account guard admits only the plan's own duplicates."""
+    stub = {"account_password": config.get("account_password", "validation"), "scenarios": [scenario]}
+    return [line for line in build_account_insert_sql(stub).split("\n") if line.startswith("INSERT INTO")]
+
+
+def cohort_sql(config: dict[str, Any], scenario: dict[str, Any], reservation: dict[str, Any],
+               gem_mapping: dict[int, int], dbc_dir: Path) -> list[str]:
+    lines = ["START TRANSACTION;"]
+    lines += cohort_guards(reservation, scenario["id"])
+    lines += _cleanup_preamble({"scenarios": [scenario]})
+    lines += _account_rows(config, scenario)
+    for slot, bot in enumerate(scenario["bots"]):
+        lines += bot_rows(config, scenario, slot, bot, gem_mapping, dbc_dir)
+    lines.append(f"UPDATE `characters`.`character_bot_pool` SET `in_use` = 0 WHERE `experiment_tags` = {sql_quote(scenario['id'])};")
+    lines.append("COMMIT;")
+    return lines
+
+
+def build_raid_shard_character_sql(config: dict[str, Any], dbc_dir: Path, plan: dict[str, Any],
                                    gem_mapping: dict[int, int] | None = None) -> str:
+    """Self-contained SQL: one guarded transaction per cohort, the anchor cohort first."""
     validate_native_consumable_slots(config)
     gem_mapping = gem_mapping if gem_mapping is not None else gem_item_enchant_map(dbc_dir)
-    lines = ["-- Generated by tools.raid_program.raid_loadout_sql (raid-shard two-spec loadouts)."]
-    lines += _cleanup_preamble(config)
-    for scenario in config["scenarios"]:
-        for slot, bot in enumerate(scenario["bots"]):
-            lines += bot_rows(config, scenario, slot, bot, gem_mapping, dbc_dir)
-    lines.append("UPDATE `characters`.`character_bot_pool` SET `in_use` = 0 WHERE `experiment_tags` IN ("
-                 + ", ".join(sql_quote(str(s["id"])) for s in config["scenarios"]) + ");")
+    reservation = plan_reservation(plan)
+    by_id = {scenario["id"]: scenario for scenario in config["scenarios"]}
+    lines = ["-- Generated by tools.raid_program.raid_loadout_sql (raid-shard two-spec loadouts).",
+             "-- Run tools.raid_program.raid_shard_preflight first, with no worldserver running.",
+             "-- Each cohort is one transaction; its guards abort (ERROR 1242) before any write."]
+    for scenario_id in order_cohorts(reservation, list(by_id)):
+        lines += cohort_sql(config, by_id[scenario_id], reservation, gem_mapping, dbc_dir)
     return "\n".join(lines) + "\n"
+
+
+def cohort_statements(plan: dict[str, Any], scenario_ids: Sequence[str], gear_profiles: Path,
+                      dbc_dir: Path) -> list[tuple[str, list[str]]]:
+    """(scenario_id, statements) per cohort in the given order, for execute_cohort_transactions."""
+    config = prepare_config(plan, gear_profiles, dbc_dir, scenario_ids)
+    gem_mapping = gem_item_enchant_map(dbc_dir)
+    reservation = plan_reservation(plan)
+    by_id = {scenario["id"]: scenario for scenario in config["scenarios"]}
+    return [(scenario_id, [line.rstrip(";") for line in cohort_sql(config, by_id[scenario_id], reservation,
+                                                                    gem_mapping, dbc_dir)
+                           if line and not line.startswith("--")])
+            for scenario_id in scenario_ids]
 
 
 def _report(plan: dict[str, Any], config: dict[str, Any], gear_profiles: Path) -> dict[str, Any]:
@@ -220,32 +331,37 @@ def _report(plan: dict[str, Any], config: dict[str, Any], gear_profiles: Path) -
                       "equipped_items": len(bot["loadout"]["equipped_offsets"]),
                       "bagged_items": len(bot["loadout"]["bag_contents"])} for bot in scenario["bots"]],
         })
+    reservation = plan_reservation(plan)
     return {"schema": REPORT_SCHEMA, "composition_id": plan["composition_id"], "shard_count": len(shards),
             "bot_count": sum(len(row["bots"]) for row in shards), "reserved_ranges": plan["reserved_ranges"],
+            "apply_reservation": {"spans": reservation["spans"], "anchors": reservation["anchors"],
+                                  "anchor_scenario_id": reservation["anchor_scenario_id"]},
             "gear_coverage": coverage, "provisioning_readiness": scenario_report(config),
             "runtime_profiles": [shard["runtime_profile"] for shard in plan["shards"]], "shards": shards}
 
 
 def scoped_provisioning_sql(plan_path: Path, scenario_ids: Sequence[str], gear_profiles: Path,
                             dbc_dir: Path) -> dict[str, Any]:
-    """Account and character SQL for exactly the selected cohorts of a generated plan.
+    """Self-contained SQL (accounts included) for exactly the selected cohorts.
 
     Item GUIDs are fixed per character, so a subset never shifts another
-    cohort's items; cleanup is scoped to the selected characters' names.
+    cohort's items; cleanup is scoped to each cohort's names. Run
+    raid_shard_preflight over the same selection before applying it.
     """
     plan = json.loads(Path(plan_path).read_text(encoding="utf-8"))
     config = prepare_config(plan, gear_profiles, dbc_dir, scenario_ids)
-    return {"scenario_ids": [row["id"] for row in config["scenarios"]],
-            "account_sql": build_account_insert_sql(config),
-            "character_sql": build_raid_shard_character_sql(config, dbc_dir)}
+    reservation = plan_reservation(plan)
+    return {"scenario_ids": order_cohorts(reservation, [row["id"] for row in config["scenarios"]]),
+            "anchor_scenario_id": reservation["anchor_scenario_id"],
+            "requires_preflight": "tools.raid_program.raid_shard_preflight",
+            "character_sql": build_raid_shard_character_sql(config, dbc_dir, plan)}
 
 
 def plan_payloads(plan: dict[str, Any], gear_profiles: Path, dbc_dir: Path) -> dict[str, str]:
     config = prepare_config(plan, gear_profiles, dbc_dir)
     return {
         "plan.json": json.dumps(plan, indent=2, sort_keys=True) + "\n",
-        "provision_accounts.sql": build_account_insert_sql(config),
-        "provision_characters.sql": build_raid_shard_character_sql(config, dbc_dir),
+        "provision_characters.sql": build_raid_shard_character_sql(config, dbc_dir, plan),
         "report.json": json.dumps(_report(plan, config, gear_profiles), indent=2, sort_keys=True, default=str) + "\n",
     }
 

@@ -27,6 +27,10 @@ VALIDATION_CONSUMABLE_SLOTS = (26, 27, 28)
 LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
 READBACK_IDENTITY_FIELDS = ("account_id", "character_guid", "account", "pool_tag", "roster_slot_id",
                             "runtime_profile_id", "evidence_namespace")
+# The accepted legacy BWD fixture always reads back on map 669, normal 10-man.
+LEGACY_BWD_FIXTURE_SCHEMA = "cata_raid_bwd_diagnostic_shard_fixture_v1"
+LEGACY_BWD_INSTANCE = (669, "normal_10man")
+RAID_SHARD_PLAN_SCHEMA = "raid_shard_plan_v1"
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -150,10 +154,12 @@ def catalog_source(config: dict[str, Any], spec: str) -> dict[str, Any]:
 def validate_shard_readback(fixture: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Check complete DB/console readback of every shard and require distinct live IDs.
 
-    Each shard's map and difficulty come from the shard itself, falling back
-    to the fixture's `instance_identity_policy` (the legacy BWD layout).
+    The legacy BWD fixture keeps its explicit map 669 / normal_10man check;
+    only raid_shard_plan_v1 shards take map and difficulty from shard data.
     """
-    policy = fixture.get("instance_identity_policy") or {}
+    schema = fixture.get("schema")
+    if schema not in (LEGACY_BWD_FIXTURE_SCHEMA, RAID_SHARD_PLAN_SCHEMA):
+        raise ValueError(f"readback_fixture_schema:{schema}")
     expected = {(str(shard["shard_id"]), str(bot["name"])): (shard, bot)
                 for shard in fixture["shards"] for bot in shard["bots"]}
     failures: list[dict[str, Any]] = []
@@ -173,8 +179,8 @@ def validate_shard_readback(fixture: dict[str, Any], rows: list[dict[str, Any]])
         for field in READBACK_IDENTITY_FIELDS:
             if row.get(field) != bot.get(field):
                 failures.append({"check": "readback_identity", "field": field, "key": key})
-        map_id = int(shard.get("map_id", policy.get("map_id")) or 0)
-        difficulty = str(shard.get("difficulty", policy.get("difficulty")) or "")
+        map_id, difficulty = (LEGACY_BWD_INSTANCE if schema == LEGACY_BWD_FIXTURE_SCHEMA
+                              else (int(shard.get("map_id") or 0), str(shard.get("difficulty") or "")))
         if int(row.get("map_id") or 0) != map_id or str(row.get("difficulty") or "") != difficulty:
             failures.append({"check": "readback_instance", "key": key})
         if row.get("certifies_predecessors") is True or row.get("predecessor_certifies") is True:

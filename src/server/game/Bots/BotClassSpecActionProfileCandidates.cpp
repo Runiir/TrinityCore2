@@ -90,6 +90,9 @@ Item* FindOnUseItemForSpell(Player const* player, uint32 spellId)
         ItemTemplate const* itemTemplate = item ? item->GetTemplate() : nullptr;
         if (!itemTemplate || (item->IsPotion() && player->GetLastPotionId()))
             return false;
+        // A bagged equippable item (e.g. off-spec gear) exposes no on-use effect until equipped.
+        if (itemTemplate->GetInventoryType() != INVTYPE_NON_EQUIP && !item->IsEquipped())
+            return false;
         for (uint8 index = 0; index < itemTemplate->Effects.size(); ++index)
         {
             ItemEffect const& effect = itemTemplate->Effects[index];

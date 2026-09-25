@@ -15,6 +15,7 @@ TARGETS = CONFIG / 'all_spec_targets_cata_p4_v1.json'
 REFERENCES = CONFIG / 'wowsims_cata_dps_reference_requests_v1.json'
 ROUTES = CONFIG / 'validation_scenarios_cata_001.json'
 COMPOSITIONS = CONFIG / 'raid_compositions'
+PREREQUISITES = CONFIG / 'raid_prerequisites'
 ALIASES = {'omnotron': 'omnotron_defense_system', 'halfus': 'halfus_wyrmbreaker',
            'beth tilac': 'bethtilac', 'cho gall': 'chogall', 'al akir': 'alakir',
            'zonozz': 'warlord_zonozz', 'yorsahj': 'yorsahj_the_unsleeping'}
@@ -79,9 +80,12 @@ def composition_roster(root: Path, raid: str, mode: str, boss: str) -> dict | No
     """Copy-0 actors of the canonical composition that declares this raid/mode/boss.
 
     Actor IDs are the deterministic raid-shard character GUIDs; the selected
-    spec per boss comes from the composition. Presence is not provisioning.
+    spec per boss comes from the composition. The cohort and scenario IDs use
+    the package-A native boss key (raid_shard_plan.join_bosses), exactly as
+    the generated plan does. Presence is not provisioning.
     """
     from tools.raid_program import raid_shard_identity as ids
+    from tools.raid_program.raid_shard_plan import ShardPlanError, join_bosses, validate_prerequisites
 
     directory = root / COMPOSITIONS
     matches = []
@@ -90,13 +94,28 @@ def composition_roster(root: Path, raid: str, mode: str, boss: str) -> dict | No
         if composition.get('raid') != raid or composition.get('mode') != mode:
             continue
         for row in composition.get('bosses', []):
-            if boss in [row['boss_key'], *row.get('aliases', [])]:
-                matches.append((path, composition, row))
+            matches.append((path, composition, row))
+    if not matches:
+        return None
+    prerequisite_path = PREREQUISITES / f'{raid}.json'
+    if not (root / prerequisite_path).is_file():
+        raise GraphError('raid composition declared without its prerequisite graph: ' + prerequisite_path.as_posix())
+    try:
+        native_by_path = {}
+        for path, composition, _row in matches:
+            if path not in native_by_path:
+                bosses = validate_prerequisites(read(root / prerequisite_path), raid, mode, int(composition['map_id']))
+                native_by_path[path] = {key: value['key'] for key, value in join_bosses(composition, bosses).items()}
+    except ShardPlanError as error:
+        raise GraphError('raid composition does not bind to its prerequisite graph: ' + str(error)) from error
+    matches = [(path, composition, row) for path, composition, row in matches
+               if boss in {row['boss_key'], native_by_path[path][row['boss_key']], *row.get('aliases', [])}]
     if not matches:
         return None
     if len(matches) != 1:
         raise GraphError('ambiguous raid composition for ' + raid + ':' + boss + ':' + mode)
     path, composition, row = matches[0]
+    native_key = native_by_path[path][row['boss_key']]
     targets = {t['spec_target_id']: t for t in read(root / composition['spec_source']).get('targets', [])}
     selection = row.get('spec_selection', {})
     actors = []
@@ -108,8 +127,8 @@ def composition_roster(root: Path, raid: str, mode: str, boss: str) -> dict | No
         packed = ids.packed_index(raid, mode, int(row['boss_number']), 0, int(character['slot']))
         actors.append({'actor_id': str(ids.character_guid(packed)), 'slot': character['character_key'],
                        'class_spec': spec, 'role': targets[spec]['role']})
-    return {'path': path.relative_to(root), 'actors': actors,
-            'scenario_id': ids.pool_tag(ids.cohort_id(raid, mode, row['boss_key'], 0))}
+    return {'path': path.relative_to(root), 'prerequisites': prerequisite_path, 'actors': actors,
+            'native_boss_key': native_key, 'scenario_id': ids.pool_tag(ids.cohort_id(raid, mode, native_key, 0))}
 
 
 def discover(root: Path, encounter: dict) -> dict:
@@ -158,6 +177,7 @@ def discover(root: Path, encounter: dict) -> dict:
     elif composition:
         actors = composition['actors']
         sources[str(composition['path'])] = ref(root, composition['path'])
+        sources[str(composition['prerequisites'])] = ref(root, composition['prerequisites'])
         roster_source = sources[str(composition['path'])]
         roster_state = 'declared_canonical_composition_requires_generated_plan_and_readback'
     elif size == 25 and sources[str(ROSTER)]:

@@ -30,8 +30,9 @@ def test_documented_examples():
     assert ids.character_guid(packed) == 11_000_001
     assert ids.account_id(packed) == 21_000_001
     assert ids.pet_id(packed) == 31_000_001
-    assert ids.item_guid(packed, 0) == 1_100_000_100
-    assert ids.item_guid(packed, 99) == 1_100_000_199
+    assert ids.item_guid(packed, 0) == 1_109_800_100
+    assert ids.item_guid(packed, 99) == 1_109_800_199
+    assert ids.item_block_owner(1_109_800_150) == 11_000_001
     assert ids.account_name(packed) == "RS1000001"
     assert ids.character_name("blackwing_descent", "mgw", "10N", 0, 1) == "Bwmgwnba"
     nefarian = ids.packed_index("blackwing_descent", "10N", 5, 1, 7)
@@ -62,6 +63,22 @@ def test_every_raid_thirteen_bosses_ten_copies_twenty_five_slots_never_collide()
     assert max(item_bases) + ids.ITEMS_PER_CHARACTER - 1 <= ids.MAX_SIGNED_INT32
     assert max(max(guids), max(accounts), max(pets)) < ids.ITEM_GUID_BASE
     assert max(guids) < ids.ACCOUNT_ID_BASE and max(accounts) < ids.PET_ID_BASE
+
+
+def test_item_blocks_are_the_human_tool_blocks_of_the_character_guid():
+    from tools.bot_ml.provision_human_participant import HUMAN_ITEM_GUID_STRIDE, item_guid_block
+    assert HUMAN_ITEM_GUID_STRIDE == ids.ITEMS_PER_CHARACTER
+    for raid, mode, boss, copy, slot in (("blackwing_descent", "10N", 0, 0, 1), ("dragon_soul", "25H", 12, 9, 25),
+                                         ("baradin_hold", "10H", 99, 9, 25)):
+        packed = ids.packed_index(raid, mode, boss, copy, slot)
+        guid = ids.character_guid(packed)
+        assert ids.item_guid_base(packed) == item_guid_block(guid)
+        assert ids.item_block_owner(ids.item_guid(packed, 99)) == guid
+    # A human character's block can only equal a raid-shard block if both share
+    # one character GUID, which the characters primary key forbids.
+    human_guid = 11_005_011
+    assert all(ids.item_guid_base(ids.packed_index("blackwing_descent", "10N", 5, copy, slot)) != item_guid_block(human_guid)
+               for copy in range(ids.MAX_COPIES) for slot in range(1, 11))
 
 
 def test_every_identity_stays_outside_the_legacy_validation_ranges():

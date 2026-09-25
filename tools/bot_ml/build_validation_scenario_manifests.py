@@ -643,10 +643,13 @@ def diagnostic_contract_status(
     }
 
 
+LEGACY_BWD_FIXTURE_SCHEMA = "cata_raid_bwd_diagnostic_shard_fixture_v1"
+LEGACY_BWD_SHARD_COUNT = 6
+LEGACY_BWD_ROSTER_SIZE = 10
 DIAGNOSTIC_ROSTER_SCHEMAS = {
-    # Accepted legacy BWD 10N layout (six shards of ten).
-    "cata_raid_bwd_diagnostic_shard_fixture_v1",
-    # Raid x boss x copies plans from tools.raid_program.raid_shard_plan.
+    # Accepted legacy BWD 10N layout: exactly six shards of exactly ten.
+    LEGACY_BWD_FIXTURE_SCHEMA,
+    # Raid x boss x copies plans from tools.raid_program.raid_shard_plan (data-driven sizes).
     "raid_shard_plan_v1",
 }
 
@@ -657,18 +660,20 @@ def diagnostic_rosters_by_scenario(
 ) -> dict[str, list[dict[str, Any]]]:
     """Translate tracked shard characters into the immutable runtime roster schema.
 
-    Shard and roster sizes come from each source's declared `shard_count` and
-    each shard's `required_bot_count`; no raid or size is hard-coded.
+    The legacy BWD fixture keeps its explicit six-shards-of-ten invariant.
+    Raid-shard plans take their sizes from the plan's declared `shard_count`
+    and each shard's `required_bot_count`.
     """
     sources = ([fixture] if fixture else []) + list(raid_shard_plans)
     rosters: dict[str, list[dict[str, Any]]] = {}
     for source in sources:
         if source.get("schema") not in DIAGNOSTIC_ROSTER_SCHEMAS:
             raise ValueError("diagnostic_shard_fixture_schema")
+        legacy = source.get("schema") == LEGACY_BWD_FIXTURE_SCHEMA
         shards = source.get("shards") if isinstance(source.get("shards"), list) else []
         for shard in shards:
             scenario_id = str(shard.get("scenario_id") or "")
-            size = int(shard.get("required_bot_count") or 0)
+            size = LEGACY_BWD_ROSTER_SIZE if legacy else int(shard.get("required_bot_count") or 0)
             bots = shard.get("bots") if isinstance(shard.get("bots"), list) else []
             roster = [
                 {
@@ -689,7 +694,8 @@ def diagnostic_rosters_by_scenario(
             if scenario_id in rosters:
                 raise ValueError(f"diagnostic_shard_roster_duplicate_scenario:{scenario_id}")
             rosters[scenario_id] = roster
-        if len(shards) != int(source.get("shard_count") or 0):
+        expected_shards = LEGACY_BWD_SHARD_COUNT if legacy else int(source.get("shard_count") or 0)
+        if len(shards) != expected_shards or not expected_shards:
             raise ValueError("diagnostic_shard_roster_count")
     return rosters
 

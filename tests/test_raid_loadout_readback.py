@@ -67,6 +67,8 @@ def test_exact_loadout_readback_passes_for_either_active_group(config):
     (lambda o: [row for row in o["inventory"] if row["bag"] != 0][0].update(owner_guid=30001), "loadout_inventory_mismatch"),
     (lambda o: [row for row in o["inventory"] if row["bag"] != 0][0].update(enchantments="1 " * 45), "loadout_item_modifiers"),
     (lambda o: [row for row in o["inventory"] if row["slot"] == 19 and row["bag"] == 0][0].update(item_id=41599), "loadout_inventory_mismatch"),
+    (lambda o: o["known_spells"].remove(63644), "loadout_dual_spec_switch_spells_missing"),
+    (lambda o: o["glyphs"].update({2: [0] * 9}), "loadout_glyph_group_beyond_count"),
 ])
 def test_group_one_and_bag_contents_are_read_back_exactly(config, mutate, check):
     bot = _bot(config, CHIMAERON, "druid")
@@ -75,10 +77,35 @@ def test_group_one_and_bag_contents_are_read_back_exactly(config, mutate, check)
     assert check in _checks(bot, observed)
 
 
+def test_missing_glyph_rows_read_back_as_all_zero_groups(config):
+    bot = copy.deepcopy(_bot(config, CHIMAERON, "druid"))
+    observed = observed_state(bot)
+    # Player::_SaveGlyphs writes an all-zero row for a group without glyphs.
+    bot["loadout"]["groups"][0]["glyphs"] = []
+    observed["glyphs"][0] = [0] * 9
+    assert _checks(bot, observed) == set()
+    observed["glyphs"].pop(0)
+    assert _checks(bot, observed) == set()
+    # A group with glyphs must not be missing: group 1 is below talentGroupsCount.
+    observed["glyphs"].pop(1)
+    assert "loadout_glyph_group" in _checks(bot, observed)
+
+
+def test_mangle_bear_and_sunfire_are_leak_checked_in_the_readback(config):
+    balance = _bot(config, MAGMAW, "druid")
+    observed = observed_state(balance)
+    observed["known_spells"].append(33878)
+    assert "loadout_inactive_group_spells_known" in _checks(balance, observed)
+    feral = _bot(config, CHIMAERON, "druid")
+    observed = observed_state(feral)
+    observed["known_spells"].append(93402)
+    assert "loadout_inactive_group_spells_known" in _checks(feral, observed)
+
+
 def test_inactive_group_specialization_spells_must_not_be_known(config):
     bot = _bot(config, CHIMAERON, "druid")
     observed = observed_state(bot)
-    observed["known_spells"].append(bot["loadout"]["inactive_only_specialization_spell_ids"][0])
+    observed["known_spells"].append(bot["loadout"]["inactive_only_spell_ids"][0])
     assert "loadout_inactive_group_spells_known" in _checks(bot, observed)
 
 
@@ -158,3 +185,35 @@ def test_phase1_readback_adds_loadout_reasons(config):
     broken["active_talent_group"] = 0
     reasons, _ = loadout_readback_reasons(contract, {bot["name"]: broken}, DBC)
     assert reasons == [f"{bot['name']}:loadout_active_talent_group"]
+
+
+def test_unmodified_plan_config_has_no_payload_failures():
+    from tests.test_raid_shard_plan import _plan
+    from tools.raid_program.raid_loadout_sql import prepare_config
+    full = prepare_config(_plan(), GEAR, DBC)
+    assert len(full["scenarios"]) == 6
+    failures, evidence = verifier.validate_payloads(full, DBC)
+    assert failures == []
+    assert evidence["reforge_count"] > 0
+
+
+def test_positive_phase1_readback_of_a_raid_shard_cohort(config):
+    from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED
+    scenario = next(row for row in config["scenarios"] if row["id"] == CHIMAERON)
+    start = scenario["start_position"]
+    expected = [{**bot, "guid": bot["expected_character_guid"], "experiment_tags": CHIMAERON} for bot in scenario["bots"]]
+    observed = [{
+        "guid": bot["expected_character_guid"], "account_id": bot["expected_account_id"],
+        "account_registry_id": bot["expected_account_id"], "account": bot["account"], "pool_tag": CHIMAERON,
+        "name": bot["name"], "role": bot["role"], "class_spec": bot["class_spec"], "class_id": bot["class"],
+        "map_id": start["map_id"], "x": start["x"], "y": start["y"], "z": start["z"], "o": start.get("o", 0.0),
+        "online": 0, "enabled": 1, "in_use": 0, "health": VALIDATION_FULL_STAT_SEED,
+        "power1": VALIDATION_FULL_STAT_SEED, "character_flags": 0, "at_login": 0, "experiment_tags": CHIMAERON,
+    } for bot in scenario["bots"]]
+    reasons = validate_readback(expected, observed, start=start, required_roles=scenario["required_roles"],
+                                character_instance_rows=0, group_member_rows=0, ghost_aura_rows=0,
+                                corpse_rows=0, corpse_phase_rows=0, roster_size=len(expected))
+    assert reasons == []
+    contract = {"expected": expected, "default_consumables": []}
+    loadout_reasons, _ = loadout_readback_reasons(contract, {bot["name"]: observed_state(bot) for bot in expected}, DBC)
+    assert loadout_reasons == []

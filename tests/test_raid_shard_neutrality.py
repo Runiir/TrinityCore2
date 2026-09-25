@@ -139,11 +139,16 @@ def test_generalized_diagnostic_rosters_match_the_legacy_reader():
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
     assert diagnostic_rosters_by_scenario(fixture) == _old_diagnostic_rosters(fixture)
     assert diagnostic_rosters_by_scenario(None) == {}
-    broken = dict(fixture, shard_count=5)
+    # The legacy fixture keeps its explicit six-shards-of-ten invariant even if
+    # its own declared counts drift.
+    five = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    five["shards"].pop()
+    five["shard_count"] = 5
     with pytest.raises(ValueError, match="diagnostic_shard_roster_count"):
-        diagnostic_rosters_by_scenario(broken)
+        diagnostic_rosters_by_scenario(five)
     short = json.loads(FIXTURE.read_text(encoding="utf-8"))
     short["shards"][0]["bots"].pop()
+    short["shards"][0]["required_bot_count"] = 9
     with pytest.raises(ValueError, match="diagnostic_shard_roster_shape"):
         diagnostic_rosters_by_scenario(short)
     with pytest.raises(ValueError, match="diagnostic_shard_fixture_schema"):
@@ -186,18 +191,79 @@ def test_scenario_catalog_keeps_the_legacy_bwd_10n_rosters():
     assert not any("raid_compositions" in key for key in found["sources"])
 
 
-def test_scenario_catalog_binds_a_declared_composition_for_encounters_without_legacy_shards(tmp_path):
+def _catalog_root(tmp_path, omnotron_key: str):
     import shutil
-    from tools.raid_program.scenario_catalog import composition_roster
+    from tests.test_raid_shard_plan import bwd_prerequisites
     target = tmp_path / "experiments/configs"
     (target / "raid_compositions").mkdir(parents=True)
+    (target / "raid_prerequisites").mkdir(parents=True)
     composition = json.loads((ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json").read_text())
     composition["mode"] = "10H"
     (target / "raid_compositions/bwd_10h.json").write_text(json.dumps(composition))
+    (target / "raid_prerequisites/blackwing_descent.json").write_text(json.dumps(bwd_prerequisites(omnotron_key)))
     shutil.copy(ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json", target)
-    roster = composition_roster(tmp_path, "blackwing_descent", "10H", "omnotron_defense_system")
-    assert roster["scenario_id"] == "blackwing_descent_10h_omnotron_c0_diagnostic"
-    assert [actor["actor_id"] for actor in roster["actors"]][:2] == ["11101001", "11101002"]
-    assert next(actor for actor in roster["actors"] if actor["slot"] == "druid")["class_spec"] == "feral_druid_tank"
+    return composition
+
+
+@pytest.mark.parametrize("omnotron_key", ["omnotron", "omnotron_defense_system"])
+def test_scenario_catalog_ids_follow_the_native_key_like_the_plan(tmp_path, omnotron_key):
+    from tests.test_raid_shard_plan import bwd_prerequisites
+    from tools.raid_program.raid_shard_plan import build_shard_plan
+    from tools.raid_program.scenario_catalog import composition_roster
+    composition = _catalog_root(tmp_path, omnotron_key)
+    plan = build_shard_plan(composition, bwd_prerequisites(omnotron_key), starts={})
+    plan_ids = {shard["composition_boss_key"]: shard["scenario_id"] for shard in plan["shards"]}
+    for slug in ("omnotron", "omnotron_defense_system"):
+        roster = composition_roster(tmp_path, "blackwing_descent", "10H", slug)
+        assert roster["native_boss_key"] == omnotron_key
+        assert roster["scenario_id"] == plan_ids["omnotron"] == f"blackwing_descent_10h_{omnotron_key}_c0_diagnostic"
+        assert [actor["actor_id"] for actor in roster["actors"]][:2] == ["11101001", "11101002"]
+        assert [actor["actor_id"] for actor in roster["actors"]] == [
+            str(bot["character_guid"]) for bot in sorted(plan["shards"][1]["bots"], key=lambda bot: bot["composition_slot"])]
+    druid = next(actor for actor in roster["actors"] if actor["slot"] == "druid")
+    assert druid["class_spec"] == "feral_druid_tank"
     assert composition_roster(tmp_path, "blackwing_descent", "25N", "magmaw") is None
     assert load_config(CONFIG)["scenarios"]  # the legacy config is untouched by the composition
+
+
+def test_scenario_catalog_refuses_a_composition_without_its_prerequisite_graph(tmp_path):
+    from tools.raid_program.development_graph import GraphError
+    from tools.raid_program.scenario_catalog import composition_roster
+    _catalog_root(tmp_path, "omnotron")
+    (tmp_path / "experiments/configs/raid_prerequisites/blackwing_descent.json").unlink()
+    with pytest.raises(GraphError, match="prerequisite graph"):
+        composition_roster(tmp_path, "blackwing_descent", "10H", "magmaw")
+
+
+def _readback_rows(fixture: dict, map_id: int, difficulty: str) -> list[dict]:
+    rows = []
+    for index, shard in enumerate(fixture["shards"], 1):
+        identities = {field: index * 1000 + offset for offset, field in enumerate(
+            ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation"), 1)}
+        for bot in shard["bots"]:
+            rows.append({"shard_id": shard["shard_id"], "name": bot["name"], "map_id": map_id, "difficulty": difficulty,
+                         "live_identities": identities, "certifies_predecessors": False,
+                         **{field: bot.get(field) for field in ("account_id", "character_guid", "account", "pool_tag",
+                                                                "roster_slot_id", "runtime_profile_id", "evidence_namespace")}})
+    return rows
+
+
+def test_legacy_readback_keeps_map_669_normal_10man_even_if_shard_data_drifts():
+    from tools.raid_program.raid_shard_contract import validate_shard_readback
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    assert validate_shard_readback(fixture, _readback_rows(fixture, 669, "normal_10man"))["all_passed"] is True
+    drifted = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    for shard in drifted["shards"]:
+        shard["map_id"], shard["difficulty"] = 720, "heroic_25man"
+    report = validate_shard_readback(drifted, _readback_rows(drifted, 720, "heroic_25man"))
+    assert {row["check"] for row in report["failures"]} == {"readback_instance"}
+    with pytest.raises(ValueError, match="readback_fixture_schema"):
+        validate_shard_readback({"schema": "other", "shards": []}, [])
+
+
+def test_plan_readback_takes_map_and_difficulty_from_each_shard():
+    from tests.test_raid_shard_plan import _plan
+    from tools.raid_program.raid_shard_contract import validate_shard_readback
+    plan = _plan()
+    assert validate_shard_readback(plan, _readback_rows(plan, 669, "normal_10man"))["all_passed"] is True
+    assert not validate_shard_readback(plan, _readback_rows(plan, 669, "heroic_10man"))["all_passed"]

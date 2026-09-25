@@ -10,14 +10,24 @@ and derives all native identities from it:
     character guid  = 10_000_000 + RMBBCSS     (e.g. 11_000_001)
     account id      = 20_000_000 + RMBBCSS
     hunter pet id   = 30_000_000 + RMBBCSS
-    item guid       = 1_000_000_000 + RMBBCSS * 100 + k   (k in 0..99)
+    item guid       = 9_800_000 + 100 * character guid + k   (k in 0..99)
 
 Each field has its own decimal digits, so distinct tuples cannot collide, and
 every range lies above the legacy validation ranges (character GUIDs
 30001-30510, accounts 20001-20510, pets 8_700_xxx, sequential items
-9_700_xxx). Names are ASCII letters only and are checked against the native
-player-name rules (length, casing, three consecutive letters, profanity and
-reserved-name DBC patterns).
+9_700_xxx). The item block of a character is exactly the block
+`provision_human_participant.item_guid_block` gives that character GUID, so
+raid-shard and human item blocks are keyed by distinct character GUIDs and
+cannot overlap. Offset 99 of every block is the character's bag, the highest
+item a loadout writes.
+
+These fixed blocks sit above the core's MAX+1 allocators. `raid_shard_preflight`
+refuses an apply unless no foreign row is inside the plan's reservation and,
+after the apply, every allocator stands above it (the plan's anchor cohort,
+which holds the highest ID of every table, is present or written first).
+Names are ASCII letters only and are checked against the native player-name
+rules (length, casing, three consecutive letters, profanity and reserved-name
+DBC patterns).
 """
 
 from __future__ import annotations
@@ -61,7 +71,9 @@ ITEMS_PER_CHARACTER = 100
 CHARACTER_GUID_BASE = 10_000_000
 ACCOUNT_ID_BASE = 20_000_000
 PET_ID_BASE = 30_000_000
-ITEM_GUID_BASE = 1_000_000_000
+# Same base and stride as provision_human_participant.HUMAN_ITEM_GUID_BASE/STRIDE.
+ITEM_BLOCK_BASE = 9_800_000
+ITEM_GUID_BASE = ITEM_BLOCK_BASE + CHARACTER_GUID_BASE * 100
 ACCOUNT_PREFIX = "RS"
 POOL_SUFFIX = "_diagnostic"
 
@@ -114,8 +126,18 @@ def pet_id(packed: int) -> int:
     return PET_ID_BASE + packed
 
 
+def item_block_for_character(guid: int) -> int:
+    """First item GUID of a character's 100-item block (the human tool's formula)."""
+    return ITEM_BLOCK_BASE + int(guid) * ITEMS_PER_CHARACTER
+
+
 def item_guid_base(packed: int) -> int:
-    return ITEM_GUID_BASE + packed * ITEMS_PER_CHARACTER
+    return item_block_for_character(character_guid(packed))
+
+
+def item_block_owner(item: int) -> int:
+    """Character GUID whose block contains this item GUID."""
+    return (int(item) - ITEM_BLOCK_BASE) // ITEMS_PER_CHARACTER
 
 
 def item_guid(packed: int, offset: int) -> int:
@@ -211,7 +233,12 @@ def load_name_validators(dbc_dir: Path) -> NameValidators | None:
 
 
 def reserved_ranges(raid: str, mode: str) -> dict[str, list[int]]:
-    """Inclusive identity ranges reserved for one raid/mode (all bosses, copies, slots)."""
+    """Inclusive identity address space of one raid/mode (all bosses, copies, slots).
+
+    This is the collision proof's address space, not the apply reservation:
+    `raid_shard_preflight.plan_reservation` bounds each apply by the IDs the
+    plan actually uses.
+    """
     low = packed_index(raid, mode, 0, 0, 1)
     high = packed_index(raid, mode, MAX_BOSS_NUMBER, MAX_COPIES - 1, MAX_SLOTS)
     return {
@@ -239,8 +266,11 @@ def scheme_description() -> dict[str, Any]:
         "character_guid_base": CHARACTER_GUID_BASE,
         "account_id_base": ACCOUNT_ID_BASE,
         "pet_id_base": PET_ID_BASE,
-        "item_guid_base": ITEM_GUID_BASE,
+        "item_guid": "9_800_000 + 100 * character_guid + offset (provision_human_participant.item_guid_block)",
+        "item_block_base": ITEM_BLOCK_BASE,
         "items_per_character": ITEMS_PER_CHARACTER,
+        "allocator_policy": "raid_shard_preflight: no foreign row in the plan reservation; every "
+                            "core/auth allocator above it after the apply (anchor cohort present or first)",
         "raid_numbers": dict(RAID_NUMBERS),
         "mode_digits": {mode: info["digit"] for mode, info in MODES.items()},
         "limits": {"copies": MAX_COPIES, "boss_number_max": MAX_BOSS_NUMBER, "slots": MAX_SLOTS},

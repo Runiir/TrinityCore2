@@ -5,8 +5,10 @@ with an identical entry and modifier payload in both spec gear sets are one
 physical item; every other item is a separate physical copy. The shard's
 active talent group chooses which set is equipped before login; the other
 set's remaining items sit in one generic container bag. Item GUID offsets
-are stable per character (bag 0, physical gear 1..59, consumables 60..99),
-so the multiset of items never depends on the selected spec.
+are stable per character (physical gear 1..59, consumables 60..98, bag 99),
+so the multiset of items never depends on the selected spec. The bag holds
+the highest offset of the block, so a written character always anchors its
+whole item block below the core item allocator.
 """
 
 from __future__ import annotations
@@ -20,20 +22,18 @@ from typing import Any
 from tools.bot_ml.build_validation_provisioning import (
     HOTFIX_ITEM_TEMPLATE_SOURCE,
     ITEM_SPARSE_FMT,
-    NATIVE_SELF_SETUP_SPELL_IDS,
-    bot_known_spell_ids,
-    bot_primary_tree_spell_ids,
-    bot_spell_ids,
     gem_item_enchant_map,
     load_wdb2_values,
     load_wdbc_values,
     runtime_safe_enchantments,
 )
+from tools.raid_program.raid_loadout_spells import DEFAULT_TRAINERS, loadout_known_spells
 
-BAG_ITEM_OFFSET = 0
 FIRST_GEAR_OFFSET = 1
 CONSUMABLE_OFFSET = 60
+BAG_ITEM_OFFSET = 99
 MAX_GEAR_ITEMS = CONSUMABLE_OFFSET - FIRST_GEAR_OFFSET
+MAX_CONSUMABLES = BAG_ITEM_OFFSET - CONSUMABLE_OFFSET
 ITEM_CLASS_CONTAINER = 1
 ITEM_SUBCLASS_GENERIC_CONTAINER = 0
 INVTYPE_BAG = 18
@@ -129,35 +129,6 @@ def physical_items(group_sets: list[list[dict[str, Any]]], gem_mapping: dict[int
     return physical, sets
 
 
-def _view(bot: dict[str, Any], group: dict[str, Any]) -> dict[str, Any]:
-    return {"class": bot["class"], "class_spec": group["class_spec"], "spells": bot.get("spells", []),
-            "primary_talent_tree_id": group["primary_talent_tree_id"], "talents": group["talents"]}
-
-
-def loadout_known_spells(bot: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> dict[str, list[int]]:
-    """Active group's full spellbook plus every group's baseline class spells.
-
-    Talent and primary-tree spells of an inactive group are excluded: the
-    native ActivateSpec path learns them only when that group is activated.
-    """
-    loadout = bot["loadout"]
-    groups = loadout["groups"]
-    active = groups[int(loadout["active_talent_group"])]
-    known = set(bot_known_spell_ids(_view(bot, active), action_profiles))
-    for group in groups:
-        known.update(bot_spell_ids(_view(bot, group), action_profiles))
-        known.update(NATIVE_SELF_SETUP_SPELL_IDS.get(str(group["class_spec"]), ()))
-    active_specialization = {int(t["spell_id"]) for t in active["talents"]} | set(bot_primary_tree_spell_ids(active))
-    inactive_only = set()
-    for group in groups:
-        group_specialization = {int(t["spell_id"]) for t in group["talents"]} | set(bot_primary_tree_spell_ids(group))
-        inactive_only |= group_specialization - active_specialization
-    leaked = sorted(known & inactive_only)
-    if leaked:
-        raise LoadoutError(f"inactive_group_spells_in_spellbook:{bot.get('name')}:{leaked}")
-    return {"known_spell_ids": sorted(known), "inactive_only_specialization_spell_ids": sorted(inactive_only)}
-
-
 def loadout_failures(bot: dict[str, Any], tables: dict[str, Any]) -> list[dict[str, Any]]:
     loadout = bot["loadout"]
     failures: list[dict[str, Any]] = []
@@ -204,7 +175,8 @@ def loadout_failures(bot: dict[str, Any], tables: dict[str, Any]) -> list[dict[s
 
 def materialize_loadout(bot: dict[str, Any], profiles: dict[str, Any], dbc_dir: Path,
                         gem_mapping: dict[int, int] | None = None,
-                        tables: dict[str, Any] | None = None) -> dict[str, Any]:
+                        tables: dict[str, Any] | None = None,
+                        trainers_path: Path = DEFAULT_TRAINERS) -> dict[str, Any]:
     """Resolve both spec gear sets into physical items and this shard's placement."""
     from tools.bot_ml.wowsims_gear_binding import merge_profession_skills, resolve_profession_setup
 
@@ -229,7 +201,7 @@ def materialize_loadout(bot: dict[str, Any], profiles: dict[str, Any], dbc_dir: 
     union = resolve_profession_setup([row["item"] for row in physical], configured_skills=bot.get("skills", []))
     loadout["profession_setup_union"] = union
     bot["skills"] = merge_profession_skills(bot.get("skills", []), union)
-    loadout.update(loadout_known_spells(bot))
+    loadout.update(loadout_known_spells(bot, dbc_dir, trainers_path=trainers_path))
     failures = loadout_failures(bot, tables)
     if failures:
         raise LoadoutError(json.dumps({"bot": bot.get("name"), "failures": failures}, sort_keys=True, default=str))
@@ -284,21 +256,23 @@ def expected_inventory(bot: dict[str, Any], default_consumables: list[dict[str, 
                          "bag": bag_guid, "slot": bag_index[offset], "count": 1,
                          "durability": int(item.get("durability", 100)),
                          "enchantments": runtime_safe_enchantments(item, gem_mapping, dbc_dir)})
-    for index, consumable in enumerate(bot.get("consumables", default_consumables)):
+    consumables = bot.get("consumables", default_consumables)
+    if len(consumables) > MAX_CONSUMABLES:
+        raise LoadoutError(f"consumable_item_offsets_exhausted:{bot.get('name')}")
+    for index, consumable in enumerate(consumables):
         rows.append({"kind": "consumable", "item_guid": base + CONSUMABLE_OFFSET + index,
                      "item_id": int(consumable["item_id"]), "bag": 0, "slot": int(consumable["slot"]),
                      "count": int(consumable.get("count", 20)), "durability": 1, "enchantments": ""})
-    if CONSUMABLE_OFFSET + len(bot.get("consumables", default_consumables)) > 100:
-        raise LoadoutError(f"consumable_item_offsets_exhausted:{bot.get('name')}")
     return rows
 
 
-def materialize_config(config: dict[str, Any], profiles: dict[str, Any], dbc_dir: Path) -> dict[str, Any]:
+def materialize_config(config: dict[str, Any], profiles: dict[str, Any], dbc_dir: Path,
+                       trainers_path: Path = DEFAULT_TRAINERS) -> dict[str, Any]:
     """Materialize every loadout bot of an already gear-applied provisioning config."""
     gem_mapping = gem_item_enchant_map(dbc_dir)
     tables = item_tables(dbc_dir)
     for scenario in config["scenarios"]:
         for bot in scenario["bots"]:
             if bot.get("loadout"):
-                materialize_loadout(bot, profiles, dbc_dir, gem_mapping, tables)
+                materialize_loadout(bot, profiles, dbc_dir, gem_mapping, tables, trainers_path)
     return config
