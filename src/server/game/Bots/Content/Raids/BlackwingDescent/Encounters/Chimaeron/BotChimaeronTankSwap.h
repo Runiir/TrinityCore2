@@ -65,25 +65,29 @@ inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
     if (!spell)
         return std::nullopt;
 
+    // Once the handoff arms (release, last chance, hold cap or healers down)
+    // the Double Attack tank owns the boss until Mortality: he takes it (the
+    // first armed action) and retakes it from anyone, even during Feud.
+    // Taunting the pacified boss is harmless and sets exactly the victim his
+    // melee must resume on; Feud follows a Systems Failure, which is when an
+    // unready raid arms by last chance or a bounded hold. The Break tank never
+    // taunts him back; after a failed handoff (timeout) he only recovers a
+    // non-tank victim, and the retry shows as its own mechanic in the trace.
     bool const feudHold = observation.FeudActive
         && (!observation.FeudRemainingMs || *observation.FeudRemainingMs > FeudTauntLeadMs);
-    if (feudHold)
-        return std::nullopt;
-
-    // Once the handoff arms (release or last chance) the Double Attack tank
-    // owns the boss until Mortality: he takes it (the first armed action) and
-    // retakes it from anyone. The Break tank never taunts him back; after a
-    // failed handoff (timeout) he only recovers a non-tank victim, and the
-    // retry shows as its own mechanic in the decision trace.
     if (burn.Armed() && IsAlivePlayer(board, duties.DoubleAttackTank))
     {
         if (botGuid == duties.DoubleAttackTank)
             return TauntDecision{ spell, burn.HandoffFailed()
                 ? "taunt_mortality_handoff_retry" : "taunt_mortality_handoff" };
-        if (burn.HandoffFailed() && !IsTank(duties, victim))
+        if (!feudHold && burn.HandoffFailed() && !IsTank(duties, victim))
             return TauntDecision{ spell, "taunt_recover_non_tank_victim" };
         return std::nullopt;
     }
+
+    // Unarmed, Feud pacifies the boss: no exchange until its last 2.5 s.
+    if (feudHold)
+        return std::nullopt;
 
     // Anyone but a tank holding the boss (a wake-up pick, a pet growl, a dead
     // tank's replacement) is taken back by the first living tank in order.

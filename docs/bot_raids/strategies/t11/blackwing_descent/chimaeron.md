@@ -162,11 +162,14 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - the release needs readiness: mixture up, no Massacre casting or due within 8 s, both tanks at
     80% or more (the Break tank is healed to 80% inside the window). The hold is bounded: after two
     Massacre cycles (60 s) or with fewer than two living healers it releases anyway;
-  - last chance: if damage the hold cannot stop (damage over time, pets) carries the boss to 20.5%
-    unreleased, the handoff arms anyway while the non-tanks keep waiting for the release;
-  - once armed (release or last chance) the Double Attack tank taunts first and holds the boss into
-    Mortality; the Break tank stops taunting and stands down while the Double Attack tank lives, so
-    his threat never pulls the boss back onto his Break stacks;
+  - last chance: if damage the hold cannot stop (damage over time, pets) carries the boss to 21%
+    unreleased, the handoff arms anyway while the non-tanks keep waiting for the release. The 1%
+    margin is about 12.5 s of the hold's residual damage, longer than the 8 s taunt cooldown, so a
+    taunt just spent on a Double Attack soak is back before 20%;
+  - once armed (release, last chance, hold cap or healers down) the Double Attack tank taunts first,
+    even during Feud (taunting the pacified boss is harmless and sets the victim his melee resumes
+    on), and holds the boss into Mortality; the Break tank stops taunting and stands down while the
+    Double Attack tank lives, so his threat never pulls the boss back onto his Break stacks;
   - non-tanks are released once the handoff lands, or after one taunt cooldown (8 s). If that
     timeout fires with the handoff still missing, the Break tank resumes attacking to keep his
     threat, recovers any non-tank victim, and the Double Attack tank keeps retrying (the retry is

@@ -26,14 +26,15 @@ static void CastMassacre(Blackboard& board)
     Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
 }
 
-// Before the handoff arms the ordinary exchange continues at any health;
+// Before the handoff arms (above the 21% last-chance line) the ordinary
+// exchange continues;
 // the release makes the Feral's handoff the first action.
 static void TestBurnTauntExchange()
 {
     Blackboard board = Board("bwd.chimaeron.encounter", true);
     ObjectGuid const boss = Boss(board).Guid;
     EncounterLatchStore store;
-    ReadyBoard(board, 21.0f);
+    ReadyBoard(board, 21.2f);
     CastMassacre(board);
     Publish(board, store);
     CHECK(Plan(board, ROGUE, &store.View()).SuppressOffense);
@@ -129,7 +130,7 @@ static void TestBurnWindow()
 
     // Held below the handoff line, the tanks are held too.
     Blackboard low = Board("bwd.chimaeron.encounter", true);
-    Boss(low).HealthPct = 21.0f;
+    Boss(low).HealthPct = 21.2f;
     CastMassacre(low);
     CHECK(Plan(low, DK).SuppressReason == "burn_hold_tanks_below_handoff");
     CHECK(Plan(low, DRUID).SuppressReason == "burn_hold_tanks_below_handoff");
@@ -168,18 +169,18 @@ static void TestBurnWindow()
     CHECK(!Plan(mortality, DK).SuppressOffense);
 }
 
-// Damage the hold cannot stop carries the boss to 20.5% unreleased: the
+// Damage the hold cannot stop carries the boss to 21% unreleased: the
 // handoff arms anyway, the Break tank stops taunting and stands down, and the
 // non-tanks wait for readiness.
 static void TestLastChanceHandoff()
 {
     Blackboard board = Board("bwd.chimaeron.encounter", true);
     EncounterLatchStore store;
-    ReadyBoard(board, 20.6f);
+    ReadyBoard(board, 21.1f);
     P(board, DK).HealthPct = 30.0f;     // readiness out of reach for now
     Publish(board, store);
     CHECK(!Latched(store, C::LastChanceLatch) && !Plan(board, DRUID, &store.View()).Action);
-    Boss(board).HealthPct = 20.5f;
+    Boss(board).HealthPct = 21.0f;
     Publish(board, store);
     CHECK(Latched(store, C::LastChanceLatch) && !Latched(store, C::BurnReleasedLatch));
     CHECK(MechanicOf(Plan(board, DRUID, &store.View())) == "taunt_mortality_handoff");
@@ -302,12 +303,24 @@ static void TestEncounterLatchStore()
     CHECK(EncounterLatchScopeKey("k", 3, 4) == "k:3:4");
 }
 
-// Replay from a Massacre landing at 21.0% with the raid at 1 health. Every
-// 250 ms the cohort publishes one latch update, all ten bots decide, healers
-// heal their assignment (healPct each), the Feral's Growl lands once off
-// cooldown, the boss swings every 4 s, and the boss loses 0.12% per step when
-// anybody attacks, else 0.02% (damage over time). The adversarial walk drops
-// 0.1% every step regardless.
+// Replay from a Massacre with the raid at 1 health. Every 250 ms the cohort
+// publishes one latch update, all ten bots decide, living healers heal their
+// assignment (HealPct each), the Feral's Growl lands once off cooldown, the
+// boss swings every 4 s unless Feud pacifies him, and the boss loses 0.12% per
+// step when anybody attacks, else 0.02% (damage over time). The adversarial
+// walk drops 0.1% every step regardless. Outage clears the mixture; Feud sets
+// the boss's Feud aura with the given time left.
+struct ReplayConfig
+{
+    uint64 GrowlReadyAfterMs = 0;
+    bool Adversarial = false;
+    float HealPct = 20.0f;
+    float StartPct = 21.0f;
+    bool Outage = false;
+    uint64 FeudLeftMs = 0;
+    bool HealersDown = false;
+};
+
 struct ReplayResult
 {
     bool MortalityReached = false;
@@ -322,19 +335,26 @@ static void Heal(ActorSnapshot& member, float pct)
     member.Health = uint64(member.HealthPct * float(member.MaxHealth) / 100.0f);
 }
 
-static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk, float healPct)
+static ReplayResult RunBurnReplay(ReplayConfig const& config)
 {
     ReplayResult result;
     Blackboard board = Board("bwd.chimaeron.encounter", true);
-    Boss(board).HealthPct = 21.0f;
+    Boss(board).HealthPct = config.StartPct;
     for (ActorSnapshot& player : board.Players)
     {
         player.Health = 1;
         player.HealthPct = 100.0f / 150000.0f;
+        if (config.Outage)
+            player.Auras.clear();
     }
-    EncounterLatchStore store;
+    if (config.HealersDown)
+        P(board, HOLY).Alive = P(board, DISC).Alive = false;
     uint64 const start = board.ObservedAtMs;
-    uint64 growlReadyAt = start + growlReadyAfterMs;
+    if (config.FeudLeftMs)
+        Boss(board).Auras.push_back({ C::FeudSpell, Boss(board).Guid, 1,
+            start + config.FeudLeftMs });
+    EncounterLatchStore store;
+    uint64 growlReadyAt = start + config.GrowlReadyAfterMs;
     uint64 nextSwingAt = start + 4000;
     auto violation = [&](char const* what, uint32 guid)
     {
@@ -345,6 +365,10 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
     for (int step = 0; step < 400; ++step)
     {
         Publish(board, store, 250);
+        if (!Boss(board).Auras.empty() && Boss(board).Auras.front().SpellId == C::FeudSpell
+            && Boss(board).Auras.front().ExpiresAtMs <= board.ObservedAtMs)
+            Boss(board).Auras.clear();
+        bool const feud = !Boss(board).Auras.empty();
         bool const released = Latched(store, C::BurnReleasedLatch) != nullptr;
         bool const armed = released || Latched(store, C::LastChanceLatch);
         bool const settled = Latched(store, C::HandoffDoneLatch)
@@ -353,7 +377,8 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
             && !Latched(store, C::HandoffDoneLatch);
         std::map<uint32, AdaptiveChimaeronPlan> plans;
         for (uint32 guid : Everyone())
-            plans[guid] = Plan(board, guid, &store.View());
+            if (P(board, guid).Alive)
+                plans[guid] = Plan(board, guid, &store.View());
 
         bool const nonTankHeld = plans[ROGUE].SuppressOffense;
         bool const pushing = released && settled;
@@ -377,6 +402,8 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
 
         for (uint32 healer : { HOLY, DISC, SHAMAN })
         {
+            if (!P(board, healer).Alive)
+                continue;
             ObjectGuid heal = plans[healer].PriorityHealTarget;
             if (heal.IsEmpty())
                 for (uint32 tank : { DK, DRUID })
@@ -385,7 +412,7 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
                             < P(board, heal.GetCounter()).HealthPct))
                         heal = G(tank);
             if (!heal.IsEmpty())
-                Heal(P(board, heal.GetCounter()), healPct);
+                Heal(P(board, heal.GetCounter()), config.HealPct);
         }
         if (CastOf(plans[DRUID]) == 6795 && board.ObservedAtMs >= growlReadyAt)
         {
@@ -394,7 +421,7 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
         }
         if (CastOf(plans[DK]) == 56222)
             Boss(board).VictimGuid = G(DK);
-        if (board.ObservedAtMs >= nextSwingAt)
+        if (!feud && board.ObservedAtMs >= nextSwingAt)
         {
             ActorSnapshot& victim = P(board, Boss(board).VictimGuid.GetCounter());
             victim.HealthPct = std::max(1.0f, victim.HealthPct - 25.0f);
@@ -404,7 +431,7 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
         bool attacking = false;
         for (uint32 guid : { DK, DRUID, HUNTER, MAGE, RET, ROGUE, LOCK })
             attacking = attacking || !plans[guid].SuppressOffense;
-        float const drop = adversarialWalk ? 0.1f : (attacking ? 0.12f : 0.02f);
+        float const drop = config.Adversarial ? 0.1f : (attacking ? 0.12f : 0.02f);
         Boss(board).HealthPct -= drop;
         if (Boss(board).HealthPct <= C::MortalityHealthPct)
         {
@@ -417,34 +444,65 @@ static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk
     return result;
 }
 
+static ReplayResult Replay(uint64 growlReadyAfterMs, bool adversarial, float healPct)
+{
+    ReplayConfig config;
+    config.GrowlReadyAfterMs = growlReadyAfterMs;
+    config.Adversarial = adversarial;
+    config.HealPct = healPct;
+    return RunBurnReplay(config);
+}
+
+static void CheckFeral(ReplayResult const& result, char const* label)
+{
+    if (result.Violations || !result.MortalityReached || result.VictimAtMortality != G(DRUID))
+        std::fprintf(stderr, "replay %s: violations=%d mortality=%d victim=%u\n", label,
+            result.Violations, int(result.MortalityReached), result.VictimAtMortality.GetCounter());
+    CHECK(result.Violations == 0);
+    CHECK(result.MortalityReached && result.VictimAtMortality == G(DRUID));
+}
+
 static void TestBurnReplayFromPostMassacre()
 {
     // Fast healing: readiness releases, the Feral takes the boss into Mortality.
     for (uint64 growlReady : { 0ull, 3000ull, 6000ull })
-    {
-        ReplayResult const walk = RunBurnReplay(growlReady, false, 20.0f);
-        CHECK(walk.Violations == 0);
-        CHECK(walk.MortalityReached && walk.VictimAtMortality == G(DRUID));
-    }
+        CheckFeral(Replay(growlReady, false, 20.0f), "fast healing");
     // Damage over time only and healers needing far longer than 12 s to bring
     // both tanks to 80%: the last-chance line hands the boss to the Feral.
-    for (uint64 growlReady : { 0ull, 3000ull, 6000ull })
-    {
-        ReplayResult const slow = RunBurnReplay(growlReady, false, 1.0f);
-        CHECK(slow.Violations == 0);
-        CHECK(slow.MortalityReached && slow.VictimAtMortality == G(DRUID));
-    }
+    for (uint64 growlReady : { 0ull, 3000ull, 6000ull, 8000ull })
+        CheckFeral(Replay(growlReady, false, 1.0f), "slow healing");
     // Adversarial walk (0.1% per step whatever the hold does): the Feral is
     // the Mortality victim whenever his taunt is available before 20%.
     for (uint64 growlReady : { 0ull, 1000ull, 2000ull, 2500ull })
-    {
-        ReplayResult const adversarial = RunBurnReplay(growlReady, true, 1.0f);
-        CHECK(adversarial.Violations == 0 && adversarial.MortalityReached);
-        CHECK(adversarial.VictimAtMortality == G(DRUID));
-    }
+        CheckFeral(Replay(growlReady, true, 1.0f), "adversarial walk");
     // Taunt unavailable until after 20%: only the sequence rules can hold.
-    ReplayResult const late = RunBurnReplay(6000, true, 1.0f);
+    ReplayResult const late = Replay(6000, true, 1.0f);
     CHECK(late.Violations == 0 && late.MortalityReached);
+
+    // Outage with Feud still running: the armed handoff is not held back by
+    // Feud, by last chance (15 s and 25 s left) or by healers down.
+    for (uint64 feudLeft : { 15000ull, 25000ull })
+    {
+        ReplayConfig lastChance;
+        lastChance.HealPct = 1.0f;
+        lastChance.Outage = true;
+        lastChance.FeudLeftMs = feudLeft;
+        CheckFeral(RunBurnReplay(lastChance), "outage feud last chance");
+        ReplayConfig healersDown = lastChance;
+        healersDown.HealersDown = true;
+        CheckFeral(RunBurnReplay(healersDown), "outage feud healers down");
+    }
+
+    // The last-chance margin covers a Growl just spent on a Double Attack
+    // soak: the line arms at 21.0% (2.5 s from 21.2%) and Growl returns 7.9 s
+    // later, still before the damage over time reaches 20%.
+    ReplayConfig spent;
+    spent.HealPct = 1.0f;
+    spent.StartPct = 21.2f;
+    spent.GrowlReadyAfterMs = 2500 + 7900;
+    ReplayResult const margin = RunBurnReplay(spent);
+    CheckFeral(margin, "spent growl at the line");
+    CHECK(margin.MortalityAtMs > spent.GrowlReadyAfterMs);
 }
 
 int main()

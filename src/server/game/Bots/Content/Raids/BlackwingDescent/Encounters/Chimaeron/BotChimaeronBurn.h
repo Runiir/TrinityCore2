@@ -19,8 +19,8 @@
 // - Release: readiness (mixture up, no Massacre near, both tanks at 80%+), or
 //   a bounded hold (two Massacre cycles, or fewer than two living healers).
 // - Last chance: damage the hold cannot stop (damage over time, pets) carries
-//   the boss to 20.5% unreleased. The handoff arms anyway; non-tanks keep
-//   waiting for the release.
+//   the boss to 21% unreleased. The handoff arms anyway (Feud does not block
+//   it); non-tanks keep waiting for the release.
 // - Armed: the Double Attack tank taunts first and holds the boss into
 //   Mortality; the Break tank stops taunting and stands down. Non-tanks are
 //   released once the handoff lands, or after one taunt cooldown. If that
@@ -55,8 +55,13 @@ enum class BurnReleaseReason : uint64
 // Below this line a held raid also holds its tanks: their damage alone would
 // carry the boss into Mortality before the handoff.
 constexpr float MortalityHandoffPct = 21.5f;
-// Last-chance handoff line: unreleased at or below it, the handoff arms.
-constexpr float LastChanceHandoffPct = 20.5f;
+// Last-chance handoff line: unreleased at or below it, the handoff arms. One
+// percent above Mortality is about 12.5 s of the hold's residual damage over
+// time (~0.08%/s), longer than the 8 s taunt cooldown, so a taunt the Double
+// Attack tank just spent on a Double Attack soak is back before 20%. Holding
+// soak taunts back instead would put a doubled swing on the Break-stacked tank
+// exactly when he is least healable.
+constexpr float LastChanceHandoffPct = 21.0f;
 // One taunt cooldown (Dark Command, Growl, Hand of Reckoning, Taunt: 8 s).
 constexpr uint64 HandoffTimeoutMs = 8000;
 // Two Massacre cycles (30 s repeat): a hold that long means readiness is out
