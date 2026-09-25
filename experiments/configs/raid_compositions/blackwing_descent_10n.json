@@ -1,0 +1,107 @@
+{
+  "schema": "raid_composition_v1",
+  "composition_id": "blackwing_descent_10n_canonical_v1",
+  "raid": "blackwing_descent",
+  "mode": "10N",
+  "map_id": 669,
+  "raid_size": 10,
+  "status": "declared_round1_not_yet_admitted",
+  "decision_source": {
+    "document": "docs/bot_raids/full_raid_parallel_shards.md",
+    "decided": "2026-09-25",
+    "summary": "One composition per raid that optimizes raid buffs and debuffs; Blood DK tank, Feral druid as second tank, Resto shaman as third healer."
+  },
+  "buff_coverage_declared": {
+    "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+    "provider_path": "ui/core/components/inputs/buffs_debuffs.ts",
+    "note": "Copied verbatim from the decision document; not recomputed here.",
+    "configurations": [
+      {"configuration": "1 tank, 2 healers (default)", "coverage": "19/20", "missing": "30% bleed. The hunter pet covers 4% physical damage instead."},
+      {"configuration": "2 tanks (druid Feral)", "coverage": "19/20", "missing": "5% spell haste. The shaman picks Windfury or Wrath of Air."},
+      {"configuration": "3 healers, shaman Resto", "coverage": "18/20 (1 tank), 19/20 (2 tanks)", "missing": "4% physical damage"}
+    ]
+  },
+  "spec_source": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+  "default_copies": 1,
+  "talent_groups_count": 2,
+  "off_spec_bag": {
+    "item_id": 38082,
+    "name": "\"Gigantique\" Bag",
+    "bag_slot": 19,
+    "container_slots": 22,
+    "acquisition": {
+      "index_path": "dataset/world_planner/item_source_index.jsonl",
+      "source_type": "vendor",
+      "source_entry": 18756
+    }
+  },
+  "characters": [
+    {"character_key": "death_knight", "slot": 1, "specs": ["blood_death_knight"]},
+    {"character_key": "druid", "slot": 2, "specs": ["balance_druid", "feral_druid_tank"]},
+    {"character_key": "hunter", "slot": 3, "specs": ["beast_mastery_hunter"]},
+    {"character_key": "mage", "slot": 4, "specs": ["fire_mage"]},
+    {"character_key": "paladin_holy", "slot": 5, "specs": ["holy_paladin"]},
+    {"character_key": "paladin_ret", "slot": 6, "specs": ["retribution_paladin"]},
+    {"character_key": "priest", "slot": 7, "specs": ["discipline_priest"]},
+    {"character_key": "rogue", "slot": 8, "specs": ["assassination_rogue"]},
+    {"character_key": "shaman", "slot": 9, "specs": ["elemental_shaman", "restoration_shaman"]},
+    {"character_key": "warlock", "slot": 10, "specs": ["demonology_warlock"]}
+  ],
+  "bosses": [
+    {
+      "boss_key": "magmaw",
+      "boss_number": 0,
+      "name_code": "mgw",
+      "route_template_scenario_id": "blackwing_descent_10n_magmaw_diagnostic",
+      "spec_selection": {"druid": "balance_druid", "shaman": "elemental_shaman"},
+      "selection_status": "provisional",
+      "rationale": "Single-tank boss; the accepted Magmaw shard already runs one Blood tank. Default 1 tank, 2 healers."
+    },
+    {
+      "boss_key": "omnotron",
+      "aliases": ["omnotron_defense_system"],
+      "boss_number": 1,
+      "name_code": "omn",
+      "route_template_scenario_id": "blackwing_descent_10n_omnotron_diagnostic",
+      "spec_selection": {"druid": "feral_druid_tank", "shaman": "elemental_shaman"},
+      "selection_status": "provisional",
+      "rationale": "Two golems are active at once, so two tanks; two healers."
+    },
+    {
+      "boss_key": "chimaeron",
+      "boss_number": 2,
+      "name_code": "chi",
+      "route_template_scenario_id": "blackwing_descent_10n_chimaeron_diagnostic",
+      "spec_selection": {"druid": "feral_druid_tank", "shaman": "restoration_shaman"},
+      "selection_status": "provisional",
+      "rationale": "Double Attack tank swap and heavy raid damage; two tanks, three healers."
+    },
+    {
+      "boss_key": "atramedes",
+      "boss_number": 3,
+      "name_code": "atr",
+      "route_template_scenario_id": "blackwing_descent_10n_atramedes_diagnostic",
+      "spec_selection": {"druid": "balance_druid", "shaman": "elemental_shaman"},
+      "selection_status": "provisional",
+      "rationale": "Single-tank boss; default 1 tank, 2 healers."
+    },
+    {
+      "boss_key": "maloriak",
+      "boss_number": 4,
+      "name_code": "mal",
+      "route_template_scenario_id": "blackwing_descent_10n_maloriak_diagnostic",
+      "spec_selection": {"druid": "feral_druid_tank", "shaman": "elemental_shaman"},
+      "selection_status": "provisional",
+      "rationale": "Aberrations and Prime Subjects need a second tank; two healers."
+    },
+    {
+      "boss_key": "nefarian",
+      "boss_number": 5,
+      "name_code": "nef",
+      "route_template_scenario_id": "blackwing_descent_10n_nefarian_diagnostic",
+      "spec_selection": {"druid": "feral_druid_tank", "shaman": "restoration_shaman"},
+      "selection_status": "provisional",
+      "rationale": "Nefarian and Onyxia need two tanks; phase 3 raid damage favors three healers."
+    }
+  ]
+}

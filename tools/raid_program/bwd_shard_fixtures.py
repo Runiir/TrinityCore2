@@ -1,4 +1,14 @@
-"""Deterministic BWD diagnostic-shard identities and live readback contract."""
+"""Accepted legacy BWD 10N diagnostic-shard layout (thin wrapper).
+
+This module only keeps the frozen legacy layout that the accepted Magmaw 10N
+roster (GUIDs 30001-30010) and the other five 301xx-305xx pools depend on:
+their shard definitions, overrides, names and GUID formula. Every generic
+check lives in `raid_shard_contract`; new raid x boss x copies shards come
+from `raid_shard_plan`. The tracked output
+`experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json` must stay
+byte-identical. Its `precompleted_boss_entries` are legacy metadata that no
+consumer reads; seeded lockouts use the package-A prerequisite graph.
+"""
 
 from __future__ import annotations
 
@@ -6,28 +16,45 @@ import argparse
 import copy
 import json
 from pathlib import Path
-import re
-from typing import Any, Iterable
+from typing import Any
+
+from tools.raid_program.raid_shard_contract import (
+    LIVE_IDENTITY_FIELDS,
+    NATIVE_BACKPACK_SLOT_END,
+    NATIVE_BACKPACK_SLOT_START,
+    VALIDATION_CONSUMABLE_SLOTS,
+    catalog_source,
+    consumable_slot_failures as _consumable_slot_failures,
+    duplicates as _duplicates,
+    live_requirements as _live_requirements,
+    read_json as _read,
+    valid_native_name,
+    validate_native_consumable_slots,
+    validate_shard_readback,
+)
+
+__all__ = [
+    "CANONICAL_ROSTER_SLOT_IDS", "CANONICAL_SCENARIO_ID", "LIVE_IDENTITY_FIELDS",
+    "NATIVE_BACKPACK_SLOT_END", "NATIVE_BACKPACK_SLOT_START", "SHARD_DEFINITIONS",
+    "SHARD_ROSTER_SOURCE_OVERRIDES", "VALIDATION_CONSUMABLE_SLOTS",
+    "build_diagnostic_provisioning_config", "build_shard_fixture", "validate_native_consumable_slots",
+    "validate_readback", "validate_shard_fixture",
+]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CANONICAL_SCENARIO_ID = "blackwing_descent_10n"
 SCENARIO_CONFIG_PATH = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001.json"
 RUNTIME_PROFILE_PATH = REPO_ROOT / "dataset/bot_runtime_profiles/profiles.json"
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"
-
-# Player::GetItemByPos(INVENTORY_SLOT_BAG_0, slot) and the native consumable
-# scanner cover the 16 base-backpack slots [23, 39).  The validation roster
-# keeps its three deterministic stacks in otherwise-unused slots 26-28.  Bank
-# slots 39+ are not a legal substitute: they can be written to
-# character_inventory but are invisible to the player-like use-item path.
-NATIVE_BACKPACK_SLOT_START = 23
-NATIVE_BACKPACK_SLOT_END = 39
-VALIDATION_CONSUMABLE_SLOTS = (26, 27, 28)
+FIXTURE_SCHEMA = "cata_raid_bwd_diagnostic_shard_fixture_v1"
+LEGACY_MAP_ID = 669
+LEGACY_DIFFICULTY = "normal_10man"
 
 CANONICAL_ROSTER_SLOT_IDS = (
     "raid_tank_1", "raid_tank_2", "raid_healer_1", "raid_healer_2", "raid_healer_3",
     "raid_dps_1", "raid_dps_2", "raid_dps_3", "raid_dps_4", "raid_dps_5",
 )
+LEGACY_BOTS_PER_SHARD = len(CANONICAL_ROSTER_SLOT_IDS)
 
 SHARD_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"boss_key": "magmaw", "profile_id": "blackwing_descent_10n_magmaw_diagnostic", "name_code": "Mgw", "precompleted_boss_entries": [], "upper_ledge_start": False, "requires_native_descent_before_engagement": False},
@@ -44,16 +71,11 @@ SHARD_DEFINITIONS: tuple[dict[str, Any], ...] = (
 SHARD_ROSTER_SOURCE_OVERRIDES: dict[str, dict[str, str]] = {
     "magmaw": {"raid_tank_1": "catalog:balance_druid", "raid_dps_2": "raid_dps_1", "raid_dps_4": "catalog:survival_hunter"},
 }
-LIVE_IDENTITY_FIELDS = ("group_id", "map_instance_id", "save_id", "attempt_id", "strategy_id", "assignment_generation")
-
-
-def _read(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _canonical(config: dict[str, Any]) -> dict[str, Any]:
     rows = [row for row in config.get("scenarios", []) if str(row.get("id")) == CANONICAL_SCENARIO_ID]
-    if len(rows) != 1 or not isinstance(rows[0].get("bots"), list) or len(rows[0]["bots"]) != 10:
+    if len(rows) != 1 or not isinstance(rows[0].get("bots"), list) or len(rows[0]["bots"]) != LEGACY_BOTS_PER_SHARD:
         raise ValueError("canonical_bwd_roster_must_have_exactly_10_bots")
     return rows[0]
 
@@ -65,21 +87,7 @@ def _slots(scenario: dict[str, Any]) -> dict[str, dict[str, Any]]:
 def _roster_source(config: dict[str, Any], slots: dict[str, dict[str, Any]], source_id: str) -> dict[str, Any]:
     if not source_id.startswith("catalog:"):
         return slots[source_id]
-    spec = source_id.removeprefix("catalog:")
-    reference = str(config.get("canonical_target_catalog") or "")
-    if not reference:
-        raise ValueError("diagnostic_catalog_source_missing")
-    catalog = _read(REPO_ROOT / reference)
-    matches = [row for row in catalog.get("targets", []) if row.get("spec_target_id") == spec]
-    if len(matches) != 1:
-        raise ValueError(f"diagnostic_catalog_source_not_unique:{spec}")
-    row = matches[0]
-    bot = copy.deepcopy(row["provisioning_bot"])
-    if (bot.get("class_spec") != spec or not row.get("gear_profile_id")
-            or bot.get("gear_profile_id") != row["gear_profile_id"]
-            or bot.get("gear_profile") != row["gear_profile_id"]):
-        raise ValueError(f"diagnostic_catalog_source_identity_invalid:{spec}")
-    return bot
+    return catalog_source(config, source_id.removeprefix("catalog:"))
 
 
 def _starts() -> dict[str, dict[str, Any]]:
@@ -116,91 +124,8 @@ def _namespace(boss: str) -> str:
     return f"cata_raid/bwd/diagnostic/{boss}"
 
 
-def _consumable_slot_failures(rows: Any, path: str) -> list[dict[str, Any]]:
-    if not isinstance(rows, list):
-        return [{"path": path, "reason": "must_be_list"}]
-    failures: list[dict[str, Any]] = []
-    seen_slots: set[int] = set()
-    for index, row in enumerate(rows):
-        row_path = f"{path}[{index}]"
-        if not isinstance(row, dict):
-            failures.append({"path": row_path, "reason": "must_be_object"})
-            continue
-        raw_slot = row.get("slot")
-        if isinstance(raw_slot, bool):
-            failures.append({"path": row_path, "reason": "slot_must_be_integer", "slot": raw_slot})
-            continue
-        try:
-            slot = int(raw_slot)
-        except (TypeError, ValueError):
-            failures.append({"path": row_path, "reason": "slot_must_be_integer", "slot": raw_slot})
-            continue
-        if slot < NATIVE_BACKPACK_SLOT_START or slot >= NATIVE_BACKPACK_SLOT_END:
-            failures.append({
-                "path": row_path,
-                "reason": "slot_outside_native_backpack",
-                "slot": slot,
-                "allowed": {
-                    "start_inclusive": NATIVE_BACKPACK_SLOT_START,
-                    "end_exclusive": NATIVE_BACKPACK_SLOT_END,
-                },
-            })
-        if slot in seen_slots:
-            failures.append({"path": row_path, "reason": "duplicate_slot", "slot": slot})
-        seen_slots.add(slot)
-    return failures
-
-
-def validate_native_consumable_slots(config: dict[str, Any]) -> dict[str, Any]:
-    """Reject validation items that native player inventory cannot discover."""
-    failures: list[dict[str, Any]] = []
-    validated_rows = 0
-    if "default_consumables" in config:
-        defaults = config.get("default_consumables")
-        default_failures = _consumable_slot_failures(defaults, "default_consumables")
-        failures.extend(default_failures)
-        if isinstance(defaults, list):
-            validated_rows += len(defaults)
-    for scenario_index, scenario in enumerate(config.get("scenarios", [])):
-        if not isinstance(scenario, dict):
-            continue
-        scenario_id = str(scenario.get("id") or scenario_index)
-        defaults = config.get("default_consumables", [])
-        for bot_index, bot in enumerate(scenario.get("bots", [])):
-            if not isinstance(bot, dict):
-                continue
-            rows = bot.get("consumables", defaults)
-            path = f"scenarios[{scenario_index}:{scenario_id}].bots[{bot_index}:{bot.get('name', bot_index)}].consumables"
-            row_failures = _consumable_slot_failures(rows, path)
-            failures.extend(row_failures)
-            if isinstance(rows, list):
-                validated_rows += len(rows)
-    if failures:
-        raise ValueError(json.dumps({
-            "check": "native_backpack_consumable_slots",
-            "failures": failures,
-        }, sort_keys=True))
-    return {
-        "all_passed": True,
-        "validated_rows": validated_rows,
-        "native_backpack_slots": [NATIVE_BACKPACK_SLOT_START, NATIVE_BACKPACK_SLOT_END],
-        "preferred_slots": list(VALIDATION_CONSUMABLE_SLOTS),
-    }
-
-
-def _live_requirements() -> dict[str, Any]:
-    return {
-        "fields": list(LIVE_IDENTITY_FIELDS),
-        "must_be_positive": True,
-        "must_be_distinct_across_shards": True,
-        "assigned_at": "live_setup_only",
-        "fixture_values": None,
-        "forbidden_provisioning_fields": list(LIVE_IDENTITY_FIELDS),
-    }
-
-
 def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
-    """Clone the canonical roster into six disjoint pools with explicit spec overrides."""
+    """Clone the canonical roster into the legacy disjoint pools with explicit spec overrides."""
     validate_native_consumable_slots(config)
     scenario = _canonical(config)
     slots = _slots(scenario)
@@ -274,7 +199,7 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
             "pool_tag": profile_id,
             "runtime_profile_id": profile_id,
             "evidence_namespace": namespace,
-            "required_bot_count": 10,
+            "required_bot_count": LEGACY_BOTS_PER_SHARD,
             "role_counts": {role: sum(bot["role"] == role for bot in bots)
                             for role in ("tank", "healer", "dps")},
             "start_position": starts.get(profile_id, {}),
@@ -285,12 +210,12 @@ def build_shard_fixture(config: dict[str, Any]) -> dict[str, Any]:
             "bots": bots,
         })
     fixture = {
-        "schema": "cata_raid_bwd_diagnostic_shard_fixture_v1",
+        "schema": FIXTURE_SCHEMA,
         "source": {"provisioning_config": "experiments/configs/validation_provisioning_cata_001.json", "canonical_scenario_id": CANONICAL_SCENARIO_ID, "runtime_profile_manifest": "dataset/bot_runtime_profiles/profiles.json", "scenario_manifest": "experiments/configs/validation_scenarios_cata_001.json"},
         "canonical_roster": [{"roster_slot_id": slot, "name": bot["name"], "account": bot["account"], "role": bot["role"], "class": bot["class"], "class_spec": bot["class_spec"]} for slot, bot in slots.items()],
-        "diagnostic_bot_count": 60,
-        "shard_count": 6,
-        "instance_identity_policy": {"map_id": 669, "difficulty": "normal_10man", "no_instance_or_save_ids_in_provisioning": True, "live_identity_fields": list(LIVE_IDENTITY_FIELDS)},
+        "diagnostic_bot_count": len(SHARD_DEFINITIONS) * LEGACY_BOTS_PER_SHARD,
+        "shard_count": len(SHARD_DEFINITIONS),
+        "instance_identity_policy": {"map_id": LEGACY_MAP_ID, "difficulty": LEGACY_DIFFICULTY, "no_instance_or_save_ids_in_provisioning": True, "live_identity_fields": list(LIVE_IDENTITY_FIELDS)},
         "shards": shards,
     }
     validate_shard_fixture(fixture, config)
@@ -323,7 +248,7 @@ def build_diagnostic_provisioning_config(config: dict[str, Any], fixture: dict[s
                 if key not in bot and key in build:
                     bot[key] = copy.deepcopy(build[key])
         merged["scenarios"].append({
-            "id": shard["scenario_id"], "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man",
+            "id": shard["scenario_id"], "instance": "Blackwing Descent", "map_id": LEGACY_MAP_ID, "difficulty": LEGACY_DIFFICULTY,
             "provisioning_scenario_id": CANONICAL_SCENARIO_ID, "start_position": copy.deepcopy(shard["start_position"]),
             "required_roles": copy.deepcopy(shard["role_counts"]), "bots": bots,
             "diagnostic_only": True, "diagnostic_parent_scenario_id": CANONICAL_SCENARIO_ID,
@@ -334,26 +259,18 @@ def build_diagnostic_provisioning_config(config: dict[str, Any], fixture: dict[s
     return merged
 
 
-def _duplicates(values: Iterable[Any]) -> list[Any]:
-    seen: set[Any] = set()
-    duplicates: list[Any] = []
-    for value in values:
-        if value in seen and value not in duplicates:
-            duplicates.append(value)
-        seen.add(value)
-    return duplicates
-
-
 def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Validate all immutable identities and the non-certifying prerequisite contract."""
     if canonical_config is not None:
         validate_native_consumable_slots(canonical_config)
     failures: list[dict[str, Any]] = []
-    if fixture.get("schema") != "cata_raid_bwd_diagnostic_shard_fixture_v1":
+    if fixture.get("schema") != FIXTURE_SCHEMA:
         failures.append({"check": "schema"})
     shards = fixture.get("shards") if isinstance(fixture.get("shards"), list) else []
-    if len(shards) != 6:
-        failures.append({"check": "shard_count", "expected": 6, "actual": len(shards)})
+    expected_shards = len(SHARD_DEFINITIONS)
+    expected_bots = expected_shards * LEGACY_BOTS_PER_SHARD
+    if len(shards) != expected_shards:
+        failures.append({"check": "shard_count", "expected": expected_shards, "actual": len(shards)})
     definitions = {str(row["boss_key"]): row for row in SHARD_DEFINITIONS}
     all_bots = [bot for shard in shards for bot in shard.get("bots", []) if isinstance(bot, dict)]
     for field in ("account_id", "account", "character_guid", "name", "roster_slot_id", "evidence_namespace"):
@@ -385,7 +302,7 @@ def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, 
         if not profile or profile.get("pool_tag_filter") != profile_id or profile.get("validation_route", {}).get("scenario_id") != profile_id or profile.get("diagnostic_only") is not True:
             failures.append({"check": "runtime_profile_binding", "profile_id": profile_id})
         bots = shard.get("bots") if isinstance(shard.get("bots"), list) else []
-        if len(bots) != 10:
+        if len(bots) != LEGACY_BOTS_PER_SHARD:
             failures.append({"check": "shard_bot_count", "boss_key": boss, "actual": len(bots)})
         if {str(bot.get("canonical_roster_slot_id")) for bot in bots} != set(CANONICAL_ROSTER_SLOT_IDS):
             failures.append({"check": "roster_slot_coverage", "boss_key": boss})
@@ -406,8 +323,7 @@ def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, 
             if bot.get("expected_character_guid") != bot.get("character_guid"):
                 failures.append({"check": "character_guid_expectation_drift", "boss_key": boss, "name": bot.get("name")})
             name = str(bot.get("name") or "")
-            if (not re.fullmatch(r"[A-Z][a-z]{1,11}", name)
-                    or name != name[:1].upper() + name[1:].lower()):
+            if not valid_native_name(name):
                 failures.append({"check": "character_name", "boss_key": boss, "name": name})
             if bot.get("pool_tag") != profile_id or bot.get("runtime_profile_id") != profile_id:
                 failures.append({"check": "bot_profile_binding", "boss_key": boss, "name": name})
@@ -420,8 +336,8 @@ def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, 
             row = actual.get(slot, {})
             if any(row.get(field) != source.get(field) for field in ("name", "account", "role", "class", "class_spec")):
                 failures.append({"check": "canonical_roster_drift", "roster_slot_id": slot})
-    if int(fixture.get("diagnostic_bot_count") or 0) != 60 or len(all_bots) != 60:
-        failures.append({"check": "diagnostic_bot_count", "expected": 60, "actual": len(all_bots)})
+    if int(fixture.get("diagnostic_bot_count") or 0) != expected_bots or len(all_bots) != expected_bots:
+        failures.append({"check": "diagnostic_bot_count", "expected": expected_bots, "actual": len(all_bots)})
     if failures:
         raise ValueError(json.dumps({"schema": fixture.get("schema"), "failures": failures}, sort_keys=True))
     return {"all_passed": True, "diagnostic_bot_count": len(all_bots), "shard_count": len(shards)}
@@ -430,48 +346,7 @@ def validate_shard_fixture(fixture: dict[str, Any], canonical_config: dict[str, 
 def validate_readback(fixture: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Check complete DB/console readback and require distinct live IDs."""
     validate_shard_fixture(fixture)
-    expected = {(str(shard["shard_id"]), str(bot["name"])): (shard, bot) for shard in fixture["shards"] for bot in shard["bots"]}
-    failures: list[dict[str, Any]] = []
-    keys = [(str(row.get("shard_id")), str(row.get("name"))) for row in rows]
-    if len(rows) != len(expected):
-        failures.append({"check": "readback_row_count", "expected": len(expected), "actual": len(rows)})
-    if _duplicates(keys):
-        failures.append({"check": "readback_duplicate_rows"})
-    live: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        key = (str(row.get("shard_id")), str(row.get("name")))
-        source = expected.get(key)
-        if source is None:
-            failures.append({"check": "unexpected_readback_identity", "key": key})
-            continue
-        shard, bot = source
-        for field in ("account_id", "character_guid", "account", "pool_tag", "roster_slot_id", "runtime_profile_id", "evidence_namespace"):
-            if row.get(field) != bot.get(field):
-                failures.append({"check": "readback_identity", "field": field, "key": key})
-        if int(row.get("map_id") or 0) != 669 or str(row.get("difficulty") or "") != "normal_10man":
-            failures.append({"check": "readback_instance", "key": key})
-        if row.get("certifies_predecessors") is True or row.get("predecessor_certifies") is True:
-            failures.append({"check": "readback_predecessor_certification", "key": key})
-        identities = row.get("live_identities")
-        if identities is not None:
-            if str(row.get("shard_id")) in live and live[str(row.get("shard_id"))] != identities:
-                failures.append({"check": "inconsistent_live_identities", "shard_id": row.get("shard_id")})
-            live[str(row.get("shard_id"))] = dict(identities)
-    for shard in fixture["shards"]:
-        shard_id = str(shard["shard_id"])
-        identity = live.get(shard_id)
-        if identity is None:
-            failures.append({"check": "missing_live_identities", "shard_id": shard_id})
-            continue
-        for field in LIVE_IDENTITY_FIELDS:
-            value = identity.get(field)
-            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-                failures.append({"check": "live_identity_positive", "shard_id": shard_id, "field": field})
-    for field in LIVE_IDENTITY_FIELDS:
-        values = [identity.get(field) for identity in live.values()]
-        if len(values) != len(set(values)):
-            failures.append({"check": "live_identity_not_distinct", "field": field})
-    return {"all_passed": not failures, "failure_count": len(failures), "failures": failures, "readback_rows": len(rows), "shards": len(live)}
+    return validate_shard_readback(fixture, rows)
 
 
 build_bwd_shard_fixture = build_shard_fixture
@@ -487,7 +362,8 @@ def main() -> int:
     fixture = build_shard_fixture(_read(args.canonical_config))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(fixture, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"output": str(args.output), "diagnostic_bot_count": 60, "shard_count": 6}, sort_keys=True))
+    print(json.dumps({"output": str(args.output), "diagnostic_bot_count": fixture["diagnostic_bot_count"],
+                      "shard_count": fixture["shard_count"]}, sort_keys=True))
     return 0
 
 

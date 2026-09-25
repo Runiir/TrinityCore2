@@ -156,6 +156,13 @@ def configured_bots(config: dict[str, Any]) -> list[dict[str, Any]]:
     return [bot for scenario in config.get("scenarios", []) for bot in scenario.get("bots", [])]
 
 
+def bagged_loadout_items(bot: dict[str, Any]) -> list[dict[str, Any]]:
+    """Off-spec gear a two-spec loadout keeps in its container bag (empty for legacy bots)."""
+    loadout = bot.get("loadout") or {}
+    equipped = set(loadout.get("equipped_offsets") or [])
+    return [row["item"] for row in loadout.get("physical_items") or [] if row["offset"] not in equipped]
+
+
 def account_names(config: dict[str, Any]) -> set[str]:
     return {str(bot.get("account", "")).upper() for bot in configured_bots(config) if bot.get("account")}
 
@@ -228,9 +235,12 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
             missing_slots = sorted(set(required_equipment_slots_for(equipment)) - covered)
             if missing_slots:
                 failures.append({"check": "equipment_slots", "bot": bot.get("name"), "missing_slots": missing_slots})
-            for item in equipment:
+            # Bagged off-spec items get the same payload checks; equip-limit
+            # categories and socketed-gem limits count equipped items only.
+            for item_index, item in enumerate(equipment + bagged_loadout_items(bot)):
+                is_equipped = item_index < len(equipment)
                 item_category = item_limit_categories_by_item.get(int(item.get("item_id") or 0), 0)
-                if item_category:
+                if item_category and is_equipped:
                     gem_limit_counts[item_category] = gem_limit_counts.get(item_category, 0) + 1
                 enchant_id = int(item.get("enchant_id") or 0)
                 payload = parse_enchantment_payload(item.get("enchantments", ""))
@@ -294,7 +304,7 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
                             "runtime_source_item_id": runtime_source_item_id,
                         })
                     category = item_limit_categories_by_item.get(int(gem_item_id), 0)
-                    if category:
+                    if category and is_equipped:
                         gem_limit_counts[category] = gem_limit_counts.get(category, 0) + 1
                 if reforge_id and reforge_id not in reforge_ids:
                     failures.append({"check": "reforge_id", "bot": bot.get("name"), "item_id": item.get("item_id"), "reforge_id": reforge_id})
@@ -556,6 +566,11 @@ def validate_database(
     gem_mapping = gem_item_enchant_map(dbc_dir)
     if require_applied and not missing_characters:
         runtime = fetch_runtime_gear(character_url, expected_characters)
+        loadout_names = {str(bot.get("name")) for bot in configured_bots(config) if bot.get("loadout")}
+        loadout_state: dict[str, dict[str, Any]] = {}
+        if loadout_names:
+            from tools.raid_program.raid_loadout_readback import fetch_runtime_loadouts
+            loadout_state = fetch_runtime_loadouts(character_url, loadout_names)
         for bot in configured_bots(config):
             name = str(bot.get("name"))
             actual_identity = runtime.get(name, {})
@@ -662,9 +677,17 @@ def validate_database(
                     "mismatches": consumable_mismatches,
                 },
             }
-            if actual_talent_tree != expected_talent_tree:
+            if bot.get("loadout"):
+                # Two-spec loadouts: talent group 1, glyph group 1 and bag != 0
+                # replace the group-0-only talent tree/talent/glyph checks.
+                from tools.raid_program.raid_loadout_readback import loadout_readback_failures, loadout_readback_summary
+                observed_loadout = loadout_state.get(name, {})
+                runtime_gear_report[name]["loadout"] = loadout_readback_summary(bot, observed_loadout)
+                failures.extend(loadout_readback_failures(
+                    bot, observed_loadout, list(config.get("default_consumables", [])), gem_mapping, dbc_dir))
+            if actual_talent_tree != expected_talent_tree and not bot.get("loadout"):
                 failures.append({"check": "runtime_talent_tree", "bot": name, "expected_talent_tree": expected_talent_tree, "actual_talent_tree": actual_talent_tree})
-            if missing_talent_spells:
+            if missing_talent_spells and not bot.get("loadout"):
                 failures.append({"check": "runtime_character_talent", "bot": name, "missing_spells": missing_talent_spells})
             if missing_known_spells:
                 failures.append({"check": "runtime_character_spell", "bot": name, "missing_spells": missing_known_spells})
@@ -678,7 +701,7 @@ def validate_database(
                 failures.append({"check": "runtime_equipment_durability", "bot": name, "slots": zero_durability})
             if visible_missing:
                 failures.append({"check": "runtime_equipment_cache", "bot": name, "visible_missing_slots": visible_missing, "expected_cache": expected_cache})
-            if invalid_actual_glyphs or glyphs_missing:
+            if (invalid_actual_glyphs or glyphs_missing) and not bot.get("loadout"):
                 failures.append({"check": "runtime_glyphs", "bot": name, "missing_glyphs": glyphs_missing, "invalid_glyphs": invalid_actual_glyphs})
             if consumable_mismatches:
                 failures.append({
@@ -926,14 +949,25 @@ def main() -> int:
     parser.add_argument("--check-db", action="store_true", help="Check configured auth/characters schema and validation account presence.")
     parser.add_argument("--require-applied", action="store_true", help="Fail if validation characters are not already present in the characters DB.")
     parser.add_argument("--allow-unready", action="store_true", help="Generate an offline report for valid but incomplete loadouts; preserves all_passed=false and never permits validation failures.")
+    parser.add_argument("--raid-shard-plan", type=Path, help="Verify a generated raid_shard_plan_v1 plan.json (two-spec loadouts) instead of the legacy validation config.")
+    parser.add_argument("--scenario-id", action="append", default=[], help="With --raid-shard-plan, verify only these shard scenario ids.")
     args = parser.parse_args()
 
-    base_config = load_config_with_bwd_diagnostic_shards(args.config, args.bwd_diagnostic_shard_fixture)
-    hotfix_url = database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo") if args.worldserver_conf.exists() else None
-    config = apply_gear_profiles(base_config, load_or_build_gear_profiles(args.gear_profiles, base_config, args.dbc_dir, hotfix_url))
-    provisioning_report = load_json(args.provisioning_report) or scenario_report(config)
-    payload_failures, payload_evidence = validate_payloads(config, args.dbc_dir, hotfix_url)
-    generated_failures, generated_evidence = validate_generated_artifacts(config, args.provisioning_report, args.dbc_dir)
+    if args.raid_shard_plan:
+        from tools.raid_program.raid_loadout_sql import prepare_config, verify_plan_outputs
+        plan = load_json(args.raid_shard_plan)
+        hotfix_url = database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo") if args.worldserver_conf.exists() else None
+        config = prepare_config(plan, args.gear_profiles, args.dbc_dir, args.scenario_id)
+        provisioning_report = scenario_report(config)
+        payload_failures, payload_evidence = validate_payloads(config, args.dbc_dir, hotfix_url)
+        generated_failures, generated_evidence = verify_plan_outputs(plan, args.raid_shard_plan.parent, args.gear_profiles, args.dbc_dir)
+    else:
+        base_config = load_config_with_bwd_diagnostic_shards(args.config, args.bwd_diagnostic_shard_fixture)
+        hotfix_url = database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo") if args.worldserver_conf.exists() else None
+        config = apply_gear_profiles(base_config, load_or_build_gear_profiles(args.gear_profiles, base_config, args.dbc_dir, hotfix_url))
+        provisioning_report = load_json(args.provisioning_report) or scenario_report(config)
+        payload_failures, payload_evidence = validate_payloads(config, args.dbc_dir, hotfix_url)
+        generated_failures, generated_evidence = validate_generated_artifacts(config, args.provisioning_report, args.dbc_dir)
     db_failures: list[dict[str, Any]] = []
     db_evidence: dict[str, Any] = {}
     if args.check_db or args.require_applied:

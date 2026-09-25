@@ -14,6 +14,7 @@ SHARDS = CONFIG / 'cata_raid_bwd_diagnostic_shards_v1.json'
 TARGETS = CONFIG / 'all_spec_targets_cata_p4_v1.json'
 REFERENCES = CONFIG / 'wowsims_cata_dps_reference_requests_v1.json'
 ROUTES = CONFIG / 'validation_scenarios_cata_001.json'
+COMPOSITIONS = CONFIG / 'raid_compositions'
 ALIASES = {'omnotron': 'omnotron_defense_system', 'halfus': 'halfus_wyrmbreaker',
            'beth tilac': 'bethtilac', 'cho gall': 'chogall', 'al akir': 'alakir',
            'zonozz': 'warlord_zonozz', 'yorsahj': 'yorsahj_the_unsleeping'}
@@ -74,6 +75,43 @@ def document(root: Path, path: Path) -> dict:
     return read(root / path) if (root / path).is_file() else {}
 
 
+def composition_roster(root: Path, raid: str, mode: str, boss: str) -> dict | None:
+    """Copy-0 actors of the canonical composition that declares this raid/mode/boss.
+
+    Actor IDs are the deterministic raid-shard character GUIDs; the selected
+    spec per boss comes from the composition. Presence is not provisioning.
+    """
+    from tools.raid_program import raid_shard_identity as ids
+
+    directory = root / COMPOSITIONS
+    matches = []
+    for path in sorted(directory.glob('*.json')) if directory.is_dir() else []:
+        composition = read(path)
+        if composition.get('raid') != raid or composition.get('mode') != mode:
+            continue
+        for row in composition.get('bosses', []):
+            if boss in [row['boss_key'], *row.get('aliases', [])]:
+                matches.append((path, composition, row))
+    if not matches:
+        return None
+    if len(matches) != 1:
+        raise GraphError('ambiguous raid composition for ' + raid + ':' + boss + ':' + mode)
+    path, composition, row = matches[0]
+    targets = {t['spec_target_id']: t for t in read(root / composition['spec_source']).get('targets', [])}
+    selection = row.get('spec_selection', {})
+    actors = []
+    for character in composition['characters']:
+        specs = character['specs']
+        spec = selection[character['character_key']] if len(specs) > 1 else specs[0]
+        if spec not in specs or spec not in targets:
+            raise GraphError('composition spec selection invalid for ' + boss)
+        packed = ids.packed_index(raid, mode, int(row['boss_number']), 0, int(character['slot']))
+        actors.append({'actor_id': str(ids.character_guid(packed)), 'slot': character['character_key'],
+                       'class_spec': spec, 'role': targets[spec]['role']})
+    return {'path': path.relative_to(root), 'actors': actors,
+            'scenario_id': ids.pool_tag(ids.cohort_id(raid, mode, row['boss_key'], 0))}
+
+
 def discover(root: Path, encounter: dict) -> dict:
     """Bind catalog observations. Presence is never research/live acceptance."""
     raid, boss, mode = (encounter[k] for k in ('raid', 'boss', 'mode'))
@@ -106,6 +144,9 @@ def discover(root: Path, encounter: dict) -> dict:
     # their roster, route, profile or GUIDs as a heroic/25-player scenario.
     if raid == 'blackwing_descent' and mode == '10N':
         shard = next((s for s in document(root, SHARDS).get('shards', []) if s['boss_key'] == shard_boss), None)
+    # The accepted legacy BWD 10N shards keep precedence in round 1; other
+    # encounters bind the canonical composition when one declares them.
+    composition = None if shard else composition_roster(root, raid, mode, boss)
     if shard:
         for bot in shard['bots']:
             if bot.get('pool_tag') != shard.get('pool_tag') or bot.get('runtime_profile_id') != shard.get('runtime_profile_id'):
@@ -114,6 +155,11 @@ def discover(root: Path, encounter: dict) -> dict:
                    'class_spec': b['class_spec'], 'role': b['role']} for b in shard['bots']]
         roster_source = sources[str(SHARDS)]
         roster_state = 'declared_diagnostic_roster_requires_current_readback'
+    elif composition:
+        actors = composition['actors']
+        sources[str(composition['path'])] = ref(root, composition['path'])
+        roster_source = sources[str(composition['path'])]
+        roster_state = 'declared_canonical_composition_requires_generated_plan_and_readback'
     elif size == 25 and sources[str(ROSTER)]:
         slots = read(root / ROSTER)['slots']
         actors = [{'actor_id': s['slot'], 'slot': s['slot'], 'class_spec': s['class_spec'], 'role': s['role']} for s in slots]
@@ -155,6 +201,14 @@ def discover(root: Path, encounter: dict) -> dict:
                 raise GraphError('route boss/difficulty/profile/provisioning disagrees with shard')
             runtime = {'status': 'declared_requires_generated_assets_and_native_admission', 'scenario_id': shard['scenario_id'],
                        'profile_id': shard['runtime_profile_id'], 'pool_tag': shard['pool_tag']}
+    elif composition:
+        scenario_id = composition['scenario_id']
+        route = next((r for r in document(root, ROUTES).get('diagnostic_scenarios', []) if r['id'] == scenario_id), None)
+        runtime = {'status': ('declared_requires_generated_assets_and_native_admission' if route
+                              else 'missing_exact_runtime_scenario'),
+                   'scenario_id': scenario_id if route else None,
+                   'profile_id': scenario_id if route else None,
+                   'pool_tag': scenario_id if route else None}
     return {'encounter': encounter, 'sources': sources, 'research': {
         'dossier': strategy['dossier'], 'contract': contract_ref, 'ledger': ledger_ref,
         'fidelity_state': contract.get('fidelity_state', strategy.get('fidelity_state')),

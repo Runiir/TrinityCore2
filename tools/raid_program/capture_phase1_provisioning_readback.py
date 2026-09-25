@@ -46,12 +46,13 @@ def validate_readback(
     group_instance_rows: int = 0,
     group_rows: int = 0,
     required_roles: dict[str, int] | None = None,
+    roster_size: int = 10,
 ) -> list[str]:
     reasons: list[str] = []
     expected_by_name = {str(row["name"]): row for row in expected}
     observed_by_name = {str(row["name"]): row for row in observed}
-    if len(expected_by_name) != 10 or len(observed_by_name) != 10:
-        reasons.append("exact_ten_names")
+    if len(expected_by_name) != roster_size or len(observed_by_name) != roster_size:
+        reasons.append("exact_ten_names" if roster_size == 10 else f"exact_{roster_size}_names")
     if set(expected_by_name) != set(observed_by_name):
         reasons.append("exact_names")
     if len({int(row.get("guid") or 0) for row in observed}) != len(observed):
@@ -59,7 +60,7 @@ def validate_readback(
     role_counts = {role: sum(str(row.get("role")) == role for row in observed) for role in ("tank", "healer", "dps")}
     expected_roles = {role: sum(str(row.get("role")) == role for row in expected) for role in ("tank", "healer", "dps")}
     declared_roles = expected_roles if required_roles is None else required_roles
-    if (sum(expected_roles.values()) != 10 or expected_roles != declared_roles
+    if (sum(expected_roles.values()) != roster_size or expected_roles != declared_roles
             or role_counts != declared_roles):
         reasons.append("exact_roles")
     for name, expected_row in expected_by_name.items():
@@ -256,6 +257,59 @@ def load_materialized_readback_contract(
     }
 
 
+def load_raid_shard_readback_contract(
+    plan_path: Path,
+    scenario_id: str,
+    gear_profiles: Path,
+    dbc_dir: Path,
+) -> dict[str, Any]:
+    """Load one raid-shard plan cohort with its materialized two-spec loadouts."""
+    from tools.raid_program.raid_loadout_sql import prepare_config
+
+    plan = json.loads(Path(plan_path).read_text(encoding="utf-8"))
+    shard = _single(plan.get("shards", []), "scenario_id", scenario_id)
+    config = prepare_config(plan, gear_profiles, dbc_dir, [scenario_id])
+    scenario = _single(config["scenarios"], "id", scenario_id)
+    expected = [{
+        **bot,
+        "guid": int(bot["expected_character_guid"]),
+        "expected_account_id": int(bot["expected_account_id"]),
+        "canonical_roster_slot_id": str(bot["canonical_roster_slot_id"]),
+        "experiment_tags": scenario_id,
+    } for bot in scenario["bots"]]
+    if len(expected) != int(shard["required_bot_count"]):
+        raise ValueError(f"raid_shard_roster_size:{scenario_id}")
+    return {
+        "scenario_id": scenario_id,
+        "fixture": plan,
+        "scenario": scenario,
+        "shard": shard,
+        "expected": expected,
+        "start": shard["start_position"],
+        "roster_size": int(shard["required_bot_count"]),
+        "default_consumables": list(config.get("default_consumables", [])),
+    }
+
+
+def loadout_readback_reasons(
+    contract: dict[str, Any],
+    observed_loadouts: dict[str, dict[str, Any]],
+    dbc_dir: Path,
+) -> tuple[list[str], list[dict[str, Any]]]:
+    """Talent group 1, glyph group 1 and bag != 0 checks for loadout rosters."""
+    from tools.bot_ml.build_validation_provisioning import gem_item_enchant_map
+    from tools.raid_program.raid_loadout_readback import loadout_readback_failures
+
+    gem_mapping = gem_item_enchant_map(dbc_dir)
+    failures: list[dict[str, Any]] = []
+    for row in contract["expected"]:
+        if row.get("loadout"):
+            failures.extend(loadout_readback_failures(
+                row, observed_loadouts.get(str(row["name"]), {}),
+                contract.get("default_consumables", []), gem_mapping, dbc_dir))
+    return sorted({f"{failure['bot']}:{failure['check']}" for failure in failures}), failures
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Capture an exact DB-backed BWD Phase 1 roster readback")
     parser.add_argument("--provisioning-config", type=Path, default=ROOT / "experiments/configs/validation_provisioning_cata_001.json")
@@ -264,18 +318,26 @@ def main() -> int:
     parser.add_argument("--scenario-id", default=CANONICAL_SCENARIO_ID)
     parser.add_argument("--worldserver-conf", type=Path, default=ROOT / "trinity-worldserver-test.conf")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--raid-shard-plan", type=Path,
+                        help="Read back a raid_shard_plan_v1 cohort (two-spec loadouts) instead of the legacy BWD fixture.")
+    parser.add_argument("--gear-profiles", type=Path, default=ROOT / "dataset/validation_gear_profiles/profiles.json")
+    parser.add_argument("--dbc-dir", type=Path, default=ROOT / "data/dbc/enUS")
     add_runtime_asset_closure_arguments(parser)
     args = parser.parse_args()
 
     enforce_runtime_asset_closure_from_args(
         args, worldserver_config=args.worldserver_conf,
     )
-    contract = load_materialized_readback_contract(
-        args.provisioning_config,
-        args.scenario_config,
-        args.bwd_shard_fixture,
-        args.scenario_id,
-    )
+    if args.raid_shard_plan:
+        contract = load_raid_shard_readback_contract(
+            args.raid_shard_plan, args.scenario_id, args.gear_profiles, args.dbc_dir)
+    else:
+        contract = load_materialized_readback_contract(
+            args.provisioning_config,
+            args.scenario_config,
+            args.bwd_shard_fixture,
+            args.scenario_id,
+        )
     expected = contract["expected"]
     scenario = contract["scenario"]
     expected_by_name = {str(row["name"]): row for row in expected}
@@ -360,9 +422,16 @@ def main() -> int:
         corpse_phase_rows=corpse_phase_rows,
         group_instance_rows=group_instance_rows,
         group_rows=group_rows,
+        roster_size=int(contract.get("roster_size", 10)),
     )
     reasons = sorted(set(reasons + validate_hunter_pet_readback(
         expected_hunter_pets, observed_hunter_pets)))
+    loadout_failures: list[dict[str, Any]] = []
+    if any(row.get("loadout") for row in expected):
+        from tools.raid_program.raid_loadout_readback import fetch_runtime_loadouts
+        loadout_reasons, loadout_failures = loadout_readback_reasons(
+            contract, fetch_runtime_loadouts(character_url, names), args.dbc_dir)
+        reasons = sorted(set(reasons + loadout_reasons))
     payload = {
         "schema": "cata_raid_phase1_bwd_provisioning_readback_v6",
         "scenario_id": args.scenario_id,
@@ -394,6 +463,14 @@ def main() -> int:
         "selected_name_count": len(names),
         "query_contract": "exact selected ten names joined to character_bot_pool plus exact selected ten auth usernames; exact expected hunter character_pet IDs with owner/id/entry/active/slot/PetType; ordered; exact character-instance/group/ghost-aura/corpse/corpse-phase residue counts",
     }
+    if args.raid_shard_plan:
+        payload["source_sha256"]["raid_shard_plan"] = sha256_file(args.raid_shard_plan)
+        payload["query_contract"] = (
+            "exact selected roster names joined to character_bot_pool plus exact auth usernames; hunter "
+            "character_pet rows; residue counts; every talent group, glyph group, spell and inventory row "
+            "including bag != 0 compared with the materialized two-spec loadout")
+    if any(row.get("loadout") for row in expected):
+        payload["loadout_readback_failures"] = loadout_failures
     write_json(args.output, payload)
     print(json.dumps(payload, sort_keys=True))
     return 0 if not reasons else 1

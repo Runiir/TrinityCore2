@@ -5,7 +5,7 @@ import json
 import math
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 try:
     from .common import stable_hash, write_json, write_jsonl
@@ -643,35 +643,54 @@ def diagnostic_contract_status(
     }
 
 
-def diagnostic_rosters_by_scenario(fixture: dict[str, Any] | None) -> dict[str, list[dict[str, Any]]]:
-    """Translate tracked shard characters into the immutable runtime roster schema."""
-    if not fixture:
-        return {}
-    if fixture.get("schema") != "cata_raid_bwd_diagnostic_shard_fixture_v1":
-        raise ValueError("diagnostic_shard_fixture_schema")
+DIAGNOSTIC_ROSTER_SCHEMAS = {
+    # Accepted legacy BWD 10N layout (six shards of ten).
+    "cata_raid_bwd_diagnostic_shard_fixture_v1",
+    # Raid x boss x copies plans from tools.raid_program.raid_shard_plan.
+    "raid_shard_plan_v1",
+}
+
+
+def diagnostic_rosters_by_scenario(
+    fixture: dict[str, Any] | None,
+    raid_shard_plans: Sequence[dict[str, Any]] = (),
+) -> dict[str, list[dict[str, Any]]]:
+    """Translate tracked shard characters into the immutable runtime roster schema.
+
+    Shard and roster sizes come from each source's declared `shard_count` and
+    each shard's `required_bot_count`; no raid or size is hard-coded.
+    """
+    sources = ([fixture] if fixture else []) + list(raid_shard_plans)
     rosters: dict[str, list[dict[str, Any]]] = {}
-    for shard in fixture.get("shards", []):
-        scenario_id = str(shard.get("scenario_id") or "")
-        bots = shard.get("bots") if isinstance(shard.get("bots"), list) else []
-        roster = [
-            {
-                "roster_slot_id": str(bot.get("canonical_roster_slot_id") or ""),
-                "guid": int(bot.get("character_guid") or 0),
-                "name": str(bot.get("name") or ""),
-                "role": str(bot.get("role") or ""),
-                "class_spec": str(bot.get("class_spec") or ""),
-            }
-            for bot in bots
-        ]
-        if not scenario_id or len(roster) != 10:
-            raise ValueError(f"diagnostic_shard_roster_shape:{scenario_id}")
-        if len({row["guid"] for row in roster}) != 10 or len({row["roster_slot_id"] for row in roster}) != 10:
-            raise ValueError(f"diagnostic_shard_roster_identity:{scenario_id}")
-        if any(not row["guid"] or not row["name"] or not row["role"] or not row["class_spec"] or not row["roster_slot_id"] for row in roster):
-            raise ValueError(f"diagnostic_shard_roster_incomplete:{scenario_id}")
-        rosters[scenario_id] = roster
-    if len(rosters) != 6:
-        raise ValueError("diagnostic_shard_roster_count")
+    for source in sources:
+        if source.get("schema") not in DIAGNOSTIC_ROSTER_SCHEMAS:
+            raise ValueError("diagnostic_shard_fixture_schema")
+        shards = source.get("shards") if isinstance(source.get("shards"), list) else []
+        for shard in shards:
+            scenario_id = str(shard.get("scenario_id") or "")
+            size = int(shard.get("required_bot_count") or 0)
+            bots = shard.get("bots") if isinstance(shard.get("bots"), list) else []
+            roster = [
+                {
+                    "roster_slot_id": str(bot.get("canonical_roster_slot_id") or ""),
+                    "guid": int(bot.get("character_guid") or 0),
+                    "name": str(bot.get("name") or ""),
+                    "role": str(bot.get("role") or ""),
+                    "class_spec": str(bot.get("class_spec") or ""),
+                }
+                for bot in bots
+            ]
+            if not scenario_id or size <= 0 or len(roster) != size:
+                raise ValueError(f"diagnostic_shard_roster_shape:{scenario_id}")
+            if len({row["guid"] for row in roster}) != size or len({row["roster_slot_id"] for row in roster}) != size:
+                raise ValueError(f"diagnostic_shard_roster_identity:{scenario_id}")
+            if any(not row["guid"] or not row["name"] or not row["role"] or not row["class_spec"] or not row["roster_slot_id"] for row in roster):
+                raise ValueError(f"diagnostic_shard_roster_incomplete:{scenario_id}")
+            if scenario_id in rosters:
+                raise ValueError(f"diagnostic_shard_roster_duplicate_scenario:{scenario_id}")
+            rosters[scenario_id] = roster
+        if len(shards) != int(source.get("shard_count") or 0):
+            raise ValueError("diagnostic_shard_roster_count")
     return rosters
 
 
@@ -680,6 +699,7 @@ def build_manifests(
     provisioning_report: dict[str, Any],
     provisioning_verify_report: dict[str, Any],
     diagnostic_fixture: dict[str, Any] | None = None,
+    raid_shard_plans: Sequence[dict[str, Any]] = (),
 ) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
     provisioned = scenario_by_id(provisioning_report)
     verification_ready = bool(provisioning_verify_report.get("all_passed"))
@@ -692,7 +712,7 @@ def build_manifests(
         for row in configured_scenarios
         if isinstance(row, dict) and row.get("id")
     }
-    diagnostic_rosters = diagnostic_rosters_by_scenario(diagnostic_fixture)
+    diagnostic_rosters = diagnostic_rosters_by_scenario(diagnostic_fixture, raid_shard_plans)
 
     for scenario in configured_scenarios:
         scenario_id = str(scenario.get("id") or "")
@@ -1093,6 +1113,8 @@ def main() -> int:
     parser.add_argument("--provisioning-report", type=Path, default=Path("dataset/validation_provisioning/report.json"))
     parser.add_argument("--provisioning-verification", type=Path, default=Path("dataset/validation_provisioning_verification/report.json"))
     parser.add_argument("--bwd-diagnostic-shard-fixture", type=Path, default=Path("experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json"))
+    parser.add_argument("--raid-shard-plan", type=Path, action="append", default=[],
+                        help="Optional raid_shard_plan_v1 plan.json whose shard rosters bind diagnostic scenarios.")
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_scenarios"))
     args = parser.parse_args()
 
@@ -1101,6 +1123,7 @@ def main() -> int:
         load_json(args.provisioning_report),
         load_json(args.provisioning_verification),
         load_json(args.bwd_diagnostic_shard_fixture),
+        [load_json(path) for path in args.raid_shard_plan],
     )
     counts: dict[str, int] = {}
     hashes: dict[str, str] = {}
