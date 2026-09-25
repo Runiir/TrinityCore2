@@ -24,6 +24,7 @@ INCLUDES = [
 
 PROGRAM = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
+#include "Bots/BotWorldPopulationMgrRaidConsumables.h"
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -184,6 +185,40 @@ int main()
         CHECK(tank.OwnsNode && !tank.SuppressOffense);
         CHECK(tank.DamageTarget == Boss(board).Guid);
         CHECK(std::string(tank.Duty) == "pull_tank");
+        // Round 3: the shared pre-pot stage (PrepotStageReady) opens only on
+        // an unsuppressed pull owner or on "prepull_pull_owner_wait". Every
+        // holder reports the closed pull gate, so no 25 s potion is spent
+        // while the raid is still dead, healing or off the entrance line.
+        {
+            auto prepotReady = [&board](Slot slot)
+            {
+                AdaptiveMaloriakPlan const plan = Plan(board, slot);
+                return BotWorldPopulationMgrRaidConsumables::PrepotStageReady(
+                    plan.OwnsNode, plan.SuppressOffense, plan.SuppressReason);
+            };
+            for (Slot slot : { DK, FERAL, HUNTER, HOLY, ROGUE, LOCK })
+            {
+                CHECK(prepotReady(slot));
+                if (slot != DK)
+                    CHECK(std::string(Plan(board, slot).SuppressReason) == "prepull_pull_owner_wait");
+            }
+            board.Route.PullPermitted = false;
+            for (Slot slot : { DK, FERAL, MAGE, DISC })
+            {
+                CHECK(!prepotReady(slot));
+                CHECK(std::string(Plan(board, slot).SuppressReason) == "prepull_pull_timer_wait");
+            }
+            board.Route.PullPermitted = true;
+            board.Players[RET].HealthPct = 60.0f;
+            for (Slot slot : { DK, SHAMAN, HOLY })
+            {
+                CHECK(!prepotReady(slot));
+                CHECK(std::string(Plan(board, slot).SuppressReason) == "prepull_health_recovery");
+            }
+            board.Players[RET].HealthPct = 100.0f;
+            for (Slot slot : { DK, FERAL, RET })
+                CHECK(prepotReady(slot));
+        }
         board.Route.PullPermitted = false;
         CHECK(std::string(Plan(board, DK).SuppressReason) == "prepull_pull_timer_wait");
         board.Route.PullPermitted = true;
@@ -192,6 +227,7 @@ int main()
         board.Players[LOCK].HealthPct = 100.0f;
         board.Players[LOCK].Alive = false;
         CHECK(std::string(Plan(board, DK).SuppressReason) == "prepull_raid_dead_wait");
+        CHECK(std::string(Plan(board, MAGE).SuppressReason) == "prepull_raid_dead_wait");
         board.Players[LOCK].Alive = true;
         std::vector<Vector3> staged;
         for (Slot slot : { HUNTER, MAGE, HOLY, RET, DISC, ROGUE, SHAMAN, LOCK })
@@ -199,7 +235,9 @@ int main()
             board.Players[slot].Position = { -105.0f, -415.0f, 77.0f };
             AdaptiveMaloriakPlan const plan = Plan(board, slot);
             CHECK(plan.SuppressOffense && plan.DamageTarget.IsEmpty());
-            CHECK(std::string(plan.SuppressReason) == "prepull_pull_owner_wait");
+            CHECK(std::string(plan.SuppressReason) == "prepull_formation_staging");
+            CHECK(!BotWorldPopulationMgrRaidConsumables::PrepotStageReady(
+                plan.OwnsNode, plan.SuppressOffense, plan.SuppressReason));
             CHECK(plan.Movement.has_value());
             Vector3 const at = Destination(plan);
             CHECK(Dist(at, Boss(board).Position) > 27.0f);

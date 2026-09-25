@@ -189,9 +189,9 @@ private:
         });
         bool const pullTank = bot.Guid == tanks.MainTank
             || (tanks.MainTank.IsEmpty() && botRole == "tank");
+        std::string_view const hold = PullHoldReason(board, staged);
         if (pullTank)
         {
-            std::string_view const hold = PullHoldReason(board, staged);
             if (hold.empty())
             {
                 plan.DamageTarget = boss.Guid;
@@ -209,7 +209,12 @@ private:
             return;
         }
         plan.SuppressOffense = true;
-        plan.SuppressReason = "prepull_pull_owner_wait";
+        // Every holder reports the closed pull gate, not only the pull tank:
+        // the shared pre-pot stage keys on "prepull_pull_owner_wait", and a
+        // 25 s potion must not be spent while the raid is still dead,
+        // healing or staging (round 3). Once the gate opens the raid waits
+        // only on the pull owner.
+        plan.SuppressReason = hold.empty() ? "prepull_pull_owner_wait" : hold;
         plan.Duty = "prepull_stage";
         Vector3 const destination = botRole == "tank"
             ? Maloriak::AddAnchorFor(boss.Position, &bot.Position)

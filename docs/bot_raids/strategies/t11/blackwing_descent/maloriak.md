@@ -184,7 +184,9 @@ clamped to the room floor:
 
 - pre-pull: the entrance line about 28 yd from the boss, with offense held until the pull tank
   engages. The pull tank waits for the play-mode pull timer, for nobody dead, for everyone at 70%
-  health or more, and for every non-tank within 15 yd of its slot;
+  health or more, and for every non-tank within 15 yd of its slot. Every holder reports that
+  gate's reason, and only a satisfied gate reports `prepull_pull_owner_wait`, so the shared
+  25-second pre-pot waits for the pull gate (round 3);
 - Red: rows in front inside the cone, melee at ±25° beside the tank, Consuming Flames targets
   behind;
 - Blue, Dark and phase two: a fan behind the boss at 18 yd, 40° apart, and melee behind at ±50°
