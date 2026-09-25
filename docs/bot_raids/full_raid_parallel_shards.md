@@ -501,18 +501,33 @@ Boss notes:
 The full handoffs, with patch texts, are in `.git/round2_patches/<package>/handoff.md`.
 
 1. Land every package's review fixes and re-reviews first.
-2. Shared dispatch files, applied in this order by one owner:
-   - Atramedes patches P1-P6, then the Chimaeron dispatch patch with `patch -p1`.
-     Hand-merge `EncounterBlackboard.cpp` hunk 1 (both constant blocks stay) and
-     `UpdateContext.h`.
-   - Then Nefarian R1-R5, then the Omnotron and Maloriak requests.
-   - Split `BotWorldPopulationMgrUpdateBotKernelCandidates.cpp` first. It is at 966
-     lines after Atramedes. Move the per-boss offense-suppression near-copies
-     (Magmaw, Omnotron, Atramedes) into one shared helper TU.
+2. Shared dispatch files, applied in this order by one owner. Each patch's handoff
+   names its merge points. Never use `patch -F3`: it silently misplaces hunks.
+   - Atramedes P1-P6 (clean on HEAD).
+   - The Chimaeron dispatch patch with `patch -p1`. `UpdateContext.h` takes fuzz 1.
+     Hand-merge `EncounterBlackboard.cpp`: both constant blocks stay, and the
+     Chimaeron timer call goes after the Atramedes call.
+   - Nefarian R1-R5 and W1 (anchored away from Omnotron's hunks).
+   - M's MP1 and MP2 (MP2 carries the Bloodlust owner fix).
+   - Omnotron's diffs. Hand-merge `BotWorldPopulationMgr.h` (Omnotron declarations
+     after Chimaeron's), `KernelFallback.cpp`
+     (`SubmitAdaptiveOmnotronRouteAuthority` after
+     `SubmitAdaptiveChimaeronRouteObservation`, both after
+     `ConfigureValidationRouteCombatAuthority`) and the `Status.cpp` include (next to
+     Nefarian's).
+   - Maloriak's dispatch patch. Hand-merge the `BotWorldPopulationMgr.h` declaration,
+     the candidates call site and the timer function.
+   - Line counts stay under 1,000 at every step. `KernelCandidates.cpp` peaks at 992
+     after Nefarian R3, drops to 887 after Omnotron moves its blocks out, then to 779
+     after Maloriak does. No split is needed first.
    - The arbitration replay (`tests/test_bot_action_arbitration.py`) must get past the
-     older Magmaw `pillar_bait_switch` assertion so the Atramedes and Chimaeron sections
-     run. Also land Atramedes' `arbitration_test.patch` and Nefarian's arbitration
-     patch.
+     older Magmaw `pillar_bait_switch` and `StackSeparation` assertions, so the
+     Atramedes, Chimaeron, Omnotron, Maloriak and Nefarian sections run. Also land
+     Atramedes' `arbitration_test.patch` and Nefarian's R5.
+   - After the round: replace the three kill-credit observers (Maloriak's Fallback
+     branch, Omnotron's route authority, Chimaeron's route observation) with one
+     table-driven observer, keeping Magmaw's key and reason strings byte-identical.
+     Also factor out the offense-suppression near-copies.
 3. Fidelity registry entries: Atramedes (non-10N rows without a 10N ledger pointer),
    Chimaeron, Nefarian, Omnotron and Maloriak.
 4. Decide on the staged Atramedes SQL (Devastation targets the Noisy player).
@@ -527,8 +542,8 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
 8. Magmaw smoke on the canonical roster, then the six BWD c0 shards in parallel through
    the raid program (`program run-plan`, `shard_coordinator`, `program run`,
    `program ingest`, `program assess`).
-9. Apply the AGENTS.md routing text (end of `references/raid-program.md`) and the
-   `development_graph.md` note after R's re-review approves.
+9. Done: the AGENTS.md routing and the `development_graph.md` note landed in
+   d335b6a506, after R's approval.
 
 ## Later rounds
 
