@@ -564,7 +564,12 @@ def test_unknown_profile_is_a_failed_start_that_ends_the_watchdog(tmp_path: Path
                                   sleep=fast_watchdog()).run()
     by_id = {row["cohort_id"]: row for row in summary["shards"]}
     maloriak = by_id["blackwing_descent_10n_maloriak_c0"]
-    assert maloriak["failed_starts"] == 1
+    assert maloriak["failed_starts"] == 1 and maloriak["start_refusal"] == "unknown_profile"
+    # A refused start never passes: the shard did not run.
+    assert summary["terminal_reason"] == "setup_failed"
+    assert summary["refused_starts"] == {"blackwing_descent_10n_maloriak_c0": "unknown_profile"}
+    assert sc.terminal_reason(infrastructure=False, setup_failed=True, shard_errors=False, completed=True) \
+        == "setup_failed"
     shard = tmp_path / "shards" / "blackwing_descent_10n_maloriak_c0"
     rejections = [json.loads(line) for line in (shard / "demux_rejections.jsonl").read_text().splitlines()]
     assert {"reason": "start_failed"}.items() <= rejections[0].items()
@@ -688,7 +693,7 @@ def test_worldserver_exit_is_infrastructure_loss(tmp_path: Path) -> None:
                                   sleep=fast_watchdog()).run()
     assert summary["terminal_reason"] == "infrastructure_loss"
     assert summary["console"] == {"transport_failed": False, "server_exited": True, "server_exit_code": 139,
-                                  "healthy": False}
+                                  "healthy": False, "abandoned_reply_pending": False}
 
 
 def test_unverified_teardown_is_infrastructure_loss(tmp_path: Path) -> None:
@@ -796,28 +801,155 @@ def test_watchdog_interruption_tears_down_and_clears(tmp_path: Path) -> None:
     assert not any(cohort["active"] for cohort in world.cohorts.values())
 
 
-def test_interrupted_console_transport_returns_early(tmp_path: Path) -> None:
-    import subprocess
-    import sys
+STAND_IN = r"""
+import json, sys, time
+sys.path.insert(0, sys.argv[2])
+sys.path.insert(0, sys.argv[3])
+from test_shard_coordinator import FakeWorld
 
-    log = tmp_path / "console.log"
-    log.write_bytes(b"")
-    with log.open("ab") as sink:
-        process = subprocess.Popen([sys.executable, "-c", "import sys, time; sys.stdin.readline(); time.sleep(30)"],
-                                   stdin=subprocess.PIPE, stdout=sink, stderr=sink)
+world = FakeWorld()
+slow = sys.argv[4]
+for line in sys.stdin:
+    command = "." + line.strip()
+    with open(sys.argv[1], "a") as received:
+        received.write(command + "\n")
+    if slow and command.startswith(slow):
+        time.sleep(1.5)  # a wedged reply the interruption abandons
+    output, _, _ = world.answer(command)
+    sys.stdout.write(output)
+    sys.stdout.flush()
+"""
+
+
+class StandIn:
+    """A worldserver stand-in process: FakeWorld behind real stdin and a console log."""
+
+    def __init__(self, tmp_path: Path, slow: str = ""):
+        import subprocess
+        import sys
+
+        self.log = tmp_path / "worldserver.console.log"
+        self.received = tmp_path / "received.txt"
+        script = tmp_path / "stand_in.py"
+        script.write_text(STAND_IN, encoding="utf-8")
+        self.log.write_bytes(b"")
+        self.received.write_text("")
+        with self.log.open("ab") as sink:
+            self.process = subprocess.Popen(
+                [sys.executable, str(script), str(self.received), str(ROOT / "tests"), str(ROOT), slow],
+                stdin=subprocess.PIPE, stdout=sink, stderr=sink, cwd=ROOT)
+
+    def commands(self) -> list[str]:
+        return self.received.read_text().splitlines()
+
+    def close(self) -> None:
+        self.process.kill()
+        self.process.wait()
+
+
+def test_interrupted_shard_exchange_returns_early_and_teardown_still_reaches_the_server(tmp_path: Path) -> None:
+    stand_in = StandIn(tmp_path, slow=".botauto stop blackwing_descent_10n_magmaw_c0")
     try:
         event = threading.Event()
-        transport = sc.ShardConsoleTransport(process, log)
+        transport = sc.ShardConsoleTransport(stand_in.process, stand_in.log)
         transport.interrupted = event
+        transport.drain_timeout_sec = 10
+        console = sc.SerializedConsole(transport)
+        assert console(".botauto create blackwing_descent_10n_magmaw_c0", 10)[1] == 0
+        assert console(".botauto create blackwing_descent_10n_maloriak_c0", 10)[1] == 0
         threading.Timer(0.3, event.set).start()
         started = time.monotonic()
-        output, code, timed_out = transport(".botauto status c", 600)
-        assert time.monotonic() - started < 5
-        assert (code, timed_out) == (1, False) and transport.failed
-        assert transport(".botauto status c", 600) == ("", 1, False)  # latched
+        # A shard's own exchange is abandoned at once: the reply is owed, the console is not failed.
+        output, code, timed_out = console(".botauto stop blackwing_descent_10n_magmaw_c0", 600,
+                                          owner="blackwing_descent_10n_magmaw_c0")
+        assert time.monotonic() - started < 1.2
+        assert (code, timed_out) == (1, False)
+        assert transport.dirty and not transport.failed
+        # Later shard exchanges never reach the server once interrupted.
+        assert console(".botauto status blackwing_descent_10n_magmaw_c0", 600,
+                       owner="blackwing_descent_10n_magmaw_c0") == ("", 1, False)
+        # Coordinator exchanges ignore the event: they drain the abandoned reply first,
+        # so its late botauto_stop line can never answer another cohort's stop.
+        output, code, timed_out = console(".botauto stop blackwing_descent_10n_maloriak_c0", 10)
+        assert (code, timed_out) == (0, False) and not transport.dirty and not transport.failed
+        stops = [json.loads(line[line.index("{"):]) for line in output.splitlines() if "botauto_stop" in line]
+        assert [row["cohort_id"] for row in stops] == ["blackwing_descent_10n_maloriak_c0"]
+        output, code, _ = console(".botauto lockout clear blackwing_descent_10n_maloriak_c0", 10)
+        assert code == 0 and "botauto_lockout" in output
+        assert console(".botauto cohorts", 10)[1] == 0
+        received = stand_in.commands()
+        assert ".botauto stop blackwing_descent_10n_maloriak_c0" in received
+        assert ".botauto lockout clear blackwing_descent_10n_maloriak_c0" in received
+        assert ".botauto status blackwing_descent_10n_magmaw_c0" not in received
+        assert console.health()["healthy"] is True
     finally:
-        process.kill()
-        process.wait()
+        stand_in.close()
+
+
+def test_undrainable_abandoned_reply_latches_the_console(tmp_path: Path) -> None:
+    stand_in = StandIn(tmp_path, slow=".botauto status blackwing_descent_10n_magmaw_c0")
+    try:
+        event = threading.Event()
+        transport = sc.ShardConsoleTransport(stand_in.process, stand_in.log)
+        transport.interrupted = event
+        transport.drain_timeout_sec = 0.2  # shorter than the wedged reply
+        console = sc.SerializedConsole(transport)
+        console(".botauto create blackwing_descent_10n_magmaw_c0", 10)
+        threading.Timer(0.2, event.set).start()
+        console(".botauto status blackwing_descent_10n_magmaw_c0", 600, owner="blackwing_descent_10n_magmaw_c0")
+        assert transport.dirty
+        output, code, timed_out = console(".botauto cohorts", 10)
+        assert (code, timed_out) == (1, True) and transport.failed
+        assert ".botauto cohorts" not in stand_in.commands()  # never sent into a contaminated console
+    finally:
+        stand_in.close()
+
+
+def test_interrupted_run_tears_down_through_a_real_console(tmp_path: Path) -> None:
+    """Ctrl-C while a shard reply is in flight: teardown's stops and clear still arrive."""
+    stand_in = StandIn(tmp_path, slow=".botauto diagnose blackwing_descent_10n_maloriak_c0")
+    try:
+        transport = sc.ShardConsoleTransport(stand_in.process, stand_in.log)
+        event = threading.Event()
+        transport.interrupted = event
+        transport.drain_timeout_sec = 20
+        plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=30, emergency_timeout_sec=60)
+        run_root = tmp_path / "run"
+        run_root.mkdir()
+
+        def watchdog(shard_transport, command, *args, **kwargs):
+            if shard_transport.spec.cohort_id.endswith("maloriak_c0"):
+                inner = shard_transport
+
+                def interrupting(text: str, timeout: int) -> tuple[str, int, bool]:
+                    if text.startswith(".botauto diagnose"):
+                        threading.Timer(0.3, event.set).start()  # operator Ctrl-C mid-reply
+                    return inner(text, timeout)
+
+                shard_transport = interrupting
+            return harness.run_transport_completion_watchdog(shard_transport, command, *args, **kwargs)
+
+        coordinator = sc.ShardCoordinator(plan, sc.SerializedConsole(transport), run_root, scenario_dir=SCENARIOS,
+                                          watchdog=watchdog, sleep=fast_watchdog(0.2), interrupted=event)
+        with pytest.raises(KeyboardInterrupt):
+            coordinator.run()
+        summary = json.loads((run_root / "shard_run.json").read_text())
+        assert summary["terminal_reason"] == "interruption"
+        received = stand_in.commands()
+        slow_at = received.index(".botauto diagnose blackwing_descent_10n_maloriak_c0 all")
+        after = received[slow_at + 1:]
+        # No shard command follows the interrupted reply; teardown owns the console.
+        assert after[0] == ".botauto cohorts"
+        assert ".botauto lockout clear blackwing_descent_10n_maloriak_c0" in after
+        assert after[-1] == ".botauto cohorts"
+        stopped = {command.split()[2] for command in after if command.startswith(".botauto stop")}
+        assert stopped == {"blackwing_descent_10n_magmaw_c0", "blackwing_descent_10n_maloriak_c0"}
+        assert summary["teardown"]["verified"] is True
+        assert summary["teardown"]["lockouts_cleared"]["blackwing_descent_10n_maloriak_c0"]["ok"] is True
+        assert summary["console"]["transport_failed"] is False
+        assert summary["console"]["abandoned_reply_pending"] is False  # drained before teardown sent
+    finally:
+        stand_in.close()
 
 
 @pytest.mark.parametrize(("flags", "reason"), [

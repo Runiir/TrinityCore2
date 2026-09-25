@@ -276,26 +276,71 @@ class ShardConsoleTransport(ConsoleTransport):
             actions = re.escape(("botauto_" + verb).encode())
         return re.compile(rb'"action"\s*:\s*"' + actions + rb'"')
 
+    # Shard-owned exchanges may be abandoned when the run is interrupted; the
+    # coordinator's own exchanges (teardown: stop, lockout clear, registry)
+    # never are, so an interrupted run still cleans the server up.
+    supports_interruptible = True
     interrupted: threading.Event | None = None
+    drain_timeout_sec: int = 180
 
     @classmethod
     def adopt(cls, transport: ConsoleTransport, max_response_bytes: int = 256 * 1024 * 1024,
-              interrupted: threading.Event | None = None) -> "ShardConsoleTransport":
+              interrupted: threading.Event | None = None,
+              drain_timeout_sec: int = 180) -> "ShardConsoleTransport":
         adopted = cls(transport.process, transport.log_path, max_response_bytes)
         adopted.interrupted = interrupted
+        adopted.drain_timeout_sec = drain_timeout_sec
         return adopted
 
-    def __call__(self, command: str, timeout_sec: int) -> tuple[str, int, bool]:
+    @property
+    def dirty(self) -> bool:
+        """An abandoned reply is still owed by the worldserver."""
+        return getattr(self, "_abandoned", None) is not None
+
+    def _abandon(self, marker: re.Pattern[bytes], offset: int, output: bytes) -> None:
+        self._abandoned = (marker, offset, bytes(output))
+
+    def _drain(self, timeout_sec: float) -> bool:
+        """Read the abandoned reply up to its prompt so it cannot answer a later command."""
+        marker, offset, seen = self._abandoned
+        output = bytearray(seen)
+        deadline = time.monotonic() + timeout_sec
+        with self.log_path.open("rb") as stream:
+            stream.seek(offset)
+            while True:
+                output.extend(stream.read(1024 * 1024))
+                found = marker.search(output)
+                if found and b"TC>" in output[found.end():]:
+                    self._abandoned = None
+                    return True
+                if self.process.poll() is not None or time.monotonic() >= deadline:
+                    return False
+                if len(output) > self.max_response_bytes:
+                    return False
+                time.sleep(0.05)
+
+    def __call__(self, command: str, timeout_sec: int, *,
+                 interruptible: bool = False) -> tuple[str, int, bool]:
         # Same framing and failure latch as ConsoleTransport; only the marker differs.
         if self.failed or self.process.poll() is not None:
             return "", 1, False
         if "\n" in command or "\r" in command or "\0" in command:
             raise ValueError("one console command required")
+        stop = self.interrupted if interruptible else None
+        if stop is not None and stop.is_set():
+            return "", 1, False
+        if self.dirty:
+            if stop is not None:
+                return "", 1, False  # only the coordinator waits for an abandoned reply
+            if not self._drain(min(float(timeout_sec), float(self.drain_timeout_sec))):
+                self.failed = True  # its late bytes could answer any later command
+                return "abandoned console reply never completed", 1, True
         marker = self.reply_marker(command)
         deadline = time.monotonic() + timeout_sec
         output = bytearray()
         with self.log_path.open("rb") as stream:
             stream.seek(0, os.SEEK_END)
+            start = stream.tell()
             assert self.process.stdin is not None
             try:
                 self.process.stdin.write((command.lstrip(".") + "\n").encode())
@@ -303,22 +348,28 @@ class ShardConsoleTransport(ConsoleTransport):
             except (BrokenPipeError, OSError):
                 self.failed = True
                 return "", 1, False
-            while time.monotonic() < deadline:
-                output.extend(stream.read(1024 * 1024))
-                if len(output) > self.max_response_bytes:
-                    self.failed = True
-                    return "console response exceeded byte budget", 1, False
-                found = marker.search(output)
-                if found and b"TC>" in output[found.end():]:
-                    return output.decode(errors="replace"), 0, False
-                if self.process.poll() is not None:
-                    self.failed = True
-                    return output.decode(errors="replace"), 1, False
-                if self.interrupted is not None and self.interrupted.is_set():
-                    # The unfinished reply could contaminate any later one.
-                    self.failed = True
-                    return output.decode(errors="replace"), 1, False
-                time.sleep(0.05)
+            try:
+                while time.monotonic() < deadline:
+                    output.extend(stream.read(1024 * 1024))
+                    if len(output) > self.max_response_bytes:
+                        self.failed = True
+                        return "console response exceeded byte budget", 1, False
+                    found = marker.search(output)
+                    if found and b"TC>" in output[found.end():]:
+                        return output.decode(errors="replace"), 0, False
+                    if self.process.poll() is not None:
+                        self.failed = True
+                        return output.decode(errors="replace"), 1, False
+                    if stop is not None and stop.is_set():
+                        # Abandoned, not failed: the next coordinator exchange
+                        # drains the rest of this reply before it sends.
+                        self._abandon(marker, start + len(output), output)
+                        return output.decode(errors="replace"), 1, False
+                    time.sleep(0.05)
+            except BaseException:
+                # Ctrl-C inside the wait: the reply is still owed; drain it later.
+                self._abandon(marker, start + len(output), output)
+                raise
         self.failed = True
         return output.decode(errors="replace"), 1, True
 
@@ -337,7 +388,11 @@ class SerializedConsole:
         with self._lock:
             started = time.time()
             try:
-                output, returncode, timed_out = self._transport(command, timeout_sec)
+                if getattr(self._transport, "supports_interruptible", False):
+                    output, returncode, timed_out = self._transport(
+                        command, timeout_sec, interruptible=owner != "coordinator")
+                else:
+                    output, returncode, timed_out = self._transport(command, timeout_sec)
             except Exception as error:  # a transport fault is a failed exchange, never a crash
                 output, returncode, timed_out = f"transport_error:{type(error).__name__}:{error}", 1, False
             self.exchanges += 1
@@ -356,7 +411,8 @@ class SerializedConsole:
         process = getattr(self._transport, "process", None)
         exit_code = process.poll() if process is not None else None
         return {"transport_failed": failed, "server_exited": exit_code is not None,
-                "server_exit_code": exit_code, "healthy": not failed and exit_code is None}
+                "server_exit_code": exit_code, "healthy": not failed and exit_code is None,
+                "abandoned_reply_pending": bool(getattr(self._transport, "dirty", False))}
 
 
 # ---------------------------------------------------------------- demultiplexing
@@ -432,6 +488,7 @@ class ShardTransport:
         self.shard_dir = shard_dir
         self.interrupted = interrupted or threading.Event()
         self.transition_timeout_sec = transition_timeout_sec
+        self.start_refusal = ""
         # One wedged reply holds the shared console: no exchange may wait
         # longer than this, whatever budget the watchdog has left.
         self.exchange_timeout_sec = max(transition_timeout_sec, exchange_timeout_sec or 0)
@@ -479,9 +536,16 @@ class ShardTransport:
             # A refused profile or admission is a failed start: the watchdog
             # stops and cleans up instead of polling an inactive cohort.
             self.failed_starts += 1
-            self._reject({"reason": "start_failed", "command": command})
+            self.start_refusal = self.refusal_reason(split.text) or "start_not_confirmed"
+            self._reject({"reason": "start_failed", "command": command, "failure_reason": self.start_refusal})
             return split.text, 1, timed_out
         return split.text, returncode, timed_out
+
+    def refusal_reason(self, text: str) -> str:
+        for row in harness.parse_json_objects(text):
+            if row.get("action") in self.START_REPLIES and row.get("ok") is not True:
+                return str(row.get("failure_reason") or row.get("action"))
+        return ""
 
     def started(self, text: str) -> bool:
         rows = harness.parse_json_objects(text)
@@ -732,6 +796,7 @@ class ShardOutcome:
             "cross_cohort_replies": self.transport.cross_cohort_replies,
             "refused_commands": self.transport.refused_commands,
             "failed_starts": self.transport.failed_starts,
+            "start_refusal": self.transport.start_refusal,
         }
 
 
@@ -977,6 +1042,12 @@ class ShardCoordinator:
             summary["infrastructure_failures"] = infrastructure
             shard_errors = {outcome.spec.cohort_id: outcome.error for outcome in self.outcomes if outcome.error}
             summary["shard_errors"] = shard_errors
+            # A refused `.botauto start` (unknown profile, admission refused)
+            # means the shard never ran: the run fails as a setup failure.
+            refused = {outcome.spec.cohort_id: outcome.transport.start_refusal
+                       for outcome in self.outcomes if outcome.transport.failed_starts}
+            summary["refused_starts"] = refused
+            setup_failed = setup_failed or bool(refused)
             if summary["terminal_reason"] != "interruption":
                 summary["terminal_reason"] = terminal_reason(
                     infrastructure=bool(infrastructure), setup_failed=setup_failed,
@@ -1161,8 +1232,10 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                        output_dir=run_root, before_launch=before_launch, lifecycle=lifecycle) as base:
         verify_process_binary(base.process, binary_sha256)
         interrupted = threading.Event()
-        console = SerializedConsole(ShardConsoleTransport.adopt(base, interrupted=interrupted),
-                                    run_root / "console_journal.jsonl")
+        console = SerializedConsole(
+            ShardConsoleTransport.adopt(base, interrupted=interrupted,
+                                        drain_timeout_sec=plan.watchdog.transition_timeout_sec),
+            run_root / "console_journal.jsonl")
         context = LiveContext(worldserver=worldserver, config=config, provisioning_config=provisioning_config,
                               gear_profiles=gear_profiles,
                               runtime_asset_closure=checks["runtime_asset_closure"],
