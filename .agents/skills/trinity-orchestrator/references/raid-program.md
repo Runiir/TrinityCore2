@@ -133,8 +133,12 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
    2. Run `$W program run-plan`: one fresh-instance shard of the full-raid cohort,
       which the generated plan must contain.
    3. Run the plan with shard_coordinator into `/tmp`.
-   4. Record it with `$W program e2e --shard-run <file>`. It reads the report,
-      then archives the run root to DVC.
+   4. Record it with `$W program e2e --shard-run <file>`. As with ingest, the
+      result is recorded first, then the run root is archived to DVC, then the
+      pointer is attached. The unit is accepted, and the program completes, only
+      once that pointer is stored. If the archive fails, the command exits
+      non-zero and `$W program e2e --archive-pending` retries from the kept `/tmp`
+      root.
 
    It passes only if every composed boss node dies natively on the round binary,
    with no raid-level input open. If the plan cannot run or produced no

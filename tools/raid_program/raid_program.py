@@ -122,6 +122,9 @@ def resume(root: Path) -> dict:
                 'last': (program['e2e']['results'] or [None])[-1]},
         'raid_inputs': [{'input': item['input'], 'owner_skill': item['owner_skill'], 'blocks': item['blocks']}
                         for item in discovery['raid_inputs']],
+        'pending_e2e_evidence': [{'round': row['round'], 'outcome': row['outcome'], 'root': row['evidence'].get('root'),
+                                  'error': row['evidence'].get('error'),
+                                  'retry': f'{WORKLOOP} program e2e --archive-pending'} for row in runs._pending(program)],
         'changed_inputs_since_creation': changed,
         'build_policy': _policy(root),
         'finish_line': FINISH_LINE, 'rules': RULES,
@@ -244,6 +247,13 @@ def _run_step(program: dict, discovery: dict, current: dict, expect: str) -> tup
 
 def _e2e_step(program: dict, discovery: dict, expect: str) -> tuple[str, list[str]]:
     e2e = discovery['e2e']
+    pending = runs._pending(program)
+    if pending:
+        errors = [str((row.get('evidence') or {}).get('error')) for row in pending if (row.get('evidence') or {}).get('error')]
+        return ('End-to-end: the run is recorded but its evidence is not archived yet'
+                + (f" (last error: {errors[-1]})" if errors else '') + '. The unit is accepted, and the program '
+                'completes, only once the pointer is stored; retry the archive from the kept /tmp run root.',
+                [f'{WORKLOOP} program e2e --archive-pending'])
     if not e2e['ready_to_run'] or discovery['raid_inputs']:
         blockers = [item['input'] for item in e2e['missing_inputs'] + discovery['raid_inputs']]
         return ('End-to-end: the unit cannot run (' + ', '.join(blockers) + '). Leave the e2e stage so the next round '
@@ -338,6 +348,7 @@ def parser() -> argparse.ArgumentParser:
     e2e = verbs.add_parser('e2e', help='Record the end-to-end run, or leave the e2e stage with --failed')
     e2e.add_argument('--shard-run', type=Path)
     e2e.add_argument('--failed', metavar='REASON')
+    e2e.add_argument('--archive-pending', action='store_true', help='Retry archiving recorded e2e evidence')
     for writer in (plan, handoff, reopen, fix, build, run_plan, run, ingest, assess, e2e):
         writer.add_argument('--expect', help='state_sha256 from resume; rejects a stale writer')
     return result
@@ -379,6 +390,10 @@ def command(root: Path, argv: list[str]) -> dict:
             extra['exit_status'] = 1  # raid_workloop exits non-zero; the errors carry their retry commands
     elif verb == 'assess':
         rounds.assess(root, args.label, expect)
+    elif args.archive_pending:
+        runs.archive_pending_e2e(root)
     else:
         runs.record_e2e(root, args.shard_run, expect, args.failed)
+    if verb == 'e2e' and runs._pending(rounds.active(store.load(root)[0])):
+        extra['exit_status'] = 1  # recorded, but the evidence archive is pending: retry with --archive-pending
     return extra | {'resume': resume(root)} if extra else resume(root)

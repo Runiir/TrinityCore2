@@ -7,13 +7,23 @@ Every recorded shard run must have run the round's binary: ``shard_run`` reads
 Every plan names the generated ``raid_shard_plan`` so shard_coordinator
 provisions the canonical cohorts. Plans are written once per round
 (``--replan`` replaces plans before any run exists); the state update is
-hash-checked before the plan files are written. The e2e run root is archived
-to DVC once its report has been read.
+hash-checked before the plan files are written; a plan is validated with
+shard_coordinator's own checks against the generated plan under ``root``.
+
+The e2e record mirrors boss ingest: the result is recorded first (evidence
+``pending``, the unit not yet accepted), then the run root is archived, then
+the pointer is attached in a second update that does not depend on the
+caller's state hash. Only a clear whose evidence pointer is stored accepts the
+e2e unit and completes the program; ``program e2e --archive-pending`` retries
+pending archives from the kept /tmp root. Archive output goes to stderr so the
+command's JSON is the only stdout.
 """
 from __future__ import annotations
 
+import contextlib
 import json
-import tempfile
+import os
+import sys
 from pathlib import Path
 
 from tools.raid_program import raid_program_packets as packets
@@ -77,9 +87,38 @@ def _documents(program: dict, discovery: dict) -> list[dict]:
                          'mode': token, 'boss_key': E2E_KEY, 'lockout': None}]}]
 
 
+@contextlib.contextmanager
+def stdout_to_stderr():
+    """Route Python and subprocess stdout (fd 1) to stderr while archiving or post-processing."""
+    sys.stdout.flush()
+    saved = os.dup(1)
+    try:
+        os.dup2(2, 1)
+        with contextlib.redirect_stdout(sys.stderr):
+            yield
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(saved, 1)
+        os.close(saved)
+
+
+def validate_document(root: Path, document: dict) -> None:
+    """shard_coordinator.load_run_plan's checks, with raid_shard_plan resolved under ``root``."""
+    from tools.raid_program.shard_coordinator import (
+        ShardRunPlan, WatchdogPolicy, check_against_source_plan, parse_shard, source_plan_shards, validate_plan)
+    declared = document.get('raid_shard_plan')
+    if declared is not None and (not isinstance(declared, str) or not declared or Path(declared).is_absolute()):
+        raise GraphError('raid_shard_plan must be a repository-relative path')
+    source = root / declared if declared else None
+    plan = ShardRunPlan(shards=tuple(parse_shard(row) for row in document['shards']),
+                        watchdog=WatchdogPolicy.from_mapping(document.get('watchdog')), source_plan=source)
+    validate_plan(plan)
+    check_against_source_plan(plan, source_plan_shards(source))
+
+
 def run_plans(root: Path, expected_sha256: str | None = None, replan: bool = False) -> dict:
     """Write this round's shard run plans (or the e2e plan) once; ``replan`` replaces plans before any run."""
-    from tools.raid_program.shard_coordinator import load_run_plan
     _, program, data = rounds.load_active(root)
     rounds.require(program, 'run', 'e2e')
     rounds.check_expected(data, expected_sha256)
@@ -91,15 +130,12 @@ def run_plans(root: Path, expected_sha256: str | None = None, replan: bool = Fal
     documents = _documents(program, rounds.discover(root, program))
     directory = packets.handoff_directory(program)
     rows = []
-    with tempfile.TemporaryDirectory(prefix='raid-program-plan-') as temp:
-        for index, document in enumerate(documents, 1):
-            encoded = (json.dumps(document, indent=2, sort_keys=True) + '\n').encode()
-            probe = Path(temp) / f'b{index}.json'
-            probe.write_bytes(encoded)
-            load_run_plan(probe)  # shard_coordinator must accept the plan before it is recorded
-            rows.append({'batch': index, 'kind': document['kind'], 'path': f"{directory}/{document['kind']}_plan_b{index}.json",
-                         'sha256': rounds.sha256_bytes(encoded), 'cohorts': [row['cohort_id'] for row in document['shards']],
-                         'encoded': encoded})
+    for index, document in enumerate(documents, 1):
+        validate_document(root, document)  # shard_coordinator must accept the plan before it is recorded
+        encoded = (json.dumps(document, indent=2, sort_keys=True) + '\n').encode()
+        rows.append({'batch': index, 'kind': document['kind'], 'path': f"{directory}/{document['kind']}_plan_b{index}.json",
+                     'sha256': rounds.sha256_bytes(encoded), 'cohorts': [row['cohort_id'] for row in document['shards']],
+                     'encoded': encoded})
 
     def reducer(state: dict) -> dict:
         target = rounds.active(state)
@@ -165,8 +201,10 @@ def archive_evidence(root: Path, name: str, kill_id: str, sources: list[Path]) -
     from tools.raid_program.scoreboard_run import archive_evidence as archive
     existing = [path for path in sources if path.exists()]
     if not existing:
-        return {'pointer': None, 'error': None, 'paths': []}
-    pointer, error = archive(root, name, kill_id, existing, set())
+        return {'pointer': None, 'error': 'no evidence path exists: ' + ', '.join(map(str, sources)),
+                'paths': [str(path) for path in sources]}
+    with stdout_to_stderr():
+        pointer, error = archive(root, name, kill_id, existing, set())
     return {'pointer': pointer, 'error': error, 'paths': [str(path) for path in existing]}
 
 
@@ -216,15 +254,24 @@ def record_run(root: Path, path: Path | None, expected_sha256: str | None = None
     return store.update(root, reducer, expected_sha256)
 
 
+def _pending(program: dict) -> list[dict]:
+    return [result for result in program['e2e']['results']
+            if result.get('run') and (result.get('evidence') or {}).get('state') != 'archived']
+
+
 def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None,
                failed_reason: str | None = None, archive=None) -> dict:
-    """Accept the end-to-end unit from one fresh-instance full-route run, or leave the e2e stage on failure.
+    """Record the end-to-end run first, then archive its root, then attach the pointer.
 
-    After the report is read, the whole run root is archived to DVC and its pointer kept in the result.
+    A failed run (or ``--failed``) opens the next round at once. A clear leaves the unit
+    ``evidence_pending`` in the e2e stage; it is accepted, and the program completes, only
+    when its evidence pointer is stored (here, or later by ``archive_pending_e2e``).
     """
     _, program, data = rounds.load_active(root)
     rounds.require(program, 'e2e')
     rounds.check_expected(data, expected_sha256)
+    if _pending(program):
+        raise GraphError('an e2e run is awaiting its evidence archive; run program e2e --archive-pending first')
     record = None
     if failed_reason:
         problems, killed = ['no_run:' + failed_reason], set()
@@ -258,11 +305,10 @@ def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None
     result = {'round': program['round'], 'outcome': 'clear' if not problems else 'failed', 'problems': problems,
               'run': record, 'boss_nodes_killed': sorted(killed)}
     if record is not None:
-        slug = program['program_id'].replace(':', '_').lower()
-        result['evidence'] = (archive or archive_evidence)(root, f'{slug}_e2e', f"r{program['round']:02d}-{record['run_id']}",
-                                                           [Path(record['source_path']).parent])
+        result['evidence'] = {'state': 'pending', 'pointer': None, 'error': None,
+                              'root': str(Path(record['source_path']).parent)}
 
-    def reducer(state: dict) -> dict:
+    def reducer(state: dict) -> dict:  # step 1: the result is durable before any evidence is touched
         target = rounds.active(state)
         rounds.require(target, 'e2e')
         if record is not None:
@@ -272,11 +318,53 @@ def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None
             target['e2e']['status'] = 'open'
             target['stage'], target['round'] = 'plan', target['round'] + 1
         else:
-            target['e2e']['status'] = 'accepted'
-            target['stage'] = 'complete'
+            target['e2e']['status'] = 'evidence_pending'
         store.history(target, 'e2e', outcome=result['outcome'], problems=problems)
         return state
-    return store.update(root, reducer, expected_sha256)
+    state = store.update(root, reducer, expected_sha256)
+    if record is None:
+        return state
+    return _archive_result(root, record['sha256'], archive)
+
+
+def _archive_result(root: Path, run_sha256: str, archive=None) -> dict:
+    """Steps 2 and 3: archive the kept e2e root, then attach the pointer (no caller hash involved)."""
+    _, program, _ = rounds.load_active(root)
+    result = next((row for row in program['e2e']['results'] if (row.get('run') or {}).get('sha256') == run_sha256), None)
+    if result is None:
+        raise GraphError('no recorded e2e result for run ' + run_sha256)
+    slug = program['program_id'].replace(':', '_').lower()
+    with stdout_to_stderr():
+        evidence = (archive or archive_evidence)(root, f'{slug}_e2e', f"r{result['round']:02d}-{result['run']['run_id']}",
+                                                 [Path(result['evidence']['root'])])
+
+    def reducer(state: dict) -> dict:
+        target = rounds.active(state)
+        row = next(item for item in target['e2e']['results'] if (item.get('run') or {}).get('sha256') == run_sha256)
+        row['evidence'] = row['evidence'] | {'state': 'archived' if evidence.get('pointer') else 'failed',
+                                             'pointer': evidence.get('pointer'), 'error': evidence.get('error'),
+                                             'paths': evidence.get('paths') or []}
+        accepted = (evidence.get('pointer') and row['outcome'] == 'clear' and target['stage'] == 'e2e'
+                    and target['e2e']['status'] == 'evidence_pending' and row is target['e2e']['results'][-1])
+        if accepted:
+            target['e2e']['status'] = 'accepted'
+            target['stage'] = 'complete'
+        store.history(target, 'e2e_evidence', run=run_sha256, pointer=evidence.get('pointer'), error=evidence.get('error'),
+                      completed=bool(accepted))
+        return state
+    return store.update(root, reducer)
+
+
+def archive_pending_e2e(root: Path, archive=None) -> dict:
+    """Retry every e2e result whose evidence is not archived, from its kept /tmp root."""
+    _, program, _ = rounds.load_active(root)
+    pending = _pending(program)
+    if not pending:
+        raise GraphError('no e2e evidence is pending')
+    state = None
+    for result in pending:
+        state = _archive_result(root, result['run']['sha256'], archive)
+    return state
 
 
 def killed_nodes(run_dir: Path) -> set[str]:

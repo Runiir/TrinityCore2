@@ -4,8 +4,9 @@ Mirrors ``scoreboard_run.run_kill`` for every shard of a boss with a raid
 target, in this order:
 
 1. build the kill record from the still-present run directory
-   (``scoreboard_run._postprocess``: ``record_from_run_dir``, falling back to
-   ``fallback_record``; timeline and summary go to a kept ``<run_dir>-analysis``);
+   (``scoreboard_run.record_kill``, shared with ``run_kill``: ``record_from_run_dir``,
+   falling back to ``fallback_record``; timeline and summary go to a kept
+   ``<run_dir>-analysis``);
 2. archive the evidence (``scoreboard_run.archive_evidence``, which adds, pushes
    and verifies the DVC pointer and then deletes the /tmp sources);
 3. append the record with its ``evidence_dvc_pointer``, or with
@@ -16,7 +17,9 @@ Shards without a raid target and each batch's run-root files (shard_run.json,
 console journal, logs) are archived too; their pointers are stored in the
 program state. Kill ids are ``<label>-<run_id>-<cohort>``, so repeated runs of
 one batch never collide, and a kill already in the scoreboard is adopted
-rather than recorded twice. A round uses one label.
+rather than recorded twice. A round uses one label. Post-processing and
+archive output (including the archive subprocess) goes to stderr, so the
+command's JSON is the only stdout.
 """
 from __future__ import annotations
 
@@ -47,10 +50,11 @@ def record_then_archive(root: Path, *, scenario: str, label: str, kill: dict, wo
     """One kill as scoreboard_run.run_kill does it: record from the live dir, archive, then append."""
     from tools.raid_program.play_mode_guard import refuse_play
     from tools.raid_program.scoreboard_core import append_record, load_records, load_target
-    from tools.raid_program.scoreboard_run import _postprocess, evidence_sources
+    from tools.raid_program.scoreboard_run import evidence_sources, record_kill
     refuse_play(kill['output_dir'], f"raid program ingest {kill['kill_id']}")
     target = load_target(root, scenario)
-    record = _postprocess(root, target, scenario, label, kill, worldserver_sha256, source_commit)
+    record = record_kill(root, target, scenario=scenario, label=label, kill=kill, sha=worldserver_sha256,
+                         source_commit=source_commit)
     record['worldserver_sha256'] = worldserver_sha256  # the round binary the run was bound to
     record['evidence_paths'] = [str(path) for path in evidence_sources(kill) if path.exists()]
     pointers = {row['evidence_dvc_pointer'] for row in load_records(root, scenario) if row.get('evidence_dvc_pointer')}
@@ -93,7 +97,8 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
             if unit is None or not unit['raid_target']['present']:
                 if key in archived or not run_dir.is_dir():
                     continue
-                pointer, error = archive(root, f'{slug}_shards', f"{run.get('run_id')}-{shard['cohort_id']}", [run_dir], set())
+                with runs.stdout_to_stderr():
+                    pointer, error = archive(root, f'{slug}_shards', f"{run.get('run_id')}-{shard['cohort_id']}", [run_dir], set())
                 shard_evidence.append({'run_sha256': run['sha256'], 'cohort_id': shard['cohort_id'],
                                        'evidence_dvc_pointer': pointer, 'archive_error': error})
                 if error:
@@ -119,9 +124,10 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
                 continue
             else:
                 try:
-                    record = record_then_archive(root, scenario=scenario, label=label, kill=_kill(run_dir, kill_id),
-                                                 worldserver_sha256=build['worldserver_sha256'],
-                                                 source_commit=build['source_commit'], archive=archive)
+                    with runs.stdout_to_stderr():
+                        record = record_then_archive(root, scenario=scenario, label=label, kill=_kill(run_dir, kill_id),
+                                                     worldserver_sha256=build['worldserver_sha256'],
+                                                     source_commit=build['source_commit'], archive=archive)
                 except (Exception, SystemExit) as failure:  # noqa: BLE001 - one shard's failure must not hide the others
                     errors.append({'cohort_id': shard['cohort_id'], 'error': f'{type(failure).__name__}: {failure}'})
                     continue
@@ -136,8 +142,9 @@ def ingest(root: Path, label: str, expected_sha256: str | None = None, archive: 
         if not (run.get('evidence') or {}).get('pointer'):
             batch = runs.batch_sources(run)
             if batch:
-                pointer, error = archive(root, f'{slug}_runs', f"r{program['round']:02d}-b{run['batch']}-{run.get('run_id')}",
-                                         batch, set())
+                with runs.stdout_to_stderr():
+                    pointer, error = archive(root, f'{slug}_runs', f"r{program['round']:02d}-b{run['batch']}-{run.get('run_id')}",
+                                             batch, set())
                 batch_evidence[run['sha256']] = {'pointer': pointer, 'error': error, 'paths': [str(p) for p in batch]}
                 if error:
                     errors.append({'run': run['sha256'], 'error': 'batch evidence archive: ' + error})

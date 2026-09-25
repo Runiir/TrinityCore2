@@ -175,6 +175,17 @@ def _postprocess(root, target, scenario, label, kill, sha, source_commit) -> dic
     return record | {"postprocess_error": message}
 
 
+def record_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, kill: dict[str, Any],
+                sha: str, source_commit: str | None) -> dict[str, Any]:
+    """Build one kill record from its still-present run directory, before any archive.
+
+    Writes the timeline and summary into kill["analysis_dir"] and falls back to an outcome-only
+    record carrying postprocess_error when post-processing crashes. Shared by run_kill and the raid
+    program's ingest (tools.raid_program.raid_program_ingest), which archive only afterwards.
+    """
+    return _postprocess(root, target, scenario, label, kill, sha, source_commit)
+
+
 def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, kill: dict[str, Any],
              sha: str, source_commit: str | None, recorded_pointers: set[str]) -> bool:
     """One kill end to end. Returns True when the batch may continue."""
@@ -196,7 +207,7 @@ def run_kill(root: Path, target: dict[str, Any], *, scenario: str, label: str, k
         raise
     # A play-mode run is never recorded or archived; its evidence stays where the harness wrote it.
     refuse_play(kill["output_dir"], f"scoreboard run {kill['kill_id']} (evidence kept at {kill['output_dir']})")
-    record = _postprocess(root, target, scenario, label, kill, sha, source_commit)
+    record = record_kill(root, target, scenario=scenario, label=label, kill=kill, sha=sha, source_commit=source_commit)
     record["worldserver_sha256"] = sha  # the hash of the pinned file that was launched always wins
     if record.get("report_binary_sha256"):
         print(f"warning: report.json names binary {record['report_binary_sha256']} but the launched file is {sha}; "

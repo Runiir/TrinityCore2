@@ -65,6 +65,10 @@ def check(root: Path, state: dict) -> None:
                 any(unit.get('status') != 'accepted' for unit in program['units'].values())
                 or program.get('e2e', {}).get('status') != 'accepted'):
             raise GraphError('complete raid program still has open units: ' + key)
+        if program.get('e2e', {}).get('status') == 'accepted':
+            last = (program['e2e'].get('results') or [{}])[-1]
+            if last.get('outcome') != 'clear' or not (last.get('evidence') or {}).get('pointer'):
+                raise GraphError('an accepted e2e unit needs a clear result with an archived evidence pointer: ' + key)
 
 
 def _lock_path(root: Path) -> Path:

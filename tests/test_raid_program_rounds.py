@@ -612,3 +612,111 @@ def test_e2e_run_root_is_archived_after_reading_the_report(world):
     result = program(root)['e2e']['results'][-1]
     assert result['outcome'] == 'clear' and result['evidence']['pointer']
     assert world['archived'][-1][2] == [str(e2e.parent)]
+
+
+def to_e2e(root: Path, holder: dict) -> Path:
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, holder, both())
+    runs.run_plans(root)
+    return shard_run(root, 'e2e', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter', 'bwd.beta.encounter']}])
+
+
+def test_e2e_archive_error_never_completes_and_archive_pending_retries(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    world['archive_errors'].append('archive_run_evidence failed (exit 1)')
+    result = raid_program.command(root, ['e2e', '--shard-run', str(e2e)])
+    assert result['exit_status'] == 1
+    view = result['resume']
+    assert view['stage'] == 'e2e' and not view['parent_objective_complete']
+    assert program(root)['e2e']['status'] == 'evidence_pending'
+    assert view['pending_e2e_evidence'][0]['error'] == 'archive_run_evidence failed (exit 1)'
+    assert view['commands'] == ['pixi run python -m tools.raid_program.raid_workloop program e2e --archive-pending']
+    with pytest.raises(GraphError, match='awaiting its evidence archive'):
+        runs.record_e2e(root, e2e)
+    assert e2e.exists(), 'the /tmp root is kept for the retry'
+    final = raid_program.command(root, ['e2e', '--archive-pending'])
+    assert final['stage'] == 'complete' and final['parent_objective_complete'] and not final['pending_e2e_evidence']
+    assert program(root)['e2e']['results'][-1]['evidence']['pointer']
+
+
+def test_complete_state_needs_an_archived_e2e_pointer(world):
+    root = world['root']
+
+    def forged(state):
+        target = rounds.active(state)
+        for unit in target['units'].values():
+            unit['status'] = 'accepted'
+        target['e2e'] = target['e2e'] | {'status': 'accepted', 'results': [{'outcome': 'clear', 'evidence': {'pointer': None}}]}
+        target['stage'] = 'complete'
+        return state
+    with pytest.raises(GraphError, match='archived evidence pointer'):
+        store.update(root, forged)
+
+
+def test_e2e_result_survives_a_concurrent_write_during_a_deleting_archive(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    before = sha(root)
+
+    def deleting_with_concurrent_write(root, name, kill_id, sources):
+        store.set_focus(root, 'boss')  # e.g. a boss-level start while the archive runs
+        for source in sources:
+            shutil.rmtree(source)
+        return {'pointer': f'artifacts/cata_raid_program/scoreboard_{name}_{kill_id}.tar.gz.dvc', 'error': None,
+                'paths': [str(source) for source in sources]}
+    runs.record_e2e(root, e2e, before, archive=deleting_with_concurrent_write)
+    state = program(root)
+    assert state['stage'] == 'complete' and state['e2e']['status'] == 'accepted'
+    assert state['e2e']['results'][-1]['evidence']['state'] == 'archived' and not e2e.exists()
+    assert store.load(root)[0]['focus'] == 'boss'
+
+
+def test_run_plans_check_identity_against_the_generated_plan_under_root(world):
+    from tools.raid_program.shard_coordinator import ShardPlanError
+    root = world['root']
+    to_run(root)
+    generated = root / world['discovery']['generated_plan']
+    generated.parent.mkdir(parents=True)
+
+    def planned(boss, precompleted):
+        cohort = f'{RAID}_10n_{boss}_c0'
+        return {'cohort_id': cohort, 'runtime_profile_id': cohort + '_diagnostic', 'scenario_id': cohort + '_diagnostic',
+                'pool_tag': cohort + '_diagnostic', 'boss_key': boss,
+                'lockout': {'precompleted_boss_keys': precompleted} if precompleted else None}
+    generated.write_text(json.dumps({'schema': 'raid_shard_plan_v1', 'shards': [planned('alpha', []), planned('beta', ['alpha'])]}))
+    assert runs.run_plans(root)['plans'][0]['cohorts'] == [f'{RAID}_10n_alpha_c0', f'{RAID}_10n_beta_c0']
+    generated.write_text(json.dumps({'schema': 'raid_shard_plan_v1', 'shards': [planned('alpha', []), planned('beta', [])]}))
+    with pytest.raises(ShardPlanError, match='differs from its generated plan shard'):
+        runs.run_plans(root, replan=True)
+
+
+def test_archive_and_postprocess_output_stays_off_stdout(world, capfd):
+    root = world['root']
+    to_run(root)
+    runs.run_plans(root)
+    runs.record_run(root, shard_run(root, 'r1', both()))
+
+    def noisy(root, scenario, kill_id, sources, pointers):
+        print('python stdout from the archiver')
+        subprocess.run(['echo', 'subprocess stdout from archive_run_evidence'], check=True)
+        return f'artifacts/cata_raid_program/scoreboard_{scenario}_{kill_id}.tar.gz.dvc', None
+    capfd.readouterr()
+    ingests.ingest(root, 'round1', archive=noisy)
+    captured = capfd.readouterr()
+    assert captured.out == '' and 'subprocess stdout from archive_run_evidence' in captured.err
+    assert 'python stdout from the archiver' in captured.err
+
+
+def test_e2e_archive_output_stays_off_stdout(world, capfd):
+    root = world['root']
+    e2e = to_e2e(root, world)
+
+    def noisy(root, name, kill_id, sources):
+        subprocess.run(['echo', '{"schema": "cata_evidence_cleanup_v1"}'], check=True)
+        return {'pointer': f'artifacts/cata_raid_program/{name}_{kill_id}.tar.gz.dvc', 'error': None, 'paths': []}
+    capfd.readouterr()
+    runs.record_e2e(root, e2e, archive=noisy)
+    captured = capfd.readouterr()
+    assert captured.out == '' and 'cata_evidence_cleanup_v1' in captured.err
+    assert program(root)['stage'] == 'complete'
