@@ -573,6 +573,9 @@ The full handoffs, with patch texts, are in `.git/round2_patches/<package>/hando
   standby starts late. Later minors: a ground duty shield that stays in range after
   three ground phases, a nearer fallback when the backup is far from every shield, and
   no elective 80-Sound gong that spends a relay shield.
+- **Magmaw baiter rotation:** it latches the roster once per scope. If play mode
+  (or a backfill) ever swaps a bot for a different GUID mid-scope, re-latch when the
+  roster GUID set changes.
 - **Harness lock:** `bot-live-validate --transport process` (scoreboard runs) should
   take `live_validation_lock` and refuse while any worldserver runs. Until then the
   coordinator runs one live thing at a time.
