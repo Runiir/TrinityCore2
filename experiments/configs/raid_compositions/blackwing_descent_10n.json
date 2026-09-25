@@ -72,9 +72,9 @@
         "chain_riders": "two non-baiter DPS without a stationary duty, by GUID: Retribution Paladin and Assassination Rogue",
         "mushrooms": "Balance Druid",
         "bloodlust": "the single shaman (Elemental here)",
-        "tank_swap": "none (one tank)",
-        "battle_res": "Balance Druid (Rebirth) and Blood DK (Raise Ally)",
-        "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h"
+        "tank_swap": "not a Magmaw duty: none with one tank; a two-tank roster swaps only through its route mechanic contract (tank_swap_trigger, read by src/server/game/Bots/BotWorldPopulationMgrValidationRouteManifest.cpp and run by src/server/game/Bots/BotWorldPopulationMgrTankSwap.cpp)",
+        "battle_res": "not a Magmaw duty: the generic combat-res reconciler (src/server/game/Bots/BotWorldPopulationMgrCombatRes.cpp) picks a caster per death among native combat resurrections (Rebirth 20484, or a resurrect spell under the in-combat resurrection limit); here the Balance Druid's Rebirth",
+        "source": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawDutyCapabilities.h (pull tank, baiters, chain riders, mushrooms, Bloodlust)"
       }
     },
     {
