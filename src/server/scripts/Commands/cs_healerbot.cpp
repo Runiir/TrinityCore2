@@ -840,10 +840,13 @@ public:
         sBotMgr->ResetPoolUseState();
         if (sConfigMgr->GetBoolDefault("BotWorld.AutoStart", false))
         {
+            // AutoStart starts the default cohort, named explicitly: BotWorld
+            // state is reachable only inside a cohort scope.
+            std::string const cohortId = BotWorldPopulationMgr::DefaultCohortId;
             std::string configuredProfile = sConfigMgr->GetStringDefault("BotWorld.RuntimeProfile", "");
             if (!configuredProfile.empty())
             {
-                std::string selectResult = sBotWorldPopulationMgr->SelectRuntimeProfile(configuredProfile);
+                std::string selectResult = sBotWorldPopulationMgr->SelectRuntimeProfileForCohort(cohortId, configuredProfile);
                 if (selectResult.find("\"ok\":true") == std::string::npos)
                 {
                     TC_LOG_ERROR("server", "BotWorld autostart skipped configured_profile=%s result=%s",
@@ -851,7 +854,7 @@ public:
                     return;
                 }
             }
-            sBotWorldPopulationMgr->StartAutonomy();
+            sBotWorldPopulationMgr->StartAutonomyForCohort(cohortId);
         }
     }
 

@@ -354,14 +354,12 @@ std::string BotWorldPopulationMgr::StartAutonomyHeldForCohort(
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_controller_route_hold", cohortId);
 
-    std::string const previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     State& hold = Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     if (Cohort().Active)
     {
         hold.Reject("controller_route_hold_active_attempt_acquire");
         std::string result = BuildControllerRouteHoldJson();
-        _selectedCohortId = previous;
         return result;
     }
 
@@ -377,19 +375,15 @@ std::string BotWorldPopulationMgr::StartAutonomyHeldForCohort(
     if (!begin.Accepted)
     {
         std::string result = BuildControllerRouteHoldJson();
-        _selectedCohortId = previous;
         return result;
     }
 
     if (!StartAutonomyForCohort(cohortId))
     {
-        _selectedCohortId = cohortId;
         hold.Reject("controller_route_hold_runtime_start_failed");
         std::string result = BuildControllerRouteHoldJson();
-        _selectedCohortId = previous;
         return result;
     }
-    _selectedCohortId = cohortId;
 
     bool const actorInCohort = std::any_of(Party().Bots.begin(),
         Party().Bots.end(), [actorGuid](WorldBotState const& state)
@@ -410,7 +404,6 @@ std::string BotWorldPopulationMgr::StartAutonomyHeldForCohort(
         hold.CompleteAcquire(identity, NowMs());
 
     std::string result = BuildControllerRouteHoldJson();
-    _selectedCohortId = previous;
     return result;
 }
 
@@ -421,15 +414,13 @@ std::string BotWorldPopulationMgr::ReleaseControllerRouteHoldForCohort(
     using namespace BotControllerRouteHold;
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_controller_route_hold", cohortId);
-    std::string const previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     State& hold = Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
     Identity requested = CurrentControllerRouteHoldIdentity(actorGuid);
     requested.SealSha256 = sealSha256;
     requested.SourceCommit = sourceCommit;
     hold.Release(requested, NowMs());
     std::string result = BuildControllerRouteHoldJson();
-    _selectedCohortId = previous;
     return result;
 }
 
@@ -625,11 +616,9 @@ std::string BotWorldPopulationMgr::ArmChainwielderOwnerCheckpointForCohort(
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_chainwielder_checkpoint", cohortId);
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     std::string result = ArmChainwielderOwnerCheckpoint(
         actorGuid, sealSha256, sourceCommit);
-    _selectedCohortId = previous;
     return result;
 }
 
@@ -638,10 +627,8 @@ std::string BotWorldPopulationMgr::GetChainwielderOwnerCheckpointJsonForCohort(
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_chainwielder_checkpoint", cohortId);
-    std::string previous = _selectedCohortId;
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     std::string result = BuildChainwielderOwnerCheckpointJson();
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = previous;
     return result;
 }
 

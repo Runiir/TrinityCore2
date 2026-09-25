@@ -703,7 +703,8 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r"^BotPolicyModel\.Enable\s*=\s*0$", conf, re.MULTILINE)
     assert "sBotMgr->ResetPoolUseState();" in startup
     assert 'sConfigMgr->GetBoolDefault("BotWorld.AutoStart", false)' in startup
-    assert "sBotWorldPopulationMgr->StartAutonomy();" in startup
+    assert "sBotWorldPopulationMgr->StartAutonomyForCohort(cohortId);" in startup
+    assert "std::string const cohortId = BotWorldPopulationMgr::DefaultCohortId;" in startup
     assert "EnsurePopulation" not in startup
     assert "SpawnAutonomyBots" not in startup
     assert "StopAutonomy" not in shutdown_initiate

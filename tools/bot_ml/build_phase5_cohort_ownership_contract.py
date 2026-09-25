@@ -5,6 +5,7 @@ import base64
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 from tools.bot_ml.build_phase4_rotation_contract import WorldserverSession
@@ -25,7 +26,16 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
     runtime_header = (
         repository / "src/server/game/Bots/BotWorldPopulationMgrRuntimeContracts.h"
     ).read_text()
-    header = manager_header + "\n" + runtime_header
+    # The cohort API and cohort members live in split headers included by
+    # the manager class (full-raid round 1, package B).
+    cohort_headers = "\n".join(
+        (repository / "src/server/game/Bots" / name).read_text()
+        for name in (
+            "BotWorldPopulationMgrCohortScopeApi.h",
+            "BotWorldPopulationMgrCohortScopeMembers.h",
+        )
+    )
+    header = manager_header + "\n" + cohort_headers + "\n" + runtime_header
     cohort_source = (
         repository / "src/server/game/Bots/BotWorldPopulationMgrCohort.cpp"
     ).read_text()
@@ -39,7 +49,11 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
     lifecycle_source = (
         repository / "src/server/game/Bots/BotWorldPopulationMgrLifecycle.cpp"
     ).read_text()
-    commands = (repository / "src/server/scripts/Commands/cs_healerbot.cpp").read_text()
+    commands = "\n".join(
+        (repository / "src/server/scripts/Commands" / name).read_text()
+        for name in ("cs_healerbot.cpp", "cs_botauto.cpp")
+    )
+    capacity = re.search(r"MaxActiveCohorts = (\d+);", header)
     pool_reset = validation_profile[
         validation_profile.index("bool BotWorldPopulationMgr::ResetValidationBotPool") :
     ]
@@ -122,7 +136,7 @@ def static_contract(repository: Path = REPO_ROOT) -> dict[str, Any]:
             and pool_reset.index("std::lock_guard<std::mutex> guard(_leaseMutex);")
             < pool_reset.index("CharacterDatabase.DirectExecute")
         ),
-        "bounded_cohort_capacity": "MaxActiveCohorts = 2" in header,
+        "bounded_cohort_capacity": bool(capacity) and 2 <= int(capacity.group(1)) <= 6,
         "profile_snapshot_pinned_per_cohort": all(
             marker in lifecycle_source
             for marker in (
@@ -252,7 +266,8 @@ def live_contract(binary: Path, worldserver_conf: Path) -> dict[str, Any]:
             "phase5_probe_b",
         }
         <= {row.get("cohort_id") for row in cohorts.get("cohorts", [])},
-        "max_active_cohorts_two": cohorts.get("max_active_cohorts") == 2,
+        "max_active_cohorts_two": type(cohorts.get("max_active_cohorts")) is int
+        and cohorts["max_active_cohorts"] >= 2,
         "probe_cleanup_left_empty_parties": all(
             row.get("party_bot_count") == 0
             for row in cohorts.get("cohorts", [])

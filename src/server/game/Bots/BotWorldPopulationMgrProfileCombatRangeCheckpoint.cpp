@@ -146,8 +146,7 @@ std::string BotWorldPopulationMgr::ArmProfileCombatRangeCheckpointForCohort(
     if (!FindCohort(cohortId))
         return UnknownCohortJson(
             "botauto_profile_combat_range_checkpoint", cohortId);
-    std::string const previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     State& checkpoint = Cohort().ProfileCombatRangeCheckpoint;
     bool actorInCohort = false;
     for (WorldBotState const& state : Party().Bots)
@@ -172,14 +171,12 @@ std::string BotWorldPopulationMgr::ArmProfileCombatRangeCheckpointForCohort(
     {
         checkpoint.Fail("profile_combat_range_checkpoint_admission_failed");
         std::string result = BuildProfileCombatRangeCheckpointJson();
-        _selectedCohortId = previous;
         return result;
     }
     if (checkpoint.CurrentStage != Stage::Disabled)
     {
         checkpoint.Fail("profile_combat_range_checkpoint_duplicate_arm");
         std::string result = BuildProfileCombatRangeCheckpointJson();
-        _selectedCohortId = previous;
         return result;
     }
     uint64 const generation = checkpoint.CheckpointGeneration + 1;
@@ -202,7 +199,6 @@ std::string BotWorldPopulationMgr::ArmProfileCombatRangeCheckpointForCohort(
     checkpoint.RouteGeneration = Party().ValidationRouteGeneration;
     checkpoint.Outcome = "profile_combat_range_checkpoint_armed";
     std::string result = BuildProfileCombatRangeCheckpointJson();
-    _selectedCohortId = previous;
     return result;
 }
 
@@ -212,10 +208,8 @@ std::string BotWorldPopulationMgr::GetProfileCombatRangeCheckpointJsonForCohort(
     if (!FindCohort(cohortId))
         return UnknownCohortJson(
             "botauto_profile_combat_range_checkpoint", cohortId);
-    std::string const previous = _selectedCohortId;
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     std::string result = BuildProfileCombatRangeCheckpointJson();
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = previous;
     return result;
 }
 

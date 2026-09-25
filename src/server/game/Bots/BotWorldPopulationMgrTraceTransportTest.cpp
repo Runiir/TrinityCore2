@@ -24,10 +24,8 @@ std::string BotWorldPopulationMgr::ApplyTraceTransportTestPressureForCohort(
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_trace_pressure", cohortId);
 
-    std::string previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     std::string result = ApplyTraceTransportTestPressure(requestedCount);
-    _selectedCohortId = previous;
     return result;
 }
 

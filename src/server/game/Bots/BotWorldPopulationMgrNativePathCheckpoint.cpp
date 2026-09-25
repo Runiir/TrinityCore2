@@ -128,8 +128,7 @@ std::string BotWorldPopulationMgr::ArmNativePathCheckpointForCohort(
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_native_path_checkpoint", cohortId);
-    std::string const previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     State& checkpoint = Cohort().NativePathCheckpoint;
     BotControllerRouteHold::State& hold =
         Cohort().ChainwielderOwnerCheckpoint.ControllerRouteHold;
@@ -156,7 +155,6 @@ std::string BotWorldPopulationMgr::ArmNativePathCheckpointForCohort(
         hold.Reject("native_path_checkpoint_admission_failed");
     }
     std::string result = BuildNativePathCheckpointJson();
-    _selectedCohortId = previous;
     return result;
 }
 
@@ -165,10 +163,8 @@ std::string BotWorldPopulationMgr::GetNativePathCheckpointJsonForCohort(
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_native_path_checkpoint", cohortId);
-    std::string const previous = _selectedCohortId;
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     std::string result = BuildNativePathCheckpointJson();
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = previous;
     return result;
 }
 

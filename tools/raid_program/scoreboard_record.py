@@ -195,7 +195,9 @@ def record_from_summary(summary: dict[str, Any], *, root: Path, target: dict[str
 
 
 MEASUREMENT_KEYS = ("measurement_validity", "damage_reconciliation")
-INFO_KEYS = ("encounter_fidelity", "encounter_rng")  # shown by scoreboard show; never read by counting or the verdict
+# shard_identity (tools.raid_program.shard_coordinator): cohort, instance and the
+# lockout's precompleted bosses of a parallel boss shard, so no record mixes shards.
+INFO_KEYS = ("encounter_fidelity", "encounter_rng", "shard_identity")  # shown by scoreboard show; never read by counting or the verdict
 
 
 def fidelity_fields(run_dir: Path, report: dict[str, Any]) -> dict[str, Any]:
@@ -289,7 +291,9 @@ def outcome_summary(run_dir: Path, worldserver_sha256: str | None, encounter_nod
             "route_deaths": (report.get("status") or {}).get("deaths"),
             "worldserver_sha256": worldserver_sha256 or sha, "report_binary_sha256": sha,
             **measurement_fields(report, analysis, encounter_node), **fidelity_fields(run_dir, report),
-            **rng_fields(run_dir, report), "encounter": None, "actors": []}
+            **rng_fields(run_dir, report),
+            **({"shard_identity": report["shard_identity"]} if isinstance(report.get("shard_identity"), dict) else {}),
+            "encounter": None, "actors": []}
 
 
 def summarize_run_dir(run_dir: Path, timeline_path: Path | None, label: str,

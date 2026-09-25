@@ -109,8 +109,7 @@ std::string BotWorldPopulationMgr::ArmMagmawTransferLaneCheckpointForCohort(
     if (!FindCohort(cohortId))
         return UnknownCohortJson(
             "botauto_magmaw_transfer_lane_checkpoint", cohortId);
-    std::string const previous = _selectedCohortId;
-    _selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     Checkpoint::State& checkpoint =
         Cohort().MagmawTransferLaneCheckpoint;
     BotControllerRouteHold::State& hold =
@@ -135,7 +134,6 @@ std::string BotWorldPopulationMgr::ArmMagmawTransferLaneCheckpointForCohort(
         hold.Reject("magmaw_transfer_checkpoint_admission_failed");
     }
     std::string result = BuildMagmawTransferLaneCheckpointJson();
-    _selectedCohortId = previous;
     return result;
 }
 
@@ -145,10 +143,8 @@ std::string BotWorldPopulationMgr::GetMagmawTransferLaneCheckpointJsonForCohort(
     if (!FindCohort(cohortId))
         return UnknownCohortJson(
             "botauto_magmaw_transfer_lane_checkpoint", cohortId);
-    std::string const previous = _selectedCohortId;
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = cohortId;
+    CohortScope scope = ScopeCohortById(cohortId);
     std::string result = BuildMagmawTransferLaneCheckpointJson();
-    const_cast<BotWorldPopulationMgr*>(this)->_selectedCohortId = previous;
     return result;
 }
 
