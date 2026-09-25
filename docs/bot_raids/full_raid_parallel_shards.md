@@ -620,6 +620,29 @@ Packages and owners:
 Rule added: never symlink a checkout directory into a scratch tree that is cleaned up. T
 deleted this doc by accident that way; it was restored from HEAD.
 
+## Round 3 results (2026-09-25)
+
+- **Commits:** integration c0efb93a61 → c836b743e5 (shared patches), DVC d40cefa7f1,
+  harness 0eaf3f92c0, build 0eaf3f92c0d1. Evidence: `round3_batch1_20260925.tar.gz`.
+- **Magmaw smoke:** native clear, 108.3 s, 263k raid DPS (round 2: 120.7 s, 234k).
+  - Rogue 3k → 32k (Mutilate, Envenom, poisons).
+  - Retribution 22k → 36k (Crusader Strike).
+  - Demonology 34k with Doomguard (Doom Bolt).
+  - Heroism cast (Exhaustion on the raid).
+  - The prepull setup gate held until every bot was ready; no prepull failures.
+- **Six-shard parallel batch:**
+
+  | Shard | Result |
+  |---|---|
+  | Magmaw | **native clear** (first clear in the parallel batch) |
+  | Omnotron | killed the sentries, engaged the constructs, wiped; recovery then plateau |
+  | Chimaeron | past Finkle, engaged, wiped; the recovery ride started after the runback; plateau |
+  | Maloriak | cleared the patrol, engaged, wiped (`route_destination_path_control_level_gap` during recovery); plateau |
+  | Atramedes | north spirits killed; stalled on the south spirits (`bot_diagnosis_error`) |
+  | Nefarian | stalled on lab trash with future-encounter contamination |
+
+  Round 4 starts with the per-boss wipe analysis.
+
 ## Round 3 candidates (from the round 2 reviews)
 
 - **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
