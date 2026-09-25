@@ -23,7 +23,12 @@ from tools.bot_ml.build_validation_provisioning import (
     load_gear_profiles,
     scenario_report,
 )
-from tools.bot_ml.build_validation_scenario_manifests import build_manifests, diagnostic_rosters_by_scenario, load_json
+from tools.bot_ml.build_validation_scenario_manifests import (
+    build_manifests,
+    diagnostic_rosters_by_scenario,
+    load_json,
+    raid_shard_plan_paths,
+)
 from tools.bot_ml.common import stable_hash
 from tools.bot_ml.validate_validation_provisioning import validate_payloads
 from tools.raid_program.bwd_shard_fixtures import build_shard_fixture, validate_shard_fixture
@@ -172,11 +177,15 @@ def test_raid_shard_plan_rosters_bind_beside_the_legacy_fixture():
 def test_validation_scenario_manifests_are_unchanged():
     if not _lock_inputs_current("validation_scenarios", set()):
         pytest.skip("validation_scenarios inputs changed since the last DVC reproduction (package D edits)")
+    # Same inputs as the validation_scenarios DVC stage, including every raid shard plan.
+    plan_paths = raid_shard_plan_paths([], [ROOT / "dataset/raid_shard_provisioning"])
     manifests = build_manifests(
         load_json(ROOT / "experiments/configs/validation_scenarios_cata_001.json"),
         load_json(PROVISIONING_OUT / "report.json"),
         load_json(ROOT / "dataset/validation_provisioning_verification/report.json"),
-        load_json(FIXTURE))
+        load_json(FIXTURE),
+        [load_json(path) for path in plan_paths],
+        [load_json(path.parent / "report.json") for path in plan_paths if (path.parent / "report.json").is_file()])
     for name in ("validation_scenarios", "validation_routes", "validation_mechanics"):
         text = "".join(json.dumps(row, sort_keys=True, default=str) + "\n" for row in manifests[name])
         assert (SCENARIOS_OUT / f"{name}.jsonl").read_text(encoding="utf-8") == text, name

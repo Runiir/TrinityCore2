@@ -223,8 +223,8 @@ stages:
       size: 20616
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: a44d61086384c5d3c3127196191e417f
-      size: 156547
+      md5: 7871f0679c35451d040118bff31255a9
+      size: 156542
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: 006a6733e13e7c591ccbe8bfcbfd72a5
@@ -252,8 +252,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: d033e0324305b7121fcb734408307921.dir
-      size: 3618803
+      md5: 56b382538b7fdf698f2b14b5b8ad574a.dir
+      size: 3618748
       nfiles: 5
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -357,8 +357,8 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning
       hash: md5
-      md5: d033e0324305b7121fcb734408307921.dir
-      size: 3618803
+      md5: 56b382538b7fdf698f2b14b5b8ad574a.dir
+      size: 3618748
       nfiles: 5
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
@@ -374,8 +374,8 @@ stages:
       size: 3975
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: a44d61086384c5d3c3127196191e417f
-      size: 156547
+      md5: 7871f0679c35451d040118bff31255a9
+      size: 156542
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: 006a6733e13e7c591ccbe8bfcbfd72a5
@@ -415,7 +415,7 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 3e628767cddd9116d417f4ba04511d7e
+      md5: ab80fce81c2ba7e14d7cabfc959d1ed8
       size: 1652
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
@@ -424,33 +424,39 @@ stages:
       --provisioning-verification 
       dataset/validation_provisioning_verification/report.json 
       --bwd-diagnostic-shard-fixture 
-      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json --output-dir 
+      experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json 
+      --raid-shard-provisioning-dir dataset/raid_shard_provisioning --output-dir
       dataset/validation_scenarios
     deps:
+    - path: dataset/raid_shard_provisioning
+      hash: md5
+      md5: 0ca06523091b43dff9c86a4873310c0b.dir
+      size: 3901890
+      nfiles: 4
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: d3abde8c2e06a0e43123f18a2f262c71
-      size: 20763
+      md5: ba1becbb7763e823ba41997abab9981a
+      size: 20758
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 3e628767cddd9116d417f4ba04511d7e
+      md5: ab80fce81c2ba7e14d7cabfc959d1ed8
       size: 1652
     - path: experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json
       hash: md5
-      md5: a44d61086384c5d3c3127196191e417f
-      size: 156547
+      md5: 7871f0679c35451d040118bff31255a9
+      size: 156542
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 00b439ad2af1d4f13347d2f5ebbcfc7e
-      size: 57507
+      md5: 4caaaa4e74f9158c5ab460df1b40c1c7
+      size: 114353
     - path: sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql
       hash: md5
       md5: d55ce540c300d77f0ddde75a68ec9cfa
       size: 23898
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: e60eb6c510ee01b56c9294faa6a08c59
-      size: 60525
+      md5: a3ec5764e85c9c9eeed2a4619f95155c
+      size: 64299
     - path: tools/bot_ml/common.py
       hash: md5
       md5: bb0de5d5b481e92f0fcffd74cbf1562e
@@ -458,8 +464,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: d367676c35178e0b643bbbf4842a0ae4.dir
-      size: 572873
+      md5: 2f605a057dcd58bd181be22304c80712.dir
+      size: 983517
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -1789,3 +1795,197 @@ stages:
       md5: 75760b01b2ad853f9d5bed703b44e6fb.dir
       size: 8828
       nfiles: 1
+  raid_shard_provisioning:
+    cmd: python -m tools.raid_program.raid_shard_plan --prerequisites-dir 
+      experiments/configs/raid_prerequisites --provisioning-config 
+      experiments/configs/validation_provisioning_cata_001.json 
+      --scenario-config experiments/configs/validation_scenarios_cata_001.json 
+      --gear-profiles dataset/validation_gear_profiles/profiles.json --trainers 
+      dataset/world_knowledge/trainers.jsonl --dbc-dir data/dbc/enUS 
+      --output-dir dataset/raid_shard_provisioning
+    deps:
+    - path: data/dbc/enUS/GemProperties.dbc
+      hash: md5
+      md5: edfb518041fec829681d8a1bf2d7219f
+      size: 21693
+    - path: data/dbc/enUS/GlyphProperties.dbc
+      hash: md5
+      md5: 2e0589081740fcf230438e5db9329e4c
+      size: 5573
+    - path: data/dbc/enUS/Item-sparse.db2
+      hash: md5
+      md5: 61c97067db73be61379002ef18993c5d
+      size: 30858357
+    - path: data/dbc/enUS/Item.db2
+      hash: md5
+      md5: 4d1b788fcac7adfbb6bdbf3ece9689a5
+      size: 2072849
+    - path: data/dbc/enUS/ItemLimitCategory.dbc
+      hash: md5
+      md5: 9e0720ed6ccb6d9980c9892fda5a00b5
+      size: 6379
+    - path: data/dbc/enUS/NamesProfanity.dbc
+      hash: md5
+      md5: 30f6cc342f4a0cf12fc9d0b65efe7055
+      size: 140202
+    - path: data/dbc/enUS/NamesReserved.dbc
+      hash: md5
+      md5: f6416d90bffb1840607ea5ca0563529c
+      size: 229987
+    - path: data/dbc/enUS/SkillLineAbility.dbc
+      hash: md5
+      md5: eea2a19ff8760e91cfb4d98c1ff473b8
+      size: 469525
+    - path: data/dbc/enUS/SpellEffect.dbc
+      hash: md5
+      md5: 4e7443542af69760f36f3ba6df070f57
+      size: 10517925
+    - path: data/dbc/enUS/SpellItemEnchantment.dbc
+      hash: md5
+      md5: 3b721c083b10f3b73c0614bd0ae266ff
+      size: 337263
+    - path: data/dbc/enUS/Talent.dbc
+      hash: md5
+      md5: 7941baeb6562621a8e5e23a1d9be7815
+      size: 50257
+    - path: data/dbc/enUS/TalentTab.dbc
+      hash: md5
+      md5: 48bd934b6cfaddc7ea7c321ba99834f4
+      size: 4929
+    - path: data/dbc/enUS/TalentTreePrimarySpells.dbc
+      hash: md5
+      md5: f65b0c49fa7b150c9cd338ad2510b819
+      size: 1445
+    - path: dataset/validation_gear_profiles
+      hash: md5
+      md5: 6a0a08de71d9081ab1cb906c12d8567f.dir
+      size: 1284521
+      nfiles: 3
+    - path: dataset/world_knowledge/trainers.jsonl
+      hash: md5
+      md5: 7e5dadcf3d481375112b250d186221db
+      size: 12820058
+    - path: experiments/configs/all_spec_targets_cata_p4_v1.json
+      hash: md5
+      md5: f3b409668c8258518e77cad8926b2d8f
+      size: 307240
+    - path: experiments/configs/cata_434_action_profiles.json
+      hash: md5
+      md5: 4bbb59b485ad80b7c609fa3f91fca07a
+      size: 20616
+    - path: experiments/configs/cata_434_combat_loot_profiles.json
+      hash: md5
+      md5: 52f9f607e1aa7a5244f86c252edc9c86
+      size: 3975
+    - path: experiments/configs/cata_blood_permanent_enchant_overlays_v1.json
+      hash: md5
+      md5: fcebed12eec2869d02592b953b885a49
+      size: 1797
+    - path: experiments/configs/raid_compositions
+      hash: md5
+      md5: 16ca1e3a75e17e2bbf4d55fb32ee889d.dir
+      size: 11245
+      nfiles: 1
+    - path: experiments/configs/raid_prerequisites
+      hash: md5
+      md5: f7dc9cedd10475d4446b45dab45c8a6c.dir
+      size: 37631
+      nfiles: 6
+    - path: experiments/configs/validation_provisioning_cata_001.json
+      hash: md5
+      md5: 006a6733e13e7c591ccbe8bfcbfd72a5
+      size: 27753
+    - path: experiments/configs/validation_scenarios_cata_001.json
+      hash: md5
+      md5: 4caaaa4e74f9158c5ab460df1b40c1c7
+      size: 114353
+    - path: experiments/configs/wowsims_cata_dps_reference_requests_v1.json
+      hash: md5
+      md5: 5297802cf6b3143a77c02fac868b1194
+      size: 1868396
+    - path: experiments/configs/wowsims_cata_p4_gear_profiles.json
+      hash: md5
+      md5: cc22fba6ca67ee3f5cb85ac760dffa98
+      size: 65131
+    - path: sql/old/4.3.4/TDB00_to_TDB01_updates/world/096_item_template.sql
+      hash: md5
+      md5: 231ed9a14fbc5c4cff841045d4f8d7de
+      size: 43020
+    - path: sql/old/4.3.4/TDB01_to_TDB02_updates/world/089_npc_trainer.sql
+      hash: md5
+      md5: 4f56237172bfa03a67e4eeb6e0818a11
+      size: 138697
+    - path: tools/bot_ml/build_validation_gear_profiles.py
+      hash: md5
+      md5: fb81cb24964c321af9adf25ba41587b8
+      size: 41409
+    - path: tools/bot_ml/build_validation_provisioning.py
+      hash: md5
+      md5: be88bbf54b96179bd2f83649c18a6aa7
+      size: 69979
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: bb0de5d5b481e92f0fcffd74cbf1562e
+      size: 7115
+    - path: tools/bot_ml/extract_world_knowledge.py
+      hash: md5
+      md5: 9f9d6ddb0fcae27397951db8b02c3d68
+      size: 31879
+    - path: tools/bot_ml/permanent_enchant_overlays.py
+      hash: md5
+      md5: 8ccb6b8dc8a153814e44ee9e368ee7f3
+      size: 5590
+    - path: tools/bot_ml/player_gear_acquisition.py
+      hash: md5
+      md5: 1303ff922c4e00f156ae6ce3e40ab56c
+      size: 1745
+    - path: tools/bot_ml/validation_profile_manifests.py
+      hash: md5
+      md5: b6ff6de9234f3be1e6347021d0ff677a
+      size: 2993
+    - path: tools/bot_ml/wowsims_gear_binding.py
+      hash: md5
+      md5: 5776d931dc2eea9036e803e98e85457e
+      size: 31587
+    - path: tools/raid_program/bwd_shard_fixtures.py
+      hash: md5
+      md5: 2218567931c539db69678f0f81bf2bb5
+      size: 22000
+    - path: tools/raid_program/raid_composition.py
+      hash: md5
+      md5: d9b636dcbc998d3b653a8a0674c47443
+      size: 13948
+    - path: tools/raid_program/raid_loadout.py
+      hash: md5
+      md5: 725f3e2ccab6f850ce3a91dad006db20
+      size: 14328
+    - path: tools/raid_program/raid_loadout_spells.py
+      hash: md5
+      md5: b8fa111c9a02bf2292d15b63990b658a
+      size: 12391
+    - path: tools/raid_program/raid_loadout_sql.py
+      hash: md5
+      md5: e4c11e94a5fa1ae8e5411e9322df8905
+      size: 28669
+    - path: tools/raid_program/raid_shard_contract.py
+      hash: md5
+      md5: d9ef3245a281426ef7d51085c75e488b
+      size: 9828
+    - path: tools/raid_program/raid_shard_identity.py
+      hash: md5
+      md5: 29c2b68ac2e45852db35253ce7892fbc
+      size: 11356
+    - path: tools/raid_program/raid_shard_plan.py
+      hash: md5
+      md5: 005d520776886888e3f2a1745098b991
+      size: 36270
+    - path: tools/raid_program/raid_shard_preflight.py
+      hash: md5
+      md5: 9d306518c4d8227c1970e67fdb3bc377
+      size: 22401
+    outs:
+    - path: dataset/raid_shard_provisioning
+      hash: md5
+      md5: 0ca06523091b43dff9c86a4873310c0b.dir
+      size: 3901890
+      nfiles: 4
