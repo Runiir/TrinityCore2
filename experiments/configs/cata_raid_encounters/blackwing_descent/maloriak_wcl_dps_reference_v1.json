@@ -1,0 +1,54 @@
+{
+  "schema": "maloriak_wcl_dps_reference_v1",
+  "encounter": "maloriak",
+  "mode": "10N",
+  "status": "pending_extraction",
+  "status_reason": "classic.warcraftlogs.com answered with a 'Human Verification / I am a human and not a bot' interstitial on 2026-09-25 (WebFetch: HTTP 403). An agent may not attest to being human, so no report page was read. No matched reference exists yet; nothing in this file is a measured value.",
+  "references": [],
+  "extraction_plan": {
+    "required_match": "Cataclysm Classic Blackwing Descent Maloriak (DungeonEncounter 1025, experiments/configs/raid_prerequisites/blackwing_descent.json), 10-player Normal, a kill (not a wipe), post-4.2 tuning era, preferably 2024-10 or later, verified on the fight page: boss, difficulty, size, date, duration, roster. Prefer a kill with at least one Red, one Blue and one Green vial phase before 25% (about 2 min 30 s or longer); a shorter kill can serve DPS context but not the vial/add timing claims.",
+    "wanted_specs": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "beast_mastery_hunter",
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "elemental_shaman",
+      "demonology_warlock"
+    ],
+    "candidate_reports_to_open_first": [
+      {
+        "report": "Y8ajQ7dbmKMG1RZy",
+        "reason": "Same BWD 10N night as the matched Magmaw DPS reference (fight 22, magmaw_wcl_dps_reference_v1.json): same raid, gear and buffs. Check its fight list for the Maloriak 10N kill.",
+        "url": "https://classic.warcraftlogs.com/reports/Y8ajQ7dbmKMG1RZy"
+      },
+      {
+        "report": "MxFq7TRbvnjGY1hJ",
+        "reason": "BWD 10N report of 2024-10-28 used for the Magmaw melee calibration (fight 22). Check for the Maloriak 10N kill; it is also the first choice for Maloriak/Aberration melee U samples.",
+        "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ"
+      },
+      {
+        "report": "xAhkN2y9YP3KRmnJ",
+        "reason": "BWD 10N report of 2025-06-11 behind the Magmaw short-fight context. Check for a Maloriak 10N kill.",
+        "url": "https://classic.warcraftlogs.com/reports/xAhkN2y9YP3KRmnJ"
+      }
+    ],
+    "fallback_discovery": "WCL Cataclysm Classic zone rankings for Maloriak (encounter 1025), 10-player Normal: read ranking rows with rendered innerText, pick a kill whose roster covers a Blood DK tank and as many wanted DPS specs as possible, then verify it on the fight page. A ranking row is a discovery index, not a reference.",
+    "views": {
+      "summary": "?fight=<id>&type=damage-done (per-actor DPS on all targets, duration, raid DPS, average item level)",
+      "casts": "?fight=<id>&type=casts&view=events (completed casts per DPS actor for maloriak_wcl_cast_timelines_v1.json; Begin Cast rows excluded)",
+      "boss_casts": "?fight=<id>&type=casts&view=events&hostility=1 (Throw Red/Blue/Green Bottle 77925/77932/77937, Arcane Storm 77896 and its interrupts, Release Aberrations 77569, Remedy 77912, Scorching Blast 77679, Consuming Flames 77786, Biting Chill 77760, Flash Freeze 97693/77699, Release All Minions 77991, Magma Jets 78194, Acid Nova 78225, Absolute Zero 78223)",
+      "interrupts": "?fight=<id>&type=interrupts (who interrupted Arcane Storm and Release Aberrations, and how many Release casts succeeded per vial phase)",
+      "dispels": "?fight=<id>&type=dispels (Remedy 77912 removals: Spellsteal, Purge, Dispel Magic, Tranquilizing Shot)",
+      "boss_melee": "?fight=<id>&type=damage-taken&view=events&by=ability&options=4098 filtered to ability 1 from Maloriak, Aberration and Prime Subject (U, hit type) plus the Scarlet Fever 81130 / Demoralizing Roar 99 / Demoralizing Shout 1160 / Vindication 26017 windows and Growth Catalyst 77987 stacks on the attacker",
+      "spell_damage": "?fight=<id>&type=damage-taken&view=events&by=ability&options=4098 for Arcane Storm 77908, Scorching Blast 77679 (split count), Consuming Flames, Flash Freeze 77699, Shatter 77715, Biting Chill 77763, Magma Jets 78095/78124, Acid Nova 78225, Absolute Zero 78208, compared with the 4.4.2 client rows in maloriak_ledger_v1.json",
+      "health": "consecutive Maloriak and Aberration damage events with health-bar percentages for tools.raid_program.derive_encounter_health (native 10N: 19,755,160 and 240,498)",
+      "bloodlust": "?fight=<id>&type=auras&spells=buffs&ability=2825 (and 32182, 80353, 90355) for the raid haste timing relative to 25%"
+    }
+  },
+  "consumers": [
+    "experiments/configs/raid_targets/blackwing_descent_10n_maloriak.json (matched_reference_ids stays empty until a verified entry exists)",
+    "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json (unresolved: wcl_matched_melee_damage_stage_for_damage_modifier_calibration, normal_health_and_enrage_values, live_timer_and_movement_confirmation_for_10N_10H_25N_25H)"
+  ]
+}

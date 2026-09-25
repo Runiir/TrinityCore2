@@ -3,13 +3,18 @@
   "ledger_schema": "cata_raid_value_timer_ledger_v1",
   "raid": "blackwing_descent",
   "boss_slug": "maloriak",
-  "modes": ["10N", "10H", "25N", "25H"],
+  "modes": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
   "fidelity_state": "fidelity_blocked",
   "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
   "unresolved_material_count": 7,
   "encounter": "maloriak",
   "purpose": "sourced_value_and_timer_ledger; no live assertion",
-  "research_as_of": "2026-08-11",
+  "research_as_of": "2026-09-25",
   "source_catalog": {
     "wowhead_442": {
       "title": "Maloriak Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
@@ -19,8 +24,16 @@
       "patch_label": "4.4.2",
       "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/maloriak-strategy",
       "accessed": "2026-08-11",
-      "used_for": ["health", "vial_cadence_and_order", "ability_targets_and_damage_examples", "green_window", "phase_two", "heroic_black"],
-      "reliability": "current_patch_labelled_strategy_source"
+      "used_for": [
+        "health",
+        "vial_cadence_and_order",
+        "ability_targets_and_damage_examples",
+        "green_window",
+        "phase_two",
+        "heroic_black"
+      ],
+      "reliability": "current_patch_labelled_strategy_source",
+      "retrieval_note": "Not re-read on 2026-09-25: direct HTTP returned 403 and the page summarizer was unavailable; the 2026-08-11 claims are retained unchanged."
     },
     "icy_cata_classic": {
       "title": "Maloriak Encounter Guide: Strategy, Abilities, Loot",
@@ -29,9 +42,18 @@
       "updated": "2024-07-29",
       "patch_label": "Cataclysm Classic",
       "url": "https://www.icy-veins.com/cataclysm-classic/maloriak-encounter-guide-strategy-abilities-loot",
-      "accessed": "2026-08-11",
-      "used_for": ["vial_order", "five_vile_swills", "red_blue_green_positioning", "18_add_reserve", "two_prime_subjects", "25_percent_transition"],
-      "reliability": "independent_current_era_strategy_source"
+      "accessed": "2026-09-25",
+      "used_for": [
+        "vial_order",
+        "five_vile_swills",
+        "red_blue_green_positioning",
+        "18_add_reserve",
+        "two_prime_subjects",
+        "25_percent_transition"
+      ],
+      "reliability": "independent_current_era_strategy_source",
+      "published": "2024-05-17",
+      "retrieval_note": "Re-read 2026-09-25 (public HTTP 200, JSON-LD datePublished 2024-05-17 / dateModified 2024-07-29). New bounded claims: interrupt Arcane Storm every cast; purge Remedy or let a mage Spellsteal it; interrupt Release Aberrations when enough adds are up, ideally dealing with nine at a time; interrupt only the first Release of a cycle; Aberrations kited by a tank away from Maloriak; face the boss to the raid only in Red, away otherwise; Blue spread 5 yards and ranged break Flash Freeze; Green: Debilitating Slime also removes Growth Catalyst, AoE all nine adds in 15 s; Prime Subjects picked up by off-tanks and ignored; Maloriak tank keeps moving out of Magma Jets; avoid Absolute Zero spheres; rotate raid cooldowns for Acid Nova; 6-minute enrage wording."
     },
     "icy_original": {
       "title": "Maloriak Detailed Strategy Guide (Heroic Mode included)",
@@ -40,9 +62,17 @@
       "updated": "2012-10-08",
       "patch_label": "page says WoD 6.1.2; historical encounter reference, not 4.4.2 authority",
       "url": "https://www.icy-veins.com/wow/maloriak-strategy-guide-normal-heroic",
-      "accessed": "2026-08-11",
-      "used_for": ["phase_duration_ranges", "10_25_target_counts", "enrage_and_heroic_deltas", "dark_duration", "heroic_fixate"],
-      "reliability": "independent_historical_strategy_source_only"
+      "accessed": "2026-09-25",
+      "used_for": [
+        "phase_duration_ranges",
+        "10_25_target_counts",
+        "enrage_and_heroic_deltas",
+        "dark_duration",
+        "heroic_fixate"
+      ],
+      "reliability": "independent_historical_strategy_source_only",
+      "published": "2011-08-26",
+      "retrieval_note": "Re-read 2026-09-25 (JSON-LD datePublished 2011-08-26, dateModified 2012-10-08). New bounded claims: Aberration health 248k/584k/872k/2.13M (10N/10H/25N/25H); cycle 2 min 35 s = 15 s transition, 47 s, 47 s, 21 s Green, 15 s transition; release 9 adds per cycle (interrupt the first Release, let the next three through); one off-tank in 10-man; Aberration hits ~5k (10N) every 2 s; Maloriak melee ~25k (10N) every 1.5-2 s; Flash Freeze only on ranged; Biting Chill one melee target in 10-man; Prime Subjects melee ~20k every 2.3 s (10N) and apply a stacking Rend; nuke phase Magma Jets every 10 s with 2 s to step out; Absolute Zero every 10 s (10N); Acid Nova every 30 s; enrage 7 min normal / 12 min heroic."
     },
     "local_cpp": {
       "title": "TrinityCore Maloriak encounter script",
@@ -50,7 +80,16 @@
       "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
       "lines": "37-1292",
       "accessed": "2026-08-11",
-      "used_for": ["state_machine", "vial_order", "local_timers", "target_filters", "add_release_selection", "phase_two", "cleanup", "heroic_black"],
+      "used_for": [
+        "state_machine",
+        "vial_order",
+        "local_timers",
+        "target_filters",
+        "add_release_selection",
+        "phase_two",
+        "cleanup",
+        "heroic_black"
+      ],
       "reliability": "current_local_server_baseline_not_live_4.4.2_evidence"
     },
     "local_instance_and_loader": {
@@ -63,7 +102,12 @@
       ],
       "lines": "h:30-183; instance:31-58,145-196,224-261; loader:76-83,308-315",
       "accessed": "2026-08-11",
-      "used_for": ["entry_ids", "boss_state_mapping", "summon_forwarding", "loader_registration"],
+      "used_for": [
+        "entry_ids",
+        "boss_state_mapping",
+        "summon_forwarding",
+        "loader_registration"
+      ],
       "reliability": "repository_confirmation"
     },
     "current_tdb": {
@@ -71,7 +115,11 @@
       "publisher": "repository database",
       "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
       "accessed": "2026-08-11",
-      "used_for": ["difficulty_entry_rows", "script_names", "creature_template_rows"],
+      "used_for": [
+        "difficulty_entry_rows",
+        "script_names",
+        "creature_template_rows"
+      ],
       "reliability": "local_dump_provenance_not_4.4.2_client_proof"
     },
     "sql_updates": {
@@ -83,95 +131,1351 @@
         "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
       ],
       "accessed": "2026-08-11",
-      "used_for": ["damage_modifier_groups", "historical_script_binding", "spawn_and_prime_subject_rows"],
+      "used_for": [
+        "damage_modifier_groups",
+        "historical_script_binding",
+        "spawn_and_prime_subject_rows"
+      ],
       "reliability": "repository_audit_only"
+    },
+    "client_442_59185_maloriak_rows_20260925": {
+      "title": "Cataclysm Classic 4.4.2.59185 client spell rows for Maloriak and the player interrupt/dispel/raid-haste spells",
+      "publisher": "wago.tools DB2 CSV export (build 4.4.2.59185, enUS)",
+      "accessed": "2026-09-25",
+      "command": "pixi run python -m tools.raid_program.extract_442_client_spell_rows --output <path> --follow-triggers --spell-id 77896 77912 77925 77932 77937 77928 77934 77938 88699 88700 92828 78896 78895 92716 92917 77569 77991 77679 77760 97693 95662 95663 93022 78194 78225 78223 92754 92720 92724 77602 77948 77615 77712 77715 77564 77987 78094 78095 78201 78208 92831 92837 92929 77711 77716 77699 92978 92979 92980 77786 92971 92972 92973 47528 1766 2139 57994 96231 80964 80965 370 30449 527 19801 19505 34490 19647 89766 2825 32182 80353 (each id as its own --spell-id)",
+      "extract_sha256": "f0bf7250fdfebfa4e68a152b8de19d06ba1bfb7b4a0f0aa41e146b4bd3a3ed2a",
+      "extract_scope": "79 spell ids after trigger closure; 92971-92973 and 92978-92980 are legacy 4.3.4 difficulty ids absent from 4.4.2 (difficulty rows live on the base ids).",
+      "table_full_csv_sha256": {
+        "SpellEffect": "53463195554e58dea60223ff7ace47064774d6490f47636e0b100c78a70786ec",
+        "SpellName": "f6c169613b405ed16210dab4e19506e907b85e6f8f422ff213757fae4a702cda",
+        "SpellMisc": "cfe3e68aaab489fc40a148070517c3cec677c9e33041cdeece37c05f9deb8d7d",
+        "SpellAuraOptions": "c6f9dd9b7579ff4dbbeb781122ce09f5fd8b7a168191cd56a0c1ceb76d78c6d7",
+        "SpellTargetRestrictions": "9c332644a146766c1fb5eb5b4473cbae30f7c2d4b0ad741309937b8cb63c2d63",
+        "SpellCooldowns": "e419e4fcaf6638e1f391b40af5fe62c3fa423921cf49822f4a18e4ccdd9c1ce2",
+        "SpellScaling": "bc5b24e23bcebca6a89775fef60a0cd4e1b59e8e75980d9acf0f30f82826203f",
+        "SpellDuration": "8235071c5172c3950ec222449a1debc9b71c961eb23e6001eeb7a7dc6e689214",
+        "SpellRadius": "cbb8774c4a5c825d19f5f51c0c9ba8b09d1953153d4ae090c562d6c46c880252",
+        "SpellRange": "90875cd8e29a0eb65888340f41ed09b810f8df9ef774adcf055e30518874227d",
+        "SpellCastTimes": "f015c5da360956f4d163f1b4b4db44eb1575799e4bdf83c18e5954ece72a115f"
+      },
+      "publication": "Not DVC-published in this package (agents may not write DVC); regenerate with the command above and publish through raid-evidence-lifecycle. Difficulty ids: 0 default (10N), 4 = 25N, 5 = 10H, 6 = 25H (2 also present).",
+      "reliability": "primary_client_reference_for_4.4.2_tuning; runtime 4.3.4 DBC parity not asserted"
+    },
+    "native_stats_20260925": {
+      "title": "Native creature health and melee rolls at DamageModifier 1",
+      "publisher": "repository database sources",
+      "paths": [
+        "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql (creature_template, creature_classlevelstats)",
+        "sql/updates/world/4.3.4/2025_06_07_00_world.sql (gt_npc_total_hp_exp3)",
+        "sql/updates/world/4.3.4/2025_06_07_01_world.sql (gt_npc_damage_by_class_exp3)",
+        "sql/updates/world/4.3.4/2025_06_18_06_world.sql (DamageModifier = 1 for every template)"
+      ],
+      "accessed": "2026-09-25",
+      "formula": "health = gt_npc_total_hp_exp3[88].Warrior 85892 x HealthModifier; swing = (gt_npc_damage_by_class_exp3[88].Warrior 2947.9421 x {1, 1.5} + creature_classlevelstats(88,1).attackpower 1226 / 14 x BaseVariance) x BaseAttackTime_s x DamageModifier (Creature.cpp UpdateLevelDependantStats, CreatureStatSystem.cpp CalculateMinMaxDamage).",
+      "limitations": "The world database (172.20.0.2) was offline, so template values come from the TDB dump plus the audited update files; a live read-back of creature_template is still required before calibration.",
+      "reliability": "repository_calculation"
+    },
+    "navmesh_669_probe_20260925": {
+      "title": "Detour probe of the pinned map 669 navmesh (laboratory wing and Maloriak room)",
+      "publisher": "repository navmesh assets",
+      "paths": [
+        "data/mmaps/669.mmap (sha256 3b794515...)",
+        "data/mmaps/6693131-6693332.mmtile (hashes as pinned in tools/raid_program/probe_drudge_navmesh_recovery.py)"
+      ],
+      "accessed": "2026-09-25",
+      "method": "findNearestPoly / findPath / findStraightPath with the player filter (NAV_GROUND | NAV_WATER | NAV_MAGMA_SLIME), probe compiled from dep/recastnavigation/Detour in /tmp (not retained).",
+      "claims": [
+        "Room floor z 73-74 across x -146..-67, y -496..-412; entrance ramp z 77 at x -110..-100, y > -415.",
+        "The central lower hall between x -160 and -60 at y -224.6 has no floor polygon (open shaft).",
+        "Lower-wing elevator (-224.0, -224.6, 76.8) to the laboratory junction (-110.0, -335.0, 67.7): path 161.8 yd via (-193.1, -258.4), (-161.1, -298.7), (-114.7, -330.1); closest approach to Maimgor 36.8 yd.",
+        "Junction to the patrol leader spawn (-55.97, -299.45): straight 64.8 yd, 34 yd from Maimgor. Junction to Maloriak (-105.79, -462.58): 130.4 yd via the entrance (-110.4, -405.3).",
+        "Old regroup/trash anchor (-66.85, -315.91) is the Drakeadon Mongrel 250119 spawn itself."
+      ],
+      "reliability": "repository_geometry"
+    },
+    "round1_two_shard_proof_20260925": {
+      "title": "Round-1 two-shard proof, Maloriak c0 shard",
+      "publisher": "repository run evidence",
+      "evidence_dvc": "artifacts/cata_raid_program/round1_two_shard_proof_20260925.tar.gz.dvc",
+      "members": [
+        "r1_proof/shards/blackwing_descent_10n_maloriak_c0/heartbeat_events.jsonl",
+        "r1_proof/shards/blackwing_descent_10n_maloriak_c0/validation_route_manifest.json",
+        "r1_proof/shard_run.json"
+      ],
+      "accessed": "2026-09-25",
+      "claims": [
+        "Every heartbeat (1-7) stays on route node bwd.maloriak.regroup (generation 1) with failure validation_route_future_encounter_contamination; kills 1, trash_pulls 224 then 167; completion semantic_progress_plateau_watchdog after 191 s without progress.",
+        "The regroup, the lab_trash node and bot_start all sit on Drakeadon Mongrel 250119 (-66.85, -315.91), whose patrol leader Drakonid Slayer 250117 (formation with 250118/250119) is not a listed pack entry."
+      ],
+      "reliability": "observed_run_evidence"
+    },
+    "wcl_gate_20260925": {
+      "title": "Warcraft Logs access on 2026-09-25",
+      "publisher": "classic.warcraftlogs.com",
+      "accessed": "2026-09-25",
+      "claim": "Human Verification interstitial ('I am a human and not a bot') in the shared browser and HTTP 403 for direct fetches; agents may not pass it. No WCL page was read.",
+      "next": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_wcl_dps_reference_v1.json extraction_plan"
+    },
+    "repo_spell_custom_attr": {
+      "title": "spell_custom_attr row for Scorching Blast",
+      "publisher": "repository SQL",
+      "path": "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql lines 168880-168882",
+      "accessed": "2026-09-25",
+      "claim": "(77679, 0x00000008) SPELL_ATTR0_CU_SHARE_DAMAGE",
+      "reliability": "repository_confirmation"
+    },
+    "repo_spellmgr_corrections": {
+      "title": "SpellMgr corrections for Maloriak spells",
+      "publisher": "repository",
+      "path": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp (Biting Chill 77760, Growth Catalyst 77987, Release Aberrations 77569, Release All Minions 77991, Debilitating Slime 77615)",
+      "accessed": "2026-09-25",
+      "reliability": "repository_confirmation"
     }
   },
   "mode_matrix": {
-    "10N": {"vial_order": ["red_or_blue", "other_color", "green"], "vials_per_cycle_local": 2, "black": false, "phase_two": "25_percent", "vile_swills": 0, "prime_subjects": 2},
-    "10H": {"vial_order": ["black", "red_or_blue", "other_color", "green"], "vials_per_cycle_local": 3, "black": true, "phase_two": "25_percent", "vile_swills": 5, "prime_subjects": 2},
-    "25N": {"vial_order": ["red_or_blue", "other_color", "green"], "vials_per_cycle_local": 2, "black": false, "phase_two": "25_percent", "vile_swills": 0, "prime_subjects": 2},
-    "25H": {"vial_order": ["black", "red_or_blue", "other_color", "green"], "vials_per_cycle_local": 3, "black": true, "phase_two": "25_percent", "vile_swills": 5, "prime_subjects": 2}
+    "10N": {
+      "vial_order": [
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
+      "vials_per_cycle_local": 2,
+      "black": false,
+      "phase_two": "25_percent",
+      "vile_swills": 0,
+      "prime_subjects": 2
+    },
+    "10H": {
+      "vial_order": [
+        "black",
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
+      "vials_per_cycle_local": 3,
+      "black": true,
+      "phase_two": "25_percent",
+      "vile_swills": 5,
+      "prime_subjects": 2
+    },
+    "25N": {
+      "vial_order": [
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
+      "vials_per_cycle_local": 2,
+      "black": false,
+      "phase_two": "25_percent",
+      "vile_swills": 0,
+      "prime_subjects": 2
+    },
+    "25H": {
+      "vial_order": [
+        "black",
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
+      "vials_per_cycle_local": 3,
+      "black": true,
+      "phase_two": "25_percent",
+      "vile_swills": 5,
+      "prime_subjects": 2
+    }
   },
   "values": [
-    {"key": "maloriak_health_guide", "10N": "24.7M", "10H": "34.6M", "25N": "86.6M", "25H": "121.2M", "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "maloriak_health_historical_conflict", "10N": "19.8M", "10H": "34.6M", "25N": "69.3M", "25H": "121.2M", "source": "icy_original", "confidence": "historical_conflicting_normal_values"},
-    {"key": "phase_two_threshold", "10N": "25_percent", "10H": "25_percent", "25N": "25_percent", "25H": "25_percent", "source": "wowhead_442+local_cpp:DamageTaken", "confidence": "guide_and_repository_confirmation"},
-    {"key": "aberration_reserve", "value": 18, "modes": ["10N", "10H", "25N", "25H"], "source": "icy_cata_classic+local_cpp:spawn_group_and_release_filter", "confidence": "independent_guide_and_repository_confirmation"},
-    {"key": "release_pack_size", "value": 3, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:RandomResize(3)", "confidence": "two_guides_and_repository_confirmation"},
-    {"key": "local_release_success_cap", "value": 6, "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:_releasedAberrationsCount_lt_6", "confidence": "implementation_only"},
-    {"key": "green_damage_taken_window", "value": "100_percent_increase_for_15s", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic", "confidence": "two_independent_current_strategy_sources"},
-    {"key": "growth_catalyst_damage_dealt", "10N": "10_percent_per_stack_guide", "10H": "20_percent_per_stack_guide", "25N": "10_percent_per_stack_guide", "25H": "20_percent_per_stack_guide", "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "growth_catalyst_damage_taken_reduction", "value": "20_percent_per_stack", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic", "confidence": "two_strategy_sources"},
-    {"key": "heroic_vile_swill_count", "value": 5, "modes": ["10H", "25H"], "source": "icy_cata_classic+icy_original+local_cpp:SPELL_VILE_SWILL", "confidence": "two_guides_and_repository_confirmation"},
-    {"key": "phase_two_prime_subject_count", "value": 2, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:SPELL_RELEASE_ALL_MINIONS", "confidence": "two_guides_and_repository_confirmation"},
-    {"key": "heroic_prime_fixate", "value": "few_seconds_after_spawn_persists_until_target_death", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_guide_only_local_explicit_logic_absent"},
-    {"key": "arcane_storm_area", "value": "80yd_guide", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "flash_freeze_local_target_filter", "value": "random_one_after_excluding_victim_and_players_attacked_by_aberration", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_maloriak_flash_freeze_targeting", "confidence": "implementation_only"},
-    {"key": "flash_freeze_guide_target", "value": "one_ranged_player_with_5yd_chain_effect", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "two_strategy_sources_but_local_filter_differs"},
-    {"key": "biting_chill_targets_conflict", "value": "wowhead_three_random_raid_members; historical_icy_one_10_player_or_two_25_player_melee_targets", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_unresolved"},
-    {"key": "heroic_damage_delta_examples", "value": "guide_reports_higher_ArcaneStorm_ScorchingBlast_ConsumingFlames_FlashFreeze_BitingChill_MagmaJets_AcidNova_AbsoluteZero; historical_source_reports_some_spells_unchanged", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_spell_coefficients_unresolved"},
-    {"key": "heroic_health_and_damage_modifier_db_groups", "value": "TDB difficulty entries exist; 2025_06_17 groups Maloriak 41378/49974 at DamageModifier 90 and 49980/49986 at 120", "modes": ["10N", "10H", "25N", "25H"], "source": "current_tdb+sql_updates", "confidence": "repository_fact_without_mode_mapping_inference"},
-    {"key": "phase_two_magma_target", "value": "current_victim_local; guide_tank", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_maloriak_magma_jets_script+wowhead_442", "confidence": "guide_and_repository_confirmation"},
-    {"key": "absolute_zero_target", "value": "random_eligible_player_with_3yd_trigger_and_5yd_explosion", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp:SelectTarget", "confidence": "guide_and_repository_confirmation"},
-    {"key": "remedy_effect", "value": "150000_health_first_tick_plus_150000_each_tick_10s_and_2000_mana_per_second_guide", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"}
+    {
+      "key": "maloriak_health_guide",
+      "10N": "24.7M",
+      "10H": "34.6M",
+      "25N": "86.6M",
+      "25H": "121.2M",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "maloriak_health_historical_conflict",
+      "10N": "19.8M",
+      "10H": "34.6M",
+      "25N": "69.3M",
+      "25H": "121.2M",
+      "source": "icy_original",
+      "confidence": "historical_conflicting_normal_values"
+    },
+    {
+      "key": "phase_two_threshold",
+      "10N": "25_percent",
+      "10H": "25_percent",
+      "25N": "25_percent",
+      "25H": "25_percent",
+      "source": "wowhead_442+local_cpp:DamageTaken",
+      "confidence": "guide_and_repository_confirmation"
+    },
+    {
+      "key": "aberration_reserve",
+      "value": 18,
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "icy_cata_classic+local_cpp:spawn_group_and_release_filter",
+      "confidence": "independent_guide_and_repository_confirmation"
+    },
+    {
+      "key": "release_pack_size",
+      "value": 3,
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+local_cpp:RandomResize(3)",
+      "confidence": "two_guides_and_repository_confirmation"
+    },
+    {
+      "key": "local_release_success_cap",
+      "value": 6,
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:_releasedAberrationsCount_lt_6",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "green_damage_taken_window",
+      "value": "100_percent_increase_for_15s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic",
+      "confidence": "two_independent_current_strategy_sources"
+    },
+    {
+      "key": "growth_catalyst_damage_dealt",
+      "10N": "10_percent_per_stack_guide",
+      "10H": "20_percent_per_stack_guide",
+      "25N": "10_percent_per_stack_guide",
+      "25H": "20_percent_per_stack_guide",
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "growth_catalyst_damage_taken_reduction",
+      "value": "20_percent_per_stack",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic",
+      "confidence": "two_strategy_sources"
+    },
+    {
+      "key": "heroic_vile_swill_count",
+      "value": 5,
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_cata_classic+icy_original+local_cpp:SPELL_VILE_SWILL",
+      "confidence": "two_guides_and_repository_confirmation"
+    },
+    {
+      "key": "phase_two_prime_subject_count",
+      "value": 2,
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic+local_cpp:SPELL_RELEASE_ALL_MINIONS",
+      "confidence": "two_guides_and_repository_confirmation"
+    },
+    {
+      "key": "heroic_prime_fixate",
+      "value": "few_seconds_after_spawn_persists_until_target_death",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_original",
+      "confidence": "historical_guide_only_local_explicit_logic_absent"
+    },
+    {
+      "key": "arcane_storm_area",
+      "value": "80yd_guide",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "flash_freeze_local_target_filter",
+      "value": "random_one_after_excluding_victim_and_players_attacked_by_aberration",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:spell_maloriak_flash_freeze_targeting",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "flash_freeze_guide_target",
+      "value": "one_ranged_player_with_5yd_chain_effect",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "two_strategy_sources_but_local_filter_differs"
+    },
+    {
+      "key": "biting_chill_targets_conflict",
+      "value": "wowhead_three_random_raid_members; historical_icy_one_10_player_or_two_25_player_melee_targets",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "material_conflict_unresolved"
+    },
+    {
+      "key": "heroic_damage_delta_examples",
+      "value": "guide_reports_higher_ArcaneStorm_ScorchingBlast_ConsumingFlames_FlashFreeze_BitingChill_MagmaJets_AcidNova_AbsoluteZero; historical_source_reports_some_spells_unchanged",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "material_conflict_spell_coefficients_unresolved"
+    },
+    {
+      "key": "heroic_health_and_damage_modifier_db_groups",
+      "value": "TDB difficulty entries exist; 2025_06_17 groups Maloriak 41378/49974 at DamageModifier 90 and 49980/49986 at 120",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "current_tdb+sql_updates",
+      "confidence": "repository_fact_without_mode_mapping_inference"
+    },
+    {
+      "key": "phase_two_magma_target",
+      "value": "current_victim_local; guide_tank",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:spell_maloriak_magma_jets_script+wowhead_442",
+      "confidence": "guide_and_repository_confirmation"
+    },
+    {
+      "key": "absolute_zero_target",
+      "value": "random_eligible_player_with_3yd_trigger_and_5yd_explosion",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+local_cpp:SelectTarget",
+      "confidence": "guide_and_repository_confirmation"
+    },
+    {
+      "key": "remedy_effect",
+      "value": "150000_health_first_tick_plus_150000_each_tick_10s_and_2000_mana_per_second_guide",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "client_arcane_storm",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "77896: 500 ms cast, 6000 ms channel (aura 23, period 1000) triggering 77908 arcane damage in 80 yd: 11309 (10N/25N/2), 47124 (10H/25H). Cooldown category 2000 ms."
+    },
+    {
+      "key": "client_remedy",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "77912: 10 s self aura, periodic heal 25000/s (10N default), 75000/s (25N), 50000/s (10H), 150000/s (25H) plus aura 24 periodic energize 2000/s. The Wowhead 'increasing each tick' wording is not a client field (native heal is flat; ramp unverified)."
+    },
+    {
+      "key": "client_release_aberrations",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "77569: 1500 ms cast, dummy on area entries (50000 yd); 77991 Release All Minions: 1500 ms cast, two dummy effects."
+    },
+    {
+      "key": "client_scorching_blast",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "repo_spell_custom_attr"
+      ],
+      "value": "77679: instant, 60 yd cone (ConeDegrees 70), school fire, 400000 (10N) / 1000000 (25N) / 850000 (10H) / 2700000 (25H); spell_custom_attr (77679, 0x8) = SPELL_ATTR0_CU_SHARE_DAMAGE splits it among targets."
+    },
+    {
+      "key": "client_consuming_flames",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "local_cpp"
+      ],
+      "value": "77786: 10 s fire DoT, 60 yd, 4500/s (10N), 9000/s (25N), 7500/s (10H), 13500/s (25H); spell_maloriak_consuming_flames adds 50% of any magic damage taken to the tick."
+    },
+    {
+      "key": "client_biting_chill",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "repo_spellmgr_corrections"
+      ],
+      "value": "77760: 10 s aura, 10 yd, targets 53/16 radius 3, period 1000 triggering 77763 frost damage to allies within 3 yd: 5000 (normal) / 10000 (heroic). SpellMgrCorrectionsPart04.cpp overwrites EFFECT_0 TargetA twice (TARGET_UNIT_TARGET_ENEMY then 0), leaving TargetA 0 and the client TargetB: a static defect (patch requested; runtime effect unobserved)."
+    },
+    {
+      "key": "client_flash_freeze",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "97693 targeting (dummy, triggers 77699). 77699: 30 s stun (aura 12) plus frost damage 56549 (10N/25N) / 84824 (10H) / 117811 (25H) on enemies within 5 yd of the target (53/16 radius 5). 77711 summons Flash Freeze 41576 (HealthModifier 0.749625: 64,387 HP in 10N). Shatter 77715 on death: 45239 (normal) / 84824 (heroic) within 5 yd plus a script effect."
+    },
+    {
+      "key": "client_debilitating_slime",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "77615: 15 s, +100% damage taken (aura 87, all schools) on every unit in 50000 yd; 77602 2 s cauldron cast; 77948 knockback 150/300 within 30 yd of the cauldron."
+    },
+    {
+      "key": "client_growth_catalyst",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "77987: area aura on friends within 10 yd: +10% damage done (normal) / +20% (heroic), -20% damage taken, aura 61 +10. SpellMgr adds SPELL_ATTR3_DOT_STACKING_RULE so stacks come from each nearby Aberration."
+    },
+    {
+      "key": "client_magma_jets",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "local_cpp"
+      ],
+      "value": "93022 script (face the victim) -> 78194 2000 ms cast summoning mover 50030 (aura 93018) that spawns Magma Jet 41901 every 3 yd along the facing until LOS breaks; 78095 on each: 37999 (10N) / 37699 (25N) / 70686 (heroic) fire plus knockback in 3 yd, then 20 s of 78124 every 500 ms: 18849 (normal) / 37699 (heroic) in 3 yd."
+    },
+    {
+      "key": "client_acid_nova",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "78225: 10 s nature DoT on every player (50000 yd), 7500/s (normal) / 15000/s (heroic)."
+    },
+    {
+      "key": "client_absolute_zero",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "local_cpp"
+      ],
+      "value": "78223 summons Absolute Zero 41961 at the target; 78201 3000 ms transform cast then period 500 ms 78206 checks enemies within 3 yd; 78208 explosion 47124 (normal) / 94249 (heroic) frost within 5 yd plus knockback. The native summon moves at random within 10 yd."
+    },
+    {
+      "key": "client_heroic_dark",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "92754 Engulfing Darkness: 3000 ms cast, 8 s channel, 20-degree cone every 1 s: 15000 (10H) / 25000 (25H) shadow and -100% healing taken for 1.5 s per tick. 92716 Shadow Imbued 90 s. 92929 Dark Sludge pools 30 s, 15000 per 500 ms in 3 yd (heroic)."
+    },
+    {
+      "key": "client_vial_timings",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "Throw bottles 500 ms casts; Drink Red/Blue/Black/All 2000 ms casts; Fire/Frost/Slime Imbued 40 s, Shadow Imbued 90 s; Unstable Mix aura 61 +20."
+    },
+    {
+      "key": "client_player_interrupts_and_dispels",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "value": "Kick 1766, Rebuke 96231, Mind Freeze 47528: 5 yd, 10 s. Wind Shear 57994: 25 yd, 15 s. Counterspell 2139: 40 yd, 24 s. Spell Lock 19647: 30 yd, 24 s. Skull Bash 80964/80965: 13 yd, 60 s base. Silencing Shot 34490: 35 yd, 20 s. Spellsteal 30449 (40 yd), Purge 370 (30 yd), Dispel Magic 527 (30 yd), Tranquilizing Shot 19801 (35 yd, magic and enrage), Devour Magic 19505 (30 yd, 15 s). Bloodlust 2825 / Heroism 32182 / Time Warp 80353: 40 s, 300 s recovery."
+    },
+    {
+      "key": "native_health",
+      "source_refs": [
+        "native_stats_20260925",
+        "icy_original",
+        "wowhead_442"
+      ],
+      "value": "Maloriak 10N 19,755,160 (HealthModifier 230), 25N 68,713,600 (800), 10H 34,631,654 (403.2), 25H 121,210,790 (1411.2). Aberration 240,498 / 858,920 / 584,066 / 2,128,570. Prime Subject 8,589,200 / 30,062,200 / 12,024,880 / 42,087,080. Flash Freeze 64,387 (10N). Heroic values match both guides; normal values match the 2012 Icy Veins page, not the Wowhead 4.4.2 24.7M / 86.6M (conflict retained; needs a WCL health derivation)."
+    },
+    {
+      "key": "native_melee_roll_modifier_1",
+      "source_refs": [
+        "native_stats_20260925"
+      ],
+      "value": "Per swing at DamageModifier 1: Maloriak 10N 41378 (BaseAttackTime 1500, variance 1) 4,553.3-6,764.2; 25N/10H/25H (2000 ms) 6,071.0-9,019.0; Aberration 41440 (2000 ms, variance 0.33) 5,953.7-8,901.6; Prime Subject 41841 (variance 0.4) 5,965.9-8,913.9; Vile Swill 49811 (rank 1, variance 0.75) 6,027.2-8,975.2. Every template runs at DamageModifier 1 today (2025_06_18_06); TDB-era values were 90/120 (boss), 25/36 (Aberration), 75/100 (Prime Subject), 45 (Vile Swill) on the old damage model and are not reused."
+    }
   ],
   "timers": [
-    {"key": "first_vial_guide", "value": "about_20s_after_engage", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_approximation"},
-    {"key": "first_cauldron_face_local", "value": "15.5s_after_engage", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:JustEngagedWith", "confidence": "implementation_only_not_vial_cast"},
-    {"key": "local_first_vial_pipeline", "value": "face_15.5s;throw_+1.3s;move_+1s;travel_unmeasured;drink_+1.5s_after_arrival;imbued_+2.5s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:MovementInform_and_UpdateAI", "confidence": "implementation_only_movement_unmeasured"},
-    {"key": "normal_vial_face_repeat", "value": "40s_after_imbued_event", "modes": ["10N", "25N"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE", "confidence": "implementation_only"},
-    {"key": "heroic_black_vial_face_repeat", "value": "90s_after_black_imbued_event_local;about_95s_dark_phase_historical_guide", "modes": ["10H", "25H"], "source": "local_cpp+icy_original", "confidence": "conflicting_do_not_schedule_exact"},
-    {"key": "normal_cycle_guide", "value": "40s_per_vial;approximately_2m35s_red_blue_green_cycle_historical", "modes": ["10N", "25N"], "source": "wowhead_442+icy_original", "confidence": "guide_approximation"},
-    {"key": "heroic_black_events_local", "value": "vile_swill_2s;engulfing_darkness_8s_then_repeat_12.5s", "modes": ["10H", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
-    {"key": "heroic_dark_guide", "value": "about_95s;seven_EngulfingDarkness_casts;3s_cast_plus_8s_channel;about_11s_cycle", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_guide_only"},
-    {"key": "arcane_storm_local", "value": "red_15.5s_then_repeat_random_15.5_to_17s;blue_6s;green_5s;channel_interrupt_window_6.5s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
-    {"key": "remedy_local", "value": "red_20.5s;blue_21.5s;green_7.5s;repeat_24s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
-    {"key": "release_aberrations_local", "value": "red_11s;blue_14.5s;green_9s;repeat_random_17_to_18s_until_6_successes", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
-    {"key": "red_local", "value": "consuming_flames_7s_then_14.5s;scorching_blast_19s_then_17s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
-    {"key": "blue_local", "value": "biting_chill_13s_then_11s;flash_freeze_17s_then_19s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
-    {"key": "green_local", "value": "cauldron_slime_effect_on_imbued;cauldron_stalker_evade_after_8s;attack_players_+4s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE", "confidence": "implementation_only"},
-    {"key": "green_guide", "value": "debilitating_slime_15s;next_vial_about_30s_after_slime_expires", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic", "confidence": "two_strategy_sources_approximate"},
-    {"key": "phase_two_local_pipeline", "value": "enter_1ms;release_all_then_drink_all_5s;unstable_mix_+2.3s;magma_jets_+3.5s;acid_nova_and_absolute_zero_+8.4s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:DamageTaken/UpdateAI", "confidence": "implementation_only"},
-    {"key": "phase_two_local_repeat", "value": "magma_jets_6s;acid_nova_20s;absolute_zero_7s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
-    {"key": "phase_two_guide_approx", "value": "magma_jets_about_6s;acid_nova_about_30s;absolute_zero_about_10s", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_approximation_conflicts_local"},
-    {"key": "vile_swill_dark_sludge_local", "value": "first_6s_then_repeat_6s_per_swill_ai", "modes": ["10H", "25H"], "source": "local_cpp:npc_maloriak_vile_swill", "confidence": "implementation_only"},
-    {"key": "vile_swill_dark_sludge_guide", "value": "about_one_new_puddle_per_second;15k_twice_per_second", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_guide_approximation"}
+    {
+      "key": "first_vial_guide",
+      "value": "about_20s_after_engage",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_approximation"
+    },
+    {
+      "key": "first_cauldron_face_local",
+      "value": "15.5s_after_engage",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:JustEngagedWith",
+      "confidence": "implementation_only_not_vial_cast"
+    },
+    {
+      "key": "local_first_vial_pipeline",
+      "value": "face_15.5s;throw_+1.3s;move_+1s;travel_unmeasured;drink_+1.5s_after_arrival;imbued_+2.5s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:MovementInform_and_UpdateAI",
+      "confidence": "implementation_only_movement_unmeasured"
+    },
+    {
+      "key": "normal_vial_face_repeat",
+      "value": "40s_after_imbued_event",
+      "modes": [
+        "10N",
+        "25N"
+      ],
+      "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "heroic_black_vial_face_repeat",
+      "value": "90s_after_black_imbued_event_local;about_95s_dark_phase_historical_guide",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp+icy_original",
+      "confidence": "conflicting_do_not_schedule_exact"
+    },
+    {
+      "key": "normal_cycle_guide",
+      "value": "40s_per_vial;approximately_2m35s_red_blue_green_cycle_historical",
+      "modes": [
+        "10N",
+        "25N"
+      ],
+      "source": "wowhead_442+icy_original",
+      "confidence": "guide_approximation"
+    },
+    {
+      "key": "heroic_black_events_local",
+      "value": "vile_swill_2s;engulfing_darkness_8s_then_repeat_12.5s",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "heroic_dark_guide",
+      "value": "about_95s;seven_EngulfingDarkness_casts;3s_cast_plus_8s_channel;about_11s_cycle",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_original",
+      "confidence": "historical_guide_only"
+    },
+    {
+      "key": "arcane_storm_local",
+      "value": "red_15.5s_then_repeat_random_15.5_to_17s;blue_6s;green_5s;channel_interrupt_window_6.5s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "remedy_local",
+      "value": "red_20.5s;blue_21.5s;green_7.5s;repeat_24s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "release_aberrations_local",
+      "value": "red_11s;blue_14.5s;green_9s;repeat_random_17_to_18s_until_6_successes",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "red_local",
+      "value": "consuming_flames_7s_then_14.5s;scorching_blast_19s_then_17s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "blue_local",
+      "value": "biting_chill_13s_then_11s;flash_freeze_17s_then_19s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "green_local",
+      "value": "cauldron_slime_effect_on_imbued;cauldron_stalker_evade_after_8s;attack_players_+4s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "green_guide",
+      "value": "debilitating_slime_15s;next_vial_about_30s_after_slime_expires",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+icy_cata_classic",
+      "confidence": "two_strategy_sources_approximate"
+    },
+    {
+      "key": "phase_two_local_pipeline",
+      "value": "enter_1ms;release_all_then_drink_all_5s;unstable_mix_+2.3s;magma_jets_+3.5s;acid_nova_and_absolute_zero_+8.4s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:DamageTaken/UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "phase_two_local_repeat",
+      "value": "magma_jets_6s;acid_nova_20s;absolute_zero_7s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:UpdateAI",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "phase_two_guide_approx",
+      "value": "magma_jets_about_6s;acid_nova_about_30s;absolute_zero_about_10s",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_approximation_conflicts_local"
+    },
+    {
+      "key": "vile_swill_dark_sludge_local",
+      "value": "first_6s_then_repeat_6s_per_swill_ai",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "local_cpp:npc_maloriak_vile_swill",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "vile_swill_dark_sludge_guide",
+      "value": "about_one_new_puddle_per_second;15k_twice_per_second",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_original",
+      "confidence": "historical_guide_approximation"
+    },
+    {
+      "key": "interrupt_rotation_basis",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "strategy_report": "Arcane Storm every 15.5-17 s after its first use per vial (native); Release Aberrations every 17-18 s (native); historical: the two are cast in succession in random order",
+      "repository_baseline": "boss_maloriak.cpp ACTION_SCHEDULE_EVENTS_FOR_PHASE / UpdateAI",
+      "source_refs": [
+        "local_cpp",
+        "icy_original",
+        "client_442_59185_maloriak_rows_20260925"
+      ],
+      "status": "native_baseline_for_bot_rotation; live cadence unresolved"
+    }
   ],
   "targeting_and_scaling": [
-    {"key": "red_scorching_blast", "target": "cone_up_to_60yd_split_among_targets", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"},
-    {"key": "red_consuming_flames", "target": "one_random_raid_player", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp:SelectTarget", "confidence": "guide_and_repository_confirmation"},
-    {"key": "local_random_target_radius", "target": "ConsumingFlames_BitingChill_AbsoluteZero_select_random_within_60yd", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:SelectTarget(60.0f)", "confidence": "implementation_only"},
-    {"key": "blue_flash_freeze", "target": "one_random_eligible_target;5yd chain", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp", "confidence": "guide_and_repository_confirmation_but_ranged_scope_unresolved"},
-    {"key": "blue_biting_chill", "target": "random_player;3yd aura", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_10_25_counts"},
-    {"key": "phase_two_absolute_zero", "target": "one_random_player;3yd_trigger;5yd_explosion", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp", "confidence": "guide_and_repository_confirmation"},
-    {"key": "heroic_vile_swill", "target": "five_oozes_spawn_under_boss;random_raid_dark_sludge", "modes": ["10H", "25H"], "source": "icy_cata_classic+icy_original+local_cpp", "confidence": "two_guides_and_repository_confirmation"},
-    {"key": "mode_damage_examples", "target": "wowhead_normal_to_heroic_examples:ArcaneStorm_12k_to_50k;ScorchingBlast_1m_to_2.7m;ConsumingFlames_9k_to_13.5k;AcidNova_7.5k_to_15k;MagmaJets_37k_to_75k;AbsoluteZero_50k_to_100k", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "guide_reported_scope_and_10_25_mapping_not_reliably_encoded"},
-    {"key": "historical_heroic_delta", "target": "melee_and_aberration_hits_higher;Remedy_regeneration_doubled;ScorchingBlast_ConsumingFlames_AcidNova_higher;ArcaneStorm_BitingChill_FlashFreeze_AbsoluteZero_MagmaJets_reported_unchanged", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_conflict_with_current_guide"}
+    {
+      "key": "red_scorching_blast",
+      "target": "cone_up_to_60yd_split_among_targets",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported"
+    },
+    {
+      "key": "red_consuming_flames",
+      "target": "one_random_raid_player",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+local_cpp:SelectTarget",
+      "confidence": "guide_and_repository_confirmation"
+    },
+    {
+      "key": "local_random_target_radius",
+      "target": "ConsumingFlames_BitingChill_AbsoluteZero_select_random_within_60yd",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "local_cpp:SelectTarget(60.0f)",
+      "confidence": "implementation_only"
+    },
+    {
+      "key": "blue_flash_freeze",
+      "target": "one_random_eligible_target;5yd chain",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+local_cpp",
+      "confidence": "guide_and_repository_confirmation_but_ranged_scope_unresolved"
+    },
+    {
+      "key": "blue_biting_chill",
+      "target": "random_player;3yd aura",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "current_guide_reported_conflicts_historical_10_25_counts"
+    },
+    {
+      "key": "phase_two_absolute_zero",
+      "target": "one_random_player;3yd_trigger;5yd_explosion",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442+local_cpp",
+      "confidence": "guide_and_repository_confirmation"
+    },
+    {
+      "key": "heroic_vile_swill",
+      "target": "five_oozes_spawn_under_boss;random_raid_dark_sludge",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_cata_classic+icy_original+local_cpp",
+      "confidence": "two_guides_and_repository_confirmation"
+    },
+    {
+      "key": "mode_damage_examples",
+      "target": "wowhead_normal_to_heroic_examples:ArcaneStorm_12k_to_50k;ScorchingBlast_1m_to_2.7m;ConsumingFlames_9k_to_13.5k;AcidNova_7.5k_to_15k;MagmaJets_37k_to_75k;AbsoluteZero_50k_to_100k",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "source": "wowhead_442",
+      "confidence": "guide_reported_scope_and_10_25_mapping_not_reliably_encoded"
+    },
+    {
+      "key": "historical_heroic_delta",
+      "target": "melee_and_aberration_hits_higher;Remedy_regeneration_doubled;ScorchingBlast_ConsumingFlames_AcidNova_higher;ArcaneStorm_BitingChill_FlashFreeze_AbsoluteZero_MagmaJets_reported_unchanged",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "source": "icy_original",
+      "confidence": "historical_conflict_with_current_guide"
+    }
   ],
   "phase_reset_credit": [
-    {"key": "reset", "behavior": "Reset calls _Reset and MakeInterruptable(false), but does not explicitly reset current vial, used vial count, or released Aberration count", "source": "local_cpp:256-260", "confidence": "repository_fact;engine_reconstruction_unresolved"},
-    {"key": "evade_cleanup", "behavior": "despawn Heroic Nefarius; remove player encounter auras; despawn growth chamber spawn group and tracked summons; despawn at evade", "source": "local_cpp:280-288,604-611", "confidence": "repository_confirmation"},
-    {"key": "death_cleanup", "behavior": "remove encounter auras and summons, call _JustDied, then signal Heroic Nefarius death scene", "source": "local_cpp:290-300,604-611", "confidence": "repository_confirmation"},
-    {"key": "boss_state_mapping", "behavior": "creature 41378 maps to DATA_MALORIAK; base BossAI path is expected to set IN_PROGRESS/DONE; instance DONE notifies generic Nefarius", "source": "blackwing_descent.h+instance_blackwing_descent.cpp", "confidence": "repository_confirmation_with_base_class_inference"},
-    {"key": "heroic_title_credit", "behavior": "Lord Victor Nefarius casts spell 89798 after death scene; script applies title ID 188; this is presentation/title credit separate from boss DONE", "source": "local_cpp:762-846,1231-1267", "confidence": "repository_confirmation"}
+    {
+      "key": "reset",
+      "behavior": "Creature::Respawn (Creature.cpp 2052-2053) only calls AI()->Reset(); the AI object is not rebuilt after _DespawnAtEvade. Before 2026-09-25 Reset() left _currentVial, _usedVialsCount and _releasedAberrationsCount from the failed attempt (first vial could be Green, the release reserve could start exhausted) and the constructor started at VIAL_RED, so the first normal vial was always Blue. Reset() now starts a fresh cycle (VIAL_GREEN sentinel, counters 0).",
+      "source": "local_cpp: boss_maloriak.cpp Reset; src/server/game/Entities/Creature/Creature.cpp Respawn",
+      "confidence": "repository_fact_repaired; live wipe/re-pull observation pending"
+    },
+    {
+      "key": "evade_cleanup",
+      "behavior": "despawn Heroic Nefarius; remove player encounter auras; despawn growth chamber spawn group and tracked summons; despawn at evade",
+      "source": "local_cpp:280-288,604-611",
+      "confidence": "repository_confirmation"
+    },
+    {
+      "key": "death_cleanup",
+      "behavior": "remove encounter auras and summons, call _JustDied, then signal Heroic Nefarius death scene",
+      "source": "local_cpp:290-300,604-611",
+      "confidence": "repository_confirmation"
+    },
+    {
+      "key": "boss_state_mapping",
+      "behavior": "creature 41378 maps to DATA_MALORIAK; base BossAI path is expected to set IN_PROGRESS/DONE; instance DONE notifies generic Nefarius",
+      "source": "blackwing_descent.h+instance_blackwing_descent.cpp",
+      "confidence": "repository_confirmation_with_base_class_inference"
+    },
+    {
+      "key": "heroic_title_credit",
+      "behavior": "Lord Victor Nefarius casts spell 89798 after death scene; script applies title ID 188; this is presentation/title credit separate from boss DONE",
+      "source": "local_cpp:762-846,1231-1267",
+      "confidence": "repository_confirmation"
+    }
   ],
   "conflicts": [
-    {"key": "first_vial", "guide": "about_20s", "local": "first_face_15.5s_plus_unmeasured_movement_pipeline", "resolution": "do_not_schedule_exact_vial_cast"},
-    {"key": "black_duration", "guide": "about_95s", "local": "90s_face_repeat_after_black_imbued", "resolution": "do_not_schedule_exact_dark_end"},
-    {"key": "phase_two_repeats", "guide": "6s/30s/10s_approx", "local": "6s/20s/7s", "resolution": "local_baseline_only_until_live_validation"},
-    {"key": "biting_chill_targets", "wowhead": "3_random_raid_members", "icy_original": "1_10_player_or_2_25_player_melee_targets", "resolution": "unresolved_spell_target_mode"},
-    {"key": "heroic_coefficients", "wowhead": "many_damage_values_increased", "icy_original": "several_named_spells_unchanged", "resolution": "unresolved_DBC_coefficients"},
-    {"key": "enrage", "icy_cata_classic": "6m_wording", "icy_original": "7m_normal_12m_heroic", "resolution": "unresolved_hotfix_and_page_context"},
-    {"key": "release_color", "icy_cata_classic": "Red_or_Green", "wowhead": "throughout_phase_one", "local": "scheduled_Red_Blue_Green", "resolution": "quota_policy_must_not_depend_on_color_only"}
+    {
+      "key": "first_vial",
+      "guide": "about_20s",
+      "local": "first_face_15.5s_plus_unmeasured_movement_pipeline",
+      "resolution": "do_not_schedule_exact_vial_cast"
+    },
+    {
+      "key": "black_duration",
+      "guide": "about_95s",
+      "local": "90s_face_repeat_after_black_imbued",
+      "resolution": "do_not_schedule_exact_dark_end"
+    },
+    {
+      "key": "phase_two_repeats",
+      "guide": "6s/30s/10s_approx",
+      "local": "6s/20s/7s",
+      "resolution": "local_baseline_only_until_live_validation"
+    },
+    {
+      "key": "biting_chill_targets",
+      "wowhead": "3_random_raid_members",
+      "icy_original": "1_10_player_or_2_25_player_melee_targets",
+      "resolution": "unresolved_spell_target_mode"
+    },
+    {
+      "key": "heroic_coefficients",
+      "wowhead": "many_damage_values_increased",
+      "icy_original": "several_named_spells_unchanged",
+      "resolution": "unresolved_DBC_coefficients"
+    },
+    {
+      "key": "enrage",
+      "icy_cata_classic": "6m_wording",
+      "icy_original": "7m_normal_12m_heroic",
+      "resolution": "unresolved_hotfix_and_page_context"
+    },
+    {
+      "key": "release_color",
+      "icy_cata_classic": "Red_or_Green",
+      "wowhead": "throughout_phase_one",
+      "local": "scheduled_Red_Blue_Green",
+      "resolution": "quota_policy_must_not_depend_on_color_only"
+    }
   ],
   "unresolved": [
-    "exact_442_client_build_and_BWD_hotfix_cutoff",
-    "live_timer_and_movement_confirmation_for_10N_10H_25N_25H",
-    "exact_spell_coefficients_and_target_counts_by_mode",
-    "normal_health_and_enrage_values",
-    "heroic_prime_subject_fixate_spell_data_and_target_persistence",
-    "AI_object_reconstruction_and_custom_counter_reset_after_evade",
-    "whether_historical_custom_SQL_pack_is_applied_to_current_database"
+    {
+      "key": "exact_442_client_build_and_BWD_hotfix_cutoff",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Build 4.4.2.59185 and the 2025-02-20 cutoff are pinned and the Maloriak client rows are extracted (client_442_59185_maloriak_rows_20260925); no official document states Maloriak-specific hotfix carryover."
+    },
+    {
+      "key": "live_timer_and_movement_confirmation_for_10N_10H_25N_25H",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Native schedules are now published read-only by GetTimeUntilEncounterMechanic, but no identity-pinned live or WCL vial/ability cadence exists (WCL gated 2026-09-25)."
+    },
+    {
+      "key": "exact_spell_coefficients_and_target_counts_by_mode",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Base points, radii, cones and durations per difficulty are resolved from 4.4.2 client rows; runtime 4.3.4 DBC parity, the Biting Chill SpellMgr target defect and WCL sample compatibility remain open."
+    },
+    {
+      "key": "normal_health_and_enrage_values",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Native 10N 19,755,160 and 25N 68,713,600 match the 2012 guide; the 4.4.2 Wowhead page says 24.7M / 86.6M. Needs a WCL health derivation; the enrage timer (6 vs 7/12 min) is absent from the script."
+    },
+    {
+      "key": "heroic_prime_subject_fixate_spell_data_and_target_persistence",
+      "status": "fidelity_blocked",
+      "evidence_gap": "No spell id or observed target sequence for Fixate or Rend."
+    },
+    {
+      "key": "AI_object_reconstruction_and_custom_counter_reset_after_evade",
+      "status": "fidelity_blocked",
+      "evidence_gap": "Source resolved (Creature::Respawn reuses the AI and calls Reset) and repaired in boss_maloriak.cpp Reset; the live wipe/re-pull observation (fresh random first vial, full release reserve) is still pending."
+    },
+    {
+      "key": "whether_historical_custom_SQL_pack_is_applied_to_current_database",
+      "status": "fidelity_blocked",
+      "evidence_gap": "The world database was offline on 2026-09-25; spell_script_names and spell_custom_attr (77679 share damage) rows still need a live read-back."
+    }
+  ],
+  "repository_revision_audited": "a570b44369246a47c77b910398bdf0019e71c0ed",
+  "historical_repository_claim_revision": "research_as_of 2026-08-11 (values, timers and conflicts rows retained unchanged)",
+  "current_audit_scope": "Round-2 boss package MA: 4.4.2 client spell rows for every Maloriak spell and the player interrupt/dispel/raid-haste spells; native health and melee rolls from creature_template and gt tables; native script audit and repair; laboratory route geometry on the pinned 669 navmesh; round-1 shard plateau root cause; bot tactic mapping. WCL was unavailable (human-verification gate), so every WCL-dependent value stays unresolved.",
+  "retrieved_utc_date": "2026-09-25",
+  "fidelity_target": {
+    "build": "4.4.2.59185",
+    "locale": "enUS",
+    "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
+    "authority": "experiments/configs/cata_raid_acceptance_policy_v1.json"
+  },
+  "native_audit_20260925": {
+    "script_readiness": "source_present_ready_for_diagnostic_shard (fidelity_blocked)",
+    "repaired": [
+      {
+        "key": "reset_counters",
+        "file": "boss_maloriak.cpp Reset",
+        "defect": "vial/release counters survived evade; first normal vial always Blue",
+        "fix": "Reset starts from VIAL_GREEN with zero counters; SelectNextVial/AdvanceUsedVials in boss_maloriak_shared.h replicate the original order exactly",
+        "test": "tests/test_maloriak_native_script.py::test_vial_order_matches_the_researched_cycles"
+      },
+      {
+        "key": "phase_two_vial_leak",
+        "file": "boss_maloriak.cpp EVENT_ENTER_PHASE_TWO, DoAction, MovementInform",
+        "defect": "the unphased vial pipeline (walk, drink, imbue, green slime, attack) could complete inside phase two, re-applying a colored imbue after Drink All Bottles or a Debilitating Slime in the nuke phase",
+        "fix": "the 25% crossing (DamageTaken) cancels the pipeline events, EVENT_ENTER_PHASE_TWO stops a cauldron walk in progress, and late cauldron arrivals and imbue scheduling are ignored in phase two",
+        "test": "tests/test_maloriak_native_script.py::test_phase_two_cancels_the_unphased_vial_pipeline"
+      },
+      {
+        "key": "mechanic_timer_observation",
+        "file": "boss_maloriak.cpp GetTimeUntilEncounterMechanic",
+        "defect": "no read-only schedule publication for bots",
+        "fix": "publishes the EventMap time to Arcane Storm, Release Aberrations, Remedy, Red/Blue abilities, phase-two abilities and the next vial (0 while casting); blackboard wiring is a patch request",
+        "test": "tests/test_maloriak_native_script.py::test_mechanic_timers_are_read_only_observations"
+      },
+      {
+        "key": "module_size",
+        "file": "boss_maloriak.cpp (1293 lines) split into boss_maloriak.cpp, boss_maloriak_spells.cpp, boss_maloriak_shared.h",
+        "defect": "over the 1,000-line module limit",
+        "fix": "spell scripts moved unchanged; AddSC_boss_maloriak registers them, loader unchanged",
+        "test": "tests/test_maloriak_native_script.py::test_spell_scripts_keep_their_names_and_registration_path"
+      }
+    ],
+    "patch_requested": [
+      {
+        "key": "biting_chill_target_correction",
+        "file": "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
+        "defect": "second assignment writes TargetA instead of TargetB"
+      }
+    ],
+    "left_unchanged_unresolved": [
+      "Remedy heal ramp (Wowhead: +150,000 per tick in 25H) - no client field or observed ticks; native heal is flat.",
+      "Berserk/enrage (6 min current wording vs 7 min normal / 12 min heroic historical) - no timer in the script; values conflict.",
+      "Prime Subject Rend (historical stacking debuff every ~6 s) - spell id unknown; not implemented.",
+      "Debilitating Slime removing Growth Catalyst (both Icy Veins pages) - no client effect expresses it; mechanism unknown; not implemented.",
+      "Release Aberrations after six successes: historical guide says the cast continues doing nothing; native stops casting.",
+      "Heroic Prime Subject Fixate - no spell data."
+    ]
+  },
+  "route_and_shard_20260925": {
+    "round1_plateau_root_cause": "The shard started on the Mongrel 250119 spawn, which is also the regroup and trash anchor. The patrol (Slayer 250117 with Mongrels 250118/250119) was engaged at the regroup; the future-encounter guard forbade offense against the next node entry 42803 while the node could not complete, so the cohort killed the unlisted Slayer and then stayed in combat with the guarded Mongrels until the 180 s plateau.",
+    "second_blocker": "Adaptive owners suppress the generic route objective; only adaptive Magmaw records native boss engagement (BotWorldPopulationMgrUpdateBotKernelFallback.cpp observeAdaptiveMagmawRoute -> RememberValidationRouteBossEngagement). Without it NotifyCreatureDeath rejects the Maloriak kill (ValidationRouteEngagedBossGuid empty), so a native clear would never complete the route. Patch requested.",
+    "proposed_rows": {
+      "regroup_and_start": [
+        -110.0,
+        -335.0,
+        67.73,
+        4.65
+      ],
+      "lab_trash_anchor": [
+        -55.9688,
+        -299.446,
+        63.6568,
+        5.68648
+      ],
+      "lab_trash_pack_entries": [
+        42802,
+        42803
+      ],
+      "lab_trash_cluster_radius_yards": 40.0,
+      "maimgor": "Maimgor 250109 hovers at (-108.8, -293.5, 74.9), 34-37 yd from the junction-to-lab and elevator paths; not part of the shard route."
+    },
+    "source_refs": [
+      "navmesh_669_probe_20260925",
+      "round1_two_shard_proof_20260925",
+      "current_tdb"
+    ]
+  },
+  "bot_tactic_mapping_20260925": {
+    "strategy": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h",
+    "tests": "tests/test_maloriak_strategy.py",
+    "rows": [
+      {
+        "mechanic": "arcane_storm",
+        "tactic": "interrupt every cast: lowest-GUID short-cooldown interrupter, second after 0.8 s of channel, all after 2 s",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original",
+          "client_442_59185_maloriak_rows_20260925"
+        ]
+      },
+      {
+        "mechanic": "release_aberrations",
+        "tactic": "admit while fewer than six are loose (nine at a time), interrupt with the second and third short interrupters otherwise; interrupt the first Release of a heroic Dark phase",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original"
+        ]
+      },
+      {
+        "mechanic": "remedy",
+        "tactic": "Spellsteal first, Purge after 1.5 s, all offensive dispellers after 3 s",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original"
+        ]
+      },
+      {
+        "mechanic": "red",
+        "tactic": "raid stacks in the cone in front of the boss beside the tank; Consuming Flames targets move behind",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original",
+          "repo_spell_custom_attr"
+        ]
+      },
+      {
+        "mechanic": "blue",
+        "tactic": "spread behind and to the sides (>5 yd); ranged damage dealers break Flash Freeze; others clear the 5-yd shatter; Biting Chill steps away",
+        "source_refs": [
+          "icy_cata_classic",
+          "client_442_59185_maloriak_rows_20260925"
+        ]
+      },
+      {
+        "mechanic": "green_and_adds",
+        "tactic": "off-tank waits at an add spot at least 20 yd from the boss while chamber creatures remain, then holds released adds there; damage dealers burn them in the slime window, at six loose (nine when the native timer shows Green within 15 s), or below 30% boss health",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original",
+          "client_442_59185_maloriak_rows_20260925"
+        ]
+      },
+      {
+        "mechanic": "phase_two",
+        "tactic": "burn the boss; off-tank holds Prime Subjects and remaining Aberrations; raid behind; main tank sidesteps Magma Jets; everyone evades Absolute Zero (7 yd) and jet fire; raid haste from the shaman (else mage)",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original",
+          "client_442_59185_maloriak_rows_20260925"
+        ]
+      },
+      {
+        "mechanic": "pull_and_healing",
+        "tactic": "pull only with the play-mode timer permitting, nobody dead, everyone at 70% health or more and every non-tank within 15 yd of its entrance slot; one spot healer on frozen/Consuming Flames/Biting Chill players below 85%, yielding while a tank is under 50% or another player is 10 points lower",
+        "source_refs": [
+          "icy_cata_classic",
+          "icy_original"
+        ]
+      }
+    ]
+  },
+  "research_completion": [
+    {
+      "key": "engage_reset_credit",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "resolved_native_live_pending",
+      "known": "BossAI engage/death; DATA_MALORIAK credit; Reset now restarts the vial cycle and release reserve.",
+      "next": "Observe one wipe and re-pull: first vial random Red/Blue, releases available again.",
+      "source_refs": [
+        "local_cpp",
+        "local_instance_and_loader"
+      ]
+    },
+    {
+      "key": "vial_order_and_cadence",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Order resolved (random Red/Blue, other, Green; heroic Black first and after each Green). Native: face 15.5 s after pull, 40 s after each imbue (Black 90 s).",
+      "next": "WCL boss casts: first throw time and throw-to-throw intervals (views in maloriak_wcl_dps_reference_v1.json).",
+      "source_refs": [
+        "local_cpp",
+        "icy_cata_classic",
+        "icy_original"
+      ]
+    },
+    {
+      "key": "arcane_storm",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "resolved_values_cadence_partial",
+      "known": "Client 500 ms cast + 6 s channel, 11309 (normal) / 47124 (heroic) per 1 s tick in 80 yd; interrupt every cast.",
+      "next": "WCL cadence and interrupt success timing.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "icy_cata_classic"
+      ]
+    },
+    {
+      "key": "remedy",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Client 10 s heal 25000/75000/50000/150000 per s; dispel/spellsteal tactic.",
+      "next": "Observe heal ticks to settle the Wowhead ramp claim.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "wowhead_442"
+      ]
+    },
+    {
+      "key": "release_aberrations_and_growth_catalyst",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "3 per success, 18 reserve, 1.5 s interruptible cast; catalyst radius 10 yd +10/20% damage, -20% taken; guides: slime removes catalyst.",
+      "next": "WCL: successful releases per cycle, add melee U, catalyst removal on slime.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "icy_cata_classic",
+        "icy_original",
+        "local_cpp"
+      ]
+    },
+    {
+      "key": "red_phase",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "resolved_values_cadence_partial",
+      "known": "Scorching Blast split cone and Consuming Flames values per mode.",
+      "next": "WCL split counts and cadence.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "repo_spell_custom_attr"
+      ]
+    },
+    {
+      "key": "blue_phase",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Flash Freeze stun 30 s, 5 yd, shatter 5 yd; Biting Chill 3 yd; native targeting excludes the victim and players attacked by an Aberration.",
+      "next": "Resolve the Biting Chill SpellMgr defect and observe target counts per mode.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "repo_spellmgr_corrections",
+        "icy_original"
+      ]
+    },
+    {
+      "key": "green_phase",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Debilitating Slime +100% taken 15 s, knockback 30 yd.",
+      "next": "Observe catalyst removal and kill timing of released adds.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "icy_cata_classic"
+      ]
+    },
+    {
+      "key": "phase_two",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "25% transition, release all, drink all, Magma Jets / Acid Nova / Absolute Zero values; native 6 / 20 / 7 s cadence; vial pipeline leak repaired.",
+      "next": "WCL cadence (guides 6-10 / 30 / 10 s) and Prime Subject melee/Rend.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "local_cpp",
+        "icy_original"
+      ]
+    },
+    {
+      "key": "heroic_dark_phase",
+      "modes": [
+        "10H",
+        "25H"
+      ],
+      "status": "partial",
+      "known": "Engulfing Darkness and Dark Sludge values; five Vile Swills.",
+      "next": "Heroic WCL cadence; Fixate.",
+      "source_refs": [
+        "client_442_59185_maloriak_rows_20260925",
+        "icy_cata_classic"
+      ]
+    },
+    {
+      "key": "health_and_melee_damage",
+      "modes": [
+        "10N",
+        "10H",
+        "25N",
+        "25H"
+      ],
+      "status": "blocked",
+      "known": "Native health and melee rolls at DamageModifier 1 computed; every template at DamageModifier 1.",
+      "next": "WCL health derivation and melee U samples (maloriak_wcl_dps_reference_v1.json views boss_melee and health) to calibrate 41378, 41440, 41841.",
+      "source_refs": [
+        "native_stats_20260925",
+        "wcl_gate_20260925"
+      ]
+    },
+    {
+      "key": "route_and_shard",
+      "modes": [
+        "10N"
+      ],
+      "status": "resolved_patch_requested",
+      "known": "Plateau root cause and the kill-attribution gap for adaptive owners; safe regroup and patrol node computed on the pinned navmesh.",
+      "next": "Apply the scenario-row and route-observer patches; observe regroup -> patrol -> encounter -> native clear.",
+      "source_refs": [
+        "round1_two_shard_proof_20260925",
+        "navmesh_669_probe_20260925"
+      ]
+    }
+  ],
+  "research_completion_policy": "Reference readiness requires sourced values or explicit proposal bounds, native comparison and specified acceptance observations. Native execution of those observations is a separate validation milestone. WCL-dependent values stay blocked until the extraction plan in maloriak_wcl_dps_reference_v1.json is executed.",
+  "acceptance_observations": [
+    "Every Arcane Storm cast ends early by an interrupt (WCL-style interrupts view or native cast-finish reason CANCELED); zero full 6 s channels.",
+    "Every Remedy removed within 3 s of application.",
+    "Released Aberrations tanked by the off-tank at least 10 yd from Maloriak; none alive when the slime window ends if the raid was in range.",
+    "Red: Scorching Blast split among at least 7 players; no Consuming Flames target inside the cone.",
+    "Blue: no chained Flash Freeze (one frozen player per cast); blocks broken within 5 s.",
+    "Phase two: no Magma Jets hits on non-tanks, no Absolute Zero explosion hits, raid haste inside the first 10 s after 25%.",
+    "Native clear with zero boss-window deaths; the route completes (validation_route_manifest_complete)."
   ]
 }

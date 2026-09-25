@@ -1,0 +1,65 @@
+{
+  "schema": "maloriak_route_rows_patch_v1",
+  "target": "experiments/configs/validation_scenarios_cata_001.json",
+  "owner": "M",
+  "apply_to_scenarios": [
+    "blackwing_descent_10n_maloriak_diagnostic",
+    "blackwing_descent_10n_maloriak_c0_diagnostic",
+    "blackwing_descent_10n",
+    "blackwing_descent_10n_full_c0"
+  ],
+  "rule": "Replace the rows whose node_id matches (keep each row's step); set start_position of the two Maloriak diagnostic scenarios to start_position below. Node IDs and order do not change.",
+  "start_position": {
+    "map_id": 669,
+    "x": -110.0,
+    "y": -335.0,
+    "z": 67.73,
+    "o": 4.65
+  },
+  "rows": {
+    "bwd.maloriak.regroup": {
+      "node_id": "bwd.maloriak.regroup",
+      "kind": "regroup",
+      "node_kind": "regroup",
+      "label": "Maloriak laboratory junction regroup",
+      "x": -110.0,
+      "y": -335.0,
+      "z": 67.73,
+      "o": 4.65,
+      "completion_policy": "arrival",
+      "source_guid": "blackwing_descent_10n_maloriak_diagnostic.start_position",
+      "source_table": "validation_scenario.start_position",
+      "source_sql": "experiments/configs/validation_scenarios_cata_001.json"
+    },
+    "bwd.maloriak.lab_trash": {
+      "node_id": "bwd.maloriak.lab_trash",
+      "kind": "trash",
+      "node_kind": "trash_cluster",
+      "label": "laboratory patrol (Drakonid Slayer and two Drakeadon Mongrels)",
+      "x": -55.9688,
+      "y": -299.446,
+      "z": 63.6568,
+      "o": 5.68648,
+      "source_entry": 42802,
+      "source_guid": "250117",
+      "source_table": "world.creature",
+      "source_sql": "world.creature",
+      "pack_target_entries": [
+        42802,
+        42803
+      ],
+      "completion_policy": "cluster_clear_after_pull",
+      "cluster_radius_yards": 40.0
+    }
+  },
+  "unchanged": "bwd.maloriak.encounter (boss row) and every non-Maloriak row.",
+  "evidence": {
+    "plateau": "round1_two_shard_proof_20260925: heartbeats 1-7 on bwd.maloriak.regroup with validation_route_future_encounter_contamination; the start, regroup and trash anchor were all the Mongrel 250119 spawn, and the patrol leader Slayer 42802 (250117, formation with 250118/250119) was not a pack entry.",
+    "geometry": "pinned 669 navmesh (hashes as in tools/raid_program/probe_drudge_navmesh_recovery.py): junction (-110, -335, 67.73) has a floor polygon; elevator -> junction 161.8 yd, closest 36.8 yd to Maimgor 250109; junction -> patrol leader straight 64.8 yd, 34 yd from Maimgor; patrol leader -> Maloriak 186.8 yd via (-64, -320) and the entrance; 40-yd cluster covers patrol waypoints 1-4 (2501170) and stays 55+ yd from Ivoroc 250108."
+  },
+  "follow_ups": [
+    "Rerun the raid_shard_provisioning DVC stage (the c0 plan copies start_position from the template scenario) and rebind the runtime asset closure.",
+    "tools/raid_program/capture_environment_validation.py:36 and tests/test_phase1_raid_foundation_capture.py:2980 still describe the old laboratory trash (42803, 250119) for the phase-1 capture route; update them if that route is re-generated.",
+    "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json still carries the old Maloriak coordinates (round-1 fixture)."
+  ]
+}

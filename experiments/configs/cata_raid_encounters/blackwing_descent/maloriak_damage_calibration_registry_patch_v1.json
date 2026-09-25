@@ -1,0 +1,238 @@
+{
+  "schema": "maloriak_damage_calibration_registry_patch_v1",
+  "target": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+  "apply": "Merge every key of creatures into target.creatures verbatim (no existing key is replaced).",
+  "owner": "coordinator",
+  "staged_sql": null,
+  "staged_sql_reason": "No DamageModifier is derived without a matched same-mode WCL melee U sample (classic.warcraftlogs.com gated on 2026-09-25). The native rolls at modifier 1 are recorded so the calibration is a single division once samples exist; the staged SQL goes under sql/custom/staged/world/ with 'maloriak' in the name at that point.",
+  "creatures": {
+    "41378": {
+      "name": "Maloriak",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 1,
+        "level": 88,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 4553.3,
+        "max": 6764.2
+      },
+      "open_reason": "No same-mode (10N) Maloriak melee U sample: classic.warcraftlogs.com was behind a human-verification gate on 2026-09-25. Extract ability-1 rows from Maloriak with Scarlet Fever/Demoralizing windows per maloriak_wcl_dps_reference_v1.json (views.boss_melee), first from reports MxFq7TRbvnjGY1hJ and Y8ajQ7dbmKMG1RZy. Historical 10N guide: about 25k per hit after tank mitigation, every 1.5-2 s. Template values come from the TDB dump; read back the live creature_template row before staging.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+        "value_key": "native_melee_roll_modifier_1"
+      }
+    },
+    "49974": {
+      "name": "Maloriak (1)",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "25N",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6071.0,
+        "max": 9019.0
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy the 10N value."
+    },
+    "49980": {
+      "name": "Maloriak (2)",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10H",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6071.0,
+        "max": 9019.0
+      },
+      "open_reason": "No same-mode (10H) melee sample; historical guide about 40k per hit. Do not copy another mode."
+    },
+    "49986": {
+      "name": "Maloriak (3)",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "25H",
+      "base_entry": 41378,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "base_variance": 1.0
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6071.0,
+        "max": 9019.0
+      },
+      "open_reason": "No same-mode (25H) melee sample. Do not copy another mode."
+    },
+    "41440": {
+      "name": "Aberration",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41440,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 0,
+        "flags_extra": 512,
+        "level": 88,
+        "base_variance": 0.33
+      },
+      "native_roll_at_modifier_1": {
+        "min": 5953.7,
+        "max": 8901.6
+      },
+      "open_reason": "Melee add (difficulty entries 49971 25N, 49977 10H, 49983 25H; 18 per attempt). No matched WCL melee sample yet. Growth Catalyst (+10% damage per nearby Aberration in normal, +20% heroic) sits inside U: select samples by the attacker's catalyst stacks. Historical 10N guide: about 5k per hit every 2 s."
+    },
+    "41841": {
+      "name": "Prime Subject",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41841,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 0,
+        "flags_extra": 1073742336,
+        "level": 88,
+        "base_variance": 0.4
+      },
+      "native_roll_at_modifier_1": {
+        "min": 5965.9,
+        "max": 8913.9
+      },
+      "open_reason": "Phase-two melee add (difficulty entries 49975, 49981, 49987). No matched WCL melee sample yet. Historical 10N guide: about 20k per hit every 2.3 s plus a stacking Rend that the native script does not cast."
+    },
+    "49811": {
+      "name": "Vile Swill",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10H",
+      "base_entry": 49811,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 1,
+        "rank": 1,
+        "flags_extra": 0,
+        "level": 88,
+        "base_variance": 0.75
+      },
+      "native_roll_at_modifier_1": {
+        "min": 6027.2,
+        "max": 8975.2
+      },
+      "open_reason": "Heroic-only Dark-phase add; the spawning templates are difficulty entries 49982 (10H) and 49988 (25H). Needs a heroic WCL melee sample."
+    },
+    "41576": {
+      "name": "Flash Freeze",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41576,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Ice block around a frozen player: npc_maloriak_flash_freeze is a NullCreatureAI that never attacks; its damage is the Shatter spell 77715 on death."
+    },
+    "41961": {
+      "name": "Absolute Zero",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41961,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI sphere; damage is the Absolute Zero explosion spell 78208."
+    },
+    "41901": {
+      "name": "Magma Jet",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41901,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "NullCreatureAI fire marker; damage is the spell 78095 / 78124 aura."
+    },
+    "50030": {
+      "name": "Magma Jet",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 50030,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Jet mover (npc_maloriak_magma_jet, aura 93018) that only summons fire markers; no melee."
+    },
+    "41505": {
+      "name": "Cauldron Trigger",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10N",
+      "base_entry": 41505,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Stalker that casts Debilitating Slime 77602/77615/77948; never melees."
+    },
+    "49799": {
+      "name": "Lord Victor Nefarius",
+      "raid": "blackwing_descent",
+      "boss": "maloriak",
+      "mode": "10H",
+      "base_entry": 49799,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Heroic presenter (npc_maloriak_lord_victor_nefarius, NullCreatureAI) that throws the Black vial; never melees."
+    }
+  }
+}

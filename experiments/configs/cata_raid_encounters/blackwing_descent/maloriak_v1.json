@@ -3,15 +3,25 @@
   "contract_schema": "cata_raid_encounter_contract_v1",
   "raid": "blackwing_descent",
   "boss_slug": "maloriak",
-  "modes": ["10N", "10H", "25N", "25H"],
+  "modes": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
   "unresolved_material_count": 6,
   "encounter": "maloriak",
-  "scope": ["10N", "10H", "25N", "25H"],
-  "research_state": "planning_only_not_live_validated",
-  "research_as_of": "2026-08-11",
+  "scope": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
+  "research_state": "researched_client_rows_native_repaired_not_live_validated",
+  "research_as_of": "2026-09-25",
   "source_urls": [
     "https://www.wowhead.com/cata/guide/raids/blackwing-descent/maloriak-strategy",
     "https://www.icy-veins.com/cataclysm-classic/maloriak-encounter-guide-strategy-abilities-loot",
@@ -19,17 +29,28 @@
   ],
   "repository_evidence": [
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_spells.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak_shared.h",
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
     "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
     "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp",
     "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+    "sql/updates/world/4.3.4/2025_06_07_00_world.sql",
+    "sql/updates/world/4.3.4/2025_06_07_01_world.sql",
+    "sql/updates/world/4.3.4/2025_06_18_06_world.sql",
     "sql/updates/world/4.3.4/2025_06_17_01_world.sql",
     "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
+    "sql/old/4.3.4/world/20051_2020_09_22/2020_07_06_00_world.sql",
     "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
   ],
   "mode_matrix": {
     "10N": {
-      "vials": ["red_or_blue", "other_color", "green"],
+      "vials": [
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
       "vials_per_cycle_local": 2,
       "black_vial": false,
       "phase_two_threshold": "25_percent",
@@ -38,7 +59,12 @@
       "off_tank_guidance": "one_normally"
     },
     "10H": {
-      "vials": ["black", "red_or_blue", "other_color", "green"],
+      "vials": [
+        "black",
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
       "vials_per_cycle_local": 3,
       "black_vial": true,
       "phase_two_threshold": "25_percent",
@@ -47,7 +73,11 @@
       "off_tank_guidance": "one_for_black_adds; kite_prime_subjects"
     },
     "25N": {
-      "vials": ["red_or_blue", "other_color", "green"],
+      "vials": [
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
       "vials_per_cycle_local": 2,
       "black_vial": false,
       "phase_two_threshold": "25_percent",
@@ -56,7 +86,12 @@
       "off_tank_guidance": "two_preferred"
     },
     "25H": {
-      "vials": ["black", "red_or_blue", "other_color", "green"],
+      "vials": [
+        "black",
+        "red_or_blue",
+        "other_color",
+        "green"
+      ],
       "vials_per_cycle_local": 3,
       "black_vial": true,
       "phase_two_threshold": "25_percent",
@@ -66,11 +101,31 @@
     }
   },
   "roles": {
-    "interrupt": ["arcane_storm_every_cast", "release_aberrations_quota_rotation"],
-    "dispel": ["remedy_remove_or_spellsteal"],
-    "main_tank": ["red_cone_orientation", "black_engulfing_darkness_cooldowns", "phase_two_magma_jets"],
-    "off_tank": ["aberration_kite", "green_window_stack", "heroic_vile_swill_kite", "phase_two_prime_subject_kite"],
-    "raid": ["red_stack_except_consuming_flames", "blue_spread_and_flash_freeze", "green_15s_aoe", "absolute_zero_evade", "acid_nova_cooldowns"]
+    "interrupt": [
+      "arcane_storm_every_cast",
+      "release_aberrations_quota_rotation"
+    ],
+    "dispel": [
+      "remedy_remove_or_spellsteal"
+    ],
+    "main_tank": [
+      "red_cone_orientation",
+      "black_engulfing_darkness_cooldowns",
+      "phase_two_magma_jets"
+    ],
+    "off_tank": [
+      "aberration_kite",
+      "green_window_stack",
+      "heroic_vile_swill_kite",
+      "phase_two_prime_subject_kite"
+    ],
+    "raid": [
+      "red_stack_except_consuming_flames",
+      "blue_spread_and_flash_freeze",
+      "green_15s_aoe",
+      "absolute_zero_evade",
+      "acid_nova_cooldowns"
+    ]
   },
   "gates": [
     "arcane_storm_interrupt",
@@ -95,11 +150,13 @@
     "heroic_prime_fixate_target_persistence_unconfirmed"
   ],
   "known_behavior_summary": [
-    "Normal local order is random Red/Blue, the other color, then Green; Heroic prepends Black and repeats it after each Green.",
-    "Release Aberrations selects up to three non-drowned chamber creatures per successful local cast and has an 18-add reserve (six successful casts).",
-    "The local AI schedules Release Aberrations in Red, Blue, and Green; strategy sources differ on intended color windows, so the bot uses a deliberate quota rather than a color-only rule.",
-    "DamageTaken enters phase two at 25 percent in every mode, releases all remaining minions, and summons two Prime Subjects.",
-    "Current TDB contains Maloriak difficulty entries and boss_maloriak; loader registration is also present. Historical custom SQL explicitly binds the boss and spell scripts."
+    "Normal order is random Red/Blue, the other color, then Green; Heroic prepends Black and repeats it after each Green. Reset now starts every attempt at the cycle start (before 2026-09-25 the first normal vial was always Blue and counters survived evade).",
+    "Release Aberrations selects up to three non-drowned chamber creatures per successful cast and has an 18-creature reserve (six successful casts); interrupted casts do not count.",
+    "The native AI schedules Release Aberrations in Red, Blue and Green; guides describe Red/Green or throughout phase one, so the bot uses a quota (nine loose at most) rather than a color rule.",
+    "DamageTaken enters phase two at 25% in every mode, cancels any unfinished cauldron visit, releases all remaining minions (two Prime Subjects included) and drinks all bottles.",
+    "The boss publishes read-only mechanic timers (GetTimeUntilEncounterMechanic) for the bot blackboard; publication into the blackboard is a coordinator patch.",
+    "Scorching Blast damage is split among targets by spell_custom_attr (77679, SHARE_DAMAGE).",
+    "SpellMgrCorrectionsPart04.cpp overwrites Biting Chill EFFECT_0 TargetA twice (TargetB intended); patch requested."
   ],
   "unresolved": [
     "exact_442_client_build_and_hotfix_cutoff",
@@ -116,6 +173,43 @@
     "Wowhead_current_biting_chill_three_targets_vs_historical_Icy_Veins_one_10_player_two_25_player",
     "Wowhead_current_heroic_damage_examples_vs_historical_Icy_Veins_same_damage_for_several_spells",
     "current_Icy_Veins_six_minute_enrage_wording_vs_historical_7m_normal_12m_heroic",
-    "current_Icy_Veins_red_green_release_description_vs_local_all_color_release_schedule"
-  ]
+    "current_Icy_Veins_red_green_release_description_vs_local_all_color_release_schedule",
+    "native_normal_health_19.76M_and_68.7M_vs_Wowhead_4.4.2_24.7M_and_86.6M",
+    "historical_guide_Biting_Chill_one_melee_target_10N_vs_native_random_target_within_60yd"
+  ],
+  "client_reference": {
+    "extract": "maloriak_ledger_v1.json source_catalog.client_442_59185_maloriak_rows_20260925",
+    "difficulty_ids": "0 default (10N), 4 = 25N, 5 = 10H, 6 = 25H",
+    "summary": "Arcane Storm 0.5 s cast + 6 s channel (11309 / 47124 per tick); Remedy 10 s heal 25000/75000/50000/150000 per s; Release Aberrations 1.5 s cast; Scorching Blast 60 yd 70-degree split cone 400k/1M/850k/2.7M; Consuming Flames 4500/9000/7500/13500 per s for 10 s; Biting Chill 5000 (normal) / 10000 (heroic) per s to allies within 3 yd; Flash Freeze 30 s stun + 56549/84824/117811 within 5 yd, Shatter 45239/84824 within 5 yd; Debilitating Slime +100% taken 15 s; Growth Catalyst 10 yd +10/20% dealt, -20% taken; Magma Jets 2 s cast, 3 yd fire lines for 20 s; Acid Nova 7500/15000 per s 10 s; Absolute Zero 3 s arm, 3 yd trigger, 5 yd 47124/94249 explosion; Engulfing Darkness 20-degree cone, -100% healing."
+  },
+  "native_health": {
+    "10N": 19755160,
+    "25N": 68713600,
+    "10H": 34631654,
+    "25H": 121210790,
+    "basis": "gt_npc_total_hp_exp3[88] 85892 x HealthModifier; normal modes conflict with the Wowhead 4.4.2 page (24.7M / 86.6M)"
+  },
+  "native_repairs_20260925": [
+    "reset_counters",
+    "phase_two_vial_leak",
+    "mechanic_timer_observation",
+    "module_size_split"
+  ],
+  "bot_strategy": {
+    "path": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h",
+    "duties": "capability-picked: main tank (Blood DK > Prot Paladin > Prot Warrior > Feral), off-tank on Aberrations/Prime Subjects/Vile Swills, Arcane Storm interrupt owner plus escalation, Release quota interrupters, Remedy dispellers, phase-two raid haste owner",
+    "tests": [
+      "tests/test_maloriak_strategy.py",
+      "tests/test_maloriak_native_script.py",
+      "tests/test_maloriak_research_packet.py"
+    ]
+  },
+  "unresolved_status": {
+    "exact_442_client_build_and_hotfix_cutoff": "build and cutoff pinned, Maloriak client rows extracted; Maloriak-specific hotfix carryover unproven",
+    "live_timer_and_cauldron_movement_confirmation_all_modes": "native schedule published; no live or WCL cadence (WCL gated 2026-09-25)",
+    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h": "client base points resolved; runtime DBC parity, Biting Chill target defect and WCL sample compatibility open",
+    "normal_health_and_enrage_due_current_vs_historical_guide_conflict": "native normal health matches the 2012 guide, conflicts with the 4.4.2 Wowhead page; enrage absent",
+    "heroic_prime_subject_fixate_implementation": "no spell data",
+    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters": "answered from source (Respawn reuses the AI) and repaired in Reset; live wipe/re-pull observation pending"
+  }
 }
