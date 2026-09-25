@@ -112,7 +112,9 @@ def select(root: Path, discovery: dict, expected_sha256: str | None = None) -> d
                              'before selecting another raid program')
         if previous and state['active_program'] != key and previous['e2e'].get('status') == 'evidence_pending':
             raise GraphError(f"program {state['active_program']} has an e2e clear awaiting its evidence archive; run "
-                             'program e2e --archive-pending (or --evidence-lost REASON) before selecting another program')
+                             'program e2e --archive-pending, or --evidence-lost REASON when its /tmp root is gone, or '
+                             '--failed REASON to abandon the attempt when the archive keeps failing, before selecting '
+                             'another program')
         if key not in state['programs']:
             state['programs'][key] = new_program(discovery)
             store.history(state['programs'][key], 'created')

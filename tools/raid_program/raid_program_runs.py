@@ -23,6 +23,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -277,17 +278,41 @@ def _kill_id(result: dict) -> str:
     return f"r{result['round']:02d}-{result['run']['run_id']}"
 
 
+def root_holds_run(result: dict) -> bool:
+    """The kept /tmp root still holds this run: its shard_run.json has the recorded sha256."""
+    summary = Path(str(result['evidence'].get('root'))) / 'shard_run.json'
+    try:
+        return rounds.sha256_bytes(summary.read_bytes()) == result['run']['sha256']
+    except OSError:
+        return False
+
+
 def adopted_pointer(root: Path, program_id: str, result: dict) -> str | None:
-    """A pointer left by an archive that completed (publication receipt written) before its state update."""
+    """A pointer left by an archive of exactly this run root that completed before its state update.
+
+    Only ``<base>.publication.json`` or ``<base>_retry<N>.publication.json`` (the archive's own
+    names) count, its ``removed_roots`` must be exactly this run's root, and the pointer must exist.
+    """
     base = f"scoreboard_{program_id.replace(':', '_').lower()}_e2e_{_kill_id(result)}"
-    for receipt in sorted((root / ARCHIVE_DIR).glob(f'{base}*.publication.json')):
+    pattern = re.compile(re.escape(base) + r'(?:_retry[0-9]+)?\.publication\.json')
+    expected = [str(Path(str(result['evidence'].get('root'))).resolve())]
+    folder = root / ARCHIVE_DIR
+    for receipt in sorted(folder.iterdir()) if folder.is_dir() else []:
+        if not pattern.fullmatch(receipt.name):
+            continue
         try:
-            pointer = json.loads(receipt.read_text(encoding='utf-8')).get('dvc_pointer')
+            payload = json.loads(receipt.read_text(encoding='utf-8'))
         except (OSError, json.JSONDecodeError):
             continue
-        if pointer and (root / pointer).is_file():
+        pointer = payload.get('dvc_pointer')
+        if pointer and payload.get('removed_roots') == expected and (root / pointer).is_file():
             return str(pointer)
     return None
+
+
+def evidence_gone(root: Path, program_id: str, result: dict) -> bool:
+    """Lost: no completed archive of it exists and its /tmp root no longer holds this run."""
+    return not adopted_pointer(root, program_id, result) and not root_holds_run(result)
 
 
 def record_e2e(root: Path, path: Path | None, expected_sha256: str | None = None,
@@ -380,9 +405,10 @@ def _archive_result(root: Path, program_id: str, run_sha256: str, archive=None) 
     adopted = adopted_pointer(root, program_id, result)
     if adopted:
         evidence = {'pointer': adopted, 'error': None, 'paths': [str(run_root)], 'adopted': True}
-    elif not run_root.exists():
+    elif not root_holds_run(result):  # gone, or the /tmp path now holds another run: never archive that
         evidence = {'pointer': None, 'paths': [str(run_root)], 'root_missing': True,
-                    'error': f'the /tmp run root {run_root} is gone; record program e2e --evidence-lost REASON'}
+                    'error': (f'the /tmp run root {run_root} no longer holds this run (shard_run.json missing or '
+                              'changed); record program e2e --evidence-lost REASON')}
     else:
         slug = program_id.replace(':', '_').lower()
         with stdout_to_stderr():
@@ -421,7 +447,11 @@ def archive_pending_e2e(root: Path, archive=None) -> dict:
 
 
 def evidence_lost(root: Path, reason: str, expected_sha256: str | None = None) -> dict:
-    """Close open e2e evidence whose /tmp root is gone; a lost clear is not a pass and reopens the e2e unit."""
+    """Close each open e2e evidence that is really gone; a lost clear is not a pass and reopens the e2e unit.
+
+    Evidence is gone when no completed archive of its root exists and the root no longer holds the
+    run. Results whose evidence is still archivable stay open (they never block closing the others).
+    """
     if not reason:
         raise GraphError('--evidence-lost needs a reason')
     _, program, data = rounds.load_active(root)
@@ -429,26 +459,25 @@ def evidence_lost(root: Path, reason: str, expected_sha256: str | None = None) -
     pending = _pending(program)
     if not pending:
         raise GraphError('no e2e evidence is pending')
-    for result in pending:
-        if adopted_pointer(root, program['program_id'], result):
-            raise GraphError('a completed archive exists for this evidence; run program e2e --archive-pending to adopt it')
-        if Path(result['evidence']['root']).exists():
-            raise GraphError(f"the run root {result['evidence']['root']} still exists; run program e2e --archive-pending")
-    shas = {result['run']['sha256'] for result in pending}
     program_id = program['program_id']
+    lost = {result['run']['sha256'] for result in pending if evidence_gone(root, program_id, result)}
+    if not lost:
+        raise GraphError('every open e2e evidence can still be archived (its run root holds the run, or a completed '
+                         'archive exists): run program e2e --archive-pending; if the archive keeps failing, abandon '
+                         'the attempt with program e2e --failed REASON')
 
     def reducer(state: dict) -> dict:
         target = state['programs'][program_id]
         blocking = awaiting_evidence(target)
         for row in target['e2e']['results']:
-            if (row.get('run') or {}).get('sha256') in shas and (row.get('evidence') or {}).get('state') in OPEN_EVIDENCE:
+            if (row.get('run') or {}).get('sha256') in lost and (row.get('evidence') or {}).get('state') in OPEN_EVIDENCE:
                 row['evidence'] = row['evidence'] | {'state': 'lost', 'lost_reason': reason, 'lost_utc': utc_now()}
                 if row is blocking:  # a clear without evidence never passes: re-run the full route next round
                     row['outcome'] = 'evidence_lost'
                     row['problems'] = [*row.get('problems', []), 'evidence_lost:' + reason]
                     target['e2e']['status'] = 'open'
                     target['stage'], target['round'] = 'plan', target['round'] + 1
-        store.history(target, 'e2e_evidence_lost', runs=sorted(shas), reason=reason)
+        store.history(target, 'e2e_evidence_lost', runs=sorted(lost), reason=reason)
         return state
     return store.update(root, reducer, expected_sha256)
 

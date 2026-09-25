@@ -142,9 +142,13 @@ A boss-level `start` switches plain `resume` back to the boss graph; use
    5. If the root is gone (`/tmp` is tmpfs, so a reboot clears it) and no
       completed archive exists, run `$W program e2e --evidence-lost <reason>`.
       A clear without evidence never passes: the unit reopens and the next round
-      re-runs the full route. Only that pending clear blocks a new e2e run;
-      `--failed` is always allowed, and a program awaiting e2e evidence cannot be
-      switched away from.
+      re-runs the full route. Evidence counts only while its root still holds the
+      recorded run (the same `shard_run.json`), or when a completed archive of
+      exactly that root exists. If the archive keeps failing while the root
+      exists (for example DVC is unreachable), abandon the attempt with
+      `$W program e2e --failed <reason>`; the kept evidence can still be archived
+      later. Only that pending clear blocks a new e2e run, and a program awaiting
+      e2e evidence cannot be switched away from.
 
    It passes only if every composed boss node dies natively on the round binary,
    with no raid-level input open. If the plan cannot run or produced no

@@ -140,10 +140,10 @@ def resume(root: Path) -> dict:
 
 
 def _evidence_retry(program: dict, row: dict, root: Path) -> str:
-    """--archive-pending while the /tmp root (or a completed archive) exists, else --evidence-lost."""
-    if Path(str(row['evidence'].get('root'))).exists() or runs.adopted_pointer(root, program['program_id'], row):
-        return f'{WORKLOOP} program e2e --archive-pending'
-    return f'{WORKLOOP} program e2e --evidence-lost <reason>'
+    """--archive-pending while the evidence is archivable (root holds the run, or a completed archive), else --evidence-lost."""
+    if runs.evidence_gone(root, program['program_id'], row):
+        return f'{WORKLOOP} program e2e --evidence-lost <reason>'
+    return f'{WORKLOOP} program e2e --archive-pending'
 
 
 def _handoff_state(handoff: dict | None) -> str:
@@ -212,6 +212,12 @@ def next_step(root: Path, program: dict, discovery: dict, sha: str) -> tuple[str
         return _run_step(program, discovery, current, expect)
     if stage == 'e2e':
         return _e2e_step(root, program, discovery, expect)
+    older = runs._pending(program)
+    if older:
+        return ('Parent objective accepted (parent_objective_complete): every boss unit and the end-to-end unit passed. '
+                f'{len(older)} older e2e evidence archive(s) are still open (see pending_e2e_evidence); archive or close '
+                'them, then report the evidence.',
+                sorted({_evidence_retry(program, row, root) for row in older}))
     return ('Parent objective accepted (parent_objective_complete): every boss unit and the end-to-end unit passed. '
             'Report the evidence.', [])
 
@@ -258,10 +264,15 @@ def _e2e_step(root: Path, program: dict, discovery: dict, expect: str) -> tuple[
     if awaiting:
         error = (awaiting.get('evidence') or {}).get('error')
         if _evidence_retry(program, awaiting, root).endswith('--archive-pending'):
+            failing = (awaiting.get('evidence') or {}).get('state') == 'failed'
             return ('End-to-end: the clear is recorded but its evidence is not archived yet'
                     + (f' (last error: {error})' if error else '') + '. The unit is accepted, and the program '
-                    'completes, only once the pointer is stored; retry the archive from the kept /tmp run root.',
-                    [f'{WORKLOOP} program e2e --archive-pending'])
+                    'completes, only once the pointer is stored; retry the archive from the kept /tmp run root.'
+                    + (' If the archive keeps failing (for example DVC is unreachable), abandon this attempt with '
+                       'program e2e --failed REASON; the next round re-runs the full route and the kept evidence '
+                       'can still be archived later.' if failing else ''),
+                    [f'{WORKLOOP} program e2e --archive-pending']
+                    + ([f'{WORKLOOP} program e2e --failed <reason> {expect}'] if failing else []))
         return ('End-to-end: the clear\'s /tmp run root is gone and no completed archive exists, so its evidence is '
                 'lost. Record that; the unit reopens and the next round re-runs the full route.',
                 [f'{WORKLOOP} program e2e --evidence-lost <reason> {expect}'])
@@ -409,8 +420,7 @@ def command(root: Path, argv: list[str]) -> dict:
         runs.evidence_lost(root, args.evidence_lost, expect)
     else:
         runs.record_e2e(root, args.shard_run, expect, args.failed)
-    if verb == 'e2e':
-        results = rounds.active(store.load(root)[0])['e2e']['results']
-        if results and results[-1].get('run') and (results[-1].get('evidence') or {}).get('state') in runs.OPEN_EVIDENCE:
-            extra['exit_status'] = 1  # recorded, but its evidence archive is still open (see pending_e2e_evidence)
+    if verb == 'e2e' and runs._pending(rounds.active(store.load(root)[0])):
+        # The step itself was recorded, but some e2e evidence (this run's or an older one) is still open.
+        extra |= {'exit_status': 1, 'exit_reason': 'open_e2e_evidence (see resume.pending_e2e_evidence)'}
     return extra | {'resume': resume(root)} if extra else resume(root)

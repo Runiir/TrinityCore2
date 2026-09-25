@@ -631,7 +631,9 @@ def test_e2e_archive_error_never_completes_and_archive_pending_retries(world):
     assert view['stage'] == 'e2e' and not view['parent_objective_complete']
     assert program(root)['e2e']['status'] == 'evidence_pending'
     assert view['pending_e2e_evidence'][0]['error'] == 'archive_run_evidence failed (exit 1)'
-    assert view['commands'] == ['pixi run python -m tools.raid_program.raid_workloop program e2e --archive-pending']
+    assert view['commands'][0] == 'pixi run python -m tools.raid_program.raid_workloop program e2e --archive-pending'
+    assert view['commands'][1].startswith('pixi run python -m tools.raid_program.raid_workloop program e2e --failed <reason>')
+    assert 'program e2e --failed REASON' in view['next_action'], 'the way out when the archive keeps failing'
     with pytest.raises(GraphError, match='awaiting its evidence archive'):
         runs.record_e2e(root, e2e)
     assert e2e.exists(), 'the /tmp root is kept for the retry'
@@ -761,26 +763,114 @@ def test_failed_is_allowed_while_a_clear_awaits_evidence(world):
     assert [row['outcome'] for row in state['e2e']['results']] == ['clear', 'failed']
 
 
+def _receipt(root: Path, name: str, run_root: Path) -> str:
+    pointer = root / 'artifacts/cata_raid_program' / f'{name}.tar.gz.dvc'
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text('outs: []\n')
+    (root / 'artifacts/cata_raid_program' / f'{name}.publication.json').write_text(json.dumps(
+        {'dvc_pointer': str(pointer.relative_to(root)), 'removed_roots': [str(run_root.resolve())]}))
+    return str(pointer.relative_to(root))
+
+
 def test_evidence_lost_is_refused_while_the_root_or_a_completed_archive_exists(world):
     root = world['root']
     e2e = to_e2e(root, world)
     world['archive_errors'].append('dvc push failed')
     runs.record_e2e(root, e2e)
-    with pytest.raises(GraphError, match='still exists'):
+    with pytest.raises(GraphError, match='can still be archived.*--failed REASON'):
         runs.evidence_lost(root, 'too early')
     result = program(root)['e2e']['results'][-1]
-    base = root / 'artifacts/cata_raid_program' / f"scoreboard_blackwing_descent_10n_e2e_r{result['round']:02d}-e2e"
-    pointer = Path(f'{base}.tar.gz.dvc')
-    pointer.parent.mkdir(parents=True, exist_ok=True)
-    pointer.write_text('outs: []\n')
-    Path(f'{base}.publication.json').write_text(json.dumps({'dvc_pointer': str(pointer.relative_to(root))}))
+    base = f"scoreboard_blackwing_descent_10n_e2e_r{result['round']:02d}-e2e"
+    pointer = _receipt(root, base + '_retry2', e2e.parent)
     shutil.rmtree(e2e.parent)  # the archive completed and deleted the root before its state update
-    with pytest.raises(GraphError, match='completed archive exists'):
+    with pytest.raises(GraphError, match='can still be archived'):
         runs.evidence_lost(root, 'wrong: the archive completed')
     runs.archive_pending_e2e(root)
     state = program(root)
     evidence = state['e2e']['results'][-1]['evidence']
-    assert evidence['adopted'] and evidence['pointer'] == str(pointer.relative_to(root)) and state['stage'] == 'complete'
+    assert evidence['adopted'] and evidence['pointer'] == pointer and state['stage'] == 'complete'
+
+
+def test_adoption_needs_the_archives_own_name_and_this_runs_root(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, e2e)
+    result = program(root)['e2e']['results'][-1]
+    base = f"scoreboard_blackwing_descent_10n_e2e_r{result['round']:02d}-e2e"
+    _receipt(root, base + '_other', e2e.parent)                     # not an archive_run_evidence name
+    _receipt(root, base + '_retry1', e2e.parent.with_name('elsewhere'))  # another root
+    assert runs.adopted_pointer(root, f'{RAID}:{MODE}', result) is None
+    assert runs.adopted_pointer(root, f'{RAID}:{MODE}', result | {'round': result['round'] + 1}) is None
+    assert runs.adopted_pointer(root, f'{RAID}:{MODE}', result) is None
+    assert _receipt(root, base, e2e.parent) == runs.adopted_pointer(root, f'{RAID}:{MODE}', result)
+
+
+def test_a_new_run_at_a_lost_roots_path_is_never_archived_as_the_old_evidence(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, e2e)
+    shutil.rmtree(e2e.parent)
+    impostor = shard_run(root, 'e2e', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter']}], terminal='x')
+    assert impostor == e2e and not runs.root_holds_run(program(root)['e2e']['results'][-1])
+    archived = len(world['archived'])
+    runs.archive_pending_e2e(root)
+    evidence = program(root)['e2e']['results'][-1]['evidence']
+    assert len(world['archived']) == archived, 'the other run at the same path was not archived'
+    assert evidence['state'] == 'failed' and evidence['root_missing'] and 'no longer holds this run' in evidence['error']
+    runs.evidence_lost(root, 'the /tmp path was reused by another run')
+    assert program(root)['e2e']['results'][-1]['evidence']['state'] == 'lost' and impostor.exists()
+
+
+def test_evidence_lost_closes_per_result(world):
+    root = world['root']
+    to_e2e(root, world)
+    old = shard_run(root, 'e2e-old', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter']}])
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, old)  # a failed run whose archive failed; its root survives
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, world, both())
+    runs.run_plans(root)
+    current = shard_run(root, 'e2e-now', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter', 'bwd.beta.encounter']}])
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, current)
+    shutil.rmtree(current.parent)
+    runs.evidence_lost(root, 'tmpfs cleared')
+    results = program(root)['e2e']['results']
+    assert [row['evidence']['state'] for row in results] == ['failed', 'lost']
+    assert program(root)['stage'] == 'plan' and results[-1]['outcome'] == 'evidence_lost'
+
+
+def test_select_refusal_names_every_exit(world):
+    root = world['root']
+    e2e = to_e2e(root, world)
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, e2e)
+    other = copy.deepcopy(world['discovery']) | {'program_id': 'firelands:10N', 'raid': 'firelands'}
+    with pytest.raises(GraphError, match='--archive-pending.*--evidence-lost REASON.*--failed REASON'):
+        rounds.select(root, other)
+
+
+def test_open_older_evidence_keeps_a_nonzero_exit_and_shows_at_completion(world):
+    root = world['root']
+    to_e2e(root, world)
+    old = shard_run(root, 'e2e-old', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter']}])
+    world['archive_errors'].append('dvc push failed')
+    runs.record_e2e(root, old)
+    rounds.plan(root)
+    complete_round(root, {'alpha': PASS, 'beta': PASS}, world, both())
+    runs.run_plans(root)
+    fresh = shard_run(root, 'e2e-new', [{'cohort_id': f'{RAID}_10n_full_c0', 'killed': ['bwd.alpha.encounter', 'bwd.beta.encounter']}])
+    world['archive_errors'].append('dvc push failed')  # the new clear's archive fails too
+    raid_program.command(root, ['e2e', '--shard-run', str(fresh)])
+    world['archive_errors'].append('still failing')  # the older run's retry fails; the clear's retry succeeds
+    result = raid_program.command(root, ['e2e', '--archive-pending'])
+    assert result['exit_status'] == 1 and 'open_e2e_evidence' in result['exit_reason']
+    view = result['resume']
+    assert view['stage'] == 'complete' and view['parent_objective_complete']
+    assert len(view['pending_e2e_evidence']) == 1 and 'older e2e evidence' in view['next_action']
+    assert view['commands'] == ['pixi run python -m tools.raid_program.raid_workloop program e2e --archive-pending']
 
 
 def test_p4_a_program_switch_cannot_lose_the_pointer(world):
