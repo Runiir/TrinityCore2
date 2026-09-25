@@ -124,6 +124,11 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   the wake wait, the Break tank stands 9 yd north of the boss and everyone else at least 16 yd away,
   so the native wake-up picks the Break tank. The native route keeps the nodes and their
   completions. The Finkle interaction itself is the route's `gossip_select_sequence` node.
+  Back asleep at `bwd.chimaeron.encounter` (the native reset after a wipe: not in combat and the
+  instance encounter not in progress), the plan keeps the node so the generic boss adapters never
+  pull him without Finkle's Mixture, suppresses offense (`encounter_reset_boss_asleep`), and stages
+  as on the wake wait once the Bile-O-Tron is active again. Waking him again needs Finkle's gossip,
+  which is a route request (see Live evidence).
 - **Mixture up.** Both guides say to spread at least 6 yd, which minimizes the -75% hit debuff and
   keeps each Slime on one player. Slots are at least 11 yd apart, and a member only moves when
   more than 2 yd off its slot, so two members are always more than 6 yd apart:
@@ -229,3 +234,30 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
 - Fix (shared, round 3): the interaction owner walks the complete native path to a point
   2.5 yd short of the target, when the target is within reach from there. For Finkle that
   point is (-113.41, 40.89, 72.36), 2.96 yd from him.
+- Round 3 (`blackwing_descent_10n-r03-b1-20260925T200656Z`, T = first boss melee): the route
+  reached the encounter, and the prewake plan worked:
+  - The gossip opened at T-27.7 (menus 11812 through 11837, one select per second) and the
+    Bile-O-Tron had 82705 at T-22.4.
+  - The native wake came 22.9 s later: the first victim was the Break tank, staged 9 yd north.
+  - The Double Attack exchange ran (Growl at T+5.8 and T+21.0, Dark Command at T+8.9 and T+17.8).
+  - Each Caustic Slime hit one member alone (163-179k, Finkle's Mixture left them at 1 HP).
+
+  Then the raid wiped with 0 heals and 0 damage (only Eye for an Eye reflects), because every
+  member's decision kernel committed `raid.prepull_consumables` (Mechanic, utility 12, GCD, cast
+  and target lanes) with `raid_prepull_wait_alive_and_healed` for the whole fight. Heals, rotations
+  and the boss adapter were deferred with `resource_lane_owned`. The native wake engages the raid
+  before the boss node starts, so the boss-node prepull could never complete. The deaths:
+  - the mage (slime then melee, T+13.1), the hunter (T+22.2) and the warlock (T+27.2);
+  - Massacre at T+30.6 took everyone below 10k HP;
+  - single melee hits killed the four members left at 1 HP (T+34.3 to T+46.5).
+
+  The recovery ride (`route_recovery_engaged:bwd.transit.lower_wing_elevator`, T+56.3) then carried
+  only the three healers. They were the only members without that candidate: an injured member out
+  of combat exempts healers. The candidate deferred the other seven members' surface walks (they
+  need the cast lanes too) every elevator cycle. Each walk aborted 1 s later with
+  `transport_rest_window_too_short`, so `route_recovery_complete` never came.
+- Fixes (round 4):
+  - Shared prepull patch: stand down while anyone on the roster is in combat or a recovery ride
+    is engaged.
+  - Chimaeron-owned: a boss back asleep at the encounter node is Prewake and is never pulled.
+  - Route request: re-run Finkle's gossip after a wipe at the encounter node.

@@ -55,7 +55,7 @@ constexpr std::string_view EncounterNode = "bwd.chimaeron.encounter";
 enum class Phase : uint8
 {
     None,       // not a Chimaeron node, or no live boss
-    Prewake,    // regroup/Finkle/wake-wait nodes while the boss sleeps
+    Prewake,    // the boss sleeps: before the wake, or back asleep after a reset
     Mixture,    // phase one with Finkle's Mixture protecting the raid
     Outage,     // Bile-O-Tron offline (Systems Failure): no mixture
     Mortality   // below 20%: Mortality, no healing, no taunt
@@ -210,6 +210,13 @@ inline Observation ObserveEncounter(Blackboard const& board)
 
     if (wakeNode)
         observation.CurrentPhase = IsEngaged(boss) ? Phase::None : Phase::Prewake;
+    else if (!IsEngaged(boss) && board.NativeBossState == "not_in_progress")
+        // Back asleep at the encounter node: the native reset after a wipe
+        // (instance state NOT_STARTED, REACT_PASSIVE, PHASE_ASLEEP; Finkle
+        // and the Bile-O-Tron respawn 30 s after the evade). Only Finkle's
+        // gossip wakes him; attacking the sleeping boss would start the
+        // fight without Finkle's Mixture.
+        observation.CurrentPhase = Phase::Prewake;
     else if (IsMortality(boss))
         observation.CurrentPhase = Phase::Mortality;
     else if (!observation.MixtureOn)

@@ -70,7 +70,7 @@ constexpr uint32 DK = 11002001, DRUID = 11002002, HUNTER = 11002003, MAGE = 1100
         "chimaeron" };
     board.Revision = 40;
     board.ObservedAtMs = 1000000;
-    board.NativeBossState = engaged ? "in_progress" : "not_started";
+    board.NativeBossState = engaged ? "in_progress" : "not_in_progress";
     board.Route.NodeId = node;
     board.Route.NavigationHints.push_back({ HomeX, HomeY, HomeZ });
     board.Players = {
@@ -658,6 +658,65 @@ static void TestOtherNodes()
     CHECK(!Plan(noBoss, DK).OwnsNode);
 }
 
+static void TestEncounterReset()
+{
+    // Round 3: after the wipe the native reset put the boss back to sleep at
+    // the encounter node (Finkle and the Bile-O-Tron respawn 30 s later).
+    // The plan keeps the node so the generic boss adapters do not pull him
+    // without Finkle's Mixture, and publishes no damage target.
+    Blackboard board = Board("bwd.chimaeron.encounter", false);
+    for (uint32 guid : Everyone())
+    {
+        AdaptiveChimaeronPlan const plan = Plan(board, guid);
+        CHECK(plan.EncounterPhase == C::Phase::Prewake);
+        CHECK(plan.OwnsNode && plan.SuppressOffense);
+        CHECK(plan.SuppressReason == "encounter_reset_boss_asleep");
+        CHECK(plan.DamageTarget.IsEmpty() && !plan.Action && !plan.Movement);
+        CHECK(plan.PriorityHealTarget.IsEmpty() && !plan.HealingDisabled);
+    }
+
+    // Once the Bile-O-Tron is active again the raid stages for the wake as it
+    // does at the wake wait: the Break tank nearest, everyone else >= 16 yd.
+    for (ActorSnapshot& player : board.Players)
+        player.Auras.push_back({ C::FinklesMixtureSpell, ObjectGuid(), 1, 0 });
+    std::map<uint32, C::Point> const moves = Destinations(board);
+    CHECK(moves.size() == 10);
+    C::Point const boss{ HomeX, HomeY };
+    CHECK(std::fabs(C::Distance(moves.at(DK), boss) - 9.0f) < 0.01f);
+    for (auto const& [guid, point] : moves)
+        if (guid != DK)
+            CHECK(C::Distance(point, boss) >= 16.0f - 0.01f);
+    CHECK(Plan(board, HUNTER).OwnsNode && Plan(board, HUNTER).SuppressOffense);
+
+    // A patrol fighting the raid lifts the suppression; the sleeping boss is
+    // still never a damage target.
+    Blackboard patrol = Board("bwd.chimaeron.encounter", false);
+    ActorSnapshot trash;
+    trash.Guid = ObjectGuid(HighGuid::Unit, uint32(42800), uint32(701));
+    trash.Entry = 42800;
+    trash.Alive = trash.Attackable = trash.Selectable = trash.InCombat = true;
+    trash.VictimGuid = G(DK);
+    patrol.Hostiles.push_back(trash);
+    AdaptiveChimaeronPlan const fighting = Plan(patrol, ROGUE);
+    CHECK(fighting.EncounterPhase == C::Phase::Prewake);
+    CHECK(!fighting.SuppressOffense && fighting.DamageTarget.IsEmpty());
+
+    // Without the native reset (instance state still in progress) a boss
+    // sample without combat or victim stays the live encounter.
+    Blackboard sample = Board("bwd.chimaeron.encounter", true);
+    Boss(sample).InCombat = false;
+    Boss(sample).VictimGuid.Clear();
+    CHECK(Plan(sample, HUNTER).EncounterPhase == C::Phase::Mixture);
+    CHECK(Plan(sample, HUNTER).DamageTarget == Boss(sample).Guid);
+
+    // The re-woken boss is the live encounter again.
+    Boss(board).InCombat = true;
+    Boss(board).VictimGuid = G(DK);
+    AdaptiveChimaeronPlan const live = Plan(board, HUNTER);
+    CHECK(live.EncounterPhase == C::Phase::Mixture);
+    CHECK(live.OwnsNode && !live.SuppressOffense && live.DamageTarget == Boss(board).Guid);
+}
+
 int main()
 {
     TestDuties();
@@ -670,6 +729,7 @@ int main()
     TestOutageCooldownsAndMortalityAbsorbs();
     TestArbitrationReplayShape();
     TestOtherNodes();
+    TestEncounterReset();
     if (failures)
         std::fprintf(stderr, "%d checks failed\n", failures);
     return failures ? 1 : 0;

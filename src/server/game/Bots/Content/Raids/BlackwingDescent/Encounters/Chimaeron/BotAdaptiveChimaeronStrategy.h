@@ -69,10 +69,18 @@ public:
             // before the Bile-O-Tron is active; once the wake wait starts the
             // raid stages so the Break tank is the nearest player. A patrol or
             // leftover pack fighting the raid lifts the suppression.
+            // Back asleep at the encounter node (the native reset after a
+            // wipe) the plan keeps the node, so the generic boss adapters do
+            // not pull him without Finkle's Mixture, and stages only once the
+            // Bile-O-Tron is active again (the Finkle owner must reach him
+            // first).
+            bool const resetAtEncounter = board.Route.NodeId == EncounterNode;
+            plan.OwnsNode = resetAtEncounter;
             plan.SuppressOffense = !OtherHostileEngaged(board, boss);
             if (plan.SuppressOffense)
-                plan.SuppressReason = "prewake_boss_asleep";
-            if (board.Route.NodeId == WakeWaitNode)
+                plan.SuppressReason = resetAtEncounter
+                    ? "encounter_reset_boss_asleep" : "prewake_boss_asleep";
+            if (board.Route.NodeId == WakeWaitNode || (resetAtEncounter && observation.MixtureOn))
                 if (std::optional<Point> slot = PrewakeSlot(duties, ToPoint(boss.Position), botGuid))
                     plan.Movement = ProposeMove(board, bot, *slot, SpreadTolerance,
                         "prewake_stage", boss.Guid, 300.0f);
