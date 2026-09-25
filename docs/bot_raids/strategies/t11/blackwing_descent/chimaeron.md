@@ -211,3 +211,21 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
    Attack tank.
 3. During an outage the raid is stacked within 6 yd of each Slime target, with no outage deaths.
 4. No taunt lands after Mortality. The kill is a native clear with 0 boss-window deaths.
+
+## Live evidence
+
+- Round 2 (`blackwing_descent_10n-r02-b1-20260925T172051Z`, instance 1, Magmaw and Omnotron
+  seeded DONE, Chimaeron NOT_STARTED): `native_interaction_timeout` at `bwd.chimaeron.finkle`
+  after exactly the contract's 90 s. The gossip never opened:
+  - The Finkle owner (hunter, lowest dps GUID) asked the planner for Finkle's own position.
+  - Finkle stands on a Soapbox gameobject (180403), 1.585 yd above the navmesh floor (72.36).
+  - The planner rejected that position on every tick with `route_destination_endpoint_mismatch`:
+    horizontal distance 0, vertical 1.585, above its 1.5 yd tolerance.
+  - The rejected approach counted no attempt, so the node could only time out.
+
+  The lockout, Finkle's spawn and gossip state, and the prewake suppression were not involved:
+  - Finkle resolved uniquely.
+  - The suppression claims only the pet resource and committed beside the rejected move.
+- Fix (shared, round 3): the interaction owner walks the complete native path to a point
+  2.5 yd short of the target, when the target is within reach from there. For Finkle that
+  point is (-113.41, 40.89, 72.36), 2.96 yd from him.
