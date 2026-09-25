@@ -61,7 +61,6 @@ try:
     from .live_validation_encounter_rng import attach_encounter_rng
     from .live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from .live_validation_terminal_signals import (
-        CONTAMINATION_COMPLETION_REASON,
         HeartbeatSignals,
         drain_terminal_trace,
         is_prepull_failure_label,
@@ -111,7 +110,6 @@ except ImportError:
     from live_validation_encounter_rng import attach_encounter_rng
     from live_validation_cleanup import CleanupBudget, SHUTDOWN_GRACE_SEC, is_stop_command
     from live_validation_terminal_signals import (
-        CONTAMINATION_COMPLETION_REASON,
         HeartbeatSignals,
         drain_terminal_trace,
         is_prepull_failure_label,
@@ -1087,7 +1085,10 @@ def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None)
         "validation_route_assist_focus_loop",
         "validation_route_stuck_loop",
     }
-    if any(label not in transient_terminal_labels for label in (report.get("failure_labels") or [])):
+    if any(
+        label not in transient_terminal_labels and not is_prepull_failure_label(label)
+        for label in (report.get("failure_labels") or [])
+    ):
         return False
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
     context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
@@ -1227,8 +1228,9 @@ def supersede_transient_route_failures(report: dict[str, Any]) -> None:
         "validation_route_stuck_loop",
     }
     labels = [str(label) for label in (report.get("failure_labels") or [])]
-    resolved = [label for label in labels if label in transient]
-    report["failure_labels"] = [label for label in labels if label not in transient]
+    # The advisory pre-pull label is superseded by a completed segment too.
+    resolved = [label for label in labels if label in transient or is_prepull_failure_label(label)]
+    report["failure_labels"] = [label for label in labels if label not in resolved]
     superseded = [str(label) for label in (report.get("superseded_failure_labels") or [])]
     for label in resolved:
         if label not in superseded:
@@ -5298,8 +5300,10 @@ def validation_failure_labels(
     native_clear = bool(evidence.get("manifest_completion_evidence")) and bool(
         evidence.get("real_boss_kill_evidence"))
     if evidence.get("contamination_evidence"):
-        # Certification must quarantine this attempt; the watchdog loop turns
-        # contamination that persists past its grace into a typed terminal.
+        # Certification must quarantine this attempt, but the label never ends
+        # the run: the native list only grows and survives route advances, so
+        # a raid that recovers and clears must still clear.  A contamination
+        # wipe loop ends through the near-wipe death loop.
         labels.append("validation_route_future_encounter_contamination")
     if timed_out:
         labels.append("worldserver_timeout")
@@ -6026,7 +6030,6 @@ def final_evidence_rejections(
         "calibration_pre_scoring_blocker_watchdog",
         "cohort_action_gate_failure_watchdog",
         "encounter_capability_blocker_watchdog",
-        CONTAMINATION_COMPLETION_REASON,
     }:
         rejections.append("watchdog_failure_is_not_final_evidence")
     if evidence.get("forbidden_completion_assists"):
@@ -7060,12 +7063,6 @@ def run_transport_completion_watchdog(
             return fail()
         if observed_native_manifest_clear(report) or report["acceptable_final_evidence"]:
             return finish(0, False)
-        # After the clear check: contamination the raid lost to and is
-        # fighting again (the evidence list itself only grows).
-        signal_terminal = signals.terminal(report, heartbeat_index)
-        if signal_terminal:
-            finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
-            return fail()
         if report["completion_reason"] in {
             "repeated_decision_watchdog",
             "death_loop_watchdog",
@@ -7544,13 +7541,6 @@ def run_worldserver_completion_watchdog(
             ):
                 break
             if observed_native_manifest_clear(report) or report["acceptable_final_evidence"]:
-                break
-            # After the clear check: contamination the raid lost to and is
-            # fighting again (the evidence list itself only grows).
-            signal_terminal = signals.terminal(report, heartbeat_index)
-            if signal_terminal:
-                finalize_raid_terminal_watchdog(output_dir, report, signal_terminal)
-                terminal_failure = True
                 break
             if report["completion_reason"] in {
                 "repeated_decision_watchdog",

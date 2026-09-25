@@ -4,7 +4,9 @@ The loop tests replay the shapes of the round-2 shard heartbeats (rebuilt from
 worldserver.console.log by the reviewer's replay): the batch Magmaw run whose
 pre-pull gate failed at heartbeat 8 yet engaged natively at 18 and died at 22,
 Maloriak held by the same gate until a diagnosis error, and Omnotron wiped by a
-contaminating Golem Sentry that re-engaged after every runback.
+contaminating Golem Sentry that re-engaged after every runback.  Contamination
+is a label only: the reviewer's scenarios A, B and B2 are runs that recover and
+clear, and Omnotron's real wipe loop ends through the near-wipe death loop.
 """
 from __future__ import annotations
 
@@ -17,7 +19,6 @@ import pytest
 from tools.bot_ml.analyze_combat_log import analyze_combat_log
 from tools.bot_ml.live_validation_terminal_signals import (
     TERMINAL_TRACE_DRAIN_FILE,
-    ContaminationWatchdog,
     HeartbeatSignals,
     NearWipeTracker,
     RouteActionLedger,
@@ -27,8 +28,10 @@ from tools.bot_ml.run_live_bot_validation import (
     command_script,
     live_validation_report,
     parse_json_objects,
+    route_segment_complete,
     run_transport_completion_watchdog,
     should_defer_active_combat_bot_diagnosis,
+    supersede_transient_route_failures,
 )
 
 COHORT = "c0"
@@ -38,6 +41,8 @@ TRACE = f".botauto trace {COHORT} all 128 delta"
 TAIL = f".botauto trace {COHORT} all 128"
 GOLEM_ENTRY = 42800
 GOLEM_GUID = 17379574786623012865
+MAGMAW_GUID = 17379570517425520858
+DRUDGE_GUID = 17379570517425520001
 OMNOTRON = dict(node="bwd.omnotron.regroup", generation=1, kind="regroup", kills=0)
 MAGMAW = dict(node="bwd.magmaw.encounter", generation=4, kind="boss")
 
@@ -57,13 +62,17 @@ MANIFEST = _manifest()
 def _status(*, node="bwd.maloriak.encounter", generation=3, kind="boss", alive=10, kills=3,
             deaths=0, prepull_failed=False, contamination=False, wipe_generation=0,
             manifest_complete=False, boss_dead=False, engaged=False, prepull_generation=None,
-            hostile_guid=0, hostile_entry=0) -> dict:
+            hostile_guid=0, hostile_entry=0, contamination_rows=()) -> dict:
     route = {"node_id": node, "generation": generation, "kind": kind, "manifest_complete": manifest_complete}
     scope = {"route_node_id": node, "route_generation": generation}
     if contamination:
         route["contamination_evidence"] = [{**scope, "route_kind": kind, "target_entry": GOLEM_ENTRY,
                                             "target_id": GOLEM_GUID,
                                             "result": "validation_route_future_encounter_contamination"}]
+    if contamination_rows:
+        # The native list survives route advances: rows keep their own scope.
+        route["contamination_evidence"] = [
+            {**row, "result": "validation_route_future_encounter_contamination"} for row in contamination_rows]
     if manifest_complete:
         route["terminal_evidence"] = [scope]
     if boss_dead:
@@ -251,6 +260,19 @@ def test_the_advisory_label_does_not_block_a_combat_deferral():
     assert should_defer_active_combat_bot_diagnosis(report) is False
 
 
+def test_the_advisory_label_never_blocks_a_manifest_less_route_segment():
+    route = {"route_node_id": "bwd.maloriak.lab_trash", "route_generation": 2, "kind": "trash"}
+    scope = {"route_node_id": "bwd.maloriak.lab_trash", "route_generation": 2}
+    report = {"failure_labels": ["no_progress_observed", PREPULL_LABEL],
+              "evidence": {"route_terminal_evidence": [scope], "trash_pulls": 3}, "trace": {}}
+    assert route_segment_complete(report, route) is True
+    supersede_transient_route_failures(report)
+    assert report["failure_labels"] == [] and report["failure_reason"] is None
+    assert report["superseded_failure_labels"] == ["no_progress_observed", PREPULL_LABEL]
+    report["failure_labels"] = ["bot_diagnosis_error", PREPULL_LABEL]
+    assert route_segment_complete(report, route) is False
+
+
 def test_a_stale_prepull_failure_from_another_route_generation_is_ignored():
     report = live_validation_report(
         _output(_status(prepull_failed=True, prepull_generation=2), _diagnose(), _trace(_route_rows(1, 2))),
@@ -312,29 +334,85 @@ def test_route_action_ledger_deduplicates_repeated_rows():
     assert ledger.observe([{**rows[0], "sequence": 10, "timestamp_ms": 99}]) == 5
 
 
-# Item 4: contamination the raid lost to and is fighting again is terminal.
+# Item 4: contamination is a label only; wipe loops end through the near-wipe death loop.
 
-def test_omnotron_contamination_ends_when_the_golem_reengages_after_the_wipe(tmp_path):
-    """Round-2 Omnotron: wiped by the Golem Sentry before heartbeat 1, runback, re-engaged at 3."""
-    rows = lambda index: _trace(_route_rows(index * 5 + 1, 5, node=OMNOTRON["node"], generation=1))  # noqa: E731
-    beats = [
-        {"status": _status(**OMNOTRON, contamination=True, alive=1, deaths=9), "trace": rows(0)},
-        {"status": _status(**OMNOTRON, contamination=True, alive=8, deaths=10, wipe_generation=1), "trace": rows(1)},
-        {"status": _status(**OMNOTRON, contamination=True, alive=9, deaths=11, wipe_generation=1,
-                           hostile_guid=GOLEM_GUID, hostile_entry=GOLEM_ENTRY), "trace": rows(2)},
-    ]
-    commands, output_dir, _output_text = _run(tmp_path, beats, max_beats=5,
-                                              manifest=_manifest("bwd.omnotron.encounter", 3))
+def _contaminated_clear(tmp_path, beats, node, generation, *, kills):
+    rows = beats[-1]["status"]["validation_route"]["contamination_evidence"]
+    clear = _status(node=node, generation=generation, kind="boss", kills=kills + 1, boss_dead=True,
+                    manifest_complete=True, contamination_rows=rows)
+    beats = beats + [{"status": clear, "trace": _trace(_route_rows(900, 2, node=node, generation=generation))}]
+    _commands, output_dir, _output_text = _run(tmp_path, beats, manifest=_manifest(node, generation))
     heartbeats = _heartbeats(output_dir)
-    assert len(heartbeats) == 3
+    return heartbeats, _report(output_dir)
+
+
+SENTRY_ROW = {"route_node_id": "bwd.omnotron.regroup", "route_generation": 1, "route_kind": "regroup",
+              "target_id": GOLEM_GUID, "target_entry": GOLEM_ENTRY}
+
+
+def test_scenario_a_magmaw_pull_after_a_recovered_drudge_near_wipe_clears(tmp_path):
+    """A bot tags Magmaw from the drudge node; Magmaw reads as the active hostile all pre-pull."""
+    row = {"route_node_id": "bwd.magmaw.drudges", "route_generation": 3, "route_kind": "trash",
+           "target_id": MAGMAW_GUID, "target_entry": 41570}
+    drudges = dict(node="bwd.magmaw.drudges", generation=3, kind="trash", contamination_rows=[row])
+    rows = lambda first, **where: _trace(_route_rows(first, 5, **where))  # noqa: E731
+    beats = [
+        {"status": _status(**drudges, kills=1, hostile_guid=DRUDGE_GUID, hostile_entry=42362),
+         "trace": rows(1, node="bwd.magmaw.drudges", generation=3)},
+        {"status": _status(**drudges, kills=2, alive=4, deaths=6, hostile_guid=DRUDGE_GUID, hostile_entry=42362),
+         "trace": rows(6, node="bwd.magmaw.drudges", generation=3)},
+        {"status": _status(**drudges, kills=3, deaths=6), "trace": rows(11, node="bwd.magmaw.drudges", generation=3)},
+    ] + [
+        {"status": _status(**MAGMAW, kills=3, deaths=6, contamination_rows=[row],
+                           hostile_guid=MAGMAW_GUID, hostile_entry=41570),
+         "trace": rows(16 + index * 5, **_scope(MAGMAW))} for index in range(4)
+    ]
+    heartbeats, report = _contaminated_clear(tmp_path, beats, MAGMAW["node"], 4, kills=3)
+    assert len(heartbeats) == 8
+    assert all("validation_route_future_encounter_contamination" in row["failure_labels"] for row in heartbeats[:7])
+    assert report["completion_reason"] == "validation_route_manifest_complete"
+
+
+@pytest.mark.parametrize("near_wipe_hostile", [(GOLEM_GUID, GOLEM_ENTRY), (DRUDGE_GUID, 1)], ids=["B", "B2"])
+def test_scenarios_b_sentry_fought_on_its_own_node_after_recovery_clear(tmp_path, near_wipe_hostile):
+    """B: the sentry wiped the regroup node, the raid recovered and fought it on its own node.
+
+    B2: the same, but the sentry was not the reported hostile at the near-wipe.
+    """
+    guid, entry = near_wipe_hostile
+    regroup = dict(node="bwd.omnotron.regroup", generation=1, kind="regroup", contamination_rows=[SENTRY_ROW])
+    sentries = dict(node="bwd.omnotron.sentries", generation=2, kind="trash", contamination_rows=[SENTRY_ROW])
+    beats = [
+        {"status": _status(**regroup, kills=0, alive=3, deaths=7, hostile_guid=guid, hostile_entry=entry),
+         "trace": _trace(_route_rows(1, 5, node="bwd.omnotron.regroup", generation=1))},
+        {"status": _status(**regroup, kills=0, deaths=7),
+         "trace": _trace(_route_rows(6, 5, node="bwd.omnotron.regroup", generation=1))},
+        {"status": _status(**sentries, kills=0, deaths=7, hostile_guid=GOLEM_GUID, hostile_entry=GOLEM_ENTRY),
+         "trace": _trace(_route_rows(11, 5, node="bwd.omnotron.sentries", generation=2))},
+        {"status": _status(**sentries, kills=2, deaths=7),
+         "trace": _trace(_route_rows(16, 5, node="bwd.omnotron.sentries", generation=2))},
+    ]
+    heartbeats, report = _contaminated_clear(tmp_path, beats, "bwd.omnotron.encounter", 3, kills=2)
+    assert len(heartbeats) == 5
+    assert report["completion_reason"] == "validation_route_manifest_complete"
+
+
+def test_omnotron_contamination_wipe_loop_ends_as_a_death_loop_at_heartbeat_10(tmp_path):
+    """Round-2 Omnotron replay: the Golem re-engages after each runback; hb10 is the third near-wipe."""
+    alive = [1, 8, 9, 9, 3, 5, 10, 10, 10, 3, 10, 5]
+    golem = {3, 4, 5, 9, 11, 12}
+    beats = [{"status": _status(**OMNOTRON, contamination=True, alive=count, wipe_generation=0 if index == 0 else 1,
+                                **({"hostile_guid": GOLEM_GUID, "hostile_entry": GOLEM_ENTRY}
+                                   if index + 1 in golem else {})),
+              "trace": _trace(_route_rows(index * 5 + 1, 5, node=OMNOTRON["node"], generation=1))}
+             for index, count in enumerate(alive)]
+    commands, output_dir, _output_text = _run(tmp_path, beats, manifest=_manifest("bwd.omnotron.encounter", 3))
+    heartbeats = _heartbeats(output_dir)
+    assert len(heartbeats) == 10
+    assert all(row["failure_labels"][0] == "validation_route_future_encounter_contamination" for row in heartbeats)
     report = _report(output_dir)
-    assert report["completion_reason"] == "future_encounter_contamination_watchdog"
-    assert report["failure_reason"] == "validation_route_future_encounter_contamination"
-    terminal = report["watchdog_state"]["terminal_failure"]
-    assert terminal["first_observed_heartbeat_index"] == 1
-    assert terminal["near_wipe_episodes_since_contamination"] == 1
-    assert terminal["engaged_target_entry"] == GOLEM_ENTRY
-    assert "watchdog_failure_is_not_final_evidence" in report["final_evidence_rejections"]
+    assert report["completion_reason"] == "death_loop_watchdog"
+    assert "validation_route_death_loop" in report["failure_labels"]
     assert commands[-1] == f".botauto stop {COHORT}"
 
 
@@ -348,32 +426,6 @@ def test_a_transient_contaminating_patrol_never_ends_a_run_that_clears(tmp_path)
     report = _report(output_dir)
     assert len(_heartbeats(output_dir)) == 5
     assert report["completion_reason"] == "validation_route_manifest_complete"
-
-
-def test_the_sticky_contamination_list_alone_is_never_terminal():
-    """The runtime only appends contamination rows, so presence is not persistence."""
-    signals = HeartbeatSignals()
-    for index in range(6):
-        report = live_validation_report(
-            _output(_status(**OMNOTRON, contamination=True, alive=10), _diagnose(),
-                    _trace(_route_rows(index * 3 + 1, 3, node=OMNOTRON["node"], generation=1))),
-            signals=signals)
-        assert signals.terminal(report, index + 1) is None
-
-
-def test_contamination_is_never_terminal_on_a_native_clear():
-    watchdog = ContaminationWatchdog()
-    tracker = NearWipeTracker(total_episodes=1)
-    report = {
-        "status": _status(contamination=True, hostile_guid=GOLEM_GUID, hostile_entry=GOLEM_ENTRY),
-        "evidence": {"contamination_evidence": [{"route_node_id": "bwd.maloriak.encounter", "route_generation": 3}],
-                     "manifest_completion_evidence": [{"route_node_id": "bwd.maloriak.encounter", "route_generation": 3}],
-                     "real_boss_kill_evidence": [{"route_node_id": "bwd.maloriak.encounter", "route_generation": 3}]},
-    }
-    assert watchdog.observe(report, 1, NearWipeTracker()) is None
-    assert watchdog.observe(report, 2, tracker) is None
-    report["evidence"]["manifest_completion_evidence"] = []
-    assert watchdog.observe(report, 3, tracker)["kind"] == "future_encounter_contamination"
 
 
 # Item 5: repeated near-wipes on one node are a death loop.
@@ -464,7 +516,7 @@ def test_terminal_failure_drains_the_backlog_and_captures_the_newest_rows(tmp_pa
     assert len(rows) == 184 and max(row["entry"]["sequence"] for row in rows) == 351
     receipt = next(row for row in parse_json_objects(output) if row.get("purpose") == "terminal_trace_drain")
     assert receipt["delta_backlog_drained"] is True and receipt["newest_captured"] is True
-    assert receipt["bots"][0]["last_captured_sequence"] == 351
+    assert receipt["bots"][0]["last_captured_sequence"] == 351 and receipt["bots"][0]["tail_rows"] == 128
 
 
 def test_a_bounded_drain_reports_the_backlog_it_left_honestly(tmp_path):
@@ -476,7 +528,8 @@ def test_a_bounded_drain_reports_the_backlog_it_left_honestly(tmp_path):
         calls.append(command)
         now["t"] += 4.0
         if command == TAIL:
-            return json.dumps(_trace(_route_rows(2263, 128), newest=2390)), True
+            # No newest_retained_sequence here: the tail is the newest rows by definition.
+            return json.dumps(_trace(_route_rows(2263, 128))), True
         first = 1 + 128 * (len(calls) - 1)
         return json.dumps(_trace(_route_rows(first, 128), pending=2390 - first - 127, newest=2390)), True
 
@@ -489,9 +542,22 @@ def test_a_bounded_drain_reports_the_backlog_it_left_honestly(tmp_path):
     assert receipt["delta_stop_reason"] == "budget_exhausted" and receipt["timed_out"] is True
     assert receipt["delta_backlog_drained"] is False and receipt["delta_pending_after"] == 2390 - 384
     assert receipt["newest_captured"] is True and receipt["completed"] is True
-    assert receipt["bots"][0]["newest_retained_sequence"] == 2390
+    assert receipt["bots"][0]["newest_retained_sequence"] == 2390 and receipt["bots"][0]["tail_rows"] == 128
     # No delta trace command configured: nothing to drain.
     assert drain_terminal_trace(run, [".botauto status c0"], tmp_path, parse_json_objects) == ""
+
+
+def test_a_failed_tail_never_claims_the_newest_rows(tmp_path):
+    def run(command: str) -> tuple[str, bool]:
+        if command == TAIL:
+            return "", True
+        # A delta row that happens to reach newest_retained_sequence is not proof.
+        return json.dumps(_trace(_route_rows(10, 1), pending=0, newest=10)), True
+
+    receipt = json.loads(drain_terminal_trace(run, [TRACE], tmp_path, parse_json_objects))
+    assert receipt["delta_backlog_drained"] is True
+    assert receipt["tail_captured"] is False and receipt["newest_captured"] is False
+    assert receipt["completed"] is False and receipt["bots"][0]["newest_captured"] is False
 
 
 def test_a_native_clear_does_not_drain(tmp_path):
@@ -543,7 +609,8 @@ def test_fall_damage_is_environmental_not_friendly():
     encounter = analyze_combat_log(_nefarian_drop_log(with_falls=True))["encounters"][0]
     actors = {row["actor_name"]: row for row in encounter["actors"]}
     assert actors["Bwnefnba"]["friendly_damage"] == 0
-    assert actors["Bwnefnba"]["raw_event_damage"] == 0
+    # raw_event_* keep their previous meaning (analyze_magmaw_trace reads them).
+    assert actors["Bwnefnba"]["raw_event_damage"] == actors["Bwnefnba"]["raw_event_friendly_damage"] == 60232
     assert actors["Bwnefnba"]["environmental_damage"] == 60232
     assert actors["Bwnefnba"]["friendly_abilities"] == []
     assert actors["Bwnefnbb"]["friendly_damage"] == 300
@@ -555,24 +622,23 @@ def test_fall_damage_is_environmental_not_friendly():
     assert encounter["combat_duration_sec"] == 4
 
 
-RATE_FIELDS = ("combat_duration_sec", "party_dps", "party_hps", "raw_event_dps")
-ACTOR_RATE_FIELDS = ("dps", "hps", "damage_uptime", "pet_uptime", "raw_event_dps")
+RATE_FIELDS = ("combat_duration_sec", "party_dps", "party_hps", "raw_event_damage", "raw_event_dps",
+               "party_raw_event_friendly_damage", "party_damage_taken")
+ACTOR_RATE_FIELDS = ("dps", "hps", "damage_uptime", "pet_uptime", "raw_event_damage", "raw_event_dps",
+                     "raw_event_friendly_damage", "raw_event_pet_damage", "raw_event_pet_damage_share")
 
 
-def test_environmental_tagging_moves_numerators_not_combat_seconds():
-    """Only the damage numerators move; dps/hps/uptime denominators are unchanged."""
+def test_environmental_tagging_moves_only_the_friendly_figures():
+    """dps/hps/uptime and every raw_event_* field are those of the pre-tagging accounting."""
     tagged = analyze_combat_log(_nefarian_drop_log(with_falls=True))["encounters"][0]
     # The same rows as ordinary friendly fire (a spell): the pre-tagging accounting.
     untagged = analyze_combat_log(_nefarian_drop_log(with_falls=True, fall_spell_id=1))["encounters"][0]
     for field in RATE_FIELDS:
-        if field == "raw_event_dps":
-            continue  # its numerator excludes the falls now
         assert tagged[field] == untagged[field], field
+    assert tagged["party_friendly_damage"] == untagged["party_friendly_damage"] - 122187
     actors = {row["actor_guid"]: row for row in untagged["actors"]}
     for actor in tagged["actors"]:
         for name in ACTOR_RATE_FIELDS:
-            if name == "raw_event_dps":
-                continue
             assert actor[name] == actors[actor["actor_guid"]][name], (actor["actor_name"], name)
 
 

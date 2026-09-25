@@ -16,22 +16,27 @@ describes the last window, not the attempt.  One watchdog loop owns one
   resets the count, and so do kills on a non-boss node (recovered trash
   deaths are progress); boss-window near-wipes count, except on the heartbeat
   that carries the boss kill or the manifest completion.
-* ``ContaminationWatchdog``: ``validation_route.contamination_evidence`` only
-  grows during an attempt (the runtime clears it only on a config load), so
-  its presence is not persistence.  Contamination is terminal only when a
-  contaminating creature is again the raid's native hostile activity after
-  the raid has had a near-wipe or wipe since the contamination was recorded:
-  the raid lost to it and it is fighting again.  A patrol the runtime guards
-  and transfers, or that dies, never qualifies.
 * ``drain_terminal_trace``: after a terminal failure, drain the oldest
   pending delta rows (bounded) and capture every bot's newest rows with one
   non-delta tail, so the failing bot's last decisions survive.
 
-A failed native pre-pull consumables gate is only a label here
-(``raid_prepull_consumables_failed:<reason>``): bosses can engage natively
-despite it (round-2 Magmaw batch: failed from heartbeat 8, engaged at 18,
-killed at 22), so the semantic no-progress and plateau clocks end a pre-pull
-that is really stuck.
+Two round-2 findings stay labels and never end a run by themselves:
+
+* Future-encounter contamination
+  (``validation_route_future_encounter_contamination``).  The native
+  evidence list only grows during an attempt,
+  survives route advances, and ``native_hostile_activity_guid`` is the
+  map-wide first active hostile (Magmaw reads as active through the whole
+  pre-pull formation), so no status-level rule separates a contamination wipe
+  loop from a raid that recovers and clears.  A real wipe loop ends through
+  the near-wipe death loop (round-2 Omnotron: ``death_loop_watchdog`` at
+  heartbeat 10).
+* A failed native pre-pull consumables gate
+  (``raid_prepull_consumables_failed:<reason>``): bosses can engage natively
+  despite it (round-2 Magmaw batch: failed from heartbeat 8, engaged at 18,
+  killed at 22), so the semantic no-progress and plateau clocks end a
+  pre-pull that is really stuck.  It is advisory: last in the labels, never
+  terminal, and transient for a manifest-less route segment.
 """
 from __future__ import annotations
 
@@ -52,9 +57,6 @@ ROUTE_ACTION_PREFIXES = ("validation_route", "move_to_validation_route")
 NEAR_WIPE_DROP_FRACTION = 0.5
 NEAR_WIPE_RECOVERED_FRACTION = 0.75
 NEAR_WIPE_HISTORY_LIMIT = 16
-CONTAMINATION_GRACE_HEARTBEATS = 2
-CONTAMINATION_COMPLETION_REASON = "future_encounter_contamination_watchdog"
-CONTAMINATION_LABEL = "validation_route_future_encounter_contamination"
 PREPULL_FAILURE_LABEL_PREFIX = "raid_prepull_consumables_failed:"
 TERMINAL_TRACE_DRAIN_FILE = "terminal_trace_drain.jsonl.gz"
 # The budget is checked before each delta call; one call may still take up to
@@ -274,87 +276,11 @@ class NearWipeTracker:
 
 
 @dataclass
-class ContaminationWatchdog:
-    """Contamination the raid lost to and is fighting again is terminal.
-
-    The native evidence list is sticky, so the watchdog keys on behaviour: a
-    contaminating creature (by GUID, or by entry when the row has no GUID) is
-    the raid's native hostile activity on this heartbeat, and the near-wipe
-    tracker has counted an episode since the contamination was first seen.
-    A native clear is never terminal here (the loop also checks it first).
-    """
-
-    first_heartbeat_index: int = 0
-    episodes_at_first: int | None = None
-    _episodes_before: int = 0
-
-    def observe(
-        self,
-        report: Mapping[str, Any],
-        heartbeat_index: int,
-        near_wipes: NearWipeTracker | None = None,
-    ) -> dict[str, Any] | None:
-        report = _mapping(report)
-        evidence = _mapping(report.get("evidence"))
-        episodes = near_wipes.total_episodes if near_wipes is not None else 0
-        # ``near_wipes`` already observed this heartbeat's status; the value
-        # it had before this heartbeat is the baseline at first contamination.
-        episodes_before, self._episodes_before = self._episodes_before, episodes
-        status = _mapping(report.get("status"))
-        # The report's evidence keeps only scopes; the native status rows carry
-        # the contaminating creature's GUID and entry.
-        rows = [
-            _mapping(row)
-            for row in _mapping(status.get("validation_route")).get("contamination_evidence") or []
-            if isinstance(row, Mapping)
-        ] or [_mapping(row) for row in evidence.get("contamination_evidence") or [] if isinstance(row, Mapping)]
-        if not rows:
-            return None
-        if self.episodes_at_first is None:
-            self.episodes_at_first = episodes_before
-            self.first_heartbeat_index = int(heartbeat_index)
-        if bool(evidence.get("manifest_completion_evidence")) and bool(evidence.get("real_boss_kill_evidence")):
-            return None
-        runtime = _mapping(status.get("raid_runtime"))
-        if runtime.get("native_hostile_activity_active") is not True:
-            return None
-        active_guid = str(runtime.get("native_hostile_activity_guid") or "")
-        active_entry = _int(runtime.get("native_hostile_activity_entry")) or 0
-        engaged = next((
-            row for row in rows
-            if (str(row.get("target_id") or "") and str(row.get("target_id")) == active_guid)
-            or (not row.get("target_id") and active_entry and (_int(row.get("target_entry")) or 0) == active_entry)
-        ), None)
-        episodes_since = episodes - int(self.episodes_at_first)
-        if engaged is None or episodes_since <= 0:
-            return None
-        return {
-            "kind": "future_encounter_contamination",
-            "completion_reason": CONTAMINATION_COMPLETION_REASON,
-            "failure_reason": CONTAMINATION_LABEL,
-            "rule": "contaminating_creature_reengaged_after_near_wipe",
-            "first_observed_heartbeat_index": self.first_heartbeat_index,
-            "near_wipe_episodes_since_contamination": episodes_since,
-            "engaged_target_entry": _int(engaged.get("target_entry")) or 0,
-            "engaged_target_id": str(engaged.get("target_id") or ""),
-            "contamination_evidence": [
-                {key: row.get(key) for key in ("route_node_id", "route_generation", "target_entry") if key in row}
-                for row in rows[:8]
-            ],
-        }
-
-
-@dataclass
 class HeartbeatSignals:
     """Per-watchdog-loop state threaded through every heartbeat report."""
 
     route_actions: RouteActionLedger = field(default_factory=RouteActionLedger)
     near_wipes: NearWipeTracker = field(default_factory=NearWipeTracker)
-    contamination: ContaminationWatchdog = field(default_factory=ContaminationWatchdog)
-
-    def terminal(self, report: Mapping[str, Any], heartbeat_index: int) -> dict[str, Any] | None:
-        """The stateful terminal of this heartbeat, if any (after the clear check)."""
-        return self.contamination.observe(report, heartbeat_index, self.near_wipes)
 
 
 def terminal_drain_command(heartbeat_commands: Sequence[str]) -> str:
@@ -392,7 +318,13 @@ class _DrainCapture:
                 receipt = self.bots.setdefault(guid, {
                     "bot_guid": guid, "bot_name": bot.get("bot_name"),
                     "newest_retained_sequence": 0, "last_captured_sequence": 0,
+                    "tail_rows": 0, "newest_captured": False,
                 })
+                if source == "tail":
+                    # The non-delta tail is this bot's newest N rows by
+                    # definition, whatever the delta cursor reached.
+                    receipt["newest_captured"] = True
+                    receipt["tail_rows"] = sum(1 for entry in bot.get("entries") or [] if isinstance(entry, Mapping))
                 newest = _int(bot.get("newest_retained_sequence"))
                 if newest is not None:
                     receipt["newest_retained_sequence"] = max(receipt["newest_retained_sequence"], newest)
@@ -450,8 +382,9 @@ def drain_terminal_trace(
     always sends the non-delta ``.botauto trace <cohort> <selector> <n>``,
     which returns each bot's newest ``n`` rows: the failing bot's last
     decisions.  Rows go to ``terminal_trace_drain.jsonl.gz`` (never the
-    bounded console buffer).  The receipt states per bot whether the newest
-    retained sequence was captured and how much delta backlog remains.
+    bounded console buffer).  The receipt states per bot whether the tail
+    reported it (its newest rows were captured), how many tail rows it had,
+    and how much delta backlog remains.
 
     The budget is checked between calls, and one call can take up to the
     cleanup step cap (``CLEANUP_STEP_MAX_SEC``, 180 s), so the worst case is
@@ -496,10 +429,9 @@ def drain_terminal_trace(
             capture.add(payloads, call=calls + 1, source="tail")
             tail_captured = True
     bots = [capture.bots[guid] for guid in sorted(capture.bots)]
-    for receipt in bots:
-        newest = int(receipt.get("newest_retained_sequence") or 0)
-        receipt["newest_captured"] = bool(newest) and int(receipt.get("last_captured_sequence") or 0) >= newest
-    newest_captured = bool(bots) and all(receipt["newest_captured"] for receipt in bots)
+    # ``newest_retained_sequence`` stays informational: only the tail proves
+    # that each bot's newest rows were captured.
+    newest_captured = tail_captured and bool(bots) and all(receipt["newest_captured"] for receipt in bots)
     backlog_drained = delta_stop == "pending_zero"
     return cleanup_step_receipt(
         command, returncode=0, timed_out=delta_stop in {"budget_exhausted", "max_calls"},

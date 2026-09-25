@@ -607,8 +607,9 @@ def analyze_combat_log(
             actor_rows = [row for row in rows if int(row.get("actor_guid") or 0) == actor_guid]
             done = [row for row in actor_rows if row.get("perspective") == "damage_done"]
             # Environmental self-damage is recorded on the friendly side of the
-            # split; damage-done rows (and so every encounter-window field)
-            # are untouched.
+            # split.  Only the friendly (originated) figures exclude it; damage
+            # done, every encounter-window field and every raw_event_* field
+            # (read by analyze_magmaw_trace) keep their previous meaning.
             friendly_rows = [
                 row for row in actor_rows
                 if friendly_split_available
@@ -622,9 +623,9 @@ def analyze_combat_log(
             total_damage = sum(_originated_amount(row) for row in done)
             friendly_damage = sum(_originated_amount(row) for row in friendly)
             raw_event_damage = sum(
-                _raw_event_amount(row) for row in [*done, *friendly]
+                _raw_event_amount(row) for row in [*done, *friendly_rows]
             )
-            raw_event_friendly_damage = sum(_raw_event_amount(row) for row in friendly)
+            raw_event_friendly_damage = sum(_raw_event_amount(row) for row in friendly_rows)
             total_taken = sum(_raw_event_amount(row) for row in taken)
             total_healing = sum(int(row.get("amount") or 0) for row in healing)
             active_seconds = len(originated_bucket_seconds[(generation, actor_guid, "damage_done", False)])
@@ -639,7 +640,7 @@ def analyze_combat_log(
             friendly_ability_summary = _ability_rows(
                 friendly,
                 friendly_damage,
-                raw_total_damage=raw_event_friendly_damage,
+                raw_total_damage=raw_event_friendly_damage - environmental_damage,
                 use_originated=True,
                 include_target=True,
             )
@@ -781,11 +782,7 @@ def analyze_combat_log(
         outgoing_rows = [
             row for row in rows
             if row.get("perspective") == "damage_done"
-            or (
-                friendly_split_available
-                and row.get("perspective") == "friendly_damage_done"
-                and not is_environmental_self_damage(row)
-            )
+            or (friendly_split_available and row.get("perspective") == "friendly_damage_done")
         ]
         encounters.append({
             "route_generation": generation,
