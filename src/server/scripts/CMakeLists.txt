@@ -207,6 +207,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_chainwielder_owner_checkpoint.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_botauto.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_botauto_play.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_botauto_lockout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_healerbot.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Commands/cs_trace_transport_test.cpp)
 

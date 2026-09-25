@@ -74,6 +74,11 @@ namespace BotWorldPopulationMgrPlay
 {
 struct Context;
 }
+
+namespace BotRaidLockout
+{
+struct CohortContext;
+}
 namespace BotEncounter
 {
 class MagmawCoordinator;
@@ -196,6 +201,7 @@ private:
     friend struct BotWorldPopulationMgrValidationRoute::ObjectiveContext;
     friend struct BotWorldPopulationMgrContent::Stonecore::HighPriestessAzil::Context;
     friend struct BotWorldPopulationMgrPlay::Context;
+    friend struct BotRaidLockout::CohortContext;
 
 #include "Bots/BotWorldPopulationMgrPlanningContracts.h"
 

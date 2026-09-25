@@ -31,6 +31,8 @@
 // Human play mode subcommands and raid-chat script (cs_botauto_play.cpp).
 std::vector<ChatCommand> BotAutoPlayCommandTable();
 void RegisterBotAutoPlayScripts();
+// Seeded raid lockout subcommands (cs_botauto_lockout.cpp).
+std::vector<ChatCommand> BotAutoLockoutCommandTable();
 
 class botauto_commandscript : public CommandScript
 {
@@ -71,6 +73,7 @@ public:
             { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
             { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
             { "play", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, nullptr, "", BotAutoPlayCommandTable() },
+            { "lockout", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, nullptr, "", BotAutoLockoutCommandTable() },
         };
 
         static std::vector<ChatCommand> commandTable =
