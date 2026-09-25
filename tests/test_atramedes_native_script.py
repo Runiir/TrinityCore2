@@ -161,3 +161,17 @@ def test_unchanged_native_schedule_is_preserved() -> None:
                          ("EVENT_SEARING_FLAME", "46s"), ("EVENT_SONIC_BREATH", "24s"),
                          ("EVENT_LIFTOFF", "1min + 31s")):
         assert f"events.ScheduleEvent({event}, {delay}, 0, PHASE_GROUND);" in engage
+
+
+def test_building_speed_cap_matches_the_spellmgr_correction() -> None:
+    # The strategy's flame model (BotAtramedesFacts.h BuildingSpeedMaxStacks)
+    # relies on this runtime correction; the client rows say 99.
+    corrections = text(ROOT / "src/server/game/Spells/SpellMgrCorrectionsPart04.cpp")
+    block = corrections[corrections.index("// Building Speed Effect"):]
+    block = block[:block.index("});") + 3]
+    for spell in ("78218", "92463", "92464", "92465"):
+        assert spell in block
+    assert "spellInfo->StackAmount = 10;" in block
+    facts = text(ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/"
+                 "Atramedes/BotAtramedesFacts.h")
+    assert re.search(r"BuildingSpeedMaxStacks = 10;", facts)

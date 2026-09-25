@@ -225,6 +225,14 @@
       "title": "classic.warcraftlogs.com human-verification interstitial",
       "accessed": "2026-09-25",
       "claim": "Every report URL returned 'One Quick Check - I am a human and not a bot' (WebFetch HTTP 403). The agent did not click it. No WCL value in this ledger was read on 2026-09-25."
+    },
+    "client_442_spell_aura_options_20260925": {
+      "title": "4.4.2.59185 SpellAuraOptions (Building Speed rows)",
+      "publisher": "wago.tools",
+      "url": "https://wago.tools/db2/SpellAuraOptions/csv?build=4.4.2.59185",
+      "accessed": "2026-09-25",
+      "full_csv_sha256": "c6f9dd9b7579ff4dbbeb781122ce09f5fd8b7a168191cd56a0c1ceb76d78c6d7",
+      "claim": "78218 CumulativeAura 99 (IDs 5642, 6878 diff 4, 6879 diff 5, 223593 diff 2) and 10 (6880 diff 6)."
     }
   },
   "mode_matrix": {
@@ -868,6 +876,14 @@
       "icy_original": "5",
       "local_spellmgr": "5",
       "resolution": "unresolved_wcl_count_per_3s_wave"
+    },
+    {
+      "key": "building_speed_stack_cap",
+      "client_4_3_4_dbc": "99_99_99_10",
+      "client_4_4_2": "99_99_99_10",
+      "server_spellmgr_correction": "10_all_modes",
+      "guides": "speeds_up_until_it_catches_the_target",
+      "resolution": "runtime_uses_correction_10;strategy_replay_passes_at_10_and_at_99"
     }
   ],
   "unresolved": [
@@ -909,7 +925,7 @@
     {
       "key": "breath_speed_scaling_with_sound",
       "status": "unresolved",
-      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed. Under native speeds (flame 5 yd/s + 1 yd/s per second, kiter 7 yd/s) a kiter is caught within about 6 s, so the strategy expects 2-3 air rescues per air phase where the historical guide reports one: count Resonating Clash 78168 per air phase in a WCL 10N kill."
+      "evidence_gap": "Guides: breath speed rises with the target's Sound; native only stacks time-based Building Speed (server cap 10 by SpellMgr correction, client 99). Under native speeds (flame 5 yd/s + 1 yd/s per stack, kiter 7 yd/s) a target summoned within 3 yd never gets out of the 5 yd breath and a reset flame catches a kiter within 6-13 s; the strategy replay spends 2-4 shields per 31 s air phase where the historical guide reports one. Count Resonating Clash 78168 per air phase in a WCL 10N kill."
     },
     {
       "key": "heroic_fiend_and_shield_destruction_cadence",
@@ -1021,9 +1037,9 @@
         78272,
         78555
       ],
-      "value": "One random target summons the Reverberating Flame (41962) near itself; the flame tracks it (78092) and Atramedes channels 78221 on it: every 500 ms 78353 within 5 yd = 15,600-16,400 Fire and +3 Sound (heroic 29,250 and +10). 78354 every 250 ms drops a 42001 patch when none is within 2 yd. 78217 adds 78218 (+20% speed) every second, max 10 stacks. 78555 (spawned patches) 14,625-15,375 Fire and +10 Sound within 8 yd",
+      "value": "One random target summons the Reverberating Flame (41962) near itself; the flame tracks it (78092) and Atramedes channels 78221 on it: every 500 ms 78353 within 5 yd = 15,600-16,400 Fire and +3 Sound (heroic 29,250 and +10). 78354 every 250 ms drops a 42001 patch when none is within 2 yd. 78217 adds 78218 (+20% speed) every second; stack cap is a conflict (client 99 in 10N/25N/10H and 10 in 25H; server SpellMgr correction 10). 78555 (spawned patches) 14,625-15,375 Fire and +10 Sound within 8 yd",
       "modes": "all",
-      "status": "resolved_client_and_native"
+      "status": "resolved_client_and_native_stack_cap_conflict"
     },
     {
       "key": "sonar_bomb_air",
@@ -1130,6 +1146,12 @@
         "observation": "The first fix derived the intro flight from IsInPhase(PHASE_INTRO) && REACT_PASSIVE; phase 0 matches every phase and REACT_PASSIVE also holds in the air phase and for 800 ms after each landing",
         "fix": "explicit _introFlight flag set by ACTION_START_INTRO and cleared at POINT_LAND_INTRO",
         "status": "fixed"
+      },
+      {
+        "key": "building_speed_cap_source",
+        "observation": "Review assumed the client's 99-stack cap; SpellMgrCorrectionsPart04.cpp sets StackAmount 10 for 78218/92463/92464/92465",
+        "resolution": "runtime cap 10 kept, conflict recorded, test pins the correction",
+        "status": "recorded"
       }
     ]
   },
@@ -1278,7 +1300,7 @@
         "10N"
       ],
       "status": "specified",
-      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor; Sonic Breath kiter circles away from its Tracking Flames marker (the trailing marker keeps one direction; raid side only breaks the summon-snapshot tie); air kiter runs the shield ring away from the flame; shield budget reserves the expected Searing Flames (this ground phase's plus the next while boss > 50% on the ground / 30% in the air); air rescue on a 1 s time-to-contact estimate, strike at the in-reach shield farthest from the flame (kiter: shields ahead only); spread 10 yd ring in the air; exits for beam/disks/bombs/fire/flame.",
+      "known": "Tank 1 (anchor 162,-224.5); gong owner at the shield nearest the anchor on the ground and owner/backup at north/south relay shields in the air; Sonic Breath kiter circles away from its Tracking Flames marker while the breath is active; air kiter runs ring waypoints inside spellclick reach of every shield; shield budget: Searing Flame always, 90-Sound emergency down to this phase's Searing Flame, air rescue and 80-Sound keep the next phase's too; air rescue on time to contact (inside-breath escape check) or at a shield ahead when the next shield is out of time; strike at the in-reach shield farthest from the flame (tank eligible as kiter); the striker (78168) runs on during the redirect. Replay: every target struck within 3 s of contact, 2-4 shields per 31 s air phase.",
       "next": "Live shard run: 0 boss-window deaths, Searing Flame gonged within 2 s, max Sound < 100, shields per air phase recorded.",
       "source_refs": [
         "client_442_spell_rows_20260925",
@@ -1295,10 +1317,11 @@
     "Every Searing Flame channel ends by a Resonating Clash within 2 s of its start (Vertigo on Atramedes).",
     "No player reaches 100 Sound (no Noisy! aura, no Devastation event).",
     "Tracking Flames target never shares the beam with another player for more than one tick.",
-    "Shields used per kill <= 4 at 10N and never below the Searing Flame reserve before a Searing Flame; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue) and phase; withheld gongs record their *_at_reserve reason.",
+    "Shield use follows the reserve rule: no Searing Flame without an available shield and no 90-Sound emergency withheld while more shields remain than this phase's Searing Flame needs; each use records clicker, reason (searing_flame, sound_emergency, sound_high, air_breath_rescue) and phase; withheld gongs record their *_at_reserve reason. Expected spend under native flame speed: 1 per ground phase plus 2-4 per air phase.",
     "Air phase: melee and tank do not path under the flying boss; Sonar Bomb hits per player <= 1 per air phase.",
     "0 boss-window deaths; encounter_fidelity reports DamageModifier status for 41442.",
-    "Sonic Breath kiter: no bearing reversal around the boss during a breath; no 78100 tick on the kiter after the first channel second."
+    "Sonic Breath kiter: no bearing reversal around the boss during a breath; no 78100 tick on the kiter after the first channel second.",
+    "Air rescue: every catch struck within 3 s of the first 1 s time-to-contact estimate; no kiter in the Roaring Flame Breath for more than 2 s at a time."
   ],
   "wcl_extraction_plan": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_wcl_dps_reference_v1.json",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md"

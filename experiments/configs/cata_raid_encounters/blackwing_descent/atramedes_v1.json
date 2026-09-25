@@ -125,14 +125,16 @@
     ],
     "gong_owner": [
       "best_ranged_by_capability_hunter_then_mage",
-      "stand_at_shield_nearest_anchor",
+      "ground_stand_at_shield_nearest_anchor",
+      "air_stand_at_north_relay_shield",
       "strike_on_searing_flame_channel_start",
-      "strike_on_sound_ge_90_down_to_searing_reserve",
-      "strike_on_sound_ge_80_unless_searing_due_within_15s_keeping_one_spare_above_reserve"
+      "strike_on_sound_ge_90_down_to_current_phase_searing_reserve",
+      "strike_on_sound_ge_80_unless_searing_due_within_15s_keeping_one_spare_above_full_reserve"
     ],
     "gong_backup": [
       "second_ranged_by_capability",
-      "acts_when_owner_dead_or_kiting"
+      "air_stand_at_south_relay_shield",
+      "strikes_when_owner_dead_or_kiting"
     ],
     "sonic_breath_target": [
       "circle_boss_at_28_42yd_away_from_own_tracking_flames_marker",
@@ -140,9 +142,11 @@
       "stop_when_breath_ends"
     ],
     "roaring_flame_breath_target": [
-      "run_shield_ring_away_from_flame",
-      "rescue_when_flame_time_to_contact_le_1s_above_reserve",
-      "strike_only_shields_ahead_or_let_a_relay_at_a_farther_shield_strike"
+      "run_ring_waypoints_inside_reach_of_every_shield_away_from_flame",
+      "rescue_on_time_to_contact_le_1s_or_at_a_shield_when_next_shield_is_out_of_time",
+      "strike_shields_ahead_any_side_once_flame_is_on_top",
+      "run_on_after_striking_until_retracked",
+      "tank_eligible"
     ],
     "raid": [
       "leave_sonic_breath_beam_backward_or_run_ahead_of_sweep",
@@ -176,9 +180,11 @@
     "no_player_reaches_100_sound",
     "searing_flame_gonged_within_2s",
     "melee_do_not_chase_flying_boss",
-    "max_4_shields_per_10n_kill",
     "searing_flame_shield_reserve_kept",
-    "sonic_breath_kite_never_reverses"
+    "sonic_breath_kite_never_reverses",
+    "no_searing_flame_without_shield",
+    "no_sound_emergency_withheld_above_current_reserve",
+    "air_catch_struck_within_3s_of_contact"
   ],
   "heroic_gates": [
     "nefarius_extra_ground_shield_destruction",

@@ -2,7 +2,7 @@
 #define TRINITY_BOT_ATRAMEDES_MOVEMENT_POLICY_H
 
 #include "Bots/BotActionArbiter.h"
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesGongPolicy.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAtramedesAirGong.h"
 #include <optional>
 #include <string_view>
 
@@ -237,45 +237,35 @@ inline std::optional<MoveProposal> FlameExit(Facts const& facts,
         FlameBreathRadius + 4.0f, "reverberating_flame_exit", 515.0f);
 }
 
-// Waypoints of the air kite: every shield spawn pulled toward the arena
-// centre, so the kiter passes each shield inside spellclick reach and lays
-// its fire trail along the outer edge.
-inline Vector3 RingWaypoint(ShieldSpawn const& spawn)
-{
-    Vector3 const shield{ spawn.X, spawn.Y, spawn.Z };
-    return Geometry::PointAt(shield, Geometry::Bearing(shield, ArenaCenter),
-        ShieldStandInset, ArenaCenter.Z);
-}
-
+// Air kite: the next ring waypoint ahead, away from the chasing flame. The
+// waypoints lie inside spellclick reach of every shield, so a rescue always
+// finds a shield ahead within one waypoint.
 inline std::optional<MoveProposal> AirKiteMove(Facts const& facts,
     ActorSnapshot const& self)
 {
     if (self.Guid != facts.AirKiter)
         return std::nullopt;
-    float const selfBearing = Geometry::Bearing(ArenaCenter, self.Position);
-    int const direction = AirKiteDirection(facts, self);
-    // Next ring waypoint at least KiteStep of arc ahead in `direction`.
-    std::optional<Vector3> best;
-    float bestAhead = 0.0f;
-    for (ShieldSpawn const& spawn : ShieldSpawns)
-    {
-        Vector3 const waypoint = RingWaypoint(spawn);
-        float const radius = std::max(1.0f, Geometry::Distance2d(ArenaCenter, waypoint));
-        float ahead = Geometry::AngleDelta(Geometry::Bearing(ArenaCenter, waypoint),
-            selfBearing) * float(direction);
-        if (ahead < 0.0f)
-            ahead += Geometry::TwoPi;
-        if (ahead * radius < KiteStep)
-            continue;
-        if (!best || ahead < bestAhead)
-        {
-            best = waypoint;
-            bestAhead = ahead;
-        }
-    }
-    if (!best)
+    std::optional<Vector3> const next = NextRingWaypoint(self.Position,
+        AirKiteDirection(facts, self));
+    if (!next)
         return std::nullopt;
-    return Survival(*best, "roaring_flame_breath_kite", 540.0f);
+    return Survival(*next, "roaring_flame_breath_kite", 540.0f);
+}
+
+// The striker of an air gong runs on before the flame comes back for it: the
+// flame waits 2 s, flies to the struck shield beside the striker and then
+// tracks it, so every yard gained now delays the next catch.
+inline std::optional<MoveProposal> AirRedirectRun(Blackboard const& board,
+    Facts const& facts, ActorSnapshot const& self)
+{
+    ActorSnapshot const* runner = AirRedirectRunner(board, facts);
+    if (!runner || runner->Guid != self.Guid)
+        return std::nullopt;
+    std::optional<Vector3> const next = NextRingWaypoint(self.Position,
+        RingDirectionAwayFrom(self.Position, facts.ReverberatingFlames.front()->Position));
+    if (!next)
+        return std::nullopt;
+    return Survival(*next, "air_redirect_run", 535.0f);
 }
 }
 

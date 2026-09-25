@@ -88,7 +88,16 @@ public:
                     gong.Shield->Guid, BotActionArbitration::Priority::Mechanic,
                     650.0f, BotNativeAction::SpellClick{ gong.Shield->Guid });
             else
-                move = Survival(ShieldStandPoint(*gong.Shield), "gong_approach", 530.0f);
+            {
+                // Ground: the stand point toward the tank anchor. Air: the
+                // nearest point inside reach on the runner's side.
+                Vector3 const approach = facts.CurrentPhase == Phase::Air
+                    ? Geometry::PointAt(gong.Shield->Position,
+                        Geometry::Bearing(gong.Shield->Position, bot->Position),
+                        ShieldStandInset, ArenaCenter.Z)
+                    : ShieldStandPoint(*gong.Shield);
+                move = Survival(approach, "gong_approach", 530.0f);
+            }
         }
 
         if (!move)
@@ -111,6 +120,8 @@ public:
             return kite;
         if (std::optional<MoveProposal> kite = AirKiteMove(facts, self))
             return kite;
+        if (std::optional<MoveProposal> run = AirRedirectRun(board, facts, self))
+            return run;
         if (std::optional<MoveProposal> exit = SonicBreathBeamExit(board, facts, duties, self))
             return exit;
         if (std::optional<MoveProposal> exit = FlameExit(facts, self))

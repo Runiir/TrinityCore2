@@ -65,8 +65,12 @@ Fire (heroic 29,250–30,750).
     then tracks the striker.
   - Heroic: Nefarius destroys one more shield after each ground gong.
 - **Air breath speed.** The Reverberating Flame gains +20% speed every second
-  (78217 → 78218, at most 10 stacks). Both guides say a gong restarts the
-  breath at its initial speed; the native script now does this.
+  (78217 → 78218). Both guides say a gong restarts the breath at its initial
+  speed; the native script now does this.
+  - The stack cap is a conflict. The client rows (4.3.4 DBC and 4.4.2.59185
+    SpellAuraOptions) allow 99 stacks in 10N, 25N and 10H, and 10 in 25H.
+  - The server's `SpellMgrCorrectionsPart04.cpp` sets 10 for all four
+    variants, so the running server caps at 10.
 - **Phases (native).**
   - Ground: Modulation 13 s, then every 22–26 s. Sonar Pulse 14.5 s, then every
     11 s. Sonic Breath 24 s, then every 42–43 s. Searing Flame 46 s (once).
@@ -122,22 +126,40 @@ from roster slots.
     unknown counts as pending), plus the next ground phase's while the boss is
     above 50% health (on the ground) or 30% (in the air).
     - Searing Flame may always use a shield.
-    - A 90-Sound emergency or an air rescue spends down to the reserve.
+    - A 90-Sound emergency spends down to this phase's Searing Flame, since a
+      Devastation death now outranks a Searing Flame 51–82 s away.
+    - An air rescue also keeps the next phase's shield.
     - An 80-Sound gong keeps one more spare.
     - Why 50% and 30%: the next Searing Flame is at least 82 s (ground) or 51 s
       (air) away. At a 150k raid-DPS floor that removes 47% or 29% of the native
       10N health, so a boss below the threshold dies first.
   - **Air rescue.** The Reverberating Flame runs 5 yd/s and gains 1 yd/s every
-    second (Building Speed, up to 10 stacks); an unbuffed kiter runs 7 yd/s.
-    - A rescue fires when the flame's 5 yd breath would reach the kiter within
-      1 s. A flame summoned beside its target is slower than the kiter for its
-      first seconds, so the air phase does not open with a gong.
+    second (Building Speed, server cap 10); an unbuffed kiter runs 7 yd/s.
+    - Time to contact solves the separation d(t) = d0 + c·t − t²/2.
+      - A target summoned within 3 yd never gets out of the 5 yd breath
+        (peak 3 + 2 = 5 yd), so it is in contact at once.
+      - One summoned farther out gets out and is caught again later.
+    - A rescue fires when contact is within 1 s. It also fires at a shield
+      ahead when the flame would catch the kiter before the next shield: the
+      west side has none for 105 yd.
     - The strike goes to whoever stands beside the shield farthest from the
-      flame. A relay bot beats the kiter, because the flame's detour is longer.
-      The kiter itself only strikes shields ahead of it, never one behind it
-      toward the flame.
-    - Right after a gong the flame is interrupted, its Tracking channel ends and
-      nobody is the kiter, so a second shield is never spent on the same catch.
+      flame. The tank counts too when it is the kiter, since Atramedes has no
+      victim in the air.
+      - The kiter itself only strikes shields ahead of it.
+      - Once the flame is on top of the kiter, any shield will do: a faster
+        flame's predictive follow overshoots, so "behind" means nothing.
+    - With nobody in reach, the kiter runs for the nearest shield ahead
+      (`gong_approach`).
+    - A 90-Sound emergency still strikes when contact is true but the rescue
+      budget is spent.
+    - Relays: in the air the gong owner and backup wait at relay shields on
+      opposite rows (north, south). A strike far from the flame is therefore
+      always within reach.
+    - The striker keeps the air Resonating Clash aura (78168). Until the flame
+      re-tracks it (2 s wait plus the flight to the shield) it already runs on
+      along the ring (`air_redirect_run`).
+    - During the redirect the flame is interrupted and nobody is the kiter, so
+      a second shield is never spent on the same catch.
 - **Sonic Breath.**
   - The tracked player circles the boss 28–42 yd out while the breath is cast
     or channelled. It runs away from the Tracking Flames marker.
@@ -159,20 +181,42 @@ from roster slots.
   - Air: one slot per player on a 10 yd-spaced ring around (145, -225), at
     17 yd or 25 yd. The outer slot is the alternate when a bomb marker is placed.
 - **Air.**
-  - The tracked player runs the ring of shield positions, away from the flame
-    (the same trailing-chaser rule, around the arena centre).
+  - The tracked player runs the ring, away from the flame (the same
+    trailing-chaser rule, around the arena centre).
+    - Each ring waypoint is 4 yd inside a shield and 3 yd onward, so it lies
+      inside spellclick reach and past the shield.
+    - Every waypoint is reached before the next is taken, so the kiter passes
+      every shield in reach. Before this fix, a 12 yd skip meant it never came
+      within reach.
   - Melee and the tank cannot reach the flying boss. They hold their slot and
     ask for offense suppression.
   - Ranged keep casting within about 48 yd horizontally of him.
 
-Acceptance observations are in the ledger, `acceptance_observations`: native
-clear after spirits and bell, every Searing Flame gonged within 2 s, nobody
-reaches 100 Sound, at most 4 shields, and 0 boss-window deaths.
-Shields used per air phase is also an open fidelity question. Under native
-speeds a flame at 5 yd/s gaining 1 yd/s per second catches a 7 yd/s kiter
-within about 6 s, so two or three rescues per air phase are expected. The
-historical guide reports one per air phase. A WCL count of Resonating Clash
-(78168) per air phase would tell whether the native flame speed is too high.
+Acceptance observations are in the ledger, `acceptance_observations`:
+- a native clear after the spirits and bell;
+- every Searing Flame gonged within 2 s;
+- no Searing Flame without a shield and no emergency withheld;
+- nobody reaches 100 Sound;
+- 0 boss-window deaths.
+
+**Air-phase replay.** `tests/test_atramedes_strategy.py` replays a 31 s air
+phase for every target, the tank included. Model:
+- every bot follows its own plan at 7 yd/s, in 0.25 s steps;
+- strikes run their native effects;
+- the flame relaunches a predictive follow every 400 ms, and its breath ticks
+  every 0.5 s.
+
+Results, at both the server cap of 10 stacks and an uncapped 99:
+- every catch is struck within 3 s of contact;
+- the kiter never stays in the breath for more than 2 s at a time;
+- 2–4 shields are spent per air phase.
+
+Solo runs, with no living relay, bound the kiter's own run to a shield to
+4.5 s.
+
+**Open question: shields per air phase.** The historical guide reports one per
+air phase. A WCL count of Resonating Clash (78168) per air phase would tell
+whether the native flame speed is too high.
 
 ## Unresolved (fidelity_blocked)
 

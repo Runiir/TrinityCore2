@@ -44,6 +44,10 @@ inline constexpr uint32 TakeOffSpell = 86915;
 // interrupting the marker ends it, so it names the current kiter only.
 inline constexpr uint32 TrackingAura = 78092;
 inline constexpr uint32 NoisyAura = 78897;
+// Air Resonating Clash: the striker keeps this 15 s dummy aura (effect 1 on
+// the caster). The flame stops, waits 2 s, flies to the struck shield and
+// then tracks the striker, so its holder is the next air kiter.
+inline constexpr uint32 AirClashAura = 78168;
 // Spells with a SpellDifficulty row (4.3.4 DBC): the facts match every
 // variant (10N, 25N, 10H, 25H) so a mode never reads as "absent". The
 // strategy's numeric tuning (thresholds, speeds) is 10N; heroic-only
@@ -162,11 +166,18 @@ inline AuraSnapshot const* FindAnyAura(ActorSnapshot const& actor,
     return itr == actor.Auras.end() ? nullptr : &*itr;
 }
 
-// Building Speed stacks on a Reverberating Flame (+20% speed each, max 10).
+// Building Speed stack cap on the server: SpellMgrCorrectionsPart04.cpp sets
+// StackAmount 10 for 78218/92463/92464/92465. The client rows (4.3.4 DBC and
+// 4.4.2.59185 SpellAuraOptions) say 99 for 10N/25N/10H and 10 for 25H; the
+// correction wins at runtime (the ledger records the conflict).
+inline constexpr uint8 BuildingSpeedMaxStacks = 10;
+
+// Building Speed stacks on a Reverberating Flame (+20% speed each), as
+// observed: never clamped, so a higher runtime cap still reads true.
 inline uint8 BuildingSpeedStacks(ActorSnapshot const& flame)
 {
     AuraSnapshot const* aura = FindAnyAura(flame, BuildingSpeedAuras);
-    return aura ? std::min<uint8>(aura->Stacks ? aura->Stacks : 1, 10) : 0;
+    return aura ? (aura->Stacks ? aura->Stacks : 1) : 0;
 }
 
 inline bool IsShieldEntry(uint32 entry)
@@ -285,7 +296,9 @@ inline Facts BuildFacts(Blackboard const& board)
         // nobody is the air kiter until the flame re-tracks the striker.
         if (tracks(player, facts.ReverberatingFlames))
             facts.AirKiter = player.Guid;
-        else if (tracks(player, facts.TrackingFlames))
+        // The Tracking Flames channel outlives the breath (10 s summon vs a
+        // 2 s cast and 6 s channel): only an active breath makes a kiter.
+        else if (facts.SonicBreathActive && tracks(player, facts.TrackingFlames))
             facts.GroundKiter = player.Guid;
     }
     if (facts.MaxSound == 0)
