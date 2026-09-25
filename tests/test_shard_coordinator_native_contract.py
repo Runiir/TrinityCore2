@@ -168,26 +168,99 @@ def test_external_legacy_callers_scope_the_default_cohort() -> None:
     assert offenders == []
 
 
-def test_process_wide_mutations_refused_while_cohorts_run() -> None:
+def test_process_wide_mutations_refused_while_shards_run() -> None:
     handlers = _handlers(_read(COMMANDS / "cs_botauto.cpp"))
     rotations = handlers["HandleAutoRotationsCommand"]
-    guard = rotations.index('(tokens[0] == "reload" || tokens[0] == "rollback") && sBotWorldPopulationMgr->IsActive()')
+    guard = rotations.index('(tokens[0] == "reload" || tokens[0] == "rollback")')
+    assert "HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId)" in rotations[guard:guard + 200]
+    assert "IsActive()" not in rotations  # host-world's always-on default cohort may still reload
     assert guard < rotations.index("ReloadDbProfiles()") and guard < rotations.index("RollbackDbProfiles()")
-    assert "active_cohorts_present" in rotations
-    for name, action, default_only in (("HandleStartCommand", "botexp_start", False),
-                                       ("HandleReplayCommand", "botexp_replay", False),
-                                       ("HandleCompareBrainCommand", "botexp_comparebrain", False),
-                                       ("HandleStopCommand", "botexp_stop", True)):
+    assert "active_shard_cohorts_present" in rotations
+    for name, action in (("HandleStartCommand", "botexp_start"), ("HandleReplayCommand", "botexp_replay"),
+                         ("HandleCompareBrainCommand", "botexp_comparebrain"), ("HandleStopCommand", "botexp_stop")):
         body = handlers[name]
-        call = f'RefuseWhileCohortsActive(handler, "{action}"' + (", true)" if default_only else ")")
+        call = f'RefuseWhileShardsActive(handler, "{action}")'
         assert call in body, name
         assert body.index(call) < body.index("ScopeCohortById(")
-    refuse = _function(_read(COMMANDS / "cs_botauto.cpp"), "static bool RefuseWhileCohortsActive(")
+    refuse = _function(_read(COMMANDS / "cs_botauto.cpp"), "static bool RefuseWhileShardsActive(")
+    # Only non-default cohorts (boss shards) refuse; the default cohort alone never does.
     assert "HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId)" in refuse
-    assert "GetActiveCohortCount()" in refuse
+    assert "RefuseWhileCohortsActive" not in _read(COMMANDS / "cs_botauto.cpp")
     # Read-only heartbeat commands (.botexp summary/status) stay available.
     for name in ("HandleSummaryCommand", "HandleStatusCommand"):
-        assert "RefuseWhileCohortsActive" not in handlers[name]
+        assert "RefuseWhileShardsActive" not in handlers[name]
+
+
+def test_shard_isolation_is_read_once_per_config_load() -> None:
+    """Hot paths never query ConfigMgr: an absent key warns on every lookup."""
+    policy = _read(BOTS / "BotExperienceLearningPolicy.cpp")
+    lookups = [line for line in policy.splitlines() if "sConfigMgr->" in line]
+    reader = _function(policy, "bool ReadShardIsolationConfig()")
+    assert lookups and all(line.strip() in reader for line in lookups)
+    assert "GetKeysByString(ShardIsolationKey)" in reader  # absent key: no "Missing name" warning
+    for signature in ("bool BotExperienceLearningPolicy::ShardIsolationEnabled()",
+                      "bool BotExperienceLearningPolicy::LearningEnabled(",
+                      "bool BotExperienceLearningPolicy::GlobalMemoryFallbackAllowed(",
+                      "float LocalDanger("):
+        assert "sConfigMgr" not in _function(policy, signature), signature
+    for name in re.findall(r"BotLearnedScore BotExperienceLearningPolicy::(Score\w+)\(", policy):
+        assert "sConfigMgr" not in _function(policy, f"BotLearnedScore BotExperienceLearningPolicy::{name}("), name
+    assert "g_shardIsolation.Get(ReadShardIsolationConfig)" in _function(
+        policy, "bool BotExperienceLearningPolicy::ShardIsolationEnabled()")
+    semantic = _read(BOTS / "BotWorldPopulationMgrSemantic.cpp")
+    for signature in ("void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(",
+                      "void BotWorldPopulationMgr::UpdateSemanticStatsFromEvent("):
+        assert "sConfigMgr" not in _function(semantic, signature), signature
+    cohort = _read(BOTS / "BotWorldPopulationMgrCohort.cpp")
+    assert "sConfigMgr" not in cohort
+    commands = _read(COMMANDS / "cs_botauto.cpp")
+    hook = _function(commands, "void OnConfigLoad(bool /*reload*/) override")
+    assert "BotExperienceLearningPolicy::RefreshShardIsolation();" in hook
+    register = _function(commands, "void RegisterBotAutoCommands()")
+    assert "new botauto_config_worldscript();" in register
+
+
+FLAG_PROGRAM = r'''
+#include "Bots/BotExperienceLearningPolicyFlag.h"
+#include <cassert>
+#include <thread>
+#include <vector>
+
+int main()
+{
+    BotCachedConfigFlag flag;
+    int reads = 0;
+    bool configured = true;
+    auto read = [&]() { ++reads; return configured; };
+    for (int call = 0; call < 100000; ++call)
+        assert(flag.Get(read));
+    assert(reads == 1);  // once per load, not once per call
+    configured = false;
+    assert(flag.Get(read) && reads == 1);  // unchanged until the config reloads
+    flag.Refresh(read);
+    assert(reads == 2 && !flag.Get(read) && reads == 2);
+
+    BotCachedConfigFlag shared;
+    std::vector<std::thread> threads;
+    for (int index = 0; index < 4; ++index)
+        threads.emplace_back([&shared]() {
+            for (int call = 0; call < 1000; ++call)
+                assert(!shared.Get([]() { return false; }));
+        });
+    for (std::thread& thread : threads)
+        thread.join();
+    return 0;
+}
+'''
+
+
+def test_cached_config_flag_reads_once_per_load(tmp_path: Path) -> None:
+    source = tmp_path / "flag.cpp"
+    binary = tmp_path / "flag"
+    source.write_text(FLAG_PROGRAM, encoding="utf-8")
+    subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-pthread", "-I", str(ROOT / "src/server/game"),
+                    str(source), "-o", str(binary)], check=True, cwd=ROOT)
+    subprocess.run([str(binary)], check=True, cwd=ROOT)
 
 
 def test_inserted_ids_are_read_back_by_the_owning_bot() -> None:
@@ -196,19 +269,24 @@ def test_inserted_ids_are_read_back_by_the_owning_bot() -> None:
         text = _read(BOTS / name)
         assert 'Query("SELECT LAST_INSERT_ID()")' not in text, name
         assert f"SELECT MAX(id) FROM {table} WHERE bot_guid = %u" in text, name
+        assert "SELECT LAST_INSERT_ID()" not in text, name
         assert f"SELECT id FROM {table} WHERE bot_guid = %u AND id > " in text, name
         insert = text.index(f"INSERT INTO {table}")
         high_water = text.index("HighWaterId(", text.index("uint64 const highWaterId"))
         assert high_water < insert, name
     segments = _read(BOTS / "BotExperimentCoordinator.cpp")
     assert "parent_run_id <=> %s" in segments and "status = 'running'" in segments
+    # The high-water read uses the (bot_guid, status, id) index.
+    high_water = _function(segments, "uint64 ReadSegmentHighWaterId(")
+    assert "WHERE bot_guid = %u AND status = 'running'" in high_water
     clips = _read(BOTS / "BotTelemetryBuffer.cpp")
     assert "run_id = \" UI64FMTD \" AND status = 'open'" in clips
 
 
 def test_learning_and_semantic_writes_freeze_under_shard_isolation() -> None:
     policy = _read(BOTS / "BotExperienceLearningPolicy.cpp")
-    assert 'sConfigMgr->GetBoolDefault("BotWorld.ShardIsolation", false)' in policy
+    assert 'constexpr char const* ShardIsolationKey = "BotWorld.ShardIsolation";' in policy
+    assert "sConfigMgr->GetBoolDefault(ShardIsolationKey, false)" in policy
     scores = re.findall(r"BotLearnedScore BotExperienceLearningPolicy::(Score\w+)\(", policy)
     assert len(scores) == 7
     for name in scores:

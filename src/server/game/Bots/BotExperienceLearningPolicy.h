@@ -50,8 +50,11 @@ public:
     // worldserver and one character database. While on, learned scores are
     // disabled, the bot_guid = 0 global-memory fallback is never read, and
     // unkeyed semantic outcome statistics are not written, so no shard's
-    // decisions depend on another shard's run.
+    // decisions depend on another shard's run. The value is cached: read once,
+    // then again on every config load (cs_botauto's OnConfigLoad hook), so
+    // these per-score and per-event checks never query ConfigMgr.
     static bool ShardIsolationEnabled();
+    static void RefreshShardIsolation();
     static bool LearningEnabled(BotExperienceLearningConfig const& config);
     static bool GlobalMemoryFallbackAllowed(BotExperienceLearningConfig const& config);
 

@@ -4,6 +4,7 @@
 
 #include "ScriptMgr.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotExperienceLearningPolicy.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotTypes.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -229,20 +230,17 @@ private:
     }
 
     // Legacy botexp commands act on the default cohort and mutate process-wide
-    // state (runs, replays). While boss shards run, they are refused so no
-    // shard's cohort or evidence can be replaced by an unqualified command.
-    static bool RefuseWhileCohortsActive(ChatHandler* handler, char const* action,
-        bool allowDefaultOnly = false)
+    // state (runs, replays). While boss shards (any cohort other than the
+    // default) run, they are refused so no shard's cohort or evidence can be
+    // replaced by an unqualified command. The default cohort alone (the
+    // always-on `make host-world` autonomy) keeps today's behaviour.
+    static bool RefuseWhileShardsActive(ChatHandler* handler, char const* action)
     {
-        uint32 const active = sBotWorldPopulationMgr->GetActiveCohortCount();
-        bool const refused = allowDefaultOnly
-            ? sBotWorldPopulationMgr->HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId)
-            : active != 0;
-        if (!refused)
+        if (!sBotWorldPopulationMgr->HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId))
             return false;
         SendAutoResult(handler, std::string("{\"ok\":false,\"action\":\"") + action
-            + "\",\"active_cohort_count\":" + std::to_string(active)
-            + ",\"failure_reason\":\"active_cohorts_present\",\"hint\":\"use_cohort_qualified_botauto\"}");
+            + "\",\"active_cohort_count\":" + std::to_string(sBotWorldPopulationMgr->GetActiveCohortCount())
+            + ",\"failure_reason\":\"active_shard_cohorts_present\",\"hint\":\"use_cohort_qualified_botauto\"}");
         return true;
     }
 
@@ -266,7 +264,7 @@ private:
 
     static bool HandleStartCommand(ChatHandler* handler, char const* args)
     {
-        if (RefuseWhileCohortsActive(handler, "botexp_start"))
+        if (RefuseWhileShardsActive(handler, "botexp_start"))
             return false;
         std::string name = FirstArg(args);
         if (name.empty())
@@ -292,7 +290,7 @@ private:
     {
         // Stopping the default cohort is harmless alone; it never runs beside
         // boss shards, whose stop is `.botauto stop <cohort>`.
-        if (RefuseWhileCohortsActive(handler, "botexp_stop", true))
+        if (RefuseWhileShardsActive(handler, "botexp_stop"))
             return false;
         auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         sBotWorldPopulationMgr->Stop();
@@ -406,12 +404,14 @@ private:
         std::string result;
         if (tokens.empty() || tokens[0] == "list")
             result = BotClassSpecActionProfileStore::DbProfilesJson();
-        else if ((tokens[0] == "reload" || tokens[0] == "rollback") && sBotWorldPopulationMgr->IsActive())
+        else if ((tokens[0] == "reload" || tokens[0] == "rollback")
+            && sBotWorldPopulationMgr->HasActiveCohortOtherThan(BotWorldPopulationMgr::DefaultCohortId))
             // Rotations are one process-wide snapshot read live by every
-            // cohort; replacing it mid-run would change shards in flight.
+            // cohort; replacing it mid-run would change shards in flight. The
+            // default cohort alone (host-world tuning) may still reload.
             result = "{\"ok\":false,\"action\":\"botauto_rotations_" + tokens[0]
                 + "\",\"active_cohort_count\":" + std::to_string(sBotWorldPopulationMgr->GetActiveCohortCount())
-                + ",\"failure_reason\":\"active_cohorts_present\"}";
+                + ",\"failure_reason\":\"active_shard_cohorts_present\"}";
         else if (tokens[0] == "reload")
             result = BotClassSpecActionProfileStore::ReloadDbProfiles();
         else if (tokens[0] == "rollback")
@@ -717,7 +717,7 @@ private:
             }
         }
 
-        if (RefuseWhileCohortsActive(handler, "botexp_replay"))
+        if (RefuseWhileShardsActive(handler, "botexp_replay"))
             return false;
         auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
         std::string result = sBotWorldPopulationMgr->Replay(replayType, selector, brainVersion);
@@ -746,7 +746,7 @@ private:
             return false;
         }
 
-        if (RefuseWhileCohortsActive(handler, "botexp_comparebrain"))
+        if (RefuseWhileShardsActive(handler, "botexp_comparebrain"))
             return false;
         uint64 replayId = uint64(strtoull(tokens[1].c_str(), nullptr, 10));
         auto scope = sBotWorldPopulationMgr->ScopeCohortById(BotWorldPopulationMgr::DefaultCohortId);
@@ -765,8 +765,22 @@ private:
 };
 
 
+// Shard isolation is cached by the learning policy; refresh it whenever the
+// worldserver (re)loads its config, never on the per-event hot paths.
+class botauto_config_worldscript : public WorldScript
+{
+public:
+    botauto_config_worldscript() : WorldScript("botauto_config_worldscript") { }
+
+    void OnConfigLoad(bool /*reload*/) override
+    {
+        BotExperienceLearningPolicy::RefreshShardIsolation();
+    }
+};
+
 void RegisterBotAutoCommands()
 {
     new botauto_commandscript();
+    new botauto_config_worldscript();
     RegisterBotAutoPlayScripts();
 }

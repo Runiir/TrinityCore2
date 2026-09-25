@@ -9232,8 +9232,11 @@ class AttemptFinalization:
     """What one closed attempt produced, before its run directory is written.
 
     ``_main`` and the shard coordinator (tools.raid_program.shard_coordinator)
-    finalize through the same code, so a shard's run directory is byte-for-byte
-    the same kind of evidence a single-cohort run writes.
+    finalize through the same code, so a shard's run directory has the same
+    artifact set and report schema as a single-cohort run. The inputs differ:
+    a shard's console transcript holds only this cohort's replies (no server
+    log lines), so worldserver_output.log and the hashes over it are not
+    byte-identical to what a single-cohort run of the same scenario records.
     """
 
     output: str

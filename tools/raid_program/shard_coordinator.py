@@ -10,7 +10,11 @@ demultiplexed so a shard's run directory holds only its own cohort's payloads.
 Each shard runs the unchanged completion watchdog of
 tools/bot_ml/run_live_bot_validation.py (heartbeats, semantic liveness,
 repeated-decision and death-loop rules, emergency cap) and is finalized by the
-same code as a single-cohort run, so each run directory can be recorded with
+same code as a single-cohort run (report.json, combat artifacts, heartbeats).
+The evidence is not byte-identical to a single-cohort run: a shard's
+worldserver_output.log holds only its own cohort's replies, and server log
+lines that name the cohort or its instance are copied to
+worldserver_cohort_lines.log. Each run directory can be recorded with
 
     pixi run python -m tools.raid_program.scoreboard ingest --scenario S --label L --run-dir DIR
 
@@ -254,7 +258,9 @@ class ShardConsoleTransport(ConsoleTransport):
             raise ValueError("coordinator transport accepts botauto commands only")
         verb = tokens[1]
         if verb == "start":
-            actions = rb"(?:botauto_status|botauto_start)"
+            # `.botauto start <cohort> <profile>` first prints the profile
+            # selection; an unknown profile ends the command right there.
+            actions = rb"(?:botauto_status|botauto_start|botauto_profile)"
         elif verb == "combatlog":
             actions = rb"(?:botauto_combatlog|botauto_combatlog_complete|botauto_combatlog_delta)"
         elif verb == "calibrate":
@@ -332,6 +338,14 @@ class SerializedConsole:
                     stream.write(json.dumps(row, sort_keys=True) + "\n")
         return output or "", returncode, timed_out
 
+    def health(self) -> dict[str, Any]:
+        """Whether the console can still be trusted: no latched failure, server alive."""
+        failed = bool(getattr(self._transport, "failed", False))
+        process = getattr(self._transport, "process", None)
+        exit_code = process.poll() if process is not None else None
+        return {"transport_failed": failed, "server_exited": exit_code is not None,
+                "server_exit_code": exit_code, "healthy": not failed and exit_code is None}
+
 
 # ---------------------------------------------------------------- demultiplexing
 
@@ -367,18 +381,20 @@ class Demultiplexed:
         return any(str(row.get("action") or "").startswith("botauto_") for row in self.foreign)
 
 
-def demultiplex(output: str, cohort_id: str) -> Demultiplexed:
+def demultiplex(output: str, cohort_id: str, adopt_unscoped: frozenset[str] = frozenset()) -> Demultiplexed:
     """Keep the raw text of this cohort's payloads; count everything else.
 
     Every botauto reply carries its cohort_id (AppendGenericRuntimeIdentityJson,
     UnknownCohortJson, combat-log frames). Server log lines and other cohorts'
-    payloads stay in the shared console log only.
+    payloads stay in the shared console log only. `adopt_unscoped` names reply
+    actions printed without a cohort_id (a failed profile selection) that the
+    serialized console proves belong to this shard's own command.
     """
     kept: list[str] = []
     result = Demultiplexed(text="")
     for start, end, payload in payload_spans(output):
         owner = payload.get("cohort_id")
-        if owner == cohort_id:
+        if owner == cohort_id or (owner is None and payload.get("action") in adopt_unscoped):
             kept.append(output[start:end])
         elif owner is None:
             result.unscoped += 1
@@ -392,12 +408,18 @@ def demultiplex(output: str, cohort_id: str) -> Demultiplexed:
 class ShardTransport:
     """One shard's addressed view of the shared console (the watchdog's execute_command)."""
 
+    # Admission and cleanup are bounded transitions, never the emergency budget.
+    TRANSITION_VERBS = frozenset({"start", "stop"})
+    START_REPLIES = frozenset({"botauto_profile", "botauto_start"})
+
     def __init__(self, console: SerializedConsole, spec: ShardSpec, shard_dir: Path,
-                 interrupted: threading.Event | None = None):
+                 interrupted: threading.Event | None = None, transition_timeout_sec: int = 180):
         self.console = console
         self.spec = spec
         self.shard_dir = shard_dir
         self.interrupted = interrupted or threading.Event()
+        self.transition_timeout_sec = transition_timeout_sec
+        self.failed_starts = 0
         self.rejections_path = shard_dir / "demux_rejections.jsonl"
         self.foreign_payloads = 0
         self.cross_cohort_replies = 0
@@ -423,8 +445,12 @@ class ShardTransport:
             self.refused_commands += 1
             self._reject({"reason": "command_refused", "command": command, "detail": str(error)})
             return "", 1, False
+        verb = command.split()[1]
+        if verb in self.TRANSITION_VERBS:
+            timeout_sec = max(1, min(int(timeout_sec), self.transition_timeout_sec))
         output, returncode, timed_out = self.console(command, timeout_sec, owner=self.spec.cohort_id)
-        split = demultiplex(output, self.spec.cohort_id)
+        split = demultiplex(output, self.spec.cohort_id,
+                            self.START_REPLIES if verb == "start" else frozenset())
         if split.foreign:
             self.foreign_payloads += len(split.foreign)
             self._reject({"reason": "foreign_payloads", "command": command, "payloads": split.foreign})
@@ -433,7 +459,20 @@ class ShardTransport:
             # would attribute one shard's state to another: fail the command.
             self.cross_cohort_replies += 1
             return split.text, returncode or 1, timed_out
+        if verb == "start" and not returncode and not timed_out and not self.started(split.text):
+            # A refused profile or admission is a failed start: the watchdog
+            # stops and cleans up instead of polling an inactive cohort.
+            self.failed_starts += 1
+            self._reject({"reason": "start_failed", "command": command})
+            return split.text, 1, timed_out
         return split.text, returncode, timed_out
+
+    def started(self, text: str) -> bool:
+        rows = harness.parse_json_objects(text)
+        if any(row.get("action") in self.START_REPLIES and row.get("ok") is not True for row in rows):
+            return False
+        return any(row.get("action") == "botauto_status" and row.get("ok") is True
+                   and row.get("cohort_id") == self.spec.cohort_id for row in rows)
 
     def _reject(self, row: dict[str, Any]) -> None:
         row = {"cohort_id": self.spec.cohort_id, "at_unix": round(time.time(), 3), **row}
@@ -514,12 +553,22 @@ def verify_lockout(reply: Mapping[str, Any], spec: ShardSpec) -> dict[str, Any]:
     return {"instance_id": instance, "map_id": map_id, "bosses_done": sorted(map(str, done))}
 
 
-def seed_lockout(console: SerializedConsole, spec: ShardSpec, timeout: int) -> dict[str, Any]:
-    """Seed, then read back before any bot acts; both must match the request."""
+def seed_command(spec: ShardSpec) -> str:
     assert spec.lockout is not None
     lockout = spec.lockout
-    command = (f".botauto lockout seed {spec.cohort_id} {lockout.raid} "
-               f"{lockout.difficulty} {lockout.seed_argument}")
+    return (f".botauto lockout seed {spec.cohort_id} {lockout.raid} "
+            f"{lockout.difficulty} {lockout.seed_argument}")
+
+
+def pending_lockout(spec: ShardSpec) -> dict[str, Any]:
+    """Recorded before the seed is sent: from here on teardown must clear it."""
+    return {"schema": LOCKOUT_SCHEMA, "state": "pending", "command": seed_command(spec),
+            "diagnostic_only_assistance": True, "certifies_predecessors": False}
+
+
+def seed_lockout(console: SerializedConsole, spec: ShardSpec, timeout: int) -> dict[str, Any]:
+    """Seed, then read back before any bot acts; both must match the request."""
+    command = seed_command(spec)
     output, code, timed_out = console(command, timeout)
     if code or timed_out:
         raise ShardRunError(f"lockout seed transport failed for {spec.cohort_id}")
@@ -530,8 +579,8 @@ def seed_lockout(console: SerializedConsole, spec: ShardSpec, timeout: int) -> d
     readback = verify_lockout(_lockout_reply(output, spec), spec)
     if readback != seeded:
         raise ShardRunError(f"lockout readback of {spec.cohort_id} differs from the seed")
-    return {"schema": LOCKOUT_SCHEMA, "command": command, "seed": seeded, "readback": readback,
-            "diagnostic_only_assistance": True, "certifies_predecessors": False}
+    return {"schema": LOCKOUT_SCHEMA, "state": "verified", "command": command, "seed": seeded,
+            "readback": readback, "diagnostic_only_assistance": True, "certifies_predecessors": False}
 
 
 def clear_lockout(console: SerializedConsole, spec: ShardSpec, timeout: int) -> dict[str, Any]:
@@ -653,6 +702,7 @@ class ShardOutcome:
             "foreign_payloads": self.transport.foreign_payloads,
             "cross_cohort_replies": self.transport.cross_cohort_replies,
             "refused_commands": self.transport.refused_commands,
+            "failed_starts": self.transport.failed_starts,
         }
 
 
@@ -667,7 +717,7 @@ class ShardCoordinator:
                  scenario_dir: Path = REPO_ROOT / "dataset/validation_scenarios",
                  server_pid: int | None = None, run_id: str | None = None,
                  watchdog: Watchdog | None = None, finalizer: Finalizer | None = None,
-                 sleep: Callable[[float], None] = time.sleep):
+                 sleep: Callable[[float], None] = time.sleep, console_log: Path | None = None):
         validate_plan(plan)
         self.plan = plan
         self.console = console
@@ -682,6 +732,7 @@ class ShardCoordinator:
         self.outcomes: list[ShardOutcome] = []
         self.created: set[str] = set()
         self.interrupted = threading.Event()
+        self.console_log = console_log
 
     def shard_dir(self, spec: ShardSpec) -> Path:
         return self.run_root / "shards" / spec.cohort_id
@@ -691,7 +742,8 @@ class ShardCoordinator:
             shard_dir = self.shard_dir(spec)
             shard_dir.mkdir(parents=True, exist_ok=False)
             route = load_shard_route(spec, self.scenario_dir, shard_dir)
-            transport = ShardTransport(self.console, spec, shard_dir, self.interrupted)
+            transport = ShardTransport(self.console, spec, shard_dir, self.interrupted,
+                                       self.plan.watchdog.transition_timeout_sec)
             self.outcomes.append(ShardOutcome(spec=spec, shard_dir=shard_dir, route=route, transport=transport))
 
     def admit(self) -> None:
@@ -704,8 +756,16 @@ class ShardCoordinator:
             create_cohort(self.console, outcome.spec, timeout)
             self.created.add(outcome.spec.cohort_id)
         for outcome in self.outcomes:
-            if outcome.spec.seeded:
+            if not outcome.spec.seeded:
+                continue
+            outcome.lockout = pending_lockout(outcome.spec)
+            harness.write_json(outcome.shard_dir / "lockout.json", outcome.lockout)
+            try:
                 outcome.lockout = seed_lockout(self.console, outcome.spec, timeout)
+            except ShardRunError as error:
+                outcome.lockout["error"] = str(error)
+                raise
+            finally:
                 harness.write_json(outcome.shard_dir / "lockout.json", outcome.lockout)
 
     def run_one(self, outcome: ShardOutcome) -> None:
@@ -730,9 +790,9 @@ class ShardCoordinator:
         except Exception as error:  # one shard's failure never stops the others' watchdogs
             outcome.error = f"{type(error).__name__}: {error}"
             outcome.command = command
-            # Never leave a failed shard admitted.
-            outcome.output += self.console(f".botauto stop {spec.cohort_id}", policy.transition_timeout_sec,
-                                           owner=spec.cohort_id)[0]
+            # Never leave a failed shard admitted (teardown verifies it).
+            outcome.output += outcome.transport(f".botauto stop {spec.cohort_id}",
+                                                policy.transition_timeout_sec)[0]
 
     def run_watchdogs(self) -> None:
         threads = [threading.Thread(target=self.run_one, args=(outcome,),
@@ -750,17 +810,35 @@ class ShardCoordinator:
             raise
 
     def teardown(self) -> dict[str, Any]:
+        """Stop every admitted shard, clear every lockout that reached its seed, verify."""
         timeout = self.plan.watchdog.transition_timeout_sec
+        stopped: list[str] = []
+        try:
+            registry = read_registry(self.console, timeout)
+            still_active = {row.get("cohort_id") for row in registry.get("cohorts") or []
+                            if isinstance(row, Mapping) and row.get("active")}
+        except ShardRunError:
+            still_active = set(self.created)  # unknown state: stop everything this run created
         for outcome in self.outcomes:
-            if outcome.lockout is not None:
+            if outcome.spec.cohort_id in self.created and outcome.spec.cohort_id in still_active:
+                self.console(f".botauto stop {outcome.spec.cohort_id}", timeout, owner="coordinator")
+                stopped.append(outcome.spec.cohort_id)
+        for outcome in self.outcomes:
+            if outcome.lockout is not None and outcome.lockout_cleared is None:
                 outcome.lockout_cleared = clear_lockout(self.console, outcome.spec, timeout)
+        receipt: dict[str, Any] = {"stopped_by_teardown": stopped,
+                                   "lockouts_cleared": {outcome.spec.cohort_id: outcome.lockout_cleared
+                                                        for outcome in self.outcomes
+                                                        if outcome.lockout is not None}}
         try:
             registry = read_registry(self.console, timeout)
         except ShardRunError as error:
-            return {"verified": False, "error": str(error)}
+            return {**receipt, "verified": False, "error": str(error)}
         active = sorted(row.get("cohort_id") for row in registry.get("cohorts") or []
                         if isinstance(row, Mapping) and row.get("active"))
-        return {"verified": not active and registry.get("active_cohort_count") == 0, "active_cohorts": active}
+        cleared = all((row or {}).get("ok") is True for row in receipt["lockouts_cleared"].values())
+        return {**receipt, "verified": not active and registry.get("active_cohort_count") == 0 and cleared,
+                "active_cohorts": active}
 
     def attach_identities(self) -> None:
         for outcome in self.outcomes:
@@ -785,7 +863,8 @@ class ShardCoordinator:
                 instances[outcome.spec.cohort_id] = int(identity["instance_id"])
         seeded_match = all(
             not outcome.lockout
-            or instances.get(outcome.spec.cohort_id) in {None, outcome.lockout["seed"]["instance_id"]}
+            or instances.get(outcome.spec.cohort_id)
+            in {None, ((outcome.lockout.get("seed") or {}).get("instance_id"))}
             for outcome in self.outcomes)
         return {
             "instance_ids": instances,
@@ -807,10 +886,21 @@ class ShardCoordinator:
                 harness.write_json(outcome.shard_dir / "report.json", outcome.watchdog_report)
                 outcome.report = outcome.watchdog_report
 
+    def copy_cohort_log_lines(self) -> None:
+        if self.console_log is None or not self.console_log.is_file():
+            return
+        for outcome in self.outcomes:
+            identity = (outcome.report or outcome.watchdog_report or {}).get("shard_identity") or {}
+            instances = {int(value) for value in (identity.get("instance_id"), identity.get("seeded_instance_id"))
+                         if value}
+            lines = cohort_log_lines(self.console_log, outcome.spec.cohort_id, instances)
+            (outcome.shard_dir / "worldserver_cohort_lines.log").write_text("".join(lines), encoding="utf-8")
+
     def run(self) -> dict[str, Any]:
         summary: dict[str, Any] = {"schema": RUN_SCHEMA, "run_id": self.run_id,
                                    "started_utc": datetime.now(timezone.utc).isoformat(),
                                    "terminal_reason": "infrastructure_loss"}
+        completed = False
         try:
             self.prepare_outcomes()
             self.admit()
@@ -819,27 +909,51 @@ class ShardCoordinator:
             summary["teardown"] = self.teardown()
             self.attach_identities()
             self.finalize()
+            self.copy_cohort_log_lines()
             summary["isolation"] = self.isolation()
-            summary["terminal_reason"] = "completed"
+            completed = True
         except KeyboardInterrupt:
             summary["terminal_reason"] = "interruption"
+            self.interrupted.set()
             raise
         except (ShardRunError, ShardPlanError) as error:
             summary["error"] = str(error)
-            # Stop anything this run admitted before giving the server back.
-            for outcome in self.outcomes:
-                if outcome.spec.cohort_id in self.created:
-                    self.console(f".botauto stop {outcome.spec.cohort_id}",
-                                 self.plan.watchdog.transition_timeout_sec, owner="coordinator")
-                if outcome.lockout is not None and outcome.lockout_cleared is None:
-                    outcome.lockout_cleared = clear_lockout(
-                        self.console, outcome.spec, self.plan.watchdog.transition_timeout_sec)
         finally:
+            if "teardown" not in summary and (self.created or any(outcome.lockout for outcome in self.outcomes)):
+                # Every failure path stops what was admitted and clears every
+                # lockout that reached its seed command, pending or verified.
+                summary["teardown"] = self.teardown()
+            summary["console"] = self.console.health()
+            infrastructure = [reason for reason, failed in (
+                ("console_transport_failed", summary["console"]["transport_failed"]),
+                ("worldserver_exited", summary["console"]["server_exited"]),
+                ("teardown_unverified", "teardown" in summary and not summary["teardown"].get("verified")),
+            ) if failed]
+            summary["infrastructure_failures"] = infrastructure
+            if completed:
+                summary["terminal_reason"] = "infrastructure_loss" if infrastructure else "completed"
             summary["shards"] = [outcome.summary() for outcome in self.outcomes]
             summary["ingest"] = [ingest_command(outcome) for outcome in self.outcomes]
             summary["closed_utc"] = datetime.now(timezone.utc).isoformat()
             harness.write_json(self.run_root / "shard_run.json", summary)
         return summary
+
+
+def cohort_log_lines(log_path: Path, cohort_id: str, instance_ids: set[int],
+                     limit: int = 200_000) -> list[str]:
+    """Server log lines naming the cohort (as a token) or one of its instances."""
+    patterns = [re.compile(rf"(?<![A-Za-z0-9_.-]){re.escape(cohort_id)}(?![A-Za-z0-9_.-])")]
+    patterns += [re.compile(rf"\binstance(?:_id)?[=:]\s*{instance}\b") for instance in sorted(instance_ids)]
+    lines: list[str] = []
+    with log_path.open("r", encoding="utf-8", errors="replace") as stream:
+        for line in stream:
+            if line.lstrip().startswith("{"):
+                continue  # command replies live in the demultiplexed transcript
+            if any(pattern.search(line) for pattern in patterns):
+                lines.append(line if line.endswith("\n") else line + "\n")
+                if len(lines) >= limit:
+                    break
+    return lines
 
 
 def ingest_command(outcome: ShardOutcome) -> list[str]:
@@ -987,11 +1101,14 @@ def run_live(plan: ShardRunPlan, *, worldserver: Path, base_config: Path, run_ro
                               runtime_asset_closure=checks["runtime_asset_closure"],
                               stage_preflight=checks["stage"], preparation=preparation)
         coordinator = ShardCoordinator(plan, console, run_root, scenario_dir=scenario_dir,
-                                       server_pid=base.process.pid)
+                                       server_pid=base.process.pid, console_log=base.log_path)
         coordinator.finalizer = lambda outcome: finalize_live_shard(
             outcome, context, plan.watchdog, coordinator.server, coordinator.run_id)
         summary = coordinator.run()
     summary["worldserver"] = {"path": str(worldserver), "sha256": binary_sha256, "lifecycle": lifecycle}
+    if lifecycle.get("process_return_code") not in (0, None) and summary.get("terminal_reason") == "completed":
+        summary["terminal_reason"] = "infrastructure_loss"
+        summary.setdefault("infrastructure_failures", []).append("worldserver_exit_code_nonzero")
     harness.write_json(run_root / "shard_run.json", summary)
     return summary
 

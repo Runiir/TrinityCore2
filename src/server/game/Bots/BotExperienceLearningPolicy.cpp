@@ -1,4 +1,5 @@
 #include "Bots/BotExperienceLearningPolicy.h"
+#include "Bots/BotExperienceLearningPolicyFlag.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -216,9 +217,30 @@ float LocalDanger(Player const* bot, float x, float y, float z, BotExperienceLea
 }
 }
 
+namespace
+{
+constexpr char const* ShardIsolationKey = "BotWorld.ShardIsolation";
+BotCachedConfigFlag g_shardIsolation;
+
+bool ReadShardIsolationConfig()
+{
+    // An absent key is off. Checking presence first keeps ConfigMgr from
+    // logging "Missing name" for every config that never mentions the key.
+    for (std::string const& key : sConfigMgr->GetKeysByString(ShardIsolationKey))
+        if (key == ShardIsolationKey)
+            return sConfigMgr->GetBoolDefault(ShardIsolationKey, false);
+    return false;
+}
+}
+
 bool BotExperienceLearningPolicy::ShardIsolationEnabled()
 {
-    return sConfigMgr->GetBoolDefault("BotWorld.ShardIsolation", false);
+    return g_shardIsolation.Get(ReadShardIsolationConfig);
+}
+
+void BotExperienceLearningPolicy::RefreshShardIsolation()
+{
+    g_shardIsolation.Refresh(ReadShardIsolationConfig);
 }
 
 bool BotExperienceLearningPolicy::LearningEnabled(BotExperienceLearningConfig const& config)

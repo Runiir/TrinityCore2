@@ -42,10 +42,17 @@ class FakeWorld:
     """A console that answers botauto commands per cohort, with server noise."""
 
     def __init__(self, *, capacity: int = 6, threads: int = 1, isolation: bool = True, pid: int = 4242,
-                 lockout_action: str = "botauto_lockout", foreign_on: str = ""):
+                 lockout_action: str = "botauto_lockout", foreign_on: str = "",
+                 bad_profiles: frozenset[str] = frozenset(), lockout_failure: str = "",
+                 sticky_active: frozenset[str] = frozenset()):
         self.capacity, self.threads, self.isolation, self.pid = capacity, threads, isolation, pid
         self.lockout_action = lockout_action
         self.foreign_on = foreign_on
+        self.bad_profiles = bad_profiles
+        self.lockout_failure = lockout_failure  # "seed_refused" | "wrong_bosses" | ""
+        self.sticky_active = sticky_active  # cohorts whose stop never takes effect
+        self.timeouts: list[tuple[str, int]] = []
+        self.failed = False
         self.cohorts: dict[str, dict[str, Any]] = {"default": {"active": False, "attempt": 0}}
         self.lockouts: dict[str, dict[str, Any]] = {}
         self.commands: list[str] = []
@@ -72,6 +79,7 @@ class FakeWorld:
         try:
             time.sleep(0.001)
             self.commands.append(command)
+            self.timeouts.append((command, timeout))
             return self.answer(command)
         finally:
             with self._guard:
@@ -98,8 +106,14 @@ class FakeWorld:
                                "failure_reason": None}), 0, False
         if verb == "lockout":
             operation, cohort = tokens[2], tokens[3]
+            if operation == "seed" and self.lockout_failure == "seed_refused":
+                return self.reply({"ok": False, "action": "botauto_lockout_seed", "cohort_id": cohort,
+                                   "instance_id": 0, "map_id": 0, "bosses_done": [],
+                                   "failure_reason": "prerequisites_unavailable"}), 0, False
             if operation == "seed":
                 raid, difficulty, bosses = tokens[4], tokens[5], tokens[6]
+                if self.lockout_failure == "wrong_bosses":
+                    bosses = bosses.split(",")[0]
                 self.next_instance += 1
                 self.lockouts[cohort] = {"instance_id": self.next_instance, "map_id": 669,
                                          "bosses_done": [] if bosses == "none" else bosses.split(","),
@@ -119,6 +133,10 @@ class FakeWorld:
         extra = []
         if self.foreign_on and command.startswith(self.foreign_on):
             extra.append({"ok": True, "action": "botauto_status", "cohort_id": "some_other_c9", "active": True})
+        if verb == "start" and tokens[3] in self.bad_profiles:
+            # SelectRuntimeProfile's refusal carries no cohort_id and ends the command.
+            return self.reply({"ok": False, "action": "botauto_profile", "failure_reason": "unknown_profile",
+                               "profile": tokens[3]}), 0, False
         if verb == "start":
             state.update(active=True, attempt=state["attempt"] + 1, profile=tokens[3])
             seeded = self.lockouts.get(cohort)
@@ -143,7 +161,7 @@ class FakeWorld:
             return self.reply({"ok": False, "action": "botauto_combatlog", "cohort_id": cohort,
                                "failure_reason": "fake_console"}), 0, False
         if verb == "stop":
-            state["active"] = False
+            state["active"] = cohort in self.sticky_active
             return self.reply({"ok": True, "action": "botauto_stop", "cohort_id": cohort,
                                "failure_reason": None}), 0, False
         raise AssertionError(command)
@@ -353,7 +371,8 @@ def test_two_shards_run_isolated_through_the_real_watchdog(tmp_path: Path) -> No
             in setup)
     assert ".botauto lockout status blackwing_descent_10n_maloriak_c0" in setup
     assert not any("lockout" in command and "magmaw_c0" in command for command in world.commands)
-    assert world.commands[-2:] == [".botauto lockout clear blackwing_descent_10n_maloriak_c0", ".botauto cohorts"]
+    assert world.commands[-3:] == [".botauto cohorts", ".botauto lockout clear blackwing_descent_10n_maloriak_c0",
+                                   ".botauto cohorts"]
 
     # Each shard's run dir holds only its own cohort's payloads and heartbeats.
     for shard_dir, spec in ((magmaw, plan.shards[0]), (maloriak, plan.shards[1])):
@@ -383,7 +402,10 @@ def test_two_shards_run_isolated_through_the_real_watchdog(tmp_path: Path) -> No
     isolation = summary["isolation"]
     assert isolation["distinct_instance_ids"] and isolation["seeded_instances_entered"]
     assert isolation["foreign_payloads"] == isolation["cross_cohort_replies"] == isolation["refused_commands"] == 0
-    assert summary["teardown"] == {"verified": True, "active_cohorts": []}
+    assert summary["teardown"] == {"verified": True, "active_cohorts": [], "stopped_by_teardown": [],
+                                   "lockouts_cleared": {"blackwing_descent_10n_maloriak_c0":
+                                                        {"ok": True, "failure_reason": None}}}
+    assert summary["console"]["healthy"] and summary["infrastructure_failures"] == []
     assert [row["lockout_cleared"] for row in summary["shards"]] == [None, {"ok": True, "failure_reason": None}]
     assert summary["ingest"][0][-4:] == ["--label", "<label>", "--run-dir", str(magmaw)]
     assert summary["ingest"][0][summary["ingest"][0].index("--scenario") + 1] == "blackwing_descent_10n_magmaw"
@@ -518,3 +540,178 @@ def test_harness_route_kinds_come_from_the_route_catalog(monkeypatch: pytest.Mon
     assert [row["kind"] for row in harness.load_validation_routes_for_scenario(SCENARIOS, MAGMAW)] == magmaw
     nefarian = harness.load_validation_routes_for_scenario(SCENARIOS, "blackwing_descent_10n_nefarian_diagnostic")
     assert "interaction" in {row["kind"] for row in nefarian}
+
+
+
+# ---------------------------------------------------------------- review fixes
+
+
+def test_unknown_profile_is_a_failed_start_that_ends_the_watchdog(tmp_path: Path) -> None:
+    world = FakeWorld(bad_profiles=frozenset({MALORIAK}))
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30,
+                      transition_timeout_sec=7)
+    summary = sc.ShardCoordinator(plan, sc.SerializedConsole(world), tmp_path, scenario_dir=SCENARIOS,
+                                  sleep=fast_watchdog()).run()
+    by_id = {row["cohort_id"]: row for row in summary["shards"]}
+    maloriak = by_id["blackwing_descent_10n_maloriak_c0"]
+    assert maloriak["failed_starts"] == 1
+    shard = tmp_path / "shards" / "blackwing_descent_10n_maloriak_c0"
+    rejections = [json.loads(line) for line in (shard / "demux_rejections.jsonl").read_text().splitlines()]
+    assert {"reason": "start_failed"}.items() <= rejections[0].items()
+    # No heartbeat was polled for the refused shard; only its cleanup ran.
+    maloriak_commands = [command for command in world.commands if "maloriak_c0" in command and "lockout" not in command]
+    assert not any(command.startswith((".botauto diagnose", ".botauto trace")) for command in maloriak_commands)
+    assert ".botauto stop blackwing_descent_10n_maloriak_c0" in maloriak_commands
+    assert by_id["blackwing_descent_10n_magmaw_c0"]["completion_reason"] == "semantic_progress_plateau_watchdog"
+    # Start and stop exchanges are bounded by the transition budget, not the emergency cap.
+    for command, timeout in world.timeouts:
+        if command.startswith((".botauto start", ".botauto stop")):
+            assert timeout <= 7, (command, timeout)
+
+
+def test_start_reply_keeps_unscoped_profile_refusal(tmp_path: Path) -> None:
+    world = FakeWorld(bad_profiles=frozenset({MAGMAW}))
+    world.cohorts["blackwing_descent_10n_magmaw_c0"] = {"active": False, "attempt": 0}
+    spec = proof_plan().shards[0]
+    transport = sc.ShardTransport(sc.SerializedConsole(world), spec, tmp_path, transition_timeout_sec=9)
+    output, code, timed_out = transport(f".botauto start {spec.cohort_id} {MAGMAW}", 3600)
+    assert (code, timed_out) == (1, False)
+    assert '"unknown_profile"' in output and "unsolicited" not in output
+    assert world.timeouts[-1] == (f".botauto start {spec.cohort_id} {MAGMAW}", 9)
+    output, code, _ = transport(f".botauto status {spec.cohort_id}", 3600)
+    assert code == 0 and world.timeouts[-1][1] == 3600  # heartbeats keep their own budget
+    assert sc.ShardConsoleTransport.reply_marker(".botauto start c p").search(
+        b'{"ok":false,"action":"botauto_profile","failure_reason":"unknown_profile"}')
+
+
+@pytest.mark.parametrize("failure", ["seed_refused", "wrong_bosses"])
+def test_failed_seed_is_still_cleared(tmp_path: Path, failure: str) -> None:
+    world = FakeWorld(lockout_failure=failure)
+    summary = sc.ShardCoordinator(proof_plan(), sc.SerializedConsole(world), tmp_path,
+                                  scenario_dir=SCENARIOS, sleep=fast_watchdog()).run()
+    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert "lockout of blackwing_descent_10n_maloriak_c0 failed" in summary["error"]
+    assert ".botauto lockout clear blackwing_descent_10n_maloriak_c0" in world.commands
+    assert not any(command.startswith(".botauto start") for command in world.commands)
+    receipt = json.loads((tmp_path / "shards" / "blackwing_descent_10n_maloriak_c0" / "lockout.json").read_text())
+    assert receipt["state"] == "pending" and "failed" in receipt["error"]
+    assert receipt["command"].startswith(".botauto lockout seed blackwing_descent_10n_maloriak_c0 ")
+    assert summary["teardown"]["lockouts_cleared"]["blackwing_descent_10n_maloriak_c0"]["ok"] is True
+
+
+def test_every_seeded_shard_is_cleared_when_a_later_seed_fails(tmp_path: Path) -> None:
+    rows = (sc.parse_shard(shard_row("blackwing_descent_10n_nefarian_c0", "blackwing_descent_10n_nefarian_diagnostic",
+                                     {"raid": "blackwing_descent", "difficulty": "10n",
+                                      "precompleted_boss_keys": ["magmaw"]})),
+            sc.parse_shard(shard_row("blackwing_descent_10n_maloriak_c0", MALORIAK, MALORIAK_LOCKOUT)))
+
+    class SecondSeedFails(FakeWorld):
+        def answer(self, command: str) -> tuple[str, int, bool]:
+            if command.startswith(".botauto lockout seed blackwing_descent_10n_maloriak_c0"):
+                return "partial reply without prompt", 1, True
+            return super().answer(command)
+
+    world = SecondSeedFails()
+    summary = sc.ShardCoordinator(sc.ShardRunPlan(shards=rows), sc.SerializedConsole(world), tmp_path,
+                                  scenario_dir=SCENARIOS, sleep=fast_watchdog()).run()
+    assert summary["terminal_reason"] == "infrastructure_loss"
+    cleared = [command for command in world.commands if command.startswith(".botauto lockout clear")]
+    assert cleared == [".botauto lockout clear blackwing_descent_10n_nefarian_c0",
+                       ".botauto lockout clear blackwing_descent_10n_maloriak_c0"]
+
+
+class LatchedTransport(FakeWorld):
+    """Latches failed (a console reply that never finished) after N exchanges."""
+
+    def __init__(self, fail_after: int, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.fail_after = fail_after
+
+    def answer(self, command: str) -> tuple[str, int, bool]:
+        if self.failed or len(self.commands) > self.fail_after:
+            self.failed = True
+            return "", 1, True
+        return super().answer(command)
+
+
+def test_latched_console_failure_is_infrastructure_loss(tmp_path: Path) -> None:
+    world = LatchedTransport(fail_after=12)
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+    summary = sc.ShardCoordinator(plan, sc.SerializedConsole(world), tmp_path, scenario_dir=SCENARIOS,
+                                  sleep=fast_watchdog()).run()
+    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert "console_transport_failed" in summary["infrastructure_failures"]
+    assert summary["console"]["healthy"] is False
+
+
+def test_worldserver_exit_is_infrastructure_loss(tmp_path: Path) -> None:
+    class Exited:
+        def poll(self) -> int:
+            return 139
+
+    world = FakeWorld()
+    world.process = Exited()
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+    summary = sc.ShardCoordinator(plan, sc.SerializedConsole(world), tmp_path, scenario_dir=SCENARIOS,
+                                  sleep=fast_watchdog()).run()
+    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert summary["console"] == {"transport_failed": False, "server_exited": True, "server_exit_code": 139,
+                                  "healthy": False}
+
+
+def test_unverified_teardown_is_infrastructure_loss(tmp_path: Path) -> None:
+    world = FakeWorld(sticky_active=frozenset({"blackwing_descent_10n_magmaw_c0"}))
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+    summary = sc.ShardCoordinator(plan, sc.SerializedConsole(world), tmp_path, scenario_dir=SCENARIOS,
+                                  sleep=fast_watchdog()).run()
+    assert summary["terminal_reason"] == "infrastructure_loss"
+    assert summary["teardown"]["verified"] is False
+    assert summary["teardown"]["stopped_by_teardown"] == ["blackwing_descent_10n_magmaw_c0"]
+    assert summary["teardown"]["active_cohorts"] == ["blackwing_descent_10n_magmaw_c0"]
+    assert summary["infrastructure_failures"] == ["teardown_unverified"]
+
+
+def test_main_exits_non_zero_on_infrastructure_loss(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    plan_path = tmp_path / "plan.json"
+    plan_path.write_text(json.dumps({"schema": sc.RUN_PLAN_SCHEMA,
+                                     "shards": [shard_row("blackwing_descent_10n_magmaw_c0", MAGMAW)]}))
+    outside = Path("/tmp") / f"shard-main-{time.time_ns()}"
+    for reason, code in (("infrastructure_loss", 1), ("completed", 0)):
+        monkeypatch.setattr(sc, "run_live", lambda plan, **kwargs: {"terminal_reason": reason, "shards": []})
+        assert sc.main(["--plan", str(plan_path), "--output-dir", str(outside)]) == code
+
+
+def test_cohort_log_lines_select_the_shard(tmp_path: Path) -> None:
+    log = tmp_path / "worldserver.console.log"
+    log.write_text(
+        "BotWorld validation prepare reset profile=p cohort=blackwing_descent_10n_magmaw_c0 attempt=1\n"
+        "BotWorld validation prepare reset profile=p cohort=blackwing_descent_10n_magmaw_c01 attempt=1\n"
+        "BotRaidLockout seeded cohort=blackwing_descent_10n_maloriak_c0 map=669 instance=101 difficulty=10n\n"
+        "BotWorld boss death callback scope=failure entry=41570 map=669 instance=101 alive=0\n"
+        "BotWorld boss death callback scope=failure entry=41570 map=669 instance=1011 alive=0\n"
+        '{"ok":true,"action":"botauto_status","cohort_id":"blackwing_descent_10n_magmaw_c0"}\n'
+        "TC> unrelated\n")
+    magmaw = sc.cohort_log_lines(log, "blackwing_descent_10n_magmaw_c0", set())
+    assert magmaw == ["BotWorld validation prepare reset profile=p cohort=blackwing_descent_10n_magmaw_c0 attempt=1\n"]
+    maloriak = sc.cohort_log_lines(log, "blackwing_descent_10n_maloriak_c0", {101})
+    assert [line.split()[0:2] for line in maloriak] == [["BotRaidLockout", "seeded"], ["BotWorld", "boss"]]
+    assert "instance=1011" not in "".join(maloriak)
+
+
+def test_coordinator_copies_cohort_log_lines(tmp_path: Path) -> None:
+    log = tmp_path / "worldserver.console.log"
+    log.write_text("x cohort=blackwing_descent_10n_magmaw_c0 y\nz cohort=blackwing_descent_10n_maloriak_c0 w\n")
+    plan = proof_plan(heartbeat_sec=1, no_progress_window_sec=1, emergency_timeout_sec=30)
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    sc.ShardCoordinator(plan, sc.SerializedConsole(FakeWorld()), run_root, scenario_dir=SCENARIOS,
+                        sleep=fast_watchdog(), console_log=log).run()
+    for spec in plan.shards:
+        lines = (run_root / "shards" / spec.cohort_id / "worldserver_cohort_lines.log").read_text().splitlines()
+        assert len(lines) == 1 and spec.cohort_id in lines[0]
+
+
+def test_attempt_finalization_docstring_is_accurate() -> None:
+    doc = harness.AttemptFinalization.__doc__ or ""
+    assert "byte-for-byte" not in doc
+    assert "only this cohort's replies" in doc

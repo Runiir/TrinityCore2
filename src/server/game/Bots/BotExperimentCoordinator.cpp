@@ -13,10 +13,14 @@ namespace
 // one at a time: the newest row of this bot above the pre-insert high-water
 // mark, carrying the inserted identity, is the row just written, whichever
 // connection wrote it. A failed insert reads back 0, never an older row.
+// Both reads stay on the (bot_guid, status, id) index: older finished rows
+// are excluded by status, and every earlier running row is at or below the
+// high-water mark.
 uint64 ReadSegmentHighWaterId(uint32 botGuid)
 {
     if (QueryResult result = CharacterDatabase.PQuery(
-            "SELECT MAX(id) FROM experiment_bot_segments WHERE bot_guid = %u", botGuid))
+            "SELECT MAX(id) FROM experiment_bot_segments WHERE bot_guid = %u AND status = 'running'",
+            botGuid))
         return result->Fetch()[0].GetUInt64();
 
     return 0;
