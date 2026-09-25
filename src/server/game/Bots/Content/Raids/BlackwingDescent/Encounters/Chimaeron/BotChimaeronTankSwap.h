@@ -17,6 +17,9 @@
 // aura, so the right tank is the victim when his melee resumes. Just before
 // 20% the fresh Double Attack tank takes the boss into Mortality (Icy Veins
 // 2024-07-29); under Mortality the boss is immune to taunt (client 82934).
+// The handoff waits for the burn release: while damage is held (damage over
+// time can drift the boss below 21.5% during the hold) the ordinary exchange
+// continues, so Break never piles onto the tank that must enter Mortality.
 namespace BotEncounter::Chimaeron
 {
 constexpr float MortalityHandoffPct = 21.5f;
@@ -51,7 +54,8 @@ inline bool Alive(Blackboard const& board, ObjectGuid guid)
 }
 
 inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
-    Observation const& observation, Duties const& duties, ObjectGuid botGuid)
+    Observation const& observation, Duties const& duties, ObjectGuid botGuid,
+    bool burnReleased)
 {
     if (!observation.Boss || !observation.Bot
         || (observation.CurrentPhase != Phase::Mixture
@@ -83,7 +87,7 @@ inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
         return std::nullopt;
     }
 
-    bool const handoff = boss.HealthPct <= MortalityHandoffPct
+    bool const handoff = burnReleased && boss.HealthPct <= MortalityHandoffPct
         && boss.HealthPct > MortalityHealthPct;
     if (botGuid == duties.DoubleAttackTank && victim == duties.BreakTank)
     {

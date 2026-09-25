@@ -7,6 +7,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronDutyPlan.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFormation.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronHealingPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronMemory.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronSupportActions.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronTankSwap.h"
 
@@ -22,7 +23,10 @@ namespace BotEncounter
 // - Action: an ordinary native cast (taunt exchange, raid cooldown, absorb,
 //   Bloodlust) of a spell the bot knows;
 // - PriorityHealTarget: the floor/urgency assignment for this healer;
-// - SuppressOffense: hold damage while the boss sleeps and in the burn window.
+// - SuppressOffense: hold damage while the boss sleeps (unless another hostile
+//   is fighting the raid) and, for non-tanks, in the burn window.
+// Optional per-bot memory latches the burn release and Pain Suppression use
+// for the scope; without it (replays) only the current revision counts.
 struct AdaptiveChimaeronPlan
 {
     bool OwnsNode = false;
@@ -43,7 +47,7 @@ public:
     static constexpr uint32 BossEntry = Chimaeron::BossEntry;
 
     AdaptiveChimaeronPlan Propose(Blackboard const& board, ObjectGuid botGuid,
-        std::string_view role) const
+        std::string_view role, ChimaeronEncounterMemory* memory = nullptr) const
     {
         using namespace Chimaeron;
         AdaptiveChimaeronPlan plan;
@@ -61,9 +65,11 @@ public:
             // The route owns these nodes (arrival, Finkle's gossip, the wake
             // wait) and their completions. Nobody may pull the sleeping boss
             // before the Bile-O-Tron is active; once the wake wait starts the
-            // raid stages so the Break tank is the nearest player.
-            plan.SuppressOffense = true;
-            plan.SuppressReason = "prewake_boss_asleep";
+            // raid stages so the Break tank is the nearest player. A patrol or
+            // leftover pack fighting the raid lifts the suppression.
+            plan.SuppressOffense = !OtherHostileEngaged(board, boss);
+            if (plan.SuppressOffense)
+                plan.SuppressReason = "prewake_boss_asleep";
             if (board.Route.NodeId == WakeWaitNode)
                 if (std::optional<Point> slot = PrewakeSlot(duties, ToPoint(boss.Position), botGuid))
                     plan.Movement = ProposeMove(board, bot, *slot, SpreadTolerance,
@@ -73,6 +79,15 @@ public:
 
         plan.OwnsNode = true;
         plan.DamageTarget = boss.Guid;
+        if (memory)
+        {
+            memory->Bind(board.CurrentScope.Key(), boss.Guid);
+            if (!memory->BurnReleased && BurnReleaseObserved(board, observation, duties))
+                memory->BurnReleased = true;
+            if (AnyPlayerHasAura(board, PainSuppressionSpell))
+                memory->PainSuppressionObserved = true;
+        }
+        bool const burnReleased = BurnReleased(board, observation, duties, memory);
         plan.HealingDisabled = observation.CurrentPhase == Phase::Mortality
             || HasAura(bot, MortalityRaidSpell);
 
@@ -80,7 +95,9 @@ public:
             plan.PriorityHealTarget = SelectPriorityHealTarget(board, observation,
                 duties, botGuid);
 
-        if (BurnHold(board, observation, duties))
+        // Tanks keep attacking in the hold: threat and self-healing (Death
+        // Strike) must not stop while the raid waits.
+        if (role != "tank" && BurnHold(board, observation, duties, memory))
         {
             plan.SuppressOffense = true;
             plan.SuppressReason = "burn_hold_before_mortality";
@@ -95,10 +112,11 @@ public:
                 plan.Movement = ProposeMove(board, bot, *slot, SpreadTolerance,
                     "mixture_slime_spread", boss.Guid, 250.0f);
 
-        if (std::optional<TauntDecision> taunt = DecideTaunt(board, observation, duties, botGuid))
+        if (std::optional<TauntDecision> taunt = DecideTaunt(board, observation, duties,
+                botGuid, burnReleased))
             plan.Action = ProposeCast(board, boss.Guid, taunt->SpellId, taunt->Reason, 400.0f);
         else if (std::optional<CastDecision> cast = DecideSupportCast(board, observation,
-                duties, botGuid))
+                duties, botGuid, memory))
             plan.Action = ProposeCast(board, cast->Target, cast->SpellId, cast->Reason, 350.0f);
         return plan;
     }

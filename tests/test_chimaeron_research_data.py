@@ -192,12 +192,13 @@ def test_native_script_repairs_are_in_place() -> None:
     engage = function_body(source, "void JustEngagedWith(Unit* who) override")
     assert "_killedPlayerCount = 0;" in engage
     timer = function_body(source, "uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override")
-    assert "spellId != SPELL_MASSACRE || !events.IsInPhase(PHASE_1)" in timer
+    assert "spellId != SPELL_MASSACRE" in timer
     assert "events.GetTimeUntilEvent(EVENT_MASSACRE)" in timer
+    assert "Logic::MassacreRemainingMs(" in timer
     slime = function_body(source, "void FilterTargets(std::list<WorldObject*>& targets)")
-    assert "Trinity::Predicates::IsVictimOf(caster)" in slime
-    assert "HasAura(SPELL_BREAK)" in slime
-    assert "Chimaeron no longer casts" in source
+    assert "unit == victim" in slime and "HasAura(SPELL_BREAK)" in slime
+    assert "Logic::PlanCausticSlimeTargets(" in slime
+    assert "Chimaeron no longer casts" in (SCRIPT.parent / "boss_chimaeron_logic.h").read_text(encoding="utf-8")
     # Uninitialized helper members are gone.
     assert re.search(r"uint8 _killedPlayerCount = 0;", source)
     assert len(source.splitlines()) < 1000

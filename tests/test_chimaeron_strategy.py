@@ -121,9 +121,10 @@ static char const* RoleOf(Blackboard const& board, uint32 guid)
     return "dps";
 }
 
-static AdaptiveChimaeronPlan Plan(Blackboard const& board, uint32 guid)
+static AdaptiveChimaeronPlan Plan(Blackboard const& board, uint32 guid,
+    ChimaeronEncounterMemory* memory = nullptr)
 {
-    return AdaptiveChimaeronStrategy().Propose(board, G(guid), RoleOf(board, guid));
+    return AdaptiveChimaeronStrategy().Propose(board, G(guid), RoleOf(board, guid), memory);
 }
 
 static bool MoveOf(AdaptiveChimaeronPlan const& plan, C::Point& out)
@@ -154,6 +155,27 @@ static std::vector<uint32> Everyone()
     return { DK, DRUID, HUNTER, MAGE, HOLY, RET, DISC, ROGUE, SHAMAN, LOCK };
 }
 
+static float MinimumGap(std::map<uint32, C::Point> const& points)
+{
+    float gap = 1000.0f;
+    for (auto const& [left, a] : points)
+        for (auto const& [right, b] : points)
+            if (left < right)
+                gap = std::min(gap, C::Distance(a, b));
+    return gap;
+}
+
+static std::map<uint32, C::Point> SpreadSlots(Blackboard const& board)
+{
+    C::Duties const duties = C::BuildDuties(board);
+    C::Point const centre = C::FormationCentre(board, Boss(const_cast<Blackboard&>(board)));
+    std::map<uint32, C::Point> slots;
+    for (ActorSnapshot const& player : board.Players)
+        if (std::optional<C::Point> slot = C::SpreadSlot(duties, centre, player.Guid))
+            slots[player.Guid.GetCounter()] = *slot;
+    return slots;
+}
+
 static std::map<uint32, C::Point> Destinations(Blackboard const& board)
 {
     std::map<uint32, C::Point> result;
@@ -176,6 +198,7 @@ static void TestDuties()
     CHECK((duties.Melee == std::vector<ObjectGuid>{ G(RET), G(ROGUE) }));
     CHECK((duties.Ranged == std::vector<ObjectGuid>{ G(HUNTER), G(MAGE), G(HOLY), G(DISC),
         G(SHAMAN), G(LOCK) }));
+    CHECK((duties.RangedHealers == std::vector<ObjectGuid>{ G(HOLY), G(DISC), G(SHAMAN) }));
     CHECK(duties.LustOwner == G(MAGE) && duties.LustSpell == 80353);
     CHECK(duties.BarrierOwner == G(DISC));
     CHECK(duties.SpiritLinkOwner == G(SHAMAN));
@@ -198,6 +221,18 @@ static void TestDuties()
     P(deadTank, DK).Alive = false;
     C::Duties const survivor = C::BuildDuties(deadTank);
     CHECK(survivor.BreakTank == G(DRUID) && survivor.DoubleAttackTank.IsEmpty());
+
+    // Without a mage the shaman lusts (Bloodlust; the runtime casts Heroism
+    // when that is the variant the bot knows). Mages always rank first.
+    Blackboard noMage = Board("bwd.chimaeron.encounter", true);
+    P(noMage, MAGE).ClassSpec = "affliction_warlock";
+    C::Duties const shamanLust = C::BuildDuties(noMage);
+    CHECK(shamanLust.LustOwner == G(SHAMAN) && shamanLust.LustSpell == 2825);
+    P(noMage, SHAMAN).Alive = false;
+    CHECK(C::BuildDuties(noMage).LustOwner.IsEmpty());
+    Blackboard twoMages = Board("bwd.chimaeron.encounter", true);
+    P(twoMages, LOCK).ClassSpec = "frost_mage";
+    CHECK(C::BuildDuties(twoMages).LustOwner == G(MAGE));
 }
 
 static void TestPrewake()
@@ -218,6 +253,21 @@ static void TestPrewake()
     CHECK(!plan.Action);
     CHECK(plan.EncounterPhase == C::Phase::Prewake);
 
+    // A patrol fighting the raid lifts the prewake suppression; the sleeping
+    // boss stays off limits (no damage target is published).
+    Blackboard patrol = Board("bwd.chimaeron.regroup", false);
+    ActorSnapshot trash;
+    trash.Guid = ObjectGuid(HighGuid::Unit, uint32(42800), uint32(700));
+    trash.Entry = 42800;
+    trash.Alive = trash.Attackable = trash.Selectable = trash.InCombat = true;
+    trash.VictimGuid = G(DK);
+    patrol.Hostiles.push_back(trash);
+    AdaptiveChimaeronPlan const fighting = Plan(patrol, ROGUE);
+    CHECK(fighting.EncounterPhase == C::Phase::Prewake);
+    CHECK(!fighting.SuppressOffense && fighting.DamageTarget.IsEmpty());
+    patrol.Hostiles.back().VictimGuid.Clear();
+    CHECK(Plan(patrol, ROGUE).SuppressOffense);
+
     // Once the boss wakes the wait node no longer stages anyone.
     Boss(board).InCombat = true;
     Boss(board).VictimGuid = G(DK);
@@ -236,9 +286,9 @@ static void TestMixtureSpread()
         for (std::size_t j = i + 1; j < guids.size(); ++j)
         {
             float const gap = C::Distance(moves.at(guids[i]), moves.at(guids[j]));
-            if (gap < 7.0f)
+            if (gap < C::MinimumSpreadSlotGap - 0.01f)
                 std::fprintf(stderr, "spread gap %u-%u %.2f\n", guids[i], guids[j], gap);
-            CHECK(gap >= 7.0f);
+            CHECK(gap >= C::MinimumSpreadSlotGap - 0.01f);
         }
     for (auto const& [guid, point] : moves)
     {
@@ -256,6 +306,30 @@ static void TestMixtureSpread()
     for (auto const& [guid, point] : moves)
         P(board, guid).Position = { point.X, point.Y, HomeZ };
     CHECK(Destinations(board).empty());
+
+    // Every member at the edge of its arrival tolerance, pushed toward its
+    // nearest neighbour's slot: nobody moves, and nobody shares a Caustic
+    // Slime split (6 yd) with anybody else.
+    Blackboard edge = board;
+    std::map<uint32, C::Point> placed;
+    for (auto const& [guid, point] : moves)
+    {
+        C::Point nearest = point;
+        float best = 1000.0f;
+        for (auto const& [other, otherPoint] : moves)
+            if (other != guid && C::Distance(point, otherPoint) < best)
+            {
+                best = C::Distance(point, otherPoint);
+                nearest = otherPoint;
+            }
+        float const shift = C::SpreadTolerance - 0.01f;
+        C::Point const shifted{ point.X + (nearest.X - point.X) / best * shift,
+            point.Y + (nearest.Y - point.Y) / best * shift };
+        P(edge, guid).Position = { shifted.X, shifted.Y, HomeZ };
+        placed[guid] = shifted;
+    }
+    CHECK(Destinations(edge).empty());
+    CHECK(MinimumGap(placed) > 6.0f);
     AdaptiveChimaeronPlan const plan = Plan(board, MAGE);
     CHECK(plan.OwnsNode && plan.DamageTarget == Boss(board).Guid);
     CHECK(!plan.SuppressOffense && !plan.HealingDisabled);
@@ -265,6 +339,32 @@ static void TestMixtureSpread()
     CHECK(Plan(board, HOLY).Duty == "tank_healer");
     CHECK(Plan(board, SHAMAN).Duty == "raid_healer");
     CHECK(Plan(board, ROGUE).Duty == "melee");
+}
+
+// Non-canonical rosters keep the same guarantee: up to three melee on the
+// inner arc, six on the 22 yd arc, overflow on the 33 yd arc.
+static void TestAlternativeRosterSpacing()
+{
+    Blackboard fourMelee = Board("bwd.chimaeron.encounter", true);
+    P(fourMelee, HUNTER).ClassSpec = "combat_rogue";
+    P(fourMelee, LOCK).ClassSpec = "fury_warrior";
+    std::map<uint32, C::Point> const melee = SpreadSlots(fourMelee);
+    CHECK(melee.size() == 10);
+    CHECK(MinimumGap(melee) >= C::MinimumSpreadSlotGap - 0.01f);
+
+    Blackboard oneMelee = Board("bwd.chimaeron.encounter", true);
+    P(oneMelee, RET).ClassSpec = "shadow_priest";
+    std::map<uint32, C::Point> const ranged = SpreadSlots(oneMelee);
+    CHECK(ranged.size() == 10);
+    CHECK(MinimumGap(ranged) >= C::MinimumSpreadSlotGap - 0.01f);
+    // Healers stay on the 22 yd arc, inside heal range of both tanks.
+    C::Point const boss{ HomeX, HomeY };
+    for (uint32 healer : { HOLY, DISC, SHAMAN })
+    {
+        CHECK(std::fabs(C::Distance(ranged.at(healer), boss) - C::RangedRadius) < 0.01f);
+        for (uint32 tank : { DK, DRUID })
+            CHECK(C::Distance(ranged.at(healer), ranged.at(tank)) <= 38.0f);
+    }
 }
 
 static void TestOutageStack()
@@ -328,13 +428,37 @@ static void TestTauntExchange()
     CHECK(Plan(board, DK).Action->Id.Mechanic == "taunt_recover_non_tank_victim");
     CHECK(!Plan(board, DRUID).Action);
 
-    // Just above 20% the fresh Feral takes the boss into Mortality and the
-    // Break tank does not take it back.
+    // Held at 21% (Massacre casting, damage over time drifted the boss into
+    // the handoff range): no handoff; the ordinary exchange continues.
     Boss(board).VictimGuid = G(DK);
     Boss(board).HealthPct = 21.0f;
     P(board, DK).HealthPct = P(board, DRUID).HealthPct = 100.0f;
-    CHECK(Plan(board, DRUID).Action && Plan(board, DRUID).Action->Id.Mechanic
+    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
+    ChimaeronEncounterMemory druidMemory;
+    ChimaeronEncounterMemory dkMemory;
+    CHECK(Plan(board, ROGUE).SuppressOffense);
+    CHECK(!Plan(board, DRUID, &druidMemory).Action);
+    Boss(board).Auras = { { C::DoubleAttackSpell, boss, 1, 0 } };
+    CHECK(Plan(board, DRUID, &druidMemory).Action
+        && Plan(board, DRUID, &druidMemory).Action->Id.Mechanic == "taunt_double_attack_soak");
+    Boss(board).VictimGuid = G(DRUID);
+    Boss(board).Auras.clear();
+    CHECK(Plan(board, DK, &dkMemory).Action
+        && Plan(board, DK, &dkMemory).Action->Id.Mechanic == "taunt_back_break_holder");
+    CHECK(!druidMemory.BurnReleased && !dkMemory.BurnReleased);
+
+    // The raid is ready: the burn releases and the fresh Feral takes the boss
+    // into Mortality; the Break tank does not take it back.
+    Boss(board).VictimGuid = G(DK);
+    Boss(board).Cast.reset();
+    CHECK(Plan(board, DRUID, &druidMemory).Action && Plan(board, DRUID, &druidMemory).Action->Id.Mechanic
         == "taunt_mortality_handoff");
+    CHECK(druidMemory.BurnReleased);
+    // Latched: a Massacre cast after the release does not cancel the handoff.
+    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
+    CHECK(Plan(board, DRUID, &druidMemory).Action && Plan(board, DRUID, &druidMemory).Action->Id.Mechanic
+        == "taunt_mortality_handoff");
+    Boss(board).Cast.reset();
     Boss(board).VictimGuid = G(DRUID);
     CHECK(!Plan(board, DK).Action);
 
@@ -393,6 +517,14 @@ static void TestHealingFloor()
     CHECK(Plan(outage, DISC).PriorityHealTarget == G(MAGE));
     CHECK(Plan(outage, SHAMAN).PriorityHealTarget == G(HUNTER));
 
+    // In the burn window the Break tank is topped to the 80% readiness bar.
+    Blackboard window = Board("bwd.chimaeron.encounter", true);
+    Boss(window).HealthPct = 22.0f;
+    P(window, DK).HealthPct = 70.0f;
+    CHECK(Plan(window, HOLY).PriorityHealTarget == G(DK));
+    Boss(window).HealthPct = 50.0f;
+    CHECK(Plan(window, HOLY).PriorityHealTarget.IsEmpty());
+
     // Mortality: healing is 99% reduced, nothing is published.
     Blackboard mortality = Board("bwd.chimaeron.encounter", true);
     Boss(mortality).Auras.push_back({ C::MortalityBossSpell, Boss(mortality).Guid, 1, 0 });
@@ -413,14 +545,31 @@ static void TestBurnWindow()
     CHECK(hold.SuppressOffense && hold.SuppressReason == "burn_hold_before_mortality");
     CHECK(!Plan(board, MAGE).Action);   // no lust into a Massacre
 
+    // Tanks keep attacking in the hold (threat, Death Strike).
+    CHECK(!Plan(board, DK).SuppressOffense && !Plan(board, DRUID).SuppressOffense);
+
     Boss(board).Cast.reset();
     CHECK(!Plan(board, ROGUE).SuppressOffense);
     ObjectGuid target;
     CHECK(CastOf(Plan(board, MAGE), &target) == 80353 && target == G(MAGE));
 
-    // A tank still low from the last Massacre keeps the hold on.
+    // Before any release a tank still low from the last Massacre keeps the
+    // hold on (no memory: this revision decides).
     P(board, DRUID).HealthPct = 60.0f;
     CHECK(Plan(board, ROGUE).SuppressOffense);
+    P(board, DRUID).HealthPct = 100.0f;
+
+    // With memory the release is latched for the scope: a swing on a tank
+    // mid-burn does not re-suppress damage while the lust runs.
+    ChimaeronEncounterMemory rogueMemory;
+    CHECK(!Plan(board, ROGUE, &rogueMemory).SuppressOffense && rogueMemory.BurnReleased);
+    P(board, DRUID).HealthPct = 60.0f;
+    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
+    CHECK(!Plan(board, ROGUE, &rogueMemory).SuppressOffense);
+    // A new scope (wipe, new attempt) starts unlatched.
+    board.CurrentScope.WipeGeneration += 1;
+    CHECK(Plan(board, ROGUE, &rogueMemory).SuppressOffense && !rogueMemory.BurnReleased);
+    Boss(board).Cast.reset();
     P(board, DRUID).HealthPct = 100.0f;
 
     // A native Massacre timer inside the lead keeps the hold; a distant one does not.
@@ -480,12 +629,23 @@ static void TestOutageCooldownsAndMortalityAbsorbs()
     enraged.VictimGuid = G(DRUID);
     enraged.Auras.push_back({ C::MortalityBossSpell, enraged.Guid, 1, 0 });
     P(mortality, DRUID).HealthPct = 50.0f;
+    ChimaeronEncounterMemory discMemory;
     ObjectGuid target;
-    CHECK(CastOf(Plan(mortality, DISC), &target) == 33206 && target == G(DRUID));
-    P(mortality, DRUID).Auras.push_back({ 33206, G(DISC), 1, 0 });
-    CHECK(CastOf(Plan(mortality, DISC), &target) == 17 && target == G(DRUID));
+    // Shield first whenever Weakened Soul allows.
+    CHECK(CastOf(Plan(mortality, DISC, &discMemory), &target) == 17 && target == G(DRUID));
+    // Shield up: Pain Suppression on the failing tank.
+    P(mortality, DRUID).Auras.push_back({ 17, G(DISC), 1, 0 });
     P(mortality, DRUID).Auras.push_back({ 6788, G(DISC), 1, 0 });
-    CHECK(!Plan(mortality, DISC).Action);
+    CHECK(CastOf(Plan(mortality, DISC, &discMemory), &target) == 33206 && target == G(DRUID));
+    // Pain Suppression observed once: never proposed again in this scope,
+    // even after it expires (its cooldown is not on the blackboard).
+    P(mortality, DRUID).Auras.push_back({ 33206, G(DISC), 1, 0 });
+    CHECK(!Plan(mortality, DISC, &discMemory).Action && discMemory.PainSuppressionObserved);
+    P(mortality, DRUID).Auras = { { 6788, G(DISC), 1, 0 } };
+    CHECK(!Plan(mortality, DISC, &discMemory).Action);
+    // Weakened Soul gone: the next shield.
+    P(mortality, DRUID).Auras.clear();
+    CHECK(CastOf(Plan(mortality, DISC, &discMemory)) == 17);
 }
 
 // The shape the arbitration replay (tests/test_bot_action_arbitration.py)
@@ -549,6 +709,7 @@ int main()
     TestDuties();
     TestPrewake();
     TestMixtureSpread();
+    TestAlternativeRosterSpacing();
     TestOutageStack();
     TestTauntExchange();
     TestHealingFloor();

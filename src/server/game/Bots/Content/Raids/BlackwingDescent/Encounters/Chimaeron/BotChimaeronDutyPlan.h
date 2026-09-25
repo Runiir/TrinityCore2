@@ -20,14 +20,19 @@ struct Duties
     // Break soaker: holds normal melee and Break stacks. Needs only the
     // mixture floor between swings, so self-sustain ranks first.
     ObjectGuid BreakTank;
-    // Double Attack soaker: taunts before each doubled swing and must be at
-    // full health, so the tank with the largest health pool ranks here.
+    // Double Attack soaker: the next living tank in BreakTankRank order. He
+    // taunts before each doubled swing and is healed toward full (in the
+    // canonical roster this is the Feral druid, the larger health pool).
     ObjectGuid DoubleAttackTank;
     // Capability order: Healers.front() is the tank healer.
     std::vector<ObjectGuid> Healers;
     std::vector<ObjectGuid> Melee;
-    // Ranged damage and healers, formation order (GUID order).
+    // Ranged damage and healers (GUID order); RangedHealers is the healer
+    // subset, dead members included so slots never reshuffle on a death.
     std::vector<ObjectGuid> Ranged;
+    std::vector<ObjectGuid> RangedHealers;
+    // Raid lust: a mage (Time Warp) first, then a shaman (Bloodlust; the
+    // runtime casts Heroism instead when only that variant is known).
     ObjectGuid LustOwner;
     uint32 LustSpell = 0;
     ObjectGuid BarrierOwner;
@@ -35,6 +40,8 @@ struct Duties
 };
 
 constexpr uint32 TimeWarpSpell = 80353;
+constexpr uint32 BloodlustSpell = 2825;
+constexpr uint32 HeroismSpell = 32182;
 
 inline int BreakTankRank(std::string_view spec)
 {
@@ -85,6 +92,22 @@ inline bool IsMageSpec(std::string_view spec)
     return spec == "fire_mage" || spec == "arcane_mage" || spec == "frost_mage";
 }
 
+inline bool IsShamanSpec(std::string_view spec)
+{
+    return spec == "elemental_shaman" || spec == "enhancement_shaman"
+        || spec == "restoration_shaman";
+}
+
+// Lust preference: 0 mage (Time Warp), 1 shaman (Bloodlust/Heroism), -1 none.
+inline int LustRank(std::string_view spec)
+{
+    if (IsMageSpec(spec))
+        return 0;
+    if (IsShamanSpec(spec))
+        return 1;
+    return -1;
+}
+
 // The acting bot's own role comes from the runtime (GetDungeonRole); every
 // other member uses its roster role from the snapshot.
 inline std::string_view EffectiveRole(ActorSnapshot const& actor,
@@ -114,6 +137,7 @@ inline Duties BuildDuties(Blackboard const& board, ObjectGuid botGuid = ObjectGu
             if (player.Alive)
                 healers.push_back(&player);
             duties.Ranged.push_back(player.Guid);
+            duties.RangedHealers.push_back(player.Guid);
             continue;
         }
         if (IsMeleeSpec(player))
@@ -128,6 +152,7 @@ inline Duties BuildDuties(Blackboard const& board, ObjectGuid botGuid = ObjectGu
     };
     std::sort(duties.Melee.begin(), duties.Melee.end(), byGuid);
     std::sort(duties.Ranged.begin(), duties.Ranged.end(), byGuid);
+    std::sort(duties.RangedHealers.begin(), duties.RangedHealers.end(), byGuid);
 
     std::sort(tanks.begin(), tanks.end(),
         [](ActorSnapshot const* left, ActorSnapshot const* right)
@@ -173,15 +198,21 @@ inline Duties BuildDuties(Blackboard const& board, ObjectGuid botGuid = ObjectGu
             duties.SpiritLinkOwner = healer->Guid;
     }
 
-    ActorSnapshot const* mage = nullptr;
+    ActorSnapshot const* lust = nullptr;
     for (ActorSnapshot const& player : board.Players)
-        if (player.Alive && IsMageSpec(player.ClassSpec)
-            && (!mage || player.Guid.GetRawValue() < mage->Guid.GetRawValue()))
-            mage = &player;
-    if (mage)
     {
-        duties.LustOwner = mage->Guid;
-        duties.LustSpell = TimeWarpSpell;
+        int const rank = LustRank(player.ClassSpec);
+        if (!player.Alive || rank < 0)
+            continue;
+        int const best = lust ? LustRank(lust->ClassSpec) : 99;
+        if (rank < best
+            || (rank == best && player.Guid.GetRawValue() < lust->Guid.GetRawValue()))
+            lust = &player;
+    }
+    if (lust)
+    {
+        duties.LustOwner = lust->Guid;
+        duties.LustSpell = IsMageSpec(lust->ClassSpec) ? TimeWarpSpell : BloodlustSpell;
     }
     return duties;
 }

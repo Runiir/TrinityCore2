@@ -30,6 +30,7 @@
 #include "MotionMaster.h"
 #include "Map.h"
 #include "blackwing_descent.h"
+#include "boss_chimaeron_logic.h"
 #include <limits>
 
 namespace BlackwingDescent::Chimaeron
@@ -175,17 +176,14 @@ struct boss_chimaeron : public BossAI
     // outside phase one, where Massacre is not scheduled.
     uint32 GetTimeUntilEncounterMechanic(uint32 spellId) const override
     {
-        if (spellId != SPELL_MASSACRE || !events.IsInPhase(PHASE_1))
+        if (spellId != SPELL_MASSACRE)
             return std::numeric_limits<uint32>::max();
 
-        if (Spell const* spell = me->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-            if (spell->GetSpellInfo() && spell->GetSpellInfo()->Id == SPELL_MASSACRE)
-                return 0;
-
-        uint32 const remaining = events.GetTimeUntilEvent(EVENT_MASSACRE);
-        if (remaining == std::numeric_limits<uint32>::max())
-            return remaining;
-        return remaining > MassacreRepeatMs ? 0 : remaining;
+        Spell const* spell = me->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+        bool const castingMassacre = spell && spell->GetSpellInfo()
+            && spell->GetSpellInfo()->Id == SPELL_MASSACRE;
+        return Logic::MassacreRemainingMs(events.IsInPhase(PHASE_1), castingMassacre,
+            events.GetTimeUntilEvent(EVENT_MASSACRE), MassacreRepeatMs);
     }
 
     void JustEngagedWith(Unit* who) override
@@ -571,30 +569,35 @@ class spell_chimaeron_caustic_slime_targeting : public SpellScript
             return;
 
         Unit* caster = GetCaster();
-        targets.remove_if(Trinity::Predicates::IsVictimOf(caster));
-
-        std::list<WorldObject*> breakTargets;
-        for (auto itr = targets.begin(); itr != targets.end();)
+        Unit const* victim = caster->GetVictim();
+        std::list<WorldObject*> eligible;
+        std::list<WorldObject*> breakAffected;
+        for (WorldObject* target : targets)
         {
-            Unit const* unit = (*itr)->ToUnit();
-            if (unit && unit->HasAura(SPELL_BREAK))
+            Unit const* unit = target->ToUnit();
+            switch (Logic::ClassifyCausticSlimeCandidate(!unit || unit == victim,
+                unit && unit->HasAura(SPELL_BREAK)))
             {
-                breakTargets.push_back(*itr);
-                itr = targets.erase(itr);
+                case Logic::SlimeCandidate::Eligible:
+                    eligible.push_back(target);
+                    break;
+                case Logic::SlimeCandidate::BreakAffected:
+                    breakAffected.push_back(target);
+                    break;
+                default:
+                    break;
             }
-            else
-                ++itr;
         }
 
-        std::size_t const size = caster->GetMap()->Is25ManRaid() ? 4 : 2;
-        if (targets.size() > size)
-            Trinity::Containers::RandomResize(targets, size);
-        else if (targets.size() < size && !breakTargets.empty())
-        {
-            if (breakTargets.size() > size - targets.size())
-                Trinity::Containers::RandomResize(breakTargets, size - targets.size());
-            targets.splice(targets.end(), breakTargets);
-        }
+        Logic::CausticSlimePick const pick = Logic::PlanCausticSlimeTargets(eligible.size(),
+            breakAffected.size(), Logic::CausticSlimeTargetCount(caster->GetMap()->Is25ManRaid()));
+        if (eligible.size() > pick.FromEligible)
+            Trinity::Containers::RandomResize(eligible, pick.FromEligible);
+        if (breakAffected.size() > pick.FromBreakAffected)
+            Trinity::Containers::RandomResize(breakAffected, pick.FromBreakAffected);
+        targets.clear();
+        targets.splice(targets.end(), eligible);
+        targets.splice(targets.end(), breakAffected);
     }
 
     void HandleDummyEffect(SpellEffIndex effIndex)

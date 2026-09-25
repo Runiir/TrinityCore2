@@ -890,7 +890,7 @@
         "10N"
       ],
       "status": "blocked_wcl_access",
-      "known": "Native swing at DamageModifier 1: 12,142-18,038 (4.0 s BaseAttackTime), +1% auto-attack bonus. Registry row 43296 is open.",
+      "known": "Native swing at DamageModifier 1: 12,142-18,038 (4.0 s BaseAttackTime), +1% auto-attack bonus. Registry rows 43296/47774/47775/47776 are requested as open (.git/round2_patches/chimaeron/registry_chimaeron_entries.json); only the 10N row points at this ledger.",
       "next": "WCL 10N: Chimaeron melee (ability 1) damage-taken rows with U on the Double Attack tank (no Break stacks), plus the Break tank with stack counts; derive bounds as for Magmaw, stage the UPDATE and mark the registry calibrated.",
       "source_refs": [
         "tdb_434_22011_chimaeron_rows"

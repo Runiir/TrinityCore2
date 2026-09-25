@@ -41,6 +41,10 @@ inline std::vector<HealUrgency> BuildHealUrgency(Blackboard const& board,
     if (phase != Phase::Mixture && phase != Phase::Outage)
         return urgency;
     ObjectGuid const victim = observation.Boss->VictimGuid;
+    // In the burn window the Break tank must reach the readiness bar (80%)
+    // that releases the push; before it he only needs a buffer (60%).
+    float const breakTankTopUpPct = observation.Boss->HealthPct <= BurnHoldMaxPct
+        ? BurnReadyTankPct : 60.0f;
 
     for (ActorSnapshot const& player : board.Players)
     {
@@ -69,7 +73,7 @@ inline std::vector<HealUrgency> BuildHealUrgency(Blackboard const& board,
             && player.HealthPct < 90.0f)
             entry = { player.Guid, 4, player.HealthPct, tank };
         else if (phase == Phase::Mixture && player.Guid == duties.BreakTank
-            && player.HealthPct < 60.0f)
+            && player.HealthPct < breakTankTopUpPct)
             entry = { player.Guid, 4, player.HealthPct, tank };
         if (entry.Tier != 255)
             urgency.push_back(entry);

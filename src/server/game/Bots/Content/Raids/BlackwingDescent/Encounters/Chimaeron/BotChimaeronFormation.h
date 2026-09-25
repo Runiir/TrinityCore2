@@ -13,7 +13,8 @@
 //
 // - Mixture phase: every member stands in a slot at least ~8 yd from every
 //   other slot, so a Caustic Slime (split within 6 yd of the impact) lands on
-//   its target alone and its -75% hit debuff touches nobody else. Two current
+//   its target alone and its -75% hit debuff touches nobody else, even with
+//   every member at the edge of its arrival tolerance. Two current
 //   Cataclysm Classic guides (Wowhead 2024-06-04, Icy Veins 2024-07-29) both
 //   prescribe this spread while the mixture is up.
 // - Outage (Systems Failure): the raid collapses into one stack behind the boss
@@ -45,11 +46,29 @@ constexpr float DoubleAttackTankDistance = 13.0f;
 constexpr float DoubleAttackTankAngle = -60.0f;
 constexpr float MeleeRadius = 11.0f;
 constexpr float RangedRadius = 22.0f;
+// Layout capacities that keep every pair of spread slots at least
+// MinimumSpreadSlotGap apart: up to three melee on the inner arc (60 degrees
+// apart when three), up to six members on the 22 yd arc (30 degrees apart at
+// most), and any overflow on a 33 yd arc 20 degrees apart (11 yd outside the
+// 22 yd arc; healers always stay on the 22 yd arc, within heal range of the
+// tanks). Melee range against Chimaeron is 22.8 yd, so the 22 yd arc still
+// reaches him.
+constexpr std::size_t InnerMeleeCapacity = 3;
+constexpr std::size_t RangedArcCapacity = 6;
+constexpr float OuterRangedRadius = 33.0f;
+constexpr float OuterRangedStep = 20.0f;
 constexpr float StackBehindDistance = 8.0f;
 constexpr float StackRingRadius = 1.5f;
 constexpr float PrewakeBreakTankDistance = 9.0f;
 constexpr float PrewakeMinimumOthers = 16.0f;
-constexpr float SpreadTolerance = 3.0f;
+// Arrival tolerance around a spread slot. The closest two spread slots are
+// the melee pair (+/-30 degrees at 11 yd: 11.0 yd apart); two members each off
+// their slot by the tolerance toward each other stay 7 yd apart, outside the
+// 6 yd Caustic Slime split.
+constexpr float MinimumSpreadSlotGap = 11.0f;
+constexpr float SpreadTolerance = 2.0f;
+static_assert(MinimumSpreadSlotGap - 2.0f * SpreadTolerance > 6.0f,
+    "spread tolerance lets two members share a Caustic Slime split");
 constexpr float StackTolerance = 1.0f;
 
 inline Point Rotate(Point vector, float degrees)
@@ -101,8 +120,8 @@ inline Point RearDirection()
     return { -RaidForward.X, -RaidForward.Y };
 }
 
-// Symmetric fan behind the boss: 0, +/-step, ... for melee; ranged spreads
-// evenly over +/-75 degrees (six members sit 30 degrees apart, 11.4 yd).
+// Symmetric fan behind the boss, evenly spaced over [-span, +span]: six
+// members on the 22 yd arc over +/-75 degrees sit 30 degrees (11.4 yd) apart.
 inline float FanAngle(std::size_t index, std::size_t count, float span)
 {
     if (count <= 1)
@@ -119,6 +138,19 @@ inline std::optional<std::size_t> IndexOf(std::vector<ObjectGuid> const& guids, 
     return std::size_t(itr - guids.begin());
 }
 
+// Members on the ranged arcs, in slot order: healers first (they must stay
+// on the 22 yd arc), then ranged damage, then melee beyond the inner arc.
+inline std::vector<ObjectGuid> RangedSlotOrder(Duties const& duties)
+{
+    std::vector<ObjectGuid> order = duties.RangedHealers;
+    for (ObjectGuid guid : duties.Ranged)
+        if (std::find(order.begin(), order.end(), guid) == order.end())
+            order.push_back(guid);
+    for (std::size_t index = InnerMeleeCapacity; index < duties.Melee.size(); ++index)
+        order.push_back(duties.Melee[index]);
+    return order;
+}
+
 inline std::optional<Point> SpreadSlot(Duties const& duties, Point centre, ObjectGuid guid)
 {
     if (guid == duties.BreakTank)
@@ -126,19 +158,30 @@ inline std::optional<Point> SpreadSlot(Duties const& duties, Point centre, Objec
     if (guid == duties.DoubleAttackTank)
         return ClampToChamber(Offset(centre, Rotate(RaidForward, DoubleAttackTankAngle),
             DoubleAttackTankDistance));
-    if (std::optional<std::size_t> index = IndexOf(duties.Melee, guid))
+    if (std::optional<std::size_t> index = IndexOf(duties.Melee, guid);
+        index && *index < InnerMeleeCapacity)
     {
-        // Two melee sit 25 degrees either side of the rear axis (9.3 yd apart).
-        float const span = duties.Melee.size() <= 2 ? 25.0f : 60.0f;
-        float const angle = FanAngle(*index, duties.Melee.size(), span);
+        // Two melee sit 30 degrees either side of the rear axis (11.0 yd
+        // apart); three sit 60 degrees apart.
+        std::size_t const count = std::min(duties.Melee.size(), InnerMeleeCapacity);
+        float const span = count <= 2 ? 30.0f : 60.0f;
+        float const angle = FanAngle(*index, count, span);
         return ClampToChamber(Offset(centre, Rotate(RearDirection(), angle), MeleeRadius));
     }
-    if (std::optional<std::size_t> index = IndexOf(duties.Ranged, guid))
+    std::vector<ObjectGuid> const order = RangedSlotOrder(duties);
+    std::optional<std::size_t> const index = IndexOf(order, guid);
+    if (!index)
+        return std::nullopt;
+    if (*index < RangedArcCapacity)
     {
-        float const angle = FanAngle(*index, duties.Ranged.size(), 75.0f);
+        std::size_t const count = std::min(order.size(), RangedArcCapacity);
+        float const angle = FanAngle(*index, count, 75.0f);
         return ClampToChamber(Offset(centre, Rotate(RearDirection(), angle), RangedRadius));
     }
-    return std::nullopt;
+    std::size_t const outerCount = order.size() - RangedArcCapacity;
+    float const span = OuterRangedStep * float(outerCount - 1) / 2.0f;
+    float const angle = FanAngle(*index - RangedArcCapacity, outerCount, span);
+    return ClampToChamber(Offset(centre, Rotate(RearDirection(), angle), OuterRangedRadius));
 }
 
 inline Point StackCentre(Point centre)

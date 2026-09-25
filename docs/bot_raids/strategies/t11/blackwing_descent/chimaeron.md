@@ -111,22 +111,27 @@ Assassination Rogue and Demonology Warlock. Duties are chosen by capability, not
   to stay above the floor. The next tank soaks Double Attack. A configured `main_tank` lease wins.
 - **Tank healer.** Holy Paladin first, then Discipline Priest, Holy Priest, Restoration Druid and
   Restoration Shaman.
-- **Lust owner.** A mage (Time Warp).
+- **Lust owner.** A mage (Time Warp) first, then a shaman (Bloodlust, or Heroism when that is the
+  variant the bot knows).
 - **Barrier owner.** The Discipline Priest.
 - **Spirit Link owner.** The Restoration Shaman.
 
 Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/`):
 
-- **Prewake** (route node `bwd.chimaeron.wake_wait`). The Break tank stands 9 yd north of the
-  sleeping boss and everyone else at least 16 yd away, so the native wake-up picks the Break tank.
-  Offense is suppressed. The native route keeps the node and its completion. The Finkle interaction
-  itself is the route's `gossip_select_sequence` node.
+- **Prewake** (route nodes `bwd.chimaeron.regroup`, `.finkle` and `.wake_wait` while the boss
+  sleeps). Offense is suppressed so nobody pulls him before the Bile-O-Tron is active, unless
+  another hostile is fighting a raid member (a patrol or leftover pack in the composed route). On
+  the wake wait, the Break tank stands 9 yd north of the boss and everyone else at least 16 yd away,
+  so the native wake-up picks the Break tank. The native route keeps the nodes and their
+  completions. The Finkle interaction itself is the route's `gossip_select_sequence` node.
 - **Mixture up.** Both guides say to spread at least 6 yd, which minimizes the -75% hit debuff and
-  keeps each Slime on one player. Slots are at least 7 yd apart:
+  keeps each Slime on one player. Slots are at least 11 yd apart, and a member only moves when
+  more than 2 yd off its slot, so two members are always more than 6 yd apart:
   - Break tank 10 yd north of the boss;
   - Double Attack tank 13 yd at -60 degrees;
-  - melee 11 yd behind at ±25 degrees;
-  - ranged DPS and healers 22 yd behind, spread over ±75 degrees.
+  - up to three melee 11 yd behind (±30 degrees for two, 60 degrees apart for three);
+  - healers, then ranged DPS, 22 yd behind over ±75 degrees (at most six; melee reach against
+    Chimaeron is 22.8 yd); any overflow sits on a 33 yd arc 20 degrees apart.
 
   The formation centre is the boss's home while he is tanked in place. Slots are clamped to the
   Bile-O-Tron patrol extent.
@@ -139,7 +144,8 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - once the charge is spent, the Break tank taunts back;
   - during Feud, neither taunts until the last 2.5 s;
   - a non-tank victim is taken back by the Break tank;
-  - between 21.5% and 20% the Double Attack tank takes the boss into Mortality;
+  - between 21.5% and 20%, once the burn is released, the Double Attack tank takes the boss into
+    Mortality (while damage is still held the ordinary exchange continues);
   - under Mortality nobody taunts.
 - **Healing:**
   - the boss victim at or below 20,000 gets the tank healer and the first raid healer;
@@ -148,10 +154,12 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
     healed in health order, and the healers split that list;
   - during an outage, healers heal by health percentage;
   - under Mortality nothing is published (healing is 99% reduced).
-- **Burn window.** Between 23% and 20.3%, everyone holds damage until the mixture is up, no Massacre
-  is casting or due within 8 s, and both tanks are at 80% or more. Then the mage casts Time Warp and
-  the raid pushes into Mortality (both guides). In Mortality the Discipline Priest uses Pain
-  Suppression on a failing tank and shields the victim. Absorbs still work.
+- **Burn window.** Between 23% and 20.3%, everyone but the tanks holds damage until the mixture is
+  up, no Massacre is casting or due within 8 s, and both tanks are at 80% or more (the Break tank is
+  healed to 80% inside the window). Then the lust owner lusts and the raid pushes into Mortality
+  (both guides). The release is latched for the attempt: a later swing on a tank cannot stop the
+  push. In Mortality the Discipline Priest shields the victim whenever Weakened Soul allows and uses
+  Pain Suppression once on a failing tank. Absorbs still work.
 
 ## Open items (unresolved)
 

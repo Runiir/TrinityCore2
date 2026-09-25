@@ -2,6 +2,7 @@
 #define TRINITY_BOT_CHIMAERON_SUPPORT_ACTIONS_H
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronFormation.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotChimaeronMemory.h"
 
 #include <array>
 #include <optional>
@@ -17,9 +18,13 @@
 //   Restoration Shaman follows with Spirit Link Totem for the second half.
 // - Burn window: both guides hold damage around 22-25% until the raid is safe
 //   (no Massacre in flight, tanks healthy, mixture up), then Bloodlust and push
-//   through 20%. Mortality (-99% healing) makes the entry state final.
+//   through 20%. Mortality (-99% healing) makes the entry state final. Once
+//   released (ready raid, lust, damage-over-time creep past the floor, or
+//   Mortality) the hold is latched off for the scope: a swing on a tank
+//   mid-burn cannot stop the push while the lust runs.
 // - Mortality: absorbs still work, so the Discipline Priest shields the boss
-//   victim and uses Pain Suppression on a failing tank.
+//   victim (Power Word: Shield whenever Weakened Soul allows) and uses Pain
+//   Suppression once on a failing tank.
 namespace BotEncounter::Chimaeron
 {
 constexpr uint32 PowerWordBarrierSpell = 62618;
@@ -36,11 +41,9 @@ constexpr uint32 SpiritLinkWindowMaxMs = 11000;
 constexpr uint32 SpiritLinkWindowMinMs = 7000;
 constexpr float StackPresenceYards = 4.0f;
 
-constexpr float BurnHoldMaxPct = 23.0f;
-constexpr float BurnHoldFloorPct = 20.3f;
-constexpr float BurnReadyTankPct = 80.0f;
 constexpr uint32 BurnHoldMassacreLeadMs = 8000;
 
+constexpr std::array<uint32, 4> RaidHasteAuras = { 2825, 32182, 80353, 90355 };
 constexpr std::array<uint32, 8> RaidHasteAndLockouts = {
     2825, 32182, 80353, 90355,      // active Bloodlust/Heroism/Time Warp/Ancient Hysteria
     57723, 57724, 80354, 95809,     // Exhaustion/Sated/Temporal Displacement/Insanity
@@ -74,17 +77,6 @@ inline bool BurnReady(Blackboard const& board, Observation const& observation,
     return TanksReady(board, duties);
 }
 
-inline bool BurnHold(Blackboard const& board, Observation const& observation,
-    Duties const& duties)
-{
-    if (!observation.Boss || (observation.CurrentPhase != Phase::Mixture
-            && observation.CurrentPhase != Phase::Outage))
-        return false;
-    float const pct = observation.Boss->HealthPct;
-    return pct <= BurnHoldMaxPct && pct > BurnHoldFloorPct
-        && !BurnReady(board, observation, duties);
-}
-
 inline bool RaidLustLocked(Blackboard const& board)
 {
     for (ActorSnapshot const& player : board.Players)
@@ -102,8 +94,54 @@ inline bool AnyPlayerHasAura(Blackboard const& board, uint32 spellId)
     return false;
 }
 
+inline bool RaidHasteActive(Blackboard const& board)
+{
+    for (uint32 spell : RaidHasteAuras)
+        if (AnyPlayerHasAura(board, spell))
+            return true;
+    return false;
+}
+
+// This revision releases the burn: Mortality already started, damage over
+// time pushed the boss past the hold floor, a raid lust is running inside the
+// window, or the raid is ready inside the window.
+inline bool BurnReleaseObserved(Blackboard const& board, Observation const& observation,
+    Duties const& duties)
+{
+    if (!observation.Boss)
+        return false;
+    if (observation.CurrentPhase == Phase::Mortality)
+        return true;
+    float const pct = observation.Boss->HealthPct;
+    if (pct > BurnHoldMaxPct)
+        return false;
+    return pct <= BurnHoldFloorPct || RaidHasteActive(board)
+        || BurnReady(board, observation, duties);
+}
+
+// The burn is released now or was released earlier in this scope. Without
+// memory (replays) only the current revision counts.
+inline bool BurnReleased(Blackboard const& board, Observation const& observation,
+    Duties const& duties, ChimaeronEncounterMemory const* memory)
+{
+    return (memory && memory->BurnReleased)
+        || BurnReleaseObserved(board, observation, duties);
+}
+
+inline bool BurnHold(Blackboard const& board, Observation const& observation,
+    Duties const& duties, ChimaeronEncounterMemory const* memory = nullptr)
+{
+    if (!observation.Boss || (observation.CurrentPhase != Phase::Mixture
+            && observation.CurrentPhase != Phase::Outage))
+        return false;
+    float const pct = observation.Boss->HealthPct;
+    return pct <= BurnHoldMaxPct && pct > BurnHoldFloorPct
+        && !BurnReleased(board, observation, duties, memory);
+}
+
 inline std::optional<CastDecision> DecideSupportCast(Blackboard const& board,
-    Observation const& observation, Duties const& duties, ObjectGuid botGuid)
+    Observation const& observation, Duties const& duties, ObjectGuid botGuid,
+    ChimaeronEncounterMemory const* memory = nullptr)
 {
     if (!observation.Boss || !observation.Bot)
         return std::nullopt;
@@ -113,7 +151,8 @@ inline std::optional<CastDecision> DecideSupportCast(Blackboard const& board,
     if (botGuid == duties.LustOwner && duties.LustSpell && !RaidLustLocked(board))
     {
         bool const burnEntry = phase == Phase::Mixture
-            && boss.HealthPct <= BurnHoldMaxPct && BurnReady(board, observation, duties);
+            && boss.HealthPct <= BurnHoldMaxPct
+            && BurnReleased(board, observation, duties, memory);
         if (phase == Phase::Mortality || burnEntry)
             return CastDecision{ botGuid, duties.LustSpell, "burn_bloodlust" };
     }
@@ -136,14 +175,18 @@ inline std::optional<CastDecision> DecideSupportCast(Blackboard const& board,
         if (ActorSnapshot const* victim = FindPlayer(board, boss.VictimGuid))
             if (victim->Alive)
             {
-                if (IsTank(duties, victim->Guid) && victim->HealthPct < 70.0f
-                    && !HasAura(*victim, PainSuppressionSpell))
-                    return CastDecision{ victim->Guid, PainSuppressionSpell,
-                        "mortality_pain_suppression" };
+                // Shield whenever Weakened Soul allows; Pain Suppression (3 min
+                // cooldown, invisible on the blackboard) only once per scope.
                 if (!HasAura(*victim, PowerWordShieldSpell)
                     && !HasAura(*victim, WeakenedSoulAura))
                     return CastDecision{ victim->Guid, PowerWordShieldSpell,
                         "mortality_victim_shield" };
+                bool const suppressionUsed = (memory && memory->PainSuppressionObserved)
+                    || AnyPlayerHasAura(board, PainSuppressionSpell);
+                if (IsTank(duties, victim->Guid) && victim->HealthPct < 70.0f
+                    && !suppressionUsed)
+                    return CastDecision{ victim->Guid, PainSuppressionSpell,
+                        "mortality_pain_suppression" };
             }
     return std::nullopt;
 }

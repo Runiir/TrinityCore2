@@ -11,6 +11,7 @@
 
 #include <string>
 #include <utility>
+#include <variant>
 
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
@@ -36,7 +37,14 @@ void BotWorldPopulationMgr::SubmitAdaptiveChimaeronCandidates(BotUpdateContext& 
         action.UtilityScore = proposal.Utility;
         action.RequiredResources = proposal.Resources();
         action.ExpiresAtMs = proposal.ExpiresAtMs;
-        action.Attempt = [this, &context, intent = proposal.Action,
+        BotNativeAction::Intent intent = proposal.Action;
+        // The shaman lust is faction-specific: cast the variant this bot knows.
+        if (auto* cast = std::get_if<BotNativeAction::CastSpell>(&intent);
+            cast && cast->SpellId == BotEncounter::Chimaeron::BloodlustSpell
+            && !context.Bot->HasSpell(BotEncounter::Chimaeron::BloodlustSpell)
+            && context.Bot->HasSpell(BotEncounter::Chimaeron::HeroismSpell))
+            cast->SpellId = BotEncounter::Chimaeron::HeroismSpell;
+        action.Attempt = [this, &context, intent = std::move(intent),
             mechanic = proposal.Id.Mechanic]()
         {
             BotActionArbitration::Outcome outcome = ExecuteNativeActionIntent(

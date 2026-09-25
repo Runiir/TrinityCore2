@@ -39,6 +39,11 @@ constexpr uint64 MixtureFloorHealth = 10000;
 // small non-lethal hit cannot leave them unprotected before the next one.
 constexpr uint64 FloorTargetHealth = 20000;
 constexpr float MortalityHealthPct = 20.0f;
+// Burn window before Mortality (both guides pause around 22-25%): damage is
+// held between these bounds until the raid is ready; tanks enter at 80%+.
+constexpr float BurnHoldMaxPct = 23.0f;
+constexpr float BurnHoldFloorPct = 20.3f;
+constexpr float BurnReadyTankPct = 80.0f;
 constexpr uint32 FeudDurationMs = 30000;
 constexpr uint32 MassacreCastMs = 4000;
 
@@ -97,6 +102,25 @@ inline ActorSnapshot const* FindPlayer(Blackboard const& board, ObjectGuid guid)
         if (player.Guid == guid)
             return &player;
     return nullptr;
+}
+
+// Another hostile (patrol, leftover trash, a summon) is fighting a raid
+// member or a raid pet. Prewake offense suppression must not stop the raid
+// from answering it; only the sleeping boss is off limits.
+inline bool OtherHostileEngaged(Blackboard const& board, ActorSnapshot const& boss)
+{
+    auto raidMember = [&board](ObjectGuid guid)
+    {
+        ActorSnapshot const* actor = board.FindActor(guid);
+        return actor && (actor->Kind == ActorKind::Player || actor->Kind == ActorKind::Pet);
+    };
+    for (auto const* actors : { &board.Hostiles, &board.Summons })
+        for (ActorSnapshot const& actor : *actors)
+            if (actor.Alive && actor.Guid != boss.Guid && actor.Kind != ActorKind::Pet
+                && actor.Attackable && actor.InCombat && !actor.VictimGuid.IsEmpty()
+                && raidMember(actor.VictimGuid))
+                return true;
+    return false;
 }
 
 inline bool IsMortality(ActorSnapshot const& boss)
