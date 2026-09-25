@@ -1,6 +1,7 @@
 #include "Bots/BotSpellResolution.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotNativeMovementOutcome.h"
+#include "Bots/BotWorldPopulationMgrNativePathTransportSurface.h"
 #include "Bots/BotWorldPopulationMgrValidationRouteBoardingAction.h"
 
 #include "CharmInfo.h"
@@ -473,6 +474,10 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
         else if constexpr (std::is_same_v<T, BotNativeAction::TransportLeave>)
         {
             return BotValidationRouteBoardingAction::LeaveTransport(bot, action);
+        }
+        else if constexpr (std::is_same_v<T, BotNativeAction::TransportSurfaceMove>)
+        {
+            return BotTransportSurfaceMovement::Execute(bot, action);
         }
         else if constexpr (std::is_same_v<T, BotNativeAction::SpellClick>)
         {

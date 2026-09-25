@@ -426,6 +426,41 @@ Boss notes:
   spirits and bell intro stay unseeded. Chimaeron needs the Finkle gossip.
 - Nefarian needs all five dead, the orb, and T's descent.
 
+### Round 2 contract: transport movement (package T)
+
+- **Route rows.** A transport contract may declare `approach`. `wait_point` is not
+  allowed next to an approach.
+  - **`surface_walk` {start_point}.** The member waits at the start point on the navmesh
+    lip. Once the platform is ready, and its remaining rest covers the walk plus 550 ms,
+    it walks one checked straight segment to the board point on the platform's own
+    model, then boards.
+  - **`ledge_drop`** {start_point, step_off_point, landing_z, landing_tolerance_yards,
+    landing_surface transport|static, min_health_after_fall_pct}. The member waits at
+    the lip, then steps off where its whole footprint has left the lip. It falls with
+    `MotionMaster::MoveFall` and reports the landing (MSG_MOVE_FALL_LAND, so
+    `Player::HandleFall` applies fall damage), then boards.
+  - **Riders with an exit.** With an approach and an exit, a rider crosses the car to
+    `disembark_point` in one checked walk and leaves over static ground there.
+- **Encounter seam.** `BotNativeAction::TransportSurfaceMove` (executor
+  `BotTransportSurfaceMovement::Execute`, header BotWorldPopulationMgrNativePathTransportSurface.h).
+  - **`Walk` to a point:** EndOnTransport is true for a point on the platform and false
+    for static ground. Passengers stay passengers, and the platform must be stationary.
+  - **`StepOff`, then `Fall` once settled with no floor, then `Land`** once
+    `BotValidationRouteBoardingAction::NativeFallLandingPending`: works from static
+    ground or from a raised part of the same transport, such as a pillar top.
+
+  Each stage re-checks floor, collision and landing, and otherwise returns a typed
+  Retryable/Unsafe reason. It cannot swim or climb.
+- **Nefarian geometry (client data).** No static navmesh covers the platform (the lava
+  navmesh lies at z 3.0), so ordinary Move intents are rejected there; use the seam.
+  - The model frame is world rotated by pi about (-107.213, -224.62).
+  - The centre floor is at local z -0.5..+0.1, rising to +1.44 at r 32-60 (the outer
+    ring, world z 8.47 when raised).
+  - Pillar blocks sit at headings 0/120/240 deg, r 36-44, with tops at +9.925 and
+    near-vertical sides.
+  - The ledge lip is at x -157.65. A ledge drop lands on the outer ring at z 8.51 (a
+    32.8 yd fall, 34.9% of max health).
+
 ### Coordination rules for round 2
 
 - Use `raid_workloop start --preview` or `raid_workloop boss ...` read-only. Only the

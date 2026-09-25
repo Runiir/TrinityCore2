@@ -138,13 +138,38 @@ struct ReclaimCorpse { ObjectGuid Corpse; };
 // own passenger bookkeeping.
 struct TransportBoard { ObjectGuid Transport; float FloorToleranceYards = 0.5f; };
 struct TransportLeave { ObjectGuid Transport; float FloorToleranceYards = 0.5f; };
+// Lawful movement where the static navmesh does not reach: a straight walk
+// across a GAMEOBJECT_TYPE_TRANSPORT platform's own surface (Walk), or a
+// ledge drop onto it (StepOff, Fall, Land). The executor
+// (BotTransportSurfaceMovement::Execute) re-proves each stage against static
+// and dynamic geometry and the platform's model, then submits only an
+// ordinary point spline, MotionMaster::MoveFall or the client's own position
+// and landing reports; it never relocates a unit or changes its height.
+struct TransportSurfaceMove
+{
+    enum class Stage : uint8 { Walk, StepOff, Fall, Land };
+    ObjectGuid Transport;
+    Stage Kind = Stage::Walk;
+    // Walk destination or step-off point.
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+    // Walk: the destination is this transport's own surface (boarding).
+    bool EndOnTransport = true;
+    float FloorToleranceYards = 0.5f;
+    // StepOff: the floor the native fall must land on and the health left.
+    float LandingZ = 0.0f;
+    float LandingToleranceYards = 1.0f;
+    bool LandOnTransport = true;
+    float MinHealthAfterFallPct = 0.2f;
+};
 
 using Intent = std::variant<CastSpell, Move, DirectionalMobility,
     CombatResApproach,
     CombatResCast, CombatResAccept, NativeDescent,
     GossipOpen, GossipSelect, SpellClick, GameObjectUse, AreaTrigger, VehicleEnter, VehicleAction,
     VehicleExit, PetCommand, UseItem, ReleaseSpirit, ReclaimCorpse,
-    TransportBoard, TransportLeave>;
+    TransportBoard, TransportLeave, TransportSurfaceMove>;
 
 inline Intent WithMovementReason(Intent intent, std::string_view reason)
 {
@@ -186,7 +211,8 @@ inline BotActionArbitration::ResourceMask RequiredResources(Intent const& intent
                 Resource::Cast);
         if constexpr (std::is_same_v<T, NativeDescent>
             || std::is_same_v<T, TransportBoard>
-            || std::is_same_v<T, TransportLeave>)
+            || std::is_same_v<T, TransportLeave>
+            || std::is_same_v<T, TransportSurfaceMove>)
             return Uses(Resource::Movement);
         if constexpr (std::is_same_v<T, CombatResApproach>)
             // Approaching only submits native movement.  It observes the
