@@ -42,21 +42,19 @@ struct Readback
     std::vector<uint8> BossStates;
     uint32 CompletedEncounterMask = 0;
     std::string SaveDataHex;
-    bool SaveDataMatches = false;
-    // The seeded DONE set holds exactly: nothing lost, nothing extra.
-    bool LockoutIntact = false;
-    // States, mask and save bytes equal the seed exactly (seed-time check).
-    bool ExactMatch = false;
-    std::vector<std::string> ExtraDone;
-    std::vector<std::string> MissingDone;
+    // BotRaidLockout::CompareReadback against the seed (BotRaidLockoutPlan.h).
+    ReadbackComparison Comparison;
     uint32 RespawnRowsLoaded = 0;
+    // Everyone inside the map, game masters included.
     uint32 MapPlayers = 0;
     std::vector<DoorObservation> Doors;
     std::string Failure;
 };
 
-// Loads and validates experiments/configs/raid_prerequisites/<raid>.json
-// (BotWorld.RaidPrerequisitesDir). Returns "" or a failure reason.
+// Loads and validates <dir>/<raid>.json. The directory is
+// BotWorld.RaidPrerequisitesDir, default experiments/configs/raid_prerequisites;
+// a relative one resolves against the source tree (SourceDirectory /
+// BuiltInConfig), never the working directory. Returns "" or a failure reason.
 std::string LoadDefinition(std::string const& raid, RaidDefinition& def);
 
 // Allocates, writes, loads, reads back and registers one lockout for
@@ -68,9 +66,11 @@ std::string SeedLockout(std::string const& cohortId, std::string const& raid,
 // Live readback when the map is loaded, else from the database row.
 Readback ReadbackLockout(LockoutRecord const& record);
 
-// Removes the lockout: unbinds the recorded group and any online player,
-// unloads the map and the save, deletes its rows and frees the instance id.
-// Refuses while anyone is inside or still bound.
+// Removes the lockout: unloads the map, unbinds the recorded group, unloads
+// the save and deletes its rows. Every refusal (anyone inside, a foreign group
+// or an online player still bound) is checked before anything changes. The
+// instance id is never freed: a reused id would load this lockout's leftover
+// corpse and corpse_phases rows into a new instance.
 std::string ClearLockout(LockoutRecord const& record);
 
 // Makes sure the instance save of an idle lockout is in memory (the core

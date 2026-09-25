@@ -7,8 +7,18 @@
   "script_header": "FL",
   "initial_boss_state": "not_started",
   "initial_boss_state_source": "instance_firelands.cpp:123-127 Create() calls InstanceScript::Create(), which sets NOT_STARTED",
-  "difficulties": ["10n", "25n", "10h", "25h"],
-  "encounter_count": {"10n": 7, "25n": 7, "10h": 7, "25h": 7},
+  "difficulties": [
+    "10n",
+    "25n",
+    "10h",
+    "25h"
+  ],
+  "encounter_count": {
+    "10n": 7,
+    "25n": 7,
+    "10h": 7,
+    "25h": 7
+  },
   "verification_level": "native_script_audit_partial",
   "sources": {
     "script": "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp",
@@ -28,8 +38,14 @@
       "dungeon_encounter_bit": 1,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [52498],
-      "sources": ["firelands.h:35 DATA_BETHTILAC = 0", "firelands.h:65 BOSS_BETHTILAC = 52498"],
+      "dead_db_spawn_entries": [
+        52498
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "firelands.h:35 DATA_BETHTILAC = 0",
+        "firelands.h:65 BOSS_BETHTILAC = 52498"
+      ],
       "notes": "No native boss AI exists; the dead spawn follows the kill credit."
     },
     {
@@ -43,8 +59,15 @@
       "dungeon_encounter_bit": 4,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [52558],
-      "sources": ["firelands.h:36 DATA_LORD_RHYOLITH = 1", "firelands.h:64 BOSS_LORD_RHYOLITH = 52558", "boss_lord_rhyolith.cpp:296-300 BossAI::JustDied"]
+      "dead_db_spawn_entries": [
+        52558
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "firelands.h:36 DATA_LORD_RHYOLITH = 1",
+        "firelands.h:64 BOSS_LORD_RHYOLITH = 52558",
+        "boss_lord_rhyolith.cpp:296-300 BossAI::JustDied"
+      ]
     },
     {
       "key": "shannox",
@@ -57,8 +80,15 @@
       "dungeon_encounter_bit": 5,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [53691],
-      "sources": ["firelands.h:37 DATA_SHANNOX = 2", "firelands.h:63 BOSS_SHANNOX = 53691", "boss_shannox.cpp:96 _JustDied"]
+      "dead_db_spawn_entries": [
+        53691
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "firelands.h:37 DATA_SHANNOX = 2",
+        "firelands.h:63 BOSS_SHANNOX = 53691",
+        "boss_shannox.cpp:96 _JustDied"
+      ]
     },
     {
       "key": "alysrazor",
@@ -71,8 +101,14 @@
       "dungeon_encounter_bit": 6,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [52530],
-      "sources": ["firelands.h:38 DATA_ALYSRAZOR = 3", "firelands.h:66 BOSS_ALYSRAZOR = 52530"],
+      "dead_db_spawn_entries": [
+        52530
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "firelands.h:38 DATA_ALYSRAZOR = 3",
+        "firelands.h:66 BOSS_ALYSRAZOR = 52530"
+      ],
       "notes": "No native boss AI exists; the dead spawn follows the kill credit."
     },
     {
@@ -86,8 +122,16 @@
       "dungeon_encounter_bit": 2,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [53494],
-      "sources": ["firelands.h:39 DATA_BALEROC = 4", "firelands.h:67 BOSS_BALEROC = 53494", "boss_baleroc.cpp:172 _JustDied", "instance_firelands.cpp:62 Baleroc's firewall door is commented out"]
+      "dead_db_spawn_entries": [
+        53494
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "firelands.h:39 DATA_BALEROC = 4",
+        "firelands.h:67 BOSS_BALEROC = 53494",
+        "boss_baleroc.cpp:172 _JustDied",
+        "instance_firelands.cpp:62 Baleroc's firewall door is commented out"
+      ]
     },
     {
       "key": "majordomo_staghelm",
@@ -100,9 +144,16 @@
       "dungeon_encounter_bit": 0,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [],
-      "sources": ["firelands.h:40 DATA_MAJORDOMO_STAGHELM = 5", "firelands.h:68 BOSS_MAJORDOMO_STAGHELM = 52571", "instance_firelands.cpp:123-134 the instance script summons Majordomo on Create and on Load unless he is DONE"],
-      "notes": "Majordomo is a summon, so a natural kill leaves no database respawn row."
+      "dead_db_spawn_entries": [],
+      "summoned_entries": [
+        52571
+      ],
+      "sources": [
+        "firelands.h:40 DATA_MAJORDOMO_STAGHELM = 5",
+        "firelands.h:68 BOSS_MAJORDOMO_STAGHELM = 52571",
+        "instance_firelands.cpp:123-134 the instance script summons Majordomo on Create and on Load unless he is DONE"
+      ],
+      "spawn_notes": "Majordomo is summoned by the instance script on Create and Load unless DONE (instance_firelands.cpp:123-134)."
     },
     {
       "key": "ragnaros",
@@ -113,21 +164,44 @@
       "credit_type": "spell_cast",
       "dungeon_encounter_id": 1203,
       "dungeon_encounter_bit": 3,
-      "predecessors": ["majordomo_staghelm"],
+      "predecessors": [
+        "majordomo_staghelm"
+      ],
       "extra_save_values": {},
-      "dead_spawn_entries": [],
-      "sources": ["firelands.h:41 DATA_RAGNAROS = 6", "firelands.h:69 BOSS_RAGNAROS = 52409", "instance_firelands.cpp:60-64 GO_MAJORDOMO_FIREWALL 208906 is Majordomo's PASSAGE door", "firelands.cpp:34-35 spawn group 458 spawns only while Ragnaros is not DONE", "boss_ragnaros_firelands.cpp:924-927 victory sets DONE and the group inactive"],
+      "dead_db_spawn_entries": [],
+      "summoned_entries": [
+        52409
+      ],
+      "sources": [
+        "firelands.h:41 DATA_RAGNAROS = 6",
+        "firelands.h:69 BOSS_RAGNAROS = 52409",
+        "instance_firelands.cpp:60-64 GO_MAJORDOMO_FIREWALL 208906 is Majordomo's PASSAGE door",
+        "firelands.cpp:34-35 spawn group 458 spawns only while Ragnaros is not DONE",
+        "boss_ragnaros_firelands.cpp:924-927 victory sets DONE and the group inactive"
+      ],
       "predecessor_basis": "door_passage_by_name",
-      "notes": "dead_spawn_entries is empty: on normal Ragnaros submerges instead of dying and spawn group 458 stays inactive once he is DONE."
+      "notes": "on normal Ragnaros submerges instead of dying and spawn group 458 stays inactive once he is DONE.",
+      "spawn_notes": "Ragnaros comes from spawn group 458, activated by at_fl_ragnaros_spawn only while he is not DONE (firelands.cpp:34-35); the group must be a manual spawn group."
     }
   ],
   "save_extras": [],
   "readback_doors": [
-    {"entry": 208906, "name": "Majordomo firewall", "open_when_done": ["majordomo_staghelm"], "sources": ["instance_firelands.cpp:60-64"]}
+    {
+      "entry": 208906,
+      "name": "Majordomo firewall",
+      "open_when_done": [
+        "majordomo_staghelm"
+      ],
+      "sources": [
+        "instance_firelands.cpp:60-64"
+      ]
+    }
   ],
   "unverified": [
     "the native script gates no boss except Ragnaros (behind Majordomo's PASSAGE firewall); retail access rules for Baleroc and Majordomo are not enforced by the script and are not encoded",
     "Beth'tilac and Alysrazor have no native boss AI",
-    "credit_entry values are TDB history"
-  ]
+    "credit_entry values are TDB history",
+    "the dead and summoned entry split is checked at seed time against the loaded world data, not offline"
+  ],
+  "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }

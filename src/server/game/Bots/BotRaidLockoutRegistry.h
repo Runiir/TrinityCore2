@@ -18,12 +18,6 @@ class Group;
 
 namespace BotRaidLockout
 {
-struct RespawnRow
-{
-    uint32 SpawnId = 0;
-    uint32 Entry = 0;
-};
-
 struct LockoutRecord
 {
     std::string CohortId;
@@ -48,7 +42,9 @@ struct LockoutRecord
     std::vector<std::string> CreditEntryMismatches;
     uint64 SeededAtUnix = 0;
     // Admission: the planned raid leader whose seed group binds to the save,
-    // and the group that did bind. Both 0 while the lockout is idle.
+    // and the group that did bind. Both 0 while the lockout is idle. The
+    // group bind is in memory only (Group::BindToInstance with load = true),
+    // like this registry; the players' own permanent binds are native rows.
     uint32 ArmedLeaderGuid = 0;
     uint32 BoundGroupGuid = 0;
 };
@@ -69,6 +65,16 @@ bool HasInstance(uint32 instanceId);
 // instance save before the leader's own map entry, so CreateMap routes the
 // whole cohort into the seeded instance. A no-op for every other leader.
 void BindArmedSeedGroup(uint32 leaderGuid, Group* seed, uint32 placementMapId);
+
+// Undoes BindArmedSeedGroup when the armed leader's placement fails after the
+// bind (BotMgrLoading.cpp failure branches). A no-op for every other leader.
+void ReleaseArmedSeedGroup(uint32 leaderGuid);
+
+// Unbinds the group recorded for `cohortId` from its lockout, deletes any
+// group_instance row of that pair synchronously and forgets the group.
+// Admission rollback calls it before the bots leave, so no half-bound group
+// outlives a failed admission. A no-op without a bound group.
+void ReleaseSeedGroupBind(std::string const& cohortId);
 }
 
 #endif

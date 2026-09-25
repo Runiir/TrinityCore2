@@ -216,7 +216,8 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
                             guid.ToString().c_str(), seed->GetGUID().ToString().c_str(), placement->MapId);
                         // A cohort with a seeded lockout armed this leader:
                         // bind the group permanently before the entry below,
-                        // so CreateMap uses the seeded save. No-op otherwise.
+                        // so CreateMap uses the seeded save. No-op otherwise;
+                        // the failure branches below release the bind again.
                         BotRaidLockout::BindArmedSeedGroup(guid.GetCounter(), seed, placement->MapId);
                     }
                     else
@@ -242,6 +243,8 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
         {
             TC_LOG_ERROR("server", "PlayerBot placement failed character=%s stage=player_cannot_enter map=%u reason=%u",
                 guid.ToString().c_str(), placement->MapId, uint32(denyReason));
+            if (seedRaidLeader)
+                BotRaidLockout::ReleaseArmedSeedGroup(guid.GetCounter());
             bot->RemoveAllAuras();
             if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
                 prejoinedGroup->RemoveMember(bot->GetGUID());
@@ -256,6 +259,8 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
         {
             TC_LOG_ERROR("server", "PlayerBot placement failed character=%s stage=destination_map_rejected map=%u",
                 guid.ToString().c_str(), placement->MapId);
+            if (seedRaidLeader)
+                BotRaidLockout::ReleaseArmedSeedGroup(guid.GetCounter());
             bot->RemoveAllAuras();
             if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
                 prejoinedGroup->RemoveMember(bot->GetGUID());
@@ -281,6 +286,8 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     if (!bot->GetMap() || !bot->GetMap()->AddPlayerToMap(bot))
     {
         TC_LOG_ERROR("server", "PlayerBot load failed character=%s stage=add_player_to_map map=%u", guid.ToString().c_str(), bot->GetMapId());
+        if (seedRaidLeader)
+            BotRaidLockout::ReleaseArmedSeedGroup(guid.GetCounter());
         bot->RemoveAllAuras();
         if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
             prejoinedGroup->RemoveMember(bot->GetGUID());

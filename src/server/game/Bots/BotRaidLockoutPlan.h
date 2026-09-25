@@ -60,10 +60,16 @@ struct BossDefinition
     int32_t DungeonEncounterBit = -1; // -1 = unknown
     std::vector<std::string> Predecessors;
     std::map<std::string, uint32_t> ExtraSaveValues;
-    // Creature entries whose database spawns a natural kill leaves dead for
-    // the lockout. Unknown (null in JSON) refuses seeding the boss as done.
-    bool DeadSpawnEntriesKnown = false;
-    std::vector<uint32_t> DeadSpawnEntries;
+    // Creature entries a natural kill leaves dead as database spawns: each
+    // must have a spawn on the map and difficulty, and each spawn gets the
+    // "never respawn" row a real kill writes. Unknown (null in JSON) refuses
+    // seeding the boss as done.
+    bool DeadDbSpawnEntriesKnown = false;
+    std::vector<uint32_t> DeadDbSpawnEntries;
+    // Entries the script summons, or spawns through a manual spawn group only
+    // while the boss is not DONE; the DONE state alone keeps them away. A
+    // database spawn of one outside a manual spawn group refuses seeding.
+    std::vector<uint32_t> SummonedEntries;
     std::vector<uint8_t> Difficulties; // empty = every raid difficulty
 };
 
@@ -71,6 +77,22 @@ struct DoorReadback
 {
     uint32_t Entry = 0;
     std::vector<std::string> OpenWhenDone;
+};
+
+// One creature spawn of the lockout's map, from the loaded world data.
+struct SpawnFact
+{
+    uint32_t SpawnId = 0;
+    uint32_t Entry = 0;
+    uint8_t SpawnMask = 0;
+    bool ManualSpawnGroup = false; // spawned only when a script activates its group
+};
+
+// A "never respawn" row the seeder writes for a dead boss spawn.
+struct RespawnRow
+{
+    uint32_t SpawnId = 0;
+    uint32_t Entry = 0;
 };
 
 struct RaidDefinition
@@ -103,7 +125,9 @@ struct SeedPlan
     uint32_t CompletedEncounterMask = 0;
     std::vector<std::pair<std::string, uint32_t>> ExtraValues; // save order
     std::string SaveData;                  // canonical GetSaveData() bytes
-    std::vector<uint32_t> DeadSpawnEntries; // sorted, unique
+    // (boss key, entry) of the done bosses, in boss-index order.
+    std::vector<std::pair<std::string, uint32_t>> DeadDbSpawns;
+    std::vector<std::pair<std::string, uint32_t>> SummonedEntries;
 };
 
 inline bool ParseDifficulty(std::string const& token, uint8_t& difficulty)
@@ -349,10 +373,21 @@ inline std::string ValidateDefinition(RaidDefinition const& def)
             if (!RawByteRoundTrips(value))
                 return "extra_save_value_not_round_trip:" + boss.Key + ":" + name;
         }
-        for (uint32_t entry : boss.DeadSpawnEntries)
+        for (uint32_t entry : boss.DeadDbSpawnEntries)
             if (!entry)
-                return "invalid_dead_spawn_entry:" + boss.Key;
+                return "invalid_dead_db_spawn_entry:" + boss.Key;
+        for (uint32_t entry : boss.SummonedEntries)
+            if (!entry)
+                return "invalid_summoned_entry:" + boss.Key;
     }
+    // An entry is either left dead as a spawn or kept away as a summon.
+    std::set<uint32_t> deadEntries;
+    for (BossDefinition const& boss : def.Bosses)
+        deadEntries.insert(boss.DeadDbSpawnEntries.begin(), boss.DeadDbSpawnEntries.end());
+    for (BossDefinition const& boss : def.Bosses)
+        for (uint32_t entry : boss.SummonedEntries)
+            if (deadEntries.count(entry))
+                return "entry_both_dead_spawn_and_summoned:" + std::to_string(entry);
     std::string cycleKey;
     if (HasPredecessorCycle(def, cycleKey))
         return "predecessor_cycle:" + cycleKey;
@@ -429,7 +464,6 @@ inline std::string BuildSeedPlan(RaidDefinition const& def, uint8_t difficulty,
     for (SaveExtraDefinition const& extra : def.SaveExtras)
         extraValues[extra.Name] = extra.Default;
     std::map<std::string, std::string> extraOwner;
-    std::set<uint32_t> deadEntries;
     for (BossDefinition const* boss : ordered)
     {
         for (std::string const& predecessor : boss->Predecessors)
@@ -437,7 +471,7 @@ inline std::string BuildSeedPlan(RaidDefinition const& def, uint8_t difficulty,
                 return "bosses_done_not_predecessor_closed:" + boss->Key + ":" + predecessor;
         if (boss->DungeonEncounterBit < 0)
             return "boss_encounter_bit_unknown:" + boss->Key;
-        if (!boss->DeadSpawnEntriesKnown)
+        if (!boss->DeadDbSpawnEntriesKnown)
             return "boss_dead_spawns_unverified:" + boss->Key;
         plan.BossStates[boss->BossIndex] = StateDone;
         plan.BossesDone.push_back(boss->Key);
@@ -451,7 +485,10 @@ inline std::string BuildSeedPlan(RaidDefinition const& def, uint8_t difficulty,
             extraValues[name] = value;
             extraOwner[name] = boss->Key;
         }
-        deadEntries.insert(boss->DeadSpawnEntries.begin(), boss->DeadSpawnEntries.end());
+        for (uint32_t entry : boss->DeadDbSpawnEntries)
+            plan.DeadDbSpawns.emplace_back(boss->Key, entry);
+        for (uint32_t entry : boss->SummonedEntries)
+            plan.SummonedEntries.emplace_back(boss->Key, entry);
     }
 
     std::vector<std::pair<SaveExtraEncoding, uint32_t>> extras;
@@ -461,7 +498,47 @@ inline std::string BuildSeedPlan(RaidDefinition const& def, uint8_t difficulty,
         extras.emplace_back(extra.Encoding, extraValues[extra.Name]);
     }
     plan.SaveData = BuildSaveData(def.ScriptHeader, plan.BossStates, extras);
-    plan.DeadSpawnEntries.assign(deadEntries.begin(), deadEntries.end());
+    return "";
+}
+
+// The respawn rows of a plan against the map's creature spawns. Every
+// expected dead entry needs a spawn on this difficulty; a summoned entry may
+// only be spawned by a manual spawn group (a script gate), since nothing else
+// would keep it away once its boss is DONE. Returns "" or a refusal.
+inline std::string ResolveDeadSpawns(SeedPlan const& plan, std::vector<SpawnFact> const& spawns,
+    std::vector<RespawnRow>& rows)
+{
+    rows.clear();
+    auto onDifficulty = [&plan](SpawnFact const& spawn)
+    {
+        return (spawn.SpawnMask & (1u << plan.Difficulty)) != 0;
+    };
+    std::set<uint32_t> added;
+    for (auto const& [boss, entry] : plan.DeadDbSpawns)
+    {
+        bool found = false;
+        for (SpawnFact const& spawn : spawns)
+            if (spawn.Entry == entry && onDifficulty(spawn))
+            {
+                found = true;
+                if (added.insert(spawn.SpawnId).second)
+                    rows.push_back({ spawn.SpawnId, spawn.Entry });
+            }
+        if (!found)
+        {
+            rows.clear();
+            return "dead_spawn_missing:" + boss + ":" + std::to_string(entry);
+        }
+    }
+    for (auto const& [boss, entry] : plan.SummonedEntries)
+        for (SpawnFact const& spawn : spawns)
+            if (spawn.Entry == entry && onDifficulty(spawn) && !spawn.ManualSpawnGroup)
+            {
+                rows.clear();
+                return "summoned_entry_has_database_spawn:" + boss + ":" + std::to_string(entry);
+            }
+    std::sort(rows.begin(), rows.end(),
+        [](RespawnRow const& a, RespawnRow const& b) { return a.SpawnId < b.SpawnId; });
     return "";
 }
 
@@ -500,6 +577,160 @@ inline bool ParseSaveData(std::string const& data, RaidDefinition const& def, ui
         extras.emplace_back(extra.Name, value);
     }
     return true;
+}
+
+// What a seeded lockout must read back as.
+struct LockoutExpectation
+{
+    std::string ScriptHeader;
+    uint32_t EncounterCount = 0;
+    std::vector<uint8_t> States;
+    std::vector<std::string> BossesDone;
+    std::map<std::string, uint32_t> BossIndexByKey; // every boss on the difficulty
+    uint32_t CompletedEncounterMask = 0;
+    std::string SaveData;
+    size_t ExtraCount = 0;
+};
+
+struct ReadbackComparison
+{
+    std::vector<std::string> ExtraDone;   // DONE on the server, not seeded
+    std::vector<std::string> MissingDone; // seeded, not DONE on the server
+    // The DONE set and the encounter count are exact.
+    bool LockoutIntact = false;
+    // Every seeded boss is DONE and every other boss is untouched: NOT_STARTED
+    // or TO_BE_DECIDED. With InstanceMapLoadAllGrids a boss AI's Reset turns
+    // TO_BE_DECIDED into NOT_STARTED at load; both mean "never pulled".
+    bool StatesEquivalent = false;
+    bool MaskMatches = false;
+    bool SaveDataMatches = false;    // byte for byte
+    bool SaveDataEquivalent = false; // same header and extras, equivalent states
+    // Seed acceptance: intact, equivalent states and save data, exact mask.
+    bool SeedMatch = false;
+};
+
+// Positional parse of GetSaveData() output as written (no load-side
+// normalisation): "<c> " per header char, "<state> " per boss, then the raw
+// extras, exactly `extraCount` bytes.
+inline bool ParseSaveDataWritten(std::string const& data, std::string const& header,
+    uint32_t encounterCount, size_t extraCount, std::vector<uint32_t>& states, std::string& extras)
+{
+    states.clear();
+    extras.clear();
+    size_t pos = 0;
+    for (char c : header)
+    {
+        if (!std::isalpha(static_cast<unsigned char>(c)))
+            continue;
+        if (pos + 1 >= data.size() || data[pos] != c || data[pos + 1] != ' ')
+            return false;
+        pos += 2;
+    }
+    for (uint32_t index = 0; index < encounterCount; ++index)
+    {
+        size_t const start = pos;
+        uint64_t value = 0;
+        while (pos < data.size() && data[pos] >= '0' && data[pos] <= '9' && pos - start < 10)
+            value = value * 10 + uint64_t(data[pos++] - '0');
+        if (pos == start || pos >= data.size() || data[pos] != ' ' || value > 0xFFFFFFFFull)
+            return false;
+        states.push_back(uint32_t(value));
+        ++pos;
+    }
+    if (data.size() - pos != extraCount)
+        return false;
+    extras = data.substr(pos);
+    return true;
+}
+
+inline bool IsUntouchedState(uint32_t state)
+{
+    return state == StateNotStarted || state == StateToBeDecided;
+}
+
+template <typename Expected, typename Observed>
+inline bool StatesEquivalentForSeed(std::vector<Expected> const& expected, std::vector<Observed> const& observed)
+{
+    if (expected.size() != observed.size())
+        return false;
+    for (size_t index = 0; index < expected.size(); ++index)
+    {
+        bool const seededDone = uint32_t(expected[index]) == StateDone;
+        if (seededDone ? uint32_t(observed[index]) != StateDone
+            : !IsUntouchedState(uint32_t(observed[index])) || !IsUntouchedState(uint32_t(expected[index])))
+            return false;
+    }
+    return true;
+}
+
+inline ReadbackComparison CompareReadback(LockoutExpectation const& expected, uint32_t observedEncounterCount,
+    std::vector<uint8_t> const& observedStates, uint32_t observedMask, std::string const& observedSaveData)
+{
+    ReadbackComparison result;
+    std::vector<std::pair<uint32_t, std::string>> byIndex;
+    for (auto const& [key, index] : expected.BossIndexByKey)
+        byIndex.emplace_back(index, key);
+    std::sort(byIndex.begin(), byIndex.end());
+    for (auto const& [index, key] : byIndex)
+    {
+        bool const seeded = std::find(expected.BossesDone.begin(), expected.BossesDone.end(), key)
+            != expected.BossesDone.end();
+        bool const observed = index < observedStates.size() && observedStates[index] == StateDone;
+        if (observed && !seeded)
+            result.ExtraDone.push_back(key);
+        if (!observed && seeded)
+            result.MissingDone.push_back(key);
+    }
+    result.LockoutIntact = observedEncounterCount == expected.EncounterCount
+        && observedStates.size() == expected.EncounterCount
+        && result.ExtraDone.empty() && result.MissingDone.empty();
+    result.StatesEquivalent = StatesEquivalentForSeed(expected.States, observedStates);
+    result.MaskMatches = observedMask == expected.CompletedEncounterMask;
+    result.SaveDataMatches = observedSaveData == expected.SaveData;
+
+    std::vector<uint32_t> expectedWritten;
+    std::vector<uint32_t> observedWritten;
+    std::string expectedExtras;
+    std::string observedExtras;
+    result.SaveDataEquivalent = result.SaveDataMatches
+        || (ParseSaveDataWritten(expected.SaveData, expected.ScriptHeader, expected.EncounterCount,
+                expected.ExtraCount, expectedWritten, expectedExtras)
+            && ParseSaveDataWritten(observedSaveData, expected.ScriptHeader, expected.EncounterCount,
+                expected.ExtraCount, observedWritten, observedExtras)
+            && expectedExtras == observedExtras
+            && StatesEquivalentForSeed(expectedWritten, observedWritten));
+    result.SeedMatch = result.LockoutIntact && result.StatesEquivalent && result.MaskMatches
+        && result.SaveDataEquivalent;
+    return result;
+}
+
+// A readback door is a PASSAGE door: open only when every listed boss is DONE.
+inline bool DoorExpectedOpen(DoorReadback const& door, std::map<std::string, uint32_t> const& indexByKey,
+    std::vector<uint8_t> const& states)
+{
+    if (states.empty() || door.OpenWhenDone.empty())
+        return false;
+    for (std::string const& key : door.OpenWhenDone)
+    {
+        auto const index = indexByKey.find(key);
+        if (index == indexByKey.end() || index->second >= states.size() || states[index->second] != StateDone)
+            return false;
+    }
+    return true;
+}
+
+// Loaded door objects of one entry: GO_STATE_ACTIVE counts as open.
+inline std::string DoorObservedState(uint32_t openCount, uint32_t closedCount)
+{
+    if (!openCount && !closedCount)
+        return "not_loaded";
+    return closedCount ? "closed" : "open";
+}
+
+// An unloaded door is not a mismatch; its grid loads when a player nears it.
+inline bool DoorMismatch(bool expectedOpen, std::string const& observed)
+{
+    return observed != "not_loaded" && (observed == "open") != expectedOpen;
 }
 
 inline std::string ToHex(std::string const& bytes)

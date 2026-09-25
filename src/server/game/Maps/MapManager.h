@@ -26,6 +26,7 @@
 #include <boost/dynamic_bitset_fwd.hpp>
 #include <map>
 #include <shared_mutex>
+#include <unordered_set>
 
 class Battleground;
 class BattlegroundMap;
@@ -118,6 +119,11 @@ class TC_GAME_API MapManager
         uint32 GenerateInstanceId();
         void RegisterInstanceId(uint32 instanceId);
         void FreeInstanceId(uint32 instanceId);
+        // True once FreeInstanceId released the id in this process. The core
+        // frees an id right after queueing the async delete of its rows
+        // (InstanceSaveManager::_ResetInstance), so a seeded lockout skips
+        // such ids: its synchronous rows could otherwise be deleted later.
+        bool WasInstanceIdFreed(uint32 instanceId) const;
 
         MapUpdater * GetMapUpdater() { return &m_updater; }
 
@@ -153,6 +159,7 @@ class TC_GAME_API MapManager
         IntervalTimer i_timer;
 
         std::unique_ptr<InstanceIds> _freeInstanceIds;
+        std::unordered_set<uint32> _freedInstanceIds;
         uint32 _nextInstanceId;
         MapUpdater m_updater;
 

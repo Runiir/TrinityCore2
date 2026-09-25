@@ -48,7 +48,7 @@ std::string ReadbackState(Readback const& readback)
 {
     if (!readback.Failure.empty())
         return "broken";
-    return readback.LockoutIntact ? "intact" : "progressed";
+    return readback.Comparison.LockoutIntact ? "intact" : "progressed";
 }
 }
 
@@ -138,11 +138,13 @@ std::string CohortContext::ArmAdmission(BotWorldPopulationMgr& mgr, uint32 route
         Readback const readback = ReadbackLockout(record);
         if (!readback.Failure.empty())
             failure = "seeded_lockout_readback:" + readback.Failure;
-        else if (!readback.LockoutIntact)
+        else if (!readback.Comparison.LockoutIntact)
             // A previous attempt killed more bosses: seed a new lockout.
-            failure = "seeded_lockout_progressed:" + (readback.ExtraDone.empty()
-                ? std::string("state") : readback.ExtraDone.front());
+            failure = "seeded_lockout_progressed:" + (readback.Comparison.ExtraDone.empty()
+                ? std::string("state") : readback.Comparison.ExtraDone.front());
         else if (readback.MapPlayers)
+            // Anyone inside, game masters included: the seeded state must be
+            // exactly the one read back.
             failure = "seeded_lockout_map_occupied";
         else if (readback.SaveGroupBinds)
             failure = "seeded_lockout_group_already_bound";
@@ -210,7 +212,7 @@ std::string CohortContext::VerifyAdmission(BotWorldPopulationMgr& mgr)
         return fail("seeded_lockout_live_readback_missing");
     if (!readback.Failure.empty())
         return fail("seeded_lockout_readback:" + readback.Failure);
-    if (!readback.LockoutIntact)
+    if (!readback.Comparison.LockoutIntact)
         return fail("seeded_lockout_readback_mismatch");
 
     Registry::Disarm(cohort.Id);
@@ -229,8 +231,12 @@ void CohortContext::DisarmAdmission(BotWorldPopulationMgr& mgr)
     BotWorldPopulationMgr::CohortRuntime& cohort = mgr.Cohort();
     if (!cohort.SeededLockout.Attached)
         return;
+    // Before the bots leave: a group that disbands while still bound would
+    // queue the core's async group_instance delete for this instance.
+    ReleaseSeedGroupBind(cohort.Id);
     Registry::Disarm(cohort.Id);
     cohort.SeededLockout.Admitted = false;
+    cohort.SeededLockout.BoundGroupGuid = 0;
 }
 
 uint32 CohortContext::ResetKeepInstanceId(BotWorldPopulationMgr const& mgr)

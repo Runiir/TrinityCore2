@@ -95,11 +95,11 @@ def test_bwd_matches_the_native_script_exactly() -> None:
         assert row["creature_entry"] == int(re.search(rf"{boss_name}\s*=\s*(\d+)", header).group(1))
     # Omnotron is the controller 42186; 42166 is Arcanotron, one of its golems.
     assert rp.boss(doc, "omnotron")["creature_entry"] == 42186
-    assert "NPC_ARCANOTRON                          = 42166" in header
-    # The inner chamber door is a PASSAGE door of both wing bosses.
-    assert "{ GO_INNER_CHAMBER_DOOR,        DATA_MAGMAW,                    DOOR_TYPE_PASSAGE   }" in source
-    assert "{ GO_INNER_CHAMBER_DOOR,        DATA_OMNOTRON_DEFENSE_SYSTEM,   DOOR_TYPE_PASSAGE   }" in source
-    assert "GO_INNER_CHAMBER_DOOR                       = 205830" in header
+    assert re.search(r"\bNPC_ARCANOTRON\s*=\s*42166\s*,", header)
+    # The inner chamber door is a PASSAGE door of both wing bosses, and of nothing else.
+    door_rows = re.findall(r"\{\s*GO_INNER_CHAMBER_DOOR\s*,\s*(\w+)\s*,\s*(\w+)\s*\}", source)
+    assert sorted(door_rows) == [("DATA_MAGMAW", "DOOR_TYPE_PASSAGE"), ("DATA_OMNOTRON_DEFENSE_SYSTEM", "DOOR_TYPE_PASSAGE")]
+    assert re.search(r"\bGO_INNER_CHAMBER_DOOR\s*=\s*205830\s*,", header)
     assert doc["readback_doors"] == [dict(doc["readback_doors"][0], entry=205830, open_when_done=["magmaw", "omnotron"])]
     # Nefarian needs the other five (IsNefarianAvailable).
     available = re.search(r"for \(BWDDataTypes data : \{([^}]*)\}\)", source).group(1)
@@ -109,8 +109,8 @@ def test_bwd_matches_the_native_script_exactly() -> None:
         {"DATA_MAGMAW": "magmaw", "DATA_OMNOTRON_DEFENSE_SYSTEM": "omnotron", "DATA_CHIMAERON": "chimaeron",
          "DATA_ATRAMEDES": "atramedes", "DATA_MALORIAK": "maloriak"}[name] for name in listed)
     # The only save extra is the raw uint8 Atramedes intro state.
-    assert "uint8 _atramedesIntroState;" in source
-    assert "data << _atramedesIntroState;" in source
+    assert re.search(r"\buint8\s+_atramedesIntroState\s*;", source)
+    assert re.search(r"\bdata\s*<<\s*_atramedesIntroState\s*;", source)
     assert doc["save_extras"] == [dict(doc["save_extras"][0], name="atramedes_intro_state", encoding="raw_uint8", default=0)]
 
 
@@ -139,7 +139,8 @@ def test_seed_argument_and_plans_for_bwd_shards() -> None:
     assert plan["boss_states"] == [3, 3, 5, 5, 5, 5]
     assert plan["completed_encounters_mask"] == (1 << 2) | (1 << 5)
     assert plan["save_data"] == b"B W D 3 3 5 5 5 5 \x00"
-    assert plan["dead_spawn_entries"] == [41570]
+    assert plan["dead_db_spawns"] == [("magmaw", 41570)]
+    assert plan["summoned_entries"] == [("omnotron", entry) for entry in (42178, 42179, 42180, 42166)]
     nefarian = rp.seed_plan(doc, "10n", rp.precompleted_bosses(doc, "nefarian", "10n"))
     assert nefarian["save_data"] == b"B W D 3 3 3 3 3 5 \x03"
     assert rp.seed_plan(doc, "25h", [])["save_data"] == b"B W D 5 5 5 5 5 5 \x00"
@@ -173,6 +174,24 @@ def test_initial_boss_state_mirrors_each_scripts_create() -> None:
         assert rp.load(raid)["initial_boss_state"] == ("not_started" if calls_base else "to_be_decided"), raid
 
 
+def test_spawn_split_matches_the_native_scripts() -> None:
+    doc = _bwd()
+    source_dir = SCRIPTS / "EasternKingdoms/BlackrockMountain/BlackwingDescent"
+    instance = (source_dir / "instance_blackwing_descent.cpp").read_text()
+    nefarians_end = (source_dir / "boss_nefarians_end.cpp").read_text()
+    omnotron = (source_dir / "boss_omnotron_defense_system.cpp").read_text()
+    # Summoned by the scripts, so a DONE state alone keeps them away.
+    assert re.search(r"SummonCreature\(\s*BOSS_ATRAMEDES\b", instance)
+    assert re.search(r"DoSummon\(\s*BOSS_NEFARIAN\b", nefarians_end)
+    assert re.search(r"SummonCreatureGroup\(\s*SUMMON_GROUP_GOLEMS\s*\)", omnotron)
+    assert 41442 in rp.boss(doc, "atramedes")["summoned_entries"]
+    assert 41376 in rp.boss(doc, "nefarian")["summoned_entries"]
+    assert rp.boss(doc, "omnotron")["dead_db_spawn_entries"] == []
+    for raid in NATIVE_SCRIPTS:
+        for row in rp.load(raid)["bosses"]:
+            assert not set(row["dead_db_spawn_entries"] or []) & set(row["summoned_entries"]), (raid, row["key"])
+
+
 def test_other_raid_gates_follow_their_scripts() -> None:
     assert rp.precompleted_bosses(rp.load("throne_of_the_four_winds"), "alakir", "10n") == ["conclave_of_wind"]
     assert rp.precompleted_bosses(rp.load("firelands"), "ragnaros", "25n") == ["majordomo_staghelm"]
@@ -198,6 +217,10 @@ def test_other_raid_gates_follow_their_scripts() -> None:
         (lambda doc: doc["bosses"][0].__setitem__("dungeon_encounter_bit", 40), "invalid_dungeon_encounter_bit:magmaw"),
         (lambda doc: doc["bosses"][0].__setitem__("key", "Magmaw"), "invalid_boss_key:Magmaw"),
         (lambda doc: doc.__setitem__("initial_boss_state", "done"), "invalid_initial_boss_state"),
+        (lambda doc: doc["bosses"][0].pop("summoned_entries"), "summoned_entries_required:magmaw"),
+        (lambda doc: doc["bosses"][0].__setitem__("dead_db_spawn_entries", [0]), "invalid_dead_db_spawn_entry:magmaw"),
+        (lambda doc: doc["bosses"][3]["summoned_entries"].append(41570),
+         "entry_both_dead_spawn_and_summoned:41570"),
     ],
 )
 def test_validation_rejects_broken_graphs(mutate, failure: str) -> None:

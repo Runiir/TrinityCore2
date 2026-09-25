@@ -516,6 +516,12 @@ void MapManager::FreeInstanceId(uint32 instanceId)
     // If freed instance id is lower than the next id available for new instances, use the freed one instead
     _nextInstanceId = std::min(instanceId, _nextInstanceId);
     _freeInstanceIds->set(instanceId, true);
+    _freedInstanceIds.insert(instanceId);
+}
+
+bool MapManager::WasInstanceIdFreed(uint32 instanceId) const
+{
+    return _freedInstanceIds.count(instanceId) != 0;
 }
 
 // hack to allow conditions to access what faction owns the map (these worldstates should not be set on these maps)

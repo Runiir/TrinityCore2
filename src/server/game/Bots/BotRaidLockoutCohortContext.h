@@ -30,6 +30,8 @@ struct CohortContext
     // Verify: after every member entered and before the batch is sealed
     // (before any bot acts), instance id, group bind and live boss states.
     static std::string VerifyAdmission(BotWorldPopulationMgr& mgr);
+    // Admission rollback: releases the seed group's bind (in memory and any
+    // group_instance row) before the bots leave, then disarms the leader.
     static void DisarmAdmission(BotWorldPopulationMgr& mgr);
 
     // The instance whose binds ResetValidationBotPool keeps; 0 without one.

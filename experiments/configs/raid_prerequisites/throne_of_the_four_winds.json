@@ -7,8 +7,18 @@
   "script_header": "TOTFW",
   "initial_boss_state": "not_started",
   "initial_boss_state_source": "instance_throne_of_the_four_winds.cpp has no Create() override; InstanceScript::Create() sets NOT_STARTED",
-  "difficulties": ["10n", "25n", "10h", "25h"],
-  "encounter_count": {"10n": 2, "25n": 2, "10h": 2, "25h": 2},
+  "difficulties": [
+    "10n",
+    "25n",
+    "10h",
+    "25h"
+  ],
+  "encounter_count": {
+    "10n": 2,
+    "25n": 2,
+    "10h": 2,
+    "25h": 2
+  },
   "verification_level": "native_script_audit_partial",
   "sources": {
     "script": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
@@ -28,8 +38,17 @@
       "dungeon_encounter_bit": 1,
       "predecessors": [],
       "extra_save_values": {},
-      "dead_spawn_entries": [45870, 45871, 45872],
-      "sources": ["throne_of_the_four_winds.h:33 DATA_CONCLAVE_OF_WIND = 0", "throne_of_the_four_winds.h:55-57 Anshal 45870, Nezir 45871, Rohash 45872", "boss_conclave_of_wind.cpp:201-203 all three KillSelf; 285-287,533-535,776-778 _JustDied"],
+      "dead_db_spawn_entries": [
+        45870,
+        45871,
+        45872
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "throne_of_the_four_winds.h:33 DATA_CONCLAVE_OF_WIND = 0",
+        "throne_of_the_four_winds.h:55-57 Anshal 45870, Nezir 45871, Rohash 45872",
+        "boss_conclave_of_wind.cpp:201-203 all three KillSelf; 285-287,533-535,776-778 _JustDied"
+      ],
       "notes": "creature_entry is Anshal; all three share BossAI(DATA_CONCLAVE_OF_WIND)."
     },
     {
@@ -41,14 +60,29 @@
       "credit_type": "kill",
       "dungeon_encounter_id": 1034,
       "dungeon_encounter_bit": 0,
-      "predecessors": ["conclave_of_wind"],
+      "predecessors": [
+        "conclave_of_wind"
+      ],
       "extra_save_values": {},
-      "dead_spawn_entries": [46753],
-      "sources": ["throne_of_the_four_winds.h:34 DATA_ALAKIR = 1", "throne_of_the_four_winds.h:58 BOSS_ALAKIR = 46753", "instance_throne_of_the_four_winds.cpp:86-88 Al'Akir is IMMUNE_TO_PC until the Conclave is DONE", "instance_throne_of_the_four_winds.cpp:203-209 the flag is removed when the Conclave becomes DONE", "boss_alakir.cpp:363-365 _JustDied"],
+      "dead_db_spawn_entries": [
+        46753
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "throne_of_the_four_winds.h:34 DATA_ALAKIR = 1",
+        "throne_of_the_four_winds.h:58 BOSS_ALAKIR = 46753",
+        "instance_throne_of_the_four_winds.cpp:86-88 Al'Akir is IMMUNE_TO_PC until the Conclave is DONE",
+        "instance_throne_of_the_four_winds.cpp:203-209 the flag is removed when the Conclave becomes DONE",
+        "boss_alakir.cpp:363-365 _JustDied"
+      ],
       "predecessor_basis": "script_immune_flag"
     }
   ],
   "save_extras": [],
   "readback_doors": [],
-  "unverified": ["credit_entry values are TDB05 history"]
+  "unverified": [
+    "credit_entry values are TDB05 history",
+    "the dead and summoned entry split is checked at seed time against the loaded world data, not offline"
+  ],
+  "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }

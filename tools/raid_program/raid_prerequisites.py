@@ -151,11 +151,14 @@ def _shape_failure(doc: Any) -> str:
             return "extra_save_values_required" + context
         if not all(_is_uint(value) for value in extras.values()):
             return "invalid_extra_save_value" + context
-        if "dead_spawn_entries" not in row:
-            return "dead_spawn_entries_required" + context
-        dead = row["dead_spawn_entries"]
+        if "dead_db_spawn_entries" not in row:
+            return "dead_db_spawn_entries_required" + context
+        dead = row["dead_db_spawn_entries"]
         if dead is not None and (not isinstance(dead, list) or not all(_is_uint(item) for item in dead)):
-            return "invalid_dead_spawn_entries" + context
+            return "invalid_dead_db_spawn_entries" + context
+        summoned = row.get("summoned_entries")
+        if not isinstance(summoned, list) or not all(_is_uint(item) for item in summoned):
+            return "summoned_entries_required" + context
         if "difficulties" in row and (
             not isinstance(row["difficulties"], list)
             or any(item not in DIFFICULTY_TOKENS for item in row["difficulties"])
@@ -268,8 +271,15 @@ def validate(doc: Any) -> str:
                 return f"unknown_extra_save_value:{key}:{name}"
             if value > 255 or value in _WHITESPACE_BYTES:
                 return f"extra_save_value_not_round_trip:{key}:{name}"
-        if row["dead_spawn_entries"] is not None and any(not entry for entry in row["dead_spawn_entries"]):
-            return "invalid_dead_spawn_entry:" + key
+        if any(not entry for entry in row["dead_db_spawn_entries"] or []):
+            return "invalid_dead_db_spawn_entry:" + key
+        if any(not entry for entry in row["summoned_entries"]):
+            return "invalid_summoned_entry:" + key
+    dead_entries = {entry for row in doc["bosses"] for entry in row["dead_db_spawn_entries"] or []}
+    for row in doc["bosses"]:
+        for entry in row["summoned_entries"]:
+            if entry in dead_entries:
+                return f"entry_both_dead_spawn_and_summoned:{entry}"
     cycle = _has_cycle(doc)
     if cycle:
         return "predecessor_cycle:" + cycle
@@ -330,14 +340,15 @@ def seed_plan(doc: dict[str, Any], difficulty: str, bosses_done: Iterable[str]) 
     extras = {extra["name"]: extra["default"] for extra in doc["save_extras"]}
     owners: dict[str, str] = {}
     mask = 0
-    dead: set[int] = set()
+    dead: list[tuple[str, int]] = []
+    summoned: list[tuple[str, int]] = []
     for row in ordered:
         for predecessor in row["predecessors"]:
             if predecessor not in done:
                 raise PrerequisiteError(f"bosses_done_not_predecessor_closed:{row['key']}:{predecessor}")
         if row["dungeon_encounter_bit"] is None:
             raise PrerequisiteError(f"boss_encounter_bit_unknown:{row['key']}")
-        if row["dead_spawn_entries"] is None:
+        if row["dead_db_spawn_entries"] is None:
             raise PrerequisiteError(f"boss_dead_spawns_unverified:{row['key']}")
         states[row["boss_index"]] = STATE_DONE
         mask |= 1 << row["dungeon_encounter_bit"]
@@ -346,7 +357,8 @@ def seed_plan(doc: dict[str, Any], difficulty: str, bosses_done: Iterable[str]) 
                 raise PrerequisiteError(f"extra_save_value_conflict:{name}")
             extras[name] = value
             owners[name] = row["key"]
-        dead.update(row["dead_spawn_entries"])
+        dead.extend((row["key"], entry) for entry in row["dead_db_spawn_entries"])
+        summoned.extend((row["key"], entry) for entry in row["summoned_entries"])
     extra_values = [(extra["name"], extras[extra["name"]]) for extra in doc["save_extras"]]
     return {
         "bosses_done": [row["key"] for row in ordered],
@@ -355,7 +367,8 @@ def seed_plan(doc: dict[str, Any], difficulty: str, bosses_done: Iterable[str]) 
         "completed_encounters_mask": mask,
         "extra_values": extra_values,
         "save_data": build_save_data(doc["script_header"], states, [value for _, value in extra_values]),
-        "dead_spawn_entries": sorted(dead),
+        "dead_db_spawns": dead,
+        "summoned_entries": summoned,
     }
 
 

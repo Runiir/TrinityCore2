@@ -1,6 +1,7 @@
 #include "Bots/BotRaidLockoutSeeder.h"
 
 #include "Bots/BotRaidLockoutDefinitionJson.h"
+#include "BuiltInConfig.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
@@ -17,6 +18,7 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <mutex>
@@ -36,6 +38,7 @@ namespace BotRaidLockout
 namespace
 {
 constexpr size_t MaxDefinitionBytes = 1024 * 1024;
+constexpr uint32 MaxInstanceIdAttempts = 64;
 // Creature::setDeathState stores this for a dungeon boss without respawn
 // delay: "never respawn in this instance". A seeded lockout uses it for every
 // dead boss spawn; the weekly raid reset deletes it with the instance.
@@ -132,23 +135,65 @@ std::string VerifyOnServer(RaidDefinition const& def, uint8 difficulty, SeedPlan
     return "";
 }
 
-// Database spawns of the dead entries on this map and difficulty. Summons
-// (Atramedes, Nefarian, Majordomo) have none and contribute no row.
-std::vector<RespawnRow> ScanDeadSpawns(uint32 mapId, uint8 difficulty, std::vector<uint32> const& entries)
+// Every creature spawn of the map, with whether a manual spawn group (a
+// script gate) owns it; ResolveDeadSpawns decides from these facts.
+std::vector<SpawnFact> MapCreatureSpawns(uint32 mapId)
 {
-    std::vector<RespawnRow> rows;
-    if (entries.empty())
-        return rows;
-    std::set<uint32> const wanted(entries.begin(), entries.end());
+    std::vector<SpawnFact> spawns;
     for (auto const& [spawnId, data] : sObjectMgr->GetAllCreatureData())
-        if (data.mapId == mapId && data.dbData && wanted.count(data.id)
-            && (data.spawnMask & (1u << difficulty)))
-            rows.push_back({ spawnId, data.id });
-    std::sort(rows.begin(), rows.end(),
-        [](RespawnRow const& a, RespawnRow const& b) { return a.SpawnId < b.SpawnId; });
-    return rows;
+        if (data.mapId == mapId && data.dbData)
+            spawns.push_back({ spawnId, data.id, data.spawnMask,
+                data.spawnGroupData && (data.spawnGroupData->flags & SPAWNGROUP_FLAG_MANUAL_SPAWN) != 0 });
+    return spawns;
 }
 
+// The core's allocator only, never SQL. Ids are plentiful, so any id that is
+// not clean is skipped and stays reserved (it is never freed back):
+// - held: a map, save, lockout or `instance` row still uses it;
+// - freed earlier in this process: InstanceSaveManager::_ResetInstance frees
+//   an id right after queueing the async delete of its rows, which could
+//   remove the rows written here. If such a delete ever lands anyway, every
+//   readback fails closed with seeded_lockout_db_row_missing.
+uint32 AllocateInstanceId(uint32 mapId, std::string& failure)
+{
+    for (uint32 attempt = 0; attempt < MaxInstanceIdAttempts; ++attempt)
+    {
+        uint32 const id = sMapMgr->GenerateInstanceId();
+        if (!id || id == std::numeric_limits<uint32>::max())
+        {
+            failure = "instance_id_exhausted";
+            return 0;
+        }
+        DbRow row;
+        char const* skip = nullptr;
+        if (sMapMgr->FindMap(mapId, id) || sInstanceSaveMgr->GetInstanceSave(id)
+            || Registry::HasInstance(id) || ReadDbRow(id, row))
+            skip = "in_use";
+        else if (sMapMgr->WasInstanceIdFreed(id))
+            skip = "freed_in_this_process";
+        if (!skip)
+            return id;
+        TC_LOG_ERROR("server", "BotRaidLockout skipped instance id %u reason=%s (kept reserved)", id, skip);
+    }
+    failure = "instance_id_unavailable";
+    return 0;
+}
+
+LockoutExpectation ExpectationOf(LockoutRecord const& record)
+{
+    LockoutExpectation expected;
+    expected.ScriptHeader = record.ScriptHeader;
+    expected.EncounterCount = record.EncounterCount;
+    expected.States = record.ExpectedStates;
+    expected.BossesDone = record.BossesDone;
+    expected.BossIndexByKey = record.BossIndexByKey;
+    expected.CompletedEncounterMask = record.CompletedEncounterMask;
+    expected.SaveData = record.SaveData;
+    expected.ExtraCount = record.ExtraValues.size();
+    return expected;
+}
+
+// The instance id stays reserved: never FreeInstanceId (see ClearLockout).
 void RollbackSeed(LockoutRecord const& record)
 {
     sMapMgr->UnloadEmptyInstance(record.MapId, record.InstanceId);
@@ -156,9 +201,6 @@ void RollbackSeed(LockoutRecord const& record)
         if (!save->GetPlayerCount() && !save->GetGroupCount())
             sInstanceSaveMgr->UnloadInstanceSave(record.InstanceId);
     DeleteRowsSync(record.InstanceId);
-    if (!sInstanceSaveMgr->GetInstanceSave(record.InstanceId)
-        && !sMapMgr->FindMap(record.MapId, record.InstanceId))
-        sMapMgr->FreeInstanceId(record.InstanceId);
 }
 
 void ObserveDoors(LockoutRecord const& record, InstanceMap* map, Readback& readback)
@@ -167,21 +209,14 @@ void ObserveDoors(LockoutRecord const& record, InstanceMap* map, Readback& readb
     {
         DoorObservation observation;
         observation.Entry = door.Entry;
-        observation.ExpectedOpen = !readback.BossStates.empty();
-        for (std::string const& key : door.OpenWhenDone)
-        {
-            auto const index = record.BossIndexByKey.find(key);
-            if (index == record.BossIndexByKey.end() || index->second >= readback.BossStates.size()
-                || readback.BossStates[index->second] != StateDone)
-                observation.ExpectedOpen = false;
-        }
+        observation.ExpectedOpen = DoorExpectedOpen(door, record.BossIndexByKey, readback.BossStates);
         uint32 open = 0;
         uint32 closed = 0;
         if (map)
             for (auto const& [spawnId, gameObject] : map->GetGameObjectBySpawnIdStore())
                 if (gameObject && gameObject->GetEntry() == door.Entry)
                     ++(gameObject->GetGoState() == GO_STATE_ACTIVE ? open : closed);
-        observation.Observed = !open && !closed ? "not_loaded" : (closed ? "closed" : "open");
+        observation.Observed = DoorObservedState(open, closed);
         readback.Doors.push_back(observation);
     }
 }
@@ -191,12 +226,21 @@ std::string LoadDefinition(std::string const& raid, RaidDefinition& def)
 {
     if (!IsValidKey(raid))
         return "invalid_raid_key";
-    std::string const directory = sConfigMgr->GetStringDefault("BotWorld.RaidPrerequisitesDir",
+    std::filesystem::path directory = sConfigMgr->GetStringDefault("BotWorld.RaidPrerequisitesDir",
         "experiments/configs/raid_prerequisites");
-    std::string const path = directory + "/" + raid + ".json";
+    if (directory.empty())
+        return "prerequisites_dir_unset:BotWorld.RaidPrerequisitesDir";
+    if (directory.is_relative())
+    {
+        std::string const root = BuiltInConfig::GetSourceDirectory();
+        if (root.empty())
+            return "prerequisites_dir_unresolved:set BotWorld.RaidPrerequisitesDir to an absolute path";
+        directory = std::filesystem::path(root) / directory;
+    }
+    std::string const path = (directory / (raid + ".json")).string();
     std::ifstream input(path.c_str(), std::ios::in | std::ios::binary);
     if (!input)
-        return "prerequisite_file_unreadable:" + path;
+        return "prerequisite_file_unreadable:" + path + " (BotWorld.RaidPrerequisitesDir or SourceDirectory)";
     std::ostringstream text;
     text << input.rdbuf();
     if (text.str().size() > MaxDefinitionBytes)
@@ -233,6 +277,7 @@ Readback ReadbackLockout(LockoutRecord const& record)
     InstanceMap* instanceMap = map ? map->ToInstanceMap() : nullptr;
     InstanceScript* script = instanceMap ? instanceMap->GetInstanceScript() : nullptr;
     readback.MapLoaded = map != nullptr;
+    readback.MapPlayers = map ? uint32(map->GetPlayers().getSize()) : 0;
     if (script)
     {
         readback.Source = "live_instance_script";
@@ -242,7 +287,6 @@ Readback ReadbackLockout(LockoutRecord const& record)
             readback.BossStates.push_back(uint8(script->GetBossState(index)));
         readback.CompletedEncounterMask = script->GetCompletedEncounterMask();
         saveData = script->GetSaveData();
-        readback.MapPlayers = instanceMap->GetPlayersCountExceptGMs();
         for (RespawnRow const& respawn : record.RespawnRows)
             if (instanceMap->GetCreatureRespawnTime(respawn.SpawnId))
                 ++readback.RespawnRowsLoaded;
@@ -264,30 +308,14 @@ Readback ReadbackLockout(LockoutRecord const& record)
     }
 
     readback.SaveDataHex = ToHex(saveData);
-    readback.SaveDataMatches = saveData == record.SaveData;
-    std::vector<std::pair<uint32, std::string>> byIndex;
-    for (auto const& [key, index] : record.BossIndexByKey)
-        byIndex.emplace_back(index, key);
-    std::sort(byIndex.begin(), byIndex.end());
-    for (auto const& [index, key] : byIndex)
-    {
-        bool const expected = std::find(record.BossesDone.begin(), record.BossesDone.end(), key)
-            != record.BossesDone.end();
-        bool const observed = index < readback.BossStates.size() && readback.BossStates[index] == StateDone;
-        if (observed && !expected)
-            readback.ExtraDone.push_back(key);
-        if (!observed && expected)
-            readback.MissingDone.push_back(key);
-    }
-    readback.LockoutIntact = readback.EncounterCount == record.EncounterCount
-        && readback.BossStates.size() == record.EncounterCount
-        && readback.ExtraDone.empty() && readback.MissingDone.empty();
-    readback.ExactMatch = readback.LockoutIntact && readback.BossStates == record.ExpectedStates
-        && readback.CompletedEncounterMask == record.CompletedEncounterMask && readback.SaveDataMatches;
+    readback.Comparison = CompareReadback(ExpectationOf(record), readback.EncounterCount,
+        readback.BossStates, readback.CompletedEncounterMask, saveData);
     ObserveDoors(record, instanceMap, readback);
 
     if (!readback.Failure.empty())
         return readback;
+    // Fail closed: the row is the lockout. It is missing after a clear, a
+    // weekly raid reset, or a stray async delete of an earlier owner's rows.
     if (!readback.DbRowPresent)
         readback.Failure = "seeded_lockout_db_row_missing";
     else if (!readback.DbIdentityMatches)
@@ -296,11 +324,11 @@ Readback ReadbackLockout(LockoutRecord const& record)
         readback.Failure = "instance_script_mismatch";
     else if (readback.EncounterCount != record.EncounterCount)
         readback.Failure = "encounter_count_mismatch";
-    else if (!readback.MissingDone.empty())
-        readback.Failure = "seeded_boss_not_done:" + readback.MissingDone.front();
+    else if (!readback.Comparison.MissingDone.empty())
+        readback.Failure = "seeded_boss_not_done:" + readback.Comparison.MissingDone.front();
     else
         for (DoorObservation const& door : readback.Doors)
-            if (door.Observed != "not_loaded" && (door.Observed == "open") != door.ExpectedOpen)
+            if (DoorMismatch(door.ExpectedOpen, door.Observed))
             {
                 readback.Failure = "door_state_mismatch:" + std::to_string(door.Entry);
                 break;
@@ -361,19 +389,15 @@ std::string SeedLockout(std::string const& cohortId, std::string const& raid,
     record.CompletedEncounterMask = plan.CompletedEncounterMask;
     record.SaveData = plan.SaveData;
     record.ExtraValues = plan.ExtraValues;
-    record.RespawnRows = ScanDeadSpawns(def.MapId, difficulty, plan.DeadSpawnEntries);
+    failure = ResolveDeadSpawns(plan, MapCreatureSpawns(def.MapId), record.RespawnRows);
+    if (!failure.empty())
+        return failure;
     record.Doors = def.ReadbackDoors;
     record.SeededAtUnix = uint64(GameTime::GetGameTime());
 
-    // The core's own allocator: ids are never inserted by SQL while running.
-    record.InstanceId = sMapMgr->GenerateInstanceId();
-    if (!record.InstanceId || sMapMgr->FindMap(record.MapId, record.InstanceId)
-        || sInstanceSaveMgr->GetInstanceSave(record.InstanceId) || Registry::HasInstance(record.InstanceId))
-    {
-        uint32 const collided = record.InstanceId;
-        record.InstanceId = 0;
-        return "instance_id_in_use:" + std::to_string(collided);
-    }
+    record.InstanceId = AllocateInstanceId(record.MapId, failure);
+    if (!record.InstanceId)
+        return failure;
 
     WriteRowsSync(record);
     DbRow row;
@@ -404,7 +428,10 @@ std::string SeedLockout(std::string const& cohortId, std::string const& raid,
     std::string readbackFailure = readback.Failure;
     if (readbackFailure.empty() && readback.Source != "live_instance_script")
         readbackFailure = "seeded_lockout_live_readback_missing";
-    if (readbackFailure.empty() && !readback.ExactMatch)
+    // Untouched bosses may read back NOT_STARTED instead of TO_BE_DECIDED
+    // (InstanceMapLoadAllGrids: a boss AI's Reset initialises its state);
+    // the DONE set, the mask and the extras stay exact.
+    if (readbackFailure.empty() && !readback.Comparison.SeedMatch)
         readbackFailure = "seeded_lockout_readback_mismatch";
     if (readbackFailure.empty() && readback.RespawnRowsLoaded != record.RespawnRows.size())
         readbackFailure = "seeded_lockout_respawn_rows_not_loaded";
@@ -431,43 +458,54 @@ std::string SeedLockout(std::string const& cohortId, std::string const& raid,
 
 std::string ClearLockout(LockoutRecord const& record)
 {
+    Difficulty const difficulty = Difficulty(record.Difficulty);
+
+    // Every refusal first; nothing changes until all of them pass.
     Map* map = sMapMgr->FindMap(record.MapId, record.InstanceId);
     if (map && map->HavePlayers())
         return "lockout_map_has_players";
-
-    Difficulty const difficulty = Difficulty(record.Difficulty);
+    Group* recordedGroup = nullptr;
     if (record.BoundGroupGuid)
         if (Group* group = sGroupMgr->GetGroupByGUID(record.BoundGroupGuid))
             if (InstanceGroupBind* bind = group->GetBoundInstance(difficulty, record.MapId))
                 if (bind->save && bind->save->GetInstanceId() == record.InstanceId)
-                    group->UnbindInstance(record.MapId, record.Difficulty, true);
-
-    // Offline binds are rows only and are deleted below.
-    std::vector<ObjectGuid> boundPlayers;
-    {
-        std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
-        for (auto const& [guid, player] : ObjectAccessor::GetPlayers())
-            if (player)
-                if (InstancePlayerBind* bind = player->GetBoundInstance(record.MapId, difficulty, true))
-                    if (bind->save && bind->save->GetInstanceId() == record.InstanceId)
-                        boundPlayers.push_back(guid);
-    }
-    for (ObjectGuid const& guid : boundPlayers)
-        if (Player* player = ObjectAccessor::FindConnectedPlayer(guid))
-            player->UnbindInstance(record.MapId, difficulty, true);
-
+                    recordedGroup = group;
+    // Binds hold the save, so without a loaded save nothing online is bound.
     if (InstanceSave* save = sInstanceSaveMgr->GetInstanceSave(record.InstanceId))
-        if (save->GetPlayerCount() || save->GetGroupCount())
-            return "lockout_still_bound";
+    {
+        if (save->GetGroupCount() > (recordedGroup ? 1u : 0u))
+            return "lockout_bound_by_foreign_group";
+        if (save->GetPlayerCount())
+        {
+            std::string bound = "unknown";
+            std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
+            for (auto const& [guid, player] : ObjectAccessor::GetPlayers())
+                if (player)
+                    if (InstancePlayerBind* bind = player->GetBoundInstance(record.MapId, difficulty, true))
+                        if (bind->save && bind->save->GetInstanceId() == record.InstanceId)
+                        {
+                            bound = std::to_string(guid.GetCounter());
+                            break;
+                        }
+            return "lockout_bound_by_online_player:" + bound;
+        }
+    }
+
+    // Changes. With the checks above none of these can refuse; the map goes
+    // first, so even an unexpected refusal leaves every bind intact.
     if (!sMapMgr->UnloadEmptyInstance(record.MapId, record.InstanceId))
         return "lockout_map_unload_refused";
+    if (recordedGroup)
+        recordedGroup->UnbindInstance(record.MapId, record.Difficulty, true);
     if (sInstanceSaveMgr->GetInstanceSave(record.InstanceId))
         sInstanceSaveMgr->UnloadInstanceSave(record.InstanceId);
     if (sInstanceSaveMgr->GetInstanceSave(record.InstanceId))
-        return "lockout_save_unload_refused";
+        TC_LOG_ERROR("server", "BotRaidLockout clear left an unbound save in memory instance=%u (its id is never reused)",
+            record.InstanceId);
 
+    // Offline binds are rows only. The instance id is not freed: corpses and
+    // corpse_phases rows keyed by it would load into a reused instance.
     DeleteRowsSync(record.InstanceId);
-    sMapMgr->FreeInstanceId(record.InstanceId);
     TC_LOG_INFO("server", "BotRaidLockout cleared cohort=%s raid=%s map=%u instance=%u",
         record.CohortId.c_str(), record.Raid.c_str(), record.MapId, record.InstanceId);
     return "";
@@ -490,11 +528,14 @@ std::string ReadbackJson(Readback const& readback)
          << ",\"boss_states\":" << JsonNumberArray(readback.BossStates)
          << ",\"completed_encounters_mask\":" << readback.CompletedEncounterMask
          << ",\"save_data_hex\":\"" << readback.SaveDataHex << "\""
-         << ",\"save_data_matches\":" << (readback.SaveDataMatches ? "true" : "false")
-         << ",\"exact_match\":" << (readback.ExactMatch ? "true" : "false")
-         << ",\"lockout_intact\":" << (readback.LockoutIntact ? "true" : "false")
-         << ",\"extra_done\":" << JsonStringArray(readback.ExtraDone)
-         << ",\"missing_done\":" << JsonStringArray(readback.MissingDone)
+         << ",\"save_data_matches\":" << (readback.Comparison.SaveDataMatches ? "true" : "false")
+         << ",\"save_data_equivalent\":" << (readback.Comparison.SaveDataEquivalent ? "true" : "false")
+         << ",\"states_equivalent\":" << (readback.Comparison.StatesEquivalent ? "true" : "false")
+         << ",\"mask_matches\":" << (readback.Comparison.MaskMatches ? "true" : "false")
+         << ",\"seed_match\":" << (readback.Comparison.SeedMatch ? "true" : "false")
+         << ",\"lockout_intact\":" << (readback.Comparison.LockoutIntact ? "true" : "false")
+         << ",\"extra_done\":" << JsonStringArray(readback.Comparison.ExtraDone)
+         << ",\"missing_done\":" << JsonStringArray(readback.Comparison.MissingDone)
          << ",\"respawn_rows_loaded\":" << readback.RespawnRowsLoaded
          << ",\"map_players\":" << readback.MapPlayers
          << ",\"doors\":[";

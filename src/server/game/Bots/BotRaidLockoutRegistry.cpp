@@ -1,6 +1,8 @@
 #include "Bots/BotRaidLockoutRegistry.h"
 
+#include "DatabaseEnv.h"
 #include "Group.h"
+#include "GroupMgr.h"
 #include "InstanceSaveMgr.h"
 #include "Log.h"
 
@@ -14,6 +16,40 @@ namespace
 {
 std::mutex RegistryLock;
 std::map<std::string, LockoutRecord> Records;
+
+bool FindArmed(uint32 leaderGuid, LockoutRecord& record)
+{
+    std::lock_guard<std::mutex> guard(RegistryLock);
+    auto const itr = std::find_if(Records.begin(), Records.end(),
+        [leaderGuid](std::pair<std::string const, LockoutRecord> const& entry)
+        {
+            return entry.second.ArmedLeaderGuid == leaderGuid;
+        });
+    if (itr == Records.end())
+        return false;
+    record = itr->second;
+    return true;
+}
+
+void ReleaseBoundGroup(LockoutRecord const& record)
+{
+    if (!record.BoundGroupGuid)
+        return;
+    if (Group* group = sGroupMgr->GetGroupByGUID(record.BoundGroupGuid))
+        if (InstanceGroupBind* bind = group->GetBoundInstance(Difficulty(record.Difficulty), record.MapId))
+            if (bind->save && bind->save->GetInstanceId() == record.InstanceId)
+            {
+                uint32 const storeId = group->GetDbStoreId();
+                // unload = true: no async delete that could race a later bind.
+                group->UnbindInstance(record.MapId, record.Difficulty, true);
+                CharacterDatabase.DirectPExecute(
+                    "DELETE FROM `group_instance` WHERE `guid` = %u AND `instance` = %u",
+                    storeId, record.InstanceId);
+                TC_LOG_INFO("server", "BotRaidLockout seed group released cohort=%s group=%s instance=%u",
+                    record.CohortId.c_str(), group->GetGUID().ToString().c_str(), record.InstanceId);
+            }
+    Registry::SetBoundGroup(record.CohortId, 0);
+}
 }
 
 bool Registry::Find(std::string const& cohortId, LockoutRecord& record)
@@ -83,17 +119,8 @@ void BindArmedSeedGroup(uint32 leaderGuid, Group* seed, uint32 placementMapId)
         return;
 
     LockoutRecord record;
-    {
-        std::lock_guard<std::mutex> guard(RegistryLock);
-        auto const itr = std::find_if(Records.begin(), Records.end(),
-            [leaderGuid](std::pair<std::string const, LockoutRecord> const& entry)
-            {
-                return entry.second.ArmedLeaderGuid == leaderGuid;
-            });
-        if (itr == Records.end())
-            return;
-        record = itr->second;
-    }
+    if (!FindArmed(leaderGuid, record))
+        return;
 
     // The save normally exists: the seeder and admission both (re)load it.
     // Re-adding from the persisted identity mirrors Player::_LoadBoundInstances
@@ -115,10 +142,28 @@ void BindArmedSeedGroup(uint32 leaderGuid, Group* seed, uint32 placementMapId)
         return;
     }
 
-    seed->BindToInstance(save, true);
+    // load = true: permanent in memory without a group_instance row, so no
+    // async write can outlive a rollback. The lockout registry is in memory
+    // too; bots entering through this bind get native permanent player binds.
+    seed->BindToInstance(save, true, true);
     Registry::SetBoundGroup(record.CohortId, seed->GetGUID().GetCounter());
     TC_LOG_INFO("server", "BotRaidLockout seed group bound cohort=%s leader=%u group=%s instance=%u map=%u difficulty=%u permanent=1",
         record.CohortId.c_str(), leaderGuid, seed->GetGUID().ToString().c_str(), record.InstanceId,
         record.MapId, uint32(record.Difficulty));
+}
+
+void ReleaseArmedSeedGroup(uint32 leaderGuid)
+{
+    LockoutRecord record;
+    if (!leaderGuid || !FindArmed(leaderGuid, record))
+        return;
+    ReleaseBoundGroup(record);
+}
+
+void ReleaseSeedGroupBind(std::string const& cohortId)
+{
+    LockoutRecord record;
+    if (Registry::Find(cohortId, record))
+        ReleaseBoundGroup(record);
 }
 }

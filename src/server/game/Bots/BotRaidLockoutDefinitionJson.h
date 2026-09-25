@@ -60,6 +60,19 @@ inline bool ReadStringArray(rapidjson::Value const& value, std::vector<std::stri
     return true;
 }
 
+inline bool ReadUIntArray(rapidjson::Value const& value, std::vector<uint32_t>& out)
+{
+    if (!value.IsArray())
+        return false;
+    for (rapidjson::Value const& item : value.GetArray())
+    {
+        if (!item.IsUint())
+            return false;
+        out.push_back(item.GetUint());
+    }
+    return true;
+}
+
 inline bool ReadDifficultyArray(rapidjson::Value const& value, std::vector<uint8_t>& out)
 {
     std::vector<std::string> tokens;
@@ -155,29 +168,26 @@ inline bool ReadBoss(rapidjson::Value const& value, BossDefinition& boss, std::s
         boss.ExtraSaveValues[std::string(pair.name.GetString(), pair.name.GetStringLength())]
             = pair.value.GetUint();
     }
-    auto const dead = value.FindMember("dead_spawn_entries");
+    auto const dead = value.FindMember("dead_db_spawn_entries");
     if (dead == value.MemberEnd())
     {
-        failure = "dead_spawn_entries_required" + context;
+        failure = "dead_db_spawn_entries_required" + context;
         return false;
     }
     if (!dead->value.IsNull())
     {
-        if (!dead->value.IsArray())
+        if (!ReadUIntArray(dead->value, boss.DeadDbSpawnEntries))
         {
-            failure = "invalid_dead_spawn_entries" + context;
+            failure = "invalid_dead_db_spawn_entries" + context;
             return false;
         }
-        boss.DeadSpawnEntriesKnown = true;
-        for (rapidjson::Value const& item : dead->value.GetArray())
-        {
-            if (!item.IsUint())
-            {
-                failure = "invalid_dead_spawn_entries" + context;
-                return false;
-            }
-            boss.DeadSpawnEntries.push_back(item.GetUint());
-        }
+        boss.DeadDbSpawnEntriesKnown = true;
+    }
+    auto const summoned = value.FindMember("summoned_entries");
+    if (summoned == value.MemberEnd() || !ReadUIntArray(summoned->value, boss.SummonedEntries))
+    {
+        failure = "summoned_entries_required" + context;
+        return false;
     }
     auto const difficulties = value.FindMember("difficulties");
     if (difficulties != value.MemberEnd()

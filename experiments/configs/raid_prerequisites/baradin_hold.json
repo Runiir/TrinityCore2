@@ -7,8 +7,14 @@
   "script_header": "BH",
   "initial_boss_state": "not_started",
   "initial_boss_state_source": "instance_baradin_hold.cpp has no Create() override; InstanceScript::Create() sets NOT_STARTED",
-  "difficulties": ["10n", "25n"],
-  "encounter_count": {"10n": 3, "25n": 3},
+  "difficulties": [
+    "10n",
+    "25n"
+  ],
+  "encounter_count": {
+    "10n": 3,
+    "25n": 3
+  },
   "verification_level": "native_script_audit_partial",
   "sources": {
     "script": "src/server/scripts/EasternKingdoms/BaradinHold/instance_baradin_hold.cpp",
@@ -17,14 +23,73 @@
     "credit_entries": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:468,600,615 (history only)"
   },
   "bosses": [
-    {"key": "argaloth", "name": "Argaloth", "boss_index": 0, "creature_entry": 47120, "credit_entry": 47120, "credit_type": "kill", "dungeon_encounter_id": 1033, "dungeon_encounter_bit": 0, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": [47120], "sources": ["baradin_hold.h:32,40", "boss_pit_lord_argaloth.cpp:89 _JustDied"]},
-    {"key": "occuthar", "name": "Occu'thar", "boss_index": 1, "creature_entry": 52363, "credit_entry": 52363, "credit_type": "kill", "dungeon_encounter_id": 1250, "dungeon_encounter_bit": 1, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": [52363], "sources": ["baradin_hold.h:33,41", "boss_occuthar.cpp:91 _JustDied"]},
-    {"key": "alizabal", "name": "Alizabal", "boss_index": 2, "creature_entry": 55869, "credit_entry": 55869, "credit_type": "kill", "dungeon_encounter_id": 1332, "dungeon_encounter_bit": 2, "predecessors": [], "extra_save_values": {}, "dead_spawn_entries": [55869], "sources": ["baradin_hold.h:34,42", "boss_alizabal.cpp:91 _JustDied"]}
+    {
+      "key": "argaloth",
+      "name": "Argaloth",
+      "boss_index": 0,
+      "creature_entry": 47120,
+      "credit_entry": 47120,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1033,
+      "dungeon_encounter_bit": 0,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_db_spawn_entries": [
+        47120
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "baradin_hold.h:32,40",
+        "boss_pit_lord_argaloth.cpp:89 _JustDied"
+      ]
+    },
+    {
+      "key": "occuthar",
+      "name": "Occu'thar",
+      "boss_index": 1,
+      "creature_entry": 52363,
+      "credit_entry": 52363,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1250,
+      "dungeon_encounter_bit": 1,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_db_spawn_entries": [
+        52363
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "baradin_hold.h:33,41",
+        "boss_occuthar.cpp:91 _JustDied"
+      ]
+    },
+    {
+      "key": "alizabal",
+      "name": "Alizabal",
+      "boss_index": 2,
+      "creature_entry": 55869,
+      "credit_entry": 55869,
+      "credit_type": "kill",
+      "dungeon_encounter_id": 1332,
+      "dungeon_encounter_bit": 2,
+      "predecessors": [],
+      "extra_save_values": {},
+      "dead_db_spawn_entries": [
+        55869
+      ],
+      "summoned_entries": [],
+      "sources": [
+        "baradin_hold.h:34,42",
+        "boss_alizabal.cpp:91 _JustDied"
+      ]
+    }
   ],
   "save_extras": [],
   "readback_doors": [],
   "unverified": [
     "Baradin Hold heroic difficulties are not listed; 10n/25n only",
-    "access depends on the Tol Barad battlefield (Battlefield/BattlefieldTB.cpp:587-589), which lockout seeding does not touch"
-  ]
+    "access depends on the Tol Barad battlefield (Battlefield/BattlefieldTB.cpp:587-589), which lockout seeding does not touch",
+    "the dead and summoned entry split is checked at seed time against the loaded world data, not offline"
+  ],
+  "spawn_schema": "dead_db_spawn_entries: entries a natural kill leaves dead as database spawns; each must have a spawn on the map and difficulty and gets a never-respawn row (null = unverified, the boss cannot be seeded done). summoned_entries: entries the script summons or spawns through a manual spawn group only while the boss is not DONE; a database spawn of one outside a manual spawn group refuses seeding."
 }
