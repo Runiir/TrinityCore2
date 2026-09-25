@@ -1406,19 +1406,20 @@ def test_all_registered_worktrees_share_git_common_queue_state() -> None:
     assert all(qb.git_common_dir(worktree) == main_common for worktree in worktrees)
 
 
-def test_full_host_default_uses_twelve_jobs_and_keeps_resource_safety(tmp_path, monkeypatch):
+def test_default_leaves_two_cpus_free_and_keeps_resource_safety(tmp_path, monkeypatch):
     selected = qb.parser().parse_args(['status']).policy
     frozen = json.loads(selected.read_text())
-    assert frozen['policy_id'] == 'cata_raid_build_resource_policy_host12_v1'
+    # The user keeps two of the twelve logical CPUs free for desktop use.
+    assert frozen['policy_id'] == 'cata_raid_build_resource_policy_host10_v1'
     paths = state_paths(tmp_path, monkeypatch)
     env = qb.coordinated_environment(frozen, paths, 'test')
-    assert env['CMAKE_BUILD_PARALLEL_LEVEL'] == '12'
-    assert env['MAKEFLAGS'] == '-j12'
+    assert env['CMAKE_BUILD_PARALLEL_LEVEL'] == '10'
+    assert env['MAKEFLAGS'] == '-j10'
     assert env['TRINITY_RAID_BUILD_LINKER_JOBS'] == '1'
-    command = ['/usr/bin/cmake', '--build', 'build', '--target', 'worldserver', '--parallel', '12']
-    qb.validate_command(command, 12, resource_class='worldserver_build', policy=frozen)
+    command = ['/usr/bin/cmake', '--build', 'build', '--target', 'worldserver', '--parallel', '10']
+    qb.validate_command(command, 10, resource_class='worldserver_build', policy=frozen)
     with pytest.raises(qb.CoordinatorError):
-        qb.validate_command(command[:-1]+['13'], 12, resource_class='worldserver_build', policy=frozen)
+        qb.validate_command(command[:-1]+['11'], 10, resource_class='worldserver_build', policy=frozen)
     assert qb.pressure_reasons(frozen, synthetic_snapshot(load=24)) == []
     assert 'load_average' in qb.pressure_reasons(policy(), synthetic_snapshot(load=24))
     assert 'memory_reserve' in qb.pressure_reasons(frozen, synthetic_snapshot(available_gib=7))

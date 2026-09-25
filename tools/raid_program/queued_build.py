@@ -59,7 +59,7 @@ except ImportError:  # Direct execution: python tools/raid_program/queued_build.
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_POLICY_RELATIVE = Path("experiments/configs/cata_raid_build_resource_policy_host12_v1.json")
+DEFAULT_POLICY_RELATIVE = Path("experiments/configs/cata_raid_build_resource_policy_host10_v1.json")
 DEFAULT_POLICY = ROOT / DEFAULT_POLICY_RELATIVE
 STATE_VERSION = 1
 TERMINAL_STATES = {"canceled", "finished", "recovered_stale"}

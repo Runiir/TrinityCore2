@@ -557,7 +557,8 @@ def test_workflow_build_uses_one_source_and_queue_owned_receipts(case, monkeypat
         assert result['success'] == (outcome=='success')
         assert [kind for kind,_ in commands] == (['configure','worldserver_build'] if outcome=='success' else ['configure'])
         if outcome=='success':
-            assert commands[-1][1][-2:]==['--parallel','12']
+            default_jobs = json.loads(queue.DEFAULT_POLICY.read_text())['parallelism']['maximum_compiler_jobs']
+            assert commands[-1][1][-2:]==['--parallel',str(default_jobs)]
             assert all('.git' in row['receipt'] for row in result['steps'])
             assert result['validated_transition'] == {'from':'build','to':'validate'}
             assert '--expect' in result['next_command']

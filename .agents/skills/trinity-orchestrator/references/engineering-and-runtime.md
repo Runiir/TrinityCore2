@@ -72,8 +72,9 @@ pixi run python -m tools.raid_program.queued_build status --compact
 The compact status is sufficient for deciding whether a build is active; the full
 status is historical context. Batch the current work-unit code and independent
 review before one coordinator-owned build. Workers do not each launch builds.
-New builds default to `cata_raid_build_resource_policy_host12_v1.json`: all 12
-logical CPUs, one shared heavyweight lease, and one linker. Load average is only a
+New builds default to `cata_raid_build_resource_policy_host10_v1.json`: 10 of the
+12 logical CPUs (the user keeps two free for desktop use), one shared heavyweight
+lease, and one linker. `host12_v1` stays valid for verifying its old receipts. Load average is only a
 diagnostic; memory reserve, PSI, swap growth, and disk space can stop an unsafe
 build. If 12 jobs are unsafe, retain that receipt and derive a bounded lower-memory
 retry rather than silently restoring the old four-job policy.
