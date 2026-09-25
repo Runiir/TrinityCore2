@@ -50,14 +50,23 @@ struct MovementState
     Vector3 Destination;
 };
 
+// The single runtime answer to "can the movement layer lift a bot from the
+// floor onto a pillar top?". Package T's transport-surface movement can
+// neither swim nor climb, so it is false. Every plan (NativeFacts below) and
+// the nefarian_duty_plan status read this one function, so they agree; flip
+// it (or make it query T's executor) when a lawful ascent exists.
+inline bool RuntimePillarAscentSupported()
+{
+    return false;
+}
+
 struct NativeFacts
 {
     std::vector<CastProgress> Casts;
     std::vector<TransportPlacement> Placements;
     // Whether the movement layer can take a bot from the floor onto a pillar
-    // top (package T: not supported; it can neither swim nor climb). Without
-    // it phase 2 holds each team at its pillar's foot.
-    bool PillarAscentSupported = false;
+    // top. Without it phase 2 holds each team at its pillar's foot.
+    bool PillarAscentSupported = RuntimePillarAscentSupported();
     std::vector<SpellReadiness> Readiness;
     std::vector<MovementState> Motion;
 

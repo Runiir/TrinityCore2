@@ -15,7 +15,9 @@ namespace BotEncounter::Nefarian
 // can classify the run; the bots still hold the pillar feet meanwhile.
 inline std::string_view CapabilityBlocker(Phase phase, NativeFacts const* facts)
 {
-    if (PhaseWantsPillar(phase) && !(facts && facts->PillarAscentSupported))
+    bool const ascent = facts ? facts->PillarAscentSupported
+        : RuntimePillarAscentSupported();
+    if (PhaseWantsPillar(phase) && !ascent)
         return "pillar_ascent_unsupported";
     return {};
 }
@@ -32,7 +34,8 @@ inline std::optional<SurfaceGoal> PillarGoal(MovementContext const& context)
     bool const onTop = OnPillarTop(context);
     // Without a pillar ascent the team holds the pillar's foot, where ranged
     // members reach the prototype (about 18 yd) through the magma.
-    bool const ascent = context.Facts && context.Facts->PillarAscentSupported;
+    bool const ascent = context.Facts ? context.Facts->PillarAscentSupported
+        : RuntimePillarAscentSupported();
     if (!onTop && !ascent)
         return MakeGoal(context, MovePurpose::PillarFoot, Surface::Floor,
             PillarBase(uint8(pillar), slot), 3.0f, false, pillar);

@@ -388,16 +388,14 @@ private:
             PathLeg ascent;
             ascent.To = goal->Local;
             ascent.LocalZ = goal->LocalZ;
-            ascent.FloorToleranceYards = RiseLegFloorTolerance;
             ascent.Kind = "pillar_ascent";
             if (onTop || Distance(self, goal->Local) <= MaxLegYards)
                 leg = ascent;
             else
-                leg = NextLeg(self, BotLocalZ(context),
-                    PillarBase(uint8(std::max(goal->Pillar, 0)), 0));
+                leg = NextLeg(self, PillarBase(uint8(std::max(goal->Pillar, 0)), 0));
         }
         else
-            leg = NextLeg(self, BotLocalZ(context), goal->Local);
+            leg = NextLeg(self, goal->Local);
         if (!leg)
         {
             plan.MovementHold = "nefarian_no_surface_path";
@@ -407,16 +405,31 @@ private:
         Vector3 const legWorld = LocalToWorld(leg->To, leg->LocalZ,
             context.View.Elevator.OriginZ);
 
-        // The same leg is already running: do not relaunch it every decision.
+        // A walk already running the same way is kept until it ends: the
+        // planned leg's end slides forward as the bot walks, so compare the
+        // direction (and that the running segment is still lawful), not the
+        // end point. A relaunch would claim movement, GCD and cast again and
+        // re-run the executor's collision probe every decision.
         if (context.Facts)
             if (MovementState const* motion =
-                    context.Facts->FindMotion(context.Bot.Guid))
-                if (motion->Moving && Distance3(motion->Destination, legWorld)
-                        <= 1.0f)
+                    context.Facts->FindMotion(context.Bot.Guid);
+                motion && motion->Moving)
+            {
+                LocalPoint const running = WorldToLocal(motion->Destination);
+                float const runningLength = Distance(self, running);
+                float const plannedLength = Distance(self, leg->To);
+                if (runningLength >= 0.5f && plannedLength >= 0.5f
+                    && runningLength <= MaxLegYards + 0.5f
+                    && SegmentWalkable(self, running)
+                    && Distance(running, leg->To) <= std::max(1.0f, plannedLength)
+                    && AngularGap(AngleOf({ running.X - self.X, running.Y - self.Y }),
+                        AngleOf({ leg->To.X - self.X, leg->To.Y - self.Y }))
+                        <= DegToRad(10.0f))
                 {
                     plan.MovementHold = "nefarian_leg_in_flight";
                     return;
                 }
+            }
 
         // Walks claim movement, GCD and cast: a formation spot far away is
         // mechanic work, a small correction yields to the rotation.

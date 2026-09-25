@@ -26,7 +26,7 @@ INCLUDES = [
 ]
 
 
-def _compile_and_run(tmp_path: Path, program: str) -> None:
+def _compile_and_run(tmp_path: Path, program: str) -> str:
     source = tmp_path / "program.cpp"
     binary = tmp_path / "program"
     source.write_text(program)
@@ -34,7 +34,9 @@ def _compile_and_run(tmp_path: Path, program: str) -> None:
     for include in INCLUDES:
         command += ["-I", str(ROOT / include)]
     subprocess.run(command + [str(source), "-o", str(binary)], check=True, cwd=ROOT)
-    subprocess.run([str(binary)], check=True, cwd=ROOT)
+    result = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr[-4000:]
+    return result.stdout
 
 
 PRELUDE = r'''
@@ -194,8 +196,14 @@ static void TestGeometry()
     CHECK(Near(board.X, 25.0f) && Near(board.Y, 0.0f), "route board point is local (25,0)");
     LocalPoint const back = WorldToLocal(LocalToWorld({ -12.5f, 31.0f }, 0.0f, 0.0f));
     CHECK(Near(back.X, -12.5f) && Near(back.Y, 31.0f), "local/world round trip");
-    CHECK(Near(PlatformFrame::RaisedOriginZ + PlatformFrame::FloorLocalZ, 6.5714f, 0.001f),
-        "raised floor matches the route board height");
+    // Collision model floor (nefarian_platform_floor_profile_v1.json): flat
+    // centre -0.546, a 10-degree ramp from r 21.17 to r 32.43, ring +1.439.
+    CHECK(Near(FloorLocalZAt({ 5.0f, 0.0f }), -0.546f, 0.001f), "flat centre floor");
+    CHECK(Near(FloorLocalZAt({ 25.0f, 0.0f }), 0.11f, 0.05f), "the ramp at r 25");
+    CHECK(Near(FloorLocalZAt({ 45.0f, 20.0f }), 1.439f, 0.001f), "the outer ring");
+    CHECK(Near(PlatformFrame::RaisedOriginZ + FloorLocalZAt({ 25.0f, 0.0f }), 7.14f, 0.05f)
+        && PlatformFrame::RaisedOriginZ + FloorLocalZAt({ 25.0f, 0.0f }) - 6.5714f > 0.5f,
+        "the raised floor at the board point is 0.5+ yd above the old route anchor z 6.5714");
 
     DragonPose const dragon{ { 0.0f, 0.0f }, 0.0f };
     CHECK(InFrontCone(dragon, { 20.0f, 0.0f }), "ahead is in the breath cone");
@@ -214,6 +222,19 @@ static void TestGeometry()
                 "pillar slots stay in the prototype's melee reach");
             CHECK(OnFloorArea(PillarBase(pillar, slot)), "pillar bases are floor spots");
         }
+}
+
+// Plans and the duty-plan status read one capability source, so the status
+// "blocked" field always matches the bots' plans.
+static std::string StatusBlocked(Blackboard const& board)
+{
+    std::string const json = BuildNefarianDutyPlanStatusJson(&board);
+    std::string const key = "\"blocked\":\"";
+    std::size_t const at = json.find(key);
+    if (at == std::string::npos)
+        return "<absent>";
+    std::size_t const end = json.find('"', at + key.size());
+    return json.substr(at + key.size(), end - at - key.size());
 }
 
 static void TestDutyPlan()
@@ -521,6 +542,12 @@ static void TestTankSpots()
     CHECK(!InDischargeFlank(turned, { 0.0f, 0.0f }), "the raid at the centre is then in her back cone");
 }
 
+static bool observedAscentDefault()
+{
+    NativeFacts const facts;
+    return facts.PillarAscentSupported;
+}
+
 static TransportPlacement Placement(Blackboard const& board, uint32 slot, float localZ)
 {
     ActorSnapshot const* bot = board.FindActor(Bot(slot));
@@ -634,6 +661,65 @@ static void TestPlatformMovement()
     AdaptiveNefarianPlan const flying = strategy.Propose(ground, Bot(4), "dps", &inFlight);
     CHECK(!flying.Movement && flying.MovementHold == "nefarian_leg_in_flight",
         "a running walk to the same leg end is left alone");
+
+    // A long walk: the planned leg end slides forward as the bot advances,
+    // so the walk still running toward the first leg end is kept.
+    Blackboard far = ground;
+    far.Summons.pop_back();
+    LocalPoint const farStart{ -45.0f, 0.0f };
+    FindPlayer(far, 4).Position = LocalToWorld(farStart, FloorLocalZAt(farStart),
+        PlatformFrame::RaisedOriginZ);
+    AdaptiveNefarianPlan const longWalk = strategy.Propose(far, Bot(4), "dps");
+    CHECK(longWalk.Movement && longWalk.MovementLeg
+        && Distance(longWalk.MovementLeg->To, farStart) > MaxLegYards - 0.1f
+        && Distance(longWalk.MovementSurface->Local, farStart) > MaxLegYards + 2.0f,
+        "a long walk starts with a full leg toward a farther goal");
+    LocalPoint const firstEnd = longWalk.MovementLeg->To;
+    LocalPoint const midway{ (farStart.X + firstEnd.X) / 2.0f,
+        (farStart.Y + firstEnd.Y) / 2.0f };
+    FindPlayer(far, 4).Position = LocalToWorld(midway, FloorLocalZAt(midway),
+        PlatformFrame::RaisedOriginZ);
+    AdaptiveNefarianPlan const fromMidway = strategy.Propose(far, Bot(4), "dps");
+    CHECK(fromMidway.MovementLeg
+        && Distance(fromMidway.MovementLeg->To, farStart) > Distance(firstEnd, farStart) + 0.5f,
+        "the leg planned from midway ends past the first leg end");
+    NativeFacts sliding;
+    sliding.Motion.push_back({ Bot(4), true, LocalToWorld(firstEnd,
+        longWalk.MovementLeg->LocalZ, PlatformFrame::RaisedOriginZ) });
+    sliding.Placements.push_back(Placement(far, 4, FloorLocalZAt(midway)));
+    AdaptiveNefarianPlan const along = strategy.Propose(far, Bot(4), "dps", &sliding);
+    CHECK(!along.Movement && along.MovementHold == "nefarian_leg_in_flight",
+        "the running walk toward the same goal is kept while the leg end slides");
+    // A running walk in another direction (an old goal) is replaced.
+    NativeFacts stale;
+    LocalPoint const elsewhere = Offset(midway, AngleOf({ firstEnd.X - midway.X,
+        firstEnd.Y - midway.Y }) + DegToRad(60.0f), 4.0f);
+    stale.Motion.push_back({ Bot(4), true, LocalToWorld(elsewhere,
+        FloorLocalZAt(elsewhere), PlatformFrame::RaisedOriginZ) });
+    stale.Placements = sliding.Placements;
+    AdaptiveNefarianPlan const turned = strategy.Propose(far, Bot(4), "dps", &stale);
+    CHECK(turned.Movement && turned.MovementHold.empty(),
+        "a running walk toward another point is relaunched");
+
+    // Status and plans agree in every phase (default facts, as the observer
+    // builds them, and no facts at all).
+    for (Blackboard const* sample : { &both, &ascent, &sinking, &landing, &ground })
+    {
+        NativeFacts const observed;
+        std::string const status = StatusBlocked(*sample);
+        for (uint32 slot = 1; slot <= 10; ++slot)
+        {
+            ActorSnapshot const* bot = sample->FindActor(Bot(slot));
+            AdaptiveNefarianPlan const withFacts = strategy.Propose(*sample, Bot(slot),
+                bot->Role, &observed);
+            AdaptiveNefarianPlan const without = strategy.Propose(*sample, Bot(slot), bot->Role);
+            if (withFacts.Blocked != "pillar_descent_unsupported")
+                CHECK(std::string(withFacts.Blocked) == status, "status and plan agree (facts)");
+            CHECK(std::string(without.Blocked) == status, "status and plan agree (no facts)");
+        }
+    }
+    CHECK(observedAscentDefault() == RuntimePillarAscentSupported(),
+        "the observer's facts default to the runtime capability");
 
     Blackboard stunned = ground;
     AddAura(FindPlayer(stunned, 4), 77827);

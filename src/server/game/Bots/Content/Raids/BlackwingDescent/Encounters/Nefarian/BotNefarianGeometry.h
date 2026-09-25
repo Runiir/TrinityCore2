@@ -15,23 +15,30 @@ namespace BotEncounter::Nefarian
 constexpr float Pi = 3.14159265358979323846f;
 constexpr float TwoPi = 2.0f * Pi;
 
-// Platform model (package T's collision probe of GO 207834): the centre floor
-// sits at local z -0.5..+0.1 and rises to an outer ring at local +1.44 from
-// r 32 out to r 60; pillar blocks stand at headings 0/120/240 degrees between
-// r 36 and 44 with near-vertical sides. No static navmesh covers any of it.
-// Standing spots lie on the centre floor (r <= 27) or on the ring
-// (33 <= r <= 57), never on the rise between them and never within 9 yards
-// of a pillar centre; paths keep 6 yards from a pillar centre (the block's
-// 4-yard half-depth, the body radius and a yard of margin).
-constexpr float CentreFloorMaxRadius = 28.0f;
-constexpr float RingInnerRadius = 32.0f;
-constexpr float InnerFloorLimit = 27.0f;
-constexpr float RingFloorLimit = 33.0f;
+// Platform floor, from the collision model of GO 207834 (displayId 10363,
+// data/vmaps/Blackwingv2_Elevator_Onyxia_Transport.wmo.vmo, sha256 b51adf90...,
+// sampled every 5 degrees and 0.5 yards in
+// experiments/configs/cata_raid_encounters/blackwing_descent/
+// nefarian_platform_floor_profile_v1.json): a flat centre at local z -0.546
+// (two decorative ridges rise 0.23 near r 10 and r 19-21) out to r 21.17, a
+// steady ramp of 0.1763 yards per yard at every heading, and the outer ring at
+// +1.439 from r 32.43 outwards. The model is within 0.24 yards of every
+// sample away from the pillars. The whole floor is walkable; pillar blocks
+// (headings 0/120/240, footprint radius 5.9 yards including their skirt, tops
+// at 9.925) are not. No static navmesh covers any of it.
+// Standing spots lie within r 57 and at least 9 yards from a pillar centre;
+// paths keep 7 yards from a pillar centre (the 5.9-yard footprint plus the
+// 0.39-yard body radius and a margin).
+constexpr float FloorFlatLocalZ = -0.546f;
+constexpr float RampStartRadius = 21.17f;
+constexpr float RampSlope = 0.1763f;
+constexpr float RingLocalZ = 1.439f;
+constexpr float RampEndRadius = RampStartRadius
+    + (RingLocalZ - FloorFlatLocalZ) / RampSlope;
 constexpr float OuterFloorLimit = 57.0f;
-constexpr float RingLocalZ = 1.44f;
 constexpr float PillarBaseRadius = 26.0f;
 constexpr float PillarKeepOutRadius = 9.0f;
-constexpr float PillarPathClearance = 6.0f;
+constexpr float PillarPathClearance = 7.0f;
 
 enum class Surface : uint8
 {
@@ -114,17 +121,15 @@ inline float SurfaceLocalZ(Surface surface)
         : PlatformFrame::FloorLocalZ;
 }
 
-// Floor height at a local point: centre floor, the rise, then the ring.
+// Floor height at a local point: the flat centre, the ramp, then the ring.
 inline float FloorLocalZAt(LocalPoint point)
 {
     float const radius = Length(point);
-    if (radius <= CentreFloorMaxRadius)
-        return PlatformFrame::FloorLocalZ;
-    if (radius >= RingInnerRadius)
+    if (radius <= RampStartRadius)
+        return FloorFlatLocalZ;
+    if (radius >= RampEndRadius)
         return RingLocalZ;
-    float const t = (radius - CentreFloorMaxRadius)
-        / (RingInnerRadius - CentreFloorMaxRadius);
-    return PlatformFrame::FloorLocalZ + t * (RingLocalZ - PlatformFrame::FloorLocalZ);
+    return FloorFlatLocalZ + (radius - RampStartRadius) * RampSlope;
 }
 
 // Absolute angle (0..pi) between an actor's facing and the direction from it
@@ -184,40 +189,25 @@ inline bool NearPillar(LocalPoint point, float keepOut = PillarKeepOutRadius)
     return false;
 }
 
-inline bool OnCentreFloor(LocalPoint point)
-{
-    return Length(point) <= InnerFloorLimit;
-}
-
-inline bool OnRing(LocalPoint point)
-{
-    float const radius = Length(point);
-    return radius >= RingFloorLimit && radius <= OuterFloorLimit;
-}
-
-// A standing spot: centre floor or ring, clear of the pillars.
+// A standing spot: on the platform floor (the ramp included), clear of the
+// pillars.
 inline bool OnFloorArea(LocalPoint point)
 {
-    return (OnCentreFloor(point) || OnRing(point)) && !NearPillar(point);
+    return Length(point) <= OuterFloorLimit && !NearPillar(point);
 }
 
-// Moves a destination off the rise (to the nearer side), inside the ring's
-// outer limit and out of a pillar's keep-out (radially, to the nearer side).
+// Moves a destination inside the platform's outer limit and radially out of
+// a pillar's keep-out, to the nearer side.
 inline LocalPoint SnapToStandingArea(LocalPoint point)
 {
-    float radius = Length(point);
-    float const angle = radius < 0.001f ? 0.0f : AngleOf(point);
-    if (radius > OuterFloorLimit)
-        radius = OuterFloorLimit;
-    if (radius > InnerFloorLimit && radius < RingFloorLimit)
-        radius = radius - InnerFloorLimit < RingFloorLimit - radius
-            ? InnerFloorLimit - 0.5f : RingFloorLimit + 0.5f;
+    float radius = std::min(Length(point), OuterFloorLimit);
+    float const angle = Length(point) < 0.001f ? 0.0f : AngleOf(point);
     LocalPoint snapped = Polar(angle, radius);
     for (LocalPoint const& pillar : PillarCenters)
     {
         if (Distance(pillar, snapped) >= PillarKeepOutRadius)
             continue;
-        float const inner = InnerFloorLimit - 0.5f;
+        float const inner = Length(pillar) - PillarKeepOutRadius - 0.5f;
         float const outer = Length(pillar) + PillarKeepOutRadius + 0.5f;
         radius = std::fabs(radius - inner) <= std::fabs(outer - radius)
             ? inner : std::min(outer, OuterFloorLimit);

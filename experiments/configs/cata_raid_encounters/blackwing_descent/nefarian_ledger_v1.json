@@ -127,7 +127,14 @@
       "title": "Round 2 package T: transport-surface movement and GO 207834 collision probe (commits a48d16b2c7, b83a36d6ad)",
       "accessed": "2026-09-25",
       "authority": "repository implementation",
-      "claim": "No static navmesh on the platform (lava navmesh z 3.0); centre floor -0.5..+0.1, ring +1.44 from r 32 to 60, pillar blocks r 36-44 with near-vertical sides; Walk/StepOff/Fall/Land only, no swim or climb; ledge drop lands on the ring at z 8.51."
+      "claim": "No static navmesh on the platform (lava navmesh z 3.0); Walk/StepOff/Fall/Land only, no swim or climb; ledge drop lands on the ring at z 8.51. Its first floor summary (centre -0.5..+0.1, ring +1.44 from r 32) is superseded by platform_collision_model."
+    },
+    {
+      "id": "platform_collision_model",
+      "title": "GO 207834 collision model data/vmaps/Blackwingv2_Elevator_Onyxia_Transport.wmo.vmo (display 10363, 992 triangles), sampled into nefarian_platform_floor_profile_v1.json",
+      "accessed": "2026-09-25",
+      "authority": "execution client data",
+      "claim": "sha256 b51adf90a9d625ebdf24fd5454c62aa1c9143a157a30812d3b2c66225eb597de; vertical rays every 5 degrees and 0.5 yd: flat centre local z -0.546 to r 21.17, 10-degree ramp 0.1763 per yard to r 32.43, ring 1.439 to r 60; floor at local (25, 0) +0.0737; pillar block plus skirt 5.15-6.0 yd from each centre; re-derived by tests/test_nefarian_platform_profile.py when the .vmo is present."
     }
   ],
   "values": [
@@ -517,25 +524,38 @@
         "orientation": 3.14159,
         "raised_origin_z": 7.03378,
         "lowered_origin_z": -6.86794,
-        "floor_local_z": -0.46235,
-        "pillar_top_local_z": 9.925069,
-        "ring_local_z": 1.44,
+        "floor_flat_local_z": -0.546,
+        "ramp_radius": [
+          21.17,
+          32.43
+        ],
+        "ramp_slope": 0.1763,
+        "ring_local_z": 1.439,
         "ring_radius": [
-          32,
+          32.43,
           60
         ],
-        "pillar_block_radius": [
-          36,
-          44
+        "board_point_local": [
+          25,
+          0
+        ],
+        "board_point_floor_local_z": 0.0737,
+        "onyxia_summon_local_z": -0.46235,
+        "pillar_top_local_z": 9.925069,
+        "pillar_centre_radius": 40.5,
+        "pillar_footprint_radius": [
+          5.15,
+          6.0
         ]
       },
       "source_refs": [
         "tdb_434_22011",
         "repo_nefarians_end",
-        "package_t_platform_probe"
+        "package_t_platform_probe",
+        "platform_collision_model"
       ],
       "status": "repository_observed",
-      "implementation_consequence": "All bot destinations are transport-local and converted with the observed origin."
+      "implementation_consequence": "All bot destinations are transport-local and converted with the observed origin; every leg ends at the model floor height of its end (FloorLocalZAt). The route anchor z 6.5714 assumed a flat floor at Onyxia's summon height and lies 0.54 under the ramp at the board point (patch request M1: z 7.1075)."
     },
     {
       "key": "magma",

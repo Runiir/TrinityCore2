@@ -195,7 +195,7 @@
     }
   ],
   "native_geometry": {
-    "platform": "GO 207834 spawn 235179 at (-107.213, -224.62), orientation pi; raised origin z 7.03378 (floor 6.57143), lowered origin z -6.86794 (floor -7.33029). Local (x, y) maps to world (-107.213 - x, -224.62 - y).",
+    "platform": "GO 207834 spawn 235179 at (-107.213, -224.62), orientation pi; raised origin z 7.03378, lowered origin z -6.86794. Local (x, y) maps to world (-107.213 - x, -224.62 - y); world z = origin z + local floor z (nefarian_platform_floor_profile_v1.json). At the route board point, local (25, 0), the floor is local +0.074 (world 7.1075 raised; the route rows' 6.5714 is 0.54 below it, patch request M1). Onyxia's summon height -7.33029 is 0.084 above the flat centre on the lowered platform.",
     "pillar_tops_local": [
       [
         40.50549,
@@ -227,7 +227,7 @@
     },
     "hail_of_bones_points": "Seven 42844 stalkers (summon group 0): six on a 44.3 yd ring and one at the centre",
     "shadowblaze_radius": 4.0,
-    "platform_model": "Package T collision probe: centre floor local z -0.5..+0.1, outer ring +1.44 from r 32 to 60 (world 8.47 raised), pillar blocks at headings 0/120/240 deg r 36-44 with near-vertical sides; no static navmesh on the platform (lava navmesh at z 3.0); ledge lip x -157.65, ledge drop lands on the ring at z 8.51 (34.9% max health fall damage).",
+    "platform_model": "Collision model data/vmaps/Blackwingv2_Elevator_Onyxia_Transport.wmo.vmo (display 10363, 992 triangles, sha256 b51adf90a9d625ebdf24fd5454c62aa1c9143a157a30812d3b2c66225eb597de), sampled by vertical rays every 5 degrees and 0.5 yd in nefarian_platform_floor_profile_v1.json (re-derived by tests/test_nefarian_platform_profile.py): flat centre local z -0.546 to r 21.2 (decorative ridges +0.2 near r 10 and r 19-21), a 10-degree ramp (0.1763 per yard) to r 32.4, ring 1.439 from r 32.4 to r 60 (world 8.47 raised); the strategy floor model is within 0.234 of every sample 7.5+ yd from a pillar. Pillar blocks at headings 0/120/240 deg, r 40.5, tops local 9.925; block plus skirt (up to local 2.2) reach 5.2-6.0 yd from their centres (pillar_footprints, per heading). No static navmesh on the platform (lava navmesh at z 3.0); ledge lip x -157.65, ledge drop lands on the ring at z 8.51 (34.9% max health fall damage).",
     "magma": "LiquidType 404 'Blackwing Descent - Magma' applies 81114: 5000 fire per second and Magma 81118 (+250 fire damage taken per stack, 99 stacks, 10 s) in normal."
   },
   "repository_evidence": [
@@ -325,7 +325,7 @@
       ]
     },
     "phase_1_damage": "Onyxia until 12%, then Nefarian down to 73% while Onyxia's charge is below 60 (two Electrocutes, +34 charge natively), then finish Onyxia.",
-    "movement_interface": "SurfaceGoal (BotNefarianMovement.h) reached in legs of at most 9.5 yd (BotNefarianPath.h: centre floor r <= 27 straight, radial rise crossing r 26.5 <-> 33.5 with 0.9 yd floor tolerance, ring straight or along lanes r 33.5 / r 50 that clear the pillars), each submitted as BotNativeAction::TransportSurfaceMove Walk with EndOnTransport (BotNefarianSurfaceIntent.h); never an ordinary Move on the platform. Typed holds: nefarian_elevator_unobserved, nefarian_not_on_platform, nefarian_movement_stunned, nefarian_no_surface_path, nefarian_leg_in_flight.",
+    "movement_interface": "SurfaceGoal (BotNefarianMovement.h) reached in legs of at most 9.5 yd (BotNefarianPath.h: the whole floor inside r 57 is walkable; every leg ends at the model floor height of its end, FloorLocalZAt, with a 0.6 yd tolerance; a leg over a ramp crease is capped at 6 yd; legs keep 7 yd from every pillar centre, through one or two waypoints on r 27 or r 50 when the straight segment does not; every simulated and planner-coverage leg is verified against the sampled model by tests/test_nefarian_movement.py), each submitted as BotNativeAction::TransportSurfaceMove Walk with EndOnTransport (BotNefarianSurfaceIntent.h); never an ordinary Move on the platform. Typed holds: nefarian_elevator_unobserved, nefarian_not_on_platform, nefarian_movement_stunned, nefarian_no_surface_path, nefarian_leg_in_flight.",
     "phase_2_without_ascent": "Typed capability blocker pillar_ascent_unsupported on every plan, in the decision trace and in the nefarian_duty_plan status; teams hold the pillar feet (local r 26). Patch W1 ends the diagnostic run at the first heartbeat with the blocker (encounter_capability_blocker_watchdog), keeping phase 1 evidence.",
     "phase_1_tanking": "Pull: the tank stands on the ring at r 52 on a radially clear heading at the dragon's end; the chasing dragon stops at its reach, about r 29-31. Hold: once the dragon is at r >= 27.5 within 15 degrees of its end, the tank stands 7 yd from it, tangential and 25 degrees outward, so it only turns. Opposite ends are then >= 53 yd apart; the chase-model test settles them 62 yd apart.",
     "bone_warrior_control": "One controller acts per warrior per decision: the first in rotation that is in range and whose control spell is ready (SpellHistory via BotNefarianNativeObserver.h), ordered stuns, roots, cooldown-free snares, then snares with a cooldown; the shackler holds one warrior."

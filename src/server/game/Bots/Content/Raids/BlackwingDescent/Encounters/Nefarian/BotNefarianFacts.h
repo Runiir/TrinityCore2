@@ -82,9 +82,12 @@ inline bool IsBoneWarriorControlAura(uint32 spellId)
 // Platform transport (GO 207834 spawn 235179). The transport is rotated by pi,
 // so a local offset (x, y) lies at world (OriginX - x, OriginY - y). Raised and
 // lowered origins come from the TDB spawn plus TransportAnimation.dbc stop 0
-// (+13.90172); the floor sits 0.46235 below the origin. Pillar tops are the
-// native Chromatic Prototype jump destinations; Shadow of Cowardice punishes a
-// passenger whose transport offset Z exceeds 9.5 outside phase 2.
+// (+13.90172). The centre floor sits 0.546 below the origin in the collision
+// model (Blackwingv2_Elevator_Onyxia_Transport.wmo.vmo, see
+// nefarian_platform_floor_profile_v1.json); Onyxia's summon point 0.462 below
+// it is 0.084 above that floor. Pillar tops are the native Chromatic
+// Prototype jump destinations (9.925 in the model too); Shadow of Cowardice
+// punishes a passenger whose transport offset Z exceeds 9.5 outside phase 2.
 struct PlatformFrame
 {
     static constexpr float OriginX = -107.213f;
@@ -92,7 +95,7 @@ struct PlatformFrame
     static constexpr float Orientation = 3.14159f;
     static constexpr float RaisedOriginZ = 7.03378f;
     static constexpr float LoweredOriginZ = -6.86794f;
-    static constexpr float FloorLocalZ = -0.46235f;
+    static constexpr float FloorLocalZ = -0.546f;
     static constexpr float PillarTopLocalZ = 9.925069f;
     static constexpr float CowardiceLocalZ = 9.5f;
     static constexpr float StopTolerance = 0.35f;

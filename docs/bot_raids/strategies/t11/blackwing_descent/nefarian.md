@@ -56,12 +56,27 @@ conflict.
 
 - **Platform.** GO 207834 spawn 235179 is at (-107.213, -224.62), rotated by π. A
   local offset (x, y) maps to world (-107.213 − x, -224.62 − y).
-  - Raised origin Z 7.03378, floor 6.57143.
-  - Lowered origin Z −6.86794, floor −7.33029.
-  - Package T probed the collision model:
-    - the centre floor is at local −0.5 to +0.1;
-    - the outer ring is at +1.44 from r 32 to r 60 (world 8.47 raised);
-    - pillar blocks sit at headings 0/120/240°, r 36–44, with near-vertical sides.
+  - Raised origin Z 7.03378; lowered origin Z −6.86794.
+  - The floor is not flat. It comes from the collision model of display 10363,
+    `data/vmaps/Blackwingv2_Elevator_Onyxia_Transport.wmo.vmo` (992 triangles, sha256
+    `b51adf90…597de`). A vertical ray was cast every 5° and every 0.5 yd, and the
+    samples are committed in
+    `experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_platform_floor_profile_v1.json`.
+    `tests/test_nefarian_platform_profile.py` re-derives them from the model. In local Z:
+    - the centre is flat at −0.546 out to r 21.2. Two decorative ridges rise
+      +0.2 near r 10 and r 19–21;
+    - from r 21.2 to r 32.4 a 10° ramp rises 0.1763 per yard;
+    - from r 32.4 to r 60 the ring is flat at 1.439 (world 8.47 raised).
+    - The strategy's floor model (`FloorLocalZAt`) is within 0.234 yd of every sample
+      that is 7.5 yd or more from a pillar.
+  - At the route's board point, local (25, 0), the floor is on the ramp at +0.074
+    (world 7.1075 raised). The route rows still say 6.5714, which is 0.54 below the
+    floor; patch request M1 corrects them.
+  - Onyxia's summon height (−7.33029 lowered) is 0.084 above the flat centre.
+  - The pillar blocks sit at headings 0/120/240° and r 40.5, and their tops are at
+    local 9.925. With its skirt (up to local 2.2), each block reaches 5.2–6.0 yd from
+    its centre. The profile records this per heading (`pillar_footprints`), so every
+    pillar stands wholly on the ring.
   - No static navmesh covers the platform (the lava navmesh is at z 3.0), so every
     move on it is a transport-surface walk.
   - The ledge lip is at x −157.65. The lawful ledge drop lands on the ring at z 8.51,
@@ -250,17 +265,25 @@ GUID, arrival tolerance, pillar, urgency) and walks to it in legs
 (`BotNefarianPath.h`), one per decision, each submitted as
 `BotNativeAction::TransportSurfaceMove` Walk with `EndOnTransport`:
 - A leg is at most 9.5 yd; the executor refuses anything over `MaxSurfaceWalkYards` (12).
-- Standing spots lie on the centre floor (r ≤ 27) or on the ring (33 ≤ r ≤ 57), at
-  least 9 yd from a pillar centre. Paths keep 6 yd from a pillar centre.
-- The rise between the centre floor and the ring (r 27–33) is not level, so it is
-  crossed only by a radial leg from r 26.5 to r 33.5, with a 0.9 yd floor tolerance.
-  Level legs keep the bot's own height with a 0.6 yd tolerance.
-- On the ring a leg is straight when it stays on the ring and clear of the pillars;
-  otherwise it follows a lane: r 33.5 inside the pillars or r 50 outside them. Lanes
-  change only on a heading whose radial line clears every pillar. This takes a bot from
-  the ledge-drop landing behind pillar 0 (local 49.2, 0) around the pillar.
-- The plan is recomputed every decision. A new Walk replaces one still running (T), and
-  a leg already in flight to the same end is not relaunched (`nefarian_leg_in_flight`).
+- The whole floor inside r 57 is walkable: the flat centre, the ramp and the ring.
+  Standing spots keep 9 yd from a pillar centre.
+- Every leg ends at the model floor height of its end (`FloorLocalZAt(leg.To)`), with a
+  0.6 yd floor tolerance. The executor moves at the linearly interpolated height, so a
+  straight chord over one of the ramp's two creases leaves the floor by at most
+  slope × a × b / (a + b), where a and b are the parts of the leg on either side. A leg
+  that crosses a crease is therefore capped at 6 yd (at most 0.26 yd off the floor).
+- A leg keeps 7 yd from every pillar centre: the widest footprint is 6.0 yd, plus the
+  body radius of 0.389. When the straight segment does not clear the pillars, the leg
+  goes through one or two waypoints, picking the shortest clear path. The waypoints lie
+  every 10° on two circles: r 27 on the ramp, inside the pillars, and r 50, outside
+  them. This takes a bot from the ledge-drop landing behind pillar 0 (local 49.2, 0)
+  around the pillar.
+- The plan is recomputed every decision. A new Walk replaces one still running (T). A
+  walk that is still running is not relaunched (`nefarian_leg_in_flight`) when its
+  destination lies in the direction of the newly planned leg (within 10°) and no farther
+  from that leg's end than the leg's own length. As the bot advances, the end of a long
+  walk slides forward, so the check compares directions, not end points. A goal change
+  or a refused walk relaunches it.
   Walks claim movement, GCD and cast: hazard escapes are Survival priority, tank and
   pillar moves Mechanic, and a formation spot more than 5 yd away is Mechanic; small
   corrections yield to the rotation.
@@ -268,9 +291,15 @@ GUID, arrival tolerance, pillar, urgency) and walks to it in legs
   an ordinary move instead), `nefarian_not_on_platform` (not a passenger of the
   elevator), `nefarian_movement_stunned` (Tail Lash stun; wait it out),
   `nefarian_no_surface_path`.
-- The planner converges between every pair of standing spots it was tested on (9,720
-  pairs), and the whole-raid simulation emits no leg over 9.5 yd, none through a
-  pillar and no non-radial rise crossing.
+- The planner converges on all 13,608 pairs of standing spots it was tested on.
+  Every leg is probed against the sampled model with an emulation of T's surface-walk
+  checks (0.25 yd samples, floor tolerance, unsupported span, body sweep):
+  - the 432 legs of the whole-raid simulation, from the board point and from the
+    ledge-drop landing;
+  - the 61,232 distinct legs of the planner coverage.
+
+  None is refused (`tests/test_nefarian_movement.py`). A level leg up the ramp or a
+  smaller pillar clearance is refused.
 
 Still needed from package T:
 1. **Pillar ascent** (not supported: T can neither swim nor climb). Players swim up

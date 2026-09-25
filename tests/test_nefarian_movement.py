@@ -6,8 +6,10 @@ the encounter with a native chase model (a dragon moves straight at its tank
 and stops at its melee reach, and only turns while the tank stays inside that
 reach), applying each emitted leg as the bot's new position, and check:
 - every submitted TransportSurfaceMove is a Walk ending on the elevator,
-  within MaxSurfaceWalkYards of the bot, clear of the pillars, and crosses the
-  centre-to-ring rise only radially;
+  within MaxSurfaceWalkYards of the bot and clear of the pillars, and package
+  T's surface-walk checks accept it against the sampled collision model
+  (tests/test_nefarian_platform_profile.py probe_leg), starting each leg from
+  the height the previous one ended at;
 - the legs converge on the goals, from the route's board point (local 25, 0)
   and from the ledge-drop landing on the ring (local 49.2, 0);
 - the tanks leave the dragons at their ends more than 50 yards apart (out of
@@ -19,6 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.test_nefarian_platform_profile import probe_leg
 from tests.test_nefarian_strategy import PRELUDE, _compile_and_run
 
 
@@ -88,13 +91,6 @@ static int Tick(Sim& sim, char const* phase)
         float const length = Distance(from, to);
         ok = ok && length <= MaxWalk && length <= MaxLegYards + 0.01f
             && SegmentClearOfPillars(from, to);
-        PlatformRegion const a = RegionOf(from);
-        PlatformRegion const b = RegionOf(to);
-        if (ok && a != b && Length(from) > 1.0f)
-            ok = plan.MovementLeg && plan.MovementLeg->CrossesRise
-                && AngularGap(AngleOf(from), AngleOf(to)) < DegToRad(2.0f);
-        if (ok && a == PlatformRegion::Ring && b == PlatformRegion::Ring)
-            ok = SegmentStaysOnRing(from, to);
         if (!ok)
         {
             ++sim.Violations;
@@ -103,6 +99,11 @@ static int Tick(Sim& sim, char const* phase)
                 plan.Movement->Id.Mechanic.c_str());
             continue;
         }
+        // Every leg goes to the Python probe (tests/test_nefarian_platform_profile.py),
+        // which checks it against the sampled collision model, not FloorLocalZAt.
+        std::printf("LEG %s %u %.4f %.4f %.4f %.4f %.4f %.4f %.3f\n", phase, slot,
+            from.X, from.Y, bot.Position.Z - sim.OriginZ, to.X, to.Y,
+            walk->Z - sim.OriginZ, walk->FloorToleranceYards);
         bot.Position = { walk->X, walk->Y, walk->Z };
         ++sim.Legs;
         ++moved;
@@ -206,19 +207,19 @@ static void TestPlannerCoverage()
 {
     int failures_ = 0;
     int runs = 0;
-    for (float fromRadius : { 0.0f, 12.0f, 25.0f, 33.5f, 49.2f, 55.0f })
+    for (float fromRadius : { 0.0f, 12.0f, 25.0f, 30.0f, 33.5f, 49.2f, 55.0f })
         for (int fromAngle = 0; fromAngle < 360; fromAngle += 20)
-            for (float toRadius : { 5.0f, 20.0f, 26.0f, 34.0f, 50.0f })
+            for (float toRadius : { 5.0f, 20.0f, 26.0f, 30.0f, 34.0f, 50.0f })
                 for (int toAngle = 0; toAngle < 360; toAngle += 20)
                 {
                     LocalPoint from = SnapToStandingArea(Polar(DegToRad(float(fromAngle)), fromRadius));
                     LocalPoint const goal = SnapToStandingArea(Polar(DegToRad(float(toAngle)), toRadius));
-                    float z = FloorLocalZAt(from);
                     ++runs;
                     bool arrived = false;
+                    float fromZ = FloorLocalZAt(from);
                     for (int leg = 0; leg < 40; ++leg)
                     {
-                        std::optional<PathLeg> const next = NextLeg(from, z, goal);
+                        std::optional<PathLeg> const next = NextLeg(from, goal);
                         if (!next)
                         {
                             arrived = Distance(from, goal) <= LegArrivalYards + 0.01f;
@@ -227,8 +228,11 @@ static void TestPlannerCoverage()
                         if (Distance(from, next->To) > MaxLegYards + 0.01f
                             || !SegmentClearOfPillars(from, next->To))
                             break;
+                        std::printf("LEGC %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n", from.X, from.Y,
+                            fromZ, next->To.X, next->To.Y, next->LocalZ,
+                            next->FloorToleranceYards);
                         from = next->To;
-                        z = next->LocalZ;
+                        fromZ = next->LocalZ;
                     }
                     if (!arrived)
                         ++failures_;
@@ -240,8 +244,10 @@ static void TestPlannerCoverage()
 int main()
 {
     // The M1 encounter anchor / descent board point, and the ledge-drop landing.
-    RunEncounter({ 25.0f, 0.0f }, PlatformFrame::FloorLocalZ, "board_point");
-    RunEncounter({ 49.2f, 0.0f }, RingLocalZ, "ledge_landing");
+    // Heights are the sampled model floor there (0.074 at the board point,
+    // 1.439 on the ring), not the strategy's own floor model.
+    RunEncounter({ 25.0f, 0.0f }, 0.074f, "board_point");
+    RunEncounter({ 49.2f, 0.0f }, 1.439f, "ledge_landing");
     TestPlannerCoverage();
     if (failures)
         std::fprintf(stderr, "%d failure(s)\n", failures);
@@ -251,4 +257,27 @@ int main()
 
 
 def test_nefarian_movement_legs_and_dragon_separation(tmp_path: Path) -> None:
-    _compile_and_run(tmp_path, MOVEMENT)
+    output = _compile_and_run(tmp_path, MOVEMENT)
+    legs = [line.split() for line in output.splitlines() if line.startswith("LEG ")]
+    assert len(legs) > 200
+    refusals = {}
+    for _, phase, slot, fx, fy, fz, tx, ty, tz, tolerance in legs:
+        verdict = probe_leg((float(fx), float(fy), float(fz)),
+                            (float(tx), float(ty), float(tz)), float(tolerance))
+        if verdict != "surface_walk_verified":
+            refusals.setdefault(verdict, []).append((phase, slot, fx, fy, tx, ty))
+    assert not refusals, {reason: rows[:5] for reason, rows in refusals.items()}
+
+    # Every distinct leg of the planner coverage (all 13,608 pairs of standing
+    # spots), probed the same way.
+    coverage = {tuple(line.split()[1:]) for line in output.splitlines()
+                if line.startswith("LEGC ")}
+    assert len(coverage) > 1000
+    coverage_refusals = {}
+    for fx, fy, fz, tx, ty, tz, tolerance in coverage:
+        verdict = probe_leg((float(fx), float(fy), float(fz)),
+                            (float(tx), float(ty), float(tz)), float(tolerance))
+        if verdict != "surface_walk_verified":
+            coverage_refusals.setdefault(verdict, []).append((fx, fy, fz, tx, ty, tz))
+    assert not coverage_refusals, {reason: (len(rows), rows[:5])
+                                   for reason, rows in coverage_refusals.items()}
