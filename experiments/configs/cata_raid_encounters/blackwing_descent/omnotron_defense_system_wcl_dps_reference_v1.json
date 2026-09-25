@@ -1,0 +1,18 @@
+{
+  "schema": "omnotron_defense_system_wcl_dps_reference_v1",
+  "boss": "omnotron_defense_system",
+  "mode": "10N",
+  "status": "blocked_wcl_human_verification",
+  "status_note": "On 2026-09-25 every classic.warcraftlogs.com page redirected to /human-challenge. No agent attests to being human, so no report was opened and no DPS value was read. References stay empty until the user clears the gate; the raid target then lists them in matched_reference_ids.",
+  "references": [],
+  "extraction_plan": {
+    "candidate_reports": [
+      {"report": "MxFq7TRbvnjGY1hJ", "date": "2024-10-28", "mode": "10N", "why": "BWD 10N night already used for Magmaw fidelity; select its Omnotron Defense System kill fight"},
+      {"report": "Y8ajQ7dbmKMG1RZy", "mode": "10N", "why": "BWD 10N Magmaw reference night; select its Omnotron kill"},
+      {"report": "xAhkN2y9YP3KRmnJ", "date": "2025-06-11", "mode": "10N", "why": "later 10N night; select its Omnotron kill"}
+    ],
+    "fallback_discovery": "WCL Cataclysm Classic rankings for encounter 1027 (Omnotron Defense System), 10-player normal; open a kill whose roster covers the canonical specs",
+    "per_reference_fields": ["id (<report>-fight<id>)", "url", "mode", "duration_sec", "raid_dps", "average_item_level", "target_scope (four constructs and Poison Bombs)", "actor_dps per class_spec", "limitations"],
+    "specs_needed": ["blood_death_knight", "feral_druid_tank", "beast_mastery_hunter", "fire_mage", "retribution_paladin", "assassination_rogue", "elemental_shaman", "demonology_warlock"]
+  }
+}

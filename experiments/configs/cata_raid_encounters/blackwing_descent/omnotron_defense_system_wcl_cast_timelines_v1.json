@@ -1,0 +1,16 @@
+{
+  "schema": "omnotron_defense_system_wcl_cast_timelines_v1",
+  "boss": "omnotron_defense_system",
+  "mode": "10N",
+  "status": "blocked_wcl_human_verification",
+  "status_note": "No WCL page could be opened on 2026-09-25 (human-verification interstitial). Timelines are added per matched reference once the gate is cleared.",
+  "source_note": "Completed Cast rows from WCL Events pages (Begin Cast excluded), one actor entry per canonical spec, as in magmaw_wcl_cast_timelines_v1.json.",
+  "timelines": [],
+  "encounter_events_to_capture": {
+    "enemy_casts": [78746, 79023, 79499, 79582, 79624, 79710, 79729, 79835, 79900, 80053, 80157],
+    "enemy_auras": [78740, 78726, 79628],
+    "player_auras": [79501, 79888, 80011, 80094],
+    "damage_taken": [1, 79879, 79889, 79504, 79035, 79617, 80092, 80097, 79912],
+    "anchors": "relative to each construct's 78740 application"
+  }
+}

@@ -3,205 +3,190 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronDutyPlan.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronFacts.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotOmnotronMovement.h"
 #include <algorithm>
-#include <cmath>
 #include <optional>
 #include <string_view>
 #include <vector>
 
+// Omnotron Defense System (BWD) adaptive strategy for any two-tank
+// composition. It owns the node only while a construct is engaged; before the
+// pull the validation route approaches and pulls the patrolling construct.
+//
+// Per bot and snapshot it proposes:
+// - DamageTarget: the newest active, unshielded construct (the older one
+//   shields first), a Poison Bomb that is safe to kill for ranged damage
+//   dealers, or the construct a tank owns;
+// - SuppressOffense: when every active construct is shielded, and for a tank
+//   whose own construct is shielded (it keeps holding it);
+// - TankTarget: the construct a tank must hold (taunt if it is on anyone else);
+// - InterruptTarget: Arcanotron for the rotation's current interrupter;
+// - DispelTarget: a Soaked In Poison carrier for a poison dispeller;
+// - OffenseAllowed: the constructs that may be damaged at all;
+// - Movement: Lightning Conductor, Poison Bomb, Flamethrower, hazards, tank
+//   positioning and Power Generator stacking, in that order.
 namespace BotEncounter
 {
 struct AdaptiveOmnotronPlan
 {
     bool OwnsNode = false;
     bool SuppressOffense = false;
+    std::string_view SuppressReason;
     ObjectGuid DamageTarget;
     ObjectGuid InterruptTarget;
+    // Arcane Annihilator cast count for this attempt: one interrupt candidate
+    // identity per cast, so retries of one cast never delay the next.
+    uint64 InterruptCastOrdinal = 0;
+    ObjectGuid TankTarget;
+    ObjectGuid DispelTarget;
+    // Constructs this bot may damage (active, no shield or shield cast). The
+    // runtime restricts every other construct entry for this bot, which also
+    // keeps area spells away from a shielded construct.
+    std::vector<ObjectGuid> OffenseAllowed;
     std::optional<BotNativeAction::Candidate> Movement;
 };
 
 class AdaptiveOmnotronStrategy
 {
 public:
-    static constexpr uint32 Arcanotron = 42166;
-    static constexpr uint32 Magmatron = 42178;
-    static constexpr uint32 Electron = 42179;
-    static constexpr uint32 Toxitron = 42180;
-    static constexpr uint32 PoisonBomb = 42897;
-    static constexpr uint32 PoisonPuddle = 42920;
-    static constexpr uint32 ChemicalCloud = 42934;
+    static constexpr uint32 Arcanotron = Omnotron::ArcanotronEntry;
+    static constexpr uint32 Magmatron = Omnotron::MagmatronEntry;
+    static constexpr uint32 Electron = Omnotron::ElectronEntry;
+    static constexpr uint32 Toxitron = Omnotron::ToxitronEntry;
+    static constexpr uint32 PoisonBomb = Omnotron::PoisonBombEntry;
+    static constexpr uint32 PoisonPuddle = Omnotron::PoisonPuddleEntry;
+    static constexpr uint32 ChemicalCloud = Omnotron::ChemicalCloudEntry;
 
     AdaptiveOmnotronPlan Propose(Blackboard const& board, ObjectGuid botGuid,
         std::string_view role) const
     {
+        // Qualified names only: other encounter headers declare helpers with
+        // the same names at BotEncounter scope.
+        namespace O = Omnotron;
         AdaptiveOmnotronPlan plan;
-        if (board.Route.NodeId != "bwd.omnotron.encounter")
+        if (board.Route.NodeId != O::EncounterNodeId)
             return plan;
         ActorSnapshot const* bot = board.FindActor(botGuid);
         if (!bot || !bot->Alive)
             return plan;
-
-        std::vector<ActorSnapshot const*> constructs;
-        for (ActorSnapshot const& hostile : board.Hostiles)
-            if (IsConstruct(hostile.Entry) && hostile.Alive)
-                constructs.push_back(&hostile);
-        if (constructs.empty())
+        O::EncounterFacts const facts = O::Observe(board);
+        if (!facts.Engaged)
             return plan;
         plan.OwnsNode = true;
+        for (O::ConstructFact const& construct : facts.Constructs)
+            if (construct.Active && !construct.Shielded())
+                plan.OffenseAllowed.push_back(construct.Actor->Guid);
+        std::string_view const effectiveRole = role.empty()
+            ? std::string_view(bot->Role) : role;
+        O::DutyPlan const duty = O::BuildDutyPlan(board, facts,
+            O::LedgerMode::Observe);
 
-        std::vector<ActorSnapshot const*> safeActive;
-        for (ActorSnapshot const* construct : constructs)
-        {
-            bool const active = HasAura(*construct, 78740)
-                || construct->InCombat || !construct->VictimGuid.IsEmpty();
-            if (!active)
-                continue;
-            if (construct->Entry == Arcanotron && construct->Cast
-                && construct->Cast->SpellId == 79710
-                && construct->Cast->Interruptible)
-                plan.InterruptTarget = construct->Guid;
-            if (!HasDamageShield(*construct))
-                safeActive.push_back(construct);
-        }
-        std::sort(safeActive.begin(), safeActive.end(), [](auto left, auto right)
-        {
-            return left->Guid.GetRawValue() < right->Guid.GetRawValue();
-        });
-        if (safeActive.empty())
-            plan.SuppressOffense = true;
-        else if (role == "tank" && safeActive.size() > 1)
-        {
-            std::vector<ObjectGuid> tanks;
-            for (ActorSnapshot const& player : board.Players)
-                if (player.Alive && player.Role == "tank")
-                    tanks.push_back(player.Guid);
-            std::sort(tanks.begin(), tanks.end(), [](ObjectGuid left, ObjectGuid right)
-            {
-                return left.GetRawValue() < right.GetRawValue();
-            });
-            auto itr = std::find(tanks.begin(), tanks.end(), botGuid);
-            size_t const index = itr == tanks.end() ? 0
-                : size_t(std::distance(tanks.begin(), itr));
-            plan.DamageTarget = safeActive[index % safeActive.size()]->Guid;
-        }
-        else
-            plan.DamageTarget = safeActive.front()->Guid;
+        ChooseTargets(board, facts, duty, *bot, effectiveRole, plan);
 
-        if (HasAura(*bot, 79888) || HasAura(*bot, 79501))
+        if (duty.Interrupt.Primary == botGuid
+            || (duty.Interrupt.Backup == botGuid
+                && duty.Interrupt.CastAgeMs >= O::InterruptBackupDelayMs))
+            plan.InterruptTarget = duty.Interrupt.Caster;
+        plan.InterruptCastOrdinal = duty.Interrupt.Ordinal;
+        // Interrupts and taunts deal no damage, so a shielded construct stays
+        // reachable for exactly those casts: the rotation's interrupter keeps
+        // Arcanotron under Power Conversion, and a tank keeps its own
+        // construct while it attacks someone else. The runtime restriction
+        // would otherwise refuse both casts.
+        auto allow = [&plan](ObjectGuid guid)
         {
-            Vector3 centroid = PlayerCentroid(board, botGuid);
-            plan.Movement = AwayFrom(board, *bot, centroid,
-                HasAura(*bot, 79888) ? "lightning_conductor_isolate"
-                    : "acquiring_target_line_clear",
-                ObjectGuid{}, 14.0f);
-            return plan;
-        }
-
-        ActorSnapshot const* nearestHazard = nullptr;
-        float nearestDistance = 0.0f;
-        auto inspectHazard = [&](ActorSnapshot const& actor)
-        {
-            bool const hazard = actor.Alive
-                && (actor.Entry == PoisonPuddle || actor.Entry == ChemicalCloud
-                    || (actor.Entry == PoisonBomb
-                        && actor.VictimGuid == botGuid));
-            if (!hazard)
-                return;
-            float const distance = Distance2d(bot->Position, actor.Position);
-            if (!nearestHazard || distance < nearestDistance)
-            {
-                nearestHazard = &actor;
-                nearestDistance = distance;
-            }
+            if (!guid.IsEmpty() && std::find(plan.OffenseAllowed.begin(),
+                    plan.OffenseAllowed.end(), guid) == plan.OffenseAllowed.end())
+                plan.OffenseAllowed.push_back(guid);
         };
-        for (ActorSnapshot const& hostile : board.Hostiles)
-            inspectHazard(hostile);
-        for (ActorSnapshot const& summon : board.Summons)
-            inspectHazard(summon);
-        float const unsafeRadius = nearestHazard
-            && nearestHazard->Entry == ChemicalCloud ? 14.0f : 8.0f;
-        if (nearestHazard && nearestDistance < unsafeRadius)
-            plan.Movement = AwayFrom(board, *bot, nearestHazard->Position,
-                nearestHazard->Entry == PoisonBomb ? "poison_bomb_kite"
-                    : "omnotron_hazard_exit",
-                nearestHazard->Guid, unsafeRadius + 3.0f);
+        allow(plan.InterruptTarget);
+        if (O::ConstructFact const* own = facts.Find(plan.TankTarget);
+            own && own->Actor->VictimGuid != botGuid)
+            allow(plan.TankTarget);
+        plan.DispelTarget = duty.DispelTargetFor(botGuid);
+        plan.Movement = ProposeMovement(board, facts, duty, *bot, effectiveRole);
         return plan;
     }
 
 private:
-    static bool IsConstruct(uint32 entry)
+    static void ChooseTargets(Blackboard const& board,
+        Omnotron::EncounterFacts const& facts, Omnotron::DutyPlan const& duty,
+        ActorSnapshot const& bot, std::string_view role, AdaptiveOmnotronPlan& plan)
     {
-        return entry == Arcanotron || entry == Magmatron
-            || entry == Electron || entry == Toxitron;
-    }
-
-    static bool HasAura(ActorSnapshot const& actor, uint32 spellId)
-    {
-        return std::any_of(actor.Auras.begin(), actor.Auras.end(),
-            [spellId](AuraSnapshot const& aura) { return aura.SpellId == spellId; });
-    }
-
-    static bool HasDamageShield(ActorSnapshot const& actor)
-    {
-        return HasAura(actor, 79900) || HasAura(actor, 79582)
-            || HasAura(actor, 79835) || HasAura(actor, 79729);
-    }
-
-    static float Distance2d(Vector3 const& left, Vector3 const& right)
-    {
-        float const dx = left.X - right.X;
-        float const dy = left.Y - right.Y;
-        return std::sqrt(dx * dx + dy * dy);
-    }
-
-    static Vector3 PlayerCentroid(Blackboard const& board, ObjectGuid exclude)
-    {
-        Vector3 result;
-        uint32 count = 0;
-        for (ActorSnapshot const& player : board.Players)
-            if (player.Alive && player.Guid != exclude)
+        namespace O = Omnotron;
+        if (role == "tank")
+        {
+            O::TankDuty const* tank = duty.TankDutyFor(bot.Guid);
+            O::ConstructFact const* own = tank ? facts.Find(tank->Construct) : nullptr;
+            if (own)
             {
-                result.X += player.Position.X;
-                result.Y += player.Position.Y;
-                result.Z += player.Position.Z;
-                ++count;
+                plan.TankTarget = own->Actor->Guid;
+                if (own->Shielded())
+                {
+                    plan.SuppressOffense = true;
+                    plan.SuppressReason = "tank_holds_shielded_construct";
+                }
+                else
+                    plan.DamageTarget = own->Actor->Guid;
+                return;
             }
-        if (count)
-        {
-            result.X /= float(count);
-            result.Y /= float(count);
-            result.Z /= float(count);
+            // Waiting next to the construct about to activate: no damage
+            // target, or combat range movement would pull it back.
+            if (tank && facts.Find(tank->Standby))
+            {
+                plan.SuppressOffense = true;
+                plan.SuppressReason = "tank_standby_next_construct";
+                return;
+            }
         }
-        return result;
+        else if (role == "dps" && O::StandsAtRange(bot.ClassSpec, role)
+            && !duty.BombTarget.IsEmpty())
+        {
+            ActorSnapshot const* bomb = board.FindActor(duty.BombTarget);
+            if (bomb && O::PlanarDistance(bomb->Position, bot.Position) <= 40.0f)
+            {
+                plan.DamageTarget = bomb->Guid;
+                return;
+            }
+        }
+
+        if (!duty.DamageFocus.IsEmpty())
+            plan.DamageTarget = duty.DamageFocus;
+        else if (!duty.DamageFallback.IsEmpty())
+            plan.DamageTarget = duty.DamageFallback;
+        else
+        {
+            plan.SuppressOffense = true;
+            plan.SuppressReason = "all_constructs_shielded";
+        }
     }
 
-    static BotNativeAction::Candidate AwayFrom(Blackboard const& board,
-        ActorSnapshot const& bot, Vector3 const& danger, std::string mechanic,
-        ObjectGuid actor, float distance)
+    static std::optional<BotNativeAction::Candidate> ProposeMovement(
+        Blackboard const& board, Omnotron::EncounterFacts const& facts,
+        Omnotron::DutyPlan const& duty, ActorSnapshot const& bot,
+        std::string_view role)
     {
-        float dx = bot.Position.X - danger.X;
-        float dy = bot.Position.Y - danger.Y;
-        float length = std::sqrt(dx * dx + dy * dy);
-        if (length < 0.01f)
-        {
-            dx = std::cos(bot.Facing);
-            dy = std::sin(bot.Facing);
-            length = 1.0f;
-        }
-        BotNativeAction::Candidate candidate;
-        candidate.Id.ScopeKey = board.CurrentScope.Key();
-        candidate.Id.Strategy = "adaptive_omnotron";
-        candidate.Id.Mechanic = std::move(mechanic);
-        candidate.Id.Actor = actor;
-        candidate.Id.EventGeneration = board.Revision;
-        candidate.ActionPriority = BotActionArbitration::Priority::Survival;
-        candidate.Utility = 300.0f;
-        candidate.ExpiresAtMs = board.ObservedAtMs + 750;
-        candidate.Action = BotNativeAction::Move{
-            danger.X + dx / length * distance,
-            danger.Y + dy / length * distance,
-            bot.Position.Z };
-        return candidate;
+        namespace O = Omnotron;
+        // Heroic Encasing Shadows roots the player; no path can be taken.
+        if (O::HasAura(bot, O::EncasingShadowsAura))
+            return std::nullopt;
+        if (auto move = O::ProposeConductorIsolation(board, facts, bot))
+            return move;
+        if (auto move = O::ProposeBombKite(board, facts, bot))
+            return move;
+        if (auto move = O::ProposeAcquiredTargetLine(board, facts, bot))
+            return move;
+        if (auto move = O::ProposeFlamethrowerDodge(board, facts, bot))
+            return move;
+        if (auto move = O::ProposeHazardExit(board, facts, bot))
+            return move;
+        if (auto move = O::ProposeConductorClearance(board, bot))
+            return move;
+        if (role == "tank")
+            return O::ProposeTankPosition(board, facts, duty, bot);
+        return O::ProposeGeneratorStack(board, facts, duty, bot, role);
     }
 };
 }

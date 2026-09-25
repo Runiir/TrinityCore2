@@ -1,0 +1,366 @@
+{
+  "schema": "creature_damage_calibration_registry_patch_v1",
+  "target": "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json",
+  "operation": "add these keys to creatures; no existing key changes",
+  "boss": "omnotron_defense_system",
+  "status_summary": "Four 10N constructs open (native roll known, WCL gated), twelve difficulty entries open, Poison Bomb open, controller/summons/Nefarius not_applicable. No DamageModifier is staged: no matched sample exists.",
+  "staged_sql": null,
+  "creatures": {
+    "42166": {
+      "name": "Arcanotron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "49056": {
+      "name": "Arcanotron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49057": {
+      "name": "Arcanotron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49058": {
+      "name": "Arcanotron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42166,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "42178": {
+      "name": "Magmatron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "49053": {
+      "name": "Magmatron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49054": {
+      "name": "Magmatron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49055": {
+      "name": "Magmatron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42178,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "42179": {
+      "name": "Electron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan).",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "49047": {
+      "name": "Electron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49048": {
+      "name": "Electron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49049": {
+      "name": "Electron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42179,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "42180": {
+      "name": "Toxitron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1500,
+        "unit_class": 4,
+        "rank": 1,
+        "level": 88,
+        "flags_extra": 2097153
+      },
+      "open_reason": "native per-swing roll at DamageModifier 1: 4,520.5-6,731.4 ((2947.9421 * {1,1.5} + 920/14) * 1.5 s; unit_class 4, level 88, HealthScalingExpansion 3). No matched 10N WCL melee sample: classic.warcraftlogs.com showed a human-verification page on 2026-09-25 and no agent may pass it. Extract damage-taken ability 1 from this construct (U, hit type, attacker-side -10% auras, excluding Power Generator +50% windows) in a 10N Omnotron kill (candidates in omnotron_defense_system_wcl_dps_reference_v1.json extraction_plan). Kill-credit creature of instance encounter 1027.",
+      "ledger": {
+        "path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+        "value_key": "construct_melee_native_roll_10n",
+        "samples_field": "wcl_10N_samples"
+      }
+    },
+    "49050": {
+      "name": "Toxitron (1)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25N",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25N) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49051": {
+      "name": "Toxitron (2)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (10H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "49052": {
+      "name": "Toxitron (3)",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "25H",
+      "base_entry": 42180,
+      "role": "boss",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 2000,
+        "unit_class": 4,
+        "rank": 1
+      },
+      "open_reason": "No same-mode (25H) melee sample. BaseAttackTime 2000 differs from 10N 1500; do not copy a 10N value."
+    },
+    "42897": {
+      "name": "Poison Bomb",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42897,
+      "role": "add",
+      "status": "open",
+      "damage_modifier": null,
+      "template_at_audit": {
+        "base_attack_time_ms": 1000,
+        "unit_class": 1,
+        "rank": 0,
+        "level": 85
+      },
+      "open_reason": "Its melee swing procs 80086 -> Quiet Suicide 3617 -> Poison Bomb 80092 (spell damage, not DamageModifier); the swing's own damage is unobserved. Needs a 10N WCL sample of ability 1 from Poison Bomb (difficulty entries 49121-49123)."
+    },
+    "42186": {
+      "name": "Omnotron",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42186,
+      "role": "boss",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Controller: REACT_PASSIVE, UNIT_FLAG_NOT_SELECTABLE, never engages or swings (boss_omnotron_defense_system.cpp Initialize; creature_template unit_flags 33554432)."
+    },
+    "42733": {
+      "name": "Power Generator",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42733,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Passive summon (unit_flags 33554432, flags_extra 130) that only pulses 79629 from its 79628 aura; it has no victim and never swings."
+    },
+    "42920": {
+      "name": "Poison Puddle",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42920,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Passive summon (unit_flags 33554432, flags_extra 8322) that only pulses 80097 from its 80095 aura; no melee."
+    },
+    "42934": {
+      "name": "Chemical Cloud",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10N",
+      "base_entry": 42934,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Passive summon (unit_flags 33554432, flags_extra 8322) that only pulses 80161/80164 from 80162/80163; no melee (difficulty entries 49118-49120 likewise)."
+    },
+    "49226": {
+      "name": "Lord Victor Nefarius",
+      "raid": "blackwing_descent",
+      "boss": "omnotron_defense_system",
+      "mode": "10H",
+      "base_entry": 49226,
+      "role": "add",
+      "status": "not_applicable",
+      "damage_modifier": null,
+      "reason": "Heroic-only PassiveAI summon on the balcony (npc_lord_victor_nefarius_omnotron); casts spells, never melees."
+    }
+  }
+}

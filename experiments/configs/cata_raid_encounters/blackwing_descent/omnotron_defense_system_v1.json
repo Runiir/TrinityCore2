@@ -3,16 +3,27 @@
   "contract_schema": "cata_raid_encounter_contract_v1",
   "raid": "blackwing_descent",
   "boss_slug": "omnotron_defense_system",
-  "modes": ["10N", "10H", "25N", "25H"],
+  "modes": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
   "fidelity_state": "fidelity_blocked",
   "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
   "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
-  "unresolved_material_count": 9,
+  "unresolved_material_count": 10,
   "encounter": "omnotron_defense_system",
   "instance": "blackwing_descent",
-  "scope": ["10N", "10H", "25N", "25H"],
-  "research_state": "planning_only_not_live_validated",
-  "fidelity_policy": "Do not schedule values marked fidelity_blocked; prefer observed encounter events over guide timers.",
+  "scope": [
+    "10N",
+    "10H",
+    "25N",
+    "25H"
+  ],
+  "research_state": "10N_ready_for_diagnostic_shard_wcl_blocked",
+  "script_readiness": "source_present_ready_for_diagnostic_shard",
+  "fidelity_policy": "Do not schedule values marked fidelity_blocked; bots act on observed auras, casts and summons, never on encounter timers.",
   "evidence_rule": "Behavior-changing claims require two independent strategy sources or one credible strategy source plus repository confirmation.",
   "source_catalog": [
     {
@@ -22,7 +33,7 @@
       "author": "Beanna",
       "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/omnotron-defense-system-strategy",
       "published_or_updated": "2024-06-04 (page metadata)",
-      "accessed": "2026-08-11",
+      "accessed": "2026-09-25",
       "scope_note": "Cataclysm guide; no reliable Classic 4.4.2 build or hotfix cutoff exposed."
     },
     {
@@ -30,9 +41,10 @@
       "title": "Omnotron Defense System Encounter Guide",
       "publisher": "Icy Veins",
       "url": "https://www.icy-veins.com/cataclysm-classic/omnotron-defense-system-encounter-guide-strategy-abilities-loot",
-      "published_or_updated": "around 2024 (page metadata; exact date not exposed)",
-      "accessed": "2026-08-11",
-      "scope_note": "Cataclysm Classic strategy; exact 4.4.2 hotfix coverage not stated."
+      "published_or_updated": "2024-07-29",
+      "accessed": "2026-09-25",
+      "scope_note": "Cataclysm Classic strategy; exact 4.4.2 hotfix coverage not stated.",
+      "author": "Abide"
     },
     {
       "id": "warcraft_wiki_legacy",
@@ -105,6 +117,127 @@
       ],
       "accessed": "2026-08-11",
       "scope_note": "DB proc/static support; does not establish wall-clock encounter timers."
+    },
+    {
+      "title": "Omnotron spell rows, 4.4.2.59185",
+      "publisher": "wago.tools client database",
+      "url": "https://wago.tools/db2/SpellEffect/csv?build=4.4.2.59185",
+      "accessed": "2026-09-25",
+      "build": "4.4.2.59185",
+      "method": "pixi run python -m tools.raid_program.extract_442_client_spell_rows --follow-triggers --spell-id <77 Omnotron IDs> (and a second run for 23 interrupt/dispel/taunt IDs)",
+      "full_csv_sha256_prefix": {
+        "SpellEffect": "53463195554e58de",
+        "SpellName": "f6c169613b405ed1",
+        "SpellMisc": "cfe3e68aaab489fc",
+        "SpellAuraOptions": "c6f9dd9b7579ff4d",
+        "SpellTargetRestrictions": "9c332644a146766c",
+        "SpellCooldowns": "e419e4fcaf6638e1",
+        "SpellDuration": "8235071c5172c395",
+        "SpellRadius": "cbb8774c4a5c825d",
+        "SpellRange": "90875cd8e29a0eb6",
+        "SpellCastTimes": "f015c5da360956f4"
+      },
+      "retention": "Extract regenerable with the command above; only the selected values are retained in this ledger (no DVC object written in round 2).",
+      "authority": "reference client values; server hotfix parity needs observations",
+      "id": "client_442_59185_omnotron"
+    },
+    {
+      "title": "Execution client DBC rows (4.3.4.15595)",
+      "publisher": "local runtime data",
+      "paths": [
+        "data/dbc/enUS/Spell.dbc",
+        "data/dbc/enUS/SpellEffect.dbc",
+        "data/dbc/enUS/SpellDifficulty.dbc",
+        "data/dbc/enUS/SpellDuration.dbc",
+        "data/dbc/enUS/SpellCooldowns.dbc"
+      ],
+      "sha256_prefix": {
+        "Spell.dbc": "088a14963d3f81a1",
+        "SpellEffect.dbc": "e3d9a470bbcb5cea",
+        "SpellDifficulty.dbc": "5537041a13b97ee2",
+        "SpellDuration.dbc": "284e22a843ce4cb8",
+        "SpellCooldowns.dbc": "0939c8ffb7902dc4"
+      },
+      "accessed": "2026-09-25",
+      "authority": "values the running server loads; equal to 4.4.2.59185 for every Omnotron 10N row compared here",
+      "id": "client_434_dbc"
+    },
+    {
+      "title": "DBM Omnotron Defense System module (DarkIronGolemCouncil.lua)",
+      "publisher": "Deadly Boss Mods",
+      "revision": "20241103125714",
+      "path": "/home/runiir/Games/_whitemane-60895_/Interface/AddOns/DBM-Raids-Cata/BlackwingDescent/DarkIronGolemCouncil.lua",
+      "sha256": "77a4f0edc5dc9bd6b0e9b1f03c20bc06a80b108003da71c56c0561f03db76879",
+      "accessed": "2026-09-25",
+      "authority": "addon expected cooldowns and author log comments; corroborating timer source, not a server constant",
+      "anchors": "timers start on SPELL_AURA_APPLIED 78740 (Activated) per construct; shields SPELL_CAST_START; Poison Protocol/Chemical Bomb/Power Generator SPELL_CAST_SUCCESS",
+      "id": "local_dbm_r20241103_omnotron"
+    },
+    {
+      "title": "TDB 434.22011 world snapshot",
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+      "sha256_prefix": "b03e64b196be444d",
+      "accessed": "2026-09-25",
+      "tables": [
+        "creature_template 42166/42178/42179/42180/42186/42733/42897/42920/42934 and difficulty entries",
+        "creature_template_addon",
+        "creature_summon_groups (summoner 42186)",
+        "conditions (78696, 79920, 80164, 91881)",
+        "spell_script_names (omnotron)",
+        "creature_model_info 32684-32688",
+        "creature_classlevelstats (88, 4)",
+        "waypoint_data 4218600",
+        "instance_encounters 1027"
+      ],
+      "authority": "historical DB snapshot plus sql/updates/world/4.3.4 (no later Omnotron template changes except 2023 StaticFlags and the 2025_06_18_06 DamageModifier reset)",
+      "id": "tdb_434_22011"
+    },
+    {
+      "title": "Map 669 navmesh tiles",
+      "paths": [
+        "data/mmaps/669.mmap",
+        "data/mmaps/6693131.mmtile",
+        "data/mmaps/6693132.mmtile",
+        "data/mmaps/6693133.mmtile",
+        "data/mmaps/6693231.mmtile",
+        "data/mmaps/6693232.mmtile",
+        "data/mmaps/6693233.mmtile",
+        "data/mmaps/6693332.mmtile"
+      ],
+      "sha256_prefix": {
+        "669.mmap": "3b794515424ff374",
+        "6693131": "ec53ab238b671d2b",
+        "6693132": "0879cbb27dce9695",
+        "6693133": "116e3649739b4235",
+        "6693231": "9bf7e5e6b956886a",
+        "6693232": "d444daf82f09d2e4",
+        "6693233": "c9a0a2787aaefe0c",
+        "6693332": "f91db1f81a7f95a8"
+      },
+      "accessed": "2026-09-25",
+      "method": "Parsed Detour polygons (MmapTileHeader 20 B, dtMeshHeader 100 B, dtPoly 32 B, recast (y,z,x) axis order) within 70 yd of the route node; point-in-polygon sampling every 2-3 deg.",
+      "claim": "A 21 yd disc around (-324.78, -399.078) is fully walkable (z 213.9-217.4); the first failing radius is 21.5 yd (south-west). The +Y side opens to the entrance corridor (walkable to ~59 yd).",
+      "id": "map_669_navmesh"
+    },
+    {
+      "title": "Validation route boss attribution",
+      "paths": [
+        "src/server/game/Bots/BotWorldPopulationMgrValidationFocus.cpp:557-569",
+        "src/server/game/Bots/BotWorldPopulationMgrCombatLog.cpp:106-160",
+        "src/server/game/Globals/ObjectMgr.cpp:5662-5683"
+      ],
+      "revision": "a570b44369246a47c77b910398bdf0019e71c0ed",
+      "accessed": "2026-09-25",
+      "claim": "A boss route node confirms a native kill only for the route target entry when IsDungeonBoss(); DUNGEON_BOSS is set only on the instance_encounters credit creature (1027 -> 42180 Toxitron, creditType 0).",
+      "id": "repo_bot_route_credit"
+    },
+    {
+      "title": "classic.warcraftlogs.com human-verification interstitial",
+      "publisher": "Warcraft Logs",
+      "url": "https://classic.warcraftlogs.com/reports/MxFq7TRbvnjGY1hJ",
+      "accessed": "2026-09-25",
+      "claim": "Every WCL page redirected to /human-challenge ('One Quick Check'). Per coordinator instruction no agent attests to being human; WCL-dependent claims stay open until the user clears the gate.",
+      "id": "wcl_human_verification_gate_20260925"
     }
   ],
   "repository_evidence": [
@@ -116,13 +249,43 @@
     "Acquiring Target selects one random target",
     "Poison Bomb samples up to 25 random eligible targets, excludes within 10yd of summoner when alternatives exist, then fixates one",
     "Nefarius manipulates only the longest-active golem and uses an internal 30s ability cooldown",
-    "Reset/FAIL/DONE paths remove encounter debuffs and forward DONE credit"
+    "Reset/FAIL/DONE paths remove encounter debuffs and forward DONE credit",
+    "round 2: Electrical Discharge starts on a random player through the 95499 trigger",
+    "round 2: two Acquiring Targets and two Poison Protocols per activation; Toxitron shields at 50/40 s like the other constructs",
+    "route kill attribution needs the credit creature 42180 as route source_entry"
   ],
+  "phase_graph": {
+    "prepull": "Controller summons four inactive constructs (Inactive 78726, Powered Down 82265, not selectable); 10 s after reset the first queued construct recharges (45 s normal) and then walks its patrol, attackable, without Activated.",
+    "engage": "Any construct entering combat: IN_PROGRESS, all constructs zone into combat, the patrolling construct receives Activated (90 s normal) and the next construct starts Recharging.",
+    "rotation": "Every 45 s (normal) the next construct activates; each active construct shields once 50 s after activation (1.5 s cast, 10 s aura) and shuts down at 90 s (Shutting Down 3 s cast, then Inactive). Two constructs overlap except during the first 45 s.",
+    "end": "Shared health reaches zero: every construct dies, the controller calls _JustDied (boss 1 DONE); credit creature 42180.",
+    "wipe": "A construct evading despawns all constructs, sets FAIL and respawns the controller after 30 s."
+  },
   "roles": {
-    "tanks": ["two_active_golems", "keep_constructs_and_raid_out_of_unintended_fields"],
-    "interrupt": ["arcane_annihilation_or_annihilator"],
-    "ranged": ["control_or_kill_poison_bombs", "move_marked_targets", "handle_flamethrower_line"],
-    "raid": ["stop_damage_on_shield_state", "spread_electrical_chain", "move_chemical_cloud_and_poison_puddle"]
+    "tanks": [
+      "two tanks own at most one active construct each; ownership follows the construct's victim, a new construct goes to the tank whose construct is gone or shutting down",
+      "taunt an owned construct that attacks anyone else",
+      "stop attacking an owned construct while it is shielded and drag it 12 yd from the other active construct",
+      "walk an owned construct out of a Power Generator (construct center >= 8.6 yd from it)",
+      "a free tank waits next to the construct whose Recharging aura ends within 12 s"
+    ],
+    "interrupt": [
+      "interrupt every Arcane Annihilator (79710) with a rotation by capability: in-range melee 10 s interrupts, then ranged, then tanks, then long cooldowns; a backup acts 450 ms into the cast"
+    ],
+    "dispel": [
+      "poison dispellers (Cleanse 4987, Remove Corruption 2782; not a Bear Form tank) clear Soaked In Poison at 3+ stacks or below 50% health"
+    ],
+    "ranged": [
+      "kill a Poison Bomb only where its 6 yd blast reaches no player (or it already touches its target)",
+      "stand in the Power Generator when it is clear of hazards"
+    ],
+    "raid": [
+      "damage the newest active unshielded construct; never damage a shielded or shield-casting construct",
+      "Lightning Conductor carrier keeps more than 8 yd from everyone; others keep out of its 8 yd",
+      "Acquiring Target player leads the Flamethrower cone away; everyone else leaves the 25 degree Magmatron-to-target cone",
+      "fixated player kites its Poison Bomb away from everyone",
+      "leave Chemical Cloud (12 yd), Poison Puddle (6 yd) and other players' bomb blast radius (6 yd)"
+    ]
   },
   "gates": [
     "shared_health_targeting",
@@ -132,7 +295,10 @@
     "lightning_conductor_isolation",
     "acquiring_target_aim",
     "poison_bomb_fixate_and_puddle",
-    "barrier_break_backdraft_awareness"
+    "barrier_break_backdraft_awareness",
+    "tank_ownership_by_victim",
+    "poison_dispel",
+    "power_generator_positioning"
   ],
   "heroic_gates": [
     "nefarian_presence",
@@ -143,40 +309,83 @@
   ],
   "difficulty_matrix": {
     "10N": {
+      "shared_health_native": 25767600,
       "shared_health_reported": "32.2M",
-      "arcane_targeting": "one random target in local AI",
+      "activation_s": 90,
+      "recharge_s": 45,
+      "shield_after_activation_s": 50,
+      "arcane_targeting": "one random target",
+      "lightning_conductor_s": 10,
       "heroic_controller": false,
-      "fidelity_status": "guide_reported_values_not_4_4_2_verified"
+      "fidelity_status": "client_rows_resolved_wcl_blocked"
     },
     "10H": {
       "shared_health_reported": "54.1M",
-      "arcane_targeting": "one random target in local AI",
+      "activation_s": 60,
+      "recharge_s": 30,
+      "shield_after_activation_s": 40,
+      "lightning_conductor_s": 15,
+      "arcane_targeting": "one random target",
       "heroic_controller": true,
-      "fidelity_status": "guide_reported_values_not_4_4_2_verified"
+      "fidelity_status": "guide_and_client_values_not_run_verified"
     },
     "25N": {
       "shared_health_reported": "99.2M",
+      "activation_s": 90,
+      "recharge_s": 45,
+      "shield_after_activation_s": 50,
+      "lightning_conductor_s": 10,
       "arcane_targeting": "area cast in local AI; guide describes three targets",
+      "electrical_discharge_chain": 8,
       "heroic_controller": false,
-      "fidelity_status": "guide_reported_values_and_area_count_not_4_4_2_verified"
+      "fidelity_status": "guide_and_client_values_not_run_verified"
     },
     "25H": {
       "shared_health_reported": "164.9M",
+      "activation_s": 60,
+      "recharge_s": 30,
+      "shield_after_activation_s": 40,
+      "lightning_conductor_s": 15,
       "arcane_targeting": "area cast in local AI",
+      "electrical_discharge_chain": 8,
       "heroic_controller": true,
-      "fidelity_status": "guide_reported_values_not_4_4_2_verified"
+      "fidelity_status": "guide_and_client_values_not_run_verified"
     }
   },
+  "bot_strategy": {
+    "owner": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron/BotAdaptiveOmnotronStrategy.h",
+    "observations_consumed": [
+      "construct auras (Activated, Inactive, Powered Down, Recharging, four shields)",
+      "construct casts (shield casts, Shutting Down, Arcane Annihilator, Flamethrower)",
+      "construct victims",
+      "player auras (Lightning Conductor, Acquiring Target, Fixate, Soaked In Poison, Encasing Shadows)",
+      "summons (Poison Bomb, Poison Puddle, Chemical Cloud, Power Generator)",
+      "player role and class_spec"
+    ],
+    "owns_node": "only while a construct is engaged; the validation route approaches and pulls",
+    "timers_used": "none"
+  },
+  "acceptance_observations": [
+    "native: 78740 applied on a new construct every 45 +- 2 s on 10N; each shield cast once per activation ~50 s after it",
+    "native: two Poison Protocol (80053) and two Acquiring Target (79501) per Toxitron/Magmatron activation on 10N",
+    "native: first hit of each Electrical Discharge cast lands on varying players, not only on the construct's victim",
+    "bots: zero direct damage events on a construct while it has a shield aura (Backdraft 79617 count 0, Static Shock 79912 count 0, Soaked In Poison applications 0 or dispelled)",
+    "bots: Arcane Annihilator interrupted (SPELL_INTERRUPT) on >= 80% of casts; no two interrupts on the same cast",
+    "bots: Lightning Conductor 79889 hits 0 players other than rare edge cases; Flamethrower 79504 hits only the marked player",
+    "bots: each active construct's victim is a tank for >= 95% of its active time after the first 3 s",
+    "route: bwd.omnotron.encounter completes with real_boss_kill_evidence on 42180 and native boss state 1 DONE; 0 boss-window deaths"
+  ],
   "unresolved": [
-    "exact_4_4_2_client_build_and_hotfix_cutoff",
-    "energy_drain_rate_and_exact_50_or_45_energy_shield_threshold",
-    "activation_duration_and_rotation_cadence",
-    "mode_specific_shield_wall_clock_timers",
-    "poison_protocol_bomb_count_and_cadence_by_mode",
-    "lightning_conductor_normal_duration_vs_heroic_duration",
-    "exact_4_4_2_health_and_damage_scaling",
-    "heroic_nefarius_selection_order_and_encounter_time_cadence",
-    "berserk_presence_and_duration_in_4_4_2"
+    "wcl_matched_10n_kill_references",
+    "construct_melee_damage_modifier_10n",
+    "shared_health_10n_wcl_derivation",
+    "electrical_discharge_chain_damage_scaling",
+    "poison_bomb_death_explosion",
+    "barrier_absorb_amount",
+    "normal_mode_first_cast_and_repeat_timers",
+    "heroic_nefarius_selection_order_and_cadence",
+    "heroic_poison_bomb_count_and_non_10n_scaling",
+    "static_shock_center_attacker_or_construct"
   ],
   "status_labels": {
     "fidelity_blocked": "Conflicting or unverified value; do not use as a fixed bot timer.",

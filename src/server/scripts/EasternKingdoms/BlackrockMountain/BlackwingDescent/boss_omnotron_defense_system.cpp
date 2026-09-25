@@ -30,181 +30,12 @@
 #include "MotionMaster.h"
 #include "TemporarySummon.h"
 #include "blackwing_descent.h"
+#include "boss_omnotron_defense_system_shared.h"
 
 namespace BlackwingDescent::OmnotronDefenseSystem
 {
-enum Spells
-{
-    // Omnotron
-    SPELL_COUNCIL_ENERGY_DRAIN                  = 78725,
-    SPELL_CONTROLLER_RECHARGE                   = 78696,
-    SPELL_RECHARGING_ELECTRON                   = 78697,
-    SPELL_RECHARGING_MAGMATRON                  = 78698,
-    SPELL_RECHARGING_ARCANOTRON                 = 78699,
-    SPELL_RECHARGING_TOXITRON                   = 78700,
-
-    // Omnotron Defense System
-    SPELL_INACTIVE                              = 78726,
-    SPELL_POWERED_DOWN                          = 82265,
-    SPELL_SHARED_HEALTH                         = 79920,
-    SPELL_SHUTTING_DOWN                         = 78746,
-    SPELL_INVISIBILITY_AND_STEALTH_DETECTION    = 67236,
-
-    // Electron
-    SPELL_ELECTRICAL_DISCHARGE_TRIGGER          = 95499,
-    SPELL_ELECTRICAL_DISCHARGE                  = 79879,
-    SPELL_UNSTABLE_SHIELD                       = 79900,
-    SPELL_STATIC_SHOCK                          = 79912,
-    SPELL_LIGHTNING_CONDUCTOR_10N               = 79888,
-
-    // Magmatron
-    SPELL_INCINERATION_SECURITY_MEASURE         = 79023,
-    SPELL_ACQUIRING_TARGET                      = 79499,
-    SPELL_BARRIER                               = 79582,
-    SPELL_BACKDRAFT                             = 79617,
-
-    // Toxitron
-    SPELL_CHEMICAL_BOMB                         = 80157,
-    SPELL_POISON_PROTOCOL                       = 80053,
-    SPELL_POISON_SOAKED_SHELL                   = 79835,
-
-    // Arcanotron
-    SPELL_POWER_GENERATOR                       = 79624,
-    SPELL_POWER_CONVERSION                      = 79729,
-
-    // Poison Bomb
-    SPELL_FIXATE_DUMMY                          = 80094,
-    SPELL_QUIETE_SUICIDE                        = 3617,
-    SPELL_POISON_BOMB_DAMAGE                    = 80092,
-    SPELL_POISON_BOMB_SUMMON_PUDDLE             = 80089,
-
-    // Power Generator
-    SPELL_OVERCHARGED_POWER_GENERATOR           = 91857,
-    SPELL_GROW_STACKER                          = 91861,
-    SPELL_ARCANE_BLOWBACK                       = 91880,
-    SPELL_POWER_GENERATOR_NORMAL                = 79628,
-
-    // Lord Victor Nefarius
-    SPELL_SHADOW_INFUSION                       = 92048,
-    SPELL_SHADOW_TELEPORT                       = 91823,
-    SPELL_SHADOW_TELEPORT_BACK                  = 91854,
-    SPELL_GRIP_OF_DEATH                         = 91849,
-    SPELL_SHADOW_CONDUCTOR                      = 92053,
-    SPELL_ENCASING_SHADOWS                      = 92023,
-    SPELL_OVERCHARGE                            = 91881
-};
-
-#define SPELL_LIGHTNING_CONDUCTOR   RAID_MODE<uint32>(79888, 91431, 91432, 91433)
-#define SPELL_SOAKED_IN_POISON      RAID_MODE<uint32>(80011, 91504, 91505, 91506)
-#define SPELL_ARCANE_ANNIHILATION   RAID_MODE<uint32>(79710, 91540, 91541, 91542)
-#define SPELL_ACTIVATED             RAID_MODE<uint32>(78740, 95016, 95017, 95018)
-
-enum Texts
-{
-    // Omnotron
-    SAY_ACTIVATE_ELECTRON               = 0,
-    SAY_ACTIVATE_TOXITRON               = 1,
-    SAY_ACTIVATE_MAGMATRON              = 2,
-    SAY_ACTIVATE_ARCANOTRON             = 3,
-    SAY_SHIELD_ELECTRON                 = 4,
-    SAY_SHIELD_TOXITRON                 = 5,
-    SAY_SHIELD_ARCANOTRON               = 6,
-    SAY_SHIELD_MAGMATRON                = 7,
-    SAY_ACQUIRING_TARGET                = 8,
-    SAY_POWERING_DOWN                   = 9,
-
-    // Omnotron Defense System
-    SAY_ANNOUNCE_ABILITY_1              = 0,
-    SAY_ANNOUNCE_ABILITY_2              = 1,
-
-    // Lord Victor Nefarius
-    SAY_INTRO_HEROIC                    = 0,
-    SAY_MANIPULATE_LIGHTNING_CONDUCTOR  = 1,
-    SAY_PULL_INTO_CHEMICAL_CLOUD        = 2,
-    SAY_ROOT_PLAYER_IN_PLACE            = 3,
-    SAY_OVERCHARGE_POWER_GENERATOR      = 4
-};
-
-enum Events
-{
-    // Omnotron
-    EVENT_LINK_GOLEM_HEALTH = 1,
-    EVENT_POWER_UP_FIRST_GOLEM,
-    EVENT_TALK_ACTIVATED_GOLEM,
-
-    // Omnotron Defense System
-
-    // Electron
-    EVENT_LIGHTNING_CONDUCTOR,
-    EVENT_ELECTRICAL_DISCHARGE,
-    EVENT_UNSTABLE_SHIELD,
-
-    // Magmatron
-    EVENT_INCINERATION_SECURITY_MEASURE,
-    EVENT_ACQUIRING_TARGET,
-    EVENT_BARRIER,
-
-    // Toxitron
-    EVENT_CHEMICAL_BOMB,
-    EVENT_POISON_PROTOCOL,
-    EVENT_POISON_SOAKED_SHELL,
-
-    // Arcanotron
-    EVENT_POWER_GENERATOR,
-    EVENT_ARCANE_ANNIHILATION,
-    EVENT_POWER_CONVERSION,
-
-    // Lord Victor Nefarius
-    EVENT_TALK_INTRO,
-    EVENT_TELEPORT_INTO_CHEMICAL_CLOUD,
-    EVENT_GRIP_OF_DEATH,
-    EVENT_TALK_PULL_PLAYERS_INTO_CHEMICAL_CLOUD,
-    EVENT_TELEPORT_BACK,
-    EVENT_TALK_MANIPULATE_LIGHTNING_CONDUCTOR,
-    EVENT_ENCASING_SHADOWS,
-    EVENT_TALK_ROOT_PLAYER,
-    EVENT_OVERCHARGE,
-    EVENT_TALK_OVERCHARGE_POWER_GENERATOR,
-    EVENT_CLEAR_ABILITY_COOLDOWN
-};
-
-enum Actions
-{
-    // Omnotron
-    ACTION_GOLEM_ACTIVATED                  = 0,
-    ACTION_START_ENCOUNTER                  = 1,
-    ACTION_STOP_ENCOUNTER                   = 2,
-    ACTION_FINISH_ENCOUNTER                 = 3,
-    ACTION_SAY_ACQUIRING_TARGET             = 4,
-
-    // Omnotron Defense System
-    ACTION_ACTIVATE_GOLEM                   = 0,
-    ACTION_DEACTIVATE_GOLEM                 = 1,
-
-    // Lord Victor Nefarius
-    ACTION_CAST_SHADOW_INFUSION             = 0,
-    ACTION_CAST_ENCASING_SHADOWS            = 1
-};
-
-enum Data
-{
-    // Omnotron
-    DATA_NEXT_GOLEM_IN_QUEUE                = 0,
-    DATA_SAY_GOLEM_SHIELD                   = 0
-};
-
 Position const FirstGolemPatrolStartPoint           = { -324.665f,  -398.085f,  213.8214f };
 Position const LordVictorNefariusSummonPosition     = { -302.9167f, -350.4167f, 220.5673f, 4.537856f };
-
-enum MovePoints
-{
-    POINT_START_WAYPOINTS = 1
-};
-
-enum SummonGroups
-{
-    SUMMON_GROUP_GOLEMS = 0
-};
 
 struct GolemInfo
 {
@@ -525,7 +356,13 @@ struct npc_omnotron_electron : public ScriptedAI
                     }
                     break;
                 case EVENT_ELECTRICAL_DISCHARGE:
-                    DoCastAOE(SPELL_ELECTRICAL_DISCHARGE);
+                    // The trigger (95499, registered spell script) picks one
+                    // random enemy and casts the chain on it. Casting 79879
+                    // without an explicit target fell back to the victim, so
+                    // every discharge started on the tank instead of a random
+                    // raid member (omnotron_defense_system ledger:
+                    // electrical_discharge_target).
+                    DoCastAOE(SPELL_ELECTRICAL_DISCHARGE_TRIGGER);
                     _events.Repeat(6s);
                     break;
                 case EVENT_UNSTABLE_SHIELD:
@@ -670,7 +507,12 @@ struct npc_omnotron_magmatron : public ScriptedAI
                     break;
                 case EVENT_ACQUIRING_TARGET:
                     DoCastAOE(SPELL_ACQUIRING_TARGET, true);
-                    _events.Repeat(26s);
+                    // Two Acquiring Targets per activation (Wowhead; DBM
+                    // DarkIronGolemCouncil.lua r20241103125714 repeats 40 s on
+                    // normal). A 26 s repeat gave a third Flamethrower inside
+                    // the 90 s normal activation. Heroic keeps 26 s: two casts
+                    // in its 60 s activation (DBM measures 27 s).
+                    _events.Repeat(IsHeroic() ? 26s : 40s);
                     break;
                 case EVENT_BARRIER:
                     DoCastSelf(SPELL_BARRIER);
@@ -774,9 +616,14 @@ struct npc_omnotron_toxitron : public ScriptedAI
     {
         if (spell->Id == SPELL_ACTIVATED)
         {
+            _poisonProtocolCasts = 0;
             _events.ScheduleEvent(EVENT_CHEMICAL_BOMB, 27s);
             _events.ScheduleEvent(EVENT_POISON_PROTOCOL, 16s);
-            _events.ScheduleEvent(EVENT_POISON_SOAKED_SHELL, IsHeroic() ? 30s : 40s);
+            // Same shield point as the other three constructs: 50 s normal,
+            // 40 s heroic (DBM DarkIronGolemCouncil.lua r20241103125714 warns
+            // 10 s ahead at 40/30 s; Wowhead reports 40 s on heroic). The old
+            // 40/30 s raised Poison Soaked Shell 10 s early.
+            _events.ScheduleEvent(EVENT_POISON_SOAKED_SHELL, IsHeroic() ? 40s : 50s);
         }
     }
 
@@ -802,6 +649,11 @@ struct npc_omnotron_toxitron : public ScriptedAI
                 case EVENT_POISON_PROTOCOL:
                     me->StopMoving();
                     DoCastSelf(SPELL_POISON_PROTOCOL);
+                    // Two Poison Protocols per activation (Wowhead; DBM repeats
+                    // 45 s on normal and 25 s on heroic). Scheduling it once
+                    // dropped the second wave of Poison Bombs.
+                    if (++_poisonProtocolCasts < 2)
+                        _events.Repeat(IsHeroic() ? 25s : 45s);
                     break;
                 case EVENT_POISON_SOAKED_SHELL:
                     DoCastSelf(SPELL_POISON_SOAKED_SHELL);
@@ -820,6 +672,7 @@ struct npc_omnotron_toxitron : public ScriptedAI
 private:
     EventMap _events;
     InstanceScript* _instance;
+    uint8 _poisonProtocolCasts = 0;
 };
 
 struct npc_omnotron_arcanotron : public ScriptedAI
@@ -974,592 +827,6 @@ private:
     EventMap _events;
     InstanceScript* _instance;
 };
-
-struct npc_lord_victor_nefarius_omnotron : public PassiveAI
-{
-    npc_lord_victor_nefarius_omnotron(Creature* creature) : PassiveAI(creature), _instance(me->GetInstanceScript()), _abilitiesOnCooldown(false) { }
-
-    void IsSummonedBy(Unit* /*summoner*/) override
-    {
-        _events.ScheduleEvent(EVENT_TALK_INTRO, 4s + 700ms);
-    }
-
-    void JustSummoned(Creature* summon) override
-    {
-        if (summon->GetEntry() != NPC_POWER_GENERATOR && summon->GetEntry() != NPC_CHEMICAL_CLOUD)
-            return;
-
-        TempSummon* summoned = summon->ToTempSummon();
-        if (!summoned)
-            return;
-
-        // Lord Victor Nefarius only manipulates the abilities of longest active golem at a time
-        if (!_abilitiesOnCooldown)
-        {
-            switch (summon->GetEntry())
-            {
-                case NPC_CHEMICAL_CLOUD:
-                    _events.ScheduleEvent(EVENT_TELEPORT_INTO_CHEMICAL_CLOUD, 2s);
-                    _abilitiesOnCooldown = true;
-                    _events.ScheduleEvent(EVENT_CLEAR_ABILITY_COOLDOWN, 30s);
-                    break;
-                case NPC_POWER_GENERATOR:
-                    _events.ScheduleEvent(EVENT_OVERCHARGE, 10s);
-                    _abilitiesOnCooldown = true;
-                    _events.ScheduleEvent(EVENT_CLEAR_ABILITY_COOLDOWN, 30s);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    void DoAction(int32 action) override
-    {
-        switch (action)
-        {
-            case ACTION_CAST_SHADOW_INFUSION:
-                if (!_abilitiesOnCooldown)
-                {
-                    DoCastAOE(SPELL_SHADOW_INFUSION);
-                    _events.ScheduleEvent(EVENT_TALK_MANIPULATE_LIGHTNING_CONDUCTOR, 6s);
-                    _abilitiesOnCooldown = true;
-                    _events.ScheduleEvent(EVENT_CLEAR_ABILITY_COOLDOWN, 30s);
-                }
-                break;
-            case ACTION_CAST_ENCASING_SHADOWS:
-                if (!_abilitiesOnCooldown)
-                {
-                    _events.ScheduleEvent(EVENT_ENCASING_SHADOWS, 300ms);
-                    _abilitiesOnCooldown = true;
-                    _events.ScheduleEvent(EVENT_CLEAR_ABILITY_COOLDOWN, 30s);
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    void UpdateAI(uint32 diff) override
-    {
-        _events.Update(diff);
-
-        while (uint32 eventId = _events.ExecuteEvent())
-        {
-            switch (eventId)
-            {
-                case EVENT_TALK_INTRO:
-                    Talk(SAY_INTRO_HEROIC);
-                    break;
-                case EVENT_TELEPORT_INTO_CHEMICAL_CLOUD:
-                    DoCastSelf(SPELL_SHADOW_TELEPORT);
-                    _events.ScheduleEvent(EVENT_GRIP_OF_DEATH, 100ms);
-                    break;
-                case EVENT_GRIP_OF_DEATH:
-                    DoCastAOE(SPELL_GRIP_OF_DEATH);
-                    _events.ScheduleEvent(EVENT_TALK_PULL_PLAYERS_INTO_CHEMICAL_CLOUD, 2s);
-                    break;
-                case EVENT_TALK_PULL_PLAYERS_INTO_CHEMICAL_CLOUD:
-                    Talk(SAY_PULL_INTO_CHEMICAL_CLOUD);
-                    _events.ScheduleEvent(EVENT_TELEPORT_BACK, 1s + 300ms);
-                    break;
-                case EVENT_TELEPORT_BACK:
-                    DoCastSelf(SPELL_SHADOW_TELEPORT_BACK);
-                    break;
-                case EVENT_TALK_MANIPULATE_LIGHTNING_CONDUCTOR:
-                    Talk(SAY_MANIPULATE_LIGHTNING_CONDUCTOR);
-                    break;
-                case EVENT_ENCASING_SHADOWS:
-                    DoCastAOE(SPELL_ENCASING_SHADOWS);
-                    _events.ScheduleEvent(EVENT_TALK_ROOT_PLAYER, 5s);
-                    break;
-                case EVENT_TALK_ROOT_PLAYER:
-                    Talk(SAY_ROOT_PLAYER_IN_PLACE);
-                    break;
-                case EVENT_OVERCHARGE:
-                    DoCastAOE(SPELL_OVERCHARGE);
-                    _events.ScheduleEvent(EVENT_TALK_OVERCHARGE_POWER_GENERATOR, 5s + 400ms);
-                    break;
-                case EVENT_TALK_OVERCHARGE_POWER_GENERATOR:
-                    Talk(SAY_OVERCHARGE_POWER_GENERATOR);
-                    break;
-                case EVENT_CLEAR_ABILITY_COOLDOWN:
-                    _abilitiesOnCooldown = false;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-private:
-    EventMap _events;
-    InstanceScript* _instance;
-    bool _abilitiesOnCooldown;
-};
-
-class DistanceCheck
-{
-    public:
-        DistanceCheck(Unit* caster) : _caster(caster) { }
-
-        bool operator()(WorldObject* object)
-        {
-            return (object->GetExactDist2d(_caster) < 10.0f);
-        }
-    private:
-        Unit* _caster;
-};
-
-struct npc_omnotron_poison_bomb : public ScriptedAI
-{
-    npc_omnotron_poison_bomb(Creature* creature) : ScriptedAI(creature) { }
-
-    void IsSummonedBy(Unit* summoner) override
-    {
-        DoZoneInCombat();
-
-        // Blizzard has a AOE target spell for this but for some reason they doesn't use it so we wont do so as well.
-        std::list<Unit*> targets;
-        SelectTargetList(targets, 25, SELECT_TARGET_RANDOM, 0, 100.0f, true);
-
-        if (targets.empty())
-            return;
-
-        std::list<Unit*> targetsCopy = targets;
-        targets.remove_if(DistanceCheck(summoner));
-
-        if (targets.empty())
-            targets = targetsCopy;
-
-        Trinity::Containers::RandomResize(targets, 1);
-
-        if (Unit* target = targets.front())
-        {
-            DoCast(target, SPELL_FIXATE_DUMMY, true);
-            me->ClearUnitState(UNIT_STATE_CASTING);
-            AddThreat(target, 500000.0f);
-            me->GetThreatManager().FixateTarget(target);
-        }
-    }
-
-    void JustDied(Unit* /*killer*/) override
-    {
-        me->DespawnOrUnsummon(2s + 500ms);
-    }
-
-    void SpellHit(WorldObject* /*caster*/, SpellInfo const* spell) override
-    {
-        if (spell->Id == SPELL_QUIETE_SUICIDE)
-        {
-            if (InstanceScript* instance = me->GetInstanceScript())
-                if (!instance->instance->GetWorldStateValue(WORLD_STATE_ID_POISON_BOMB))
-                    instance->DoUpdateWorldState(WORLD_STATE_ID_POISON_BOMB, 1);
-
-            DoCastSelf(SPELL_POISON_BOMB_DAMAGE, true);
-            DoCastSelf(SPELL_POISON_BOMB_SUMMON_PUDDLE, true);
-        }
-    }
-};
-
-class GuidCheck
-{
-    public:
-        GuidCheck(ObjectGuid golemGUID) : _golemGUID(golemGUID)  { }
-
-        bool operator()(WorldObject* object)
-        {
-            return object->GetGUID() != _golemGUID;
-        }
-    private:
-        ObjectGuid _golemGUID;
-};
-
-class spell_omnotron_controller_recharge : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_RECHARGING_ELECTRON,
-                SPELL_RECHARGING_MAGMATRON,
-                SPELL_RECHARGING_TOXITRON,
-                SPELL_RECHARGING_ARCANOTRON
-            });
-    }
-
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        InstanceScript* instance = GetCaster()->GetInstanceScript();
-        if (!instance)
-            return;
-
-        Creature* omnotron = instance->GetCreature(DATA_OMNOTRON_DEFENSE_SYSTEM);
-        if (!omnotron)
-            return;
-
-        ObjectGuid golemGuid = omnotron->AI()->GetGUID(DATA_NEXT_GOLEM_IN_QUEUE);
-        targets.remove_if(GuidCheck(golemGuid));
-    }
-
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-    {
-        if (Unit* caster = GetCaster())
-        {
-            uint32 rechargingSpellId = 0;
-            switch (GetHitUnit()->GetEntry())
-            {
-                case NPC_ELECTRON:
-                    rechargingSpellId = SPELL_RECHARGING_ELECTRON;
-                    break;
-                case NPC_MAGMATRON:
-                    rechargingSpellId = SPELL_RECHARGING_MAGMATRON;
-                    break;
-                case NPC_TOXITRON:
-                    rechargingSpellId = SPELL_RECHARGING_TOXITRON;
-                    break;
-                case NPC_ARCANOTRON:
-                    rechargingSpellId = SPELL_RECHARGING_ARCANOTRON;
-                    break;
-                default:
-                    break;
-            }
-
-            if (rechargingSpellId)
-                caster->CastSpell(caster, rechargingSpellId);
-        }
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_omnotron_controller_recharge::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
-        OnEffectHitTarget.Register(&spell_omnotron_controller_recharge::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_omnotron_recharging : public AuraScript
-{
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (GetTargetApplication()->GetRemoveMode().HasFlag(AuraRemoveFlags::Expired))
-            if (Creature* golem = GetTarget()->ToCreature())
-                if (golem->IsAIEnabled())
-                    golem->AI()->DoAction(ACTION_ACTIVATE_GOLEM);
-    }
-
-    void Register() override
-    {
-        AfterEffectRemove.Register(&spell_omnotron_recharging::AfterRemove, EFFECT_0, SPELL_AURA_PERIODIC_ENERGIZE, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_omnotron_activated : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_SHUTTING_DOWN });
-    }
-
-    void HandleTick(AuraEffect const* /*aurEff*/)
-    {
-        PreventDefaultAction();
-        if (Unit* caster = GetCaster())
-            if (caster->GetVictim())
-                caster->CastSpell(GetCaster()->GetVictim(), GetSpellInfo()->Effects[EFFECT_0].TriggerSpell, TriggerCastFlags(TRIGGERED_FULL_MASK & ~TRIGGERED_IGNORE_POWER_COST));
-    }
-
-    void AfterRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        GetTarget()->CastSpell(GetTarget(), SPELL_SHUTTING_DOWN);
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_omnotron_activated::HandleTick, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-        AfterEffectRemove.Register(&spell_omnotron_activated::AfterRemove, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_omnotron_inactive : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_RECHARGING_ELECTRON });
-    }
-
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-    {
-        Unit* target = GetHitUnit();
-        target->CastSpell(target, SPELL_POWERED_DOWN, true);
-        if (Creature* golem = target->ToCreature())
-            if (golem->IsAIEnabled())
-                golem->AI()->DoAction(ACTION_DEACTIVATE_GOLEM);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_omnotron_inactive::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_omnotron_electrical_discharge_trigger : public SpellScript
-{
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        Trinity::Containers::RandomResize(targets, 1);
-    }
-
-    void HandleDummyEffect(SpellEffIndex effIndex)
-    {
-        if (Unit* caster = GetCaster())
-            caster->CastSpell(GetHitUnit(), GetSpellInfo()->Effects[effIndex].BasePoints, true);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_omnotron_electrical_discharge_trigger::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-        OnEffectHitTarget.Register(&spell_omnotron_electrical_discharge_trigger::HandleDummyEffect, EFFECT_0, SPELL_EFFECT_DUMMY);
-    }
-};
-
-class spell_omnotron_electrical_discharge : public SpellScript
-{
-    bool Load() override
-    {
-        _chainTargetCount = 0;
-        return true;
-    }
-
-    void HandleDamageBonus(SpellEffIndex /*effIndex*/)
-    {
-        int32 damage = GetHitDamage();
-        AddPct(damage, _chainTargetCount * 20);
-        _chainTargetCount++;
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_omnotron_electrical_discharge::HandleDamageBonus, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
-    }
-private:
-    uint8 _chainTargetCount;
-};
-
-class spell_omnotron_unstable_shield : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_STATIC_SHOCK });
-    }
-
-    bool CheckProc(ProcEventInfo& eventInfo)
-    {
-        return eventInfo.GetDamageInfo();
-    }
-
-    void HandleProc(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
-    {
-        PreventDefaultAction();
-        Unit* caster = GetTarget();
-        Unit* target = eventInfo.GetDamageInfo()->GetAttacker();
-        if (!target)
-            return;
-
-        caster->CastSpell(target, SPELL_STATIC_SHOCK, aurEff);
-
-        if (InstanceScript* instance = caster->GetInstanceScript())
-            if (!instance->instance->GetWorldStateValue(WORLD_STATE_ID_STATIC_SHOCK))
-                instance->DoUpdateWorldState(WORLD_STATE_ID_STATIC_SHOCK, 1);
-    }
-
-    void Register() override
-    {
-        DoCheckProc.Register(&spell_omnotron_unstable_shield::CheckProc);
-        OnEffectProc.Register(&spell_omnotron_unstable_shield::HandleProc, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL);
-    }
-};
-
-class spell_omnotron_aquiring_target : public SpellScript
-{
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.empty())
-            return;
-
-        Trinity::Containers::RandomResize(targets, 1);
-    }
-
-    void HandleDummyEffect(SpellEffIndex effIndex)
-    {
-        if (Unit* caster = GetCaster())
-        {
-            caster->StopMoving();
-            caster->CastSpell(GetHitUnit(), GetSpellInfo()->Effects[effIndex].BasePoints, true);
-        }
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_omnotron_aquiring_target::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
-        OnEffectHitTarget.Register(&spell_omnotron_aquiring_target::HandleDummyEffect, EFFECT_0, SPELL_EFFECT_DUMMY);
-    }
-};
-
-class spell_omnotron_acquiring_target_periodic : public AuraScript
-{
-    void HandleTick(AuraEffect const* /*aurEff*/)
-    {
-        PreventDefaultAction();
-        if (Unit* caster = GetCaster())
-            caster->CastSpell(GetTarget(), GetSpellInfo()->Effects[EFFECT_0].TriggerSpell, true);
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_omnotron_acquiring_target_periodic::HandleTick, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-    }
-};
-
-class spell_omnotron_barrier : public AuraScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_BACKDRAFT });
-    }
-
-    void HandleAbsorbRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-    {
-        if (GetTargetApplication()->GetRemoveMode().HasFlag(AuraRemoveFlags::ByEnemySpell))
-            if (Unit* caster = GetCaster())
-                caster->CastSpell(caster, SPELL_BACKDRAFT, true);
-    }
-
-    void Register() override
-    {
-        AfterEffectRemove.Register(&spell_omnotron_barrier::HandleAbsorbRemove, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB, AURA_EFFECT_HANDLE_REAL);
-    }
-};
-
-class spell_omnotron_shadow_infusion : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_SHADOW_CONDUCTOR,
-                SPELL_LIGHTNING_CONDUCTOR_10N
-            });
-    }
-
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-    {
-        Unit* target = GetHitUnit();
-        target->RemoveAurasDueToSpell(sSpellMgr->GetSpellIdForDifficulty(SPELL_LIGHTNING_CONDUCTOR_10N, target));
-        target->CastSpell(target, SPELL_SHADOW_CONDUCTOR, true);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_omnotron_shadow_infusion::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_omnotron_shadow_conductor : public SpellScript
-{
-    void ChangeDamage(SpellEffIndex /*effIndex*/)
-    {
-        Unit* caster = GetCaster();
-        Unit* target = GetHitUnit();
-
-        if (!caster || !target)
-            return;
-
-        float distanceMultiplier = std::max(caster->GetExactDist2d(target) * 0.5f, 1.0f);
-        SetEffectValue(int32(6000 * distanceMultiplier));
-    }
-
-    void Register() override
-    {
-        OnEffectLaunchTarget.Register(&spell_omnotron_shadow_conductor::ChangeDamage, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
-    }
-};
-
-class spell_omnotron_overcharge : public SpellScript
-{
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo(
-            {
-                SPELL_POWER_GENERATOR_NORMAL,
-                SPELL_OVERCHARGED_POWER_GENERATOR,
-                SPELL_GROW_STACKER,
-                SPELL_ARCANE_BLOWBACK
-            });
-    }
-
-    void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-    {
-        Creature* target = GetHitCreature();
-        if (!target)
-            return;
-
-        target->RemoveAurasDueToSpell(sSpellMgr->GetSpellIdForDifficulty(SPELL_POWER_GENERATOR_NORMAL, target));
-        target->CastSpell(target, SPELL_OVERCHARGED_POWER_GENERATOR, true);
-        target->CastSpell(target, SPELL_GROW_STACKER);
-        target->m_Events.AddEventAtOffset([target]()
-        {
-            target->RemoveAllAuras();
-            target->CastSpell(target, SPELL_ARCANE_BLOWBACK);
-            target->DespawnOrUnsummon(1s);
-        }, 8s);
-    }
-
-    void Register() override
-    {
-        OnEffectHitTarget.Register(&spell_omnotron_overcharge::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-    }
-};
-
-class spell_omnotron_overcharged_power_generator : public AuraScript
-{
-    void HandlePeriodic(AuraEffect const* aurEff)
-    {
-        PreventDefaultAction();
-        if (Unit* target = GetTarget())
-        {
-            uint32 triggerSpell = GetSpellInfo()->Effects[EFFECT_0].TriggerSpell;
-            int32 radius = target->GetObjectScale() * 10000;
-            target->CastSpell(nullptr, triggerSpell,  CastSpellExtraArgs(aurEff).SetOriginalCaster(target->GetGUID()).AddSpellMod(SPELLVALUE_RADIUS_MOD, radius));
-        }
-    }
-
-    void Register() override
-    {
-        OnEffectPeriodic.Register(&spell_omnotron_overcharged_power_generator::HandlePeriodic, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-    }
-};
-
-class spell_omnotron_flamethrower : public SpellScript
-{
-    void FilterTargets(std::list<WorldObject*>& targets)
-    {
-        if (targets.size() >= 2)
-            if (InstanceScript* instance = GetCaster()->GetInstanceScript())
-                if (!instance->instance->GetWorldStateValue(WORLD_STATE_ID_FLAMETHROWER))
-                    instance->DoUpdateWorldState(WORLD_STATE_ID_FLAMETHROWER, 1);
-    }
-
-    void Register() override
-    {
-        OnObjectAreaTargetSelect.Register(&spell_omnotron_flamethrower::FilterTargets, EFFECT_0, TARGET_UNIT_CONE_CASTER_TO_DEST_ENEMY);
-    }
-};
 }
 
 void AddSC_boss_omnotron_defense_system()
@@ -1571,21 +838,5 @@ void AddSC_boss_omnotron_defense_system()
     RegisterBlackwingDescentCreatureAI(npc_omnotron_magmatron);
     RegisterBlackwingDescentCreatureAI(npc_omnotron_toxitron);
     RegisterBlackwingDescentCreatureAI(npc_omnotron_arcanotron);
-    RegisterBlackwingDescentCreatureAI(npc_lord_victor_nefarius_omnotron);
-    RegisterBlackwingDescentCreatureAI(npc_omnotron_poison_bomb);
-    RegisterSpellScript(spell_omnotron_controller_recharge);
-    RegisterSpellScript(spell_omnotron_recharging);
-    RegisterSpellScript(spell_omnotron_activated);
-    RegisterSpellScript(spell_omnotron_inactive);
-    RegisterSpellScript(spell_omnotron_electrical_discharge);
-    RegisterSpellScript(spell_omnotron_electrical_discharge_trigger);
-    RegisterSpellScript(spell_omnotron_unstable_shield);
-    RegisterSpellScript(spell_omnotron_aquiring_target);
-    RegisterSpellScript(spell_omnotron_acquiring_target_periodic);
-    RegisterSpellScript(spell_omnotron_barrier);
-    RegisterSpellScript(spell_omnotron_shadow_infusion);
-    RegisterSpellScript(spell_omnotron_shadow_conductor);
-    RegisterSpellScript(spell_omnotron_overcharge);
-    RegisterSpellScript(spell_omnotron_overcharged_power_generator);
-    RegisterSpellScript(spell_omnotron_flamethrower);
+    AddSC_boss_omnotron_defense_system_spells();
 }

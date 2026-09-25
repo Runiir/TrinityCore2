@@ -1,0 +1,175 @@
+{
+  "schema": "raid_target_v1",
+  "scenario": "blackwing_descent_10n_omnotron_defense_system",
+  "purpose": "Numeric finish line for Omnotron Defense System 10N bots with the canonical BWD 10N composition (Omnotron selection: Feral tank, Elemental): per-actor kill DPS on par with matched Warcraft Logs references, measured over native kills.",
+  "validation_scenario_id": "blackwing_descent_10n_omnotron_c0_diagnostic",
+  "validation_scenario_note": "Canonical c0 cohort row and runtime profile requested from package M (patch_request); the legacy blackwing_descent_10n_omnotron_diagnostic row uses the old roster.",
+  "cohort_id": "blackwing_descent_10n_omnotron_c0",
+  "composition": "experiments/configs/raid_compositions/blackwing_descent_10n.json",
+  "encounter_route_node_id": "bwd.omnotron.encounter",
+  "wcl_reference_manifest": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_dps_reference_v1.json",
+  "wcl_cast_timelines_pending": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_wcl_cast_timelines_v1.json",
+  "wcl_cast_timelines_note": "Set wcl_cast_timelines to the pending file once it holds matched timelines; it is empty while WCL is gated.",
+  "matched_reference_ids": [],
+  "reference_status": {
+    "state": "no_matched_wcl_reference",
+    "reason": "classic.warcraftlogs.com human-verification gate on 2026-09-25; see the reference manifest's extraction_plan.",
+    "wowsims_fallback_specs": [
+      "fire_mage",
+      "retribution_paladin",
+      "assassination_rogue",
+      "elemental_shaman",
+      "demonology_warlock"
+    ],
+    "no_reference_specs": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "beast_mastery_hunter"
+    ],
+    "consequence": "scoreboard verdict reports no_reference for Blood DK, Feral tank and BM hunter; the overall status stays fail until matched WCL references exist."
+  },
+  "unmatched_reference_notes": {},
+  "kills_per_measurement": 3,
+  "kills_per_batch": 5,
+  "actor_dps_ratio": 0.95,
+  "actor_dps_metric": "Per actor: mean encounter_window_dps over the label's counted native-clear kills divided by the median actor_dps of the matched references for the same spec. target_dps is that WCL median; the actor passes when ratio >= actor_dps_ratio.",
+  "party_dps_ratio": 0.95,
+  "party_dps_gating": false,
+  "party_dps_metric": "Mean encounter_window_party_dps over counted native-clear kills divided by the median raid_dps of the matched references. Reported, not gating.",
+  "clear_rule": {
+    "native_clear": true,
+    "completion_reason": "validation_route_manifest_complete",
+    "basis": "report.json native_gameplay_outcome.native_clear and completion_reason. The harness exit code is informational: diagnostic route runs exit 1 (all_passed=false) even on a clean native clear."
+  },
+  "max_boss_window_deaths": 0,
+  "boss_window_deaths_basis": "Lethal landed damage on a party member inside the encounter route node or encounter window, reconciled with the route death count. Unknown counts never pass.",
+  "roles_without_dps_target": [
+    "healer"
+  ],
+  "healer_status": "Healers have no DPS target; their status follows the encounter status.",
+  "fallback_reference": {
+    "source": "wowsims",
+    "promotion_index": "experiments/configs/wowsims_cata_dps_reference_promotion_index_v1.json",
+    "ratio": 0.9,
+    "applies_when": "the spec has no matched WCL reference",
+    "dps_field": "result_observation.dps of the spec entry's generation_receipt; the receipt's sha256 must match the index entry, its target_spec must match and simulator_error must be empty, otherwise the spec has no fallback"
+  },
+  "reference_basis_rule": "Per non-healer actor: reference_basis wcl (target = median matched WCL DPS, required ratio actor_dps_ratio) when the spec has a matched WCL reference; otherwise wowsims_fallback (target = verified WoWSims DPS, required ratio fallback_reference.ratio); otherwise none (status no_reference).",
+  "missing_reference_policy": "An actor whose spec has neither a matched WCL reference nor a verified WoWSims fallback gets status no_reference and no target. The overall status is fail until a reference exists: a missing reference is work, not a pass.",
+  "roster": {
+    "11001001": {
+      "name": "Bwomnnba",
+      "spec": "blood_death_knight",
+      "role": "tank"
+    },
+    "11001002": {
+      "name": "Bwomnnbb",
+      "spec": "feral_druid_tank",
+      "role": "tank"
+    },
+    "11001003": {
+      "name": "Bwomnnbc",
+      "spec": "beast_mastery_hunter",
+      "role": "dps"
+    },
+    "11001004": {
+      "name": "Bwomnnbd",
+      "spec": "fire_mage",
+      "role": "dps"
+    },
+    "11001005": {
+      "name": "Bwomnnbe",
+      "spec": "holy_paladin",
+      "role": "healer"
+    },
+    "11001006": {
+      "name": "Bwomnnbf",
+      "spec": "retribution_paladin",
+      "role": "dps"
+    },
+    "11001007": {
+      "name": "Bwomnnbg",
+      "spec": "discipline_priest",
+      "role": "healer"
+    },
+    "11001008": {
+      "name": "Bwomnnbh",
+      "spec": "assassination_rogue",
+      "role": "dps"
+    },
+    "11001009": {
+      "name": "Bwomnnbi",
+      "spec": "elemental_shaman",
+      "role": "dps"
+    },
+    "11001010": {
+      "name": "Bwomnnbj",
+      "spec": "demonology_warlock",
+      "role": "dps"
+    }
+  },
+  "roster_policy": "Specs and roles come from the canonical composition's Omnotron selection (raid_shard_identity cohort blackwing_descent_10n_omnotron_c0, GUIDs 11001001-11001010), never from the WCL timeline. A counted clear missing any expected actor fails the encounter with roster_incomplete.",
+  "counting_rules": {
+    "label": "A label is one build and one batch: run refuses a label that already has kills and runs a pinned copy /tmp/worldserver-<sha12>.",
+    "counted": "A kill counts unless it is voided, interrupted, an infrastructure_failure, has no evidence pointer (no_evidence), is a clear whose post-processing failed (postprocess_error), was recorded without report.json measurement_validity (no_measurement_validity), or has valid_for_dps false (stalled_boss_window).",
+    "measurement_validity": "Copied per kill from report.json measurement_validity for the encounter window (valid flag, reasons, stalled sec, stall fraction, max stall). Kills recorded before harness commit d2393eb5a1 have none: their boss windows lost 11-21% to heartbeat freezes and are never compared with new kills. A clear with valid_for_dps false is excluded; a wipe is excluded only when a stall overlapped the boss window, so trash wipes still fail the label.",
+    "damage_reconciliation": "Killed-hostile damage vs max HP from combat_analysis.json (mismatch_count, unlogged_health_loss). Shown, never excludes a kill.",
+    "infrastructure_failure": "report.json missing or unreadable, or the run never reached the encounter route node and no bot died. Not counted and not a gameplay failure.",
+    "mixed_builds": "Counted kills with different worldserver_sha256 (mixed_binaries) or source_commit (mixed_commits) fail the encounter."
+  },
+  "status_rules": {
+    "encounter": "fail if any counted kill is not a native clear, lacks encounter data, has more than max_boss_window_deaths boss-window deaths or an unknown count, or the counted kills mix binaries/commits or miss a roster actor; otherwise insufficient_kills below kills_per_measurement counted native clears; otherwise pass.",
+    "actor": "no_reference without a matched spec reference; insufficient_kills below kills_per_measurement; fail (below_target) under actor_dps_ratio; fail (encounter_failed) at target while the encounter is not pass; otherwise pass.",
+    "overall": "pass only if the encounter passes and every non-healer actor passes."
+  },
+  "noise_rule": {
+    "min_kills_per_label": 3,
+    "test": "two-sided Welch t-test at alpha 0.05 over counted native-clear kills",
+    "statistic": "t = (mean1 - mean2) / sqrt(sd1^2 / n1 + sd2^2 / n2), sample standard deviations (n - 1)",
+    "degrees_of_freedom": "Welch-Satterthwaite: (a + b)^2 / (a^2 / (n1 - 1) + b^2 / (n2 - 1)) with a = sd1^2 / n1, b = sd2^2 / n2",
+    "critical_value": "t_crit = Student t quantile 0.975 at df (scipy.stats.t.ppf)",
+    "improved": "t > t_crit",
+    "regressed": "t < -t_crit",
+    "within_noise": "otherwise; with zero spread on both sides any nonzero delta is improved or regressed",
+    "insufficient_kills": "either label has fewer than min_kills_per_label counted native-clear kills",
+    "applies_to": "each actor's encounter_window_dps and the party encounter_window_party_dps",
+    "keep_rule": "Keep a change (candidate vs baseline) only when all four conditions hold and each label has kills_per_batch counted native clears; `show --min-kills N` overrides the batch size and the decision line says so. A failed condition means revert; otherwise an unjudged condition or a short batch means insufficient_kills. (a) Every kill recorded under the candidate label is a native clear, except infrastructure failures, interrupted runs and voided kills; a counted native clear without encounter data is unjudged. (b) Boss-window deaths per counted kill did not increase; an unknown count is unjudged, and recovered trash deaths never gate. (c) Neither the party nor any non-healer actor is regressed under the per-row two-sided 95% Welch t. (d) The point estimate is non-negative: with --actor A, actor A's mean DPS, otherwise the party mean DPS, is at least the baseline mean. Keep also requires the change's mechanism to be visible in the candidate kills (ranked gaps, evidence_view), which the tool cannot check.",
+    "batch_rule": "keep/revert batches use kills_per_batch counted native clears per label; kills_per_measurement stays the finish-line minimum"
+  },
+  "run_plan": {
+    "default_worldserver": "build/src/server/worldserver/worldserver",
+    "output_dir_pattern": "/tmp/scoreboard-{label}-k{kill}-{timestamp}",
+    "duration_policy": "completion-watchdog: stop on native clear, no-progress stall, repeated decisions, death loops or infrastructure loss. There is no success timer.",
+    "argv_template": [
+      "pixi",
+      "run",
+      "bot-live-validate",
+      "--worldserver",
+      "{worldserver}",
+      "--config",
+      "trinity-worldserver-test.conf",
+      "--duration-policy",
+      "completion-watchdog",
+      "--apply-validation-provisioning",
+      "--reset-bot-pool",
+      "--bot-pool-tag",
+      "blackwing_descent_10n_omnotron_c0_diagnostic",
+      "--keep-bot-pool-position",
+      "--heartbeat-sec",
+      "30",
+      "--no-progress-window-sec",
+      "180",
+      "--max-repeated-decision-count",
+      "20",
+      "--max-death-loop-count",
+      "3",
+      "--validation-scenario-id",
+      "blackwing_descent_10n_omnotron_c0_diagnostic",
+      "--validation-route-manifest",
+      "--output-dir",
+      "{output_dir}"
+    ],
+    "shard_run_plan": "experiments/configs/shard_runs/bwd_10n_round2_canonical_c0_v1.json",
+    "argv_template_note": "Single-shard scoreboard form; the round-2 parallel run goes through shard_coordinator with the shard run plan. Provisioning of the canonical c0 cohort is package M's guarded apply path."
+  }
+}

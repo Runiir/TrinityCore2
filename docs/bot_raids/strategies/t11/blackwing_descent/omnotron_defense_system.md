@@ -1,192 +1,226 @@
-# Omnotron Defense System — research contract v2
+# Omnotron Defense System — research contract v3
 
-Scope is Cataclysm Classic, intended to cover 10-player normal/heroic and
-25-player normal/heroic. This is a research and planning contract, not a
-claim of 4.4.2 live fidelity. Values which are only present in an external
-guide are labelled as such. A bot must not turn a `fidelity_blocked` value
-into a fixed schedule.
+Scope is Cataclysm Classic 4.4.2 (reference build 59185, hotfix cutoff
+2025-02-20) executed on the 4.3.4 client/server. 10N is researched for a
+live-attempt-ready shard; 10H, 25N and 25H keep their earlier guide-level
+status. The claim ledger is
+`experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json`
+and the mechanic contract is `omnotron_defense_system_v1.json` next to it. The
+encounter stays `fidelity_blocked`: ten material values are unresolved, most of
+them because Warcraft Logs showed a human-verification page during this pass
+(no agent may pass it). Nothing below is a bot timer.
 
-## Bot contract
+## What changed in round 2 (2026-09-25)
 
-- Treat Electron, Magmatron, Toxitron and Arcanotron as one shared-health
-  council. The controller randomizes the initial order and keeps at most two
-  constructs online. Assign two tanks, but select the current active pair
-  from encounter state rather than from a hard-coded order.
-- Interrupt Arcane Annihilation/Annihilator. Move a Lightning Conductor mark
-  and Magmatron's Acquiring Target/Flamethrower away from the raid. Keep
-  players and the tanked construct out of Power Generator unless taking the
-  documented benefit is intentional; move away from Chemical Cloud and kite
-  Poison Bombs.
-- Stop or redirect damage when Power Conversion, Unstable Shield, Barrier or
-  Poison Soaked Shell is observed. A shield is an event/state gate, not a
-  timer-only gate: the exact 4.4.2 threshold and local timer disagree with
-  some guide descriptions (see the ledger).
-- In heroic, observe Nefarius' actual cast/summon events. Do not assume the
-  historical “every N seconds, fixed order” story; the repository controller
-  applies an ability only when the corresponding cloud/generator or golem
-  event arrives and enforces a 30-second internal cooldown.
+- **Client rows** (4.4.2.59185 via wago.tools, and the 4.3.4 execution DBC,
+  identical for every 10N row compared) resolve the rotation, durations, radii
+  and 10N damage ranges.
+- **DBM** `DarkIronGolemCouncil.lua` r20241103125714 (sha256 `77a4f0ed…`)
+  corroborates the normal and heroic timers from logs.
+- **Native script audit**: four real defects fixed (below); the 1,591-line
+  script was split under the repository's 1,000-line rule.
+- **Kill attribution**: the route row named Arcanotron (42166), but only the
+  encounter credit creature Toxitron (42180) is a dungeon boss, so a native
+  kill could never produce boss-kill evidence. Patch requested.
+- **Bot strategy**: `Encounters/Omnotron/` now holds a real adaptive strategy
+  (duties by capability, no timers).
 
-## Cross-source behavior that is safe for planning
+## Phase graph (all modes)
 
-The current Cataclysm guide and the local script agree on the encounter's
-high-level shape: four constructs share health; one starts, another is brought
-online while the first is still active, and two are active at once. A golem
-deactivates at the end of its energy cycle and the queue supplies the next
-one. The implementation links shared health at reset, shuffles the four GUIDs
-and starts recharge at 10 seconds (`boss_omnotron_defense_system.cpp:236-245,
-366-375`).
+1. **Pre-pull.** The controller (42186, passive, 20 yd south on a ledge)
+   summons four inactive constructs: Inactive (78726: stun and immunity),
+   Powered Down (82265), not selectable. 10 s after reset the first queued
+   construct gets Recharging (45 s normal), then walks a patrol between
+   (-309.8, -393.0) and (-342.3, -392.7). It is attackable but has no
+   Activated aura.
+2. **Engage.** Any construct entering combat sets IN_PROGRESS, zones all four
+   into combat and applies Activated (78740) to the patrolling one. The next
+   construct starts Recharging at once.
+3. **Rotation.** Activated lasts 90 s on normal and 60 s on heroic.
+   Recharging lasts 45 s and 30 s, so a new construct joins every 45 s
+   (30 s heroic) and two are active after the first 45 s. Each active
+   construct shields once, 50 s (heroic 40 s) after activation: a 1.5 s cast
+   and a 10 s aura. At expiry it casts Shutting Down (78746, 3 s) and becomes
+   inactive.
+4. **Kill.** Shared Health (79920) links the four. When the pool empties
+   they all die, the controller calls `_JustDied` (boss index 1 DONE) and the
+   credit creature is 42180.
+5. **Wipe.** Any construct evading despawns all four, sets FAIL and respawns
+   the controller after 30 s (fresh AI: default spawn group, not
+   compatibility mode).
 
-The following are guide-reported planning values, not 4.4.2-verified values:
+## 10N abilities (client rows; native agrees unless noted)
 
-| Mechanic | Reported behavior | Bot implication |
-|---|---|---|
-| Shared health | 10N 32.2M; 10H 54.1M; 25N 99.2M; 25H 164.9M | Do not split damage by construct; use encounter health. |
-| Rotation | 60s first activation, second after 30s, then another about every 30s; at most two active | Derive active pair from events. The repository has an independent recharge aura and no 60s constant in this AI. |
-| Power Generator | 5-yard benefit, +50%, lasts 60s; first report is 15s after activation and repeats about every 20s | Keep intended recipient(s) in the field; keep raid/enemies out when not using it. |
-| Electrical Discharge | About 6s; chain to up to three targets within 8 yards; each jump gains 20% | Spread chained targets. The local spell script selects one next target and adds 20% per jump. |
-| Lightning Conductor | Marked player is isolated for about 15s; guide text elsewhere says 10s normal/15s heroic | Use the aura/event end, not a mode timer, until 4.4.2 data is confirmed. |
-| Unstable Shield | About 40s after activation, 10s; attacks proc Static Shock within about 6 yards | Stop damage and wait for shield removal. Local proc fires at the attacker on any damage event. |
-| Incineration | About 10s then about every 30s, four seconds | Move/mitigate the cone; local AI uses 10.5s then 26.5s. |
-| Acquiring Target | About 20s; a four-second lead then four-second Flamethrower | One random target is selected by the local script; target and raid clear the line. |
-| Barrier | About 40s, 10s; breaking it causes Backdraft | Stop damage unless the controller explicitly authorizes a break. |
-| Chemical Bomb | About 25s after activation; cloud about 30s and +50% damage taken | Move the bomb/cloud to a safe edge; do not use it as a fixed timer. |
-| Poison Protocol | First report is 15s, with another about 25s later; bombs are about 3s apart | Treat the cast as an interrupt/targeting event. Number and cadence differ between sources. |
-| Poison Soaked Shell | About 40s and 10s; attacks apply a stacking poison; Expunge/dispels clear it | Stop damage and clear the poison according to the observed aura. |
+| Construct | Ability | 10N value | Bot handling |
+|---|---|---|---|
+| Electron | Electrical Discharge 95499→79879 | 23,399-24,600 nature, chain 3 within 8 yd, every 6 s | No spread (guides); the chain now starts on a random player |
+| Electron | Lightning Conductor 79888 | 10 s (15 s heroic); every 2 s 19,499-20,500 to allies within 8 yd | Carrier isolates beyond 11 yd; others keep out of 10 yd |
+| Electron | Unstable Shield 79900 | 10 s; hits proc Static Shock 29,249-30,750 in 6 yd | Stop direct damage |
+| Magmatron | Incineration Security Measure 79023 | 11,699-12,300 fire per second for 4 s, raid-wide | Heal through |
+| Magmatron | Acquiring Target 79501 → Flamethrower 79505/79504 | 4 s mark, then a 25° cone, 20,474-21,525 per second for 4 s | Marked player leads the cone away; others leave the line |
+| Magmatron | Barrier 79582 | Absorb 300,000 (client; Wowhead says 900,000), 10 s; breaking it casts Backdraft 73,124-76,875 on everyone | Stop all damage |
+| Toxitron | Chemical Bomb 80157 → Chemical Cloud 42934 | 30 s; +50% damage taken for players within 12 yd and constructs within 13 yd | Leave the cloud; no construct dragging (1 yd band) |
+| Toxitron | Poison Protocol 80053 | 9 s, one Poison Bomb every 3 s (3 per cast), twice per activation | Fixated player kites; ranged kill bombs where the blast reaches nobody |
+| Toxitron | Poison Bomb 42897 | Fixate 20 s; on contact 73,124-76,875 nature in 6 yd plus Poison Puddle (6 yd, 11,699-12,300 per second, 30 s) | Leave puddles and other players' bombs |
+| Toxitron | Poison Soaked Shell 79835 | 10 s; attackers get Soaked In Poison (5,000 per stack every 2 s, 30 s, poison) | Stop direct damage; dispel 3+ stacks |
+| Arcanotron | Arcane Annihilator 79710 | 38,999-41,000 arcane, 1.5 s cast, one random target | Interrupt rotation |
+| Arcanotron | Power Generator 79624 → 42733 | 60 s, 5 yd: +50% damage done and 250 mana per 0.5 s for players and constructs | Tanks move constructs out; ranged and healers stand in |
+| Arcanotron | Power Conversion 79729 | 10 s; each hit gives +10% magic damage and cast speed for 30 s | Stop direct damage (DoT ticks do not proc) |
 
-The external guide reports 10-player Arcane Annihilation as one random target
-and 25-player as an area/three-target cast. The local AI confirms one random
-target in 10-player and an area cast in 25-player (`boss_omnotron_defense_system.cpp:948-957`). The exact
-spell damage ranges are intentionally omitted from the bot contract: current
-pages disagree by patch and are not proof of the Classic 4.4.2 hotfix state.
+Native melee: constructs are level 88, unit class 4, BaseAttackTime 1.5 s.
+At DamageModifier 1 the native roll is 4,520.5-6,731.4 per swing. That value
+stays uncalibrated until matched WCL samples exist. Native 10N shared health
+is 25,767,600 (85,892 × 300). The Wowhead guide says 32.2M; WCL derivation is
+pending.
 
-## Difficulty matrix
+## Native script audit (round 2)
 
-| Mode | Confirmed/common contract | Mode-specific report or blocker |
-|---|---|---|
-| 10N | Shared health; shuffled queue; two active; all four construct kits; one-target Arcane cast in local AI; normal spell IDs | Guide reports 32.2M shared health. Poison Protocol bomb count/cadence and shield threshold are `fidelity_blocked`. |
-| 10H | Same controller and shared-health shape; Nefarius is summoned only on heroic by the repository | Guide reports 54.1M health and stronger damage. Nefarius' event-driven interference is confirmed locally; exact external cadence is unresolved. |
-| 25N | Same shape; local AI changes Arcane to area targeting; all four kits | Guide reports 99.2M health. Exact area target count and Poison Protocol cadence are source-conflicted. |
-| 25H | Same shape; local AI uses area Arcane targeting; Nefarius interference and heroic spell variants | Guide reports 164.9M health and stronger effects. Exact Classic 4.4.2 health, damage, bomb count and Nefarius selection cadence are unresolved. |
+Split: `boss_omnotron_defense_system.cpp` (controller and constructs),
+`boss_omnotron_defense_system_spells.cpp` (Nefarius, Poison Bomb, spell
+scripts) and `boss_omnotron_defense_system_shared.h`. The loader is unchanged.
+Fixed defects, each with two sources:
 
-The old heroic guide reports roughly 35-second Nefarian upgrades and a random
-active golem; the current repository instead routes effects from Lightning
-Conductor, Chemical Cloud and Power Generator summons and clears a 30-second
-cooldown. These are not interchangeable schedules.
+1. **Electrical Discharge target.** The AI cast 79879 without a target, which
+   falls back to the construct's victim (the tank). It now casts the
+   registered random-target trigger 95499. Sources: Wowhead ("to a random raid
+   member") and the client trigger row.
+2. **Acquiring Target count.** A 26 s repeat gave three Flamethrowers per 90 s
+   normal activation. Normal now repeats after 40 s. Sources: DBM (40 s) and
+   Wowhead ("twice per activation"). Heroic keeps 26 s, which already gives
+   two casts in 60 s.
+3. **Poison Protocol count.** It was scheduled once per activation; it now
+   casts a second time 45 s (heroic 25 s) later. Sources: DBM and Wowhead.
+4. **Poison Soaked Shell timing.** It came at 40 s normal and 30 s heroic,
+   10 s before every other construct's shield. It is now 50 s and 40 s.
+   Sources: DBM and Wowhead's heroic 40 s.
 
-## Repository lifecycle, reset and credit
+Left unchanged because the sources conflict or only one source exists (all
+listed as `unresolved`):
 
-- `Reset` summons the construct group, links shared health after 5 seconds and
-  starts the first recharge after 10 seconds. The four GUIDs are shuffled per
-  encounter (`boss_omnotron_defense_system.cpp:236-245,366-375`).
-- A recharge aura activates its target only when its periodic energize aura
-  expires. The activated aura periodically casts the golem's normal trigger
-  spell; when it expires it casts shutting down. Inactive handling applies
-  Powered Down and makes the golem not selectable (`boss_omnotron_defense_system.cpp:1243-1305`).
-- Starting the encounter sets `IN_PROGRESS`, clears the four worldstates,
-  summons heroic Nefarius, zones all constructs into combat and activates the
-  queued golem (`boss_omnotron_defense_system.cpp:306-322`).
-- A failed/evaded encounter disengages and despawns the constructs, sets
-  `FAIL`, removes raid debuffs, despawns summons and evades the controller
-  (`boss_omnotron_defense_system.cpp:323-337`).
-- Completion calls `_JustDied()` (the boss credit/boss-state transition),
-  disengages constructs and removes debuffs (`:338-348`). The instance forwards
-  Omnotron `DONE` to the generic Nefarius credit path
-  (`instance_blackwing_descent.cpp:254-261`).
+- normal-mode first-cast offsets (Chemical Bomb, Lightning Conductor, Power
+  Generator, Poison Protocol);
+- the Electrical Discharge +20% per jump, whose script is a no-op (no
+  `SetHitDamage`);
+- whether a killed Poison Bomb explodes;
+- the Barrier absorb amount;
+- the Static Shock centre;
+- Nefarius' heroic cadence.
 
-## Targeting and heroic controller details
+## Bot strategy (canonical 10N composition)
 
-Repository-confirmed target rules:
+The Omnotron shard uses 2 tanks and 2 healers: Blood DK, Feral druid (tank),
+BM hunter, Fire mage, Holy paladin, Ret paladin, Disc priest, Assassination
+rogue, Elemental shaman and Demonology warlock. Every duty is chosen from
+observed state and capability, never from a roster slot:
 
-- Electrical Discharge's trigger list is randomly reduced to one next target;
-  damage increases 20% per chain jump (`boss_omnotron_defense_system.cpp:1308-1352`).
-- Acquiring Target randomly reduces eligible targets to one and casts its
-  periodic flamethrower on that target (`boss_omnotron_defense_system.cpp:1388-1426`).
-- A Poison Bomb samples up to 25 random eligible targets, removes targets
-  within 10 yards of its summoner when alternatives exist, then randomly keeps
-  one and fixates it (`boss_omnotron_defense_system.cpp:1114-1143`).
-- In 10-player the local AI selects one Arcane target; in 25-player it casts
-  the area spell (`boss_omnotron_defense_system.cpp:948-957`).
-- Unstable Shield procs Static Shock at the damage attacker, and Barrier casts
-  Backdraft only when removed by an enemy spell (`boss_omnotron_defense_system.cpp:1354-1447`).
+- **Ownership.** The strategy owns the node only while a construct is engaged;
+  the validation route approaches and pulls the patrolling construct.
+- **Tanks.** A tank owns the active construct whose victim it is. A new
+  construct goes to the tank whose construct is gone or shutting down. The
+  owner taunts its construct if it attacks anyone else. While its construct is
+  shielded, the owner stops attacking and drags it 12 yd from the other
+  construct. It walks the construct out of a Power Generator. A tank without a
+  construct waits next to the construct whose Recharging aura ends within
+  12 s.
+- **Damage.** The focus is the newest active construct without a shield or
+  shield cast. The older construct therefore shields first, and DoTs age out
+  before its Barrier. If every active construct is shielded, offense is
+  suppressed.
+- **Interrupts.** The Arcane Annihilator rotation goes by class/spec and
+  reach: in-range melee 10 s interrupts (Rebuke, Kick), then ranged (Wind
+  Shear 15 s, Counterspell 24 s), then tanks (Mind Freeze), then long
+  cooldowns (Skull Bash 60 s). A player with a personal movement debuff comes
+  last. A per-cohort ledger counts casts: one primary per cast and one backup
+  450 ms in.
+- **Dispels.** Poison dispellers (Cleanse, Remove Corruption; never a Bear Form
+  tank) clear Soaked In Poison at 3+ stacks or below 50% health. Healers go
+  first.
+- **Movement**, in priority order: Lightning Conductor isolation, Poison Bomb
+  kiting, Acquiring Target cone steering, Flamethrower cone dodge, hazard exit
+  (Chemical Cloud, Poison Puddle, bomb blast), clearance from a conductor, tank
+  positioning, then Power Generator stacking for ranged and healers.
+  Destinations stay on a 20 yd disc around the route node. The map 669
+  navmesh is walkable on the full 21 yd disc.
 
-On heroic start, Nefarius is summoned. The local controller only manipulates
-the longest-active golem at a time. Chemical Cloud schedules teleport/grip and
-return, Power Generator schedules Overcharge, Lightning Conductor can trigger
-Shadow Infusion/Shadow Conductor, and Acquiring Target can trigger Encasing
-Shadows. Each accepted ability sets a 30-second cooldown
-(`boss_omnotron_defense_system.cpp:978-1088`). Overcharge grows the generator,
-then removes its auras and produces Arcane Blowback (`boss_omnotron_defense_system.cpp:1493-1545`). The
-repository therefore supports the presence and event causes of heroic
-interference, but not a universal fixed order or encounter-time cadence.
+Not implemented, deliberately:
+
+- dragging constructs into the Chemical Cloud (guides call it optional; the
+  12/13 yd band leaves no safe margin);
+- pre-positioning Toxitron before Poison Protocol;
+- Bloodlust timing (no reviewed release window, so the shared reservation
+  stays closed);
+- Spellsteal of Converted Power.
+
+## Conflicts and unresolved items (`fidelity_blocked`)
+
+1. `wcl_matched_10n_kill_references`: per-spec 10N kill DPS and cast
+   timelines. WCL gated.
+2. `construct_melee_damage_modifier_10n`: matched U samples per construct.
+3. `shared_health_10n_wcl_derivation`: native 25.77M against guide 32.2M.
+4. `electrical_discharge_chain_damage_scaling`: Wowhead same damage, Icy Veins
+   increasing, native no-op.
+5. `poison_bomb_death_explosion`: Wowhead explodes; native does not.
+6. `barrier_absorb_amount`: client 300k against Wowhead 900k.
+7. `normal_mode_first_cast_and_repeat_timers`: native against DBM normal
+   offsets.
+8. `heroic_nefarius_selection_order_and_cadence`.
+9. `heroic_poison_bomb_count_and_non_10n_scaling`: Wowhead 2 bombs per tick
+   against client 1; other modes' health and damage.
+10. `static_shock_center_attacker_or_construct`.
+
+WCL extraction plan once the gate is cleared:
+
+- **Reports.** Start from the BWD 10N reports already used for Magmaw:
+  `MxFq7TRbvnjGY1hJ` (2024-10-28), `Y8ajQ7dbmKMG1RZy` and `xAhkN2y9YP3KRmnJ`.
+  Select the Omnotron Defense System kill fights. Otherwise use the 10N
+  rankings for encounter 1027.
+- **Per kill, extract:**
+  - summary DPS by spec;
+  - completed casts (timelines);
+  - enemy casts and auras: 78740, the four shields, 80053, 80157, 79501, 79888,
+    79624, 79710;
+  - damage-taken ability 1 from each construct with mitigation (U), excluding
+    Power Generator windows (+50%);
+  - 79879 hit sequences;
+  - 80092 events after bomb deaths;
+  - absorbs on 79582;
+  - resource-bar health samples for `derive_encounter_health`.
 
 ## Repository and database audit
 
-- C++ implementation: `src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp` (controller, four AIs, Nefarius, target filters and aura scripts; cited ranges above).
-- IDs and mode entries: `blackwing_descent.h:87-123`; base constructs are
-  42166/42178/42179/42180 and boss 42186. Historical difficulty entries are
-  assigned in `sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql:6-9`.
-- Instance mapping/forwarding: `instance_blackwing_descent.cpp:31-57,174-183`.
-  Encounter registration is the historical row 1027/42180 in
-  `sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:463`.
-- Loader: `eastern_kingdoms_script_loader.cpp:76-80,307-312` declares and calls
-  `AddSC_boss_omnotron_defense_system`.
-- SQL binding is present in the historical custom update
-  `sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql:131229-131356`:
-  boss/construct/Nefarius/poison-bomb `ScriptName`s, spell-script bindings,
-  difficulty entries and heroic spell bindings. The earlier draft's claim
-  that no historical binding exists was incorrect. Current `sql/updates/world/4.3.4`
-  has no equivalent Omnotron `ScriptName` row in the searched updates.
-- DB support also includes the 78725 Council Energy Drain aura on base golems
-  (`sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql:155-165`),
-  static flags for base/difficulty entries (`sql/updates/world/4.3.4/2023_08_27_00_world.sql:36437-36461`),
-  and spell-proc values for Power Conversion/Poison Soaked Shell
-  (`sql/updates/world/4.3.4/2025_06_20_00_world.sql:322-333`; cooldown rows for
-  79729/79900 in `2025_06_20_01_world.sql:104-111`). These rows corroborate
-  proc wiring, not the encounter's wall-clock schedule.
-
-## Conflicts and unresolved fidelity blockers
-
-- The current Cataclysm guide reports 60-second activation/30-second stagger
-  and approximately 40-second shields. Local AI uses a 40/50-second heroic/
-  normal shield schedule for Electron, Magmatron and Arcanotron, 30/40 for
-  Toxitron, and has no 60-second constant. Older Icy Veins documentation says
-  100-to-0 energy, a 50-energy shield and roughly 30/45-second rotation.
-  Threshold, energy drain rate, activation cadence and shield timing are
-  `fidelity_blocked` pending verified 4.4.2 spell/DBC or run evidence.
-- Poison Protocol is reported as one normal/two heroic bombs by Wowhead, but
-  the Warcraft Wiki reports a 3-second cadence (1.5 seconds in 25-player),
-  while the local AI only schedules the channel once per activation. Bomb
-  count, channel timing and mode scaling are unresolved.
-- Lightning Conductor is reported as 15 seconds by the current guide, but
-  Warcraft Wiki/legacy strategy text distinguishes 10-second normal and
-  15-second heroic. Use event state only.
-- Health and damage numbers, heroic health reductions, the presence of a
-  berserk timer and exact 4.4.2 hotfix/build cutoff have no reliable source in
-  this repository audit. They remain `fidelity_blocked`; no exact build claim
-  is recorded.
+- Scripts: see the split above. Loader `eastern_kingdoms_script_loader.cpp`
+  still calls `AddSC_boss_omnotron_defense_system` only.
+- DB (TDB 434.22011 plus `sql/updates/world/4.3.4`):
+  - constructs 42166/42178/42179/42180 (10N): HealthModifier 300,
+    BaseAttackTime 1500, unit class 4, rank 1, level 88;
+  - difficulty entries 49047-49058 use BaseAttackTime 2000;
+  - addon auras 78726 82265 78725 73059;
+  - summon group 0 of 42186;
+  - conditions limit 78696, 79920 and 80164 to the four entries;
+  - 79629 (Power Generator) has no conditions, so it affects every unit in
+    5 yd;
+  - `instance_encounters` 1027 credits 42180 (creditType 0);
+  - upstream `2025_06_18_06` set DamageModifier 1 everywhere.
+- Instance: boss index 1; Omnotron has no prerequisites. The inner door opens
+  when Magmaw and Omnotron are done.
 
 ## Source metadata
 
-1. **Wowhead — “Omnotron Defense System Strategy Guide”.** Author Beanna;
-   page updated 2024-06-04; Cataclysm guide URL
-   <https://www.wowhead.com/cata/guide/raids/blackwing-descent/omnotron-defense-system-strategy>;
-   accessed 2026-08-11. Reports current guide health values, 60/30 rotation,
-   ability timers, ranges, 10/25 targeting and heroic differences. The page
-   does not expose a reliable 4.4.2 build/hotfix cutoff.
-2. **Icy Veins — “Omnotron Defense System Encounter Guide”.** Cataclysm
-   Classic guide, page metadata indicates publication around 2024; URL
-   <https://www.icy-veins.com/cataclysm-classic/omnotron-defense-system-encounter-guide-strategy-abilities-loot>;
-   accessed 2026-08-11. Used as an independent strategy source for shared
-   health/energy shape and heroic ability descriptions; exact page patch
-   coverage is not stated.
-3. **Warcraft Wiki — “Omnotron Defense System”.** Community-maintained
-   ability/reference page; URL <https://warcraft.wiki.gg/wiki/Omnotron_Defense_System>;
-   accessed 2026-08-11. Used for historical spell ranges, target ranges,
-   Poison Protocol cadence and patch/hotfix history; not treated as proof of
-   the Classic 4.4.2 state.
-4. **Guías WoW — “Heroic Mode Omnotron Defense System”.** Legacy Cataclysm
-   heroic strategy page (page age metadata approximately 15.5 years); URL
-   <https://en.guiaswow.com/blackwing-descent/guide-heroic-mode-defense-system-omnotron-defense-system.html>;
-   accessed 2026-08-11. Used only as an independent historical report of
-   Nefarian's roughly 35-second random upgrades and heroic mechanics; its
-   patch is not a 4.4.2 source.
+1. **Wowhead — "Omnotron Defense System Strategy Guide"** by Beanna (updated
+   2024-06-04), <https://www.wowhead.com/cata/guide/raids/blackwing-descent/omnotron-defense-system-strategy>,
+   re-read 2026-09-25. Mode-unspecific rotation text (60/30 s), ability table,
+   tank/melee/ranged tips, "no enrage timer".
+2. **Icy Veins — "Omnotron Defense System Encounter Guide"** by Abide (last
+   updated 2024-07-29), <https://www.icy-veins.com/cataclysm-classic/omnotron-defense-system-encounter-guide-strategy-abilities-loot>,
+   re-read 2026-09-25. 50-energy shields, dispelling Soaked In Poison, tank
+   the target into the cloud and next to the generator.
+3. **Warcraft Wiki — "Omnotron Defense System"**, <https://warcraft.wiki.gg/wiki/Omnotron_Defense_System>,
+   accessed 2026-08-11 (legacy values).
+4. **Guías WoW heroic guide**, <https://en.guiaswow.com/blackwing-descent/guide-heroic-mode-defense-system-omnotron-defense-system.html>,
+   accessed 2026-08-11 (heroic history).
+5. **Client rows** 4.4.2.59185 (wago.tools, full-CSV sha256 prefixes in the
+   ledger) and the 4.3.4 execution DBC (`data/dbc/enUS`).
+6. **DBM** `DarkIronGolemCouncil.lua` r20241103125714 (local install, sha256 in
+   the ledger).
+7. **Repository**: TDB 434.22011 snapshot, map 669 navmesh tiles, the native
+   script and the route attribution code (paths in the ledger).

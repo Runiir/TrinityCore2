@@ -1,0 +1,216 @@
+"""Omnotron Defense System research packet, raid target and native script shape."""
+from __future__ import annotations
+
+import json
+import math
+import re
+import struct
+from pathlib import Path
+
+import pytest
+
+from tools.raid_program import raid_shard_identity as ids
+
+ROOT = Path(__file__).resolve().parents[1]
+ENCOUNTERS = ROOT / "experiments/configs/cata_raid_encounters/blackwing_descent"
+CONTRACT = ENCOUNTERS / "omnotron_defense_system_v1.json"
+LEDGER = ENCOUNTERS / "omnotron_defense_system_ledger_v1.json"
+WCL_REFERENCE = ENCOUNTERS / "omnotron_defense_system_wcl_dps_reference_v1.json"
+WCL_TIMELINES = ENCOUNTERS / "omnotron_defense_system_wcl_cast_timelines_v1.json"
+TARGET = ROOT / "experiments/configs/raid_targets/blackwing_descent_10n_omnotron_defense_system.json"
+COMPOSITION = ROOT / "experiments/configs/raid_compositions/blackwing_descent_10n.json"
+SCRIPTS = ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent"
+CONTENT = ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Omnotron"
+DOSSIER = ROOT / "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md"
+
+
+def load(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_contract_and_ledger_share_identity_and_unresolved_list() -> None:
+    contract, ledger = load(CONTRACT), load(LEDGER)
+    for document in (contract, ledger):
+        assert document["raid"] == "blackwing_descent"
+        assert document["boss_slug"] == "omnotron_defense_system"
+        assert document["fidelity_state"] == "fidelity_blocked"
+        assert document["unresolved_material_count"] == len(document["unresolved"]) > 0
+    assert contract["unresolved"] == ledger["unresolved"]
+    assert ledger["fidelity_target"]["build"] == "4.4.2.59185"
+    assert ledger["dossier_path"] == contract["dossier_path"]
+    assert (ROOT / contract["dossier_path"]).is_file()
+
+
+def test_ledger_completion_inventory_names_next_questions() -> None:
+    ledger = load(LEDGER)
+    rows = {row["key"]: row for row in ledger["research_completion"]}
+    for key in ("lifecycle_engage_reset_wipe_credit", "activation_rotation", "shields",
+                "construct_melee_calibration_10n", "wcl_actor_references_10n", "health_10n"):
+        assert key in rows and rows[key]["next"] and rows[key]["source_refs"]
+    for row in rows.values():
+        for ref in row["source_refs"]:
+            assert ref in ledger["source_catalog"], ref
+
+
+def test_ledger_retains_client_rotation_and_native_roll() -> None:
+    values = {row["key"]: row for row in load(LEDGER)["values"]}
+    rotation = values["activation_rotation"]["client_rows"]
+    assert rotation["78740"]["duration_ms"] == {"normal": 90000, "heroic": 60000}
+    assert rotation["78697"]["duration_ms"] == {"normal": 45000, "heroic": 30000}
+    assert values["lightning_conductor"]["modes"]["10N"] == "10 s"
+    assert values["shared_health_and_construct_count"]["native_calculated_mode_values"]["10N"] == math.ceil(85892 * 300)
+    low = (2947.9421 + 920 / 14) * 1.5
+    high = (2947.9421 * 1.5 + 920 / 14) * 1.5
+    assert values["construct_melee_native_roll_10n"]["modes"]["10N"] == (
+        f"{low:,.1f}-{high:,.1f} per swing at DamageModifier 1")
+    assert values["kill_credit_and_route_attribution"]["modes"]["10N"] == "credit creature 42180 Toxitron"
+
+
+def test_wcl_files_declare_the_gate_instead_of_values() -> None:
+    reference, timelines = load(WCL_REFERENCE), load(WCL_TIMELINES)
+    assert reference["status"] == timelines["status"] == "blocked_wcl_human_verification"
+    assert reference["references"] == [] and timelines["timelines"] == []
+    assert {row["report"] for row in reference["extraction_plan"]["candidate_reports"]} >= {
+        "MxFq7TRbvnjGY1hJ", "Y8ajQ7dbmKMG1RZy"}
+
+
+def test_raid_target_follows_the_canonical_omnotron_selection() -> None:
+    target, composition = load(TARGET), load(COMPOSITION)
+    assert target["schema"] == "raid_target_v1"
+    assert target["scenario"] == TARGET.stem
+    assert target["encounter_route_node_id"] == "bwd.omnotron.encounter"
+    manifest = load(ROOT / target["wcl_reference_manifest"])
+    assert set(target["matched_reference_ids"]) <= {row["id"] for row in manifest["references"]}
+    assert "wcl_cast_timelines" not in target  # set once matched timelines exist
+    boss = next(row for row in composition["bosses"] if row["boss_key"] == "omnotron")
+    assert target["cohort_id"] == ids.cohort_id("blackwing_descent", "10N", "omnotron", 0)
+    expected = {}
+    for character in composition["characters"]:
+        packed = ids.packed_index("blackwing_descent", "10N", boss["boss_number"], 0, character["slot"])
+        spec = boss["spec_selection"].get(character["character_key"], character["specs"][0])
+        expected[str(ids.character_guid(packed))] = (
+            ids.character_name("blackwing_descent", boss["name_code"], "10N", 0, character["slot"]), spec)
+    assert {guid: (row["name"], row["spec"]) for guid, row in target["roster"].items()} == expected
+    roles = [row["role"] for row in target["roster"].values()]
+    assert roles.count("tank") == 2 and roles.count("healer") == 2 and roles.count("dps") == 6
+    assert "bot-pool-tag" in " ".join(target["run_plan"]["argv_template"])
+    assert target["validation_scenario_id"] in target["run_plan"]["argv_template"]
+
+
+def test_native_script_is_split_and_carries_the_round2_fixes() -> None:
+    main = (SCRIPTS / "boss_omnotron_defense_system.cpp").read_text(encoding="utf-8")
+    spells = (SCRIPTS / "boss_omnotron_defense_system_spells.cpp").read_text(encoding="utf-8")
+    shared = (SCRIPTS / "boss_omnotron_defense_system_shared.h").read_text(encoding="utf-8")
+    for text in (main, spells, shared):
+        assert len(text.splitlines()) < 1000
+    assert "AddSC_boss_omnotron_defense_system_spells();" in main
+    assert "void AddSC_boss_omnotron_defense_system_spells()" in spells
+    assert "RegisterSpellScript(spell_omnotron_electrical_discharge_trigger);" in spells
+    discharge = main[main.index("case EVENT_ELECTRICAL_DISCHARGE:"):]
+    discharge = discharge[:discharge.index("break;")]
+    assert "DoCastAOE(SPELL_ELECTRICAL_DISCHARGE_TRIGGER);" in discharge
+    acquiring = main[main.index("case EVENT_ACQUIRING_TARGET:"):]
+    assert "_events.Repeat(IsHeroic() ? 26s : 40s);" in acquiring[:acquiring.index("break;")]
+    assert "_events.ScheduleEvent(EVENT_POISON_SOAKED_SHELL, IsHeroic() ? 40s : 50s);" in main
+    protocol = main[main.index("case EVENT_POISON_PROTOCOL:"):]
+    protocol = protocol[:protocol.index("break;")]
+    assert "if (++_poisonProtocolCasts < 2)" in protocol and "IsHeroic() ? 25s : 45s" in protocol
+    # Every registration of the original file survives the split exactly once.
+    registrations = re.findall(r"Register(?:BlackwingDescentCreatureAI|SpellScript)\((\w+)\)", main + spells)
+    assert len(registrations) == len(set(registrations)) == 22
+
+
+def test_strategy_constants_match_the_execution_client() -> None:
+    dbc = ROOT / "data/dbc/enUS/SpellDifficulty.dbc"
+    if not dbc.is_file():
+        pytest.skip("execution client DBC not present")
+    data = dbc.read_bytes()
+    _, count, fields, size, _ = struct.unpack_from("<4s4I", data)
+    rows = {}
+    for index in range(count):
+        record = struct.unpack_from(f"<{fields}I", data, 20 + index * size)
+        rows[record[1]] = list(record[1:5])
+    facts = (CONTENT / "BotOmnotronFacts.h").read_text(encoding="utf-8")
+    for name, ids_ in re.findall(r"SpellSet (\w+)\{ ([0-9, ]+) \};", facts):
+        values = [int(value) for value in ids_.split(",")]
+        assert rows[values[0]] == values, name
+
+
+def test_arena_disc_is_walkable_on_the_map_669_navmesh() -> None:
+    tiles = sorted((ROOT / "data/mmaps").glob("669*.mmtile"))
+    if not tiles:
+        pytest.skip("map 669 navmesh not present")
+    center = (-324.78, -399.078)
+    polygons = []
+    for tile in tiles:
+        blob = tile.read_bytes()
+        header = struct.unpack_from("<15i", blob, 20)
+        poly_count, vert_count = header[6], header[7]
+        verts = [struct.unpack_from("<3f", blob, 120 + 12 * i) for i in range(vert_count)]
+        base = 120 + 12 * vert_count
+        for index in range(poly_count):
+            offset = base + 32 * index
+            indices = struct.unpack_from("<6H", blob, offset + 4)
+            vertex_count, area = struct.unpack_from("<BB", blob, offset + 30)
+            if area >> 6:
+                continue
+            points = [(verts[i][2], verts[i][0], verts[i][1]) for i in indices[:vertex_count]]
+            z = sum(point[2] for point in points) / vertex_count
+            if 205.0 < z < 222.0:
+                polygons.append(points)
+
+    def inside(x: float, y: float) -> bool:
+        for points in polygons:
+            hit = False
+            for i in range(len(points)):
+                x1, y1 = points[i][0], points[i][1]
+                x2, y2 = points[(i + 1) % len(points)][0], points[(i + 1) % len(points)][1]
+                if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+                    hit = not hit
+            if hit:
+                return True
+        return False
+
+    for radius in (5.0, 12.0, 20.0):
+        for degrees in range(0, 360, 6):
+            angle = math.radians(degrees)
+            assert inside(center[0] + math.cos(angle) * radius, center[1] + math.sin(angle) * radius)
+
+
+def test_runtime_candidate_attempts_capture_only_live_context() -> None:
+    source = (CONTENT / "BotWorldPopulationMgrOmnotronCandidates.cpp").read_text(encoding="utf-8")
+    captures = re.findall(r"\bAttempt\s*=\s*(\[[^\]]*\])\s*\(", source, re.DOTALL)
+    assert len(captures) == 5
+    for capture in captures:
+        assert "&context" in capture and not re.search(r"(?:\[|,)\s*&\s*(?:,|\])", capture)
+    assert "SetCurrentEncounterRestrictions" in source
+    assert len(source.splitlines()) < 1000
+
+
+def test_dossier_discloses_sources_and_blocked_state() -> None:
+    text = DOSSIER.read_text(encoding="utf-8")
+    for token in ("4.4.2", "fidelity_blocked", "wowhead.com", "icy-veins.com", "repository",
+                  "boss_omnotron_defense_system_spells.cpp", "42180"):
+        assert token in text
+
+
+def test_damage_calibration_registry_patch_is_schema_valid_and_honest() -> None:
+    from tools.bot_ml.live_validation_fidelity import REGISTRY_STATUSES, load_registry
+
+    patch = load(ENCOUNTERS / "omnotron_defense_system_damage_calibration_registry_patch_v1.json")
+    registry = load_registry(ROOT)
+    assert patch["target"] == "experiments/configs/encounter_fidelity/creature_damage_calibration_v1.json"
+    assert patch["staged_sql"] is None
+    creatures = patch["creatures"]
+    for entry, row in creatures.items():
+        assert entry.isdigit() and row["status"] in REGISTRY_STATUSES
+        assert row["role"] in ("boss", "add") and row["mode"] in ("10N", "25N", "10H", "25H")
+        assert row["boss"] == "omnotron_defense_system" and isinstance(row["base_entry"], int)
+        assert row["damage_modifier"] is None  # nothing is calibrated without a matched sample
+        assert row.get("open_reason") if row["status"] == "open" else row.get("reason")
+        if entry in registry["creatures"]:
+            assert registry["creatures"][entry] == row  # applied verbatim, never edited
+    bosses_10n = {entry for entry, row in creatures.items() if row["role"] == "boss" and row["mode"] == "10N"}
+    assert bosses_10n == {"42166", "42178", "42179", "42180", "42186"}
+    assert all(creatures[entry]["template_at_audit"]["base_attack_time_ms"] == 1500
+               for entry in ("42166", "42178", "42179", "42180"))
