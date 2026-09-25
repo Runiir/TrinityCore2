@@ -431,7 +431,7 @@ Boss notes:
 - Use `raid_workloop start --preview` or `raid_workloop boss ...` read-only. Only the
   coordinator (and later R's raid program) selects or advances the saved graph.
 - Keep CPU load modest: focused tests only, and prefix heavy commands with `nice -n 10`.
-  The user keeps two CPUs free.
+  The user keeps four CPUs free: builds use the `host8` policy (8 jobs, exact `--parallel 8`).
 - No edits after your handoff. The coordinator builds only after every agent has
   finished, and any edit during a build aborts it.
 
