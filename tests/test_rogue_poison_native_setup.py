@@ -336,38 +336,58 @@ def test_applied_poison_inventory_readback_fails_closed() -> None:
     }]
 
 
-def test_raid_rosters_apply_provisioned_poisons_out_of_combat_only() -> None:
-    """Round 3 (04_rogue_raid_poisons): r02-b1 rogues never applied poisons.
+def test_raid_rosters_apply_provisioned_poisons_only_while_the_group_rests() -> None:
+    """Round 3 (04_rogue_raid_poisons, reworked): r02-b1 rogues never applied poisons.
 
-    A raid roster carries both stacks, so persistent setup requires them there
-    too, but only at the out-of-combat readiness barrier: a three-second item
-    cast started mid-pull would suppress the whole rotation.  Outside
-    calibration a live exact enchant is the readiness fact, so the rogue does
-    not re-poison (and spend a stack) after every pull.
+    Raid rogues set up their provisioned poisons best effort, and only while
+    the whole group rests (the readiness barrier or the prepull staging gate),
+    never on the first action of a pull. Outside calibration a live exact
+    enchant is the readiness fact, a hand that cannot be poisoned is skipped,
+    and each hand gets one native attempt per rest window, so setup never
+    holds forever. Dungeon rogues and calibration keep the old contract.
     """
     setup = definition(
         "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup",
     )
     gate = setup[setup.index("bool const raidPoisonsProvisioned"):
                  setup.index("state.RoguePoisonSetupRequired = roguePoisonSetup;")]
-    assert "Cohort().Raid.RaidInstance" in gate
-    assert "!Cohort().CalibrationActive && !bot->IsInCombat()" in gate
-    assert "bot->GetItemCount(43233) > 0 && bot->GetItemCount(43231) > 0" in gate
+    assert "!Cohort().CalibrationActive" in gate
+    assert "Cohort().Raid.RaidInstance && BotRaidPoisonSetup::InRaidMap(bot)" in gate
+    assert "BotRaidPoisonSetup::HasAnyStack(bot)" in gate
+    assert "BotRaidPoisonSetup::GroupAtRest(bot, target)" in gate
     assert "(Cohort().CalibrationActive || raidPoisonsProvisioned)" in gate
     assert 'profile.SpecTag == "assassination_rogue"' in gate
     # The stacks the gate counts are exactly the contract's main/off hand items.
     assert "EQUIPMENT_SLOT_MAINHAND, 43233, 2823, 7" in setup
     assert "EQUIPMENT_SLOT_OFFHAND, 43231, 8679, 323" in setup
 
-    shortcut = setup.index(
-        "if (!Cohort().CalibrationActive\n"
-        "                && receipt.ObservedEnchantId == receipt.RequiredEnchantId")
-    assert setup.index("receipt.ObservedEnchantDurationMs = weapon") < shortcut
+    policy = read(BOTS / "BotRaidPoisonSetup.h")
+    assert "DeadlyPoisonItem = 43233" in policy and "InstantPoisonItem = 43231" in policy
+    rest = policy[policy.index("inline bool GroupAtRest"):policy.index("inline bool InRaidMap")]
+    for fact in ("bot->IsInCombat()", "!bot->getAttackers().empty()",
+                 "target && target->IsInCombat()", "member->IsInMap(bot) && member->IsInCombat()"):
+        assert fact in rest, fact
+    assert "bot->GetMap()->IsRaid()" in policy
+
+    best_effort = setup.index("bool const bestEffort = !Cohort().CalibrationActive;")
+    shortcut = setup.index("if (bestEffort\n                && receipt.ObservedEnchantId == receipt.RequiredEnchantId")
+    assert setup.index("receipt.ObservedEnchantDurationMs = weapon") < best_effort < shortcut
     assert shortcut < setup.index("Item* poisonItem = bot->GetItemByEntry(")
-    assert (
-        "receipt.ObservedEnchantDurationMs >= PoisonRefreshThresholdMs)\n"
-        "                return false;" in setup
-    )
-    # Calibration keeps the fail-closed receipt chain: the shortcut is the only
-    # new early return and it is scoped away from calibration.
+    skip = setup.index("if (bestEffort) // one attempt per hand per rest window; never hold")
+    skip_block = setup[skip:setup.index("if (!weaponTemplate", skip)]
+    assert setup.index("if (exactEnchantObserved)") < skip
+    for condition in ("receipt.NativeUseFinishedAtMs >= receipt.NativeUseSubmittedAtMs",
+                      "!receipt.NativeUseFinishedSuccessfully",
+                      "receipt.NextNativeUseRetryAtMs <= nowMs",
+                      "receipt.NextNativeUseRetryAtMs = BotRaidPoisonSetup::WindowSpent",
+                      "receipt.NextNativeUseRetryAtMs == BotRaidPoisonSetup::WindowSpent",
+                      "!weaponTemplate", "!itemCurrentlyAvailable", "!receipt.SpellAvailable"):
+        assert condition in skip_block, condition
+    assert "return false;" in skip_block
+    # A rejected submission spends the window instead of retrying each second.
+    assert ("receipt.NextNativeUseRetryAtMs = bestEffort\n"
+            "                ? BotRaidPoisonSetup::WindowSpent : nowMs + 1000;") in setup
+    assert "return !bestEffort;" in setup
+    # Calibration keeps the fail-closed receipt chain: both new branches are
+    # scoped away from calibration.
     assert setup.count("!Cohort().CalibrationActive") == 2

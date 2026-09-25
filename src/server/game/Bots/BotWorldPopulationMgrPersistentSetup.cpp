@@ -3,6 +3,7 @@
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotPersistentSelfBuffContract.h"
+#include "Bots/BotRaidPoisonSetup.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Cryptography/CryptoHash.h"
@@ -264,14 +265,13 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     // party may legitimately arrive with no consumable stack in the generated
     // roster; do not hold its rogue in persistent setup forever. Calibration
     // still remains fail-closed and requires the native item-use/finish/live
-    // enchant evidence before the scored window opens. A raid roster is
-    // provisioned with both poison stacks (Deadly 43233, Instant 43231); r02-b1
-    // rogues never applied them, so no poison damage reached any shard. A
-    // three-second item cast is never started mid-pull: raid setup runs at the
-    // out-of-combat readiness barrier and must not suppress the rotation.
-    bool const raidPoisonsProvisioned = Cohort().Raid.RaidInstance
-        && !Cohort().CalibrationActive && !bot->IsInCombat()
-        && bot->GetItemCount(43233) > 0 && bot->GetItemCount(43231) > 0;
+    // enchant evidence before the scored window opens. Raid rogues set up
+    // their provisioned poisons best effort, only while the group rests
+    // (BotRaidPoisonSetup.h); dungeon rogues are unchanged.
+    bool const raidPoisonsProvisioned = !Cohort().CalibrationActive
+        && Cohort().Raid.RaidInstance && BotRaidPoisonSetup::InRaidMap(bot)
+        && BotRaidPoisonSetup::HasAnyStack(bot)
+        && BotRaidPoisonSetup::GroupAtRest(bot, target);
     bool const roguePoisonSetup = (Cohort().CalibrationActive || raidPoisonsProvisioned)
         && role == "dps"
         && (profile.SpecTag == "assassination_rogue"
@@ -750,7 +750,8 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
                 ? weapon->GetEnchantmentDuration(TEMP_ENCHANTMENT_SLOT) : 0;
             // Outside calibration the live exact enchant is the readiness
             // fact; re-poisoning after every pull would only spend stacks.
-            if (!Cohort().CalibrationActive
+            bool const bestEffort = !Cohort().CalibrationActive;
+            if (bestEffort
                 && receipt.ObservedEnchantId == receipt.RequiredEnchantId
                 && receipt.ObservedEnchantDurationMs >= PoisonRefreshThresholdMs)
                 return false;
@@ -819,6 +820,18 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
                 return false;
             }
             receipt.EnchantObservedAtMs = 0;
+            if (bestEffort) // one attempt per hand per rest window; never hold
+            {
+                if (receipt.NativeUseSubmittedAtMs
+                    && ((receipt.NativeUseFinishedAtMs >= receipt.NativeUseSubmittedAtMs
+                            && !receipt.NativeUseFinishedSuccessfully)
+                        || receipt.NextNativeUseRetryAtMs <= nowMs))
+                    receipt.NextNativeUseRetryAtMs = BotRaidPoisonSetup::WindowSpent;
+                if (receipt.NextNativeUseRetryAtMs == BotRaidPoisonSetup::WindowSpent
+                    || !weaponTemplate || weaponTemplate->GetClass() != ITEM_CLASS_WEAPON
+                    || !itemCurrentlyAvailable || !receipt.SpellAvailable)
+                    return false;
+            }
 
             if (!weaponTemplate
                 || weaponTemplate->GetClass() != ITEM_CLASS_WEAPON)
@@ -901,14 +914,15 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             receipt.NativeUseFinishedItemGuid.Clear();
             receipt.NativeUseFinishedWeaponGuid.Clear();
             receipt.EnchantObservedAtMs = 0;
-            receipt.NextNativeUseRetryAtMs = nowMs + 1000;
+            receipt.NextNativeUseRetryAtMs = bestEffort
+                ? BotRaidPoisonSetup::WindowSpent : nowMs + 1000;
             ObserveBotCandidateFailure(state, bot,
                 "world.setup.weapon_poison:" + std::string(name),
                 outcome.Reason, 1000, 15000, 3, 15000);
             RecordCombatAttempt(state, bot, bot, "persistent_setup",
                 &telemetryAction, BotActionResult::CastFailed,
                 outcome.Reason.c_str());
-            return true;
+            return !bestEffort;
         };
 
         if (ensureWeaponPoison(state.RogueMainhandPoisonSetup,

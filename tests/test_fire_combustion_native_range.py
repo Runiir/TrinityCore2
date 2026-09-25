@@ -64,6 +64,7 @@ def test_migrated_rows_through_actual_resolver_native_envelope_and_dot_gate(tmp_
 #include <cassert>
 #include <string>
 constexpr unsigned SPELL_RANGE_MELEE=1,CLASS_MAGE=8,EFFECT_0=0;
+constexpr float NOMINAL_MELEE_RANGE=5;
 struct Range {unsigned Flags=0;};
 struct SpellInfo {Range range;Range* RangeEntry=&range;float maximum=40;float GetMaxRange(bool)const{return maximum;}};
 struct SpellMgr {SpellInfo info;SpellInfo const* GetSpellInfo(unsigned){return &info;}}mgr;
@@ -84,6 +85,8 @@ std::string check(unsigned guid,float cap,float nativeMax,float distance,bool ow
  mgr.info.maximum=nativeMax;Profile profile;BotActionCandidate candidate;candidate.Profile.MaxRange=cap;candidate.SpellId=candidate.ResolvedSpellId=spellId;
  // Fixture SQL rows are ordinary enemy actions with zero minimum range.
  bool selfTarget=false,densityOnly=false;float minRange=0;ResolvedCombatAction action;
+ // Raid scope only widens exact 5 yd melee caps; these Fire rows must not care.
+ bool const raidRotationScope=RAID_ROTATION_SCOPE;
 ''' + native + '\nfor(int once=0;once<1;++once){\n' + dots + configured + maximum + '\n}\nreturn candidate.RejectReason;\n}\nint main(){\n' + '\n'.join(cases)+r'''
  assert(check(30006,40,40,40,true).empty());
  assert(check(30006,40,40,40.01f,true)=="max_range_exceeded");
@@ -97,7 +100,11 @@ std::string check(unsigned guid,float cap,float nativeMax,float distance,bool ow
  assert(check(30006,35,30,33.01f,true,2136)=="max_range_exceeded");
 }
 '''
-    path=tmp_path/'range.cpp';path.write_text(cpp);binary=tmp_path/'range'
-    result=subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',str(path),'-o',str(binary)],capture_output=True,text=True)
-    assert result.returncode==0,result.stderr
-    subprocess.run([str(binary)],check=True)
+    path=tmp_path/'range.cpp';path.write_text(cpp)
+    # The accepted legacy Magmaw Fire mages run in a raid: the result must be
+    # identical with and without the round 3 raid rotation scope.
+    for scope in (0,1):
+        binary=tmp_path/f'range_{scope}'
+        result=subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',f'-DRAID_ROTATION_SCOPE={scope}',str(path),'-o',str(binary)],capture_output=True,text=True)
+        assert result.returncode==0,result.stderr
+        subprocess.run([str(binary)],check=True)

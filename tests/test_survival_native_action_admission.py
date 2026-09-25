@@ -76,18 +76,23 @@ def test_loaded_rows_through_production_count_and_native_range(tmp_path):
 #include <cassert>
 #include <string>
 constexpr unsigned SPELL_RANGE_MELEE=1;
+constexpr float NOMINAL_MELEE_RANGE=5;
 struct Range {unsigned Flags=2;};
 struct SpellInfo {Range range;Range* RangeEntry=&range;float maximum=40;};
 struct SpellMgr {SpellInfo info;SpellInfo const* GetSpellInfo(int){return &info;}} mgr;
 auto* sSpellMgr=&mgr;
 struct Actor {float GetSpellMaxRangeForTarget(Actor*,SpellInfo const* info){return info->maximum;}
  float GetMeleeRange(Actor*){return 5;} float GetCombatReach(){return 1.5f;}};
-struct Profile {unsigned MinEnemies=1,MaxEnemies=0;float MaxRange=40;};
+struct Profile {unsigned MinEnemies=1,MaxEnemies=0;float MaxRange=40;std::string TargetSelector="enemy";};
+struct ResolvedCombatAction {float MinRange=0,MaxRange=0;bool RangeRecoveryRequired=false;};
 struct BotActionCandidate {struct Profile Profile;int ResolvedSpellId=77767;std::string RejectReason;};
 void check(unsigned minimum,unsigned maximum,float cap,float nativeMax,float distance,unsigned hostileCount,bool admitted){
  Actor actor,unit;auto* bot=&actor;auto* target=&unit;
  mgr.info.maximum=nativeMax;
- BotActionCandidate candidate;candidate.Profile={minimum,maximum,cap};
+ BotActionCandidate candidate;candidate.Profile={minimum,maximum,cap,"enemy"};
+ bool densityOnly=false;float minRange=0;ResolvedCombatAction action;
+ // Raid scope only widens exact 5 yd melee caps; ranged shots must not care.
+ bool const raidRotationScope=RAID_ROTATION_SCOPE;
 ''' + native + r'''
  for(int once=0;once<1;++once){
 ''' + count + r'''
@@ -104,6 +109,8 @@ int main(){
  check(2,0,40,40,38.4835f,1,false); // Existing Multi-Shot minimum enemy gate survives.
 }
 '''
-    path=tmp_path/'admission.cpp';path.write_text(cpp);binary=path.with_suffix('')
-    subprocess.run(['c++','-std=c++17',str(path),'-o',str(binary)],check=True,capture_output=True,text=True)
-    subprocess.run([str(binary)],check=True)
+    path=tmp_path/'admission.cpp';path.write_text(cpp)
+    for scope in (0,1):
+        binary=tmp_path/f'admission_{scope}'
+        subprocess.run(['c++','-std=c++17',f'-DRAID_ROTATION_SCOPE={scope}',str(path),'-o',str(binary)],check=True,capture_output=True,text=True)
+        subprocess.run([str(binary)],check=True)

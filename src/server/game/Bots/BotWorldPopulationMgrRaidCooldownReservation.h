@@ -54,6 +54,11 @@ inline bool HasAnyTag(std::string_view tags, std::initializer_list<std::string_v
     return false;
 }
 
+// A row tagged here is never reserved. Only the raid rotation overrides
+// (BotRaidRotationOverrides.h) add it, to Retribution Inquisition: a Holy Power
+// buff filed as an offensive cooldown that trash must not hold back.
+inline constexpr char const* ReservationExemptTag = "raid_reservation_exempt";
+
 inline bool IsReservationWindow(RouteContext const& route)
 {
     if (!route.ValidationRouteEnabled || !route.RaidInstance
@@ -236,7 +241,8 @@ inline char const* BossHitEmergencyDefensiveKeptReason(BossHitTimer timer,
 inline char const* ReservationReason(RouteContext const& route,
     CandidateContext const& candidate)
 {
-    if (!IsReservationWindow(route) || IsEmergencyOrSurvival(candidate))
+    if (!IsReservationWindow(route) || IsEmergencyOrSurvival(candidate)
+        || HasTag(candidate.MechanicTags, ReservationExemptTag))
         return nullptr;
 
     if (IsBloodlust(candidate))

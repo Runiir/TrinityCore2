@@ -267,6 +267,7 @@ def test_migrated_rows_through_actual_resolver_range_envelope(tmp_path: Path) ->
 #include <cassert>
 #include <string>
 constexpr unsigned SPELL_RANGE_MELEE=1;
+constexpr float NOMINAL_MELEE_RANGE=5;
 struct Range {unsigned Flags=0;};
 struct SpellInfo {Range range;Range* RangeEntry=&range;float maximum=40;float GetMaxRange(bool)const{return maximum;}};
 struct SpellMgr {SpellInfo info;SpellInfo const* GetSpellInfo(unsigned){return &info;}}mgr;
@@ -282,6 +283,8 @@ std::string check(float cap,float nativeMax,float distance){
  Actor actor,targetUnit;auto* bot=&actor;auto* target=&targetUnit;
  mgr.info.maximum=nativeMax;Profile profile;BotActionCandidate candidate;candidate.Profile.MaxRange=cap;
  bool selfTarget=false,densityOnly=false;float minRange=0;ResolvedCombatAction action;
+ // Raid scope only widens exact 5 yd melee caps; these Fire rows must not care.
+ bool const raidRotationScope=RAID_ROTATION_SCOPE;
 ''' + native + "\nfor(int once=0;once<1;++once){\n" + configured + maximum + r'''
 }
  (void)minRange;
@@ -296,8 +299,12 @@ int main(){
 '''
     path = tmp_path / "hot_streak_range.cpp"
     path.write_text(cpp)
-    binary = tmp_path / "hot_streak_range"
-    result = subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(path), "-o", str(binary)],
-                            capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-    subprocess.run([str(binary)], check=True)
+    # The accepted legacy Magmaw Fire mages run in a raid: the result must be
+    # identical with and without the round 3 raid rotation scope.
+    for scope in (0, 1):
+        binary = tmp_path / f"hot_streak_range_{scope}"
+        result = subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+                                 f"-DRAID_ROTATION_SCOPE={scope}", str(path), "-o", str(binary)],
+                                capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
+        subprocess.run([str(binary)], check=True)

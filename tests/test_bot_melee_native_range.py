@@ -44,8 +44,13 @@ Manager* sSpellMgr;
 struct Action {float MinRange=0;float MaxRange=5;bool RangeRecoveryRequired=false;};
 int main(){Range r;Manager mgr{{&r}};sSpellMgr=&mgr;Player p;auto bot=&p;Unit u;
 auto target=&u;auto actionTarget=target;bool selfTarget=false;ProfileStub profile;
+// The production helper, built once per scope (it captures raidRotationScope).
+auto makeHelper=[&](bool raidRotationScope){
 ''' + helper + r'''
-auto evaluate=[&](float cap,float distance,bool melee,float raw){
+return effectiveSpellMaxRange;};
+constexpr bool Dungeon=false, Raid=true;
+auto evaluate=[&](float cap,float distance,bool melee,float raw,bool scope){
+auto effectiveSpellMaxRange=makeHelper(scope);
 r.Flags=melee?SPELL_RANGE_MELEE:0;mgr.info.Raw=raw;p.Distance=distance;
 BotActionCandidate candidate;candidate.Profile.MaxRange=cap;candidate.Profile.RequiresMeleeRange=melee;
 Action action;float minRange=0;bool densityOnly=false;bool deferLavaBurstMovementRejection=false;
@@ -57,34 +62,47 @@ auto best=&candidate;action.MaxRange=cap>0?cap:profile.MaxRange;
 ''' + selected + r'''
 return std::make_pair(candidate.RejectReason,action.MaxRange);
 };
+for(bool scope:{Dungeon,Raid}){
 // Native legal at eight yards, outside the five-yard raw DBC default.
-auto implicit=evaluate(0,8,true,5);assert(implicit.first.empty());assert(implicit.second==bot->GetMeleeRange(target));
-// A declared nominal five-yard melee maximum is the same approach default
-// (round 3, 03_melee_profile_native_reach): Mutilate and Crusader Strike at
-// 5.4-14 yd from a large boss centre are admitted at native reach.
-auto nominalCap=evaluate(5,8,true,5);assert(nominalCap.first.empty());assert(nominalCap.second==bot->GetMeleeRange(target));
-auto shortCap=evaluate(3,8,true,5);assert(shortCap.first.empty());assert(shortCap.second==bot->GetMeleeRange(target));
-auto nominalBeyondNative=evaluate(5,14,true,5);assert(nominalBeyondNative.first=="melee_range_required");
-// A melee maximum above nominal reach remains a policy cap.
-auto policyCap=evaluate(8,10,true,5);assert(policyCap.first=="max_range_exceeded");assert(policyCap.second==8);
-auto beyondNative=evaluate(0,14,true,5);assert(beyondNative.first=="melee_range_required");assert(beyondNative.second==bot->GetMeleeRange(target));
-auto ranged=evaluate(20,21,false,30);assert(ranged.first=="max_range_exceeded");assert(ranged.second==20);
-auto rangedDefault=evaluate(0,31,false,30);assert(rangedDefault.first=="max_range_exceeded");assert(rangedDefault.second==30);
-auto nativeRangedCap=evaluate(60,42,false,30);assert(nativeRangedCap.first=="max_range_exceeded");assert(nativeRangedCap.second==41.5f);
+auto implicit=evaluate(0,8,true,5,scope);assert(implicit.first.empty());assert(implicit.second==bot->GetMeleeRange(target));
+// Only an exact nominal cap is widened, and only in raid scope.
+auto shortCap=evaluate(3,8,true,5,scope);assert(shortCap.first=="max_range_exceeded");assert(shortCap.second==3);
+auto nearNominal=evaluate(4.99f,8,true,5,scope);assert(nearNominal.first=="max_range_exceeded");
+auto policyCap=evaluate(8,10,true,5,scope);assert(policyCap.first=="max_range_exceeded");assert(policyCap.second==8);
+auto beyondNative=evaluate(0,14,true,5,scope);assert(beyondNative.first=="melee_range_required");assert(beyondNative.second==bot->GetMeleeRange(target));
+auto nominalBeyondNative=evaluate(5,14,true,5,scope);assert(nominalBeyondNative.first=="melee_range_required");
+// A non-melee spell never takes the melee rule, in either scope.
+auto ranged=evaluate(20,21,false,30,scope);assert(ranged.first=="max_range_exceeded");assert(ranged.second==20);
+auto rangedDefault=evaluate(0,31,false,30,scope);assert(rangedDefault.first=="max_range_exceeded");assert(rangedDefault.second==30);
+auto nativeRangedCap=evaluate(60,42,false,30,scope);assert(nativeRangedCap.first=="max_range_exceeded");assert(nativeRangedCap.second==41.5f);
+auto rangedNominal=evaluate(5,6,false,30,scope);assert(rangedNominal.first=="max_range_exceeded");assert(rangedNominal.second==5);
+}
+// Dungeon and calibration: an explicit five-yard cap still clips the native
+// envelope, exactly as before round 3.
+auto dungeonCap=evaluate(5,8,true,5,Dungeon);assert(dungeonCap.first=="max_range_exceeded");assert(dungeonCap.second==5);
+auto dungeonInCap=evaluate(5,4,true,5,Dungeon);assert(dungeonInCap.first.empty());assert(dungeonInCap.second==5);
+// Raid scope (round 3, 03_melee_profile_native_reach): a declared nominal
+// five-yard melee maximum is the approach default, so Mutilate and Crusader
+// Strike at 5.4-14 yd from a large boss centre are admitted at native reach.
+auto raidCap=evaluate(5,8,true,5,Raid);assert(raidCap.first.empty());assert(raidCap.second==bot->GetMeleeRange(target));
 }
 '''
     program = program.replace("NATIVE_MELEE_BODY", native_melee_body)
     if rune_strike_caps is not None:
         old_cap, new_cap = rune_strike_caps
-        # Since the nominal-reach resolver rule, the old five-yard Rune Strike
-        # cap is admitted too; the migration stays an idempotent no-op fix.
+        # Outside a raid the old five-yard Rune Strike cap is still rejected
+        # at eight yards, which is what the migration fixed; the raid-only
+        # nominal-reach rule admits it there as well.
         checks = f"""
-        auto oldRuneStrike=evaluate({old_cap},8,true,5);
-        assert(oldRuneStrike.first.empty());
-        assert(oldRuneStrike.second==bot->GetMeleeRange(target));
-        auto newRuneStrike=evaluate({new_cap},8,true,5);
+        auto oldRuneStrike=evaluate({old_cap},8,true,5,Dungeon);
+        assert(oldRuneStrike.first=="max_range_exceeded");
+        auto oldRuneStrikeRaid=evaluate({old_cap},8,true,5,Raid);
+        assert(oldRuneStrikeRaid.first.empty());
+        for(bool scope:{{Dungeon,Raid}}){{
+        auto newRuneStrike=evaluate({new_cap},8,true,5,scope);
         assert(newRuneStrike.first.empty());
         assert(newRuneStrike.second==bot->GetMeleeRange(target));
+        }}
         """
         end = program.rindex("}")
         program = program[:end] + checks + program[end:]

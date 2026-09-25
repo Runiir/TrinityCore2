@@ -67,7 +67,7 @@ struct Unit {
  bool IsWithinMeleeRange(Unit*) { return distance<=5; }
 };
 '''+helper+r'''
-struct Profile { float MinRange=0, MaxRange=35; bool RequiresMeleeRange=false,RequiresRangedRange=false,RangeRecoveryRequired=false; };
+struct Profile { float MinRange=0, MaxRange=35; bool RequiresMeleeRange=false,RequiresRangedRange=false,RangeRecoveryRequired=false; std::string TargetSelector="enemy"; };
 struct BotActionCandidate { struct Profile Profile; int ResolvedSpellId=0; std::string RejectReason; };
 std::string check(float configuredMin,float distance,float nativeMin=0,bool requiresRanged=false) {
  Unit actor; actor.distance=distance;actor.nativeMin=nativeMin;
@@ -76,6 +76,7 @@ std::string check(float configuredMin,float distance,float nativeMin=0,bool requ
  candidates[0].Profile.MinRange=configuredMin;
  candidates[0].Profile.RequiresRangedRange=requiresRanged;
  bool selfCenteredHostileAction=false,selfTarget=false;
+ bool densityOnly=false; // the max-range branch's range-recovery envelope
 '''+native+r'''
  auto effectiveSpellMaxRange=[](BotActionCandidate const&,float configured) { return std::min(configured,30.0f); };
  for(auto& candidate:candidates) {
