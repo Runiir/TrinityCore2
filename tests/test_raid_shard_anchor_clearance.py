@@ -240,3 +240,85 @@ def test_the_atramedes_start_clears_every_spirit_without_an_exemption(creatures,
     report = _check(CONFIG, creatures, hostile, world)
     assert not [row for row in report["violations"] + report["exempted"]
                 if "atramedes" in row["scenario_id"] and row["anchor"] == "start_position"]
+
+
+ROUND3_NORTH_PATROL = {"x": -58.5521, "y": -146.793, "z": 63.6199, "o": 1.41372, "source_entry": 42802,
+                       "source_guid": "250116", "pack_target_entries": [42802, 46083]}
+
+
+def _round3_north_patrol(config: dict, scenario_id: str) -> None:
+    _node(_scenario(config, scenario_id), "bwd.lower_hall.north_patrol").update(copy.deepcopy(ROUND3_NORTH_PATROL))
+
+
+@pytest.mark.parametrize("scenario_id", [NEFARIAN_C0, "blackwing_descent_10n_nefarian_diagnostic",
+                                         "blackwing_descent_10n", "blackwing_descent_10n_full_c0"])
+def test_the_round3_north_patrol_key_is_refused_by_the_future_guard_rule(scenario_id):
+    """Round 3: a later node named the lab patrol Slayer's entry, so the guard froze bwd.maloriak.lab_trash."""
+    config = copy.deepcopy(CONFIG)
+    _round3_north_patrol(config, scenario_id)
+    report = clearance.check_future_guard(config)
+    assert {"rule": "future_guard_overlap", "scenario_id": scenario_id, "node": "bwd.maloriak.lab_trash",
+            "later_node": "bwd.lower_hall.north_patrol", "entry": 42802} in report["guard_violations"]
+    assert clearance.check_future_guard(CONFIG)["guard_violations"] == []
+
+
+def test_the_future_guard_rule_mirrors_the_runtime_fields():
+    step = {"kind": "boss", "source_entry": 1, "opener_target_entry": 2, "alternate_target_entries": [3],
+            "add_target_entries": [4], "pack_target_entries": [5], "scripted_event_entries": [6],
+            "mechanic_contract": {"target_entries": [7]}, "source_guid": "8", "split_source_guids": [9]}
+    assert clearance.guard_entries(step) == {1, 2, 3, 4, 5, 6, 7}
+    assert clearance.guard_spawns(step) == {8, 9}
+    assert clearance.guard_entries({**step, "kind": "interaction"}) == set()
+    route = [{"kind": "trash", "node_id": "a", "source_entry": 10, "source_guid": "8"},
+             {"kind": "regroup", "node_id": "b", "source_entry": 10},
+             dict(step, node_id="c")]
+    found = clearance.check_future_guard({"scenarios": [{"id": "s", "route": route}]})["guard_violations"]
+    assert found == [{"rule": "future_guard_overlap", "scenario_id": "s", "node": "a", "later_node": "c", "spawn": 8}]
+    # A boss node as the current node is not guarded; a regroup naming an entry protects nothing.
+    route = [dict(step, node_id="boss"), {"kind": "trash", "node_id": "t", "source_entry": 1}]
+    assert clearance.check_future_guard({"scenarios": [{"id": "s", "route": route}]})["guard_violations"] == []
+
+
+def test_the_future_guard_rule_counts_the_formation_its_source_pulls(world):
+    """Keyed on Mongrel 250120, the north patrol still fights Slayer 250116: a later 42802 node is refused."""
+    _needs_world(world)
+    config = copy.deepcopy(CONFIG)
+    nefarian = _scenario(config, NEFARIAN_C0)
+    ivoroc = _node(nefarian, "bwd.lower_hall.ivoroc")
+    ivoroc["alternate_target_entries"] = [42802]
+    assert clearance.check_future_guard(config)["guard_violations"] == [
+        {"rule": "future_guard_overlap", "scenario_id": NEFARIAN_C0, "node": "bwd.maloriak.lab_trash",
+         "later_node": "bwd.lower_hall.ivoroc", "entry": 42802}]
+    found = clearance.check_future_guard(config, world)["guard_violations"]
+    assert {"rule": "future_guard_overlap", "scenario_id": NEFARIAN_C0, "node": "bwd.lower_hall.north_patrol",
+            "later_node": "bwd.lower_hall.ivoroc", "entry": 42802} in found
+
+
+def _formation(guid: int, leader: int, group_ai: int) -> clearance.WorldSpawn:
+    return clearance.WorldSpawn(guid=guid, entry=guid, map_id=669, point=(0.0, 0.0, 0.0), reach=((0.0, 0.0, 0.0),),
+                                slack=0.0, leader=leader, unit_flags=0, group_ai=group_ai)
+
+
+def test_formation_engagement_follows_creature_group_ai():
+    leader, member, other = _formation(1, 1, 515), _formation(2, 1, 515), _formation(3, 1, 515)
+    loner = _formation(4, 4, 0)
+    # GroupAI 515 reads as uint8 3: every member assists every member.
+    assert all(clearance.formation_engages(pulled, spawn)
+               for pulled in (leader, member) for spawn in (leader, member, other))
+    assert not clearance.formation_engages(member, loner) and clearance.formation_engages(loner, loner)
+    leader_only = _formation(2, 1, clearance.FORMATION_LEADER_ASSISTS_MEMBER)
+    assert clearance.formation_engages(leader_only, leader) and not clearance.formation_engages(leader_only, other)
+    assert not clearance.formation_engages(_formation(2, 1, clearance.FORMATION_MEMBERS_ASSIST_LEADER), leader)
+    assert not clearance.formation_engages(_formation(1, 1, 0x200), member)  # idle-in-formation only
+
+
+def test_the_north_patrol_node_keyed_on_its_mongrel_clears_its_slayer(world):
+    _needs_world(world)
+    spawns = world["by_guid"]
+    for scenario_id in (NEFARIAN_C0, "blackwing_descent_10n_nefarian_diagnostic", "blackwing_descent_10n",
+                        "blackwing_descent_10n_full_c0"):
+        north = _node(_scenario(CONFIG, scenario_id), "bwd.lower_hall.north_patrol")
+        assert (north["source_entry"], north["source_guid"], north["pack_target_entries"]) == (46083, "250120", [46083])
+        assert (north["x"], north["y"], north["z"]) == spawns[250120].point
+        assert all(clearance.cleared_by(north, spawns[guid], world) for guid in (NORTH_PATROL, 250120, 250121))
+        assert not clearance.cleared_by(north, spawns[NORTH_PATROL])  # the entry alone does not cover the Slayer

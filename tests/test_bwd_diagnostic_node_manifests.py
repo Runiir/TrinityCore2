@@ -565,9 +565,12 @@ def test_nefarian_shard_uses_native_orb_intro_and_player_descent():
     # Round 3: the hall trash is cleared from the Maloriak junction before the Orb regroup.
     assert (junction["x"], junction["y"], junction["z"]) == (-110.0, -335.0, 67.73)
     # The north patrol first: its path turns 8 yd from Ivoroc's spawn.
+    # Round 4: the north patrol is keyed on its Mongrel. A later node naming the Slayer entry 42802 made
+    # the runtime future guard freeze the lab patrol's Slayer; the formation pulls the north Slayer along.
     assert [(row["source_entry"], row["source_guid"]) for row in (lab_patrol, north_patrol, ivoroc)] == [
-        (42802, "250117"), (42802, "250116"), (42767, "250108")]
-    assert north_patrol["pack_target_entries"] == [42802, 46083]
+        (42802, "250117"), (46083, "250120"), (42767, "250108")]
+    assert lab_patrol["pack_target_entries"] == [42802, 42803]
+    assert north_patrol["pack_target_entries"] == [46083]
     assert preparation["source_entry"] == 203254
     assert (preparation["x"], preparation["y"], preparation["z"]) == (-27.84375, -224.4774, 63.30268)
     assert orb["interaction_contract"] == {

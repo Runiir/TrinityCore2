@@ -37,6 +37,15 @@ adds, plus half the sampling step) of it, counting its patrol segments and wande
 consecutive anchors share a floor or a short ramp; segments into a transport or descent node are the
 transport's own movement and are skipped. Navmesh paths would replace the straight segments (round 4).
 
+A fourth rule mirrors the runtime future-encounter guard (check_future_guard): no trash node may fight an
+entry or spawn id that a later trash or boss node names (GUARD_ENTRY_FIELDS, GUARD_ENTRY_LIST_FIELDS,
+the mechanic contract's target entries, source_guid and split_source_guids). What a node fights is its
+own entries plus every formation mate its source's pull engages (creature_formations GroupAI). The guard
+protects those entries on every earlier node and never enrolls such a creature in the current pack, so
+an overlap leaves the current node's creature untouchable (round 3: the Nefarian c0 lab patrol Slayer).
+Earlier nodes clear a formation mate their source's pull engages whatever its entry, since this rule
+guarantees the runtime can enroll it.
+
 An anchor may stand closer only with an explicit exemption (EXEMPTIONS) that names the node anchor,
 the creature entry and the reason, e.g. the Chimaeron nodes stand on the passive sleeping boss by design.
 Accepted rows (Magmaw, Stonecore) are never moved by this check; a finding there is exempted and reported.
@@ -68,6 +77,7 @@ UNIT_FLAG_IMMUNE_TO_PC = 0x100
 UNIT_FLAG_NOT_SELECTABLE = 0x2000000
 CREATURE_FLAG_EXTRA_TRIGGER = 0x80
 MOVEMENT_RANDOM, MOVEMENT_WAYPOINT = 1, 2
+FORMATION_MEMBERS_ASSIST_LEADER, FORMATION_LEADER_ASSISTS_MEMBER = 0x1, 0x2  # GroupAIFlags
 PATH_SAMPLE_YARDS = 2.0
 # Creature::CanStartAttack compares with IsWithinDistInMap, which adds both object sizes: the creature's
 # cancels the `- CombatReach` of its aggro radius, the player's (1.5 yd) remains. Half the sampling step
@@ -140,6 +150,34 @@ PATH_EXEMPTIONS: tuple[PathExemption, ...] = tuple(
                                "encounter; the raid walks up to him by design.")
     for node in ("bwd.chimaeron.regroup", "bwd.chimaeron.finkle", "bwd.chimaeron.wake_wait"))
 
+# Fields the runtime future-encounter guard reads from a later trash or boss node
+# (IsImmediateNextValidationRouteEncounterMember and the raid-area authority): every creature of such
+# an entry is untouchable while an earlier non-boss node is current, and it cannot be enrolled in the
+# current pack either (isNaturalValidationRoutePackMember rejects it first).
+GUARD_ENTRY_FIELDS = ("source_entry", "opener_target_entry")
+GUARD_ENTRY_LIST_FIELDS = ("alternate_target_entries", "add_target_entries", "pack_target_entries",
+                           "scripted_event_entries")
+GUARD_SPAWN_LIST_FIELDS = ("split_source_guids",)
+
+
+@dataclass(frozen=True)
+class GuardExemption:
+    """A reviewed current node that shares one entry with a later node, with the reason."""
+    node: str
+    later_node: str
+    entry: int
+    reason: str
+    scenarios: tuple[str, ...] = ()  # empty: every scenario with this node pair
+
+
+GUARD_EXEMPTIONS: tuple[GuardExemption, ...] = (
+    GuardExemption("step12", "step17", 42428,
+                   "Stonecore sentry gauntlet (source Devout Follower 42428) and High Priestess Azil's adds "
+                   "(add_target_entries [42428]). Since 7e26a892f0 (2026-08-28) the guard protects every later "
+                   "node, so the gauntlet's own source is protected; no Stonecore run has been recorded since. "
+                   + ACCEPTED_ROW_NOTE, ("stonecore_5n", "stonecore_5h")),
+)
+
 
 def anchor_key(node_id: str, field: str) -> str:
     return node_id if field == "regroup" else f"{node_id}:{field}"
@@ -175,6 +213,26 @@ class WorldSpawn:
     leader: int
     unit_flags: int
     segments: tuple[tuple[tuple[float, float, float], tuple[float, float, float]], ...] = ()  # its walked loop
+    group_ai: int = 0  # its own creature_formations GroupAI (0 without a row)
+
+
+def formation_engages(pulled: WorldSpawn, spawn: WorldSpawn) -> bool:
+    """True when pulling `pulled` makes `spawn` engage too: CreatureGroup::MemberEngagingTarget.
+
+    The core reads the pulled creature's own GroupAI as a uint8. A pulled leader brings its members with
+    FLAG_MEMBERS_ASSIST_LEADER; a pulled member brings the leader with FLAG_LEADER_ASSISTS_MEMBER and the
+    other members only when both bits are set (the second bit gates the whole call).
+    """
+    if spawn.guid == pulled.guid:
+        return True
+    if spawn.map_id != pulled.map_id or spawn.leader != pulled.leader:
+        return False
+    group_ai = pulled.group_ai & 0xFF
+    if pulled.guid == pulled.leader:
+        return bool(group_ai & FORMATION_MEMBERS_ASSIST_LEADER)
+    if not group_ai & FORMATION_LEADER_ASSISTS_MEMBER:
+        return False
+    return spawn.guid == pulled.leader or bool(group_ai & FORMATION_MEMBERS_ASSIST_LEADER)
 
 
 def _sql_values(line: str) -> list[list[str]]:
@@ -250,6 +308,8 @@ def load_world(path: Path = TDB_WORLD, maps: Iterable[int] = (669, 725)) -> dict
                 (int(row["point"]), (float(row["position_x"]), float(row["position_y"]), float(row["position_z"]))))
     formation = {int(row["MemberGUID"]): (int(row["LeaderGUID"]), float(row["FollowDistance"]))
                  for row in records("creature_formations") if int(row["MemberGUID"]) in guids}
+    group_ai = {int(row["MemberGUID"]): int(row["GroupAI"])
+                for row in records("creature_formations") if int(row["MemberGUID"]) in guids}
     by_guid = {int(row["guid"]): row for row in creatures}
 
     def walked(guid: int) -> list[tuple[float, float, float]]:
@@ -280,8 +340,9 @@ def load_world(path: Path = TDB_WORLD, maps: Iterable[int] = (669, 725)) -> dict
         spawns.append(WorldSpawn(guid=guid, entry=int(row["id"]), map_id=int(row["map"]), point=point,
                                  reach=tuple(reach), segments=tuple(segments),
                                  slack=max(slack, follow if leader != guid else 0.0),
-                                 leader=leader, unit_flags=int(row["unit_flags"])))
-    return {"spawns": spawns, "templates": templates, "source": str(path)}
+                                 leader=leader, unit_flags=int(row["unit_flags"]), group_ai=group_ai.get(guid, 0)))
+    return {"spawns": spawns, "by_guid": {spawn.guid: spawn for spawn in spawns}, "templates": templates,
+            "source": str(path)}
 
 
 def can_aggro_players(spawn: WorldSpawn, template: Mapping[str, Any], hostile_factions: set[int]) -> bool:
@@ -291,11 +352,21 @@ def can_aggro_players(spawn: WorldSpawn, template: Mapping[str, Any], hostile_fa
             and not int(template.get("flags_extra") or 0) & CREATURE_FLAG_EXTRA_TRIGGER)
 
 
-def cleared_by(step: Mapping[str, Any], spawn: WorldSpawn) -> bool:
-    """True when this fight node kills the spawn: its source, that source's formation, or its cluster."""
-    if step.get("kind") not in FIGHT_KINDS or spawn.entry not in node_entries(step):
+def cleared_by(step: Mapping[str, Any], spawn: WorldSpawn, world: Mapping[str, Any] | None = None) -> bool:
+    """True when this fight node kills the spawn: its source, what pulling the source engages, or its cluster.
+
+    With `world`, a formation mate that the source's pull engages (formation_engages) is cleared whatever
+    its entry: the runtime enrolls natively engaged creatures in the current pack unless a later node names
+    their entry, which check_future_guard refuses.
+    """
+    if step.get("kind") not in FIGHT_KINDS:
         return False
     source = str(step.get("source_guid") or "")
+    pulled = (world.get("by_guid") or {}).get(int(source)) if world is not None and source.isdigit() else None
+    if pulled is not None and formation_engages(pulled, spawn):
+        return True
+    if spawn.entry not in node_entries(step):
+        return False
     if source.isdigit() and int(source) in (spawn.guid, spawn.leader):
         return True
     radius = float(step.get("cluster_radius_yards") or DEFAULT_CLUSTER_RADIUS_YARDS)
@@ -423,7 +494,7 @@ def check_anchor_clearance(config: Mapping[str, Any], mobs: Mapping[int, Mapping
                 template = world["templates"].get(spawn.entry) or {}
                 if (spawn.map_id != map_id or spawn.entry in later
                         or not can_aggro_players(spawn, template, hostile_factions)
-                        or any(cleared_by(step, spawn) for step in route[:first_index])):
+                        or any(cleared_by(step, spawn, world) for step in route[:first_index])):
                     continue
                 yards = reach_distance(point, spawn)
                 if yards >= non_target_yards:
@@ -442,14 +513,89 @@ def check_anchor_clearance(config: Mapping[str, Any], mobs: Mapping[int, Mapping
     unused = [{**exemption.__dict__, "point": list(exemption.point), "scenarios": list(exemption.scenarios)}
               for exemption in exemptions if exemption not in used]
     paths = check_route_paths(config, world, hostile_factions) if world is not None else {}
+    guard = check_future_guard(config, world)
     return {"schema": "route_anchor_clearance_v1", "min_yards": min_yards, "anchors_checked": checked,
             "non_target_yards": non_target_yards if world is not None else None,
             "all_passed": not violations and not unused
             and all(row["entry"] in KNOWN_TRUNCATED_ENTRIES for row in missing)
-            and not paths.get("path_violations") and not paths.get("path_unused_exemptions"),
-            **paths, "violations": violations, "exempted": exempted,
+            and not paths.get("path_violations") and not paths.get("path_unused_exemptions")
+            and not guard["guard_violations"] and not guard["guard_unused_exemptions"],
+            **paths, **guard, "violations": violations, "exempted": exempted,
             "unused_exemptions": unused, "truncated_spawn_lists": missing,
             "entries_without_db_spawn": sorted(no_spawn)}
+
+
+def guard_entries(step: Mapping[str, Any]) -> set[int]:
+    """The entries the runtime future guard protects for this node while an earlier node is current."""
+    if step.get("kind") not in FIGHT_KINDS:
+        return set()
+    entries = {int(step[field]) for field in GUARD_ENTRY_FIELDS if step.get(field)}
+    for field in GUARD_ENTRY_LIST_FIELDS:
+        entries.update(int(value) for value in step.get(field) or [])
+    entries.update(int(value) for value in (step.get("mechanic_contract") or {}).get("target_entries") or [])
+    return entries - {0}
+
+
+def guard_spawns(step: Mapping[str, Any]) -> set[int]:
+    """The spawn ids the runtime future guard protects for this node (TargetSpawnId, SplitSourceGuids)."""
+    if step.get("kind") not in FIGHT_KINDS:
+        return set()
+    values = [step.get("source_guid")] + [value for field in GUARD_SPAWN_LIST_FIELDS for value in step.get(field) or []]
+    return {int(value) for value in values if str(value or "").isdigit() and int(value)}
+
+
+def fought_by(step: Mapping[str, Any], world: Mapping[str, Any] | None) -> tuple[set[int], set[int]]:
+    """(entries, spawn ids) a trash node must be free to attack: its own, plus what its source's pull engages."""
+    entries, spawns = guard_entries(step), guard_spawns(step)
+    source = str(step.get("source_guid") or "")
+    pulled = (world.get("by_guid") or {}).get(int(source)) if world is not None and source.isdigit() else None
+    if pulled is not None:
+        for spawn in world["spawns"]:
+            if formation_engages(pulled, spawn):
+                entries.add(spawn.entry)
+                spawns.add(spawn.guid)
+    return entries, spawns
+
+
+def check_future_guard(config: Mapping[str, Any], world: Mapping[str, Any] | None = None, *,
+                       exemptions: Iterable[GuardExemption] = GUARD_EXEMPTIONS) -> dict[str, Any]:
+    """Rule 4: no trash node may fight an entry or spawn that a later trash or boss node names.
+
+    The runtime guard is entry-based across every later node, and a guarded creature is never enrolled
+    in the current pack, so a shared entry leaves the current node's creature untouchable: round 3's
+    Nefarian c0 shard stood 400 s in combat with the lab patrol's Drakonid Slayer (42802) because the
+    later north patrol node named 42802. Boss nodes are exempt as the current node (the guard is off
+    during a boss node); interaction, regroup and transport nodes fight nothing.
+    """
+    exemptions = tuple(exemptions)
+    violations: list[dict[str, Any]] = []
+    exempted: list[dict[str, Any]] = []
+    used: set[GuardExemption] = set()
+    for scenario in scenarios(config):
+        scenario_id = str(scenario.get("id"))
+        route = list(scenario.get("route") or [])
+        for index, step in enumerate(route):
+            if step.get("kind") != "trash":
+                continue
+            node = str(step.get("node_id") or f"step{step.get('step')}")
+            entries, spawns = fought_by(step, world)
+            for later in route[index + 1:]:
+                later_node = str(later.get("node_id") or f"step{later.get('step')}")
+                shared = [("entry", value) for value in sorted(entries & guard_entries(later))]
+                shared += [("spawn", value) for value in sorted(spawns & guard_spawns(later))]
+                for kind, value in shared:
+                    finding = {"rule": "future_guard_overlap", "scenario_id": scenario_id, "node": node,
+                               "later_node": later_node, kind: value}
+                    exemption = next((row for row in exemptions if kind == "entry" and row.node == node
+                                      and row.later_node == later_node and row.entry == value
+                                      and (not row.scenarios or scenario_id in row.scenarios)), None)
+                    if exemption is None:
+                        violations.append(finding)
+                    else:
+                        used.add(exemption)
+                        exempted.append({**finding, "reason": exemption.reason})
+    unused = [{**row.__dict__, "scenarios": list(row.scenarios)} for row in exemptions if row not in used]
+    return {"guard_violations": violations, "guard_exempted": exempted, "guard_unused_exemptions": unused}
 
 
 def route_points(scenario: Mapping[str, Any]) -> list[tuple[str, str, tuple[float, float, float]]]:
@@ -491,7 +637,7 @@ def check_route_paths(config: Mapping[str, Any], world: Mapping[str, Any], hosti
             samples = [tuple(begin[axis] + (end[axis] - begin[axis]) * part / count for axis in range(3))
                        for part in range(count + 1)]
             for spawn in candidates:
-                if cleared_by(destination, spawn) or any(cleared_by(step, spawn) for step in route[:index]):
+                if cleared_by(destination, spawn, world) or any(cleared_by(step, spawn, world) for step in route[:index]):
                     continue
                 closest = min(spawn_distance(sample, spawn) for sample in samples)
                 if closest >= yards:

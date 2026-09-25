@@ -18,7 +18,10 @@ COMPOSITION = ROOT / "experiments/configs/raid_compositions/blackwing_descent_10
 CONTRACTS = ROOT / "src/server/game/Bots/BotWorldPopulationMgrRaidConsumableContracts.cpp"
 GENERATED = ROOT / "src/server/game/Bots/BotCalibrationFixtureContractGenerated.h"
 DBC = ROOT / "data/dbc/enUS"
-HEROISM, BLOODLUST = 32182, 2825
+HEROISM, BLOODLUST, WATER_SHIELD = 32182, 2825, 52127
+SELF_BUFFS = ROOT / "src/server/game/Bots/BotPersistentSelfBuffContract.h"
+CLASS_IDS = {"WARRIOR": 1, "PALADIN": 2, "HUNTER": 3, "ROGUE": 4, "PRIEST": 5, "DEATH_KNIGHT": 6, "SHAMAN": 7,
+             "MAGE": 8, "WARLOCK": 9, "DRUID": 11}
 # Specs whose native contract row is still a pending shared patch
 # (.git/round3_patches/maloriak/01_prepull_bm_hunter_contract.patch). Self-expiring: once the C++
 # contract table names the spec, the whitelist is empty and every roster spec must have its row.
@@ -93,7 +96,7 @@ def test_the_fallback_table_mirrors_the_runtime_contract_archetypes():
 def test_the_shaman_carries_native_heroism_in_every_shard(plan):
     shamans = [bot for shard in plan["shards"] for bot in shard["bots"] if bot["character_key"] == "shaman"]
     assert len(shamans) == len(plan["shards"])
-    assert all(bot["spells"] == [HEROISM] and bot["race"] == 11 for bot in shamans)
+    assert all(bot["spells"] == [HEROISM, WATER_SHIELD] and bot["race"] == 11 for bot in shamans)
     assert all("spells" not in bot for shard in plan["shards"] for bot in shard["bots"]
                if bot["character_key"] != "shaman")
 
@@ -134,3 +137,29 @@ def test_the_plan_refuses_a_roster_member_without_its_contract_set(plan):
         failures = json.loads(str(refused.value))["failures"]
         assert {"check": "prepull_consumable_contract", "name": dk["name"], "class_spec": "blood_death_knight",
                 "reason": reason} in failures
+
+
+def persistent_self_buffs() -> list[tuple[int, str | None, str | None, int]]:
+    """(class id, role, spec tag, spell id) rows of BotPersistentSelfBuffContract::Buffs."""
+    rows = re.findall(r'\{ CLASS_([A-Z_]+), (nullptr|"[a-z]+"), (nullptr|"[a-z_]+"), (\d+),', SELF_BUFFS.read_text())
+    return [(CLASS_IDS[name], None if role == "nullptr" else role.strip('"'),
+             None if spec == "nullptr" else spec.strip('"'), int(spell)) for name, role, spec, spell in rows]
+
+
+def test_every_canonical_spec_knows_its_persistent_self_buff(plan):
+    """Round 3 Nefarian c0: the Restoration shaman logged persistent_setup_spell_missing:52127 all run."""
+    if not (DBC / "SkillLineAbility.dbc").is_file() or not (ROOT / "dataset/world_knowledge/trainers.jsonl").is_file():
+        pytest.skip("client DBCs or trainers not hydrated")
+    from tools.raid_program.raid_loadout_spells import loadout_known_spells
+
+    buffs = persistent_self_buffs()
+    assert (7, "healer", None, WATER_SHIELD) in buffs and len(buffs) >= 20
+    checked = set()
+    for shard in plan["shards"]:
+        for bot in shard["bots"]:
+            known = set(loadout_known_spells(bot, DBC)["known_spell_ids"])
+            required = {spell for class_id, role, spec, spell in buffs if class_id == int(bot["class"])
+                        and role in (None, bot["role"]) and spec in (None, bot["class_spec"])}
+            assert required <= known, (shard["cohort_id"], bot["class_spec"], sorted(required - known))
+            checked.add(bot["class_spec"])
+    assert {"restoration_shaman", "elemental_shaman", "fire_mage", "demonology_warlock"} <= checked
