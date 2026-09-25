@@ -16,8 +16,8 @@
 //   ~11 s of stacked Slimes until the Bile-O-Tron returns. The Discipline
 //   Priest drops Power Word: Barrier on the stack as Slimes resume and the
 //   Restoration Shaman follows with Spirit Link Totem for the second half.
-// - Burn (BotChimaeronBurn.h): the lust owner lusts once the release and the
-//   Mortality handoff are done, the moment the non-tanks are released.
+// - Burn (BotChimaeronBurn.h): the lust owner lusts when the push starts
+//   (release plus a settled handoff), the moment the non-tanks are released.
 // - Mortality: absorbs still work, so the Discipline Priest shields the boss
 //   victim whenever Weakened Soul allows and uses Pain Suppression on a failing
 //   tank unless it was used within its 3 minute cooldown.
@@ -68,8 +68,7 @@ inline std::optional<CastDecision> DecideSupportCast(Blackboard const& board,
 
     if (botGuid == duties.LustOwner && duties.LustSpell && !RaidLustLocked(board))
     {
-        bool const pushStarts = burn.InWindow && burn.Released && burn.HandoffDone;
-        if (phase == Phase::Mortality || pushStarts)
+        if (phase == Phase::Mortality || burn.PushStarts())
             return CastDecision{ botGuid, duties.LustSpell, "burn_bloodlust" };
     }
 

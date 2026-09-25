@@ -70,13 +70,18 @@ inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
     if (feudHold)
         return std::nullopt;
 
-    // After the burn release the Double Attack tank owns the boss until
-    // Mortality: he takes it (first action of the release) and retakes it
-    // from anyone; the Break tank never taunts again.
-    if (burn.Released && IsAlivePlayer(board, duties.DoubleAttackTank))
+    // Once the handoff arms (release or last chance) the Double Attack tank
+    // owns the boss until Mortality: he takes it (the first armed action) and
+    // retakes it from anyone. The Break tank never taunts him back; after a
+    // failed handoff (timeout) he only recovers a non-tank victim, and the
+    // retry shows as its own mechanic in the decision trace.
+    if (burn.Armed() && IsAlivePlayer(board, duties.DoubleAttackTank))
     {
         if (botGuid == duties.DoubleAttackTank)
-            return TauntDecision{ spell, "taunt_mortality_handoff" };
+            return TauntDecision{ spell, burn.HandoffFailed()
+                ? "taunt_mortality_handoff_retry" : "taunt_mortality_handoff" };
+        if (burn.HandoffFailed() && !IsTank(duties, victim))
+            return TauntDecision{ spell, "taunt_recover_non_tank_victim" };
         return std::nullopt;
     }
 
@@ -98,7 +103,7 @@ inline std::optional<TauntDecision> DecideTaunt(Blackboard const& board,
         return std::nullopt;
     }
     if (botGuid == duties.BreakTank && victim == duties.DoubleAttackTank
-        && !observation.DoubleAttackPending && !burn.Released)
+        && !observation.DoubleAttackPending && !burn.Armed())
         return TauntDecision{ spell, "taunt_back_break_holder" };
     return std::nullopt;
 }

@@ -467,7 +467,7 @@
       "outage": "everyone on a 1.5 yd ring 8 yd behind the boss; Barrier at 16.5-12 s Feud remaining, Spirit Link at 11-7 s.",
       "mortality": "no formation, no healing, no taunts; the Break tank stands down behind a living Double Attack tank; Discipline shields the victim whenever Weakened Soul allows and uses Pain Suppression on a failing tank outside its 3 minute cooldown; lust if still unused."
     },
-    "burn_window": "one cohort sequence held -> released -> handoff -> push: from 23% non-tanks hold, tanks hold below 21.5%; release only on readiness (mixture up, no Massacre casting or due within 8 s, both tanks 80%+, Break tank healed to 80% in the window); the Double Attack tank's handoff taunt is the first released action, non-tanks wait for it (at most 8 s), the Break tank stands down while the Double Attack tank lives; then the lust owner lusts.",
+    "burn_window": "one cohort sequence held -> armed -> handoff -> push: from 23% non-tanks hold, tanks hold below 21.5%; release on readiness (mixture up, no Massacre casting or due within 8 s, both tanks 80%+) or a bounded hold (60 s, or fewer than two living healers); last chance at 20.5% unreleased arms the handoff anyway; armed, the Double Attack tank taunts first and the Break tank stops taunting and stands down; non-tanks go once the handoff lands or after 8 s; a failed handoff lets the Break tank attack again while the Double Attack tank retries; then the lust owner lusts.",
     "duties_by_capability": "Break tank: Blood DK > Protection Paladin > Protection Warrior > Feral; the next tank soaks Double Attack. Tank healer: Holy Paladin > Discipline > Holy Priest > Restoration Druid > Restoration Shaman. Lust: mage (Time Warp) first, then shaman (Bloodlust/Heroism).",
     "runtime_submission": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotWorldPopulationMgrChimaeronCandidates.cpp (native cast and offense-suppression candidates, route engagement observation; wired by the coordinator dispatch patch)",
     "prewake_nodes": [
@@ -475,7 +475,7 @@
       "bwd.chimaeron.finkle",
       "bwd.chimaeron.wake_wait"
     ],
-    "latches": "cohort-scoped: src/server/game/Bots/BotEncounterLatches.h (generic store, published view) and Encounters/Chimaeron/BotChimaeronBurn.h UpdateEncounterLatches (burn release, Mortality handoff, Pain Suppression cast); updated once per blackboard publication, reset on a new scope, boss object or disengage."
+    "latches": "cohort-scoped: src/server/game/Bots/BotEncounterLatches.h (generic store with per-module sub-stores) and module 'chimaeron' in Encounters/Chimaeron/BotChimaeronBurn.h (hold start, release and reason, last chance, handoff done or timed out, Pain Suppression cast); updated once per blackboard publication for the Chimaeron node; reset on a new scope key, boss object or disengage (the native encounter epoch is authoritative only for Magmaw today)."
   },
   "repository_audit": [
     {

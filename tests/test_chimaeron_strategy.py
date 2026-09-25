@@ -1,9 +1,11 @@
 """Header-only replay of the adaptive Chimaeron strategy on the canonical 10N composition.
 
 The C++ program builds blackboards the way the runtime publishes them and checks
-every decision the strategy owns: capability duties, prewake staging, mixture
-spread, outage stack, the Break/Double Attack taunt exchange, healer floor
-assignments, the burn window, raid cooldowns and Mortality absorbs.
+the decisions outside the burn window: capability duties, prewake staging,
+mixture spread, outage stack, the Break/Double Attack taunt exchange, healer
+floor assignments, raid cooldowns and Mortality absorbs. The burn window and the
+cohort latches are in tests/test_chimaeron_burn.py, which reuses PRELUDE and
+compile_and_run from here.
 """
 from __future__ import annotations
 
@@ -23,8 +25,7 @@ INCLUDES = [
     "src/common/Debugging",
 ]
 
-PROGRAM = r'''
-#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h"
+PRELUDE = r'''#include "Bots/Content/Raids/BlackwingDescent/Encounters/Chimaeron/BotAdaptiveChimaeronStrategy.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -46,9 +47,9 @@ constexpr uint32 DK = 11002001, DRUID = 11002002, HUNTER = 11002003, MAGE = 1100
     HOLY = 11002005, RET = 11002006, DISC = 11002007, ROGUE = 11002008,
     SHAMAN = 11002009, LOCK = 11002010;
 
-static ObjectGuid G(uint32 counter) { return ObjectGuid(HighGuid::Player, counter); }
+[[maybe_unused]] static ObjectGuid G(uint32 counter) { return ObjectGuid(HighGuid::Player, counter); }
 
-static ActorSnapshot Member(uint32 guid, char const* role, char const* spec)
+[[maybe_unused]] static ActorSnapshot Member(uint32 guid, char const* role, char const* spec)
 {
     ActorSnapshot player;
     player.Guid = G(guid);
@@ -62,7 +63,7 @@ static ActorSnapshot Member(uint32 guid, char const* role, char const* spec)
     return player;
 }
 
-static Blackboard Board(char const* node, bool engaged)
+[[maybe_unused]] static Blackboard Board(char const* node, bool engaged)
 {
     Blackboard board;
     board.CurrentScope = Scope{ "blackwing_descent_10n_chimaeron_c0", 3, 0, 2, node, 669, 1,
@@ -103,7 +104,7 @@ static Blackboard Board(char const* node, bool engaged)
     return board;
 }
 
-static ActorSnapshot& P(Blackboard& board, uint32 guid)
+[[maybe_unused]] static ActorSnapshot& P(Blackboard& board, uint32 guid)
 {
     for (ActorSnapshot& player : board.Players)
         if (player.Guid == G(guid))
@@ -112,9 +113,9 @@ static ActorSnapshot& P(Blackboard& board, uint32 guid)
     std::abort();
 }
 
-static ActorSnapshot& Boss(Blackboard& board) { return board.Hostiles.front(); }
+[[maybe_unused]] static ActorSnapshot& Boss(Blackboard& board) { return board.Hostiles.front(); }
 
-static char const* RoleOf(Blackboard const& board, uint32 guid)
+[[maybe_unused]] static char const* RoleOf(Blackboard const& board, uint32 guid)
 {
     for (ActorSnapshot const& player : board.Players)
         if (player.Guid == G(guid))
@@ -122,29 +123,37 @@ static char const* RoleOf(Blackboard const& board, uint32 guid)
     return "dps";
 }
 
-static AdaptiveChimaeronPlan Plan(Blackboard const& board, uint32 guid,
+[[maybe_unused]] static AdaptiveChimaeronPlan Plan(Blackboard const& board, uint32 guid,
     EncounterLatchView const* latches = nullptr)
 {
     return AdaptiveChimaeronStrategy().Propose(board, G(guid), RoleOf(board, guid), latches);
 }
 
 // The cohort publisher: a new revision, then one latch update from it.
-static void Publish(Blackboard& board, EncounterLatchStore& store, uint64 stepMs = 0)
+[[maybe_unused]] static void Publish(Blackboard& board, EncounterLatchStore& store, uint64 stepMs = 0)
 {
     board.Revision += 1;
     board.ObservedAtMs += stepMs;
     store.BeginPublication(EncounterLatchScopeKey(board.CurrentScope.Key(),
         board.CurrentScope.ServerEpoch, board.CurrentScope.EncounterEpoch),
         board.Revision, board.ObservedAtMs);
-    C::UpdateEncounterLatches(board, store);
+    // The runtime publisher dispatches the module by route node.
+    if (board.Route.NodeId == C::EncounterNode)
+        C::UpdateEncounterLatches(board, store.Module(C::LatchModule));
 }
 
-static std::string MechanicOf(AdaptiveChimaeronPlan const& plan)
+[[maybe_unused]] static EncounterLatch const* Latched(EncounterLatchStore const& store, std::string_view name)
+{
+    EncounterLatchModuleView const* module = store.View().Module(C::LatchModule);
+    return module ? module->Find(name) : nullptr;
+}
+
+[[maybe_unused]] static std::string MechanicOf(AdaptiveChimaeronPlan const& plan)
 {
     return plan.Action ? plan.Action->Id.Mechanic : std::string();
 }
 
-static bool MoveOf(AdaptiveChimaeronPlan const& plan, C::Point& out)
+[[maybe_unused]] static bool MoveOf(AdaptiveChimaeronPlan const& plan, C::Point& out)
 {
     if (!plan.Movement)
         return false;
@@ -155,7 +164,7 @@ static bool MoveOf(AdaptiveChimaeronPlan const& plan, C::Point& out)
     return true;
 }
 
-static uint32 CastOf(AdaptiveChimaeronPlan const& plan, ObjectGuid* target = nullptr)
+[[maybe_unused]] static uint32 CastOf(AdaptiveChimaeronPlan const& plan, ObjectGuid* target = nullptr)
 {
     if (!plan.Action)
         return 0;
@@ -167,12 +176,12 @@ static uint32 CastOf(AdaptiveChimaeronPlan const& plan, ObjectGuid* target = nul
     return cast->SpellId;
 }
 
-static std::vector<uint32> Everyone()
+[[maybe_unused]] static std::vector<uint32> Everyone()
 {
     return { DK, DRUID, HUNTER, MAGE, HOLY, RET, DISC, ROGUE, SHAMAN, LOCK };
 }
 
-static float MinimumGap(std::map<uint32, C::Point> const& points)
+[[maybe_unused]] static float MinimumGap(std::map<uint32, C::Point> const& points)
 {
     float gap = 1000.0f;
     for (auto const& [left, a] : points)
@@ -182,7 +191,7 @@ static float MinimumGap(std::map<uint32, C::Point> const& points)
     return gap;
 }
 
-static std::map<uint32, C::Point> SpreadSlots(Blackboard const& board)
+[[maybe_unused]] static std::map<uint32, C::Point> SpreadSlots(Blackboard const& board)
 {
     C::Duties const duties = C::BuildDuties(board);
     C::Point const centre = C::FormationCentre(board, Boss(const_cast<Blackboard&>(board)));
@@ -193,7 +202,7 @@ static std::map<uint32, C::Point> SpreadSlots(Blackboard const& board)
     return slots;
 }
 
-static std::map<uint32, C::Point> Destinations(Blackboard const& board)
+[[maybe_unused]] static std::map<uint32, C::Point> Destinations(Blackboard const& board)
 {
     std::map<uint32, C::Point> result;
     for (uint32 guid : Everyone())
@@ -204,7 +213,9 @@ static std::map<uint32, C::Point> Destinations(Blackboard const& board)
     }
     return result;
 }
+'''
 
+PROGRAM = PRELUDE + r'''
 static void TestDuties()
 {
     Blackboard board = Board("bwd.chimaeron.encounter", true);
@@ -459,48 +470,6 @@ static void TestTauntExchange()
     CHECK(Plan(board, DK).Action->Id.Mechanic == "taunt_recover_non_tank_victim");
     CHECK(!Plan(board, DRUID).Action);
 
-    // Held at 21% (Massacre casting, damage over time drifted the boss into
-    // the handoff range): no handoff; the ordinary exchange continues.
-    EncounterLatchStore store;
-    Boss(board).VictimGuid = G(DK);
-    Boss(board).HealthPct = 21.0f;
-    P(board, DK).HealthPct = P(board, DRUID).HealthPct = 100.0f;
-    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
-    Publish(board, store);
-    CHECK(Plan(board, ROGUE, &store.View()).SuppressOffense);
-    CHECK(!Plan(board, DRUID, &store.View()).Action);
-    Boss(board).Auras = { { C::DoubleAttackSpell, boss, 1, 0 } };
-    Publish(board, store);
-    CHECK(MechanicOf(Plan(board, DRUID, &store.View())) == "taunt_double_attack_soak");
-    Boss(board).VictimGuid = G(DRUID);
-    Boss(board).Auras.clear();
-    Publish(board, store);
-    CHECK(MechanicOf(Plan(board, DK, &store.View())) == "taunt_back_break_holder");
-    CHECK(!store.Find(C::BurnReleasedLatch));
-
-    // The raid is ready: the release makes the Feral's handoff the first
-    // action; the Break tank never takes the boss back.
-    Boss(board).VictimGuid = G(DK);
-    Boss(board).Cast.reset();
-    Publish(board, store);
-    CHECK(store.Find(C::BurnReleasedLatch) && !store.Find(C::HandoffDoneLatch));
-    CHECK(MechanicOf(Plan(board, DRUID, &store.View())) == "taunt_mortality_handoff");
-    CHECK(!Plan(board, DK, &store.View()).Action);
-    // Latched: a Massacre cast after the release does not cancel the handoff.
-    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
-    Publish(board, store);
-    CHECK(MechanicOf(Plan(board, DRUID, &store.View())) == "taunt_mortality_handoff");
-    Boss(board).Cast.reset();
-    Boss(board).VictimGuid = G(DRUID);
-    Publish(board, store);
-    CHECK(store.Find(C::HandoffDoneLatch));
-    CHECK(!Plan(board, DK, &store.View()).Action && !Plan(board, DRUID, &store.View()).Action);
-    // The Feral retakes the boss from anyone until Mortality.
-    Boss(board).VictimGuid = G(DK);
-    Publish(board, store);
-    CHECK(MechanicOf(Plan(board, DRUID, &store.View())) == "taunt_mortality_handoff");
-    CHECK(!Plan(board, DK, &store.View()).Action);
-
     // Mortality: immune to taunt, no exchange at all.
     Boss(board).HealthPct = 19.0f;
     Boss(board).VictimGuid = G(DK);
@@ -573,268 +542,6 @@ static void TestHealingFloor()
     CHECK(plan.EncounterPhase == C::Phase::Mortality);
     CHECK(plan.DamageTarget == Boss(mortality).Guid);
     CHECK(!plan.Movement);
-}
-
-static void TestBurnWindow()
-{
-    Blackboard board = Board("bwd.chimaeron.encounter", true);
-    Boss(board).HealthPct = 22.0f;
-    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
-    AdaptiveChimaeronPlan const hold = Plan(board, ROGUE);
-    CHECK(hold.SuppressOffense && hold.SuppressReason == "burn_hold_before_mortality");
-    CHECK(!Plan(board, MAGE).Action);   // no lust into a Massacre
-    // Above the handoff line tanks keep attacking in the hold (threat, Death Strike).
-    CHECK(!Plan(board, DK).SuppressOffense && !Plan(board, DRUID).SuppressOffense);
-
-    // Ready (no view: this revision decides): released, handoff pending.
-    // Non-tanks wait for the Feral's taunt; the Break tank stands down.
-    Boss(board).Cast.reset();
-    CHECK(Plan(board, ROGUE).SuppressOffense
-        && Plan(board, ROGUE).SuppressReason == "burn_wait_for_mortality_handoff");
-    CHECK(MechanicOf(Plan(board, DRUID)) == "taunt_mortality_handoff");
-    CHECK(Plan(board, DK).SuppressOffense
-        && Plan(board, DK).SuppressReason == "burn_break_tank_stand_down");
-    CHECK(!Plan(board, MAGE).Action);
-    // The Feral holds the boss: the push starts and the lust owner lusts.
-    Boss(board).VictimGuid = G(DRUID);
-    CHECK(!Plan(board, ROGUE).SuppressOffense && !Plan(board, DRUID).SuppressOffense);
-    ObjectGuid target;
-    CHECK(CastOf(Plan(board, MAGE), &target) == 80353 && target == G(MAGE));
-    CHECK(Plan(board, DK).SuppressOffense);
-
-    // Cohort latches: the release and handoff hold for the scope, so a swing
-    // on a tank or a Massacre mid-burn does not re-suppress the push.
-    EncounterLatchStore store;
-    Boss(board).VictimGuid = G(DK);
-    Publish(board, store);
-    Boss(board).VictimGuid = G(DRUID);
-    Publish(board, store);
-    CHECK(store.Find(C::HandoffDoneLatch));
-    P(board, DRUID).HealthPct = 60.0f;
-    Boss(board).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), board.ObservedAtMs, false, false };
-    Publish(board, store);
-    CHECK(!Plan(board, ROGUE, &store.View()).SuppressOffense);
-    // Every bot reads the same view: a stale revision is ignored.
-    EncounterLatchView stale = store.View();
-    stale.Revision -= 1;
-    CHECK(Plan(board, ROGUE, &stale).SuppressOffense);
-    // A new scope (wipe, new attempt, new native encounter epoch) starts over.
-    board.CurrentScope.EncounterEpoch += 1;
-    Publish(board, store);
-    CHECK(!store.Find(C::BurnReleasedLatch) && Plan(board, ROGUE, &store.View()).SuppressOffense);
-    // A disengaged boss (evade with survivors keeps the GUID) clears everything.
-    Boss(board).Cast.reset();
-    P(board, DRUID).HealthPct = 100.0f;
-    Boss(board).VictimGuid = G(DK);
-    Publish(board, store);
-    CHECK(store.Find(C::BurnReleasedLatch));
-    Boss(board).InCombat = false;
-    Boss(board).VictimGuid.Clear();
-    Publish(board, store);
-    CHECK(store.View().Latches.empty() && store.View().Subject.IsEmpty());
-    Boss(board).InCombat = true;
-    Boss(board).VictimGuid = G(DK);
-
-    // The handoff is bounded by one taunt cooldown: with the Feral's taunt
-    // unavailable the non-tanks are released 8 s after the release.
-    EncounterLatchStore timeout;
-    Publish(board, timeout);
-    uint64 const releasedAt = timeout.Find(C::BurnReleasedLatch)->SetAtMs;
-    Publish(board, timeout, 7900);
-    CHECK(!timeout.Find(C::HandoffDoneLatch) && Plan(board, ROGUE, &timeout.View()).SuppressOffense);
-    Publish(board, timeout, 100);
-    CHECK(board.ObservedAtMs == releasedAt + 8000);
-    CHECK(timeout.Find(C::HandoffDoneLatch) && !Plan(board, ROGUE, &timeout.View()).SuppressOffense);
-
-    // Held below the handoff line, the tanks are held too.
-    Blackboard low = Board("bwd.chimaeron.encounter", true);
-    Boss(low).HealthPct = 21.0f;
-    Boss(low).Cast = CastSnapshot{ C::MassacreSpell, ObjectGuid(), low.ObservedAtMs, false, false };
-    CHECK(Plan(low, DK).SuppressReason == "burn_hold_tanks_below_handoff");
-    CHECK(Plan(low, DRUID).SuppressReason == "burn_hold_tanks_below_handoff");
-
-    // A native Massacre timer inside the lead keeps the hold; a distant one does not.
-    Blackboard timer = Board("bwd.chimaeron.encounter", true);
-    Boss(timer).HealthPct = 22.0f;
-    Boss(timer).VictimGuid = G(DRUID);
-    Boss(timer).MechanicTimers.push_back({ C::MassacreSpell, 5000, false,
-        FactSource::NativeInstanceState });
-    CHECK(Plan(timer, ROGUE).SuppressReason == "burn_hold_before_mortality");
-    Boss(timer).MechanicTimers.back().RemainingMs = 20000;
-    CHECK(!Plan(timer, ROGUE).SuppressOffense);
-    // Sated/Temporal Displacement anywhere: no second lust.
-    P(timer, HUNTER).Auras.push_back({ 57724, ObjectGuid(), 1, 0 });
-    CHECK(!Plan(timer, MAGE).Action);
-
-    // An outage in the window holds, and damage over time past the old floor
-    // no longer releases anything: only readiness and the handoff do.
-    Blackboard outage = Board("bwd.chimaeron.encounter", true);
-    for (ActorSnapshot& player : outage.Players)
-        player.Auras.clear();
-    Boss(outage).HealthPct = 22.0f;
-    CHECK(Plan(outage, ROGUE).SuppressOffense);
-    Boss(outage).HealthPct = 20.2f;
-    CHECK(Plan(outage, ROGUE).SuppressOffense && Plan(outage, DK).SuppressOffense);
-
-    // Mortality: lust if unused, nobody held but the Break tank standing
-    // down behind a living Double Attack tank.
-    Blackboard mortality = Board("bwd.chimaeron.encounter", true);
-    Boss(mortality).HealthPct = 19.0f;
-    Boss(mortality).Auras.push_back({ C::MortalityBossSpell, Boss(mortality).Guid, 1, 0 });
-    CHECK(CastOf(Plan(mortality, MAGE)) == 80353);
-    CHECK(!Plan(mortality, ROGUE).SuppressOffense && !Plan(mortality, DRUID).SuppressOffense);
-    CHECK(Plan(mortality, DK).SuppressOffense);
-    P(mortality, DRUID).Alive = false;
-    CHECK(!Plan(mortality, DK).SuppressOffense);
-}
-
-// The generic cohort store: first set wins, scope and subject changes clear.
-static void TestEncounterLatchStore()
-{
-    EncounterLatchStore store;
-    store.BeginPublication("scope-a", 5, 1000);
-    store.BindSubject(G(1));
-    CHECK(store.Latch("boss.x", 7).SetAtMs == 1000);
-    store.BeginPublication("scope-a", 6, 2000);
-    CHECK(store.Latch("boss.x", 9).SetAtMs == 1000 && store.Find("boss.x")->Value == 7);
-    CHECK(store.View().Revision == 6 && store.View().ObservedAtMs == 2000);
-    store.Clear("boss.x");
-    CHECK(!store.Find("boss.x"));
-    store.Latch("boss.y");
-    store.BindSubject(G(1));
-    CHECK(store.Find("boss.y"));
-    store.BindSubject(G(2));
-    CHECK(!store.Find("boss.y") && store.View().Subject == G(2));
-    store.Latch("boss.y");
-    store.BeginPublication("scope-b", 7, 3000);
-    CHECK(!store.Find("boss.y") && store.View().Subject.IsEmpty());
-    CHECK(EncounterLatchScopeKey("k", 3, 4) == "k:3:4");
-}
-
-// Replay from the reviewer's case: a Massacre lands at 21.0% with the raid at
-// 1 health. Every 250 ms the cohort publishes one latch update, all ten bots
-// decide, healers heal their assignment, taunts land when the Feral's Growl is
-// off cooldown, the boss swings every 4 s, and the boss loses 0.1% per step
-// whenever anybody attacks (plus 0.02% damage over time). The adversarial walk
-// drops 0.1% every step regardless.
-struct ReplayResult
-{
-    bool MortalityReached = false;
-    ObjectGuid VictimAtMortality;
-    int Violations = 0;
-};
-
-static void Heal(ActorSnapshot& member, float pct)
-{
-    member.HealthPct = std::min(100.0f, member.HealthPct + pct);
-    member.Health = uint64(member.HealthPct * float(member.MaxHealth) / 100.0f);
-}
-
-static ReplayResult RunBurnReplay(uint64 growlReadyAfterMs, bool adversarialWalk)
-{
-    ReplayResult result;
-    Blackboard board = Board("bwd.chimaeron.encounter", true);
-    Boss(board).HealthPct = 21.0f;
-    for (ActorSnapshot& player : board.Players)
-    {
-        player.Health = 1;
-        player.HealthPct = 100.0f / 150000.0f;
-    }
-    EncounterLatchStore store;
-    uint64 const start = board.ObservedAtMs;
-    uint64 growlReadyAt = start + growlReadyAfterMs;
-    uint64 nextSwingAt = start + 4000;
-    auto violation = [&](char const* what, uint32 guid)
-    {
-        ++result.Violations;
-        std::fprintf(stderr, "replay violation %s bot %u t=%llu hp=%.2f\n", what, guid,
-            static_cast<unsigned long long>(board.ObservedAtMs - start), Boss(board).HealthPct);
-    };
-    for (int step = 0; step < 400; ++step)
-    {
-        Publish(board, store, 250);
-        EncounterLatchView const& view = store.View();
-        bool const released = view.Find(C::BurnReleasedLatch) != nullptr;
-        bool const handedOff = view.Find(C::HandoffDoneLatch) != nullptr;
-        std::map<uint32, AdaptiveChimaeronPlan> plans;
-        for (uint32 guid : Everyone())
-            plans[guid] = Plan(board, guid, &view);
-
-        bool nonTankHeld = plans[ROGUE].SuppressOffense;
-        for (auto const& [guid, plan] : plans)
-        {
-            bool const tank = guid == DK || guid == DRUID;
-            std::string const mechanic = MechanicOf(plan);
-            if (mechanic == "taunt_mortality_handoff" && !released)
-                violation("handoff_before_release", guid);
-            if (guid == DK && released && mechanic.rfind("taunt_", 0) == 0)
-                violation("break_tank_taunt_after_release", guid);
-            if (!tank && !plan.SuppressOffense && !handedOff)
-                violation("non_tank_released_before_handoff", guid);
-            if (!tank && plan.SuppressOffense != nonTankHeld)
-                violation("non_tanks_disagree", guid);
-            if (tank && !handedOff && Boss(board).HealthPct <= C::MortalityHandoffPct
-                && !plan.SuppressOffense)
-                violation("tank_attacks_below_handoff_line_while_held", guid);
-        }
-
-        // Healers heal their assignment, or the lowest tank below 90%.
-        for (uint32 healer : { HOLY, DISC, SHAMAN })
-        {
-            ObjectGuid heal = plans[healer].PriorityHealTarget;
-            if (heal.IsEmpty())
-                for (uint32 tank : { DK, DRUID })
-                    if (P(board, tank).HealthPct < 90.0f
-                        && (heal.IsEmpty() || P(board, tank).HealthPct
-                            < P(board, heal.GetCounter()).HealthPct))
-                        heal = G(tank);
-            if (!heal.IsEmpty())
-                Heal(P(board, heal.GetCounter()), 20.0f);
-        }
-        if (CastOf(plans[DRUID]) == 6795 && board.ObservedAtMs >= growlReadyAt)
-        {
-            Boss(board).VictimGuid = G(DRUID);
-            growlReadyAt = board.ObservedAtMs + 8000;
-        }
-        if (CastOf(plans[DK]) == 56222)
-            Boss(board).VictimGuid = G(DK);
-        if (board.ObservedAtMs >= nextSwingAt)
-        {
-            ActorSnapshot& victim = P(board, Boss(board).VictimGuid.GetCounter());
-            victim.HealthPct = std::max(1.0f, victim.HealthPct - 25.0f);
-            victim.Health = uint64(victim.HealthPct * float(victim.MaxHealth) / 100.0f);
-            nextSwingAt += 4000;
-        }
-        bool attacking = false;
-        for (uint32 guid : { DK, DRUID, HUNTER, MAGE, RET, ROGUE, LOCK })
-            attacking = attacking || !plans[guid].SuppressOffense;
-        float const drop = adversarialWalk ? 0.1f : (attacking ? 0.12f : 0.02f);
-        Boss(board).HealthPct -= drop;
-        if (Boss(board).HealthPct <= C::MortalityHealthPct)
-        {
-            result.MortalityReached = true;
-            result.VictimAtMortality = Boss(board).VictimGuid;
-            break;
-        }
-    }
-    return result;
-}
-
-static void TestBurnReplayFromPostMassacre()
-{
-    for (uint64 growlReady : { 0ull, 3000ull, 6000ull })
-    {
-        ReplayResult const walk = RunBurnReplay(growlReady, false);
-        CHECK(walk.Violations == 0);
-        CHECK(walk.MortalityReached && walk.VictimAtMortality == G(DRUID));
-    }
-    // The adversarial walk (damage the hold cannot stop) may reach Mortality
-    // first, but never breaks the sequence rules.
-    for (uint64 growlReady : { 0ull, 6000ull })
-    {
-        ReplayResult const adversarial = RunBurnReplay(growlReady, true);
-        CHECK(adversarial.Violations == 0 && adversarial.MortalityReached);
-    }
 }
 
 static void TestOutageCooldownsAndMortalityAbsorbs()
@@ -960,9 +667,6 @@ int main()
     TestOutageStack();
     TestTauntExchange();
     TestHealingFloor();
-    TestBurnWindow();
-    TestEncounterLatchStore();
-    TestBurnReplayFromPostMassacre();
     TestOutageCooldownsAndMortalityAbsorbs();
     TestArbitrationReplayShape();
     TestOtherNodes();
@@ -973,9 +677,9 @@ int main()
 '''
 
 
-def _compile_and_run(tmp_path: Path, program: str) -> subprocess.CompletedProcess:
-    source = tmp_path / "chimaeron_strategy.cpp"
-    binary = tmp_path / "chimaeron_strategy"
+def compile_and_run(tmp_path: Path, program: str, name: str = "chimaeron_strategy") -> subprocess.CompletedProcess:
+    source = tmp_path / f"{name}.cpp"
+    binary = tmp_path / name
     source.write_text(program)
     command = ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror"]
     for include in INCLUDES:
@@ -985,7 +689,7 @@ def _compile_and_run(tmp_path: Path, program: str) -> subprocess.CompletedProces
 
 
 def test_chimaeron_strategy_decisions_replay(tmp_path: Path) -> None:
-    result = _compile_and_run(tmp_path, PROGRAM)
+    result = compile_and_run(tmp_path, PROGRAM)
     assert result.returncode == 0, result.stderr
 
 

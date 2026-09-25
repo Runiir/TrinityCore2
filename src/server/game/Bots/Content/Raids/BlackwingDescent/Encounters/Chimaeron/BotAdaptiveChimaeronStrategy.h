@@ -89,19 +89,20 @@ public:
             plan.PriorityHealTarget = SelectPriorityHealTarget(board, observation,
                 duties, botGuid);
 
-        // Non-tanks hold from 23% until release and handoff are done. Tanks
-        // keep threat and self-healing above the handoff line, hold below it,
-        // and the Break tank stands down after the release.
+        // Non-tanks hold from 23% until the release and a settled handoff.
+        // Tanks keep threat and self-healing above the handoff line, hold
+        // below it, and the Break tank stands down once the handoff arms.
         if (role != "tank" && burn.HoldNonTanks())
         {
             plan.SuppressOffense = true;
-            plan.SuppressReason = burn.HandoffPending()
+            plan.SuppressReason = burn.Released && burn.HandoffPending()
                 ? "burn_wait_for_mortality_handoff" : "burn_hold_before_mortality";
         }
-        else if (role == "tank" && HoldTank(burn, observation, duties, botGuid))
+        else if (role == "tank" && HoldTank(board, burn, observation, duties, botGuid))
         {
             plan.SuppressOffense = true;
-            plan.SuppressReason = botGuid == duties.BreakTank && burn.Released
+            plan.SuppressReason = botGuid == duties.BreakTank && burn.Armed()
+                    && !burn.HandoffFailed()
                 ? "burn_break_tank_stand_down" : "burn_hold_tanks_below_handoff";
         }
 

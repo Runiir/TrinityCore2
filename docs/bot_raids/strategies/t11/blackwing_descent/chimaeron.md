@@ -156,23 +156,31 @@ Phase behavior (`src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/
   - during an outage, healers heal by health percentage;
   - under Mortality nothing is published (healing is 99% reduced).
 - **Burn window** (both guides pause around 22-25%, then lust and push). One sequence, held →
-  released → handoff → push:
+  armed → handoff → push:
   - from 23%, non-tanks hold damage; tanks keep attacking above 21.5% (threat, Death Strike) and
     hold below it, so their damage cannot carry the boss into Mortality;
   - the release needs readiness: mixture up, no Massacre casting or due within 8 s, both tanks at
-    80% or more (the Break tank is healed to 80% inside the window). Damage over time drifting the
-    boss down does not release anything;
-  - on release the Double Attack tank taunts first; non-tanks stay held until he is the victim,
-    at most one taunt cooldown (8 s); the Break tank stands down for good while the Double Attack
-    tank lives, so his threat never pulls the boss back onto his Break stacks;
+    80% or more (the Break tank is healed to 80% inside the window). The hold is bounded: after two
+    Massacre cycles (60 s) or with fewer than two living healers it releases anyway;
+  - last chance: if damage the hold cannot stop (damage over time, pets) carries the boss to 20.5%
+    unreleased, the handoff arms anyway while the non-tanks keep waiting for the release;
+  - once armed (release or last chance) the Double Attack tank taunts first and holds the boss into
+    Mortality; the Break tank stops taunting and stands down while the Double Attack tank lives, so
+    his threat never pulls the boss back onto his Break stacks;
+  - non-tanks are released once the handoff lands, or after one taunt cooldown (8 s). If that
+    timeout fires with the handoff still missing, the Break tank resumes attacking to keep his
+    threat, recovers any non-tank victim, and the Double Attack tank keeps retrying (the retry is
+    its own mechanic, `taunt_mortality_handoff_retry`, in the decision trace);
   - then the lust owner lusts and the raid pushes into Mortality.
 
-  Release, handoff and Pain Suppression use are cohort latches (`src/server/game/Bots/BotEncounterLatches.h`,
-  `BotChimaeronBurn.h`): the blackboard publisher sets them once per revision, so every bot reads the
-  same state whatever its decision cadence. They reset on a new scope (attempt, wipe, route node,
-  native encounter epoch), on a new boss object, and when the boss is seen out of combat. In
-  Mortality the Discipline Priest shields the victim whenever Weakened Soul allows and uses Pain
-  Suppression on a failing tank unless it was cast within its 3 minute cooldown. Absorbs still work.
+  Every step is a cohort latch (`src/server/game/Bots/BotEncounterLatches.h`, module `chimaeron` in
+  `BotChimaeronBurn.h`): the blackboard publisher sets it once per revision for the Chimaeron node,
+  so every bot reads the same state whatever its decision cadence. Latches reset on a new scope key
+  (attempt, wipe generation, route node), on a new boss object, and when the boss is seen out of
+  combat. The native encounter epoch in the key is authoritative only for Magmaw today, so for
+  Chimaeron the disengage reset is the pull boundary. In Mortality the Discipline Priest shields the
+  victim whenever Weakened Soul allows and uses Pain Suppression on a failing tank unless it was cast
+  within its 3 minute cooldown. Absorbs still work.
 
 ## Open items (unresolved)
 
