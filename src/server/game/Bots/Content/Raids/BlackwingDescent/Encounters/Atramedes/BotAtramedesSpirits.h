@@ -16,9 +16,13 @@
 // 436, creature_formations groupAI 3): each group of four aggroes together,
 // resets and respawns 30 s after a wipe. A dying spirit casts its Bestowal
 // on the others, which then gain its ability, so the kill order decides what
-// the fight turns into. Spell rows (4.3.4 DBC):
-//   Thunderclap 80649 (Moltenfist): 15 yd around the caster, only while its
-//     victim is in melee range, every 6-8 s.
+// the fight turns into. Spell rows (4.3.4 DBC). An area effect with TargetA
+// SRC_CASTER and TargetB UNIT_SRC_AREA_ENEMY uses the TargetB radius
+// (SpellEffectInfo::CalcRadius), tested as a 2D cylinder with no hitbox for
+// these generic-family spells (WorldObjectSpellAreaTargetCheck):
+//   Thunderclap 80649 (Moltenfist): 20 yd around the caster (TargetB radius
+//     index 9; round 3 logged a hit at 16 yd), only while its victim is in
+//     melee range, every 6-8 s.
 //   Chain Lightning 80646 (Shadowforge): random target within 90 yd,
 //     8 targets, magic chain (12.5 yd jumps), every 10-11 s.
 //   Stormbolt 80648 (Anvilrage): random target within 30 yd, 8 yd splash
@@ -26,7 +30,8 @@
 //   Burden of the Crown 80718 (Corehammer): on its victim, +100% damage done
 //     and no power cost, a 13.9k self-hit on each hit (80722).
 //   Whirlwind 80652 (Burningeye): 5 s, every second 80651 (56.5k physical,
-//     5 yd) around the spirit; Avatar 80645 (Thaurissan; Angerforge's
+//     4 yd: TargetB radius index 26; round 3: the tank at 4.37-4.56 yd took
+//     0 of 13 ticks) around the spirit; Avatar 80645 (Thaurissan; Angerforge's
 //     Bestowal also grants Avatar in the native script), Stoneblood 80655
 //     (Angerforge), Shield of Light 80747 then Execution Sentence 80727 on
 //     the victim (Ironstar).
@@ -35,16 +40,23 @@
 //     to hand on last. North (Icy Veins): Corehammer (Burden then buffs the
 //     raid), Anvilrage, Moltenfist, Shadowforge. South (no readable source
 //     yet): Angerforge, Thaurissan, Burningeye, Ironstar;
-//   - ranged and healers stand on a half circle 26 yd from the engaged pack,
-//     toward the arena centre: outside every Thunderclap (15 yd + 1.5 reach)
-//     and 13 yd apart, so Chain Lightning does not jump between them;
-//   - melee (not the tank) leave any spirit under Whirlwind (80652) to
-//     WhirlwindExitYards and come back when it ends (round 3: the rogue and
-//     the retribution paladin died to Whirlwind handed on to two spirits);
+//   - ranged and healers stand on a half circle 30 yd from the engaged pack,
+//     toward the arena centre: outside every Thunderclap (20 yd, with a
+//     1.5 yd margin) and 15.5 yd apart, so Chain Lightning (12.5 yd jumps)
+//     does not jump between them;
+//   - melee (not the tank) within WhirlwindDangerYards of a spirit under
+//     Whirlwind (80652) step to a ring WhirlwindHoldYards from their target:
+//     outside every whirlwinding spirit's 4 yd pulse and still inside melee
+//     range (1.5 + spirit reach 3.375 + 4/3 = 6.21 yd, creature_model_info
+//     36437-36444), so they keep hitting and the native chase does not pull
+//     them back in; with no such point (two whirlwinding spirits side by
+//     side) they leave radially from those spirits' centroid (round 3: the
+//     rogue and the retribution paladin died to Whirlwind handed on to two
+//     spirits);
 //   - everyone, the tank included, damages the kill-order target: on a trash
 //     route the shared group focus is the tank's own target, so the tank
-//     sets the order for the raid; positions of the tank and melee are left
-//     to native tanking and melee range.
+//     sets the order for the raid; the tank's position and the melee's
+//     outside a Whirlwind are left to native tanking and melee range.
 // The route keeps the pull, threat pickup and completion (OwnsNode stays
 // false); before the pack is engaged this plan is empty.
 namespace BotEncounter::Atramedes::Spirits
@@ -66,19 +78,27 @@ inline constexpr std::array<uint32, 4> NorthKillOrder{ Corehammer, Anvilrage,
 inline constexpr std::array<uint32, 4> SouthKillOrder{ Angerforge, Thaurissan,
     Burningeye, Ironstar };
 
-inline constexpr float ThunderclapRadius = 15.0f;
+inline constexpr float ThunderclapRadius = 20.0f;
 inline constexpr float ChainJumpRadius = 12.5f;
-inline constexpr float StandoffRadius = 26.0f;
+inline constexpr float StandoffRadius = 30.0f;
 inline constexpr float StandoffStepRad = 30.0f * Geometry::Pi / 180.0f;
 inline constexpr float StandoffTolerance = 4.0f;
-// Inside this of an engaged spirit the next Thunderclap lands: leave with
-// survival priority.
-inline constexpr float DangerRadius = ThunderclapRadius + PlayerCombatReach + 1.5f;
-// Whirlwind (80652) pulses 80651 every second, 5 yd around the spirit; melee
-// step out to this far from any whirlwinding spirit.
+// Inside this of an engaged spirit the next Thunderclap lands (no hitbox, a
+// 1.5 yd margin): leave with survival priority.
+inline constexpr float DangerRadius = ThunderclapRadius + 1.5f;
+// Whirlwind (80652) pulses 80651 every second, 4 yd around the spirit (2D,
+// no hitbox). A melee player within WhirlwindDangerYards of a whirlwinding
+// spirit moves; the point it takes is WhirlwindHoldYards from its target and
+// at least WhirlwindClearYards from every whirlwinding spirit, so it does
+// not trigger again (hysteresis) and stays inside melee range.
 inline constexpr uint32 WhirlwindAura = 80652;
-inline constexpr float WhirlwindRadius = 5.0f;
-inline constexpr float WhirlwindExitYards = WhirlwindRadius + PlayerCombatReach + 3.5f;
+inline constexpr float WhirlwindRadius = 4.0f;
+inline constexpr float WhirlwindDangerYards = WhirlwindRadius + 0.75f;
+inline constexpr float WhirlwindClearYards = WhirlwindRadius + 1.0f;
+inline constexpr float WhirlwindHoldYards = 5.4f;
+// creature_model_info 36437-36444 (every spirit): CombatReach 3.375.
+inline constexpr float SpiritCombatReach = 3.375f;
+inline constexpr float SpiritMeleeRange = PlayerCombatReach + SpiritCombatReach + 4.0f / 3.0f;
 
 inline bool IsSpiritNode(std::string_view node)
 {
@@ -179,30 +199,67 @@ inline float NearestSpiritDistance(Pack const& pack, Vector3 const& point)
     return nearest;
 }
 
-// Melee out of every whirlwinding spirit's reach: straight away from the
-// nearest one, to WhirlwindExitYards.
-inline std::optional<MoveProposal> WhirlwindExit(Pack const& pack, ActorSnapshot const& self)
+// Melee near a whirlwinding spirit. Nothing to do unless `self` is within
+// WhirlwindDangerYards of one. Then: the point on the WhirlwindHoldYards
+// ring around `target` (the spirit it hits) nearest to it that is at least
+// WhirlwindClearYards from every whirlwinding spirit; with none, straight
+// out from the whirlwinding spirits' centroid until clear of them all.
+inline std::optional<MoveProposal> WhirlwindExit(Pack const& pack, ActorSnapshot const& self,
+    ActorSnapshot const* target)
 {
-    ActorSnapshot const* nearest = nullptr;
-    float nearestDistance = WhirlwindExitYards;
+    std::vector<ActorSnapshot const*> whirling;
+    bool danger = false;
     for (ActorSnapshot const* spirit : pack.Engaged)
-    {
-        if (!FindAura(*spirit, WhirlwindAura))
-            continue;
-        float const distance = Geometry::Distance2d(spirit->Position, self.Position);
-        if (distance < nearestDistance)
+        if (FindAura(*spirit, WhirlwindAura))
         {
-            nearest = spirit;
-            nearestDistance = distance;
+            whirling.push_back(spirit);
+            danger = danger || Geometry::Distance2d(spirit->Position, self.Position)
+                < WhirlwindDangerYards;
         }
-    }
-    if (!nearest)
+    if (!danger)
         return std::nullopt;
-    float const bearing = nearestDistance > 0.1f
-        ? Geometry::Bearing(nearest->Position, self.Position)
-        : Geometry::Bearing(nearest->Position, ArenaCenter);
-    return Survival(Geometry::PointAt(nearest->Position, bearing, WhirlwindExitYards + 1.0f,
-        ArenaCenter.Z), "spirit_whirlwind_exit", 530.0f);
+    auto clear = [&whirling](Vector3 const& point)
+    {
+        return std::all_of(whirling.begin(), whirling.end(), [&point](ActorSnapshot const* spirit)
+        {
+            return Geometry::Distance2d(spirit->Position, point) >= WhirlwindClearYards;
+        });
+    };
+    if (target)
+    {
+        std::optional<Vector3> best;
+        float bestDistance = 0.0f;
+        for (int step = 0; step < 72; ++step)
+        {
+            Vector3 const point = Geometry::PointAt(target->Position,
+                float(step) * Geometry::TwoPi / 72.0f, WhirlwindHoldYards, ArenaCenter.Z);
+            float const distance = Geometry::Distance2d(point, self.Position);
+            if (clear(point) && (!best || distance < bestDistance))
+            {
+                best = point;
+                bestDistance = distance;
+            }
+        }
+        if (best)
+            return Survival(*best, "spirit_whirlwind_ring", 530.0f);
+    }
+    float x = 0.0f;
+    float y = 0.0f;
+    for (ActorSnapshot const* spirit : whirling)
+    {
+        x += spirit->Position.X;
+        y += spirit->Position.Y;
+    }
+    Vector3 const centroid{ x / float(whirling.size()), y / float(whirling.size()), ArenaCenter.Z };
+    float const bearing = Geometry::Distance2d(centroid, self.Position) > 0.1f
+        ? Geometry::Bearing(centroid, self.Position) : Geometry::Bearing(centroid, ArenaCenter);
+    for (float radius = WhirlwindHoldYards; radius <= 30.0f; radius += 0.5f)
+    {
+        Vector3 const point = Geometry::PointAt(centroid, bearing, radius, ArenaCenter.Z);
+        if (clear(point))
+            return Survival(point, "spirit_whirlwind_exit", 530.0f);
+    }
+    return std::nullopt;
 }
 
 inline std::optional<MoveProposal> StandoffMove(Blackboard const& board, Pack const& pack,

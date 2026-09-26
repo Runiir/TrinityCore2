@@ -121,7 +121,8 @@ conflict is recorded (ledger `conflicts`, source
      stepping around the boss at the same distance, until the lane is 8 yd
      to the side (about an 8 yd arc). The player stays in melee range.
 2. "One designated ranged is on bell duty, usually a hunter": the gong owner
-   is the BM hunter (unchanged).
+   is the hunter (unchanged; the canonical hunter is Survival since
+   2026-09-26, user decision, and GongRank ranks every hunter spec first).
 3. "In the air phase you can have 3 players assigned to gongs: the hunter,
    maybe the mage, and another very fast player."
    - The owner (hunter) and backup (mage) keep their relay stations.
@@ -206,7 +207,7 @@ conflict is recorded (ledger `conflicts`, source
 
 ## 10N bot strategy (canonical composition: 1 tank, 2 healers, 7 DPS)
 
-Roster: Blood DK (tank); Balance, BM Hunter, Fire Mage, Retribution,
+Roster: Blood DK (tank); Balance, Survival Hunter, Fire Mage, Retribution,
 Assassination, Elemental, Demonology; Holy Paladin and Discipline healers.
 Duties come from capability on every snapshot (`BotAtramedesDutyPlan.h`), never
 from roster slots.
@@ -348,19 +349,40 @@ from roster slots.
   - Everyone, the tank included, damages the kill-order target once the
     pack is engaged. On a trash route the shared group focus
     (`FindValidationRouteGroupFocusTarget`) is the tank's own target, so the
-    tank's target puts the raid on the kill order. The tank's and the melee's
-    positions are left to native threat and melee range.
-  - Ranged and healers stand on a half circle 26 yd from the engaged pack,
+    tank's target puts the raid on the kill order. The tank's position, and
+    the melee's outside a Whirlwind, are left to native threat and melee
+    range.
+  - Radii: an area effect with TargetA SRC_CASTER and TargetB
+    UNIT_SRC_AREA_ENEMY uses the TargetB radius (`SpellEffectInfo::CalcRadius`).
+    It is tested as a 2D cylinder with no hitbox for these generic-family
+    spells (`WorldObjectSpellAreaTargetCheck`). That makes Thunderclap
+    (80649) 20 yd (radius index 9; round 3 logged a hit at 16 yd) and the
+    Whirlwind pulse (80651) 4 yd (radius index 26; the tank at 4.37–4.56 yd
+    took 0 of 13 ticks). `tests/test_atramedes_spirits.py` pins both against
+    the client rows.
+  - Ranged and healers stand on a half circle 30 yd from the engaged pack,
     toward the arena centre, 30° apart:
-    - outside every Thunderclap (80649, 15 yd plus 1.5 yd reach), with a
-      survival exit when inside 18 yd;
+    - outside every Thunderclap (20 yd), with a survival exit when inside
+      21.5 yd;
     - within 38 yd of every spirit;
-    - 13.5 yd apart, above Chain Lightning's 12.5 yd jump;
+    - 15.5 yd apart, above Chain Lightning's 12.5 yd jump;
     - at least 35 yd from the other pack.
   - The route keeps the pull, threat pickup and completion.
-  - Melee (not the tank) leave any spirit under Whirlwind (80652: 5 s,
-    80651 every second in 5 yd, 56.5k) to 10 yd, and come back when it
-    ends.
+  - Melee near Whirlwind (80652: 5 s, 80651 every second in 4 yd, 56.5k).
+    A melee player (not the tank) within 4.75 yd of a whirlwinding spirit
+    steps to a ring 5.4 yd from its target.
+    - The ring point is the one nearest the player that is at least 5 yd
+      from every whirlwinding spirit.
+    - It lies outside the pulse and inside melee range (1.5 + spirit
+      CombatReach 3.375 + 4/3 = 6.21 yd; creature_model_info 36437–36444),
+      so the melee keep hitting and the native chase does not pull them
+      back in.
+    - The 4.75 yd trigger and the 5 yd clearance give hysteresis.
+    - With no clear ring point (whirlwinding spirits around the target),
+      they leave radially from the whirlwinding spirits' centroid until
+      clear of all of them. They never ping-pong between two.
+    - The round-4 version left to 10 yd, out of melee range, and flipped
+      against the native chase.
   - Round 3 cleared both packs without a wipe.
     - North: Thunderclap hit players 19 times (125 in round 2), mostly the
       tank and melee. Chain Lightning was cast once, with no death.

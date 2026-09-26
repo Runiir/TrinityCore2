@@ -27,6 +27,7 @@ INCLUDES = [
 PROGRAM = r'''
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Atramedes/BotAdaptiveAtramedesStrategy.h"
 #include <cassert>
+#include <cmath>
 #include <cstdio>
 #include <string>
 #include <variant>
@@ -85,7 +86,7 @@ static Blackboard NorthBoard(bool engaged = true)
     board.Players = {
         MakePlayer(Tank, "tank", "blood_death_knight", 148.0f, -189.0f),
         MakePlayer(Balance, "dps", "balance_druid", 154.0f, -186.0f),
-        MakePlayer(Hunter, "dps", "beast_mastery_hunter", 154.0f, -186.0f),
+        MakePlayer(Hunter, "dps", "survival_hunter", 154.0f, -186.0f),
         MakePlayer(Mage, "dps", "fire_mage", 154.0f, -186.0f),
         MakePlayer(HolyPaladin, "healer", "holy_paladin", 154.0f, -189.0f),
         MakePlayer(Retribution, "dps", "retribution_paladin", 148.0f, -189.0f),
@@ -240,6 +241,7 @@ static void CheckSlots(Blackboard const& board, Vector3 const& otherPack)
             // Outside Thunderclap (15 yd + 1.5 player reach), inside 40 yd
             // spell range of every spirit.
             assert(distance >= S::DangerRadius);
+            assert(distance >= S::ThunderclapRadius + 1.5f);
             assert(distance <= 38.0f);
         }
         // Far from the other pack (20 yd aggro + its 6 yd spread + margin)
@@ -306,42 +308,130 @@ static void TestStandoff()
 }
 
 // Round 3: Burningeye died second and his Whirlwind (80652, 5 s, 80651
-// every second in 5 yd, 56.5k) went to Thaurissan and Ironstar; the rogue
-// and the retribution paladin stood in it and died, and their long runback
-// stalled the route. Melee now step out of any whirlwinding spirit and come
-// back when it ends; the tank stays.
-static void TestWhirlwindExit()
+// every second, 56.5k) went to Thaurissan and Ironstar; the rogue and the
+// retribution paladin stood in it and died, and their long runback stalled
+// the route. 80651 reaches 4 yd (TargetB radius, 2D, no hitbox; the tank at
+// 4.37-4.56 yd took 0 of 13 ticks) and melee range to a spirit is
+// 1.5 + 3.375 + 4/3 = 6.21 yd: melee hold a 5.4 yd ring around their target,
+// outside every pulse and still hitting; the tank stays.
+static void AddWhirlwind(Blackboard const& board, ActorSnapshot& spirit)
 {
-    Blackboard board = SouthBoard();
-    ActorSnapshot& burningeye = Spirit(board, S::Burningeye);
-    for (uint32 slot : { Retribution, Rogue, Tank })
-        Member(board, slot).Position = { burningeye.Position.X + 2.0f, burningeye.Position.Y, 75.0f };
-    assert(!Plan(board, Rogue).Movement && !Plan(board, Retribution).Movement);
     AuraSnapshot whirl;
     whirl.SpellId = S::WhirlwindAura;
-    whirl.CasterGuid = burningeye.Guid;
+    whirl.CasterGuid = spirit.Guid;
     whirl.ExpiresAtMs = board.ObservedAtMs + 5000;
-    burningeye.Auras.push_back(whirl);
+    spirit.Auras.push_back(whirl);
+}
+
+static bool ClearOfWhirlwinds(Blackboard const& board, Vector3 const& point)
+{
+    for (ActorSnapshot const& spirit : board.Hostiles)
+        for (AuraSnapshot const& aura : spirit.Auras)
+            if (spirit.Alive && aura.SpellId == S::WhirlwindAura
+                && G::Distance2d(spirit.Position, point) < S::WhirlwindClearYards)
+                return false;
+    return true;
+}
+
+static void TestWhirlwindExit()
+{
+    assert(S::WhirlwindRadius == 4.0f && S::ThunderclapRadius == 20.0f);
+    assert(std::fabs(S::SpiritMeleeRange - 6.2083f) < 0.001f);
+    assert(S::WhirlwindDangerYards > S::WhirlwindRadius);
+    assert(S::WhirlwindClearYards > S::WhirlwindDangerYards);
+    assert(S::WhirlwindHoldYards >= 5.25f && S::WhirlwindHoldYards <= 5.5f);
+    assert(S::WhirlwindHoldYards < S::SpiritMeleeRange - 0.5f);
+
+    // Burningeye whirlwinds beside the kill target (Angerforge, 5.1 yd away):
+    // melee between them take the ring around Angerforge, clear of the pulse.
+    Blackboard board = SouthBoard();
+    ActorSnapshot& burningeye = Spirit(board, S::Burningeye);
+    ActorSnapshot const& angerforge = Spirit(board, S::Angerforge);
+    Member(board, Retribution).Position = { 151.5f, -259.5f, 75.0f };
+    Member(board, Rogue).Position = { burningeye.Position.X + 2.0f, burningeye.Position.Y, 75.0f };
+    Member(board, Tank).Position = { burningeye.Position.X - 2.0f, burningeye.Position.Y, 75.0f };
+    assert(!Plan(board, Rogue).Movement && !Plan(board, Retribution).Movement);
+    AddWhirlwind(board, burningeye);
     for (uint32 slot : { Retribution, Rogue })
     {
         AdaptiveAtramedesPlan const plan = Plan(board, slot);
-        assert(Mechanic(plan) == "spirit_whirlwind_exit");
+        assert(Mechanic(plan) == "spirit_whirlwind_ring");
         assert(plan.Movement->ActionPriority == BotActionArbitration::Priority::Survival);
-        Vector3 const out{ MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f };
-        // Outside 80651's 5 yd plus the player's 1.5 yd reach, with margin.
-        assert(G::Distance2d(out, burningeye.Position) >= S::WhirlwindExitYards);
-        assert(G::Distance2d(out, burningeye.Position) >= 5.0f + 1.5f + 2.0f);
-        // Still on the kill order.
-        assert(plan.DamageTarget == UnitGuid(S::Angerforge, 63));
+        Vector3 const ring{ MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f };
+        assert(ClearOfWhirlwinds(board, ring));
+        assert(G::Distance2d(ring, burningeye.Position) > S::WhirlwindRadius + 0.75f);
+        float const reach = G::Distance2d(ring, angerforge.Position);
+        assert(reach > S::WhirlwindHoldYards - 0.01f && reach < S::SpiritMeleeRange);
+        assert(plan.DamageTarget == angerforge.Guid);
+        // At the ring: no move (the native chase keeps it, in melee range).
+        Member(board, slot).Position = ring;
+        assert(!Plan(board, slot).Movement);
     }
-    // The tank holds the pack.
-    assert(!Plan(board, Tank, "tank").Movement);
-    // Already out of reach: no move; Whirlwind over: back to melee.
-    Member(board, Rogue).Position = { burningeye.Position.X + S::WhirlwindExitYards + 0.5f,
-        burningeye.Position.Y, 75.0f };
+    // Hysteresis: 4.8 yd from the pulse (outside the 4.75 trigger): hold.
+    Member(board, Rogue).Position = G::PointAt(burningeye.Position,
+        G::Bearing(burningeye.Position, angerforge.Position) + 1.2f, 4.8f, 75.0f);
     assert(!Plan(board, Rogue).Movement);
+    // The tank holds the pack; Whirlwind over: back to native melee.
+    assert(!Plan(board, Tank, "tank").Movement);
     burningeye.Auras.clear();
+    Member(board, Retribution).Position = { burningeye.Position.X + 1.0f, burningeye.Position.Y, 75.0f };
     assert(!Plan(board, Retribution).Movement);
+
+    // Round 3's case: Whirlwind handed on to Thaurissan (the kill target) and
+    // Ironstar, 6.1 yd apart. From anywhere near them the ring point is clear
+    // of both and in melee range of Thaurissan, and it holds (no ping-pong).
+    board = SouthBoard();
+    Spirit(board, S::Angerforge).Alive = false;
+    Spirit(board, S::Burningeye).Alive = false;
+    AddWhirlwind(board, Spirit(board, S::Thaurissan));
+    AddWhirlwind(board, Spirit(board, S::Ironstar));
+    ActorSnapshot const& thaurissan = Spirit(board, S::Thaurissan);
+    int moves = 0;
+    for (float x = 139.0f; x <= 146.0f; x += 1.0f)
+        for (float y = -265.0f; y <= -255.0f; y += 1.0f)
+        {
+            Member(board, Rogue).Position = { x, y, 75.0f };
+            AdaptiveAtramedesPlan const plan = Plan(board, Rogue);
+            if (!plan.Movement)
+            {
+                // Clear, or between the trigger (4.75) and the clearance
+                // (5.0): hold. Inside a pulse it always moves.
+                ActorSnapshot const* ironstar = &Spirit(board, S::Ironstar);
+                for (ActorSnapshot const* spirit : { &thaurissan, ironstar })
+                    assert(G::Distance2d(spirit->Position, Member(board, Rogue).Position)
+                        >= S::WhirlwindDangerYards);
+                continue;
+            }
+            ++moves;
+            assert(Mechanic(plan) == "spirit_whirlwind_ring");
+            Vector3 const ring{ MoveOf(plan)->X, MoveOf(plan)->Y, 75.0f };
+            assert(ClearOfWhirlwinds(board, ring));
+            assert(G::Distance2d(ring, thaurissan.Position) < S::SpiritMeleeRange);
+            Member(board, Rogue).Position = ring;
+            assert(!Plan(board, Rogue).Movement);
+        }
+    assert(moves >= 20);
+
+    // No clear ring point: three whirlwinding spirits 3 yd around the target
+    // cover its whole 5.4 yd ring. Leave radially from their centroid, clear
+    // of every pulse.
+    board = SouthBoard();
+    ActorSnapshot& target = Spirit(board, S::Angerforge);
+    Vector3 const centre = target.Position;
+    uint32 const others[] = { S::Thaurissan, S::Burningeye, S::Ironstar };
+    for (int i = 0; i < 3; ++i)
+    {
+        ActorSnapshot& other = Spirit(board, others[i]);
+        other.Position = G::PointAt(centre, float(i) * 2.0f * G::Pi / 3.0f, 3.0f, 75.0f);
+        AddWhirlwind(board, other);
+    }
+    Member(board, Rogue).Position = G::PointAt(centre, 0.5f, 1.0f, 75.0f);
+    AdaptiveAtramedesPlan const out = Plan(board, Rogue);
+    assert(Mechanic(out) == "spirit_whirlwind_exit");
+    Vector3 const exit{ MoveOf(out)->X, MoveOf(out)->Y, 75.0f };
+    assert(ClearOfWhirlwinds(board, exit));
+    Member(board, Rogue).Position = exit;
+    assert(!Plan(board, Rogue).Movement);
 }
 
 static void TestStrayPull()
@@ -399,3 +489,35 @@ def test_spirit_nodes_match_the_route_rows() -> None:
         assert f'"{row["node_id"]}"' in header
         for entry in row["pack_target_entries"]:
             assert str(entry) in header
+
+
+def test_spirit_ability_radii_match_the_client_rows() -> None:
+    """80651 and 80649 hit with their TargetB radius (SpellEffectInfo::CalcRadius)."""
+    import struct
+
+    dbc = ROOT / "data/dbc/enUS"
+    if not (dbc / "SpellEffect.dbc").is_file():
+        import pytest
+        pytest.skip("4.3.4 client DBC files are not extracted in this checkout")
+
+    def rows(name: str) -> list[bytes]:
+        data = (dbc / name).read_bytes()
+        magic, count, fields, size, _ = struct.unpack_from("<4s4i", data)
+        assert magic == b"WDBC" and size == fields * 4
+        return [data[20 + i * size:20 + (i + 1) * size] for i in range(count)]
+
+    def u32(row: bytes, index: int) -> int:
+        return struct.unpack_from("<I", row, index * 4)[0]
+
+    radii = {u32(row, 0): struct.unpack_from("<f", row, 4)[0] for row in rows("SpellRadius.dbc")}
+    effects = {(u32(row, 24), u32(row, 25)): row for row in rows("SpellEffect.dbc")}
+    header = (ROOT / "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/"
+              "Atramedes/BotAtramedesSpirits.h").read_text(encoding="utf-8")
+    for spell, constant in ((80651, "WhirlwindRadius"), (80649, "ThunderclapRadius")):
+        effect = effects[(spell, 0)]
+        # TargetA 22 SRC_CASTER, TargetB 15 UNIT_SRC_AREA_ENEMY.
+        assert (u32(effect, 22), u32(effect, 23)) == (22, 15)
+        radius = radii[u32(effect, 16)]
+        assert f"{constant} = {radius:.1f}f" in header
+    assert radii[u32(effects[(80651, 0)], 16)] == 4.0
+    assert radii[u32(effects[(80649, 0)], 16)] == 20.0

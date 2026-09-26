@@ -202,7 +202,7 @@ public:
             plan.DamageTarget = target->Guid;
         if (tank)
             return plan;
-        std::optional<MoveProposal> move = melee ? Spirits::WhirlwindExit(pack, *bot)
+        std::optional<MoveProposal> move = melee ? Spirits::WhirlwindExit(pack, *bot, target)
             : Spirits::StandoffMove(board, pack, duties.Tank, *bot);
         if (move)
             plan.Movement = MakeCandidate(board, move->Mechanic,

@@ -97,7 +97,7 @@ static Blackboard Board()
     board.Players = {
         MakePlayer(Tank, "tank", "blood_death_knight", 150.0f, -224.5f),
         MakePlayer(Balance, "dps", "balance_druid", 135.0f, -206.0f),
-        MakePlayer(Hunter, "dps", "beast_mastery_hunter", stand.X, stand.Y),
+        MakePlayer(Hunter, "dps", "survival_hunter", stand.X, stand.Y),
         MakePlayer(Mage, "dps", "fire_mage", 131.0f, -229.0f),
         MakePlayer(HolyPaladin, "healer", "holy_paladin", 146.0f, -238.0f),
         MakePlayer(Retribution, "dps", "retribution_paladin", 165.0f, -240.0f),
