@@ -14,6 +14,7 @@
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCapabilities.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -41,6 +42,9 @@ struct DutyPlan
     // Kites the bone warriors and roots them with Nature's Grasp once its
     // dragon is dead (user raid experience 2026-09-26): the Onyxia tank.
     ObjectGuid WarriorHandler;
+    // The pillar without a healer, where both tanks stand and heal themselves
+    // (user raid experience 2026-09-26, round 8); -1 with three healers.
+    int TankPillar = -1;
 
     int PillarOf(ObjectGuid guid) const
     {
@@ -100,10 +104,18 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
         plan.OnyxiaTank = tanks[1]->Guid;
     plan.WarriorHandler = plan.OnyxiaTank;
 
-    // Pillar teams: one healer each, then a 13-second interrupter where the
-    // healer cannot provide one, then balance head count and damage dealers.
+    // Pillar teams (round 8, user raid experience 2026-09-26, followed
+    // literally): with two healers the tanks - and only the tanks - take the
+    // healerless pillar and heal themselves (the Blood DK's Death Strike, the
+    // Feral's Frenzied Regeneration); each other pillar gets one healer. Then
+    // a 13-second interrupter wherever the team lacks one (the tank pillar
+    // has Mind Freeze), and the rest balance the healer pillars' prototype
+    // damage.
+    // Teams come from the whole roster, dead members included, so a death
+    // never reshuffles the platforms.
     std::array<uint32, 3> bestCooldown{ 0, 0, 0 };
-    auto place = [&plan, &bestCooldown](ActorSnapshot const* member,
+    std::array<float, 3> damage{ 0.0f, 0.0f, 0.0f };
+    auto place = [&plan, &bestCooldown, &damage](ActorSnapshot const* member,
         std::size_t pillar)
     {
         PillarTeam& team = plan.Pillars[pillar];
@@ -114,6 +126,7 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
             bestCooldown[pillar] = interrupt.CooldownMs;
         if (member->Role == "dps")
             ++team.DamageDealers;
+        damage[pillar] += PillarDamageWeight(member->ClassSpec, member->Role);
     };
 
     std::vector<ActorSnapshot const*> rest;
@@ -129,28 +142,22 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
         else
             rest.push_back(member);
     }
-    // Two healers (user raid experience 2026-09-26: 2 tanks, 2 healers,
-    // 6 DPS): pillars are 70 yards apart, so the third pillar has no healer.
-    // It gets the Nefarian tank, the member best able to sustain itself (a
-    // Blood death knight's Death Strike) through the magma swim.
-    // The roster's Nefarian tank, dead or alive: teams never reshuffle when a
-    // tank dies and another takes over the live duty.
-    ActorSnapshot const* rosterTank = nullptr;
-    for (ActorSnapshot const* member : members)
-        if (member->Role == "tank" && (!rosterTank
-                || NefarianTankRank(member->ClassSpec) < NefarianTankRank(rosterTank->ClassSpec)))
-            rosterTank = member;
-    if (healers < plan.Pillars.size() && rosterTank)
+    if (healers < plan.Pillars.size())
     {
-        auto tank = std::find_if(rest.begin(), rest.end(),
-            [rosterTank](ActorSnapshot const* member)
-            {
-                return member == rosterTank;
-            });
-        if (tank != rest.end())
+        plan.TankPillar = int(healers);
+        // Both roster tanks (dead or alive), the Nefarian tank first.
+        std::vector<ActorSnapshot const*> rosterTanks;
+        for (ActorSnapshot const* member : rest)
+            if (member->Role == "tank")
+                rosterTanks.push_back(member);
+        std::stable_sort(rosterTanks.begin(), rosterTanks.end(), [](auto left, auto right)
         {
-            place(*tank, healers);
-            rest.erase(tank);
+            return NefarianTankRank(left->ClassSpec) < NefarianTankRank(right->ClassSpec);
+        });
+        for (ActorSnapshot const* tank : rosterTanks)
+        {
+            place(tank, std::size_t(plan.TankPillar));
+            rest.erase(std::find(rest.begin(), rest.end(), tank));
         }
     }
 
@@ -187,32 +194,52 @@ inline DutyPlan BuildNefarianDutyPlan(Blackboard const& board)
         }
         if (target == plan.Pillars.size())
         {
-            target = 0;
-            for (std::size_t pillar = 1; pillar < plan.Pillars.size(); ++pillar)
+            // The healer pillar whose prototype would die last (least damage),
+            // the smaller team on a tie. The tank pillar is the tanks' alone
+            // (the user's tactic); the healer pillars finish first and send
+            // help.
+            target = plan.Pillars.size();
+            for (std::size_t pillar = 0; pillar < plan.Pillars.size(); ++pillar)
             {
+                if (int(pillar) == plan.TankPillar)
+                    continue;
+                if (target == plan.Pillars.size())
+                {
+                    target = pillar;
+                    continue;
+                }
                 PillarTeam const& candidate = plan.Pillars[pillar];
                 PillarTeam const& best = plan.Pillars[target];
-                if (candidate.Members.size() < best.Members.size()
-                    || (candidate.Members.size() == best.Members.size()
-                        && candidate.DamageDealers < best.DamageDealers))
+                if (damage[pillar] < damage[target] - 0.01f
+                    || (std::fabs(damage[pillar] - damage[target]) <= 0.01f
+                        && candidate.Members.size() < best.Members.size()))
                     target = pillar;
             }
+            if (target == plan.Pillars.size())
+                target = 0;
         }
         place(member, target);
     }
 
     // Interrupters: a living non-healer with the shortest cooldown, melee
     // first; the backup is the next living interrupter on the same pillar.
-    for (PillarTeam& team : plan.Pillars)
+    for (std::size_t index = 0; index < plan.Pillars.size(); ++index)
     {
+        PillarTeam& team = plan.Pillars[index];
+        // The tank pillar interrupts with its tanks (user raid experience
+        // 2026-09-26: Mind Freeze and Skull Bash); the Blood DK's 10-second
+        // Mind Freeze keeps it within the 13-second Blast Nova repeat.
+        bool const tankPillar = int(index) == plan.TankPillar;
         std::vector<ActorSnapshot const*> capable;
         for (ObjectGuid guid : team.Members)
             if (ActorSnapshot const* member = board.FindActor(guid))
                 if (member->Alive && InterruptFor(member->ClassSpec).Known())
                     capable.push_back(member);
         std::stable_sort(capable.begin(), capable.end(),
-            [&team](auto left, auto right)
+            [&team, tankPillar](auto left, auto right)
         {
+            if (tankPillar && (left->Role == "tank") != (right->Role == "tank"))
+                return left->Role == "tank";
             InterruptCapability const a = InterruptFor(left->ClassSpec);
             InterruptCapability const b = InterruptFor(right->ClassSpec);
             if (a.CooldownMs != b.CooldownMs)
@@ -269,7 +296,8 @@ inline std::string NefarianDutyPlanJson(DutyPlan const& plan)
                  << ",\"backup\":" << team.BackupInterrupter.GetCounter()
                  << ",\"off_healer\":" << team.OffHealer.GetCounter() << '}';
         }
-        json << "],\"warrior_handler\":" << plan.WarriorHandler.GetCounter();
+        json << "],\"warrior_handler\":" << plan.WarriorHandler.GetCounter()
+             << ",\"tank_pillar\":" << plan.TankPillar;
     }
     json << '}';
     return json.str();

@@ -255,6 +255,8 @@ def encounter_duty_rules() -> dict[str, list]:
     maloriak = constants(MALORIAK_DUTIES)
     nefarian_constants = constants(NEFARIAN_CAPABILITIES)
     assert "SpellNaturesGrasp : 0" in function_body(NEFARIAN_CAPABILITIES, "inline uint32 WarriorRootFor")
+    assert "return { SpellEnrage, SpellFrenziedRegeneration, SpellSurvivalInstincts };" in function_body(
+        NEFARIAN_CAPABILITIES, "inline std::array<uint32, 3> TankSelfCareSpellsFor")
     rank_body = function_body(CHIMAERON_DUTIES, "inline int LustRank")
     mage_rank = int(re.search(r"IsMageSpec\(spec\)\)\s*return (\d+);", rank_body).group(1))
     shaman_rank = int(re.search(r"IsShamanSpec\(spec\)\)\s*return (\d+);", rank_body).group(1))
@@ -305,6 +307,10 @@ def encounter_duty_rules() -> dict[str, list]:
             # Round 6, the user's tactic: the druid roots bone warriors with Nature's Grasp (WarriorRootFor).
             lambda bot, _bots: [{nefarian_constants["SpellNaturesGrasp"]}] if bot["class_spec"].endswith(
                 ("druid", "druid_tank")) else [],
+            # Round 8: the Feral tank's pillar self-care and the paladins' magma-crossing Divine Shield.
+            lambda bot, _bots: [{nefarian_constants["SpellEnrage"]}, {nefarian_constants["SpellFrenziedRegeneration"]}]
+            if bot["class_spec"] == "feral_druid_tank" else [],
+            lambda bot, _bots: [{nefarian_constants["SpellDivineShield"]}] if bot["class_spec"].endswith("paladin") else [],
             lambda bot, _bots: [] if bot["role"] == "tank" else [{capability_spell(nefarian_controls, bot["class_spec"])}]],
         "maloriak": [
             lambda bot, _bots: [{REMEDY_DISPEL_BY_CLASS.get(int(bot["class"]))}],
@@ -352,7 +358,7 @@ def test_every_canonical_bot_knows_the_duty_spells_its_encounters_name(plan):
     assert gaps == UNLEARNABLE_DUTY_SPELLS
     # The review's spells are among the checked ones: Time Warp, Sprint, Dash, Stampeding Roar, Cat Form.
     assert {80353, 2983, 1850, 77764, 768, 4987, 5116, 19801, 30449, 370, 9484, 853, 20484,
-            57934, 1499, 13809, 16689} <= required_seen
+            57934, 1499, 13809, 16689, 5229, 22842, 642} <= required_seen
 
 
 def combat_res_spells() -> list[int]:
@@ -417,6 +423,6 @@ def test_canonical_only_declarations_stay_out_of_the_legacy_rosters():
 
         walk(legacy)
         assert bots, path
-        assert not any({20484, 21562, 57934, 1499, 13809, 16689} & set(bot.get("spells") or []) for bot in bots), path
+        assert not any({20484, 21562, 57934, 1499, 13809, 16689, 5229, 22842, 642} & set(bot.get("spells") or []) for bot in bots), path
         hunters = [bot for bot in bots if str(bot["class_spec"]).endswith("_hunter")]
         assert hunters and all(isinstance(bot.get("pet"), dict) and bot["pet"]["entry"] == 8959 for bot in hunters), path

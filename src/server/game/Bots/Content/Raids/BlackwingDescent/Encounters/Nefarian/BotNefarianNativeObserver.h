@@ -34,6 +34,12 @@ inline PickupMemory& SharedPickupMemory()
     return memory;
 }
 
+inline PillarKillMemory& SharedPillarKillMemory()
+{
+    static PillarKillMemory memory;
+    return memory;
+}
+
 inline std::mutex& SharedPickupMutex()
 {
     static std::mutex mutex;
@@ -85,32 +91,49 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
     // spot, whether it stands still and whether the native line of sight to
     // Onyxia holds); everyone reads the tank's budget.
     EncounterView const view = ObserveEncounter(board);
-    if (view.OnyxiaAlive())
+    if (view.Nefarian)
     {
-        DutyPlan const duty = BuildNefarianDutyPlan(board);
-        ObjectGuid const tank = OnyxiaTankNow(board, duty);
-        if (!tank.IsEmpty())
-        {
-            std::lock_guard<std::mutex> lock(SharedPickupMutex());
-            PickupState state;
-            if (tank == observer->GetGUID())
-                state = SharedPickupMemory().Observe(tank, view.Onyxia->Guid,
-                    view.Onyxia->InCombat && view.Onyxia->VictimGuid != tank,
-                    { observer->GetPositionX(), observer->GetPositionY(),
-                        observer->GetPositionZ() },
-                    !observer->movespline->Finalized(), facts.InSight(view.Onyxia->Guid),
-                    board.ObservedAtMs);
-            else
-                state = SharedPickupMemory().Find(tank, view.Onyxia->Guid, board.ObservedAtMs);
-            if (!state.Tank.IsEmpty())
-                facts.Pickups.push_back(state);
-        }
+        std::array<bool, 3> alive{ false, false, false };
+        for (int pillar = 0; pillar < 3; ++pillar)
+            alive[pillar] = PillarPrototype(view, pillar) != nullptr;
+        std::lock_guard<std::mutex> lock(SharedPickupMutex());
+        facts.PillarKillMs = SharedPillarKillMemory().Observe(view.Nefarian->Guid,
+            view.CurrentPhase == Phase::PlatformHold || view.CurrentPhase == Phase::PlatformReturn,
+            alive, board.ObservedAtMs);
     }
+    // The dragon pickups (Onyxia's tank, Nefarian's tank once he has
+    // landed): each tank records its own decisions, everyone reads Onyxia's
+    // budget (the damage dealers' hold).
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    auto observePickup = [&](ActorSnapshot const* dragon, ObjectGuid tank, bool pickupPossible)
+    {
+        if (!dragon || tank.IsEmpty())
+            return;
+        std::lock_guard<std::mutex> lock(SharedPickupMutex());
+        PickupState state;
+        if (tank == observer->GetGUID())
+            state = SharedPickupMemory().Observe(tank, dragon->Guid, dragon->Entry,
+                pickupPossible && dragon->Alive && dragon->InCombat && dragon->VictimGuid != tank,
+                { observer->GetPositionX(), observer->GetPositionY(), observer->GetPositionZ() },
+                !observer->movespline->Finalized(), facts.InSight(dragon->Guid),
+                board.ObservedAtMs);
+        else
+            state = SharedPickupMemory().Find(tank, dragon->Guid, board.ObservedAtMs);
+        if (!state.Tank.IsEmpty())
+            facts.Pickups.push_back(state);
+    };
+    if (view.OnyxiaAlive())
+        observePickup(view.Onyxia, OnyxiaTankNow(board, duty), true);
+    if (view.Nefarian && !ActsAsOnyxiaTank(board, view, duty, duty.NefarianTank))
+        observePickup(view.Nefarian, duty.NefarianTank, view.NefarianLanded());
+
     for (ActorSnapshot const& player : board.Players)
     {
         Player const* bot = ObjectAccessor::GetPlayer(*observer, player.Guid);
         if (!bot || !bot->IsInWorld())
             continue;
+        if (player.ClassSpec == "feral_druid_tank" && !bot->HasAura(SpellGlyphOfFrenziedRegeneration))
+            facts.UnglyphedFrenziedRegeneration.push_back(player.Guid);
         // The spells the duties name: whether the bot knows each one (a spell
         // it lacks is unknown and not ready) and, if so, whether SpellHistory
         // has it ready.
@@ -118,7 +141,9 @@ inline NativeFacts ObserveNativeFacts(Player const* observer,
                 ControlFor(player.ClassSpec).SpellId,
                 TauntFor(player.ClassSpec).SpellId,
                 WarriorRootFor(player.ClassSpec), OffHealFor(player.ClassSpec),
-                PreAscentShieldFor(player.ClassSpec), PreAscentTopUpFor(player.ClassSpec) })
+                PreAscentShieldFor(player.ClassSpec), PreAscentTopUpFor(player.ClassSpec),
+                TankSelfCareSpellsFor(player.ClassSpec)[0], TankSelfCareSpellsFor(player.ClassSpec)[1],
+                TankSelfCareSpellsFor(player.ClassSpec)[2], CrossingDefensiveFor(player.ClassSpec) })
         {
             if (!spellId)
                 continue;

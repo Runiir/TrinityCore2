@@ -681,6 +681,9 @@ struct npc_nefarians_end_onyxia : public ScriptedAI
 
     void JustAppeared() override
     {
+        // Until Nefarian lands she cannot die (her template's unkillable
+        // flag; cleared on ACTION_NEFARIAN_LANDED).
+        me->SetUnkillable(true);
         if (_instance->GetData(DATA_NEFARIANS_END_INTRO_DONE))
             DoAction(ACTION_REANIMATED);
     }
@@ -769,8 +772,18 @@ struct npc_nefarians_end_onyxia : public ScriptedAI
                 break;
             case ACTION_NEFARIAN_LANDED:
                 _allowDeath = true;
-                TC_LOG_INFO("server.nefarians_end", "NefariansEnd onyxia landed_received onyxia=%s ai=%p allow_death=%d health=%u",
-                    me->GetGUID().ToString().c_str(), static_cast<void const*>(this), int(_allowDeath), me->GetHealth());
+                // Round 8: the 4.3.4 sniffed creature_template StaticFlags of
+                // Onyxia (sql/updates/world/4.3.4/2023_08_27_00_world.sql,
+                // 0x5089000c) carry CREATURE_STATIC_FLAG_UNKILLABLE, which
+                // Unit::DealDamage enforces after this AI's DamageTaken: the
+                // r06 and r07 live attempts held her at 1 health until her
+                // Electrical Charge reached 100 and Electrical Overload wiped
+                // the raid. The flag is her "no death before Nefarian lands";
+                // it goes with the landing, as _allowDeath does.
+                me->SetUnkillable(false);
+                TC_LOG_INFO("server.nefarians_end", "NefariansEnd onyxia landed_received onyxia=%s ai=%p allow_death=%d unkillable=%d health=%u",
+                    me->GetGUID().ToString().c_str(), static_cast<void const*>(this), int(_allowDeath),
+                    int(me->HasStaticFlag(CREATURE_STATIC_FLAG_UNKILLABLE)), me->GetHealth());
                 break;
             default:
                 break;

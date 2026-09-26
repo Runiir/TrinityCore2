@@ -18,6 +18,7 @@
 #include "Bots/BotEncounterBlackboard.h"
 #include "Bots/BotNativeActionIntent.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianPhaseMovement.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianTankSelfCare.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianSurfaceIntent.h"
 #include <cmath>
 #include <optional>
@@ -303,6 +304,23 @@ private:
                     100.0f));
                 return;
             }
+            // A crossing helper's magma defensive (round 8), once in the lava.
+            {
+                ArenaLayout const layout = BuildArenaLayout(duty);
+                MovementContext const context{ board, view, duty, layout, bot, facts };
+                if (CrossingDefensiveDue(context, CrossingFor(context)))
+                    plan.Actions.push_back(Cast(board, "pillar_crossing_defensive", bot.Guid,
+                        CrossingDefensiveFor(bot.ClassSpec), Priority::Survival, 96.0f));
+            }
+            // The tanks' self-care on the healerless pillar (round 8).
+            for (HealDecision const& self : DecideTankSelfCare(view, duty, bot, facts))
+            {
+                bool const enrage = self.SpellId == SpellEnrage;
+                plan.Actions.push_back(Cast(board, self.Reason, self.Target, self.SpellId,
+                    self.SpellId == SpellDeathStrike ? Priority::Mechanic
+                        : enrage ? Priority::Support : Priority::Survival,
+                    enrage ? 82.0f : 95.0f));
+            }
             HealDecision const care = DecidePreAscentCare(board, view, duty, bot, facts);
             if (!care.Target.IsEmpty())
                 plan.Actions.push_back(Cast(board, care.Reason, care.Target,
@@ -404,6 +422,38 @@ private:
     // leg, the plan holds the bot (WarriorStopHold: the submission clears the
     // native chase or path, stops the spline and renews a Hazard movement
     // lease, so combat range movement cannot restart it).
+    // The crossing helper's departure (BotNefarianCrossing.h): rim, step off
+    // and fall, each a survival-lane surface request like the descent's.
+    static void ChooseCrossingDeparture(AdaptiveNefarianPlan& plan,
+        Nefarian::MovementContext const& context, Nefarian::CrossingAssignment const& crossing)
+    {
+        using namespace Nefarian;
+        DescentDecision const departure = PlanCrossingDeparture(context,
+            context.Plan.PillarOf(context.Bot.Guid), crossing.Pillar);
+        if (!departure.Hold.empty())
+            plan.MovementHold = departure.Hold;
+        if (!departure.Move)
+            return;
+        if (Stunned(context.Bot))
+        {
+            plan.MovementHold = "nefarian_movement_stunned";
+            return;
+        }
+        plan.MovementSurface = MakeGoal(context, MovePurpose::PillarAscent,
+            Surface::Floor, BotLocal(context), 3.0f, true, crossing.Pillar);
+        BotNativeAction::Candidate movement;
+        movement.Id.ScopeKey = context.Board.CurrentScope.Key();
+        movement.Id.Strategy = "adaptive_nefarian";
+        movement.Id.Mechanic = std::string(departure.Mechanic);
+        movement.Id.Actor = context.Bot.Guid;
+        movement.Id.EventGeneration = uint64(departure.Move->Kind) + 101;
+        movement.ActionPriority = BotActionArbitration::Priority::Mechanic;
+        movement.Utility = 300.0f;
+        movement.ExpiresAtMs = context.Board.ObservedAtMs + 1000;
+        movement.Action = *departure.Move;
+        plan.Movement = std::move(movement);
+    }
+
     static void ChooseMovement(AdaptiveNefarianPlan& plan,
         Nefarian::MovementContext const& context)
     {
@@ -439,13 +489,20 @@ private:
             plan.MovementHold = PlatformHoldWith(plan.MovementHold);
     }
 
+    // The pickup's budget spent for the dragon this tank picks up (Onyxia,
+    // or Nefarian once he has landed).
     static bool PickupExhausted(Nefarian::MovementContext const& context)
     {
         using namespace Nefarian;
-        return context.Facts && context.View.OnyxiaAlive()
-            && context.View.Onyxia->VictimGuid != context.Bot.Guid
-            && ActsAsOnyxiaTank(context.Board, context.View, context.Plan, context.Bot.Guid)
-            && context.Facts->PickupExhausted(context.Bot.Guid, context.View.Onyxia->Guid);
+        if (!context.Facts)
+            return false;
+        EncounterView const& view = context.View;
+        if (ActsAsOnyxiaTank(context.Board, view, context.Plan, context.Bot.Guid))
+            return view.Onyxia->VictimGuid != context.Bot.Guid
+                && context.Facts->PickupExhausted(context.Bot.Guid, view.Onyxia->Guid);
+        return context.Bot.Guid == context.Plan.NefarianTank && view.NefarianLanded()
+            && view.Nefarian->VictimGuid != context.Bot.Guid
+            && context.Facts->PickupExhausted(context.Bot.Guid, view.Nefarian->Guid);
     }
 
     static bool PlatformHoldApplies(Nefarian::MovementContext const& context)
@@ -508,6 +565,15 @@ private:
             }
         }
 
+        // Cross-pillar help (round 8): a helper leaves its pillar top.
+        CrossingAssignment const crossing = fightOnFloor ? CrossingAssignment{}
+            : CrossingFor(context);
+        if (crossing.Departing && OnPillarStructure(context))
+        {
+            ChooseCrossingDeparture(plan, context, crossing);
+            return;
+        }
+
         std::optional<SurfaceGoal> goal;
         Priority priority = Priority::CombatMovement;
         float utility = 120.0f;
@@ -555,7 +621,8 @@ private:
             && AscentSupported(context.Facts))
         {
             AscentDecision const ascent = PlanPillarAscent(context, goal->Pillar,
-                context.Plan.SlotOf(context.Bot.Guid));
+                crossing.Pillar == goal->Pillar ? crossing.Slot
+                    : context.Plan.SlotOf(context.Bot.Guid));
             if (ascent.Step)
             {
                 plan.Ascent = ascent.Step;

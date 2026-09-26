@@ -648,6 +648,108 @@ then spent 79 minutes in phase 1 until `emergency_wall_clock_timeout`.
 - The route drops the Onyxia tank last. A Feral-first drop would shorten the
   pickup further.
 
+## 7b. Phase 2 pillars, round 8 (user raid experience 2026-09-26, followed literally)
+
+The user's tactic for two healers and three pillars:
+- the tanks take the healerless pillar and heal themselves;
+- when another pillar kills its prototype, one healer and one DPS from it swim
+  across to help finish.
+
+**Teams** (`BotNefarianDutyPlan.h`, `TankPillar`):
+
+| Pillar | Members | Interrupts |
+|---|---|---|
+| 0 | Holy paladin, rogue, Elemental shaman, hunter | Kick |
+| 1 | Discipline priest, Retribution paladin, mage, warlock | Rebuke |
+| 2 | Blood DK, Feral (the tanks alone) | Mind Freeze (10 s), then Skull Bash |
+
+- Every primary interrupter is back within Blast Nova's 13 s.
+- Skull Bash is 60 s: the canonical Feral has no Brutal Impact.
+- The remaining damage dealers balance the healer pillars. Teams stay stable.
+
+**Self-care** (`BotNefarianTankSelfCare.h`), after the pillar interrupt:
+
+| Tank | Spell | Used under |
+|---|---|---|
+| Blood DK | Death Strike | 80% |
+| Feral | Survival Instincts | 30% |
+| Feral, with the glyph (canonical) | Frenzied Regeneration, no Enrage | 50% |
+| Feral, without the glyph | Enrage then Frenzied Regeneration (rage conversion) | 60% |
+
+- The glyph (aura 54810) is observed on the bot.
+- Spells the bot does not know are never named. M provisions Enrage, Frenzied
+  Regeneration, and Divine Shield for both paladins.
+
+**Cross-pillar help** (`BotNefarianCrossing.h`):
+- Who sends: the first healer pillar to kill its prototype. The observer's kill
+  order keeps it, and a pillar whose healer died releases it.
+- When: only while the platform rests lowered and the tank pillar's prototype
+  keeps at least 25% of its health.
+- Who goes: the healer, plus one damage dealer. It is one with a magma defensive
+  it actually has ready if any, otherwise the first by slot, and the healer heals
+  the pair during the swim.
+- The defensive first: at the rim a ready defensive (Divine Shield, Pain
+  Suppression) is cast with no movement proposed that decision, so it owns the
+  cast lanes. Beside a proposed step it would lose them (tested in the kernel).
+  The step waits until the defensive is up with at least 6 s left.
+- The step into the lava uses the ledge-drop contract's liquid variant
+  (`TransportSurfaceMove::LandInLiquid`, patch `R8_ledge_drop_into_liquid.patch`).
+  The dry-ground contract still refuses liquid. Native admission accepts the step
+  on all 18 slot headings with the liquid contract and refuses it with the dry
+  one. After it: fall, land on the sunken ring, float, swim, hop onto a spare
+  slot. Until the executor carries the field, nobody crosses.
+- No departure once the platform rises.
+
+**Survival model** (`user_tank_pillar_*`; not a native estimate, recorded without
+deviating on it):
+
+| Layout | Tank-pillar death | Mean phase | Helper death | Death on the pillar the healer left |
+|---|---|---|---|---|
+| The literal layout | 0% | 76 s | 0.2% | 50% |
+| No help | 27% | 110 s | - | - |
+| Elemental off-healer on the tank pillar | 16% | - | - | - |
+| Off-healer and warlock on the tank pillar | 75% | - | - | - |
+
+## 7c. Round 7 live run (analysed in round 8)
+
+Evidence: `artifacts/cata_raid_program/round7_batch1_20260926.tar.gz`. The run had
+three phase-1 attempts of 139-141 s each, ended by `encounter_reset_loop_watchdog`.
+`wipe_generation` stayed 0 and one death was recorded.
+
+**Root cause: Onyxia cannot die.**
+- Her 4.3.4 `creature_template` StaticFlags (0x5089000c,
+  `sql/updates/world/4.3.4/2023_08_27_00_world.sql`) carry
+  `CREATURE_STATIC_FLAG_UNKILLABLE`. `Unit::DealDamage` enforces it after her
+  AI's `DamageTaken`.
+- The landing chain completed every attempt (`landed_received allow_death=1`).
+  She still took exactly max − 1 health (5,582,979), and every later hit landed
+  0. She reached 1 health at 61, 80 and 62 s.
+- About 140 s after each pull her Electrical Charge reached 100. Electrical
+  Overload (78999, 855k-1.045M Nature to everyone) wiped the raid, and the
+  dragons reset.
+- The same flag explains the r06 1-health stalls.
+
+**Fix** (`boss_nefarians_end.cpp`):
+- She is unkillable when she appears, and the flag is cleared with
+  `ACTION_NEFARIAN_LANDED`. That is her "no death before Nefarian lands", like
+  `_allowDeath`.
+- The landing log now also prints the flag.
+
+**What worked**
+- The platform hold: one magma event in the whole run.
+- The Feral's pickup: Onyxia on the Feral at 0-1.9 s, first damage by the Feral.
+- The damage dealers' hold.
+- The lust: Time Warp at 5.4 s. Attempt 2 had none because of the cooldown;
+  attempt 3 got it at 40 s, once it was ready.
+
+**Also fixed**: in attempt 1 the hunter held Nefarian at the centre while the Blood DK
+waited at its pull spot, 48 yd away and out of taunt range. The Nefarian tank now
+picks him up the way the Onyxia tank does (`DragonPickupGoal`): into taunt range
+with a clear line, and only then leads him out. Replay: a taunt after about 3 s.
+
+**Noted**: a few bots stood 1-3 yd below the floor near the ramp start (r 21-24),
+with no magma damage.
+
 ## 8. Encounter damage fidelity
 
 Every Nefarian's End creature still has DamageModifier 1 (the upstream reset). None is

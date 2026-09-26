@@ -16,6 +16,7 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianNativeFacts.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <vector>
 
@@ -31,14 +32,18 @@ class PickupMemory
 public:
     // One observation per decision of the tank that picks Onyxia up. Returns
     // the pickup's state (empty when no pickup is under way).
-    PickupState Observe(ObjectGuid tank, ObjectGuid onyxia, bool pickupActive,
+    // `onyxia` is the dragon being picked up (Onyxia or Nefarian) and
+    // `dragonEntry` its creature entry: entries are kept per tank and dragon,
+    // so observing one dragon never erases the other's memory.
+    PickupState Observe(ObjectGuid tank, ObjectGuid onyxia, uint32 dragonEntry, bool pickupActive,
         Vector3 position, bool moving, bool nativeSight, uint64 nowMs)
     {
-        // A new Onyxia (a new attempt) retires every older entry.
+        // A new dragon of that entry (a new attempt), or the pickup over,
+        // retires the tank's entry for that dragon only.
         _entries.erase(std::remove_if(_entries.begin(), _entries.end(),
             [&](Entry const& entry)
             {
-                return entry.State.Tank == tank
+                return entry.State.Tank == tank && entry.State.DragonEntry == dragonEntry
                     && (!pickupActive || entry.State.Onyxia != onyxia);
             }), _entries.end());
         if (!pickupActive)
@@ -49,6 +54,7 @@ public:
             Entry fresh;
             fresh.State.Tank = tank;
             fresh.State.Onyxia = onyxia;
+            fresh.State.DragonEntry = dragonEntry;
             fresh.StartedMs = nowMs;
             _entries.push_back(fresh);
             entry = &_entries.back();
@@ -107,6 +113,38 @@ private:
     }
 
     std::vector<Entry> _entries;
+};
+
+// The order in which the pillars killed their prototypes (round 8 review):
+// per attempt (Nefarian's GUID), a pillar's kill time is the first
+// observation in phase 2 of its prototype gone after it was once seen.
+class PillarKillMemory
+{
+public:
+    std::array<uint64, 3> Observe(ObjectGuid nefarian, bool phaseTwo,
+        std::array<bool, 3> const& prototypeAlive, uint64 nowMs)
+    {
+        if (nefarian != _nefarian)
+        {
+            _nefarian = nefarian;
+            _seen = { false, false, false };
+            _kill = { 0, 0, 0 };
+        }
+        if (phaseTwo)
+            for (std::size_t pillar = 0; pillar < 3; ++pillar)
+            {
+                if (prototypeAlive[pillar])
+                    _seen[pillar] = true;
+                else if (_seen[pillar] && !_kill[pillar])
+                    _kill[pillar] = nowMs ? nowMs : 1;
+            }
+        return _kill;
+    }
+
+private:
+    ObjectGuid _nefarian;
+    std::array<bool, 3> _seen{ false, false, false };
+    std::array<uint64, 3> _kill{ 0, 0, 0 };
 };
 }
 

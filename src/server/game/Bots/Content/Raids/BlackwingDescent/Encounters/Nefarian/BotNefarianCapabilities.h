@@ -15,6 +15,7 @@
 // cooldown or an invalid target.
 
 #include "Define.h"
+#include <array>
 #include <string_view>
 
 namespace BotEncounter::Nefarian
@@ -201,6 +202,55 @@ inline bool IsMeleeDamageSpec(std::string_view spec)
 
 // Preference for the Nefarian tank: the longest-lived dragon and the phase 3
 // boss. Lower is better.
+// The tanks heal themselves on the healerless pillar (round 8, user raid
+// experience 2026-09-26). Blood: Death Strike (49998, heals at least 7% of
+// maximum health). Feral: Enrage (5229) for rage, Frenzied Regeneration
+// (22842: +30% maximum health, health raised to 30% if below; unglyphed it
+// converts up to 10 rage a second at 0.30% of maximum health each - the
+// canonical Glyph of Frenzied Regeneration, item 40896 / spell 54810,
+// replaces that with +30% healing received) and Survival Instincts (61336).
+constexpr uint32 SpellDeathStrike = 49998;
+constexpr uint32 SpellEnrage = 5229;
+constexpr uint32 SpellFrenziedRegeneration = 22842;
+constexpr uint32 SpellSurvivalInstincts = 61336;
+constexpr uint32 SpellGlyphOfFrenziedRegeneration = 54810;
+
+inline std::array<uint32, 3> TankSelfCareSpellsFor(std::string_view spec)
+{
+    if (spec == "blood_death_knight")
+        return { SpellDeathStrike, 0, 0 };
+    if (spec == "feral_druid_tank")
+        return { SpellEnrage, SpellFrenziedRegeneration, SpellSurvivalInstincts };
+    return { 0, 0, 0 };
+}
+
+// A crossing helper's magma defensive (round 8), cast as it drops into the
+// lava: Divine Shield (paladins; Forbearance 25771 blocks it) or Pain
+// Suppression (Discipline). A damage dealer crosses only with one.
+constexpr uint32 SpellDivineShield = 642;
+constexpr uint32 SpellPainSuppression = 33206;
+constexpr uint32 SpellForbearance = 25771;
+
+inline uint32 CrossingDefensiveFor(std::string_view spec)
+{
+    if (spec.size() >= 7 && spec.substr(spec.size() - 7) == "paladin")
+        return SpellDivineShield;
+    if (spec == "discipline_priest")
+        return SpellPainSuppression;
+    return 0;
+}
+
+// A member's share of its pillar's prototype damage (round 8 pillar
+// balance): damage dealers 1, a tank about half, a healer nothing.
+inline float PillarDamageWeight(std::string_view spec, std::string_view role)
+{
+    if (role == "healer" || IsHealerSpec(spec, role))
+        return 0.0f;
+    if (role == "tank")
+        return spec == "blood_death_knight" ? 0.5f : 0.4f;
+    return 1.0f;
+}
+
 inline int NefarianTankRank(std::string_view spec)
 {
     if (spec == "blood_death_knight")

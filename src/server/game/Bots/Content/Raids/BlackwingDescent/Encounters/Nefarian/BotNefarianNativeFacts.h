@@ -10,6 +10,7 @@
 
 #include "Bots/BotEncounterBlackboard.h"
 #include <algorithm>
+#include <array>
 #include <vector>
 
 namespace BotEncounter::Nefarian
@@ -77,7 +78,8 @@ inline bool RuntimePillarAscentSupported()
 struct PickupState
 {
     ObjectGuid Tank;
-    ObjectGuid Onyxia;
+    ObjectGuid Onyxia;         // the dragon being picked up
+    uint32 DragonEntry = 0;    // its entry (Onyxia 41270, Nefarian 41376)
     uint64 ElapsedMs = 0;      // since the pickup began (Onyxia on another)
     uint32 Rejections = 0;     // spots the native line of sight rejected
     std::vector<Vector3> RejectedSpots;
@@ -138,6 +140,21 @@ struct NativeFacts
     }
 
     std::vector<PickupState> Pickups;
+    // When each pillar's prototype was first seen dead in phase 2 (0: alive
+    // or unknown), kept by the observer per attempt (PillarKillMemory): the
+    // first finisher sends the cross-pillar help, and keeps that duty.
+    std::array<uint64, 3> PillarKillMs{ 0, 0, 0 };
+    // Feral tanks without the Glyph of Frenzied Regeneration (spell 54810):
+    // their Frenzied Regeneration converts rage into health, so Enrage feeds
+    // it. The canonical Feral carries the glyph (+30% healing received, no
+    // rage conversion); a Feral not listed here is taken to carry it.
+    std::vector<ObjectGuid> UnglyphedFrenziedRegeneration;
+
+    bool FrenziedRegenerationGlyphed(ObjectGuid actor) const
+    {
+        return std::find(UnglyphedFrenziedRegeneration.begin(),
+            UnglyphedFrenziedRegeneration.end(), actor) == UnglyphedFrenziedRegeneration.end();
+    }
 
     PickupState const* FindPickup(ObjectGuid tank, ObjectGuid onyxia) const
     {

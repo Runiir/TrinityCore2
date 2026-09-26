@@ -171,3 +171,25 @@ def test_onyxia_landing_chain_is_instrumented_not_rewritten() -> None:
         assert marker in script, marker
     # printf-style logging (TC_LOG_* here takes %-formats).
     assert "{}" not in "".join(line for line in script.splitlines() if "NefariansEnd" in line)
+
+
+def test_onyxia_unkillable_flag_goes_with_the_landing() -> None:
+    """Round 8 (r07 root cause): Onyxia's 4.3.4 creature_template StaticFlags
+    carry CREATURE_STATIC_FLAG_UNKILLABLE, which Unit::DealDamage enforces
+    after her AI's DamageTaken; the script clears it with the landing and
+    sets it again when she appears."""
+    sql = (ROOT / "sql/updates/world/4.3.4/2023_08_27_00_world.sql").read_text(encoding="utf-8")
+    row = [line for line in sql.splitlines() if "WHERE `entry`= 41270;" in line and "StaticFlags" in line]
+    assert row, "Onyxia's static flags row"
+    flags = int(re.search(r"`StaticFlags`= (\d+)", row[0]).group(1))
+    assert flags & 0x8, "CREATURE_STATIC_FLAG_UNKILLABLE"
+    unit = _code(ROOT / "src/server/game/Entities/Unit/Unit.cpp")
+    assert "HasStaticFlag(CREATURE_STATIC_FLAG_UNKILLABLE)" in unit
+    script = _code(ROOT / "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp")
+    onyxia = script[script.index("struct npc_nefarians_end_onyxia"):]
+    landed = onyxia[onyxia.index("case ACTION_NEFARIAN_LANDED:"):]
+    landed = landed[:landed.index("break;")]
+    assert "_allowDeath = true;" in landed and "me->SetUnkillable(false);" in landed
+    appeared = onyxia[onyxia.index("void JustAppeared() override"):]
+    appeared = appeared[:appeared.index("\n    }\n")]
+    assert "me->SetUnkillable(true);" in appeared

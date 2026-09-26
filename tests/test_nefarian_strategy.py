@@ -186,9 +186,10 @@ std::string ObjectGuid::ToString() const { return std::to_string(GetRawValue());
         prototype.InCombat = true;
         board.Summons.push_back(prototype);
     }
-    // Pillar 2 team on its pillar top: death knight, elemental shaman, hunter.
+    // The tank pillar's team on its top (round 8: death knight, Feral,
+    // elemental shaman).
     uint8 slot = 0;
-    for (uint32 member : { 1u, 9u, 3u })
+    for (uint32 member : { 1u, 2u, 9u })
         FindPlayer(board, member).Position = LocalToWorld(PillarSlot(2, slot++),
             PlatformFrame::PillarTopLocalZ, originZ);
     return board;
@@ -254,17 +255,22 @@ static void TestDutyPlan()
     Blackboard const board = CanonicalBoard();
     DutyPlan const plan = BuildNefarianDutyPlan(board);
     std::string const json = NefarianDutyPlanJson(plan);
+    // Round 8 (user raid experience 2026-09-26, followed literally): both
+    // tanks and only the tanks on the healerless pillar, interrupting with
+    // Mind Freeze and Skull Bash; Kick and Rebuke cover the healer pillars,
+    // which share the damage dealers.
     std::string const expected = "{\"applies\":true,\"nefarian_tank\":30501,"
         "\"onyxia_tank\":30502,\"shackler\":30507,\"pillars\":["
-        "{\"members\":[30505,30508,30504],\"healer\":30505,\"interrupt\":30508,\"backup\":30505,\"off_healer\":0},"
-        "{\"members\":[30507,30506,30502,30510],\"healer\":30507,\"interrupt\":30506,\"backup\":30502,\"off_healer\":0},"
-        "{\"members\":[30501,30509,30503],\"healer\":0,\"interrupt\":30501,\"backup\":30509,\"off_healer\":30509}],"
-        "\"warrior_handler\":30502}";
+        "{\"members\":[30505,30508,30509,30503],\"healer\":30505,\"interrupt\":30508,\"backup\":30505,\"off_healer\":0},"
+        "{\"members\":[30507,30506,30504,30510],\"healer\":30507,\"interrupt\":30506,\"backup\":30504,\"off_healer\":0},"
+        "{\"members\":[30501,30502],\"healer\":0,\"interrupt\":30501,\"backup\":30502,\"off_healer\":0}],"
+        "\"warrior_handler\":30502,\"tank_pillar\":2}";
     CHECK(json == expected, json.c_str());
     CHECK(plan.PillarOf(plan.NefarianTank) == 2 && plan.Pillars[2].Healer.IsEmpty(),
         "two healers: the Blood death knight takes the pillar without a healer");
     CHECK(plan.WarriorHandler == Bot(2), "the Feral Onyxia tank handles the bone warriors");
-    CHECK(plan.Pillars[2].OffHealer == Bot(9), "the Elemental shaman off-heals the healerless pillar");
+    CHECK(plan.Pillars[2].OffHealer.IsEmpty() && plan.PillarOf(Bot(9)) == 0,
+        "the tank pillar is the tanks' alone; the Elemental shaman is on a healer pillar");
 
     // Stable teams: the Blood DK dies, the Feral takes the Nefarian tank duty,
     // and nobody changes pillar.
@@ -276,9 +282,9 @@ static void TestDutyPlan()
     for (std::size_t pillar = 0; pillar < 3; ++pillar)
         CHECK(promoted.Pillars[pillar].Members == plan.Pillars[pillar].Members,
             "a tank's death never reshuffles the pillar teams");
-    CHECK(promoted.Pillars[2].PrimaryInterrupter == Bot(9)
-        && promoted.Pillars[2].OffHealer == Bot(9),
-        "the shaman interrupts and off-heals pillar 2 when the death knight is dead");
+    CHECK(promoted.Pillars[2].PrimaryInterrupter == Bot(2)
+        && promoted.Pillars[2].BackupInterrupter.IsEmpty(),
+        "the Feral interrupts (Skull Bash) alone when the death knight is dead");
     for (uint32 dead : { 5u, 7u, 9u, 2u })
     {
         Blackboard withDeath = CanonicalBoard();
@@ -292,8 +298,11 @@ static void TestDutyPlan()
     ArenaLayout const layout = BuildArenaLayout(plan);
     CHECK(AngularGap(layout.OnyxiaEndAngle, PillarAngle(plan.PillarOf(plan.OnyxiaTank)))
         < DegToRad(32.0f), "Onyxia's end beside her tank's pillar");
-    CHECK(AngularGap(layout.NefarianEndAngle, PillarAngle(plan.PillarOf(plan.NefarianTank)))
-        < DegToRad(32.0f), "Nefarian's end beside his tank's pillar");
+    // Both tanks share the tank pillar: Onyxia's end is beside it (her
+    // tank is there when she dies) and Nefarian's opposite, beyond Children
+    // of Deathwing's 50 yards.
+    CHECK(AngularGap(layout.NefarianEndAngle, layout.OnyxiaEndAngle) > DegToRad(170.0f),
+        "Nefarian's end opposite Onyxia's");
     CHECK(Near(AngularGap(layout.OnyxiaEndAngle, layout.NefarianEndAngle), Pi, 0.01f),
         "the dragons' ends are opposite (separation is proven by the chase model in "
         "test_nefarian_movement.py)");
@@ -307,7 +316,7 @@ static void TestDutyPlan()
     DutyPlan const reduced = BuildNefarianDutyPlan(withDead);
     CHECK(reduced.PillarOf(Bot(8)) == 0, "dead rogue keeps pillar 0");
     CHECK(reduced.Pillars[0].PrimaryInterrupter == Bot(5), "holy paladin takes pillar 0 interrupts");
-    CHECK(reduced.Pillars[0].BackupInterrupter == Bot(4), "the mage backs up pillar 0");
+    CHECK(reduced.Pillars[0].BackupInterrupter == Bot(9), "the Elemental shaman backs up pillar 0");
 
     // External humans never receive a duty.
     Blackboard withHuman = CanonicalBoard();
@@ -460,7 +469,9 @@ static void TestInterrupts()
     EncounterView const view = ObserveEncounter(board);
     DutyPlan const plan = BuildNefarianDutyPlan(board);
     ActorSnapshot const& knight = FindPlayer(board, 1);
-    ActorSnapshot const& shaman = FindPlayer(board, 9);
+    // Round 8: the tank pillar interrupts with its tanks (Mind Freeze, then
+    // the Feral's Skull Bash).
+    ActorSnapshot const& shaman = FindPlayer(board, 2);
 
     InterruptDecision const primary = DecideBlastNovaInterrupt(board, view, plan, knight, nullptr);
     CHECK(primary.Target == board.Summons[3].Guid && primary.SpellId == 47528,
@@ -471,22 +482,22 @@ static void TestInterrupts()
     NativeFacts late;
     late.Casts.push_back({ board.Summons[3].Guid, 80734, 4000, 2000 });
     InterruptDecision const backup = DecideBlastNovaInterrupt(board, view, plan, shaman, &late);
-    CHECK(backup.SpellId == 57994 && backup.Reason == "blast_nova_backup_primary_late",
-        "the Elemental shaman Wind Shears after 2 s of the 4 s cast");
+    CHECK(backup.SpellId == 80964 && backup.Reason == "blast_nova_backup_primary_late",
+        "the Feral Skull Bashes after 2 s of the 4 s cast");
 
     Blackboard dead = board;
     FindPlayer(dead, 1).Alive = false;
     EncounterView const deadView = ObserveEncounter(dead);
     DutyPlan const deadPlan = BuildNefarianDutyPlan(dead);
     InterruptDecision const replacement = DecideBlastNovaInterrupt(dead, deadView, deadPlan,
-        FindPlayer(dead, 9), nullptr);
-    CHECK(replacement.SpellId == 57994, "the shaman interrupts when the death knight is dead");
+        FindPlayer(dead, 2), nullptr);
+    CHECK(replacement.SpellId == 80964, "the Feral interrupts when the death knight is dead");
 
     NativeFacts noMindFreeze;
     noMindFreeze.Readiness.push_back({ Bot(1), 47528, true, false });
     CHECK(DecideBlastNovaInterrupt(board, view, plan, knight, &noMindFreeze).Target.IsEmpty(),
         "a primary that does not know its interrupt is skipped");
-    CHECK(DecideBlastNovaInterrupt(board, view, plan, shaman, &noMindFreeze).SpellId == 57994,
+    CHECK(DecideBlastNovaInterrupt(board, view, plan, shaman, &noMindFreeze).SpellId == 80964,
         "and the backup interrupts at once");
 
     AdaptiveNefarianStrategy strategy;
@@ -2136,7 +2147,7 @@ static void TestPickupExhaustion()
             if (running)
                 facts.Motion.push_back({ Bot(2), true, LocalToWorld(*running, FloorLocalZAt(*running),
                     PlatformFrame::RaisedOriginZ) });
-            PickupState const state = memory.Observe(Bot(2), onyxia.Guid, true, feral.Position,
+            PickupState const state = memory.Observe(Bot(2), onyxia.Guid, OnyxiaEntry, true, feral.Position,
                 running.has_value(), false, board.ObservedAtMs);
             facts.Pickups.push_back(state);
             AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(2), "tank", &facts);
@@ -2183,6 +2194,372 @@ static void TestPickupExhaustion()
     }
 }
 
+// Round 8 (user raid experience 2026-09-26): the tanks on the healerless
+// pillar heal themselves, interrupts first; after a healer pillar's kill its
+// healer and one damage dealer cross to the tank pillar.
+static Blackboard CrossingBoard()
+{
+    Blackboard board = PlatformBoard(PlatformFrame::LoweredOriginZ);
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    for (int pillar : { 0, 1 })
+    {
+        uint8 slot = 0;
+        for (ObjectGuid member : duty.Pillars[pillar].Members)
+            FindPlayer(board, member.GetCounter() - 30500).Position = LocalToWorld(
+                PillarSlot(uint8(pillar), slot++), PlatformFrame::PillarTopLocalZ,
+                PlatformFrame::LoweredOriginZ);
+    }
+    return board;
+}
+
+static NativeFacts OnTop(Blackboard const& board, uint32 member)
+{
+    NativeFacts facts;
+    LocalPoint const at = WorldToLocal(board.FindActor(Bot(member))->Position);
+    facts.Placements.push_back(PlacementAt(board, member, at, PlatformFrame::PillarTopLocalZ));
+    facts.PillarAscentSupported = true;
+    return facts;
+}
+
+static void TestTankPillarSelfCare()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CrossingBoard();
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    CHECK(duty.TankPillar == 2 && duty.PillarOf(Bot(1)) == 2 && duty.PillarOf(Bot(2)) == 2
+        && duty.Pillars[2].Healer.IsEmpty(), "both tanks on the healerless pillar");
+    CHECK(duty.Pillars[0].Healer == Bot(5) && duty.Pillars[1].Healer == Bot(7),
+        "one healer on each other pillar");
+    for (PillarTeam const& team : duty.Pillars)
+    {
+        ActorSnapshot const* interrupter = board.FindActor(team.PrimaryInterrupter);
+        CHECK(interrupter && InterruptFor(interrupter->ClassSpec).CooldownMs <= 13000,
+            "every pillar's interrupter is back within Blast Nova's 13 s");
+    }
+    CHECK(duty.Pillars[2].PrimaryInterrupter == Bot(1) && duty.Pillars[2].BackupInterrupter == Bot(2),
+        "the tank pillar interrupts with Mind Freeze and Skull Bash");
+
+    auto has = [](AdaptiveNefarianPlan const& plan, uint32 spell)
+    {
+        return std::any_of(plan.Actions.begin(), plan.Actions.end(),
+            [spell](BotNativeAction::Candidate const& action)
+            {
+                auto const* cast = std::get_if<BotNativeAction::CastSpell>(&action.Action);
+                return cast && cast->SpellId == spell;
+            });
+    };
+    Blackboard hurt = board;
+    FindPlayer(hurt, 1).HealthPct = 60.0f;
+    FindPlayer(hurt, 2).HealthPct = 45.0f;
+    NativeFacts dkFacts = OnTop(hurt, 1);
+    NativeFacts feralFacts = OnTop(hurt, 2);
+    AdaptiveNefarianPlan const dk = strategy.Propose(hurt, Bot(1), "tank", &dkFacts);
+    CHECK(has(dk, SpellDeathStrike), "the Blood DK Death Strikes under Barrage");
+    // The canonical Feral carries the Glyph of Frenzied Regeneration: no
+    // rage conversion, so no Enrage for it; Frenzied Regeneration under 50%.
+    AdaptiveNefarianPlan const feral = strategy.Propose(hurt, Bot(2), "tank", &feralFacts);
+    CHECK(!has(feral, SpellEnrage) && has(feral, SpellFrenziedRegeneration),
+        "glyphed: Frenzied Regeneration, no Enrage");
+    // Unglyphed: Enrage for the rage, then Frenzied Regeneration, earlier.
+    NativeFacts unglyphed = feralFacts;
+    unglyphed.UnglyphedFrenziedRegeneration.push_back(Bot(2));
+    AdaptiveNefarianPlan const raging = strategy.Propose(hurt, Bot(2), "tank", &unglyphed);
+    CHECK(has(raging, SpellEnrage) && has(raging, SpellFrenziedRegeneration),
+        "unglyphed: Enrage and Frenzied Regeneration");
+    Blackboard fiftyFive = hurt;
+    FindPlayer(fiftyFive, 2).HealthPct = 55.0f;
+    CHECK(has(strategy.Propose(fiftyFive, Bot(2), "tank", &unglyphed), SpellFrenziedRegeneration)
+        && !has(strategy.Propose(fiftyFive, Bot(2), "tank", &feralFacts), SpellFrenziedRegeneration),
+        "unglyphed it converts rage from 60%, glyphed it waits for 50%");
+    // Not provisioned yet (M adds Enrage and Frenzied Regeneration): nothing.
+    NativeFacts missing = unglyphed;
+    missing.Readiness.push_back({ Bot(2), SpellEnrage, false, false });
+    missing.Readiness.push_back({ Bot(2), SpellFrenziedRegeneration, false, false });
+    AdaptiveNefarianPlan const lacking = strategy.Propose(hurt, Bot(2), "tank", &missing);
+    CHECK(!has(lacking, SpellEnrage) && !has(lacking, SpellFrenziedRegeneration),
+        "spells the Feral does not know are never named");
+    CHECK(!has(feral, SpellSurvivalInstincts), "Survival Instincts only at the bottom");
+    FindPlayer(hurt, 2).HealthPct = 25.0f;
+    CHECK(has(strategy.Propose(hurt, Bot(2), "tank", &feralFacts), SpellSurvivalInstincts),
+        "and Survival Instincts under 30%");
+    NativeFacts spent = unglyphed;
+    spent.Readiness.push_back({ Bot(2), SpellFrenziedRegeneration, false, true });
+    AdaptiveNefarianPlan const noRegen = strategy.Propose(hurt, Bot(2), "tank", &spent);
+    CHECK(!has(noRegen, SpellFrenziedRegeneration) && !has(noRegen, SpellEnrage),
+        "no Frenzied Regeneration on cooldown, and no Enrage for it");
+    // A Blast Nova on the tank pillar: the DK's Mind Freeze comes alone.
+    Blackboard nova = hurt;
+    CastSnapshot cast;
+    cast.SpellId = 80734;
+    cast.Interruptible = true;
+    ActorSnapshot const* prototype = PillarPrototype(ObserveEncounter(nova), 2);
+    for (ActorSnapshot& summon : nova.Summons)
+        if (prototype && summon.Guid == prototype->Guid)
+            summon.Cast = cast;
+    AdaptiveNefarianPlan const interrupting = strategy.Propose(nova, Bot(1), "tank", &dkFacts);
+    CHECK(has(interrupting, 47528) && !has(interrupting, SpellDeathStrike),
+        "the interrupt first, the Death Strike on the next decision");
+}
+
+static void TestCrossingHelp()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CrossingBoard();
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    EncounterView const alive = ObserveEncounter(board);
+    CHECK(alive.CurrentPhase == Phase::PlatformHold, "the platform rests at the lowered stop");
+    CHECK(duty.Pillars[2].Members.size() == 2, "the tank pillar is the two tanks' alone");
+    CHECK(SendingPillar(board, alive, duty) == -1, "no help while every prototype lives");
+    auto without = [](Blackboard board, int pillar, EncounterView const& view)
+    {
+        ActorSnapshot const* prototype = PillarPrototype(view, pillar);
+        board.Summons.erase(std::remove_if(board.Summons.begin(), board.Summons.end(),
+            [prototype](ActorSnapshot const& s) { return prototype && s.Guid == prototype->Guid; }),
+            board.Summons.end());
+        return board;
+    };
+
+    // The defensive a bot actually has (the native facts), not its spec.
+    ActorSnapshot ret = FindPlayer(board, 6);
+    NativeFacts none;
+    CHECK(CrossingDefensiveState(ret, &none, 1000) == DefensiveState::Ready, "Divine Shield known and ready");
+    NativeFacts unknown;
+    unknown.Readiness.push_back({ Bot(6), SpellDivineShield, false, false });
+    CHECK(CrossingDefensiveState(ret, &unknown, 1000) == DefensiveState::None, "not provisioned: none");
+    ActorSnapshot forbearing = ret;
+    AddAura(forbearing, SpellForbearance);
+    CHECK(CrossingDefensiveState(forbearing, &none, 1000) == DefensiveState::Unavailable, "Forbearance");
+    ActorSnapshot shielded = ret;
+    shielded.Auras.push_back({ SpellDivineShield, ObjectGuid{}, 1, 1000 + 7000 });
+    CHECK(CrossingDefensiveState(shielded, &none, 1000) == DefensiveState::Active, "up with 7 s left");
+    shielded.Auras.back().ExpiresAtMs = 1000 + 3000;
+    CHECK(CrossingDefensiveState(shielded, &none, 1000) == DefensiveState::Unavailable,
+        "too little of it left to cover the swim");
+
+    // Pillar 1 kills first: its healer and a damage dealer with a defensive
+    // (the Retribution paladin) cross; pillar 0 would send its healer and its
+    // first damage dealer (none has a defensive: the healer heals the pair).
+    Blackboard killed = without(board, 1, alive);
+    EncounterView const view = ObserveEncounter(killed);
+    NativeFacts order;
+    order.PillarKillMs = { 0, 5000, 0 };
+    CHECK(SendingPillar(killed, view, duty, &order) == 1, "the first finishing pillar sends help");
+    CHECK(IsPillarHelper(killed, duty, 1, Bot(7), &order) && IsPillarHelper(killed, duty, 1, Bot(6), &order)
+        && !IsPillarHelper(killed, duty, 1, Bot(4), &order) && !IsPillarHelper(killed, duty, 1, Bot(10), &order),
+        "its healer and one damage dealer, one with a defensive");
+    CHECK(IsPillarHelper(killed, duty, 0, Bot(5), &order) && IsPillarHelper(killed, duty, 0, Bot(8), &order)
+        && !IsPillarHelper(killed, duty, 0, Bot(9), &order),
+        "without a defensive damage dealer the first by slot still goes with the healer");
+    // Both done: the first finisher keeps the duty (a later lower pillar never
+    // takes it over), unless its healer is dead.
+    Blackboard both = without(killed, 0, alive);
+    EncounterView const bothView = ObserveEncounter(both);
+    NativeFacts later = order;
+    later.PillarKillMs = { 9000, 5000, 0 };
+    CHECK(SendingPillar(both, bothView, duty, &later) == 1, "the persisted first finisher keeps it");
+    Blackboard deadHealer = both;
+    FindPlayer(deadHealer, 7).Alive = false;
+    CHECK(SendingPillar(deadHealer, ObserveEncounter(deadHealer), duty, &later) == 0,
+        "a pillar whose healer died releases it");
+    // No help once the platform rises, nor when the tank pillar is done.
+    Blackboard rising = killed;
+    rising.Interactables = { MakeElevator(PlatformFrame::LoweredOriginZ + 3.0f) };
+    CHECK(SendingPillar(rising, ObserveEncounter(rising), duty, &order) == -1, "no help once the platform rises");
+
+    if (!CrossingSupported)
+    {
+        // The executor lacks the ledge drop into liquid (patch
+        // R8_ledge_drop_into_liquid.patch): nobody leaves.
+        NativeFacts facts = OnTop(killed, 7);
+        facts.PillarKillMs = order.PillarKillMs;
+        CHECK(CrossingFor(MovementContext{ killed, view, duty, BuildArenaLayout(duty),
+            FindPlayer(killed, 7), &facts }).Pillar < 0, "without the liquid ledge drop nobody crosses");
+        std::printf("CROSSING departure checks skipped (executor without LandInLiquid)\n");
+        return;
+    }
+
+    // The departure, with the rim, the defensive first, then the step into
+    // the lava under the liquid ledge-drop contract.
+    auto departure = [&](uint32 member, LocalPoint at, NativeFacts facts)
+    {
+        Blackboard b = killed;
+        PlaceAt(FindPlayer(b, member), at);
+        FindPlayer(b, member).Position = LocalToWorld(at, PlatformFrame::PillarTopLocalZ - 0.5f,
+            PlatformFrame::LoweredOriginZ);
+        facts.Placements.clear();
+        facts.Placements.push_back(PlacementAt(b, member, at, PlatformFrame::PillarTopLocalZ - 0.5f));
+        facts.PillarAscentSupported = true;
+        facts.PillarKillMs = order.PillarKillMs;
+        return std::make_pair(b, strategy.Propose(b, Bot(member), "", &facts));
+    };
+    float const toward = AngleOf({ PillarCenters[2].X - PillarCenters[1].X, PillarCenters[2].Y - PillarCenters[1].Y });
+    uint8 slot = 0;
+    for (uint8 candidate = 1; candidate < 6; ++candidate)
+        if (AngularGap(PillarSlotHeading(1, candidate), toward) < AngularGap(PillarSlotHeading(1, slot), toward))
+            slot = candidate;
+    LocalPoint const rim = Offset(PillarCenters[1], PillarSlotHeading(1, slot), DescentRimRadius);
+    auto [atTop, walk] = departure(7, PillarSlot(1, 0), NativeFacts{});
+    CHECK(walk.Movement && walk.Movement->Id.Mechanic == "pillar_crossing_rim", "first out to the rim");
+    auto [atRim, first] = departure(7, rim, NativeFacts{});
+    bool const shieldCast = std::any_of(first.Actions.begin(), first.Actions.end(),
+        [](BotNativeAction::Candidate const& action) { return action.Id.Mechanic == "pillar_crossing_defensive"; });
+    CHECK(!first.Movement && first.MovementHold == "nefarian_crossing_defensive_first" && shieldCast,
+        "at the rim the ready defensive comes first, with no movement proposed");
+    // The arbitration: with no movement this decision the instant defensive
+    // owns the cast lanes; a proposed step would have taken them.
+    {
+        using namespace BotActionArbitration;
+        Kernel kernel;
+        kernel.Begin(1000);
+        bool defensiveRan = false;
+        for (BotNativeAction::Candidate const& action : first.Actions)
+            kernel.Submit(Candidate{ action.Id.Key(), "adaptive_nefarian", action.ActionPriority,
+                action.Utility, 0.0f, 0.0f, action.Resources(), 0, 100, 3000, 5, true, "", [&]
+                {
+                    defensiveRan = defensiveRan || action.Id.Mechanic == "pillar_crossing_defensive";
+                    return Outcome::Committed("cast_submitted");
+                } });
+        kernel.Resolve();
+        CHECK(defensiveRan, "the kernel commits the defensive");
+        Kernel contested;
+        contested.Begin(1000);
+        bool contestedDefensive = false;
+        contested.Submit(Candidate{ "ascent_step", "adaptive_nefarian", Priority::Survival, 460.0f, 0.0f, 0.0f,
+            Uses(Resource::Movement, Resource::GlobalCooldown, Resource::Cast), 0, 100, 3000, 5, true, "",
+            [] { return Outcome::Committed("step"); } });
+        for (BotNativeAction::Candidate const& action : first.Actions)
+            contested.Submit(Candidate{ action.Id.Key(), "adaptive_nefarian", action.ActionPriority,
+                action.Utility, 0.0f, 0.0f, action.Resources(), 0, 100, 3000, 5, true, "", [&]
+                {
+                    contestedDefensive = contestedDefensive || action.Id.Mechanic == "pillar_crossing_defensive";
+                    return Outcome::Committed("cast_submitted");
+                } });
+        contested.Resolve();
+        CHECK(!contestedDefensive, "beside a proposed step it would lose the lanes (why it comes first)");
+    }
+    Blackboard up = killed;
+    NativeFacts upFacts;
+    upFacts.PillarKillMs = order.PillarKillMs;
+    FindPlayer(killed, 7).Auras.push_back({ SpellPainSuppression, ObjectGuid{}, 1, killed.ObservedAtMs + 8000 });
+    auto [stepping, step] = departure(7, rim, upFacts);
+    auto const* move = step.Movement
+        ? std::get_if<BotNativeAction::TransportSurfaceMove>(&step.Movement->Action) : nullptr;
+    CHECK(move && move->Kind == BotNativeAction::TransportSurfaceMove::Stage::StepOff
+        && LandsInLiquid(*move)
+        && std::fabs(move->LandingZ - (PlatformFrame::LoweredOriginZ + RingLocalZ)) < 0.01f,
+        "with the defensive up it steps off into the lava under the liquid ledge-drop contract");
+    FindPlayer(killed, 7).Auras.pop_back();
+    // A helper without a defensive steps off at once (pillar 0's rogue).
+    Blackboard zeroFirst = without(board, 0, alive);
+    NativeFacts zeroOrder;
+    zeroOrder.PillarKillMs = { 4000, 0, 0 };
+    float const towardZero = AngleOf({ PillarCenters[2].X - PillarCenters[0].X, PillarCenters[2].Y - PillarCenters[0].Y });
+    uint8 zeroSlot = 0;
+    for (uint8 candidate = 1; candidate < 6; ++candidate)
+        if (AngularGap(PillarSlotHeading(0, candidate), towardZero) < AngularGap(PillarSlotHeading(0, zeroSlot), towardZero))
+            zeroSlot = candidate;
+    LocalPoint const zeroRim = Offset(PillarCenters[0], PillarSlotHeading(0, zeroSlot), DescentRimRadius);
+    PlaceAt(FindPlayer(zeroFirst, 8), zeroRim);
+    FindPlayer(zeroFirst, 8).Position = LocalToWorld(zeroRim, PlatformFrame::PillarTopLocalZ - 0.5f,
+        PlatformFrame::LoweredOriginZ);
+    NativeFacts rogueFacts;
+    rogueFacts.Placements.push_back(PlacementAt(zeroFirst, 8, zeroRim, PlatformFrame::PillarTopLocalZ - 0.5f));
+    rogueFacts.PillarAscentSupported = true;
+    rogueFacts.PillarKillMs = zeroOrder.PillarKillMs;
+    AdaptiveNefarianPlan const rogue = strategy.Propose(zeroFirst, Bot(8), "dps", &rogueFacts);
+    CHECK(rogue.Movement && rogue.Movement->Id.Mechanic == "pillar_crossing_step_off",
+        "a damage dealer without a defensive steps off at once");
+    // Gates: a hurt helper stays.
+    Blackboard weak = killed;
+    FindPlayer(weak, 7).HealthPct = 70.0f;
+    NativeFacts weakFacts = OnTop(weak, 7);
+    weakFacts.PillarKillMs = order.PillarKillMs;
+    AdaptiveNefarianPlan const stay = strategy.Propose(weak, Bot(7), "", &weakFacts);
+    CHECK(!stay.Movement || stay.Movement->Id.Mechanic.rfind("pillar_crossing_", 0) != 0,
+        "a hurt helper does not swim the magma");
+    // A swimmer under way heads for a spare swim station of the tank pillar.
+    Blackboard swim = killed;
+    Vector3 afloat = LocalToWorld(Offset(PillarCenters[2], AngleOf(PillarCenters[1]), 20.0f), 0.0f, 0.0f);
+    afloat.Z = MagmaSurfaceZ - FloatDepthYards;
+    FindPlayer(swim, 7).Position = afloat;
+    NativeFacts swimFacts;
+    swimFacts.PillarAscentSupported = true;
+    swimFacts.PillarKillMs = order.PillarKillMs;
+    AdaptiveNefarianPlan const swimmer = strategy.Propose(swim, Bot(7), "healer", &swimFacts);
+    CHECK(swimmer.Ascent && swimmer.Ascent->Pillar == 2
+        && swimmer.Ascent->Slot >= duty.Pillars[2].Members.size(),
+        "the swimmer heads for a spare swim station of the tank pillar");
+    (void)atTop; (void)atRim; (void)stepping; (void)up;
+}
+
+// The r07 run's first attempt, replayed: Nefarian landed and stayed at the
+// centre on the hunter while the Blood DK waited at its pull spot (r 49),
+// out of taunt range. The DK now walks into taunt range and taunts, and
+// leads him out only once he attacks it.
+static void TestNefarianPickupReplay()
+{
+    AdaptiveNefarianStrategy strategy;
+    Blackboard board = CanonicalBoard();
+    AddDragons(board, true);
+    board.Summons[0].VictimGuid = Bot(2); // Onyxia on the Feral
+    ActorSnapshot& nefarian = board.Summons[1];
+    PlaceAt(nefarian, { 0.5f, 0.5f });
+    nefarian.VictimGuid = Bot(3); // on the hunter
+    ActorSnapshot& dk = FindPlayer(board, 1);
+    DutyPlan const duty = BuildNefarianDutyPlan(board);
+    ArenaLayout const layout = BuildArenaLayout(duty);
+    LocalPoint self = Polar(layout.NefarianEndAngle, 49.0f);
+    PlaceAt(dk, self);
+    int decisions = 0;
+    bool taunted = false;
+    for (; decisions < 80 && !taunted; ++decisions)
+    {
+        NativeFacts facts = StandingFacts(board, 1);
+        AdaptiveNefarianPlan const plan = strategy.Propose(board, Bot(1), "tank", &facts);
+        bool const taunt = std::any_of(plan.Actions.begin(), plan.Actions.end(),
+            [](BotNativeAction::Candidate const& action) { return action.Id.Mechanic == "nefarian_taunt"; });
+        if (!plan.Movement && taunt && Distance(self, { 0.5f, 0.5f }) <= 30.0f
+            && PillarSightClear(self, { 0.5f, 0.5f }))
+        {
+            taunted = true;
+            break;
+        }
+        CHECK(plan.Movement && plan.MovementLeg, "until in taunt range it walks in");
+        if (!plan.MovementLeg)
+            break;
+        self = StepToward(self, plan.MovementLeg->To, 0.7f);
+        PlaceAt(dk, self);
+    }
+    // The pickup memory is kept per dragon: observing Onyxia never erases
+    // Nefarian's entry, and Nefarian's budget runs out as Onyxia's does.
+    {
+        PickupMemory memory;
+        ObjectGuid const onyxiaGuid = board.Summons[0].Guid;
+        memory.Observe(Bot(1), nefarian.Guid, NefarianEntry, true, dk.Position, false, false, 1000);
+        memory.Observe(Bot(1), onyxiaGuid, OnyxiaEntry, true, dk.Position, false, true, 1000);
+        memory.Observe(Bot(1), onyxiaGuid, OnyxiaEntry, false, dk.Position, false, true, 2000);
+        CHECK(!memory.Find(Bot(1), nefarian.Guid, 2000).Tank.IsEmpty()
+            && memory.Find(Bot(1), onyxiaGuid, 2000).Tank.IsEmpty(),
+            "Onyxia's pickup ending keeps Nefarian's memory");
+        PickupState const spent = memory.Find(Bot(1), nefarian.Guid, 1000 + PickupBudgetMs);
+        CHECK(spent.Exhausted && spent.DragonEntry == NefarianEntry, "Nefarian's budget runs out too");
+        NativeFacts facts = StandingFacts(board, 1);
+        facts.Pickups.push_back(spent);
+        AdaptiveNefarianPlan const held = strategy.Propose(board, Bot(1), "tank", &facts);
+        CHECK(!held.Movement && HoldReason(held.MovementHold) == PickupExhaustedHold,
+            "Nefarian's pickup exhausted: the DK holds with the typed state");
+    }
+    std::printf("NEFPICKUP taunt at decision %d, %.1f yd from Nefarian\n", decisions,
+        Distance(self, { 0.5f, 0.5f }));
+    CHECK(taunted && decisions <= 40, "the DK taunts Nefarian within a few seconds");
+    nefarian.VictimGuid = Bot(1);
+    NativeFacts facts = StandingFacts(board, 1);
+    AdaptiveNefarianPlan const lead = strategy.Propose(board, Bot(1), "tank", &facts);
+    CHECK(lead.MovementSurface && lead.MovementSurface->Purpose != MovePurpose::None
+        && Distance(lead.MovementSurface->Local, self) > 3.0f,
+        "once he attacks it, it leads him out to his end");
+}
+
 // Pillar care: pre-ascent shields and top-ups, then the off-healer on the
 // healerless pillar (coordinator default, pending the user).
 static void TestPillarCare()
@@ -2196,7 +2573,7 @@ static void TestPillarCare()
     CHECK(shield.SpellId == SpellPowerWordShield && duty.PillarOf(shield.Target) == 2,
         "the priest shields the healerless pillar first before the floor sinks");
     Blackboard shielded = ascent;
-    for (uint32 slot : { 1u, 9u, 3u })
+    for (uint32 slot : { 1u, 2u, 9u })
         AddAura(FindPlayer(shielded, slot), SpellPowerWordShield);
     EncounterView const shieldedView = ObserveEncounter(shielded);
     HealDecision const next = DecidePreAscentCare(shielded, shieldedView, duty,
@@ -2214,55 +2591,47 @@ static void TestPillarCare()
 
     Blackboard platform = PlatformBoard(PlatformFrame::LoweredOriginZ);
     EncounterView const platformView = ObserveEncounter(platform);
-    FindPlayer(platform, 3).HealthPct = 60.0f;
+    // The canonical tank pillar has no off-healer (the tanks alone, the
+    // user's tactic). The off-heal rules still hold for a healerless team
+    // that has one: a synthetic plan with the shaman there.
+    CHECK(duty.Pillars[2].OffHealer.IsEmpty()
+        && DecideOffHeal(platform, platformView, duty, FindPlayer(platform, 9), nullptr).Target.IsEmpty(),
+        "canonically nobody off-heals");
+    DutyPlan offDuty = duty;
+    for (PillarTeam& team : offDuty.Pillars)
+        team.Members.erase(std::remove(team.Members.begin(), team.Members.end(), Bot(9)), team.Members.end());
+    offDuty.Pillars[2].Members.push_back(Bot(9));
+    offDuty.Pillars[2].OffHealer = Bot(9);
+    FindPlayer(platform, 2).HealthPct = 60.0f;
     FindPlayer(platform, 1).HealthPct = 70.0f;
-    HealDecision const heal = DecideOffHeal(platform, platformView, duty, FindPlayer(platform, 9), nullptr);
-    CHECK(heal.SpellId == 8004 && heal.Target == Bot(3), "the shaman Healing Surges the lowest teammate");
-    CHECK(DecideOffHeal(platform, platformView, duty, FindPlayer(platform, 4), nullptr).Target.IsEmpty(),
+    HealDecision const heal = DecideOffHeal(platform, platformView, offDuty, FindPlayer(platform, 9), nullptr);
+    CHECK(heal.SpellId == 8004 && heal.Target == Bot(2), "the shaman Healing Surges the lowest teammate");
+    CHECK(DecideOffHeal(platform, platformView, offDuty, FindPlayer(platform, 4), nullptr).Target.IsEmpty(),
         "only the healerless pillar's off-healer off-heals");
     // Range and line of sight: an unreachable Blood DK at 30% never blocks a
-    // reachable hunter at 50%.
+    // reachable Feral at 50%.
     Blackboard spread = platform;
     FindPlayer(spread, 1).HealthPct = 30.0f;
-    FindPlayer(spread, 3).HealthPct = 50.0f;
+    FindPlayer(spread, 2).HealthPct = 50.0f;
     Vector3 far = FindPlayer(spread, 9).Position;
     far.X += 45.0f;
     FindPlayer(spread, 1).Position = far;
     EncounterView const spreadView = ObserveEncounter(spread);
-    HealDecision const reachable = DecideOffHeal(spread, spreadView, duty, FindPlayer(spread, 9), nullptr);
-    CHECK(reachable.Target == Bot(3), "the out-of-range DK does not block the hunter's heal");
+    HealDecision const reachable = DecideOffHeal(spread, spreadView, offDuty, FindPlayer(spread, 9), nullptr);
+    CHECK(reachable.Target == Bot(2), "the out-of-range DK does not block the Feral's heal");
     Blackboard blocked = platform;
     FindPlayer(blocked, 1).HealthPct = 30.0f;
-    FindPlayer(blocked, 3).HealthPct = 50.0f;
+    FindPlayer(blocked, 2).HealthPct = 50.0f;
     EncounterView const blockedView = ObserveEncounter(blocked);
     NativeFacts sight;
     sight.OutOfSight.push_back(Bot(1));
-    CHECK(DecideOffHeal(blocked, blockedView, duty, FindPlayer(blocked, 9), &sight).Target == Bot(3),
+    CHECK(DecideOffHeal(blocked, blockedView, offDuty, FindPlayer(blocked, 9), &sight).Target == Bot(2),
         "nor does one out of line of sight");
     NativeFacts noSurge;
     noSurge.Readiness.push_back({ Bot(9), 8004, true, false });
-    CHECK(DecideOffHeal(platform, platformView, duty, FindPlayer(platform, 9), &noSurge).Target.IsEmpty(),
+    CHECK(DecideOffHeal(platform, platformView, offDuty, FindPlayer(platform, 9), &noSurge).Target.IsEmpty(),
         "no heal the shaman does not know");
 
-    // Interrupts come first.
-    Blackboard casting = platform;
-    CastSnapshot nova;
-    nova.SpellId = 80734;
-    nova.Interruptible = true;
-    casting.Summons[3].Cast = nova;
-    FindPlayer(casting, 1).Alive = false; // the shaman is the pillar's interrupter now
-    AdaptiveNefarianStrategy strategy;
-    AdaptiveNefarianPlan const busy = strategy.Propose(casting, Bot(9), "dps");
-    CHECK(busy.InterruptTarget == casting.Summons[3].Guid && busy.Actions.size() == 1
-        && std::get_if<BotNativeAction::CastSpell>(&busy.Actions[0].Action)->SpellId == 57994,
-        "a due Wind Shear comes before any heal");
-    AdaptiveNefarianPlan const healing = strategy.Propose(platform, Bot(9), "dps");
-    CHECK(std::any_of(healing.Actions.begin(), healing.Actions.end(),
-        [](BotNativeAction::Candidate const& action)
-        {
-            auto const* cast = std::get_if<BotNativeAction::CastSpell>(&action.Action);
-            return cast && cast->SpellId == 8004;
-        }), "otherwise the shaman heals");
 }
 
 // The healerless pillar's survival through phase 2 is modelled with finite
@@ -2294,6 +2663,9 @@ int main()
     TestRoundSevenReview();
     TestDeathKnightFallbackDuty();
     TestPickupExhaustion();
+    TestTankPillarSelfCare();
+    TestCrossingHelp();
+    TestNefarianPickupReplay();
     TestPillarCare();
     if (failures)
         std::fprintf(stderr, "%d failure(s)\n", failures);

@@ -7,6 +7,7 @@
 // ascent and the descent steps are in BotNefarianAscent.h.
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianAscent.h"
+#include "Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotNefarianCrossing.h"
 #include <algorithm>
 #include <initializer_list>
 #include <vector>
@@ -35,10 +36,17 @@ inline std::optional<SurfaceGoal> PillarGoal(MovementContext const& context)
     Phase const phase = context.View.CurrentPhase;
     if (!PhaseWantsPillar(phase))
         return std::nullopt;
-    int const pillar = context.Plan.PillarOf(context.Bot.Guid);
+    int pillar = context.Plan.PillarOf(context.Bot.Guid);
     if (pillar < 0)
         return std::nullopt;
-    uint8 const slot = context.Plan.SlotOf(context.Bot.Guid);
+    uint8 slot = context.Plan.SlotOf(context.Bot.Guid);
+    // A helper crossing to the tank pillar (round 8) takes a spare slot there.
+    if (CrossingAssignment const crossing = CrossingFor(context);
+        crossing.Pillar >= 0 && !crossing.Departing)
+    {
+        pillar = crossing.Pillar;
+        slot = crossing.Slot;
+    }
     if (OnPillarStructure(context))
         return MakeGoal(context, phase == Phase::PlatformAscent
                 ? MovePurpose::PillarAscent : MovePurpose::PillarHold,
@@ -130,15 +138,18 @@ inline bool PillarSightClear(LocalPoint from, LocalPoint to)
 constexpr float OnyxiaPickupYards = 25.0f;
 constexpr float OnyxiaTauntReachYards = 28.0f; // Growl 30, less a margin
 
-inline SurfaceGoal OnyxiaPickupGoal(MovementContext const& context)
+// The same pickup for either dragon (round 8: in the r07 run's first attempt
+// the hunter held Nefarian at the centre for the whole attempt while the
+// Blood DK waited 48 yards away at its pull spot, out of taunt range).
+inline SurfaceGoal DragonPickupGoal(MovementContext const& context,
+    ActorSnapshot const& onyxiaActor, float meleeReach)
 {
     LocalPoint const self = BotLocal(context);
-    ActorSnapshot const& onyxiaActor = *context.View.Onyxia;
     LocalPoint const onyxia = WorldToLocal(onyxiaActor.Position);
     uint32 const taunt = TauntFor(context.Bot.ClassSpec).SpellId;
     bool const tauntUsable = taunt
         && (!context.Facts || context.Facts->SpellUsable(context.Bot.Guid, taunt));
-    float const reach = tauntUsable ? OnyxiaTauntReachYards : OnyxiaMeleeReach - 2.0f;
+    float const reach = tauntUsable ? OnyxiaTauntReachYards : meleeReach - 2.0f;
     bool const nativeSight = !context.Facts || context.Facts->InSight(onyxiaActor.Guid);
     PickupState const* memory = context.Facts
         ? context.Facts->FindPickup(context.Bot.Guid, onyxiaActor.Guid) : nullptr;
@@ -171,6 +182,11 @@ inline SurfaceGoal OnyxiaPickupGoal(MovementContext const& context)
         }
     // No spot: hold, and let the taunt try from here.
     return MakeGoal(context, MovePurpose::TankLead, Surface::Floor, self, 3.0f, true);
+}
+
+inline SurfaceGoal OnyxiaPickupGoal(MovementContext const& context)
+{
+    return DragonPickupGoal(context, *context.View.Onyxia, OnyxiaMeleeReach);
 }
 
 inline std::optional<SurfaceGoal> TankGoal(MovementContext const& context)
@@ -218,6 +234,10 @@ inline std::optional<SurfaceGoal> TankGoal(MovementContext const& context)
             if (phase != Phase::BothDragons)
                 return MakeGoal(context, MovePurpose::Stage, Surface::Floor,
                     Polar(layout.NefarianEndAngle, 12.0f), 3.0f, false);
+            // Picked up first: until Nefarian attacks his tank it walks into
+            // taunt range with a clear line (DragonPickupGoal).
+            if (view.Nefarian->VictimGuid != context.Bot.Guid)
+                return DragonPickupGoal(context, *view.Nefarian, NefarianMeleeReach);
             return fromSpot(PlanTankSpot(WorldToLocal(view.Nefarian->Position),
                 layout.NefarianEndAngle, NefarianMeleeReach, false));
         }

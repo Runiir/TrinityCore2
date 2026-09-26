@@ -295,25 +295,26 @@
   ],
   "strategy": {
     "implementation": "src/server/game/Bots/Content/Raids/BlackwingDescent/Encounters/Nefarian/BotAdaptiveNefarianStrategy.h",
-    "duty_plan": "BotNefarianDutyPlan.h: Nefarian tank = best living tank by capability (Blood DK, Protection Paladin, Protection Warrior, Feral); Onyxia tank = next tank, also the bone-warrior handler; pillar teams = one healer each (two healers: the Nefarian tank takes the pillar without one), then a <=13 s interrupter where the team has none, then balanced head count and damage dealers; primary interrupter = shortest cooldown, backup = next; shackler = first living non-tank with Shackle Undead (backup control only). Teams are built from the whole roster (dead members included), so a death never reshuffles them; live duties (tanks, handler, interrupters, off-healer, shackler) skip the dead.",
+    "duty_plan": "BotNefarianDutyPlan.h: Nefarian tank = best living tank by capability (Blood DK, Protection Paladin, Protection Warrior, Feral); Onyxia tank = next tank, also the bone-warrior handler; pillar teams (round 8): one healer each; with two healers both roster tanks (dead or alive, so teams never reshuffle) and only they take the healerless pillar (TankPillar, the user's tactic followed literally); then a <=13 s interrupter where a team has none (Kick, Rebuke; the tank pillar has Mind Freeze), then the remaining damage dealers balance the healer pillars' prototype damage (none joins the tank pillar: the model loses them there); the tank pillar's interrupters are its tanks (Mind Freeze, then Skull Bash), the other pillars' the shortest cooldown; shackler = first living non-tank with Shackle Undead.",
     "canonical_10n_plan": {
       "nefarian_tank": "blood_death_knight",
       "onyxia_tank": "feral_druid_tank",
+      "tank_pillar": 2,
       "pillar_0": [
         "holy_paladin (healer, backup Rebuke)",
         "assassination_rogue (Kick)",
-        "fire_mage"
+        "elemental_shaman",
+        "survival_hunter"
       ],
       "pillar_1": [
-        "discipline_priest (healer, Shackle Undead)",
-        "retribution_paladin (Rebuke)",
-        "feral_druid_tank (backup Skull Bash)",
+        "discipline_priest (healer, Shackle Undead, Pain Suppression)",
+        "retribution_paladin (Rebuke; Divine Shield)",
+        "fire_mage (backup Counterspell)",
         "demonology_warlock"
       ],
       "pillar_2": [
-        "blood_death_knight (no healer; Mind Freeze)",
-        "elemental_shaman (off-healer, backup Wind Shear)",
-        "survival_hunter"
+        "blood_death_knight (no healer; Mind Freeze 10 s, Death Strike)",
+        "feral_druid_tank (backup Skull Bash, 60 s without Brutal Impact; Frenzied Regeneration, Survival Instincts, Enrage when unglyphed)"
       ],
       "shackler": "discipline_priest Shackle Undead",
       "warrior_handler": "feral_druid_tank Nature's Grasp"
@@ -328,11 +329,18 @@
       "phase_1": "Bloodlust and burn Onyxia from the pull, before Nefarian lands; no Electrocute pacing. The user expects this may not hold on heroic or with lower gear: heroic keeps the Electrocute budget (PhaseOnePacingFor).",
       "phase_2": "Swim in the magma as it rises beside your pillar; once the pillar top is level with the surface, hop onto it and damage the prototype there.",
       "bone_warriors": "The Feral druid kites them, rooting them with Nature's Grasp as much as possible; with enough Onyxia-phase damage there are few. They must never get in front of Nefarian: his breath wakes them, refills their energy and buffs them (confirmed by the user).",
-      "conflicts": "Replaces the guide-derived Electrocute pacing (Wowhead, Icy Veins) in 10N, the three-healer composition, the stun/root/snare controller rotation, and the round-2 pillar_ascent_unsupported blocker."
+      "conflicts": "Replaces the guide-derived Electrocute pacing (Wowhead, Icy Veins) in 10N, the three-healer composition, the stun/root/snare controller rotation, and the round-2 pillar_ascent_unsupported blocker.",
+      "phase_2_pillars": "Round 8 (user raid experience 2026-09-26, authoritative): the tanks take the healerless pillar and heal themselves - the Blood DK with Death Strike, the Feral with its self-heals (Frenzied Regeneration, Enrage for rage); 'Feral healing himself might be enough'. When another pillar kills its prototype, one healer and one DPS from it (not all at once) swim across the lava to the tank pillar and help finish."
     },
     "phase_2_ascent": "BotNefarianAscent.h and BotNefarianMagma.h, data nefarian_magma_v1.json: walk to the pillar foot (9.5 yd, slot heading) while the floor keeps still; the magma (world 2.7713) covers the ring 5.5 s after the platform starts down; at 1.2 yd depth Float (stop standing on the platform like a client that starts swimming), Swim to the station 6.7 yd from the pillar centre at the float depth, hold; at the lowered stop the top is 0.286 above the surface: Hop (the client jump, 7.95577 yd/s up, at most run speed, checked as the exact MoveSpline MoveJumpWithGravity runs: duration from the 3D segment, the ballistic air time rounded down) onto the rim just above the waterline, Board, walk up to the slot on the flat top (3.0 yd). About 8 s in the magma: 8 ticks = 47,000 fire before resistance (5000 + 250 k per tick). Float, Swim and Hop are package T stages requested in patch N1; without them the plan carries the typed blocker pillar_ascent_unsupported (W1 watchdog terminal). A late swimmer when the floor rises meets it and rides up 0.25 yd/s slower than it, boarding within a band about 2 s long.",
     "phase_3_descent": "Once the floor is back at the raised stop and before Nefarian lands (Shadow of Cowardice 79355 punishes passengers above local 9.5 every 2 s): walk to the rim (5.0 yd), StepOff past the wall, Fall 7-8 yd onto the skirt or ring (below the 14.57 yd fall-damage threshold), Land; package T's existing stages.",
-    "healerless_pillar": "Coordinator default pending the user's answer and the live run: the Elemental shaman off-heals pillar 2 with Healing Surge 8004 (in its action profile) on the lowest teammate it can reach (40 yd, line of sight) under 90%, after its Blast Nova interrupt; before the floor goes under the Disc priest shields everyone and the Holy paladin tops up anyone under 95%, pillar 2 first. Resource-limited model (tests/test_nefarian_phase_two_survival.py, nefarian_phase_two_survival_v1.json: finite mana, 1.5 s casts landing at completion and never across a swim or hop, the Barrage landing after its 2 s cast and a 1.73 s missile flight from Nefarian's phase 2 lift-off position, realised preparation, phase 2 lasting until the last prototype dies; interrupts not modelled): a pillar-2 death before phase 2 ends in 44% of trials (mean phase 52 s), 13% with 1.25x and 2% with 1.5x raid DPS. Alternatives: a pure burn pillar 2 (option A) 100%, a tank pillar 92%; option B (a healer reaching two pillars) is geometrically impossible (nearest pillar tops 62.5 yd apart, heals reach 40). This is not a native estimate: single-assumption changes move the default from about 4% to 75%. The live run decides pillar-2 viability."
+    "healerless_pillar": "Coordinator default pending the user's answer and the live run: the Elemental shaman off-heals pillar 2 with Healing Surge 8004 (in its action profile) on the lowest teammate it can reach (40 yd, line of sight) under 90%, after its Blast Nova interrupt; before the floor goes under the Disc priest shields everyone and the Holy paladin tops up anyone under 95%, pillar 2 first. Resource-limited model (tests/test_nefarian_phase_two_survival.py, nefarian_phase_two_survival_v1.json: finite mana, 1.5 s casts landing at completion and never across a swim or hop, the Barrage landing after its 2 s cast and a 1.73 s missile flight from Nefarian's phase 2 lift-off position, realised preparation, phase 2 lasting until the last prototype dies; interrupts not modelled): a pillar-2 death before phase 2 ends in 44% of trials (mean phase 52 s), 13% with 1.25x and 2% with 1.5x raid DPS. Alternatives: a pure burn pillar 2 (option A) 100%, a tank pillar 92%; option B (a healer reaching two pillars) is geometrically impossible (nearest pillar tops 62.5 yd apart, heals reach 40). This is not a native estimate: single-assumption changes move the default from about 4% to 75%. The live run decides pillar-2 viability.",
+    "phase_2_tank_pillar": {
+      "self_care": "BotNefarianTankSelfCare.h under Barrage (pillar phases), after the pillar interrupt: Blood DK Death Strike 49998 on its prototype under 80%; Feral Survival Instincts 61336 under 30%; Frenzied Regeneration 22842 under 50% with the Glyph of Frenzied Regeneration (canonical: no rage conversion, so no Enrage), under 60% after Enrage 5229 without it (rage conversion; NativeFacts::UnglyphedFrenziedRegeneration from the bot's aura 54810). Spells the bot does not know are never named; M provisions Enrage, Frenzied Regeneration and Divine Shield for both paladins.",
+      "cross_pillar_help": "BotNefarianCrossing.h: the first healer pillar to kill its prototype (the observer's kill order persists it; a dead healer releases it) sends its healer and one damage dealer - one with a magma defensive it actually has ready if any, else the first by slot (the healer heals the pair) - while the platform rests lowered and the tank pillar's prototype keeps >=25%, each at >=80% health. At the rim a ready defensive (Divine Shield 642, Pain Suppression 33206) is cast first, with no movement proposed that decision so it owns the cast lanes; the step waits until it is up with >=6 s left (Forbearance, cooldown and the window are rechecked there). The step into the lava uses the ledge-drop contract's liquid variant (TransportSurfaceMove::LandInLiquid, patch R8_ledge_drop_into_liquid.patch; the dry-ground contract still refuses liquid), then fall, land on the sunken ring, float, swim, hop onto a spare slot of the tank pillar. Until the executor carries LandInLiquid nobody crosses.",
+      "survival_model": "nefarian_phase_two_survival_v1.json user_tank_pillar_* (the literal layout: the tanks alone on the tank pillar; not a native estimate, recorded without deviating on it): a tank-pillar death before phase 2 ends in 0% of trials (mean phase 76 s), a helper death 0.2%, and a death on the pillar the healer left 50%; without the help 27% (110 s); with the Elemental off-healer on the tank pillar 16%, with it and the warlock 75%.",
+      "frenzied_regeneration_glyph": "The canonical Feral carries Glyph of Frenzied Regeneration (item 40896, spell 54810): Frenzied Regeneration then converts no rage into health but raises healing received by 30%; the self-care handles both (glyph observed on the bot). M owns glyphs."
+    }
   },
   "acceptance_observations": [
     "Every bot is a passenger of GO 207834 before Onyxia's start-fight pulse (no bot pulls from the ledge).",
@@ -448,9 +456,25 @@
         "Onyxia pickup ownership until she targets her tank, bounded across decisions (10 s, 4 rejected spots or ~3 s stalled without sight; then nefarian_pickup_exhausted and the damage dealers start); the Blood DK keeps Onyxia while she lives when the Feral is dead, then tanks Nefarian"
       ],
       "open": [
-        "Onyxia held at 1 health with Nefarian landed and engaged (attempts 1-3 and 5-8): no break proven in the native chain (MoveLand, MovementInform, EVENT_LANDED, ACTION_NEFARIAN_LANDED, _allowDeath); the chain is instrumented (NefariansEnd log lines, server.nefarians_end) pending the next live run; the native rule is unchanged",
+        "Resolved in round 8 (r07 evidence): Onyxia's template carries CREATURE_STATIC_FLAG_UNKILLABLE; the script now clears it when Nefarian lands.",
         "watchdog counts party damage as progress while the encounter keeps resetting (tools/bot_ml/run_live_bot_validation.py)",
         "the route drops the Onyxia tank last (it was still on the ledge approach when the node advanced); a Feral-first drop would shorten the pickup further"
+      ]
+    },
+    "round7_batch1": {
+      "evidence": "artifacts/cata_raid_program/round7_batch1_20260926.tar.gz shard blackwing_descent_10n_nefarian_c0; combat log export complete (15,265 events, none dropped)",
+      "outcome": "reached bwd.nefarian.encounter; three phase-1 attempts of 139-141 s each, ended by encounter_reset_loop_watchdog; wipe_generation 0, 1 death recorded",
+      "root_cause": "Onyxia's 4.3.4 creature_template StaticFlags (0x5089000c, sql/updates/world/4.3.4/2023_08_27_00_world.sql) carry CREATURE_STATIC_FLAG_UNKILLABLE, which Unit::DealDamage enforces after her AI's DamageTaken; the landing chain completed every attempt (landed_received allow_death=1) yet she took exactly max-1 health (5,582,979) and every later hit landed 0 (reached 1 health at 61, 80 and 62 s). Her Electrical Charge then reached 100 about 140 s after each pull and Electrical Overload (78999, 855k-1.045M Nature to all) wiped the raid; the dragons reset. The same flag explains the r06 1-health stalls.",
+      "other_findings": [
+        "the platform hold held: one magma event in the whole run, bots on the platform at every reset",
+        "the Feral picked Onyxia up at 0-1.9 s and was first to damage her each attempt (the damage-dealer hold worked)",
+        "lust: Time Warp at 5.4 s in attempt 1, none in attempt 2 (cooldown), at 40 s in attempt 3 once ready",
+        "attempt 1: the hunter held Nefarian at the centre for the whole attempt while the Blood DK waited at its pull spot 48 yd away, out of taunt range; Nefarian's breath hit 15 targets",
+        "a few bots stood 1-3 yd below the floor near the ramp start (r 21-24, z 3.5-5.7) without magma damage"
+      ],
+      "fixes": [
+        "boss_nefarians_end.cpp: Onyxia's unkillable flag is set when she appears and cleared with ACTION_NEFARIAN_LANDED (her 'no death before Nefarian lands', as _allowDeath)",
+        "the Nefarian tank picks Nefarian up like the Onyxia tank does (DragonPickupGoal): into taunt range with a clear line before leading him out"
       ]
     }
   }

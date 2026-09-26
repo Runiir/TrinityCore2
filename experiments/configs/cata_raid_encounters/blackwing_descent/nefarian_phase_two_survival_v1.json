@@ -42,6 +42,39 @@
       "death_probability": 0.02,
       "mean_phase_seconds": 37.8,
       "median_first_death_seconds": 35.4
+    },
+    "user_tank_pillar_glyphed": {
+      "death_probability": 0.0,
+      "mean_phase_seconds": 75.9,
+      "median_first_death_seconds": null,
+      "helper_death_probability": 0.002,
+      "home_pillar_death_probability": 0.5
+    },
+    "user_tank_pillar_unglyphed": {
+      "death_probability": 0.0,
+      "mean_phase_seconds": 75.9,
+      "median_first_death_seconds": null,
+      "helper_death_probability": 0.002,
+      "home_pillar_death_probability": 0.5
+    },
+    "user_tank_pillar_glyphed_no_help": {
+      "death_probability": 0.27,
+      "mean_phase_seconds": 109.6,
+      "median_first_death_seconds": 87.9
+    },
+    "user_tank_pillar_with_offhealer": {
+      "death_probability": 0.162,
+      "mean_phase_seconds": 59.8,
+      "median_first_death_seconds": 47.9,
+      "helper_death_probability": 0.003,
+      "home_pillar_death_probability": 0.03
+    },
+    "user_tank_pillar_with_offhealer_and_warlock": {
+      "death_probability": 0.745,
+      "mean_phase_seconds": 53.6,
+      "median_first_death_seconds": 45.4,
+      "helper_death_probability": 0.0,
+      "home_pillar_death_probability": 0.0
     }
   },
   "layout_search": "The exhaustive 2/2/6 layout search of the first model (no layout materially better than the default) was not re-run on the corrected model: the coordinator stopped model refinement; the live run decides.",

@@ -110,6 +110,52 @@ LAYOUTS = {
     "tank_pillar": {0: [HOLY, ROGUE, HUNTER, SHAMAN], 1: [DISC, RET, WARLOCK], 2: [DK, FERAL, MAGE]},
 }
 
+# Round 8, the user's tactic (user raid experience 2026-09-26) followed
+# literally, as the duty plan builds it: the Blood DK and the Feral alone on
+# the healerless pillar, healing themselves; the first healer pillar to kill
+# its prototype sends its healer and one damage dealer across (one with a
+# magma defensive if it has one).
+USER_TANK_PILLAR = {0: [HOLY, ROGUE, SHAMAN, HUNTER], 1: [DISC, RET, MAGE, WARLOCK], 2: [DK, FERAL]}
+# Recorded for comparison only (the plan does not deviate on them).
+USER_ALTERNATIVES = {
+    "user_tank_pillar_with_offhealer": {0: [HOLY, ROGUE, MAGE, WARLOCK], 1: [DISC, RET, HUNTER],
+                                        2: [DK, FERAL, SHAMAN_HEALS]},
+    "user_tank_pillar_with_offhealer_and_warlock": {0: [HOLY, ROGUE, MAGE], 1: [DISC, RET, HUNTER],
+                                                    2: [DK, FERAL, SHAMAN_HEALS, WARLOCK]},
+}
+# Feral self-care (Spell.dbc): Frenzied Regeneration 22842 at under 50%
+# (3 min: once), +30% maximum health; with the canonical Glyph of Frenzied
+# Regeneration (item 40896, spell 54810) +30% healing received for 20 s,
+# without it up to 10 rage a second at 0.30% of maximum health each (rage
+# assumed available under Barrage). Survival Instincts 61336 at under 30%
+# (-50% damage taken for 12 s, once). Leader of the Pack 24932: 4% of maximum
+# health per melee crit, at most once in 6 s (from the hop at 15 s).
+FERAL_REGEN_TRIGGER = 0.5
+FERAL_INSTINCTS_TRIGGER = 0.3
+LEADER_OF_THE_PACK_PER_SECOND = 0.04 / 6.0
+# Cross-pillar help: the helpers leave at their pillar's kill if the tank
+# pillar's prototype keeps at least 25% of its health; the swim (about 60
+# yards at 4.72 yd/s, the step-off and the hop) takes CROSSING_SECONDS under
+# the magma's ticks (5,000 + 250 a stack each second); then the healer heals
+# the lowest tank-pillar member at HELPER_HPS (assumed) and the damage dealer
+# joins the tank pillar's prototype.
+CROSSING_SECONDS = 16.0
+HELPER_HPS = 12_000.0
+# A helper's magma defensive, cast at the rim just before it drops into the
+# lava (8 s): Divine Shield 642 (Holy and Retribution paladins: immune), Pain
+# Suppression 33206 (Discipline priest: -40%). The damage dealer is one with a
+# defensive if the pillar has one, otherwise the first; during the swim the
+# healer heals the pair with instant heals (HELPER_SWIM_HPS, assumed), and
+# from its departure its own pillar is no longer healed.
+CROSSING_DEFENSIVE = {"holy": 0.0, "ret": 0.0, "disc": 0.6}
+CROSSING_DEFENSIVE_SECONDS = 8.0
+HELPER_SWIM_HPS = 5_000.0
+USER_VARIANTS = {
+    "user_tank_pillar_glyphed": {"feral": "glyphed", "help": True},
+    "user_tank_pillar_unglyphed": {"feral": "unglyphed", "help": True},
+    "user_tank_pillar_glyphed_no_help": {"feral": "glyphed", "help": False},
+}
+
 
 STILL = ((4.0, 6.4), (8.4, 13.3), (15.0, 1e9))
 
@@ -132,11 +178,14 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
     mana_regen = tweak.get("mana_regen", MANA_REGEN)
     dk_self_heal = tweak.get("dk_self_heal", DK_SELF_HEAL)
     prep = tweak.get("preparation", 0.8)
+    feral_care = tweak.get("feral")
+    help_across = tweak.get("help", False)
     rnd = random.Random(seed)
     members = {}
     for pillar, team in layout.items():
         for name, health, dps, melee, role in team:
-            members[name] = {"pillar": pillar, "max": float(health), "hp": rnd.uniform(0.8, 1.0) * health,
+            members[name] = {"name": name, "pillar": pillar, "max": float(health),
+                             "hp": rnd.uniform(0.8, 1.0) * health,
                              "dps": dps * dps_scale, "melee": melee, "role": role, "absorb": 0.0,
                              "dead": False}
     for member in members.values():
@@ -152,9 +201,22 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
     cast_done = gcd_done = -1.0
     first_death = None
     pending: list[tuple[int, str, float]] = []  # (arrival step, target, damage)
+    regen_until = instincts_until = boost_until = -1.0
+    regen_used = instincts_used = False
+    helpers: list[str] = []
+    crossing_start = None
+    unhealed_pillar = None
+    helper_died = False
+    home_died = False
+    regen_bonus = 0.0
 
     def hit(member: dict, damage: float) -> None:
         damage *= 1.0 - mitigation
+        if member is members.get("feral") and t < instincts_until:
+            damage *= 0.5
+        if member.get("crossing") and crossing_start is not None \
+                and t < crossing_start + 1.0 + CROSSING_DEFENSIVE_SECONDS:
+            damage *= CROSSING_DEFENSIVE.get(member["name"], 1.0)
         soaked = min(member["absorb"], damage)
         member["absorb"] -= soaked
         member["hp"] -= damage - soaked
@@ -169,9 +231,36 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
                 continue
             if name == healer and busy_healing:
                 continue
+            if member.get("crossing") and (not arrived or member["role"] == "healer"):
+                continue
             prototypes[member["pillar"]] = max(0.0, prototypes[member["pillar"]] - member["dps"] / 10.0)
         if all(value <= 0.0 for value in prototypes.values()):
-            return first_death, t
+            return (first_death, t, helper_died, home_died) if help_across else (first_death, t)
+        # Cross-pillar help: the first healer pillar to finish sends its
+        # healer and one damage dealer.
+        if help_across and crossing_start is None and prototypes.get(2, 0.0) >= 0.25 * PROTOTYPE:
+            for pillar in (0, 1):
+                if prototypes.get(pillar, 1.0) <= 0.0:
+                    team = [n for n, m in members.items() if m["pillar"] == pillar and not m["dead"]]
+                    healer_name = next((n for n in team if members[n]["role"] == "healer"), None)
+                    # A damage dealer with a magma defensive if any, else the first.
+                    dps_name = next((n for n in team if members[n]["role"] == "dps"
+                                     and n in CROSSING_DEFENSIVE), None) or next(
+                        (n for n in team if members[n]["role"] == "dps"), None)
+                    helpers = [n for n in (healer_name, dps_name) if n]
+                    crossing_start = t
+                    unhealed_pillar = pillar if healer_name else None
+                    for name in helpers:
+                        members[name]["pillar"] = 2
+                        members[name]["crossing"] = True
+                    break
+        crossing = crossing_start is not None and t < crossing_start + CROSSING_SECONDS
+        arrived = crossing_start is not None and t >= crossing_start + CROSSING_SECONDS
+        if crossing_start is not None and step % 10 == 0 and crossing and t > crossing_start + 1.0:
+            tick = int(t - crossing_start - 1.0)
+            for name in helpers:
+                if not members[name]["dead"]:
+                    hit(members[name], 5000.0 + 250.0 * tick)
         if 65 <= step <= 135 and (step - 65) % 10 == 0:
             tick = (step - 65) // 10
             for member in members.values():
@@ -191,13 +280,52 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
             if not members[name]["dead"]:
                 hit(members[name], damage)
         for name, member in members.items():
-            if member["pillar"] != 2:
+            if member["pillar"] != 2 and member["pillar"] != unhealed_pillar:
                 member["hp"] = member["max"]
             elif name == "dk" and not member["dead"]:
                 member["hp"] = min(member["max"], member["hp"] + dk_self_heal / 10.0)
+            elif name == "feral" and feral_care and not member["dead"]:
+                # Frenzied Regeneration's +30% maximum health is temporary:
+                # when it expires the extra health goes with it.
+                if regen_bonus and t >= regen_until:
+                    member["hp"] = max(1.0, member["hp"] - regen_bonus)
+                    regen_bonus = 0.0
+                ceiling = member["max"] * (1.3 if t < regen_until else 1.0)
+                if not regen_used and member["hp"] < FERAL_REGEN_TRIGGER * member["max"]:
+                    regen_used = True
+                    regen_until = t + 20.0
+                    regen_bonus = 0.3 * member["max"]
+                    member["hp"] = max(member["hp"] + regen_bonus, 0.3 * member["max"])
+                    if feral_care == "glyphed":
+                        boost_until = t + 20.0
+                if not instincts_used and member["hp"] < FERAL_INSTINCTS_TRIGGER * member["max"]:
+                    instincts_used = True
+                    instincts_until = t + 12.0
+                if feral_care == "unglyphed" and t < regen_until:
+                    member["hp"] += 0.03 * member["max"] / 10.0
+                if t >= 15.0:
+                    member["hp"] += LEADER_OF_THE_PACK_PER_SECOND * member["max"] / 10.0
+                member["hp"] = min(ceiling, member["hp"])
+            if help_across and crossing and name in helpers and member["role"] == "healer" \
+                    and not member["dead"]:
+                pair = [n for n in helpers if not members[n]["dead"]]
+                lowest = min(pair, key=lambda n: members[n]["hp"] / members[n]["max"])
+                members[lowest]["hp"] = min(members[lowest]["max"],
+                                            members[lowest]["hp"] + HELPER_SWIM_HPS / 10.0)
+            if help_across and arrived and name in helpers and member["role"] == "healer" \
+                    and not member["dead"]:
+                team = [n for n, m in members.items() if m["pillar"] == 2 and not m["dead"]]
+                lowest = min(team, key=lambda n: members[n]["hp"] / members[n]["max"])
+                boost = 1.3 if lowest == "feral" and t < boost_until else 1.0
+                members[lowest]["hp"] = min(members[lowest]["max"],
+                                            members[lowest]["hp"] + HELPER_HPS * boost / 10.0)
             if member["hp"] <= 0.0 and not member["dead"]:
                 member["dead"] = True
-                if member["pillar"] == 2 and first_death is None:
+                if member.get("crossing"):
+                    helper_died = True
+                elif member["pillar"] == unhealed_pillar:
+                    home_died = True
+                elif member["pillar"] == 2 and first_death is None:
                     first_death = t
         mana = min(mana_pool, mana + mana_regen / 10.0)
         if healer is None or members[healer]["dead"]:
@@ -208,6 +336,8 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
                 amount = HEAL_BASE * rnd.uniform(1.0 - HEAL_VARIANCE, 1.0 + HEAL_VARIANCE) + 0.483 * 4500.0
                 if rnd.random() < 0.15:
                     amount *= HEAL_CRIT
+                if cast_target == "feral" and t < boost_until:
+                    amount *= 1.3
                 target["hp"] = min(target["max"], target["hp"] + amount)
             cast_target = None
         if cast_target is None and cast_fits(t, 1.5) and t >= gcd_done and mana >= SURGE_COST:
@@ -217,23 +347,34 @@ def run(seed: int, layout: dict, heal_below: float, dps_scale: float = 1.0,
                 cast_target = lowest
                 cast_done = gcd_done = t + 1.5
                 mana -= SURGE_COST
-    return first_death, 180.0
+    return (first_death, 180.0, helper_died, home_died) if help_across else (first_death, 180.0)
 
 
 def summarize(layout: dict, heal_below: float, dps_scale: float = 1.0, seeds: int = SEEDS,
               tweak: dict | None = None) -> dict:
     deaths = []
     phases = []
+    helper_deaths = 0
+    home_deaths = 0
     for seed in range(seeds):
-        death, phase = run(seed, layout, heal_below, dps_scale, tweak)
+        outcome = run(seed, layout, heal_below, dps_scale, tweak)
+        death, phase = outcome[0], outcome[1]
+        if len(outcome) > 2 and outcome[2]:
+            helper_deaths += 1
+        if len(outcome) > 3 and outcome[3]:
+            home_deaths += 1
         phases.append(phase)
         if death is not None and death <= phase:
             deaths.append(death)
-    return {
+    result = {
         "death_probability": round(len(deaths) / seeds, 3),
         "mean_phase_seconds": round(statistics.mean(phases), 1),
         "median_first_death_seconds": round(statistics.median(deaths), 1) if deaths else None,
     }
+    if tweak and tweak.get("help"):
+        result["helper_death_probability"] = round(helper_deaths / seeds, 3)
+        result["home_pillar_death_probability"] = round(home_deaths / seeds, 3)
+    return result
 
 
 # The reviewer's sensitivity variants (GPT-6 Astra, second re-review), on the
@@ -255,6 +396,10 @@ def model_results() -> dict:
     results = {name: summarize(layout, heal_below) for name, layout in LAYOUTS.items()}
     for scale in (1.25, 1.5):
         results[f"default_dps_x{scale}"] = summarize(LAYOUTS["default"], heal_below, scale)
+    for name, tweak in USER_VARIANTS.items():
+        results[name] = summarize(USER_TANK_PILLAR, heal_below, tweak=tweak)
+    for name, layout in USER_ALTERNATIVES.items():
+        results[name] = summarize(layout, heal_below, tweak={"feral": "glyphed", "help": True})
     return results
 
 
@@ -285,3 +430,15 @@ def test_the_risk_is_reported_not_hidden() -> None:
     assert f"{default:.0%}" in healerless
     assert "not a native estimate" in healerless and "not a native estimate" in recorded["note"]
     assert recorded["pillar_top_separation_yards"]["minimum"] > 40.0
+
+
+def test_round_eight_layout_is_recorded() -> None:
+    """The user's tank pillar (round 8, literal): the recorded risks are in the contract."""
+    recorded = json.loads(DATA.read_text(encoding="utf-8"))["results"]
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))["strategy"]["phase_2_tank_pillar"]
+    user = recorded["user_tank_pillar_glyphed"]
+    text = contract["survival_model"]
+    assert f"{user['death_probability']:.0%}" in text
+    assert f"{user['home_pillar_death_probability']:.0%}" in text
+    assert f"{recorded['user_tank_pillar_glyphed_no_help']['death_probability']:.0%}" in text
+    assert "not a native estimate" in text.lower()
