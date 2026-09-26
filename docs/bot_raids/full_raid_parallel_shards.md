@@ -686,6 +686,28 @@ ready check (harness patch H).
 User decision (2026-09-26): the canonical hunter becomes **Survival**. As the fixed Magmaw
 baiter, BM did 14-16k because it can't Cobra Shot while moving; legacy Survival did 37.6k.
 
+## Round 4 results (2026-09-26)
+
+- **Commits:** integration c6603b9667, DVC e2d0568e69, build e2d0568e6960. Evidence:
+  `round4_batch1_20260926.tar.gz`.
+- **Magmaw smoke:** native clear in 81.5 s at 339k raid DPS (round 3: 108 s and 263k;
+  legacy accepted average 282k; WCL reference 246k).
+  - The Survival hunter baited at 45.3k (BM did 14k).
+  - Ret 45.4k, rogue 38.1k, Elemental 47.6k, mage 47.4k.
+- **Six-shard parallel batch:** three native clears in one worldserver.
+
+  | Shard | Result |
+  |---|---|
+  | Magmaw | clear |
+  | Omnotron | clear (label `combat_log_transport_incomplete`) |
+  | Chimaeron | clear |
+  | Atramedes | reached the encounter for the first time (route 6/7), wiped, plateaued in recovery |
+  | Maloriak | engaged, ended on `validation_active_instance_drift` |
+  | Nefarian | reached the descent (7/9), then a lower-wing recovery ride engaged without a wipe and timed out |
+
+- **Crash:** the worldserver segfaulted (exit -11) on the last cohort's `.botauto stop`,
+  after every shard had finished. No core was captured; a crash investigation is round 5.
+
 ## Round 3 candidates (from the round 2 reviews)
 
 - **Nefarian:** a lawful pillar ascent (swimming onto a pillar top) and the pillar-top
