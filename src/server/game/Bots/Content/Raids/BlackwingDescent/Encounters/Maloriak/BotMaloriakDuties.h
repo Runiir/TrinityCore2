@@ -3,6 +3,7 @@
 
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotMaloriakFacts.h"
 
+#include <algorithm>
 #include <string_view>
 #include <tuple>
 #include <vector>
@@ -346,6 +347,35 @@ inline ObjectGuid ResolveLustOwner(Blackboard const& board)
         }
     }
     return owner;
+}
+
+// A healer assigned a purge or interrupt drops the heal it is casting only
+// while nobody in the raid is below this health (the Disc Priest joins
+// Remedy after 3 s).
+constexpr float HealerKeepsHealBelowPct = 50.0f;
+
+inline bool OwnCastYieldsToDuty(bool healer, bool castIsHelpful,
+    float lowestAllyHealthPct)
+{
+    return !healer || !castIsHelpful
+        || lowestAllyHealthPct >= HealerKeepsHealBelowPct;
+}
+
+// Defensive cap on the phase-two push hold. The hold normally ends when the
+// tanks push the boss to 25% or the chambers empty; the cap bounds it when
+// they cannot. startedAtMs is the dispatch's per-boss latch (0 = closed).
+constexpr uint64 PhaseTwoPushHoldCapMs = 90000;
+
+inline bool PushHoldWithinCap(uint64& startedAtMs, bool window, uint64 nowMs)
+{
+    if (!window)
+    {
+        startedAtMs = 0;
+        return false;
+    }
+    if (!startedAtMs)
+        startedAtMs = std::max<uint64>(nowMs, 1);
+    return nowMs < startedAtMs + PhaseTwoPushHoldCapMs;
 }
 
 inline bool Contains(std::vector<ObjectGuid> const& guids, ObjectGuid guid)

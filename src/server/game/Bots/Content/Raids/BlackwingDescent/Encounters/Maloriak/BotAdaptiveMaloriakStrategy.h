@@ -41,9 +41,12 @@ public:
     // Pacing: at 25% Release All Minions frees the whole reserve plus two
     // Prime Subjects, so below 30% damage dealers and healers hold the boss
     // while more than one release (3 Aberrations) is still in the chambers,
-    // killing each released batch instead. Tanks keep attacking, which bounds
-    // the hold (about 5% of the boss at tank damage). The r03 attempt reached
-    // 25% after 80 s with all 18 in reserve and wiped to them.
+    // killing each released batch instead. A living tank is required and
+    // tanks keep attacking, so the hold covers about 5% of the boss at tank
+    // damage; the dispatch caps it at Maloriak::PhaseTwoPushHoldCapMs. It
+    // cannot drain the reserve to 3: at the r03 raid damage about 6-9
+    // Aberrations plus both Prime Subjects still come at 25% (r03 got all 18
+    // after 80 s and wiped to them).
     static constexpr std::size_t PhaseTwoReserveCap = 3;
 
     // Hazard radii come from client rows (BotMaloriakFormation.h): Absolute
@@ -98,6 +101,11 @@ public:
         std::string_view const botRole = bot->Role.empty()
             ? role : std::string_view(bot->Role);
         Maloriak::TankDuties const tanks = Maloriak::ResolveTanks(board);
+        plan.PushHoldWindow = observation.Engaged
+            && observation.CurrentPhase != Maloriak::Phase::PhaseTwo
+            && boss.HealthPct <= CleanupBeforePhaseTwoPct
+            && observation.ReserveAberrations > PhaseTwoReserveCap
+            && !tanks.MainTank.IsEmpty();
 
         if (observation.CurrentPhase == Maloriak::Phase::Prepull)
         {
@@ -649,16 +657,14 @@ private:
             : "aberration_burn";
     }
 
-    // Below 30% in phase one, boss damage waits while more than
-    // PhaseTwoReserveCap Aberrations are still in the chambers. The boss stays
-    // the formation target; the suppression only clears the offensive target.
+    // Inside the push-hold window (below 30% in phase one, more than
+    // PhaseTwoReserveCap Aberrations in the chambers, a living tank), boss
+    // damage waits. The boss stays the formation target; the suppression only
+    // clears the offensive target, and the dispatch drops it after the cap.
     static void HoldPhaseTwoPush(Maloriak::Observation const& observation,
         AdaptiveMaloriakPlan& plan)
     {
-        if (observation.CurrentPhase == Maloriak::Phase::PhaseTwo
-            || plan.DamageTarget != observation.Boss->Guid
-            || observation.Boss->HealthPct > CleanupBeforePhaseTwoPct
-            || observation.ReserveAberrations <= PhaseTwoReserveCap)
+        if (!plan.PushHoldWindow || plan.DamageTarget != observation.Boss->Guid)
             return;
         plan.SuppressOffense = true;
         plan.SuppressReason = "phase_two_push_hold";

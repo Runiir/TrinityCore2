@@ -1,12 +1,15 @@
 #include "Bots/BotEncounterInterruptVeto.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
+#include "Bots/BotWorldPopulationMgrSpellSemantics.h"
 #include "Bots/BotWorldPopulationMgrUpdateContext.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawBloodlust.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Maloriak/BotAdaptiveMaloriakStrategy.h"
 
 #include "CharmInfo.h"
 #include "Creature.h"
+#include "Group.h"
 #include "ObjectAccessor.h"
 #include "Pet.h"
 #include "Player.h"
@@ -19,7 +22,11 @@
 #include <algorithm>
 #include <array>
 #include <list>
+#include <map>
+#include <mutex>
 #include <string>
+#include <string_view>
+#include <tuple>
 
 // Kernel candidates for the adaptive Maloriak plan (BotAdaptiveMaloriakStrategy.h).
 // Every candidate submits one ordinary native request (move, interrupt,
@@ -30,8 +37,11 @@
 // Magmaw's observer does for Magmaw.
 namespace
 {
+using BotWorldPopulationMgrNativeHelpers::HasPowerForSpell;
 using BotWorldPopulationMgrNativeHelpers::IsNativeCombatObserved;
 using BotWorldPopulationMgrNativeHelpers::UnitHealthPct;
+using BotWorldPopulationMgrSpellSemantics::HasNearbyProtectedEncounterTarget;
+using BotWorldPopulationMgrSpellSemantics::SpellHasHostileMultiTargetSemantics;
 
 // Pummel, Kick, Counterspell, Wind Shear, Rebuke, Mind Freeze, Skull Bash
 // (bear, cat), Silence, Silencing Shot.
@@ -95,21 +105,96 @@ bool HasRemedy(Unit const* unit)
     return false;
 }
 
+// Every BotWorldPopulationMgr::TryCastCombatSpell gate except the bot's own
+// casting state, in the same order, so a bot only stops its cast when the
+// duty spell would then be submitted (r03 logged Wind Shear no_line_of_sight
+// 24 times; an out-of-sight Shaman must keep its Lava Burst).
+bool DutySpellCastable(Player* bot, Unit* target, uint32 spellId)
+{
+    if (!bot || !target || !spellId || !target->IsAlive()
+        || !bot->IsValidAttackTarget(target))
+        return false;
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo || !bot->IsWithinLOSInMap(target))
+        return false;
+    uint64 const ownerGuid = bot->GetGUID().GetRawValue();
+    if (BotRaidAreaAuthority::IsAllOffenseSuppressed(ownerGuid))
+        return false;
+    if (Creature const* creature = target->ToCreature();
+        creature && BotRaidAreaAuthority::IsProtectedEncounterTarget(
+            ownerGuid, creature->GetEntry(), creature->GetSpawnId(),
+            creature->GetGUID().GetRawValue()))
+        return false;
+    if (HasNearbyProtectedEncounterTarget(bot, target, spellInfo)
+        && SpellHasHostileMultiTargetSemantics(spellInfo))
+        return false;
+    if (bot->HasUnitState(UNIT_STATE_CONTROLLED)
+        || (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE
+            && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
+        || (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY
+            && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED)))
+        return false;
+    float const maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    if (!bot->IsWithinDistInMap(target, maxRange))
+        return false;
+    if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+        || !bot->GetSpellHistory()->IsReady(spellInfo))
+        return false;
+    return HasPowerForSpell(bot, spellInfo);
+}
+
+// A healer keeps a heal in progress while anyone in its raid is below
+// Maloriak::HealerKeepsHealBelowPct; everyone else yields to the duty.
+bool OwnCastYields(Player* bot, bool healer)
+{
+    Spell const* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL);
+    if (!current)
+        current = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
+    bool const helpful = current && current->GetSpellInfo()->IsPositive();
+    float lowest = 100.0f;
+    if (healer && helpful)
+        if (Group* group = bot->GetGroup())
+            for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                if (Player* member = itr->GetSource();
+                    member && member->IsAlive() && member->IsInMap(bot))
+                    lowest = std::min(lowest, member->GetHealthPct());
+    return BotEncounter::Maloriak::OwnCastYieldsToDuty(healer, helpful, lowest);
+}
+
 // TryCastCombatSpell refuses while the bot is casting, and casters chain hard
-// casts, so round 4's one Remedy (25000/s, 225000 healed) was never purged. A
-// bot assigned an interrupt or purge stops its own cast first, as a player
-// would, but only when that spell is off cooldown and the target is in range.
-bool ClearOwnCastFor(Player* bot, Unit* target, uint32 spellId)
+// casts, so r03's one Remedy (25000/s, 225000 healed) was never purged. A bot
+// assigned an interrupt or purge stops its own cast first, as a player would,
+// when the duty spell would then pass every cast gate and the cast it drops
+// is not a needed heal.
+bool ClearOwnCastFor(Player* bot, bool healer, Unit* target, uint32 spellId)
 {
     if (!bot->HasUnitState(UNIT_STATE_CASTING))
         return true;
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!spellInfo || !bot->GetSpellHistory()->IsReady(spellInfo)
-        || !bot->IsWithinDistInMap(target,
-            std::max(5.0f, spellInfo->GetMaxRange(false))))
+    if (!OwnCastYields(bot, healer) || !DutySpellCastable(bot, target, spellId))
         return false;
     bot->InterruptNonMeleeSpells(false);
     return true;
+}
+
+// Per-boss latch of the phase-two push hold (map, instance, boss GUID ->
+// window start). Every bot of the cohort refreshes it; the window is the same
+// for all of them, so the first observer starts the clock.
+std::mutex PushHoldMutex;
+std::map<std::tuple<uint32, uint32, uint64>, uint64> PushHoldStartedAtMs;
+
+bool PushHoldHonoured(Player const* bot,
+    BotEncounter::AdaptiveMaloriakPlan const& plan, uint64 nowMs)
+{
+    std::tuple<uint32, uint32, uint64> const key{ bot->GetMapId(),
+        bot->GetInstanceId(), plan.Boss.GetRawValue() };
+    std::lock_guard<std::mutex> guard(PushHoldMutex);
+    if (!plan.PushHoldWindow)
+    {
+        PushHoldStartedAtMs.erase(key);
+        return false;
+    }
+    return BotEncounter::Maloriak::PushHoldWithinCap(PushHoldStartedAtMs[key],
+        true, nowMs);
 }
 }
 
@@ -128,7 +213,10 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
     {
         Unit* boss = plan.ReleaseAdmitted
             ? ObjectAccessor::GetUnit(*context.Bot, plan.Boss) : nullptr;
-        BotEncounterInterruptVeto::Set(plan.Boss.GetRawValue(),
+        // Keyed by map and instance: creature GUIDs are generated per map,
+        // so two concurrent instances of map 669 can share Maloriak's GUID.
+        BotEncounterInterruptVeto::Set(context.Bot->GetMapId(),
+            context.Bot->GetInstanceId(), plan.Boss.GetRawValue(),
             BotEncounter::Maloriak::ReleaseAberrationsSpell,
             boss && boss->IsAlive() && NativeReleaseAdmitted(boss));
     }
@@ -183,7 +271,11 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
         context.State.DecisionKernel.Submit(std::move(movement));
     }
 
-    if (plan.SuppressOffense)
+    // The push hold stands down after Maloriak::PhaseTwoPushHoldCapMs.
+    bool const pushHoldHonoured = PushHoldHonoured(context.Bot, plan,
+        context.DecisionNowMs);
+    if (plan.SuppressOffense && (plan.SuppressReason != "phase_two_push_hold"
+            || pushHoldHonoured))
     {
         std::string const reason(plan.SuppressReason);
         BotActionArbitration::Candidate suppress;
@@ -263,7 +355,9 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             if (!interruptSpell)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "interrupt_spell_unknown");
-            if (!ClearOwnCastFor(context.Bot, caster, interruptSpell))
+            bool const healer = std::string_view(
+                GetDungeonRole(context.Bot)) == "healer";
+            if (!ClearOwnCastFor(context.Bot, healer, caster, interruptSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "interrupt_not_ready_while_casting");
             if (!TryCastCombatSpell(context.Bot, caster, interruptSpell))
@@ -304,7 +398,9 @@ void BotWorldPopulationMgr::SubmitMaloriakKernelCandidates(
             if (!dispelSpell)
                 return BotActionArbitration::Outcome::NotApplicable(
                     "dispel_spell_unknown");
-            if (!ClearOwnCastFor(context.Bot, target, dispelSpell))
+            bool const healer = std::string_view(
+                GetDungeonRole(context.Bot)) == "healer";
+            if (!ClearOwnCastFor(context.Bot, healer, target, dispelSpell))
                 return BotActionArbitration::Outcome::Retryable(
                     "dispel_not_ready_while_casting");
             // Purges share the GCD: hold the cast lanes through it so the

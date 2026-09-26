@@ -31,8 +31,10 @@ Machine-readable packet: `experiments/configs/cata_raid_encounters/blackwing_des
 - Green: Debilitating Slime doubles damage taken for 15 s. Burn the Aberrations then.
 - Aberrations are tanked away from Maloriak. Growth Catalyst reaches 10 yards.
 - Pacing: below 30% damage dealers and healers hold the boss while more than one release (3
-  Aberrations) is still in the chambers, and kill each released batch; tanks keep attacking, which
-  bounds the hold. In round 3 the raid reached 25% after 80 s with all 18 in reserve.
+  Aberrations) is still in the chambers and a tank is alive, and kill each released batch; tanks
+  keep attacking, and the hold stands down after 90 s. It thins the 25% wave but cannot empty the
+  chambers: at round-3 raid damage expect about 6-9 Aberrations plus both Prime Subjects at 25%
+  (round 3 without it: all 18 plus both, after 80 s).
 - Phase two (25%–0%): burn the boss. The off-tank holds the Prime Subjects and any remaining
   Aberrations. The raid stays out of the front. The tank steps out of Magma Jets. Everyone
   avoids Absolute Zero spheres and jet fire. Use raid haste here: the nuke phase is a DPS race.
@@ -177,8 +179,8 @@ Duties are chosen by capability from the observed roster, never by roster slot.
 | Main tank | Blood DK | lease, else Blood DK > Prot Paladin > Prot Warrior > Feral; taunts back an aggressive boss, not under Shadow Imbued |
 | Off-tank | Feral (bear) | picks up and taunts loose Aberrations, Prime Subjects and Vile Swills; holds them at an add spot ≥ 20 yd from the boss |
 | Arcane Storm | Retribution (lowest-GUID melee 10 s interrupt) | the owner at the cast; the second short interrupter after 0.8 s of channel; everyone capable after 2 s |
-| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting. An admitted release is published as an interrupt veto that ordinary rotation interrupts honour (in round 3 they cut every release) |
-| Remedy | Mage (Spellsteal) | Shaman Purge after 1.5 s, Hunter and Priest after 3 s; an assigned purger or interrupter stops its own hard cast first |
+| Release Aberrations | Rogue and Elemental Shaman | interrupt only when six or more are loose (heroic Dark: while Vile Swills live); never the Arcane Storm owner (with one short interrupter the long pool takes it); the dispatch recounts the Aberrations natively before interrupting. An admitted release is published as an interrupt veto, keyed by map, instance and boss GUID, that the kernel profile resolver honours (in round 3 rotation interrupts cut every release); the legacy SelectCombatSpell and BotController paths do not check it |
+| Remedy | Mage (Spellsteal) | Shaman Purge after 1.5 s, Hunter and Priest after 3 s; an assigned purger or interrupter stops its own hard cast first, only when the duty spell passes every other cast gate (sight, range, cooldown, power, control), and a healer keeps a heal while anyone is below 50% |
 | Raid haste | Elemental Shaman (else a Mage) | in phase two |
 | Flash Freeze | ranged damage dealers | break the nearest block; others leave the 5-yard shatter |
 

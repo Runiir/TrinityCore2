@@ -8,6 +8,7 @@ checks the duty, target and movement proposals phase by phase.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -464,7 +465,9 @@ int main()
     // interrupts, so 25% freed 18 Aberrations and 2 Prime Subjects. The plan
     // publishes whether a release is admitted (the dispatch turns it into an
     // interrupt veto) and holds boss damage below 30% while the chambers
-    // still hold more than one release.
+    // still hold more than one release. The hold is bounded by tank damage
+    // and a 90 s cap, so it does not drain the chambers to 3: at the r03 raid
+    // damage about 6-9 Aberrations plus both Prime Subjects still come at 25%.
     {
         Blackboard board = Canonical();
         Boss(board).Auras.push_back({ 78895, Boss(board).Guid, 1, 0 });
@@ -497,6 +500,16 @@ int main()
         }
         AdaptiveMaloriakPlan const tank = Plan(board, DK);
         CHECK(!tank.SuppressOffense && tank.DamageTarget == Boss(board).Guid);
+        // Every bot, tanks included, reports the same window for the latch.
+        for (Slot slot : { DK, FERAL, MAGE, HOLY })
+            CHECK(Plan(board, slot).PushHoldWindow);
+        // Without a living tank nobody would push to 25%: no hold.
+        board.Players[DK].Alive = false;
+        board.Players[FERAL].Alive = false;
+        CHECK(!Plan(board, MAGE).PushHoldWindow);
+        CHECK(!Plan(board, MAGE).SuppressOffense);
+        board.Players[DK].Alive = true;
+        board.Players[FERAL].Alive = true;
         // A released batch is burned instead of waiting.
         board.Summons[6].Selectable = board.Summons[6].Attackable = true;
         AdaptiveMaloriakPlan const burn = Plan(board, LOCK);
@@ -516,7 +529,29 @@ int main()
         Boss(board).HealthPct = 24.0f;
         AdaptiveMaloriakPlan const two = Plan(board, MAGE);
         CHECK(std::string(two.Phase) == "phase_two");
-        CHECK(!two.SuppressOffense && !two.ReleaseAdmitted);
+        CHECK(!two.SuppressOffense && !two.ReleaseAdmitted && !two.PushHoldWindow);
+    }
+
+    // The dispatch's push-hold latch: starts at the first observation of the
+    // window, stands down after 90 s, resets when the window closes.
+    {
+        uint64 started = 0;
+        CHECK(!M::PushHoldWithinCap(started, false, 5000) && started == 0);
+        CHECK(M::PushHoldWithinCap(started, true, 10000) && started == 10000);
+        CHECK(M::PushHoldWithinCap(started, true, 99999));
+        CHECK(!M::PushHoldWithinCap(started, true, 100000));
+        CHECK(!M::PushHoldWithinCap(started, true, 150000) && started == 10000);
+        CHECK(!M::PushHoldWithinCap(started, false, 150001) && started == 0);
+        CHECK(M::PushHoldWithinCap(started, true, 200000) && started == 200000);
+    }
+
+    // Stopping the bot's own cast for a purge or interrupt: never a heal in
+    // progress while anyone is below 50%; damage casts and non-healers yield.
+    {
+        CHECK(M::OwnCastYieldsToDuty(false, true, 10.0f));
+        CHECK(M::OwnCastYieldsToDuty(true, false, 10.0f));
+        CHECK(!M::OwnCastYieldsToDuty(true, true, 49.9f));
+        CHECK(M::OwnCastYieldsToDuty(true, true, 50.0f));
     }
 
     // Ranged hysteresis (r03: healers re-pathed on almost every decision as
@@ -895,12 +930,29 @@ def test_maloriak_dispatch_module_revalidates_at_the_native_edge() -> None:
     # moves that start outside the laboratory take the route lane; assigned
     # interrupts and purges stop the bot's own hard cast (Remedy went
     # unpurged for 225000 healing) and purges hold the lanes through the GCD.
-    assert "BotEncounterInterruptVeto::Set(plan.Boss.GetRawValue()," in module
     assert "boss && boss->IsAlive() && NativeReleaseAdmitted(boss)" in module
     assert "!BotEncounter::Maloriak::InRoom(" in module
     assert "BotMovementArbitration::Owner::Route" in module
-    assert module.count("ClearOwnCastFor(context.Bot,") == 2
+    assert module.count("ClearOwnCastFor(context.Bot, healer,") == 2
     assert '"native_dispel_wait_global_cooldown"' in module
+    # The veto is keyed by map and instance (per-map creature GUIDs).
+    assert "BotEncounterInterruptVeto::Set(context.Bot->GetMapId(),\n            context.Bot->GetInstanceId(), plan.Boss.GetRawValue()," in module
+    # The push hold stands down after the cap.
+    assert "PushHoldHonoured(context.Bot, plan," in module
+    assert 'plan.SuppressReason != "phase_two_push_hold"' in module
+    # A bot stops its own cast only when the duty spell passes every other
+    # TryCastCombatSpell gate (r03: Wind Shear no_line_of_sight 24 times).
+    combat_spell = (ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatSpell.cpp").read_text(encoding="utf-8")
+    start = combat_spell.index("bool BotWorldPopulationMgr::TryCastCombatSpell(")
+    try_cast = combat_spell[start:combat_spell.index("\n}\n", start)]
+    start = module.index("bool DutySpellCastable(")
+    duty = module[start:module.index("\n}\n", start)]
+    identifiers = lambda body: set(re.findall(r"[A-Za-z_][A-Za-z_0-9]*", body))
+    # Own casting state, facing and the cast itself are the only differences.
+    exempt = {"TryCastCombatSpell", "BotWorldPopulationMgr", "forceFacing",
+              "SetFacingToObject", "UNIT_STATE_CASTING", "CastSpell", "SPELL_CAST_OK"}
+    assert identifiers(try_cast) - identifiers(duty) - exempt == set()
+    assert "UNIT_STATE_CASTING" not in duty
     timers = (folder / "BotMaloriakNativeTimers.cpp").read_text(encoding="utf-8")
     assert "Maloriak::PublishedMechanicSpells" in timers
     assert "GetTimeUntilEncounterMechanic(spellId)" in timers

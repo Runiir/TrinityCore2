@@ -22,6 +22,9 @@ struct AdaptiveMaloriakPlan
     // Release All Minions freed 18 Aberrations and 2 Prime Subjects at once).
     ObjectGuid Boss;
     bool ReleaseAdmitted = false;
+    // The phase-two push hold condition, the same for every bot (tanks
+    // included), so the dispatch can latch its start and cap its length.
+    bool PushHoldWindow = false;
     // Offense hold: pre-pull (everyone but the pull tank), the off-tank's
     // add-spot wait, a blocked melee ring, or the phase-two push hold.
     bool SuppressOffense = false;

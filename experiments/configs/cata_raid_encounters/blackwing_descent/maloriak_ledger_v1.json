@@ -252,6 +252,23 @@
         "SpellMisc (73 rows) identical apart from the same radii per the independent review of 2026-09-25 (not re-derived here)."
       ],
       "reliability": "primary_client_data_comparison"
+    },
+    "run_r03_b1_20260925": {
+      "title": "Round-3 six-shard batch, Maloriak c0 shard (the first engaged attempt)",
+      "publisher": "repository run evidence",
+      "evidence_dvc": "artifacts/cata_raid_program/round3_batch1_20260925.tar.gz.dvc",
+      "members": [
+        "shards/blackwing_descent_10n_maloriak_c0/combat_log.json",
+        "shards/blackwing_descent_10n_maloriak_c0/terminal_trace_drain.jsonl.gz",
+        "shards/blackwing_descent_10n_maloriak_c0/heartbeat_events.jsonl"
+      ],
+      "accessed": "2026-09-25",
+      "claims": [
+        "Boss 100% to 25% in 80.1 s; every Release Aberrations cut by profile interrupts (Rebuke 39 s and 57 s, Wind Shear 81 s); all 18 Aberrations first seen at 88.1-91.6 s and both Prime Subjects at 90.3-90.5 s; wipe by 112 s.",
+        "Acid Nova ticked 19453 raw (7500 x 1.1^10) with the Aberrations beside Maloriak; Consuming Flames raw ticks grew +50% of the previous landed tick (4500 to 58733).",
+        "One Remedy went unpurged (225000 healed); after the runback the eight non-tanks' prepull_stage moves from the lower-wing elevator landing were refused as route_destination_path_control_level_gap (152 entries)."
+      ],
+      "reliability": "observed_run_evidence"
     }
   },
   "mode_matrix": {
@@ -1259,7 +1276,7 @@
       },
       {
         "mechanic": "release_aberrations",
-        "tactic": "admit while fewer than six are loose (nine at a time), interrupt with the second and third short interrupters otherwise; interrupt the first Release of a heroic Dark phase",
+        "tactic": "admit while fewer than six are loose (nine at a time), interrupt with the second and third short interrupters otherwise; interrupt the first Release of a heroic Dark phase; an admitted release is published as an interrupt veto (keyed by map, instance and boss GUID) that the kernel profile resolver honours; the legacy SelectCombatSpell/BotController paths do not check it",
         "source_refs": [
           "icy_cata_classic",
           "icy_original"
@@ -1267,7 +1284,7 @@
       },
       {
         "mechanic": "remedy",
-        "tactic": "Spellsteal first, Purge after 1.5 s, all offensive dispellers after 3 s",
+        "tactic": "Spellsteal first, Purge after 1.5 s, all offensive dispellers after 3 s; an assigned purger or interrupter stops its own hard cast only when the duty spell passes every other TryCastCombatSpell gate, and a healer keeps a heal while anyone is below 50%",
         "source_refs": [
           "icy_cata_classic",
           "icy_original"
@@ -1329,6 +1346,16 @@
         "source_refs": [
           "icy_cata_classic",
           "icy_original"
+        ]
+      },
+      {
+        "mechanic": "phase_two_pacing",
+        "tactic": "below 30% in phase one, with more than 3 Aberrations in the chambers and a living tank, damage dealers and healers hold the boss and burn each released batch; tanks keep attacking; the dispatch drops the hold after 90 s",
+        "expectation": "The hold is bounded by tank damage (about 5% of the boss) and the 90 s cap, so it does not drain the chambers to 3. At the r03 raid damage about 6-9 Aberrations plus both Prime Subjects still come at 25% (r03 without the hold: all 18 plus both).",
+        "source_refs": [
+          "icy_cata_classic",
+          "local_cpp:DamageTaken/UpdateAI",
+          "run_r03_b1_20260925"
         ]
       }
     ]
