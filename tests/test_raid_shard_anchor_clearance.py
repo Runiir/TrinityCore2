@@ -190,8 +190,7 @@ def test_the_full_route_clears_the_hall_before_crossing_it(creatures, hostile, w
     _needs_world(world)
     nodes = [step["node_id"] for step in _full(CONFIG, scenario_id)["route"]]
     maloriak = nodes.index("bwd.maloriak.encounter")
-    assert nodes[maloriak + 1:maloriak + 3] == ["bwd.lower_hall.north_patrol", "bwd.lower_hall.ivoroc"]
-    assert nodes.index("bwd.lower_hall.ivoroc") < nodes.index("bwd.atramedes.north_spirits")
+    assert nodes[maloriak + 1] == HALL and nodes.index(HALL) < nodes.index("bwd.atramedes.north_spirits")
     report = _check(CONFIG, creatures, hostile, world)
     assert report["path_violations"] == [] and report["path_segments_checked"] >= 100
     assert {row["to"] for row in report["path_exempted"]} == {
@@ -199,20 +198,30 @@ def test_the_full_route_clears_the_hall_before_crossing_it(creatures, hostile, w
     assert set(report["path_unchecked_scenarios"]["scenarios"]) == {"stonecore_5n", "stonecore_5h"}
 
 
+HALL = "bwd.lower_hall.central_hall"
+# The round-3/4 split of the hall node: Ivoroc alone at his spawn, and the north patrol keyed on its Mongrel.
+SPLIT_IVOROC = {"node_id": "bwd.lower_hall.ivoroc", "kind": "trash", "x": -17.5573, "y": -224.347, "z": 74.2971,
+                "source_entry": 42767, "source_guid": "250108", "pack_target_entries": [42767],
+                "cluster_radius_yards": 20.0}
+SPLIT_NORTH_PATROL = {"node_id": "bwd.lower_hall.north_patrol", "kind": "trash", "x": -65.1896, "y": -150.167,
+                      "z": 64.1058, "source_entry": 46083, "source_guid": "250120", "pack_target_entries": [46083],
+                      "cluster_radius_yards": 40.0}
+
+
 @pytest.mark.parametrize("order", ["ivoroc_first", "after_chimaeron"])
 def test_a_walk_past_a_live_patrol_is_refused(hostile, world, order):
+    """Split into Ivoroc and the north patrol, a walk to Ivoroc first passes the patrol's turn 8 yd from him."""
     _needs_world(world)
     config = copy.deepcopy(CONFIG)
     full = _full(config)
-    rows = full["route"]
-    hall = [row for row in rows if row["node_id"].startswith("bwd.lower_hall.")]
+    rows = [row for row in full["route"] if row["node_id"] != HALL]
+    split = [dict(SPLIT_IVOROC), dict(SPLIT_NORTH_PATROL)]
     if order == "ivoroc_first":
-        first = rows.index(hall[0])
-        rows[first], rows[first + 1] = rows[first + 1], rows[first]
+        maloriak = next(index for index, row in enumerate(rows) if row["node_id"] == "bwd.maloriak.encounter")
+        full["route"] = rows[:maloriak + 1] + split + rows[maloriak + 1:]
     else:  # round-3 first cut: the hall nodes just before the Orb, Ivoroc first
-        rest = [row for row in rows if row not in hall]
-        orb = next(index for index, row in enumerate(rest) if row["node_id"] == "bwd.nefarian.orb_regroup")
-        full["route"] = rest[:orb] + list(reversed(hall)) + rest[orb:]
+        orb = next(index for index, row in enumerate(rows) if row["node_id"] == "bwd.nefarian.orb_regroup")
+        full["route"] = rows[:orb] + split + rows[orb:]
     report = clearance.check_route_paths({"scenarios": [full]}, world, hostile)
     walked_past = {(row["to"], row["guid"]) for row in report["path_violations"]}
     assert ("bwd.lower_hall.ivoroc", NORTH_PATROL) in walked_past  # its path turns 8 yd from Ivoroc
@@ -244,11 +253,11 @@ def test_the_atramedes_start_clears_every_spirit_without_an_exemption(creatures,
 
 
 ROUND3_NORTH_PATROL = {"x": -58.5521, "y": -146.793, "z": 63.6199, "o": 1.41372, "source_entry": 42802,
-                       "source_guid": "250116", "pack_target_entries": [42802, 46083]}
+                       "source_guid": "250116", "pack_target_entries": [42802, 46083, 42767]}
 
 
 def _round3_north_patrol(config: dict, scenario_id: str) -> None:
-    _node(_scenario(config, scenario_id), "bwd.lower_hall.north_patrol").update(copy.deepcopy(ROUND3_NORTH_PATROL))
+    _node(_scenario(config, scenario_id), HALL).update(copy.deepcopy(ROUND3_NORTH_PATROL))
 
 
 @pytest.mark.parametrize("scenario_id", [NEFARIAN_C0, "blackwing_descent_10n_nefarian_diagnostic",
@@ -259,7 +268,7 @@ def test_the_round3_north_patrol_key_is_refused_by_the_future_guard_rule(scenari
     _round3_north_patrol(config, scenario_id)
     report = clearance.check_future_guard(config)
     assert {"rule": "future_guard_overlap", "scenario_id": scenario_id, "node": "bwd.maloriak.lab_trash",
-            "later_node": "bwd.lower_hall.north_patrol", "entry": 42802} in report["guard_violations"]
+            "later_node": HALL, "entry": 42802} in report["guard_violations"]
     assert clearance.check_future_guard(CONFIG)["guard_violations"] == []
 
 
@@ -281,18 +290,17 @@ def test_the_future_guard_rule_mirrors_the_runtime_fields():
 
 
 def test_the_future_guard_rule_counts_the_formation_its_source_pulls(world):
-    """Keyed on Mongrel 250120, the north patrol still fights Slayer 250116: a later 42802 node is refused."""
+    """Keyed on Mongrel 250120, the hall node still fights Slayer 250116: a later 42802 node is refused."""
     _needs_world(world)
     config = copy.deepcopy(CONFIG)
     nefarian = _scenario(config, NEFARIAN_C0)
-    ivoroc = _node(nefarian, "bwd.lower_hall.ivoroc")
-    ivoroc["alternate_target_entries"] = [42802]
+    _node(nefarian, "bwd.nefarian.encounter")["alternate_target_entries"] = [42802]
     assert clearance.check_future_guard(config)["guard_violations"] == [
         {"rule": "future_guard_overlap", "scenario_id": NEFARIAN_C0, "node": "bwd.maloriak.lab_trash",
-         "later_node": "bwd.lower_hall.ivoroc", "entry": 42802}]
+         "later_node": "bwd.nefarian.encounter", "entry": 42802}]
     found = clearance.check_future_guard(config, world)["guard_violations"]
-    assert {"rule": "future_guard_overlap", "scenario_id": NEFARIAN_C0, "node": "bwd.lower_hall.north_patrol",
-            "later_node": "bwd.lower_hall.ivoroc", "entry": 42802} in found
+    assert {"rule": "future_guard_overlap", "scenario_id": NEFARIAN_C0, "node": HALL,
+            "later_node": "bwd.nefarian.encounter", "entry": 42802} in found
 
 
 def _formation(guid: int, leader: int, group_ai: int) -> clearance.WorldSpawn:
@@ -313,16 +321,59 @@ def test_formation_engagement_follows_creature_group_ai():
     assert not clearance.formation_engages(_formation(1, 1, 0x200), member)  # idle-in-formation only
 
 
-def test_the_north_patrol_node_keyed_on_its_mongrel_clears_its_slayer(world):
+def test_the_central_hall_node_clears_the_north_patrol_and_ivoroc_together(world):
+    """Round 5 (r04 Nefarian c0): a straggler walking to the north patrol passed under Ivoroc and pulled him.
+    One node now owns both; it is keyed on Mongrel 250120 so no later node names the Slayer entry 42802."""
     _needs_world(world)
     spawns = world["by_guid"]
     for scenario_id in (NEFARIAN_C0, "blackwing_descent_10n_nefarian_diagnostic", "blackwing_descent_10n",
                         "blackwing_descent_10n_full_c0"):
-        north = _node(_scenario(CONFIG, scenario_id), "bwd.lower_hall.north_patrol")
-        assert (north["source_entry"], north["source_guid"], north["pack_target_entries"]) == (46083, "250120", [46083])
-        assert (north["x"], north["y"], north["z"]) == spawns[250120].point
-        assert all(clearance.cleared_by(north, spawns[guid], world) for guid in (NORTH_PATROL, 250120, 250121))
-        assert not clearance.cleared_by(north, spawns[NORTH_PATROL])  # the entry alone does not cover the Slayer
+        route = _scenario(CONFIG, scenario_id)["route"]
+        assert not any(step["node_id"] in ("bwd.lower_hall.north_patrol", "bwd.lower_hall.ivoroc") for step in route)
+        hall = _node(_scenario(CONFIG, scenario_id), HALL)
+        assert (hall["source_entry"], hall["source_guid"], hall["pack_target_entries"]) == (46083, "250120", [46083, 42767])
+        assert (hall["x"], hall["y"], hall["z"]) == (-33.0668, -223.2, 63.4878)  # the corridor corner under Ivoroc
+        assert all(clearance.cleared_by(hall, spawns[guid], world) for guid in (NORTH_PATROL, 250120, 250121, IVOROC))
+        assert not clearance.cleared_by(hall, spawns[NORTH_PATROL])  # the entry alone does not cover the Slayer
+        assert clearance.math.dist((hall["x"], hall["y"], hall["z"]), spawns[IVOROC].point) < 20.0
+        assert clearance.spawn_distance((hall["x"], hall["y"], hall["z"]), spawns[NORTH_PATROL]) < hall["cluster_radius_yards"]
+
+
+PYRECRAW, PYRECRAW_ENTRY, PYRECRAW_REACH_3D = 250107, 42764, 16.5
+FULL_ROUTES = ("blackwing_descent_10n", "blackwing_descent_10n_full_c0")
+
+
+def test_the_full_raid_clears_pyrecraw_right_after_the_central_hall(hostile, world):
+    """Round 5 review: the Atramedes-to-Chimaeron walk passed the hovering Pyrecraw, whom no node cleared.
+    The full routes clear him from the floor under his spawn right after the central hall: a later node that
+    names him makes the future-target guard protect him on every earlier node, and the recovery walk into the
+    Atramedes wing passes 19.7 yd from his spawn. The boss shards never walk past him."""
+    _needs_world(world)
+    spawn = world["by_guid"][PYRECRAW]
+    for scenario_id in FULL_ROUTES:
+        route = _scenario(CONFIG, scenario_id)["route"]
+        ids = [step["node_id"] for step in route]
+        index = ids.index("bwd.north_corridor.pyrecraw")
+        assert ids[index - 1:index + 2] == ["bwd.lower_hall.central_hall", "bwd.north_corridor.pyrecraw",
+                                            "bwd.atramedes.north_spirits"]
+        assert all(not step["node_id"].startswith(("bwd.atramedes.", "bwd.chimaeron.")) for step in route[:index])
+        node = route[index]
+        assert (node["source_entry"], node["source_guid"], node["pack_target_entries"]) == (
+            PYRECRAW_ENTRY, str(PYRECRAW), [PYRECRAW_ENTRY])
+        assert node["completion_policy"] == "cluster_clear_after_pull" and node["cluster_radius_yards"] >= 25.0
+        anchor = (node["x"], node["y"], node["z"])
+        # On the floor under him: arrival is inside his reach wherever his 10 yd random movement took him.
+        horizontal = clearance.math.dist(anchor[:2], spawn.point[:2]) + spawn.slack
+        assert clearance.math.hypot(horizontal, spawn.point[2] - anchor[2]) < PYRECRAW_REACH_3D
+        assert clearance.cleared_by(node, spawn, world)
+        others = [other.guid for other in world["spawns"] if other.map_id == 669 and other.guid != PYRECRAW
+                  and clearance.can_aggro_players(other, world["templates"].get(other.entry) or {}, hostile)
+                  and clearance.spawn_distance(anchor, other) < node["cluster_radius_yards"]]
+        assert others == []
+    for row in clearance.scenarios(CONFIG):
+        if row["id"].startswith("blackwing_descent_10n") and row["id"] not in FULL_ROUTES:
+            assert not any(step.get("source_guid") == str(PYRECRAW)
+                           or PYRECRAW_ENTRY in (step.get("pack_target_entries") or []) for step in row["route"])
 
 
 OMNOTRON_C0 = "blackwing_descent_10n_omnotron_c0_diagnostic"

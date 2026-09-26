@@ -140,6 +140,49 @@ def character_spells(character: dict[str, Any]) -> list[int]:
     return sorted(spells)
 
 
+# Runtime keys of a hunter pet row (character_pet / pet_spell); a composition pet may carry documentation
+# keys too (family, talent tab, notes), which never reach the plan.
+PET_RUNTIME_KEYS = ("entry", "modelid", "created_by_spell", "level", "slot", "active", "actionbar", "spells")
+PET_SPELL_ACTIVE_STATES = (1, 0x81, 0xC1)  # ACT_PASSIVE, ACT_DISABLED, ACT_ENABLED (UnitDefines.h ActiveStates)
+
+
+def character_pet(character: dict[str, Any]) -> dict[str, Any] | None:
+    """The hunter pet a composition character declares instead of its catalog pet, or None.
+
+    Only the runtime keys are kept. The shape is checked here; the lawfulness of the family, talents and
+    spellbook against the client DBCs and the world dump is raid_loadout_pet's (tests and the audit).
+    """
+    pet = character.get("pet")
+    if pet is None:
+        return None
+    key = character.get("character_key")
+
+    def fail(reason: str) -> ShardPlanError:
+        return ShardPlanError(f"character_pet_invalid:{key}:{reason}")
+
+    if not isinstance(pet, dict):
+        raise fail("not_an_object")
+    if not all(str(spec).endswith("_hunter") for spec in character.get("specs") or [None]):
+        raise fail("not_a_hunter")
+    for field in ("entry", "modelid", "level"):
+        if isinstance(pet.get(field), bool) or not isinstance(pet.get(field), int) or pet[field] <= 0:
+            raise fail(field)
+    if pet["level"] > 85 or pet.get("slot", 0) != 0 or pet.get("active", 1) != 1:
+        raise fail("level_slot_or_active")
+    actionbar = str(pet.get("actionbar") or "").split()
+    if len(actionbar) != 20 or not all(value.isdigit() for value in actionbar):
+        raise fail("actionbar")
+    spells: list[int] = []
+    for row in pet.get("spells") or []:
+        spell, active = (row.get("id"), row.get("active", 1)) if isinstance(row, dict) else (row, 1)
+        if isinstance(spell, bool) or not isinstance(spell, int) or spell <= 0 or active not in PET_SPELL_ACTIVE_STATES:
+            raise fail(f"spell:{row}")
+        spells.append(spell)
+    if not spells or len(set(spells)) != len(spells):
+        raise fail("spells")
+    return {field: copy.deepcopy(pet[field]) for field in PET_RUNTIME_KEYS if field in pet}
+
+
 def relative(path: Path) -> str:
     """Repository-relative path, computed lexically.
 
@@ -261,6 +304,29 @@ def _spec_group(catalog: dict[str, dict[str, Any]], spec: str, group: int, mirro
     return row
 
 
+def character_group_spells(character: dict[str, Any]) -> dict[str, list[int]]:
+    """Class spells a composition character declares for one of its specs only, by spec.
+
+    Like `spells`, but the spell is provisioned only while that spec's talent group is active
+    (raid_loadout_spells.loadout_known_spells), e.g. Faerie Fire 770 for Balance and Faerie Fire (Feral)
+    16857 for the Feral tank.
+    """
+    declared = character.get("group_spells")
+    if declared is None:
+        return {}
+    key = character.get("character_key")
+    specs = [str(spec) for spec in character.get("specs") or []]
+    if not isinstance(declared, dict) or not set(declared) <= set(specs):
+        raise ShardPlanError(f"character_group_spells_invalid:{key}")
+    result = {}
+    for spec, spells in declared.items():
+        if (not isinstance(spells, list) or not spells or len(set(spells)) != len(spells)
+                or any(isinstance(spell, bool) or not isinstance(spell, int) or spell <= 0 for spell in spells)):
+            raise ShardPlanError(f"character_group_spells_invalid:{key}:{spec}")
+        result[spec] = sorted(spells)
+    return result
+
+
 def character_loadout_groups(catalog: dict[str, dict[str, Any]], character: dict[str, Any]) -> list[dict[str, Any]]:
     specs = [str(spec) for spec in character["specs"]]
     groups = [_spec_group(catalog, spec, index) for index, spec in enumerate(specs)]
@@ -268,6 +334,9 @@ def character_loadout_groups(catalog: dict[str, dict[str, Any]], character: dict
         # A single-spec character mirrors its only build into talent group 1,
         # so every composition character has the same two-group shape.
         groups.append(_spec_group(catalog, specs[0], 1, mirrors=0))
+    for group in groups:
+        if group["mirrors_talent_group"] is None and (spells := character_group_spells(character).get(group["class_spec"])):
+            group["spells"] = spells
     return groups
 
 
@@ -333,8 +402,10 @@ def _bot(composition: dict[str, Any], catalog: dict[str, dict[str, Any]], charac
             bot[field] = copy.deepcopy(active[field])
     if spells := character_spells(character):
         bot["spells"] = spells
-    if source.get("pet"):
-        pet = {k: v for k, v in copy.deepcopy(source["pet"]).items() if k != "id_offset"}
+    declared_pet = character_pet(character)
+    if declared_pet is not None or source.get("pet"):
+        pet = declared_pet if declared_pet is not None else {
+            k: v for k, v in copy.deepcopy(source["pet"]).items() if k != "id_offset"}
         pet["name"] = (bot["name"].lower() + "pet")[:12]
         bot["pet"] = pet
         bot["expected_pet_id"] = ids.pet_id(packed)

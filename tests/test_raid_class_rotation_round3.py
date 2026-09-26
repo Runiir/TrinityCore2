@@ -277,8 +277,9 @@ def test_resolver_applies_raid_fixes_only_in_raid_scope() -> None:
     assert "<= NOMINAL_MELEE_RANGE" not in resolver
     # Drain Life: the healer-owned recovery gate uses the same scope.
     assert "BotRaidHealthRecoveryGate::Holds(raidRotationScope," in resolver
-    # Five round 3 uses, plus the round 4 canonical Survival scope (round 4 test).
-    assert resolver.count("raidRotationScope") == 6
+    # Five round 3 uses, plus the round 4 canonical Survival scope (round 4
+    # test) and the round 5 Faerie Fire upkeep gate (test_raid_major_armor).
+    assert resolver.count("raidRotationScope") == 7
 
 
 def test_no_world_db_rotation_row_changes_this_round() -> None:

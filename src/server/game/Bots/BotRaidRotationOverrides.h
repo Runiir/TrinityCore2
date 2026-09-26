@@ -2,6 +2,7 @@
 #define TRINITY_BOT_RAID_ROTATION_OVERRIDES_H
 
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotRaidMajorArmor.h"
 #include "Bots/BotWorldPopulationMgrRaidCooldownReservation.h"
 
 #include <initializer_list>
@@ -180,9 +181,20 @@ inline bool ApplySurvival(BotActionProfileSpell& spell)
     return false;
 }
 
-// Returns the number of rows changed. Call only in canonical raid scope.
+// Round 5: the canonical druid (Balance DPS or Feral tank) gains a Faerie
+// Fire row that keeps the major armor debuff on the boss
+// (BotRaidMajorArmor.h). The legacy accepted Magmaw druid 30001 is Balance,
+// so this too stays out of the legacy raid scope.
+
+// Returns the number of rows changed or added. Call only in canonical raid
+// scope.
 inline uint32 ApplyCanonical(BotClassSpecActionProfile& profile)
 {
+    if (BotActionProfileSpell* upkeep = BotRaidMajorArmor::AppendUpkeepRow(profile))
+    {
+        AppendTag(*upkeep, CanonicalScopeTag);
+        return 1;
+    }
     if (profile.Role != "dps" || profile.ClassId != 3 || profile.SpecTag != "survival")
         return 0;
     uint32 changed = 0;

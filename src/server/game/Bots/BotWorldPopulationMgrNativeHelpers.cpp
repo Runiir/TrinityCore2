@@ -8,7 +8,9 @@
 #include "Server/Packets/QuestPackets.h"
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
+#include "SpellHistory.h"
 #include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "Totem.h"
 #include "Unit.h"
 #include "WorldPacket.h"
@@ -130,6 +132,22 @@ bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
     if (spellInfo->PowerType == POWER_HEALTH)
         return int64(bot->GetHealth()) > powerCost;
     return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
+}
+
+bool HasReadyNativeCombatRes(Player const* member)
+{
+    if (!member)
+        return false;
+    for (auto const& [spellId, playerSpell] : member->GetSpellMap())
+    {
+        if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active || !member->HasSpell(spellId))
+            continue;
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (IsNativeCombatResSpell(spellInfo)
+            && member->GetSpellHistory()->IsReady(spellInfo) && HasPowerForSpell(member, spellInfo))
+            return true;
+    }
+    return false;
 }
 
 uint32 ControlledDispelAuraForHealer(Player const* healer)

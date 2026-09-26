@@ -6,6 +6,7 @@
 #include "Bots/BotEncounterInterruptVeto.h"
 #include "Bots/BotRaidCombatPotionHealthOwner.h"
 #include "Bots/BotRaidHealthRecoveryGate.h"
+#include "Bots/BotRaidMajorArmor.h"
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotSpellMinimumRange.h"
 #include "Bots/BotTauntVehicleSeat.h"
@@ -178,6 +179,16 @@ void BotWorldPopulationMgr::AdmitProfileCombatCandidates(
             candidate.RejectReason = "reference_prepull_action_excluded";
             continue;
         }
+        // Raid Faerie Fire upkeep (BotRaidMajorArmor.h): a boss in combat that
+        // lacks the full major armor debuff; never a movement. Keyed on the
+        // typed spell id, so the raid_major_armor tag stays descriptive.
+        if (raidRotationScope && BotRaidMajorArmor::IsUpkeepSpell(candidate.SpellId))
+            if (char const* majorArmorReason = BotRaidMajorArmor::AdmissionRejection(
+                    target, candidate.RejectReason))
+            {
+                candidate.RejectReason = majorArmorReason;
+                continue;
+            }
         if (candidate.RejectReason.empty())
             if (char const* reservationReason = BotRaidCooldownReservation::ReservationReason(
                     cooldownRoute, { candidate.Category, candidate.Profile.MechanicTags }))

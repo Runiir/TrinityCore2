@@ -2,7 +2,8 @@
 
 #include "Bots/BotActionExecutor.h"
 #include "Bots/BotClassSpecActionProfile.h"
-#include "Bots/BotPersistentSelfBuffContract.h"
+#include "Bots/BotCanonicalRaidScope.h"
+#include "Bots/BotRaidPersistentBuffs.h"
 #include "Bots/BotRaidPoisonSetup.h"
 #include "Bots/BotMovementArbiter.h"
 #include "Bots/BotNativeActionIntent.h"
@@ -11,6 +12,7 @@
 #include "Entities/Item/Item.h"
 #include "Entities/Item/ItemTemplate.h"
 #include "GameTime.h"
+#include "Group.h"
 #include "ObjectMgr.h"
 #include "Pet.h"
 #include "Player.h"
@@ -307,7 +309,14 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         state.RogueMainhandPoisonSetup = {};
         state.RogueOffhandPoisonSetup = {};
     }
-    for (auto const& buff : BotPersistentSelfBuffContract::Buffs)
+    // Canonical raids add Fortitude and the paladin auras and bless Might
+    // under a druid's Mark (BotRaidPersistentBuffs.h); elsewhere, the table.
+    bool const canonicalRaid = BotCanonicalRaidScope::IsCanonicalRaid(
+        Cohort().Raid.RaidInstance, Cohort().Config.ValidationRouteScenarioId);
+    for (auto const& buff : BotRaidPersistentBuffs::Contract(BotPersistentSelfBuffContract::Buffs,
+             canonicalRaid, bot->getClass(),
+             [bot] { return BotRaidPersistentBuffs::GroupHasMarkOfTheWild(bot); },
+             [bot](uint32 spellId) { return bot->HasSpell(spellId); }))
     {
         if (!BotPersistentSelfBuffContract::Matches(buff, bot->getClass(), role, profile.SpecTag))
             continue;

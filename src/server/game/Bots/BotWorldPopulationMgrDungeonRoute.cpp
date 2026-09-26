@@ -1,6 +1,8 @@
 #include "Bots/BotWorldPopulationMgr.h"
 
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotCanonicalRaidScope.h"
+#include "Bots/BotRaidPersistentBuffs.h"
 #include "GameTime.h"
 #include "Group.h"
 #include "GroupReference.h"
@@ -480,6 +482,10 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     };
 
     std::string role = GetDungeonRole(bot);
+    // Canonical raids keep Fortitude and the blessing in persistent setup
+    // (BotRaidPersistentBuffs.h), which re-casts them after a wipe.
+    bool const canonicalRaid = BotCanonicalRaidScope::IsCanonicalRaid(
+        Cohort().Raid.RaidInstance, Cohort().Config.ValidationRouteScenarioId);
     if (!urgentHunterPetRecovery)
         for (ActiveBuffRequirement const& requirement : requirements)
         {
@@ -488,6 +494,9 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
             if (requirement.Role && role != requirement.Role)
                 continue;
             if (!bot->HasSpell(requirement.SpellId))
+                continue;
+            if (BotRaidPersistentBuffs::ReadinessOwnedByContract(canonicalRaid, requirement.SpellId,
+                    [bot] { return BotRaidPersistentBuffs::GroupHasMarkOfTheWild(bot); }))
                 continue;
 
             std::string missing = std::string(requirement.PartyWide ? "missing_party_buff:" : "missing_self_buff:") + requirement.Key;

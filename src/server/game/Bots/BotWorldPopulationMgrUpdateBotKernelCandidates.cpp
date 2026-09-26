@@ -46,6 +46,7 @@ void BotWorldPopulationMgr::SubmitAdaptiveKernelCandidates(
         SubmitMagmawBloodlustCandidate(context);
         SubmitMagmawMangleDefensiveCandidate(context);
         SubmitAdaptiveChimaeronCandidates(context);
+        SubmitRaidBossLustCandidate(context);
         bool const typedDrudgeValidationRoute =
             Cohort().Config.ValidationRouteMechanicProfile
                 == "trash_two_tank_charge_lanes";

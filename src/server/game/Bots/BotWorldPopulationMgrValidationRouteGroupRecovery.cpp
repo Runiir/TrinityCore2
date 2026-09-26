@@ -2,6 +2,7 @@
 
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotActionArbiter.h"
+#include "Bots/BotCombatResEligibility.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrNativeHelpers.h"
 #include "Bots/BotWorldPopulationMgrSpellSemantics.h"
@@ -19,8 +20,7 @@
 #include <string>
 
 using BotWorldPopulationMgrNativeHelpers::Distance2d;
-using BotWorldPopulationMgrNativeHelpers::HasPowerForSpell;
-using BotWorldPopulationMgrNativeHelpers::IsNativeCombatResSpell;
+using BotWorldPopulationMgrNativeHelpers::HasReadyNativeCombatRes;
 using BotWorldPopulationMgrSpellSemantics::NowMs;
 
 bool BotWorldPopulationMgr::TryValidationRouteGroupRecovery(
@@ -82,6 +82,11 @@ bool GroupRecoveryContext::Run()
         bool criticalRoleDead = false;
         bool groupCombatActive = false;
         bool livingCombatResurrectionCaster = false;
+        // A canonical raid never counts a tank: the reconciler would decline
+        // every corpse for it (BotCombatResEligibility.h).
+        bool const canonicalRaid = BotCanonicalRaidScope::IsCanonicalRaid(
+            Manager.Cohort().Raid.RaidInstance,
+            Manager.Cohort().Config.ValidationRouteScenarioId);
         Unit* retreatThreat = nullptr;
         for (GroupReference* itr = Bot->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
         {
@@ -94,18 +99,11 @@ bool GroupRecoveryContext::Run()
                 groupCombatActive = groupCombatActive || member->IsInCombat() || member->GetVictim() || !member->getAttackers().empty();
                 if (!retreatThreat && std::string(Manager.GetDungeonRole(member)) == "tank")
                     retreatThreat = member->GetVictim();
-                for (auto const& [spellId, playerSpell] : member->GetSpellMap())
-                {
-                    if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active || !member->HasSpell(spellId))
-                        continue;
-                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-                    if (IsNativeCombatResSpell(spellInfo)
-                        && member->GetSpellHistory()->IsReady(spellInfo) && HasPowerForSpell(member, spellInfo))
-                    {
-                        livingCombatResurrectionCaster = true;
-                        break;
-                    }
-                }
+                if (!livingCombatResurrectionCaster
+                    && BotCombatResEligibility::CountsAsLivingCaster(canonicalRaid,
+                        [this, member] { return std::string_view(Manager.GetDungeonRole(member)); },
+                        [member] { return HasReadyNativeCombatRes(member); }))
+                    livingCombatResurrectionCaster = true;
             }
             else
             {

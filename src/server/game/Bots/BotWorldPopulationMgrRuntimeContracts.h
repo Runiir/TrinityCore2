@@ -450,6 +450,9 @@
         uint64 MagmawBloodlustSubmittedAtMs = 0;
         ObjectGuid MagmawBloodlustOwnerGuid;
         ObjectGuid MagmawBloodlustHeadGuid;
+        // Canonical boss lust fallback (BotRaidBossLust.h): one native cast
+        // per attempt where the boss strategy declares no lust timing.
+        BotRaidBossLust::Latch BossLust;
         std::map<uint32, std::string> AccountNameById;
         std::set<uint32> AccountNameLookupAttempted;
     };

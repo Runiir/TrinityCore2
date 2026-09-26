@@ -13,6 +13,7 @@
 #include "Bots/BotProfileCombatRangeCheckpoint.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneCheckpoint.h"
 #include "Bots/BotValidationPrepullCheckpoint.h"
+#include "Bots/BotRaidBossLustLatch.h"
 #include "Bots/BotValidationPatrolPullState.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
 #include "Bots/BotEncounterBlackboard.h"
@@ -317,6 +318,7 @@ private:
     void ReconcileRaidPrepullItemSpellFinished(Player* caster, uint32 spellId,
         bool success, ObjectGuid castItemGuid, uint32 castItemEntry);
     void SubmitMagmawBloodlustCandidate(BotUpdateContext& context);
+    void SubmitRaidBossLustCandidate(BotUpdateContext& context);
     void SubmitMagmawMangleDefensiveCandidate(BotUpdateContext& context);
     void SubmitAdaptiveChimaeronCandidates(BotUpdateContext& context);
     void SubmitAdaptiveChimaeronRouteObservation(BotUpdateContext& context);

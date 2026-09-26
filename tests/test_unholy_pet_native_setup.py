@@ -50,7 +50,9 @@ def test_unholy_uses_learned_raise_dead_and_unholy_presence() -> None:
         '{ CLASS_DEATH_KNIGHT, "dps", "unholy_death_knight", '
         '48265, 48265, 0, "unholy_presence" }'
     ) in SELF_BUFF_CONTRACT.read_text(encoding="utf-8")
-    assert "for (auto const& buff : BotPersistentSelfBuffContract::Buffs)" in setup
+    # The base self-buff table, extended only in canonical raids
+    # (BotRaidPersistentBuffs.h, round 5).
+    assert "for (auto const& buff : BotRaidPersistentBuffs::Contract(BotPersistentSelfBuffContract::Buffs," in setup
     assert "BotPersistentSelfBuffContract::Matches(buff, bot->getClass(), role, profile.SpecTag)" in setup
     assert "requiredPet.RequiredSummonSpellId = 46584" in setup
     assert "requiredPet.RequiredEntry = ENTRY_GHOUL" in setup

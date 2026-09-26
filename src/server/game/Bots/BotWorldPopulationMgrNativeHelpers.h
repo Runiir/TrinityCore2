@@ -22,6 +22,9 @@ float Distance2d(float ax, float ay, float bx, float by);
 bool UsesRangedAoeCalibrationLane(std::string const& spec);
 float UnitHealthPct(Unit const* unit);
 bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo);
+// A learned, active native combat res that is ready and affordable now: the
+// group recovery's living-caster spell test (BotCombatResEligibility.h).
+bool HasReadyNativeCombatRes(Player const* member);
 uint32 ControlledDispelAuraForHealer(Player const* healer);
 Player* CombatOwnerPlayer(Unit* unit);
 bool CancelRemovableShapeshifts(Player* bot);

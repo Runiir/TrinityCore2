@@ -197,8 +197,10 @@ def trainers_sha256(trainers_path: Path = DEFAULT_TRAINERS) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
-def _view(bot: dict[str, Any], group: dict[str, Any]) -> dict[str, Any]:
-    return {"class": bot["class"], "class_spec": group["class_spec"], "spells": bot.get("spells", []),
+def _view(bot: dict[str, Any], group: dict[str, Any], group_spells: bool = True) -> dict[str, Any]:
+    """A single-spec view of one talent group; `group_spells` adds the group's own declared spells."""
+    spells = list(bot.get("spells", [])) + (list(group.get("spells") or []) if group_spells else [])
+    return {"class": bot["class"], "class_spec": group["class_spec"], "spells": spells,
             "primary_talent_tree_id": group["primary_talent_tree_id"], "talents": group["talents"]}
 
 
@@ -230,8 +232,9 @@ def fits_race_and_class(spell: int, race: int, class_id: int, dbc_dir: Path) -> 
 
 def declared_spell_failures(bot: dict[str, Any], dbc_dir: Path, learn_map: dict[int, list[int]],
                             trainers_path: Path = DEFAULT_TRAINERS) -> list[int]:
-    """Declared `spells` this race and class could not learn natively at level 85."""
+    """Declared `spells` (character-wide or of one talent group) this race and class could not learn at 85."""
     declared = [int(spell) for spell in bot.get("spells") or []]
+    declared += [int(spell) for group in (bot.get("loadout") or {}).get("groups") or [] for spell in group.get("spells") or []]
     if not declared:
         return []
     baseline = native_baseline(int(bot["class"]), int(bot["race"]), dbc_dir, learn_map, trainers_path)
@@ -264,7 +267,8 @@ def loadout_known_spells(bot: dict[str, Any], dbc_dir: Path, action_profiles: di
         inactive_only -= specialization_closure(active, learn_map) | single_active | baseline
     known = set(single_active)
     for group in groups:
-        known.update(bot_spell_ids(_view(bot, group), action_profiles))
+        # A group's own declared spells are provisioned only while that group is active.
+        known.update(bot_spell_ids(_view(bot, group, group_spells=group is active), action_profiles))
         known.update(NATIVE_SELF_SETUP_SPELL_IDS.get(str(group["class_spec"]), ()))
     known -= inactive_only
     if int(loadout.get("talent_groups_count") or 0) > 1:

@@ -35,6 +35,13 @@ inline bool IsCanonicalCompositionScenario(std::string_view scenarioId)
     std::string_view::size_type const cut = scenarioId.rfind('_');
     return cut != std::string_view::npos && IsCopyToken(scenarioId.substr(cut + 1));
 }
+
+// A raid-instance cohort of a canonical composition: the round 5 combat-res
+// eligibility, persistent raid buffs and boss lust fallback use this scope.
+inline bool IsCanonicalRaid(bool raidInstance, std::string_view scenarioId)
+{
+    return raidInstance && IsCanonicalCompositionScenario(scenarioId);
+}
 }
 
 #endif

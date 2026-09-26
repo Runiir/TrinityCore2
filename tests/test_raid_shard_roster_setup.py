@@ -179,13 +179,20 @@ CHIMAERON_CANDIDATES = ENCOUNTERS / "Chimaeron/BotWorldPopulationMgrChimaeronCan
 ATRAMEDES_MOBILITY = ENCOUNTERS / "Atramedes/BotAtramedesMobility.h"
 ATRAMEDES_ICE_BLOCK = ENCOUNTERS / "Atramedes/BotAtramedesIceBlock.h"
 ATRAMEDES_FACTS = ENCOUNTERS / "Atramedes/BotAtramedesFacts.h"
+COMBAT_RES = ROOT / "src/server/game/Bots/BotWorldPopulationMgrCombatRes.cpp"
+GROUP_RECOVERY = ROOT / "src/server/game/Bots/BotWorldPopulationMgrValidationRouteGroupRecovery.cpp"
+COMBAT_RES_ELIGIBILITY = ROOT / "src/server/game/Bots/BotCombatResEligibility.h"
+RESURRECT_EFFECTS = (18, 113, 172)  # SPELL_EFFECT_RESURRECT, _NEW, _WITH_AURA
+SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT = 0x00800000
+# Round 5: the druid tanks here, and a canonical raid never makes a tank the combat-res owner.
+SHARDS_WITHOUT_COMBAT_RES = {"omnotron", "chimaeron", "maloriak", "nefarian", "full"}
 # MaloriakRemedyDispelSpells in class order: Spellsteal, Purge, Tranquilizing Shot, Dispel Magic.
 REMEDY_DISPEL_BY_CLASS = {8: 30449, 7: 370, 3: 19801, 5: 527}
 # Omnotron's Soaked In Poison dispel (CanCleansePoison): Cleanse for a paladin, Remove Corruption for a
 # druid that is neither a tank nor Feral.
 POISON_CLEANSE_BY_CLASS = {2: 4987, 11: 2782}
-# Reviewed gaps: Curse of Exhaustion 18223 is an Affliction talent, so a Demonology warlock cannot learn it.
-UNLEARNABLE_DUTY_SPELLS = {("demonology_warlock", 18223)}
+# Reviewed gaps: none since b90e95330a names Curse of Exhaustion (an Affliction talent) for Affliction only.
+UNLEARNABLE_DUTY_SPELLS: set[tuple[str, int]] = set()
 
 
 def function_body(path: Path, signature: str) -> str:
@@ -284,7 +291,12 @@ def encounter_duty_rules() -> dict[str, list]:
             return [spells_for(bot["class_spec"])] if owner is bot else []
         return rule
 
+    def combat_res(bot, _bots):
+        # Rebirth is the reconciler's named combat res; only a non-tank may own it in a canonical raid.
+        return [{combat_res_spells()[0]}] if int(bot["class"]) == 11 and bot["role"] != "tank" else []
+
     return {
+        "all": [combat_res],
         "nefarian": [
             lambda bot, _bots: [{capability_spell(nefarian_interrupts, bot["class_spec"])}],
             lambda bot, _bots: [] if bot["role"] == "tank" else [{capability_spell(nefarian_controls, bot["class_spec"])}]],
@@ -315,8 +327,8 @@ def test_every_canonical_bot_knows_the_duty_spells_its_encounters_name(plan):
     learn_map, gaps, required_seen = spell_learn_map(DBC), set(), set()
     for shard in plan["shards"]:
         boss_rules = [rule for boss, boss_rules in rules.items() for rule in boss_rules
-                      if shard["boss_key"] in (boss, "full")]
-        assert boss_rules or shard["boss_key"] == "magmaw", shard["cohort_id"]
+                      if boss == "all" or shard["boss_key"] in (boss, "full")]
+        assert len(boss_rules) > 1 or shard["boss_key"] == "magmaw", shard["cohort_id"]
         for bot in shard["bots"]:
             spec, known = bot["class_spec"], set(loadout_known_spells(bot, DBC)["known_spell_ids"])
             baseline = native_baseline(int(bot["class"]), int(bot["race"]), DBC, learn_map)
@@ -330,4 +342,70 @@ def test_every_canonical_bot_knows_the_duty_spells_its_encounters_name(plan):
                         gaps.add((spec, min(alternatives)))
     assert gaps == UNLEARNABLE_DUTY_SPELLS
     # The review's spells are among the checked ones: Time Warp, Sprint, Dash, Stampeding Roar, Cat Form.
-    assert {80353, 2983, 1850, 77764, 768, 4987, 5116, 19801, 30449, 370, 9484, 853} <= required_seen
+    assert {80353, 2983, 1850, 77764, 768, 4987, 5116, 19801, 30449, 370, 9484, 853, 20484} <= required_seen
+
+
+def combat_res_spells() -> list[int]:
+    """The spells BotWorldPopulationMgrCombatRes.cpp IsNativeCombatResSpell names by id (Rebirth)."""
+    body = function_body(COMBAT_RES, "bool IsNativeCombatResSpell")
+    return [int(value) for value in re.findall(r"spellInfo->Id == (\d+)", body)]
+
+
+def resurrect_spells_with_limit() -> set[int]:
+    """Spells the reconciler also accepts: a resurrect effect and the in-combat resurrection limit."""
+    from tools.bot_ml.build_validation_provisioning import load_wdbc_values
+
+    attributes = {int(row[0]): int(row[9]) for row in load_wdbc_values(
+        DBC / "Spell.dbc", "niiiiiiiiiiiiiiifiiiissxxiixxifiiiiiiixiiiiiiiii")}
+    effects = {int(row[24]) for row in load_wdbc_values(DBC / "SpellEffect.dbc", "nifiiiffiiiiiifiifiiiiiiiix")
+               if int(row[1]) in RESURRECT_EFFECTS}
+    return {spell for spell in effects if attributes.get(spell, 0) & SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT}
+
+
+def test_combat_res_owners_are_the_non_tank_members_that_know_one(plan):
+    """Round 5: the druid knows Rebirth everywhere, but owns it only where it is Balance (not the tank)."""
+    if not (DBC / "SkillLineAbility.dbc").is_file() or not (ROOT / "dataset/world_knowledge/trainers.jsonl").is_file():
+        pytest.skip("client DBCs or trainers not hydrated")
+    from tools.raid_program.raid_loadout_spells import loadout_known_spells
+
+    assert combat_res_spells() == [20484]
+    # One rule (BotCombatResEligibility.h) for the reconciler's owner loop and the group recovery's living caster.
+    reconciler = re.sub(r"\s+", " ", COMBAT_RES.read_text())
+    assert ("if (canonicalRaid && !BotCombatResEligibility::RoleMayCast(canonicalRaid, "
+            "GetDungeonRole(member.Bot))) continue;") in reconciler
+    assert "BotCombatResEligibility::CountsAsLivingCaster(canonicalRaid," in GROUP_RECOVERY.read_text()
+    assert 'return !canonicalRaid || role != "tank";' in COMBAT_RES_ELIGIBILITY.read_text()
+    res_spells = set(combat_res_spells()) | resurrect_spells_with_limit()
+    owners = {}
+    for shard in plan["shards"]:
+        owners[shard["boss_key"]] = sorted(
+            bot["class_spec"] for bot in shard["bots"] if bot["role"] != "tank"
+            and res_spells & set(loadout_known_spells(bot, DBC)["known_spell_ids"]))
+        druid = next(bot for bot in shard["bots"] if bot["character_key"] == "druid")
+        assert 20484 in loadout_known_spells(druid, DBC)["known_spell_ids"], shard["cohort_id"]
+    assert owners["magmaw"] == owners["atramedes"] == ["balance_druid"]
+    assert {boss for boss, found in owners.items() if not found} == SHARDS_WITHOUT_COMBAT_RES
+
+
+def test_canonical_only_declarations_stay_out_of_the_legacy_rosters():
+    """Rebirth, Power Word: Fortitude and the Ravager are canonical-roster provisioning; the legacy rosters keep theirs."""
+    for path in (ROOT / "experiments/configs/cata_raid_bwd_diagnostic_shards_v1.json",
+                 ROOT / "experiments/configs/validation_provisioning_cata_001.json"):
+        legacy = json.loads(path.read_text())
+        bots = []
+
+        def walk(value):
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    if key == "bots" and isinstance(child, list):  # provisioned rows, not roster summaries
+                        bots.extend(row for row in child if isinstance(row, dict) and "class_spec" in row)
+                    walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child)
+
+        walk(legacy)
+        assert bots, path
+        assert not any({20484, 21562} & set(bot.get("spells") or []) for bot in bots), path
+        hunters = [bot for bot in bots if str(bot["class_spec"]).endswith("_hunter")]
+        assert hunters and all(isinstance(bot.get("pet"), dict) and bot["pet"]["entry"] == 8959 for bot in hunters), path

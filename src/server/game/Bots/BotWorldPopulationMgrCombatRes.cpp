@@ -1,6 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotWorldPopulationMgrPlay.h"
-#include "Bots/BotCanonicalRaidScope.h"
+#include "Bots/BotCombatResEligibility.h"
 
 #include "Creature.h"
 #include "Group.h"
@@ -431,14 +431,18 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
     // A canonical-composition raid never makes an active tank the caster: a
     // Feral or Blood tank that turns from its target mid-pull to cast Rebirth
     // or Raise Ally drops threat; the Balance druid or a healer casts instead
-    // (round 4). Legacy accepted scenarios keep today's owner set
-    // (BotCanonicalRaidScope.h).
-    bool const canonicalRaid = Cohort().Raid.RaidInstance
-        && BotCanonicalRaidScope::IsCanonicalCompositionScenario(
-            Cohort().Config.ValidationRouteScenarioId);
+    // (round 4). The route group recovery applies the same rule to its living
+    // combat-res caster (BotCombatResEligibility.h). Legacy accepted scenarios
+    // keep today's owner set. Each owner's learned, active, ready spell is
+    // proved per candidate by CurrentCombatResOwnerUsable below.
+    bool const canonicalRaid = BotCanonicalRaidScope::IsCanonicalRaid(
+        Cohort().Raid.RaidInstance, Cohort().Config.ValidationRouteScenarioId);
     for (Member const& member : living)
     {
-        if (canonicalRaid && std::string(GetDungeonRole(member.Bot)) == "tank")
+        // The role (a possible database lookup) is read only in a canonical
+        // raid, as before this rule was shared.
+        if (canonicalRaid && !BotCombatResEligibility::RoleMayCast(canonicalRaid,
+                GetDungeonRole(member.Bot)))
             continue;
         for (auto const& [spellId, playerSpell] : member.Bot->GetSpellMap())
         {
