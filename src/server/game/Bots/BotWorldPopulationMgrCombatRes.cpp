@@ -14,6 +14,7 @@
 #include "Unit.h"
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,74 @@ bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
         return int64(bot->GetHealth()) > powerCost;
     return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
 }
+
+constexpr float ApproachSampleYards = 2.0f;
+constexpr float ApproachEnvelopeMarginYards = 2.0f;
+}
+
+// Post-kill window: the owner's planned approach, sampled every
+// ApproachSampleYards from where it stands, ends at the first sample inside
+// the cast envelope (within the spell's range less a margin, with line of
+// sight to the body), provided no earlier sample touches liquid. The approach
+// executor walks to exactly this dry point (CombatResApproach), never to the
+// body: a body in the lava is raised only from where a caster sees it and
+// nobody walks into the lava to reach it. False when refused.
+bool BotWorldPopulationMgr::PostKillApproachDestination(Player const* owner,
+    Player const* target, float range, float& x, float& y, float& z) const
+{
+    PathGenerator path(owner);
+    if (!path.CalculatePath(target->GetPositionX(), target->GetPositionY(),
+            target->GetPositionZ(), false)
+        || (path.GetPathType() & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH
+            | PATHFIND_INCOMPLETE | PATHFIND_SHORTCUT | PATHFIND_FARFROMPOLY)))
+        return false;
+    Map* map = owner->GetMap();
+    PhaseShift const& phase = owner->GetPhaseShift();
+    std::vector<G3D::Vector3> samples;
+    G3D::Vector3 previous(owner->GetPositionX(), owner->GetPositionY(), owner->GetPositionZ());
+    samples.push_back(previous);
+    for (G3D::Vector3 const& point : path.GetPath())
+    {
+        float const length = (point - previous).length();
+        uint32 const steps = std::max<uint32>(1, uint32(std::ceil(length / ApproachSampleYards)));
+        for (uint32 step = 1; step <= steps; ++step)
+            samples.push_back(previous + (point - previous) * (float(step) / float(steps)));
+        previous = point;
+    }
+    float const envelope = std::max(0.0f, range - ApproachEnvelopeMarginYards);
+    float const eye = owner->GetCollisionHeight();
+    std::size_t const destination = BotPostKillRecovery::ApproachDestination(samples.size(),
+        [&](std::size_t index)
+        {
+            G3D::Vector3 const& sample = samples[index];
+            return map->IsInWater(phase, sample.x, sample.y, sample.z);
+        },
+        [&](std::size_t index)
+        {
+            G3D::Vector3 const& sample = samples[index];
+            return target->GetExactDist(sample.x, sample.y, sample.z) <= envelope
+                && map->isInLineOfSight(phase, sample.x, sample.y, sample.z + eye,
+                    target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() + eye,
+                    LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing);
+        });
+    if (destination >= samples.size())
+        return false;
+    x = samples[destination].x;
+    y = samples[destination].y;
+    z = samples[destination].z;
+    return true;
+}
+
+BotPostKillRecovery::Scope BotWorldPopulationMgr::PostKillRecoveryScope() const
+{
+    return { Cohort().AttemptId, Party().ValidationRouteGeneration,
+        Cohort().Config.ValidationRouteNodeId };
+}
+
+bool BotWorldPopulationMgr::PostKillRecoveryWindowOpen() const
+{
+    return Cohort().Config.ValidationRouteEnable
+        && BotPostKillRecovery::WindowOpen(Cohort().Raid.PostKillRecovery, PostKillRecoveryScope());
 }
 
 bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& targetState,
@@ -71,6 +140,15 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
     if (!IsNativeCombatResTarget(targetState, target))
     {
         declineReason = "declined_target_ineligible";
+        return false;
+    }
+    // A post-kill reservation ends at the window's deadline (approach and
+    // submitted cast alike); in-combat reservations are never bound by it.
+    if (BotPostKillRecovery::ReservationPastDeadline(Cohort().Raid.PostKillRecovery,
+            PostKillRecoveryScope(), targetState.NativeBattleResSpellId,
+            targetState.NativeBattleResDecisionAtMs, nowMs))
+    {
+        declineReason = BotPostKillRecovery::Deadline;
         return false;
     }
     if (targetState.NativeBattleResOwnerGuid.IsEmpty() || !targetState.NativeBattleResSpellId)
@@ -144,7 +222,10 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
         return false;
     }
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!IsNativeCombatResSpell(spellInfo))
+    // After a kill the ordinary out-of-combat resurrections count too.
+    bool const postKillWindow = PostKillRecoveryWindowOpen();
+    if (!IsNativeCombatResSpell(spellInfo)
+        && !(spellInfo && postKillWindow && BotPostKillRecovery::IsOutOfCombatResurrection(spellId)))
     {
         declineReason = "declined_spell_not_combat_res";
         return false;
@@ -169,6 +250,15 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
         if (!validApproachPath)
         {
             declineReason = "declined_no_los_or_valid_path";
+            return false;
+        }
+        float destinationX = 0.0f;
+        float destinationY = 0.0f;
+        float destinationZ = 0.0f;
+        if (postKillWindow && !PostKillApproachDestination(owner, target, resurrectionRange,
+                destinationX, destinationY, destinationZ))
+        {
+            declineReason = BotPostKillRecovery::ApproachThroughLiquid;
             return false;
         }
     }
@@ -197,6 +287,14 @@ bool BotWorldPopulationMgr::CurrentCombatResOwnerUsable(WorldBotState const& tar
         return true;
     }
 
+    // A peaceful-only spell (the out-of-combat resurrections) waits for the
+    // owner's combat to end, as Spell::CheckCast would refuse it
+    // (SPELL_FAILED_AFFECTING_COMBAT). Combat resurrections are unaffected.
+    if (!spellInfo->CanBeUsedInCombat() && owner->IsInCombat())
+    {
+        declineReason = BotPostKillRecovery::OwnerInCombat;
+        return false;
+    }
     if (!owner->GetSpellHistory()->IsReady(spellInfo))
     {
         declineReason = "declined_combat_res_cooldown";
@@ -305,6 +403,50 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
         else
             dead.push_back({ &state, bot });
     }
+
+    // The post-kill recovery window (BotPostKillRecovery.h), observed once
+    // per update for every reader (the owner check, the candidate builder and
+    // the dead members' release hold).
+    bool postKillWindow = false;
+    {
+        RaidRuntime& runtime = Cohort().Raid;
+        BotPostKillRecovery::WindowObservation observation;
+        observation.Current = PostKillRecoveryScope();
+        observation.CanonicalRaid = BotCanonicalRaidScope::IsCanonicalRaid(
+            runtime.RaidInstance, Cohort().Config.ValidationRouteScenarioId);
+        observation.BossNode = Cohort().Config.ValidationRouteKind == "boss";
+        observation.BossKillRecorded = observation.BossNode
+            && BotPostKillRecovery::BossKillRecorded(Party().Bots,
+                Party().ValidationRouteGeneration);
+        observation.EncounterInProgress = runtime.EncounterInProgress;
+        if (Player* observer = living.empty() ? nullptr : living.front().Bot)
+            if (InstanceScript* instance = observer->GetInstanceScript())
+                observation.EncounterInProgress = observation.EncounterInProgress
+                    || instance->IsEncounterInProgress();
+        observation.HostileActivityActive = runtime.NativeHostileActivityActive;
+        observation.HostileObservationCurrent =
+            runtime.NativeHostileObservationAttemptId == runtime.AttemptId
+            && runtime.NativeHostileObservationRouteGeneration == Party().ValidationRouteGeneration
+            && runtime.NativeHostileObservationNodeId == Cohort().Config.ValidationRouteNodeId;
+        observation.NowMs = nowMs;
+        BotPostKillRecovery::Edge const edge =
+            BotPostKillRecovery::Observe(runtime.PostKillRecovery, observation);
+        postKillWindow = runtime.PostKillRecovery.Open;
+        Member const* reporter = !dead.empty() ? &dead.front()
+            : !living.empty() ? &living.front() : nullptr;
+        if (edge != BotPostKillRecovery::Edge::None && reporter)
+        {
+            std::string const result = edge == BotPostKillRecovery::Edge::Opened
+                ? std::string("post_kill_recovery_window_opened")
+                : "post_kill_recovery_window_closed:" + runtime.PostKillRecovery.Reason;
+            std::string raw = BuildRawJson(reporter->Bot, nullptr);
+            std::string semantic = BuildSemanticJson(reporter->Bot, nullptr,
+                "validation_route_resurrection");
+            RecordEvent(*reporter->State, reporter->Bot, "validation_route_recovery", nullptr,
+                result.c_str(), raw.c_str(), semantic.c_str(), float(dead.size()),
+                uint32(living.size()));
+        }
+    }
     if (dead.empty())
         return;
 
@@ -340,6 +482,146 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
         PublishNativeBattleResDecision(*member.State, member.Bot, decision,
             ownerGuid, spellId, nowMs, decisionUntilMs);
     };
+    // Stage the exact bounded approach reservation so the same predicate
+    // used by re-reconciliation, execution, and dead-member waiting also
+    // decides whether the planner may publish it; restore the target after.
+    auto stagedOwnerUsable = [&](Member const& target, Player* ownerBot, uint32 spellId,
+        std::string& declineReason)
+    {
+        WorldBotState& staged = *target.State;
+        std::string const previousDecision = staged.NativeBattleResDecision;
+        ObjectGuid const previousOwner = staged.NativeBattleResOwnerGuid;
+        uint32 const previousSpell = staged.NativeBattleResSpellId;
+        uint64 const previousAt = staged.NativeBattleResDecisionAtMs;
+        uint64 const previousUntil = staged.NativeBattleResDecisionUntilMs;
+        uint64 const previousApproachDecisionAt =
+            staged.NativeBattleResApproachIntentDecisionAtMs;
+        uint64 const previousApproachAcceptedUntil =
+            staged.NativeBattleResApproachIntentAcceptedUntilMs;
+        staged.NativeBattleResDecision = "reserved_approach";
+        staged.NativeBattleResOwnerGuid = ownerBot->GetGUID();
+        staged.NativeBattleResSpellId = spellId;
+        staged.NativeBattleResDecisionAtMs = nowMs;
+        staged.NativeBattleResDecisionUntilMs = nowMs + CombatResReservationLifetimeMs;
+        // A staged planner proposal has not passed typed arbitration yet and
+        // must never inherit a prior approach's transient cast/GCD tolerance.
+        staged.NativeBattleResApproachIntentDecisionAtMs = 0;
+        staged.NativeBattleResApproachIntentAcceptedUntilMs = 0;
+        bool const usable = CurrentCombatResOwnerUsable(staged, target.Bot, nowMs,
+            declineReason);
+        staged.NativeBattleResDecision = previousDecision;
+        staged.NativeBattleResOwnerGuid = previousOwner;
+        staged.NativeBattleResSpellId = previousSpell;
+        staged.NativeBattleResDecisionAtMs = previousAt;
+        staged.NativeBattleResDecisionUntilMs = previousUntil;
+        staged.NativeBattleResApproachIntentDecisionAtMs = previousApproachDecisionAt;
+        staged.NativeBattleResApproachIntentAcceptedUntilMs = previousApproachAcceptedUntil;
+        return usable;
+    };
+
+    // Post-kill window (BotPostKillRecovery.h): every unreserved, unreleased
+    // body in raise order (healers first) goes to the first free caster whose
+    // native check passes, one body per caster; casters already reserving a
+    // body are busy. Any living member that knows an out-of-combat
+    // resurrection (or has Rebirth ready) casts, tanks included: nothing is
+    // left to hold. A body no caster could serve is published unreachable and
+    // releases at once (the dead member's hold reads that decision).
+    auto reconcilePostKill = [&]()
+    {
+        // Past the deadline no body is reserved any more: each releases.
+        bool const pastDeadline = BotPostKillRecovery::PastDeadline(
+            Cohort().Raid.PostKillRecovery, PostKillRecoveryScope(), nowMs);
+        std::vector<Member> targets;
+        std::vector<uint64> busy;
+        for (Member const& member : dead)
+        {
+            if (member.State->NativeBattleResDecision == "reserved_approach"
+                || member.State->NativeBattleResDecision == "reserved_cast_submitted")
+            {
+                busy.push_back(member.State->NativeBattleResOwnerGuid.GetRawValue());
+                continue;
+            }
+            if (member.State->NativeBattleResDecisionUntilMs > nowMs
+                && member.State->NativeBattleResDecision.rfind("declined_", 0) == 0)
+                continue;
+            if (!IsNativeCombatResTarget(*member.State, member.Bot))
+            {
+                applyDecision(member, "declined_target_ineligible");
+                continue;
+            }
+            if (pastDeadline)
+            {
+                applyDecision(member, BotPostKillRecovery::Deadline);
+                continue;
+            }
+            targets.push_back(member);
+        }
+        if (targets.empty())
+            return;
+        std::vector<uint32> priority;
+        for (Member const& member : targets)
+            priority.push_back(BotPostKillRecovery::TargetPriority(GetDungeonRole(member.Bot)));
+        std::vector<std::size_t> order(targets.size());
+        for (std::size_t index = 0; index < order.size(); ++index)
+            order[index] = index;
+        std::sort(order.begin(), order.end(), [&](std::size_t left, std::size_t right)
+        {
+            if (priority[left] != priority[right])
+                return priority[left] > priority[right];
+            return targets[left].Bot->GetGUID() < targets[right].Bot->GetGUID();
+        });
+
+        struct Caster
+        {
+            Player* Bot = nullptr;
+            uint32 SpellId = 0;
+            uint32 RecoveryMs = 0;
+        };
+        std::vector<Caster> casters;
+        for (Member const& member : living)
+            for (auto const& [spellId, playerSpell] : member.Bot->GetSpellMap())
+            {
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+                if (spellInfo && (IsNativeCombatResSpell(spellInfo)
+                        || BotPostKillRecovery::IsOutOfCombatResurrection(spellId)))
+                    casters.push_back({ member.Bot, spellId,
+                        std::max(spellInfo->RecoveryTime, spellInfo->CategoryRecoveryTime) });
+            }
+        std::sort(casters.begin(), casters.end(), [](Caster const& left, Caster const& right)
+        {
+            if (left.RecoveryMs != right.RecoveryMs)
+                return left.RecoveryMs < right.RecoveryMs;
+            if (left.Bot->GetGUID() != right.Bot->GetGUID())
+                return left.Bot->GetGUID() < right.Bot->GetGUID();
+            return left.SpellId < right.SpellId;
+        });
+        std::vector<uint64> casterKeys;
+        for (Caster const& caster : casters)
+            casterKeys.push_back(caster.Bot->GetGUID().GetRawValue());
+
+        std::vector<BotPostKillRecovery::Assignment> const assignments =
+            BotPostKillRecovery::Assign(order.size(), casterKeys, busy,
+                [&](std::size_t target, std::size_t caster, std::string& reason)
+                {
+                    return stagedOwnerUsable(targets[order[target]], casters[caster].Bot,
+                        casters[caster].SpellId, reason);
+                });
+        for (std::size_t index = 0; index < order.size(); ++index)
+        {
+            Member const& member = targets[order[index]];
+            BotPostKillRecovery::Assignment const& assignment = assignments[index];
+            if (assignment.Result == BotPostKillRecovery::Outcome::Assigned)
+                applyDecision(member, "reserved_approach",
+                    casters[assignment.Owner].Bot->GetGUID(), casters[assignment.Owner].SpellId,
+                    nowMs + CombatResReservationLifetimeMs);
+            else if (assignment.Result == BotPostKillRecovery::Outcome::Pending)
+                applyDecision(member, BotPostKillRecovery::CasterPending, ObjectGuid::Empty, 0,
+                    nowMs + BotPostKillRecovery::PendingDecisionMs);
+            else
+                applyDecision(member, BotPostKillRecovery::NoReachableCaster, ObjectGuid::Empty,
+                    0, nowMs + BotPostKillRecovery::UnreachableDecisionMs);
+        }
+    };
 
     // A reservation is a continuously reconciled promise, not a timer-only
     // latch.  Any owner, target, spell, path, power, cooldown, or cast-state
@@ -354,6 +636,12 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
                     member.State->NativeBattleResOwnerGuid,
                     member.State->NativeBattleResSpellId);
         }
+
+    if (postKillWindow)
+    {
+        reconcilePostKill();
+        return;
+    }
 
     if (!groupCombatActive && !nativeTrashRecoveryWindow)
     {
@@ -472,40 +760,8 @@ void BotWorldPopulationMgr::ReconcileNativeBattleResDecisions(uint64 nowMs)
     OwnerCandidate const* owner = nullptr;
     for (OwnerCandidate const& candidate : owners)
     {
-        // Stage the exact bounded approach reservation so the same predicate
-        // used by re-reconciliation, execution, and dead-member waiting also
-        // decides whether the planner may publish it.
-        std::string const previousDecision = selected->State->NativeBattleResDecision;
-        ObjectGuid const previousOwner = selected->State->NativeBattleResOwnerGuid;
-        uint32 const previousSpell = selected->State->NativeBattleResSpellId;
-        uint64 const previousAt = selected->State->NativeBattleResDecisionAtMs;
-        uint64 const previousUntil = selected->State->NativeBattleResDecisionUntilMs;
-        uint64 const previousApproachDecisionAt =
-            selected->State->NativeBattleResApproachIntentDecisionAtMs;
-        uint64 const previousApproachAcceptedUntil =
-            selected->State->NativeBattleResApproachIntentAcceptedUntilMs;
-        selected->State->NativeBattleResDecision = "reserved_approach";
-        selected->State->NativeBattleResOwnerGuid = candidate.Owner.Bot->GetGUID();
-        selected->State->NativeBattleResSpellId = candidate.SpellId;
-        selected->State->NativeBattleResDecisionAtMs = nowMs;
-        selected->State->NativeBattleResDecisionUntilMs = nowMs + CombatResReservationLifetimeMs;
-        // A staged planner proposal has not passed typed arbitration yet and
-        // must never inherit a prior approach's transient cast/GCD tolerance.
-        selected->State->NativeBattleResApproachIntentDecisionAtMs = 0;
-        selected->State->NativeBattleResApproachIntentAcceptedUntilMs = 0;
         std::string declineReason;
-        bool const usable = CurrentCombatResOwnerUsable(*selected->State,
-            selected->Bot, nowMs, declineReason);
-        selected->State->NativeBattleResDecision = previousDecision;
-        selected->State->NativeBattleResOwnerGuid = previousOwner;
-        selected->State->NativeBattleResSpellId = previousSpell;
-        selected->State->NativeBattleResDecisionAtMs = previousAt;
-        selected->State->NativeBattleResDecisionUntilMs = previousUntil;
-        selected->State->NativeBattleResApproachIntentDecisionAtMs =
-            previousApproachDecisionAt;
-        selected->State->NativeBattleResApproachIntentAcceptedUntilMs =
-            previousApproachAcceptedUntil;
-        if (usable)
+        if (stagedOwnerUsable(*selected, candidate.Owner.Bot, candidate.SpellId, declineReason))
         {
             owner = &candidate;
             break;
@@ -534,8 +790,9 @@ BotWorldPopulationMgr::BuildCombatResNativeActionCandidate(
 {
     if (!Cohort().Config.ValidationRouteEnable || !owner || !owner->IsInWorld()
         || !owner->IsAlive() || !ownerState.ValidationCohortLocked
-        || Cohort().Config.ValidationRouteBossRecovery
-            == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly)
+        || (Cohort().Config.ValidationRouteBossRecovery
+                == ValidationRouteBossRecoveryPolicy::NativeFullWipeOnly
+            && !PostKillRecoveryWindowOpen()))
         return std::nullopt;
 
     WorldBotState* targetState = nullptr;

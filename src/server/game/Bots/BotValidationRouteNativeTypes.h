@@ -257,6 +257,7 @@ struct RecoveryTransit
     std::string NodeId;
     TransportContract Transport;
     NodeRuntime Runtime; // started while some member needs the ride
+    bool PostKillOnly = false; // row post_kill_only: an arrival, after a recorded kill
 };
 
 // A wake waiting for the party: since when, last tick seen, who holds it.

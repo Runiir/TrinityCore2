@@ -125,6 +125,34 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
             : state.DeadTimer >= 5000;
         if (deathRecoveryReady)
         {
+            // Post-kill recovery window (BotPostKillRecovery.h): an unreleased
+            // body keeps its release, bounded from the window's opening, while
+            // a caster that could reach it exists; the reconciler raises it
+            // and the owner accepts the native request for it. A body no
+            // caster can reach releases at once and returns (post-kill
+            // return past a boarding-only descent).
+            if (BotPostKillRecovery::HoldsRelease(Cohort().Raid.PostKillRecovery,
+                    PostKillRecoveryScope(), state.NativeBattleResDecision, deathNowMs)
+                && IsNativeCombatResTarget(state, bot))
+            {
+                if (state.LastRecoveryResult != "post_kill_resurrection_hold")
+                {
+                    std::string raw = BuildRawJson(bot, nullptr);
+                    std::string semantic = BuildSemanticJson(bot, nullptr,
+                        "validation_route_resurrection");
+                    RecordEvent(state, bot, "validation_route_recovery", nullptr,
+                        "post_kill_resurrection_hold", raw.c_str(), semantic.c_str(),
+                        float(Cohort().Raid.PostKillRecovery.OpenedAtMs
+                            + BotPostKillRecovery::ReleaseHoldMs - deathNowMs),
+                        state.NativeBattleResOwnerGuid.GetCounter(),
+                        state.NativeBattleResSpellId);
+                }
+                state.LastRecoveryMode = "post_kill_resurrection_window";
+                state.LastRecoveryResult = "post_kill_resurrection_hold";
+                state.LastRecoveryMs = deathNowMs;
+                state.DeadTimer = 0;
+                return;
+            }
             // A fully wiped boss attempt keeps the exact all-dead latch. A
             // partial boss death may open only after the native encounter has
             // reset and no hostile activity remains. This is the ordinary
@@ -276,9 +304,21 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
                     && state.NativeBattleResApproachIntentAcceptedUntilMs
                         > recoveryNowMs);
             std::string combatResDeclineReason;
-            bool const battleResReserved = combatResReservationPresent
-                && acceptedCombatResIntentCurrent
+            // A post-kill reservation (BotPostKillRecovery.h) ends at the
+            // window's deadline even while its approach or cast is current;
+            // in-combat reservations are never bound by it.
+            bool const postKillReservationExpired =
+                BotPostKillRecovery::ReservationPastDeadline(Cohort().Raid.PostKillRecovery,
+                    PostKillRecoveryScope(), state.NativeBattleResSpellId,
+                    state.NativeBattleResDecisionAtMs, recoveryNowMs);
+            bool const ownerUsable = combatResReservationPresent
+                && acceptedCombatResIntentCurrent && !postKillReservationExpired
                 && CurrentCombatResOwnerUsable(state, bot, recoveryNowMs, combatResDeclineReason);
+            BotPostKillRecovery::ReservationVerdict const reservation =
+                BotPostKillRecovery::DecideReservationWait(combatResReservationPresent,
+                    acceptedCombatResIntentCurrent, postKillReservationExpired, ownerUsable);
+            bool const battleResReserved =
+                reservation.Step == BotPostKillRecovery::ReservationStep::Wait;
             if (battleResReserved)
             {
                 state.LastRecoveryMode = "wait_for_reserved_combat_res";
@@ -287,16 +327,18 @@ void BotWorldPopulationMgr::HandleBotDeath(WorldBotState& state, Player* bot, ui
                 state.DeadTimer = 0;
                 return;
             }
-            if (combatResReservationPresent)
+            if (reservation.Step == BotPostKillRecovery::ReservationStep::Decline)
             {
                 ObjectGuid const declinedOwner = state.NativeBattleResOwnerGuid;
                 uint32 const declinedSpell = state.NativeBattleResSpellId;
                 PublishNativeBattleResDecision(state, bot,
                     !acceptedCombatResIntentCurrent
                         ? "declined_typed_intent_not_current"
-                        : (combatResDeclineReason.empty()
-                            ? "declined_owner_unusable"
-                            : combatResDeclineReason),
+                        : postKillReservationExpired
+                            ? std::string(BotPostKillRecovery::Deadline)
+                            : (combatResDeclineReason.empty()
+                                ? "declined_owner_unusable"
+                                : combatResDeclineReason),
                     declinedOwner, declinedSpell, recoveryNowMs, recoveryNowMs + 5000);
             }
             // Certifying cohorts use one explicit recovery handshake: the

@@ -38,12 +38,22 @@ enum class RecoverySide : std::uint8_t { Board, Exit };
 
 // Boarding level: where members wait (the approach start, else the wait
 // point, else the board point). Exit level: the exit point, else the
-// disembark point. False when either is missing.
+// disembark point; for a post-kill arrival (a boarding-only transport with a
+// final approach, like the Nefarian descent: no exit) the board point it
+// lands on. False when either is missing.
+inline bool ArrivalOnly(TransportContract const& ride)
+{
+    return !ride.ExitPoint.Valid && !ride.DisembarkPoint.Valid
+        && ride.Approach.Mode != ApproachMode::None;
+}
+
 inline bool RecoveryLevels(TransportContract const& ride, float& boardZ, float& exitZ)
 {
     Point3 const& board = ride.Approach.StartPoint.Valid ? ride.Approach.StartPoint
         : ride.WaitPoint.Valid ? ride.WaitPoint : ride.BoardPoint;
-    Point3 const& exit = ride.ExitPoint.Valid ? ride.ExitPoint : ride.DisembarkPoint;
+    Point3 const& exit = ride.ExitPoint.Valid ? ride.ExitPoint
+        : ride.DisembarkPoint.Valid ? ride.DisembarkPoint
+        : ArrivalOnly(ride) ? ride.BoardPoint : ride.ExitPoint;
     if (!board.Valid || !exit.Valid)
         return false;
     boardZ = board.Z;
@@ -86,6 +96,8 @@ struct RecoveryMemberView
     bool AtExit = false;
     bool InCombat = false;
     float Z = 0.0f;
+    // The transit is a post-kill arrival (ArrivalOnly): boarding ends it.
+    bool Arrival = false;
 };
 
 // A member is in flight for a ride only while that ride runs its approach:
@@ -110,8 +122,11 @@ inline bool MemberNeedsRide(RecoveryMemberView const& member, float boardZ, floa
 {
     if (!member.Alive || !member.OnRouteInstance)
         return false;
-    if (member.Aboard || member.InFlight)
+    if (member.InFlight)
         return true;
+    // Aboard a ride it is riding; aboard an arrival it has arrived.
+    if (member.Aboard)
+        return !member.Arrival;
     if (SideOf(member.Z, boardZ, exitZ) == RecoverySide::Board)
         return member.Released;
     return member.Boarded && !member.AtExit;
@@ -349,6 +364,10 @@ inline bool RecoveryRideHoldsMember(bool rideEngaged, TransportContract const& r
 {
     float boardZ = 0.0f;
     float exitZ = 0.0f;
+    // An engaged post-kill arrival holds its riders at the lip until the last
+    // of them is there (the cohort drops together), bounded by its timeout.
+    if (ArrivalOnly(ride))
+        return rideEngaged && !onTransport;
     return rideEngaged && !onTransport && RecoveryLevels(ride, boardZ, exitZ)
         && SideOf(z, boardZ, exitZ) == RecoverySide::Exit;
 }

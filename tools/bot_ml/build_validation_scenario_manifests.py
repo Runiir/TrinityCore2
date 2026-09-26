@@ -673,6 +673,35 @@ def recovery_return_blockers(*routes: Sequence[dict[str, Any]]) -> dict[str, str
     return blockers
 
 
+def post_kill_arrivals(*routes: Sequence[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Per node ID, the unchanged transport contract of a boarding-only row
+    with a final approach and no exit (the Nefarian descent's ledge drop),
+    whose approach start and board point are at least
+    RECOVERY_MIN_LEVEL_SEPARATION_YARDS apart (the first route that declares
+    a node wins). A boss row beyond it carries it as a post-kill arrival
+    (recovery_transport entry with "post_kill_only": true): after the boss is
+    recorded killed, a member released then (a body no caster could reach)
+    walks back and drops onto the platform again (round 10). Before the kill
+    a wipe there still cannot walk back (recovery_return_blocked_by)."""
+    arrivals: dict[str, dict[str, Any]] = {}
+    for route in routes:
+        for step in route or []:
+            node_id = str(step.get("node_id") or "")
+            contract = step.get("transport_contract")
+            if not node_id or node_id in arrivals or not isinstance(contract, dict):
+                continue
+            approach = contract.get("approach")
+            if ride_levels(contract) is not None or not isinstance(approach, dict) \
+                    or contract.get("exit_point") or contract.get("disembark_point"):
+                continue
+            start, board = approach.get("start_point"), contract.get("board_point")
+            if not start or not board \
+                    or abs(float(start[2]) - float(board[2])) < RECOVERY_MIN_LEVEL_SEPARATION_YARDS:
+                continue
+            arrivals[node_id] = contract
+    return arrivals
+
+
 def prepull_setup_gate(scenario: dict[str, Any]) -> bool:
     """Whether a scenario's rows opt into the runtime's prepull setup gate
     (BotValidationRoutePrepull.h): composition/canonical scenarios only (a
@@ -1009,6 +1038,7 @@ def build_manifests(
         rides = recovery_rides(route_steps, parent_route)
         wakes = recovery_wakes(route_steps, parent_route)
         blockers = recovery_return_blockers(route_steps, parent_route)
+        arrivals = post_kill_arrivals(route_steps, parent_route)
 
         for step in route_steps:
             coordinates_valid, coordinate_missing_reason = route_coordinate_status(step)
@@ -1225,6 +1255,10 @@ def build_manifests(
                 blocked_by = blockers.get(str(step.get("node_id") or ""))
                 if blocked_by:
                     route["recovery_return_blocked_by"] = blocked_by
+                arrival = arrivals.get(blocked_by or "")
+                if arrival and step.get("kind") == "boss":
+                    route["recovery_transport"] = list(route.get("recovery_transport") or []) + [
+                        {"node_id": blocked_by, "contract": copy.deepcopy(arrival), "post_kill_only": True}]
             patrol_combat_anchor = step.get("patrol_combat_anchor")
             if patrol_combat_anchor:
                 route["patrol_combat_anchor"] = {

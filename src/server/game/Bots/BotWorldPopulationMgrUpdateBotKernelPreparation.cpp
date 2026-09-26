@@ -270,6 +270,9 @@ void BotWorldPopulationMgr::PrepareValidationKernel(
                     nativeInput.BossResetGeneration = Cohort().Raid.BossResetGeneration;
                     nativeInput.CompositionRecovery = Cohort().Raid.RaidInstance
                         && routeNode.CompositionRecovery;
+                    nativeInput.PostKillReturn = Cohort().Config.ValidationRouteKind == "boss"
+                        && BotPostKillRecovery::BossKillRecorded(Party().Bots,
+                            Party().ValidationRouteGeneration);
                     nativeInput.CompletionAlreadyRecorded =
                         std::any_of(Party().Bots.begin(), Party().Bots.end(),
                             [this](WorldBotState const& cohortState)

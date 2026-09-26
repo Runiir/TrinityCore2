@@ -13,6 +13,7 @@
 #include "Bots/BotProfileCombatRangeCheckpoint.h"
 #include "Bots/Content/Raids/BlackwingDescent/Encounters/Magmaw/BotMagmawTransferLaneCheckpoint.h"
 #include "Bots/BotValidationPrepullCheckpoint.h"
+#include "Bots/BotPostKillRecovery.h"
 #include "Bots/BotRaidBossLustLatch.h"
 #include "Bots/BotValidationPatrolPullState.h"
 #include "Bots/BotMeleeAutoAttackIntent.h"
@@ -303,6 +304,11 @@ private:
         std::string const& decision, ObjectGuid ownerGuid, uint32 spellId,
         uint64 nowMs, uint64 decisionUntilMs);
     void ReconcileNativeBattleResDecisions(uint64 nowMs);
+    // Post-kill recovery window (BotPostKillRecovery.h), in the current scope.
+    BotPostKillRecovery::Scope PostKillRecoveryScope() const;
+    bool PostKillRecoveryWindowOpen() const;
+    bool PostKillApproachDestination(Player const* owner, Player const* target, float range,
+        float& x, float& y, float& z) const;
     struct BotUpdateContext;
     void UpdateBot(WorldBotState& state, uint32 diff);
     void HoldValidationAttemptFailure(WorldBotState& state, Player* bot);

@@ -189,6 +189,11 @@ struct Input
     // from a wipe at this node.
     bool Blocked = false;
     bool WipedHere = false;
+    // The node's boss is recorded killed (post-kill return, round 10): the
+    // descent it lies beyond is ridden again as a post-kill recovery transit
+    // (BotValidationRouteNativeRecovery.h), so a member released after the
+    // kill walks back like any other.
+    bool PostKillReturn = false;
     // An engaged recovery ride holds the member at its exit for the party
     // (RecoveryRideHoldsMember): the clock pauses.
     bool RideHolds = false;
@@ -225,7 +230,7 @@ inline Decision Decide(Memory& memory, Input const& input)
         memory = Memory();
         return { Verdict::Arrived };
     }
-    if (input.Blocked)
+    if (input.Blocked && !input.PostKillReturn)
     {
         // A member released while the fight goes on stays out of it; a wipe
         // here cannot be walked back to.

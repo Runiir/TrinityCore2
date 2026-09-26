@@ -19,8 +19,10 @@ namespace BotWorldPopulationMgrValidationRouteNative
 {
 struct RecoveryOps
 {
-    // One member's step of a transport contract with its own runtime state.
-    std::function<void(Callbacks const&, BotValidationRouteNative::TransportContract const&,
+    // One member's step of a transport contract with its own runtime state,
+    // among the given members (a post-kill arrival: its riders only).
+    std::function<void(Input const&, Callbacks const&,
+        BotValidationRouteNative::TransportContract const&,
         BotValidationRouteNative::NodeRuntime&, Facts::TransportTarget const&)> Ride;
     // Keep the member where it is, owning its movement.
     std::function<void(std::string const&)> Hold;

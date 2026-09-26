@@ -665,7 +665,10 @@ inline bool ValidNodeId(std::string_view id)
 // the unchanged transport contract of a ride between two levels that lies
 // between this node and where a wipe's runback leaves the party. The
 // contract sits under "contract", never "transport_contract", so the row
-// reader never mistakes it for the row's own transport contract.
+// reader never mistakes it for the row's own transport contract. An entry
+// with "post_kill_only": true is instead the boarding-only transport the node
+// lies beyond (its final approach lands on the platform; no exit), ridden
+// only after the node's boss is recorded killed.
 inline ParseError ParseRecoveryTransports(Json const& array, std::vector<RecoveryTransit>& out)
 {
     out.clear();
@@ -678,7 +681,7 @@ inline ParseError ParseRecoveryTransports(Json const& array, std::vector<Recover
         if (!item.IsObject())
             return ParseError::Invalid("recovery_transport_not_object");
         for (auto const& [key, value] : item.Members)
-            if (!KnownField(key, { "node_id", "contract" }))
+            if (!KnownField(key, { "node_id", "contract", "post_kill_only" }))
                 return ParseError::Unknown("recovery_transport." + key);
         Json const* id = item.Find("node_id");
         Json const* contract = item.Find("contract");
@@ -691,16 +694,26 @@ inline ParseError ParseRecoveryTransports(Json const& array, std::vector<Recover
                 return ParseError::Invalid("recovery_transport_duplicate:" + id->Text);
         RecoveryTransit transit;
         transit.NodeId = id->Text;
+        if (Json const* postKill = item.Find("post_kill_only"))
+        {
+            if (!postKill->IsBool())
+                return ParseError::Invalid("recovery_transport_post_kill_only");
+            transit.PostKillOnly = postKill->Boolean;
+        }
         if (ParseError error = ParseTransport(*contract, transit.Transport))
             return error.Kind == ParseError::Code::UnknownField
                 ? ParseError::Unknown("recovery_transport." + error.Detail)
                 : ParseError::Invalid("recovery_transport:" + error.Detail);
         // A recovery ride carries the party between two levels: it has an
-        // exit, and its two ends are unambiguous.
+        // exit, and its two ends are unambiguous. A post-kill arrival has a
+        // final approach and no exit instead.
         float boardZ = 0.0f;
         float exitZ = 0.0f;
-        if (!transit.Transport.HasExit())
-            return ParseError::Invalid("recovery_transport_requires_exit");
+        if (transit.PostKillOnly ? !ArrivalOnly(transit.Transport)
+                : !transit.Transport.HasExit())
+            return ParseError::Invalid(transit.PostKillOnly
+                ? "recovery_transport_post_kill_requires_arrival"
+                : "recovery_transport_requires_exit");
         if (!RecoveryLevels(transit.Transport, boardZ, exitZ)
             || !(std::fabs(boardZ - exitZ) >= MinRecoveryLevelSeparationYards))
             return ParseError::Invalid("recovery_transport_levels_not_separated");

@@ -80,6 +80,9 @@ struct Input
     // composition_recovery in a raid instance): a reset then starts a wake.
     std::uint64_t BossResetGeneration = 0;
     bool CompositionRecovery = false;
+    // The node's boss is recorded killed at this route generation: post-kill
+    // arrivals (recovery_transport post_kill_only) may run.
+    bool PostKillReturn = false;
 };
 
 struct Result

@@ -453,6 +453,9 @@
         // Canonical boss lust fallback (BotRaidBossLust.h): one native cast
         // per attempt where the boss strategy declares no lust timing.
         BotRaidBossLust::Latch BossLust;
+        // Canonical post-kill recovery window (BotPostKillRecovery.h),
+        // observed once per update by the resurrection reconciler.
+        BotPostKillRecovery::Latch PostKillRecovery;
         std::map<uint32, std::string> AccountNameById;
         std::set<uint32> AccountNameLookupAttempted;
     };

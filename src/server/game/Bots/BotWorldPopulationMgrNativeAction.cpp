@@ -222,6 +222,28 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                     std::min(targetState->NativeBattleResDecisionUntilMs,
                         acceptedAtMs + 1500);
             };
+            // Post-kill window (BotPostKillRecovery.h): inside the cast
+            // envelope the approach ends where the caster stands, also while
+            // it waits for a cast or GCD to finish, so it never walks on
+            // toward a body in the lava. The movement input is released like
+            // a player letting go of the keys; nothing is relocated.
+            bool const postKillWindow = PostKillRecoveryWindowOpen();
+            bool const inEnvelope = bot->IsWithinLOSInMap(target)
+                && bot->IsWithinDistInMap(target, resurrectionRange);
+            if (postKillWindow && inEnvelope
+                && (bot->isMoving() || state.ActivePathValid || state.IsMoving))
+            {
+                bot->StopMoving();
+                bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                bot->GetMotionMaster()->MoveIdle();
+                state.ActivePathValid = false;
+                state.ActivePathPurposeValid = false;
+                state.ActivePathSegmentValid = false;
+                state.ActivePathTraversalMode.clear();
+                state.ActivePathTargetGuid.Clear();
+                state.MovementLease = {};
+                state.IsMoving = false;
+            }
             if (bot->HasUnitState(UNIT_STATE_CASTING))
             {
                 // A player does not start walking in the middle of an
@@ -232,8 +254,7 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                 return BotActionArbitration::Outcome::Progressed(
                     "typed_combat_res_waiting_for_active_cast");
             }
-            if (bot->IsWithinLOSInMap(target)
-                && bot->IsWithinDistInMap(target, resurrectionRange))
+            if (inEnvelope)
             {
                 // The approach intent owns movement only.  Holding inside the
                 // cast envelope while an independent damage cast/GCD finishes
@@ -243,11 +264,25 @@ BotActionArbitration::Outcome BotWorldPopulationMgr::ExecuteNativeActionIntent(
                     "typed_combat_res_cast_resources_pending");
             }
 
+            // Post-kill: walk to the validated dry point in the envelope
+            // (the same one the owner check approved), never to the body.
+            float destinationX = target->GetPositionX();
+            float destinationY = target->GetPositionY();
+            float destinationZ = target->GetPositionZ();
+            if (postKillWindow && !PostKillApproachDestination(bot, target, resurrectionRange,
+                    destinationX, destinationY, destinationZ))
+            {
+                declineCombatResIntent(targetState, target, action.SpellId,
+                    action.ReservationAtMs, action.ReservationUntilMs,
+                    BotPostKillRecovery::ApproachThroughLiquid);
+                return BotActionArbitration::Outcome::Retryable(
+                    BotPostKillRecovery::ApproachThroughLiquid);
+            }
             bool const moved = MoveBotToPoint(state, bot,
-                target->GetPositionX(), target->GetPositionY(),
-                target->GetPositionZ(), false,
+                destinationX, destinationY, destinationZ, false,
                 BotMovementArbitration::Owner::Support,
-                BotMovementArbitration::Priority::Support, target);
+                BotMovementArbitration::Priority::Support,
+                postKillWindow ? nullptr : target);
             if (!moved)
                 return BotActionArbitration::Outcome::Retryable(
                     "combat_res_approach_not_submitted");

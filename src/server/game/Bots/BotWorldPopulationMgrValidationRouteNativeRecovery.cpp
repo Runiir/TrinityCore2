@@ -58,9 +58,32 @@ std::vector<RecoveryMemberView> RecoveryViews(Input const& input, NodeRuntime co
             ride.ExitPoint.Y, ride.ExitPoint.Z) <= ride.ArrivalToleranceYards;
         view.InCombat = bot->IsInCombat();
         view.Z = bot->GetPositionZ();
+        view.Arrival = ArrivalOnly(ride);
         views.push_back(view);
     }
     return views;
+}
+
+// A post-kill arrival drops only its riders together: the survivors already
+// on the platform (passengers or not, after a resurrection that teleported
+// them to their caster) never hold its cohort barrier.
+Input ArrivalRiders(Input const& input, std::vector<RecoveryMemberView> const& views,
+    float boardZ, float exitZ)
+{
+    Input riders = input;
+    riders.Members.clear();
+    for (MemberInput const& member : input.Members)
+    {
+        if (!member.Bot)
+            continue;
+        std::uint64_t const guid = member.Bot->GetGUID().GetRawValue();
+        auto const view = std::find_if(views.begin(), views.end(),
+            [guid](RecoveryMemberView const& candidate) { return candidate.Guid == guid; });
+        if (member.Bot == input.Bot
+            || (view != views.end() && MemberNeedsRide(*view, boardZ, exitZ)))
+            riders.Members.push_back(member);
+    }
+    return riders;
 }
 
 // Every loaded member as a recovery wake sees it.
@@ -226,6 +249,13 @@ bool RunRecovery(Input const& input, Callbacks const& callbacks, NodeContract& n
     {
         TransportContract const& ride = transit.Transport;
         NodeRuntime& runtime = transit.Runtime;
+        // A post-kill arrival exists only after the node's boss is recorded
+        // killed, on a composition raid row; before that it never runs.
+        if (transit.PostKillOnly && !(input.PostKillReturn && input.CompositionRecovery))
+        {
+            runtime = NodeRuntime();
+            continue;
+        }
         bool const engaged = runtime.Started && runtime.Scope == input.Scope;
         if (!engaged && runtime.Started)
             runtime = NodeRuntime();
@@ -298,7 +328,8 @@ bool RunRecovery(Input const& input, Callbacks const& callbacks, NodeContract& n
         }
         // The ride's own failures and events carry the recovery prefix.
         Callbacks const ridden = RecoveryCallbacks(callbacks, transit.NodeId, &RecoveryFailure);
-        ops.Ride(ridden, ride, runtime, transport);
+        ops.Ride(ArrivalOnly(ride) ? ArrivalRiders(input, views, boardZ, exitZ) : input,
+            ridden, ride, runtime, transport);
         return true;
     }
     return RunRecoveryWakes(input, callbacks, node, ops);

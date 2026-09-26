@@ -859,10 +859,10 @@ Result Run(Input const& input, Callbacks const& callbacks)
     if (!node.Recovery.empty() || !node.RecoveryInteractions.empty())
     {
         RecoveryOps ops;
-        ops.Ride = [&input](Callbacks const& ridden, TransportContract const& ride,
+        ops.Ride = [](Input const& riders, Callbacks const& ridden, TransportContract const& ride,
             NodeRuntime& rideRuntime, Facts::TransportTarget const& platform)
         {
-            RunTransport(input, ridden, ride, rideRuntime, platform);
+            RunTransport(riders, ridden, ride, rideRuntime, platform);
         };
         ops.Hold = [&input](std::string const& reason) { SubmitHold(input, reason); };
         ops.Elect = [&input](InteractionContract const& wake)

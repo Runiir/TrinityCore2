@@ -374,7 +374,9 @@ def test_runtime_runs_recovery_rides_before_the_node_and_fails_typed() -> None:
     # starts only once no ride is needed.
     assert run.index("RunRecovery(input, callbacks, node, ops)") < run.index("runtime.Enter(input.Scope, input.NowMs);")
     assert "if (!node.Interaction.Declared && !node.Completion.Declared && !node.Transport.Declared)\n        return result;" in run
-    assert "RunTransport(input, ridden, ride, rideRuntime, platform);" in run
+    # A ride runs among the members RunRecovery passes (all of them, or a
+    # post-kill arrival's riders: tests/test_bot_post_kill_recovery.py).
+    assert "RunTransport(riders, ridden, ride, rideRuntime, platform);" in run
     assert "ops.Hold = [&input](std::string const& reason) { SubmitHold(input, reason); };" in run
     # The transport step takes its contract and runtime explicitly.
     assert "TransportContract const& contract, NodeRuntime& runtime,\n    Facts::TransportTarget const& transport)" in runtime
@@ -389,7 +391,7 @@ def test_runtime_runs_recovery_rides_before_the_node_and_fails_typed() -> None:
         '"route_recovery_engaged:" + transit.NodeId',
         '"route_recovery_complete:" + transit.NodeId',
         'ops.Hold("route_recovery_waiting_for_party");',
-        "ops.Ride(ridden, ride, runtime, transport);",
+        "ops.Ride(ArrivalOnly(ride) ? ArrivalRiders(input, views, boardZ, exitZ) : input,\n            ridden, ride, runtime, transport);",
         "prefixed.Complete = nullptr;",
         "runtime.Enter(input.Scope, input.NowMs);",
         "StaleRiderState(view, state->second, boardZ, exitZ)",
@@ -416,7 +418,7 @@ def test_runtime_runs_recovery_rides_before_the_node_and_fails_typed() -> None:
         assert marker in manifest, marker
 
     contract = _code(_source("BotValidationRouteNativeContract.h"))
-    assert 'KnownField(key, { "node_id", "contract" })' in contract
+    assert 'KnownField(key, { "node_id", "contract", "post_kill_only" })' in contract
     types = _source("BotValidationRouteNativeTypes.h")
     assert "|| !Recovery.empty() || !RecoveryInteractions.empty();" in types
     assert "std::vector<RecoveryTransit> Recovery;" in types

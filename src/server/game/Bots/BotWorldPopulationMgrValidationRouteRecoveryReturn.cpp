@@ -78,6 +78,8 @@ bool BotWorldPopulationMgr::BotUpdateContext::ObserveValidationRecoveryReturn()
         node->NavigationAnchorY, node->NavigationAnchorZ) : 0.0f;
     input.Blocked = node && !node->RecoveryReturnBlockedBy.empty();
     input.WipedHere = wipedHere;
+    input.PostKillReturn = BotPostKillRecovery::BossKillRecorded(manager.Party().Bots,
+        manager.Party().ValidationRouteGeneration);
     // An engaged recovery ride holding the member at its exit for the last
     // living rider pauses the return clock (the ride's timeout bounds it).
     if (node)
