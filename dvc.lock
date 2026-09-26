@@ -455,8 +455,8 @@ stages:
       size: 23898
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: 63a775b4c6c7c4a3a69b2583f8eafb83
-      size: 73257
+      md5: 75df2cdc2e04c702177c5e07d5f81785
+      size: 75268
     - path: tools/bot_ml/common.py
       hash: md5
       md5: bb0de5d5b481e92f0fcffd74cbf1562e
@@ -464,8 +464,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: c110c79899a2fa1c5ed177315fa4020e.dir
-      size: 1145524
+      md5: d0c1036377ad685d84d2342823e0a3ec.dir
+      size: 1146744
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
